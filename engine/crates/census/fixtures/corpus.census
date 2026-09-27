@@ -764,6 +764,8 @@ docs/obligations/0221-subagents-read-skills-from-the-shared-checkout-and-a-workt
   typed: obligation_record
 docs/obligations/0222-ten-rules-of-the-editions-ledger-have-one-recorded-corpus-so-a-rule-change-blessed-with-an-edit-to-that-corpus-passes.md
   typed: obligation_record
+docs/obligations/0223-no-run-measures-whether-the-documents-under-docs-change-what-an-agent-builds.md
+  typed: obligation_record
 docs/obligations/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/probe-results/README.md
@@ -797,6 +799,10 @@ docs/probes/a-cold-agent-reaches-the-governing-document-through-the-corpus-descr
 docs/probes/a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer.md
   typed: probe
 docs/probes/a-session-answers-from-the-register-without-opening-the-question-it-replaced.md
+  typed: probe
+docs/probes/a-session-names-the-event-that-makes-a-document-accepted.md
+  typed: probe
+docs/probes/a-session-names-the-status-a-settled-decision-carries-in-its-pull-request.md
   typed: probe
 docs/probes/a-session-records-an-unmeasured-claim-in-the-shape-this-corpus-checks.md
   typed: probe

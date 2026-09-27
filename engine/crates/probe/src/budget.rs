@@ -53,12 +53,21 @@ pub struct Envelope {
     /// The arms this tier runs. A campaign runs the pair or it estimates
     /// nothing.
     pub arms: Vec<Arm>,
+    /// The paths, relative to the repository root, that the absent arm
+    /// removes. Spec 5: the absent arm names a declared ablation. Empty for a
+    /// tier that runs no absent arm, and refused as empty for one that does.
+    pub ablation: Vec<String>,
 }
 
 /// Every declared tier.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Budgets {
     pub tiers: Vec<Envelope>,
+    /// The paths, relative to the repository root, that every arm of every
+    /// tier removes: the probe shelves, whose documents state the answer each
+    /// probe expects. They are the instrument and not the treatment, so no
+    /// arm holds them. Empty where the file declares none.
+    pub instrument: Vec<String>,
 }
 
 impl Budgets {
@@ -90,6 +99,17 @@ impl Budgets {
             )));
         };
 
+        let instrument = match root.get("instrument") {
+            None => Vec::new(),
+            Some(listed) => paths(&listed.value)
+                .ok_or_else(|| {
+                    Unreadable::Malformed(format!(
+                        "`instrument` in {PATH} is not a sequence of paths"
+                    ))
+                })?
+                .map_err(|entry| Unreadable::InstrumentUnsafe { entry })?,
+        };
+
         let mut tiers = Vec::new();
         for entry in block {
             let name = entry.key.value.as_str();
@@ -108,7 +128,7 @@ impl Budgets {
                 "{PATH} declares no tier, and a run at a tier with no envelope cannot fail closed"
             )));
         }
-        Ok(Budgets { tiers })
+        Ok(Budgets { tiers, instrument })
     }
 }
 
@@ -171,8 +191,29 @@ fn envelope(tier: Tier, fields: &Mapping) -> Result<Envelope, Unreadable> {
     // the pair is what an efficacy claim rests on. A campaign declaring one arm
     // is a campaign that estimates nothing, which is the regression tier under
     // a name that would let a published claim cite it.
-    if tier == Tier::Campaign && arms.len() != Arm::ALL.len() {
-        return Err(Unreadable::CampaignHasOneArm);
+    if tier.pairs_arms() && arms.len() != Arm::ALL.len() {
+        return Err(Unreadable::PairHasOneArm { tier: name });
+    }
+
+    // Spec 5: the absent arm names a declared ablation. An absent arm with
+    // none is whatever a script happens to remove, and an ablation with no
+    // absent arm is declared and never applied.
+    let ablation = match fields.get("ablation") {
+        None => Vec::new(),
+        Some(listed) => paths(&listed.value)
+            .ok_or_else(|| {
+                Unreadable::Malformed(format!(
+                    "`ablation` of the `{name}` tier in {PATH} is not a sequence of paths"
+                ))
+            })?
+            .map_err(|entry| Unreadable::AblationUnsafe { tier: name, entry })?,
+    };
+    let absent = arms.contains(&Arm::Absent);
+    if absent && ablation.is_empty() {
+        return Err(Unreadable::AblationUndeclared { tier: name });
+    }
+    if !absent && !ablation.is_empty() {
+        return Err(Unreadable::AblationWithoutAbsent { tier: name });
     }
 
     Ok(Envelope {
@@ -181,7 +222,44 @@ fn envelope(tier: Tier, fields: &Mapping) -> Result<Envelope, Unreadable> {
         session_cost,
         repetitions,
         arms,
+        ablation,
     })
+}
+
+/// A sequence of paths inside the tree, deduplicated in declared order.
+///
+/// `None` where the value is not a sequence, and the first unsafe entry as the
+/// error.
+fn paths(value: &Value) -> Option<Result<Vec<String>, String>> {
+    let items = value.as_seq()?;
+    let mut paths: Vec<String> = Vec::new();
+    for item in items {
+        let entry = item
+            .value
+            .as_scalar()
+            .map(|scalar| scalar.text.clone())
+            .unwrap_or_default();
+        if !ablation_entry_is_safe(&entry) {
+            return Some(Err(entry));
+        }
+        if !paths.contains(&entry) {
+            paths.push(entry);
+        }
+    }
+    Some(Ok(paths))
+}
+
+/// Whether an ablation entry names a path inside the tree.
+///
+/// `tools/probe/ablate.sh` hands every entry to `rm -rf` in a copy of the
+/// tree, so an empty entry, an absolute one, or one with a `..` component
+/// would remove the copy itself or something outside it.
+fn ablation_entry_is_safe(entry: &str) -> bool {
+    !entry.is_empty()
+        && !entry.starts_with('/')
+        && entry
+            .split('/')
+            .all(|component| component != ".." && component != "." && !component.is_empty())
 }
 
 fn text(map: &Mapping, key: &str) -> Option<String> {
@@ -207,7 +285,22 @@ pub enum Unreadable {
         tier: &'static str,
         found: String,
     },
-    CampaignHasOneArm,
+    PairHasOneArm {
+        tier: &'static str,
+    },
+    AblationUndeclared {
+        tier: &'static str,
+    },
+    AblationWithoutAbsent {
+        tier: &'static str,
+    },
+    AblationUnsafe {
+        tier: &'static str,
+        entry: String,
+    },
+    InstrumentUnsafe {
+        entry: String,
+    },
 }
 
 impl std::fmt::Display for Unreadable {
@@ -240,11 +333,34 @@ impl std::fmt::Display for Unreadable {
                 f,
                 "the `{tier}` tier names the arm `{found}`. The arms are `present` and `absent`"
             ),
-            Unreadable::CampaignHasOneArm => write!(
+            Unreadable::PairHasOneArm { tier } => write!(
                 f,
-                "the `campaign` tier names one arm. A campaign estimates a difference, so it runs \
-                 the pair, and a campaign with one arm is the regression tier under a name a \
-                 published claim would cite"
+                "the `{tier}` tier names one arm. It estimates a difference, so it runs the \
+                 pair, and with one arm it is the regression tier under a name a published \
+                 claim would cite"
+            ),
+            Unreadable::AblationUndeclared { tier } => write!(
+                f,
+                "the `{tier}` tier runs the `absent` arm and declares no `ablation`. Spec 5: the \
+                 absent arm names a declared ablation, or the claim it measures is whatever a \
+                 script removed"
+            ),
+            Unreadable::AblationWithoutAbsent { tier } => write!(
+                f,
+                "the `{tier}` tier declares an `ablation` and runs no `absent` arm, so the \
+                 ablation is declared and never applied"
+            ),
+            Unreadable::AblationUnsafe { tier, entry } => write!(
+                f,
+                "the `{tier}` tier's ablation names `{entry}`. An entry is a path inside the \
+                 tree, relative to its root, with no `..`, `.` or empty component, because \
+                 the absent arm removes it with `rm -rf`"
+            ),
+            Unreadable::InstrumentUnsafe { entry } => write!(
+                f,
+                "the `instrument` of {PATH} names `{entry}`. An entry is a path inside the tree, \
+                 relative to its root, with no `..`, `.` or empty component, because every arm \
+                 removes it with `rm -rf`"
             ),
         }
     }
@@ -255,6 +371,7 @@ mod tests {
     use super::*;
 
     const GOOD: &str = "\
+instrument: [docs/probes, docs/probe-runs]
 tiers:
   regression:
     budget_cents: 2000
@@ -266,25 +383,124 @@ tiers:
     session_cost_cents: 4
     repetitions: 58
     arms: [present, absent]
+    ablation: [CLAUDE.md, .claude, .githooks, .headwater]
+  documentation:
+    budget_cents: 40000
+    session_cost_cents: 4
+    repetitions: 58
+    arms: [present, absent]
+    ablation: [CLAUDE.md, .claude, .githooks, .headwater, docs]
 ";
 
     #[test]
-    fn both_tiers_read() {
+    fn every_tier_reads_with_its_ablation() {
         let budgets = Budgets::read(GOOD).expect("reads");
-        assert_eq!(budgets.tiers.len(), 2);
+        assert_eq!(budgets.tiers.len(), 3);
         let campaign = budgets.of(Tier::Campaign).expect("campaign");
         assert_eq!(campaign.repetitions, 58);
         assert_eq!(campaign.arms, vec![Arm::Present, Arm::Absent]);
+        assert_eq!(
+            campaign.ablation,
+            vec!["CLAUDE.md", ".claude", ".githooks", ".headwater"]
+        );
+        let documentation = budgets.of(Tier::Documentation).expect("documentation");
+        assert_eq!(
+            documentation.ablation,
+            vec!["CLAUDE.md", ".claude", ".githooks", ".headwater", "docs"]
+        );
+        let regression = budgets.of(Tier::Regression).expect("regression");
+        assert!(regression.ablation.is_empty(), "one arm, nothing removed");
+        assert_eq!(budgets.instrument, vec!["docs/probes", "docs/probe-runs"]);
+    }
+
+    #[test]
+    fn a_file_with_no_instrument_removes_nothing_from_any_arm() {
+        let source = GOOD.replace("instrument: [docs/probes, docs/probe-runs]\n", "");
+        assert!(Budgets::read(&source).expect("reads").instrument.is_empty());
+    }
+
+    #[test]
+    fn an_instrument_entry_that_leaves_the_tree_is_refused() {
+        // `tools/probe/ablate.sh` hands every entry to `rm -rf` in every arm.
+        let source = GOOD.replace("[docs/probes, docs/probe-runs]", "[docs/probes, ../x]");
+        assert_eq!(
+            Budgets::read(&source),
+            Err(Unreadable::InstrumentUnsafe {
+                entry: "../x".to_string()
+            })
+        );
     }
 
     #[test]
     fn a_campaign_with_one_arm_is_refused() {
-        let source = GOOD.replace("arms: [present, absent]", "arms: [present]");
+        let source = GOOD.replacen("arms: [present, absent]", "arms: [present]", 1);
         assert_eq!(
             Budgets::read(&source),
-            Err(Unreadable::CampaignHasOneArm),
+            Err(Unreadable::PairHasOneArm { tier: "campaign" }),
             "a campaign estimates a difference and one arm estimates none"
         );
+    }
+
+    #[test]
+    fn a_documentation_tier_with_one_arm_is_refused() {
+        let source = GOOD
+            .replace(
+                "    arms: [present, absent]\n    ablation: [CLAUDE.md, .claude, .githooks, .headwater, docs]\n",
+                "    arms: [present]\n",
+            );
+        assert_eq!(
+            Budgets::read(&source),
+            Err(Unreadable::PairHasOneArm {
+                tier: "documentation"
+            }),
+            "the documentation tier estimates a difference too"
+        );
+    }
+
+    #[test]
+    fn an_absent_arm_with_no_ablation_is_refused() {
+        // Spec 5: the absent arm names a declared ablation. Without one, the
+        // absent tree is whatever a script removes, and no claim names it.
+        let source = GOOD.replace(
+            "    ablation: [CLAUDE.md, .claude, .githooks, .headwater]\n",
+            "",
+        );
+        assert_eq!(
+            Budgets::read(&source),
+            Err(Unreadable::AblationUndeclared { tier: "campaign" })
+        );
+    }
+
+    #[test]
+    fn an_ablation_without_the_absent_arm_is_refused() {
+        let source = GOOD.replace(
+            "    arms: [present]\n",
+            "    arms: [present]\n    ablation: [docs]\n",
+        );
+        assert_eq!(
+            Budgets::read(&source),
+            Err(Unreadable::AblationWithoutAbsent { tier: "regression" }),
+            "an ablation no arm applies is declared and never read"
+        );
+    }
+
+    #[test]
+    fn an_ablation_entry_that_leaves_the_tree_is_refused() {
+        // `tools/probe/ablate.sh` hands every entry to `rm -rf`.
+        for entry in ["docs/../..", "/etc", "..", "\"\""] {
+            let source = GOOD.replace(
+                "[CLAUDE.md, .claude, .githooks, .headwater, docs]",
+                &format!("[CLAUDE.md, {entry}]"),
+            );
+            assert_eq!(
+                Budgets::read(&source),
+                Err(Unreadable::AblationUnsafe {
+                    tier: "documentation",
+                    entry: entry.trim_matches('"').to_string(),
+                }),
+                "{entry}"
+            );
+        }
     }
 
     #[test]

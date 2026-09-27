@@ -241,16 +241,36 @@ pub enum Tier {
     /// establishes no effect, so no published claim rests on it.
     Regression,
     /// Both arms, powered, one batch, one model version, for one named claim.
+    /// Its absent arm removes the governance paths and keeps `docs/`, so the
+    /// claim it measures is that the governance changes what an agent builds.
     Campaign,
+    /// Both arms, like the campaign, and an absent arm that also removes the
+    /// documents. Present against absent here measures documents and
+    /// governance together; the documents alone are this tier's absent arm
+    /// against the campaign's, from one batch on one model version.
+    Documentation,
 }
 
 impl Tier {
-    pub const ALL: [Tier; 2] = [Tier::Regression, Tier::Campaign];
+    pub const ALL: [Tier; 3] = [Tier::Regression, Tier::Campaign, Tier::Documentation];
 
     pub fn name(self) -> &'static str {
         match self {
             Tier::Regression => "regression",
             Tier::Campaign => "campaign",
+            Tier::Documentation => "documentation",
+        }
+    }
+
+    /// Whether the tier runs the pair of arms and estimates a difference.
+    ///
+    /// Every site that treated the campaign as the one paired tier reads this
+    /// instead, so that a paired tier cannot silently run one arm or go
+    /// unpaired in a result.
+    pub fn pairs_arms(self) -> bool {
+        match self {
+            Tier::Regression => false,
+            Tier::Campaign | Tier::Documentation => true,
         }
     }
 

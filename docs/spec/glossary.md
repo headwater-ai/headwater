@@ -133,7 +133,7 @@ Content-addressed per file, plus the taxonomy lock hash, so that an incremental 
 
 ### Campaign
 
-A powered, paired probe run for one named claim, executed as a single batch at one model version. Compare the regression tier, which runs one arm on a schedule and estimates no effect. See [spec 5](05-ai-integration.md#two-tiers-and-the-cadence-follows-the-purpose).
+A powered, paired probe run for one named claim, executed as a single batch at one model version. Compare the regression tier, which runs one arm on a schedule and estimates no effect. See [spec 5](05-ai-integration.md#three-tiers-and-the-cadence-follows-the-purpose).
 
 ### Capture cost
 
