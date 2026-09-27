@@ -140,6 +140,8 @@ anchors
   code_path `.github/workflows/release.yml` via source-tree
     cited by HW-DR-0091
   code_path `.github/workflows/release.yml` via source-tree
+    cited by HW-DR-0094
+  code_path `.github/workflows/release.yml` via source-tree
     cited by HW-PD-0009
   code_path `.github/workflows/release.yml` via source-tree
     cited by HW-PD-0010
@@ -507,6 +509,10 @@ anchors
     cited by HW-EVAL-one-clone-many-agents-how-this-repository-isolates-the-sessions-that-build-it
   code_path `tools/cite/check-citations-fixtures.sh` via source-tree
     cited by HW-DR-0092
+  code_path `tools/engine/harper-spike/**` via source-tree
+    cited by HW-EVAL-harper-spike-results
+  code_path `tools/engine/harper-spike/build.sh` via source-tree
+    cited by HW-EVAL-harper-spike-results
   code_path `tools/engine/language-spike/**` via source-tree
     cited by HW-EVAL-language-spike-results
   code_path `tools/engine/language-spike/build.sh` via source-tree
@@ -543,6 +549,8 @@ anchors
     cited by HW-DR-0047
   code_path `tools/site/cloudflare-build.sh` via source-tree
     cited by HW-DR-0047
+  code_path `tools/site/fetch-apt.sh` via source-tree
+    cited by HW-DR-0094
   code_path `tools/site/refresh-crawler-files.sh` via source-tree
     cited by HW-DR-0048
   code_path `tools/site/refresh-figures.sh` via source-tree
@@ -555,6 +563,8 @@ anchors
     cited by HW-DR-0048
   code_path `wrangler.jsonc` via source-tree
     cited by HW-DR-0047
+  test_site `engine/crates/check/tests/fixtures.rs` via comment-scan
+    cited by HW-VER-0001
 
 docs/requirements/0002-every-document-of-a-kind-that-requires-sections-carries-all-of-them.md:17:7
   edge: `verified_by` -> section.required.missing resolves to nothing at all, and `check_rule` names the resolver `check-rule`, which this run does not have

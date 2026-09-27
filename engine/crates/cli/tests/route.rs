@@ -340,3 +340,260 @@ fn a_reading_on_the_tree_wins_over_a_longer_one_only_a_glob_edge_reaches() {
     assert!(member.contains("\"tools/governed.sh\""), "{member}");
     assert!(!member.contains("governed.sh's"), "{member}");
 }
+
+/// Route reads the bytes of a governed file only for an edge whose revision
+/// its answer names, and that is a governing edge of an anchor the task names
+/// (#1160). A load that hashed every file a `governs` edge reaches cost this
+/// repository's route 0.16 s of CPU against 0.06 s before, by the median
+/// user+sys of 10 interleaved runs on 2026-09-28.
+///
+/// Two governed files here have no interest for the task. One is a named pipe
+/// with no writer, so a process that opens it to read waits forever, and one
+/// is mode 000, so a process that is not root cannot read it. The task names a
+/// third file that a different document governs. A route that opens the pipe
+/// never answers, so the case runs the verb under a deadline and fails on it.
+#[cfg(unix)]
+#[test]
+fn route_never_opens_a_governed_file_that_no_anchor_of_the_task_reaches() {
+    use std::os::unix::fs::PermissionsExt;
+
+    let root = Root::shaped("route-lazy-revision", |at| {
+        std::fs::write(at.join("tools/governed.sh"), "").expect("the governed file writes");
+        let fifo = std::process::Command::new("mkfifo")
+            .arg(at.join("tools/pipe"))
+            .status()
+            .expect("mkfifo runs");
+        assert!(fifo.success(), "the named pipe is made");
+        let locked = at.join("tools/locked.sh");
+        std::fs::write(&locked, "echo locked\n").expect("the locked file writes");
+        std::fs::set_permissions(&locked, std::fs::Permissions::from_mode(0o000))
+            .expect("the mode is set");
+        for (number, title, target) in [
+            ("0002", "a tool", "tools/governed.sh"),
+            ("0003", "a pipe", "tools/pipe"),
+            ("0004", "a locked file", "tools/locked.sh"),
+        ] {
+            let slug = title.replace(' ', "-");
+            std::fs::write(
+                at.join(format!(
+                    "docs/decisions/{number}-the-decision-that-governs-{slug}.md"
+                )),
+                format!(
+                    "---\nid: HW-DR-{number}\ntitle: The decision that governs {title}\n\
+                     status: current\nstatus_since: 2026-08-01\nlast_verified: 2026-08-01\n\
+                     summary: One decision that governs one file under the tools \
+                     directory.\nprovenance:\n  warrant: asserted\n  agency: human\n  \
+                     evidence_basis: unevidenced\nrelations:\n  governs:\n    - {target}\n\
+                     ---\n\n# The decision that governs {title}\n\n## Context\n\nA \
+                     fixture.\n\n## Decision\n\nIt governs one file.\n\n## \
+                     Consequences\n\nThe route names it.\n"
+                ),
+            )
+            .expect("the decision writes");
+        }
+    });
+
+    let (out, err) = route_under_deadline(
+        &root,
+        "tools/governed.sh",
+        "route opened the named pipe that no anchor of its task reaches, and waited on it",
+    );
+    assert!(
+        out.contains("HW-DR-0002"),
+        "the governing decision is named: {out}"
+    );
+    assert!(!out.contains("HW-DR-0003"), "{out}");
+    assert!(!out.contains("HW-DR-0004"), "{out}");
+    assert!(!err.contains("revision"), "no revision error: {err}");
+}
+
+/// A governing edge that records no `verified_revision` can never go suspect,
+/// so route has no revision to compare and reads no byte of what it governs,
+/// even where the task names that very file (#1160). The edge here governs a
+/// named pipe with no writer, and the task names the pipe. A route that
+/// digests the pipe before it asks whether the edge recorded a revision never
+/// answers.
+#[cfg(unix)]
+#[test]
+fn route_never_reads_the_bytes_of_a_file_whose_governing_edge_records_no_revision() {
+    let root = Root::shaped("route-unrecorded-revision", |at| {
+        let fifo = std::process::Command::new("mkfifo")
+            .arg(at.join("tools/pipe"))
+            .status()
+            .expect("mkfifo runs");
+        assert!(fifo.success(), "the named pipe is made");
+        std::fs::write(
+            at.join("docs/decisions/0002-the-decision-that-governs-a-pipe.md"),
+            "---\nid: HW-DR-0002\ntitle: The decision that governs a pipe\nstatus: \
+             current\nstatus_since: 2026-08-01\nlast_verified: 2026-08-01\nsummary: One \
+             decision that governs one named pipe under the tools directory.\nprovenance:\n  \
+             warrant: asserted\n  agency: human\n  evidence_basis: unevidenced\nrelations:\n  \
+             governs:\n    - tools/pipe\n---\n\n# The decision that governs a pipe\n\n## \
+             Context\n\nA fixture.\n\n## Decision\n\nIt governs one file.\n\n## \
+             Consequences\n\nThe route names it.\n",
+        )
+        .expect("the decision writes");
+    });
+    let (out, _) = route_under_deadline(
+        &root,
+        "tools/pipe",
+        "route digested a governed file whose edge records no revision, and waited on it",
+    );
+    assert!(
+        out.contains("HW-DR-0002"),
+        "the governing decision is named: {out}"
+    );
+}
+
+/// Run `route edit <path> --json` and fail with `hung` if it has not answered
+/// in 60 s, which is how a route that opened a named pipe with no writer ends.
+#[cfg(unix)]
+fn route_under_deadline(root: &Root, path: &str, hung: &str) -> (String, String) {
+    use std::time::{Duration, Instant};
+
+    let mut child = std::process::Command::new(env!("CARGO_BIN_EXE_headwater"))
+        .args(["route", "edit", path, "--json", "--root"])
+        .arg(&root.at)
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .spawn()
+        .expect("the binary runs");
+    let deadline = Instant::now() + Duration::from_secs(60);
+    let status = loop {
+        if let Some(status) = child.try_wait().expect("the child is there") {
+            break status;
+        }
+        if Instant::now() > deadline {
+            child.kill().expect("the child stops");
+            child.wait().expect("the child is reaped");
+            panic!("{hung}");
+        }
+        std::thread::sleep(Duration::from_millis(50));
+    };
+    let output = child.wait_with_output().expect("the output is read");
+    let out = String::from_utf8_lossy(&output.stdout).into_owned();
+    let err = String::from_utf8_lossy(&output.stderr).into_owned();
+    assert!(status.success(), "{out}\n{err}");
+    (out, err)
+}
+
+/// The MCP `route` tool answers the bytes `headwater route` prints, for a path
+/// git ignores and for one it does not (#1161). The tool once routed with no
+/// ignore list, so it named a cache the verb drops as ungoverned, and told an
+/// adopter's AI client that a build product was a gap in the corpus. Both
+/// paths exist on the tree, because git lists as ignored only a path that is
+/// there.
+#[test]
+fn the_mcp_route_tool_and_the_route_verb_agree_on_an_ignored_path_and_a_tracked_one() {
+    let root = root("route-mcp-ignored");
+    let ignored = "tools/__pycache__/stub.cpython-312.pyc";
+    let tracked = "tools/ungoverned.sh";
+    let cache = root.at.join(ignored);
+    std::fs::create_dir_all(cache.parent().expect("a parent")).expect("the cache is made");
+    std::fs::write(&cache, "").expect("the cache writes");
+    std::fs::write(root.at.join(tracked), "").expect("the tool writes");
+    std::fs::write(root.at.join(".gitignore"), "__pycache__/\n").expect("the ignore file writes");
+    let init = std::process::Command::new("git")
+        .args(["init", "-q"])
+        .current_dir(&root.at)
+        .status()
+        .expect("git runs");
+    assert!(init.success());
+
+    for (path, named) in [(ignored, false), (tracked, true)] {
+        let verb = root.run(&["route", "edit", path]);
+        assert_eq!(verb.code, Some(0), "{verb:?}");
+        assert_eq!(
+            verb.out.contains("governed scope"),
+            named,
+            "the verb on {path}\n{}",
+            verb.out
+        );
+        let served = root.run_with(
+            &["mcp", "--now", "2026-09-28"],
+            &format!(
+                "{{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{{}}}}\n\
+                 {{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"tools/call\",\"params\":\
+                 {{\"name\":\"route\",\"arguments\":{{\"task\":\"edit {path}\"}}}}}}\n"
+            ),
+        );
+        assert_eq!(served.code, Some(0), "{served:?}");
+        assert_eq!(
+            served.out.contains("governed scope"),
+            named,
+            "the MCP tool on {path}\n{}",
+            served.out
+        );
+        let answer = headwater_yaml::json::Json::string(verb.out.as_str()).render();
+        assert!(
+            served.out.contains(&answer),
+            "the MCP tool answers the bytes of the verb on {path}\nverb:\n{}\nserved:\n{}\n{}",
+            verb.out,
+            served.out,
+            served.err
+        );
+    }
+}
+
+/// The MCP server reads git's ignore list when a route asks for it, and not
+/// once at start-up (#1161). A session outlives an edit to `.gitignore`, and
+/// the verb reads the list on every run, so a list read once would name a path
+/// the verb had stopped naming. One session routes an untracked file, the case
+/// ignores it, and the same session routes it again.
+#[test]
+fn the_mcp_route_tool_reads_an_ignore_rule_written_after_the_session_started() {
+    use std::io::{BufRead, Write};
+    let root = root("route-mcp-ignored-later");
+    let path = "tools/untracked.sh";
+    std::fs::write(root.at.join(path), "").expect("the tool writes");
+    let init = std::process::Command::new("git")
+        .args(["init", "-q"])
+        .current_dir(&root.at)
+        .status()
+        .expect("git runs");
+    assert!(init.success());
+
+    let mut child = std::process::Command::new(env!("CARGO_BIN_EXE_headwater"))
+        .args(["mcp", "--now", "2026-09-28", "--root"])
+        .arg(&root.at)
+        .stdin(std::process::Stdio::piped())
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::null())
+        .spawn()
+        .expect("the binary runs");
+    let mut input = child.stdin.take().expect("the standard input is piped");
+    let mut output = std::io::BufReader::new(child.stdout.take().expect("piped"));
+    let mut ask = |id: u32, message: String| -> String {
+        writeln!(input, "{message}").expect("the request writes");
+        input.flush().expect("the request flushes");
+        let mut line = String::new();
+        output.read_line(&mut line).expect("the response reads");
+        assert!(line.contains(&format!("\"id\":{id}")), "{line}");
+        line
+    };
+    let route = |id: u32| {
+        format!(
+            "{{\"jsonrpc\":\"2.0\",\"id\":{id},\"method\":\"tools/call\",\"params\":\
+             {{\"name\":\"route\",\"arguments\":{{\"task\":\"edit {path}\"}}}}}}"
+        )
+    };
+    ask(
+        1,
+        "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{}}".to_owned(),
+    );
+    let before = ask(2, route(2));
+    assert!(
+        before.contains("governed scope"),
+        "untracked, named: {before}"
+    );
+
+    std::fs::write(root.at.join(".gitignore"), "untracked.sh\n").expect("the ignore file writes");
+    let after = ask(3, route(3));
+    assert!(
+        !after.contains("governed scope"),
+        "ignored, not named: {after}"
+    );
+
+    drop(input);
+    assert!(child.wait().expect("the server ends").success());
+}

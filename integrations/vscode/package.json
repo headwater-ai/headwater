@@ -1,0 +1,45 @@
+{
+  "name": "headwater-vscode",
+  "displayName": "Headwater",
+  "description": "Shows the documents that govern a task, an open file and a saved file, from headwater mcp.",
+  "version": "0.1.0",
+  "publisher": "headwater-ai",
+  "license": "Apache-2.0",
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/headwater-ai/headwater",
+    "directory": "integrations/vscode"
+  },
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": ["Other"],
+  "main": "./extension.js",
+  "activationEvents": ["workspaceContains:.headwater"],
+  "contributes": {
+    "commands": [
+      {
+        "command": "headwater.route",
+        "title": "Headwater: What governs this task?"
+      },
+      {
+        "command": "headwater.governing",
+        "title": "Headwater: What governs this file?"
+      }
+    ],
+    "configuration": {
+      "title": "Headwater",
+      "properties": {
+        "headwater.path": {
+          "type": "string",
+          "default": "headwater",
+          "description": "The headwater binary to run. The extension spawns `<path> mcp --root <workspace folder>` once per query."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "test": "node --test test/client.test.js"
+  }
+}

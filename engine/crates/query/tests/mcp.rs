@@ -180,6 +180,9 @@ impl Built {
             root: &self.root,
             declared: self.declared(),
             claims: &self.claims,
+            // The fixture tree is read as one git ignores nothing under, so
+            // the recorded sessions name what they named before #1161.
+            ignored: &headwater_graph::scope::Ignored::default,
             package: "query-fixture",
             version: "0.0.0",
             now: Context::at(Date::parse(at).expect("a date")),

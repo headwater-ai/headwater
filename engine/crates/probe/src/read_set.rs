@@ -64,7 +64,7 @@
 //!
 //! [`Staleness::render`] returns a string. There is no `Result`, no status and
 //! no error arm, so no caller of this module can branch a build on a result
-//! going stale. That is the shape [spec 5](../../../../docs/spec/05-ai-integration.md#two-tiers-and-the-cadence-follows-the-purpose)
+//! going stale. That is the shape [spec 5](../../../../docs/spec/05-ai-integration.md#three-tiers-and-the-cadence-follows-the-purpose)
 //! asks for: a probe result going stale is a fact about a measurement, and an
 //! exit status that carried it would put a model's behavior on a build.
 

@@ -1,0 +1,30 @@
+# docs/spec/: 17 documents, 4 with a language finding
+docs/spec/03-authoring-and-lifecycle.md
+docs/spec/07-distribution-and-federation.md
+docs/spec/16-harness-support.md
+docs/spec/00-vision-and-scope.md
+docs/spec/01-conceptual-model.md
+docs/spec/02-taxonomy-model.md
+# docs/decisions/: 92 documents, 14 with a language finding
+docs/decisions/0024-q24-readability-and-what-a-sweep-can-be-asked-about.md
+docs/decisions/0025-q25-where-the-namespace-goes-in-an-identifier-and-who-declares-it.md
+docs/decisions/0026-q26-whether-terminality-belongs-to-a-state-or-to-a-state-and-a-regime.md
+docs/decisions/0001-implementation-language.md
+docs/decisions/0002-schema-format.md
+docs/decisions/0003-how-much-of-the-default-taxonomy-ships-in-the-box.md
+# docs/evaluations/: 28 documents, 1 with a language finding
+docs/evaluations/adjacent-work.md
+docs/evaluations/a-probe-task-section-is-the-prompt-so-commentary-under-that-heading-is-prompt.md
+docs/evaluations/capability-bundle-address-inventory.md
+docs/evaluations/default-taxonomy-first-run.md
+# docs/obligations/: 221 documents, 43 with a language finding
+docs/obligations/0011-nothing-has-been-promoted-out-of-the-synthesized-tier.md
+docs/obligations/0013-no-probe-tests-whether-a-counted-tombstone-stops-a-confident.md
+docs/obligations/0037-the-register-is-not-a-projection-of-the-lock-alone-so-generate.md
+docs/obligations/0001-the-promotion-fix-has-no-reading-of-the-assisted-fraction.md
+docs/obligations/0002-declarative-voice-is-called-detectable-at-useful-precision.md
+docs/obligations/0003-the-rebuild-and-cache-design-is-measured-at-spike-scale-alone.md
+# docs/how-to/: 5 documents, 0 with a language finding
+docs/how-to/cut-a-release.md
+docs/how-to/diagnose-an-isolation-failure.md
+docs/how-to/mine-the-shadow-mode-routing-log.md
