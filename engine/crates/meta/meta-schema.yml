@@ -286,6 +286,8 @@ definitions:
     members:
       # The files of a release archive, as paths inside it.
       archive: {seq: {scalar: string}}
+      # The paths the Debian package installs, absolute on the host (#764).
+      deb: {seq: {scalar: string}}
       # The five integration points of HW-DR-0077, each with what it needs
       # beyond the binary.
       integration_points: {map: {block: integration_point}}

@@ -96,6 +96,9 @@ nav:
       - "The runner image of the engine release build is written in the workflow because it sets the glibc floor": "decisions/0091-the-runner-image-of-the-engine-release-build-is-written-in-the-workflow-because-it-sets-the-glibc-floor.md"
       - "The citation comment of spec 5 is for an adopter's corpus, and this repository does not practice it on its own code": "decisions/0092-the-citation-comment-of-spec-5-is-for-an-adopter-s-corpus-and-this-repository-does-not-practice-it-on-its-own-code.md"
       - "The live account of a domain is its own kind, split on the product and process line, and it draws on the records it cites": "decisions/0093-the-live-account-of-a-domain-is-its-own-kind-split-on-the-product-and-process-line-and-it-draws-on-the-records-it-cites.md"
+      - "The APT repository is served from headwater.tools and signed by a subkey the owner's offline key certifies": "decisions/0094-the-apt-repository-is-served-from-headwater-tools-and-signed-by-a-subkey-the-owner-s-offline-key-certifies.md"
+      - "Q67 — One library entry may address the keys of an entry it names in requires, and confluence holds over the dependency order": "decisions/0095-q67-one-library-entry-may-address-the-keys-of-an-entry-it-names-in-requires-and-confluence-holds-over-the-dependency-order.md"
+      - "Harper does not become part of the engine now, and Q41 stands": "decisions/0096-harper-does-not-become-part-of-the-engine-now-and-q41-stands.md"
   - "Acceptance criteria":
       - "Acceptance criteria": "acceptance-criteria/README.md"
       - "No engine source outside the fetch crate names a network API and no crate of the checking loop reaches a network package": "acceptance-criteria/0001-no-engine-source-outside-the-fetch-crate-names-a-network-api-and-no-crate-of-the-checking-loop-reaches-a-network-package.md"
@@ -110,6 +113,7 @@ nav:
       - "First contact — the Q11, Q12 and Q16 evaluation": "evaluations/first-contact.md"
       - "Governs edges: what an anchor reaches, what covers it, when it ages, and where a session meets it": "evaluations/governs-edges-what-an-anchor-reaches-what-covers-it-when-it-ages-and-where-a-session-meets-it.md"
       - "The graph, its export, and the tier above it": "evaluations/graph-export-and-federation.md"
+      - "Harper over this corpus finds no error on a 25-document sample, and version 2.11.0 does not build at the engine's floor of rustc 1.91": "evaluations/harper-spike-results.md"
       - "inspect_evals as a worked instance — the first ADR log this project did not write": "evaluations/inspect-evals-worked-example.md"
       - "The implementation language — the evidence for Q1": "evaluations/language-choice.md"
       - "The Q1 spike — results": "evaluations/language-spike-results.md"
@@ -137,6 +141,7 @@ nav:
       - "Diagnose an isolation failure": "how-to/diagnose-an-isolation-failure.md"
       - "Mine the shadow-mode routing log": "how-to/mine-the-shadow-mode-routing-log.md"
       - "Relocate a shelf": "how-to/relocate-a-shelf.md"
+      - "Rotate or revoke the APT signing subkey": "how-to/rotate-or-revoke-the-apt-signing-subkey.md"
       - "Wire headwater check into your own workflow": "how-to/wire-headwater-check-into-your-own-workflow.md"
   - "The command surface":
       - "The command surface": "interfaces/README.md"
@@ -399,6 +404,7 @@ nav:
       - "No disk floor is stated for a build-order run, and nothing prunes the cargo pool": "obligations/0220-no-disk-floor-is-stated-for-a-build-order-run-and-nothing-prunes-the-cargo-pool.md"
       - "Subagents read skills from the shared checkout, and a worktree-isolated integrator cannot fast-forward it after a merge": "obligations/0221-subagents-read-skills-from-the-shared-checkout-and-a-worktree-isolated-integrator-cannot-fast-forward-it-after-a-merge.md"
       - "Ten rules of the editions ledger have one recorded corpus, so a rule change blessed with an edit to that corpus passes": "obligations/0222-ten-rules-of-the-editions-ledger-have-one-recorded-corpus-so-a-rule-change-blessed-with-an-edit-to-that-corpus-passes.md"
+      - "No run measures whether the documents under docs change what an agent builds": "obligations/0223-no-run-measures-whether-the-documents-under-docs-change-what-an-agent-builds.md"
   - "Probe results":
       - "Probe results": "probe-results/README.md"
       - "Probe result for regression-probe-transcript-for-2026-09-09": "probe-results/regression-probe-transcript-for-2026-09-09.md"
@@ -418,6 +424,8 @@ nav:
       - "A cold agent reaches the governing document through the corpus descriptor": "probes/a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor.md"
       - "A counted tombstone separates a withheld answer from an absent answer": "probes/a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer.md"
       - "A session answers from the register without opening the question it replaced": "probes/a-session-answers-from-the-register-without-opening-the-question-it-replaced.md"
+      - "A session names the event that makes a document accepted": "probes/a-session-names-the-event-that-makes-a-document-accepted.md"
+      - "A session names the status a settled decision carries in its pull request": "probes/a-session-names-the-status-a-settled-decision-carries-in-its-pull-request.md"
       - "A session records an unmeasured claim in the shape this corpus checks": "probes/a-session-records-an-unmeasured-claim-in-the-shape-this-corpus-checks.md"
       - "An agent reaches the adjudication from the document that lost it": "probes/an-agent-reaches-the-adjudication-from-the-document-that-lost-it.md"
       - "The authoring skill reaches an agent that is about to write a governed document": "probes/the-authoring-skill-reaches-an-agent-that-is-about-to-write-a-governed-document.md"

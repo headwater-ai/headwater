@@ -197,6 +197,7 @@ The fixture suites, which are shell and Python rather than cargo, and which you 
     sh tools/run/run-dir-fixtures.sh
     sh tools/run/wait-for-fixtures.sh
     sh tools/site/check-site-footer.sh .headwater/site-deploy
+    sh tools/site/fetch-apt-fixtures.sh
     sh tools/site/site-canonical-fixtures.sh
     sh tools/site/site-console-fixtures.sh
     sh tools/site/site-footer-fixtures.sh

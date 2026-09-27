@@ -22,7 +22,7 @@
 
 lock:
   format: 3
-  digest: sha256:69c76c945ae7593f0a895a5a08810d65e83f8846adb66160676af7672c87101b
+  digest: sha256:faf07a4737d00d54bb8b88c13cdabff472d612f7d9146d4f609fd950d8107ddb
   rules: 2
   package: headwater/standard
   version: 4.9.1
@@ -36,7 +36,7 @@ lock:
     - path: .headwater/packages/headwater-standard/bundles/decision-record/bundle.yml
       digest: sha256:d2e1dd60f5adf97dcefd3aa46b0f377ed5e7eca533f82fad8a3d90224f79673f
     - path: .headwater/overlay.yml
-      digest: sha256:533f2d66e1a71bfd8e663b67445765d4b9cdec228c81292532698f4b0ac4469e
+      digest: sha256:18f717a27087e4e8c90c8a6c578142db17509138c8d9ace5bcd851a1a203ed96
 
 # The adoption payload: the debt this corpus declared when the taxonomy first
 # reached it. Every other line of this file is generated and this block is not.
@@ -777,6 +777,14 @@ resolved:
         - review_record
       to:
         - governed_document
+    cited_in:
+      cardinality: many
+      created_by: agent
+      family: evidence
+      from:
+        - verification
+      to:
+        - test_site
     cites_evidence:
       cardinality: many
       created_by: author
@@ -1681,6 +1689,12 @@ resolved:
       - "headwater probe"
       - "headwater neighbors"
       - "headwater sweep"
+    deb:
+      - "/usr/bin/headwater"
+      - "/usr/share/doc/headwater/copyright"
+      - "/usr/share/bash-completion/completions/headwater"
+      - "/usr/share/zsh/vendor-completions/_headwater"
+      - "/usr/share/fish/vendor_completions.d/headwater.fish"
     integration_points:
       agent_harness:
         depends_on: []

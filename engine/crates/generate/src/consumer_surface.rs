@@ -38,6 +38,8 @@ use headwater_yaml::value::{Mapping, Value};
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Declared {
     pub archive: Vec<String>,
+    /// The paths the Debian package installs, absolute on the target host.
+    pub deb: Vec<String>,
     /// Each integration point, in the order the block declares them, with the
     /// programs it depends on.
     pub integration_points: Vec<(String, Vec<String>)>,
@@ -71,6 +73,7 @@ impl Declared {
             .unwrap_or_default();
         Some(Declared {
             archive: strings(block, "archive"),
+            deb: strings(block, "deb"),
             integration_points: points,
             prerequisites: strings(block, "prerequisites"),
             companions: strings(block, "companions"),
@@ -125,6 +128,13 @@ fn render(output: &str, declared: &Declared) -> String {
         "What the archive holds",
         "The files of a release archive, as paths inside it.",
         &declared.archive,
+    );
+    list(
+        &mut out,
+        "What the Debian package installs",
+        "The paths the `.deb` package writes on the host that installs it. The package holds \
+         no taxonomy, and no maintainer script reads or writes a corpus.",
+        &declared.deb,
     );
 
     out.push_str("\n## Integration points\n\n");
