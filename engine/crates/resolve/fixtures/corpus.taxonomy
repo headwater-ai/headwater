@@ -682,6 +682,14 @@ relations:
       - review_record
     to:
       - governed_document
+  cited_in:
+    cardinality: many
+    created_by: agent
+    family: evidence
+    from:
+      - verification
+    to:
+      - test_site
   cites_evidence:
     cardinality: many
     created_by: author
