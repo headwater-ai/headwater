@@ -42,8 +42,8 @@
         },
         {
           "shelf": "how_to",
-          "path": "docs/how-to/diagnose-an-isolation-failure.md",
-          "id": "HW-HOW-diagnose-an-isolation-failure"
+          "path": "docs/how-to/cut-a-release.md",
+          "id": "HW-HOW-cut-a-release"
         },
         {
           "shelf": "interfaces",
