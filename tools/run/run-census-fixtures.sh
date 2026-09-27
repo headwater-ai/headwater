@@ -6,7 +6,11 @@
 # by its text. Both are held here against a transcript written by hand whose
 # right answer is known: five lines, four turns, because one response is
 # written as two lines that carry one usage record, and two `gh pr view` calls
-# in one turn that cost one turn and not two.
+# in one turn that cost one turn and not two. A second transcript of eight
+# turns on one model holds the growth line: the context at 10% and at 90% of
+# the turns, and the cost of the first quarter against the last, priced by
+# token class, with a one-hour cache write and a turn split over two lines
+# whose output count grows between them.
 #
 # Run it from anywhere:
 #     sh tools/run/run-census-fixtures.sh
@@ -197,6 +201,56 @@ same 'the mean concurrency is agent-minutes over the span' 'mean concurrency 1 a
 same 'one compaction, with the gap on each side of it' ' 2026-01-01T00:50:00Z 5 min since the parent'"'"'s last turn, 10 min to its next dispatch' "$(fleet 2026-01-01T00:50:00Z)"
 same 'a truncated line in an agent transcript is skipped, and the builder still spans 30 minutes' 'hw-build 1 30 5' "$(fleet hw-build)"
 same '  the integrator row is the parent'"'"'s turns per merge' 'hw-integrate 1 20 5' "$(fleet hw-integrate)"
+
+# Growth: what the last quarter of a transcript's turns cost against its first.
+# Eight turns on Sonnet 5, two a quarter, each with a larger context than the
+# one before, so the turn at 10% is g1 and the turn at 90% is g8. Rates per
+# million tokens: input $2.00, cache read $0.20, five-minute write $2.50,
+# one-hour write $4.00, output $10.00.
+#   g1  100 in, 100000 written, 1000 out                      $0.2602
+#   g2  two lines, one message: 100 in, 100000 read, 20000 written. The first
+#       line says 80 out and the second says 2000, because the harness writes
+#       the usage record again as the response streams, so the last line is
+#       the turn's. $0.0902, where the first line alone would be $0.0710.
+#   g7  100 in, 400000 read, 200000 written, 2000 out         $0.6002
+#   g8  100 in, 600000 read, 200000 written of which 100000 to the one-hour
+#       cache, 5000 out                                       $0.8202
+# So the first quarter is $0.3504, the last is $1.4204, and the ratio is 4.05.
+# A count per line reads nine turns; a tool that prices the one-hour write at
+# the five-minute rate reads a last quarter of $1.27; one that keeps the
+# first line of g2 reads a first quarter of $0.33.
+cat > "$scratch/growth.jsonl" <<'EOF'
+{"type":"assistant","message":{"id":"g1","model":"claude-sonnet-5","usage":{"input_tokens":100,"cache_read_input_tokens":0,"cache_creation_input_tokens":100000,"output_tokens":1000},"content":[{"type":"text","text":"start"}]}}
+{"type":"assistant","message":{"id":"g2","model":"claude-sonnet-5","usage":{"input_tokens":100,"cache_read_input_tokens":100000,"cache_creation_input_tokens":20000,"output_tokens":80},"content":[{"type":"text","text":"reading"}]}}
+{"type":"assistant","message":{"id":"g2","model":"claude-sonnet-5","usage":{"input_tokens":100,"cache_read_input_tokens":100000,"cache_creation_input_tokens":20000,"output_tokens":2000},"content":[{"type":"tool_use","name":"Read","input":{"file_path":"x"}}]}}
+{"type":"assistant","message":{"id":"g3","model":"claude-sonnet-5","usage":{"input_tokens":100,"cache_read_input_tokens":120000,"cache_creation_input_tokens":30000,"output_tokens":1000},"content":[{"type":"text","text":"3"}]}}
+{"type":"assistant","message":{"id":"g4","model":"claude-sonnet-5","usage":{"input_tokens":100,"cache_read_input_tokens":150000,"cache_creation_input_tokens":50000,"output_tokens":1000},"content":[{"type":"text","text":"4"}]}}
+{"type":"assistant","message":{"id":"g5","model":"claude-sonnet-5","usage":{"input_tokens":100,"cache_read_input_tokens":200000,"cache_creation_input_tokens":100000,"output_tokens":1000},"content":[{"type":"text","text":"5"}]}}
+{"type":"assistant","message":{"id":"g6","model":"claude-sonnet-5","usage":{"input_tokens":100,"cache_read_input_tokens":300000,"cache_creation_input_tokens":100000,"output_tokens":1000},"content":[{"type":"text","text":"6"}]}}
+{"type":"assistant","message":{"id":"g7","model":"claude-sonnet-5","usage":{"input_tokens":100,"cache_read_input_tokens":400000,"cache_creation_input_tokens":200000,"output_tokens":2000},"content":[{"type":"text","text":"7"}]}}
+{"type":"assistant","message":{"id":"g8","model":"claude-sonnet-5","usage":{"input_tokens":100,"cache_read_input_tokens":600000,"cache_creation_input_tokens":200000,"cache_creation":{"ephemeral_5m_input_tokens":100000,"ephemeral_1h_input_tokens":100000},"output_tokens":5000},"content":[{"type":"text","text":"BRANCH: x"}]}}
+EOF
+gout=$(sh "$tool" "$scratch/growth.jsonl" 2>&1); status=$?
+same 'the growth census exits 0' 0 "$status"
+same 'growth counts turns per message id, reads the last line of a split turn, and prices both write lifetimes' \
+    'growth  turns 8  context at 10% 100100  at 90% 800100  first quarter $0.35  last quarter $1.42  4.1x' \
+    "$(printf '%s\n' "$gout" | grep '^growth')"
+
+# Three turns cannot be cut into quarters, and the line says so rather than
+# dividing by zero. Their context figures are still given.
+head -4 "$scratch/growth.jsonl" > "$scratch/short.jsonl"
+sout=$(sh "$tool" "$scratch/short.jsonl" 2>&1); status=$?
+same 'a three-turn census exits 0' 0 "$status"
+same '  and reports too few turns for quarters' \
+    'growth  turns 3  context at 10% 100100  at 90% 150100  too few turns for quarters' \
+    "$(printf '%s\n' "$sout" | grep '^growth')"
+
+# A turn with tokens and no rate for its model is not priced as zero. The
+# first transcript above names no model at all, and its line gives the turns
+# and the context and says what it could not price.
+same 'a model with no rate is reported as unpriced, with its context still given' \
+    'growth  turns 7  context at 10% 1000  at 90% 64000  unpriced model (none)' \
+    "$(printf '%s\n' "$out" | grep '^growth')"
 
 sh "$tool" "$scratch/missing.jsonl" >/dev/null 2>&1; status=$?
 same 'a missing file is refused with usage' 2 "$status"
