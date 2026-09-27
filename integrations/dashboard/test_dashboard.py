@@ -127,6 +127,90 @@ class TheCommandLine(unittest.TestCase):
             dashboard.load(export, corpus_identity="fixture")
 
 
+def run_cli(export, scratch):
+    source = os.path.join(scratch, "export.json")
+    with open(source, "w", encoding="utf-8") as handle:
+        json.dump(export, handle)
+    out = os.path.join(scratch, "page.html")
+    result = subprocess.run(
+        [sys.executable, os.path.join(HERE, "dashboard.py"), "--export", source, "--out", out],
+        capture_output=True,
+        text=True,
+    )
+    return result, os.path.exists(out)
+
+
+class AMalformedExportIsRefused(unittest.TestCase):
+    """A malformed input exits 2 with one line naming the document and field, never a traceback."""
+
+    def refused(self, mutate, names):
+        export = load_fixture()
+        mutate(export)
+        with tempfile.TemporaryDirectory() as scratch:
+            result, wrote = run_cli(export, scratch)
+        self.assertEqual(result.returncode, 2, result.stderr)
+        self.assertNotIn("Traceback", result.stderr)
+        self.assertFalse(wrote, "a refused export must not write a page")
+        for name in names:
+            self.assertIn(name, result.stderr)
+
+    def test_a_document_with_neither_id_nor_path(self):
+        def mutate(export):
+            del export["graph"]["documents"][1]["id"]
+            del export["graph"]["documents"][1]["path"]
+        self.refused(mutate, ["graph.documents[1]", "`id`", "`path`"])
+
+    def test_a_last_verified_that_is_not_a_string(self):
+        def mutate(export):
+            export["graph"]["documents"][1]["facets"]["last_verified"] = 20260115
+        self.refused(mutate, ["FX-OBL-0001", "facets.last_verified"])
+
+    def test_a_list_valued_warrant(self):
+        def mutate(export):
+            export["graph"]["documents"][0]["warrant"] = ["accepted"]
+        self.refused(mutate, ["FX-DR-0002", "`warrant`"])
+
+    def test_a_document_that_is_not_an_object(self):
+        def mutate(export):
+            export["graph"]["documents"].append("FX-DR-0003")
+        self.refused(mutate, ["graph.documents[2]", "not an object"])
+
+    def test_a_governs_edge_whose_target_has_no_id(self):
+        def mutate(export):
+            del export["graph"]["edges"][0]["target"]["id"]
+        self.refused(mutate, ["graph.edges[0]", "target.id"])
+
+    def test_a_graph_with_no_documents_key(self):
+        def mutate(export):
+            del export["graph"]["documents"]
+        self.refused(mutate, ["graph", "`documents`"])
+
+    def test_two_documents_with_one_id(self):
+        def mutate(export):
+            export["graph"]["documents"][1]["id"] = "FX-DR-0002"
+        self.refused(mutate, ["FX-DR-0002", "more than one document"])
+
+
+class ThePageHoldsWhatItPrints(unittest.TestCase):
+    def test_a_title_is_escaped_and_never_markup(self):
+        export = load_fixture()
+        export["graph"]["documents"][0]["facets"]["title"] = "<script>alert(1)</script> & more"
+        page = dashboard.render(dashboard.load(export, corpus_identity="fixture"))
+        self.assertNotIn("<script>", page)
+        self.assertIn("&lt;script&gt;alert(1)&lt;/script&gt; &amp; more", page)
+
+    def test_an_undated_document_is_listed_first_as_never_verified(self):
+        export = load_fixture()
+        export["graph"]["documents"].append(
+            {"path": "docs/x.md", "kind": "decision", "id": "FX-DR-0009", "facets": {"title": "Never checked"}}
+        )
+        model = dashboard.load(export, corpus_identity="fixture")
+        order = [row["id"] for row in dashboard.staleness_view(model)]
+        self.assertEqual(order, ["FX-DR-0009", "FX-OBL-0001", "FX-DR-0002"])
+        page = dashboard.render(model)
+        self.assertIn("<td>%s</td><td>FX-DR-0009</td>" % dashboard.NEVER_VERIFIED, page)
+
+
 class TheWorkedExample(unittest.TestCase):
     """.headwater/export.json in this repository is the input the issue names."""
 

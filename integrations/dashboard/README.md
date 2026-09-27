@@ -19,6 +19,17 @@ It needs Python 3 and nothing else. It does not need the Headwater engine.
 - `--out` is the page to write. The default is `dashboard.html` in the current directory.
 - `--corpus-identity` names the corpus that the export belongs to. The default is `local`.
 
+If the export is not a valid `graph_export` file, the tool refuses it with exit status 2. It prints one line that names the document and the field, for example ``dashboard: graph.documents[0] (FX-DR-0002): `warrant` is list, not a string`` for the fixture below with a list in its `warrant`. It does not write a page in that case, so a lead never reads a partial page as a complete one.
+
+## How the page reaches a person who runs no command
+
+One person runs the command, and every other reader only opens a file. There are two ways to do this:
+
+- **A person who already works in the repository** runs the command after `headwater generate` writes a new `.headwater/export.json`. That person then puts `dashboard.html` where the team can open it, for example a shared drive, a wiki attachment, or a static web server. The page is one HTML file that loads nothing from the network, so you can copy it anywhere. A browser opens it directly from disk.
+- **A CI job** runs the same command on each push to the default branch and publishes `dashboard.html` as a build artifact or to a static site. The lead opens the link. Nobody runs a command by hand.
+
+This repository does not publish the page. It gives you the tool only. Where a team puts the page is the team's decision.
+
 ## Where each value comes from
 
 | view | field in the export |

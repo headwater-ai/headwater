@@ -60,10 +60,33 @@ def _version(text):
         return None
 
 
+def _refuse(where, field, problem):
+    raise ExportRefused("%s: `%s` %s" % (where, field, problem))
+
+
+def _list(graph, name):
+    value = graph.get(name)
+    if not isinstance(value, list):
+        _refuse("graph", name, "is missing or is not a list")
+    return value
+
+
+def _optional_string(value, where, field):
+    if value is not None and not isinstance(value, str):
+        _refuse(where, field, "is %s, not a string" % type(value).__name__)
+    return value
+
+
 def load(export, corpus_identity):
-    """Read one export as one corpus's data, keyed by the pair on every row."""
+    """Read one export as one corpus's data, keyed by the pair on every row.
+
+    A malformed input is refused with ExportRefused, which names the document
+    and the field, and is never rendered as a partial page.
+    """
     if not corpus_identity:
         raise ExportRefused("a corpus identity is required; every row is keyed by it")
+    if not isinstance(export, dict):
+        raise ExportRefused("the export is not a JSON object")
     version = _version(export.get("export_version"))
     if version is None or version < MINIMUM_EXPORT_VERSION:
         raise ExportRefused(
@@ -73,42 +96,78 @@ def load(export, corpus_identity):
     graph = export.get("graph")
     if not isinstance(graph, dict):
         raise ExportRefused("the export has no `graph` object")
+    raw_documents = _list(graph, "documents")
+    raw_anchors = _list(graph, "anchors")
+    raw_edges = _list(graph, "edges")
 
     documents = []
     by_path = {}
-    for document in graph.get("documents", []):
-        facets = document.get("facets") or {}
-        identifier = document.get("id") or document["path"]
+    seen = set()
+    for index, document in enumerate(raw_documents):
+        where = "graph.documents[%d]" % index
+        if not isinstance(document, dict):
+            _refuse(where, "document", "is not an object")
+        path = _optional_string(document.get("path"), where, "path")
+        identifier = _optional_string(document.get("id"), where, "id") or path
+        if not identifier:
+            _refuse(where, "id", "and `path` are both missing, so the row has no key")
+        where = "%s (%s)" % (where, identifier)
+        facets = document.get("facets", {})
+        if not isinstance(facets, dict):
+            _refuse(where, "facets", "is not an object")
+        # The export carries this field under `facets`, never at the top level.
+        last_verified = _optional_string(facets.get("last_verified"), where, "facets.last_verified")
+        # An absent key stays absent. It is never read as `asserted`.
+        warrant = _optional_string(document.get("warrant"), where, "warrant")
+        if (corpus_identity, identifier) in seen:
+            _refuse(where, "id", "appears on more than one document")
+        seen.add((corpus_identity, identifier))
+        title = facets.get("title")
         row = {
             "corpus_identity": corpus_identity,
             "id": identifier,
             "key": (corpus_identity, identifier),
-            "path": document.get("path"),
+            "path": path,
             "kind": document.get("kind"),
-            "title": facets.get("title") or document.get("path"),
-            # The export carries this field under `facets`, never at the top level.
-            "last_verified": facets.get("last_verified"),
-            # An absent key stays absent. It is never read as `asserted`.
-            "warrant": document["warrant"] if "warrant" in document else None,
+            "title": title if isinstance(title, str) and title else path,
+            "last_verified": last_verified,
+            "warrant": warrant,
         }
         documents.append(row)
-        by_path[row["path"]] = row
+        if path:
+            by_path[path] = row
 
-    code_paths = set(
-        anchor["id"] for anchor in graph.get("anchors", []) if anchor.get("anchor_kind") == "code_path"
-    )
+    code_paths = set()
+    for index, anchor in enumerate(raw_anchors):
+        where = "graph.anchors[%d]" % index
+        if not isinstance(anchor, dict):
+            _refuse(where, "anchor", "is not an object")
+        if anchor.get("anchor_kind") == "code_path":
+            code_paths.add(_optional_string(anchor.get("id"), where, "id"))
+
     governed_by = {}
-    for edge in graph.get("edges", []):
-        target = edge.get("target") or {}
+    for index, edge in enumerate(raw_edges):
+        where = "graph.edges[%d]" % index
+        if not isinstance(edge, dict):
+            _refuse(where, "edge", "is not an object")
+        target = edge.get("target")
+        if not isinstance(target, dict):
+            _refuse(where, "target", "is missing or is not an object")
         if edge.get("relation") != "governs" or target.get("bound") != "anchor":
             continue
         if target.get("anchor_kind") != "code_path":
             continue
-        source = by_path.get(edge.get("source"))
-        governor = source["id"] if source else edge.get("source")
-        governed_by.setdefault(target["id"], [])
-        if governor not in governed_by[target["id"]]:
-            governed_by[target["id"]].append(governor)
+        anchor_id = _optional_string(target.get("id"), where, "target.id")
+        if not anchor_id:
+            _refuse(where, "target.id", "is missing on a governs edge")
+        source_path = _optional_string(edge.get("source"), where, "source")
+        source = by_path.get(source_path)
+        governor = source["id"] if source else source_path
+        if not governor:
+            _refuse(where, "source", "is missing on a governs edge")
+        governed_by.setdefault(anchor_id, [])
+        if governor not in governed_by[anchor_id]:
+            governed_by[anchor_id].append(governor)
 
     anchors = []
     for identifier in sorted(governed_by):
