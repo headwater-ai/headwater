@@ -1,0 +1,169 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# A composite action a CONSUMING repository drops into its pull-request
+# workflow to get an upkeep report on each change: which documents the change
+# touched, which the engine reports as suspect, which findings it now owes,
+# and what nobody measured. It needs the released binary and nothing else: no
+# clone of this repository, no Rust toolchain, no model and no assistant.
+#
+# WHY IT EXISTS (#502). The `headwater-maintainer` subagent writes this kind
+# of report, and it runs only inside Claude Code. A team on any other
+# harness, or with no assistant at all, got no upkeep signal. The half of
+# that report that needs no reader is already in the engine:
+# `headwater change` writes the manifest of a change, `headwater check
+# --change` reports over it, and `headwater route <path>` names every
+# document whose `governs` edge reaches a path. This action runs those three
+# verbs through `upkeep.sh` and writes the report through
+# `upkeep-report.py`.
+#
+# WHAT IT DOES NOT DO. It reads no sentence for staleness, because that needs
+# a model, and a model call in a consumer's CI needs a provider, a key and a
+# payer that no ruling names yet. The report says so in its Unmeasured part
+# on every run, so an empty Stale part never reads as "nothing is stale".
+#
+# IT PROPOSES AND NEVER ACCEPTS. It commits nothing and writes nothing inside
+# the checkout: every engine verb runs with `--no-cache`, and the work
+# directory and the default report path are under `runner.temp`. It needs
+# `contents: read`. The one write it can make is a pull-request comment,
+# behind `comment`, which is off by default and needs `pull-requests: write`.
+# It exits 0 whatever the report says, because a proposal is not a gate;
+# `integrations/headwater-check` is the gate.
+#
+# Every value that traces to `inputs.*`, to `steps.*.outputs.*` or to the
+# event payload reaches a `run:` script through `env:`, never inline, for the
+# reason `headwater-check/action.yml` gives at its last step.
+name: headwater upkeep
+description: >-
+  Report which governed documents a pull request touched, which the engine
+  reports as suspect, what `headwater check --change` says the change owes,
+  and what this report did not measure, using the released headwater binary.
+  No model, no Rust toolchain, no cargo.
+author: headwater-ai
+
+inputs:
+  version:
+    description: >-
+      The `headwater-ai/headwater` release tag to install, for example
+      `v0.4.0`, or `latest`. It resolves exactly as it does for
+      `integrations/headwater-check`. The engine verbs this action runs
+      (`change`, `check --change`, `route --json`) are in v0.4.0.
+    required: false
+    default: latest
+  root:
+    description: The corpus, relative to the consuming repository's checkout.
+    required: false
+    default: "."
+  base:
+    description: >-
+      The revision to measure the change from. Empty (the default) means the
+      merge base of the pull request's base commit and `HEAD`, which needs a
+      checkout with the history to find it (`fetch-depth: 0`). Outside a
+      pull request, set it.
+    required: false
+    default: ""
+  report-path:
+    description: >-
+      Where to write the Markdown report. Empty (the default) writes it under
+      the runner's temporary directory, outside the checkout. The report also
+      goes to the job summary.
+    required: false
+    default: ""
+  comment:
+    description: >-
+      Post the report as a comment on the pull request. Off by default. The
+      calling job needs `permissions: pull-requests: write` for it.
+    required: false
+    default: "false"
+  github-token:
+    description: >-
+      Used to resolve `latest` at a higher rate limit, and to post the
+      comment when `comment` is `true`. Optional otherwise.
+    required: false
+    default: ""
+
+outputs:
+  report-path:
+    description: The path of the Markdown report.
+    value: ${{ steps.report.outputs.report-path }}
+
+runs:
+  using: composite
+  steps:
+    - name: Refuse a platform this release does not cover
+      shell: bash
+      run: |
+        set -euo pipefail
+        if [ "${{ runner.os }}" != "Linux" ] || [ "${{ runner.arch }}" != "X64" ]; then
+          echo "::error::headwater-ai/headwater publishes a release binary for Linux x86_64 (glibc >= 2.39) alone. This runner is ${{ runner.os }}/${{ runner.arch }}, so this action refuses rather than skipping the report." >&2
+          exit 1
+        fi
+
+    - name: Resolve the release tag
+      id: resolve
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
+        REQUESTED: ${{ inputs.version }}
+      run: sh "${{ github.action_path }}/../headwater-check/resolve-version.sh"
+
+    - name: Download the release archive and verify its checksum
+      shell: bash
+      env:
+        TAG: ${{ steps.resolve.outputs.tag }}
+        STAGE: ${{ runner.temp }}/headwater-upkeep-action
+      run: sh "${{ github.action_path }}/../headwater-check/install.sh"
+
+    - name: Find the base of the change
+      id: base
+      shell: bash
+      env:
+        ROOT: ${{ inputs.root }}
+        BASE: ${{ inputs.base }}
+        PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+      run: |
+        set -euo pipefail
+        if [ -z "$BASE" ]; then
+          if [ -z "$PR_BASE_SHA" ]; then
+            echo "::error::this run is not a pull request, so there is no merge base to measure from. Set the 'base' input to a revision." >&2
+            exit 1
+          fi
+          if ! BASE=$(cd "$ROOT" && git merge-base "$PR_BASE_SHA" HEAD); then
+            echo "::error::git found no merge base of $PR_BASE_SHA and HEAD. Check out with 'fetch-depth: 0' so the history is there." >&2
+            exit 1
+          fi
+        fi
+        echo "base=$BASE" >>"$GITHUB_OUTPUT"
+        echo "measuring the change from $BASE"
+
+    - name: Write the upkeep report
+      id: report
+      shell: bash
+      env:
+        ROOT: ${{ inputs.root }}
+        BASE: ${{ steps.base.outputs.base }}
+        REPORT_PATH: ${{ inputs.report-path }}
+      run: |
+        set -euo pipefail
+        if [ -z "$REPORT_PATH" ]; then
+          REPORT_PATH="$RUNNER_TEMP/headwater-upkeep.md"
+        fi
+        HEADWATER_BIN=headwater sh "${{ github.action_path }}/upkeep.sh" \
+          "$ROOT" "$BASE" "$RUNNER_TEMP/headwater-upkeep-work" "$REPORT_PATH"
+        cat "$REPORT_PATH" >>"$GITHUB_STEP_SUMMARY"
+        echo "report-path=$REPORT_PATH" >>"$GITHUB_OUTPUT"
+
+    - name: Post the report on the pull request
+      if: ${{ inputs.comment == 'true' }}
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github-token != '' && inputs.github-token || github.token }}
+        PR_NUMBER: ${{ github.event.pull_request.number }}
+        REPORT_PATH: ${{ steps.report.outputs.report-path }}
+        REPOSITORY: ${{ github.repository }}
+      run: |
+        set -euo pipefail
+        if [ -z "$PR_NUMBER" ]; then
+          echo "::warning::'comment' is true, and this run is not a pull request, so there is nothing to comment on." >&2
+          exit 0
+        fi
+        gh pr comment "$PR_NUMBER" --repo "$REPOSITORY" --body-file "$REPORT_PATH"

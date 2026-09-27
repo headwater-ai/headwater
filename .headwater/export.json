@@ -3853,7 +3853,8 @@
               "HW-SPEC-harness-support"
             ],
             "governs": [
-              "integrations/headwater-check/**"
+              "integrations/headwater-check/**",
+              "integrations/headwater-upkeep/**"
             ]
           }
         }
@@ -12873,6 +12874,11 @@
       },
       {
         "anchor_kind": "code_path",
+        "id": "integrations/headwater-upkeep/**",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
         "id": "mkdocs.yml",
         "resolver": "source-tree"
       },
@@ -16977,6 +16983,17 @@
           "bound": "anchor",
           "anchor_kind": "code_path",
           "id": "integrations/headwater-check/**",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/how-to/wire-headwater-check-into-your-own-workflow.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "integrations/headwater-upkeep/**",
           "resolver": "source-tree"
         }
       },
