@@ -2607,14 +2607,15 @@ echo "the recorded terminal demonstration, and its frozen-snapshot marker"
 # is the one thing left to hold, and this group holds it: a recording embed
 # with no marker beside it fails the build, the same as a broken link does.
 
-# 9a. The population, over the real page. The README carries no recording
-#     embed yet (Done-when item 4 of #601 stays open on tooling absence), so
-#     this reads zero offenders over zero embeds — the same "read the real
-#     page and report zero" shape group 2 and group 3 open with, and it goes
-#     red on its own the day a GIF lands with no marker beside it.
+# 9a. The population, over the real page. The README carries one recording
+#     embed, `.github/assets/headwater-demo.gif` (#601), so this reads zero
+#     offenders over exactly one embed. The count is asserted too: zero
+#     offenders over zero embeds is also green, so without it a deleted embed,
+#     or one renamed to an extension the judge does not read, would pass.
 recording_judge "$readme" >"$scratch/recordings.out"
 bad=$(sed '$d' "$scratch/recordings.out")
 same "the real page carries no recording embed with a missing marker" "" "$bad"
+same "  over exactly one recording embed" "1" "$(tail -n 1 "$scratch/recordings.out")"
 
 # 9b. THE DECISIVE CASE OF THIS GROUP, provoked before any real recording
 #     exists. This is the case #601 exists for: a frozen, undisclosed number
