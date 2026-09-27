@@ -27,6 +27,7 @@ relations:
 
 - You have adopted Headwater, and `headwater generate --check` passes on your default branch.
 - You know which build step or deploy reads each file that `headwater generate` writes. `headwater derived` lists the files.
+- To add a document on a second shelf with `headwater new`, that shelf's kind needs an identifier. In the standard package, `decision` has one after `headwater init`. `specification` does not, and `headwater new specification` refuses until your overlay declares `kinds.specification.identifier` and its scheme ([#1264](https://github.com/headwater-ai/headwater/issues/1264)).
 
 ## Steps
 
@@ -42,4 +43,13 @@ relations:
 - `headwater generate --check`, `headwater taxonomy resolve --check` and `git ls-files .headwater/export.json` all agree: the first two exit 0 and the last prints nothing.
 - In a local merge or rebase, two branches that add documents to two different shelves with `headwater new` merge with no conflict. This includes a branch that edits a governed file and records a new `verified_revision`.
 - A forge merge of the same two pull requests can still conflict on `.headwater/capture-cost.jsonl`. Nobody has measured whether GitHub applies `merge=union`. It did not apply `-merge` when this repository measured that attribute on 2026-09-24.
-- One conflict stays. Two branches that each add a document at the end of one shelf both insert a row at one position of the shelf index. Git reports a conflict on that file. Run `headwater generate` on the merged tree, and commit the index that it writes. No attribute or setting on the forge removes this conflict.
+- One conflict stays, on a shelf whose identifiers are numbers. Two branches that each run `headwater new decision` both take the next number. The merge conflicts on the shelf index and on the claim file of that number under `.headwater/ids/`, which is by design ([HW-DR-0054](../decisions/0054-the-upper-bound-of-a-reconcile-first-allocator-is-the-corpus-and-a-claim-store.md)). `headwater generate` alone does not resolve it, because two documents then hold one identifier and `headwater check --strict` exits 1.
+
+## If two branches took the same number
+
+Do these steps on the branch that merges second.
+
+1. Keep the claim file of the branch that merged first: `git checkout --theirs .headwater/ids/<scheme>/<identifier>`.
+2. Give your document the next free number. Rename its file to the new number, and change its `id` to match.
+3. Run `headwater check --fix`. It writes the claim file for the new number.
+4. Run `headwater generate`, and commit the result. `headwater check --strict` then exits 0.

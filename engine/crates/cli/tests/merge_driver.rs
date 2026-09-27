@@ -705,54 +705,126 @@ fn the_same_merge_without_the_union_line_conflicts_on_the_capture_cost_store() {
     );
 }
 
-/// An overlay entry that names `profile` before `kind` is still a graph export,
-/// and the reader the decisive case uses finds it. A reader of the overlay's
-/// text missed exactly this order, and the decisive case then passed on a tree
-/// that commits an export (#1253 verify).
+/// A `graph_export` is found in the resolved lock whatever order its overlay
+/// entry names the keys in. `taxonomy resolve` keeps the overlay's key order, so
+/// a reader that expects `kind` first misses the other two rows. A reader of the
+/// overlay's text missed the profile-first row, and a grep of the lock for a
+/// `- kind: graph_export` line missed the output-first row (#1253 verify).
 #[test]
-fn a_graph_export_declared_profile_first_is_found_in_the_lock() {
-    let tree = Tree::adopted("profile-first");
-    let overlay = tree.read(".headwater/overlay.yml");
-    tree.write(
-        ".headwater/overlay.yml",
-        &format!(
-            "{overlay}add_to:\n  projections:\n    - profile: public\n      kind: graph_export\n      output: site/graph.json\n"
+fn a_graph_export_is_found_in_the_lock_in_every_key_order() {
+    for (label, entry) in [
+        (
+            "kind-first",
+            "    - kind: graph_export\n      profile: public\n      output: site/graph.json\n",
         ),
-    );
-    tree.headwater_ok(&["taxonomy", "resolve"]);
-    let found = graph_exports_in_lock(&tree.at);
+        (
+            "profile-first",
+            "    - profile: public\n      kind: graph_export\n      output: site/graph.json\n",
+        ),
+        (
+            "output-first",
+            "    - output: site/graph.json\n      kind: graph_export\n",
+        ),
+    ] {
+        let tree = Tree::adopted(&format!("order-{label}"));
+        let overlay = tree.read(".headwater/overlay.yml");
+        tree.write(
+            ".headwater/overlay.yml",
+            &format!("{overlay}add_to:\n  projections:\n{entry}"),
+        );
+        tree.headwater_ok(&["taxonomy", "resolve"]);
+        let found = graph_exports_in_lock(&tree.at);
+        assert!(
+            found.contains("- kind: graph_export\n")
+                && found.contains("output: \"site/graph.json\"\n"),
+            "the {label} entry is read from the lock:\n{found}"
+        );
+    }
+}
+
+/// This repository declares no graph export, so `generate` commits none. This
+/// is the decision CI's "The graph export is computed at build time and never
+/// committed" step names: it reads the resolved lock as YAML, through the
+/// reader the case above holds in every key order, rather than a line of text.
+#[test]
+fn this_repository_declares_no_graph_export() {
+    let declared = this_repository_s_graph_exports();
     assert!(
-        found.contains("- kind: graph_export\n") && found.contains("output: \"site/graph.json\"\n"),
-        "the profile-first entry is read from the lock:\n{found}"
+        declared.is_empty(),
+        "this repository's lock declares a graph export, which `generate` would commit; \
+         compute it at build time instead (#1251):\n{declared}"
     );
 }
 
-/// The residual #1251 leaves open: two branches that each add a decision at
-/// the end of one shelf conflict on that shelf's index, because git conflicts
-/// on two insertions at one position and a forge reads no attribute that could
-/// union them. Held exactly, so the set cannot grow without this case moving.
+/// The residual #1251 leaves open, and its remedy.
+///
+/// Two branches that each run `headwater new decision` both mint the next
+/// number, `ACME-DR-0002`. The merge conflicts on the shelf index, because both
+/// insert a row at one position, and on the claim file of the identifier, by
+/// design ([HW-DR-0054](../../../../docs/decisions/0054-the-upper-bound-of-a-reconcile-first-allocator-is-the-corpus-and-a-claim-store.md)).
+/// Held exactly, so the set cannot grow without this case moving.
+///
+/// Regenerating is not the remedy: it leaves two documents with one identifier,
+/// and `check --strict` refuses the tree. The remedy the how-to states is a
+/// renumber of the branch's own document, then `check --fix` writes its claim.
 #[test]
-fn two_decisions_added_at_the_end_of_one_shelf_conflict_on_its_index_alone() {
+fn two_decisions_minted_on_two_branches_conflict_on_the_index_and_the_claim_and_a_renumber_resolves_them(
+) {
+    const CLAIM: &str = ".headwater/ids/decision_id/ACME-DR-0002";
     let tree = governed_tree("same-shelf", &this_repository_s_graph_exports(), true);
     tree.git(&["checkout", "-q", "-b", "a"]);
-    tree.decide("0002");
+    tree.headwater_ok(&["new", "decision", "--title", "Alpha"]);
     tree.headwater_ok(&["generate"]);
     tree.git(&["add", "-A"]);
     tree.git(&["commit", "-q", "-m", "a decision"]);
     tree.git(&["checkout", "-q", "main"]);
     tree.git(&["checkout", "-q", "-b", "b"]);
-    tree.decide("0003");
+    tree.headwater_ok(&["new", "decision", "--title", "Beta"]);
     tree.headwater_ok(&["generate"]);
     tree.git(&["add", "-A"]);
     tree.git(&["commit", "-q", "-m", "another decision"]);
 
     let merge = tree.git_output(&["merge", "--no-edit", "a"]);
-    assert!(!merge.status.success(), "the two rows conflict");
+    assert!(!merge.status.success(), "the two mints conflict");
     assert_eq!(
         tree.unmerged(),
-        vec!["docs/decisions/README.md".to_string()],
-        "the shelf index is the one conflicted path"
+        vec![CLAIM.to_string(), "docs/decisions/README.md".to_string()],
+        "the claim and the shelf index are the conflicted paths"
     );
+
+    // The merged branch keeps its claim, and regenerating alone is not enough.
+    tree.git(&["checkout", "--theirs", CLAIM]);
+    tree.headwater_ok(&["generate"]);
+    tree.git(&["add", "-A"]);
+    let strict = tree.headwater(&["check", "--strict"]);
+    assert_eq!(
+        strict.status.code(),
+        Some(1),
+        "two documents hold ACME-DR-0002, so a strict check refuses the tree"
+    );
+
+    // The renumber: this branch's document takes the next free number.
+    tree.git(&[
+        "mv",
+        "docs/decisions/0002-beta.md",
+        "docs/decisions/0003-beta.md",
+    ]);
+    let moved = tree.read("docs/decisions/0003-beta.md");
+    tree.write(
+        "docs/decisions/0003-beta.md",
+        &moved.replace("id: ACME-DR-0002\n", "id: ACME-DR-0003\n"),
+    );
+    tree.headwater_ok(&["check", "--fix"]);
+    assert!(
+        tree.at
+            .join(".headwater/ids/decision_id/ACME-DR-0003")
+            .exists(),
+        "`check --fix` writes the claim of the new number"
+    );
+    tree.headwater_ok(&["generate"]);
+    tree.git(&["add", "-A"]);
+    tree.headwater_ok(&["check", "--strict"]);
+    tree.headwater_ok(&["generate", "--check"]);
 }
 
 /// A clone that ran the old `init --git --git-config` has the driver config
