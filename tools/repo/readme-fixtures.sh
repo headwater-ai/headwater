@@ -2614,6 +2614,24 @@ printf '%s\n' \
 got=$(recording_judge "$scratch/recording-marked.md" | sed '$d' | tr '\n' '|')
 same "  and a recording embed with a marker beside it passes" "" "$got"
 
+# 9d. The extension is read without regard to case. GitHub serves `demo.gIf`
+#     as the same animated image as `demo.gif`, so a judge that lists three
+#     spellings of the extension lets the other five reach the page unmarked.
+printf '%s\n' '![headwater check, run against the tutorial corpus](demo.gIf)' >"$scratch/recording-case.md"
+got=$(recording_judge "$scratch/recording-case.md" | sed '$d' | tr '\n' '|')
+same "  and an embed whose extension is in any case is a recording embed" \
+    "1: demo.gIf  no \`recorded on YYYY-MM-DD\` marker within two lines|" \
+    "$got"
+
+# 9e. An HTML `<img src>` embed is a recording embed too. GitHub renders it in
+#     a README, so a judge that reads only `![alt](target)` would let an
+#     unmarked GIF reach the page by the other syntax.
+printf '%s\n' '<p><img src="demo.gif" alt="headwater check"></p>' >"$scratch/recording-html.md"
+got=$(recording_judge "$scratch/recording-html.md" | sed '$d' | tr '\n' '|')
+same "  and an HTML img embed with no marker fails" \
+    "1: demo.gif  no \`recorded on YYYY-MM-DD\` marker within two lines|" \
+    "$got"
+
 echo
 echo "$passed passed, $failed failed"
 [ "$failed" -eq 0 ]
