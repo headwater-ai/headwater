@@ -356,7 +356,6 @@ fn a_reading_on_the_tree_wins_over_a_longer_one_only_a_glob_edge_reaches() {
 #[test]
 fn route_never_opens_a_governed_file_that_no_anchor_of_the_task_reaches() {
     use std::os::unix::fs::PermissionsExt;
-    use std::time::{Duration, Instant};
 
     let root = Root::shaped("route-lazy-revision", |at| {
         std::fs::write(at.join("tools/governed.sh"), "").expect("the governed file writes");
@@ -394,8 +393,66 @@ fn route_never_opens_a_governed_file_that_no_anchor_of_the_task_reaches() {
         }
     });
 
+    let (out, err) = route_under_deadline(
+        &root,
+        "tools/governed.sh",
+        "route opened the named pipe that no anchor of its task reaches, and waited on it",
+    );
+    assert!(
+        out.contains("HW-DR-0002"),
+        "the governing decision is named: {out}"
+    );
+    assert!(!out.contains("HW-DR-0003"), "{out}");
+    assert!(!out.contains("HW-DR-0004"), "{out}");
+    assert!(!err.contains("revision"), "no revision error: {err}");
+}
+
+/// A governing edge that records no `verified_revision` can never go suspect,
+/// so route has no revision to compare and reads no byte of what it governs,
+/// even where the task names that very file (#1160). The edge here governs a
+/// named pipe with no writer, and the task names the pipe. A route that
+/// digests the pipe before it asks whether the edge recorded a revision never
+/// answers.
+#[cfg(unix)]
+#[test]
+fn route_never_reads_the_bytes_of_a_file_whose_governing_edge_records_no_revision() {
+    let root = Root::shaped("route-unrecorded-revision", |at| {
+        let fifo = std::process::Command::new("mkfifo")
+            .arg(at.join("tools/pipe"))
+            .status()
+            .expect("mkfifo runs");
+        assert!(fifo.success(), "the named pipe is made");
+        std::fs::write(
+            at.join("docs/decisions/0002-the-decision-that-governs-a-pipe.md"),
+            "---\nid: HW-DR-0002\ntitle: The decision that governs a pipe\nstatus: \
+             current\nstatus_since: 2026-08-01\nlast_verified: 2026-08-01\nsummary: One \
+             decision that governs one named pipe under the tools directory.\nprovenance:\n  \
+             warrant: asserted\n  agency: human\n  evidence_basis: unevidenced\nrelations:\n  \
+             governs:\n    - tools/pipe\n---\n\n# The decision that governs a pipe\n\n## \
+             Context\n\nA fixture.\n\n## Decision\n\nIt governs one file.\n\n## \
+             Consequences\n\nThe route names it.\n",
+        )
+        .expect("the decision writes");
+    });
+    let (out, _) = route_under_deadline(
+        &root,
+        "tools/pipe",
+        "route digested a governed file whose edge records no revision, and waited on it",
+    );
+    assert!(
+        out.contains("HW-DR-0002"),
+        "the governing decision is named: {out}"
+    );
+}
+
+/// Run `route edit <path> --json` and fail with `hung` if it has not answered
+/// in 60 s, which is how a route that opened a named pipe with no writer ends.
+#[cfg(unix)]
+fn route_under_deadline(root: &Root, path: &str, hung: &str) -> (String, String) {
+    use std::time::{Duration, Instant};
+
     let mut child = std::process::Command::new(env!("CARGO_BIN_EXE_headwater"))
-        .args(["route", "edit", "tools/governed.sh", "--json", "--root"])
+        .args(["route", "edit", path, "--json", "--root"])
         .arg(&root.at)
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped())
@@ -409,21 +466,13 @@ fn route_never_opens_a_governed_file_that_no_anchor_of_the_task_reaches() {
         if Instant::now() > deadline {
             child.kill().expect("the child stops");
             child.wait().expect("the child is reaped");
-            panic!(
-                "route opened the named pipe that no anchor of its task reaches, and waited on it"
-            );
+            panic!("{hung}");
         }
         std::thread::sleep(Duration::from_millis(50));
     };
     let output = child.wait_with_output().expect("the output is read");
-    let out = String::from_utf8_lossy(&output.stdout);
-    let err = String::from_utf8_lossy(&output.stderr);
+    let out = String::from_utf8_lossy(&output.stdout).into_owned();
+    let err = String::from_utf8_lossy(&output.stderr).into_owned();
     assert!(status.success(), "{out}\n{err}");
-    assert!(
-        out.contains("HW-DR-0002"),
-        "the governing decision is named: {out}"
-    );
-    assert!(!out.contains("HW-DR-0003"), "{out}");
-    assert!(!out.contains("HW-DR-0004"), "{out}");
-    assert!(!err.contains("revision"), "no revision error: {err}");
+    (out, err)
 }
