@@ -165,6 +165,7 @@ declarations
             reasoning (required) scalar:string]
   surface members
     archive seq of scalar:string
+    deb seq of scalar:string
     integration_points map of members
         depends_on seq of scalar:string
     prerequisites seq of scalar:string
