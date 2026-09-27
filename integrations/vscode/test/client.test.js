@@ -80,25 +80,18 @@ test('governing answers the contract\'s pointers, silence for an ungoverned path
   assert.deepEqual(await client.route('what governs the mcp server', missing), []);
 });
 
-test('route parses the pointers out of the report, folded lines rejoined, and nothing else', async () => {
+test('route reads the pointers from structuredContent, in order, and nothing else', async () => {
   const { options } = fake('route-pointers.jsonl');
   const pointers = await client.route('add a VS Code extension that calls the MCP server for routing', options);
   assert.deepEqual(
     pointers.map((p) => p.path),
     [
       'docs/probes/the-pointer-this-corpus-offers-for-a-task-is-the-document-a-session-opens.md',
-      'docs/how-to/mine-the-shadow-mode-routing-log.md',
+      'docs/how-to/rotate-or-revoke-the-apt-signing-subkey.md',
       'docs/requirements/0002-every-document-of-a-kind-that-requires-sections-carries-all-of-them.md',
       'docs/interfaces/headwater-mcp.md',
       'docs/obligations/0206-hw-run-policy-names-a-worktree-add-workaround-that-write-edit-refuses-under-this-harness.md',
     ],
-  );
-  // The server folds a pointer at 80 columns, here inside the name.
-  const folded = pointers[1];
-  assert.equal(folded.name, 'Mine the shadow-mode routing log');
-  assert.equal(
-    folded.summary,
-    'Join the shadow log to the session transcripts by prompt identifier, and read the deterministic route against the embedding path one prompt at a time.',
   );
   const mcp = pointers[3];
   assert.equal(mcp.name, 'headwater mcp');
@@ -107,6 +100,27 @@ test('route parses the pointers out of the report, folded lines rejoined, and no
     mcp.summary,
     'How the stdio MCP server exposes read tools, optional working-tree writes, and a one-write session seal.',
   );
+});
+
+test('a path that holds " (", a name with spaces and a summary past 80 columns read back exactly', async () => {
+  // The text form split this path at its first ` (`, and a fold of this
+  // summary at 80 columns starts a line with `governs`, which the text reader
+  // took for evidence (#1248).
+  const { options } = fake('route-paren-path.jsonl');
+  assert.deepEqual(await client.route('why is quarantine throttling one quota rule', options), [
+    {
+      path: 'docs/decisions/a (draft) note.md',
+      name: 'Quota notes at the edge',
+      summary: 'why the quota governs each retry of a tenant, and what quarantine throttling does at the edge',
+      asserted: 'nobody accepted this document',
+    },
+  ]);
+});
+
+test('an answer with pointers in its text and no structuredContent is no pointers', async () => {
+  // Recorded from an engine older than #1248. The text is never parsed.
+  const { options } = fake('route-text-only.jsonl');
+  assert.deepEqual(await client.route('add a VS Code extension that calls the MCP server for routing', options), []);
 });
 
 test('an [asserted: ...] pointer keeps its warrant', async () => {
@@ -192,37 +206,28 @@ test('asking for any tool outside the allowlist throws before anything spawns', 
   assert.deepEqual(asked(), []);
 });
 
-test('parsePointers takes a pointer line by the contract shape alone', () => {
-  assert.deepEqual(client.parsePointers('no document governs a/b.rs\n'), []);
-  assert.deepEqual(client.parsePointers('docs/a.md (A (b) c) — sum — more\n'), [
-    { path: 'docs/a.md', name: 'A (b) c', summary: 'sum — more', asserted: null },
-  ]);
-  assert.deepEqual(client.parsePointers('docs/a.md — only a summary\n'), [
-    { path: 'docs/a.md', name: null, summary: 'only a summary', asserted: null },
-  ]);
-  assert.deepEqual(client.parsePointers(''), []);
-});
-
-test('a line with neither a name nor a summary is never a pointer', () => {
-  // Each of these is a line the server writes around its pointers. A path may
-  // hold a space, so only the name-or-summary guard keeps them out.
-  for (const line of [
-    'no document governs docs/x.md',
-    '  terms zzqx',
-    '  no purpose matched',
-    '  purpose evidence 3',
-    '  the budget withheld 191 more pointers',
-    '  docs/x.md is in the governed scope, and nothing governs it',
-    'docs/a.md',
-  ]) {
-    assert.deepEqual(client.parsePointers(line + '\n'), [], line);
-  }
+test('readPointers takes each element of structuredContent.pointers, and nothing else', () => {
+  assert.deepEqual(
+    client.readPointers({
+      pointers: [
+        { path: 'docs/a (b).md', kind: 'decision', name: 'A (b) c', summary: 'sum — more', unwarranted: false },
+        { path: 'docs/a.md', kind: 'decision', summary: 'only a summary', unwarranted: true },
+      ],
+    }),
+    [
+      { path: 'docs/a (b).md', name: 'A (b) c', summary: 'sum — more', asserted: null },
+      { path: 'docs/a.md', name: null, summary: 'only a summary', asserted: 'nobody accepted this document' },
+    ],
+  );
+  assert.deepEqual(client.readPointers({ pointers: [] }), []);
+  assert.deepEqual(client.readPointers(undefined), []);
+  assert.deepEqual(client.readPointers({}), []);
+  assert.deepEqual(client.readPointers({ pointers: 'docs/a.md' }), []);
+  // One element that is not a pointer makes the whole answer untrusted.
+  assert.deepEqual(client.readPointers({ pointers: [{ path: 'docs/a.md' }, { name: 'no path' }] }), []);
 });
 
 test('a pointer whose path holds a space is kept whole', async () => {
-  assert.deepEqual(client.parsePointers('docs/how to/my file.md (My file) — a summary\n'), [
-    { path: 'docs/how to/my file.md', name: 'My file', summary: 'a summary', asserted: null },
-  ]);
   const { options } = fake('governing-spaced-path.jsonl');
   assert.deepEqual(await client.governing('src/my module.rs', options), [
     { path: 'docs/how to/my file.md', name: 'My file', summary: 'a summary', asserted: null },

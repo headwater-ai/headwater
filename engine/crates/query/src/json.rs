@@ -4,9 +4,10 @@
 //! [#321](https://github.com/headwater-ai/headwater/issues/321) asks that
 //! `route` and `explain` "emit JSON that `python3 -m json.tool` parses". These
 //! two documents are that JSON. They are the first machine surface either read
-//! has ever had: the MCP server serves both as [`Route::render`] and
+//! has ever had: the MCP server served both as [`Route::render`] and
 //! [`Explanation::render`] inside a text block, and a caller who wanted the
-//! parts had to take them out of prose.
+//! parts had to take them out of prose. The MCP `route` tool now carries the
+//! route document as its `structuredContent` too (#1248).
 //!
 //! # Three rules that hold for every document this module writes
 //!
