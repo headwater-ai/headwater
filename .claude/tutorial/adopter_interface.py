@@ -82,10 +82,10 @@ TUTORIAL = drive.DOC
 # repository), `printf` (writing the seed document), `rm` (removing it
 # again in step 8). `cargo` is handled separately, by subcommand.
 # The piece `_pieces` yields in place of the rest of a block once a line
-# ends inside a quote, a pair of backticks or a `$(`. The line number, counted
+# ends inside a quote, a pair of backticks, a `$(` or a `${`. The line number, counted
 # from 1, follows it. `check_piece` never allows it, so the block fails.
-UNREADABLE = ('unreadable: a quote, a pair of backticks or a $( is still open '
-              'at the end of block line ')
+UNREADABLE = ('unreadable: a quote, a pair of backticks, a $( or a ${ is still '
+              'open at the end of block line ')
 
 ALLOWED_LEADING_WORDS = frozenset({'headwater', 'git', 'mkdir', 'cd', 'printf', 'rm'})
 
@@ -190,17 +190,18 @@ def _split_unquoted(text, is_boundary):
 
 def _scan(text, is_boundary):
     """The pieces `_split_unquoted` cuts, and what is still open at the end
-    of `text`: a quote (`'`, `"` or `$'`), a backtick, `$(`, or None.
+    of `text`: a quote (`'`, `"` or `$'`), a backtick, `$(`, `${`, or None.
 
     The engine's `scan` in `engine/crates/check/src/command.rs` reads one
     command by the same rules. `$'…'` is ANSI-C quoting: a backslash inside
     it escapes the next character, so `$'\\''` is one quoted quote. Inside
     backticks a quote opens nothing. A `$(` outside quotes opens until its
-    `)`. A `#` at the start of the text, or after a blank, `;`, `&` or `|`,
-    opens a comment to the end, and the comment is no part of a piece. After
-    `)`, `<` or `>` a `#` is part of a word.
+    `)`, and a `${` until its `}`. A `#` at the start of the text, or after a
+    blank, `;`, `&` or `|`, opens a comment to the end, and the comment is no
+    part of a piece. After `)`, `<` or `>`, and anywhere inside a `${…}`, a
+    `#` is part of a word. A comment inside an open `$(` reports the `$(`.
     """
-    pieces, buf, quote, depth, i = [], [], None, 0, 0
+    pieces, buf, quote, depth, braces, i = [], [], None, 0, 0, 0
     while i < len(text):
         ch = text[i]
         if ch == '\\' and quote != "'":
@@ -213,22 +214,26 @@ def _scan(text, is_boundary):
                 quote = None
             i += 1
             continue
-        if ch == '$' and text[i + 1:i + 2] in ("'", '('):
+        if ch == '$' and text[i + 1:i + 2] in ("'", '(', '{'):
             if text[i + 1] == "'":
                 quote = "$'"
-            else:
+            elif text[i + 1] == '(':
                 depth += 1
+            else:
+                braces += 1
             buf.append(text[i:i + 2])
             i += 2
             continue
         if ch == ')' and depth:
             depth -= 1
+        if ch == '}' and braces:
+            braces -= 1
         if ch in ('"', "'", '`'):
             quote = ch
             buf.append(ch)
             i += 1
             continue
-        if ch == '#' and (i == 0 or text[i - 1] in ' \t;&|'):
+        if ch == '#' and not braces and (i == 0 or text[i - 1] in ' \t;&|'):
             break
         consumed = is_boundary(text, i)
         if consumed:
@@ -239,7 +244,7 @@ def _scan(text, is_boundary):
         buf.append(ch)
         i += 1
     pieces.append(''.join(buf))
-    return pieces, quote or ('$(' if depth else None)
+    return pieces, quote or ('$(' if depth else '${' if braces else None)
 
 
 def split_chain(line):
@@ -338,7 +343,7 @@ def check_piece(piece, cargo_allowed=False):
 def _pieces(block):
     """Every piece of every line of a command block, one line at a time.
 
-    A line that ends inside a quote, a pair of backticks or a `$(` joins
+    A line that ends inside a quote, a pair of backticks, a `$(` or a `${` joins
     nothing (#1135). Its pieces are yielded, then one `UNREADABLE` piece that
     names the line, and nothing after it: a checker that joined such a line
     would have to lex the shell, and each construct it misread would hide

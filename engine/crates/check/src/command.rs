@@ -90,7 +90,7 @@ impl Undeclared {
 impl DocumentCheck for Undeclared {
     const RULE: &'static str = self::RULE;
     /// 2 reports the rest of a block as unreadable once a line ends inside a
-    /// quote, a pair of backticks or a `$(` (#1135). The first edition read
+    /// quote, a pair of backticks, a `$(` or a `${` (#1135). The first edition read
     /// each line alone and could read a quoted chain as one program.
     const VERSION: u32 = 2;
     const NEEDS_BODY: bool = true;
@@ -131,7 +131,7 @@ impl DocumentCheck for Undeclared {
             for (line, read) in programs(&text, info == "console") {
                 let (message, remediation) = match read {
                     Read::Unreadable => (
-                        "a line of this shell block ends inside a quote, a pair of backticks or a `$(`, so the rule cannot read the rest of the block (HW-DR-0077)".to_string(),
+                        "a line of this shell block ends inside a quote, a pair of backticks, a `$(` or a `${`, so the rule cannot read the rest of the block (HW-DR-0077)".to_string(),
                         format!(
                             "close the quote on the line that opens it, or mark the step as a deliberate exception with `<!-- headwater allow={} scope=block reason=accepted_deviation ... -->`",
                             self::RULE
@@ -185,7 +185,7 @@ enum Read {
 /// zero, that the command holding it starts on.
 ///
 /// Only a trailing `\` outside quotes and comments joins a line to the next.
-/// A line that ends inside a quote, a pair of backticks or a `$(` joins
+/// A line that ends inside a quote, a pair of backticks, a `$(` or a `${` joins
 /// nothing (#1135): the rule reads what the line runs, then reports the rest
 /// of the block as unreadable and stops. A checker that joined such a line
 /// would have to lex the shell, and each construct it misread would hide the
@@ -224,7 +224,7 @@ fn programs(text: &str, console: bool) -> Vec<(usize, Read)> {
         starts.push((command.len(), number));
         command.push_str(trimmed);
         match scan(&command).open {
-            Some('\'' | '"' | 'a' | '`' | '(') => {
+            Some('\'' | '"' | 'a' | '`' | '(' | '{') => {
                 read_command(&command, &starts, number, &mut found);
                 found.push((number, Read::Unreadable));
                 return found;
@@ -280,8 +280,9 @@ struct Scan<'a> {
     /// its byte offset.
     segments: Vec<(usize, &'a str)>,
     /// What is still open at the end: a quote (`'`, `"`, or `a` for `$'…'`),
-    /// a pair of backticks (`` ` ``), a `$(` (`(`), a comment (`#`), or
-    /// nothing.
+    /// a pair of backticks (`` ` ``), a `$(` (`(`), a `${` (`{`), a comment
+    /// (`#`), or nothing. A comment inside an open `$(` or `${` reports the
+    /// `$(` or the `${`, because the shell reads on past the line.
     open: Option<char>,
     /// The byte offset of the first `<<` outside quotes and comments.
     heredoc: Option<usize>,
@@ -292,15 +293,17 @@ struct Scan<'a> {
 /// A backslash escapes the next character outside quotes, inside double
 /// quotes, inside ANSI-C quotes (`$'…'`) and inside backticks, and is literal
 /// inside single quotes. Inside backticks a quote opens nothing. A `$(`
-/// outside quotes opens until its `)`. A `#` at the start of the command, or
-/// after a blank, `;`, `&` or `|`, opens a comment to the end, so an operator,
-/// a quote or a `<<` in a comment is none of them. After `)`, `<` or `>` a
-/// `#` is part of a word.
+/// outside quotes opens until its `)`, and a `${` until its `}`. A `#` at the
+/// start of the command, or after a blank, `;`, `&` or `|`, opens a comment to
+/// the end, so an operator, a quote or a `<<` in a comment is none of them.
+/// After `)`, `<` or `>`, and anywhere inside a `${…}`, a `#` is part of a
+/// word.
 fn scan(command: &str) -> Scan<'_> {
     let mut out = Vec::new();
     let mut start = 0;
     let mut quote: Option<char> = None;
     let mut depth = 0usize;
+    let mut braces = 0usize;
     let mut heredoc = None;
     let mut escaped = false;
     let bytes = command.as_bytes();
@@ -325,14 +328,20 @@ fn scan(command: &str) -> Scan<'_> {
                 at += 1;
             }
             (None, ')') if depth > 0 => depth -= 1,
+            (None, '$') if bytes.get(at + 1) == Some(&b'{') => {
+                braces += 1;
+                at += 1;
+            }
+            (None, '}') if braces > 0 => braces -= 1,
             (None, '\'' | '"' | '`') => quote = Some(c),
             (None, '#')
-                if at == 0 || matches!(bytes[at - 1], b' ' | b'\t' | b';' | b'&' | b'|') =>
+                if braces == 0
+                    && (at == 0 || matches!(bytes[at - 1], b' ' | b'\t' | b';' | b'&' | b'|')) =>
             {
                 out.push((start, &command[start..at]));
                 return Scan {
                     segments: out,
-                    open: Some('#'),
+                    open: Some(if depth > 0 { '(' } else { '#' }),
                     heredoc,
                 };
             }
@@ -359,7 +368,9 @@ fn scan(command: &str) -> Scan<'_> {
     out.push((start, &command[start..]));
     Scan {
         segments: out,
-        open: quote.or((depth > 0).then_some('(')),
+        open: quote
+            .or((depth > 0).then_some('('))
+            .or((braces > 0).then_some('{')),
         heredoc,
     }
 }
@@ -528,6 +539,12 @@ mod tests {
         assert_eq!(
             names("headwater check # note \\\nnpm install\n", false),
             pairs(&[(0, "headwater"), (1, "npm")])
+        );
+        // An escaped backslash at the end of a line is a literal backslash,
+        // and it joins nothing (X4 of the third verify).
+        assert_eq!(
+            names("echo a\\\\\nnpm ci\n", false),
+            pairs(&[(0, "echo"), (1, "npm")])
         );
     }
 
