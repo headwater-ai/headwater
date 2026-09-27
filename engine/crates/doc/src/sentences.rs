@@ -63,9 +63,11 @@ use headwater_yaml::{Position, Span};
 ///
 /// The cost: an entry suppresses the split without condition. A real sentence
 /// end on an entry, as in `sold in the U.S. The next` or `set out in 5 U.S.C.
-/// The next`, joins with the sentence after it. The dotted forms end a
-/// sentence less often than a name or a number follows them, so the list takes
-/// that cost.
+/// The next`, joins with the sentence after it. For `U.S.C.` the cost also
+/// covers a next sentence that opens with a number, as in `set out in 5
+/// U.S.C. 12 agencies read it`, because the section number that the entry
+/// exists for is a number too. The dotted forms end a sentence less often than
+/// a name or a number follows them, so the list takes that cost.
 const ABBREVIATIONS: [&str; 14] = [
     "e.g.", "i.e.", "cf.", "etc.", "vs.", "al.", "approx.", "no.", "U.S.", "U.K.", "a.m.", "p.m.",
     "Ph.D.", "U.S.C.",
@@ -488,6 +490,10 @@ mod tests {
         );
         assert_eq!(
             texts("It is set out in 5 U.S.C. The next one is not.\n").len(),
+            1
+        );
+        assert_eq!(
+            texts("It is set out in 5 U.S.C. 12 agencies read it.\n").len(),
             1
         );
     }
