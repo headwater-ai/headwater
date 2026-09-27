@@ -469,6 +469,8 @@ anchors
     cited by HW-IFACE-headwater-json
   code_path `integrations/headwater-check/**` via source-tree
     cited by HW-HOW-wire-headwater-check-into-your-own-workflow
+  code_path `integrations/headwater-upkeep/**` via source-tree
+    cited by HW-HOW-wire-headwater-check-into-your-own-workflow
   code_path `mkdocs.yml` via source-tree
     cited by HW-DR-0036
   code_path `mkdocs/hooks/site_tokens.py` via source-tree

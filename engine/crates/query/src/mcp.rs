@@ -220,6 +220,13 @@ pub struct Server<'a> {
     /// the reason it holds the census: one read, so every tool answers over one
     /// state of the tree.
     pub claims: &'a headwater_check::claim::Claims,
+    /// What git ignores under the corpus, which the `route` tool drops from
+    /// the ungoverned paths it names, as `headwater route` does (#1161). This
+    /// crate runs no version control command, so the caller reads git. It is
+    /// a function rather than a list read at start-up, because a route that
+    /// names no ungoverned path runs no git command (#953), and the tool
+    /// keeps that property of the verb.
+    pub ignored: &'a dyn Fn() -> headwater_graph::scope::Ignored,
     /// The taxonomy package and its version, which every rendered report
     /// states beside the lock digest.
     pub package: &'a str,
@@ -771,9 +778,15 @@ fn call(server: &Server<'_>, message: &Mapping) -> Result<Answer, Failure> {
     let argument = held(tool.only().name);
 
     let text = match tool.name {
-        "route" => surface
-            .route(&argument, Budget::default())
-            .render(headwater_check::paint::ColorMode::Plain),
+        "route" => {
+            let mut route = surface.route(&argument, Budget::default());
+            // The verb's filter, on the verb's terms: git is read only where
+            // the route named an ungoverned path (#953, #1161).
+            if !route.ungoverned.is_empty() {
+                route.retain_unignored(&(server.ignored)());
+            }
+            route.render(headwater_check::paint::ColorMode::Plain)
+        }
         // A path argument is read the way `headwater explain` reads one, through
         // the same `typed`, so the tool and the verb find one document for one
         // spelling, and refuse a path that leaves the repository as outside it
