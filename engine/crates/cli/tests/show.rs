@@ -114,6 +114,19 @@ impl Root {
             .output()
             .expect("the binary runs")
     }
+
+    /// The same run from inside the root, with `--root .`: the invocation a
+    /// reader in a shell types. A relative root is what made an absolute
+    /// target unclassifiable (#1227), so each path case runs both ways.
+    fn run_inside(&self, arguments: &[&str]) -> Output {
+        Command::new(env!("CARGO_BIN_EXE_headwater"))
+            .args(arguments)
+            .arg("--root")
+            .arg(".")
+            .current_dir(&self.at)
+            .output()
+            .expect("the binary runs")
+    }
 }
 
 impl Drop for Root {
@@ -275,4 +288,106 @@ fn repoint_bundles(package: &Path) {
     assert!(text.contains(from), "the authored manifest states `{from}`");
     let to = format!("  bundles: {up}docs/taxonomies");
     std::fs::write(&manifest, text.replace(from, &to)).expect("the scratch manifest writes");
+}
+
+/// The two ways each path case runs: with an absolute `--root`, and from
+/// inside the root with `--root .`.
+const RUNS: [(&str, fn(&Root, &[&str]) -> Output); 2] = [
+    ("--root <absolute>", Root::run),
+    ("--root . from inside", Root::run_inside),
+];
+
+/// [#1227](https://github.com/headwater-ai/headwater/issues/1227): a path is
+/// typed the way a shell or an editor spells it. `./`, a `..` that stays in
+/// the repository and an absolute path under the root name the same document
+/// as the plain relative path, so `explain` and `show` answer each one as they
+/// answer that path. Each spelling runs with an absolute `--root` and again
+/// from inside the root with `--root .`, because the relative root is the run
+/// that read an absolute target as unclassifiable.
+#[test]
+fn explain_and_show_resolve_every_spelling_of_a_path_inside_the_repository() {
+    let root = Root::new("spellings");
+    let on_disk = std::fs::read(root.at.join(DOCUMENT)).expect("the document reads");
+    let plain = root.run(&["explain", DOCUMENT]);
+    assert_eq!(plain.status.code(), Some(0), "the plain path resolves");
+
+    let spellings = [
+        format!("./{DOCUMENT}"),
+        format!("docs/../{DOCUMENT}"),
+        root.at.join(DOCUMENT).display().to_string(),
+    ];
+    for target in &spellings {
+        for (how, run) in RUNS {
+            let explained = run(&root, &["explain", target]);
+            assert_eq!(
+                explained.status.code(),
+                Some(0),
+                "`explain {target}` with {how}: {}",
+                String::from_utf8_lossy(&explained.stderr)
+            );
+            assert_eq!(
+                String::from_utf8_lossy(&explained.stdout),
+                String::from_utf8_lossy(&plain.stdout),
+                "`explain {target}` with {how} explains the document the plain path names"
+            );
+            let shown = run(&root, &["show", target]);
+            assert_eq!(
+                shown.status.code(),
+                Some(0),
+                "`show {target}` with {how}: {}",
+                String::from_utf8_lossy(&shown.stderr)
+            );
+            assert!(
+                shown.stdout == on_disk,
+                "`show {target}` with {how} writes the bytes on disk"
+            );
+        }
+    }
+}
+
+/// The other half of #1227: a path that leaves the repository, absolute or by
+/// `..`, is refused as outside it. It is never read as a corpus path with no
+/// document written there, which is the sentence a hook takes as leave to
+/// write. `explain --json` is refused the same way, with nothing on standard
+/// output (HW-DR-0043).
+#[test]
+fn explain_and_show_refuse_a_path_outside_the_repository_as_outside_it() {
+    let root = Root::new("outside");
+    let beside = root
+        .at
+        .parent()
+        .expect("the root has a parent")
+        .join("outside.md")
+        .display()
+        .to_string();
+    for target in ["/etc/passwd", "../../outside.md", beside.as_str()] {
+        for (how, run) in RUNS {
+            for arguments in [
+                vec!["explain", target],
+                vec!["explain", target, "--json"],
+                vec!["show", target],
+            ] {
+                let refused = run(&root, &arguments);
+                let asked = arguments.join(" ");
+                let stderr = String::from_utf8_lossy(&refused.stderr);
+                assert_eq!(
+                    refused.status.code(),
+                    Some(1),
+                    "`{asked}` with {how} refuses: {stderr}"
+                );
+                assert!(
+                    refused.stdout.is_empty(),
+                    "`{asked}` with {how} writes nothing on standard output"
+                );
+                assert!(
+                    stderr.contains("outside this repository"),
+                    "`{asked}` with {how} says it is outside this repository: {stderr}"
+                );
+                assert!(
+                    !stderr.contains("no document written there"),
+                    "`{asked}` with {how} is not read as a corpus path: {stderr}"
+                );
+            }
+        }
+    }
 }
