@@ -80,7 +80,11 @@ def route(path, doc, ident):
 
 
 def main():
-    current = [ESCAPED, OLD_FAR, OLD_KEPT, OLD_GONE, OLD_SHARED, NEW_FAR, TWICE, dict(TWICE)]
+    # NEW_FAR comes before every old finding it collides with. A partial key
+    # still counts the right number of new findings, because the multiset
+    # decrements, but it spends the base's copy on NEW_FAR and calls the old
+    # finding after it new. So the order is what makes each partial key red.
+    current = [NEW_FAR, ESCAPED, OLD_FAR, OLD_KEPT, OLD_GONE, OLD_SHARED, TWICE, dict(TWICE)]
     base = [ESCAPED, OLD_FAR, OLD_KEPT, OLD_GONE, OLD_SHARED, TWICE]
     with tempfile.TemporaryDirectory() as work:
         write(os.path.join(work, "changed.txt"), "src/a.rs\n")
