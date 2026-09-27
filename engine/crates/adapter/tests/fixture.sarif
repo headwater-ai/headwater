@@ -323,7 +323,7 @@
               "properties": {
                 "headwater": {
                   "scope": "document",
-                  "version": 6,
+                  "version": 7,
                   "obligations": [
                     "OB-FIX-7"
                   ],
@@ -339,7 +339,7 @@
               "properties": {
                 "headwater": {
                   "scope": "document",
-                  "version": 5,
+                  "version": 6,
                   "obligations": [
                     "OB-FIX-8"
                   ],
@@ -355,7 +355,7 @@
               "properties": {
                 "headwater": {
                   "scope": "document",
-                  "version": 5,
+                  "version": 6,
                   "obligations": [
                     "OB-FIX-22"
                   ],
@@ -794,7 +794,7 @@
             "analysisTarget"
           ],
           "hashes": {
-            "sha-256": "8dd1e0dfc872f7591dc2ce9b4d0ee7c6c6426542e92fc88c78a001c1134fedcb"
+            "sha-256": "4d8d8f0498f14bf87b2a0f314c32e5a026ba395676792011daf46fa02c9bc5b9"
           }
         },
         {
@@ -1706,7 +1706,7 @@
                   "uri": "check/spec/07-prose-defects.md"
                 },
                 "region": {
-                  "startLine": 43,
+                  "startLine": 45,
                   "startColumn": 1
                 }
               }
@@ -1739,7 +1739,7 @@
                   "uri": "check/spec/07-prose-defects.md"
                 },
                 "region": {
-                  "startLine": 47,
+                  "startLine": 49,
                   "startColumn": 1
                 }
               }
@@ -1772,7 +1772,7 @@
                   "uri": "check/spec/07-prose-defects.md"
                 },
                 "region": {
-                  "startLine": 49,
+                  "startLine": 51,
                   "startColumn": 1
                 }
               }
@@ -1805,7 +1805,7 @@
                   "uri": "check/spec/07-prose-defects.md"
                 },
                 "region": {
-                  "startLine": 60,
+                  "startLine": 62,
                   "startColumn": 1
                 }
               }
@@ -1838,7 +1838,7 @@
                   "uri": "check/spec/07-prose-defects.md"
                 },
                 "region": {
-                  "startLine": 61,
+                  "startLine": 63,
                   "startColumn": 1
                 }
               }
@@ -1871,7 +1871,7 @@
                   "uri": "check/spec/07-prose-defects.md"
                 },
                 "region": {
-                  "startLine": 65,
+                  "startLine": 67,
                   "startColumn": 32
                 }
               }
@@ -1904,7 +1904,7 @@
                   "uri": "check/spec/07-prose-defects.md"
                 },
                 "region": {
-                  "startLine": 67,
+                  "startLine": 69,
                   "startColumn": 28
                 }
               }
@@ -1935,7 +1935,7 @@
                   "uri": "check/spec/07-prose-defects.md"
                 },
                 "region": {
-                  "startLine": 69,
+                  "startLine": 71,
                   "startColumn": 91
                 }
               }
@@ -1966,7 +1966,7 @@
                   "uri": "check/spec/07-prose-defects.md"
                 },
                 "region": {
-                  "startLine": 71,
+                  "startLine": 73,
                   "startColumn": 63
                 }
               }
@@ -1997,7 +1997,7 @@
                   "uri": "check/spec/07-prose-defects.md"
                 },
                 "region": {
-                  "startLine": 73,
+                  "startLine": 75,
                   "startColumn": 46
                 }
               }
@@ -2028,7 +2028,7 @@
                   "uri": "check/spec/07-prose-defects.md"
                 },
                 "region": {
-                  "startLine": 75,
+                  "startLine": 77,
                   "startColumn": 90
                 }
               }

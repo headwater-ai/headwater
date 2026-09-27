@@ -51,17 +51,17 @@
 | warn | `check/spec/07-prose-defects.md:35` | `language.controlled.not_met` | `ste_house` holds prose to 25 words a sentence, and this one has 49 |
 | warn | `check/spec/07-prose-defects.md:35` | `language.retired_term.used` | `ste_house` retires `robust`, and this sentence writes it: it stands in for the failure the thing survives |
 | warn | `check/spec/07-prose-defects.md:35` | `voice.forbidden_construction` | `declarative` forbids future_intent, and this sentence writes `will be` |
-| error | `check/spec/07-prose-defects.md:43` | `language.controlled.not_met` | `ste_house` admits no contraction, and this sentence writes `doesn't` |
-| error | `check/spec/07-prose-defects.md:47` | `language.retired_term.used` | `ste_house` retires `reference system`, and this sentence writes it: the corpus renamed it |
-| warn | `check/spec/07-prose-defects.md:49` | `language.retired_term.used` | `ste_house` retires `robust`, and this sentence writes it: it stands in for the failure the thing survives |
-| error | `check/spec/07-prose-defects.md:60` | `language.source_form.not_met` | `ste_house` writes one paragraph on one line, and this line continues the paragraph above |
-| error | `check/spec/07-prose-defects.md:61` | `language.source_form.not_met` | `ste_house` writes one paragraph on one line, and this line continues the paragraph above |
-| error | `check/spec/07-prose-defects.md:65` | `link.fragment.unresolved` | `#no-such-section` names no heading of this document |
-| error | `check/spec/07-prose-defects.md:67` | `link.path.unresolved` | `19-renamed.md` names no file of this repository: nothing stands at `check/spec/19-renamed.md` |
-| error | `check/spec/07-prose-defects.md:69` | `link.path.unresolved` | `19-renamed.md#a-heading` names no file of this repository: nothing stands at `check/spec/19-renamed.md` |
-| error | `check/spec/07-prose-defects.md:71` | `link.path.unresolved` | `../../../outside.md` does not name a path of this repository at all: `check/spec/../../../outside.md` climbs above the repository |
-| error | `check/spec/07-prose-defects.md:73` | `link.path.unresolved` | `19-renamed.md?v=2` names no file of this repository: nothing stands at `check/spec/19-renamed.md` |
-| error | `check/spec/07-prose-defects.md:75` | `link.path.unresolved` | `/spec/00-both-halves.md` names no file of this repository: nothing stands at `/spec/00-both-halves.md` |
+| error | `check/spec/07-prose-defects.md:45` | `language.controlled.not_met` | `ste_house` admits no contraction, and this sentence writes `doesn't` |
+| error | `check/spec/07-prose-defects.md:49` | `language.retired_term.used` | `ste_house` retires `reference system`, and this sentence writes it: the corpus renamed it |
+| warn | `check/spec/07-prose-defects.md:51` | `language.retired_term.used` | `ste_house` retires `robust`, and this sentence writes it: it stands in for the failure the thing survives |
+| error | `check/spec/07-prose-defects.md:62` | `language.source_form.not_met` | `ste_house` writes one paragraph on one line, and this line continues the paragraph above |
+| error | `check/spec/07-prose-defects.md:63` | `language.source_form.not_met` | `ste_house` writes one paragraph on one line, and this line continues the paragraph above |
+| error | `check/spec/07-prose-defects.md:67` | `link.fragment.unresolved` | `#no-such-section` names no heading of this document |
+| error | `check/spec/07-prose-defects.md:69` | `link.path.unresolved` | `19-renamed.md` names no file of this repository: nothing stands at `check/spec/19-renamed.md` |
+| error | `check/spec/07-prose-defects.md:71` | `link.path.unresolved` | `19-renamed.md#a-heading` names no file of this repository: nothing stands at `check/spec/19-renamed.md` |
+| error | `check/spec/07-prose-defects.md:73` | `link.path.unresolved` | `../../../outside.md` does not name a path of this repository at all: `check/spec/../../../outside.md` climbs above the repository |
+| error | `check/spec/07-prose-defects.md:75` | `link.path.unresolved` | `19-renamed.md?v=2` names no file of this repository: nothing stands at `check/spec/19-renamed.md` |
+| error | `check/spec/07-prose-defects.md:77` | `link.path.unresolved` | `/spec/00-both-halves.md` names no file of this repository: nothing stands at `/spec/00-both-halves.md` |
 | error | `check/spec/08-contract-met.md:2` | `identifier.claim.missing` | `DR-FIX-0008` is spent by check/spec/08-contract-met.md and no file of `.headwater/ids` claims it, so this identifier is invisible to the allocator of every other branch and a second document can be minted onto it |
 | error | `check/spec/09-contract-missing.md` | `section.required.missing` | `decision_record` requires the section `Decision`, and no heading of this document says so |
 | error | `check/spec/09-contract-missing.md:2` | `identifier.claim.missing` | `DR-FIX-0009` is spent by check/spec/09-contract-missing.md and no file of `.headwater/ids` claims it, so this identifier is invisible to the allocator of every other branch and a second document can be minted onto it |
