@@ -165,3 +165,34 @@ fn no_crate_is_published_before_a_member_it_depends_on() {
         wrong.join("\n")
     );
 }
+
+/// The publish job waits for the registry's actual index state rather than a
+/// guessed delay, and it does so before moving on after Cargo reports a wait
+/// timeout. This is the release-time race that a local cargo test cannot see.
+#[test]
+fn publish_workflow_gates_on_sparse_index_visibility() {
+    let text =
+        std::fs::read_to_string(repository_root().join(".github/workflows/publish-crates.yml"))
+            .expect("the publish workflow is on disk");
+
+    assert!(
+        text.contains("wait_for_workspace_dependencies"),
+        "the workflow must gate each crate on its workspace dependencies"
+    );
+    assert!(
+        text.contains("https://index.crates.io/"),
+        "the workflow must read the sparse index, not a fixed delay"
+    );
+    assert!(
+        text.contains("timed out waiting for availability"),
+        "Cargo's availability timeout warning must remain an explicit gate"
+    );
+    assert!(
+        text.contains("::error::$crate is waiting for workspace dependency $dependency $version"),
+        "a dependency wait failure must name the crate and dependency"
+    );
+    assert!(
+        !text.contains("sleep 30"),
+        "a fixed thirty-second delay cannot prove registry visibility"
+    );
+}
