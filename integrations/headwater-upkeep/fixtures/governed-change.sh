@@ -95,8 +95,16 @@ touched = section("Touched")
 if touched is None:
     failed.append("the report has no Touched section")
 else:
-    lines = [l for l in touched.splitlines() if "src/a.rs" in l and decision in l]
-    if not lines:
+    # One entry is a top-level `- ` line and the indented lines under it.
+    entries, current = [], None
+    for line in touched.splitlines():
+        if line.startswith("- "):
+            current = [line]
+            entries.append(current)
+        elif line.startswith("  ") and current is not None:
+            current.append(line)
+    hits = [e for e in entries if "`src/a.rs`" in e[0] and any(decision in l for l in e)]
+    if not hits:
         failed.append(f"Touched does not name {decision} against src/a.rs")
 unmeasured = section("Unmeasured")
 if unmeasured is None:

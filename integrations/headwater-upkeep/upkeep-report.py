@@ -110,7 +110,19 @@ def main():
         else:
             no_edge.append(path)
 
+    # `check --change` reports over the whole corpus, and the change scopes
+    # only the rules that read a transition. The report keeps the findings on
+    # the documents this change reaches, and counts the rest in one line, so
+    # a corpus with old debt does not bury the change under it.
+    reached = set(documents) | {p.get("path") for _, p in governed} | {p.get("path") for _, _, p in under_directory}
+    # A finding a directive suppressed, or that migration debt holds, has
+    # `escape` other than `none`. It is a deviation the corpus already
+    # declared, so it is counted and not listed.
     findings = (check or {}).get("findings") or []
+    escaped = [f for f in findings if f.get("escape", "none") != "none"]
+    findings = [f for f in findings if f.get("escape", "none") == "none"]
+    elsewhere = [f for f in findings if f.get("path") not in reached]
+    findings = [f for f in findings if f.get("path") in reached]
     suspect = [f for f in findings if f.get("rule") in SUSPECT_RULES]
     owed = [f for f in findings if f.get("rule") not in SUSPECT_RULES]
 
@@ -128,10 +140,16 @@ def main():
         lines.append("No changed path is a document, and no governs edge names a changed path.")
     for path in documents:
         lines.append(f"- {code(path)}: a document of this corpus, changed")
+    by_path = defaultdict(list)
     for path, pointer in governed:
-        ident = pointer.get("id") or pointer.get("kind") or "document"
-        summary = pointer.get("summary") or ""
-        lines.append(f"- {code(path)}: governed by {code(pointer.get('path', '?'))} ({ident}). {summary}".rstrip())
+        by_path[path].append(pointer)
+    for path in [p for p in others if p in by_path]:
+        pointers = by_path[path]
+        lines.append(f"- {code(path)}: governed by {len(pointers)} document(s)")
+        for pointer in pointers:
+            ident = pointer.get("id") or pointer.get("kind") or "document"
+            summary = pointer.get("summary") or ""
+            lines.append(f"  - {code(pointer.get('path', '?'))} ({ident}). {summary}".rstrip())
     lines.append("")
 
     lines.append("## Stale")
@@ -153,20 +171,30 @@ def main():
     if check is None:
         lines.append(f"`headwater check --change` wrote no report (exit {check_exit}). Its standard error is in the job log.")
     elif not owed:
-        lines.append(f"`headwater check --change` reports no finding outside Stale (exit {check_exit}).")
+        lines.append(
+            f"`headwater check --change` reports no finding outside Stale on a document this change reaches (exit {check_exit})."
+        )
     else:
         by_rule = defaultdict(lambda: defaultdict(list))
         for f in owed:
             by_rule[f.get("rule", "?")][f.get("path", "?")].append(f)
-        in_change = set(documents) | {p.get("path") for _, p in governed}
         for rule in sorted(by_rule):
             lines.append(f"- `{rule}`")
             for path in sorted(by_rule[rule]):
-                mark = "" if path in in_change else " (outside this change)"
                 for f in by_rule[rule][path]:
                     lines.append(
-                        f"  - {code(path)}:{f.get('line', '?')}{mark} [{f.get('severity', '?')}]: {f.get('message', '')}"
+                        f"  - {code(path)}:{f.get('line', '?')} [{f.get('severity', '?')}]: {f.get('message', '')}"
                     )
+    if elsewhere:
+        lines.append("")
+        lines.append(
+            f"{len(elsewhere)} more finding(s) are on documents this change does not reach. `headwater check` lists them."
+        )
+    if escaped:
+        lines.append("")
+        lines.append(
+            f"{len(escaped)} finding(s) are not listed because a suppression or a migration task in the corpus holds them."
+        )
     lines.append("")
 
     lines.append("## Unmeasured")

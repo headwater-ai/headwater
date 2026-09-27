@@ -77,6 +77,6 @@ jobs:
           REPORT: ${{ steps.action.outputs.report-path }}
         run: |
           set -euo pipefail
-          grep -q 'src/a.rs`: governed by `docs/decisions/0001-' "$REPORT"
+          sed -n '/^## Touched/,/^## Stale/p' "$REPORT" | grep -A1 '^- `src/a.rs`: governed by' | grep -q 'docs/decisions/0001-'
           sed -n '/^## Unmeasured/,$p' "$REPORT" | grep -q 'src/b.rs'
           echo "the packaged action wrote the same report: $REPORT"

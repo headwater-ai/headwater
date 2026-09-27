@@ -1,4 +1,4 @@
-621 seen, 440 classified, 440 checked, 9351 check instances
+621 seen, 440 classified, 440 checked, 9353 check instances
      22 generated, held to regeneration by `headwater generate --check`
      23 skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
     320 skipped: the target is a document, which holds no revision for an edge to be verified against
@@ -21,8 +21,8 @@ adoption
     440 instances of facet.value.blank
     440 instances of identifier.pattern.not_met
     440 instances of shelf.placement_is_primary
-    817 instances of relation.target.unresolved
-    594 instances of relation.target.suspect
+    818 instances of relation.target.unresolved
+    595 instances of relation.target.suspect
      92 instances of relation.reciprocity.missing
     451 instances of relation.endpoint.not_permitted
       3 instances of lifecycle.dependency.on_terminal
