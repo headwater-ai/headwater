@@ -18,57 +18,43 @@
 # promotion is one flag on one line, with the diff that added it as its audit
 # trail, rather than a `continue-on-error` that hides which rules block.
 #
-# No action from outside the `actions` organization. `actions/checkout` and
-# `actions/cache` are GitHub's own, and the bar this states is that rather
-# than a count of two: an action from anywhere else runs code nobody here
-# reviews, on every push, with a token in the environment.
+# No action from outside the `actions` organization (HW-PD-0019).
 #
 # Where a job runs, what this file trusts, and what it tests before a merge
 # are stated as a whole in docs/evaluations/two-triggers-one-verdict-how-this-
 # repository-s-ci-decides-where-a-job-runs-and-what-it-trusts.md, with the
-# measurements behind each rule. This header keeps only what an editor of
-# this file must obey. Read that document before changing any of them.
+# measurements behind each rule. Each rule below is decided in the record it
+# cites, which carries the reason and the condition that reopens it. This
+# header keeps only what an editor of this file must obey. Read the record
+# before changing a rule.
 #
 # 1. `runs-on` decides self-hosted eligibility on `github.event_name` and on
-#    nothing else. Never key it on which repository opened a pull request,
-#    or on any field a pull request's author can influence. A fork runs its
-#    own copy of this file, so no condition here defends against one. The
-#    router of rule 6 may send an eligible job to a hosted runner, and it
-#    never makes a job eligible.
+#    nothing else. Never key it on any field a pull request's author can
+#    influence (HW-PD-0013).
 #
-# 2. The real boundary is `fork_pr_contributor_approval:
-#    all_external_contributors`, which holds every outside run for a manual
-#    click. Never approve a run whose diff touches `.github/` without reading
-#    that diff first. No expression in this file substitutes for reading it.
+# 2. Never approve an outside run whose diff touches `.github/` without
+#    reading that diff first. The approval setting is the boundary, and no
+#    expression in this file substitutes for it (HW-PD-0014).
 #
-# 3. A condition may take work away and must never grant it. The job-level
-#    `if:` below is sound only because deleting it gives a fork the run it
-#    already had. Do not replace the `pull_request` trigger with a filter:
-#    a skipped workflow leaves a required check pending forever.
+# 3. A condition may take work away and must never grant it. No filter on
+#    the `pull_request` trigger (HW-PD-0015).
 #
-# 4. Job names stay literals. GitHub does not evaluate an expression in a
-#    job name for a job it skips, and prints the source text instead.
+# 4. Job names stay literals (HW-PD-0015).
 #
-# 5. `engine/target` is never carried between self-hosted jobs. Two
-#    attempts broke `actions/checkout` and then `.githooks/fixtures.sh`.
-#    sccache is what makes a cold target directory cheap.
+# 5. `engine/target` is never carried between self-hosted jobs (HW-PD-0019).
 #
-# 6. The `route` job moves a `push` run to a hosted runner when the
-#    self-hosted pool is full, and it can do nothing else. It outputs one
-#    word, `overflow`, and `runs-on` below compares it with the literal
-#    `'true'`, so the only labels a job can get are `vars.CI_RUNNER` or
-#    `ubuntu-latest`. A failed or skipped `needs:` skips a job by default,
-#    and a skipped job reports success to a required check. Two things stop
-#    that. Its step continues on an error, so an error in the script gives
-#    an empty output. And the `if:` of `engine` and `headwater` opens with
-#    `!cancelled()`, so they run when `route` fails as a job (a runner lost
-#    or a setup that failed), and an empty output is today's routing. Keep
-#    that prefix, and give `route` no `if:` of its own.
+# 6. The `route` job can only move a `push` run to a hosted runner. Keep the
+#    `!cancelled()` prefix on the `if:` of `engine` and `headwater`, and give
+#    `route` no `if:` of its own (HW-PD-0018).
+#
+# 7. `CI_RUNNER` is an opt-in that only a `push` reads, and unset means
+#    `ubuntu-latest` (HW-PD-0016). Concurrency is per ref, and every ref but
+#    `main` cancels a superseded run (HW-PD-0017).
 #
 # `runner.environment` reads `self-hosted` on the container and tells the two
 # runners apart wherever a step differs between them. `--break-system-packages`
 # on each `pip install --user` below is what the self-hosted image's PEP 668
-# Python needs, and pip accepts it where PEP 668 does not apply.
+# Python needs, and pip accepts it where PEP 668 does not apply (HW-PD-0019).
 #
 #   gh variable set CI_RUNNER --body '["self-hosted", "headwater"]'  # opt in, push events only
 #   gh variable delete CI_RUNNER                                    # back to ubuntu-latest
@@ -78,33 +64,17 @@
 
 name: CI
 
-# `branches: ['**']` rather than `[main]`: a feature-branch push is written by
-# someone with commit access and read by nobody yet, which is the case the
-# self-hosted container exists to bound and to make fast. What makes a `push`
-# eligible for self-hosted is that it is a `push`, whichever branch it lands on.
+# `branches: ['**']` rather than `[main]`: a push is eligible for
+# self-hosted whichever branch it lands on (HW-PD-0013).
 on:
   push:
     branches: ['**']
   pull_request:
 
-# On the self-hosted runner a superseded run is not merely wasted compute: a
-# pool of three slots serves this repository (two until 2026-09-23), a run is
-# two jobs, so a run nobody will read holds most of the pool, and every other
-# branch waits behind a verdict about a commit nobody will merge. Three pushes to one branch in
-# ten minutes queued three full runs of both jobs, at three to fourteen
-# minutes each. On a GitHub-hosted runner the queue is not the cost and the
-# minutes are, which is the same reason under a different meter.
-#
-# The group is per ref, so two different pull requests never cancel each
-# other. `github.ref` is `refs/pull/N/merge` on a pull request and
-# `refs/heads/main` on a push, which separates them without a second key.
-#
-# Cancellation is for every ref but `main`. A run on `main` is the only thing
-# that reads the composition of merges, so two merges landing a minute apart
-# must produce two verdicts rather than one; cancelling the first would lose
-# the only check that ever sees that pair together. Key it on the ref and never
-# on the event: keyed on the event, it exempted exactly the push runs that
-# occupy the self-hosted runner.
+# Per ref, so two pull requests never cancel each other. Every ref but
+# `main` cancels a superseded run, and `main` keeps every run because it
+# alone reads the composition of merges. Key it on the ref and never on
+# the event (HW-PD-0017).
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}

@@ -435,6 +435,13 @@ nav:
       - "Each release workflow compares the tag with the version its artifact states and refuses an empty reading": "process/decisions/0010-each-release-workflow-compares-the-tag-with-the-version-its-artifact-states-and-refuses-an-empty-reading.md"
       - "Crates publish in one fixed order that a test holds, and a rerun continues where the last run stopped": "process/decisions/0011-crates-publish-in-one-fixed-order-that-a-test-holds-and-a-rerun-continues-where-the-last-run-stopped.md"
       - "The release workflows are separate from CI, one tag value serves both entry points, and fixtures read them statically": "process/decisions/0012-the-release-workflows-are-separate-from-ci-one-tag-value-serves-both-entry-points-and-fixtures-read-them-statically.md"
+      - "Self-hosted eligibility in CI is decided by the event alone, and a push to any branch is eligible": "process/decisions/0013-self-hosted-eligibility-in-ci-is-decided-by-the-event-alone-and-a-push-to-any-branch-is-eligible.md"
+      - "The boundary against a fork is the approval of outside runs, and a person reads a .github diff before approving one": "process/decisions/0014-the-boundary-against-a-fork-is-the-approval-of-outside-runs-and-a-person-reads-a-github-diff-before-approving-one.md"
+      - "A condition in CI may take work away and never grant it, so one run per commit comes from a job-level if": "process/decisions/0015-a-condition-in-ci-may-take-work-away-and-never-grant-it-so-one-run-per-commit-comes-from-a-job-level-if.md"
+      - "CI_RUNNER is an opt-in that only a push reads, and an unset value falls back to ubuntu-latest": "process/decisions/0016-ci-runner-is-an-opt-in-that-only-a-push-reads-and-an-unset-value-falls-back-to-ubuntu-latest.md"
+      - "CI concurrency is per ref, and every ref but main cancels a superseded run": "process/decisions/0017-ci-concurrency-is-per-ref-and-every-ref-but-main-cancels-a-superseded-run.md"
+      - "A router sends a push run to a hosted runner when the self-hosted pool is full, and it can only take work away": "process/decisions/0018-a-router-sends-a-push-run-to-a-hosted-runner-when-the-self-hosted-pool-is-full-and-it-can-only-take-work-away.md"
+      - "CI runs actions from the actions organization only, and carries no build state between self-hosted jobs": "process/decisions/0019-ci-runs-actions-from-the-actions-organization-only-and-carries-no-build-state-between-self-hosted-jobs.md"
   - "Requirements":
       - "Requirements": "requirements/README.md"
       - "The engine reaches no network at check time": "requirements/0001-the-engine-reaches-no-network-at-check-time.md"

@@ -95,6 +95,20 @@ anchors
     cited by HW-OBL-0173
   code_path `.github/workflows/ci.yml` via source-tree
     cited by HW-OBL-0173
+  code_path `.github/workflows/ci.yml` via source-tree
+    cited by HW-PD-0013
+  code_path `.github/workflows/ci.yml` via source-tree
+    cited by HW-PD-0014
+  code_path `.github/workflows/ci.yml` via source-tree
+    cited by HW-PD-0015
+  code_path `.github/workflows/ci.yml` via source-tree
+    cited by HW-PD-0016
+  code_path `.github/workflows/ci.yml` via source-tree
+    cited by HW-PD-0017
+  code_path `.github/workflows/ci.yml` via source-tree
+    cited by HW-PD-0018
+  code_path `.github/workflows/ci.yml` via source-tree
+    cited by HW-PD-0019
   code_path `.github/workflows/publish-crates.yml` via source-tree
     cited by HW-DR-0088
   code_path `.github/workflows/publish-crates.yml` via source-tree
