@@ -31,11 +31,9 @@
 # Other derived files name a probe by its path or title and state neither its
 # expectation nor its answer: `.headwater/nav.yml`, `.headwater/corpus.json`,
 # `.headwater/capture-cost.jsonl` and the census and graph fixtures under
-# `engine/`. `ablate.sh` leaves them, and a title can hint at a target.
-# `tools/probe/seal.sh` removes each one that names a selected probe (#1229),
-# and `probe-record.sh` refuses a workspace that still holds one. A present-arm
-# rate over a workspace that was not sealed is an upper bound on what the
-# documents alone achieve.
+# `engine/`. They stay in every arm, the seal of #1229 included, and a title
+# can hint at a target. So a present-arm rate over an `opened` probe is an
+# upper bound on what the documents alone achieve.
 instrument:
   - docs/probes
   - docs/probe-runs
@@ -154,15 +152,29 @@ tiers:
 # ablation, and a workspace inside this repository's own checkout, the guard
 # `probe-record.sh` already applies to the same argument.
 #
-# **What the seal removes, in every arm.** The three probe shelves of the
-# instrument, and every file whose bytes name a selected probe by its
-# identifier or its slug: the derived folds under `.headwater/`, the census
-# and graph fixtures under `engine/`, and each obligation and evaluation that
-# names the probe. The 2026-09-17 tombstone session read its own probe file
-# before it answered (#1229). No probe's `examines` target names a probe, so
-# the documents that a probe tests survive the seal.
+# **What the seal removes, in every arm, and why.** The instrument above, and
+# each document under `docs/` whose bytes name a selected probe by its
+# identifier or its slug. On 2026-09-28 those documents were 6 obligations and
+# 3 evaluations, and each of the 9 states a probe's expected value, a recorded
+# verdict or answer of a session, or an `examines` target. So they are answer keys
+# in the same sense as the instrument. The 2026-09-17 tombstone session read
+# its own probe file before it answered (#1229).
+#
+# The seal removes nothing else. Every other file that names a probe does so
+# by path or title and states no answer: the derived folds listed above, the
+# census and graph fixtures, and a comment in the hand-written
+# `.headwater/overlay.yml`. The present arm is meant to test `.headwater/`, so
+# the seal keeps all of it. No probe's `examines` target names a probe, so the
+# documents that a probe tests survive the seal.
+#
+# **What the seal does to the comparison.** It runs in every arm, so the 9
+# records are absent from both sides of every present-versus-absent pair, and
+# the pair still differs only by the tier's `ablation`. A rate is then a rate
+# over the corpus less those records. The `documentation` tier removes all of
+# `docs/` in its absent arm anyway, so the seal changes only its present arm.
 # `sh tools/probe/seal.sh <workspace> <probe-id>...` is the mechanism, and
-# `probe-record.sh` refuses a workspace that still names the probe (exit 9).
+# `probe-record.sh` refuses a workspace that still holds the instrument
+# (exit 8) or a record under `docs/` that names the probe (exit 9).
 # Every transcript on `docs/probe-runs/` was recorded before the seal existed.
 #
 # `session_cost_cents` was a declared number and not a measured one until the

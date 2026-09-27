@@ -1,33 +1,39 @@
 #!/bin/sh
-# Remove every answer key from a probe workspace, in both arms.
+# Remove every answer key from a probe workspace, in every arm.
 #
 # A probe's own document states its expectation, a recorded run states what a
-# session answered, and a derived fold names the probe beside its target. A
-# session that reads any of them reads its answer key. The tombstone session
-# of 2026-09-17 did exactly that: it listed `docs/probes/` in its copy of this
-# corpus, read its own probe file, and then answered (#1229). `ablate.sh`
-# removes the four paths that deliver governance and leaves `docs/` alone, so
-# before this script both arms held every probe.
+# session answered, and a record under `docs/` that names a probe states its
+# expected value, a recorded answer or its target. A session that reads any of
+# them reads its answer key. The tombstone session of 2026-09-17 did exactly
+# that: it listed `docs/probes/` in its copy of this corpus, read its own probe
+# file, and then answered (#1229).
 #
 #     sh tools/probe/seal.sh <workspace> <probe-id>...
 #
 # It deletes, in place:
 #
-# - `docs/probes/`, `docs/probe-runs/` and `docs/probe-results/`;
-# - every file under the workspace whose bytes contain a named probe's
-#   identifier or its slug, the file name the probe has on the shelf. That
-#   reaches the derived folds under `.headwater/`, the census and graph
-#   fixtures under `engine/`, and every obligation and evaluation that names
-#   the probe.
+# - the instrument that `.headwater/probe.yml` declares and `ablate.sh
+#   --instrument` prints: the three probe shelves and `.headwater/export.json`,
+#   which restates each probe's expectation and target;
+# - every document under the workspace's `docs/` whose bytes contain a named
+#   probe's identifier or its slug, the file name the probe has on the shelf.
+#
+# It removes nothing outside `docs/` and the instrument. A file there names a
+# probe by path or title and states no answer: the derived folds
+# `.headwater/nav.yml`, `.headwater/corpus.json` and
+# `.headwater/capture-cost.jsonl`, the census and graph fixtures under
+# `engine/`, and a comment in the hand-written `.headwater/overlay.yml`. The
+# present arm is meant to test `.headwater/`, so it keeps every one of them.
 #
 # No probe's `examines` target names a probe, so the documents a probe tests
-# survive the seal. `.headwater/probe.yml` records what the seal removes, and
-# `probe-record.sh` refuses a workspace that still names the probe (exit 9).
+# survive the seal. `.headwater/probe.yml` records what the seal removes and
+# why, and `probe-record.sh` refuses a workspace that still holds the
+# instrument (exit 8) or a record under `docs/` that names the probe (exit 9).
 #
 # It refuses a workspace inside this checkout (exit 6), the guard `ablate.sh`
-# applies for the same reason. It is idempotent: the slug is read from this
-# checkout's shelf, so a second run over a sealed tree finds the same names and
-# nothing left to delete.
+# applies for the same reason, and an instrument it cannot read (exit 8). It
+# is idempotent: the slug is read from this checkout's shelf, so a second run
+# over a sealed tree finds the same names and nothing left to delete.
 
 set -eu
 
@@ -57,14 +63,22 @@ case "$here" in
         ;;
 esac
 
+# The instrument, read from the checkout's declaration the way the driver's
+# guard reads it, so the two can never disagree about a path.
+instrument=$(sh "$root/tools/probe/ablate.sh" --instrument) || {
+    echo "seal: the instrument of the probe declaration could not be read." >&2
+    exit 8
+}
 removed=0
-for shelf in docs/probes docs/probe-runs docs/probe-results; do
-    if [ -e "$here/$shelf" ]; then
-        rm -rf "${here:?}/$shelf"
+declared=0
+for path in $instrument; do
+    declared=$((declared + 1))
+    if [ -e "$here/$path" ]; then
+        rm -rf "${here:?}/$path"
         removed=$((removed + 1))
     fi
 done
-echo "seal: removed $removed of 3 probe shelves from $here"
+echo "seal: removed $removed of $declared instrument paths from $here"
 
 for probe in "$@"; do
     slug=""
@@ -75,10 +89,13 @@ for probe in "$@"; do
             slug=${slug%.md}
             ;;
     esac
-    if [ -n "$slug" ]; then
-        named=$(grep -rlF -e "$probe" -e "$slug" -- "$here" 2>/dev/null) || named=""
-    else
-        named=$(grep -rlF -e "$probe" -- "$here" 2>/dev/null) || named=""
+    named=""
+    if [ -d "$here/docs" ]; then
+        if [ -n "$slug" ]; then
+            named=$(grep -rlF -e "$probe" -e "$slug" -- "$here/docs" 2>/dev/null) || named=""
+        else
+            named=$(grep -rlF -e "$probe" -- "$here/docs" 2>/dev/null) || named=""
+        fi
     fi
     count=0
     if [ -n "$named" ]; then
@@ -94,5 +111,5 @@ for probe in "$@"; do
         done
         IFS=$old_ifs
     fi
-    echo "seal: removed $count files naming $probe${slug:+ or $slug}"
+    echo "seal: removed $count documents under docs/ naming $probe${slug:+ or $slug}"
 done

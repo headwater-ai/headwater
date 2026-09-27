@@ -94,8 +94,11 @@
 # ## Exit status
 #
 # Every code below is returned by one kind of path and no other, so a caller
-# and a fixture can branch on it. The refusals 2, 4, 6, 8 and 9 run before any
-# check of this host and before any harness call, so they spend nothing.
+# and a fixture can branch on it. The harness's own status never leaves this
+# script: any nonzero one is 10, and the status it had is printed on stderr.
+# The refusals 2, 4, 6, 8 and 9 run before any check of this host and before
+# any harness call, so they spend nothing. When both 8 and 9 apply, 8 answers,
+# because the instrument guard runs first.
 #
 #   0   the transcript was written, or a read-only mode printed its members
 #   1   no temporary file for the plan
@@ -107,9 +110,10 @@
 #   7   the harness subshell could not enter the workspace
 #   8   the workspace still holds the instrument that `ablate.sh --instrument`
 #       names, or that list could not be read
-#   9   a file in the workspace names the probe by its identifier or its slug,
-#       or no `grep` can confirm that none does (`tools/probe/seal.sh`)
-#   any other   the exit status of the harness itself, passed through
+#   9   a document under the workspace's `docs/` names the probe by its
+#       identifier or its slug, or no `grep` can confirm that none does
+#       (`tools/probe/seal.sh` is the remedy)
+#   10  the harness exited nonzero, and its status is on stderr
 
 set -u
 
@@ -211,18 +215,19 @@ if [ "$identity_only" = 0 ] && [ "$provider_only" = 0 ] && [ "$answer_only" = 0 
             exit 8
         fi
     done
-    # The answer key. A workspace that still holds the probe's own document, a
-    # recorded run of it, or any file that names it hands the session its
-    # expectation: the tombstone session of 2026-09-17 read its own probe file
-    # and then answered (#1229). `tools/probe/seal.sh` removes every such file,
-    # and this guard refuses a workspace that was not sealed. It runs before
-    # any harness call, so the case that asserts it spends nothing. It exits 9,
-    # a code no other path of this script returns.
+    # The answer key outside the instrument. A document under `docs/` that
+    # names the probe is a record about it, and each such record on this shelf
+    # states the probe's expected value, a recorded answer or its target
+    # (#1229). `tools/probe/seal.sh` removes those records, and this guard
+    # refuses a workspace that was not sealed. It reads `docs/` alone: a file
+    # outside it names a probe by path or title, as a derived fold or the
+    # overlay does, and states no answer. It runs before any harness call, so
+    # the case that asserts it spends nothing, and it exits 9.
     #
     # The slug is the file name the probe has on this checkout's shelf. A
-    # derived fold such as `.headwater/nav.yml` names the slug and not the
-    # identifier, so both are searched for. A host with no `grep` cannot
-    # confirm the tree is clean, and that is a refusal rather than a pass.
+    # record links the probe by that path and not by the identifier, so both
+    # are searched for. A host with no `grep` cannot confirm the tree is
+    # clean, and that is a refusal rather than a pass.
     command -v grep >/dev/null 2>&1 || {
         echo "probe-record: \`grep\` is not on the path, so nothing can confirm the workspace holds no answer key." >&2
         exit 9
@@ -236,9 +241,9 @@ if [ "$identity_only" = 0 ] && [ "$provider_only" = 0 ] && [ "$answer_only" = 0 
             ;;
     esac
     if [ -n "$slug" ]; then
-        key=$(grep -rlF -e "$probe" -e "$slug" -- "$here" 2>/dev/null) || key=""
+        key=$(grep -rlF -e "$probe" -e "$slug" -- "$here/docs" 2>/dev/null) || key=""
     else
-        key=$(grep -rlF -e "$probe" -- "$here" 2>/dev/null) || key=""
+        key=$(grep -rlF -e "$probe" -- "$here/docs" 2>/dev/null) || key=""
     fi
     if [ -n "$key" ]; then
         first=${key%%
@@ -423,17 +428,27 @@ export HEADWATER_PROBE_SESSION HEADWATER_SHADOW_LOG_DIR
 # the guard above cleared, so nothing it writes moves the `tree` digest the
 # plan fixed; the subshell keeps that `cd` out of this script's own state.
 task=$(cat "$task_file")
+# The subshell cannot return 7 for its own `cd` and let a harness return 7
+# too, so it leaves a marker instead and the status below is the harness's.
+rm -f "$raw.nocd"
 (
-    cd "$here" || exit 7
+    cd "$here" || { : > "$raw.nocd"; exit 1; }
     claude -p --output-format stream-json --verbose \
         ${model:+--model "$model"} \
         "$task"
 ) > "$raw" 2>"$raw.err"
 status=$?
+if [ -e "$raw.nocd" ]; then
+    rm -f "$raw.nocd"
+    echo "probe-record: the session could not enter the workspace at $here." >&2
+    exit 7
+fi
+# A harness status is the harness's own choice and may equal any code above,
+# so every nonzero one leaves as 10, with the status it had on stderr.
 if [ "$status" != 0 ]; then
     echo "probe-record: the harness exited $status." >&2
     tail -5 "$raw.err" >&2
-    exit "$status"
+    exit 10
 fi
 
 
