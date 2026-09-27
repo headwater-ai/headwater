@@ -23,6 +23,12 @@
 # a hook at a corpus that is not this one.
 hw_root=${HEADWATER_HOOK_ROOT:-${CLAUDE_PROJECT_DIR:-$PWD}}
 
+# How many entries of one `governs` pattern the edit-time advisory lists
+# before it prints the pattern and its count alone. The owner ruled on
+# 2026-09-25, on #1093: "list up to about 20 files, then print the pattern and
+# the count, so the editor sees the size without a long list to read."
+hw_governs_listed_at_most=20
+
 # The built engine, or empty when there is none.
 #
 # Two profiles build one. `release` is what CI builds and what a release
@@ -317,14 +323,67 @@ hw_ungoverned_in_scope() {
 # An outbound entry counts only where its relation is `governs`, and every
 # inbound entry counts, whatever its relation. `related` of a heavily cited
 # specification part holds twenty entries or more, and the list names each.
+#
+# A `governs` pattern is named by the entries it matched, which the engine
+# writes as `reach.members[i].paths`, so the hook never matches a glob itself
+# (HW-DR-0074 gives a path one matcher). A member whose only entry is its own
+# pattern is a literal and prints as one line. Any other member prints the
+# pattern and its count, then each entry under it, up to
+# `hw_governs_listed_at_most`. Past that bound it prints the pattern and the
+# count and no entry. The heading count is the number of distinct entries the
+# document's patterns reach, a pattern past the bound counting every entry it
+# matched and an entry two edges reach counting once, so the count is the
+# size the editor has to check and not the number of lines. An edge with no
+# `reach`, an anchor that binds nothing or a document target, prints its
+# `targets` as written.
 hw_governed_by_document() {
     _engine=$(hw_engine) || return 1
     _explain=$("$_engine" explain --json --root "$hw_root" "$1" 2>/dev/null) || return 1
     _total=$(hw_count "$_explain" related) || return 1
-    _governs= _governs_n=0 _cites= _cites_n=0 _at=0
+    _governs= _governs_n=0 _summed=0 _cites= _cites_n=0 _at=0
     while [ "$_at" -lt "$_total" ]; do
         _relation=$(hw_field "$_explain" related "$_at" relation) || _relation=
         _inbound=$(hw_field "$_explain" related "$_at" inbound) || _inbound=
+        _members=0
+        if [ "$_inbound:$_relation" = false:governs ]; then
+            _members=$(hw_count "$_explain" related "$_at" reach members) || _members=0
+        fi
+        if [ "$_members" -gt 0 ]; then
+            _m=0
+            while [ "$_m" -lt "$_members" ]; do
+                _pattern=$(hw_field "$_explain" related "$_at" reach members "$_m" pattern) || _pattern=
+                _matched=$(hw_field "$_explain" related "$_at" reach members "$_m" matched) || _matched=0
+                _m=$((_m + 1))
+                [ -n "$_pattern" ] || continue
+                _first=
+                if [ "$_matched" -eq 1 ]; then
+                    _first=$(hw_field "$_explain" related "$_at" reach members "$((_m - 1))" paths 0) || _first=
+                fi
+                _files=files
+                [ "$_matched" -eq 1 ] && _files=file
+                if [ "$_matched" -eq 1 ] && [ "$_first" = "$_pattern" ]; then
+                    _governs="$_governs
+  $_pattern"
+                elif [ "$_matched" -le "$hw_governs_listed_at_most" ]; then
+                    _governs="$_governs
+  $_pattern ($_matched $_files):"
+                    _p=0
+                    while [ "$_p" -lt "$_matched" ]; do
+                        _path=$(hw_field "$_explain" related "$_at" reach members "$((_m - 1))" paths "$_p") || _path=
+                        _p=$((_p + 1))
+                        [ -n "$_path" ] || continue
+                        _governs="$_governs
+    $_path"
+                    done
+                else
+                    _governs="$_governs
+  $_pattern ($_matched $_files, not listed past $hw_governs_listed_at_most)"
+                fi
+                _summed=$((_summed + _matched))
+            done
+            _at=$((_at + 1))
+            continue
+        fi
         # `targets` holds one member per target as written. `target` joins
         # them with `, `, and a member may hold a comma itself (#1092).
         _count=$(hw_count "$_explain" related "$_at" targets) || _count=0
@@ -346,6 +405,14 @@ hw_governed_by_document() {
         done
         _at=$((_at + 1))
     done
+    # Two edges can reach one entry, a literal page and a glob over its
+    # directory, so the entries a pattern reached are counted as the engine's
+    # union, `governed_entries`, and never as the sum of `matched` (#1093).
+    # The sum stands in only where an older engine writes no union.
+    if [ "$_summed" -gt 0 ]; then
+        _union=$(hw_field "$_explain" governed_entries) || _union=$_summed
+        _governs_n=$((_governs_n + _union))
+    fi
     [ "$_governs_n" -gt 0 ] || [ "$_cites_n" -gt 0 ] || return 1
     if [ "$_governs_n" -gt 0 ]; then
         printf 'It governs these code paths (%s):%s\n' "$_governs_n" "$_governs"
