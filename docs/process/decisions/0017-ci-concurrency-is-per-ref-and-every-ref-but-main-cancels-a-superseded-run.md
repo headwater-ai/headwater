@@ -14,7 +14,7 @@ provenance:
 relations:
   governs:
     - to: .github/workflows/ci.yml
-      verified_revision: sha256:a4195cba139ce6094882dc4531fe20ed780aef3eabfc987a9e906606e46635ee
+      verified_revision: sha256:f4b3c176cedc9d969614ad7755edc324f1dc78423d8b55162ab05beb8595f57e
 ---
 
 # CI concurrency is per ref, and every ref but main cancels a superseded run
@@ -31,7 +31,7 @@ A pool of three self-hosted slots serves this repository, two until 2026-09-23. 
 
 **Cancel on every ref but `main`.** `cancel-in-progress` is true for every ref except `refs/heads/main`. A newer run on a branch cancels the older run, because nobody merges the superseded commit.
 
-**`main` keeps its runs.** A run on `main` is the only check that reads the composition of merges. Two merges that land a minute apart need two verdicts.
+**`main` keeps its runs.** A run on `main` is the last check that reads the composition of merges. Since [HW-PD-0020](0020-merges-go-through-the-github-merge-queue-one-squash-commit-per-pull-request.md), the merge queue reads it first, on the group tip. Two merges that land a minute apart still need two verdicts.
 
 **Key on the ref and never on the event.** A key on the event once exempted exactly the push runs that hold the self-hosted runner.
 

@@ -44,7 +44,17 @@ hw_root=${HEADWATER_HOOK_ROOT:-${CLAUDE_PROJECT_DIR:-$PWD}}
 # carry different times on any file system this runs on, and a tie means the two
 # binaries are equally current. It is stated because a reader who has to know
 # which one ran should not have to derive it from an operator.
+#
+# A hook that has already found its engine can pin it in `hw_engine_pin`, and
+# every read below then uses that binary whatever `hw_root` names afterwards.
+# `intent.sh` does, because it corrects `hw_root` to the payload's `cwd` after
+# the engine is found, and a worktree with no build of its own then made every
+# later read fail and the hook exit before its shadow-log line (#917).
 hw_engine() {
+    if [ -n "${hw_engine_pin:-}" ] && [ -x "$hw_engine_pin" ]; then
+        printf '%s' "$hw_engine_pin"
+        return 0
+    fi
     _release="$hw_root/engine/target/release/headwater"
     _dev="$hw_root/engine/target/dev-release/headwater"
     engine=
@@ -106,7 +116,8 @@ hw_field() {
 # hook at a corpus that is not this one on purpose, and a session's own `cwd`
 # is not grounds to override what a test asked for.
 #
-# Empty input, no `cwd` member, no engine to read it with: this returns
+# Empty input, no `cwd` member, no engine to read it with, a `cwd` in no work
+# tree, a work tree with no taxonomy lock: this returns
 # `hw_root` unchanged, the same fail-open answer every function in this file
 # gives. That is the wrong checkout in exactly the case this function exists
 # to fix, and the checkout every caller already had before that case was
@@ -123,10 +134,19 @@ hw_resolve_root() {
     # The harness moves `cwd` whenever a `cd` persists, so a session doing
     # engine work hands a hook `engine/` or deeper, where no
     # `.headwater/taxonomy.lock` sits and every corpus verb fails (#917). The
-    # top of the work tree that holds `cwd` is the repository, and a `cwd`
-    # outside any work tree is returned as it came.
-    _top=$(git -C "$_cwd" rev-parse --show-toplevel 2>/dev/null) && [ -n "$_top" ] && _cwd=$_top
-    printf '%s' "$_cwd"
+    # top of the work tree that holds `cwd` is the repository.
+    #
+    # A `cwd` outside every work tree, or a work tree with no taxonomy lock,
+    # names no corpus, so this returns `hw_root` for it. The parent session of
+    # every `/next-run` works from a run directory under the git common dir,
+    # where `--show-toplevel` fails. Until #917 this returned that directory as
+    # it came, `route` found no lock there, and the hook exited with no output
+    # and no shadow-log line.
+    _top=$(git -C "$_cwd" rev-parse --show-toplevel 2>/dev/null) && [ -n "$_top" ] && [ -f "$_top/.headwater/taxonomy.lock" ] || {
+        printf '%s' "$hw_root"
+        return 0
+    }
+    printf '%s' "$_top"
 }
 
 # How many elements the array or the object at that path holds.

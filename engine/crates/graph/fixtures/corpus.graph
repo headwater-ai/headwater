@@ -109,6 +109,8 @@ anchors
     cited by HW-PD-0018
   code_path `.github/workflows/ci.yml` via source-tree
     cited by HW-PD-0019
+  code_path `.github/workflows/ci.yml` via source-tree
+    cited by HW-PD-0020
   code_path `.github/workflows/publish-crates.yml` via source-tree
     cited by HW-DR-0088
   code_path `.github/workflows/publish-crates.yml` via source-tree
@@ -525,6 +527,10 @@ anchors
     cited by HW-EVAL-one-clone-many-agents-how-this-repository-isolates-the-sessions-that-build-it
   code_path `tools/repo/retire-worktree.sh` via source-tree
     cited by HW-HOW-diagnose-an-isolation-failure
+  code_path `tools/run/queue-done-fixtures.sh` via source-tree
+    cited by HW-PD-0020
+  code_path `tools/run/queue-done.sh` via source-tree
+    cited by HW-PD-0020
   code_path `tools/run/run-census.sh` via source-tree
     cited by HW-PD-0003
   code_path `tools/run/run-census.sh` via source-tree

@@ -292,7 +292,27 @@ Two relations in the resolved taxonomy have the shape this needs. `governs` runs
 
 So this taxonomy has the vocabulary for the claim and no obligation to state it. This document already records the near case. The unresolved link at `packages/@n8n/expression-runtime/ARCHITECTURE.md:426` reaches `headwater check` as [a fact in the graph section, and from 4.3.0 as a finding too](#the-broken-link-that-no-rule-reported-until-430). The `.agents/specs/` claim does not reach the engine at all, and typing the corpus does not change that. The run in the next section types every file of `.agents/skills/` and reports 136 findings, and not one of them is this claim. A stated practice that no artifact backs is invisible to a check whether or not the document carrying it has a kind.
 
-Whether a rule should report a stated practice that no artifact backs is [#496](https://github.com/headwater-ai/headwater/issues/496), and this section decides nothing about it.
+**The owner ruled that this gap is a sweep pattern and not a check rule.** The [ruling on #496](https://github.com/headwater-ai/headwater/issues/496#issuecomment-5770898999) is dated 2026-09-22. Its reason is that to tell an empty directory from one that nobody meant to create is a judgment. The [headwater-sweep skill](https://github.com/headwater-ai/headwater/blob/main/.claude/skills/headwater-sweep/SKILL.md) carries the pattern as a hand pass, with the command that collects the candidates. Over the fixture copy of this corpus, `docs/taxonomies/diataxis-site/fixtures/n8n/corpus/`, the command prints four lines. Three are `spec-driven-development/SKILL.md` at lines 23, 35 and 81, which are lines 8, 20 and 66 at the pin. The fourth is `.agents/plans/` in `create-pr/SKILL.md`, and that skill reads the directory only "when present". So the pattern finds the claim above, and a reader then judges the one line that is not a claim.
+
+**The pattern, run once over this repository.** The run was on 2026-09-27, at `9851bf6e` on `main`, with the command in the skill. It read 553 Markdown files, which are every tracked `*.md` file outside `docs/reviews/` and outside any `fixtures/` directory. It printed 92 mentions of 45 distinct paths. Each mention was read in its line and judged, and the judgment of a path held for every mention of it:
+
+| judgment | mentions | the paths, with the mentions of each |
+|---|---|---|
+| a build output | 13 | `engine/target` 8, `engine/target/` 2, `engine/target/release/headwater` 3 |
+| a checkout or a cache that a session or a verb writes | 15 | `.claude/worktrees/` 6, `.headwater/cache/checks` 4, `.headwater/cache/` 2, `.headwater/cache/.gitignore` 1, `.headwater/cache/embeddings/` 1, `.headwater/models` 1 |
+| a snapshot, an import or a site directory that a run writes | 12 | `.headwater/observations.yml` 5, `.headwater/site-build` 3, `.headwater/site-deploy` 3, `.headwater/imports/` 1 |
+| a path in Sysl | 12 | `docs/ideas/root.md` 7, `docs/ideas/` 5 |
+| a path in n8n | 7 | `docs/generated/`, `docs/db.md`, `.claude/specs/`, `.claude/plugins/n8n/skills/`, `.github/pull_request_template.md`, `.github/pull_request_title_conventions.md`, `.github/scripts/quality/check-cubic-config.mjs` |
+| a path in an adopter's repository | 3 | `.github/workflows/headwater-check.yml`, `docs/decisions/0001-store-attempts-in-postgres.md`, `docs/decisions/0002-deliver-at-least-once.md` |
+| a path in a fixture corpus, or in another harness | 4 | `docs/specifications/beacon-overview.md` 2, `docs/evaluations/queue-durability.md` 1, `.github/skills/` 1 |
+| an example, or an alternative that a record refuses | 12 | `docs/drafts/` 2, `.claude/hooks-disabled/write.sh` 3, `.claude/hooks-disabled` 1, `docs/corpus.json` 1, `mkdocs/build.sh` 1, `site/docs` 1, `docs/INDEX.md` 1, `.headwater/packages/acme-my-taxonomy` 1, `engine/crates/check/src/runner.rs` 1 |
+| a retired or past path, and the text says that it is gone | 10 | `tools/ste-lint.py` 6, `docs/decisions/0049` 1, `docs/obligations/a-governs-edge-reaches-the-path-it-names-and-nothing-under-it.md` 1, `docs/spec/16-a-second-part-at-sixteen.md` 1, `.claude/notes/cost-attribution-handoff.md` 1 |
+| a practice that exists, at a path that moved | 2 | `engine/crates/census/src/pattern.rs` 1, `tools/id-store-fixtures.sh` 1 |
+| a claim about this tree that nothing backs | 2 | `docs/RFCS/` 2 |
+
+**One claim in this repository has no path behind it, in two copies.** The candidate backlog of [the library index](../taxonomies/README.md#the-candidate-backlog-and-what-became-of-it) disqualifies the proposal-process tradition because "a `docs/RFCS/` corpus already in this repository" reads as a decision record. This tree has never held that path. [#7](https://github.com/headwater-ai/headwater/issues/7), where the sentence came from, names the corpus of #489, which is in another repository. The package copy of the same page carries the same sentence. Two further lines cite a path that moved while the practice stayed. [HW-OBL-0060](../obligations/0060-the-most-specific-shelf-wins-names-no-order.md) cites the pattern order in the census crate, which moved to `engine/crates/meta/src/pattern.rs` in `88fd3ef4`. [HW-OBL-0201](../obligations/0201-no-coverage-or-mutation-measurement-has-ever-been-taken-over-the-engine-s-test-suite.md) cites a fixture suite that is now `tools/repo/id-store-fixtures.sh`. The three went to the intake file of the run that recorded this, and this change repairs none of them.
+
+**What the command does not see.** It reads a path only inside backticks, only with a slash, and only where the tree tracks the first segment. So it misses a command in one code span, such as `ls` with its directory, and a path with no directory at all. It asks git and not the disk. So it counts a directory that a build writes as absent, and its result does not depend on what the host has built. This section adds mentions of absent paths itself, so a run at a later commit prints more than 92 lines.
 
 ### What was enumerated here, and what was not
 
@@ -445,7 +465,7 @@ The fixes stand on the branch [`fix-agents-doc-defects`](https://github.com/head
 | 2 | [`667f926`](https://github.com/headwater-ai/n8n/commit/667f926ca88651d9ef6f38bbfb2e8d2ba2b182f4) | the claim becomes conditional, and the skill says what to do when the directory is absent | none: no admitted entry types `.agents/skills/`, so no run reads the file |
 | 3 | [`3d450a8`](https://github.com/headwater-ai/n8n/commit/3d450a89dea6fa917d9778665550a0e094313f98) | the sentence names DB migrations as the third agent | none: `headwater sweep` carried it, and a sweep is a proposal rather than a verdict |
 
-**The rule column reads `none` three times, and that is the result rather than a gap in the table.** Each fix here was found by a person reading, by a graph fact that no rule consumes, or by a sampler. Whether an unresolved prose link should become a finding is one open obligation of this repository. Whether a stated practice that no artifact backs should become a rule is [#496](https://github.com/headwater-ai/headwater/issues/496), and defect 2 is one instance of it.
+**The rule column reads `none` three times, and that is the result rather than a gap in the table.** Each fix here was found by a person reading, by a graph fact that no rule consumes, or by a sampler. Whether an unresolved prose link should become a finding is one open obligation of this repository. A stated practice that no artifact backs is not a rule, by the owner's ruling on [#496](https://github.com/headwater-ai/headwater/issues/496). It is [a hand pass beside the sweep](#what-this-taxonomy-would-report-and-what-it-does-not), and defect 2 is one instance of it.
 
 **No fixture copy was touched.** Two of the three fixed files are also held here as fixture copies. [The typing note above](#what-was-typed-and-as-what) claims byte identity with the pin for those copies. Editing a copy would make that claim false and no check would report it. The fixes live on the fork and nowhere else.
 
@@ -471,7 +491,7 @@ Sending anything upstream to n8n, which is [#729](https://github.com/headwater-a
 
 Fixing the 33 findings that the two runs reported. All 33 are artifacts of this library's vocabulary rather than defects in n8n's writing, so there is nothing there for n8n to accept.
 
-Whether the gap between a stated practice and an absent artifact deserves a check rule is [#496](https://github.com/headwater-ai/headwater/issues/496). [One instance of that gap is reported above](#what-this-taxonomy-would-report-and-what-it-does-not), and the rule question stays open.
+A check rule for the gap between a stated practice and an absent artifact. The owner ruled on [#496](https://github.com/headwater-ai/headwater/issues/496) that the gap is a sweep pattern. [The section that reports its instance](#what-this-taxonomy-would-report-and-what-it-does-not) records the ruling and one run of the pattern over this repository.
 
 A census of every architecture document in the monorepo. Four is the sample, and the fourth Done-when bullet of [#492](https://github.com/headwater-ai/headwater/issues/492) asks for one document of this kind at minimum.
 
