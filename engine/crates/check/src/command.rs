@@ -449,4 +449,75 @@ mod tests {
             pairs(&[(0, "echo"), (0, "npm")])
         );
     }
+
+    /// An open `$'…'` carries into the next line like any other quote.
+    #[test]
+    fn an_ansi_c_quote_open_at_the_end_of_a_line_joins_the_next_line() {
+        let block = "printf $'a\nheadwater check' && echo RAN && printf 'b'\n";
+        assert_eq!(
+            names(block, false),
+            pairs(&[(0, "printf"), (1, "echo"), (1, "printf")])
+        );
+    }
+
+    /// A `#` after `)`, `<` or `>` starts a word, so it opens a comment and an
+    /// apostrophe in it opens no quote.
+    #[test]
+    fn a_hash_after_a_closing_parenthesis_or_a_redirect_opens_a_comment() {
+        assert_eq!(
+            names("(echo a)#'\nnpm install\n", false),
+            pairs(&[(0, "echo"), (1, "npm")])
+        );
+        assert_eq!(
+            names("echo hi >#it's\nnpm install\n", false),
+            pairs(&[(0, "echo"), (1, "npm")])
+        );
+    }
+
+    /// A comment straight after an operator is no program.
+    #[test]
+    fn a_comment_after_an_operator_is_not_a_program() {
+        assert_eq!(
+            names("echo a &&# it's\nnpm install\n", false),
+            pairs(&[(0, "echo"), (1, "npm")])
+        );
+    }
+
+    /// A quote inside backticks belongs to the command that the backticks
+    /// run, and it opens no quote that joins the next line.
+    #[test]
+    fn a_quote_inside_backticks_opens_nothing() {
+        assert_eq!(
+            names("echo `echo it's` && npm install\nnpm ci\n", false),
+            pairs(&[(0, "echo"), (0, "npm"), (1, "npm")])
+        );
+    }
+
+    /// A `<<` inside quotes or in a comment opens no here-document, so the
+    /// next line is still read.
+    #[test]
+    fn a_heredoc_opener_in_quotes_or_a_comment_opens_nothing() {
+        assert_eq!(
+            names("printf '<<EOF' && echo hi\nnpm install\n", false),
+            pairs(&[(0, "printf"), (0, "echo"), (1, "npm")])
+        );
+        assert_eq!(
+            names("printf 'a <<EOF\nb' && echo x\nnpm install\n", false),
+            pairs(&[(0, "printf"), (1, "echo"), (2, "npm")])
+        );
+        assert_eq!(
+            names("echo hi # see <<EOF\nnpm install\n", false),
+            pairs(&[(0, "echo"), (1, "npm")])
+        );
+    }
+
+    /// An apostrophe in a here-document body is not read, and the line after
+    /// the end word is.
+    #[test]
+    fn an_apostrophe_in_a_heredoc_body_hides_nothing() {
+        assert_eq!(
+            names("cat <<'EOF'\ndon't\nEOF\nnpm install && echo RAN\n", false),
+            pairs(&[(0, "cat"), (3, "npm"), (3, "echo")])
+        );
+    }
 }
