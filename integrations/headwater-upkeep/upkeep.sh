@@ -47,6 +47,9 @@ mkdir -p "$work/change" "$work/route" "$work/route-base" "$work/base"
 #   changed.txt  every path the change leaves on the tree
 #   gone.tsv     D<tab>path for a deletion, R<tab>old<tab>new for a rename
 ( cd "$root" && git diff --name-status -M --relative "$base" ) >"$work/name-status.txt"
+# The hunks, with no context lines, so the report can carry a base finding's
+# line to where it stands now. The same `-M` pairs a rename with its hunks.
+( cd "$root" && git diff -U0 -M --relative --no-color --no-ext-diff "$base" ) >"$work/diff.patch"
 : >"$work/changed.txt"
 : >"$work/gone.tsv"
 while IFS="$(printf '\t')" read -r status first second; do

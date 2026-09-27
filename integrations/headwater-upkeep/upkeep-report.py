@@ -17,9 +17,13 @@
 #
 # WHICH FINDINGS ARE LISTED. `check --change` reports over the whole corpus,
 # so a corpus with old debt would bury the change under it. A finding is
-# listed when the change introduced it, wherever it lands: it is in this
-# run and not in the run over the base tree, compared by rule, path and
-# message. A deleted file breaks an edge on the document that governed it,
+# listed when the change introduced it, wherever it lands: no finding of the
+# run over the base tree pairs with it. A base finding pairs with a current
+# one when rule, path and message agree and its line, carried through the
+# change's diff hunks, is the current line. A line inside a hunk the change
+# deleted or rewrote maps to nothing, so a finding there is new. Same-key
+# findings are common (one rule, one message, many sentences), so the line
+# is what tells the one the change added from the one that stood. A deleted file breaks an edge on the document that governed it,
 # and a deleted document breaks an edge on a document one relation away, and
 # both are new findings. A finding that stood before the change is listed
 # only when it is on a document the change reaches, and counted otherwise. A
@@ -31,10 +35,11 @@
 #
 # Usage: upkeep-report.py <work-dir> <report-path>
 # <work-dir> holds what `upkeep.sh` wrote: changed.txt, gone.tsv,
-# check.json, check.exit, base-check.json, routes.tsv, route/<n>.json,
+# check.json, check.exit, base-check.json, diff.patch, routes.tsv, route/<n>.json,
 # routes-base.tsv and route-base/<n>.json.
 import json
 import os
+import re
 import sys
 from collections import Counter, defaultdict
 
@@ -111,17 +116,92 @@ def pointer_lines(pointers):
     return out
 
 
+HUNK = re.compile(r"^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@")
+
+
+def parse_diff(text):
+    """Read `git diff -U0 -M` into {old path: (new path or None, hunks)}.
+    Each hunk is (old start, old count, new start, new count). A file the
+    diff does not name did not change, and maps to itself line for line."""
+    files = {}
+    old = new = None
+    hunks = None
+    for line in text.splitlines():
+        if line.startswith("diff --git "):
+            old = new = None
+            hunks = []
+        elif hunks is None:
+            continue
+        elif line.startswith("rename from "):
+            old = line[len("rename from "):]
+        elif line.startswith("rename to "):
+            new = line[len("rename to "):]
+        elif line.startswith("--- "):
+            side = line[4:]
+            old = None if side == "/dev/null" else side[2:] if side.startswith("a/") else side
+        elif line.startswith("+++ "):
+            side = line[4:]
+            new = None if side == "/dev/null" else side[2:] if side.startswith("b/") else side
+            if old is not None:
+                files[old] = (new, hunks)
+        else:
+            m = HUNK.match(line)
+            if m:
+                a, b, c, d = m.groups()
+                hunks.append((int(a), 1 if b is None else int(b), int(c), 1 if d is None else int(d)))
+        # A pure rename carries no `---`/`+++` pair, so record it on the
+        # `rename to` line as well; a later `+++` overwrites it with hunks.
+        if line.startswith("rename to ") and old is not None:
+            files.setdefault(old, (new, hunks))
+    return files
+
+
+def map_line(path, line, diff):
+    """Carry a base finding's (path, line) to where it stands after the
+    change, or return None when the change deleted the file or deleted or
+    rewrote that line. A finding with no line number keeps it."""
+    if path not in diff:
+        return path, line
+    new_path, hunks = diff[path]
+    if new_path is None:
+        return None
+    if not isinstance(line, int) or line <= 0:
+        return new_path, line
+    shift = 0
+    for a, b, c, d in hunks:
+        if b == 0:
+            # An insertion after old line `a`: it moves every line below it.
+            if line > a:
+                shift += d
+        elif a <= line < a + b:
+            return None
+        elif line >= a + b:
+            shift += d - b
+    return new_path, line + shift
+
+
 def finding_key(f):
     return (f.get("rule"), f.get("path"), f.get("message"))
 
 
-def split_findings(findings, base_findings, reached):
+def split_findings(findings, base_findings, reached, diff):
     """Return (listed, elsewhere, escaped). `listed` holds (finding, is_new)
-    pairs. With no base run, nothing can be called new."""
-    base = Counter(finding_key(f) for f in base_findings or [])
+    pairs. With no base run, nothing can be called new.
+
+    A current finding is old when a base finding has the same rule, path and
+    message and its line, carried through the diff, is the current line. Each
+    base finding pairs once. A current finding that pairs with nothing is
+    new."""
+    base = Counter()
+    for f in base_findings or []:
+        moved = map_line(f.get("path"), f.get("line"), diff)
+        if moved is None:
+            continue
+        rule, _, message = finding_key(f)
+        base[(rule, moved[0], message, moved[1])] += 1
     listed, elsewhere, escaped = [], [], []
     for f in findings:
-        key = finding_key(f)
+        key = finding_key(f) + (f.get("line"),)
         is_new = base_findings is not None and base[key] == 0
         if base[key] > 0:
             base[key] -= 1
@@ -175,7 +255,8 @@ def main():
 
     findings = (check or {}).get("findings") or []
     base_findings = None if base_check is None else (base_check.get("findings") or [])
-    listed, elsewhere, escaped = split_findings(findings, base_findings, reached)
+    diff = parse_diff("\n".join(read_lines(os.path.join(work, "diff.patch"))))
+    listed, elsewhere, escaped = split_findings(findings, base_findings, reached, diff)
     suspect = [(f, n) for f, n in listed if f.get("rule") in SUSPECT_RULES]
     owed = [(f, n) for f, n in listed if f.get("rule") not in SUSPECT_RULES]
 
