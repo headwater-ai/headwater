@@ -414,6 +414,29 @@ mod tests {
         assert_eq!(texts("A shelf collects them, e.g. a decision.\n").len(), 1);
     }
 
+    /// A dotted abbreviation before a name (#1185). `U.S. iPhone` split through
+    /// the lower-case name guard, and `U.S. Federal` through the capital that
+    /// opens a sentence. The list is read before either opener, so one entry
+    /// holds both shapes. One line for each dotted entry of the list.
+    #[test]
+    fn a_dotted_abbreviation_ends_no_sentence_before_a_name() {
+        assert_eq!(texts("The U.S. iPhone ships it.\n").len(), 1);
+        assert_eq!(texts("The U.S. Federal court read it.\n").len(), 1);
+        assert_eq!(texts("The U.K. Parliament read it.\n").len(), 1);
+        assert_eq!(texts("It opens at 9 a.m. Monday.\n").len(), 1);
+        assert_eq!(texts("It closes at 5 p.m. Friday.\n").len(), 1);
+        assert_eq!(texts("She holds a Ph.D. in it.\n").len(), 1);
+        assert_eq!(texts("She holds a Ph.D. From Leeds.\n").len(), 1);
+    }
+
+    /// The cost of the dotted entries, held so that nobody reads it as a bug:
+    /// the list suppresses without condition, so a real sentence end on one of
+    /// them joins with the next sentence.
+    #[test]
+    fn a_sentence_that_ends_on_a_dotted_abbreviation_joins_the_next() {
+        assert_eq!(texts("It is sold in the U.S. The next one is not.\n").len(), 1);
+    }
+
     /// The guard that catches every abbreviation the list misses: a sentence of
     /// this corpus never opens in lower case.
     #[test]
