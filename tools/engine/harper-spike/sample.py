@@ -4,10 +4,11 @@
 
     python3 sample.py <check.json> <root> > sample.txt
 
-For each of five shelves it takes, in path order, the first three documents
-that carry a `language.controlled.not_met` finding and the first three that
-carry none. Thirty documents, fifteen with a language finding. The rule is
-fixed so that a rerun on the same corpus picks the same files.
+For each of five shelves it takes, in path order, up to three documents that
+carry a `language.controlled.not_met` finding and up to three that carry none.
+On the corpus of 2026-09-27 that is 25 documents, 10 of them with a language
+finding: the evaluations shelf had one flagged document and how-to had none.
+The rule is fixed so that a rerun on the same corpus picks the same files.
 """
 import json
 import os
