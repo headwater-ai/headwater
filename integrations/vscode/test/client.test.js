@@ -10,7 +10,7 @@
 //
 // Every other test drives `test/fake-server.js`, which replays a session that
 // the real server recorded under `test/fixtures/` and writes down what it was
-// asked. Run the suite with `node --test integrations/vscode/test/`.
+// asked. Run the suite with `node --test integrations/vscode/test/client.test.js`.
 
 'use strict';
 
