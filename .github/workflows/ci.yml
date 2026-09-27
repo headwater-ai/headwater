@@ -1588,7 +1588,9 @@ jobs:
         # the guide's table of release workflows with the `on:` block of every
         # workflow in this directory, in both directions: a workflow that a tag
         # or a person alone starts must have a row, and every row must match a
-        # trigger on disk. It builds nothing and opens no socket.
+        # trigger on disk. It reads the workflows with PyYAML, which the
+        # MkDocs install earlier in this job supplies, so every shape of `on:`
+        # that GitHub runs is read. It builds nothing and opens no socket.
         run: sh tools/repo/release-guide-fixtures.sh
       - name: Every declared export profile is what this corpus produces
         # `export_plan()` is a separate code path from `plan()`: it re-filters

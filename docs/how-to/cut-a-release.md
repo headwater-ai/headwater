@@ -56,7 +56,8 @@ Before an engine release, make sure that these conditions are true:
         git push origin v<version>
 
     The tag starts `release.yml` and `publish-crates.yml`. Each one refuses a tag that does not agree with `[workspace.package] version`. `release.yml` compares the tag with what the binary prints. `publish-crates.yml` compares the tag with what `cargo metadata` reads.
-8. **Move the install text after the tag exists.** Search the tree for the previous tag, and change each install line to the new tag. Pull request #1194 is the model, and it changed seven files. Do this step last. Group 4 of `tools/repo/readme-fixtures.sh` requires that the tag which `README.md` pins resolves on the remote, or that the page says the tag is not cut. So a change that pins the new tag cannot merge before the tag exists. [DEVELOPING.md](../../DEVELOPING.md) states that exclusive or.
+8. **Wait until both workflows are complete, and confirm what they shipped.** Do the first two checks under [How to know it worked](#how-to-know-it-worked): the release has every archive, and crates.io has every crate at the new version. If a check fails, go to [When a step fails](#when-a-step-fails) and do not continue. For v0.3.0 the first publish attempt stopped 15 minutes after the tag, and the crates were complete 6 minutes after that.
+9. **Move the install text last.** Change each install line from the previous tag to the new tag. Pull request #1194 is the model, and it changed seven files. Do not change a line that records history, such as an older entry in `site/changelog/index.html`. Group 4 of `tools/repo/readme-fixtures.sh` requires that the tag which `README.md` pins resolves on the remote, or that the page says the tag is not cut. [DEVELOPING.md](../../DEVELOPING.md) states that exclusive or. That group reads the tag only. It does not read the archives or the crates, so a green CI run on this change is not the confirmation of step 8. If you merge this change before step 8, the download line in `README.md` can give a 404, and `cargo install headwater-cli` can install an older version.
 
 The asset names follow the pattern `headwater-<tag>-<target>.tar.gz`, and each archive has a `.sha256` file beside it. The matrix in `release.yml` is the list of targets. Group 7 of `tools/repo/readme-fixtures.sh` holds that list against `README.md`, so this page does not copy it.
 
@@ -67,7 +68,8 @@ The four-step process in the header of `.headwater/packages/headwater-standard/p
 1. **Change the version in the source.** Set `version` in `taxonomy-source/headwater-standard/package.yml`.
 2. **Publish, pin, vendor and resolve.** Do the four steps in the order that the header of `.headwater/packages/headwater-standard/package.yml` gives. Commit the result on a branch and merge it.
 3. **Tag the merged commit and push.** Use the tag `taxonomy/headwater-standard/v<version>`. The workflow publishes again at the tagged commit. It refuses a tag whose version is not the version that `publish` wrote.
-4. **Move the pinned taxonomy tag and digest.** `README.md` and `docs/tutorials/your-first-governed-corpus.md` pin one taxonomy tag and its digest. Change both after the tag exists. Group 6 of `tools/repo/readme-fixtures.sh` reads the digest out of the tree of the pinned tag, so a digest from a different tag fails.
+4. **Confirm the artifact.** Do the last check under [How to know it worked](#how-to-know-it-worked): the release has the zip, and its notes state the digest.
+5. **Move the pinned taxonomy tag and digest last.** `README.md` and `docs/tutorials/your-first-governed-corpus.md` pin one taxonomy tag and its digest. Change both only after step 4. Group 6 of `tools/repo/readme-fixtures.sh` reads the digest out of the tree of the pinned tag, so a digest from a different tag fails.
 
 ### How the two releases depend on each other
 
@@ -87,4 +89,6 @@ The workflows do not depend on each other, and a taxonomy release needs no engin
 - For each crate in the `order` variable of `publish-crates.yml`, `https://crates.io/api/v1/crates/<name>` reports the new version as `max_version`. The crates.io API refuses a request that has no `User-Agent` header, so send one.
 - `site/changelog/index.html` has an entry for the new version.
 - CI is green on the pull request that moves the install text, which includes `tools/repo/readme-fixtures.sh`.
-- For a taxonomy release, `gh release view taxonomy/headwater-standard/v<version>` lists `headwater-standard-<version>.zip`, and the release notes state the digest that `README.md` now pins.
+- For a taxonomy release, `gh release view taxonomy/headwater-standard/v<version>` lists `headwater-standard-<version>.zip`, and the release notes state the digest.
+
+Step 8 of the engine release needs the first two checks. Step 4 of the taxonomy release needs the last check. Do them before you move any install text.
