@@ -243,7 +243,10 @@ impl Graph {
                         .target
                         .anchor_display()
                         .unwrap_or_else(|| normalized.clone()),
-                    patterns: patterns.iter().map(|member| member.pattern.clone()).collect(),
+                    patterns: patterns
+                        .iter()
+                        .map(|member| member.pattern.clone())
+                        .collect(),
                     excluded_by: excluded_by.clone(),
                     edges: 1,
                 }),

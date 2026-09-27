@@ -533,11 +533,17 @@ fn of_target(target: &Target) -> Json {
         } => {
             let mut members = vec![
                 ("bound".to_string(), Json::string("anchor")),
-                ("anchor_kind".to_string(), Json::string(anchor_kind.as_str())),
+                (
+                    "anchor_kind".to_string(),
+                    Json::string(anchor_kind.as_str()),
+                ),
                 ("id".to_string(), Json::string(normalized.as_str())),
                 ("resolver".to_string(), Json::string(resolver.as_str())),
             ];
-            let patterns: Vec<String> = patterns.iter().map(|member| member.pattern.clone()).collect();
+            let patterns: Vec<String> = patterns
+                .iter()
+                .map(|member| member.pattern.clone())
+                .collect();
             if let Some(patterns) = list_members(&patterns) {
                 members.push(("patterns".to_string(), patterns));
             }
