@@ -235,7 +235,10 @@ fn the_publish_loop_runs_the_index_gate_before_and_after_each_publish() {
         "publish beta".to_string(),
         format!("{gate} --published beta 9.9.9"),
     ];
-    assert!(ok, "the publish loop failed with every gate passing: {lines:?}");
+    assert!(
+        ok,
+        "the publish loop failed with every gate passing: {lines:?}"
+    );
     assert_eq!(
         lines, expected,
         "the publish loop does not run the index gate around each publish"
@@ -246,7 +249,10 @@ fn the_publish_loop_runs_the_index_gate_before_and_after_each_publish() {
 #[test]
 fn the_publish_loop_stops_before_a_crate_the_gate_refuses() {
     let (ok, lines) = run_publish_loop("*crates-index-wait.sh\\ beta\\ *");
-    assert!(!ok, "the publish loop succeeded though the gate refused beta: {lines:?}");
+    assert!(
+        !ok,
+        "the publish loop succeeded though the gate refused beta: {lines:?}"
+    );
     assert!(
         !lines.iter().any(|line| line == "publish beta"),
         "the publish loop published beta after the gate refused it: {lines:?}"
