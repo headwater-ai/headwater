@@ -36,7 +36,7 @@ relations:
 3. **Add the path of the export to `.gitignore`, and delete the committed copy.** For example, add `.headwater/export.json` and run `git rm --cached .headwater/export.json`.
 4. **Compute the export in the step that reads it.** Run `headwater export --format json > <path>` in that step, before the reader starts. With no `graph_export` declared, the one profile is `default`, so the command needs no `--profile`.
 5. **Run `headwater generate`, and commit the result.** The descriptor and the lock move once, because they record the projections that you declare.
-6. **Add the line `.headwater/capture-cost.jsonl merge=union` to `.gitattributes`.** Each run of `headwater new` adds one reading at the end of that file. So two branches that each add a document both change its last line, and git reports a conflict. `union` keeps the lines of both sides, and that result is correct for this file because no reading depends on another. `headwater init --git` does not write this line.
+6. **Make sure that `.gitattributes` has the line `.headwater/capture-cost.jsonl merge=union`.** Each run of `headwater new` adds one reading at the end of that file. So two branches that each add a document both change its last line, and git reports a conflict. `union` keeps the lines of both sides, and that result is correct for this file because no reading depends on another. `headwater init --git` writes this line, and the same line for `.headwater/adoption.jsonl`. It writes neither where a line of yours already names the file. If you ran `headwater init --git` with an earlier release, run it again, or add the line by hand.
 
 ## How to know it worked
 

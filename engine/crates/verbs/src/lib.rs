@@ -330,7 +330,7 @@ pub const VERBS: &[Verb] = &[
         name: "init",
         group: "The taxonomy",
         summary: "scaffold the consumer declaration and the overlay",
-        description: "Scaffold the consumer declaration and the overlay for a repository that has neither, and print the questions that no tree answers. It refuses to overwrite a binding. With `--git` it also appends a `-merge` line to `.gitattributes` for each file the two verb producers write, so an unconfigured clone reports a conflict on it. It prints the `git config` lines that name `headwater merge-driver` and the `info/attributes` lines that select the driver in one clone. It writes them under `--git-config`, or where the clone already names the driver. On a bound repository `--git` does that alone.",
+        description: "Scaffold the consumer declaration and the overlay for a repository that has neither, and print the questions that no tree answers. It refuses to overwrite a binding. With `--git` it also appends a `-merge` line to `.gitattributes` for each file the two verb producers write, so an unconfigured clone reports a conflict on it, and a `merge=union` line for each append-only store the engine writes, so a merge keeps the lines of both branches. It prints the `git config` lines that name `headwater merge-driver` and the `info/attributes` lines that select the driver in one clone. It writes them under `--git-config`, or where the clone already names the driver. On a bound repository `--git` does that alone.",
         words: &[],
     },
     Verb {
