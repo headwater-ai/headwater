@@ -299,15 +299,18 @@ fn the_report_wraps_every_line_to_the_width() {
     );
 
     // The fill is tight. A width of 20 would satisfy the bound above and fail
-    // here, so the bound alone is not what this file holds.
+    // here, so the bound alone is not what this file holds. A line of one word
+    // is not a line the fill chose, so it does not count: one long word must not
+    // hide a fill that stops short on every other line.
     let longest = rendered
         .lines()
+        .filter(|line| !one_word(line))
         .map(|line| line.chars().count())
         .max()
-        .expect("the report has lines");
+        .expect("the report has lines of more than one word");
     assert!(
         longest > WIDTH - 12,
-        "the longest line is {longest} of {WIDTH}, so the fill is not reaching the width"
+        "the longest line of more than one word is {longest} of {WIDTH}, so the fill is not reaching the width"
     );
 
     // The remediation of `pin.current` is demonstrably filled rather than
