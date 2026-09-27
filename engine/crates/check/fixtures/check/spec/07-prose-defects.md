@@ -36,6 +36,8 @@ This sentence cites 12 U.S.C. 101 beside a U.S. Federal court, the U.K. Parliame
 
 Set the flag to `no`. The loader then keeps the string exactly as the author wrote it in the source file and reads no other value from it.
 
+Pass `--no`. The robust flag will be read once.
+
 ## The three spans a patch must not land at
 
 A code span carries one and no rule reads it: `it doesn't matter` is a name rather than prose.

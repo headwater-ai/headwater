@@ -2520,7 +2520,7 @@
             "governs": [
               {
                 "to": "engine/crates/check/src/language.rs",
-                "verified_revision": "sha256:eca7558bb8463a3ad8b844f7b09374f305dbcc15f8d4b18fc2e472f17bf83f66"
+                "verified_revision": "sha256:73b6425e92ca92586efdf16b4e942b2165a880e68ed6af33c13d96c3b22195db"
               }
             ],
             "traces_to": [
@@ -15139,7 +15139,7 @@
           "resolver": "source-tree"
         },
         "attributes": {
-          "verified_revision": "sha256:eca7558bb8463a3ad8b844f7b09374f305dbcc15f8d4b18fc2e472f17bf83f66"
+          "verified_revision": "sha256:73b6425e92ca92586efdf16b4e942b2165a880e68ed6af33c13d96c3b22195db"
         }
       },
       {

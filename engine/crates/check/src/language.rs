@@ -318,7 +318,7 @@ impl DocumentCheck for Language {
     /// This rule counts words per sentence, so the merged pair reported one sentence past the limit that is two sentences inside it. The document, the lock and the rule are all unchanged, so a warm
     /// cache from the previous engine would serve the merged verdict. The
     /// `Sentence boundaries` paragraph of `fixtures/check/spec/07-prose-defects.md`
-    /// now ends a sentence on the code span `no`, so `tests/editions.rs` holds this change too.
+    /// ends a sentence on the code spans `no` and `--no`. The pair after `no` is past the length limit only while merged, and the sentence after `--no` writes a retired term and a future, so `tests/editions.rs` holds this change for all three rules.
     const VERSION: u32 = 6;
     const NEEDS_BODY: bool = true;
 
