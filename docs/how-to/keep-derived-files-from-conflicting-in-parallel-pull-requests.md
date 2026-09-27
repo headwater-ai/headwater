@@ -47,9 +47,10 @@ relations:
 
 ## If two branches took the same number
 
-Do these steps on the branch that merges second.
+Do these steps on the branch that lands second. They are the same whether you merge the other branch into yours or rebase yours onto it.
 
-1. Keep the claim file of the branch that merged first: `git checkout --theirs .headwater/ids/<scheme>/<identifier>`.
+1. Take the claim file from the branch that landed first, by its name: `git checkout origin/main -- .headwater/ids/<scheme>/<identifier>`. Do not use `--ours` or `--theirs`. A rebase swaps what those two names mean, and `--theirs` in a rebase writes your own claim over the landed one. That claim then names a file that is not on the tree, and neither `headwater check --strict` nor `headwater generate --check` reports it.
 2. Give your document the next free number. Rename its file to the new number, and change its `id` to match.
 3. Run `headwater check --fix`. It writes the claim file for the new number.
-4. Run `headwater generate`, and commit the result. `headwater check --strict` then exits 0.
+4. Run `headwater generate`, and commit the result, or run `git rebase --continue` in a rebase. `headwater check --strict` then exits 0.
+5. Read the claim file of the landed number. It names the landed document, not yours.

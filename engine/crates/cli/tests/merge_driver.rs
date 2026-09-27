@@ -484,7 +484,7 @@ const COMMITTED_EXPORT: &str =
 /// order, and a bundle may declare an export too. `taxonomy resolve` folds all
 /// of that into one list, and the lock is where the list is written. The lock is
 /// read as YAML, so a key order the reader did not expect is not a missed entry
-/// (`a_graph_export_declared_profile_first_is_found_in_the_lock`). An entry
+/// (`a_graph_export_is_found_in_the_lock_in_every_key_order`). An entry
 /// whose value is not a scalar, such as a `filter`, is refused rather than
 /// copied short.
 fn graph_exports_in_lock(root: &Path) -> String {
@@ -756,22 +756,73 @@ fn this_repository_declares_no_graph_export() {
     );
 }
 
-/// The residual #1251 leaves open, and its remedy.
+/// How the second branch meets the first: `git merge` from the second branch,
+/// or `git rebase` of the second branch onto the first. The two swap what
+/// `--ours` and `--theirs` name, which is why the remedy names neither.
+#[derive(Clone, Copy, Debug)]
+enum Meet {
+    Merge,
+    Rebase,
+}
+
+/// Every claim under `.headwater/ids/` names a file that is on the tree.
+///
+/// A claim is written once and holds the path of the document that minted the
+/// identifier ([HW-DR-0054](../../../../docs/decisions/0054-the-upper-bound-of-a-reconcile-first-allocator-is-the-corpus-and-a-claim-store.md)).
+/// `identifier.claim.stale` is advisory, so `check --strict` passes a claim
+/// that names a path which is gone, and this assertion is what refuses it.
+fn assert_every_claim_names_a_document(tree: &Tree) {
+    fn walk(dir: &Path, out: &mut Vec<PathBuf>) {
+        for entry in std::fs::read_dir(dir).expect("the claim directory reads") {
+            let path = entry.expect("the entry reads").path();
+            match path.is_dir() {
+                true => walk(&path, out),
+                false => out.push(path),
+            }
+        }
+    }
+    let mut claims = Vec::new();
+    walk(&tree.at.join(".headwater/ids"), &mut claims);
+    assert!(!claims.is_empty(), "the tree holds claims");
+    for claim in claims {
+        let named = std::fs::read_to_string(&claim).expect("the claim reads");
+        assert!(
+            tree.at.join(named.trim_end()).is_file(),
+            "{} names {}, which is not on the tree",
+            claim.display(),
+            named.trim_end()
+        );
+    }
+}
+
+/// The residual #1251 leaves open, and its remedy, over a merge and a rebase.
 ///
 /// Two branches that each run `headwater new decision` both mint the next
-/// number, `ACME-DR-0002`. The merge conflicts on the shelf index, because both
-/// insert a row at one position, and on the claim file of the identifier, by
-/// design ([HW-DR-0054](../../../../docs/decisions/0054-the-upper-bound-of-a-reconcile-first-allocator-is-the-corpus-and-a-claim-store.md)).
-/// Held exactly, so the set cannot grow without this case moving.
+/// number, `ACME-DR-0002`. Meeting them conflicts on the shelf index, because
+/// both insert a row at one position, and on the claim file of the identifier,
+/// by design (HW-DR-0054). Held exactly, so the set cannot grow without this
+/// case moving.
 ///
 /// Regenerating is not the remedy: it leaves two documents with one identifier,
-/// and `check --strict` refuses the tree. The remedy the how-to states is a
-/// renumber of the branch's own document, then `check --fix` writes its claim.
+/// and `check --strict` refuses the tree. The remedy the how-to states takes
+/// the claim from the branch that landed first by its name, never by `--ours`
+/// or `--theirs`: under a rebase `--theirs` is the branch being rebased, and it
+/// would rewrite the landed claim to name a path that no longer exists, which
+/// `check --strict` and `generate --check` both pass (#1253 verify 3). Then the
+/// second branch's document takes the next free number and `check --fix` writes
+/// its claim.
 #[test]
 fn two_decisions_minted_on_two_branches_conflict_on_the_index_and_the_claim_and_a_renumber_resolves_them(
 ) {
+    for meet in [Meet::Merge, Meet::Rebase] {
+        mint_twice_and_renumber(meet);
+    }
+}
+
+fn mint_twice_and_renumber(meet: Meet) {
     const CLAIM: &str = ".headwater/ids/decision_id/ACME-DR-0002";
-    let tree = governed_tree("same-shelf", &this_repository_s_graph_exports(), true);
+    let label = format!("same-shelf-{meet:?}").to_lowercase();
+    let tree = governed_tree(&label, &this_repository_s_graph_exports(), true);
     tree.git(&["checkout", "-q", "-b", "a"]);
     tree.headwater_ok(&["new", "decision", "--title", "Alpha"]);
     tree.headwater_ok(&["generate"]);
@@ -784,26 +835,34 @@ fn two_decisions_minted_on_two_branches_conflict_on_the_index_and_the_claim_and_
     tree.git(&["add", "-A"]);
     tree.git(&["commit", "-q", "-m", "another decision"]);
 
-    let merge = tree.git_output(&["merge", "--no-edit", "a"]);
-    assert!(!merge.status.success(), "the two mints conflict");
+    let met = match meet {
+        Meet::Merge => tree.git_output(&["merge", "--no-edit", "a"]),
+        Meet::Rebase => tree.git_output(&["rebase", "a"]),
+    };
+    assert!(!met.status.success(), "{meet:?}: the two mints conflict");
     assert_eq!(
         tree.unmerged(),
         vec![CLAIM.to_string(), "docs/decisions/README.md".to_string()],
-        "the claim and the shelf index are the conflicted paths"
+        "{meet:?}: the claim and the shelf index are the conflicted paths"
     );
 
-    // The merged branch keeps its claim, and regenerating alone is not enough.
-    tree.git(&["checkout", "--theirs", CLAIM]);
+    // The claim of the branch that landed first, taken by its name.
+    tree.git(&["checkout", "a", "--", CLAIM]);
+    assert_eq!(
+        tree.read(CLAIM),
+        "docs/decisions/0002-alpha.md\n",
+        "{meet:?}: the landed claim names the landed document"
+    );
     tree.headwater_ok(&["generate"]);
     tree.git(&["add", "-A"]);
     let strict = tree.headwater(&["check", "--strict"]);
     assert_eq!(
         strict.status.code(),
         Some(1),
-        "two documents hold ACME-DR-0002, so a strict check refuses the tree"
+        "{meet:?}: two documents hold ACME-DR-0002, so a strict check refuses the tree"
     );
 
-    // The renumber: this branch's document takes the next free number.
+    // The renumber: the second branch's document takes the next free number.
     tree.git(&[
         "mv",
         "docs/decisions/0002-beta.md",
@@ -819,12 +878,25 @@ fn two_decisions_minted_on_two_branches_conflict_on_the_index_and_the_claim_and_
         tree.at
             .join(".headwater/ids/decision_id/ACME-DR-0003")
             .exists(),
-        "`check --fix` writes the claim of the new number"
+        "{meet:?}: `check --fix` writes the claim of the new number"
     );
     tree.headwater_ok(&["generate"]);
     tree.git(&["add", "-A"]);
+    match meet {
+        Meet::Merge => tree.git(&["commit", "-q", "--no-edit"]),
+        Meet::Rebase => {
+            let continued = tree.git_output(&["-c", "core.editor=true", "rebase", "--continue"]);
+            assert!(
+                continued.status.success(),
+                "{meet:?}: the rebase continues:\n{}",
+                String::from_utf8_lossy(&continued.stderr)
+            );
+            String::new()
+        }
+    };
     tree.headwater_ok(&["check", "--strict"]);
     tree.headwater_ok(&["generate", "--check"]);
+    assert_every_claim_names_a_document(&tree);
 }
 
 /// A clone that ran the old `init --git --git-config` has the driver config
