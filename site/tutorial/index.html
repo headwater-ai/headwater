@@ -217,16 +217,30 @@
     <h2 class="label">Before you start</h2>
     <div class="split">
       <div style="font-size: 0.98rem;">
-        <p>You need four things: <strong>git</strong>, with a name and an email address configured in it, <strong>Linux on x86_64 or macOS on Apple silicon</strong>, <strong>curl</strong> and <strong>tar</strong>, and about twenty minutes. No clone, and no Rust toolchain.</p>
-        <p style="color: var(--muted); font-size: 0.92rem; margin: 0;">Three facts about the blocks below. A block is a command or it is output, and the two look the same, so read the sentence above one before you paste it. Your dates differ, and where a block shows a date, yours shows the day you read this. Long output is trimmed, and says so.</p>
+        <p>You need four things.</p>
+        <ul>
+          <li><code>git</code>, and a name and an email address configured in it.</li>
+          <li>Linux on x86_64, or macOS on Apple silicon. You do not need a Rust toolchain.</li>
+          <li><code>curl</code> and <code>tar</code>, to install the engine.</li>
+          <li>About twenty minutes.</li>
+        </ul>
+        <p>Three facts about the blocks below.</p>
+        <ul>
+          <li><strong>A block is a command or it is output, and the two look the same.</strong> Every step gives the command first and what it printed after. Nothing marks the difference, so read the sentence above a block before you paste it.</li>
+          <li><strong>Your dates differ.</strong> The engine reads a clock, and it puts the date of your run into what it writes. Where a block below shows <code>2026-09-09</code>, yours shows the day you read this.</li>
+          <li><strong>Long output is trimmed.</strong> A block that is shorter than the real output says so on the line above it.</li>
+        </ul>
       </div>
       <div>
+        <p>Install the engine once. The block below downloads the release archive for Linux on x86_64 and puts the <code>headwater</code> binary in <code>~/.local/bin</code>. The archive holds a static build, so it needs no particular C library.</p>
         <pre class="cmd verbatim">mkdir -p ~/.local/bin
 curl -fsSLO https://github.com/headwater-ai/headwater/releases/download/v0.4.0/headwater-v0.4.0-x86_64-unknown-linux-musl.tar.gz
 tar -xzf headwater-v0.4.0-x86_64-unknown-linux-musl.tar.gz -C ~/.local/bin headwater</pre>
-        <p>On macOS on Apple silicon, the archive is <code>headwater-v0.4.0-aarch64-apple-darwin.tar.gz</code>. Use that name in the <code>curl</code> line and in the <code>tar</code> line. Each archive has a <code>.sha256</code> file beside it on the release, for <code>sha256sum -c</code> or <code>shasum -a 256 -c</code>.</p>
-        <p class="check"><span class="checkword">Check</span> <span><code>headwater --version</code> prints a number. Many Linux distributions put <code>~/.local/bin</code> on your <code>PATH</code> when the directory exists at login, and macOS does not. If your shell cannot find <code>headwater</code>, add the directory to your <code>PATH</code> and open a new shell.</span></p>
-        <p>This installs version 0.4.0 of the engine. It does not get you <code>taxonomy-source</code>, which step 3 fetches. With a Rust toolchain, <code>cargo install headwater-cli</code> is the alternative, and the repository&rsquo;s README names it under <em>Obtaining a named version</em>.</p>
+        <p>On macOS on Apple silicon, the archive is <code>headwater-v0.4.0-aarch64-apple-darwin.tar.gz</code>. Use that name in the <code>curl</code> line and in the <code>tar</code> line.</p>
+        <p>Each archive has a checksum file beside it on the release page. The name of the checksum file is the name of the archive with <code>.sha256</code> added. To verify the archive, download that file too and give it to <code>sha256sum -c</code>, or to <code>shasum -a 256 -c</code> on macOS.</p>
+        <p class="check"><span class="checkword">Check</span> <span><code>headwater --version</code> prints a number.</span></p>
+        <p>Many Linux distributions put <code>~/.local/bin</code> on your <code>PATH</code> when the directory exists at login. macOS does not. If your shell cannot find <code>headwater</code>, add <code>~/.local/bin</code> to your <code>PATH</code> in the startup file of your shell. Then open a new shell. You can also run the binary as <code>~/.local/bin/headwater</code>.</p>
+        <p>This installs version 0.4.0 of the engine. It does not install <code>taxonomy-source</code>, and step 3 fetches that. If you have a Rust toolchain, <code>cargo install headwater-cli</code> is an alternative route, and the README's <em>Obtaining a named version</em> section describes it.</p>
       </div>
     </div>
   </div>

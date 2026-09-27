@@ -7192,10 +7192,9 @@ const APPEND_ONLY_STORES: [&str; 2] = [
 /// `headwater init --git`: the attribute lines, and the configuration git needs.
 ///
 /// **The set is computed, and only from the producers the tree holds.**
-/// `headwater derived` knows four producers, and two of them are a script and a
-/// toolchain of the repository that maintains this engine. An adopter holds
-/// neither, so a line this step wrote for one of them would name a producer
-/// the adopter cannot run. `Producer::held_by` is the one predicate. The
+/// `headwater derived` knows three producers, and one of them is a toolchain of
+/// the repository that maintains this engine. An adopter does not hold it, so a
+/// line this step wrote for it would name a producer the adopter cannot run. `Producer::held_by` is the one predicate. The
 /// population applies it, so this step and `headwater derived` read one set. The lock is always in the set, because
 /// `headwater taxonomy resolve` writes it and nothing else does, whether or
 /// not it has run yet.

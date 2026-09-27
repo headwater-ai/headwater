@@ -386,8 +386,8 @@ fn the_same_merge_without_the_git_step_writes_markers_into_the_folds() {
 /// line moves on every change, so two branches that move it always conflict,
 /// and what `-merge` changes is the file left behind: the current side, which
 /// `headwater taxonomy resolve` reads, rather than a file with markers in it.
-/// The quiet case, a fold that a text merge takes to exit 0, is a page under
-/// `site/`, and `engine/crates/census/tests/merge_driver.rs` holds it.
+/// The quiet case, a fold that a text merge takes to exit 0, is held by
+/// `engine/crates/census/tests/merge_driver.rs`.
 #[test]
 fn a_clone_with_the_committed_attributes_and_no_driver_config_conflicts_on_a_fold() {
     let tree = Tree::adopted("unconfigured");
@@ -1957,32 +1957,24 @@ fn the_git_step_without_git_names_the_refusal_and_writes_no_line_a_nested_file_c
 /// A producer that only this repository holds is neither named by
 /// `headwater derived` nor written by `init --git` in an adopter's tree.
 ///
-/// `derived` knows four producers, and two of them are a script and a blessing
-/// run that only the repository maintaining this engine holds. Each row below
-/// plants a file that producer would claim here, and the file whose presence
-/// makes a tree hold it. In the adopter's tree the file is claimed by nobody,
+/// `derived` knows three producers, and one of them is a blessing run that only
+/// the repository maintaining this engine holds. The row below plants a file
+/// that producer would claim here, and the file whose presence makes a tree
+/// hold it. Until #1273 a second row planted a page under `site/` for the
+/// figure refresh, which is no longer a producer. In the adopter's tree the file is claimed by nobody,
 /// so the report names neither the file nor the command, and `init --git`
 /// writes no line. Once the tree holds the producer, the same file is claimed
 /// and written, which is what makes the first half a measurement of the
 /// predicate rather than of a filter that admits nothing.
 #[test]
 fn the_git_step_writes_no_line_for_a_producer_the_adopter_does_not_hold() {
-    let rows: [(&str, &str, &str, &str, &str); 2] = [
-        (
-            "script-producer",
-            "site/index.html",
-            "<p>The corpus holds <span data-figure=\"census.seen\">1</span> files.</p>\n",
-            "sh tools/site/refresh-figures.sh",
-            "tools/site/refresh-figures.sh",
-        ),
-        (
-            "blessing-producer",
-            "engine/crates/a/fixtures/corpus.a",
-            "426 files\nsha256:0a1b\n",
-            "HEADWATER_BLESS=1 cargo test",
-            "engine/Cargo.toml",
-        ),
-    ];
+    let rows: [(&str, &str, &str, &str, &str); 1] = [(
+        "blessing-producer",
+        "engine/crates/a/fixtures/corpus.a",
+        "426 files\nsha256:0a1b\n",
+        "HEADWATER_BLESS=1 cargo test",
+        "engine/Cargo.toml",
+    )];
     for (label, path, body, command, holder) in rows {
         let tree = Tree::adopted(label);
         let plant = |relative: &str, text: &str| {

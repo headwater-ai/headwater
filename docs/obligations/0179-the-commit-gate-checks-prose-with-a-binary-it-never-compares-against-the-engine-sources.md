@@ -2,7 +2,7 @@
 id: HW-OBL-0179
 status: current
 status_since: 2026-09-08
-summary: "The figures clause of the commit gate refuses when its binary is behind the engine sources, and the prose clause above it asks nothing."
+summary: "The prose clause of the commit gate runs a binary it never compares against the engine sources. The figures clause that did ask left the gate in #1273."
 last_verified: 2026-09-08
 title: "The commit gate checks prose with a binary it never compares against the engine sources"
 waiting_on: build
@@ -28,6 +28,8 @@ relations:
 The consequence is a wrong verdict rather than a wrong write. A binary that predates a rule cannot fire the rule. The gate then passes a commit that the current engine refuses, and the refusal arrives in CI instead. A binary built ahead of the tree fires a rule the tree does not declare. The gate then refuses a commit that nothing is wrong with. `.claude/hooks/lib.sh` resolves the same two paths for the harness hooks, and it asks nothing either. Those hooks bind nothing, so the gate is where this is worth paying for.
 
 Measured on 2026-09-08 against this branch. Seventeen files name one of the two binary paths. Two of them gate or write with the binary, and one of those two compares it against `engine/`.
+
+**The figures clause is gone from the gate since #1273.** [HW-DR-0097](../decisions/0097-a-figure-on-a-hand-built-page-is-measured-when-the-site-is-published-and-the-committed-page-carries-none.md) moved the figures out of the committed pages, and `.githooks/pre-commit` runs no `refresh-figures.sh`. The script still exits `3` on a stale binary, in CI and in the deploy. The prose clause is now the only clause of the gate that runs the engine, and it still asks nothing.
 
 ## Obligation
 

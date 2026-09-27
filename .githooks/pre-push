@@ -1,28 +1,7 @@
 #!/bin/sh
-# Two clauses, and they are of different strengths on purpose.
-#
-# # The refusal: a site/* conflict nobody reviewed
-#
-# The one position that can still refuse, once `.githooks/merge-regenerate`
-# and `.githooks/commit-msg` have both already let a `site/*` conflict
-# through unreviewed.
-#
-# A rebase resolves that driver's refusal locally and commits the result with
-# no `commit-msg` hook of its own (see `.githooks/post-rewrite`, which reports
-# the same gap but cannot block anything — the rewrite it would refuse has
-# already finished by the time it runs). `pre-push` is the last local hook
-# before the content leaves this clone, so it is where the gap actually
-# closes: refuse the push outright while `tools/site/ack-site-prose-reviewed.sh`
-# still lists something pending, on the theory that a diff nobody has looked
-# at is worth a blocked push and a false one costs one command to clear.
-#
-# This blocks every ref in the push, not only one that touches `site/*` —
-# `pre-push` receives the whole batch on stdin, and a marker already means a
-# `site/*` page in *this clone* carries an unreviewed resolution, which the
-# push about to happen may or may not include but the next one probably will.
-# Reading stdin to narrow it to "does this push actually carry that blob"
-# would make a real gap look like it was never checked, on a clone where the
-# blocker is still true five minutes later.
+# One clause, a warning. Until #1273 a second clause refused a push while a
+# `site/*` merge conflict sat unreviewed; the pages carry no measured figure
+# now, merge as text, and the marker that clause read is gone.
 #
 # # The warning: an issue this push works on that nobody has claimed
 #
@@ -41,10 +20,9 @@
 # every agent pays for on every dispatch and most agents never touch the
 # board, so the rule does not clear that bar.
 #
-# It warns and never refuses. An unclaimed issue is not unreviewed content
-# leaving the clone the way the clause above is; it is a board that has gone
-# stale, and the push is not the thing that harmed it. It is also the one
-# clause here that reaches the network, so every way that can go wrong — no
+# It warns and never refuses. An unclaimed issue is a board that has gone
+# stale, and the push is not the thing that harmed it. It is also a clause
+# that reaches the network, so every way that can go wrong — no
 # `gh`, no login, no network, a rate limit, a number that is a pull request
 # rather than an issue — is silence rather than a verdict. `gh auth status`
 # reports a secondary rate limit as an invalid token, so no failure from `gh`
@@ -60,10 +38,9 @@ root=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
 # value names one checkout, so git resolves this hook to that checkout's copy
 # whatever branch is actually pushing. `.githooks/pre-commit` carries the
 # full account of why and how this hands off to the worktree's own copy
-# instead (#925); this hook needs the same guard, because the refusal below
-# is a `site/*` page review this clone's own branch may or may not still
-# owe, and the checkout named by an absolute value may owe a different one
-# entirely, or none. `exec` passes the ref list this hook reads on stdin
+# instead (#925); this hook needs the same guard, because the branch being
+# pushed is this worktree's and not the one an absolute value names. `exec`
+# passes the ref list this hook reads on stdin
 # through unchanged, because it replaces the process image without touching
 # any open file descriptor.
 #
@@ -84,23 +61,6 @@ if [ -z "${HEADWATER_HOOK_HANDOFF:-}" ] && [ "$self" != "$own_dir" ]; then
     fi
     echo "headwater: this worktree carries no $hook_name of its own, so the" >&2
     echo "  checkout core.hooksPath names ran its copy instead." >&2
-fi
-
-pending=$(sh "$root/tools/site/ack-site-prose-reviewed.sh" 2>/dev/null)
-if [ -n "$pending" ]; then
-	cat >&2 <<EOF
-
-  Push refused: a site/* merge conflict was resolved but never reviewed.
-
-$pending
-
-  sh tools/site/ack-site-prose-reviewed.sh <path> shows the diff again and
-  clears it once you have carried the losing side's prose forward by hand
-  and refreshed figures. That is the one command this refusal is waiting on.
-
-EOF
-
-	exit 1
 fi
 
 # Everything below is the warning, and it exits 0 by every path.

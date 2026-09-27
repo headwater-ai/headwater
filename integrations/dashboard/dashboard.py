@@ -83,6 +83,20 @@ def _optional_string(value, where, field):
     return value
 
 
+def _patterns(value, identifier, where, field):
+    """The patterns one code_path anchor holds.
+
+    A list anchor's `id` is a length-prefixed identity and not a path, so an
+    export at 1.2 or later writes its members under `patterns` (#1247). An
+    anchor with no `patterns` holds one pattern, and that pattern is its `id`.
+    """
+    if value is None:
+        return [identifier]
+    if not isinstance(value, list) or not value or not all(isinstance(item, str) for item in value):
+        _refuse(where, field, "is not a non-empty list of strings")
+    return list(value)
+
+
 def _date(value, where, field):
     """A calendar date, returned in the form YYYY-MM-DD so that text order is date order.
 
@@ -175,6 +189,7 @@ def load(export, corpus_identity):
             code_paths.add(_optional_string(anchor.get("id"), where, "id"))
 
     governed_by = {}
+    patterns_of = {}
     for index, edge in enumerate(raw_edges):
         where = "graph.edges[%d]" % index
         if not isinstance(edge, dict):
@@ -194,6 +209,7 @@ def load(export, corpus_identity):
         governor = source["id"] if source else source_path
         if not governor:
             _refuse(where, "source", "is missing on a governs edge")
+        patterns_of[anchor_id] = _patterns(target.get("patterns"), anchor_id, where, "target.patterns")
         governed_by.setdefault(anchor_id, [])
         if governor not in governed_by[anchor_id]:
             governed_by[anchor_id].append(governor)
@@ -205,6 +221,7 @@ def load(export, corpus_identity):
                 "corpus_identity": corpus_identity,
                 "id": identifier,
                 "key": (corpus_identity, identifier),
+                "patterns": patterns_of[identifier],
                 "declared": identifier in code_paths,
                 "governed_by": sorted(governed_by[identifier]),
             }
@@ -273,6 +290,14 @@ def tree_files(tree):
     return sorted(found)
 
 
+def governed_paths(model):
+    """Every distinct code path a governs edge names, counted by member.
+
+    A list anchor of two files is two governed paths and one anchor row.
+    """
+    return sorted(set(pattern for row in model.anchors for pattern in row["patterns"]))
+
+
 def coverage_view(model, tree=None):
     """Each reached anchor with its matched-file count, and the tree's covered share.
 
@@ -285,8 +310,10 @@ def coverage_view(model, tree=None):
     covered = set()
     rows = []
     for row in model.anchors:
-        matches = _pattern(row["id"])
-        hit = [path for path in files if matches(path)]
+        # A list anchor covers the union of its members, so a file two
+        # members match is one file of the row, and one of the share.
+        matchers = [_pattern(pattern) for pattern in row["patterns"]]
+        hit = [path for path in files if any(matches(path) for matches in matchers)]
         covered.update(hit)
         rows.append((row, len(hit)))
     return Coverage(rows, len(covered), len(files))
@@ -319,7 +346,7 @@ def render(model, coverage=None):
     out.append(
         "<p class=\"muted\">Read-only. Rendered from a <code>graph_export</code> file (profile %s). "
         "%d documents, %d governed code paths.</p>"
-        % (html.escape(str(model.profile.get("name", "unnamed"))), len(model.documents), len(model.anchors))
+        % (html.escape(str(model.profile.get("name", "unnamed"))), len(model.documents), len(governed_paths(model)))
     )
     out.append("<nav><a href=\"#staleness\">Staleness</a><a href=\"#warrant\">Warrant</a>"
                "<a href=\"#coverage\">Coverage</a></nav>")
@@ -355,8 +382,10 @@ def render(model, coverage=None):
         out.append("<p>%d of %d files in the tree are covered (%.1f%%).</p>" % (coverage.covered, coverage.total, share))
     out.append("<table><tr><th>Code path</th><th>Files matched</th><th>Governed by</th></tr>")
     for row, count in coverage.rows:
-        out.append("<tr><td><code>%s</code></td>%s%s</tr>" % (
-            html.escape(row["id"]), _cell("" if count is None else count), _cell(", ".join(row["governed_by"]))
+        out.append("<tr><td>%s</td>%s%s</tr>" % (
+            "<br>".join("<code>%s</code>" % html.escape(pattern) for pattern in row["patterns"]),
+            _cell("" if count is None else count),
+            _cell(", ".join(row["governed_by"])),
         ))
     out.append("</table></body></html>")
     return "\n".join(out) + "\n"

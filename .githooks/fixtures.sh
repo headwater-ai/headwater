@@ -294,15 +294,9 @@ judge 'and the rename is what the path rule refuses' 1 "$status" \
 
 # A document that never reached a terminal state. `$draft` opens at `draft`,
 # which reaches `current` and `deprecated`, so nothing about it is retained.
-#
-# `HEADWATER_SKIP_FIGURE_CHECK` is set for the same reason the site cases below
-# set `HEADWATER_SKIP_CRAWLER_CHECK`: removing a document moves `census.seen`
-# and every figure derived from it, so the figures clause refuses this commit
-# for a reason that has nothing to do with the lifecycle. That clause has its
-# own cases, and one of them provokes exactly this in the other direction.
 reset
 git -C "$scratch" rm -q "$draft"
-out=$(cd "$scratch" && HEADWATER_SKIP_FIGURE_CHECK=1 sh .githooks/pre-commit 2>&1); status=$?
+out=$(cd "$scratch" && sh .githooks/pre-commit 2>&1); status=$?
 refute 'deleting a document that stands at no terminal state is not a deletion finding' \
     'lifecycle.deletion.not_permitted (OB-LIFE-4)' "$out"
 judge 'and its dead citations are refused, as they are for any document' 1 "$status" \
@@ -486,264 +480,6 @@ sed -i 's|--accent: #1d5c54|--accent: #b30000|' "$scratch/site/proof/index.html"
 out=$(cd "$scratch" && HEADWATER_SKIP_TOKEN_CHECK=1 sh .githooks/pre-commit 2>&1); status=$?
 judge 'and the named variable releases that one clause' 0 "$status" '' "$out"
 
-# The figures clause. Every number on a hand-built page comes from a run of
-# this engine, written into a `data-figure` element by
-# `tools/site/refresh-figures.sh`, and HW-DR-0039 rules it. The five cases below are
-# the three directions a derived figure has to move in, plus the escape hatch
-# and the denominator.
-#
-# The three directions are the whole argument that these are figures rather
-# than numbers a script once wrote: a hand edit of one has to fail, an
-# unrelated edit has to pass, and a change to the corpus the figure measures
-# has to make it stale.
-
-# Direction 1 — a figure edited by hand is refused, and the refusal names the
-# figure and the page.
-#
-# The value is read off the page rather than written here. A constant would
-# stop matching the next time this corpus grows, and the case would then edit
-# nothing and pass while measuring nothing, which is the failure the
-# escape-hatch case above is also written to avoid. `run.date` is deliberately
-# not the figure chosen: it is the clock rather than a function of the tree,
-# and the clause exempts it.
-reset
-figpage="site/proof/index.html"
-seen=$(grep -o 'data-figure="census.seen"[^>]*>[0-9]*<' "$scratch/$figpage" \
-    | head -1 | sed 's/.*>//; s/<$//')
-[ -n "$seen" ] || seen=none
-judge 'the figure case still finds a census.seen figure on the page it names' 0 0 \
-    'a number' "$(case $seen in none) echo "no census.seen span in $figpage" ;; *) echo "a number ($seen)" ;; esac)"
-sed -i "s|data-figure=\"census.seen\">$seen<|data-figure=\"census.seen\">$((seen - 1))<|g" \
-    "$scratch/$figpage"
-out=$(gate); status=$?
-judge 'a figure edited by hand on a page of the deployed site is refused' 1 "$status" \
-    'disagrees with a fresh run' "$out"
-judge 'and the refusal names the figure and the page' 1 "$status" \
-    "census.seen in $figpage" "$out"
-judge 'and it names the command that repairs it' 1 "$status" \
-    'sh tools/site/refresh-figures.sh' "$out"
-
-# The escape hatch, which is a silent pass in the two clauses above and an
-# announced one here. The hook cannot write into the commit, so the line it
-# prints on the author's terminal is the whole local record of the bypass, and
-# the CI step of the same name carries no hatch at all.
-reset
-sed -i "s|data-figure=\"census.seen\">$seen<|data-figure=\"census.seen\">$((seen - 1))<|g" \
-    "$scratch/$figpage"
-out=$(cd "$scratch" && HEADWATER_SKIP_FIGURE_CHECK=1 sh .githooks/pre-commit 2>&1); status=$?
-judge 'and the named variable releases that one clause' 0 "$status" '' "$out"
-judge 'and the release is announced rather than silent' 0 "$status" \
-    'HEADWATER_SKIP_FIGURE_CHECK is set' "$out"
-
-# Direction 2 — an edit that touches no figure is not refused. Without this the
-# case above only proves the gate refuses something about `site/`.
-#
-# `site/compare/index.html` carries no `data-figure` element, no marker the
-# crawler files read beyond its title, and the edit changes neither its title
-# nor its description, so this clause is the only one with anything to say
-# about it.
-reset
-printf '\n<p>A paragraph added by hand, carrying no figure.</p>\n' \
-    >> "$scratch/site/compare/index.html"
-out=$(gate); status=$?
-judge 'an edit to a page that carries no figure is not refused' 0 "$status" '' "$out"
-
-# Direction 3 — a change to the corpus a figure measures makes that figure
-# stale. This is the direction that separates a derived figure from a number
-# somebody typed once, and no other case here can reach it: directions 1 and 2
-# both move the page, and this one moves what the page is about.
-#
-# An untyped Markdown file is the cheapest probe. It moves `census.seen` and
-# `census.untyped` and touches no blessed fixture of the engine. The judge
-# names `census.seen` rather than any count, because the count moves whenever
-# this corpus does.
-reset
-printf 'A file added to move the census.\n' > "$scratch/docs/ZZ-census-probe.md"
-out=$(gate); status=$?
-judge 'a document added to the corpus makes a figure on the site stale' 1 "$status" \
-    'census.seen in site/index.html' "$out"
-
-# The denominator. `never` is the set of figures this run measured that reached
-# no page, and it used to be printed and dropped: an empty `site/`, a renamed
-# marker attribute or a moved page all left the figures half reporting
-# `0 used across 8 pages` at exit 0, so the check ran over nothing and passed.
-# HW-DR-0050 already refuses a page that opts out of the shared register rather
-# than skipping it, and this is the same discipline for a figure.
-reset
-find "$scratch/site" -name '*.html' -exec sed -i 's/data-figure=/data-figurex=/g' {} +
-out=$(gate); status=$?
-judge 'a renamed marker that leaves every figure on no page is refused' 1 "$status" \
-    'measured but on no page' "$out"
-judge 'and the refusal states the denominator it ran over' 1 "$status" \
-    '0 used across 8 pages' "$out"
-
-# The two pages HW-DR-0037 governs by name, absent. Both checks used to be
-# guarded by `.exists()`, so renaming `site/tutorial/index.html` dropped 43
-# checked blocks in silence and renaming `site/index.html` dropped the
-# HW-DR-0037 quotation. Both are now an error, and these are what hold that.
-#
-# These two run the script rather than the gate, and the reason is worth
-# stating. Removing a page under `site/` raises `relation.target.unresolved`,
-# because HW-DR-0037 declares `governs` over each one, so `headwater check
-# --strict` fails and the figures clause never runs at all. The gate cannot
-# reach either guard, so a case written through it would assert a refusal that
-# came from somewhere else.
-reset
-mv "$scratch/site/tutorial/index.html" "$scratch/site/tutorial/away.html"
-out=$(cd "$scratch" && sh tools/site/refresh-figures.sh --check 2>&1); status=$?
-judge 'the tutorial page missing is an error rather than a skip' 1 "$status" \
-    'site/tutorial/index.html is not there' "$out"
-judge 'and the refusal says which record governs it by name' 1 "$status" \
-    'HW-DR-0037 governs that page by name' "$out"
-
-reset
-mv "$scratch/site/index.html" "$scratch/site/away.html"
-out=$(cd "$scratch" && sh tools/site/refresh-figures.sh --check 2>&1); status=$?
-judge 'the landing page missing is an error rather than a skip' 1 "$status" \
-    'site/index.html is not there' "$out"
-
-# The partition of the 34 figures into the 26 a gate compares and the 8 that
-# are a function of the clock is a list of key names, so it goes stale the
-# moment a key is renamed and the exemption then covers nothing. The script
-# holds its own list against the run, and this provokes that guard.
-reset
-sed -i 's/put("rules.fired"/put("rules.firedX"/' "$scratch/tools/site/refresh-figures.sh"
-out=$(cd "$scratch" && sh tools/site/refresh-figures.sh --check 2>&1); status=$?
-judge 'a clock-partition entry that no run measures is refused' 1 "$status" \
-    'the clock partition names rules.fired, which this run does not measure' "$out"
-
-# Membership in the clock partition used to be excuse enough on its own: a
-# difference in one of the eight was reported and never failed, whether or not
-# a dated mechanism actually lapsed (#823, and the reproductions at #816 and
-# #822). A tree edit that moves one of these eight, with no adoption task and
-# no suppression directive anywhere near expiring, has to fail exactly as any
-# of the 26 gated figures would.
-reset
-printf '\nThis sentence is written to run past the limit that the house profile sets for descriptive text, and it keeps going for long enough that a reader loses the thread of the clause.\n' \
-    >> "$scratch/docs/spec/02-taxonomy-model.md"
-out=$(cd "$scratch" && sh tools/site/refresh-figures.sh --check 2>&1); status=$?
-judge 'a tree-caused change to a clock-exempt figure is refused, not excused as clock only' \
-    1 "$status" 'stale findings.reported in' "$out"
-refute 'and it is not labeled clock only' 'clock only findings.reported' "$out"
-
-# The companion case the design has to keep protecting: a tree nobody touched,
-# with the clock past a live suppression directive's `until`. The directive
-# and the finding it hides are already part of the tree the page was written
-# against; only the calendar moves between then (`G0`, read off the page's own
-# `run.date`) and now. `--check` must still exit 0, labeled `clock only`, or a
-# fix that just deleted the exemption would pass the case above and break the
-# one this script exists to protect.
-reset
-printf '\nThis sentence is written to run past the limit that the house profile sets for descriptive text, and it keeps going for long enough that a reader loses the thread of the clause. <!-- headwater allow=language.controlled.not_met scope=block until=2020-01-01 reason=false_positive note=this fixture, a directive already lapsed by the time this suite runs -->\n' \
-    >> "$scratch/docs/spec/02-taxonomy-model.md"
-g0json=$("$engine" check --root "$scratch" --json --now 2019-06-01 2>/dev/null)
-g0raised=$(printf '%s' "$g0json" | jq '.findings | length')
-g0reported=$(printf '%s' "$g0json" | jq '[.findings[] | select(.escape != "suppression")] | length')
-g0suppressed=$(printf '%s' "$g0json" | jq '[.findings[] | select(.escape == "suppression")] | length')
-g0advisory=$(printf '%s' "$g0json" | jq '[.findings[] | select(.escape != "suppression" and .severity == "warn")] | length')
-g0errors=$(printf '%s' "$g0json" | jq '[.findings[] | select(.escape != "suppression" and .severity == "error")] | length')
-g0directives=$(cd "$scratch" && "$engine" check --root . --now 2019-06-01 2>/dev/null \
-    | sed -n 's/.*[0-9]* findings hidden by \([0-9]*\) directives.*/\1/p')
-# The page as it stood at G0: what a run on 2019-06-01, against this tree,
-# actually saw. Written by hand here, never by the script under test.
-sed -i 's#data-figure="run.date">[^<]*<#data-figure="run.date">2019-06-01<#' \
-    "$scratch/site/index.html" "$scratch/site/proof/index.html" "$scratch/site/how-it-works/index.html"
-sed -i "s#data-figure=\"findings.reported\">[^<]*<#data-figure=\"findings.reported\">$g0reported<#" \
-    "$scratch/site/index.html" "$scratch/site/proof/index.html"
-sed -i "s#data-figure=\"findings.suppressed\">[^<]*<#data-figure=\"findings.suppressed\">$g0suppressed<#" \
-    "$scratch/site/index.html" "$scratch/site/proof/index.html"
-sed -i "s#data-figure=\"findings.raised\">[^<]*<#data-figure=\"findings.raised\">$g0raised<#" \
-    "$scratch/site/proof/index.html"
-sed -i "s#data-figure=\"findings.errors\">[^<]*<#data-figure=\"findings.errors\">$g0errors<#" \
-    "$scratch/site/index.html" "$scratch/site/proof/index.html"
-sed -i "s#data-figure=\"findings.advisory\">[^<]*<#data-figure=\"findings.advisory\">$g0advisory<#" \
-    "$scratch/site/proof/index.html"
-sed -i "s#data-figure=\"findings.directives\">[^<]*<#data-figure=\"findings.directives\">$g0directives<#" \
-    "$scratch/site/proof/index.html"
-out=$(cd "$scratch" && sh tools/site/refresh-figures.sh --check 2>&1); status=$?
-judge 'a tree nobody touched, with the clock past a directive'"'"'s until, still exits 0' \
-    0 "$status" '0 stale' "$out"
-judge 'and the reported-count difference is labeled clock only' 0 "$status" \
-    'clock only findings.reported' "$out"
-refute 'and nothing is reported as an ordinary stale figure' 'stale findings' "$out"
-
-# The verb figures are read off the rows of the index, which states no count
-# since #1058: one row for each verb, and `**no contract**` in the last cell of
-# a verb nothing describes. So a tree whose first row loses its contract must
-# read one uncontracted verb and one fewer contracted one. The total is read
-# off the page rather than written here, so a new verb with its contract moves
-# this case with no edit.
-reset
-verbs=$(grep -c '^| `' "$scratch/docs/interfaces/README.md")
-sed -i '0,/^| `/{s/^\(| `.*\) | \[[^]]*\]([^)]*) |$/\1 | **no contract** |/}' \
-    "$scratch/docs/interfaces/README.md"
-grep -q '| \*\*no contract\*\* |$' "$scratch/docs/interfaces/README.md" || {
-    printf 'FAIL setup: the first verb row of docs/interfaces/README.md did not lose its contract\n'
-    exit 1
-}
-out=$(cd "$scratch" && sh tools/site/refresh-figures.sh --print 2>&1); status=$?
-judge 'a verb row marked with no contract is read as one uncontracted verb' \
-    0 "$status" 'verbs.nocontract 1' "$out"
-judge 'and the contracted figure is the rows less that one' \
-    0 "$status" "verbs.contracts $((verbs - 1)) " "$out"
-
-# The engine behind the tree. Every case above measures with whatever binary is
-# under `engine/target/`, and until #679 nothing asked whether that binary was
-# older than the engine sources beside it. A binary that predates a rule counts
-# one fewer wired rule than the page correctly states, so it calls a correct
-# page stale, and the repair the hook then prints writes the wrong figure over
-# the right one. Measured on 6c12f87: a binary a few hours behind reported 12
-# stale figures across 3 pages, and a rebuild at the same commit reported 0.
-#
-# The control comes first and it is what makes the rest evidence. The staged
-# binary is byte-identical to the one this suite runs, so a run of it in the
-# behind state measures the same 34 figures and finds nothing stale. Without
-# the control, a case that asserted only the refusal would pass over a gate
-# that had never looked at an mtime at all.
-reset
-out=$(cd "$scratch" && sh tools/site/refresh-figures.sh --check 2>&1); status=$?
-judge 'a binary newer than the engine sources measures the pages and finds them current' \
-    0 "$status" '0 stale' "$out"
-
-# The provocation is the real cause rather than a stand-in: you pulled a change
-# to the engine and did not build it again.
-touch "$scratch/engine/crates/cli/src/main.rs"
-out=$(cd "$scratch" && sh tools/site/refresh-figures.sh --check 2>&1); status=$?
-judge 'an engine source newer than the binary makes the check refuse to measure' \
-    3 "$status" 'cannot tell whether a figure is stale' "$out"
-# The command is carried whole rather than truncated at the crate name.
-# `tools/engine/build-declaration-fixtures.sh` reads every release build of the CLI in
-# the tracked tree and requires `--locked` on each, and a prefix written here
-# for brevity is an unflagged occurrence to that gate. It is also the weaker
-# assertion: the flag is part of what the refusal has to tell the author.
-judge 'and the refusal names the build command' 3 "$status" \
-    'cargo build --profile dev-release -p headwater-cli --manifest-path engine/Cargo.toml --locked' "$out"
-refute 'and it prints no command that measures again' \
-    'sh tools/site/refresh-figures.sh' "$out"
-refute 'and it names no figure as stale' 'stale census.seen in' "$out"
-
-# The gate reads the status rather than the text. It used to collapse every
-# non-zero into one sentence about the pages and one instruction to measure
-# again, and that instruction is what did the damage.
-out=$(gate); status=$?
-judge 'the gate refuses the commit and blames the engine rather than the pages' \
-    1 "$status" 'the engine that would measure them is older than the engine sources' "$out"
-refute 'and it does not say the pages disagree with a fresh run' \
-    'disagrees with a fresh run' "$out"
-refute 'and it does not tell the author to measure again' \
-    'sh tools/site/refresh-figures.sh' "$out"
-
-# The writing path agrees with `--check`, which is the clause that stops the
-# corruption. A refresh in this state must not write a figure that a `--check`
-# in the same state refused to trust.
-out=$(cd "$scratch" && sh tools/site/refresh-figures.sh 2>&1); status=$?
-judge 'the writing path refuses in the same state' 3 "$status" \
-    'cannot tell whether a figure is stale' "$out"
-(cd "$scratch" && git diff --quiet -- site/); status=$?
-judge 'and it wrote no figure into site/' 0 "$status" '' 'site/ is unmodified'
-# `reset` puts the binary back in front of the sources, and every clause below
-# opens with one, so the state this case plants reaches none of them.
-
 # A finding whose location line lands on the width boundary, printed whole.
 #
 # #340 lays the report out at 80 columns, and the fill leaves a line alone when
@@ -884,13 +620,13 @@ judge 'the gate reports a clone with no merge driver configured' 0 0 \
 
 # And a clone that sets the driver and has not selected it in
 # `info/attributes`, where the committed `-merge` alone would keep every fold
-# from the driver and its site-review marker (#1058). The gate selects it.
+# from the driver (#1058). The gate selects it.
 no_override=$(cd "$scratch" && git config merge.headwater-regenerate.driver ".githooks/merge-regenerate %O %A %B %P" && rm -f "$(git rev-parse --git-path info/attributes)" && sh .githooks/pre-commit 2>&1)
 judge 'the gate selects the driver in a clone that configured it' 0 0 \
     'selected the merge driver for' "$no_override"
 selected=$(cd "$scratch" && cat "$(git rev-parse --git-path info/attributes)" 2>/dev/null)
-judge 'and the selection names the site pages the marker guards' 0 0 \
-    'site/index.html merge=headwater-regenerate' "$selected"
+judge 'and the selection names the lock, a fold the driver refuses' 0 0 \
+    '.headwater/taxonomy.lock merge=headwater-regenerate' "$selected"
 again=$(cd "$scratch" && sh .githooks/select-merge-driver 2>&1)
 refute 'and a second run selects nothing more' 'selected the merge driver' "$again"
 
@@ -907,7 +643,7 @@ stale=$(cd "$scratch" && git config merge.headwater-regenerate.driver ".githooks
 refute 'a driver line for a record-shaped path is removed' \
     'docs/decisions/README.md merge=headwater-regenerate' "$stale"
 judge 'and a line the selector does not own is kept' 0 0 'x.bin -diff' "$stale"
-judge 'and every fold is still selected' 0 0 'site/index.html merge=headwater-regenerate' "$stale"
+judge 'and every fold is still selected' 0 0 '.headwater/taxonomy.lock merge=headwater-regenerate' "$stale"
 
 # And the gate reports an absolute `core.hooksPath`, which `EnterWorktree`
 # writes on every call, and says nothing about the relative one `CLAUDE.md`
@@ -983,9 +719,9 @@ mv "$hold/moved-engine" "$scratch/engine/target/release/headwater"
 
 # --- the push gate, and the board claim it warns about -----------------------
 #
-# `.githooks/pre-push` carries two clauses of different strengths: it refuses a
-# push while an unreviewed `site/*` resolution is pending, and it warns about an
-# issue the push works on that nobody has claimed. The warning reaches the
+# `.githooks/pre-push` warns about an issue the push works on that nobody has
+# claimed. Until #1273 it also refused a push while an unreviewed `site/*`
+# resolution was pending; the pages merge as text now. The warning reaches the
 # network, so every case here plants a `gh` on PATH rather than calling one. A
 # case that asserted silence against a real `gh` would pass on a clone with no
 # login, which is the shape of a check that cannot run reading as one that does.
@@ -999,17 +735,9 @@ mv "$hold/moved-engine" "$scratch/engine/target/release/headwater"
 pushes=$(mktemp -d) || exit 1
 trap 'rm -rf "$scratch" "$merges" "$pushes"' EXIT HUP INT TERM
 
-mkdir -p "$pushes/bin" "$pushes/repo/.githooks" "$pushes/repo/tools/site"
+mkdir -p "$pushes/bin" "$pushes/repo/.githooks"
 cp "$root/.githooks/pre-push" "$pushes/repo/.githooks/"
 chmod +x "$pushes/repo/.githooks/pre-push"
-
-# No marker pending, so the refusal above stays out of the way. One case below
-# replaces this to prove the refusal still wins.
-cat > "$pushes/repo/tools/site/ack-site-prose-reviewed.sh" <<'ACK'
-#!/bin/sh
-exit 0
-ACK
-chmod +x "$pushes/repo/tools/site/ack-site-prose-reviewed.sh"
 
 # The planted `gh`. It answers exactly what the hook's own `--jq` composes, a
 # url and an assignee count, for the three numbers these cases use. Any other
@@ -1277,18 +1005,6 @@ git -C "$pushes/repo" checkout -q main
 git -C "$pushes/repo" branch -qD 941-merge-fixture >/dev/null 2>&1
 git -C "$pushes/repo" update-ref -d refs/remotes/origin/main >/dev/null 2>&1
 git -C "$pushes/repo" update-ref -d refs/remotes/origin/941-merge-fixture >/dev/null 2>&1
-
-# The refusal still wins. A pending marker means unreviewed content is about to
-# leave the clone, and that outranks a stale board.
-cat > "$pushes/repo/tools/site/ack-site-prose-reviewed.sh" <<'ACK'
-#!/bin/sh
-echo "  site/index.html"
-ACK
-chmod +x "$pushes/repo/tools/site/ack-site-prose-reviewed.sh"
-out=$(push_from "$unclaimed_at" "$none"); status=$?
-judge 'an unreviewed site page still refuses the whole push' 1 "$status" \
-    'Push refused: a site/* merge conflict was resolved but never reviewed' "$out"
-refute 'and the refusal does not also spend a network call on the board' '#901 is unassigned' "$out"
 
 # The handoff's stdin claim, proven rather than asserted from the shape of
 # `exec`. A second checkout of the same repository gets its own marked copy

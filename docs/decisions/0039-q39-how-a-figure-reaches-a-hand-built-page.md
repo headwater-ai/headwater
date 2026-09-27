@@ -1,7 +1,7 @@
 ---
 id: HW-DR-0039
-status: current
-status_since: 2026-08-30
+status: superseded
+status_since: 2026-09-28
 summary: "The interpolating form that HW-DR-0037 admits runs before the commit rather than after it, and a script writes every figure on a hand-built page from a run."
 last_verified: 2026-09-06
 title: "Q39 — How a figure reaches a hand-built page"
@@ -15,10 +15,10 @@ provenance:
 relations:
   constrains:
     - HW-DR-0037
-  governs:
-    - tools/site/refresh-figures.sh
   traces_to:
     - .headwater/notes/website-design-brief.md
+  superseded_by:
+    - HW-DR-0097
 ---
 
 # Q39 — How a figure reaches a hand-built page

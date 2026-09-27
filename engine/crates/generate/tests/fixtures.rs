@@ -1098,6 +1098,108 @@ fn the_native_export_round_trips_the_graph() {
     assert!(losses.is_empty(), "the native export declared a loss");
 }
 
+/// A list anchor travels with its member patterns, and a single pattern with none.
+///
+/// [#1247](https://github.com/headwater-ai/headwater/issues/1247). A `governs`
+/// entry written as a flow list is one anchor over the union of its members
+/// ([HW-DR-0074](../../../../docs/decisions/0074-a-code-path-anchor-is-a-pattern-over-the-tree-and-it-binds-when-the-pattern-matches-at-least-one-entry.md)),
+/// and its `id` is the length-prefixed identity the graph encodes. A consumer
+/// of the export that read `id` as a path saw a path that matches no file, and
+/// one that split a joined string read the wrong members. So the anchor node
+/// and every edge onto it carry `patterns`, the sorted normalized members,
+/// beside the unchanged `id`. A single-pattern anchor carries no `patterns`,
+/// because its `id` is already its one pattern.
+///
+/// The second list holds `src/a, b.txt`, whose name holds `, `, the separator
+/// of the joined display string. An emitter that wrote the display string
+/// split on `, ` reads three members there and goes red.
+#[test]
+fn the_native_export_carries_the_members_of_a_list_anchor() {
+    let base = fixtures_dir().join("listanchor");
+    let corpus = Corpus::new(&base, "docs");
+    let root = load_map(&fixtures_dir().join("listanchor.taxonomy.yml"));
+    let built = Built::over(&corpus, &root);
+    let surface = built.surface();
+    let projections = Projections::read(&root).expect("the projections read");
+    let profile = projections.profile("default").expect("the default profile");
+    let emission = headwater_generate::export::emit(&surface, profile, Emitter::Json, None)
+        .expect("the native export emits");
+    let read = headwater_yaml::load(&emission.bytes).expect("the export reads back");
+    let map = read.value.as_map().expect("an object");
+    let graph = map
+        .get("graph")
+        .and_then(|node| node.value.as_map())
+        .expect("a graph");
+
+    let text = |entry: &Mapping, key: &str| -> Option<String> {
+        Some(entry.get(key)?.value.as_scalar()?.text.clone())
+    };
+    let patterns = |entry: &Mapping| -> Option<Vec<String>> {
+        Some(
+            entry
+                .get("patterns")?
+                .value
+                .as_seq()?
+                .iter()
+                .map(|item| item.value.as_scalar().expect("a pattern").text.clone())
+                .collect(),
+        )
+    };
+    let cases: [(&str, Option<Vec<&str>>); 4] = [
+        ("src/c.rs", None),
+        ("8:src/a.rs8:src/b.rs", Some(vec!["src/a.rs", "src/b.rs"])),
+        (
+            "12:src/a, b.txt8:src/c.rs",
+            Some(vec!["src/a, b.txt", "src/c.rs"]),
+        ),
+        // Three members, written out of order. An emitter that writes members
+        // for a list of exactly two, rather than for more than one, drops it.
+        (
+            "8:src/a.rs8:src/b.rs8:src/c.rs",
+            Some(vec!["src/a.rs", "src/b.rs", "src/c.rs"]),
+        ),
+    ];
+
+    let anchors: Vec<&Mapping> = graph
+        .get("anchors")
+        .and_then(|node| node.value.as_seq())
+        .expect("anchors")
+        .iter()
+        .map(|item| item.value.as_map().expect("an anchor object"))
+        .collect();
+    assert_eq!(
+        anchors.len(),
+        cases.len(),
+        "four governs entries are four anchor nodes, so the case is not vacuous"
+    );
+    let targets: Vec<&Mapping> = graph
+        .get("edges")
+        .and_then(|node| node.value.as_seq())
+        .expect("edges")
+        .iter()
+        .filter_map(|item| item.value.as_map()?.get("target")?.value.as_map())
+        .filter(|target| text(target, "bound").as_deref() == Some("anchor"))
+        .collect();
+    assert_eq!(targets.len(), cases.len(), "one governs edge per entry");
+
+    for (id, members) in &cases {
+        let expected: Option<Vec<String>> = members
+            .as_ref()
+            .map(|list| list.iter().map(|member| member.to_string()).collect());
+        for (place, entries) in [("graph.anchors[]", &anchors), ("edges[].target", &targets)] {
+            let entry = entries
+                .iter()
+                .find(|entry| text(entry, "id").as_deref() == Some(*id))
+                .unwrap_or_else(|| panic!("{place} holds no entry with id `{id}`"));
+            assert_eq!(
+                patterns(entry),
+                expected,
+                "{place} `{id}` carries the wrong `patterns`"
+            );
+        }
+    }
+}
+
 /// A filter withholds a document whole, and every edge that names it.
 ///
 /// Spec 6's claim about a filtered export: it "contains no document that its

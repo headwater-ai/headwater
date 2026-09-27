@@ -39,7 +39,9 @@ This repository does not publish the page. It gives you the tool only. Where a t
 |---|---|
 | staleness | `graph.documents[].facets.last_verified`. The export has no top-level `last_verified`. |
 | warrant | `graph.documents[].warrant`. When the key is absent, the page shows "none stated". |
-| coverage | `graph.edges[]` whose `relation` is `governs` and whose target is a `code_path` anchor |
+| coverage | `graph.edges[]` whose `relation` is `governs` and whose target is a `code_path` anchor. The paths are `target.patterns` when the export writes it, and `target.id` when it does not. |
+
+A document can govern a list of paths as one entry, such as `[src/a.rs, src/b.rs]`. The export writes that entry as one anchor. Its `id` is a key and not a path, and its `patterns` holds the paths (export version 1.2 or later). The page shows one row for the list, names every path in it, and counts the files that any of the paths match.
 
 A code path is an exact file, a directory, or a glob, where `*` stays inside one path segment and `**` crosses segments. A path that matches no file in the tree shows 0 files matched. This is often a sign that the path in the document is wrong.
 
