@@ -31,6 +31,8 @@ Read the issue and its comments, because corrections live there:
     sh tools/run/gh-issue.sh body <N>
     sh tools/run/gh-issue.sh comments <N>
 
+Then read the run's `decisions.md`, at the path the dispatch names, for `OWNER` lines that name this issue, in the form `hw-run-policy` states. Such a line is the owner's ruling on the issue, even before the product owner has posted it to the comments.
+
 Confirm the premise against `docs/spec/`, [9 — The decision register](../../docs/spec/09-decisions.md) and spec 13. `headwater explain` and `headwater route` answer from the graph the engine built; open a specification part only after they have named the right one, and never read a whole part.
 
 Where the change extends an interface contract, a decision's stated clause or an existing case table, write that into the note as the first thing to build: the new case against the contract as stated, run, and failing for the change's own reason before the implementation exists.

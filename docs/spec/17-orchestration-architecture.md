@@ -3,7 +3,7 @@ id: HW-SPEC-orchestration-architecture
 status: current
 status_since: 2026-09-22
 summary: "The five stages of a build-order run, what each one owns and never does, where the veto sits, and how claims order the merges."
-last_verified: 2026-09-27
+last_verified: 2026-09-28
 doc_type: design_spec
 sequence: 17
 title: "Orchestration architecture"
@@ -26,14 +26,16 @@ relations:
     - HW-PD-0006
     - HW-PD-0007
   governs:
-    - .claude/commands/next-run.md
+    - to: .claude/commands/next-run.md
+      verified_revision: sha256:597229563393b2e3e7c32b5c09dfbd644a0c793dcab0d55f27839fc30c3824aa
     - .claude/commands/next.md
     - .claude/agents/hw-queue.md
     - .claude/agents/hw-adjudicate.md
     - .claude/agents/hw-build.md
     - .claude/agents/hw-verify.md
     - .claude/agents/hw-integrate.md
-    - .claude/skills/hw-run-policy/SKILL.md
+    - to: .claude/skills/hw-run-policy/SKILL.md
+      verified_revision: sha256:164c3c18eae39af9f10a5750d12be0c9b82dcd142bbba5d929d8d1112f999591
     - .claude/skills/hw-verification-bar/SKILL.md
 ---
 
@@ -105,7 +107,7 @@ flowchart LR
 
 **The parent waits by ending its turn.** With agents in flight, an ended turn is the blocking wait, and each report wakes it. A check on a timer buys nothing and costs a turn at the parent's full context. Its prompt cache holds that context for an hour, so a report arrives warm whether or not the parent looked.
 
-**The parent escalates to a person on two conditions and rules on everything else.** A redirect that changes milestone order and a decision that needs an owner rather than an answer both go to the human. [`headwater-product-owner`](../../.claude/agents/headwater-product-owner.md) reads the whole board and writes one ruling block for each decision the owner owes, and [`headwater-maintainer`](../../.claude/agents/headwater-maintainer.md) reports what a change left stale. Both propose, and neither accepts.
+**The parent escalates to a person on two conditions and rules on everything else.** A redirect that changes milestone order and a decision that needs an owner rather than an answer both go to the human. [`headwater-product-owner`](../../.claude/agents/headwater-product-owner.md) reads the whole board and writes one ruling block for each decision the owner owes. The parent records the owner's answer in the run's decisions file, and the next pass of the product owner posts that answer on the issue. Until then, the adjudication stage reads the recorded answer as the ruling. [`headwater-maintainer`](../../.claude/agents/headwater-maintainer.md) reports what a change left stale. Both propose, and neither accepts.
 
 ### The queue stage
 
@@ -192,7 +194,7 @@ The front matter of this part declares a `governs` edge onto each `.claude/` fil
 | [`.claude/agents/hw-integrate.md`](../../.claude/agents/hw-integrate.md) | The integration stage: the merge, the rebuild, the regenerate, the write-back, the claim release and the ledger line |
 | [`.claude/skills/hw-run-policy/SKILL.md`](../../.claude/skills/hw-run-policy/SKILL.md) | The standing rulings, the environment of a run, and the same list read for cost |
 | [`.claude/skills/hw-verification-bar/SKILL.md`](../../.claude/skills/hw-verification-bar/SKILL.md) | The adversarial checks a branch survives before it merges, and the review questions behind them |
-| [`.claude/agents/headwater-product-owner.md`](../../.claude/agents/headwater-product-owner.md) | Board judgment: milestone order, what is finished and unclosed, and the rulings the owner owes |
+| [`.claude/agents/headwater-product-owner.md`](../../.claude/agents/headwater-product-owner.md) | Board judgment: milestone order, what is finished and unclosed, the rulings the owner owes, ruling write-back and epic closure |
 | [`.claude/agents/headwater-maintainer.md`](../../.claude/agents/headwater-maintainer.md) | What one change touched, what it left stale, and what the corpus is owed |
 | [The evaluation](../evaluations/the-build-order-as-a-multi-agent-system.md) | The measurements under every ruling above, and the numbers a later run answers to |
 | [`docs/process/decisions/`](../process/decisions/README.md) | The seven rulings this part states, each with the argument that settled it |
