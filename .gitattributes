@@ -126,8 +126,9 @@
 # - **What is listed below is a fold by construction.** The lock carries a
 #   digest over its whole canonical text. The recorded lock fixture opens with a
 #   digest, and `.githooks/fixtures.sh` measures that two sides that
-#   write one fold merge to a value true of neither tree. The three pages
-#   under `site/` carry figures, which the block after this one measures.
+#   write one fold merge to a value true of neither tree. The pages under
+#   `site/` carry blank figure markers and are not listed: the figures are
+#   measured into an assembled copy when the site is published (#1273).
 #
 # The cost of that split is one conflict less per pair of branches: two branches
 # that each add a document no longer stop on every shelf page and the nav, and
@@ -136,52 +137,6 @@
 
 .headwater/taxonomy.lock -merge
 engine/crates/lock/fixtures/corpus.lock -merge
-
-# The hand-built pages that carry a measured figure. `tools/site/refresh-figures.sh`
-# substitutes 34 measured keys into every element marked `data-figure` on every
-# page under `site/`, 107 occurrences across these three, and
-# `.githooks/pre-commit` refuses a commit that leaves one stale. So every branch
-# that adds a document rewrites all three of these files.
-#
-# The reason they are here is not the reason above, and the difference is worth
-# stating because these pages look like the case that escapes. They are already
-# decomposed: one element per figure, 57 of them on the landing page, so two
-# branches that move *different* figures merge correctly and nothing in this
-# block would be needed. What survives the decomposition is two branches that
-# move the *same* figure to the *same* new value. Both add a document, both
-# write `census.seen">426`, and the union is 427.
-#
-# Half of that case is reached from here and half is not, per the note above.
-# Two branches adding documents of *different* kinds move different figures, so
-# the two pages differ, the driver is called and it refuses. Two branches adding
-# documents of the *same* kind write one identical page, git takes it at the
-# tree level, and no driver runs. `.githooks/commit-msg` is what reaches the
-# second half, for every path in this file rather than only for these; #717
-# built it and the header above says what it reaches.
-#
-# These are the only two paths in this file measured to escape the driver, and
-# `site/how-it-works/index.html` is here for the differing-bytes case alone: it
-# carries no figure that a document added to any shelf moves.
-#
-# Listed rather than matched, and the list is enumerated rather than remembered.
-# `site/*` would reach `site/tutorial/index.html`, whose 43 verbatim blocks are
-# copied out of the tutorial document rather than measured, and the four pages
-# under `site/changelog/`, `site/compare/`, `site/glossary/` and `site/ns/`,
-# which carry no figure at all. Refusing a merge of a page somebody edits by
-# hand is the worse of the two failures, so
-# `every_page_carrying_a_figure_is_declared_unmergeable` in the census crate
-# reads every page under `site/` and holds the ones carrying a figure against
-# this block, in both directions.
-#
-# One cost, which is intended rather than a regression:
-# `tools/site/refresh-site-tokens.sh` also writes into these three pages, copying one
-# identical block into every page under `site/`. Two branches that both
-# refreshed the tokens wrote the same bytes and used to merge, and now they stop
-# and ask. The remedy the driver names rewrites the figures and leaves the token
-# block untouched, so the resolution is one command either way.
-site/how-it-works/index.html -merge
-site/index.html -merge
-site/proof/index.html -merge
 
 # Vendor snapshots retain upstream bytes, including whitespace that this
 # repository does not own. Their fixture README pins their source revisions.

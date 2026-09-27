@@ -1,9 +1,9 @@
 ---
 id: HW-OBL-0217
-status: current
-status_since: 2026-09-26
-summary: "The pre-push hook reads a site-review marker that every worktree of a clone shares, so one unreviewed site merge refuses the push of every worktree."
-last_verified: 2026-09-26
+status: discharged
+status_since: 2026-09-28
+summary: "The pre-push hook read a site-review marker that every worktree of a clone shared. #1273 removed the marker, its writer and its reader, because the site pages no longer hold a fold."
+last_verified: 2026-09-28
 title: "The site-review marker lives in the common directory of a clone, so one worktree's unreviewed merge blocks the push of every worktree"
 waiting_on: build
 ---
@@ -23,3 +23,5 @@ Every worktree of a clone shares the common directory. So a marker that one work
 ## Discharge
 
 This record discharges when two conditions hold. First, the marker is keyed to the worktree or to the commit that holds the unreviewed resolution. Second, `.githooks/pre-push` reads only the markers of the worktree that pushes. A case writes a marker in one worktree of a clone. The case then requires that a push from a second worktree succeeds, and that a push from the first worktree is refused.
+
+**Discharged on 2026-09-28 by removal, and not by the two conditions above.** [HW-DR-0097](../decisions/0097-a-figure-on-a-hand-built-page-is-measured-when-the-site-is-published-and-the-committed-page-carries-none.md) moved the figures out of the committed pages, so a `site/*` page no longer holds a fold and no merge of it is refused. #1273 deleted the marker writer in `.githooks/merge-regenerate`, `tools/site/ack-site-prose-reviewed.sh`, `.githooks/post-rewrite` and the refusal clause of `.githooks/pre-push`. No marker exists, so no worktree can block another.

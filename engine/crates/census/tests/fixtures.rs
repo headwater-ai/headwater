@@ -219,46 +219,22 @@ fn no_generated_document_is_declared_unmergeable() {
     );
 }
 
-/// Every page the figure refresh writes is declared unmergeable, enumerated.
+/// No page under `site/` is declared unmergeable, and none carries a measured figure.
 ///
-/// The test above holds the documents `headwater generate` writes. This holds
-/// the other producer of a fold in this repository. `tools/site/refresh-figures.sh`
-/// substitutes a measured number into every element carrying `data-figure` on
-/// every page under `site/`, so a page that carries one holds a fold in its
-/// markup exactly the way a generated index holds one in its opening line.
+/// Until #1273 `tools/site/refresh-figures.sh` wrote a measured number into
+/// every `data-figure` element of the committed pages. Each such page held a
+/// fold, so `.gitattributes` declared it `-merge`, and every pull request that
+/// added a document conflicted with every other one on the same pages. The
+/// refresh now fills an assembled copy when the site is published, so the
+/// committed pages carry empty markers and are hand-written text.
 ///
-/// Decomposition does not save these pages, and that is worth stating because
-/// they look decomposed. There is one element per figure and 57 of them on the
-/// landing page, so two branches that move *different* figures do merge
-/// correctly. The case that survives is two branches that move the *same*
-/// figure to the *same* new value: both add a document, both write
-/// `census.seen">426`, git reads one change written twice, takes 426 with no
-/// conflict, and the union is 427.
-///
-/// The set is enumerated from the pages rather than taken from a list, because
-/// every hand-held account of it has been short. The contended set was
-/// published as five artifacts and measured seven; the driver set was answered
-/// as seventeen the day after a tenth shelf index made it eighteen; the count
-/// of pages here was written as four and measured three.
-/// [#676](https://github.com/headwater-ai/headwater/issues/676) owns the
-/// general question of what enumerates the derived artifacts, and this is the
-/// local instance of it.
+/// Both halves are held here. A `-merge` line left on a page refuses a merge of
+/// text somebody edits by hand. A value written into a committed marker brings
+/// the fold back, and two branches that move one figure to one value merge to
+/// a number true of neither.
 #[test]
-fn every_page_carrying_a_figure_is_declared_unmergeable() {
+fn no_page_under_site_is_declared_unmergeable_or_carries_a_figure() {
     let root = repository_root();
-
-    // The producer's own two literals. This test enumerates the same way
-    // `tools/site/refresh-figures.sh` does, and a copy of a rule goes stale in
-    // silence, so the copy is held against the original rather than trusted.
-    let producer = std::fs::read_to_string(root.join("tools/site/refresh-figures.sh"))
-        .expect("the figure refresh");
-    for literal in ["site/**/*.html", "data-figure="] {
-        assert!(
-            producer.contains(literal),
-            "tools/site/refresh-figures.sh no longer says {literal}, so this test \
-             enumerates a set the producer has stopped writing"
-        );
-    }
 
     let mut pages = Vec::new();
     collect_html(&root.join("site"), &root, &mut pages);
@@ -269,7 +245,7 @@ fn every_page_carrying_a_figure_is_declared_unmergeable() {
         pages.len()
     );
 
-    let written: Vec<&String> = pages
+    let marked: Vec<&String> = pages
         .iter()
         .filter(|page| {
             std::fs::read_to_string(root.join(page))
@@ -278,47 +254,43 @@ fn every_page_carrying_a_figure_is_declared_unmergeable() {
         })
         .collect();
     assert!(
-        !written.is_empty(),
-        "no page under site/ carries a figure, so this proves nothing. Either \
-         the refresh writes nothing or the marker was renamed"
+        !marked.is_empty(),
+        "no page under site/ carries a figure marker, so this proves nothing"
     );
 
     let attributes =
         std::fs::read_to_string(root.join(".gitattributes")).expect("the attributes file");
     let declared: Vec<&str> = attributes
         .lines()
-        .filter(|line| !line.starts_with('#') && line.split_whitespace().nth(1) == Some("-merge"))
+        .filter(|line| !line.starts_with('#'))
+        .filter(|line| {
+            line.split_whitespace()
+                .skip(1)
+                .any(|attribute| attribute == "-merge" || attribute.starts_with("merge="))
+        })
         .filter_map(|line| line.split_whitespace().next())
-        .collect();
-    assert!(
-        declared.len() >= 5,
-        "only {} paths declare the driver, so this proves nothing",
-        declared.len()
-    );
-
-    let missing: Vec<&&String> = written
-        .iter()
-        .filter(|page| !declared.contains(&page.as_str()))
-        .collect();
-    assert!(
-        missing.is_empty(),
-        "these pages carry a figure the refresh rewrites and merge like \
-         ordinary files, so two branches that move one figure to one value \
-         merge to a number true of neither: {missing:#?}"
-    );
-
-    // The other direction. A page that stops carrying a figure and keeps the
-    // attribute refuses a merge of a file somebody now edits by hand, which
-    // `.gitattributes` names as the worse of the two failures.
-    let stale: Vec<&&str> = declared
-        .iter()
         .filter(|path| path.starts_with("site/"))
-        .filter(|path| !written.iter().any(|page| page.as_str() == **path))
         .collect();
     assert!(
-        stale.is_empty(),
-        "these pages are declared unmergeable and carry no figure, so the \
-         declaration now refuses a merge of hand-written text: {stale:#?}"
+        declared.is_empty(),
+        "these pages under site/ carry a merge attribute, so a merge of \
+         hand-written text is refused: {declared:#?}"
+    );
+
+    let filled: Vec<&&String> = marked
+        .iter()
+        .filter(|page| {
+            let text = std::fs::read_to_string(root.join(page.as_str())).expect("a page");
+            text.split("data-figure=\"").skip(1).any(|rest| {
+                let after = rest.split_once('>').map_or("", |(_, after)| after);
+                !after.starts_with('<')
+            })
+        })
+        .collect();
+    assert!(
+        filled.is_empty(),
+        "these committed pages carry a measured figure; run \
+         `sh tools/site/refresh-figures.sh --blank`: {filled:#?}"
     );
 }
 
@@ -436,10 +408,9 @@ fn corpus_of(root: &Path) -> Corpus {
 /// The computed population and `.gitattributes` agree, in both directions.
 ///
 /// This generalizes `the_generated_documents_are_declared_unmergeable` and
-/// `every_page_carrying_a_figure_is_declared_unmergeable` over all four
-/// producers rather than replacing either. Those two hold a producer's rule
-/// against the attribute; this holds the union, so a producer output that
-/// belongs to neither of their two rules can no longer be missed.
+/// over all three producers rather than replacing it. That case holds one
+/// producer's rule against the attribute; this holds the union, so a producer
+/// output that belongs to no single rule can no longer be missed.
 #[test]
 fn every_producer_output_is_declared_and_every_declared_path_has_a_producer() {
     let root = repository_root();
@@ -541,27 +512,6 @@ fn a_second_gitignored_marker_bearing_file_does_not_reopen_this() {
          reached the population as undeclared: {:#?}",
         population.undeclared
     );
-}
-
-/// The producer's own two literals, held against the copy this crate enumerates by.
-///
-/// `every_page_carrying_a_figure_is_declared_unmergeable` already holds them
-/// for its own copy of the rule. `headwater_census::derived` is a second reader
-/// of the same script, so it needs the same guard: a copy of a rule goes stale
-/// in silence.
-#[test]
-fn the_figure_refresh_still_writes_the_set_the_population_enumerates() {
-    let root = repository_root();
-    let producer =
-        std::fs::read_to_string(root.join("tools/site/refresh-figures.sh")).expect("the refresh");
-    for literal in ["site/**/*.html", headwater_census::derived::FIGURE] {
-        assert!(
-            producer.contains(literal),
-            "tools/site/refresh-figures.sh no longer says {literal}, so \
-             `headwater_census::derived` enumerates a set the producer has \
-             stopped writing"
-        );
-    }
 }
 
 /// No prose of this repository states the size of the population as a number.
@@ -721,10 +671,9 @@ fn words_of(line: &str) -> Vec<String> {
 /// both directions at once.
 ///
 /// The load of this case is the unedited verb. Nothing in
-/// `headwater_census::derived` names `site/planted/index.html`. The figure
-/// refresh writes every page under `site/` that carries a `data-figure`
-/// element, the planted page carries one, and that is the whole reason it is
-/// reported. A rule that read a list would report nothing here.
+/// `headwater_census::derived` names `docs/planted/README.md`. The projection
+/// layer writes every file that carries the generated-file marker, the planted
+/// file carries one, and that is the whole reason it is reported. A rule that read a list would report nothing here.
 #[test]
 fn a_planted_producer_output_and_a_planted_orphan_are_both_reported() {
     let root = TempTree::new("planted");
@@ -739,10 +688,10 @@ fn a_planted_producer_output_and_a_planted_orphan_are_both_reported() {
         "docs/shelf/README.md",
         "<!-- headwater:generated shelf_index. -->\n\n# A shelf\n",
     );
-    // Produced by the figure refresh and declared by nothing.
+    // Produced by the projection layer and declared by nothing.
     root.write(
-        "site/planted/index.html",
-        "<p><span data-figure=\"census.seen\">426</span></p>\n",
+        "docs/planted/README.md",
+        "<!-- headwater:generated shelf_index. -->\n\n# A planted shelf\n\n426 documents\n",
     );
     // Declared and written by no producer.
     // (no file at docs/nobody/README.md, and a file there with no marker would
@@ -757,10 +706,10 @@ fn a_planted_producer_output_and_a_planted_orphan_are_both_reported() {
             .map(|output| (output.path.as_str(), output.producer))
             .collect::<Vec<_>>(),
         vec![(
-            "site/planted/index.html",
-            headwater_census::derived::Producer::FigureRefresh
+            "docs/planted/README.md",
+            headwater_census::derived::Producer::Generate
         )],
-        "a page the figure refresh writes carries no attribute and the report \
+        "a file the projection layer writes carries no attribute and the report \
          missed it, or it named the wrong producer"
     );
     assert_eq!(
@@ -772,15 +721,51 @@ fn a_planted_producer_output_and_a_planted_orphan_are_both_reported() {
 
     let rendered = population.render(headwater_paint::ColorMode::Plain);
     for expected in [
-        "site/planted/index.html",
+        "docs/planted/README.md",
         "docs/nobody/README.md",
-        "sh tools/site/refresh-figures.sh",
+        "headwater generate",
     ] {
         assert!(
             rendered.contains(expected),
             "the report does not name {expected}:\n{rendered}"
         );
     }
+}
+
+/// A hand-built page under `site/` is written by no producer, blank markers or not.
+///
+/// Before #1273 the figure refresh substituted measured numbers into the
+/// committed pages, and a page that carried a `data-figure` element was a fold
+/// that needed `-merge`. The refresh now fills an assembled copy at publish
+/// time, and the committed page holds only empty markers, so it merges as the
+/// text it is. A tree that still holds `tools/site/refresh-figures.sh` is asked
+/// no attribute for the page.
+#[test]
+fn a_page_under_site_whose_figures_are_blank_is_claimed_by_no_producer() {
+    let root = TempTree::new("blank-figures");
+    root.write("tools/site/refresh-figures.sh", "#!/bin/sh\n");
+    root.write(".gitattributes", "# no merge attribute anywhere\n");
+    root.write(
+        "site/index.html",
+        "<p><span data-figure=\"census.seen\"></span> documents</p>\n",
+    );
+
+    let population = headwater_census::derived::population(root.path());
+
+    assert!(
+        population
+            .outputs
+            .iter()
+            .all(|output| output.path != "site/index.html"),
+        "a page under site/ is still claimed by a producer: {:?}",
+        population.outputs
+    );
+    assert!(
+        population.undeclared.is_empty(),
+        "the verb asks -merge of a hand-built page: {:?}",
+        population.undeclared
+    );
+    assert!(population.agrees(), "the tree does not agree");
 }
 
 /// A recorded fixture is a member only where its opening states a fold.
@@ -933,8 +918,8 @@ fn every_disagreement_between_a_shape_and_a_treatment_is_reported() {
     );
     // A fold declared nothing: the direction the verb already reported.
     root.write(
-        "site/silent/index.html",
-        "<p><span data-figure=\"census.seen\">426</span></p>\n",
+        "docs/silent/README.md",
+        "<!-- headwater:generated shelf_index. -->\n\n12 decisions\n",
     );
     // The three that agree.
     root.write(
@@ -959,6 +944,7 @@ fn every_disagreement_between_a_shape_and_a_treatment_is_reported() {
         found,
         vec![
             ("docs/interleaved/README.md", Shape::Fold, Treatment::Union),
+            ("docs/silent/README.md", Shape::Fold, Treatment::Unset),
             (
                 "engine/crates/a/fixtures/corpus.a",
                 Shape::RecordPerEntity,
@@ -969,7 +955,6 @@ fn every_disagreement_between_a_shape_and_a_treatment_is_reported() {
                 Shape::RecordPerEntity,
                 Treatment::Union
             ),
-            ("site/silent/index.html", Shape::Fold, Treatment::Unset),
             (
                 "store/appended.jsonl",
                 Shape::IndependentLines,
@@ -1132,15 +1117,15 @@ fn a_producer_output_whose_every_line_is_a_record_is_a_fold() {
         "{\"digest\":\"sha256:0a1b\"}\n{\"seen\":426}\n",
     );
     root.write(
-        "site/figure/index.html",
-        "{<span data-figure=\"census.seen\">426</span>}\n",
+        ".headwater/taxonomy.lock",
+        "{\"digest\":\"sha256:0a1b\"}\n{\"packages\":2}\n",
     );
 
     let population = headwater_census::derived::population(root.path());
     let report = population.render(headwater_paint::ColorMode::Plain);
     for (path, producer) in [
         ("engine/crates/a/fixtures/corpus.a", Producer::RecordedFold),
-        ("site/figure/index.html", Producer::FigureRefresh),
+        (".headwater/taxonomy.lock", Producer::TaxonomyResolve),
     ] {
         assert!(
             population
@@ -1164,46 +1149,39 @@ fn a_producer_output_whose_every_line_is_a_record_is_a_fold() {
     }
 }
 
-/// A tree that holds neither the figure script nor the engine workspace is
-/// not told to run either one.
+/// A tree that does not hold the engine workspace is not told to run the blessing.
 ///
-/// The tree below is an adopter's: a page under `site/` that carries a
-/// `data-figure` element, and a recorded fixture whose opening states a fold.
-/// In this repository the first is the figure producer's and the second is the
-/// blessing run's. Here neither producer is held, so neither claims a file, and
-/// the report names neither command. Make either predicate always true and
-/// this case fails.
+/// The tree below is an adopter's: a recorded fixture whose opening states a
+/// fold. In this repository it is the blessing run's. Here that producer is not
+/// held, so it claims no file, and the report does not name its command. Make
+/// the predicate always true and this case fails.
 #[test]
 fn a_tree_that_lacks_a_producer_is_not_told_to_run_it() {
     use headwater_census::derived::Producer;
 
-    const PAGE: &str = "site/index.html";
     const FOLD: &str = "engine/crates/a/fixtures/corpus.a";
     let root = TempTree::adopter("adopter");
     root.write(".gitattributes", "");
-    root.write(PAGE, "<span data-figure=\"census.seen\">426</span>\n");
     root.write(FOLD, "426 files\nsha256:0a1b\n");
 
     let population = headwater_census::derived::population(root.path());
     let report = population.render(headwater_paint::ColorMode::Plain);
-    for producer in [Producer::FigureRefresh, Producer::RecordedFold] {
-        assert!(
-            !producer.held_by(root.path()),
-            "{producer:?} is held by a tree that carries neither the script nor the \
-             engine workspace"
-        );
-        assert!(
-            !report.contains(producer.command()),
-            "the report names `{}`, which this tree cannot run:\n{report}",
-            producer.command()
-        );
-    }
+    let producer = Producer::RecordedFold;
+    assert!(
+        !producer.held_by(root.path()),
+        "{producer:?} is held by a tree that does not carry the engine workspace"
+    );
+    assert!(
+        !report.contains(producer.command()),
+        "the report names `{}`, which this tree cannot run:\n{report}",
+        producer.command()
+    );
     assert!(
         population.outputs.is_empty(),
         "a producer the tree does not hold claimed a file:\n{report}"
     );
     assert!(
-        !report.contains(PAGE) && !report.contains(FOLD),
+        !report.contains(FOLD),
         "the report names a file that no held producer writes:\n{report}"
     );
     assert!(
@@ -1215,8 +1193,7 @@ fn a_tree_that_lacks_a_producer_is_not_told_to_run_it() {
         "an adopter tree with no attribute agrees:\n{report}"
     );
 
-    // The same files, in a tree that holds both producers, are claimed.
-    root.write(REFRESH_SCRIPT, "#!/bin/sh\n");
+    // The same file, in a tree that holds the producer, is claimed.
     root.write(ENGINE_MANIFEST, "[workspace]\n");
     let population = headwater_census::derived::population(root.path());
     let claimed: Vec<&str> = population
@@ -1224,7 +1201,7 @@ fn a_tree_that_lacks_a_producer_is_not_told_to_run_it() {
         .iter()
         .map(|output| output.path.as_str())
         .collect();
-    assert_eq!(claimed, vec![FOLD, PAGE], "a held producer claims its file");
+    assert_eq!(claimed, vec![FOLD], "a held producer claims its file");
 }
 
 /// Inside a git repository, the merge attribute of every path is git's answer.
@@ -1820,8 +1797,6 @@ fn git_treatment(root: &Path, path: &str) -> headwater_census::derived::Treatmen
     }
 }
 
-/// The file whose presence means a tree holds the figure producer.
-const REFRESH_SCRIPT: &str = "tools/site/refresh-figures.sh";
 /// The file whose presence means a tree holds the blessing run.
 const ENGINE_MANIFEST: &str = "engine/Cargo.toml";
 
@@ -1833,13 +1808,12 @@ const ENGINE_MANIFEST: &str = "engine/Cargo.toml";
 struct TempTree(PathBuf);
 
 impl TempTree {
-    /// A tree that holds all four producers, as this repository does.
+    /// A tree that holds all three producers, as this repository does.
     ///
-    /// The figure script and the engine workspace are planted, because a tree
-    /// that lacks either is not asked about that producer at all.
+    /// The engine workspace is planted, because a tree that lacks it is not
+    /// asked about the blessing run at all.
     fn new(label: &str) -> TempTree {
         let tree = TempTree::adopter(label);
-        tree.write(REFRESH_SCRIPT, "#!/bin/sh\n");
         tree.write(ENGINE_MANIFEST, "[workspace]\n");
         tree
     }

@@ -60,12 +60,21 @@
 #   same reasons, and a divergence between them is the failure above repeating
 #   itself in the other direction.
 #
-# WHAT THIS DOES NOT DO
+# THIS IS NO LONGER THE DEPLOY PATH (#1273)
 #
-#   It does not deploy. Cloudflare runs `npx wrangler deploy` afterwards, and
-#   `wrangler.jsonc` names the directory that deploy serves. While that file
-#   names `./site`, this script's output is built and not served — which is
-#   deliberate, and HW-DR-0047 states the order in which that changes.
+#   The site is deployed by the `Deploy the site` job of
+#   `.github/workflows/ci.yml`, which runs `tools/site/deploy-site.sh` on a
+#   push to `main` after every gating job is green. That script measures the
+#   figures into the assembled pages, and nothing here can: a Workers Build has
+#   no built engine, and it starts on the push rather than after CI.
+#
+#   So the committed pages carry every figure blank, and this script refuses
+#   the assembled directory with `tools/site/check-site-figures.sh` before
+#   Cloudflare deploys it. While the Workers Builds git integration stays
+#   connected, every build it runs goes red and publishes nothing, which is the
+#   intended outcome: a red build in the Cloudflare dashboard rather than a
+#   live page with holes where the figures belong. Disconnect the repository
+#   in the Worker's Builds settings, and this file has no caller.
 #
 set -eu
 
@@ -81,6 +90,9 @@ python3 -m mkdocs build --strict
 
 echo "cloudflare-build.sh: composing the served directory"
 sh tools/site/assemble-site.sh
+
+echo "cloudflare-build.sh: refusing a blank figure, which only the CI deploy fills"
+sh tools/site/check-site-figures.sh .headwater/site-deploy
 
 echo "cloudflare-build.sh: adding the signed APT repository of the newest release"
 sh tools/site/fetch-apt.sh .headwater/site-deploy
