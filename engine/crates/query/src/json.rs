@@ -49,6 +49,23 @@ pub fn route(route: &Route) -> String {
     of_route(route).render_pretty()
 }
 
+/// One route as a value, which the MCP `route` tool carries as its
+/// `structuredContent`, so that member and `route --json` are one document
+/// (#1248).
+pub fn route_value(route: &Route) -> Json {
+    of_route(route)
+}
+
+/// A list of pointers as `{"pointers": [...]}`, each element the pointer
+/// `route` writes. The MCP `governing_docs_for_path` tool carries it as its
+/// `structuredContent` (#1248).
+pub fn pointers_value(pointers: &[Pointer]) -> Json {
+    Json::object([(
+        "pointers",
+        Json::Array(pointers.iter().map(of_pointer).collect()),
+    )])
+}
+
 /// One explanation as JSON.
 pub fn explain(explanation: &Explanation) -> String {
     of_explanation(explanation).render_pretty()
