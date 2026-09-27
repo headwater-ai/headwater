@@ -51,16 +51,26 @@ use headwater_yaml::{Position, Span};
 /// with a capital or, since #1151, with a lower-case word such as `iPhone`.
 /// The titles `Mr.`, `Mrs.`, `Dr.` and `St.` of that chapter are omitted on
 /// purpose. `Dr.` and `St.` also end real sentences as `drive` and `street`,
-/// and a title is not dotted, so it waits on its own evidence. `U.S.C.` needs
-/// no entry, because no space follows its inner periods.
+/// and a title is not dotted, so it waits on its own evidence.
+///
+/// `U.S.C.` is the citation form of the United States Code in the same manual
+/// and in the Bluebook, as in `12 U.S.C. 101` (#1228). No space follows its
+/// inner periods, so they never reach this list. Its final period meets the
+/// section number, and a digit opens a sentence, so without an entry one
+/// citation split into three sentences.
+///
+/// A dotted entry matches in any case, so `u.s.` and `PH.D.` hold as well.
 ///
 /// The cost: an entry suppresses the split without condition. A real sentence
-/// end on an entry, as in `sold in the U.S. The next`, joins with the sentence
-/// after it. The dotted forms end a sentence less often than a name follows
-/// them, so the list takes that cost.
-const ABBREVIATIONS: [&str; 13] = [
+/// end on an entry, as in `sold in the U.S. The next` or `set out in 5 U.S.C.
+/// The next`, joins with the sentence after it. For `U.S.C.` the cost also
+/// covers a next sentence that opens with a number, as in `set out in 5
+/// U.S.C. 12 agencies read it`, because the section number that the entry
+/// exists for is a number too. The dotted forms end a sentence less often than
+/// a name or a number follows them, so the list takes that cost.
+const ABBREVIATIONS: [&str; 14] = [
     "e.g.", "i.e.", "cf.", "etc.", "vs.", "al.", "approx.", "no.", "U.S.", "U.K.", "a.m.", "p.m.",
-    "Ph.D.",
+    "Ph.D.", "U.S.C.",
 ];
 
 /// One sentence of one document.
@@ -443,6 +453,30 @@ mod tests {
         assert_eq!(texts("It closes at 5 p.m. Friday.\n").len(), 1);
         assert_eq!(texts("She holds a Ph.D. in it.\n").len(), 1);
         assert_eq!(texts("She holds a Ph.D. From Leeds.\n").len(), 1);
+        assert_eq!(texts("Read 12 U.S.C. Section 101 first.\n").len(), 1);
+    }
+
+    /// A statute citation before a section number (#1228). The period after
+    /// `U.S.C.` met the digit of `101`, and a digit opens a sentence, so one
+    /// sentence split into three.
+    #[test]
+    fn a_statute_citation_before_a_number_ends_no_sentence() {
+        assert_eq!(
+            texts("Read 12 U.S.C. 101. Then stop.\n"),
+            ["Read 12 U.S.C. 101.", "Then stop."]
+        );
+    }
+
+    /// A dotted entry matches in any case (#1228). Each case is followed by a
+    /// word that opens a sentence, a capital or a name such as `iPhone`, so a
+    /// case-sensitive match splits it. After a plain lower-case word the
+    /// lower-case guard joins the two anyway, and the case would prove nothing.
+    #[test]
+    fn a_dotted_abbreviation_matches_in_any_case() {
+        assert_eq!(texts("The u.s. iPhone ships it.\n").len(), 1);
+        assert_eq!(texts("It opens at 9 A.M. Monday.\n").len(), 1);
+        assert_eq!(texts("She holds a PH.D. From Leeds.\n").len(), 1);
+        assert_eq!(texts("Read 12 u.s.c. 101 first.\n").len(), 1);
     }
 
     /// The cost of the dotted entries, held so that nobody reads it as a bug:
@@ -452,6 +486,14 @@ mod tests {
     fn a_sentence_that_ends_on_a_dotted_abbreviation_joins_the_next() {
         assert_eq!(
             texts("It is sold in the U.S. The next one is not.\n").len(),
+            1
+        );
+        assert_eq!(
+            texts("It is set out in 5 U.S.C. The next one is not.\n").len(),
+            1
+        );
+        assert_eq!(
+            texts("It is set out in 5 U.S.C. 12 agencies read it.\n").len(),
             1
         );
     }

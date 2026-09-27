@@ -1,6 +1,6 @@
 ## `headwater check`
 
-61 findings, 38 of them errors across 28 of 31 documents, against `headwater/fixture` 1.0.0 at `9df1915ec6a29614e9cba30132a126a5cc7591315ce0e880fda4b551982640c0`, evaluated at 2026-08-12.
+64 findings, 38 of them errors across 28 of 31 documents, against `headwater/fixture` 1.0.0 at `9df1915ec6a29614e9cba30132a126a5cc7591315ce0e880fda4b551982640c0`, evaluated at 2026-08-12.
 
 **Coverage.** This run saw 31 files and classified 29 of them, and left 1 to `headwater generate --check`, which holds a generated file to the bytes its emitter writes. It created 357 check instances, and 60 of them reached no verdict.
 
@@ -33,17 +33,20 @@
 | error | `check/spec/07-prose-defects.md:25` | `language.controlled.not_met` | `ste_house` admits no contraction, and this sentence writes `doesn't` |
 | error | `check/spec/07-prose-defects.md:27` | `language.controlled.not_met` | `ste_house` declares the tag `en-US`, and this sentence writes `behaviour` |
 | warn | `check/spec/07-prose-defects.md:29` | `language.controlled.not_met` | `ste_house` admits no semicolon in running prose, and this sentence writes one |
-| error | `check/spec/07-prose-defects.md:39` | `language.controlled.not_met` | `ste_house` admits no contraction, and this sentence writes `doesn't` |
-| error | `check/spec/07-prose-defects.md:43` | `language.retired_term.used` | `ste_house` retires `reference system`, and this sentence writes it: the corpus renamed it |
-| warn | `check/spec/07-prose-defects.md:45` | `language.retired_term.used` | `ste_house` retires `robust`, and this sentence writes it: it stands in for the failure the thing survives |
-| error | `check/spec/07-prose-defects.md:56` | `language.source_form.not_met` | `ste_house` writes one paragraph on one line, and this line continues the paragraph above |
-| error | `check/spec/07-prose-defects.md:57` | `language.source_form.not_met` | `ste_house` writes one paragraph on one line, and this line continues the paragraph above |
-| error | `check/spec/07-prose-defects.md:61` | `link.fragment.unresolved` | `#no-such-section` names no heading of this document |
-| error | `check/spec/07-prose-defects.md:63` | `link.path.unresolved` | `19-renamed.md` names no file of this repository: nothing stands at `check/spec/19-renamed.md` |
-| error | `check/spec/07-prose-defects.md:65` | `link.path.unresolved` | `19-renamed.md#a-heading` names no file of this repository: nothing stands at `check/spec/19-renamed.md` |
-| error | `check/spec/07-prose-defects.md:67` | `link.path.unresolved` | `../../../outside.md` does not name a path of this repository at all: `check/spec/../../../outside.md` climbs above the repository |
-| error | `check/spec/07-prose-defects.md:69` | `link.path.unresolved` | `19-renamed.md?v=2` names no file of this repository: nothing stands at `check/spec/19-renamed.md` |
-| error | `check/spec/07-prose-defects.md:71` | `link.path.unresolved` | `/spec/00-both-halves.md` names no file of this repository: nothing stands at `/spec/00-both-halves.md` |
+| warn | `check/spec/07-prose-defects.md:35` | `language.controlled.not_met` | `ste_house` holds prose to 25 words a sentence, and this one has 49 |
+| warn | `check/spec/07-prose-defects.md:35` | `language.retired_term.used` | `ste_house` retires `robust`, and this sentence writes it: it stands in for the failure the thing survives |
+| warn | `check/spec/07-prose-defects.md:35` | `voice.forbidden_construction` | `declarative` forbids future_intent, and this sentence writes `will be` |
+| error | `check/spec/07-prose-defects.md:43` | `language.controlled.not_met` | `ste_house` admits no contraction, and this sentence writes `doesn't` |
+| error | `check/spec/07-prose-defects.md:47` | `language.retired_term.used` | `ste_house` retires `reference system`, and this sentence writes it: the corpus renamed it |
+| warn | `check/spec/07-prose-defects.md:49` | `language.retired_term.used` | `ste_house` retires `robust`, and this sentence writes it: it stands in for the failure the thing survives |
+| error | `check/spec/07-prose-defects.md:60` | `language.source_form.not_met` | `ste_house` writes one paragraph on one line, and this line continues the paragraph above |
+| error | `check/spec/07-prose-defects.md:61` | `language.source_form.not_met` | `ste_house` writes one paragraph on one line, and this line continues the paragraph above |
+| error | `check/spec/07-prose-defects.md:65` | `link.fragment.unresolved` | `#no-such-section` names no heading of this document |
+| error | `check/spec/07-prose-defects.md:67` | `link.path.unresolved` | `19-renamed.md` names no file of this repository: nothing stands at `check/spec/19-renamed.md` |
+| error | `check/spec/07-prose-defects.md:69` | `link.path.unresolved` | `19-renamed.md#a-heading` names no file of this repository: nothing stands at `check/spec/19-renamed.md` |
+| error | `check/spec/07-prose-defects.md:71` | `link.path.unresolved` | `../../../outside.md` does not name a path of this repository at all: `check/spec/../../../outside.md` climbs above the repository |
+| error | `check/spec/07-prose-defects.md:73` | `link.path.unresolved` | `19-renamed.md?v=2` names no file of this repository: nothing stands at `check/spec/19-renamed.md` |
+| error | `check/spec/07-prose-defects.md:75` | `link.path.unresolved` | `/spec/00-both-halves.md` names no file of this repository: nothing stands at `/spec/00-both-halves.md` |
 | error | `check/spec/08-contract-met.md:2` | `identifier.claim.missing` | `DR-FIX-0008` is spent by check/spec/08-contract-met.md and no file of `.headwater/ids` claims it, so this identifier is invisible to the allocator of every other branch and a second document can be minted onto it |
 | error | `check/spec/09-contract-missing.md` | `section.required.missing` | `decision_record` requires the section `Decision`, and no heading of this document says so |
 | error | `check/spec/09-contract-missing.md:2` | `identifier.claim.missing` | `DR-FIX-0009` is spent by check/spec/09-contract-missing.md and no file of `.headwater/ids` claims it, so this identifier is invisible to the allocator of every other branch and a second document can be minted onto it |
