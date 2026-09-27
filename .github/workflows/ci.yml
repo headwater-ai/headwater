@@ -29,8 +29,9 @@
 # before changing a rule.
 #
 # 1. `runs-on` decides self-hosted eligibility on `github.event_name` and on
-#    nothing else. Never key it on any field a pull request's author can
-#    influence (HW-PD-0013).
+#    nothing else. `push` and `merge_group` are eligible, and `pull_request`
+#    is not. Never key it on any field a pull request's author can
+#    influence (HW-PD-0013, HW-PD-0020).
 #
 # 2. Never approve an outside run whose diff touches `.github/` without
 #    reading that diff first. The approval setting is the boundary, and no
@@ -43,20 +44,20 @@
 #
 # 5. `engine/target` is never carried between self-hosted jobs (HW-PD-0019).
 #
-# 6. The `route` job can only move a `push` run to a hosted runner. Keep the
-#    `!cancelled()` prefix on the `if:` of `engine` and `headwater`, and give
-#    `route` no `if:` of its own (HW-PD-0018).
+# 6. The `route` job can only move a `push` or `merge_group` run to a
+#    hosted runner. Keep the `!cancelled()` prefix on the `if:` of `engine`
+#    and `headwater`, and give `route` no `if:` of its own (HW-PD-0018).
 #
-# 7. `CI_RUNNER` is an opt-in that only a `push` reads, and unset means
-#    `ubuntu-latest` (HW-PD-0016). Concurrency is per ref, and every ref but
-#    `main` cancels a superseded run (HW-PD-0017).
+# 7. `CI_RUNNER` is an opt-in that only a `push` or a `merge_group` reads,
+#    and unset means `ubuntu-latest` (HW-PD-0016). Concurrency is per ref,
+#    and every ref but `main` cancels a superseded run (HW-PD-0017).
 #
 # `runner.environment` reads `self-hosted` on the container and tells the two
 # runners apart wherever a step differs between them. `--break-system-packages`
 # on each `pip install --user` below is what the self-hosted image's PEP 668
 # Python needs, and pip accepts it where PEP 668 does not apply (HW-PD-0019).
 #
-#   gh variable set CI_RUNNER --body '["self-hosted", "headwater"]'  # opt in, push events only
+#   gh variable set CI_RUNNER --body '["self-hosted", "headwater"]'  # opt in, push and merge_group only
 #   gh variable delete CI_RUNNER                                    # back to ubuntu-latest
 #   gh variable list                                                # which one is live
 #   gh variable set CI_SELF_HOSTED_SLOTS --body 3                  # the pool size the router assumes
@@ -64,17 +65,25 @@
 
 name: CI
 
-# `branches: ['**']` rather than `[main]`: a push is eligible for
-# self-hosted whichever branch it lands on (HW-PD-0013).
+# `branches` starts from `'**'` rather than `[main]`: a push is eligible for
+# self-hosted whichever branch it lands on (HW-PD-0013). `merge_group` is
+# the merge queue's trigger, and the queue's own `gh-readonly-queue/`
+# branches are excluded from `push`, so a queued commit starts one run and
+# not two in one concurrency group (HW-PD-0020).
 on:
   push:
-    branches: ['**']
+    branches: ['**', '!gh-readonly-queue/**']
   pull_request:
+  merge_group:
+    types: [checks_requested]
 
 # Per ref, so two pull requests never cancel each other. Every ref but
 # `main` cancels a superseded run, and `main` keeps every run because it
-# alone reads the composition of merges. Key it on the ref and never on
-# the event (HW-PD-0017).
+# is the last check that reads the composition of merges, after the merge
+# queue's run on the group tip (HW-PD-0020). Key it on the ref and never on
+# the event (HW-PD-0017). Each merge queue entry has its own ref,
+# `refs/heads/gh-readonly-queue/main/pr-N-<sha>`, so one entry's run never
+# cancels another's (HW-PD-0020).
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
@@ -129,7 +138,7 @@ jobs:
             echo "overflow=false" >> "$GITHUB_OUTPUT"
             exit 0
           }
-          if [ "$EVENT" != push ]; then
+          if [ "$EVENT" != push ] && [ "$EVENT" != merge_group ]; then
             echo "route: a $EVENT run never reaches self-hosted -> hosted"
             echo "overflow=true" >> "$GITHUB_OUTPUT"
             exit 0
@@ -174,13 +183,13 @@ jobs:
     # `push` run on the same commit already answered. It takes work away and
     # grants none (header rule 3), which is why it may read a pull request
     # field here and `runs-on` below may not.
-    if: ${{ !cancelled() && (github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository) }}
+    if: ${{ !cancelled() && (github.event_name == 'push' || github.event_name == 'merge_group' || github.event.pull_request.head.repo.full_name != github.repository) }}
     # `!cancelled()` in the `if:` above runs this job when `route` fails as
     # a job, so this `needs:` delays it by one short hosted job and never
     # skips it (header rule 6). With no output the job routes as it did
     # before `route` existed.
     needs: route
-    # `CI_RUNNER` is only read on a `push`, and its own unset fallback is
+    # `CI_RUNNER` is only read on a `push` or a `merge_group`, and its own unset fallback is
     # `ubuntu-latest`: the self-hosted labels are an opt-in the variable has
     # to name explicitly (`gh variable set CI_RUNNER --body '["self-hosted",
     # "headwater"]'`), not a default. A `pull_request` never reaches that
@@ -190,7 +199,7 @@ jobs:
     # pull request that has gone `CONFLICTING` against a moved `main` gets
     # no check-suite at all, on either runner, which looks the same from
     # here.
-    runs-on: ${{ github.event_name == 'push' && needs.route.outputs.overflow != 'true' && fromJSON(vars.CI_RUNNER || '["ubuntu-latest"]') || fromJSON('["ubuntu-latest"]') }}
+    runs-on: ${{ (github.event_name == 'push' || github.event_name == 'merge_group') && needs.route.outputs.overflow != 'true' && fromJSON(vars.CI_RUNNER || '["ubuntu-latest"]') || fromJSON('["ubuntu-latest"]') }}
     steps:
       - uses: actions/checkout@v4
       - name: The cargo cache, on a hosted runner only
@@ -456,11 +465,11 @@ jobs:
     name: headwater check (advisory)
     # Both expressions are the `engine` job's, and so are both reasons: that
     # job carries why a same-repo pull request skips here, and the
-    # top-of-file comment carries why `push` is the only trigger this file
-    # trusts with the self-hosted label.
-    if: ${{ !cancelled() && (github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository) }}
+    # top-of-file comment carries why `push` and `merge_group` are the only
+    # triggers this file trusts with the self-hosted label.
+    if: ${{ !cancelled() && (github.event_name == 'push' || github.event_name == 'merge_group' || github.event.pull_request.head.repo.full_name != github.repository) }}
     needs: route
-    runs-on: ${{ github.event_name == 'push' && needs.route.outputs.overflow != 'true' && fromJSON(vars.CI_RUNNER || '["ubuntu-latest"]') || fromJSON('["ubuntu-latest"]') }}
+    runs-on: ${{ (github.event_name == 'push' || github.event_name == 'merge_group') && needs.route.outputs.overflow != 'true' && fromJSON(vars.CI_RUNNER || '["ubuntu-latest"]') || fromJSON('["ubuntu-latest"]') }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -1189,8 +1198,9 @@ jobs:
           fi
           exit "$status"
       - name: The tools a build-order stage calls behave as their agent definitions say
-        # Six scripts that every stage of a run calls in place of a command
-        # it once retyped: the CI-finished condition, the board move, the
+        # Seven scripts that every stage of a run calls in place of a command
+        # it once retyped: the CI-finished condition, the queue-finished
+        # condition, the board move, the
         # single-issue reads and writes, the capped wait, the fetched-added-
         # built worktree and the cargo slot wrapper. Each suite was written
         # with its script and none was run by anything until run
@@ -1199,6 +1209,7 @@ jobs:
         # token and no toolchain, and writes only under temporary directories.
         run: |
           sh tools/run/ci-done-fixtures.sh
+          sh tools/run/queue-done-fixtures.sh
           sh tools/run/board-move-fixtures.sh
           sh tools/run/gh-issue-fixtures.sh
           sh tools/run/wait-for-fixtures.sh

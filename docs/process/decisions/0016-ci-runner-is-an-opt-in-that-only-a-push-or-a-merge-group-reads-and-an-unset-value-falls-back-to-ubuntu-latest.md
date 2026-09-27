@@ -2,9 +2,9 @@
 id: HW-PD-0016
 status: current
 status_since: 2026-09-27
-summary: "The self-hosted labels reach runs-on only when the CI_RUNNER variable names them and the event is a push. The default is a hosted runner."
+summary: "The self-hosted labels reach runs-on only when the CI_RUNNER variable names them and the event is a push or a merge group. The default is a hosted runner."
 last_verified: 2026-09-27
-title: "CI_RUNNER is an opt-in that only a push reads, and an unset value falls back to ubuntu-latest"
+title: "CI_RUNNER is an opt-in that only a push or a merge group reads, and an unset value falls back to ubuntu-latest"
 provenance:
   warrant: asserted
   agency: agent
@@ -14,10 +14,10 @@ provenance:
 relations:
   governs:
     - to: .github/workflows/ci.yml
-      verified_revision: sha256:0a779f46544f53e30264c814cd7a176966280fdfba2f3be426b68206d3b0a3b0
+      verified_revision: sha256:9a388898944b9ec3a6af4f28b10c5d8d069b21bc1cb81b0e04bba1cbdf6cfb57
 ---
 
-# CI_RUNNER is an opt-in that only a push reads, and an unset value falls back to ubuntu-latest
+# CI_RUNNER is an opt-in that only a push or a merge group reads, and an unset value falls back to ubuntu-latest
 
 ## Context
 
@@ -27,7 +27,7 @@ The variable lives in the repository settings and not in the tree. So a reader o
 
 ## Decision
 
-**An opt-in.** `runs-on` reads `vars.CI_RUNNER` only when the event is a `push` and the router did not report overflow ([HW-PD-0018](0018-a-router-sends-a-push-run-to-a-hosted-runner-when-the-self-hosted-pool-is-full-and-it-can-only-take-work-away.md)). When the variable is unset, the expression falls back to `["ubuntu-latest"]`. The self-hosted labels reach a job only when the variable names them, with `gh variable set CI_RUNNER --body '["self-hosted", "headwater"]'`.
+**An opt-in.** `runs-on` reads `vars.CI_RUNNER` only when the event is a `push` and the router did not report overflow ([HW-PD-0018](0018-a-router-sends-a-push-or-merge-group-run-to-a-hosted-runner-when-the-self-hosted-pool-is-full-and-it-can-only-take-work-away.md)). Since [HW-PD-0020](0020-merges-go-through-the-github-merge-queue-one-squash-commit-per-pull-request.md), a `merge_group` run reads it in the same way as a `push`. When the variable is unset, the expression falls back to `["ubuntu-latest"]`. The self-hosted labels reach a job only when the variable names them, with `gh variable set CI_RUNNER --body '["self-hosted", "headwater"]'`.
 
 **A pull request never reads it.** A `pull_request` run takes the last branch of the expression, `ubuntu-latest`, whatever the variable holds.
 
