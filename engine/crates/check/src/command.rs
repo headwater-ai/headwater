@@ -91,8 +91,11 @@ impl DocumentCheck for Undeclared {
     const RULE: &'static str = self::RULE;
     /// 2 reports the rest of a block as unreadable once a line ends inside a
     /// quote, a pair of backticks, a `$(` or a `${` (#1135). The first edition read
-    /// each line alone and could read a quoted chain as one program.
-    const VERSION: u32 = 2;
+    /// each line alone and could read a quoted chain as one program. 3 reads
+    /// a here-document end word, `$(( ))`, a `\` before a CR and a closer of
+    /// the other kind as the shell does, and names the first program inside
+    /// `$( )`, backticks, `<( )` and `>( )` (#1135).
+    const VERSION: u32 = 3;
     const NEEDS_BODY: bool = true;
 
     fn instantiates(&self, _kind: &str) -> bool {
