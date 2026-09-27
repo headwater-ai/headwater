@@ -95,7 +95,7 @@ nav:
       - "Each release states in its notes the release digest that a consumer pins": "decisions/0090-each-release-states-in-its-notes-the-release-digest-that-a-consumer-pins.md"
       - "The runner image of the engine release build is written in the workflow because it sets the glibc floor": "decisions/0091-the-runner-image-of-the-engine-release-build-is-written-in-the-workflow-because-it-sets-the-glibc-floor.md"
       - "The citation comment of spec 5 is for an adopter's corpus, and this repository does not practice it on its own code": "decisions/0092-the-citation-comment-of-spec-5-is-for-an-adopter-s-corpus-and-this-repository-does-not-practice-it-on-its-own-code.md"
-      - "Q66 — One library entry may address the keys of an entry it names in requires, and confluence holds over the dependency order": "decisions/0095-q66-one-library-entry-may-address-the-keys-of-an-entry-it-names-in-requires-and-confluence-holds-over-the-dependency-order.md"
+      - "Q67 — One library entry may address the keys of an entry it names in requires, and confluence holds over the dependency order": "decisions/0095-q67-one-library-entry-may-address-the-keys-of-an-entry-it-names-in-requires-and-confluence-holds-over-the-dependency-order.md"
   - "Acceptance criteria":
       - "Acceptance criteria": "acceptance-criteria/README.md"
       - "No source file of the engine names a network API and no locked dependency provides one": "acceptance-criteria/0001-no-source-file-of-the-engine-names-a-network-api-and-no-locked-dependency-provides-one.md"

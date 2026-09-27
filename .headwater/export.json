@@ -2691,7 +2691,7 @@
         }
       },
       {
-        "path": "docs/decisions/0095-q66-one-library-entry-may-address-the-keys-of-an-entry-it-names-in-requires-and-confluence-holds-over-the-dependency-order.md",
+        "path": "docs/decisions/0095-q67-one-library-entry-may-address-the-keys-of-an-entry-it-names-in-requires-and-confluence-holds-over-the-dependency-order.md",
         "kind": "decision",
         "id": "HW-DR-0095",
         "warrant": "asserted",
@@ -2701,7 +2701,7 @@
           "status_since": "2026-09-27",
           "summary": "An entry that names another in requires may add into its keys, and every other pair of entries still commutes only over disjoint leaves.",
           "last_verified": "2026-09-27",
-          "title": "Q66 — One library entry may address the keys of an entry it names in requires, and confluence holds over the dependency order",
+          "title": "Q67 — One library entry may address the keys of an entry it names in requires, and confluence holds over the dependency order",
           "provenance": {
             "warrant": "asserted",
             "agency": "agent",
@@ -15072,7 +15072,7 @@
         }
       },
       {
-        "source": "docs/decisions/0095-q66-one-library-entry-may-address-the-keys-of-an-entry-it-names-in-requires-and-confluence-holds-over-the-dependency-order.md",
+        "source": "docs/decisions/0095-q67-one-library-entry-may-address-the-keys-of-an-entry-it-names-in-requires-and-confluence-holds-over-the-dependency-order.md",
         "relation": "traces_to",
         "written_as": "traces_to",
         "target": {
@@ -15083,7 +15083,7 @@
         }
       },
       {
-        "source": "docs/decisions/0095-q66-one-library-entry-may-address-the-keys-of-an-entry-it-names-in-requires-and-confluence-holds-over-the-dependency-order.md",
+        "source": "docs/decisions/0095-q67-one-library-entry-may-address-the-keys-of-an-entry-it-names-in-requires-and-confluence-holds-over-the-dependency-order.md",
         "relation": "traces_to",
         "written_as": "traces_to",
         "target": {
@@ -15094,7 +15094,7 @@
         }
       },
       {
-        "source": "docs/decisions/0095-q66-one-library-entry-may-address-the-keys-of-an-entry-it-names-in-requires-and-confluence-holds-over-the-dependency-order.md",
+        "source": "docs/decisions/0095-q67-one-library-entry-may-address-the-keys-of-an-entry-it-names-in-requires-and-confluence-holds-over-the-dependency-order.md",
         "relation": "traces_to",
         "written_as": "traces_to",
         "target": {
@@ -15105,7 +15105,7 @@
         }
       },
       {
-        "source": "docs/decisions/0095-q66-one-library-entry-may-address-the-keys-of-an-entry-it-names-in-requires-and-confluence-holds-over-the-dependency-order.md",
+        "source": "docs/decisions/0095-q67-one-library-entry-may-address-the-keys-of-an-entry-it-names-in-requires-and-confluence-holds-over-the-dependency-order.md",
         "relation": "traces_to",
         "written_as": "traces_to",
         "target": {

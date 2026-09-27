@@ -4,7 +4,7 @@ status: current
 status_since: 2026-09-27
 summary: "An entry that names another in requires may add into its keys, and every other pair of entries still commutes only over disjoint leaves."
 last_verified: 2026-09-27
-title: "Q66 — One library entry may address the keys of an entry it names in requires, and confluence holds over the dependency order"
+title: "Q67 — One library entry may address the keys of an entry it names in requires, and confluence holds over the dependency order"
 provenance:
   warrant: asserted
   agency: agent
@@ -19,7 +19,7 @@ relations:
     - HW-SPEC-distribution-and-federation
 ---
 
-# Q66 — One library entry may address the keys of an entry it names in requires, and confluence holds over the dependency order
+# Q67 — One library entry may address the keys of an entry it names in requires, and confluence holds over the dependency order
 
 ## Context
 
@@ -44,6 +44,8 @@ The issue holds the ruling, and this record points to it. This record adds nothi
 ## Consequences
 
 **Confluence is narrowed, and it is not given up.** The owner did not rule on this point. This paragraph derives it from the form. [Spec 2](../spec/02-taxonomy-model.md#customization-by-composition) claimed that every set of overlays gives one result in any legal order. [Spec 7](../spec/07-distribution-and-federation.md#bundles-are-publisher-overlays-in-the-other-direction) claimed that every subset of add-only bundles commutes. A dependent entry can write into a key of its dependency. That write reaches a node that the dependency wrote, so the two operations do not commute. The declared dependency orders the pair, and the dependency applies first. The declared dependencies make a partial order over the selected entries. Confluence holds over every order that respects it. Two entries with no dependency between them still commute only over disjoint leaves, and the resolver still refuses them where their leaves meet.
+
+**The claim that every subset of bundles resolves is narrowed as well.** This consequence is also derived and not ruled. [HW-DR-0040](0040-q40-whether-extends-bundle-requires-and-an-overlay-s-taxonomy-key-are-a-mechanism-or-a-label.md) rules that `requires` does not add a bundle to a selection, and this record does not change that. So a selection can hold a dependent bundle and lack a bundle that it names in `requires`. The dependent write then has no target, and the merge fails. For example, `add_to` in `engine/crates/resolve/src/merge.rs` finds no list to append to. The claim holds for every subset that is closed under `requires`. For the other selection, the resolver owes one refusal before the merge. That refusal must name the dependent bundle, the bundle missing from the selection, and the address of the write. The resolver does not do this yet, and HW-OBL-0040 holds the work.
 
 **The resolver does not read the form yet.** Today the confluence check in `engine/crates/resolve/src/confluence.rs` compares every pair of overlays and reads no `requires` value. An engine change is owed, and HW-OBL-0040 holds it until that change lands. The obligation now waits on a build and not on a ruling.
 
