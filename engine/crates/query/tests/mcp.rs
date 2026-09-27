@@ -1119,11 +1119,22 @@ fn a_route_answer_carries_its_pointers_as_structured_content() {
     );
     let path = "query/decisions/a (draft) note.md";
     let name = "Quota notes at the edge";
-    let summary = "why the draft note on quarantine throttling says one quota rule governs each retry of a tenant";
+    let summary = "why the quota governs each retry of a tenant, and what quarantine throttling does at the edge";
+    // The checked-in taxonomy declares no facet in the `name` role, so the
+    // copy declares one. A pointer then renders as `path (name) — summary`.
+    let taxonomy = scratch.0.join("query.taxonomy.yml");
+    let declared = std::fs::read_to_string(&taxonomy).expect("the fixture taxonomy");
+    let scent = "  summary:\n    role: scent\n    required: true\n";
+    assert!(declared.contains(scent), "the taxonomy declares a scent");
+    std::fs::write(
+        &taxonomy,
+        declared.replacen(scent, &format!("{scent}  title:\n    role: name\n"), 1),
+    )
+    .expect("the taxonomy");
     std::fs::write(
         scratch.0.join(path),
         format!(
-            "---\nid: DR-FIX-0099\nstatus: current\nstatus_since: 2026-02-01\nsummary: {summary}\nprovenance:\n  warrant: accepted\n  accepted_by: the fixture tree\nrelations:\n  governs:\n    - src/ingest/mod.rs\n---\n\n# {name}\n\nA document whose path, name and summary the text form cannot carry.\n"
+            "---\nid: DR-FIX-0099\ntitle: {name}\nstatus: current\nstatus_since: 2026-02-01\nsummary: {summary}\nprovenance:\n  warrant: accepted\n  accepted_by: the fixture tree\nrelations:\n  governs:\n    - src/ingest/mod.rs\n---\n\n# {name}\n\nA document whose path, name and summary the text form cannot carry.\n"
         ),
     )
     .expect("the document");
@@ -1132,7 +1143,7 @@ fn a_route_answer_carries_its_pointers_as_structured_content() {
 
     let response = once(
         &server,
-        &calling("route", r#"{"task":"quarantine throttling quota rule"}"#),
+        &calling("route", r#"{"task":"why is quarantine throttling one quota rule"}"#),
     );
     let text = tool_text(&response);
     let answer = structured(&response).expect("the route answer carries structuredContent");
@@ -1146,6 +1157,17 @@ fn a_route_answer_carries_its_pointers_as_structured_content() {
         text.lines()
             .any(|line| line.contains(path) && line.ends_with(summary)),
         "the pointer is one line of the text block: {text}"
+    );
+    // The member is the `route --json` document for the same task, byte for
+    // byte, so one parser reads both.
+    let route = built.surface().route(
+        "why is quarantine throttling one quota rule",
+        headwater_query::Budget::default(),
+    );
+    let document = headwater_query::json::route_value(&route).render();
+    assert!(
+        response.contains(&format!(r#""structuredContent":{document}"#)),
+        "structuredContent is the route --json document: {response}"
     );
 
     let response = once(
