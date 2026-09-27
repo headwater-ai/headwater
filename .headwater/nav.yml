@@ -90,6 +90,10 @@ nav:
       - "The resolved taxonomy is drawn by a verb that prints Mermaid and writes no file": "decisions/0082-the-resolved-taxonomy-is-drawn-by-a-verb-that-prints-mermaid-and-writes-no-file.md"
       - "Governs and traces_to are created by an agent, because a session proposes the line and a person types it": "decisions/0083-governs-and-traces-to-are-created-by-an-agent-because-a-session-proposes-the-line-and-a-person-types-it.md"
       - "A live document that rests on a draft one is reported over every relation, because a draft leaves no record to cite": "decisions/0085-a-live-document-that-rests-on-a-draft-one-is-reported-over-every-relation-because-a-draft-leaves-no-record-to-cite.md"
+      - "An engine release and a taxonomy release have disjoint tag namespaces and are cut independently": "decisions/0088-an-engine-release-and-a-taxonomy-release-have-disjoint-tag-namespaces-and-are-cut-independently.md"
+      - "A taxonomy release publishes the source at the tagged commit and never ships the vendored copy": "decisions/0089-a-taxonomy-release-publishes-the-source-at-the-tagged-commit-and-never-ships-the-vendored-copy.md"
+      - "Each release states in its notes the release digest that a consumer pins": "decisions/0090-each-release-states-in-its-notes-the-release-digest-that-a-consumer-pins.md"
+      - "The runner image of the engine release build is written in the workflow because it sets the glibc floor": "decisions/0091-the-runner-image-of-the-engine-release-build-is-written-in-the-workflow-because-it-sets-the-glibc-floor.md"
   - "Acceptance criteria":
       - "Acceptance criteria": "acceptance-criteria/README.md"
       - "No source file of the engine names a network API and no locked dependency provides one": "acceptance-criteria/0001-no-source-file-of-the-engine-names-a-network-api-and-no-locked-dependency-provides-one.md"
@@ -425,6 +429,10 @@ nav:
       - "The entrypoint keeps its name and becomes a resumable run": "process/decisions/0006-the-entrypoint-keeps-its-name-and-becomes-a-resumable-run.md"
       - "A background wait caps below the cache lifetime and re-issues itself": "process/decisions/0007-a-background-wait-caps-below-the-cache-lifetime-and-re-issues-itself.md"
       - "The board has an owner of its structure, and its milestones are capped versions": "process/decisions/0008-the-board-has-an-owner-of-its-structure-and-its-milestones-are-capped-versions.md"
+      - "A release gets all its assets in one create call, and a person deletes it to run again": "process/decisions/0009-a-release-gets-all-its-assets-in-one-create-call-and-a-person-deletes-it-to-run-again.md"
+      - "Each release workflow compares the tag with the version its artifact states and refuses an empty reading": "process/decisions/0010-each-release-workflow-compares-the-tag-with-the-version-its-artifact-states-and-refuses-an-empty-reading.md"
+      - "Crates publish in one fixed order that a test holds, and a rerun continues where the last run stopped": "process/decisions/0011-crates-publish-in-one-fixed-order-that-a-test-holds-and-a-rerun-continues-where-the-last-run-stopped.md"
+      - "The release workflows are separate from CI, one tag value serves both entry points, and fixtures read them statically": "process/decisions/0012-the-release-workflows-are-separate-from-ci-one-tag-value-serves-both-entry-points-and-fixtures-read-them-statically.md"
   - "Requirements":
       - "Requirements": "requirements/README.md"
       - "The engine reaches no network at check time": "requirements/0001-the-engine-reaches-no-network-at-check-time.md"

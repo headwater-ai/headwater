@@ -1,68 +1,17 @@
 # SPDX-License-Identifier: Apache-2.0
 #
-# What #735 asked for and #707 explicitly did not: a route from this
-# workspace to crates.io. `release.yml` hands a stranger a binary; this hands
-# a Rust user `cargo install headwater-cli`, which needs every crate the
-# binary depends on to exist on the registry too, not only the binary crate.
+# Publishes every workspace crate to crates.io, leaves first, so that
+# `cargo install headwater-cli` resolves (#735). A `v*` tag starts it, or a
+# hand run with a required `tag` input.
 #
-# # WHY THIS FIRES ON A TAG, THE SAME AS `release.yml`
+# The reasons live in records, and this file cites them rather than restating
+# them. Each record governs this file, so an edit here makes it suspect:
 #
-# A tag is a version bump a person already decided to cut, not a moving
-# branch head. Firing on `push: tags: [v*]` ties one crates.io publish to
-# one cut, the same commitment `release.yml` ties one binary to, rather than
-# to whatever `main` holds at some later moment nobody chose. `workflow_dispatch`
-# takes the same tag as an input, required and not defaulted to `main`, for a
-# run against a tag that already exists — a step this workflow gained after
-# the tag was cut, or a crate rejected for a reason unrelated to the tag. The
-# version guard beside `publish_with_retry` below is what a checkout at the
-# wrong tag, or a tag cut before the version bump it was meant to carry,
-# cannot get past silently.
-#
-# # WHY ONE STEP AND NOT TWENTY-THREE
-#
-# The order is not alphabetical and not arbitrary: it is `cargo metadata`'s
-# own dependency closure, leaves first, so that by the time this step reaches
-# `headwater-cli` every crate it depends on already resolves through the
-# registry rather than through the path this workspace builds with locally.
-# Getting that order right, once, next to the loop that walks it, is safer
-# than getting it right in twenty-three separate step orderings that a future
-# edit can silently reorder.
-#
-# # WHY EACH CRATE IS CHECKED BEFORE IT IS PUBLISHED
-#
-# `cargo publish` refuses a version that already exists, so a rerun after a
-# partial failure — crate 9 of 23 rejected for a reason the first 8 already
-# cleared — would otherwise fail immediately on crate 1. The check makes a
-# rerun resume rather than restart: a crate the registry already carries at
-# this version is skipped, and the loop's first real publish is wherever the
-# previous run stopped. The check needs its own `User-Agent`: crates.io's
-# API rejects curl's default one with a 403, which this loop cannot tell
-# apart from a 404, so an unset header reads every crate as unpublished and
-# turns "resume" back into "restart".
-#
-# # WHY THE SLEEP
-#
-# crates.io's index takes a short, unspecified interval to make a freshly
-# published crate resolvable to the next `cargo publish` that depends on it.
-# Publishing `headwater-yaml` and immediately publishing `headwater-doc`,
-# which depends on it, is exactly the race group 7 of `tools/repo/readme-fixtures`
-# guards a different version of on the release side. Thirty seconds is a
-# margin measured nowhere yet; `sh tools/engine/build-declaration-fixtures.sh`-style
-# evidence for a shorter one is future work, not a claim this comment makes.
-#
-# # WHY A FAILED PUBLISH RETRIES INSTEAD OF EXITING
-#
-# crates.io throttles a new crate name, not a new version of one already
-# claimed: five in a burst, then one every ten minutes, read from the
-# `PublishNew` limiter this registry runs. Twenty-three crates share one
-# workspace and most of them are new names, so the closure below runs into
-# that limiter as a matter of course, not as a failure of this workflow. A
-# 429 names the exact GMT timestamp crates.io will accept the next one at;
-# the loop reads that timestamp back out of `cargo publish`'s own error and
-# sleeps to it, so one dispatch carries the whole closure to completion
-# without a person watching for each ten-minute window to reopen. A failure
-# that is not a 429 still stops the run: that is a crate this workflow
-# cannot fix by waiting.
+#   HW-DR-0088  the `v*` namespace, the same tag as `release.yml`
+#   HW-PD-0010  the tag is compared with the version `cargo metadata` reads
+#   HW-PD-0011  the fixed order, the skip that lets a rerun continue, the
+#               30-second wait and the wait for a 429
+#   HW-PD-0012  a separate file and one tag value
 name: Publish crates
 
 on:
@@ -84,10 +33,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: The tag this run is about
-        # One value for both entry points: the ref for a tag push, the input
-        # for a hand run. Every step below reads this and never
-        # `github.ref_name`, so the two paths cannot diverge — the same
-        # reason `release.yml` names this step the same way.
+        # Every step below reads this output and never `github.ref_name` (HW-PD-0012).
         id: tag
         run: |
           tag="${{ inputs.tag || github.ref_name }}"
@@ -113,18 +59,9 @@ jobs:
           if [ -z "$CARGO_REGISTRY_TOKEN" ]; then
               echo "::error::no CARGO_REGISTRY_TOKEN secret; nothing below can publish" && exit 1
           fi
-          # Leaves first. `cargo metadata --no-deps --format-version 1` over
-          # this workspace names the same 25 crates and the same edges; this
-          # list is that graph's topological order, walked once when #735 was
-          # filed and not recomputed on every run, so a dependency a future
-          # crate adds is a diff here and not a silent reorder underneath one.
-          # `headwater-paint` joined at #479 as a second leaf beside
-          # `headwater-hash`: it depends on nothing and `headwater-check`
-          # depends on it, so it goes anywhere before that crate.
-          # `headwater-vcs` joined at #929 as a third: it depends on nothing,
-          # and only `headwater-cli` depends on it. `headwater-fetch` joined at
-          # #959 as a fourth, on the same terms: no workspace dependency, and
-          # `headwater-cli` its one dependent (HW-DR-0075).
+          # Leaves first, fixed rather than computed on each run (HW-PD-0011).
+          # `engine/crates/cli/tests/publish_order.rs` holds this list against
+          # the workspace, and finds it by the literal `order="`.
           order="headwater-hash headwater-mark headwater-paint headwater-vcs headwater-fetch headwater-verbs headwater-yaml \
                  headwater-doc headwater-ref headwater-meta headwater-resolve \
                  headwater-census headwater-graph headwater-lock headwater-check \
@@ -134,22 +71,15 @@ jobs:
                  headwater-conformance headwater-cli"
           version=$(cargo metadata --no-deps --format-version 1 |
                      python3 -c 'import json,sys; d=json.load(sys.stdin); print(next(p["version"] for p in d["packages"] if p["name"]=="headwater-cli"))')
-          # The tag names the version this run is meant to publish. A checkout
-          # at the wrong ref, or a tag cut before the version bump it was
-          # meant to carry, produces a workspace that is not what the tag
-          # says — the same defect `release.yml`'s own version-match step
-          # guards, and the same reason it is written here rather than
-          # trusted.
+          # The version guard: HW-PD-0010.
           case "${TAG#v}" in
               "$version") ;;
               *) echo "::error::the tag names ${TAG#v} and the workspace carries $version" && exit 1 ;;
           esac
-          # A 429 from `cargo publish` names the exact moment the PublishNew
-          # limiter refills, e.g. "Please try again after Tue, 08 Sep 2026
-          # 20:48:04 GMT". This waits to that moment, plus a five-second
-          # margin, and tries the same crate again. Anything that is not a
-          # 429 — a bad description, a yanked dependency, a token crates.io
-          # has revoked — is not a wait, so the loop lets that exit the job.
+          # A 429 names the moment the new-crate limiter refills, e.g. "Please
+          # try again after Tue, 08 Sep 2026 20:48:04 GMT". Wait to it, 5 seconds
+          # more, and try the same crate again. Any other failure stops the job
+          # (HW-PD-0011).
           publish_with_retry() {
               crate="$1"
               while true; do
@@ -176,6 +106,8 @@ jobs:
                   sleep "$wait"
               done
           }
+          # A crate the registry has at this version is skipped, so a rerun
+          # continues (HW-PD-0011). crates.io refuses curl's default User-Agent.
           for crate in $order; do
               status=$(curl -sS -H 'User-Agent: headwater-publish-workflow (https://github.com/headwater-ai/headwater)' \
                   -o /dev/null -w '%{http_code}' \
