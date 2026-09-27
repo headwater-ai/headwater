@@ -4,6 +4,7 @@ status: current
 status_since: 2026-09-27
 summary: "The job-level if skips a duplicate pull_request run and grants nothing. No trigger filter replaces it, and each job name stays a literal."
 last_verified: 2026-09-27
+title: "A condition in CI may take work away and never grant it, so one run per commit comes from a job-level if"
 provenance:
   warrant: asserted
   agency: agent

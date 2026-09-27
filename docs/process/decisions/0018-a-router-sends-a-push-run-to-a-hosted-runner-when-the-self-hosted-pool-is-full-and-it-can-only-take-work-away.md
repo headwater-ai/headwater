@@ -4,6 +4,7 @@ status: current
 status_since: 2026-09-27
 summary: "The route job counts the jobs on the self-hosted label and outputs overflow. A failure in it gives an empty output and changes no routing."
 last_verified: 2026-09-27
+title: "A router sends a push run to a hosted runner when the self-hosted pool is full, and it can only take work away"
 provenance:
   warrant: asserted
   agency: agent

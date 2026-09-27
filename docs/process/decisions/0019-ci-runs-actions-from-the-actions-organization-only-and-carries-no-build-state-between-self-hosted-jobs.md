@@ -4,6 +4,7 @@ status: current
 status_since: 2026-09-27
 summary: "Only actions from GitHub's own organization run in ci.yml. No self-hosted job inherits engine/target from another, and sccache makes a cold target cheap."
 last_verified: 2026-09-27
+title: "CI runs actions from the actions organization only, and carries no build state between self-hosted jobs"
 provenance:
   warrant: asserted
   agency: agent

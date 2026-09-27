@@ -4,6 +4,7 @@ status: current
 status_since: 2026-09-27
 summary: "The self-hosted labels reach runs-on only when the CI_RUNNER variable names them and the event is a push. The default is a hosted runner."
 last_verified: 2026-09-27
+title: "CI_RUNNER is an opt-in that only a push reads, and an unset value falls back to ubuntu-latest"
 provenance:
   warrant: asserted
   agency: agent
