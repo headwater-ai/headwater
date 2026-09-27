@@ -14,7 +14,7 @@ Invoke the `hw-run-policy` skill before you begin. Invoke `headwater-engine` bef
 
 A pull request, a note, and a report that is the four lines, one sentence each, and the block. Everything else is the note.
 
-The note, `build.md` in the issue's scratch directory, is for the verifier: what you built, what you ran with each command's exit status, the numbers that moved and why each one moved, the decisive fixture and the run that showed it failing before it passed, and every claim you could not check yourself.
+The note, `build.md` in the issue's scratch directory, is for the verifier: what you built, what you ran with each command's exit status, the numbers that moved and why each one moved, the decisive fixture and the run that showed it failing before it passed, and every claim you could not check yourself. It also carries the maintainer's **Stale** and **Owed** parts, under the heading `## Upkeep (headwater-maintainer)`.
 
 The report is the four lines, and then the block:
 
@@ -51,6 +51,8 @@ Your tree and branch stay after the run, for the owner to clean up. Leave the tr
 **The bar is the Done-when, not the title.** An honest split is a success condition: when the issue is more than lands in one pull request, split it on the board, take the first sound piece, file the remainder with an `## ELI5` section per `.github/ISSUE_TEMPLATE/issue.md`, and return `Refs #N`.
 
 **Before you open the pull request**, rebase onto `origin/main`, rebuild the engine, then run `headwater generate` and re-bless the recorded fixtures, and read that diff. Then run the whole suite once, `sh tools/hw-cargo test --workspace --manifest-path engine/Cargo.toml`, which is the one workspace-wide run a build owes before its pull request. A binary built before the rebase writes what the previous engine produced, and `headwater check --strict` passes it because the same binary wrote and checked it.
+
+**Then dispatch `headwater-maintainer` over your branch, before you open the pull request.** Run it after the rebase, the rebuild, `headwater generate` and the workspace suite, so that it reads the tree you will push, and dispatch it without `isolation`, so that it works in your tree. Name the absolute path of your tree and the base `origin/main`, and it diffs `origin/main...HEAD`. The engine is already built there, so it runs that binary and builds nothing. If it must build, it sets `HW_CARGO_SLOT=maintainer-<N>` for your issue, because four builders run at once and one shared `maintainer` slot is the target-directory race the run policy records for `verify`. Paste its **Stale** and **Owed** parts verbatim into `build.md` and into the pull request body, under the heading `## Upkeep (headwater-maintainer)` in both. You accept nothing from it: it proposes and the parent rules. Fix a Stale sentence that your own change made false, inside the issue's scope, and write every other line to intake, one line each, as the run policy says.
 
 **After you open it, wait for CI once**, on the commit you pushed, started with `run_in_background: true` and re-issued on a `RE-ISSUE` exit:
 
