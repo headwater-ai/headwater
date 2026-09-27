@@ -670,8 +670,12 @@ fn two_branches_that_each_run_new_merge_the_capture_cost_store_without_a_conflic
         "the store holds one reading from each branch:\n{store}"
     );
     assert!(
-        readings.iter().any(|line| line.contains("a-ruling-on-branch-a"))
-            && readings.iter().any(|line| line.contains("a-ruling-on-branch-b")),
+        readings
+            .iter()
+            .any(|line| line.contains("a-ruling-on-branch-a"))
+            && readings
+                .iter()
+                .any(|line| line.contains("a-ruling-on-branch-b")),
         "one reading names each document:\n{store}"
     );
 }
@@ -679,15 +683,16 @@ fn two_branches_that_each_run_new_merge_the_capture_cost_store_without_a_conflic
 /// The union lines are appended only where `.gitattributes` says nothing of the
 /// store, and they never reach the override that selects the driver.
 ///
-/// An adopter who already declared the capture-cost store `-merge` keeps that
-/// line byte for byte, and gets no union line after it that would win. The
-/// adoption store, which the file does not name, gets its union line. Under
-/// `--git-config` the override names the lock alone, because a driver line on a
-/// store would hand a file no producer writes to the regenerate driver.
+/// An adopter who already declared one store `-merge` and the other
+/// `merge=union` keeps both lines byte for byte, and gets no line after either
+/// that would win or repeat it. The step reads any treatment as a declaration,
+/// not only `-merge`. Under `--git-config` the override names the lock alone,
+/// because a driver line on a store would hand a file no producer writes to the
+/// regenerate driver.
 #[test]
 fn the_git_step_leaves_a_declared_store_alone_and_writes_no_override_for_a_store() {
     let tree = Tree::adopted("declared-store");
-    let own = format!("# the adopter's own line\n{CAPTURE_COST} -merge\n");
+    let own = format!("# the adopter's own lines\n{CAPTURE_COST} -merge\n{ADOPTION} merge=union\n");
     tree.write(".gitattributes", &own);
     tree.headwater_ok(&["init", "--git", "--git-config"]);
 
@@ -696,21 +701,20 @@ fn the_git_step_leaves_a_declared_store_alone_and_writes_no_override_for_a_store
         attributes.starts_with(&own),
         "the adopter's lines are kept byte for byte:\n{attributes}"
     );
-    let about_capture_cost: Vec<&str> = attributes
-        .lines()
-        .filter(|line| line.starts_with(CAPTURE_COST))
-        .collect();
-    assert_eq!(
-        about_capture_cost,
-        vec![format!("{CAPTURE_COST} -merge").as_str()],
-        "no line after the adopter's overrides it:\n{attributes}"
-    );
-    assert!(
-        attributes
+    for (store, line) in [
+        (CAPTURE_COST, format!("{CAPTURE_COST} -merge")),
+        (ADOPTION, format!("{ADOPTION} merge=union")),
+    ] {
+        let naming: Vec<&str> = attributes
             .lines()
-            .any(|line| line == format!("{ADOPTION} merge=union")),
-        "the store the file does not name gets its union line:\n{attributes}"
-    );
+            .filter(|seen| seen.starts_with(store))
+            .collect();
+        assert_eq!(
+            naming,
+            vec![line.as_str()],
+            "the adopter's line is the one line that names {store}:\n{attributes}"
+        );
+    }
 
     let over = std::fs::read_to_string(tree.info_attributes()).expect("the override is written");
     for store in [CAPTURE_COST, ADOPTION] {
