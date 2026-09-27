@@ -41,6 +41,8 @@ Earlier in run `20260927-0443`, pull request #1211 tried a batch branch. It merg
 
 **A branch that is only behind `main` is not brought current by hand.** The queue tests the composition, so the strict up-to-date rule has no work left to do. The ruleset drops it. The integrator merges `origin/main` into a branch only when the queue reports a conflict. GitHub merges with no custom merge driver, so it can write a derived artifact wrong. That artifact fails the projection step of the `headwater` job on the group tip, and the queue ejects the pull request.
 
+**The integrator enqueues every ruled pull request together, and the queue groups them.** Until #1273 every pull request that added a document moved the measured figures on three pages under `site/`, and each page was declared `-merge`. So each queue entry conflicted with the entry before it, and a parent ruled that the integrator enqueue one at a time. [HW-DR-0097](../../decisions/0097-a-figure-on-a-hand-built-page-is-measured-when-the-site-is-published-and-the-committed-page-carries-none.md) moved the figures out of the committed pages, so no shared derived file moves between two such pull requests.
+
 **The batch branch of #1211 is retired.** No integrator merges several pull requests into one branch again.
 
 **The parent applies the ruleset after this record merges.** This record states the settings, and nothing in this change applies them. The `Protect main` ruleset gets one new rule, `merge_queue`, with these parameters:
