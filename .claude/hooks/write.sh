@@ -41,6 +41,17 @@
 #                            from the code it rules. Every fact of this part
 #                            is read from `headwater explain --json`.
 #
+#                            A third part, in the same object: an edit to a
+#                            path that a producer writes names the row and the
+#                            treatment of its record and the command that
+#                            rebuilds it (#1053). Where this worktree is
+#                            stopped in a merge and the path is unmerged, it
+#                            says so, and names the rebuild on the merged tree
+#                            as the resolution. Every fact of this part is read
+#                            from `headwater derived`, through
+#                            `hw_derived_report`, which `derived.sh` shares
+#                            for the conflict moment.
+#
 #   PostToolUse Write|Edit   one line, or nothing. The line names each
 #                            governing edge of the edited path that the edit
 #                            left suspect: the edge records a
@@ -110,14 +121,16 @@ case $path in
 esac
 
 # The impact advisory, on standard output, or nothing. It is one JSON object
-# with up to two parts, worded for an edit that has not happened yet. The
+# with up to three parts, worded for an edit that has not happened yet. The
 # forward part names the documents that govern the path. The reverse part,
 # for a path that is itself a document, names the code paths it governs and
-# the documents that declare an edge onto it (#1008). Either part can be
-# absent, and a call with neither prints nothing.
+# the documents that declare an edge onto it (#1008). The derived part, for a
+# path a producer writes, names its record and its rebuild command (#1053).
+# Any part can be absent, and a call with none prints nothing.
 advise() {
     advisory=
     named=
+    unrouted=
     if pointers=$(hw_governing_pointers "$rel"); then
         advisory="Headwater impact detection: a document in this corpus declares that it governs \`$rel\`, which you are about to change.
 
@@ -134,7 +147,7 @@ $pointers"
 $ungoverned"
         # The documents a term route reached, where it reached any, are still
         # documents to read.
-        case $ungoverned in *'The route reached these documents'*) named=1 ;; esac
+        case $ungoverned in *'The route reached these documents'*) named=1 ;; *) unrouted=1 ;; esac
     fi
     if reverse=$(hw_governed_by_document "$rel"); then
         [ -n "$advisory" ] && advisory="$advisory
@@ -145,17 +158,50 @@ $ungoverned"
 $reverse"
         named=1
     fi
+    # #1053: the path is one a producer writes. The row, the treatment and the
+    # command are the engine's, read from `headwater derived`.
+    if derived=$(hw_derived_report "$rel"); then
+        heading=$(printf '%s\n' "$derived" | sed -n 1p)
+        rebuild=$(printf '%s\n' "$derived" | sed -n 2p)
+        [ -n "$advisory" ] && advisory="$advisory
+
+"
+        conflicted=
+        if state=$(hw_merge_state); then
+            hw_unmerged_paths | grep -Fqx -- "$rel" && conflicted=$state
+        fi
+        if [ -n "$conflicted" ]; then
+            advisory="${advisory}Headwater: \`$rel\`, which you are about to change, is a derived artifact, and this $conflicted left it in conflict. Its record is: $heading."
+            if [ -n "$rebuild" ]; then
+                advisory="$advisory
+
+Do not resolve it by hand. Resolve the sources, then run \`$rebuild\` on the merged tree and stage what it writes."
+            fi
+        else
+            advisory="${advisory}Headwater: \`$rel\`, which you are about to change, is a derived artifact. Its record is: $heading."
+            if [ -n "$rebuild" ]; then
+                advisory="$advisory
+
+Rebuild it with \`$rebuild\` rather than editing it by hand. An edit by hand is lost at the next run of that command."
+            fi
+        fi
+    fi
     [ -n "$advisory" ] || exit 0
     # "Read each one" only where the advisory names a document to read. An
-    # ungoverned path that no route reached names none (#953, verify finding 3).
+    # ungoverned path that no route reached names none (#953, verify finding 3),
+    # and neither does a derived artifact on its own (#1053).
     if [ -n "$named" ]; then
         advisory="$advisory
 
 This is advisory. Read each one before the edit, and say whether the change invalidates it. Nothing here blocks the edit."
-    else
+    elif [ -n "$unrouted" ]; then
         advisory="$advisory
 
 This is advisory. Nothing here blocks the edit, and nothing here writes the edge. Declare it only in a document that rules this path."
+    else
+        advisory="$advisory
+
+This is advisory. Nothing here blocks the edit."
     fi
     quoted=$(hw_quote "$advisory") || exit 0
     printf '{"hookSpecificOutput":{"hookEventName":"PreToolUse","additionalContext":%s}}\n' "$quoted"
