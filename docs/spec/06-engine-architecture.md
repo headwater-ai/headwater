@@ -303,6 +303,7 @@ headwater route       <task description> [--json]
 headwater neighbors   <task description> [--model <dir>] [--top <n>] [--json]
 headwater query       <expression>
 headwater explain     <path|identifier> [--json]
+headwater show        <path|identifier>
 headwater mcp         [--now <date>] [--write]
 headwater import      [<name>] [--expect <digest>] [--write]
 headwater export      [--profile ...]
