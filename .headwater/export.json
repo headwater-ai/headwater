@@ -2557,7 +2557,7 @@
               },
               {
                 "to": ".github/workflows/publish-crates.yml",
-                "verified_revision": "sha256:ead2238fa32a3fc4d600d5238d40a072cc5371aee1409a9417fa3fa2d62fea26"
+                "verified_revision": "sha256:f77729188a8b0bffa908fa2b0166cf36a5379a130649855992e3f4844bc7174e"
               }
             ]
           }
@@ -4176,6 +4176,29 @@
               "engine/crates/query/src/lib.rs",
               "engine/crates/query/src/route.rs",
               "engine/crates/query/src/json.rs"
+            ]
+          }
+        }
+      },
+      {
+        "path": "docs/interfaces/headwater-show.md",
+        "kind": "interface_contract",
+        "id": "HW-IFACE-headwater-show",
+        "facets": {
+          "id": "HW-IFACE-headwater-show",
+          "status": "current",
+          "status_since": "2026-09-27",
+          "summary": "headwater show prints the bytes of one document as they are on disk, found by path or identifier through the resolver that explain uses.",
+          "last_verified": "2026-09-27",
+          "title": "headwater show",
+          "relations": {
+            "governs": [
+              [
+                "engine/crates/cli/src/lib.rs",
+                "engine/crates/cli/src/main.rs"
+              ],
+              "engine/crates/query/src/explain.rs",
+              "engine/crates/census/src/walk.rs"
             ]
           }
         }
@@ -10476,7 +10499,7 @@
               },
               {
                 "to": ".github/workflows/publish-crates.yml",
-                "verified_revision": "sha256:ead2238fa32a3fc4d600d5238d40a072cc5371aee1409a9417fa3fa2d62fea26"
+                "verified_revision": "sha256:f77729188a8b0bffa908fa2b0166cf36a5379a130649855992e3f4844bc7174e"
               }
             ]
           }
@@ -10491,7 +10514,7 @@
           "id": "HW-PD-0011",
           "status": "current",
           "status_since": "2026-09-27",
-          "summary": "publish-crates.yml walks one leaves-first crate list that publish_order.rs holds against the workspace, skips a published crate so a rerun continues, and waits out a 429.",
+          "summary": "publish-crates.yml walks one leaves-first crate list that publish_order.rs holds, skips a published crate, waits for the index, and waits out a 429.",
           "last_verified": "2026-09-27",
           "title": "Crates publish in one fixed order that a test holds, and a rerun continues where the last run stopped",
           "provenance": {
@@ -10505,7 +10528,7 @@
             "governs": [
               {
                 "to": ".github/workflows/publish-crates.yml",
-                "verified_revision": "sha256:ead2238fa32a3fc4d600d5238d40a072cc5371aee1409a9417fa3fa2d62fea26"
+                "verified_revision": "sha256:f77729188a8b0bffa908fa2b0166cf36a5379a130649855992e3f4844bc7174e"
               }
             ],
             "traces_to": [
@@ -10545,7 +10568,7 @@
               },
               {
                 "to": ".github/workflows/publish-crates.yml",
-                "verified_revision": "sha256:ead2238fa32a3fc4d600d5238d40a072cc5371aee1409a9417fa3fa2d62fea26"
+                "verified_revision": "sha256:f77729188a8b0bffa908fa2b0166cf36a5379a130649855992e3f4844bc7174e"
               }
             ]
           }
@@ -14921,7 +14944,7 @@
           "resolver": "source-tree"
         },
         "attributes": {
-          "verified_revision": "sha256:ead2238fa32a3fc4d600d5238d40a072cc5371aee1409a9417fa3fa2d62fea26"
+          "verified_revision": "sha256:f77729188a8b0bffa908fa2b0166cf36a5379a130649855992e3f4844bc7174e"
         }
       },
       {
@@ -17007,6 +17030,39 @@
           "bound": "anchor",
           "anchor_kind": "code_path",
           "id": "engine/crates/query/src/json.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/interfaces/headwater-show.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "28:engine/crates/cli/src/lib.rs29:engine/crates/cli/src/main.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/interfaces/headwater-show.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/query/src/explain.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/interfaces/headwater-show.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/census/src/walk.rs",
           "resolver": "source-tree"
         }
       },
@@ -19786,7 +19842,7 @@
           "resolver": "source-tree"
         },
         "attributes": {
-          "verified_revision": "sha256:ead2238fa32a3fc4d600d5238d40a072cc5371aee1409a9417fa3fa2d62fea26"
+          "verified_revision": "sha256:f77729188a8b0bffa908fa2b0166cf36a5379a130649855992e3f4844bc7174e"
         }
       },
       {
@@ -19800,7 +19856,7 @@
           "resolver": "source-tree"
         },
         "attributes": {
-          "verified_revision": "sha256:ead2238fa32a3fc4d600d5238d40a072cc5371aee1409a9417fa3fa2d62fea26"
+          "verified_revision": "sha256:f77729188a8b0bffa908fa2b0166cf36a5379a130649855992e3f4844bc7174e"
         }
       },
       {
@@ -19853,7 +19909,7 @@
           "resolver": "source-tree"
         },
         "attributes": {
-          "verified_revision": "sha256:ead2238fa32a3fc4d600d5238d40a072cc5371aee1409a9417fa3fa2d62fea26"
+          "verified_revision": "sha256:f77729188a8b0bffa908fa2b0166cf36a5379a130649855992e3f4844bc7174e"
         }
       },
       {

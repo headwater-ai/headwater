@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-//! The nineteen interface contracts that hand-state `--no-color`'s meaning,
+//! The twenty interface contracts that hand-state `--no-color`'s meaning,
 //! held against the one sentence `headwater-help.md` and `NO_COLOR_TEXT`
 //! already carry.
 //!
@@ -69,7 +69,9 @@ use std::path::{Path, PathBuf};
 /// joined at #479, when `headwater derived` became the first verb below
 /// `headwater-check` to render the palette at all. `headwater-sweep` needed no
 /// document change to join: its row already restated the sentence and nothing
-/// read it.
+/// read it. `headwater-show` joined at birth, at #740: its standard output is
+/// a document's own bytes and never painted, and its refusal on standard
+/// error is painted the way `explain`'s is.
 ///
 /// Two documents that carry a `--no-color` row are absent on purpose.
 /// `headwater-help.md` is the one this file reads the expectation out of, so
@@ -79,7 +81,7 @@ use std::path::{Path, PathBuf};
 /// senses a terminal would be a promise the binary must not keep. An absence
 /// here is a claim about a document rather than an oversight, which is why both
 /// are named.
-const REMAINING: [&str; 19] = [
+const REMAINING: [&str; 20] = [
     "headwater-capture",
     "headwater-check",
     "headwater-completions",
@@ -97,11 +99,12 @@ const REMAINING: [&str; 19] = [
     "headwater-probe",
     "headwater-query",
     "headwater-route",
+    "headwater-show",
     "headwater-sweep",
     "headwater-taxonomy",
 ];
 
-/// Two of the nineteen, `headwater-probe` and `headwater-query`, name the
+/// Two of the twenty, `headwater-probe` and `headwater-query`, name the
 /// global flags in one prose sentence rather than in an Options table row —
 /// see each document's own Options section. A row-shaped assertion over them
 /// would fail on a document that was never wrong about the flag, so this file
@@ -190,8 +193,8 @@ fn no_document_still_claims_no_run_of_this_binary_ever_writes_color() {
     );
 }
 
-/// Every one of the nineteen gains a `--no-banner` mention: a row beside
-/// `--no-color`'s for the seventeen documents that carry an Options table row,
+/// Every one of the twenty gains a `--no-banner` mention: a row beside
+/// `--no-color`'s for the eighteen documents that carry an Options table row,
 /// and a place in the prose list of global flags for the two that do not.
 #[test]
 fn every_document_gains_a_no_banner_mention() {
