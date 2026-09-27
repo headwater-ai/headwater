@@ -31,13 +31,13 @@ Before this record, the reasons lived in comments of the three release workflows
 - `.github/workflows/release-taxonomy.yml`: the header (lines 15 to 19), the tag step (lines 69 to 70), and the archive step (lines 127 to 130).
 - `.github/workflows/publish-crates.yml`: the header (lines 8 to 16), and the tag step (lines 87 to 90).
 
-`ci.yml` runs on a push to `main` and on a pull request. Neither event starts a run for a tag. A tag trigger in `ci.yml` would run each corpus gate and each fixture suite again, on a commit that passed all of them on `main`.
+`ci.yml` runs on a push to a branch and on a pull request. Neither event starts a run for a tag. A tag trigger in `ci.yml` would run each corpus gate and each fixture suite again, on a commit that passed all of them on `main`.
 
 ## Decision
 
 **Separate files.** Each release workflow is a file of its own and is not a job in `ci.yml`. The taxonomy release is also not a job in `release.yml`.
 
-**Two entry points, one value.** A pushed tag starts each release workflow. `workflow_dispatch` also starts each one, with a required `tag` input that has no default. The first step resolves the tag from the input, or from the ref when there is no input, and writes it as a step output. Every later step reads that output. No step reads `github.ref_name`, so the two entry points cannot diverge.
+**Two entry points, one value.** A pushed tag starts each release workflow. `workflow_dispatch` also starts each one, with a required `tag` input that has no default. The first step resolves the tag from the input, or from `github.ref_name` when there is no input, and writes it as a step output. Every later step reads that output, and no later step reads `github.ref_name`. So the two entry points cannot diverge.
 
 **A dry run.** A hand run of `release.yml` with `publish: false` builds every archive, runs both smoke jobs, and creates no release. It is the only run that a change to `release.yml` gets before a tag. The run can use a branch and a tag that already exists. The job that creates the release asks for `contents: write` itself. The workflow default is `contents: read`, so a job added later must ask for the permission.
 

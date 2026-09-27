@@ -256,12 +256,23 @@ root = sys.argv[1]
 workflows = sys.argv[2].split()
 ident = re.compile(r"\bHW-(?:DR|PD)-[0-9]{4}\b")
 
+def as_list(v):
+    if v is None:
+        return []
+    if isinstance(v, list):
+        return v
+    return [v]
+
+# A `governs` value is one entry or a list of entries. An entry is a pattern,
+# a list of patterns, or a map whose `to` is either. The engine reads each
+# shape as an edge, so each shape is read here.
 def governs_targets(rel):
     out = []
-    for entry in (rel or {}).get("governs") or []:
+    governs = rel.get("governs") if isinstance(rel, dict) else None
+    for entry in as_list(governs):
         if isinstance(entry, dict):
             entry = entry.get("to")
-        for p in (entry if isinstance(entry, list) else [entry]):
+        for p in as_list(entry):
             if isinstance(p, str):
                 out.append(p)
     return out

@@ -33,7 +33,7 @@ The glibc archive of an engine release needs the glibc version of the image that
 
 Each row of the build matrix in `release.yml` names its runner image in the workflow file. No job of `release.yml` reads `CI_RUNNER` or any other variable for its runner. A change to an image is a diff in `release.yml` that a reviewer reads.
 
-The release build runs `cargo build --release` with `--locked`. The binary that an adopter downloads resolves the committed `engine/Cargo.lock`, and not the dependency versions that resolve on the day of the build. The taxonomy release builds its engine with `--locked` for the same reason. `tools/engine/build-declaration-fixtures.sh` holds the flag on the cargo commands of `ci.yml`. On 2026-09-27 it did not read the release workflows, so the flag there is held by review alone.
+The release build runs `cargo build --release` with `--locked`. The binary that an adopter downloads resolves the committed `engine/Cargo.lock`, and not the dependency versions that resolve on the day of the build. The taxonomy release builds its engine with `--locked` for the same reason. Group 7 of `tools/engine/build-declaration-fixtures.sh` holds the flag. It reads every tracked file for a `cargo build` that names `-p headwater-cli`. So it reads the build step of both release workflows, and it names a copy with no `--locked`.
 
 ## Consequences
 
