@@ -1821,7 +1821,7 @@
           "status": "current",
           "status_since": "2026-09-11",
           "summary": "Nine required facets went unwritten on two generated documents. The engine derives seven from committed bytes, the emitter composes the summary, and the declaration block stays closed at three scalars.",
-          "last_verified": "2026-09-26",
+          "last_verified": "2026-09-27",
           "title": "Every required facet of a generated document is derived, and the emitter composes the summary",
           "provenance": {
             "warrant": "asserted",
@@ -1837,7 +1837,7 @@
             "governs": [
               {
                 "to": "engine/crates/generate/src/derived.rs",
-                "verified_revision": "sha256:402da8aa3219803a14f060977e36f950326d43dce66233996fc22cbd0cf3bf6e"
+                "verified_revision": "sha256:df3fe720e5c546530ce4ee6dca826bafc78acea352450581e4513f9a900cd171"
               }
             ]
           }
@@ -2350,19 +2350,22 @@
           "id": "HW-DR-0082",
           "status": "current",
           "status_since": "2026-09-24",
-          "summary": "`headwater taxonomy graph` prints the resolved taxonomy from the lock as a Mermaid flowchart, and no projection, explain format or export target draws it",
-          "last_verified": "2026-09-25",
+          "summary": "`headwater taxonomy graph` prints the resolved taxonomy as a Mermaid flowchart, no projection or export target draws it, and D2 and DOT are equal candidates after it",
+          "last_verified": "2026-09-27",
           "title": "The resolved taxonomy is drawn by a verb that prints Mermaid and writes no file",
           "provenance": {
             "warrant": "asserted",
             "agency": "agent",
             "drafted_by": "claude-opus-5.5",
-            "activity": "draft",
+            "activity": "draft+revise",
             "evidence_basis": "evidenced"
           },
           "relations": {
             "governs": [
-              "engine/crates/cli/src/taxonomy_graph.rs"
+              {
+                "to": "engine/crates/cli/src/taxonomy_graph.rs",
+                "verified_revision": "sha256:3231a0b4cf0a9089d889fe1e3c3885c2b6f337bdba6645990aa5f4ea52633444"
+              }
             ]
           }
         }
@@ -10700,7 +10703,7 @@
             "governs": [
               {
                 "to": ".github/workflows/ci.yml",
-                "verified_revision": "sha256:947ac77a5a63190647e46e38c0a117cb2105ed8bb5a0528ec457c3347b436f5d"
+                "verified_revision": "sha256:9a6951a6d4a23cf366cf6046f17e651868521231af26008a8dec2927b10b0f59"
               }
             ]
           }
@@ -10729,7 +10732,7 @@
             "governs": [
               {
                 "to": ".github/workflows/ci.yml",
-                "verified_revision": "sha256:947ac77a5a63190647e46e38c0a117cb2105ed8bb5a0528ec457c3347b436f5d"
+                "verified_revision": "sha256:9a6951a6d4a23cf366cf6046f17e651868521231af26008a8dec2927b10b0f59"
               }
             ]
           }
@@ -10758,7 +10761,7 @@
             "governs": [
               {
                 "to": ".github/workflows/ci.yml",
-                "verified_revision": "sha256:947ac77a5a63190647e46e38c0a117cb2105ed8bb5a0528ec457c3347b436f5d"
+                "verified_revision": "sha256:9a6951a6d4a23cf366cf6046f17e651868521231af26008a8dec2927b10b0f59"
               }
             ]
           }
@@ -10787,7 +10790,7 @@
             "governs": [
               {
                 "to": ".github/workflows/ci.yml",
-                "verified_revision": "sha256:947ac77a5a63190647e46e38c0a117cb2105ed8bb5a0528ec457c3347b436f5d"
+                "verified_revision": "sha256:9a6951a6d4a23cf366cf6046f17e651868521231af26008a8dec2927b10b0f59"
               }
             ]
           }
@@ -10816,7 +10819,7 @@
             "governs": [
               {
                 "to": ".github/workflows/ci.yml",
-                "verified_revision": "sha256:947ac77a5a63190647e46e38c0a117cb2105ed8bb5a0528ec457c3347b436f5d"
+                "verified_revision": "sha256:9a6951a6d4a23cf366cf6046f17e651868521231af26008a8dec2927b10b0f59"
               }
             ]
           }
@@ -10845,7 +10848,7 @@
             "governs": [
               {
                 "to": ".github/workflows/ci.yml",
-                "verified_revision": "sha256:947ac77a5a63190647e46e38c0a117cb2105ed8bb5a0528ec457c3347b436f5d"
+                "verified_revision": "sha256:9a6951a6d4a23cf366cf6046f17e651868521231af26008a8dec2927b10b0f59"
               }
             ]
           }
@@ -10874,7 +10877,7 @@
             "governs": [
               {
                 "to": ".github/workflows/ci.yml",
-                "verified_revision": "sha256:947ac77a5a63190647e46e38c0a117cb2105ed8bb5a0528ec457c3347b436f5d"
+                "verified_revision": "sha256:9a6951a6d4a23cf366cf6046f17e651868521231af26008a8dec2927b10b0f59"
               }
             ]
           }
@@ -10903,7 +10906,7 @@
             "governs": [
               {
                 "to": ".github/workflows/ci.yml",
-                "verified_revision": "sha256:947ac77a5a63190647e46e38c0a117cb2105ed8bb5a0528ec457c3347b436f5d"
+                "verified_revision": "sha256:9a6951a6d4a23cf366cf6046f17e651868521231af26008a8dec2927b10b0f59"
               },
               {
                 "to": "tools/run/queue-done.sh",
@@ -10958,6 +10961,9 @@
               },
               {
                 "to": "HW-PD-0019"
+              },
+              {
+                "to": "HW-PD-0020"
               }
             ]
           }
@@ -14514,7 +14520,7 @@
           "resolver": "source-tree"
         },
         "attributes": {
-          "verified_revision": "sha256:402da8aa3219803a14f060977e36f950326d43dce66233996fc22cbd0cf3bf6e"
+          "verified_revision": "sha256:df3fe720e5c546530ce4ee6dca826bafc78acea352450581e4513f9a900cd171"
         }
       },
       {
@@ -14911,6 +14917,9 @@
           "anchor_kind": "code_path",
           "id": "engine/crates/cli/src/taxonomy_graph.rs",
           "resolver": "source-tree"
+        },
+        "attributes": {
+          "verified_revision": "sha256:3231a0b4cf0a9089d889fe1e3c3885c2b6f337bdba6645990aa5f4ea52633444"
         }
       },
       {
@@ -20185,7 +20194,7 @@
           "resolver": "source-tree"
         },
         "attributes": {
-          "verified_revision": "sha256:947ac77a5a63190647e46e38c0a117cb2105ed8bb5a0528ec457c3347b436f5d"
+          "verified_revision": "sha256:9a6951a6d4a23cf366cf6046f17e651868521231af26008a8dec2927b10b0f59"
         }
       },
       {
@@ -20199,7 +20208,7 @@
           "resolver": "source-tree"
         },
         "attributes": {
-          "verified_revision": "sha256:947ac77a5a63190647e46e38c0a117cb2105ed8bb5a0528ec457c3347b436f5d"
+          "verified_revision": "sha256:9a6951a6d4a23cf366cf6046f17e651868521231af26008a8dec2927b10b0f59"
         }
       },
       {
@@ -20213,7 +20222,7 @@
           "resolver": "source-tree"
         },
         "attributes": {
-          "verified_revision": "sha256:947ac77a5a63190647e46e38c0a117cb2105ed8bb5a0528ec457c3347b436f5d"
+          "verified_revision": "sha256:9a6951a6d4a23cf366cf6046f17e651868521231af26008a8dec2927b10b0f59"
         }
       },
       {
@@ -20227,7 +20236,7 @@
           "resolver": "source-tree"
         },
         "attributes": {
-          "verified_revision": "sha256:947ac77a5a63190647e46e38c0a117cb2105ed8bb5a0528ec457c3347b436f5d"
+          "verified_revision": "sha256:9a6951a6d4a23cf366cf6046f17e651868521231af26008a8dec2927b10b0f59"
         }
       },
       {
@@ -20241,7 +20250,7 @@
           "resolver": "source-tree"
         },
         "attributes": {
-          "verified_revision": "sha256:947ac77a5a63190647e46e38c0a117cb2105ed8bb5a0528ec457c3347b436f5d"
+          "verified_revision": "sha256:9a6951a6d4a23cf366cf6046f17e651868521231af26008a8dec2927b10b0f59"
         }
       },
       {
@@ -20255,7 +20264,7 @@
           "resolver": "source-tree"
         },
         "attributes": {
-          "verified_revision": "sha256:947ac77a5a63190647e46e38c0a117cb2105ed8bb5a0528ec457c3347b436f5d"
+          "verified_revision": "sha256:9a6951a6d4a23cf366cf6046f17e651868521231af26008a8dec2927b10b0f59"
         }
       },
       {
@@ -20269,7 +20278,7 @@
           "resolver": "source-tree"
         },
         "attributes": {
-          "verified_revision": "sha256:947ac77a5a63190647e46e38c0a117cb2105ed8bb5a0528ec457c3347b436f5d"
+          "verified_revision": "sha256:9a6951a6d4a23cf366cf6046f17e651868521231af26008a8dec2927b10b0f59"
         }
       },
       {
@@ -20283,7 +20292,7 @@
           "resolver": "source-tree"
         },
         "attributes": {
-          "verified_revision": "sha256:947ac77a5a63190647e46e38c0a117cb2105ed8bb5a0528ec457c3347b436f5d"
+          "verified_revision": "sha256:9a6951a6d4a23cf366cf6046f17e651868521231af26008a8dec2927b10b0f59"
         }
       },
       {
@@ -20388,6 +20397,17 @@
           "bound": "document",
           "id": "HW-PD-0019",
           "path": "docs/process/decisions/0019-ci-runs-actions-from-the-actions-organization-only-and-carries-no-build-state-between-self-hosted-jobs.md",
+          "kind": "process_decision"
+        }
+      },
+      {
+        "source": "docs/process/explanations/where-a-ci-job-runs.md",
+        "relation": "draws_on",
+        "written_as": "draws_on",
+        "target": {
+          "bound": "document",
+          "id": "HW-PD-0020",
+          "path": "docs/process/decisions/0020-merges-go-through-the-github-merge-queue-one-squash-commit-per-pull-request.md",
           "kind": "process_decision"
         }
       },
