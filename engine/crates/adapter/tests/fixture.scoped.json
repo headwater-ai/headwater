@@ -505,7 +505,7 @@
     {
       "rule": "surface.command.undeclared",
       "scope": "document",
-      "version": 2,
+      "version": 3,
       "obligations": []
     },
     {
