@@ -95,7 +95,7 @@ nav:
       - "Each release states in its notes the release digest that a consumer pins": "decisions/0090-each-release-states-in-its-notes-the-release-digest-that-a-consumer-pins.md"
       - "The runner image of the engine release build is written in the workflow because it sets the glibc floor": "decisions/0091-the-runner-image-of-the-engine-release-build-is-written-in-the-workflow-because-it-sets-the-glibc-floor.md"
       - "The citation comment of spec 5 is for an adopter's corpus, and this repository does not practice it on its own code": "decisions/0092-the-citation-comment-of-spec-5-is-for-an-adopter-s-corpus-and-this-repository-does-not-practice-it-on-its-own-code.md"
-      - "Harper does not become part of the engine, and Q41 stands": "decisions/0096-harper-does-not-become-part-of-the-engine-and-q41-stands.md"
+      - "Harper does not become part of the engine now, and Q41 stands": "decisions/0096-harper-does-not-become-part-of-the-engine-now-and-q41-stands.md"
   - "Acceptance criteria":
       - "Acceptance criteria": "acceptance-criteria/README.md"
       - "No source file of the engine names a network API and no locked dependency provides one": "acceptance-criteria/0001-no-source-file-of-the-engine-names-a-network-api-and-no-locked-dependency-provides-one.md"
@@ -109,7 +109,7 @@ nav:
       - "First contact — the Q11, Q12 and Q16 evaluation": "evaluations/first-contact.md"
       - "Governs edges: what an anchor reaches, what covers it, when it ages, and where a session meets it": "evaluations/governs-edges-what-an-anchor-reaches-what-covers-it-when-it-ages-and-where-a-session-meets-it.md"
       - "The graph, its export, and the tier above it": "evaluations/graph-export-and-federation.md"
-      - "Harper over this corpus finds no error on a 25-document sample, and it builds only past the engine toolchain": "evaluations/harper-spike-results.md"
+      - "Harper over this corpus finds no error on a 25-document sample, and version 2.11.0 does not build at the engine's floor of rustc 1.91": "evaluations/harper-spike-results.md"
       - "inspect_evals as a worked instance — the first ADR log this project did not write": "evaluations/inspect-evals-worked-example.md"
       - "The implementation language — the evidence for Q1": "evaluations/language-choice.md"
       - "The Q1 spike — results": "evaluations/language-spike-results.md"

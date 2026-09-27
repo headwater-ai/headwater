@@ -4,9 +4,10 @@
 # Run one cargo command for the spike inside a pinned Rust image.
 #
 # harper-core 2.11.0 declares no rust-version and does not compile on rustc
-# 1.93.1 (four E0308 errors in its own linting/ modules, measured 2026-09-27).
-# The engine's floor is 1.91. So the spike builds in a container whose rustc
-# is newer, and the evaluation reports the lowest image that built it.
+# 1.93.1 or 1.91 (four E0308 errors in its own linting/ modules, measured
+# 2026-09-27). It builds on rustc 1.98.1, which is rust:latest that day. So
+# the spike builds in rust:latest. No image between 1.93.1 and 1.98.1 was
+# tried, so 1.98.1 is a compiler that works and not the lowest one.
 #
 #   sh tools/engine/harper-spike/in-container.sh <image> <cargo args...>
 #

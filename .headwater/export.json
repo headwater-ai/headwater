@@ -2691,7 +2691,7 @@
         }
       },
       {
-        "path": "docs/decisions/0096-harper-does-not-become-part-of-the-engine-and-q41-stands.md",
+        "path": "docs/decisions/0096-harper-does-not-become-part-of-the-engine-now-and-q41-stands.md",
         "kind": "decision",
         "id": "HW-DR-0096",
         "warrant": "asserted",
@@ -2699,9 +2699,9 @@
           "id": "HW-DR-0096",
           "status": "current",
           "status_since": "2026-09-27",
-          "summary": "harper-core found no error in a 25-document sample of this corpus, and it needs a newer compiler than the engine allows. So the engine does not link it, and Vale stays refused.",
+          "summary": "harper-core found 0 real errors in 187 hand-read findings on 25 documents of this corpus. So the engine does not link it now, Q41 stands, and a stated precision bar or an adopter request reopens it.",
           "last_verified": "2026-09-27",
-          "title": "Harper does not become part of the engine, and Q41 stands",
+          "title": "Harper does not become part of the engine now, and Q41 stands",
           "provenance": {
             "warrant": "asserted",
             "agency": "agent",
@@ -2942,9 +2942,9 @@
           "id": "HW-EVAL-harper-spike-results",
           "status": "current",
           "status_since": "2026-09-27",
-          "summary": "harper-core 2.11.0, fed only the prose an author wrote, found 0 errors in 187 hand-read findings on 25 documents. It needs rustc past 1.93 and adds 496 crates.",
+          "summary": "harper-core 2.11.0, fed only the prose an author wrote, found 0 errors in 187 hand-read findings on 25 documents. It adds 496 crates and does not compile at rustc 1.91.",
           "last_verified": "2026-09-27",
-          "title": "Harper over this corpus finds no error on a 25-document sample, and it builds only past the engine toolchain",
+          "title": "Harper over this corpus finds no error on a 25-document sample, and version 2.11.0 does not build at the engine's floor of rustc 1.91",
           "provenance": {
             "warrant": "asserted",
             "agency": "agent",
@@ -15157,7 +15157,7 @@
         }
       },
       {
-        "source": "docs/decisions/0096-harper-does-not-become-part-of-the-engine-and-q41-stands.md",
+        "source": "docs/decisions/0096-harper-does-not-become-part-of-the-engine-now-and-q41-stands.md",
         "relation": "traces_to",
         "written_as": "traces_to",
         "target": {
@@ -15168,7 +15168,7 @@
         }
       },
       {
-        "source": "docs/decisions/0096-harper-does-not-become-part-of-the-engine-and-q41-stands.md",
+        "source": "docs/decisions/0096-harper-does-not-become-part-of-the-engine-now-and-q41-stands.md",
         "relation": "traces_to",
         "written_as": "traces_to",
         "target": {
@@ -15179,7 +15179,7 @@
         }
       },
       {
-        "source": "docs/decisions/0096-harper-does-not-become-part-of-the-engine-and-q41-stands.md",
+        "source": "docs/decisions/0096-harper-does-not-become-part-of-the-engine-now-and-q41-stands.md",
         "relation": "traces_to",
         "written_as": "traces_to",
         "target": {

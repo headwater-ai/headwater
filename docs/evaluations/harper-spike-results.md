@@ -2,9 +2,9 @@
 id: HW-EVAL-harper-spike-results
 status: current
 status_since: 2026-09-27
-summary: "harper-core 2.11.0, fed only the prose an author wrote, found 0 errors in 187 hand-read findings on 25 documents. It needs rustc past 1.93 and adds 496 crates."
+summary: "harper-core 2.11.0, fed only the prose an author wrote, found 0 errors in 187 hand-read findings on 25 documents. It adds 496 crates and does not compile at rustc 1.91."
 last_verified: 2026-09-27
-title: "Harper over this corpus finds no error on a 25-document sample, and it builds only past the engine toolchain"
+title: "Harper over this corpus finds no error on a 25-document sample, and version 2.11.0 does not build at the engine's floor of rustc 1.91"
 provenance:
   warrant: asserted
   agency: agent
@@ -18,9 +18,9 @@ relations:
     - tools/engine/harper-spike/build.sh
 ---
 
-# Harper over this corpus finds no error on a 25-document sample, and it builds only past the engine toolchain
+# Harper over this corpus finds no error on a 25-document sample, and version 2.11.0 does not build at the engine's floor of rustc 1.91
 
-[#1013](https://github.com/headwater-ai/headwater/issues/1013) asks whether `harper-core` is worth a place in this engine as a deterministic grammar and autofix layer. This page holds the measurements. The ruling that reads them is [HW-DR-0096](../decisions/0096-harper-does-not-become-part-of-the-engine-and-q41-stands.md). The code is in [`tools/engine/harper-spike/`](../../tools/engine/harper-spike/), and `tools/engine/harper-spike/build.sh` reproduces every number.
+[#1013](https://github.com/headwater-ai/headwater/issues/1013) asks whether `harper-core` is worth a place in this engine as a deterministic grammar and autofix layer. This page holds the measurements. The ruling that reads them is [HW-DR-0096](../decisions/0096-harper-does-not-become-part-of-the-engine-now-and-q41-stands.md). The code is in [`tools/engine/harper-spike/`](../../tools/engine/harper-spike/), and `tools/engine/harper-spike/build.sh` reproduces every number.
 
 ## The setup
 
@@ -96,7 +96,8 @@ The only category that Harper adds and the engine lacks is grammar: a doubled wo
 
 | measurement | value |
 |---|---|
-| lowest rustc that built it | not 1.93.1, the host compiler: four `E0308` errors in `harper-core`'s own `linting/` modules. rustc 1.98.1 in `rust:latest` built it. 2.8.0 fails the same way. The crate declares no `rust-version` |
+| compilers tried, for `harper-core` 2.11.0 | fails on rustc 1.93.1, the host compiler, with four `E0308` errors in its own `linting/` modules. Fails the same way on rustc 1.91 in `rust:1.91` (the verification of this page). Builds on rustc 1.98.1 in `rust:latest`. The crate declares no `rust-version`, and no image between 1.93.1 and 1.98.1 was tried |
+| compilers tried, for older versions | 2.8.0 fails on rustc 1.93.1. The verification of this page ran `cargo check` on rustc 1.91: 2.4.0 fails, and 2.0.0, 1.12.0 and 1.0.0 pass |
 | crates `harper-core` adds to what `headwater-doc` reaches | 496, from the resolve graph of every target. It brings the `burn` machine-learning crates for part-of-speech tagging |
 | licenses of those crates | all permissive except 4 MPL-2.0 and 2 that offer LGPL-2.1 as one choice. `harper-core` is Apache-2.0 |
 | spike binary, release, not stripped | 18,670,680 bytes |
@@ -105,7 +106,7 @@ The only category that Harper adds and the engine lacks is grammar: a doubled wo
 | 25 documents, cold | 9.3 to 9.6 s, which is 373 to 382 ms a document |
 | 25 documents, warm, same process | 6.4 to 6.8 s, which is 254 to 271 ms a document |
 
-**Two numbers the issue asked for are not here.** The size of the engine binary with `harper-core` linked needs the engine built by a compiler that builds Harper, and the engine's pinned toolchain cannot. A `wasm32-unknown-unknown` build was not tried, because the container has no such target installed. Harper ships a WebAssembly package of its own, but this page did not measure it.
+**Two numbers the issue asked for are not here.** The engine pins no toolchain, and it declares `rust-version = "1.91"` as its floor. To measure the engine binary with `harper-core` 2.11.0 linked, the whole engine must build on rustc 1.98.1 or a compiler near it. This spike built only itself in that image. A `wasm32-unknown-unknown` build was not tried, because the container has no such target installed. Harper ships a WebAssembly package of its own, but this page did not measure it.
 
 **For scale, the engine's whole budget for a change-scoped check is 200 ms** ([spec 6](../spec/06-engine-architecture.md#performance-targets)). One document through Harper takes more than that.
 

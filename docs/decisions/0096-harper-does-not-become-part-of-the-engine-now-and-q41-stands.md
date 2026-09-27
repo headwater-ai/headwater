@@ -2,9 +2,9 @@
 id: HW-DR-0096
 status: current
 status_since: 2026-09-27
-summary: "harper-core found no error in a 25-document sample of this corpus, and it needs a newer compiler than the engine allows. So the engine does not link it, and Vale stays refused."
+summary: "harper-core found 0 real errors in 187 hand-read findings on 25 documents of this corpus. So the engine does not link it now, Q41 stands, and a stated precision bar or an adopter request reopens it."
 last_verified: 2026-09-27
-title: "Harper does not become part of the engine, and Q41 stands"
+title: "Harper does not become part of the engine now, and Q41 stands"
 provenance:
   warrant: asserted
   agency: agent
@@ -18,7 +18,7 @@ relations:
     - HW-DR-0024
 ---
 
-# Harper does not become part of the engine, and Q41 stands
+# Harper does not become part of the engine now, and Q41 stands
 
 ## Context
 
@@ -32,15 +32,16 @@ So this record weighs Harper on what it measured, and not on what [spec 00](../s
 
 ## Decision
 
-**The engine does not link `harper-core`.** No Harper rule becomes a control, and no regime names Harper as a backend. Spec 00 keeps its line about grammar, because the ruling licensed a change to it only for a record that integrates Harper.
+**The engine does not link `harper-core` now.** No Harper rule becomes a control, and no regime names Harper as a backend. Spec 00 keeps its line about grammar, because the ruling licensed a change to it only for a record that integrates Harper.
 
 **Q41 stands unchanged.** Nothing in this spike shows a capability that Vale gives and the engine lacks.
 
-**The decision rests on three measurements, and any one of them is enough:**
+**The decision rests on precision.** Of 187 findings read by hand on 25 documents, 0 were errors, 57 were preferences and 130 were wrong. The verification of this record read its own sample of 30 findings, drawn another way, and it also found 0 errors. A control that reports no true error on the corpus it runs on costs its readers and gives them nothing.
 
-- **Harper found no error on this corpus.** Of 187 findings read by hand on 25 documents, 0 were errors, 57 were preferences and 130 were wrong.
-- **Harper needs a newer compiler than the engine allows.** `harper-core` 2.11.0 does not compile on rustc 1.93.1, and it declares no minimum. The engine's floor is 1.91.
-- **Harper costs more than the engine's whole check.** It adds 496 crates, and one document takes 254 to 382 ms, against a budget of 200 ms for a change-scoped check.
+**Two costs weigh against Harper as well, and neither decides alone:**
+
+- **Crates and time.** It adds 496 crates, and one document takes 254 to 382 ms. The budget for a whole change-scoped check is 200 ms.
+- **The compiler.** `harper-core` declares no `rust-version`. Version 2.11.0 fails to compile on rustc 1.91 and on rustc 1.93.1, and it builds on rustc 1.98.1. The verification found that 2.4.0 fails on rustc 1.91 and that 2.0.0 and 1.12.0 pass `cargo check` there. The engine pins no toolchain, and CI builds on current stable, so CI would build 2.11.0. But the engine declares `rust-version = "1.91"`, so linking 2.4.0 or later would raise that floor for every adopter who builds from source.
 
 ## Consequences
 
@@ -51,10 +52,13 @@ So this record weighs Harper on what it measured, and not on what [spec 00](../s
 3. **Scoping: answered, with a correction.** The spike feeds Harper one sentence, masks what the author did not write, and maps each finding to file bytes. The decisive fixture holds. But `Sentence::authored` is the wrong input for grammar: it removes code spans, and the removal wrote 602 false findings on the sample. A grammar rule needs the words a reader sees, with the foreign runs masked.
 4. **Determinism: answered.** Two runs were byte-identical. The crate version pins the dictionary, and the dialect and rule set are code. So the four inputs of spec 12 hold if the Harper version counts as part of the check version.
 
-**The two answers that fail are cost and yield, which Q41 did not ask about.** Harper's shape fits this engine better than Vale's. Its output on this corpus does not.
+**The answer that fails is yield, which Q41 did not ask about.** Harper's shape fits this engine better than Vale's. Its output on this corpus does not.
 
 **[HW-DR-0005](0005-voice-checking-depth.md) and [HW-DR-0024](0024-q24-readability-and-what-a-sweep-can-be-asked-about.md) are unchanged.** Harper has no voice rule and no readability score that reaches this corpus. Its `LongSentences` rule fired once in the raw mode and never on the authored text.
 
 **An adopter can still run Harper alongside.** It can run as a separate step, and nothing in this engine stops it. That is the same place spec 00 puts Vale.
 
-**What would reopen this.** Two things together reopen it. The first is a Harper release that declares a `rust-version` at or below the engine's floor. The second is a sample that shows at least one true error for each rule proposed. The seeded set in `tools/engine/harper-spike/tests/seeded.rs` shows that the doubled-word rule and the article rule are correct on text that holds the error. A corpus with those errors would give a different answer, and `tools/engine/harper-spike/build.sh` measures it again.
+**What would reopen this.** Either of two things reopens it, and `tools/engine/harper-spike/build.sh` measures the first again:
+
+- **A precision bar met on a corrected input.** Correct the input first, so that Harper does not read the text of a masked code span as context. Then read by hand at least 50 findings of one Harper rule on any corpus. If at least 4 in 5 of them are true errors, that rule is a candidate control. The seeded set in `tools/engine/harper-spike/tests/seeded.rs` holds text with each error. On it, the doubled-word rule and the article rule are correct, so they are the first to try.
+- **An adopter asks.** A person outside this repository can file an issue that asks for grammar findings in the same check. That issue reopens the question, and that adopter's corpus is the sample.
