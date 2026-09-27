@@ -645,4 +645,31 @@ mod tests {
             Vec::<String>::new()
         );
     }
+
+    /// #1262. The parse removes the backticks, so the last letters of a code
+    /// span and the prose period after it read as `no.` or `etc.`. An
+    /// abbreviation matches prose letters only, so this period ends the
+    /// sentence whatever the span ends on.
+    #[test]
+    fn a_period_after_a_code_span_ends_the_sentence_whatever_the_span_ends_on() {
+        assert_eq!(
+            texts("Pass `--no`. Then stop.\n"),
+            ["Pass --no.", "Then stop."]
+        );
+        assert_eq!(texts("Write `a, b, etc`. Then stop.\n").len(), 2);
+        assert_eq!(texts("Compare `x-vs`. Then stop.\n").len(), 2);
+        assert_eq!(texts("Name `x.al`. Then stop.\n").len(), 2);
+        // The next sentence opens with a code span.
+        assert_eq!(texts("Write `etc`. `x` opens the next.\n").len(), 2);
+        // A dotted entry whose letters the span holds up to the last period.
+        assert_eq!(texts("Read `x.e.g`. Then stop.\n").len(), 2);
+    }
+
+    /// The control for the case above: a prose abbreviation after a code span
+    /// still ends no sentence.
+    #[test]
+    fn a_prose_abbreviation_after_a_code_span_still_ends_no_sentence() {
+        assert_eq!(texts("Use `x` e.g. Foo holds.\n").len(), 1);
+        assert_eq!(texts("Set `x` to no. Five holds it.\n").len(), 1);
+    }
 }
