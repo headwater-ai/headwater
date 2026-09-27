@@ -1,0 +1,7 @@
+<!-- headwater:generated shelf_index. `headwater generate` writes this file, and `headwater generate --check` holds it. Edit the corpus, not this file. -->
+
+# Process explanations
+
+The documents on this shelf, in the reading order this corpus derives.
+
+- [Where a CI job runs](where-a-ci-job-runs.md) — A push can run on the self-hosted pool when CI_RUNNER opts in and the pool has room. A pull request always runs on a hosted runner. (asserted, and no human has accepted it)
