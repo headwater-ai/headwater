@@ -353,6 +353,29 @@ fn member(node: &Spanned<Value>, key: &str) -> Option<String> {
         .map(|scalar| scalar.text.clone())
 }
 
+/// A value without its spans, so two documents written in two layouts compare
+/// on what they say.
+fn canonical(value: &Value) -> String {
+    match value {
+        Value::Scalar(scalar) => format!("{:?}", scalar.text),
+        Value::Seq(items) => format!(
+            "[{}]",
+            items
+                .iter()
+                .map(|item| canonical(&item.value))
+                .collect::<Vec<_>>()
+                .join(",")
+        ),
+        Value::Map(map) => format!(
+            "{{{}}}",
+            map.iter()
+                .map(|entry| format!("{:?}:{}", entry.key.value, canonical(&entry.value.value)))
+                .collect::<Vec<_>>()
+                .join(",")
+        ),
+    }
+}
+
 /// The list member `pointers` of a structured answer.
 fn pointers_of(node: &Spanned<Value>) -> Vec<Spanned<Value>> {
     node.value
@@ -1164,10 +1187,12 @@ fn a_route_answer_carries_its_pointers_as_structured_content() {
         "why is quarantine throttling one quota rule",
         headwater_query::Budget::default(),
     );
-    let document = headwater_query::json::route_value(&route).render();
-    assert!(
-        response.contains(&format!(r#""structuredContent":{document}"#)),
-        "structuredContent is the route --json document: {response}"
+    let document = headwater_yaml::load(&headwater_query::json::route(&route))
+        .expect("route --json is JSON");
+    assert_eq!(
+        canonical(&answer.value),
+        canonical(&document.value),
+        "structuredContent is the route --json document"
     );
 
     let response = once(
