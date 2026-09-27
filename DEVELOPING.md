@@ -129,16 +129,17 @@ Several agent sessions build this repository at the same time, each in its own w
 
 **What that check holds is the name of each gate, and not the flags printed beside it.** The commands below are written as CI writes them so that you can copy a line and run it, but no case compares a flag: `--check` deleted from a line here moves nothing, and `--check` deleted from the workflow moves nothing either. The reason is that the flags on these commands are a pinned clock, a change manifest, an output shape and a check-versus-write switch, and a suite that compared them would redden on a reordering that changed no gate. `--locked` is the one flag anything in this repository holds, and `sh tools/engine/build-declaration-fixtures.sh` is what holds it.
 
-The cargo commands. The `engine` job runs the first five. The `headwater` job runs the build, because it needs the binary before it can run a verb over the corpus:
+The cargo commands. The `engine` job runs the first six. The `headwater` job runs the build, because it needs the binary before it can run a verb over the corpus:
 
     cargo --version
     cargo fmt --check
     cargo clippy --all-targets --locked -- -D warnings
     cargo test --locked
+    cargo test -p headwater-cli --no-default-features --locked --test no_fetch
     cargo tree -e normal --no-default-features -p headwater-cli --locked
     cargo build --release -p headwater-cli --locked
 
-`cargo tree` is the leak gate for the binary without the `fetch` feature: the step fails when `headwater-fetch` is in that tree.
+The two commands with `--no-default-features` hold the binary without the `fetch` feature. The first runs its refusal of a location, and the second fails when `headwater-fetch` is in its tree.
 
 A green clippy on your host is not evidence about CI. Three toolchains disagree about this source — the pinned container, your host, and CI's current stable — and a host clippy has reported zero warnings on a tree that CI rejected with two errors. Push and read CI rather than reproducing it locally.
 
