@@ -105,10 +105,32 @@ fn corpus_graph() -> Graph {
     let declarations = Declarations::read(&resolved).expect("the resolved declarations read");
 
     let taken = census::take(&corpus, &taxonomy);
+    // `check-rule` belongs to `headwater-check`, which this crate cannot
+    // reach, so this report records every `check_rule` target as having no
+    // resolver. `comment-scan` belongs to this crate, and it joins on the
+    // condition `main.rs` sets: a declared anchor kind names it with a
+    // pattern. Without it this report records every `test_site` edge of this
+    // repository as having no resolver, which a run of the verb never does
+    // (#1097).
+    let resolvers = match declarations
+        .anchors
+        .iter()
+        .find(|anchor| anchor.resolver == "comment-scan")
+        .and_then(|anchor| anchor.pattern.clone())
+    {
+        Some(pattern) => Resolvers::over(&corpus)
+            .with(Box::new(headwater_graph::anchors::CommentScan::new(
+                &root,
+                pattern,
+                headwater_graph::anchors::CommentScan::claimed(&root),
+            )))
+            .expect("the comment-scan resolver is the only one of its name"),
+        None => Resolvers::over(&corpus),
+    };
     Graph::build(
         &taken,
         &declarations,
-        &Resolvers::over(&corpus),
+        &resolvers,
         &corpus,
         &Config::default(),
     )

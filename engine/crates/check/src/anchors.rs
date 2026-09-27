@@ -120,7 +120,7 @@ impl Resolver for Rules {
                 // A rule template is at no revision. It moves with the binary,
                 // and the lock digest that every read set already carries is
                 // what a cached verdict keys on.
-                revision: None,
+                revision: None.into(),
             },
             false => Binding::Unresolved(format!(
                 "this engine implements no rule `{id}`, and it ships {}",
@@ -159,7 +159,7 @@ mod tests {
                 matched: vec!["section.required.missing".to_string()],
                 normalized: "section.required.missing".to_string(),
                 excluded_by: None,
-                revision: None,
+                revision: None.into(),
             }
         );
     }
@@ -174,7 +174,7 @@ mod tests {
                 matched: vec!["language.retired_term.used".to_string()],
                 normalized: "language.retired_term.used".to_string(),
                 excluded_by: None,
-                revision: None,
+                revision: None.into(),
             }
         );
         // Case, separator and prefix are three ways to spell a rule this engine

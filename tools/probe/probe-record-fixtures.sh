@@ -1,5 +1,6 @@
 #!/bin/sh
-# What holds `tools/probe/probe-transform.sh` and `tools/probe/probe-record.sh`.
+# What holds `tools/probe/probe-transform.sh`, `tools/probe/probe-record.sh` and
+# `tools/probe/ablate.sh`.
 #
 # The pair exists to stop one thing: a model's account of its own process
 # reaching `docs/probe-runs/` as if it were an observation. So the cases below
@@ -705,18 +706,22 @@ same "the driver refuses a workspace carrying a clone's \`.git\` directory" "4" 
 # The answer-key guard (#1229), asserted unconditionally and before any harness
 # call. A workspace that holds the probe's own document hands the session its
 # expectation, and the 2026-09-17 tombstone session read exactly that file and
-# then answered. The clean half runs with a `PATH` that holds `grep` and not
-# `jq` or `claude`, so it stops at the tool check (3) and can never start a paid
+# then answered. The copy sits outside the probe shelves, so the instrument
+# guard (8) passes it and this guard (9) is the one that answers. The clean
+# half runs with a `PATH` that holds `grep`, `sh` and `awk` and not `jq` or
+# `claude`, so it stops at the tool check (3) and can never start a paid
 # session on a host that has the harness installed.
-mkdir -p "$scratch/keyed/docs/probes" "$scratch/grep-only"
-cp "$root/engine/crates/probe/fixtures/corpus/probes/0001-opened.md" "$scratch/keyed/docs/probes/"
+mkdir -p "$scratch/keyed/notes" "$scratch/grep-only"
+cp "$root/engine/crates/probe/fixtures/corpus/probes/0001-opened.md" "$scratch/keyed/notes/"
 sh "$driver" --probe PROBE-FIX-opened --session x --task-file "$scratch/task.md" \
     --workspace "$scratch/keyed" >/dev/null 2>"$scratch/driver-key.err"
-same "the driver refuses a workspace that holds the probe's own document" "8" "$?"
-present "and it names the file" "keyed/docs/probes/0001-opened.md" "$scratch/driver-key.err"
+same "the driver refuses a workspace that holds the probe's own document" "9" "$?"
+present "and it names the file" "keyed/notes/0001-opened.md" "$scratch/driver-key.err"
 
-ln -s "$(command -v grep)" "$scratch/grep-only/grep"
-rm "$scratch/keyed/docs/probes/0001-opened.md"
+for tool in grep sh awk; do
+    ln -s "$(command -v "$tool")" "$scratch/grep-only/$tool"
+done
+rm "$scratch/keyed/notes/0001-opened.md"
 PATH="$scratch/grep-only" "$shell" "$driver" --probe PROBE-FIX-opened --session x \
     --task-file "$scratch/task.md" --workspace "$scratch/keyed" \
     >/dev/null 2>"$scratch/driver-sealed.err"
@@ -729,7 +734,7 @@ mkdir -p "$scratch/slugged/.headwater"
 printf -- '- docs/probes/%s.md\n' "$tombstone" > "$scratch/slugged/.headwater/nav.yml"
 sh "$driver" --probe "HW-PROBE-$tombstone" --session x --task-file "$scratch/task.md" \
     --workspace "$scratch/slugged" >/dev/null 2>"$scratch/driver-slug.err"
-same "the driver refuses a workspace whose fold names the probe by its slug" "8" "$?"
+same "the driver refuses a workspace whose fold names the probe by its slug" "9" "$?"
 
 # `seal.sh` removes every such file, and the driver then passes its guard.
 mkdir -p "$scratch/sealed/docs/probes" "$scratch/sealed/docs/probe-runs" "$scratch/sealed/docs/spec" "$scratch/sealed/.headwater"
@@ -822,6 +827,176 @@ STUB
 else
     printf 'note no engine or no lock, so the liveness cases did not run.\n'
 fi
+
+# ---------------------------------------------------------------------------
+# `tools/probe/ablate.sh`, which produces an absent-arm tree from the tier's
+# declared ablation (#1010).
+#
+# Two tiers remove two different trees, and the difference between them is
+# the only thing that measures what the documents under `docs/` do. So the
+# cases hold both ablations against the checkout's own `.headwater/probe.yml`,
+# the refusal of a tier with no absent arm, and the refusal of an entry that
+# would take `rm -rf` outside the workspace. Every refusal is asserted to
+# leave the workspace untouched.
+# ---------------------------------------------------------------------------
+ablate="$root/tools/probe/ablate.sh"
+fresh_workspace() {
+    rm -rf "$scratch/ablate-ws"
+    mkdir -p "$scratch/ablate-ws/.claude" "$scratch/ablate-ws/.githooks" \
+        "$scratch/ablate-ws/.headwater" "$scratch/ablate-ws/docs/spec" \
+        "$scratch/ablate-ws/docs/probes" "$scratch/ablate-ws/docs/probe-runs" \
+        "$scratch/ablate-ws/engine/crates/census/fixtures" \
+        "$scratch/ablate-ws/site/tutorial" "$scratch/ablate-ws/tools"
+    : > "$scratch/ablate-ws/CLAUDE.md"
+    : > "$scratch/ablate-ws/.headwater/export.json"
+    : > "$scratch/ablate-ws/.headwater/taxonomy.lock"
+    : > "$scratch/ablate-ws/docs/spec/05.md"
+    : > "$scratch/ablate-ws/docs/probes/p.md"
+    : > "$scratch/ablate-ws/engine/crates/census/fixtures/corpus.census"
+    : > "$scratch/ablate-ws/site/tutorial/index.html"
+    : > "$scratch/ablate-ws/site/index.html"
+}
+kept() {
+    # $1 name, then the paths that must still exist, then `--`, then the
+    # paths that must be gone.
+    name=$1
+    shift
+    missing=""
+    while [ "$#" -gt 0 ] && [ "$1" != "--" ]; do
+        [ -e "$scratch/ablate-ws/$1" ] || missing="$missing $1"
+        shift
+    done
+    [ "$#" -gt 0 ] && shift
+    stayed=""
+    for gone in "$@"; do
+        [ -e "$scratch/ablate-ws/$gone" ] && stayed="$stayed $gone"
+    done
+    if [ -z "$missing$stayed" ]; then
+        pass "$name"
+    else
+        fail "$name" "removed:${missing:- nothing wrong}; kept:${stayed:- nothing wrong}"
+    fi
+}
+
+fresh_workspace
+sh "$ablate" campaign "$scratch/ablate-ws" >/dev/null 2>"$scratch/ablate.err"
+same "ablate.sh produces the campaign's absent arm" "0" "$?"
+kept "the campaign removes the four governance paths and the instrument, and keeps the rest of docs/" \
+    docs docs/spec/05.md engine/crates/census/fixtures/corpus.census site/tutorial/index.html tools \
+    -- CLAUDE.md .claude .githooks .headwater docs/probes docs/probe-runs
+
+fresh_workspace
+sh "$ablate" documentation "$scratch/ablate-ws" >/dev/null 2>"$scratch/ablate.err"
+same "ablate.sh produces the documentation tier's absent arm" "0" "$?"
+kept "the documentation tier removes the four governance paths, docs/ and the two copies outside it" \
+    engine/crates/census/fixtures site/index.html tools \
+    -- CLAUDE.md .claude .githooks .headwater docs \
+    engine/crates/census/fixtures/corpus.census site/tutorial/index.html
+
+fresh_workspace
+sh "$ablate" --present "$scratch/ablate-ws" >/dev/null 2>"$scratch/ablate.err"
+same "ablate.sh produces a present arm" "0" "$?"
+kept "a present arm loses the instrument and nothing else" \
+    CLAUDE.md .claude .githooks .headwater/taxonomy.lock docs/spec/05.md \
+    engine/crates/census/fixtures/corpus.census site/tutorial/index.html \
+    -- docs/probes docs/probe-runs .headwater/export.json
+
+same "ablate.sh lists the instrument the checkout declares" \
+    "docs/probes docs/probe-runs docs/probe-results .headwater/export.json" \
+    "$(sh "$ablate" --instrument | tr '\n' ' ' | sed 's/ $//')"
+
+printf 'tiers:\n  regression:\n    budget_cents: 1\n    session_cost_cents: 1\n    repetitions: 1\n    arms: [present]\n' \
+    > "$scratch/no-instrument.yml"
+fresh_workspace
+HW_PROBE_YML="$scratch/no-instrument.yml" sh "$ablate" --present "$scratch/ablate-ws" \
+    >/dev/null 2>"$scratch/ablate.err"
+same "a present arm with no instrument declared exits 0" "0" "$?"
+kept "and removes nothing, and never the workspace itself" \
+    CLAUDE.md .claude docs docs/probes engine tools --
+
+printf 'instrument: [docs/probes] # the shelf\ntiers:\n  campaign:\n    arms: [present, absent]\n    ablation: [docs] # the documents\n' \
+    > "$scratch/commented.yml"
+same "ablate.sh reads past a trailing YAML comment, as the engine does" "docs/probes" \
+    "$(HW_PROBE_YML="$scratch/commented.yml" sh "$ablate" --instrument 2>&1)"
+
+# The two refusals of the driver below are asserted with a stub harness first
+# on PATH. It records that it ran and exits nonzero, so a refusal that
+# regresses shows up as a marker file here and never as a paid session.
+mkdir -p "$scratch/refuse-bin"
+cat > "$scratch/refuse-bin/claude" <<STUB
+#!/bin/sh
+: > "$scratch/harness-ran"
+exit 1
+STUB
+chmod +x "$scratch/refuse-bin/claude"
+
+fresh_workspace
+rm -f "$scratch/harness-ran"
+PATH="$scratch/refuse-bin:$PATH" sh "$driver" --probe PROBE-FIX-opened --session x \
+    --task-file "$scratch/task.md" --workspace "$scratch/ablate-ws" \
+    >/dev/null 2>"$scratch/driver-instrument.err"
+same "the driver refuses a workspace that still holds the instrument" "8" "$?"
+present "and it names the path and the command that prepares the arm" \
+    "sh tools/probe/ablate.sh --present" "$scratch/driver-instrument.err"
+same "and no session started" "no" "$([ -e "$scratch/harness-ran" ] && echo yes || echo no)"
+
+fresh_workspace
+rm -f "$scratch/harness-ran"
+HW_PROBE_YML="$scratch/no-such-probe.yml" PATH="$scratch/refuse-bin:$PATH" sh "$driver" \
+    --probe PROBE-FIX-opened --session x --task-file "$scratch/task.md" \
+    --workspace "$scratch/ablate-ws" >/dev/null 2>"$scratch/driver-unread.err"
+same "the driver fails closed when the instrument cannot be read" "8" "$?"
+same "and no session started" "no" "$([ -e "$scratch/harness-ran" ] && echo yes || echo no)"
+
+fresh_workspace
+sh "$ablate" regression "$scratch/ablate-ws" >/dev/null 2>"$scratch/ablate.err"
+same "ablate.sh refuses the regression tier, which runs no absent arm" "2" "$?"
+present "and it names the tier" "\`regression\` tier declares no ablation" "$scratch/ablate.err"
+kept "and the refused workspace is untouched" \
+    CLAUDE.md .claude .githooks .headwater docs docs/probes engine tools --
+
+fresh_workspace
+sh "$ablate" sweep "$scratch/ablate-ws" >/dev/null 2>"$scratch/ablate.err"
+same "ablate.sh refuses a tier the declaration does not carry" "2" "$?"
+
+sh "$ablate" "$scratch/ablate-ws" >/dev/null 2>"$scratch/ablate.err"
+same "ablate.sh refuses the old one-argument form" "2" "$?"
+present "and prints the two-argument usage" "<tier> <workspace>" "$scratch/ablate.err"
+
+for entry in 'docs/../..' '/etc' '..' '""'; do
+    cat > "$scratch/unsafe-probe.yml" <<YML
+tiers:
+  campaign:
+    budget_cents: 100
+    session_cost_cents: 25
+    repetitions: 58
+    arms: [present, absent]
+    ablation: [CLAUDE.md, $entry]
+YML
+    fresh_workspace
+    HW_PROBE_YML="$scratch/unsafe-probe.yml" sh "$ablate" campaign "$scratch/ablate-ws" \
+        >/dev/null 2>"$scratch/ablate.err"
+    same "ablate.sh refuses the ablation entry $entry" "2" "$?"
+    kept "and removes nothing, not even the safe entry before it" \
+        CLAUDE.md .claude .githooks .headwater docs docs/probes engine tools --
+done
+
+cat > "$scratch/block-probe.yml" <<'YML'
+tiers:
+  documentation:
+    budget_cents: 100
+    session_cost_cents: 25
+    repetitions: 58
+    arms: [present, absent]
+    ablation:
+      - docs
+      - ".claude"
+YML
+fresh_workspace
+HW_PROBE_YML="$scratch/block-probe.yml" sh "$ablate" documentation "$scratch/ablate-ws" \
+    >/dev/null 2>"$scratch/ablate.err"
+same "ablate.sh reads a block-sequence ablation" "0" "$?"
+kept "and removes exactly its entries" CLAUDE.md .githooks .headwater engine -- docs .claude
 
 present "the driver names the channel and never a file under ~/.claude/projects" \
     "output-format stream-json" "$driver"

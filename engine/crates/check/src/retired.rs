@@ -174,7 +174,26 @@ impl DocumentCheck for Retired {
     /// the rule are all unchanged, so a warm cache from the previous engine
     /// would serve the merged verdict and the fix would read as working while
     /// it did nothing.
-    const VERSION: u32 = 4;
+    ///
+    /// **Edition five, on 2026-09-27 ([#1228](https://github.com/headwater-ai/headwater/issues/1228)).**
+    /// The splitter in `headwater-doc` now holds `U.S.C.` as an abbreviation,
+    /// so `12 U.S.C. 101.` stays one sentence. It also retires the miss of
+    /// [#1218](https://github.com/headwater-ai/headwater/issues/1218), which
+    /// added `U.S.`, `U.K.`, `a.m.`, `p.m.` and `Ph.D.` and raised no edition.
+    /// This rule locates each finding by the sentence that holds it, so the position of a finding after the citation moves. The document, the lock and the rule are all unchanged, so a warm
+    /// cache from the previous engine would serve the split verdict. The
+    /// `Sentence boundaries` paragraph of `fixtures/check/spec/07-prose-defects.md`
+    /// holds each dotted entry, so `tests/editions.rs` fails the next
+    /// splitter change that moves one of them and leaves this number alone.
+    ///
+    /// **Edition six, on 2026-09-28 ([#1262](https://github.com/headwater-ai/headwater/issues/1262)).**
+    /// An abbreviation in the splitter in `headwater-doc` now matches prose letters only.
+    /// Before, the last letters of a code span such as `--no` or `etc` and the period after it read as `no.` or `etc.`, and the sentence after it merged into it.
+    /// This rule locates each finding by the sentence that holds it, so the position of a finding in the second sentence of the pair moves. The document, the lock and the rule are all unchanged, so a warm
+    /// cache from the previous engine would serve the merged verdict. The
+    /// `Sentence boundaries` paragraph of `fixtures/check/spec/07-prose-defects.md`
+    /// ends a sentence on the code spans `no` and `--no`. The pair after `no` is past the length limit only while merged, and the sentence after `--no` writes a retired term and a future, so `tests/editions.rs` holds this change for all three rules.
+    const VERSION: u32 = 6;
     const NEEDS_BODY: bool = true;
 
     fn instantiates(&self, kind: &str) -> bool {

@@ -315,10 +315,10 @@ fn the_digest_is_a_function_of_bytes_and_not_of_modification_time() {
         }
     };
     let first = resolve(&one);
-    assert!(first.is_some(), "a bound file reports a revision");
+    assert!(first.get().is_some(), "a bound file reports a revision");
     assert_eq!(first, resolve(&two));
     assert_eq!(
-        first.as_deref(),
+        first.get(),
         Some(expected(&one, &[".githooks/pre-commit"]).as_str())
     );
 

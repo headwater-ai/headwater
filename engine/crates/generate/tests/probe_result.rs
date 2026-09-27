@@ -627,6 +627,37 @@ fn two_arms_of_one_campaign_disagreeing_on_refused_sessions_fail_the_run() {
     );
 }
 
+/// Two paired tiers remove two different trees, so a campaign's present arm
+/// and a documentation run's absent arm are not one comparison, whatever
+/// selection, model and served version they share (#1010).
+///
+/// The absent transcript here is [`CAMPAIGN_ABSENT`] recorded at the
+/// `documentation` tier. Keyed without the tier, the pair is chosen and its
+/// refused-session counts disagree, so the run fails on a comparison nobody
+/// made. Keyed with it, each side is alone and nothing is compared.
+#[test]
+fn a_campaign_arm_never_pairs_with_a_documentation_arm() {
+    let at = copied("tiers-apart");
+    std::fs::write(
+        at.join("runs/probe-runs/campaign-present.md"),
+        CAMPAIGN_PRESENT,
+    )
+    .expect("the present-arm transcript lands");
+    std::fs::write(
+        at.join("runs/probe-runs/documentation-absent.md"),
+        CAMPAIGN_ABSENT.replace("tier: campaign", "tier: documentation"),
+    )
+    .expect("the absent-arm transcript lands");
+
+    let plan = plan_over(&at);
+    assert!(
+        plan.mismatched_arms.is_empty(),
+        "two tiers were paired as one run: {:?}",
+        plan.mismatched_arms
+    );
+    assert!(plan.ambiguous_arms.is_empty(), "{:?}", plan.ambiguous_arms);
+}
+
 /// A second present-arm transcript under the same key as
 /// [`CAMPAIGN_PRESENT`], sharing its identity and carrying the same refused
 /// count as [`CAMPAIGN_ABSENT`] (one) — the shape that let the old

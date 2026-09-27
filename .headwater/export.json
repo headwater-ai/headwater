@@ -15,7 +15,7 @@
   "graph": {
     "documents": [
       {
-        "path": "docs/acceptance-criteria/0001-no-source-file-of-the-engine-names-a-network-api-and-no-locked-dependency-provides-one.md",
+        "path": "docs/acceptance-criteria/0001-no-engine-source-outside-the-fetch-crate-names-a-network-api-and-no-crate-of-the-checking-loop-reaches-a-network-package.md",
         "kind": "acceptance_criterion",
         "id": "HW-AC-0001",
         "warrant": "asserted",
@@ -23,9 +23,9 @@
           "id": "HW-AC-0001",
           "status": "current",
           "status_since": "2026-09-06",
-          "summary": "Two facts settle whether the engine can reach a network: no source file under engine/crates names a network API, and no locked package provides one.",
+          "summary": "Outside the fetch crate only test files name a network API, and no crate but the CLI reaches a locked network package.",
           "last_verified": "2026-08-25",
-          "title": "No source file of the engine names a network API and no locked dependency provides one",
+          "title": "No engine source outside the fetch crate names a network API and no crate of the checking loop reaches a network package",
           "verification_method": "inspection",
           "provenance": {
             "warrant": "asserted",
@@ -1821,7 +1821,7 @@
           "status": "current",
           "status_since": "2026-09-11",
           "summary": "Nine required facets went unwritten on two generated documents. The engine derives seven from committed bytes, the emitter composes the summary, and the declaration block stays closed at three scalars.",
-          "last_verified": "2026-09-26",
+          "last_verified": "2026-09-27",
           "title": "Every required facet of a generated document is derived, and the emitter composes the summary",
           "provenance": {
             "warrant": "asserted",
@@ -1837,7 +1837,7 @@
             "governs": [
               {
                 "to": "engine/crates/generate/src/derived.rs",
-                "verified_revision": "sha256:402da8aa3219803a14f060977e36f950326d43dce66233996fc22cbd0cf3bf6e"
+                "verified_revision": "sha256:df3fe720e5c546530ce4ee6dca826bafc78acea352450581e4513f9a900cd171"
               }
             ]
           }
@@ -2350,19 +2350,22 @@
           "id": "HW-DR-0082",
           "status": "current",
           "status_since": "2026-09-24",
-          "summary": "`headwater taxonomy graph` prints the resolved taxonomy from the lock as a Mermaid flowchart, and no projection, explain format or export target draws it",
-          "last_verified": "2026-09-25",
+          "summary": "`headwater taxonomy graph` prints the resolved taxonomy as a Mermaid flowchart, no projection or export target draws it, and D2 and DOT are equal candidates after it",
+          "last_verified": "2026-09-27",
           "title": "The resolved taxonomy is drawn by a verb that prints Mermaid and writes no file",
           "provenance": {
             "warrant": "asserted",
             "agency": "agent",
             "drafted_by": "claude-opus-5.5",
-            "activity": "draft",
+            "activity": "draft+revise",
             "evidence_basis": "evidenced"
           },
           "relations": {
             "governs": [
-              "engine/crates/cli/src/taxonomy_graph.rs"
+              {
+                "to": "engine/crates/cli/src/taxonomy_graph.rs",
+                "verified_revision": "sha256:3231a0b4cf0a9089d889fe1e3c3885c2b6f337bdba6645990aa5f4ea52633444"
+              }
             ]
           }
         }
@@ -2500,7 +2503,7 @@
           "status": "current",
           "status_since": "2026-09-26",
           "summary": "The six-sentence paragraph defect is retired before it lands. 50 of 60 sampled paragraphs past six sentences held one topic, so the count misses what rule 6.5 asks, and no word count replaces it.",
-          "last_verified": "2026-09-26",
+          "last_verified": "2026-09-28",
           "title": "No paragraph limit joins the language rule, because most paragraphs past six sentences hold one topic",
           "provenance": {
             "warrant": "accepted",
@@ -2517,7 +2520,7 @@
             "governs": [
               {
                 "to": "engine/crates/check/src/language.rs",
-                "verified_revision": "sha256:4ed3b112c0e9c08ba9264da27070a07ce958e666a85a085cb591131e52c01bac"
+                "verified_revision": "sha256:73b6425e92ca92586efdf16b4e942b2165a880e68ed6af33c13d96c3b22195db"
               }
             ],
             "traces_to": [
@@ -2549,7 +2552,7 @@
             "governs": [
               {
                 "to": ".github/workflows/release.yml",
-                "verified_revision": "sha256:e2004f70a412b80dbc2ba92887f1a694973f8e21905114badd18a548ce4b4296"
+                "verified_revision": "sha256:66aeccf8d5dd9a9a73f5a2e93de8062823828f404e2f46253368cbcc296cb15f"
               },
               {
                 "to": ".github/workflows/release-taxonomy.yml",
@@ -2615,7 +2618,7 @@
             "governs": [
               {
                 "to": ".github/workflows/release.yml",
-                "verified_revision": "sha256:e2004f70a412b80dbc2ba92887f1a694973f8e21905114badd18a548ce4b4296"
+                "verified_revision": "sha256:66aeccf8d5dd9a9a73f5a2e93de8062823828f404e2f46253368cbcc296cb15f"
               },
               {
                 "to": ".github/workflows/release-taxonomy.yml",
@@ -2648,7 +2651,7 @@
             "governs": [
               {
                 "to": ".github/workflows/release.yml",
-                "verified_revision": "sha256:e2004f70a412b80dbc2ba92887f1a694973f8e21905114badd18a548ce4b4296"
+                "verified_revision": "sha256:66aeccf8d5dd9a9a73f5a2e93de8062823828f404e2f46253368cbcc296cb15f"
               },
               {
                 "to": ".github/workflows/release-taxonomy.yml",
@@ -2686,6 +2689,117 @@
             ],
             "traces_to": [
               "HW-SPEC-ai-integration"
+            ]
+          }
+        }
+      },
+      {
+        "path": "docs/decisions/0093-the-live-account-of-a-domain-is-its-own-kind-split-on-the-product-and-process-line-and-it-draws-on-the-records-it-cites.md",
+        "kind": "decision",
+        "id": "HW-DR-0093",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-DR-0093",
+          "status": "current",
+          "status_since": "2026-09-27",
+          "summary": "explanation and process_explanation state what holds now across one domain, and draws_on reports an account whose source decision ends.",
+          "last_verified": "2026-09-27",
+          "title": "The live account of a domain is its own kind, split on the product and process line, and it draws on the records it cites",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5.5",
+            "activity": "draft",
+            "evidence_basis": "reconstructed"
+          }
+        }
+      },
+      {
+        "path": "docs/decisions/0094-the-apt-repository-is-served-from-headwater-tools-and-signed-by-a-subkey-the-owner-s-offline-key-certifies.md",
+        "kind": "decision",
+        "id": "HW-DR-0094",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-DR-0094",
+          "status": "current",
+          "status_since": "2026-09-27",
+          "summary": "Headwater ships one amd64 Debian package, taxonomy-free, through an APT repository on headwater.tools whose metadata a CI-held signing subkey signs",
+          "last_verified": "2026-09-27",
+          "title": "The APT repository is served from headwater.tools and signed by a subkey the owner's offline key certifies",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5.5",
+            "activity": "draft",
+            "evidence_basis": "direct"
+          },
+          "relations": {
+            "governs": [
+              {
+                "to": ".github/workflows/release.yml",
+                "verified_revision": "sha256:66aeccf8d5dd9a9a73f5a2e93de8062823828f404e2f46253368cbcc296cb15f"
+              },
+              {
+                "to": "tools/site/fetch-apt.sh",
+                "verified_revision": "sha256:267d4973aa89566e55b076462180979fa28e4ba50d23f56d79148f7c97add8cb"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "path": "docs/decisions/0095-q67-one-library-entry-may-address-the-keys-of-an-entry-it-names-in-requires-and-confluence-holds-over-the-dependency-order.md",
+        "kind": "decision",
+        "id": "HW-DR-0095",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-DR-0095",
+          "status": "current",
+          "status_since": "2026-09-27",
+          "summary": "An entry that names another in requires may add into its keys, and every other pair of entries still commutes only over disjoint leaves.",
+          "last_verified": "2026-09-27",
+          "title": "Q67 — One library entry may address the keys of an entry it names in requires, and confluence holds over the dependency order",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5.5",
+            "activity": "draft",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "traces_to": [
+              "HW-OBL-0040",
+              "HW-DR-0040",
+              "HW-SPEC-taxonomy-model",
+              "HW-SPEC-distribution-and-federation"
+            ]
+          }
+        }
+      },
+      {
+        "path": "docs/decisions/0096-harper-does-not-become-part-of-the-engine-now-and-q41-stands.md",
+        "kind": "decision",
+        "id": "HW-DR-0096",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-DR-0096",
+          "status": "current",
+          "status_since": "2026-09-27",
+          "summary": "harper-core found 0 real errors in 187 hand-read findings on 25 documents of this corpus. So the engine does not link it now, Q41 stands, and a stated precision bar or an adopter request reopens it.",
+          "last_verified": "2026-09-27",
+          "title": "Harper does not become part of the engine now, and Q41 stands",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5.5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "traces_to": [
+              "HW-DR-0041",
+              "HW-DR-0005",
+              "HW-DR-0024"
             ]
           }
         }
@@ -2808,6 +2922,34 @@
         }
       },
       {
+        "path": "docs/evaluations/external-evaluation-harnesses-and-benchmarks-for-the-probe-campaign.md",
+        "kind": "evaluation",
+        "id": "HW-EVAL-external-evaluation-harnesses-and-benchmarks-for-the-probe-campaign",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-EVAL-external-evaluation-harnesses-and-benchmarks-for-the-probe-campaign",
+          "status": "current",
+          "status_since": "2026-09-27",
+          "summary": "DeepEval, Promptfoo and Inspect AI can drive a probe session but never grade one. The campaign adopts none, because each reads model text or opens a channel the session can write to.",
+          "last_verified": "2026-09-27",
+          "title": "External evaluation harnesses and benchmarks for the probe campaign",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "mixed",
+            "drafted_by": "claude-opus-5.5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "traces_to": [
+              "HW-SPEC-ai-integration",
+              "HW-SPEC-the-recorder-contract",
+              "HW-DR-0059"
+            ]
+          }
+        }
+      },
+      {
         "path": "docs/evaluations/first-contact.md",
         "kind": "evaluation",
         "id": "HW-EVAL-first-contact",
@@ -2901,6 +3043,35 @@
               "HW-SPEC-distribution-and-federation",
               "HW-SPEC-check-layer",
               "HW-SPEC-glossary"
+            ]
+          }
+        }
+      },
+      {
+        "path": "docs/evaluations/harper-spike-results.md",
+        "kind": "evaluation",
+        "id": "HW-EVAL-harper-spike-results",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-EVAL-harper-spike-results",
+          "status": "current",
+          "status_since": "2026-09-27",
+          "summary": "harper-core 2.11.0, fed only the prose an author wrote, found 0 errors in 187 hand-read findings on 25 documents. It adds 496 crates and does not compile at rustc 1.91.",
+          "last_verified": "2026-09-27",
+          "title": "Harper over this corpus finds no error on a 25-document sample, and version 2.11.0 does not build at the engine's floor of rustc 1.91",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5.5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "governs": [
+              "tools/engine/harper-spike/**"
+            ],
+            "traces_to": [
+              "tools/engine/harper-spike/build.sh"
             ]
           }
         }
@@ -3634,6 +3805,27 @@
             "traces_to": [
               "HW-SPEC-taxonomy-model"
             ]
+          }
+        }
+      },
+      {
+        "path": "docs/how-to/rotate-or-revoke-the-apt-signing-subkey.md",
+        "kind": "how_to",
+        "id": "HW-HOW-rotate-or-revoke-the-apt-signing-subkey",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-HOW-rotate-or-revoke-the-apt-signing-subkey",
+          "status": "current",
+          "status_since": "2026-09-27",
+          "summary": "How a maintainer replaces or withdraws the subkey that signs the Headwater APT metadata, and what each adopter must download again",
+          "last_verified": "2026-09-27",
+          "title": "Rotate or revoke the APT signing subkey",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5.5",
+            "activity": "draft",
+            "evidence_basis": "direct"
           }
         }
       },
@@ -5376,8 +5568,8 @@
           "title": "Composition between two library entries has no add-only form",
           "status": "current",
           "status_since": "2026-08-13",
-          "waiting_on": "ruling",
-          "last_verified": "2026-09-11",
+          "waiting_on": "build",
+          "last_verified": "2026-09-27",
           "summary": "The first library entry to claim an address owns it, so a second entry cannot reuse the vocabulary that both traditions need.",
           "provenance": {
             "warrant": "accepted",
@@ -8970,10 +9162,10 @@
         "warrant": "asserted",
         "facets": {
           "id": "HW-OBL-0176",
-          "status": "current",
-          "status_since": "2026-09-07",
+          "status": "discharged",
+          "status_since": "2026-09-28",
           "summary": "Under HEADWATER_BLESS one case truncates crates/conformance/fixtures/wrapped.report while a sibling thread of the same binary reads it, which can panic the run and cannot corrupt the artifact.",
-          "last_verified": "2026-09-23",
+          "last_verified": "2026-09-28",
           "title": "A blessed fixture is read by a sibling case that runs while the write truncates it",
           "waiting_on": "adopter",
           "provenance": {
@@ -9756,10 +9948,10 @@
         "id": "HW-OBL-0215",
         "facets": {
           "id": "HW-OBL-0215",
-          "status": "current",
-          "status_since": "2026-09-26",
+          "status": "discharged",
+          "status_since": "2026-09-28",
           "summary": "Under HEADWATER_BLESS=1, one render test reads fixtures/wrapped.report while a sibling test in the same process rewrites it, and the reader can panic.",
-          "last_verified": "2026-09-24",
+          "last_verified": "2026-09-28",
           "title": "A bless run of the conformance render tests races two tests over one fixture file",
           "waiting_on": "build"
         }
@@ -9846,6 +10038,35 @@
           "last_verified": "2026-09-27",
           "title": "Ten rules of the editions ledger have one recorded corpus, so a rule change blessed with an edit to that corpus passes",
           "waiting_on": "build"
+        }
+      },
+      {
+        "path": "docs/obligations/0223-no-run-measures-whether-the-documents-under-docs-change-what-an-agent-builds.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0223",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-OBL-0223",
+          "status": "current",
+          "status_since": "2026-09-27",
+          "summary": "The campaign's absent arm keeps docs/, so no rate says whether the documents change what an agent builds. The documentation tier removes them, and nobody has paid for a run of it.",
+          "last_verified": "2026-09-27",
+          "title": "No run measures whether the documents under docs change what an agent builds",
+          "waiting_on": "measurement",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "mixed",
+            "drafted_by": "claude-opus-5.5",
+            "activity": "draft",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "traces_to": [
+              "HW-SPEC-ai-integration",
+              "HW-OBL-0004",
+              "HW-OBL-0112"
+            ]
+          }
         }
       },
       {
@@ -10082,6 +10303,66 @@
             ],
             "traces_to": [
               "HW-OBL-0197"
+            ]
+          }
+        }
+      },
+      {
+        "path": "docs/probes/a-session-names-the-event-that-makes-a-document-accepted.md",
+        "kind": "probe",
+        "id": "HW-PROBE-a-session-names-the-event-that-makes-a-document-accepted",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-PROBE-a-session-names-the-event-that-makes-a-document-accepted",
+          "status": "current",
+          "status_since": "2026-09-27",
+          "summary": "A session picks one of two events as the one that makes a document accepted, and a ruling under docs/decisions decides which.",
+          "last_verified": "2026-09-27",
+          "probe_category": "sufficiency",
+          "expectation": "answered",
+          "oracle": "none",
+          "title": "A session names the event that makes a document accepted",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "mixed",
+            "drafted_by": "claude-opus-5.5",
+            "activity": "draft",
+            "evidence_basis": "unevidenced"
+          },
+          "relations": {
+            "traces_to": [
+              "HW-OBL-0223",
+              "HW-DR-0034"
+            ]
+          }
+        }
+      },
+      {
+        "path": "docs/probes/a-session-names-the-status-a-settled-decision-carries-in-its-pull-request.md",
+        "kind": "probe",
+        "id": "HW-PROBE-a-session-names-the-status-a-settled-decision-carries-in-its-pull-request",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-PROBE-a-session-names-the-status-a-settled-decision-carries-in-its-pull-request",
+          "status": "current",
+          "status_since": "2026-09-27",
+          "summary": "A session picks one of two status values for a settled decision in its pull request, and a ruling under docs/decisions decides which.",
+          "last_verified": "2026-09-27",
+          "probe_category": "sufficiency",
+          "expectation": "answered",
+          "oracle": "none",
+          "title": "A session names the status a settled decision carries in its pull request",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "mixed",
+            "drafted_by": "claude-opus-5.5",
+            "activity": "draft",
+            "evidence_basis": "unevidenced"
+          },
+          "relations": {
+            "traces_to": [
+              "HW-OBL-0223",
+              "HW-DR-0052"
             ]
           }
         }
@@ -10458,7 +10739,7 @@
             "governs": [
               {
                 "to": ".github/workflows/release.yml",
-                "verified_revision": "sha256:e2004f70a412b80dbc2ba92887f1a694973f8e21905114badd18a548ce4b4296"
+                "verified_revision": "sha256:66aeccf8d5dd9a9a73f5a2e93de8062823828f404e2f46253368cbcc296cb15f"
               },
               {
                 "to": ".github/workflows/release-taxonomy.yml",
@@ -10491,7 +10772,7 @@
             "governs": [
               {
                 "to": ".github/workflows/release.yml",
-                "verified_revision": "sha256:e2004f70a412b80dbc2ba92887f1a694973f8e21905114badd18a548ce4b4296"
+                "verified_revision": "sha256:66aeccf8d5dd9a9a73f5a2e93de8062823828f404e2f46253368cbcc296cb15f"
               },
               {
                 "to": ".github/workflows/release-taxonomy.yml",
@@ -10560,7 +10841,7 @@
             "governs": [
               {
                 "to": ".github/workflows/release.yml",
-                "verified_revision": "sha256:e2004f70a412b80dbc2ba92887f1a694973f8e21905114badd18a548ce4b4296"
+                "verified_revision": "sha256:66aeccf8d5dd9a9a73f5a2e93de8062823828f404e2f46253368cbcc296cb15f"
               },
               {
                 "to": ".github/workflows/release-taxonomy.yml",
@@ -10597,7 +10878,7 @@
             "governs": [
               {
                 "to": ".github/workflows/ci.yml",
-                "verified_revision": "sha256:f4b3c176cedc9d969614ad7755edc324f1dc78423d8b55162ab05beb8595f57e"
+                "verified_revision": "sha256:9a388898944b9ec3a6af4f28b10c5d8d069b21bc1cb81b0e04bba1cbdf6cfb57"
               }
             ]
           }
@@ -10626,7 +10907,7 @@
             "governs": [
               {
                 "to": ".github/workflows/ci.yml",
-                "verified_revision": "sha256:a4195cba139ce6094882dc4531fe20ed780aef3eabfc987a9e906606e46635ee"
+                "verified_revision": "sha256:9a388898944b9ec3a6af4f28b10c5d8d069b21bc1cb81b0e04bba1cbdf6cfb57"
               }
             ]
           }
@@ -10655,7 +10936,7 @@
             "governs": [
               {
                 "to": ".github/workflows/ci.yml",
-                "verified_revision": "sha256:a4195cba139ce6094882dc4531fe20ed780aef3eabfc987a9e906606e46635ee"
+                "verified_revision": "sha256:9a388898944b9ec3a6af4f28b10c5d8d069b21bc1cb81b0e04bba1cbdf6cfb57"
               }
             ]
           }
@@ -10684,7 +10965,7 @@
             "governs": [
               {
                 "to": ".github/workflows/ci.yml",
-                "verified_revision": "sha256:f4b3c176cedc9d969614ad7755edc324f1dc78423d8b55162ab05beb8595f57e"
+                "verified_revision": "sha256:9a388898944b9ec3a6af4f28b10c5d8d069b21bc1cb81b0e04bba1cbdf6cfb57"
               }
             ]
           }
@@ -10713,7 +10994,7 @@
             "governs": [
               {
                 "to": ".github/workflows/ci.yml",
-                "verified_revision": "sha256:f4b3c176cedc9d969614ad7755edc324f1dc78423d8b55162ab05beb8595f57e"
+                "verified_revision": "sha256:9a388898944b9ec3a6af4f28b10c5d8d069b21bc1cb81b0e04bba1cbdf6cfb57"
               }
             ]
           }
@@ -10742,7 +11023,7 @@
             "governs": [
               {
                 "to": ".github/workflows/ci.yml",
-                "verified_revision": "sha256:f4b3c176cedc9d969614ad7755edc324f1dc78423d8b55162ab05beb8595f57e"
+                "verified_revision": "sha256:9a388898944b9ec3a6af4f28b10c5d8d069b21bc1cb81b0e04bba1cbdf6cfb57"
               }
             ]
           }
@@ -10771,7 +11052,7 @@
             "governs": [
               {
                 "to": ".github/workflows/ci.yml",
-                "verified_revision": "sha256:a4195cba139ce6094882dc4531fe20ed780aef3eabfc987a9e906606e46635ee"
+                "verified_revision": "sha256:9a388898944b9ec3a6af4f28b10c5d8d069b21bc1cb81b0e04bba1cbdf6cfb57"
               }
             ]
           }
@@ -10800,7 +11081,7 @@
             "governs": [
               {
                 "to": ".github/workflows/ci.yml",
-                "verified_revision": "sha256:f4b3c176cedc9d969614ad7755edc324f1dc78423d8b55162ab05beb8595f57e"
+                "verified_revision": "sha256:9a388898944b9ec3a6af4f28b10c5d8d069b21bc1cb81b0e04bba1cbdf6cfb57"
               },
               {
                 "to": "tools/run/queue-done.sh",
@@ -10809,6 +11090,55 @@
               {
                 "to": "tools/run/queue-done-fixtures.sh",
                 "verified_revision": "sha256:c85c8ec0e3240a77e5e6ded53daad36b5d5fe005e2a29a30ef6144b0b548ad0e"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "path": "docs/process/explanations/where-a-ci-job-runs.md",
+        "kind": "process_explanation",
+        "id": "HW-PEXP-where-a-ci-job-runs",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-PEXP-where-a-ci-job-runs",
+          "status": "current",
+          "status_since": "2026-09-27",
+          "summary": "A push or a merge queue run can use the self-hosted pool when CI_RUNNER opts in and the pool has room. A pull request from a fork runs on a hosted runner, and one from a branch here is skipped.",
+          "last_verified": "2026-09-27",
+          "title": "Where a CI job runs",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5.5",
+            "activity": "draft",
+            "evidence_basis": "reconstructed"
+          },
+          "relations": {
+            "draws_on": [
+              {
+                "to": "HW-PD-0013"
+              },
+              {
+                "to": "HW-PD-0014"
+              },
+              {
+                "to": "HW-PD-0015"
+              },
+              {
+                "to": "HW-PD-0016"
+              },
+              {
+                "to": "HW-PD-0017"
+              },
+              {
+                "to": "HW-PD-0018"
+              },
+              {
+                "to": "HW-PD-0019"
+              },
+              {
+                "to": "HW-PD-0020"
               }
             ]
           }
@@ -11879,6 +12209,9 @@
             "governs": [
               "engine/crates/check/tests/fixtures.rs"
             ],
+            "cited_in": [
+              "engine/crates/check/tests/fixtures.rs"
+            ],
             "proves": [
               "HW-AC-0002"
             ]
@@ -12269,6 +12602,11 @@
         "resolver": "source-tree"
       },
       {
+        "anchor_kind": "test_site",
+        "id": "engine/crates/check/tests/fixtures.rs",
+        "resolver": "comment-scan"
+      },
+      {
         "anchor_kind": "code_path",
         "id": "engine/crates/cli/Cargo.toml",
         "resolver": "source-tree"
@@ -12635,6 +12973,16 @@
       },
       {
         "anchor_kind": "code_path",
+        "id": "tools/engine/harper-spike/**",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
+        "id": "tools/engine/harper-spike/build.sh",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
         "id": "tools/engine/language-spike/**",
         "resolver": "source-tree"
       },
@@ -12710,6 +13058,11 @@
       },
       {
         "anchor_kind": "code_path",
+        "id": "tools/site/fetch-apt.sh",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
         "id": "tools/site/refresh-crawler-files.sh",
         "resolver": "source-tree"
       },
@@ -12741,7 +13094,7 @@
     ],
     "edges": [
       {
-        "source": "docs/acceptance-criteria/0001-no-source-file-of-the-engine-names-a-network-api-and-no-locked-dependency-provides-one.md",
+        "source": "docs/acceptance-criteria/0001-no-engine-source-outside-the-fetch-crate-names-a-network-api-and-no-crate-of-the-checking-loop-reaches-a-network-package.md",
         "relation": "verified_by",
         "written_as": "verifies",
         "target": {
@@ -14360,7 +14713,7 @@
           "resolver": "source-tree"
         },
         "attributes": {
-          "verified_revision": "sha256:402da8aa3219803a14f060977e36f950326d43dce66233996fc22cbd0cf3bf6e"
+          "verified_revision": "sha256:df3fe720e5c546530ce4ee6dca826bafc78acea352450581e4513f9a900cd171"
         }
       },
       {
@@ -14757,6 +15110,9 @@
           "anchor_kind": "code_path",
           "id": "engine/crates/cli/src/taxonomy_graph.rs",
           "resolver": "source-tree"
+        },
+        "attributes": {
+          "verified_revision": "sha256:3231a0b4cf0a9089d889fe1e3c3885c2b6f337bdba6645990aa5f4ea52633444"
         }
       },
       {
@@ -14938,7 +15294,7 @@
           "resolver": "source-tree"
         },
         "attributes": {
-          "verified_revision": "sha256:4ed3b112c0e9c08ba9264da27070a07ce958e666a85a085cb591131e52c01bac"
+          "verified_revision": "sha256:73b6425e92ca92586efdf16b4e942b2165a880e68ed6af33c13d96c3b22195db"
         }
       },
       {
@@ -14963,7 +15319,7 @@
           "resolver": "source-tree"
         },
         "attributes": {
-          "verified_revision": "sha256:e2004f70a412b80dbc2ba92887f1a694973f8e21905114badd18a548ce4b4296"
+          "verified_revision": "sha256:66aeccf8d5dd9a9a73f5a2e93de8062823828f404e2f46253368cbcc296cb15f"
         }
       },
       {
@@ -15019,7 +15375,7 @@
           "resolver": "source-tree"
         },
         "attributes": {
-          "verified_revision": "sha256:e2004f70a412b80dbc2ba92887f1a694973f8e21905114badd18a548ce4b4296"
+          "verified_revision": "sha256:66aeccf8d5dd9a9a73f5a2e93de8062823828f404e2f46253368cbcc296cb15f"
         }
       },
       {
@@ -15047,7 +15403,7 @@
           "resolver": "source-tree"
         },
         "attributes": {
-          "verified_revision": "sha256:e2004f70a412b80dbc2ba92887f1a694973f8e21905114badd18a548ce4b4296"
+          "verified_revision": "sha256:66aeccf8d5dd9a9a73f5a2e93de8062823828f404e2f46253368cbcc296cb15f"
         }
       },
       {
@@ -15087,6 +15443,111 @@
           "id": "HW-SPEC-ai-integration",
           "path": "docs/spec/05-ai-integration.md",
           "kind": "design_spec"
+        }
+      },
+      {
+        "source": "docs/decisions/0094-the-apt-repository-is-served-from-headwater-tools-and-signed-by-a-subkey-the-owner-s-offline-key-certifies.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": ".github/workflows/release.yml",
+          "resolver": "source-tree"
+        },
+        "attributes": {
+          "verified_revision": "sha256:66aeccf8d5dd9a9a73f5a2e93de8062823828f404e2f46253368cbcc296cb15f"
+        }
+      },
+      {
+        "source": "docs/decisions/0094-the-apt-repository-is-served-from-headwater-tools-and-signed-by-a-subkey-the-owner-s-offline-key-certifies.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "tools/site/fetch-apt.sh",
+          "resolver": "source-tree"
+        },
+        "attributes": {
+          "verified_revision": "sha256:267d4973aa89566e55b076462180979fa28e4ba50d23f56d79148f7c97add8cb"
+        }
+      },
+      {
+        "source": "docs/decisions/0095-q67-one-library-entry-may-address-the-keys-of-an-entry-it-names-in-requires-and-confluence-holds-over-the-dependency-order.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-OBL-0040",
+          "path": "docs/obligations/0040-composition-between-two-library-entries-has-no-add-only-form.md",
+          "kind": "obligation_record"
+        }
+      },
+      {
+        "source": "docs/decisions/0095-q67-one-library-entry-may-address-the-keys-of-an-entry-it-names-in-requires-and-confluence-holds-over-the-dependency-order.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0040",
+          "path": "docs/decisions/0040-q40-whether-extends-bundle-requires-and-an-overlay-s-taxonomy-key-are-a-mechanism-or-a-label.md",
+          "kind": "decision"
+        }
+      },
+      {
+        "source": "docs/decisions/0095-q67-one-library-entry-may-address-the-keys-of-an-entry-it-names-in-requires-and-confluence-holds-over-the-dependency-order.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-SPEC-taxonomy-model",
+          "path": "docs/spec/02-taxonomy-model.md",
+          "kind": "design_spec"
+        }
+      },
+      {
+        "source": "docs/decisions/0095-q67-one-library-entry-may-address-the-keys-of-an-entry-it-names-in-requires-and-confluence-holds-over-the-dependency-order.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-SPEC-distribution-and-federation",
+          "path": "docs/spec/07-distribution-and-federation.md",
+          "kind": "design_spec"
+        }
+      },
+      {
+        "source": "docs/decisions/0096-harper-does-not-become-part-of-the-engine-now-and-q41-stands.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0041",
+          "path": "docs/decisions/0041-q41-whether-vale-becomes-a-declared-regime-backend.md",
+          "kind": "decision"
+        }
+      },
+      {
+        "source": "docs/decisions/0096-harper-does-not-become-part-of-the-engine-now-and-q41-stands.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0005",
+          "path": "docs/decisions/0005-voice-checking-depth.md",
+          "kind": "decision"
+        }
+      },
+      {
+        "source": "docs/decisions/0096-harper-does-not-become-part-of-the-engine-now-and-q41-stands.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0024",
+          "path": "docs/decisions/0024-q24-readability-and-what-a-sweep-can-be-asked-about.md",
+          "kind": "decision"
         }
       },
       {
@@ -15263,6 +15724,39 @@
           "id": "HW-SPEC-glossary",
           "path": "docs/spec/glossary.md",
           "kind": "design_spec"
+        }
+      },
+      {
+        "source": "docs/evaluations/external-evaluation-harnesses-and-benchmarks-for-the-probe-campaign.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-SPEC-ai-integration",
+          "path": "docs/spec/05-ai-integration.md",
+          "kind": "design_spec"
+        }
+      },
+      {
+        "source": "docs/evaluations/external-evaluation-harnesses-and-benchmarks-for-the-probe-campaign.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-SPEC-the-recorder-contract",
+          "path": "docs/spec/15-the-recorder-contract.md",
+          "kind": "design_spec"
+        }
+      },
+      {
+        "source": "docs/evaluations/external-evaluation-harnesses-and-benchmarks-for-the-probe-campaign.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0059",
+          "path": "docs/decisions/0059-a-transform-over-a-harness-session-log-is-an-observed-transcript-when-the-log-arrives-by-a-channel-the-model-cannot-write-to.md",
+          "kind": "decision"
         }
       },
       {
@@ -15472,6 +15966,28 @@
           "id": "HW-SPEC-glossary",
           "path": "docs/spec/glossary.md",
           "kind": "design_spec"
+        }
+      },
+      {
+        "source": "docs/evaluations/harper-spike-results.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "tools/engine/harper-spike/**",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/evaluations/harper-spike-results.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "tools/engine/harper-spike/build.sh",
+          "resolver": "source-tree"
         }
       },
       {
@@ -19592,6 +20108,39 @@
         }
       },
       {
+        "source": "docs/obligations/0223-no-run-measures-whether-the-documents-under-docs-change-what-an-agent-builds.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-SPEC-ai-integration",
+          "path": "docs/spec/05-ai-integration.md",
+          "kind": "design_spec"
+        }
+      },
+      {
+        "source": "docs/obligations/0223-no-run-measures-whether-the-documents-under-docs-change-what-an-agent-builds.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-OBL-0004",
+          "path": "docs/obligations/0004-working-tree-write-tools-have-no-measured-effect.md",
+          "kind": "obligation_record"
+        }
+      },
+      {
+        "source": "docs/obligations/0223-no-run-measures-whether-the-documents-under-docs-change-what-an-agent-builds.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-OBL-0112",
+          "path": "docs/obligations/0112-a-surface-cannot-move-the-assisted-fraction-of-a-run.md",
+          "kind": "obligation_record"
+        }
+      },
+      {
         "source": "docs/probes/a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor.md",
         "relation": "examines",
         "written_as": "examines",
@@ -19644,6 +20193,50 @@
           "id": "HW-OBL-0197",
           "path": "docs/obligations/0197-a-superseded-document-claims-no-reliance-and-nothing-measures-whether-a-session-honors-that.md",
           "kind": "obligation_record"
+        }
+      },
+      {
+        "source": "docs/probes/a-session-names-the-event-that-makes-a-document-accepted.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-OBL-0223",
+          "path": "docs/obligations/0223-no-run-measures-whether-the-documents-under-docs-change-what-an-agent-builds.md",
+          "kind": "obligation_record"
+        }
+      },
+      {
+        "source": "docs/probes/a-session-names-the-event-that-makes-a-document-accepted.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0034",
+          "path": "docs/decisions/0034-q34-whether-acceptance-means-merged-to-main-and-what-an-agent-may-write-before-that.md",
+          "kind": "decision"
+        }
+      },
+      {
+        "source": "docs/probes/a-session-names-the-status-a-settled-decision-carries-in-its-pull-request.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-OBL-0223",
+          "path": "docs/obligations/0223-no-run-measures-whether-the-documents-under-docs-change-what-an-agent-builds.md",
+          "kind": "obligation_record"
+        }
+      },
+      {
+        "source": "docs/probes/a-session-names-the-status-a-settled-decision-carries-in-its-pull-request.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0052",
+          "path": "docs/decisions/0052-a-document-is-proposed-at-the-state-it-will-hold-and-the-merge-activates-it.md",
+          "kind": "decision"
         }
       },
       {
@@ -19833,7 +20426,7 @@
           "resolver": "source-tree"
         },
         "attributes": {
-          "verified_revision": "sha256:e2004f70a412b80dbc2ba92887f1a694973f8e21905114badd18a548ce4b4296"
+          "verified_revision": "sha256:66aeccf8d5dd9a9a73f5a2e93de8062823828f404e2f46253368cbcc296cb15f"
         }
       },
       {
@@ -19861,7 +20454,7 @@
           "resolver": "source-tree"
         },
         "attributes": {
-          "verified_revision": "sha256:e2004f70a412b80dbc2ba92887f1a694973f8e21905114badd18a548ce4b4296"
+          "verified_revision": "sha256:66aeccf8d5dd9a9a73f5a2e93de8062823828f404e2f46253368cbcc296cb15f"
         }
       },
       {
@@ -19928,7 +20521,7 @@
           "resolver": "source-tree"
         },
         "attributes": {
-          "verified_revision": "sha256:e2004f70a412b80dbc2ba92887f1a694973f8e21905114badd18a548ce4b4296"
+          "verified_revision": "sha256:66aeccf8d5dd9a9a73f5a2e93de8062823828f404e2f46253368cbcc296cb15f"
         }
       },
       {
@@ -19970,7 +20563,7 @@
           "resolver": "source-tree"
         },
         "attributes": {
-          "verified_revision": "sha256:f4b3c176cedc9d969614ad7755edc324f1dc78423d8b55162ab05beb8595f57e"
+          "verified_revision": "sha256:9a388898944b9ec3a6af4f28b10c5d8d069b21bc1cb81b0e04bba1cbdf6cfb57"
         }
       },
       {
@@ -19984,7 +20577,7 @@
           "resolver": "source-tree"
         },
         "attributes": {
-          "verified_revision": "sha256:a4195cba139ce6094882dc4531fe20ed780aef3eabfc987a9e906606e46635ee"
+          "verified_revision": "sha256:9a388898944b9ec3a6af4f28b10c5d8d069b21bc1cb81b0e04bba1cbdf6cfb57"
         }
       },
       {
@@ -19998,7 +20591,7 @@
           "resolver": "source-tree"
         },
         "attributes": {
-          "verified_revision": "sha256:a4195cba139ce6094882dc4531fe20ed780aef3eabfc987a9e906606e46635ee"
+          "verified_revision": "sha256:9a388898944b9ec3a6af4f28b10c5d8d069b21bc1cb81b0e04bba1cbdf6cfb57"
         }
       },
       {
@@ -20012,7 +20605,7 @@
           "resolver": "source-tree"
         },
         "attributes": {
-          "verified_revision": "sha256:f4b3c176cedc9d969614ad7755edc324f1dc78423d8b55162ab05beb8595f57e"
+          "verified_revision": "sha256:9a388898944b9ec3a6af4f28b10c5d8d069b21bc1cb81b0e04bba1cbdf6cfb57"
         }
       },
       {
@@ -20026,7 +20619,7 @@
           "resolver": "source-tree"
         },
         "attributes": {
-          "verified_revision": "sha256:f4b3c176cedc9d969614ad7755edc324f1dc78423d8b55162ab05beb8595f57e"
+          "verified_revision": "sha256:9a388898944b9ec3a6af4f28b10c5d8d069b21bc1cb81b0e04bba1cbdf6cfb57"
         }
       },
       {
@@ -20040,7 +20633,7 @@
           "resolver": "source-tree"
         },
         "attributes": {
-          "verified_revision": "sha256:f4b3c176cedc9d969614ad7755edc324f1dc78423d8b55162ab05beb8595f57e"
+          "verified_revision": "sha256:9a388898944b9ec3a6af4f28b10c5d8d069b21bc1cb81b0e04bba1cbdf6cfb57"
         }
       },
       {
@@ -20054,7 +20647,7 @@
           "resolver": "source-tree"
         },
         "attributes": {
-          "verified_revision": "sha256:a4195cba139ce6094882dc4531fe20ed780aef3eabfc987a9e906606e46635ee"
+          "verified_revision": "sha256:9a388898944b9ec3a6af4f28b10c5d8d069b21bc1cb81b0e04bba1cbdf6cfb57"
         }
       },
       {
@@ -20068,7 +20661,7 @@
           "resolver": "source-tree"
         },
         "attributes": {
-          "verified_revision": "sha256:f4b3c176cedc9d969614ad7755edc324f1dc78423d8b55162ab05beb8595f57e"
+          "verified_revision": "sha256:9a388898944b9ec3a6af4f28b10c5d8d069b21bc1cb81b0e04bba1cbdf6cfb57"
         }
       },
       {
@@ -20100,13 +20693,101 @@
         }
       },
       {
+        "source": "docs/process/explanations/where-a-ci-job-runs.md",
+        "relation": "draws_on",
+        "written_as": "draws_on",
+        "target": {
+          "bound": "document",
+          "id": "HW-PD-0013",
+          "path": "docs/process/decisions/0013-self-hosted-eligibility-in-ci-is-decided-by-the-event-alone-and-a-push-to-any-branch-is-eligible.md",
+          "kind": "process_decision"
+        }
+      },
+      {
+        "source": "docs/process/explanations/where-a-ci-job-runs.md",
+        "relation": "draws_on",
+        "written_as": "draws_on",
+        "target": {
+          "bound": "document",
+          "id": "HW-PD-0014",
+          "path": "docs/process/decisions/0014-the-boundary-against-a-fork-is-the-approval-of-outside-runs-and-a-person-reads-a-github-diff-before-approving-one.md",
+          "kind": "process_decision"
+        }
+      },
+      {
+        "source": "docs/process/explanations/where-a-ci-job-runs.md",
+        "relation": "draws_on",
+        "written_as": "draws_on",
+        "target": {
+          "bound": "document",
+          "id": "HW-PD-0015",
+          "path": "docs/process/decisions/0015-a-condition-in-ci-may-take-work-away-and-never-grant-it-so-one-run-per-commit-comes-from-a-job-level-if.md",
+          "kind": "process_decision"
+        }
+      },
+      {
+        "source": "docs/process/explanations/where-a-ci-job-runs.md",
+        "relation": "draws_on",
+        "written_as": "draws_on",
+        "target": {
+          "bound": "document",
+          "id": "HW-PD-0016",
+          "path": "docs/process/decisions/0016-ci-runner-is-an-opt-in-that-only-a-push-or-a-merge-group-reads-and-an-unset-value-falls-back-to-ubuntu-latest.md",
+          "kind": "process_decision"
+        }
+      },
+      {
+        "source": "docs/process/explanations/where-a-ci-job-runs.md",
+        "relation": "draws_on",
+        "written_as": "draws_on",
+        "target": {
+          "bound": "document",
+          "id": "HW-PD-0017",
+          "path": "docs/process/decisions/0017-ci-concurrency-is-per-ref-and-every-ref-but-main-cancels-a-superseded-run.md",
+          "kind": "process_decision"
+        }
+      },
+      {
+        "source": "docs/process/explanations/where-a-ci-job-runs.md",
+        "relation": "draws_on",
+        "written_as": "draws_on",
+        "target": {
+          "bound": "document",
+          "id": "HW-PD-0018",
+          "path": "docs/process/decisions/0018-a-router-sends-a-push-or-merge-group-run-to-a-hosted-runner-when-the-self-hosted-pool-is-full-and-it-can-only-take-work-away.md",
+          "kind": "process_decision"
+        }
+      },
+      {
+        "source": "docs/process/explanations/where-a-ci-job-runs.md",
+        "relation": "draws_on",
+        "written_as": "draws_on",
+        "target": {
+          "bound": "document",
+          "id": "HW-PD-0019",
+          "path": "docs/process/decisions/0019-ci-runs-actions-from-the-actions-organization-only-and-carries-no-build-state-between-self-hosted-jobs.md",
+          "kind": "process_decision"
+        }
+      },
+      {
+        "source": "docs/process/explanations/where-a-ci-job-runs.md",
+        "relation": "draws_on",
+        "written_as": "draws_on",
+        "target": {
+          "bound": "document",
+          "id": "HW-PD-0020",
+          "path": "docs/process/decisions/0020-merges-go-through-the-github-merge-queue-one-squash-commit-per-pull-request.md",
+          "kind": "process_decision"
+        }
+      },
+      {
         "source": "docs/requirements/0001-the-engine-reaches-no-network-at-check-time.md",
         "relation": "verified_by",
         "written_as": "verified_by",
         "target": {
           "bound": "document",
           "id": "HW-AC-0001",
-          "path": "docs/acceptance-criteria/0001-no-source-file-of-the-engine-names-a-network-api-and-no-locked-dependency-provides-one.md",
+          "path": "docs/acceptance-criteria/0001-no-engine-source-outside-the-fetch-crate-names-a-network-api-and-no-crate-of-the-checking-loop-reaches-a-network-package.md",
           "kind": "acceptance_criterion"
         }
       },
@@ -21846,6 +22527,17 @@
           "anchor_kind": "code_path",
           "id": "engine/crates/check/tests/fixtures.rs",
           "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/verifications/0001-the-section-heading-rule-has-no-case-table-and-a-golden-fixture-report-is-what-proves-it-runs.md",
+        "relation": "cited_in",
+        "written_as": "cited_in",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "test_site",
+          "id": "engine/crates/check/tests/fixtures.rs",
+          "resolver": "comment-scan"
         }
       },
       {

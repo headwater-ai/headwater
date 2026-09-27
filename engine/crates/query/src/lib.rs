@@ -620,7 +620,7 @@ impl Neighbour {
                 members => {
                     let breakdown = members
                         .iter()
-                        .map(|(pattern, count)| format!("{pattern}: {count}"))
+                        .map(|(pattern, paths)| format!("{pattern}: {}", paths.len()))
                         .collect::<Vec<String>>()
                         .join(", ");
                     let _ = write!(line, " (reaches {} entries — {breakdown})", reach.total);

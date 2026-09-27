@@ -18,7 +18,7 @@ relations:
 
     headwater show <path|identifier> [--root <path>]
 
-The target is a path under the corpus root or an identifier declared by a document.
+The target is a path under the corpus root or an identifier declared by a document. A path can have the form that a shell or an editor writes, relative to the repository root, as the Synopsis section of [`headwater explain`](headwater-explain.md#synopsis) states.
 
 ## Description
 

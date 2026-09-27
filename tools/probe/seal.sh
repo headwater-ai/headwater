@@ -22,7 +22,7 @@
 #
 # No probe's `examines` target names a probe, so the documents a probe tests
 # survive the seal. `.headwater/probe.yml` records what the seal removes, and
-# `probe-record.sh` refuses a workspace that still names the probe (exit 8).
+# `probe-record.sh` refuses a workspace that still names the probe (exit 9).
 #
 # It refuses a workspace inside this checkout (exit 6), the guard `ablate.sh`
 # applies for the same reason. It is idempotent: the slug is read from this

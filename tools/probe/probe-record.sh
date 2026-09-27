@@ -90,6 +90,26 @@
 #
 # It writes only what `--raw` and standard output name, it needs `jq` and the
 # `claude` harness, and it spends real money.
+#
+# ## Exit status
+#
+# Every code below is returned by one kind of path and no other, so a caller
+# and a fixture can branch on it. The refusals 2, 4, 6, 8 and 9 run before any
+# check of this host and before any harness call, so they spend nothing.
+#
+#   0   the transcript was written, or a read-only mode printed its members
+#   1   no temporary file for the plan
+#   2   a usage error: a missing or unknown argument, task file, workspace or log
+#   3   a tool is missing: `jq`, the engine, or the `claude` harness
+#   4   the workspace carries a `.git` file or directory
+#   5   `headwater probe plan` failed
+#   6   the workspace is inside the corpus the plan was taken over
+#   7   the harness subshell could not enter the workspace
+#   8   the workspace still holds the instrument that `ablate.sh --instrument`
+#       names, or that list could not be read
+#   9   a file in the workspace names the probe by its identifier or its slug,
+#       or no `grep` can confirm that none does (`tools/probe/seal.sh`)
+#   any other   the exit status of the harness itself, passed through
 
 set -u
 
@@ -174,14 +194,30 @@ if [ "$identity_only" = 0 ] && [ "$provider_only" = 0 ] && [ "$answer_only" = 0 
         echo "probe-record: that is a live pointer into this repository's history, most likely left by \`cp -a\` of a worktree. Strip \`.git\` from the copy before recording." >&2
         exit 4
     fi
+    # The instrument: the probe shelves every arm removes, because a probe
+    # document states the answer it expects. A workspace that still holds one
+    # hands the session its own answer key.
+    # Fail closed: an instrument this script cannot read is a workspace it
+    # cannot clear, and a loop over the output of a failed command runs zero
+    # times and lets the session start.
+    instrument=$(sh "$root/tools/probe/ablate.sh" --instrument) || {
+        echo "probe-record: the instrument of the probe declaration could not be read, so this workspace cannot be cleared of it." >&2
+        exit 8
+    }
+    for path in $instrument; do
+        if [ -e "$here/$path" ]; then
+            echo "probe-record: the workspace at $here still holds \`$path\`, which every arm removes." >&2
+            echo "probe-record: prepare it with \`sh tools/probe/ablate.sh --present <workspace>\` or \`sh tools/probe/ablate.sh <tier> <workspace>\`." >&2
+            exit 8
+        fi
+    done
     # The answer key. A workspace that still holds the probe's own document, a
     # recorded run of it, or any file that names it hands the session its
     # expectation: the tombstone session of 2026-09-17 read its own probe file
     # and then answered (#1229). `tools/probe/seal.sh` removes every such file,
     # and this guard refuses a workspace that was not sealed. It runs before
-    # any harness call, so the case that asserts it spends nothing. It exits 8
-    # because 7 is what the harness subshell below returns when it cannot enter
-    # the workspace.
+    # any harness call, so the case that asserts it spends nothing. It exits 9,
+    # a code no other path of this script returns.
     #
     # The slug is the file name the probe has on this checkout's shelf. A
     # derived fold such as `.headwater/nav.yml` names the slug and not the
@@ -189,7 +225,7 @@ if [ "$identity_only" = 0 ] && [ "$provider_only" = 0 ] && [ "$answer_only" = 0 
     # confirm the tree is clean, and that is a refusal rather than a pass.
     command -v grep >/dev/null 2>&1 || {
         echo "probe-record: \`grep\` is not on the path, so nothing can confirm the workspace holds no answer key." >&2
-        exit 8
+        exit 9
     }
     slug=""
     shelf_file=$(grep -rlx -- "id: $probe" "$root/docs/probes" 2>/dev/null) || shelf_file=""
@@ -209,7 +245,7 @@ if [ "$identity_only" = 0 ] && [ "$provider_only" = 0 ] && [ "$answer_only" = 0 
 *}
         echo "probe-record: the workspace names the probe it would run: $first" >&2
         echo "probe-record: a session that reads that file reads its own answer key. Run \`sh tools/probe/seal.sh $here $probe\` first." >&2
-        exit 8
+        exit 9
     fi
 fi
 

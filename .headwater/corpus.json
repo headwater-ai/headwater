@@ -22,7 +22,7 @@
       "taxonomy": {
         "package": "headwater/standard",
         "version": "4.9.1",
-        "lock": "sha256:37bda33ec603ce5c1ee7d7749982826998cfdbdf18ab8c5954b7a47113d4c1f3"
+        "lock": "sha256:faf07a4737d00d54bb8b88c13cdabff472d612f7d9146d4f609fd950d8107ddb"
       },
       "entry_points": [
         {
@@ -32,7 +32,7 @@
         },
         {
           "shelf": "acceptance_criteria",
-          "path": "docs/acceptance-criteria/0001-no-source-file-of-the-engine-names-a-network-api-and-no-locked-dependency-provides-one.md",
+          "path": "docs/acceptance-criteria/0001-no-engine-source-outside-the-fetch-crate-names-a-network-api-and-no-crate-of-the-checking-loop-reaches-a-network-package.md",
           "id": "HW-AC-0001"
         },
         {
@@ -84,6 +84,11 @@
           "shelf": "process_decisions",
           "path": "docs/process/decisions/0001-orchestration-prose-has-one-owner-per-sentence.md",
           "id": "HW-PD-0001"
+        },
+        {
+          "shelf": "process_explanations",
+          "path": "docs/process/explanations/where-a-ci-job-runs.md",
+          "id": "HW-PEXP-where-a-ci-job-runs"
         },
         {
           "shelf": "requirements",
