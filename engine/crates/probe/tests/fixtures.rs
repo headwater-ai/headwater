@@ -837,6 +837,58 @@ fn a_campaign_narrowed_to_one_arm_is_refused() {
     assert_eq!(plan.refusal, Some(Refusal::CampaignNarrowed));
 }
 
+/// The documentation tier's absent arm removes the fixture corpus's `probes`
+/// directory, and four of the five fixture probes have a predicate over a
+/// document under it. A session in that arm cannot open or cite a document it
+/// never had, so a rate over those probes measures the ablation and not the
+/// documents. The plan refuses, by name, before the budget is looked at: an
+/// `OverBudget` here would hide the reason the run cannot measure the claim at
+/// any price.
+#[test]
+fn a_documentation_plan_refuses_a_probe_whose_document_its_absent_arm_removes() {
+    let plan = plan_at(Tier::Documentation, &Narrowing::default());
+    assert_eq!(
+        plan.refusal,
+        Some(Refusal::AblatedExamined {
+            probe: "PROBE-FIX-cited".into(),
+            path: "probes/0002-answered.md".into(),
+            entry: "probes".into(),
+        }),
+        "the first probe by identifier whose predicate names a removed document"
+    );
+    assert!(
+        !plan.refusal.as_ref().is_some_and(Refusal::stops_a_grade),
+        "a plan-time policy refusal, like a campaign narrowed to one arm"
+    );
+
+    // `--category sufficiency` keeps `cited` beside `answered` and `patched`,
+    // and the refusal still names it.
+    let sufficiency = plan_at(
+        Tier::Documentation,
+        &Narrowing {
+            category: Some(Category::Sufficiency),
+            ..Narrowing::default()
+        },
+    );
+    assert!(
+        matches!(
+            &sufficiency.refusal,
+            Some(Refusal::AblatedExamined { probe, .. }) if probe == "PROBE-FIX-cited"
+        ),
+        "{:?}",
+        sufficiency.refusal
+    );
+
+    // The campaign's ablation removes the governance paths and not `probes`,
+    // so the same selection reaches the ceiling and nothing else.
+    let campaign = plan_at(Tier::Campaign, &Narrowing::default());
+    assert!(
+        matches!(campaign.refusal, Some(Refusal::OverBudget { .. })),
+        "{:?}",
+        campaign.refusal
+    );
+}
+
 /// An arm the tier does not declare refuses, rather than silently planning the
 /// arm the tier does declare.
 ///

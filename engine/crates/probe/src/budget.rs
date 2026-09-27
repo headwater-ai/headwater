@@ -266,25 +266,102 @@ tiers:
     session_cost_cents: 4
     repetitions: 58
     arms: [present, absent]
+    ablation: [CLAUDE.md, .claude, .githooks, .headwater]
+  documentation:
+    budget_cents: 40000
+    session_cost_cents: 4
+    repetitions: 58
+    arms: [present, absent]
+    ablation: [CLAUDE.md, .claude, .githooks, .headwater, docs]
 ";
 
     #[test]
-    fn both_tiers_read() {
+    fn every_tier_reads_with_its_ablation() {
         let budgets = Budgets::read(GOOD).expect("reads");
-        assert_eq!(budgets.tiers.len(), 2);
+        assert_eq!(budgets.tiers.len(), 3);
         let campaign = budgets.of(Tier::Campaign).expect("campaign");
         assert_eq!(campaign.repetitions, 58);
         assert_eq!(campaign.arms, vec![Arm::Present, Arm::Absent]);
+        assert_eq!(
+            campaign.ablation,
+            vec!["CLAUDE.md", ".claude", ".githooks", ".headwater"]
+        );
+        let documentation = budgets.of(Tier::Documentation).expect("documentation");
+        assert_eq!(
+            documentation.ablation,
+            vec!["CLAUDE.md", ".claude", ".githooks", ".headwater", "docs"]
+        );
+        let regression = budgets.of(Tier::Regression).expect("regression");
+        assert!(regression.ablation.is_empty(), "one arm, nothing removed");
     }
 
     #[test]
     fn a_campaign_with_one_arm_is_refused() {
-        let source = GOOD.replace("arms: [present, absent]", "arms: [present]");
+        let source = GOOD.replacen("arms: [present, absent]", "arms: [present]", 1);
         assert_eq!(
             Budgets::read(&source),
-            Err(Unreadable::CampaignHasOneArm),
+            Err(Unreadable::PairHasOneArm { tier: "campaign" }),
             "a campaign estimates a difference and one arm estimates none"
         );
+    }
+
+    #[test]
+    fn a_documentation_tier_with_one_arm_is_refused() {
+        let source = GOOD
+            .replace(
+                "    arms: [present, absent]\n    ablation: [CLAUDE.md, .claude, .githooks, .headwater, docs]\n",
+                "    arms: [present]\n",
+            );
+        assert_eq!(
+            Budgets::read(&source),
+            Err(Unreadable::PairHasOneArm {
+                tier: "documentation"
+            }),
+            "the documentation tier estimates a difference too"
+        );
+    }
+
+    #[test]
+    fn an_absent_arm_with_no_ablation_is_refused() {
+        // Spec 5: the absent arm names a declared ablation. Without one, the
+        // absent tree is whatever a script removes, and no claim names it.
+        let source = GOOD.replace("    ablation: [CLAUDE.md, .claude, .githooks, .headwater]\n", "");
+        assert_eq!(
+            Budgets::read(&source),
+            Err(Unreadable::AblationUndeclared { tier: "campaign" })
+        );
+    }
+
+    #[test]
+    fn an_ablation_without_the_absent_arm_is_refused() {
+        let source = GOOD.replace(
+            "    arms: [present]\n",
+            "    arms: [present]\n    ablation: [docs]\n",
+        );
+        assert_eq!(
+            Budgets::read(&source),
+            Err(Unreadable::AblationWithoutAbsent { tier: "regression" }),
+            "an ablation no arm applies is declared and never read"
+        );
+    }
+
+    #[test]
+    fn an_ablation_entry_that_leaves_the_tree_is_refused() {
+        // `tools/probe/ablate.sh` hands every entry to `rm -rf`.
+        for entry in ["docs/../..", "/etc", "..", "\"\""] {
+            let source = GOOD.replace(
+                "[CLAUDE.md, .claude, .githooks, .headwater, docs]",
+                &format!("[CLAUDE.md, {entry}]"),
+            );
+            assert_eq!(
+                Budgets::read(&source),
+                Err(Unreadable::AblationUnsafe {
+                    tier: "documentation",
+                    entry: entry.trim_matches('"').to_string(),
+                }),
+                "{entry}"
+            );
+        }
     }
 
     #[test]

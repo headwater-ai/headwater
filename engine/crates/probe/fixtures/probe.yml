@@ -3,6 +3,11 @@
 # The envelope the fixture plans are projected against. The regression ceiling
 # clears the fixture selection and the campaign ceiling does not, so one file
 # holds both arms of the budget rule.
+#
+# The documentation tier's ablation names `probes`, the fixture corpus's own
+# directory, so every probe whose predicate names a document examines a path
+# its own absent arm removes. The campaign tier's ablation does not, so one
+# file holds both arms of the ablation rule.
 
 tiers:
   regression:
@@ -16,3 +21,11 @@ tiers:
     session_cost_cents: 25
     repetitions: 58
     arms: [present, absent]
+    ablation: [CLAUDE.md, .claude, .githooks, .headwater]
+
+  documentation:
+    budget_cents: 100
+    session_cost_cents: 25
+    repetitions: 58
+    arms: [present, absent]
+    ablation: [CLAUDE.md, .claude, .githooks, .headwater, probes]
