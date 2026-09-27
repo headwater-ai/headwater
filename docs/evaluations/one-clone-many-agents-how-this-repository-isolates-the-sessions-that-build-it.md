@@ -18,7 +18,6 @@ relations:
     - .githooks/pre-commit
     - .githooks/commit-msg
     - .githooks/pre-push
-    - .githooks/post-rewrite
     - .claude/hooks/lib.sh
     - .claude/hooks/touch.sh
     - tools/hw-cargo
