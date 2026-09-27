@@ -777,15 +777,16 @@ fn call(server: &Server<'_>, message: &Mapping) -> Result<Answer, Failure> {
         // A path argument is read the way `headwater explain` reads one, through
         // the same `typed`, so the tool and the verb find one document for one
         // spelling, and refuse a path that leaves the repository as outside it
-        // (#1227).
-        // A path argument is read the way `headwater explain` reads one, through
-        // the same `typed`, so the tool and the verb find one document for one
-        // spelling, and refuse a path that leaves the repository as outside it
-        // (#1227).
+        // (#1227). A retried spelling is a path, so only a document at that
+        // path answers it, and `./<identifier>` never finds the identifier.
         "explain" => match surface.explain(&argument).or_else(|| {
             headwater_census::walk::typed(server.root, &argument)
                 .filter(|relative| *relative != argument)
-                .and_then(|relative| surface.explain(&relative))
+                .and_then(|relative| {
+                    surface
+                        .explain(&relative)
+                        .filter(|explanation| explanation.path == relative)
+                })
         }) {
             // Plain, unconditionally: an MCP server's own stdout is never a
             // terminal, so a real invocation piped the same way would sense

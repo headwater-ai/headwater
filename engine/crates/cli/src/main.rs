@@ -4317,8 +4317,14 @@ fn find_document(root: &Path, target: &str) -> Result<headwater_query::Explanati
                 &headwater_census::walk::Classification::Unclassifiable,
             ),
             Some(relative) => {
+                // A retried spelling is a path, so only a document at that
+                // path answers it: `./HW-DR-0001` names the file `HW-DR-0001`
+                // and never the identifier, as it did before #1227.
                 if relative != target {
-                    if let Some(explanation) = surface.explain(&relative) {
+                    if let Some(explanation) = surface
+                        .explain(&relative)
+                        .filter(|explanation| explanation.path == relative)
+                    {
                         return Ok(explanation);
                     }
                 }
