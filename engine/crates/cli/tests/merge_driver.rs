@@ -66,6 +66,12 @@ impl Tree {
     /// An adopted tree at `at`, which a case places inside a directory of its own.
     fn adopted_at(at: PathBuf) -> Tree {
         let _ = std::fs::remove_dir_all(&at);
+        Tree::adopted_in(at.clone(), &at)
+    }
+
+    /// An adopted tree at `at`, inside the git repository whose top is `top`,
+    /// which is `at` itself or a directory above it.
+    fn adopted_in(at: PathBuf, top: &Path) -> Tree {
         std::fs::create_dir_all(at.join("docs")).expect("the corpus directory is made");
         std::fs::write(at.join("docs/one.md"), "# a document\n").expect("the document writes");
         copy_dir(
@@ -73,7 +79,8 @@ impl Tree {
             &at.join(".headwater/packages/headwater-standard"),
         );
         let tree = Tree { at };
-        tree.git(&["init", "-q", "-b", "main"]);
+        let init = tree.git_output(&["init", "-q", "-b", "main", &top.to_string_lossy()]);
+        assert!(init.status.success(), "`git init` succeeds");
         tree.git(&["config", "user.email", "adopter@example.com"]);
         tree.git(&["config", "user.name", "An adopter"]);
         tree.headwater_ok(&["init"]);
@@ -862,6 +869,80 @@ fn two_branches_that_each_record_an_audit_merge_the_adoption_store_without_a_con
         readings.iter().any(|line| line.contains("2026-01-01"))
             && readings.iter().any(|line| line.contains("2026-02-02")),
         "one reading carries each date:\n{store}"
+    );
+}
+
+/// With `--root` a subdirectory of the repository, each store gets its union
+/// line unless a line there already names it, with the store absent and present.
+///
+/// Git reads the paths of an attributes file that no directory holds from the
+/// top of the work tree, so a check that spelled the store from `--root` would
+/// never match it in this tree. The step must then not read "no answer" as "a
+/// line names the store" and write nothing in silence.
+#[test]
+fn below_the_top_of_the_repository_the_git_step_writes_each_store_line_it_owes() {
+    let mut wrong: Vec<String> = Vec::new();
+    for owned in [None, Some(CAPTURE_COST), Some(ADOPTION)] {
+        for present in [false, true] {
+            let label = format!(
+                "below-{}-{present}",
+                owned.map_or("none", |store| if store == ADOPTION {
+                    "adoption"
+                } else {
+                    "cost"
+                })
+            );
+            let top = std::env::temp_dir().join(format!(
+                "headwater-cli-merge-driver-{}-{label}",
+                std::process::id()
+            ));
+            let _ = std::fs::remove_dir_all(&top);
+            let _top = Tree { at: top.clone() };
+            let tree = Tree::adopted_in(top.join("handbook"), &top);
+            for store in [CAPTURE_COST, ADOPTION] {
+                if present {
+                    tree.write(store, "{\"a\":1}\n");
+                }
+            }
+            if let Some(store) = owned {
+                tree.write(".gitattributes", &format!("{store} merge=ours\n"));
+            }
+            let output = tree.headwater(&["init", "--git"]);
+            let attributes =
+                std::fs::read_to_string(tree.at.join(".gitattributes")).unwrap_or_default();
+            for store in [CAPTURE_COST, ADOPTION] {
+                let answer = tree.git(&["check-attr", "merge", "--", store]);
+                let expected = if owned == Some(store) {
+                    "ours"
+                } else {
+                    "union"
+                };
+                let lines = attributes
+                    .lines()
+                    .filter(|line| line.starts_with(store))
+                    .count();
+                if !answer.trim_end().ends_with(&format!(": {expected}")) || lines != 1 {
+                    wrong.push(format!(
+                        "{label}, {store}: git answers `{}`, {lines} lines name it, exit {:?}",
+                        answer.trim_end(),
+                        output.status.code()
+                    ));
+                }
+            }
+            if output.status.code() != Some(0) {
+                wrong.push(format!(
+                    "{label}: exit {:?}:\n{}",
+                    output.status.code(),
+                    String::from_utf8_lossy(&output.stderr)
+                ));
+            }
+        }
+    }
+    assert!(
+        wrong.is_empty(),
+        "below the top of the repository, each store the file does not name gets its union \
+         line, and a named store keeps its line:\n{}",
+        wrong.join("\n")
     );
 }
 
