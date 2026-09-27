@@ -164,7 +164,7 @@ engine/crates/lock/fixtures/corpus.lock -merge
 # carries no figure that a document added to any shelf moves.
 #
 # Listed rather than matched, and the list is enumerated rather than remembered.
-# `site/*` would reach `site/tutorial/index.html`, whose 43 verbatim blocks are
+# `site/*` would reach `site/tutorial/index.html`, whose verbatim blocks are
 # copied out of the tutorial document rather than measured, and the four pages
 # under `site/changelog/`, `site/compare/`, `site/glossary/` and `site/ns/`,
 # which carry no figure at all. Refusing a merge of a page somebody edits by
