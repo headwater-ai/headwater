@@ -590,6 +590,28 @@ REGRESSION_CASES = [
     ('an apostrophe in a trailing comment does not hide the next line',
      "headwater check # it's here\nnpm install",
      ['npm install']),
+    # The shapes the verifier of #1195 found. A here-document body is not
+    # read, so an apostrophe in it opens no quote.
+    ('an apostrophe in a here-document body does not hide the next line',
+     "cat <<EOF\nit's here\nEOF\nnpm install",
+     ['cat <<EOF', 'npm install']),
+    ('an apostrophe in a quoted here-document body hides no chained command',
+     "cat <<'EOF'\ndon't\nEOF\nnpm install && echo RAN-B2b",
+     ["cat <<'EOF'", 'npm install', 'echo RAN-B2b']),
+    # A `#` after `)`, `<` or `>` starts a word, so it opens a comment.
+    ('a hash after a closing parenthesis opens a comment',
+     "(echo a)#'\nnpm install",
+     ['(echo a)', 'npm install']),
+    ('a hash after a redirect opens a comment',
+     "echo hi >#it's\nnpm install",
+     ['echo hi >', 'npm install']),
+    # A quote inside backticks belongs to the command they run.
+    ('a quote inside backticks opens nothing',
+     "echo `echo it's` && npm install\nnpm ci",
+     ["echo `echo it's`", 'npm install', 'npm ci']),
+    ('an ANSI-C quote open at the end of a line joins the next line',
+     "printf $'a\nheadwater check' && echo RAN && printf 'b'",
+     ['echo RAN']),
 ]
 
 
