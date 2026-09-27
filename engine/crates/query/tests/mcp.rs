@@ -1125,6 +1125,71 @@ fn a_session_writes_nothing_to_the_corpus_it_reads() {
     assert_eq!(before, snapshot(&scratch.0));
 }
 
+/// The document path both structured cases add: it holds ` (`, which the text
+/// form split early.
+const PAREN_PATH: &str = "query/decisions/a (draft) note.md";
+
+/// A private copy of the fixture tree with one more document at
+/// [`PAREN_PATH`], named `name`, summarized by `summary`, and governing
+/// `src/ingest/mod.rs`. The checked-in taxonomy declares no facet in the `name`
+/// role, so the copy declares one, and a pointer then renders as
+/// `path (name) — summary`.
+fn a_corpus_with_one_named_document(case: &str, name: &str, summary: &str) -> (Scratch, Built) {
+    let scratch = Scratch::of(&fixtures_dir(), case);
+    let taxonomy = scratch.0.join("query.taxonomy.yml");
+    let declared = std::fs::read_to_string(&taxonomy).expect("the fixture taxonomy");
+    let scent = "  summary:\n    role: scent\n    required: true\n";
+    assert!(declared.contains(scent), "the taxonomy declares a scent");
+    std::fs::write(
+        &taxonomy,
+        declared.replacen(scent, &format!("{scent}  title:\n    role: name\n"), 1),
+    )
+    .expect("the taxonomy");
+    std::fs::write(
+        scratch.0.join(PAREN_PATH),
+        format!(
+            "---\nid: DR-FIX-0099\ntitle: {name}\nstatus: current\nstatus_since: 2026-02-01\nsummary: {summary}\nprovenance:\n  warrant: accepted\n  accepted_by: the fixture tree\nrelations:\n  governs:\n    - src/ingest/mod.rs\n---\n\n# {name}\n\nA document whose path, name and summary the text form cannot carry.\n"
+        ),
+    )
+    .expect("the document");
+    let built = fixture_tree_at(&scratch.0);
+    (scratch, built)
+}
+
+/// A mapping with one member removed, and any other value as it stands.
+fn without(value: &Value, key: &str) -> Value {
+    match value {
+        Value::Map(map) => Value::Map(headwater_yaml::Mapping::new(
+            map.iter()
+                .filter(|entry| entry.key.value != key)
+                .cloned()
+                .collect(),
+        )),
+        other => other.clone(),
+    }
+}
+
+/// Every string under a value, with the path of members that reaches it.
+fn strings_under(value: &Value, at: &str, found: &mut Vec<(String, String)>) {
+    match value {
+        Value::Scalar(scalar) => found.push((at.to_string(), scalar.text.clone())),
+        Value::Seq(items) => {
+            for (index, item) in items.iter().enumerate() {
+                strings_under(&item.value, &format!("{at}[{index}]"), found);
+            }
+        }
+        Value::Map(map) => {
+            for entry in map.iter() {
+                strings_under(
+                    &entry.value.value,
+                    &format!("{at}.{}", entry.key.value),
+                    found,
+                );
+            }
+        }
+    }
+}
+
 /// A path with ` (` in it, a name with spaces and a summary past eighty
 /// columns come back exactly from `structuredContent`, and the text block
 /// shows the pointer on one line (#1248).
@@ -1136,32 +1201,14 @@ fn a_session_writes_nothing_to_the_corpus_it_reads() {
 /// the fold at eighty columns would begin its continuation with `governs`.
 #[test]
 fn a_route_answer_carries_its_pointers_as_structured_content() {
-    let scratch = Scratch::of(
-        &fixtures_dir(),
-        "a_route_answer_carries_its_pointers_as_structured_content",
-    );
-    let path = "query/decisions/a (draft) note.md";
+    let path = PAREN_PATH;
     let name = "Quota notes at the edge";
     let summary = "why the quota governs each retry of a tenant, and what quarantine throttling does at the edge";
-    // The checked-in taxonomy declares no facet in the `name` role, so the
-    // copy declares one. A pointer then renders as `path (name) — summary`.
-    let taxonomy = scratch.0.join("query.taxonomy.yml");
-    let declared = std::fs::read_to_string(&taxonomy).expect("the fixture taxonomy");
-    let scent = "  summary:\n    role: scent\n    required: true\n";
-    assert!(declared.contains(scent), "the taxonomy declares a scent");
-    std::fs::write(
-        &taxonomy,
-        declared.replacen(scent, &format!("{scent}  title:\n    role: name\n"), 1),
-    )
-    .expect("the taxonomy");
-    std::fs::write(
-        scratch.0.join(path),
-        format!(
-            "---\nid: DR-FIX-0099\ntitle: {name}\nstatus: current\nstatus_since: 2026-02-01\nsummary: {summary}\nprovenance:\n  warrant: accepted\n  accepted_by: the fixture tree\nrelations:\n  governs:\n    - src/ingest/mod.rs\n---\n\n# {name}\n\nA document whose path, name and summary the text form cannot carry.\n"
-        ),
-    )
-    .expect("the document");
-    let built = fixture_tree_at(&scratch.0);
+    let (_scratch, built) = a_corpus_with_one_named_document(
+        "a_route_answer_carries_its_pointers_as_structured_content",
+        name,
+        summary,
+    );
     let server = built.server(RECORDED_AT);
 
     let response = once(
@@ -1184,18 +1231,22 @@ fn a_route_answer_carries_its_pointers_as_structured_content() {
             .any(|line| line.contains(path) && line.ends_with(summary)),
         "the pointer is one line of the text block: {text}"
     );
-    // The member is the `route --json` document for the same task, byte for
-    // byte, so one parser reads both.
+    // The member is the `route --json` document for the same task less its
+    // `text`, which is folded for a terminal, so one parser reads both.
     let route = built.surface().route(
         "why is quarantine throttling one quota rule",
         headwater_query::Budget::default(),
     );
     let document =
         headwater_yaml::load(&headwater_query::json::route(&route)).expect("route --json is JSON");
+    assert!(
+        member(&answer, "text").is_none(),
+        "structuredContent carries no folded text"
+    );
     assert_eq!(
         canonical(&answer.value),
-        canonical(&document.value),
-        "structuredContent is the route --json document"
+        canonical(&without(&document.value, "text")),
+        "structuredContent is the route --json document less its text"
     );
 
     let response = once(
@@ -1209,4 +1260,45 @@ fn a_route_answer_carries_its_pointers_as_structured_content() {
         .unwrap_or_else(|| panic!("{path} governs src/ingest/mod.rs: {response}"));
     assert_eq!(member(&pointer, "name").as_deref(), Some(name));
     assert_eq!(member(&pointer, "summary").as_deref(), Some(summary));
+}
+
+/// No string under `structuredContent` holds a newline, even where a name is
+/// longer than the fold width (#1248). A fold inside a structured member is a
+/// newline a client reads as a second line, and `route --json` folds its
+/// `text` at eighty columns, so that member stays out of the MCP answer.
+#[test]
+fn no_string_under_structured_content_is_folded() {
+    let name = "Quota notes at the edge, and why each retry of a tenant answers to one rule and never to two";
+    assert!(name.chars().count() > 80, "the name is past the fold width");
+    let summary = "why the quota governs each retry of a tenant, and what quarantine throttling does at the edge";
+    let (_scratch, built) = a_corpus_with_one_named_document(
+        "no_string_under_structured_content_is_folded",
+        name,
+        summary,
+    );
+    let server = built.server(RECORDED_AT);
+    for (tool, arguments) in [
+        (
+            "route",
+            r#"{"task":"why is quarantine throttling one quota rule"}"#,
+        ),
+        ("governing_docs_for_path", r#"{"path":"src/ingest/mod.rs"}"#),
+    ] {
+        let response = once(&server, &calling(tool, arguments));
+        let answer = structured(&response).expect("the answer carries structuredContent");
+        assert!(
+            pointers_of(&answer)
+                .iter()
+                .any(|pointer| member(pointer, "name").as_deref() == Some(name)),
+            "{tool} names the long-named document: {response}"
+        );
+        let mut found = Vec::new();
+        strings_under(&answer.value, "structuredContent", &mut found);
+        for (at, text) in &found {
+            assert!(
+                !text.contains('\n'),
+                "{tool}: {at} holds a newline: {text:?}"
+            );
+        }
+    }
 }

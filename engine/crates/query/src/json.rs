@@ -7,7 +7,7 @@
 //! has ever had: the MCP server served both as [`Route::render`] and
 //! [`Explanation::render`] inside a text block, and a caller who wanted the
 //! parts had to take them out of prose. The MCP `route` tool now carries the
-//! route document as its `structuredContent` too (#1248).
+//! route document, less its folded `text`, as its `structuredContent` (#1248).
 //!
 //! # Three rules that hold for every document this module writes
 //!
@@ -50,11 +50,22 @@ pub fn route(route: &Route) -> String {
     of_route(route).render_pretty()
 }
 
-/// One route as a value, which the MCP `route` tool carries as its
-/// `structuredContent`, so that member and `route --json` are one document
-/// (#1248).
-pub fn route_value(route: &Route) -> Json {
-    of_route(route)
+/// One route as the MCP `route` tool carries it in `structuredContent`: the
+/// `route --json` document with every member but `text` (#1248).
+///
+/// `text` is the report folded at eighty columns for a terminal, and a fold
+/// inside a name or a summary is a newline a client could read as structure.
+/// The MCP answer carries the report once, unfolded, in its text block.
+pub fn route_structured(route: &Route) -> Json {
+    match of_route(route) {
+        Json::Object(members) => Json::Object(
+            members
+                .into_iter()
+                .filter(|(key, _)| key != "text")
+                .collect(),
+        ),
+        other => other,
+    }
 }
 
 /// A list of pointers as `{"pointers": [...]}`, each element the pointer

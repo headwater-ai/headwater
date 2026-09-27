@@ -790,8 +790,10 @@ fn call(server: &Server<'_>, message: &Mapping) -> Result<Answer, Failure> {
                 route.retain_unignored(&(server.ignored)());
             }
             // Taken after the filter, so the structured answer and the text
-            // name the same paths. It is the `route --json` document.
-            structured = Some(crate::json::route_value(&route));
+            // name the same paths. It is the `route --json` document without
+            // its `text` member, which is folded for a terminal: the text
+            // block below carries the report once, unfolded.
+            structured = Some(crate::json::route_structured(&route));
             // Never folded: a fold hangs a continuation at the indent of an
             // evidence line.
             route.render_at(headwater_check::paint::ColorMode::Plain, None)
