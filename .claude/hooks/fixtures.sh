@@ -736,6 +736,17 @@ if [ -x "$engine" ]; then
         write.sh 0 '' "$reverse_payload"
     cp "$engine" "$open_root/engine/target/release/headwater"
 
+    # #1053: the derived-artifact advisory on the same terms. The scratch root
+    # is no git repository, and `headwater derived` exits 1 there with its
+    # report intact, which is the case the reader ignores the status for.
+    lock_edit='{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":".headwater/taxonomy.lock"}}'
+    expect 'the control for: the derived-artifact advisory with no engine' \
+        write.sh 0 'headwater taxonomy resolve' "$lock_edit"
+    rm -f "$open_root/engine/target/release/headwater"
+    expect 'the derived-artifact advisory with no engine is silent, and the edit proceeds' \
+        write.sh 0 '' "$lock_edit"
+    cp "$engine" "$open_root/engine/target/release/headwater"
+
     # No position runs an interpreter, which is HW-DR-0055 and the discharge of
     # HW-OBL-0146. A sabotage cannot state this the way the three above state
     # theirs: an interpreter that answers non-zero changes nothing now, and a
@@ -1580,8 +1591,8 @@ expect_streams() {
 # The standing half of clause 5: no declaration may fall back to the bare
 # `sh "$CLAUDE_PROJECT_DIR/.claude/hooks/<name>.sh"` this issue found, with no
 # guard around it. This reads `.claude/settings.json` itself rather than a
-# count of declarations, so an eighth one added later in this exact shape is
-# caught here rather than shipped, whether or not this file's other seven cases
+# count of declarations, so a ninth one added later in this exact shape is
+# caught here rather than shipped, whether or not this file's other eight cases
 # below are ever updated to know about it.
 bare=$(grep -nE '"command": *"sh \\"\$CLAUDE_PROJECT_DIR/\.claude/hooks/[A-Za-z_.]+\.sh\\""' "$root/.claude/settings.json") || true
 if [ -n "$bare" ]; then
@@ -1593,7 +1604,7 @@ else
     passed=$((passed + 1))
 fi
 
-# The two directions of the seven declarations themselves, run through their
+# The two directions of the eight declarations themselves, run through their
 # own command string exactly as `.claude/settings.json` holds it — not a
 # paraphrase of it — with the script it names moved aside and then replaced
 # by a stub that refuses on purpose. Mirrors the shape `review.sh`'s own
@@ -1602,7 +1613,7 @@ fi
 #
 # The ordinal of each declaration is its position in `.claude/settings.json`
 # file order (`intent.sh`, `write.sh` PreToolUse, `touch.sh`, `wait.sh`,
-# `read.sh`, `write.sh` PostToolUse, `review.sh`); the bare-pattern scan just above is
+# `read.sh`, `write.sh` PostToolUse, `derived.sh`, `review.sh`); the bare-pattern scan just above is
 # the one of the two checks that does not depend on this list staying
 # up to date with that order.
 hw_settings_case() {
@@ -1673,6 +1684,93 @@ if [ -x "$engine" ]; then
     refute 'an edit to a source file says nothing about a derived artifact' \
         write.sh 'derived artifact' \
         '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"engine/crates/check/src/lib.rs"}}'
+
+    # The conflict moment, over a real conflict. A scratch repository commits a
+    # taxonomy lock, two branches move it to two values, and the merge stops.
+    # `headwater derived` claims the lock in a tree that holds nothing else,
+    # because the `taxonomy resolve` producer is held by every tree. The engine
+    # is copied in, because a hook finds it under the root it answers for, and
+    # it stays untracked.
+    merge_root=$(mktemp -d "${TMPDIR:-/tmp}/headwater-derived-XXXXXX")
+    mg() { git -C "$merge_root" -c user.name=fixture -c user.email=fixture@example.invalid "$@" >/dev/null 2>&1; }
+    mg init -b main .
+    mkdir -p "$merge_root/.headwater" "$merge_root/engine/target/release"
+    printf 'base\n' > "$merge_root/.headwater/taxonomy.lock"
+    printf 'engine/\n' > "$merge_root/.gitignore"
+    mg add .gitignore .headwater/taxonomy.lock
+    mg commit -m base
+    mg switch -c other
+    printf 'other\n' > "$merge_root/.headwater/taxonomy.lock"
+    mg commit -am other
+    mg switch main
+    printf 'main\n' > "$merge_root/.headwater/taxonomy.lock"
+    mg commit -am main
+    mg merge other
+    cp "$engine" "$merge_root/engine/target/release/headwater"
+
+    HEADWATER_HOOK_ROOT="$merge_root"
+    export HEADWATER_HOOK_ROOT
+    bash_payload() {
+        printf '{"hook_event_name":"PostToolUse","tool_name":"Bash","session_id":"%s","cwd":"%s","tool_input":{"command":"git merge other"}}' \
+            "$1" "$merge_root"
+    }
+    expect 'a merge that leaves the lock in conflict names it and `headwater taxonomy resolve`' \
+        derived.sh 0 '`.headwater/taxonomy.lock`: A fold' "$(bash_payload fixture-1053-a)"
+    expect 'the conflict advisory names the rebuild command' \
+        derived.sh 0 'headwater taxonomy resolve' "$(bash_payload fixture-1053-b)"
+    expect 'a second call in the same merge and the same session is silent' \
+        derived.sh 0 '' "$(bash_payload fixture-1053-b)"
+    expect 'an edit to the lock mid-merge says it is in conflict' \
+        write.sh 0 'this merge left it in conflict' \
+        '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":".headwater/taxonomy.lock"}}'
+
+    # No engine, the same merge: the control speaks, and the sabotage is silent.
+    expect 'the control for: the conflict advisory with no engine' \
+        derived.sh 0 'headwater taxonomy resolve' "$(bash_payload fixture-1053-c)"
+    rm -f "$merge_root/engine/target/release/headwater"
+    expect 'the conflict advisory with no engine is silent, and the call has happened' \
+        derived.sh 0 '' "$(bash_payload fixture-1053-d)"
+
+    # No hook introduces a verb (spec 5). A recording stand-in writes each
+    # first argument and hands the call to the real engine, both positions run
+    # at full strength through it, and each argument it recorded must be a
+    # verb that the real engine's help lists. No list is written here.
+    printf '#!/bin/sh\nprintf "%%s\\n" "$1" >> "%s/verbs-called"\nexec "%s" "$@"\n' \
+        "$merge_root" "$engine" > "$merge_root/engine/target/release/headwater"
+    chmod u+x "$merge_root/engine/target/release/headwater"
+    expect 'the conflict position runs at full strength through the recorder' \
+        derived.sh 0 'headwater taxonomy resolve' "$(bash_payload fixture-1053-e)"
+    expect 'the edit position runs at full strength through the recorder' \
+        write.sh 0 'headwater taxonomy resolve' \
+        '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":".headwater/taxonomy.lock"}}'
+    help=$("$engine" --help 2>/dev/null)
+    unlisted=
+    while IFS= read -r verb; do
+        case $verb in headwater | '') unlisted="$unlisted $verb" ; continue ;; esac
+        printf '%s\n' "$help" | grep -Eq "^  $verb( |\$)" || unlisted="$unlisted $verb"
+    done < "$merge_root/verbs-called"
+    if [ ! -s "$merge_root/verbs-called" ]; then
+        printf 'FAIL %s\n  the recorder recorded nothing\n' 'no derived-artifact position introduces a verb'
+        failed=$((failed + 1))
+    elif [ -n "$unlisted" ]; then
+        printf 'FAIL %s\n  called, and not a verb the help lists:%s\n' 'no derived-artifact position introduces a verb' "$unlisted"
+        failed=$((failed + 1))
+    else
+        printf 'ok   %s\n' 'no derived-artifact position introduces a verb'
+        passed=$((passed + 1))
+    fi
+    cp "$engine" "$merge_root/engine/target/release/headwater"
+
+    # The merge ends, and the position is silent again.
+    mg merge --abort
+    expect 'after the merge is aborted the conflict position is silent' \
+        derived.sh 0 '' "$(bash_payload fixture-1053-f)"
+
+    HEADWATER_HOOK_ROOT="$root"
+    export HEADWATER_HOOK_ROOT
+    # The stamps sit under the scratch repository's own git dir, so this
+    # removes them too.
+    rm -rf "$merge_root"
 else
     skip 'the derived-artifact advisory cases' 'no built engine'
 fi
@@ -1683,7 +1781,8 @@ hw_settings_case 3 touch.sh
 hw_settings_case 4 wait.sh
 hw_settings_case 5 read.sh
 hw_settings_case 6 write.sh
-hw_settings_case 7 review.sh
+hw_settings_case 7 derived.sh
+hw_settings_case 8 review.sh
 
 printf '\n%s passed, %s failed, %s skipped\n' "$passed" "$failed" "$skipped"
 # A caller that knows an engine should be there says so, and this answers
