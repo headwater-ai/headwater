@@ -158,12 +158,29 @@ impl Root {
     }
 
     pub(crate) fn run(&self, arguments: &[&str]) -> Ran {
-        let output = Command::new(env!("CARGO_BIN_EXE_headwater"))
+        self.run_with(arguments, "")
+    }
+
+    /// Run the binary with `input` on its standard input, which is how a case
+    /// talks to `headwater mcp` (#1161).
+    pub(crate) fn run_with(&self, arguments: &[&str], input: &str) -> Ran {
+        use std::io::Write;
+        let mut child = Command::new(env!("CARGO_BIN_EXE_headwater"))
             .args(arguments)
             .arg("--root")
             .arg(&self.at)
-            .output()
+            .stdin(std::process::Stdio::piped())
+            .stdout(std::process::Stdio::piped())
+            .stderr(std::process::Stdio::piped())
+            .spawn()
             .expect("the binary runs");
+        child
+            .stdin
+            .take()
+            .expect("the standard input is piped")
+            .write_all(input.as_bytes())
+            .expect("the input writes");
+        let output = child.wait_with_output().expect("the binary finishes");
         Ran {
             code: output.status.code(),
             out: String::from_utf8_lossy(&output.stdout).into_owned(),

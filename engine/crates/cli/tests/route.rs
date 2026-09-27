@@ -476,3 +476,61 @@ fn route_under_deadline(root: &Root, path: &str, hung: &str) -> (String, String)
     assert!(status.success(), "{out}\n{err}");
     (out, err)
 }
+
+/// The MCP `route` tool answers the bytes `headwater route` prints, for a path
+/// git ignores and for one it does not (#1161). The tool once routed with no
+/// ignore list, so it named a cache the verb drops as ungoverned, and told an
+/// adopter's AI client that a build product was a gap in the corpus. Both
+/// paths exist on the tree, because git lists as ignored only a path that is
+/// there.
+#[test]
+fn the_mcp_route_tool_and_the_route_verb_agree_on_an_ignored_path_and_a_tracked_one() {
+    let root = root("route-mcp-ignored");
+    let ignored = "tools/__pycache__/stub.cpython-312.pyc";
+    let tracked = "tools/ungoverned.sh";
+    let cache = root.at.join(ignored);
+    std::fs::create_dir_all(cache.parent().expect("a parent")).expect("the cache is made");
+    std::fs::write(&cache, "").expect("the cache writes");
+    std::fs::write(root.at.join(tracked), "").expect("the tool writes");
+    std::fs::write(root.at.join(".gitignore"), "__pycache__/\n").expect("the ignore file writes");
+    let init = std::process::Command::new("git")
+        .args(["init", "-q"])
+        .current_dir(&root.at)
+        .status()
+        .expect("git runs");
+    assert!(init.success());
+
+    for (path, named) in [(ignored, false), (tracked, true)] {
+        let verb = root.run(&["route", "edit", path]);
+        assert_eq!(verb.code, Some(0), "{verb:?}");
+        assert_eq!(
+            verb.out.contains("governed scope"),
+            named,
+            "the verb on {path}\n{}",
+            verb.out
+        );
+        let served = root.run_with(
+            &["mcp", "--now", "2026-09-28"],
+            &format!(
+                "{{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{{}}}}\n\
+                 {{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"tools/call\",\"params\":\
+                 {{\"name\":\"route\",\"arguments\":{{\"task\":\"edit {path}\"}}}}}}\n"
+            ),
+        );
+        assert_eq!(served.code, Some(0), "{served:?}");
+        assert_eq!(
+            served.out.contains("governed scope"),
+            named,
+            "the MCP tool on {path}\n{}",
+            served.out
+        );
+        let answer = headwater_yaml::json::Json::string(verb.out.as_str()).render();
+        assert!(
+            served.out.contains(&answer),
+            "the MCP tool answers the bytes of the verb on {path}\nverb:\n{}\nserved:\n{}\n{}",
+            verb.out,
+            served.out,
+            served.err
+        );
+    }
+}
