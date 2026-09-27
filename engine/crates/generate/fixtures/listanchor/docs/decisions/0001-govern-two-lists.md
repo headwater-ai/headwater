@@ -7,7 +7,7 @@ relations:
   governs:
     - src/c.rs
     - [src/a.rs, src/b.rs]
-    - [src/c.rs, "src/a, b.rs"]
+    - [src/c.rs, "src/a, b.txt"]
 ---
 
 # Govern two lists

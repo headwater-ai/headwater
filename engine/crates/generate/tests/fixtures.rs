@@ -1113,7 +1113,7 @@ fn the_native_export_round_trips_the_graph() {
 /// beside the unchanged `id`. A single-pattern anchor carries no `patterns`,
 /// because its `id` is already its one pattern.
 ///
-/// The second list holds `src/a, b.rs`, whose name holds `, `, the separator
+/// The second list holds `src/a, b.txt`, whose name holds `, `, the separator
 /// of the joined display string. An emitter that wrote the display string
 /// split on `, ` reads three members there and goes red.
 #[test]
@@ -1152,8 +1152,8 @@ fn the_native_export_carries_the_members_of_a_list_anchor() {
         ("src/c.rs", None),
         ("8:src/a.rs8:src/b.rs", Some(vec!["src/a.rs", "src/b.rs"])),
         (
-            "11:src/a, b.rs8:src/c.rs",
-            Some(vec!["src/a, b.rs", "src/c.rs"]),
+            "12:src/a, b.txt8:src/c.rs",
+            Some(vec!["src/a, b.txt", "src/c.rs"]),
         ),
     ];
 

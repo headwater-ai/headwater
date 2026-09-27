@@ -1,1 +1,2 @@
+// SPDX-License-Identifier: Apache-2.0
 // A member whose name holds the separator of a joined list.
