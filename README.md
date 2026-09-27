@@ -8,12 +8,12 @@
 
 ## Obtaining a named version
 
-**Download the binary. You need no Rust toolchain.** Every engine release carries a static Linux x86_64 archive and a macOS arm64 archive. The block below installs `v0.3.0` on Linux into `~/.local/bin`. On macOS on Apple silicon, put `aarch64-apple-darwin` where the block says `x86_64-unknown-linux-musl`.
+**Download the binary. You need no Rust toolchain.** Every engine release carries a static Linux x86_64 archive and a macOS arm64 archive. The block below installs `v0.4.0` on Linux into `~/.local/bin`. On macOS on Apple silicon, put `aarch64-apple-darwin` where the block says `x86_64-unknown-linux-musl`.
 
 ```
 mkdir -p ~/.local/bin
-curl -fsSLO https://github.com/headwater-ai/headwater/releases/download/v0.3.0/headwater-v0.3.0-x86_64-unknown-linux-musl.tar.gz
-tar -xzf headwater-v0.3.0-x86_64-unknown-linux-musl.tar.gz -C ~/.local/bin headwater
+curl -fsSLO https://github.com/headwater-ai/headwater/releases/download/v0.4.0/headwater-v0.4.0-x86_64-unknown-linux-musl.tar.gz
+tar -xzf headwater-v0.4.0-x86_64-unknown-linux-musl.tar.gz -C ~/.local/bin headwater
 ```
 
 Each archive has a `.sha256` file beside it on the release, which `sha256sum -c` reads, and `shasum -a 256 -c` on macOS. The archive holds the `headwater` binary and the license, and nothing else. It does not get you `taxonomy-source`, and the taxonomy paragraphs below say how to fetch it.
@@ -26,12 +26,12 @@ cargo install headwater-cli
 
 The command needs nothing this repository ships: no clone, no toolchain floor beyond what `cargo` itself resolves from the crate's declared `rust-version`. It gets you the `headwater` binary alone, at whatever the newest published version is.
 
-**A fixed version built from source, with the taxonomy package beside it.** `v0.3.0` is the newest tagged release, and the block below builds it from source. It needs a Rust toolchain at **1.91 or later**, a floor `engine/README.md` explains and `engine/Cargo.toml` declares.
+**A fixed version built from source, with the taxonomy package beside it.** `v0.4.0` is the newest tagged release, and the block below builds it from source. It needs a Rust toolchain at **1.91 or later**, a floor `engine/README.md` explains and `engine/Cargo.toml` declares.
 
 ```
 git clone https://github.com/headwater-ai/headwater.git
 cd headwater
-git checkout v0.3.0
+git checkout v0.4.0
 cargo build --release -p headwater-cli --manifest-path engine/Cargo.toml --locked
 ```
 
