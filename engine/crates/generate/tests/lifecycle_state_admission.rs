@@ -53,6 +53,14 @@
 //! `bogus_notice` binds — a different defect that a lifecycle regime has no
 //! part in, and a refusal over it must not talk about a regime at all.
 //!
+//! `twin_notice`, `clash_notice` and `undated_notice` hold the date a file
+//! entered a state that more than one document sets (#1111). Their setters sit
+//! on the `flaggers` shelf, which no projection reads. `twin_notice` has two
+//! setters of `retired` on two dates. `clash_notice` has two setters of
+//! `current` and one of `retired`, and the `retired` setter carries the oldest
+//! date, so a fold that reads a setter of the state the file does not stand at
+//! writes a different file. `undated_notice` has one setter with no date.
+//!
 //! This repository's own lock cannot exercise any of the three failing cases:
 //! [HW-OBL-0196](../../../../docs/obligations/0196-a-relation-writes-a-state-onto-a-kind-that-binds-no-lifecycle-regime-and-nothing-reads-that-pair.md)
 //! records that all seventeen concrete kinds of `headwater/standard` bind a
