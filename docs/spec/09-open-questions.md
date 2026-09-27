@@ -355,7 +355,7 @@ The documents on this shelf, in the reading order this corpus derives. Each head
 
 ## The resolved taxonomy is drawn by a verb that prints Mermaid and writes no file
 
-[HW-DR-0082](../decisions/0082-the-resolved-taxonomy-is-drawn-by-a-verb-that-prints-mermaid-and-writes-no-file.md) — `headwater taxonomy graph` prints the resolved taxonomy from the lock as a Mermaid flowchart, and no projection, explain format or export target draws it (asserted, and no human has accepted it)
+[HW-DR-0082](../decisions/0082-the-resolved-taxonomy-is-drawn-by-a-verb-that-prints-mermaid-and-writes-no-file.md) — `headwater taxonomy graph` prints the resolved taxonomy as a Mermaid flowchart, no projection or export target draws it, and D2 and DOT are equal candidates after it (asserted, and no human has accepted it)
 
 ## Governs and traces_to are created by an agent, because a session proposes the line and a person types it
 
@@ -384,3 +384,7 @@ The documents on this shelf, in the reading order this corpus derives. Each head
 ## The citation comment of spec 5 is for an adopter's corpus, and this repository does not practice it on its own code
 
 [HW-DR-0092](../decisions/0092-the-citation-comment-of-spec-5-is-for-an-adopter-s-corpus-and-this-repository-does-not-practice-it-on-its-own-code.md) — The per-identifier citation comment of spec 5 is a convention for an adopter's corpus. By the owner's ruling, the code of this repository carries none. Its comments that name an identifier are prose, and the checker does not read them. (asserted, and no human has accepted it)
+
+## The live account of a domain is its own kind, split on the product and process line, and it draws on the records it cites
+
+[HW-DR-0093](../decisions/0093-the-live-account-of-a-domain-is-its-own-kind-split-on-the-product-and-process-line-and-it-draws-on-the-records-it-cites.md) — explanation and process_explanation state what holds now across one domain, and draws_on reports an account whose source decision ends. (asserted, and no human has accepted it)

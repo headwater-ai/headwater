@@ -387,6 +387,22 @@ kinds:
     lifecycle: standard
     purpose: evidence
     voice: narrative
+  explanation:
+    facets:
+      require:
+        - title
+    identifier:
+      scheme: explanation_id
+    is_a: governed_document
+    language: ste_house
+    lifecycle: standard
+    purpose: behavior
+    sections:
+      require:
+        - Scope
+        - "How it works"
+        - "Why it is this way"
+    voice: declarative
   how_to:
     facets:
       require:
@@ -517,6 +533,22 @@ kinds:
         - Context
         - Decision
         - Consequences
+    voice: declarative
+  process_explanation:
+    facets:
+      require:
+        - title
+    identifier:
+      scheme: process_explanation_id
+    is_a: governed_document
+    language: ste_house
+    lifecycle: standard
+    purpose: behavior
+    sections:
+      require:
+        - Scope
+        - "How it works"
+        - "Why it is this way"
     voice: declarative
   requirement:
     facets:
@@ -712,6 +744,16 @@ relations:
     reciprocal: required
     to:
       - obligation_record
+  draws_on:
+    cardinality: many
+    created_by: author
+    family: evidence
+    from:
+      - explanation
+      - process_explanation
+    lifecycle_sensitive: true
+    to:
+      - governed_document
   examines:
     cardinality: many
     created_by: author
@@ -774,6 +816,11 @@ shelves:
     kind: evaluation
     path: "docs/evaluations/**"
     title: Evaluations
+  explanations:
+    homogeneous: true
+    kind: explanation
+    path: "docs/explanations/**"
+    title: Explanations
   how_to:
     homogeneous: true
     kind: how_to
@@ -821,6 +868,11 @@ shelves:
     layout: "{seq:04d}-{slug}.md"
     path: "docs/process/decisions/**"
     title: "Process decisions"
+  process_explanations:
+    homogeneous: true
+    kind: process_explanation
+    path: "docs/process/explanations/**"
+    title: "Process explanations"
   requirements:
     homogeneous: true
     kind: requirement
@@ -869,6 +921,10 @@ identifier_schemes:
     allocation: minted-once
     namespace: HW
     pattern: "{namespace}-EVAL-{slug}"
+  explanation_id:
+    allocation: minted-once
+    namespace: HW
+    pattern: "{namespace}-EXP-{slug}"
   how_to_id:
     allocation: minted-once
     namespace: HW
@@ -893,6 +949,10 @@ identifier_schemes:
     allocation: reconcile-first
     namespace: HW
     pattern: "{namespace}-PD-{seq:04d}"
+  process_explanation_id:
+    allocation: minted-once
+    namespace: HW
+    pattern: "{namespace}-PEXP-{slug}"
   register_id:
     allocation: minted-once
     namespace: HW
@@ -955,6 +1015,8 @@ projections:
       - tutorials
       - how_to
       - process_decisions
+      - explanations
+      - process_explanations
     output: "{shelf}/README.md"
   - kind: shelf_sections
     for:

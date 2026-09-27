@@ -17,9 +17,11 @@
 //!
 //! Read the diff before committing it. A blessed fixture is the change.
 //!
-//! This file is what HW-VER-0001 names as its proof. The citation in that
-//! sentence is what the `comment-scan` resolver reads to bind the verification's
-//! `cited_in` edge, and the test that removes it is below.
+//! This file is what HW-VER-0001 names as its proof. The `comment-scan`
+//! resolver binds the verification's `cited_in` edge from any comment in this
+//! file that cites the identifier. This sentence is one such comment, and the
+//! doc comment of the decisive test below is another, so either one alone
+//! binds the edge. That test removes every citation to show the edge unbinds.
 
 use headwater_census::census;
 use headwater_census::census::Census;

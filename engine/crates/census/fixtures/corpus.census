@@ -190,6 +190,8 @@ docs/decisions/0091-the-runner-image-of-the-engine-release-build-is-written-in-t
   typed: decision
 docs/decisions/0092-the-citation-comment-of-spec-5-is-for-an-adopter-s-corpus-and-this-repository-does-not-practice-it-on-its-own-code.md
   typed: decision
+docs/decisions/0093-the-live-account-of-a-domain-is-its-own-kind-split-on-the-product-and-process-line-and-it-draws-on-the-records-it-cites.md
+  typed: decision
 docs/decisions/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/doctrine/maturity-model.md
@@ -203,6 +205,8 @@ docs/evaluations/adjacent-work.md
 docs/evaluations/capability-bundle-address-inventory.md
   typed: evaluation
 docs/evaluations/default-taxonomy-first-run.md
+  typed: evaluation
+docs/evaluations/external-evaluation-harnesses-and-benchmarks-for-the-probe-campaign.md
   typed: evaluation
 docs/evaluations/first-contact.md
   typed: evaluation
@@ -846,6 +850,10 @@ docs/process/decisions/0020-merges-go-through-the-github-merge-queue-one-squash-
   typed: process_decision
 docs/process/decisions/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
+docs/process/explanations/README.md
+  generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
+docs/process/explanations/where-a-ci-job-runs.md
+  typed: process_explanation
 docs/requirements/0001-the-engine-reaches-no-network-at-check-time.md
   typed: requirement
 docs/requirements/0002-every-document-of-a-kind-that-requires-sections-carries-all-of-them.md

@@ -468,11 +468,19 @@ fn set_state(surface: &Surface<'_>, id: &str, output: &str) -> Option<String> {
     found.into_iter().next()
 }
 
-/// The paths of the documents whose edges put a state on this document.
+/// The paths of the documents whose edges put on this document the state
+/// [`set_state`] picks.
+///
+/// A document whose edge sets a different state is not one of them. HW-DR-0063
+/// derives `state_entered` as the stalest date on "the documents that set the
+/// state", and a refusal over the state names the documents that set it, so a
+/// setter of the state that lost the sorted-order pick answers neither (#1111).
 fn set_by(surface: &Surface<'_>, id: &str, output: &str) -> Option<Vec<String>> {
+    let state = set_state(surface, id, output)?;
     let paths: Vec<String> = incoming(surface, id, output)
         .into_iter()
-        .filter_map(|(relation, path)| relation.map(|_| path))
+        .filter(|(relation, _)| relation.as_deref() == Some(state.as_str()))
+        .map(|(_, path)| path)
         .collect();
     match paths.is_empty() {
         true => None,

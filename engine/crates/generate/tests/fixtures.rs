@@ -596,17 +596,17 @@ fn every_output_carries_its_own_marker() {
     }
 }
 
-/// This repository generates its twenty-five artifacts, and it says why for
+/// This repository generates its twenty-six artifacts, and it says why for
 /// everything else.
 ///
 /// A property and not a recording, for the reason the query crate states about
 /// its own repository run: the corpus is prose somebody edits. What is asserted
 /// is what a prose edit must not change.
 ///
-/// **Fourteen of the twenty-five are shelf indexes, one per shelf that holds a
+/// **Fifteen of the twenty-six are shelf indexes, one per shelf that holds a
 /// document.** The first is the decisions shelf, which the package has declared
 /// since the first-run walkthrough and which produced a reason rather than a
-/// file until #124 filled that shelf. The other thirteen are the overlay's own
+/// file until #124 filled that shelf. The other fourteen are the overlay's own
 /// entry, in the order its `for` list names them, and the specification index
 /// leads it because that is the list the root README used to carry by hand.
 /// #528 is why the seven after it are there: each of those shelf roots answered
@@ -615,7 +615,9 @@ fn every_output_carries_its_own_marker() {
 /// twelfth, `how_to`, is the same story as the decisions shelf's own #124: the
 /// `for` list named it before #885 put a document on it, and until then it
 /// produced a reason rather than a file, the same way `specifications` still
-/// does below.
+/// does below. The fifteenth, `process_explanations`, is on the list from the
+/// change that declared it (#1005), because that change put its first document
+/// on the shelf. Its sibling `explanations` holds none yet and gives a reason.
 ///
 /// **Six of the other eleven are one each, and five are one per committed
 /// transcript.** The count in the name of this test therefore moves when a
@@ -631,8 +633,9 @@ fn every_output_carries_its_own_marker() {
 /// probe result for each transcript the corpus holds, which is the five
 /// recorded on 2026-09-09, 2026-09-11, 2026-09-16 and two of them on 2026-09-17.
 ///
-/// Two declarations produce a reason rather than a file. The package declares
-/// an index for one shelf this tree holds no document on, and the register is a
+/// Three declarations produce a reason rather than a file. The package declares
+/// an index for one shelf this tree holds no document on, the overlay declares
+/// one for `explanations`, which holds none either, and the register is a
 /// function of the clock.
 ///
 /// **The order is the plan's order, and it is asserted.** A declared projection
@@ -644,7 +647,7 @@ fn every_output_carries_its_own_marker() {
 /// compares bytes, so a contributor who edits a `summary` and does not
 /// regenerate fails this test before CI runs.
 #[test]
-fn this_repository_generates_its_twenty_five_artifacts_and_accounts_for_the_rest() {
+fn this_repository_generates_its_twenty_six_artifacts_and_accounts_for_the_rest() {
     let root = repository_root();
     let resolved = headwater_resolve::repository(&root)
         .unwrap_or_else(|errors| panic!("{}", headwater_resolve::render_errors(&errors)));
@@ -719,6 +722,7 @@ fn this_repository_generates_its_twenty_five_artifacts_and_accounts_for_the_rest
             "docs/tutorials/README.md",
             "docs/how-to/README.md",
             "docs/process/decisions/README.md",
+            "docs/process/explanations/README.md",
             "docs/spec/09-open-questions.md",
             "docs/probe-results/regression-probe-transcript-for-2026-09-09.md",
             "docs/probe-results/regression-probe-transcript-for-2026-09-11.md",
@@ -731,12 +735,14 @@ fn this_repository_generates_its_twenty_five_artifacts_and_accounts_for_the_rest
             ".headwater/nav.yml",
             descriptor::PATH
         ],
-        "this repository writes an index for each of its thirteen shelves that hold a \
+        "this repository writes an index for each of its fifteen shelves that hold a \
          document, then the redirect map, the verb index, the consumer surface page, the \
          graph export, the \
          site navigation and the descriptor, in that order"
     );
-    // One declared shelf holds no document, `specifications`. The
+    // Two declared shelves hold no document, `specifications` and
+    // `explanations` (#1005, which put its first account on the process
+    // shelf and none on the product one). The
     // `process_decisions` shelf held none for one commit, which put this
     // literal at 8 and left `docs/process/decisions/README.md` out of the
     // list above, and `how_to` held none from the taxonomy that declared it
@@ -750,7 +756,7 @@ fn this_repository_generates_its_twenty_five_artifacts_and_accounts_for_the_rest
     // reason is a property of this engine rather than of the corpus.
     assert_eq!(
         plan.unwritten.len(),
-        6,
+        7,
         "a projection produced neither a file nor a reason"
     );
     for unwritten in &plan.unwritten {
