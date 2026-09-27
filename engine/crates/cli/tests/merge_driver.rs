@@ -44,6 +44,43 @@ fn binary() -> PathBuf {
     PathBuf::from(env!("CARGO_BIN_EXE_headwater"))
 }
 
+/// Remove `path` and everything under it, and try again until it is gone.
+///
+/// One attempt is not enough. A git process that outlives the command that
+/// started it, such as an automatic maintenance run, can still be writing under
+/// the tree when the case ends, and `remove_dir_all` then fails on a directory
+/// that is not empty. Each tree below turns automatic maintenance off, and this
+/// is the second guard. CI's "The engine suite leaves nothing in its temporary
+/// directory" step fails on anything left.
+fn remove_all(path: &Path) {
+    for _ in 0..50 {
+        let _ = std::fs::remove_dir_all(path);
+        if !path.exists() {
+            return;
+        }
+        std::thread::sleep(std::time::Duration::from_millis(20));
+    }
+}
+
+/// A scratch directory that is removed when this value is dropped: on the
+/// success path, on a panic and on an early return (#1158).
+struct Scratch(PathBuf);
+
+impl Scratch {
+    fn made(path: PathBuf) -> Scratch {
+        remove_all(&path);
+        let scratch = Scratch(path);
+        std::fs::create_dir_all(&scratch.0).expect("the scratch directory is made");
+        scratch
+    }
+}
+
+impl Drop for Scratch {
+    fn drop(&mut self) {
+        remove_all(&self.0);
+    }
+}
+
 const LOCK: &str = ".headwater/taxonomy.lock";
 const DESCRIPTOR: &str = ".headwater/corpus.json";
 
@@ -65,17 +102,24 @@ impl Tree {
 
     /// An adopted tree at `at`, which a case places inside a directory of its own.
     fn adopted_at(at: PathBuf) -> Tree {
-        let _ = std::fs::remove_dir_all(&at);
-        std::fs::create_dir_all(at.join("docs")).expect("the corpus directory is made");
-        std::fs::write(at.join("docs/one.md"), "# a document\n").expect("the document writes");
+        remove_all(&at);
+        // The guard exists before the first byte is written, so a panic while
+        // the tree is built removes what was built.
+        let tree = Tree { at };
+        std::fs::create_dir_all(tree.at.join("docs")).expect("the corpus directory is made");
+        tree.write("docs/one.md", "# a document\n");
         copy_dir(
             &repository().join(".headwater/packages/headwater-standard"),
-            &at.join(".headwater/packages/headwater-standard"),
+            &tree.at.join(".headwater/packages/headwater-standard"),
         );
-        let tree = Tree { at };
         tree.git(&["init", "-q", "-b", "main"]);
         tree.git(&["config", "user.email", "adopter@example.com"]);
         tree.git(&["config", "user.name", "An adopter"]);
+        // No git process outlives the command that started it, so nothing
+        // writes under the tree after the case removes it.
+        tree.git(&["config", "maintenance.auto", "false"]);
+        tree.git(&["config", "gc.auto", "0"]);
+        tree.git(&["config", "gc.autoDetach", "false"]);
         tree.headwater_ok(&["init"]);
         // The one answer `taxonomy resolve` refuses without: a namespace for
         // the decision identifier. It is the overlay's `INTERVIEW 2` question.
@@ -230,7 +274,7 @@ impl Tree {
 
 impl Drop for Tree {
     fn drop(&mut self) {
-        let _ = std::fs::remove_dir_all(&self.at);
+        remove_all(&self.at);
     }
 }
 
@@ -876,12 +920,11 @@ fn inside_a_repository_where_git_does_not_run_derived_says_so() {
     tree.headwater_ok(&["init", "--git"]);
     tree.headwater_ok(&["derived"]);
 
-    let empty = tree.at.with_extension("empty-path");
-    std::fs::create_dir_all(&empty).expect("the empty directory is made");
+    let empty = Scratch::made(tree.at.with_extension("empty-path"));
     let output = Command::new(binary())
         .args(["derived", "--root"])
         .arg(&tree.at)
-        .env("PATH", &empty)
+        .env("PATH", &empty.0)
         .env("GIT_CONFIG_GLOBAL", "/dev/null")
         .env("GIT_CONFIG_NOSYSTEM", "1")
         .env_remove("GIT_DIR")
@@ -889,7 +932,6 @@ fn inside_a_repository_where_git_does_not_run_derived_says_so() {
         .env_remove("GIT_WORK_TREE")
         .output()
         .expect("the binary runs");
-    let _ = std::fs::remove_dir_all(&empty);
     let said = format!(
         "{}{}",
         String::from_utf8_lossy(&output.stdout),
@@ -1000,10 +1042,8 @@ fn outside_a_repository_with_no_git_derived_reads_the_root_file_and_refuses_noth
         "no directory above the temporary tree holds a `.git` entry"
     );
 
-    let empty = tree.at.with_extension("empty-path-no-repository");
-    std::fs::create_dir_all(&empty).expect("the empty directory is made");
-    let (code, said) = derived_with(&tree, Some(&empty), &[]);
-    let _ = std::fs::remove_dir_all(&empty);
+    let empty = Scratch::made(tree.at.with_extension("empty-path-no-repository"));
+    let (code, said) = derived_with(&tree, Some(&empty.0), &[]);
     assert!(
         !said.contains("git did not"),
         "a tree with no repository names no git failure:\n{said}"
@@ -1020,7 +1060,7 @@ struct Outer(PathBuf);
 
 impl Drop for Outer {
     fn drop(&mut self) {
-        let _ = std::fs::remove_dir_all(&self.0);
+        remove_all(&self.0);
     }
 }
 
@@ -1169,13 +1209,12 @@ fn the_git_step_writes_no_line_for_a_fold_a_nested_file_declares() {
 fn the_git_step_without_git_names_the_refusal_and_writes_no_line_a_nested_file_could_declare() {
     let tree = Tree::adopted("nested-no-git");
     tree.write(".headwater/.gitattributes", "taxonomy.lock -merge\n");
-    let empty = tree.at.with_extension("nested-no-git-empty-path");
-    std::fs::create_dir_all(&empty).expect("the empty directory is made");
+    let empty = Scratch::made(tree.at.with_extension("nested-no-git-empty-path"));
     for run in ["first", "second"] {
         let output = Command::new(binary())
             .args(["init", "--git", "--root"])
             .arg(&tree.at)
-            .env("PATH", &empty)
+            .env("PATH", &empty.0)
             .env("GIT_CONFIG_GLOBAL", "/dev/null")
             .env("GIT_CONFIG_NOSYSTEM", "1")
             .env_remove("GIT_DIR")
@@ -1204,7 +1243,6 @@ fn the_git_step_without_git_names_the_refusal_and_writes_no_line_a_nested_file_c
             "the {run} run exits 1, because git did not give the merge attributes:\n{stderr}"
         );
     }
-    let _ = std::fs::remove_dir_all(&empty);
 }
 
 /// A producer that only this repository holds is neither named by
