@@ -59,7 +59,23 @@
 # finding rather than an empty set, so a new workflow can never drop out of
 # the population in silence.
 #
+# # THE REASONS, AND WHERE A WORKFLOW POINTS AT THEM
+#
+# The reasons the release process is the way it is live in records under
+# `docs/decisions/` and `docs/process/decisions/` (#1006), and the guide and
+# the header comment of each release workflow cite them rather than restate
+# them. The last group below holds the header side, in both directions: each
+# identifier the header of `release.yml`, `release-taxonomy.yml` or
+# `publish-crates.yml` cites is exactly one record that governs that
+# workflow, and each record that governs one of them is cited in its header.
+# So a reason moved back into a comment with no record, or a record that no
+# header points at, is red. The `governs` edge is what makes a record suspect
+# when its workflow changes, and `headwater check` reads that half.
+#
 # # WHAT IS NOT HELD
+#
+# Whether a record states the same reason as the comment it replaced is prose,
+# and no suite reads it.
 #
 # The steps of the guide, the asset names and the order of the steps are
 # prose. The asset names are held against `release.yml` by group 7 of
@@ -212,15 +228,109 @@ judge() {
         done
 }
 
-# copy_tree DEST — the two inputs of the judge, copied under DEST.
+# ---------------------------------------------------------------------------
+# cites ROOT — the header of each release workflow and the records that
+# govern it are one set. Prints one line per finding, and nothing for a tree
+# that holds.
+#
+# The header is the comment block at the top of the file, before the first
+# line that is not a comment. Every `HW-DR-NNNN` and `HW-PD-NNNN` in it must be
+# the `id:` of exactly one record under `docs/decisions/` or
+# `docs/process/decisions/`, and that record's `relations.governs` must name
+# the workflow. In the other direction, every record on those two shelves
+# whose `governs` names the workflow must be cited in its header. A header
+# that cites nothing is a finding. A record cited in a step comment and not in
+# the header is not read here: a step may cite a record about one line.
+# ---------------------------------------------------------------------------
+release_workflows="release.yml release-taxonomy.yml publish-crates.yml"
+
+cites_py='
+import fnmatch, glob, os, re, sys
+try:
+    import yaml
+except ImportError:
+    print("PyYAML is not installed, so no record can be read")
+    sys.exit(0)
+
+root = sys.argv[1]
+workflows = sys.argv[2].split()
+ident = re.compile(r"\bHW-(?:DR|PD)-[0-9]{4}\b")
+
+def governs_targets(rel):
+    out = []
+    for entry in (rel or {}).get("governs") or []:
+        if isinstance(entry, dict):
+            entry = entry.get("to")
+        for p in (entry if isinstance(entry, list) else [entry]):
+            if isinstance(p, str):
+                out.append(p)
+    return out
+
+records = {}
+for shelf in ("docs/decisions", "docs/process/decisions"):
+    for path in sorted(glob.glob(os.path.join(root, shelf, "*.md"))):
+        with open(path, encoding="utf-8") as f:
+            text = f.read()
+        if not text.startswith("---\n"):
+            continue
+        end = text.find("\n---", 4)
+        try:
+            front = yaml.safe_load(text[4:end]) or {}
+        except Exception:
+            continue
+        rid = front.get("id")
+        if not isinstance(rid, str):
+            continue
+        rel = os.path.relpath(path, root)
+        records.setdefault(rid, []).append((rel, governs_targets(front.get("relations"))))
+
+out = []
+for wf in workflows:
+    wf_path = ".github/workflows/" + wf
+    full = os.path.join(root, wf_path)
+    if not os.path.isfile(full):
+        out.append("%s is not in the tree" % wf)
+        continue
+    header = []
+    with open(full, encoding="utf-8") as f:
+        for line in f:
+            if not line.lstrip().startswith("#") and line.strip():
+                break
+            header.append(line)
+    cited = sorted(set(ident.findall("".join(header))))
+    if not cited:
+        out.append("the header of %s cites no record" % wf)
+    for rid in cited:
+        found = records.get(rid, [])
+        if len(found) != 1:
+            out.append("the header of %s cites %s and %d records carry that id" % (wf, rid, len(found)))
+            continue
+        rel, targets = found[0]
+        if not any(fnmatch.fnmatchcase(wf_path, t) for t in targets):
+            out.append("the header of %s cites %s and %s does not govern it" % (wf, rid, rel))
+    for rid in sorted(records):
+        for rel, targets in records[rid]:
+            if rid not in cited and any(fnmatch.fnmatchcase(wf_path, t) for t in targets):
+                out.append("%s governs %s and its header does not cite %s" % (rel, wf, rid))
+for line in out:
+    print(line)
+'
+
+cites() {
+    python3 -c "$cites_py" "$1" "$release_workflows"
+}
+
+# copy_tree DEST — the inputs of both judges, copied under DEST.
 copy_tree() {
-    mkdir -p "$1/.github/workflows" "$1/docs/how-to"
+    mkdir -p "$1/.github/workflows" "$1/docs/how-to" "$1/docs/decisions" "$1/docs/process/decisions"
     for wf in "$root"/.github/workflows/*.yml "$root"/.github/workflows/*.yaml; do
         [ -f "$wf" ] && cp "$wf" "$1/.github/workflows/"
     done
     if [ -f "$root/$guide_rel" ]; then
         cp "$root/$guide_rel" "$1/$guide_rel"
     fi
+    cp "$root"/docs/decisions/*.md "$1/docs/decisions/"
+    cp "$root"/docs/process/decisions/*.md "$1/docs/process/decisions/"
 }
 
 # arm NAME DIR FILE — moves `$scratch/arm.in` to DIR/.github/workflows/FILE
@@ -356,6 +466,66 @@ if [ -f "$root/$guide_rel" ]; then
 else
     fail "the arms over a copy of the guide" "no guide at $guide_rel, so none of them can run"
 fi
+
+echo
+echo "each release workflow header cites the records that govern it"
+
+same "the headers in this tree and the records that govern them are one set" "" \
+    "$(cites "$root" | tr '\n' '|' | sed 's/|$//')"
+for wf in $release_workflows; do
+    n=$(sed -n '/^[^#]/q;p' "$root/.github/workflows/$wf" | grep -oE 'HW-(DR|PD)-[0-9]{4}' | sort -u | wc -l | tr -d ' ')
+    if [ "$n" -ge 1 ]; then
+        pass "  the header of $wf cites $n records"
+    else
+        fail "  the header of $wf cites a record" "it cites none, so its reasons live only in the comment"
+    fi
+done
+
+echo
+echo "the citation judge refuses what it claims to refuse"
+
+# contains NAME NEEDLE HAYSTACK
+contains() {
+    case "$3" in
+        *"$2"*) pass "$1" ;;
+        *) fail "$1" "expected a line \`$2\`, got \`$3\`" ;;
+    esac
+}
+
+# g1. A header that cites an identifier no record carries.
+copy_tree "$scratch/g1"
+sed '1a\
+# HW-PD-9999 is cited here and no record carries it.' \
+    "$root/.github/workflows/release.yml" >"$scratch/g1/.github/workflows/release.yml"
+contains "a header that cites HW-PD-9999 is red" \
+    "the header of release.yml cites HW-PD-9999 and 0 records carry that id" "$(cites "$scratch/g1")"
+
+# g2. A header that cites a record that does not govern the workflow.
+copy_tree "$scratch/g2"
+sed '1a\
+# HW-DR-0028 is cited here and governs only the overlay.' \
+    "$root/.github/workflows/release-taxonomy.yml" >"$scratch/g2/.github/workflows/release-taxonomy.yml"
+contains "a header that cites a record that governs something else is red" \
+    "the header of release-taxonomy.yml cites HW-DR-0028 and docs/decisions/0028-q28-whether-an-evaluation-is-governed-prose.md does not govern it" \
+    "$(cites "$scratch/g2")"
+
+# g3. A record that governs release.yml and that the header does not cite.
+copy_tree "$scratch/g3"
+printf '%s\n' '---' 'id: HW-DR-9998' 'relations:' '  governs:' '    - .github/workflows/release.yml' '---' '' '# A reason nobody cites' \
+    >"$scratch/g3/docs/decisions/9998-a-reason-nobody-cites.md"
+contains "a record that governs release.yml and is not cited there is red" \
+    "docs/decisions/9998-a-reason-nobody-cites.md governs release.yml and its header does not cite HW-DR-9998" \
+    "$(cites "$scratch/g3")"
+
+# g4. A workflow with every citation removed from its comments.
+copy_tree "$scratch/g4"
+sed -E 's/HW-(DR|PD)-[0-9]{4}//g' "$root/.github/workflows/publish-crates.yml" \
+    >"$scratch/g4/.github/workflows/publish-crates.yml"
+out=$(cites "$scratch/g4")
+contains "a workflow with its citations removed is red" \
+    "the header of publish-crates.yml cites no record" "$out"
+contains "  and each record that governs it is named" \
+    "governs publish-crates.yml and its header does not cite" "$out"
 
 echo
 echo "$passed passed, $failed failed"
