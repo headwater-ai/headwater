@@ -491,7 +491,7 @@ def main():
         compare("step 16: grep 'L2'",
                 run("headwater conformance 2>/dev/null | grep 'L2'").stdout,
                 '  L2 Regenerated — reached, 4 of 4 rules met\n'
-                'L2 reached, against headwater/standard 4.2.0', today)
+                'L2 reached, against headwater/standard 4.9.1', today)
 
         # Where to go next.
         assert_true('where to go next: headwater infer exits 0',
