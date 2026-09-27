@@ -98,7 +98,7 @@ nav:
       - "The live account of a domain is its own kind, split on the product and process line, and it draws on the records it cites": "decisions/0093-the-live-account-of-a-domain-is-its-own-kind-split-on-the-product-and-process-line-and-it-draws-on-the-records-it-cites.md"
   - "Acceptance criteria":
       - "Acceptance criteria": "acceptance-criteria/README.md"
-      - "No source file of the engine names a network API and no locked dependency provides one": "acceptance-criteria/0001-no-source-file-of-the-engine-names-a-network-api-and-no-locked-dependency-provides-one.md"
+      - "No engine source outside the fetch crate names a network API and no crate of the checking loop reaches a network package": "acceptance-criteria/0001-no-engine-source-outside-the-fetch-crate-names-a-network-api-and-no-crate-of-the-checking-loop-reaches-a-network-package.md"
       - "Every required section of every governed document has a heading": "acceptance-criteria/0002-every-required-section-of-every-governed-document-has-a-heading.md"
   - "Evaluations":
       - "Evaluations": "evaluations/README.md"

@@ -2,9 +2,9 @@
 id: HW-AC-0001
 status: current
 status_since: 2026-09-06
-summary: "Two facts settle whether the engine can reach a network: no source file under engine/crates names a network API, and no locked package provides one."
+summary: "Outside the fetch crate only test files name a network API, and no crate but the CLI reaches a locked network package."
 last_verified: 2026-08-25
-title: "No source file of the engine names a network API and no locked dependency provides one"
+title: "No engine source outside the fetch crate names a network API and no crate of the checking loop reaches a network package"
 verification_method: inspection
 provenance:
   warrant: asserted
@@ -17,17 +17,17 @@ relations:
     - HW-REQ-0001
 ---
 
-# No source file of the engine names a network API and no locked dependency provides one
+# No engine source outside the fetch crate names a network API and no crate of the checking loop reaches a network package
 
 ## Fit criterion
 
 Two facts, and both are true of the tree at the commit that carries this document. Neither is a standing guarantee. The method below is `inspection`, so it establishes the state of one tree at one commit. Nothing re-establishes it on the next commit, and a reader who needs the property today reads it again today.
 
-**No source file outside `headwater-fetch` names one of six network APIs, except in two test files.** `engine/crates/fetch/` is excluded by name, because it is the one crate that carries a client ([HW-DR-0075](../decisions/0075-the-vendor-verb-may-take-a-location-and-the-fetch-lives-only-in-a-crate-the-checking-loop-never-links.md)). This command returns two lines, and both are in tests. `engine/crates/cli/tests/publish.rs` binds a `std::net::TcpListener` on `127.0.0.1` to serve an artifact to `taxonomy vendor`. `engine/crates/cli/tests/network_boundary.rs` names `ureq` as a package that no other crate may reach.
+**No source file outside `headwater-fetch` names one of six network APIs, except in three test files.** `engine/crates/fetch/` is excluded by name, because it is the one crate that carries a client ([HW-DR-0075](../decisions/0075-the-vendor-verb-may-take-a-location-and-the-fetch-lives-only-in-a-crate-the-checking-loop-never-links.md)). This command returns four lines, and all four are in tests. `engine/crates/cli/tests/publish.rs` binds a `std::net::TcpListener` on `127.0.0.1` twice. The first serves an artifact to `taxonomy vendor`, and the second stands in for a proxy that must see no connection. `engine/crates/cli/tests/init.rs` binds one to serve an artifact to `init`. `engine/crates/cli/tests/network_boundary.rs` names `ureq` as a package that no other crate may reach.
 
     grep -rn "std::net\|reqwest\|hyper\|ureq\|tokio::net\|TcpStream" engine/crates/ --include=*.rs | grep -v '^engine/crates/fetch/'
 
-Measured on 2026-09-24 on the branch of #959, which returned those 2 lines. On 2026-08-25 against `9a87b75`, the grep with no exclusion returned 0 lines. The six names are the standard library module, the three common client crates, the async transport, and the raw socket type.
+Measured on 2026-09-28 on the branch of #1113, which returned those 4 lines. On 2026-09-24 the branch of #959 returned 2 of them. On 2026-08-25 against `9a87b75`, the grep with no exclusion returned 0 lines. The six names are the standard library module, the three common client crates, the async transport, and the raw socket type.
 
 **The six are the surfaces this criterion checks, and they are not every route to a socket.** A crate reaches one through `socket2`, through `mio`, through a `libc` call, or through `std::process::Command` running a program that does. This grep sees none of those four. Two things bound what that omission can hide. The second fact below reads the whole locked set by name, so a crate that arrives to supply one of those routes is visible there. And a workspace that took one of them would still have to name the crate that carries it. Widening the grep to those routes is work this criterion does not do, and it names the work rather than hiding it.
 

@@ -15,7 +15,7 @@
   "graph": {
     "documents": [
       {
-        "path": "docs/acceptance-criteria/0001-no-source-file-of-the-engine-names-a-network-api-and-no-locked-dependency-provides-one.md",
+        "path": "docs/acceptance-criteria/0001-no-engine-source-outside-the-fetch-crate-names-a-network-api-and-no-crate-of-the-checking-loop-reaches-a-network-package.md",
         "kind": "acceptance_criterion",
         "id": "HW-AC-0001",
         "warrant": "asserted",
@@ -23,9 +23,9 @@
           "id": "HW-AC-0001",
           "status": "current",
           "status_since": "2026-09-06",
-          "summary": "Two facts settle whether the engine can reach a network: no source file under engine/crates names a network API, and no locked package provides one.",
+          "summary": "Outside the fetch crate only test files name a network API, and no crate but the CLI reaches a locked network package.",
           "last_verified": "2026-08-25",
-          "title": "No source file of the engine names a network API and no locked dependency provides one",
+          "title": "No engine source outside the fetch crate names a network API and no crate of the checking loop reaches a network package",
           "verification_method": "inspection",
           "provenance": {
             "warrant": "asserted",
@@ -12836,7 +12836,7 @@
     ],
     "edges": [
       {
-        "source": "docs/acceptance-criteria/0001-no-source-file-of-the-engine-names-a-network-api-and-no-locked-dependency-provides-one.md",
+        "source": "docs/acceptance-criteria/0001-no-engine-source-outside-the-fetch-crate-names-a-network-api-and-no-crate-of-the-checking-loop-reaches-a-network-package.md",
         "relation": "verified_by",
         "written_as": "verifies",
         "target": {
@@ -20311,7 +20311,7 @@
         "target": {
           "bound": "document",
           "id": "HW-AC-0001",
-          "path": "docs/acceptance-criteria/0001-no-source-file-of-the-engine-names-a-network-api-and-no-locked-dependency-provides-one.md",
+          "path": "docs/acceptance-criteria/0001-no-engine-source-outside-the-fetch-crate-names-a-network-api-and-no-crate-of-the-checking-loop-reaches-a-network-package.md",
           "kind": "acceptance_criterion"
         }
       },
