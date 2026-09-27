@@ -1,5 +1,6 @@
 #!/bin/sh
-# What holds `tools/probe/probe-transform.sh` and `tools/probe/probe-record.sh`.
+# What holds `tools/probe/probe-transform.sh`, `tools/probe/probe-record.sh` and
+# `tools/probe/ablate.sh`.
 #
 # The pair exists to stop one thing: a model's account of its own process
 # reaching `docs/probe-runs/` as if it were an observation. So the cases below
@@ -766,6 +767,110 @@ STUB
 else
     printf 'note no engine or no lock, so the liveness cases did not run.\n'
 fi
+
+# ---------------------------------------------------------------------------
+# `tools/probe/ablate.sh`, which produces an absent-arm tree from the tier's
+# declared ablation (#1010).
+#
+# Two tiers remove two different trees, and the difference between them is
+# the only thing that measures what the documents under `docs/` do. So the
+# cases hold both ablations against the checkout's own `.headwater/probe.yml`,
+# the refusal of a tier with no absent arm, and the refusal of an entry that
+# would take `rm -rf` outside the workspace. Every refusal is asserted to
+# leave the workspace untouched.
+# ---------------------------------------------------------------------------
+ablate="$root/tools/probe/ablate.sh"
+fresh_workspace() {
+    rm -rf "$scratch/ablate-ws"
+    mkdir -p "$scratch/ablate-ws/.claude" "$scratch/ablate-ws/.githooks" \
+        "$scratch/ablate-ws/.headwater" "$scratch/ablate-ws/docs/spec" \
+        "$scratch/ablate-ws/engine" "$scratch/ablate-ws/tools"
+    : > "$scratch/ablate-ws/CLAUDE.md"
+    : > "$scratch/ablate-ws/docs/spec/05.md"
+}
+kept() {
+    # $1 name, then the paths that must still exist, then `--`, then the
+    # paths that must be gone.
+    name=$1
+    shift
+    missing=""
+    while [ "$#" -gt 0 ] && [ "$1" != "--" ]; do
+        [ -e "$scratch/ablate-ws/$1" ] || missing="$missing $1"
+        shift
+    done
+    [ "$#" -gt 0 ] && shift
+    stayed=""
+    for gone in "$@"; do
+        [ -e "$scratch/ablate-ws/$gone" ] && stayed="$stayed $gone"
+    done
+    if [ -z "$missing$stayed" ]; then
+        pass "$name"
+    else
+        fail "$name" "removed:${missing:- nothing wrong}; kept:${stayed:- nothing wrong}"
+    fi
+}
+
+fresh_workspace
+sh "$ablate" campaign "$scratch/ablate-ws" >/dev/null 2>"$scratch/ablate.err"
+same "ablate.sh produces the campaign's absent arm" "0" "$?"
+kept "the campaign removes the four governance paths and keeps docs/" \
+    docs docs/spec/05.md engine tools -- CLAUDE.md .claude .githooks .headwater
+
+fresh_workspace
+sh "$ablate" documentation "$scratch/ablate-ws" >/dev/null 2>"$scratch/ablate.err"
+same "ablate.sh produces the documentation tier's absent arm" "0" "$?"
+kept "the documentation tier removes the four governance paths and docs/" \
+    engine tools -- CLAUDE.md .claude .githooks .headwater docs
+
+fresh_workspace
+sh "$ablate" regression "$scratch/ablate-ws" >/dev/null 2>"$scratch/ablate.err"
+same "ablate.sh refuses the regression tier, which runs no absent arm" "2" "$?"
+present "and it names the tier" "\`regression\` tier declares no ablation" "$scratch/ablate.err"
+kept "and the refused workspace is untouched" \
+    CLAUDE.md .claude .githooks .headwater docs engine tools --
+
+fresh_workspace
+sh "$ablate" sweep "$scratch/ablate-ws" >/dev/null 2>"$scratch/ablate.err"
+same "ablate.sh refuses a tier the declaration does not carry" "2" "$?"
+
+sh "$ablate" "$scratch/ablate-ws" >/dev/null 2>"$scratch/ablate.err"
+same "ablate.sh refuses the old one-argument form" "2" "$?"
+present "and prints the two-argument usage" "<tier> <workspace>" "$scratch/ablate.err"
+
+for entry in 'docs/../..' '/etc' '..' '""'; do
+    cat > "$scratch/unsafe-probe.yml" <<YML
+tiers:
+  campaign:
+    budget_cents: 100
+    session_cost_cents: 25
+    repetitions: 58
+    arms: [present, absent]
+    ablation: [CLAUDE.md, $entry]
+YML
+    fresh_workspace
+    HW_PROBE_YML="$scratch/unsafe-probe.yml" sh "$ablate" campaign "$scratch/ablate-ws" \
+        >/dev/null 2>"$scratch/ablate.err"
+    same "ablate.sh refuses the ablation entry $entry" "2" "$?"
+    kept "and removes nothing, not even the safe entry before it" \
+        CLAUDE.md .claude .githooks .headwater docs engine tools --
+done
+
+cat > "$scratch/block-probe.yml" <<'YML'
+tiers:
+  documentation:
+    budget_cents: 100
+    session_cost_cents: 25
+    repetitions: 58
+    arms: [present, absent]
+    ablation:
+      - docs
+      - ".claude"
+YML
+fresh_workspace
+HW_PROBE_YML="$scratch/block-probe.yml" sh "$ablate" documentation "$scratch/ablate-ws" \
+    >/dev/null 2>"$scratch/ablate.err"
+same "ablate.sh reads a block-sequence ablation" "0" "$?"
+kept "and removes exactly its entries" CLAUDE.md .githooks .headwater engine -- docs .claude
 
 present "the driver names the channel and never a file under ~/.claude/projects" \
     "output-format stream-json" "$driver"

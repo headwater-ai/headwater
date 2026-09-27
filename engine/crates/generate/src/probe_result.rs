@@ -72,7 +72,7 @@ use headwater_check::lifecycle_state::{Standing, StateFacet, Stood};
 use headwater_graph::links::Binding;
 use headwater_probe::grade::Results;
 use headwater_probe::intake::{Record, Tree};
-use headwater_probe::{Arm, Tier};
+use headwater_probe::Arm;
 use headwater_query::Surface;
 
 use crate::RefusedTranscript;
