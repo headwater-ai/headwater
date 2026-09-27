@@ -1019,6 +1019,85 @@ if [ -x "$engine" ]; then
         failed=$((failed + 1))
     fi
 
+    # The parent session of every `/next-run` works from the run directory,
+    # which `tools/run/run-dir.sh` puts under the git common dir. That `cwd` is
+    # inside no work tree, so `git rev-parse --show-toplevel` fails there, and
+    # until #917 the hook routed over the run directory itself, found no lock,
+    # and exited with no output and no line. Measured on 2026-09-27: 8 person
+    # prompts from two such sessions left nothing in the log.
+    gitdir_session="fixture-session-shadow-gitdir-$$"
+    gitdir_file="$shadow_dir/$gitdir_session.jsonl"
+    gitdir_cwd="$common/headwater-run-fixture-$$"
+    mkdir -p "$gitdir_cwd"
+    gitdir_payload="{\"hook_event_name\":\"UserPromptSubmit\",\"session_id\":\"$gitdir_session\",\"prompt_id\":\"fixture-gitdir-$$\",\"cwd\":\"$gitdir_cwd\",\"user_input\":\"what does a check know about the front matter of a document\"}"
+    gitdir_out=$(printf '%s' "$gitdir_payload" | env -u HEADWATER_HOOK_ROOT CLAUDE_PROJECT_DIR="$root" sh "$hooks/intent.sh" 2>&1)
+    rm -rf "$gitdir_cwd"
+    case $gitdir_out in
+        *docs/spec/*)
+            printf 'ok   %s\n' 'a prompt whose cwd is inside the git common dir routes over the project root'
+            passed=$((passed + 1))
+            ;;
+        *)
+            printf 'FAIL %s\n  expected output to hold docs/spec/, got:\n%s\n' 'a prompt whose cwd is inside the git common dir routes over the project root' "$gitdir_out"
+            failed=$((failed + 1))
+            ;;
+    esac
+    if [ -s "$gitdir_file" ] && [ "$(tail -n 1 "$gitdir_file" | "$engine" json field corpus_root 2>/dev/null)" = "$root" ]; then
+        printf 'ok   %s\n' 'a prompt from inside the git common dir leaves a line that names the project root'
+        passed=$((passed + 1))
+    else
+        printf 'FAIL %s\n' 'a prompt from inside the git common dir left no line naming the project root'
+        failed=$((failed + 1))
+    fi
+
+    # A `cwd` in a work tree that holds no built engine of its own. The engine
+    # is found once, through `CLAUDE_PROJECT_DIR`, and every later read has to
+    # use that same binary. Until #917 the reads after the root correction
+    # looked for an engine under the corrected root, found none, and ended the
+    # hook in silence after `route` had already answered. The tree here is a
+    # copy of the lock and nothing else, so a route over it succeeds and finds
+    # no pointers.
+    bare_tree=$(mktemp -d "${TMPDIR:-/tmp}/headwater-shadow-bare.XXXXXX")
+    git -C "$bare_tree" init -q 2>/dev/null
+    mkdir -p "$bare_tree/.headwater"
+    cp "$root/.headwater/taxonomy.lock" "$bare_tree/.headwater/taxonomy.lock"
+    bare_session="fixture-session-shadow-bare-$$"
+    bare_file="$shadow_dir/$bare_session.jsonl"
+    bare_payload="{\"hook_event_name\":\"UserPromptSubmit\",\"session_id\":\"$bare_session\",\"cwd\":\"$bare_tree\",\"user_input\":\"what does a check know about the front matter of a document\"}"
+    printf '%s' "$bare_payload" | env -u HEADWATER_HOOK_ROOT CLAUDE_PROJECT_DIR="$root" sh "$hooks/intent.sh" > /dev/null 2>&1
+    if [ -s "$bare_file" ] && [ "$(tail -n 1 "$bare_file" | "$engine" json field corpus_root 2>/dev/null)" = "$bare_tree" ]; then
+        printf 'ok   %s\n' 'a prompt from a work tree with no engine of its own still leaves a line'
+        passed=$((passed + 1))
+    else
+        printf 'FAIL %s\n' 'a prompt from a work tree with no engine of its own left no line'
+        failed=$((failed + 1))
+    fi
+
+    # A route that fails, with the engine present and the input parsed, is a
+    # prompt the population counts, so it leaves a line that says so rather
+    # than no line at all. A lock that will not parse is the failure here.
+    printf 'not a lock\n' > "$bare_tree/.headwater/taxonomy.lock"
+    broken_session="fixture-session-shadow-broken-$$"
+    broken_file="$shadow_dir/$broken_session.jsonl"
+    broken_payload="{\"hook_event_name\":\"UserPromptSubmit\",\"session_id\":\"$broken_session\",\"cwd\":\"$bare_tree\",\"user_input\":\"what does a check know about the front matter of a document\"}"
+    broken_out=$(printf '%s' "$broken_payload" | env -u HEADWATER_HOOK_ROOT CLAUDE_PROJECT_DIR="$root" sh "$hooks/intent.sh" 2>&1)
+    broken_status=$?
+    rm -rf "$bare_tree"
+    if [ "$broken_status" -eq 0 ] && [ -z "$broken_out" ]; then
+        printf 'ok   %s\n' 'a route that fails lets the prompt proceed in silence'
+        passed=$((passed + 1))
+    else
+        printf 'FAIL %s\n  status %s, output:\n%s\n' 'a route that fails lets the prompt proceed in silence' "$broken_status" "$broken_out"
+        failed=$((failed + 1))
+    fi
+    if [ -s "$broken_file" ] && [ "$(tail -n 1 "$broken_file" | "$engine" json field skip 2>/dev/null)" = "route_failed" ] && tail -n 1 "$broken_file" | grep -q '"route":null'; then
+        printf 'ok   %s\n' 'a route that fails leaves a line with a null route and the skip reason route_failed'
+        passed=$((passed + 1))
+    else
+        printf 'FAIL %s\n' 'a route that fails left no line with a null route and the skip reason route_failed'
+        failed=$((failed + 1))
+    fi
+
     # Step 3 of #819: the recorder's name for its session, which
     # `tools/probe/probe-record.sh` exports before it starts the harness. A
     # person's prompt carries none, and a count subtracts the lines that do.
