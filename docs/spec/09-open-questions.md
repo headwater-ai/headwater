@@ -317,6 +317,10 @@ The documents on this shelf, in the reading order this corpus derives. Each head
 
 [HW-DR-0068](../decisions/0068-the-front-matter-key-that-carries-a-minted-identifier-is-id.md) — The front-matter key `id` is the fixed, global name for the value a kind's `identifier: {scheme: …}` facet mints. (asserted, and no human has accepted it)
 
+## No paragraph limit joins the language rule, because most paragraphs past six sentences hold one topic
+
+[HW-DR-0087](../decisions/0087-no-paragraph-limit-joins-the-language-rule-because-most-paragraphs-past-six-sentences-hold-one-topic.md) — The six-sentence paragraph defect is retired before it lands. 50 of 60 sampled paragraphs past six sentences held one topic, so the count misses what rule 6.5 asks, and no word count replaces it.
+
 ## A paragraph limit counts sentences under the language rule and never words
 
 [HW-DR-0069](../decisions/0069-a-paragraph-limit-counts-sentences-under-the-language-rule-and-never-words.md) — No word-length rule joins the check layer. The six-sentence limit of the standard the house regime declares lands as a fifth defect of the language rule, advisory permanently. The paragraph that raised the question is a hand-kept index, and a derived list repairs it where no lexical rule reads it.

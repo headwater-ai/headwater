@@ -1983,8 +1983,8 @@
         "warrant": "accepted",
         "facets": {
           "id": "HW-DR-0069",
-          "status": "current",
-          "status_since": "2026-09-17",
+          "status": "superseded",
+          "status_since": "2026-09-26",
           "summary": "No word-length rule joins the check layer. The six-sentence limit of the standard the house regime declares lands as a fifth defect of the language rule, advisory permanently. The paragraph that raised the question is a hand-kept index, and a derived list repairs it where no lexical rule reads it.",
           "last_verified": "2026-09-17",
           "title": "A paragraph limit counts sentences under the language rule and never words",
@@ -1994,6 +1994,9 @@
             ],
             "traces_to": [
               "HW-DR-0005"
+            ],
+            "superseded_by": [
+              "HW-DR-0087"
             ]
           },
           "provenance": {
@@ -2476,6 +2479,42 @@
             "traces_to": [
               "HW-DR-0052",
               "HW-SPEC-authoring-and-lifecycle"
+            ]
+          }
+        }
+      },
+      {
+        "path": "docs/decisions/0087-no-paragraph-limit-joins-the-language-rule-because-most-paragraphs-past-six-sentences-hold-one-topic.md",
+        "kind": "decision",
+        "id": "HW-DR-0087",
+        "warrant": "accepted",
+        "facets": {
+          "id": "HW-DR-0087",
+          "status": "current",
+          "status_since": "2026-09-26",
+          "summary": "The six-sentence paragraph defect is retired before it lands. 50 of 60 sampled paragraphs past six sentences held one topic, so the count misses what rule 6.5 asks, and no word count replaces it.",
+          "last_verified": "2026-09-26",
+          "title": "No paragraph limit joins the language rule, because most paragraphs past six sentences hold one topic",
+          "provenance": {
+            "warrant": "accepted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5.5",
+            "activity": "measure+draft",
+            "accepted_by": "j.baxter",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "supersedes": [
+              "HW-DR-0069"
+            ],
+            "governs": [
+              {
+                "to": "engine/crates/check/src/language.rs",
+                "verified_revision": "sha256:4ed3b112c0e9c08ba9264da27070a07ce958e666a85a085cb591131e52c01bac"
+              }
+            ],
+            "traces_to": [
+              "HW-DR-0005"
             ]
           }
         }
@@ -13784,6 +13823,17 @@
         }
       },
       {
+        "source": "docs/decisions/0069-a-paragraph-limit-counts-sentences-under-the-language-rule-and-never-words.md",
+        "relation": "supersedes",
+        "written_as": "superseded_by",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0087",
+          "path": "docs/decisions/0087-no-paragraph-limit-joins-the-language-rule-because-most-paragraphs-past-six-sentences-hold-one-topic.md",
+          "kind": "decision"
+        }
+      },
+      {
         "source": "docs/decisions/0070-the-matched-purposes-take-turns-at-a-route-budget-and-each-pointer-states-what-reached-it.md",
         "relation": "governs",
         "written_as": "governs",
@@ -14180,6 +14230,42 @@
           "id": "HW-SPEC-authoring-and-lifecycle",
           "path": "docs/spec/03-authoring-and-lifecycle.md",
           "kind": "design_spec"
+        }
+      },
+      {
+        "source": "docs/decisions/0087-no-paragraph-limit-joins-the-language-rule-because-most-paragraphs-past-six-sentences-hold-one-topic.md",
+        "relation": "supersedes",
+        "written_as": "supersedes",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0069",
+          "path": "docs/decisions/0069-a-paragraph-limit-counts-sentences-under-the-language-rule-and-never-words.md",
+          "kind": "decision"
+        }
+      },
+      {
+        "source": "docs/decisions/0087-no-paragraph-limit-joins-the-language-rule-because-most-paragraphs-past-six-sentences-hold-one-topic.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/check/src/language.rs",
+          "resolver": "source-tree"
+        },
+        "attributes": {
+          "verified_revision": "sha256:4ed3b112c0e9c08ba9264da27070a07ce958e666a85a085cb591131e52c01bac"
+        }
+      },
+      {
+        "source": "docs/decisions/0087-no-paragraph-limit-joins-the-language-rule-because-most-paragraphs-past-six-sentences-hold-one-topic.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0005",
+          "path": "docs/decisions/0005-voice-checking-depth.md",
+          "kind": "decision"
         }
       },
       {
