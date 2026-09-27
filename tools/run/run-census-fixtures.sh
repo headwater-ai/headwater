@@ -114,11 +114,11 @@ same '  the same holds for a transcript with no cache-creation field at all' \
 # same 500000-token rewrite. The two expired turns total 1,000,000 tokens,
 # which at $2.50 a million is $2.50.
 cat > "$scratch/expiry.jsonl" <<'EOF'
-{"type":"assistant","timestamp":"2026-01-01T00:00:00.000Z","message":{"id":"e1","usage":{"cache_read_input_tokens":0,"cache_creation_input_tokens":50000},"content":[{"type":"tool_use","name":"Bash","input":{"command":"echo start"}}]}}
-{"type":"assistant","timestamp":"2026-01-01T00:00:30.000Z","message":{"id":"e2","usage":{"cache_read_input_tokens":50000,"cache_creation_input_tokens":0},"content":[{"type":"tool_use","name":"Bash","input":{"command":"echo warm"}}]}}
-{"type":"assistant","timestamp":"2026-01-01T00:07:00.000Z","message":{"id":"e3","usage":{"cache_read_input_tokens":1000,"cache_creation_input_tokens":500000},"content":[{"type":"tool_use","name":"Bash","input":{"command":"echo woke"}}]}}
-{"type":"assistant","timestamp":"2026-01-01T00:07:10.000Z","message":{"id":"e4","usage":{"cache_read_input_tokens":501000,"cache_creation_input_tokens":0},"content":[{"type":"tool_use","name":"Bash","input":{"command":"echo warm again"}}]}}
-{"type":"assistant","timestamp":"2026-01-01T00:15:00.000Z","message":{"id":"e5","usage":{"cache_read_input_tokens":2000,"cache_creation_input_tokens":500000},"content":[{"type":"tool_use","name":"Bash","input":{"command":"echo woke again"}}]}}
+{"type":"assistant","timestamp":"2026-01-01T00:00:00.000Z","message":{"id":"e1","model":"claude-sonnet-5","usage":{"cache_read_input_tokens":0,"cache_creation_input_tokens":50000},"content":[{"type":"tool_use","name":"Bash","input":{"command":"echo start"}}]}}
+{"type":"assistant","timestamp":"2026-01-01T00:00:30.000Z","message":{"id":"e2","model":"claude-sonnet-5","usage":{"cache_read_input_tokens":50000,"cache_creation_input_tokens":0},"content":[{"type":"tool_use","name":"Bash","input":{"command":"echo warm"}}]}}
+{"type":"assistant","timestamp":"2026-01-01T00:07:00.000Z","message":{"id":"e3","model":"claude-sonnet-5","usage":{"cache_read_input_tokens":1000,"cache_creation_input_tokens":500000},"content":[{"type":"tool_use","name":"Bash","input":{"command":"echo woke"}}]}}
+{"type":"assistant","timestamp":"2026-01-01T00:07:10.000Z","message":{"id":"e4","model":"claude-sonnet-5","usage":{"cache_read_input_tokens":501000,"cache_creation_input_tokens":0},"content":[{"type":"tool_use","name":"Bash","input":{"command":"echo warm again"}}]}}
+{"type":"assistant","timestamp":"2026-01-01T00:15:00.000Z","message":{"id":"e5","model":"claude-sonnet-5","usage":{"cache_read_input_tokens":2000,"cache_creation_input_tokens":500000},"content":[{"type":"tool_use","name":"Bash","input":{"command":"echo woke again"}}]}}
 EOF
 
 eout=$(sh "$tool" "$scratch/expiry.jsonl" 2>&1); status=$?
@@ -135,9 +135,9 @@ same 'a rewrite past the cache lifetime is counted, a reread inside it is not' \
 # after p2, past the hour, and rewrites 500000 tokens. So one turn is in the
 # class, and at the one-hour rate of $4.00 a million it cost $2.00.
 cat > "$scratch/hour.jsonl" <<'EOF'
-{"type":"assistant","timestamp":"2026-01-01T00:00:00.000Z","message":{"id":"p1","usage":{"cache_read_input_tokens":0,"cache_creation_input_tokens":50000,"cache_creation":{"ephemeral_5m_input_tokens":0,"ephemeral_1h_input_tokens":50000}},"content":[{"type":"tool_use","name":"Agent","input":{}}]}}
-{"type":"assistant","timestamp":"2026-01-01T00:20:00.000Z","message":{"id":"p2","usage":{"cache_read_input_tokens":1000,"cache_creation_input_tokens":300000,"cache_creation":{"ephemeral_5m_input_tokens":0,"ephemeral_1h_input_tokens":300000}},"content":[{"type":"tool_use","name":"Agent","input":{}}]}}
-{"type":"assistant","timestamp":"2026-01-01T01:30:00.000Z","message":{"id":"p3","usage":{"cache_read_input_tokens":2000,"cache_creation_input_tokens":500000,"cache_creation":{"ephemeral_5m_input_tokens":0,"ephemeral_1h_input_tokens":500000}},"content":[{"type":"tool_use","name":"Agent","input":{}}]}}
+{"type":"assistant","timestamp":"2026-01-01T00:00:00.000Z","message":{"id":"p1","model":"claude-sonnet-5","usage":{"cache_read_input_tokens":0,"cache_creation_input_tokens":50000,"cache_creation":{"ephemeral_5m_input_tokens":0,"ephemeral_1h_input_tokens":50000}},"content":[{"type":"tool_use","name":"Agent","input":{}}]}}
+{"type":"assistant","timestamp":"2026-01-01T00:20:00.000Z","message":{"id":"p2","model":"claude-sonnet-5","usage":{"cache_read_input_tokens":1000,"cache_creation_input_tokens":300000,"cache_creation":{"ephemeral_5m_input_tokens":0,"ephemeral_1h_input_tokens":300000}},"content":[{"type":"tool_use","name":"Agent","input":{}}]}}
+{"type":"assistant","timestamp":"2026-01-01T01:30:00.000Z","message":{"id":"p3","model":"claude-sonnet-5","usage":{"cache_read_input_tokens":2000,"cache_creation_input_tokens":500000,"cache_creation":{"ephemeral_5m_input_tokens":0,"ephemeral_1h_input_tokens":500000}},"content":[{"type":"tool_use","name":"Agent","input":{}}]}}
 EOF
 
 pout=$(sh "$tool" "$scratch/hour.jsonl" 2>&1); status=$?
