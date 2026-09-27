@@ -276,6 +276,9 @@ fn a_target_at_another_terminal_state_is_reported_with_no_patch() {
     let run = run();
     let finding = against(&run, "notes/deprecated-target.md").expect("the finding");
     assert_eq!(finding.patch, None);
+    // Advisory: the remedy is a judgment between two terminal states, so it
+    // is not mechanical and total, and it must not fail a strict run.
+    assert_eq!(finding.severity, Severity::Warn);
     assert!(
         finding.message.contains("`deprecated`"),
         "{}",

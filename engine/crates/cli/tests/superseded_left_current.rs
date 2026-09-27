@@ -211,3 +211,66 @@ fn check_fix_writes_the_state_and_the_successor_s_date_onto_the_target() {
     let still = fixed.out.contains(&named);
     assert!(!still, "the fixed run no longer reports it\n{}", fixed.out);
 }
+
+/// A live successor over a target that stands at a terminal state other than
+/// the one the edge sets is reported and does not fail a strict run.
+///
+/// Which terminal state the target ends at is a judgment between two, so the
+/// remedy is not mechanical and total, and the finding is advisory with no
+/// patch. The scratch root carries the four files the overlay's language
+/// regime lists outside the corpus root, so that nothing else fails the run
+/// and the exit status is this rule's to decide.
+#[test]
+fn a_target_deprecated_before_its_successor_is_advisory_and_strict_passes() {
+    let root = Root::new("deprecated");
+    let repository = repository();
+    for file in [
+        "README.md",
+        ".github/CONTRIBUTING.md",
+        ".github/SECURITY.md",
+        ".github/ISSUE_TEMPLATE/issue.md",
+    ] {
+        let to = root.at.join(file);
+        std::fs::create_dir_all(to.parent().expect("a parent")).expect("the directory is made");
+        std::fs::copy(repository.join(file), &to).expect("the outside-root file copies");
+    }
+    let (target, target_id) = root.decision("A ruling that was deprecated first");
+    let (successor, successor_id) = root.decision("The ruling that later replaces it");
+    set_facet(&target, "status", "deprecated");
+    set_facet(&target, "status_since", "2026-07-01");
+    into_front_matter(
+        &target,
+        &format!("relations:\n  superseded_by:\n    - {successor_id}\n"),
+    );
+    set_facet(&successor, "status", "current");
+    set_facet(&successor, "status_since", "2026-08-05");
+    into_front_matter(
+        &successor,
+        &format!("relations:\n  supersedes:\n    - {target_id}\n"),
+    );
+
+    let checked = root.run(&["check", "--strict", "--no-cache", "--now", NOW]);
+    let named = format!("{RULE}: `{target_id}` stands at `deprecated`");
+    assert!(
+        checked.out.contains(&named),
+        "the target is still reported\n{}{}",
+        checked.out,
+        checked.err
+    );
+    assert_eq!(
+        checked.code,
+        Some(0),
+        "an advisory finding does not fail a strict run\n{}{}",
+        checked.out,
+        checked.err
+    );
+
+    let fixed = root.run(&["check", "--fix", "--no-cache", "--now", NOW]);
+    let text = std::fs::read_to_string(&target).expect("the target reads");
+    assert_eq!(
+        facet(&text, "status"),
+        Some("deprecated"),
+        "no fix is offered\n{text}\n{}",
+        fixed.err
+    );
+}
