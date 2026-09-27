@@ -6,10 +6,11 @@ summary: "The six-sentence paragraph defect is retired before it lands. 50 of 60
 last_verified: 2026-09-26
 title: "No paragraph limit joins the language rule, because most paragraphs past six sentences hold one topic"
 provenance:
-  warrant: asserted
+  warrant: accepted
   agency: agent
   drafted_by: claude-opus-5.5
   activity: measure+draft
+  accepted_by: j.baxter
   evidence_basis: evidenced
 relations:
   supersedes:

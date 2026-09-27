@@ -2487,7 +2487,7 @@
         "path": "docs/decisions/0087-no-paragraph-limit-joins-the-language-rule-because-most-paragraphs-past-six-sentences-hold-one-topic.md",
         "kind": "decision",
         "id": "HW-DR-0087",
-        "warrant": "asserted",
+        "warrant": "accepted",
         "facets": {
           "id": "HW-DR-0087",
           "status": "current",
@@ -2496,10 +2496,11 @@
           "last_verified": "2026-09-26",
           "title": "No paragraph limit joins the language rule, because most paragraphs past six sentences hold one topic",
           "provenance": {
-            "warrant": "asserted",
+            "warrant": "accepted",
             "agency": "agent",
             "drafted_by": "claude-opus-5.5",
             "activity": "measure+draft",
+            "accepted_by": "j.baxter",
             "evidence_basis": "evidenced"
           },
           "relations": {

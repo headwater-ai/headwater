@@ -319,7 +319,7 @@ The documents on this shelf, in the reading order this corpus derives. Each head
 
 ## No paragraph limit joins the language rule, because most paragraphs past six sentences hold one topic
 
-[HW-DR-0087](../decisions/0087-no-paragraph-limit-joins-the-language-rule-because-most-paragraphs-past-six-sentences-hold-one-topic.md) — The six-sentence paragraph defect is retired before it lands. 50 of 60 sampled paragraphs past six sentences held one topic, so the count misses what rule 6.5 asks, and no word count replaces it. (asserted, and no human has accepted it)
+[HW-DR-0087](../decisions/0087-no-paragraph-limit-joins-the-language-rule-because-most-paragraphs-past-six-sentences-hold-one-topic.md) — The six-sentence paragraph defect is retired before it lands. 50 of 60 sampled paragraphs past six sentences held one topic, so the count misses what rule 6.5 asks, and no word count replaces it.
 
 ## A paragraph limit counts sentences under the language rule and never words
 
