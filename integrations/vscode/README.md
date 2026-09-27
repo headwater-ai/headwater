@@ -12,7 +12,7 @@ When nothing governs the task or the file, the extension shows nothing. It does 
 
 The extension is a client of `headwater mcp`, the corpus MCP server that the engine ships. For each question it starts `headwater mcp --root <workspace folder>`, sends one request and stops the process. It does not look for a server that is already running, because the server reads standard input and walks the corpus once when it starts. A server kept alive across your edits would answer from an old walk. One session takes about 0.16 seconds on this repository.
 
-It calls two tools of the query class, `route` and `governing_docs_for_path`, and no other tool. It never passes `--write`, so the server it starts registers no tool that writes. It reads each answer by the pointer shape that [the `headwater mcp` interface](../../docs/interfaces/headwater-mcp.md) states as the wire format a caller may rely on: `path (name) — summary [asserted: …]`. A line of any other shape is not a pointer, and the extension does not show it. A line with neither a name nor a summary is not a pointer either. The server repeats your own words in two places, and the extension never reads a pointer from them: the first line of a `route` answer repeats the task, and the answer for an ungoverned path repeats the path. So the extension recognizes the answer `no document governs <path>` by that prefix and shows nothing for it, whatever the path holds. Any other `governing_docs_for_path` answer counts only when every line of it is a pointer.
+It calls two tools of the query class, `route` and `governing_docs_for_path`, and no other tool. It never passes `--write`, so the server it starts registers no tool that writes. It reads each answer from the `structuredContent` member, which [the `headwater mcp` interface](../../docs/interfaces/headwater-mcp.md) states as the machine contract of both tools. It takes the path, the name and the summary of each element of `pointers`, and shows the warrant sentence when the element is `unwarranted`. It never reads the text block. A path can hold ` (` and a summary can hold any word, so a pointer read from the text can be wrong. An answer with no `structuredContent` comes from an engine older than this contract, and the extension shows nothing for it.
 
 ## When it does nothing
 
@@ -20,7 +20,7 @@ The extension degrades to nothing and says nothing in each of these cases:
 
 - no `headwater` binary is on the path, or at the path the `headwater.path` setting names
 - the workspace folder has no `.headwater/` directory
-- the server exits with an error, answers with an error, answers text the extension cannot read, or takes more than five seconds
+- the server exits with an error, answers with an error, answers without `structuredContent`, answers JSON the extension cannot read, or takes more than five seconds
 
 This is the same fails-open posture as every hook in this repository. A missing engine never blocks your editor.
 

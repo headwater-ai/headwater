@@ -1105,7 +1105,23 @@ impl Route {
     /// states that the default senses the stream and colors only there, and
     /// `tools/engine/color-fixtures.sh` attaches a real terminal to hold it.
     pub fn render(&self, mode: ColorMode) -> String {
+        self.render_at(mode, Some(headwater_check::fill::WIDTH))
+    }
+
+    /// The route as text, folded at `width` columns, or never folded where
+    /// `width` is `None`.
+    ///
+    /// The MCP `route` tool passes `None` (#1248). A fold hangs a pointer's
+    /// continuation four columns in, which is the indent of an evidence line,
+    /// so a reader of that text could not tell the two apart. The tool carries
+    /// the parts as `structuredContent`, and its text is for a person to read,
+    /// one line to a pointer.
+    pub fn render_at(&self, mode: ColorMode, width: Option<usize>) -> String {
         use std::fmt::Write;
+        let fold = |text: &str| match width {
+            Some(width) => headwater_check::fill::filled(text, width),
+            None => text.to_string(),
+        };
         let mut out = String::new();
         let _ = writeln!(
             out,
@@ -1167,17 +1183,15 @@ impl Route {
         // SGR sequence is characters that occupy no column: a path painted
         // before the fold would push the fold six characters early and leave
         // the reset code counted as a word. So the pointer is composed plain,
-        // folded, and the path — which the fold never splits, because it holds
-        // no space — is painted in place afterwards.
+        // folded, and the path is painted in place afterwards. A path that
+        // holds a space can be split by the fold, and then it is left unpainted
+        // rather than painted in half; the unfolded text never splits one.
         //
         // The evidence line under a pointer is the task read back, so it is
         // dim like the terms line. It carries no em dash, for the reason the
         // withheld line below gives.
         for (pointer, evidence) in self.offers() {
-            let folded = headwater_check::fill::filled(
-                &format!("  {}\n", pointer.render()),
-                headwater_check::fill::WIDTH,
-            );
+            let folded = fold(&format!("  {}\n", pointer.render()));
             out.push_str(&folded.replacen(
                 &pointer.path,
                 &paint(Role::Path, &pointer.path, mode),
@@ -1185,10 +1199,7 @@ impl Route {
             ));
             if let Some(evidence) = evidence {
                 for said in evidence.render().lines() {
-                    let folded = headwater_check::fill::filled(
-                        &format!("    {said}\n"),
-                        headwater_check::fill::WIDTH,
-                    );
+                    let folded = fold(&format!("    {said}\n"));
                     for line in folded.lines() {
                         let _ = writeln!(out, "{}", dim(line, mode));
                     }
