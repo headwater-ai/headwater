@@ -178,22 +178,50 @@ def _split_unquoted(text, is_boundary):
     opens no quoted span, so the chained command is still split out.
     Inside single quotes a backslash is literal.
     """
+    pieces, _ = _scan(text, is_boundary)
+    return [p.strip() for p in pieces if p.strip()]
+
+
+def _scan(text, is_boundary):
+    """The pieces `_split_unquoted` cuts, and the quote still open at the
+    end of `text` (`'`, `"` or `$'`), or None.
+
+    `$'…'` is ANSI-C quoting: a backslash inside it escapes the next
+    character, so `$'\\''` is one quoted quote and the span stays open
+    only to the `'` after it. A `#` that starts a word outside quotes opens
+    a comment to the end of the line, and the comment is no part of a
+    piece, so an apostrophe in it opens no quote.
+    """
     pieces, buf, quote, i = [], [], None, 0
     while i < len(text):
         ch = text[i]
+        if quote == '#':
+            if ch != '\n':
+                i += 1
+                continue
+            quote = None
         if ch == '\\' and quote != "'":
             buf.append(text[i:i + 2])
             i += 2
             continue
         if quote:
             buf.append(ch)
-            if ch == quote:
+            if ch == quote[-1]:
                 quote = None
             i += 1
+            continue
+        if ch == '$' and text[i + 1:i + 2] == "'":
+            quote = "$'"
+            buf.append(quote)
+            i += 2
             continue
         if ch in ('"', "'"):
             quote = ch
             buf.append(ch)
+            i += 1
+            continue
+        if ch == '#' and (i == 0 or text[i - 1] in ' \t\n;&|('):
+            quote = '#'
             i += 1
             continue
         consumed = is_boundary(text, i)
@@ -205,7 +233,7 @@ def _split_unquoted(text, is_boundary):
         buf.append(ch)
         i += 1
     pieces.append(''.join(buf))
-    return [p.strip() for p in pieces if p.strip()]
+    return pieces, (None if quote == '#' else quote)
 
 
 def split_chain(line):
@@ -303,11 +331,27 @@ def check_piece(piece, cargo_allowed=False):
 
 def _pieces(block):
     """Every piece of every line of a command block."""
+    commands, pending = [], None
     for line in block.split('\n'):
-        stripped = line.strip()
-        if not stripped or stripped.startswith('#'):
+        if pending is not None:
+            text = pending + '\n' + line
+        else:
+            text = line.strip()
+            if not text or text.startswith('#'):
+                continue
+        # A quote still open at the end of a line carries into the next
+        # line, as a shell reads it (#1135).
+        if _scan(text, lambda _t, _i: 0)[1]:
+            pending = text
             continue
-        for segment in split_chain(stripped):
+        pending = None
+        commands.append(text.strip())
+    # A quote the block never closes is a shell syntax error. Its text is
+    # still read, so a gate fails closed on it rather than skipping it.
+    if pending is not None:
+        commands.append(pending.strip())
+    for command in commands:
+        for segment in split_chain(command):
             yield from split_pipe(segment)
 
 
