@@ -20,4 +20,5 @@ Say whether the cache may change a verdict. Answer `yes` or `no`.
 
 ```yaml
 answers: [yes, no]
+expected: [no]
 ```

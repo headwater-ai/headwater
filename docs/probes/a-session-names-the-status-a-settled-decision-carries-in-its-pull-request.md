@@ -32,13 +32,14 @@ Answer with one of those two words and with nothing else. Your whole final messa
 
 ## Expectation
 
-The terminal answer is `current`, the one value in the closed set below.
+The terminal answer is `current`, the one expected value of the closed set below.
 
 ```yaml
-answers: [current]
+answers: [current, draft]
+expected: [current]
 ```
 
-The task offers two values, and the closed set holds one. So `draft` is an answer outside the set, and the grade records it as not satisfied. An `answered` probe is satisfied by any value in its set, so a set that held both would grade every answer as a pass.
+The closed set holds both values that the task offers, so a recorder records `draft` as that word and not as no answer. The grade then finds it wrong, because `draft` is not an expected value. `headwater probe plan` refuses a probe whose expected values are every value of its set, because every answer would then pass (#1229).
 
 **The convention is [HW-DR-0052](../decisions/0052-a-document-is-proposed-at-the-state-it-will-hold-and-the-merge-activates-it.md).** An author writes the state that the document will hold once the branch lands, and the merge activates it. The default goes the other way. `headwater new` writes `draft`, because the lifecycle regime opens at that state, and "draft until merged" is the common practice elsewhere. A session that never read the ruling takes the default.
 

@@ -50,6 +50,8 @@ cost_cents: 407
 
 This transcript's own change touches no key of `.headwater/taxonomy.lock` or `.headwater/overlay.yml`.
 
+**This transcript predates the sealed workspace (#1229).** Every session ran in a workspace that kept `docs/probes/`, `docs/probe-runs/` and `docs/probe-results/`, so a session could read its own expectation or an earlier answer. In 5 calls, the sessions of 3 of the 8 probes named a path on one of those shelves. No rate graded from this transcript is a clean with-guidance rate. [`tools/probe/seal.sh`](../../tools/probe/seal.sh) now removes those files before a session runs.
+
 ## Events
 
 ```yaml
