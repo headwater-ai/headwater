@@ -1148,12 +1148,18 @@ fn the_native_export_carries_the_members_of_a_list_anchor() {
                 .collect(),
         )
     };
-    let cases: [(&str, Option<Vec<&str>>); 3] = [
+    let cases: [(&str, Option<Vec<&str>>); 4] = [
         ("src/c.rs", None),
         ("8:src/a.rs8:src/b.rs", Some(vec!["src/a.rs", "src/b.rs"])),
         (
             "12:src/a, b.txt8:src/c.rs",
             Some(vec!["src/a, b.txt", "src/c.rs"]),
+        ),
+        // Three members, written out of order. An emitter that writes members
+        // for a list of exactly two, rather than for more than one, drops it.
+        (
+            "8:src/a.rs8:src/b.rs8:src/c.rs",
+            Some(vec!["src/a.rs", "src/b.rs", "src/c.rs"]),
         ),
     ];
 
@@ -1167,7 +1173,7 @@ fn the_native_export_carries_the_members_of_a_list_anchor() {
     assert_eq!(
         anchors.len(),
         cases.len(),
-        "three governs entries are three anchor nodes, so the case is not vacuous"
+        "four governs entries are four anchor nodes, so the case is not vacuous"
     );
     let targets: Vec<&Mapping> = graph
         .get("edges")

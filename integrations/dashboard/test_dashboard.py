@@ -126,6 +126,23 @@ def with_list_anchor(export):
     return export
 
 
+def add_list_anchor(export, patterns):
+    """One more governs edge onto a list anchor, with the identity the engine would write."""
+    members = sorted(patterns)
+    target = {
+        "bound": "anchor",
+        "anchor_kind": "code_path",
+        "id": "".join("%d:%s" % (len(member.encode("utf-8")), member) for member in members),
+        "resolver": "source-tree",
+        "patterns": members,
+    }
+    export["graph"]["anchors"].append(dict((key, target[key]) for key in ("anchor_kind", "id", "resolver", "patterns")))
+    export["graph"]["edges"].append(
+        {"source": "docs/obligations/0001-old.md", "relation": "governs", "written_as": "governs", "target": target}
+    )
+    return export
+
+
 class AListAnchorIsCountedByItsMembers(unittest.TestCase):
     """#1247: a list anchor covers the union of its members, and never its identity as a path."""
 
@@ -146,6 +163,28 @@ class AListAnchorIsCountedByItsMembers(unittest.TestCase):
         self.assertIn("5 governed code paths", page)
         self.assertIn("<code>README.txt</code><br><code>docs/a.md</code>", page)
         self.assertNotIn("10:README.txt", page)
+
+    def test_a_member_two_lists_share_is_one_governed_path(self):
+        export = with_list_anchor(load_fixture())
+        add_list_anchor(export, ["docs/a.md", "src/lib.rs"])
+        model = dashboard.load(export, corpus_identity="fixture")
+        # `docs/a.md` is a member of both lists. It is one path, so the header
+        # counts six and not seven.
+        self.assertEqual(
+            dashboard.governed_paths(model),
+            ["README.txt", "docs/a.md", "missing/path.rs", "src/**", "src/lib.rs", "src/main.rs"],
+        )
+        self.assertIn("6 governed code paths", dashboard.render(model))
+
+    def test_a_file_two_members_of_one_list_match_is_one_file_of_the_row(self):
+        export = load_fixture()
+        add_list_anchor(export, ["src/**", "src/main.rs"])
+        model = dashboard.load(export, corpus_identity="fixture")
+        coverage = dashboard.coverage_view(model, tree=TREE)
+        matched = dict((row["id"], count) for row, count in coverage.rows)
+        # `src/main.rs` matches both members. The tree holds two files under
+        # `src/`, so the row matches two, and never three.
+        self.assertEqual(matched["6:src/**11:src/main.rs"], 2)
 
     def test_an_anchor_with_no_patterns_is_its_one_id(self):
         model = dashboard.load(load_fixture(), corpus_identity="fixture")
