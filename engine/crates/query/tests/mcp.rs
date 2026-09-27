@@ -856,7 +856,11 @@ fn the_explain_tool_reads_every_spelling_of_a_path_and_refuses_one_outside_the_r
         "the plain path explains the document: {plain}"
     );
     let absolute = built.root.join(document).display().to_string();
-    for target in [format!("./{document}"), format!("query/../{document}"), absolute] {
+    for target in [
+        format!("./{document}"),
+        format!("query/../{document}"),
+        absolute,
+    ] {
         assert_eq!(asked(&target), plain, "`{target}` explains `{document}`");
     }
     for target in ["../outside.md", "/etc/passwd"] {
