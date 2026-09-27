@@ -165,3 +165,154 @@ fn no_crate_is_published_before_a_member_it_depends_on() {
         wrong.join("\n")
     );
 }
+
+/// The body of the loop that publishes each crate, from `for crate in $order`
+/// to its `done`.
+fn publish_loop() -> String {
+    let text =
+        std::fs::read_to_string(repository_root().join(".github/workflows/publish-crates.yml"))
+            .expect("the publish workflow is on disk");
+    let start = text
+        .find("for crate in $order; do")
+        .expect("publish-crates.yml walks the order with `for crate in $order`");
+    let rest = &text[start..];
+    let end = rest
+        .find("\n          done")
+        .expect("the publish loop closes with `done`");
+    rest[..end].to_string()
+}
+
+/// The loop waits on the index, and not on a clock.
+///
+/// A fixed sleep is what let v0.3.0 and v0.4.0 publish a crate before
+/// crates.io listed its dependency (#1197). This case reads the shape only; the
+/// behavioral cases below hold what the gate does.
+#[test]
+fn the_publish_loop_gates_each_crate_on_the_index_and_not_on_a_fixed_sleep() {
+    let body = publish_loop();
+    let bare_sleep: Vec<&str> = body
+        .lines()
+        .map(str::trim)
+        .filter(|line| {
+            line.strip_prefix("sleep ")
+                .is_some_and(|rest| rest.chars().all(|c| c.is_ascii_digit()))
+        })
+        .collect();
+    assert!(
+        bare_sleep.is_empty(),
+        "the publish loop waits a fixed time: {bare_sleep:?}"
+    );
+    let gate = body
+        .find("crates-index-wait.sh \"$crate\"")
+        .expect("the publish loop calls tools/repo/crates-index-wait.sh on each crate");
+    let publish = body
+        .find("publish_with_retry \"$crate\"")
+        .expect("the publish loop publishes with publish_with_retry");
+    assert!(
+        gate < publish,
+        "the publish loop publishes a crate before it waits for the crate's dependencies"
+    );
+    let published = body
+        .find("crates-index-wait.sh --published \"$crate\"")
+        .expect("the publish loop waits for the index to list the crate it just published");
+    assert!(
+        publish < published,
+        "the publish loop waits for the crate itself before it publishes it"
+    );
+}
+
+/// A sparse index on disk that lists every workspace member at `version`,
+/// except the members `behind` names, which it lists at an older version only.
+fn sparse_index(case: &str, version: &str, behind: &[&str]) -> PathBuf {
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    static NEXT: AtomicUsize = AtomicUsize::new(0);
+    let dir = std::env::temp_dir().join(format!(
+        "hw-index-{case}-{}-{}",
+        std::process::id(),
+        NEXT.fetch_add(1, Ordering::SeqCst)
+    ));
+    let _ = std::fs::remove_dir_all(&dir);
+    for (name, _) in workspace_members() {
+        let path = dir.join(&name[0..2]).join(&name[2..4]).join(&name);
+        std::fs::create_dir_all(path.parent().expect("a parent")).expect("index directory");
+        let mut lines = format!("{{\"name\":\"{name}\",\"vers\":\"0.0.1\",\"deps\":[]}}\n");
+        if !behind.contains(&name.as_str()) {
+            lines.push_str(&format!(
+                "{{\"name\":\"{name}\",\"vers\":\"{version}\",\"deps\":[]}}\n"
+            ));
+        }
+        std::fs::write(&path, lines).expect("index file");
+    }
+    dir
+}
+
+/// Runs the gate against `index` with a one-second deadline.
+fn run_gate(index: &Path, args: &[&str]) -> std::process::Output {
+    std::process::Command::new("sh")
+        .arg(repository_root().join("tools/repo/crates-index-wait.sh"))
+        .args(args)
+        .env("HW_CRATES_INDEX", format!("file://{}", index.display()))
+        .env("HW_CRATES_INDEX_DEADLINE", "1")
+        .output()
+        .expect("sh runs the gate")
+}
+
+/// The gate refuses a crate whose dependency the index does not list at the
+/// release version, and names the dependency.
+///
+/// This is the v0.4.0 failure: `headwater-import` stopped because the index
+/// did not list `headwater-scaffold` 0.4.0.
+#[test]
+fn the_index_gate_refuses_a_crate_whose_dependency_the_index_does_not_list() {
+    let version = env!("CARGO_PKG_VERSION");
+    let index = sparse_index("refuses", version, &["headwater-scaffold"]);
+    let out = run_gate(&index, &["headwater-import", version]);
+    let said = String::from_utf8_lossy(&out.stdout).into_owned();
+    let _ = std::fs::remove_dir_all(&index);
+    assert!(
+        !out.status.success(),
+        "the gate passed headwater-import while the index did not list headwater-scaffold {version}"
+    );
+    assert!(
+        said.contains("::error::headwater-import:") && said.contains("headwater-scaffold"),
+        "the gate's refusal does not name the dependency it waited for: {said}"
+    );
+}
+
+/// The gate passes a crate once the index lists every dependency, and passes a
+/// published crate once the index lists the crate itself.
+#[test]
+fn the_index_gate_passes_a_crate_whose_dependencies_the_index_lists() {
+    let version = env!("CARGO_PKG_VERSION");
+    let index = sparse_index("passes", version, &[]);
+    let deps = run_gate(&index, &["headwater-import", version]);
+    let published = run_gate(&index, &["--published", "headwater-import", version]);
+    let _ = std::fs::remove_dir_all(&index);
+    assert!(
+        deps.status.success(),
+        "the gate refused headwater-import with every dependency listed: {}{}",
+        String::from_utf8_lossy(&deps.stdout),
+        String::from_utf8_lossy(&deps.stderr)
+    );
+    assert!(
+        published.status.success(),
+        "the gate refused a published headwater-import that the index lists: {}{}",
+        String::from_utf8_lossy(&published.stdout),
+        String::from_utf8_lossy(&published.stderr)
+    );
+}
+
+/// `--published` refuses while the index does not list the crate itself, so a
+/// cargo availability timeout cannot count as success for the next crate.
+#[test]
+fn the_index_gate_refuses_a_published_crate_the_index_does_not_list() {
+    let version = env!("CARGO_PKG_VERSION");
+    let index = sparse_index("unlisted", version, &["headwater-import"]);
+    let out = run_gate(&index, &["--published", "headwater-import", version]);
+    let said = String::from_utf8_lossy(&out.stdout).into_owned();
+    let _ = std::fs::remove_dir_all(&index);
+    assert!(
+        !out.status.success() && said.contains("::error::headwater-import:"),
+        "the gate passed a published crate the index does not list: {said}"
+    );
+}
