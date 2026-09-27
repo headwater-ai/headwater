@@ -53,6 +53,18 @@
 //! `bogus_notice` binds — a different defect that a lifecycle regime has no
 //! part in, and a refusal over it must not talk about a regime at all.
 //!
+//! `twin_notice`, `clash_notice` and `undated_notice` hold the date a file
+//! entered a state that more than one document sets (#1111). Their setters sit
+//! on the `flaggers` shelf, which no projection reads. `twin_notice` has two
+//! setters of `retired` on two dates. `clash_notice` has two setters of
+//! `current` and one of `retired`, and the `retired` setter carries the oldest
+//! date, so a fold that reads a setter of the state the file does not stand at
+//! writes a different file. The `retired` setter's file name sorts first, so
+//! the edge order cannot pick `current` in place of the sort over states.
+//! `strict_clash_notice` takes the same three edges and binds `strict`, so it
+//! is refused, and the refusal names only the `current` setters.
+//! `undated_notice` has one setter with no date.
+//!
 //! This repository's own lock cannot exercise any of the three failing cases:
 //! [HW-OBL-0196](../../../../docs/obligations/0196-a-relation-writes-a-state-onto-a-kind-that-binds-no-lifecycle-regime-and-nothing-reads-that-pair.md)
 //! records that all seventeen concrete kinds of `headwater/standard` bind a
@@ -520,5 +532,199 @@ fn a_state_a_relation_sets_that_the_kinds_own_regime_admits_is_written_with_the_
         "`{WRITTEN}` did not take its freshness as the stalest date over the documents the \
          projection read (2026-02-01). `2026-03-15` is the newest of them, and `2026-05-01` is \
          the setter's date, and the setter was not read. It reads:\n{bytes}"
+    );
+}
+
+/// The output with two setters of one state, on two dates.
+const TWIN: &str = "lifecycle-regime/notices/TWIN.md";
+
+/// The output with setters of two different states.
+const CLASH: &str = "lifecycle-regime/notices/CLASH.md";
+
+/// The output whose one setter carries no date.
+const UNDATED: &str = "lifecycle-regime/notices/UNDATED.md";
+
+/// The bytes the plan writes at `at`, or a panic that names what it declined.
+fn written<'a>(plan: &'a Plan, at: &str) -> &'a str {
+    plan.outputs
+        .iter()
+        .find(|output| output.path == at)
+        .map(|output| output.bytes.as_str())
+        .unwrap_or_else(|| {
+            panic!(
+                "`{at}` was not written. The plan declined {:?}",
+                plan.unwritten
+                    .iter()
+                    .map(|unwritten| (unwritten.at.as_str(), unwritten.reason.as_str()))
+                    .collect::<Vec<_>>()
+            )
+        })
+}
+
+/// Two documents set one state on two dates, and the file entered the state on
+/// the stalest of them (#1111).
+///
+/// HW-DR-0063 derives `state_entered` as "the stalest date on the documents
+/// that set the state". The case above has one setter, so a minimum and a
+/// maximum agree there, and a newest fold passed it. Here the setters carry
+/// `2026-04-10` and `2026-06-10`, and a newest fold writes the second.
+#[test]
+fn two_setters_of_one_state_write_the_stalest_of_their_dates() {
+    let plan = plan_over_lifecycle_regime();
+    let bytes = written(&plan, TWIN);
+
+    assert_eq!(
+        member(bytes, "status"),
+        Some("retired"),
+        "`{TWIN}` does not stand at the state both of its incoming edges set. It reads:\n{bytes}"
+    );
+    assert_eq!(
+        member(bytes, "status_since"),
+        Some("2026-04-10"),
+        "`{TWIN}` did not take the stalest date of the two documents that set its state \
+         (2026-04-10). `2026-06-10` is the newest of them. It reads:\n{bytes}"
+    );
+}
+
+/// Two relations set two different states, and the date comes from the setters
+/// of the state the file stands at, and from no other (#1111).
+///
+/// `set_state` picks the first state in sorted order, `current`. Two documents
+/// set `current`, on `2026-04-20` and `2026-06-20`. One document sets
+/// `retired`, on `2026-03-20`, the oldest date of the three. A fold over every
+/// setter writes `2026-03-20`, a date on which the file entered a state it does
+/// not stand at. A newest fold over the agreeing setters writes `2026-06-20`.
+/// The contract, HW-DR-0063, reads "the documents that set the state", and
+/// only `2026-04-20` answers it. The `retired` setter's file name,
+/// `0003-disagreeing-retired-setter.md`, sorts before both `current` setters,
+/// so its edge arrives first and only the sort over states picks `current`.
+#[test]
+fn setters_of_two_states_date_the_file_from_the_setters_of_the_chosen_state_alone() {
+    let plan = plan_over_lifecycle_regime();
+    let bytes = written(&plan, CLASH);
+
+    assert_eq!(
+        member(bytes, "status"),
+        Some("current"),
+        "`{CLASH}` does not stand at `current`, the first in sorted order of the two states its \
+         incoming edges set. It reads:\n{bytes}"
+    );
+    assert_eq!(
+        member(bytes, "status_since"),
+        Some("2026-04-20"),
+        "`{CLASH}` did not take the stalest date of the documents that set `current` \
+         (2026-04-20). `2026-03-20` is the date of the document that sets `retired`, a state the \
+         file does not stand at, and `2026-06-20` is the newest of the agreeing setters. It \
+         reads:\n{bytes}"
+    );
+}
+
+/// No setter carries a date, and the refusal names the fold it would have taken
+/// and the setter that needs the value (#1111).
+///
+/// No page is written in this case, so the word a reader sees is in the
+/// refusal that `generate` prints. The fold for a state an edge sets is the
+/// stalest, and `newest` is the fold for a state no edge sets, over a
+/// different set of documents. The repair is a date on the setter, so the
+/// reason does not send the reader to the taxonomy.
+#[test]
+fn a_setter_with_no_date_refuses_the_file_and_names_the_stalest_fold() {
+    let plan = plan_over_lifecycle_regime();
+
+    assert!(
+        !plan.outputs.iter().any(|output| output.path == UNDATED),
+        "`{UNDATED}` was written, and the one document that sets its state carries no \
+         `status_since`"
+    );
+    let refusal = plan
+        .unwritten
+        .iter()
+        .find(|unwritten| unwritten.at == UNDATED)
+        .unwrap_or_else(|| {
+            panic!(
+                "nothing reported the declaration that writes `{UNDATED}`. The plan declined {:?}",
+                plan.unwritten
+                    .iter()
+                    .map(|unwritten| unwritten.at.as_str())
+                    .collect::<Vec<_>>()
+            )
+        });
+    let reason = refusal.reason.as_str();
+    for wanted in [
+        "status_since",
+        "stalest",
+        "whose edges set this document's state",
+        "carries no value for it",
+        "lifecycle-regime/flaggers/0009-undated-setter.md",
+    ] {
+        assert!(
+            reason.contains(wanted),
+            "the refusal of `{UNDATED}` does not name `{wanted}`. It reads: {reason}"
+        );
+    }
+    for unwanted in ["newest", "taxonomy"] {
+        assert!(
+            !reason.contains(unwanted),
+            "the refusal of `{UNDATED}` names `{unwanted}`. The fold over the setters of a state \
+             is the stalest, and the repair is a date on the setter. It reads: {reason}"
+        );
+    }
+}
+
+/// The output whose kind binds `strict` and takes the same three edges as
+/// [`CLASH`].
+const STRICT_CLASH: &str = "lifecycle-regime/notices/STRICT-CLASH.md";
+
+/// A clash onto a kind whose regime refuses the chosen state names the
+/// setters of that state, and not the setter of the state that lost (#1111).
+///
+/// `set_state` picks `current`, and `strict` has no place for it, so the file
+/// is refused. The repair is on the edges that set `current`, which are
+/// `0006-older-current-setter.md` and `0007-newer-current-setter.md`.
+/// `0003-disagreeing-retired-setter.md` sets `retired`, which `strict` admits,
+/// so a refusal that names it sends the reader to an edge where nothing is
+/// wrong.
+#[test]
+fn a_clash_whose_chosen_state_the_regime_refuses_names_only_the_setters_of_that_state() {
+    let plan = plan_over_lifecycle_regime();
+
+    assert!(
+        !plan
+            .outputs
+            .iter()
+            .any(|output| output.path == STRICT_CLASH),
+        "`{STRICT_CLASH}` was written. The first of its edges' states in sorted order is \
+         `current`, which `strict` does not name"
+    );
+    let refusal = plan
+        .unwritten
+        .iter()
+        .find(|unwritten| unwritten.at == STRICT_CLASH)
+        .unwrap_or_else(|| {
+            panic!(
+                "nothing reported the declaration that writes `{STRICT_CLASH}`. The plan declined \
+                 {:?}",
+                plan.unwritten
+                    .iter()
+                    .map(|unwritten| unwritten.at.as_str())
+                    .collect::<Vec<_>>()
+            )
+        });
+    let reason = refusal.reason.as_str();
+    for wanted in [
+        "`current`",
+        "strict",
+        "lifecycle-regime/flaggers/0006-older-current-setter.md",
+        "lifecycle-regime/flaggers/0007-newer-current-setter.md",
+    ] {
+        assert!(
+            reason.contains(wanted),
+            "the refusal of `{STRICT_CLASH}` does not name `{wanted}`. It reads: {reason}"
+        );
+    }
+    assert!(
+        !reason.contains("0003-disagreeing-retired-setter.md"),
+        "the refusal of `{STRICT_CLASH}` names the setter of `retired`, a state the file does not \
+         stand at and `strict` admits. It reads: {reason}"
     );
 }

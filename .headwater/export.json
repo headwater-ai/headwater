@@ -1821,7 +1821,7 @@
           "status": "current",
           "status_since": "2026-09-11",
           "summary": "Nine required facets went unwritten on two generated documents. The engine derives seven from committed bytes, the emitter composes the summary, and the declaration block stays closed at three scalars.",
-          "last_verified": "2026-09-26",
+          "last_verified": "2026-09-27",
           "title": "Every required facet of a generated document is derived, and the emitter composes the summary",
           "provenance": {
             "warrant": "asserted",
@@ -1837,7 +1837,7 @@
             "governs": [
               {
                 "to": "engine/crates/generate/src/derived.rs",
-                "verified_revision": "sha256:402da8aa3219803a14f060977e36f950326d43dce66233996fc22cbd0cf3bf6e"
+                "verified_revision": "sha256:df3fe720e5c546530ce4ee6dca826bafc78acea352450581e4513f9a900cd171"
               }
             ]
           }
@@ -10907,6 +10907,9 @@
               },
               {
                 "to": "HW-PD-0019"
+              },
+              {
+                "to": "HW-PD-0020"
               }
             ]
           }
@@ -14458,7 +14461,7 @@
           "resolver": "source-tree"
         },
         "attributes": {
-          "verified_revision": "sha256:402da8aa3219803a14f060977e36f950326d43dce66233996fc22cbd0cf3bf6e"
+          "verified_revision": "sha256:df3fe720e5c546530ce4ee6dca826bafc78acea352450581e4513f9a900cd171"
         }
       },
       {
@@ -20307,6 +20310,17 @@
           "bound": "document",
           "id": "HW-PD-0019",
           "path": "docs/process/decisions/0019-ci-runs-actions-from-the-actions-organization-only-and-carries-no-build-state-between-self-hosted-jobs.md",
+          "kind": "process_decision"
+        }
+      },
+      {
+        "source": "docs/process/explanations/where-a-ci-job-runs.md",
+        "relation": "draws_on",
+        "written_as": "draws_on",
+        "target": {
+          "bound": "document",
+          "id": "HW-PD-0020",
+          "path": "docs/process/decisions/0020-merges-go-through-the-github-merge-queue-one-squash-commit-per-pull-request.md",
           "kind": "process_decision"
         }
       },
