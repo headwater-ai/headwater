@@ -61,7 +61,11 @@ use headwater_yaml::{Position, Span};
 ///
 /// A dotted entry matches in any case, so `u.s.` and `PH.D.` hold as well.
 ///
-/// The cost: an entry suppresses the split without condition. A real sentence
+/// An entry matches prose letters only. A letter inside a code span is part
+/// of a name, so the period after `` `--no` `` or `` `etc` `` ends the
+/// sentence when a sentence opens after it (#1262).
+///
+/// The cost: an entry in prose suppresses the split without condition. A real sentence
 /// end on an entry, as in `sold in the U.S. The next` or `set out in 5 U.S.C.
 /// The next`, joins with the sentence after it. For `U.S.C.` the cost also
 /// covers a next sentence that opens with a number, as in `set out in 5
@@ -177,7 +181,7 @@ fn ends_a_sentence(chars: &[char], index: usize, block: &Block, links: &[Link]) 
     if !next.is_whitespace() {
         return false;
     }
-    if c == '.' && closes_an_abbreviation(chars, index) {
+    if c == '.' && closes_an_abbreviation(chars, index, block) {
         return false;
     }
     let opening = skip_space(chars, after);
@@ -263,7 +267,7 @@ fn opens_a_link(block: &Block, index: usize, links: &[Link]) -> bool {
         .any(|link| link.span.start.offset <= at && at < link.span.end.offset)
 }
 
-fn closes_an_abbreviation(chars: &[char], index: usize) -> bool {
+fn closes_an_abbreviation(chars: &[char], index: usize, block: &Block) -> bool {
     ABBREVIATIONS.iter().any(|abbreviation| {
         let letters: Vec<char> = abbreviation.chars().collect();
         if letters.len() > index + 1 {
@@ -275,10 +279,14 @@ fn closes_an_abbreviation(chars: &[char], index: usize) -> bool {
         if from > 0 && chars[from - 1].is_alphanumeric() {
             return false;
         }
-        letters
-            .iter()
-            .enumerate()
-            .all(|(offset, letter)| chars[from + offset].eq_ignore_ascii_case(letter))
+        // Prose letters only. The parse removed the backticks, so the tail
+        // of a code span such as `--no` reads as `no.` with the period after
+        // it (#1262). The test is per character, because a span can hold
+        // only part of an entry.
+        letters.iter().enumerate().all(|(offset, letter)| {
+            chars[from + offset].eq_ignore_ascii_case(letter)
+                && ownership_at(block, from + offset) != Ownership::Code
+        })
     })
 }
 

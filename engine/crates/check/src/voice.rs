@@ -386,7 +386,15 @@ impl DocumentCheck for Voice {
     /// `Sentence boundaries` paragraph of `fixtures/check/spec/07-prose-defects.md`
     /// holds each dotted entry, so `tests/editions.rs` fails the next
     /// splitter change that moves one of them and leaves this number alone.
-    const VERSION: u32 = 6;
+    ///
+    /// **Edition seven, on 2026-09-28 ([#1262](https://github.com/headwater-ai/headwater/issues/1262)).**
+    /// An abbreviation in the splitter in `headwater-doc` now matches prose letters only.
+    /// Before, the last letters of a code span such as `--no` or `etc` and the period after it read as `no.` or `etc.`, and the sentence after it merged into it.
+    /// This rule reports per sentence, so the span and the count of its findings move with the split. The document, the lock and the rule are all unchanged, so a warm
+    /// cache from the previous engine would serve the merged verdict. The
+    /// `Sentence boundaries` paragraph of `fixtures/check/spec/07-prose-defects.md`
+    /// now ends a sentence on the code span `no`, so `tests/editions.rs` holds this change too.
+    const VERSION: u32 = 7;
     /// The body, because the regime is about prose. This declaration is the
     /// access: without it [`DocumentView::body`] returns nothing.
     const NEEDS_BODY: bool = true;
