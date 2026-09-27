@@ -3186,29 +3186,6 @@ fn a_loopback_location_is_fetched_directly_under_a_proxy_environment() {
         }
     });
 
-    let adopter = root.path().join("adopter");
-    std::fs::create_dir_all(&adopter).expect("the adopter root is made");
-    let location = format!("{base}/x.zip");
-    let output = Command::new(env!("CARGO_BIN_EXE_headwater"))
-        .args(["taxonomy", "vendor", &location, "--expect", &record.digest])
-        .arg("--root")
-        .arg(&adopter)
-        .env("HTTP_PROXY", &proxy)
-        .env("http_proxy", &proxy)
-        .env("ALL_PROXY", &proxy)
-        .env("all_proxy", &proxy)
-        .env_remove("NO_PROXY")
-        .env_remove("no_proxy")
-        .output()
-        .expect("the binary runs");
-    let stderr = String::from_utf8_lossy(&output.stderr);
-    assert_eq!(
-        connections.load(Ordering::SeqCst),
-        0,
-        "a plain-http loopback request went through the proxy:\n{stderr}"
-    );
-    assert_eq!(output.status.code(), Some(0), "{stderr}");
-
     let by_path = root.path().join("by-path");
     std::fs::create_dir_all(&by_path).expect("the adopter root is made");
     let (code, _stdout, stderr) = consumer_run(
@@ -3222,9 +3199,39 @@ fn a_loopback_location_is_fetched_directly_under_a_proxy_environment() {
         ],
     );
     assert_eq!(code, Some(0), "{stderr}");
-    assert_eq!(
-        tree(&by_path.join(package::PACKAGES)),
-        tree(&adopter.join(package::PACKAGES)),
-        "a location under a proxy environment installed other bytes than the artifact by path"
-    );
+
+    // A scheme is case-insensitive, so `HTTP://` is the same plain-http
+    // location and must skip the proxy in the same way.
+    let upper = base.replacen("http://", "HTTP://", 1);
+    for (case, location) in [
+        ("lower", format!("{base}/x.zip")),
+        ("upper", format!("{upper}/x.zip")),
+    ] {
+        let adopter = root.path().join(format!("adopter-{case}"));
+        std::fs::create_dir_all(&adopter).expect("the adopter root is made");
+        let output = Command::new(env!("CARGO_BIN_EXE_headwater"))
+            .args(["taxonomy", "vendor", &location, "--expect", &record.digest])
+            .arg("--root")
+            .arg(&adopter)
+            .env("HTTP_PROXY", &proxy)
+            .env("http_proxy", &proxy)
+            .env("ALL_PROXY", &proxy)
+            .env("all_proxy", &proxy)
+            .env_remove("NO_PROXY")
+            .env_remove("no_proxy")
+            .output()
+            .expect("the binary runs");
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        assert_eq!(
+            connections.load(Ordering::SeqCst),
+            0,
+            "the plain-http loopback request {location} went through the proxy:\n{stderr}"
+        );
+        assert_eq!(output.status.code(), Some(0), "{location}: {stderr}");
+        assert_eq!(
+            tree(&by_path.join(package::PACKAGES)),
+            tree(&adopter.join(package::PACKAGES)),
+            "{location} under a proxy environment installed other bytes than the artifact by path"
+        );
+    }
 }
