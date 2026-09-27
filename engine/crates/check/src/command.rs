@@ -419,7 +419,7 @@ fn heredoc_end(command: &str) -> Option<String> {
 
 #[cfg(test)]
 mod tests {
-    use super::{Read, programs};
+    use super::{programs, Read};
 
     fn names(text: &str, console: bool) -> Vec<(usize, String)> {
         programs(text, console)
