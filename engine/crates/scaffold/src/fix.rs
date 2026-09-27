@@ -51,6 +51,14 @@
 //! promise. A patch that landed inside a link's destination, or that turned a
 //! word into markup, changes the parse — and the parse is what is compared.
 //!
+//! # A facet write is a third writer, and it rewrites only a value
+//!
+//! [`Patch::Facets`] replaces the value of a top-level scalar facet that the
+//! front matter already declares, and it adds no key. Its guards are
+//! `set_facets`'s: the parsed value and the key's own line both read as the
+//! value the check saw, and the result reads back as the value written. It
+//! runs after the text patches, whose offsets are into the file as it stood.
+//!
 //! # One file at a time, and all of a file or none of it
 //!
 //! [`crate::write::apply`] puts every file of a scaffold on the tree or none of
@@ -115,6 +123,10 @@ pub enum Refused {
     /// an occupied path arrives here as `AlreadyExists` and never as an
     /// overwrite.
     Uncreatable { path: String, why: String },
+    /// A [`Patch::Facets`] found a facet absent, not a plain scalar on its
+    /// own line, or holding a value other than the one the check read, or
+    /// the result did not read back as the values it wrote.
+    FacetUnwritable { path: String, why: String },
 }
 
 impl Refused {
@@ -128,7 +140,8 @@ impl Refused {
             | Refused::Unparseable { path, .. }
             | Refused::Unrecognizable { path, .. }
             | Refused::HalfUnwritable { path, .. }
-            | Refused::Uncreatable { path, .. } => path,
+            | Refused::Uncreatable { path, .. }
+            | Refused::FacetUnwritable { path, .. } => path,
         }
     }
 }
@@ -177,6 +190,9 @@ impl std::fmt::Display for Refused {
                  file of the identifier claim store is the only record of who minted an \
                  identifier and nothing repairs one that was written over"
             ),
+            Refused::FacetUnwritable { path, why } => {
+                write!(f, "{path}: {why}. Nothing is written")
+            }
         }
     }
 }
@@ -337,6 +353,10 @@ fn one_file(root: &Path, path: &str, patches: &[&Patch]) -> Result<Option<Fixed>
         true => source.clone(),
         false => substitute(path, &source, &text)?,
     };
+    // After the text patches, whose offsets are into the file as it stood,
+    // and before a splice, which reads the front matter this writes.
+    let (with_facets, facets) = set_facets(path, &patched, patches)?;
+    patched = with_facets;
     for half in &halves {
         patched = splice(&patched, half).map_err(|refusal| match refusal {
             Refusal::ReciprocalUnwritable { path, why } => Refused::HalfUnwritable { path, why },
@@ -352,8 +372,115 @@ fn one_file(root: &Path, path: &str, patches: &[&Patch]) -> Result<Option<Fixed>
     Ok(Some(Fixed {
         path: path.to_string(),
         text: patched,
-        applied: text.len() + halves.len(),
+        applied: text.len() + facets + halves.len(),
     }))
+}
+
+/// Every [`Patch::Facets`] over one file, and how many of them landed.
+///
+/// Each write names a top-level key of the front-matter block and the value
+/// the check read there. The guard is two readings of that value, and both
+/// have to agree with `expect`: the parsed front matter, and the text of the
+/// key's own line. A value that spans lines or carries a comment fails the
+/// second, so the line this writer replaces is always the whole value. The
+/// result is parsed again, and every written facet has to read back as the
+/// value written.
+///
+/// Two patches can name one facet, where two successors each report one
+/// target. The first in patch order lands, and a later one that names a facet
+/// this run already wrote is not applied: its `expect` held against the file
+/// as it stood and no longer holds against the file as written, and one run
+/// writes one stamp.
+fn set_facets(path: &str, source: &str, patches: &[&Patch]) -> Result<(String, usize), Refused> {
+    let refuse = |why: String| Refused::FacetUnwritable {
+        path: path.to_string(),
+        why,
+    };
+    let scalar_of = |parsed: &headwater_doc::Document, facet: &str| -> Option<String> {
+        parsed
+            .facets
+            .get(facet)
+            .and_then(|value| value.value.as_scalar())
+            .map(|scalar| scalar.text.clone())
+    };
+    let mut current = source.to_string();
+    let mut written: Vec<&str> = Vec::new();
+    let mut landed = 0;
+    for patch in patches {
+        let Patch::Facets { set, .. } = patch else {
+            continue;
+        };
+        if set
+            .iter()
+            .any(|(facet, _, _)| written.contains(&facet.as_str()))
+        {
+            continue;
+        }
+        let parsed = headwater_doc::parse(&current)
+            .map_err(|errors| refuse(format!("{} parse errors before the write", errors.len())))?;
+        let mut lines: Vec<String> = current.lines().map(str::to_string).collect();
+        if lines.first().map(String::as_str) != Some("---") {
+            return Err(refuse(
+                "the file opens with no front-matter block".to_string(),
+            ));
+        }
+        let close = lines
+            .iter()
+            .enumerate()
+            .skip(1)
+            .find(|(_, line)| line.as_str() == "---")
+            .map(|(position, _)| position)
+            .ok_or_else(|| refuse("the front-matter block is never closed".to_string()))?;
+        for (facet, expect, value) in set {
+            let read = scalar_of(&parsed, facet);
+            if read.as_deref() != Some(expect.as_str()) {
+                return Err(refuse(format!(
+                    "`{facet}` reads {} where the check read `{expect}`",
+                    match read {
+                        Some(read) => format!("`{read}`"),
+                        None => "as no scalar".to_string(),
+                    }
+                )));
+            }
+            let key = format!("{facet}:");
+            let at = (1..close)
+                .find(|&position| lines[position].starts_with(&key))
+                .ok_or_else(|| refuse(format!("no line of the front matter opens with `{key}`")))?;
+            let rest = lines[at][key.len()..].trim();
+            let bare = rest
+                .strip_prefix('"')
+                .and_then(|rest| rest.strip_suffix('"'))
+                .or_else(|| {
+                    rest.strip_prefix('\'')
+                        .and_then(|rest| rest.strip_suffix('\''))
+                })
+                .unwrap_or(rest);
+            if bare != expect {
+                return Err(refuse(format!(
+                    "the line of `{facet}` holds `{rest}`, which is not the whole value \
+                     `{expect}`, so replacing the line is not safe"
+                )));
+            }
+            lines[at] = format!("{key} {value}");
+        }
+        let mut next = lines.join("\n");
+        if current.ends_with('\n') {
+            next.push('\n');
+        }
+        let reread = headwater_doc::parse(&next)
+            .map_err(|errors| refuse(format!("{} parse errors after the write", errors.len())))?;
+        for (facet, _, value) in set {
+            if scalar_of(&reread, facet).as_deref() != Some(value.as_str()) {
+                return Err(refuse(format!(
+                    "`{facet}` does not read back as `{value}` after the write"
+                )));
+            }
+        }
+        written.extend(set.iter().map(|(facet, _, _)| facet.as_str()));
+        current = next;
+        landed += 1;
+    }
+    Ok((current, landed))
 }
 
 /// The halves this file owes, each one once.
@@ -862,6 +989,114 @@ mod tests {
         assert_eq!(composed.files[0].path, "a.md");
         assert_eq!(composed.refused.len(), 1);
         assert_eq!(composed.refused[0].path(), "b.md");
+    }
+
+    const RETIRED: &str = "---\nid: D-3\nstatus: current\nstatus_since: 2026-07-01\nsummary: a target\n---\n\n# Three\n\nWords.\n";
+
+    fn facets(path: &str, state: (&str, &str), since: (&str, &str)) -> Patch {
+        Patch::Facets {
+            path: path.to_string(),
+            set: vec![
+                (
+                    "status".to_string(),
+                    state.0.to_string(),
+                    state.1.to_string(),
+                ),
+                (
+                    "status_since".to_string(),
+                    since.0.to_string(),
+                    since.1.to_string(),
+                ),
+            ],
+        }
+    }
+
+    /// A state and its stamp land together, and nothing else in the file
+    /// moves (#1198).
+    #[test]
+    fn a_state_and_its_stamp_land_together() {
+        let dir = tree(&[("c.md", RETIRED)]);
+        let composed = compose(
+            dir.path(),
+            &[facets(
+                "c.md",
+                ("current", "superseded"),
+                ("2026-07-01", "2026-08-05"),
+            )],
+        );
+        assert!(composed.refused.is_empty(), "{:?}", composed.refused);
+        assert_eq!(composed.files[0].applied, 1);
+        assert_eq!(
+            composed.files[0].text,
+            RETIRED
+                .replace("status: current", "status: superseded")
+                .replace("status_since: 2026-07-01", "status_since: 2026-08-05")
+        );
+    }
+
+    /// The guard: one value the check read that no longer holds refuses the
+    /// whole patch, so the state never lands without its stamp.
+    #[test]
+    fn a_facet_that_moved_refuses_both_writes() {
+        let dir = tree(&[("c.md", RETIRED)]);
+        let composed = compose(
+            dir.path(),
+            &[facets(
+                "c.md",
+                ("current", "superseded"),
+                ("2026-06-30", "2026-08-05"),
+            )],
+        );
+        assert!(composed.files.is_empty(), "{:?}", composed.files);
+        assert_eq!(composed.refused.len(), 1);
+        assert!(
+            matches!(&composed.refused[0], Refused::FacetUnwritable { why, .. } if why.contains("status_since")),
+            "{:?}",
+            composed.refused
+        );
+    }
+
+    /// A value whose line is not the whole value is refused rather than
+    /// rewritten, because replacing the line would drop the rest of it.
+    #[test]
+    fn a_facet_line_that_carries_more_than_its_value_is_refused() {
+        let source = RETIRED.replace("status: current", "status: current # held");
+        let dir = tree(&[("c.md", source.as_str())]);
+        let composed = compose(
+            dir.path(),
+            &[facets(
+                "c.md",
+                ("current", "superseded"),
+                ("2026-07-01", "2026-08-05"),
+            )],
+        );
+        assert!(composed.files.is_empty(), "{:?}", composed.files);
+        assert_eq!(composed.refused.len(), 1, "{:?}", composed.refused);
+    }
+
+    /// Two successors of one target each offer a stamp. The first lands and
+    /// the second is not applied, so one run writes one stamp.
+    #[test]
+    fn two_facet_patches_over_one_facet_write_it_once() {
+        let dir = tree(&[("c.md", RETIRED)]);
+        let composed = compose(
+            dir.path(),
+            &[
+                facets(
+                    "c.md",
+                    ("current", "superseded"),
+                    ("2026-07-01", "2026-08-05"),
+                ),
+                facets(
+                    "c.md",
+                    ("current", "superseded"),
+                    ("2026-07-01", "2026-08-09"),
+                ),
+            ],
+        );
+        assert!(composed.refused.is_empty(), "{:?}", composed.refused);
+        assert_eq!(composed.files[0].applied, 1);
+        assert!(composed.files[0].text.contains("status_since: 2026-08-05\n"));
     }
 
     /// A directory that cleans itself up, so no fixture leaves a tree behind.
