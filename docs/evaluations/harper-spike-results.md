@@ -85,7 +85,7 @@ relations:
 | category today | Harper | why |
 |---|---|---|
 | contraction | do not touch | Harper missed the seeded one |
-| British spelling | complement at most | Harper found it, with one wrong suggestion. Its dictionary flagged 1,069 words on the sample, which are 283 distinct strings. The 10 of them read by hand were all correct terms |
+| British spelling | complement at most | Harper found it, with one wrong suggestion. Its dictionary flagged 1,069 words on the sample, which are 285 distinct byte strings. The 10 of them read by hand were all correct terms |
 | sentence length, 25 words | do not touch | Harper's threshold is higher, and it missed a 31-word sentence |
 | semicolon | do not touch | Harper missed it |
 | retired terms | do not touch | Harper has no such list, and `retired_terms` is the mechanism |
@@ -119,4 +119,4 @@ The only category that Harper adds and the engine lacks is grammar: a doubled wo
 
 ## Configuration
 
-**Harper takes a user dictionary and pattern rules of its own, called Weir.** An adopter could add terms and house rules through them without a new Headwater rule language. But the word list of this corpus would have to be written first. On 25 documents, SpellCheck made 1,069 findings over 283 distinct strings. So a list for the sample alone holds at most 283 entries. Some of those strings can be real errors, because only 10 findings were read by hand. This is a smaller list than the first version of this page stated. The recommendation of [HW-DR-0096](../decisions/0096-harper-does-not-become-part-of-the-engine-now-and-q41-stands.md) does not rest on this number. `retired_terms` in the overlay already does what a Weir rule for a retired term would do, and the engine reads it.
+**Harper takes a user dictionary and pattern rules of its own, called Weir.** An adopter could add terms and house rules through them without a new Headwater rule language. But the word list of this corpus would have to be written first. On 25 documents, SpellCheck made 1,069 findings over 285 distinct byte strings, counted with `LC_ALL=C sort -u`. So a list for the sample alone holds at most 285 entries. If the list ignores case, 279 strings are distinct, and this page did not test which one Harper does. Some of those strings can be real errors, because only 10 findings were read by hand. This is a smaller list than the first version of this page stated. The recommendation of [HW-DR-0096](../decisions/0096-harper-does-not-become-part-of-the-engine-now-and-q41-stands.md) does not rest on this number. `retired_terms` in the overlay already does what a Weir rule for a retired term would do, and the engine reads it.
