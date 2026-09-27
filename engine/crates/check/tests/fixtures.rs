@@ -104,7 +104,16 @@ fn run_at(
     cache: &mut Cache,
     adoption: Option<&Mapping>,
 ) -> Run {
-    run_scanning(corpus, root, lock, source, ctx, cache, adoption, &corpus.base)
+    run_scanning(
+        corpus,
+        root,
+        lock,
+        source,
+        ctx,
+        cache,
+        adoption,
+        &corpus.base,
+    )
 }
 
 /// [`run_at`], with the tree that `comment-scan` reads named apart from the
@@ -904,10 +913,8 @@ fn this_repository_binds_hw_ver_0001_under_test_site_and_a_removed_citation_unbi
     // with every citation of the identifier taken out. Keyed on the test name
     // and the pid, because cargo runs this file's cases as threads of one
     // process.
-    let scan = Path::new(env!("CARGO_TARGET_TMPDIR")).join(format!(
-        "removed-citation-{}",
-        std::process::id()
-    ));
+    let scan = Path::new(env!("CARGO_TARGET_TMPDIR"))
+        .join(format!("removed-citation-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&scan);
     let claim = ".headwater/ids/verification_id/HW-VER-0001";
     std::fs::create_dir_all(scan.join(claim).parent().expect("a parent"))

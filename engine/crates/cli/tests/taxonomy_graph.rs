@@ -572,7 +572,10 @@ fn the_drawing_holds_every_kind_anchor_and_pair_the_committed_lock_declares() {
             .iter()
             .chain(&expected.captioned)
             .any(|(_, _, to)| to == anchor);
-        assert!(reached, "no relation reaches the anchor `{anchor}`:\n{text}");
+        assert!(
+            reached,
+            "no relation reaches the anchor `{anchor}`:\n{text}"
+        );
     }
     assert!(
         edges(&text)
