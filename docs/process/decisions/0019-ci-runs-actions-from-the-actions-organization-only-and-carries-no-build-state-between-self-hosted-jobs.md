@@ -14,7 +14,7 @@ provenance:
 relations:
   governs:
     - to: .github/workflows/ci.yml
-      verified_revision: sha256:a4195cba139ce6094882dc4531fe20ed780aef3eabfc987a9e906606e46635ee
+      verified_revision: sha256:f43f09ae7167f09120459b0e332f3e8cdc6a32c6eb8aafaa003933e67368a904
 ---
 
 # CI runs actions from the actions organization only, and carries no build state between self-hosted jobs

@@ -134,6 +134,7 @@ nav:
       - "How-to guides": "how-to/README.md"
       - "Cut a release": "how-to/cut-a-release.md"
       - "Diagnose an isolation failure": "how-to/diagnose-an-isolation-failure.md"
+      - "Keep derived files from conflicting in parallel pull requests": "how-to/keep-derived-files-from-conflicting-in-parallel-pull-requests.md"
       - "Mine the shadow-mode routing log": "how-to/mine-the-shadow-mode-routing-log.md"
       - "Relocate a shelf": "how-to/relocate-a-shelf.md"
       - "Wire headwater check into your own workflow": "how-to/wire-headwater-check-into-your-own-workflow.md"

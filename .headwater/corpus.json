@@ -22,7 +22,7 @@
       "taxonomy": {
         "package": "headwater/standard",
         "version": "4.9.1",
-        "lock": "sha256:37bda33ec603ce5c1ee7d7749982826998cfdbdf18ab8c5954b7a47113d4c1f3"
+        "lock": "sha256:3ff24241d3911f302b8de6ac886da0d94727208debd3c5b49308e274f4f4f1a2"
       },
       "entry_points": [
         {
@@ -111,14 +111,7 @@
           "id": "HW-VER-0001"
         }
       ],
-      "exports": [
-        {
-          "profile": "site",
-          "target": "json",
-          "output": ".headwater/export.json",
-          "filtered": false
-        }
-      ]
+      "exports": []
     }
   ]
 }

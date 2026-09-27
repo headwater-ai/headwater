@@ -1574,15 +1574,24 @@ jobs:
         # MkDocs install earlier in this job supplies, so every shape of `on:`
         # that GitHub runs is read. It builds nothing and opens no socket.
         run: sh tools/repo/release-guide-fixtures.sh
-      - name: Every declared export profile is what this corpus produces
-        # `export_plan()` is a separate code path from `plan()`: it re-filters
-        # the declared projections by `--profile` rather than writing every
-        # one of them, so the step above never exercises it. A declaration
-        # with no filter, like the `graph_export` entry this corpus carries,
-        # takes the same path a narrower profile would, and this step is what
-        # holds that path to a committed, current file rather than trusting
-        # the step above to cover it by coincidence.
-        run: ./engine/target/release/headwater export --check
+      - name: The graph export is computed at build time and never committed
+        # This corpus declares no `graph_export` since #1251, so `export --check`
+        # would hold nothing here: it reports that no declaration produced a
+        # file and exits 0. `crates/cli/tests/json.rs` and `export.rs` hold
+        # `export_plan()` over fixture corpora that declare profiles. This step
+        # holds the two things that replaced the committed file. The export a
+        # build step reads is computed from the tree by one command, which
+        # exits 0 with a graph on standard output. And the path is not
+        # tracked, because a committed copy moved on nearly every pull request
+        # and conflicted on every pair of them, and a forge reads no merge
+        # attribute that could stop that (HW-DR-0049).
+        run: |
+          ./engine/target/release/headwater export --format json > "$RUNNER_TEMP/export.json"
+          test -s "$RUNNER_TEMP/export.json"
+          if git ls-files --error-unmatch .headwater/export.json >/dev/null 2>&1; then
+            echo "::error file=.headwater/export.json::the graph export is committed; it is computed at build time (#1251)"
+            exit 1
+          fi
       - name: This repository is at the rung it claims
         # `headwater conformance` measures the adoption rather than the corpus,
         # and with no flag it exits 0 whatever it finds. `--level L0` is the one
