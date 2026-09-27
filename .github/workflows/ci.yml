@@ -30,7 +30,10 @@
 # this file must obey. Read that document before changing any of them.
 #
 # 1. `runs-on` decides self-hosted eligibility on `github.event_name` and on
-#    nothing else. Never key it on which repository opened a pull request,
+#    nothing else. `push` and `merge_group` are eligible, and `pull_request`
+#    is not. GitHub builds a `merge_group` ref from this repository's `main`
+#    and the heads of pull requests a person with write access queued, so it
+#    is trusted as a `push` is. Never key it on which repository opened a pull request,
 #    or on any field a pull request's author can influence. A fork runs its
 #    own copy of this file, so no condition here defends against one. The
 #    router of rule 6 may send an eligible job to a hosted runner, and it
@@ -82,10 +85,18 @@ name: CI
 # someone with commit access and read by nobody yet, which is the case the
 # self-hosted container exists to bound and to make fast. What makes a `push`
 # eligible for self-hosted is that it is a `push`, whichever branch it lands on.
+#
+# `merge_group` is the merge queue's trigger, and the queue merges nothing
+# until the two required checks report on the group's ref. `checks_requested`
+# is the one type GitHub sends. The queue's own branches, `gh-readonly-queue/`,
+# are excluded from `push`, so one queued commit starts one run and not two
+# that share one concurrency group and cancel each other.
 on:
   push:
-    branches: ['**']
+    branches: ['**', '!gh-readonly-queue/**']
   pull_request:
+  merge_group:
+    types: [checks_requested]
 
 # On the self-hosted runner a superseded run is not merely wasted compute: a
 # pool of three slots serves this repository (two until 2026-09-23), a run is
@@ -97,7 +108,11 @@ on:
 #
 # The group is per ref, so two different pull requests never cancel each
 # other. `github.ref` is `refs/pull/N/merge` on a pull request and
-# `refs/heads/main` on a push, which separates them without a second key.
+# `refs/heads/main` on a push, which separates them without a second key. On
+# a `merge_group` it is `refs/heads/gh-readonly-queue/main/pr-N-<sha>`, one
+# ref for each queue entry, so one entry's run never cancels another's. When
+# the queue rebuilds a group it makes new refs, and the old runs are
+# GitHub's to stop.
 #
 # Cancellation is for every ref but `main`. A run on `main` is the only thing
 # that reads the composition of merges, so two merges landing a minute apart
@@ -159,7 +174,7 @@ jobs:
             echo "overflow=false" >> "$GITHUB_OUTPUT"
             exit 0
           }
-          if [ "$EVENT" != push ]; then
+          if [ "$EVENT" != push ] && [ "$EVENT" != merge_group ]; then
             echo "route: a $EVENT run never reaches self-hosted -> hosted"
             echo "overflow=true" >> "$GITHUB_OUTPUT"
             exit 0
@@ -204,13 +219,13 @@ jobs:
     # `push` run on the same commit already answered. It takes work away and
     # grants none (header rule 3), which is why it may read a pull request
     # field here and `runs-on` below may not.
-    if: ${{ !cancelled() && (github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository) }}
+    if: ${{ !cancelled() && (github.event_name == 'push' || github.event_name == 'merge_group' || github.event.pull_request.head.repo.full_name != github.repository) }}
     # `!cancelled()` in the `if:` above runs this job when `route` fails as
     # a job, so this `needs:` delays it by one short hosted job and never
     # skips it (header rule 6). With no output the job routes as it did
     # before `route` existed.
     needs: route
-    # `CI_RUNNER` is only read on a `push`, and its own unset fallback is
+    # `CI_RUNNER` is only read on a `push` or a `merge_group`, and its own unset fallback is
     # `ubuntu-latest`: the self-hosted labels are an opt-in the variable has
     # to name explicitly (`gh variable set CI_RUNNER --body '["self-hosted",
     # "headwater"]'`), not a default. A `pull_request` never reaches that
@@ -220,7 +235,7 @@ jobs:
     # pull request that has gone `CONFLICTING` against a moved `main` gets
     # no check-suite at all, on either runner, which looks the same from
     # here.
-    runs-on: ${{ github.event_name == 'push' && needs.route.outputs.overflow != 'true' && fromJSON(vars.CI_RUNNER || '["ubuntu-latest"]') || fromJSON('["ubuntu-latest"]') }}
+    runs-on: ${{ (github.event_name == 'push' || github.event_name == 'merge_group') && needs.route.outputs.overflow != 'true' && fromJSON(vars.CI_RUNNER || '["ubuntu-latest"]') || fromJSON('["ubuntu-latest"]') }}
     steps:
       - uses: actions/checkout@v4
       - name: The cargo cache, on a hosted runner only
@@ -486,11 +501,11 @@ jobs:
     name: headwater check (advisory)
     # Both expressions are the `engine` job's, and so are both reasons: that
     # job carries why a same-repo pull request skips here, and the
-    # top-of-file comment carries why `push` is the only trigger this file
-    # trusts with the self-hosted label.
-    if: ${{ !cancelled() && (github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository) }}
+    # top-of-file comment carries why `push` and `merge_group` are the only
+    # triggers this file trusts with the self-hosted label.
+    if: ${{ !cancelled() && (github.event_name == 'push' || github.event_name == 'merge_group' || github.event.pull_request.head.repo.full_name != github.repository) }}
     needs: route
-    runs-on: ${{ github.event_name == 'push' && needs.route.outputs.overflow != 'true' && fromJSON(vars.CI_RUNNER || '["ubuntu-latest"]') || fromJSON('["ubuntu-latest"]') }}
+    runs-on: ${{ (github.event_name == 'push' || github.event_name == 'merge_group') && needs.route.outputs.overflow != 'true' && fromJSON(vars.CI_RUNNER || '["ubuntu-latest"]') || fromJSON('["ubuntu-latest"]') }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -1219,8 +1234,9 @@ jobs:
           fi
           exit "$status"
       - name: The tools a build-order stage calls behave as their agent definitions say
-        # Six scripts that every stage of a run calls in place of a command
-        # it once retyped: the CI-finished condition, the board move, the
+        # Seven scripts that every stage of a run calls in place of a command
+        # it once retyped: the CI-finished condition, the queue-finished
+        # condition, the board move, the
         # single-issue reads and writes, the capped wait, the fetched-added-
         # built worktree and the cargo slot wrapper. Each suite was written
         # with its script and none was run by anything until run
@@ -1229,6 +1245,7 @@ jobs:
         # token and no toolchain, and writes only under temporary directories.
         run: |
           sh tools/run/ci-done-fixtures.sh
+          sh tools/run/queue-done-fixtures.sh
           sh tools/run/board-move-fixtures.sh
           sh tools/run/gh-issue-fixtures.sh
           sh tools/run/wait-for-fixtures.sh
