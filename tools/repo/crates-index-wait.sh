@@ -80,11 +80,21 @@ index_path() {
 }
 
 # crates.io refuses curl's default User-Agent, and the CDN in front of the
-# index serves a cached file unless asked not to.
+# index serves a cached file unless asked not to. The match takes the closing
+# quote, so `0.4.0-rc1` is not `0.4.0`, and it passes over a line the index
+# marks yanked, which a new publish cannot resolve. `why` keeps the last
+# reason a read failed, so the error can tell a request that failed (a 429, a
+# refused connection, a name that does not resolve) from an index that
+# answered without the version.
+why=
 listed() {
-    curl -fsS -H 'User-Agent: headwater-publish-workflow (https://github.com/headwater-ai/headwater)' \
-        -H 'Cache-Control: no-cache' "$base/$(index_path "$1")" 2>/dev/null |
-        grep -qF "\"vers\":\"$version\""
+    if ! body=$(curl -fsS -H 'User-Agent: headwater-publish-workflow (https://github.com/headwater-ai/headwater)' \
+        -H 'Cache-Control: no-cache' "$base/$(index_path "$1")" 2>&1); then
+        why="the last request failed: $(printf '%s\n' "$body" | tail -n 1)"
+        return 1
+    fi
+    why="the index answered, and no line has an unyanked \"vers\":\"$version\""
+    printf '%s\n' "$body" | grep -F "\"vers\":\"$version\"" | grep -qvF '"yanked":true'
 }
 
 for name in $names; do
@@ -93,9 +103,9 @@ for name in $names; do
         waited=$(($(date +%s) - start))
         if [ "$waited" -ge "$deadline" ]; then
             if [ "$mode" = published ]; then
-                echo "::error::$crate: the crates.io index does not list $crate $version after ${deadline}s, though cargo publish returned"
+                echo "::error::$crate: the crates.io index does not list $crate $version after ${deadline}s, though cargo publish returned ($why)"
             else
-                echo "::error::$crate: the crates.io index does not list $name $version after ${deadline}s"
+                echo "::error::$crate: the crates.io index does not list $name $version after ${deadline}s ($why)"
             fi
             exit 1
         fi
