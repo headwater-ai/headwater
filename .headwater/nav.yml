@@ -434,6 +434,7 @@ nav:
       - "Each release workflow compares the tag with the version its artifact states and refuses an empty reading": "process/decisions/0010-each-release-workflow-compares-the-tag-with-the-version-its-artifact-states-and-refuses-an-empty-reading.md"
       - "Crates publish in one fixed order that a test holds, and a rerun continues where the last run stopped": "process/decisions/0011-crates-publish-in-one-fixed-order-that-a-test-holds-and-a-rerun-continues-where-the-last-run-stopped.md"
       - "The release workflows are separate from CI, one tag value serves both entry points, and fixtures read them statically": "process/decisions/0012-the-release-workflows-are-separate-from-ci-one-tag-value-serves-both-entry-points-and-fixtures-read-them-statically.md"
+      - "Merges go through the GitHub merge queue, one squash commit per pull request": "process/decisions/0020-merges-go-through-the-github-merge-queue-one-squash-commit-per-pull-request.md"
   - "Requirements":
       - "Requirements": "requirements/README.md"
       - "The engine reaches no network at check time": "requirements/0001-the-engine-reaches-no-network-at-check-time.md"
