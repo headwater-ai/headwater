@@ -784,9 +784,15 @@ fresh_workspace() {
     rm -rf "$scratch/ablate-ws"
     mkdir -p "$scratch/ablate-ws/.claude" "$scratch/ablate-ws/.githooks" \
         "$scratch/ablate-ws/.headwater" "$scratch/ablate-ws/docs/spec" \
-        "$scratch/ablate-ws/engine" "$scratch/ablate-ws/tools"
+        "$scratch/ablate-ws/docs/probes" "$scratch/ablate-ws/docs/probe-runs" \
+        "$scratch/ablate-ws/engine/crates/census/fixtures" \
+        "$scratch/ablate-ws/site/tutorial" "$scratch/ablate-ws/tools"
     : > "$scratch/ablate-ws/CLAUDE.md"
     : > "$scratch/ablate-ws/docs/spec/05.md"
+    : > "$scratch/ablate-ws/docs/probes/p.md"
+    : > "$scratch/ablate-ws/engine/crates/census/fixtures/corpus.census"
+    : > "$scratch/ablate-ws/site/tutorial/index.html"
+    : > "$scratch/ablate-ws/site/index.html"
 }
 kept() {
     # $1 name, then the paths that must still exist, then `--`, then the
@@ -813,21 +819,52 @@ kept() {
 fresh_workspace
 sh "$ablate" campaign "$scratch/ablate-ws" >/dev/null 2>"$scratch/ablate.err"
 same "ablate.sh produces the campaign's absent arm" "0" "$?"
-kept "the campaign removes the four governance paths and keeps docs/" \
-    docs docs/spec/05.md engine tools -- CLAUDE.md .claude .githooks .headwater
+kept "the campaign removes the four governance paths and the instrument, and keeps the rest of docs/" \
+    docs docs/spec/05.md engine/crates/census/fixtures/corpus.census site/tutorial/index.html tools \
+    -- CLAUDE.md .claude .githooks .headwater docs/probes docs/probe-runs
 
 fresh_workspace
 sh "$ablate" documentation "$scratch/ablate-ws" >/dev/null 2>"$scratch/ablate.err"
 same "ablate.sh produces the documentation tier's absent arm" "0" "$?"
-kept "the documentation tier removes the four governance paths and docs/" \
-    engine tools -- CLAUDE.md .claude .githooks .headwater docs
+kept "the documentation tier removes the four governance paths, docs/ and the two copies outside it" \
+    engine/crates/census/fixtures site/index.html tools \
+    -- CLAUDE.md .claude .githooks .headwater docs \
+    engine/crates/census/fixtures/corpus.census site/tutorial/index.html
+
+fresh_workspace
+sh "$ablate" --present "$scratch/ablate-ws" >/dev/null 2>"$scratch/ablate.err"
+same "ablate.sh produces a present arm" "0" "$?"
+kept "a present arm loses the instrument and nothing else" \
+    CLAUDE.md .claude .githooks .headwater docs/spec/05.md \
+    engine/crates/census/fixtures/corpus.census site/tutorial/index.html \
+    -- docs/probes docs/probe-runs
+
+same "ablate.sh lists the instrument the checkout declares" \
+    "docs/probes docs/probe-runs docs/probe-results" \
+    "$(sh "$ablate" --instrument | tr '\n' ' ' | sed 's/ $//')"
+
+printf 'tiers:\n  regression:\n    budget_cents: 1\n    session_cost_cents: 1\n    repetitions: 1\n    arms: [present]\n' \
+    > "$scratch/no-instrument.yml"
+fresh_workspace
+HW_PROBE_YML="$scratch/no-instrument.yml" sh "$ablate" --present "$scratch/ablate-ws" \
+    >/dev/null 2>"$scratch/ablate.err"
+same "a present arm with no instrument declared exits 0" "0" "$?"
+kept "and removes nothing, and never the workspace itself" \
+    CLAUDE.md .claude docs docs/probes engine tools --
+
+fresh_workspace
+sh "$driver" --probe PROBE-FIX-opened --session x --task-file "$scratch/task.md" \
+    --workspace "$scratch/ablate-ws" >/dev/null 2>"$scratch/driver-instrument.err"
+same "the driver refuses a workspace that still holds the instrument" "8" "$?"
+present "and it names the path and the command that prepares the arm" \
+    "sh tools/probe/ablate.sh --present" "$scratch/driver-instrument.err"
 
 fresh_workspace
 sh "$ablate" regression "$scratch/ablate-ws" >/dev/null 2>"$scratch/ablate.err"
 same "ablate.sh refuses the regression tier, which runs no absent arm" "2" "$?"
 present "and it names the tier" "\`regression\` tier declares no ablation" "$scratch/ablate.err"
 kept "and the refused workspace is untouched" \
-    CLAUDE.md .claude .githooks .headwater docs engine tools --
+    CLAUDE.md .claude .githooks .headwater docs docs/probes engine tools --
 
 fresh_workspace
 sh "$ablate" sweep "$scratch/ablate-ws" >/dev/null 2>"$scratch/ablate.err"
@@ -852,7 +889,7 @@ YML
         >/dev/null 2>"$scratch/ablate.err"
     same "ablate.sh refuses the ablation entry $entry" "2" "$?"
     kept "and removes nothing, not even the safe entry before it" \
-        CLAUDE.md .claude .githooks .headwater docs engine tools --
+        CLAUDE.md .claude .githooks .headwater docs docs/probes engine tools --
 done
 
 cat > "$scratch/block-probe.yml" <<'YML'

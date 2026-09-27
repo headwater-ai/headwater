@@ -1,13 +1,13 @@
 ---
-id: HW-PROBE-a-session-names-the-merge-and-not-the-stamp-as-what-accepts-a-document
+id: HW-PROBE-a-session-names-the-event-that-makes-a-document-accepted
 status: current
 status_since: 2026-09-27
-summary: A session says what makes a document accepted, and only the ruling in docs/decisions answers the merge onto main rather than the accepted_by stamp the field name suggests.
+summary: A session picks one of two events as the one that makes a document accepted, and a ruling under docs/decisions decides which.
 last_verified: 2026-09-27
 probe_category: sufficiency
 expectation: answered
 oracle: "none"
-title: "A session names the merge and not the stamp as what accepts a document"
+title: "A session names the event that makes a document accepted"
 provenance:
   warrant: asserted
   agency: mixed
@@ -20,7 +20,7 @@ relations:
     - HW-DR-0034
 ---
 
-# A session names the merge and not the stamp as what accepts a document
+# A session names the event that makes a document accepted
 
 ## Task
 
@@ -42,7 +42,9 @@ The task offers two values, and the closed set holds one. So `stamp` is an answe
 
 **The convention is [HW-DR-0034](../decisions/0034-q34-whether-acceptance-means-merged-to-main-and-what-an-agent-may-write-before-that.md).** Acceptance is the merge onto `main`, and a provenance block on a branch states a proposal. The default goes the other way. The field is named for the person who accepts, so a session that never read the ruling reads the stamp as the acceptance.
 
-**This probe is for the `documentation` tier.** Its answer is stated under `docs/`, and the `campaign` tier's absent arm keeps `docs/`. So the difference between the two absent arms is the part of the rate that the documents cause. The authoring skill under `.claude/` also states the ruling, and both absent arms remove it.
+**This probe is for the `documentation` tier.** Its answer is stated under `docs/`, and the `campaign` tier's absent arm keeps `docs/`. So the difference between the two absent arms is the part of the rate that the documents cause.
+
+**Where else the answer is written, and which arm holds it.** This document states the answer, so it is part of the instrument that `.headwater/probe.yml` names, and every arm of every tier removes it. The name of this document states no answer, because `engine/crates/census/fixtures/corpus.census` lists it and that file sits outside `docs/`. The same census fixture lists the file name of the decision, and that name states the ruling. So the `documentation` ablation removes the census fixture with `docs/`. The authoring skill under `.claude/` also states the ruling, and both absent arms remove it.
 
 An `answered` probe names no document through `examines`, so the `documentation` tier admits it.
 

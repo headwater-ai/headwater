@@ -40,7 +40,7 @@ All subcommands require a readable `.headwater/probe.yml`, a readable taxonomy l
 
 | Subcommand | Options | What it does |
 |---|---|---|
-| `plan` | `--tier <regression\|campaign\|documentation>` | Select the tier. The default is `regression`. A paired tier refuses a probe whose predicate names a document that its own ablation removes. |
+| `plan` | `--tier <regression\|campaign\|documentation>` | Select the tier. The default is `regression`. A paired tier refuses a probe whose predicate names a document that its own ablation removes. Every tier refuses one whose document sits under the `instrument`, which every arm removes. |
 | `plan` | `--arm <present\|absent>` | Narrow the declared arms. An arm the tier does not declare refuses the run and names the arms it does declare. |
 | `plan` | `--category <name>` | Narrow the selection to one declared category. |
 | `plan` | `--seed <n>` | Record the caller's rotation seed. It does not select a subset. The default is `0`. |

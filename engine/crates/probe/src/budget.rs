@@ -63,6 +63,11 @@ pub struct Envelope {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Budgets {
     pub tiers: Vec<Envelope>,
+    /// The paths, relative to the repository root, that every arm of every
+    /// tier removes: the probe shelves, whose documents state the answer each
+    /// probe expects. They are the instrument and not the treatment, so no
+    /// arm holds them. Empty where the file declares none.
+    pub instrument: Vec<String>,
 }
 
 impl Budgets {
@@ -94,6 +99,17 @@ impl Budgets {
             )));
         };
 
+        let instrument = match root.get("instrument") {
+            None => Vec::new(),
+            Some(listed) => paths(&listed.value)
+                .ok_or_else(|| {
+                    Unreadable::Malformed(format!(
+                        "`instrument` in {PATH} is not a sequence of paths"
+                    ))
+                })?
+                .map_err(|entry| Unreadable::InstrumentUnsafe { entry })?,
+        };
+
         let mut tiers = Vec::new();
         for entry in block {
             let name = entry.key.value.as_str();
@@ -112,7 +128,7 @@ impl Budgets {
                 "{PATH} declares no tier, and a run at a tier with no envelope cannot fail closed"
             )));
         }
-        Ok(Budgets { tiers })
+        Ok(Budgets { tiers, instrument })
     }
 }
 
@@ -182,27 +198,16 @@ fn envelope(tier: Tier, fields: &Mapping) -> Result<Envelope, Unreadable> {
     // Spec 5: the absent arm names a declared ablation. An absent arm with
     // none is whatever a script happens to remove, and an ablation with no
     // absent arm is declared and never applied.
-    let mut ablation = Vec::new();
-    if let Some(listed) = fields.get("ablation") {
-        let Some(items) = listed.value.as_seq() else {
-            return Err(Unreadable::Malformed(format!(
-                "`ablation` of the `{name}` tier in {PATH} is not a sequence of paths"
-            )));
-        };
-        for item in items {
-            let entry = item
-                .value
-                .as_scalar()
-                .map(|scalar| scalar.text.clone())
-                .unwrap_or_default();
-            if !ablation_entry_is_safe(&entry) {
-                return Err(Unreadable::AblationUnsafe { tier: name, entry });
-            }
-            if !ablation.contains(&entry) {
-                ablation.push(entry);
-            }
-        }
-    }
+    let ablation = match fields.get("ablation") {
+        None => Vec::new(),
+        Some(listed) => paths(&listed.value)
+            .ok_or_else(|| {
+                Unreadable::Malformed(format!(
+                    "`ablation` of the `{name}` tier in {PATH} is not a sequence of paths"
+                ))
+            })?
+            .map_err(|entry| Unreadable::AblationUnsafe { tier: name, entry })?,
+    };
     let absent = arms.contains(&Arm::Absent);
     if absent && ablation.is_empty() {
         return Err(Unreadable::AblationUndeclared { tier: name });
@@ -219,6 +224,29 @@ fn envelope(tier: Tier, fields: &Mapping) -> Result<Envelope, Unreadable> {
         arms,
         ablation,
     })
+}
+
+/// A sequence of paths inside the tree, deduplicated in declared order.
+///
+/// `None` where the value is not a sequence, and the first unsafe entry as the
+/// error.
+fn paths(value: &Value) -> Option<Result<Vec<String>, String>> {
+    let items = value.as_seq()?;
+    let mut paths: Vec<String> = Vec::new();
+    for item in items {
+        let entry = item
+            .value
+            .as_scalar()
+            .map(|scalar| scalar.text.clone())
+            .unwrap_or_default();
+        if !ablation_entry_is_safe(&entry) {
+            return Some(Err(entry));
+        }
+        if !paths.contains(&entry) {
+            paths.push(entry);
+        }
+    }
+    Some(Ok(paths))
 }
 
 /// Whether an ablation entry names a path inside the tree.
@@ -268,6 +296,9 @@ pub enum Unreadable {
     },
     AblationUnsafe {
         tier: &'static str,
+        entry: String,
+    },
+    InstrumentUnsafe {
         entry: String,
     },
 }
@@ -324,6 +355,12 @@ impl std::fmt::Display for Unreadable {
                 "the `{tier}` tier's ablation names `{entry}`. An entry is a path inside the \
                  tree, relative to its root, with no `..`, `.` or empty component, because \
                  the absent arm removes it with `rm -rf`"
+            ),
+            Unreadable::InstrumentUnsafe { entry } => write!(
+                f,
+                "the `instrument` of {PATH} names `{entry}`. An entry is a path inside the tree, \
+                 relative to its root, with no `..`, `.` or empty component, because every arm \
+                 removes it with `rm -rf`"
             ),
         }
     }

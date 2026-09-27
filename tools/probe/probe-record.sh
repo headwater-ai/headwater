@@ -174,6 +174,16 @@ if [ "$identity_only" = 0 ] && [ "$provider_only" = 0 ] && [ "$answer_only" = 0 
         echo "probe-record: that is a live pointer into this repository's history, most likely left by \`cp -a\` of a worktree. Strip \`.git\` from the copy before recording." >&2
         exit 4
     fi
+    # The instrument: the probe shelves every arm removes, because a probe
+    # document states the answer it expects. A workspace that still holds one
+    # hands the session its own answer key.
+    for path in $(sh "$root/tools/probe/ablate.sh" --instrument); do
+        if [ -e "$here/$path" ]; then
+            echo "probe-record: the workspace at $here still holds \`$path\`, which every arm removes." >&2
+            echo "probe-record: prepare it with \`sh tools/probe/ablate.sh --present <workspace>\` or \`sh tools/probe/ablate.sh <tier> <workspace>\`." >&2
+            exit 8
+        fi
+    done
 fi
 
 command -v jq >/dev/null 2>&1 || {

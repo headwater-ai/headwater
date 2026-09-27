@@ -9,6 +9,18 @@
 # place.
 #
 #     sh tools/probe/ablate.sh <tier> <workspace>
+#     sh tools/probe/ablate.sh --present <workspace>
+#     sh tools/probe/ablate.sh --instrument
+#
+# `--instrument` prints the instrument entries, one per line, and touches
+# nothing. `probe-record.sh` reads it to refuse a workspace that still holds
+# one.
+#
+# Every arm also loses the `instrument`, the top-level sequence of the same
+# file: the probe shelves, whose documents state the answer each probe
+# expects. `--present` produces a present-arm tree, which removes the
+# instrument alone, and it is how every present arm, the regression tier's
+# included, is prepared.
 #
 # `campaign` removes `CLAUDE.md`, `.claude/`, `.githooks/` and `.headwater/`.
 # `documentation` removes those four and `docs/`. The list is read from the
@@ -52,21 +64,31 @@ case $0 in
 esac
 root=$(cd "$invoked_from/../.." && pwd -P)
 
-usage="usage: sh tools/probe/ablate.sh <tier> <workspace>"
+usage="usage: sh tools/probe/ablate.sh <tier> <workspace>, --present <workspace>, or --instrument"
 tier=${1:-}
 workspace=${2:-}
-[ -n "$tier" ] && [ -n "$workspace" ] || {
-    echo "$usage" >&2
-    exit 2
-}
-here=$(cd "$workspace" 2>/dev/null && pwd -P) || {
-    echo "ablate: no workspace directory at $workspace" >&2
-    exit 2
-}
+arm=absent
+case "$tier" in
+    --present) arm=present ;;
+    --instrument) arm=list ;;
+esac
+if [ "$arm" = list ]; then
+    here=""
+else
+    [ -n "$tier" ] && [ -n "$workspace" ] || {
+        echo "$usage" >&2
+        exit 2
+    }
+    here=$(cd "$workspace" 2>/dev/null && pwd -P) || {
+        echo "ablate: no workspace directory at $workspace" >&2
+        exit 2
+    }
+fi
 
 # The same guard `probe-record.sh` applies to its own `--workspace` argument:
 # a path inside this repository's checkout is refused rather than ablated.
 case "$here" in
+    "") ;;
     "$root"|"$root"/*)
         echo "ablate: $here is inside this repository's own checkout." >&2
         echo "ablate: an absent-arm workspace is a copy outside it. Use one." >&2
@@ -84,24 +106,36 @@ declaration=${HW_PROBE_YML:-$root/.headwater/probe.yml}
 # ablation entry, in declared order. The file is a flat two-level mapping
 # with two-space indentation, which is what the engine reads too; `ablation`
 # is either a one-line flow sequence or a block sequence under the key.
-listing=$(awk -v want="$tier" '
+listing=$(awk -v want="$tier" -v arm="$arm" '
     function trim(s) { sub(/^[ \t]+/, "", s); sub(/[ \t]+$/, "", s); return s }
-    function emit(e,    n, c, i) {
+    function emit(e, kind,    n, c, i) {
         bad = (e == "" || e ~ /^\//)
         n = split(e, c, "/")
         for (i = 1; i <= n; i++) if (c[i] == ".." || c[i] == "." || c[i] == "") bad = 1
-        print (bad ? "unsafe " : "entry ") e
+        print (bad ? "unsafe " : (kind == "instrument" ? "instrument " : "entry ")) e
     }
     function unquote(s) {
         s = trim(s)
         if (s ~ /^".*"$/ || s ~ /^\047.*\047$/) s = substr(s, 2, length(s) - 2)
         return s
     }
-    /^[^ #]/ { intiers = ($0 ~ /^tiers:/); cur = ""; block = 0; next }
+    /^instrument:/ {
+        intiers = 0; cur = ""; block = 0
+        rest = trim(substr($0, index($0, ":") + 1))
+        if (rest == "") { iblock = 1; next }
+        if (rest !~ /^\[.*\]$/) { print "malformed"; next }
+        rest = substr(rest, 2, length(rest) - 2)
+        n = split(rest, parts, ",")
+        if (trim(rest) == "") n = 0
+        for (i = 1; i <= n; i++) emit(unquote(parts[i]), "instrument")
+        next
+    }
+    iblock && /^  - / { emit(unquote(substr($0, 5)), "instrument"); next }
+    /^[^ #]/ { iblock = 0; intiers = ($0 ~ /^tiers:/); cur = ""; block = 0; next }
     !intiers { next }
     /^  [^ #][^:]*:[ \t]*$/ {
         cur = trim(substr($0, 3)); sub(/:$/, "", cur); block = 0
-        if (cur == want) print "tier"
+        if (cur == want && arm == "absent") print "tier"
         next
     }
     cur != want { next }
@@ -121,13 +155,16 @@ listing=$(awk -v want="$tier" '
     /^    [^ ]/ { block = 0 }
 ' "$declaration")
 
-case "$listing" in
-    tier*) ;;
-    *)
-        echo "ablate: \`$tier\` is not a tier $declaration declares" >&2
-        exit 2
-        ;;
-esac
+if [ "$arm" = absent ]; then
+    case "$listing" in
+        tier*|*"
+tier"*) ;;
+        *)
+            echo "ablate: \`$tier\` is not a tier $declaration declares" >&2
+            exit 2
+            ;;
+    esac
+fi
 case "$listing" in
     *malformed*)
         echo "ablate: the \`$tier\` tier's ablation is not a sequence of paths" >&2
@@ -142,15 +179,32 @@ if [ -n "$unsafe" ]; then
     echo "ablate: the \`$tier\` tier's ablation names $unsafe, and an entry is a path inside the tree with no \`..\`, \`.\` or empty component" >&2
     exit 2
 fi
+instrument=$(printf '%s\n' "$listing" | awk '/^instrument / { print substr($0, 12) }')
+if [ "$arm" = list ]; then
+    [ -z "$instrument" ] || printf '%s\n' "$instrument"
+    exit 0
+fi
 entries=$(printf '%s\n' "$listing" | awk '/^entry / { print substr($0, 7) }')
-if [ -z "$entries" ]; then
+if [ "$arm" = absent ] && [ -z "$entries" ]; then
     echo "ablate: the \`$tier\` tier declares no ablation, so it runs no absent arm to produce" >&2
     exit 2
+fi
+if [ "$arm" = present ]; then
+    tier=present
+    entries=$instrument
+    if [ -z "$entries" ]; then
+        echo "ablate: $declaration declares no instrument, so a present arm removes nothing"
+        exit 0
+    fi
+else
+    entries=$(printf '%s\n%s\n' "$instrument" "$entries" | awk 'NF')
 fi
 
 found=""
 missing=""
 while IFS= read -r path; do
+    # Never an empty path: "$here/" is the workspace itself.
+    [ -n "$path" ] || continue
     if [ -e "$here/$path" ] || [ -L "$here/$path" ]; then
         found="$found $path"
         rm -rf "${here:?}/$path"

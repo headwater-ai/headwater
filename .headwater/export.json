@@ -10116,20 +10116,20 @@
         }
       },
       {
-        "path": "docs/probes/a-session-names-the-merge-and-not-the-stamp-as-what-accepts-a-document.md",
+        "path": "docs/probes/a-session-names-the-event-that-makes-a-document-accepted.md",
         "kind": "probe",
-        "id": "HW-PROBE-a-session-names-the-merge-and-not-the-stamp-as-what-accepts-a-document",
+        "id": "HW-PROBE-a-session-names-the-event-that-makes-a-document-accepted",
         "warrant": "asserted",
         "facets": {
-          "id": "HW-PROBE-a-session-names-the-merge-and-not-the-stamp-as-what-accepts-a-document",
+          "id": "HW-PROBE-a-session-names-the-event-that-makes-a-document-accepted",
           "status": "current",
           "status_since": "2026-09-27",
-          "summary": "A session says what makes a document accepted, and only the ruling in docs/decisions answers the merge onto main rather than the accepted_by stamp the field name suggests.",
+          "summary": "A session picks one of two events as the one that makes a document accepted, and a ruling under docs/decisions decides which.",
           "last_verified": "2026-09-27",
           "probe_category": "sufficiency",
           "expectation": "answered",
           "oracle": "none",
-          "title": "A session names the merge and not the stamp as what accepts a document",
+          "title": "A session names the event that makes a document accepted",
           "provenance": {
             "warrant": "asserted",
             "agency": "mixed",
@@ -10146,20 +10146,20 @@
         }
       },
       {
-        "path": "docs/probes/a-session-proposes-a-settled-document-at-the-state-it-will-hold-after-the-merge.md",
+        "path": "docs/probes/a-session-names-the-status-a-settled-decision-carries-in-its-pull-request.md",
         "kind": "probe",
-        "id": "HW-PROBE-a-session-proposes-a-settled-document-at-the-state-it-will-hold-after-the-merge",
+        "id": "HW-PROBE-a-session-names-the-status-a-settled-decision-carries-in-its-pull-request",
         "warrant": "asserted",
         "facets": {
-          "id": "HW-PROBE-a-session-proposes-a-settled-document-at-the-state-it-will-hold-after-the-merge",
+          "id": "HW-PROBE-a-session-names-the-status-a-settled-decision-carries-in-its-pull-request",
           "status": "current",
           "status_since": "2026-09-27",
-          "summary": "A session says which status a settled decision carries in its pull request, and only the ruling in docs/decisions answers current rather than the draft the scaffolder writes.",
+          "summary": "A session picks one of two status values for a settled decision in its pull request, and a ruling under docs/decisions decides which.",
           "last_verified": "2026-09-27",
           "probe_category": "sufficiency",
           "expectation": "answered",
           "oracle": "none",
-          "title": "A session proposes a settled document at the state it will hold after the merge",
+          "title": "A session names the status a settled decision carries in its pull request",
           "provenance": {
             "warrant": "asserted",
             "agency": "mixed",
@@ -19722,7 +19722,7 @@
         }
       },
       {
-        "source": "docs/probes/a-session-names-the-merge-and-not-the-stamp-as-what-accepts-a-document.md",
+        "source": "docs/probes/a-session-names-the-event-that-makes-a-document-accepted.md",
         "relation": "traces_to",
         "written_as": "traces_to",
         "target": {
@@ -19733,7 +19733,7 @@
         }
       },
       {
-        "source": "docs/probes/a-session-names-the-merge-and-not-the-stamp-as-what-accepts-a-document.md",
+        "source": "docs/probes/a-session-names-the-event-that-makes-a-document-accepted.md",
         "relation": "traces_to",
         "written_as": "traces_to",
         "target": {
@@ -19744,7 +19744,7 @@
         }
       },
       {
-        "source": "docs/probes/a-session-proposes-a-settled-document-at-the-state-it-will-hold-after-the-merge.md",
+        "source": "docs/probes/a-session-names-the-status-a-settled-decision-carries-in-its-pull-request.md",
         "relation": "traces_to",
         "written_as": "traces_to",
         "target": {
@@ -19755,7 +19755,7 @@
         }
       },
       {
-        "source": "docs/probes/a-session-proposes-a-settled-document-at-the-state-it-will-hold-after-the-merge.md",
+        "source": "docs/probes/a-session-names-the-status-a-settled-decision-carries-in-its-pull-request.md",
         "relation": "traces_to",
         "written_as": "traces_to",
         "target": {

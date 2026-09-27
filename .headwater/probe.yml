@@ -14,6 +14,15 @@
 # Every field is required and none has a default. A default would be this engine
 # choosing how much to spend.
 
+# The instrument: the probe shelves, which every arm of every tier removes,
+# the present arm too. A probe document states the answer it expects, and a
+# transcript states the answers sessions gave, so a session that could read
+# them would be graded against its own answer key. They are the instrument and
+# not the treatment, so no arm holds them, and the claim of each tier stays
+# about the paths its ablation names. `headwater probe plan` refuses a probe
+# whose predicate names a document under one of them, at every tier.
+instrument: [docs/probes, docs/probe-runs, docs/probe-results]
+
 tiers:
 
   # Detect that something moved. One arm, one repetition, against a recorded
@@ -42,6 +51,16 @@ tiers:
   # The claim it measures is that the governance changes what an agent builds:
   # its ablation removes the four paths that deliver this repository's
   # governance and keeps `docs/`.
+  #
+  # Since #1010 the plan refuses a probe whose predicate names a document the
+  # ablation removes, at this tier as at `documentation`. One probe does:
+  # the authoring-skill probe expects `opened` over a file under `.claude/`,
+  # which no absent-arm session can open, so its absent rate is zero by
+  # construction and the pair would measure the ablation. So an unnarrowed
+  # `--tier campaign` refuses on that probe before it reaches the ceiling.
+  # That probe is a regression-tier instrument. A campaign runs over a
+  # category that excludes it (`--category navigability` or
+  # `--category sufficiency`), and there the ceiling is what refuses it.
   campaign:
     budget_cents: 5000
     session_cost_cents: 25
@@ -66,6 +85,12 @@ tiers:
   # `patched` probes are admitted, and `--category sufficiency` is the
   # selection meant for this tier.
   #
+  # Two files outside `docs/` copy what a document states, and the ablation
+  # removes them with it. `engine/crates/census/fixtures/corpus.census` lists
+  # every path under `docs/`, and a decision's file name states its ruling.
+  # `site/tutorial/index.html` states the ruling of HW-DR-0052 in one step.
+  # Both are kept in the campaign's absent arm, like `docs/` itself.
+  #
   # The absent tree is produced by
   # `sh tools/probe/ablate.sh documentation <workspace>`. Its cost over the
   # sufficiency probes is projected at the end of this file.
@@ -74,7 +99,14 @@ tiers:
     session_cost_cents: 25
     repetitions: 58
     arms: [present, absent]
-    ablation: [CLAUDE.md, .claude, .githooks, .headwater, docs]
+    ablation:
+      - CLAUDE.md
+      - .claude
+      - .githooks
+      - .headwater
+      - docs
+      - engine/crates/census/fixtures/corpus.census
+      - site/tutorial/index.html
 
 # The absent arm names a declared ablation (spec 5, "the counterfactual is not
 # a category, it is an arm of every probe... the absent arm names a declared
@@ -111,9 +143,12 @@ tiers:
 #
 # The campaign tier's own count (10 probes since #1010 added two, both arms,
 # 58 repetitions) therefore projects two figures and not one. At the declared
-# rate: 10 x 2 x 58 x $0.25 = $290.00 against the $50.00 ceiling above, which
-# is what refuses the plan today. At the realized rate: roughly
-# 10 x 2 x 58 x $0.50 = $580.00. Over the 8 probes before #1010 the same
+# rate: 10 x 2 x 58 x $0.25 = $290.00 against the $50.00 ceiling above. At the
+# realized rate: roughly 10 x 2 x 58 x $0.50 = $580.00. Neither is what refuses
+# an unnarrowed campaign plan today: the authoring-skill probe refuses it
+# first (see the campaign tier's comment). Its sufficiency selection (4
+# probes, 464 sessions, $116.00 declared) refuses on the ceiling. Over the 8
+# probes before #1010 the same
 # figures were $232.00 and roughly $464.00, about four times the $116.00 an
 # earlier draft of the issue that asked for this comparison cited, before
 # #531 added four probes and before a live regression run gave the declared

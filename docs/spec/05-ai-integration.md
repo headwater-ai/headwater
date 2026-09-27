@@ -348,9 +348,11 @@ Two earlier categories are gone, and each removal is a finding rather than a sim
 This repository makes two claims, and each claim has its own ablation:
 
 - **The governance changes what an agent builds.** The `campaign` tier removes `CLAUDE.md`, `.claude/`, `.githooks/` and `.headwater/`, and it keeps `docs/`. Its present arm against its absent arm measures the governance. The documents are in both arms, so this rate says nothing about them.
-- **The documents change what an agent builds.** The `documentation` tier removes the same four paths and `docs/`. Its present arm against its absent arm measures the documents and the governance together. The effect of the documents alone is the `documentation` absent arm against the `campaign` absent arm. That difference holds only when both ran in one batch on one model version.
+- **The documents change what an agent builds.** The `documentation` tier removes the same four paths, `docs/`, and each file outside `docs/` that copies what a document states. Its present arm against its absent arm measures the documents and the governance together. The effect of the documents alone is the `documentation` absent arm against the `campaign` absent arm. That difference holds only when both ran in one batch on one model version.
 
 A probe whose predicate names a document (`opened`, `not_opened` or `cited`) cannot be satisfied in an arm that removed that document. So `headwater probe plan` refuses such a probe at a tier whose ablation removes what it examines, and it refuses before it projects the cost. An `answered` or `patched` probe reads the output of the session, and every tier admits it.
+
+**The instrument is in no arm.** A probe document states the answer that it expects, and a recorded transcript states the answers that sessions gave. So the probe shelves are the instrument and not the treatment. The `instrument` sequence of `.headwater/probe.yml` names them, and every arm of every tier removes them, the present arm too. Otherwise the difference between two arms would include the answer key.
 
 An A/B run over the two arms is the only evidence that the instruction surface earns its context cost. Without it, "the AI reads our docs" is a belief.
 

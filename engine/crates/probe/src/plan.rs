@@ -248,6 +248,13 @@ pub enum Refusal {
         /// The ablation entry the path equals or sits under.
         entry: String,
     },
+    /// A probe whose predicate names a document under the instrument, which
+    /// every arm of every tier removes. No session of any arm could open it.
+    InstrumentExamined {
+        probe: String,
+        path: String,
+        entry: String,
+    },
     /// The projected cost is above the tier's ceiling. Spec 5: a run that does
     /// not happen is the cheaper error.
     OverBudget {
@@ -283,6 +290,7 @@ impl Refusal {
             // A policy about which probes a paired run may carry, decided
             // after the whole selection is read, like a narrowed campaign.
             Refusal::AblatedExamined { .. } => false,
+            Refusal::InstrumentExamined { .. } => false,
             Refusal::NoProbes
             | Refusal::SelectionEmpty { .. }
             | Refusal::Unnameable { .. }
@@ -406,6 +414,12 @@ impl std::fmt::Display for Refusal {
                  `{entry}`. A session cannot open or cite a document it never had, so the pair \
                  would measure the ablation. Narrow the selection to `answered` and `patched` \
                  probes, or run it at a tier whose ablation keeps the document"
+            ),
+            Refusal::InstrumentExamined { probe, path, entry } => write!(
+                f,
+                "{probe} expects a predicate over `{path}`, and every arm removes `{entry}`, the \
+                 instrument, because a probe document states the answer it expects. No session \
+                 could open or cite it"
             ),
             Refusal::OverBudget {
                 sessions,
@@ -813,6 +827,12 @@ impl Plan {
         // Before the ceiling: a run over budget could be afforded later, and a
         // run whose absent arm removes what its probes read cannot measure the
         // claim at any price, so this is the reason a reader is given.
+        if let Some(Refusal::AblatedExamined { probe, path, entry }) =
+            ablated_examined(&plan.selected, &budgets.instrument)
+        {
+            plan.refusal = Some(Refusal::InstrumentExamined { probe, path, entry });
+            return plan;
+        }
         if plan.arms.contains(&Arm::Absent) {
             if let Some(refusal) = ablated_examined(&plan.selected, &envelope.ablation) {
                 plan.refusal = Some(refusal);
