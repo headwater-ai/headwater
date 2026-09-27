@@ -248,6 +248,17 @@ same '  skips a truncated line, and reports too few turns for quarters' \
     'growth  turns 3  context at 10% 100100  at 90% 150100  too few turns for quarters' \
     "$(printf '%s\n' "$sout" | grep '^growth')"
 
+# A dated model id is priced at the rate of the model it dates. The harness
+# writes Haiku 4.5 as `claude-haiku-4-5-20251001`. Turns g1 to g4 on that id,
+# at $1.00 input, $0.10 read, $1.25 write and $5.00 output a million, give a
+# first quarter (g1) of $0.1301 and a last quarter (g4) of $0.0826.
+head -5 "$scratch/growth.jsonl" | sed 's/"claude-sonnet-5"/"claude-haiku-4-5-20251001"/' > "$scratch/dated.jsonl"
+dout=$(sh "$tool" "$scratch/dated.jsonl" 2>&1); status=$?
+same 'a dated-model census exits 0' 0 "$status"
+same '  and prices the turns at the undated model'"'"'s rate' \
+    'growth  turns 4  context at 10% 100100  at 90% 200100  first quarter $0.13  last quarter $0.08  0.6x' \
+    "$(printf '%s\n' "$dout" | grep '^growth')"
+
 # A turn with tokens and no rate for its model is not priced as zero. The
 # first transcript above names no model at all, and its line gives the turns
 # and the context and says what it could not price.
