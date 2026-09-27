@@ -174,6 +174,43 @@ if [ "$identity_only" = 0 ] && [ "$provider_only" = 0 ] && [ "$answer_only" = 0 
         echo "probe-record: that is a live pointer into this repository's history, most likely left by \`cp -a\` of a worktree. Strip \`.git\` from the copy before recording." >&2
         exit 4
     fi
+    # The answer key. A workspace that still holds the probe's own document, a
+    # recorded run of it, or any file that names it hands the session its
+    # expectation: the tombstone session of 2026-09-17 read its own probe file
+    # and then answered (#1229). `tools/probe/seal.sh` removes every such file,
+    # and this guard refuses a workspace that was not sealed. It runs before
+    # any harness call, so the case that asserts it spends nothing. It exits 8
+    # because 7 is what the harness subshell below returns when it cannot enter
+    # the workspace.
+    #
+    # The slug is the file name the probe has on this checkout's shelf. A
+    # derived fold such as `.headwater/nav.yml` names the slug and not the
+    # identifier, so both are searched for. A host with no `grep` cannot
+    # confirm the tree is clean, and that is a refusal rather than a pass.
+    command -v grep >/dev/null 2>&1 || {
+        echo "probe-record: \`grep\` is not on the path, so nothing can confirm the workspace holds no answer key." >&2
+        exit 8
+    }
+    slug=""
+    shelf_file=$(grep -rlx -- "id: $probe" "$root/docs/probes" 2>/dev/null) || shelf_file=""
+    case "$shelf_file" in
+        *.md)
+            slug=${shelf_file##*/}
+            slug=${slug%.md}
+            ;;
+    esac
+    if [ -n "$slug" ]; then
+        key=$(grep -rlF -e "$probe" -e "$slug" -- "$here" 2>/dev/null) || key=""
+    else
+        key=$(grep -rlF -e "$probe" -- "$here" 2>/dev/null) || key=""
+    fi
+    if [ -n "$key" ]; then
+        first=${key%%
+*}
+        echo "probe-record: the workspace names the probe it would run: $first" >&2
+        echo "probe-record: a session that reads that file reads its own answer key. Run \`sh tools/probe/seal.sh $here $probe\` first." >&2
+        exit 8
+    fi
 fi
 
 command -v jq >/dev/null 2>&1 || {
