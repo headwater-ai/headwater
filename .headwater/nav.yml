@@ -94,6 +94,7 @@ nav:
       - "A taxonomy release publishes the source at the tagged commit and never ships the vendored copy": "decisions/0089-a-taxonomy-release-publishes-the-source-at-the-tagged-commit-and-never-ships-the-vendored-copy.md"
       - "Each release states in its notes the release digest that a consumer pins": "decisions/0090-each-release-states-in-its-notes-the-release-digest-that-a-consumer-pins.md"
       - "The runner image of the engine release build is written in the workflow because it sets the glibc floor": "decisions/0091-the-runner-image-of-the-engine-release-build-is-written-in-the-workflow-because-it-sets-the-glibc-floor.md"
+      - "The citation comment of spec 5 is for an adopter's corpus, and this repository does not practice it on its own code": "decisions/0092-the-citation-comment-of-spec-5-is-for-an-adopter-s-corpus-and-this-repository-does-not-practice-it-on-its-own-code.md"
   - "Acceptance criteria":
       - "Acceptance criteria": "acceptance-criteria/README.md"
       - "No source file of the engine names a network API and no locked dependency provides one": "acceptance-criteria/0001-no-source-file-of-the-engine-names-a-network-api-and-no-locked-dependency-provides-one.md"

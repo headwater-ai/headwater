@@ -380,3 +380,7 @@ The documents on this shelf, in the reading order this corpus derives. Each head
 ## The runner image of the engine release build is written in the workflow because it sets the glibc floor
 
 [HW-DR-0091](../decisions/0091-the-runner-image-of-the-engine-release-build-is-written-in-the-workflow-because-it-sets-the-glibc-floor.md) — release.yml names each runner image and never reads CI_RUNNER, because the image sets the glibc floor that README.md states. The build is --locked. (asserted, and no human has accepted it)
+
+## The citation comment of spec 5 is for an adopter's corpus, and this repository does not practice it on its own code
+
+[HW-DR-0092](../decisions/0092-the-citation-comment-of-spec-5-is-for-an-adopter-s-corpus-and-this-repository-does-not-practice-it-on-its-own-code.md) — The per-identifier citation comment of spec 5 is a convention for an adopter's corpus. By the owner's ruling, the code of this repository carries none. Its comments that name an identifier are prose, and the checker does not read them. (asserted, and no human has accepted it)

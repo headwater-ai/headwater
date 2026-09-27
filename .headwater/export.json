@@ -2659,6 +2659,38 @@
         }
       },
       {
+        "path": "docs/decisions/0092-the-citation-comment-of-spec-5-is-for-an-adopter-s-corpus-and-this-repository-does-not-practice-it-on-its-own-code.md",
+        "kind": "decision",
+        "id": "HW-DR-0092",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-DR-0092",
+          "status": "current",
+          "status_since": "2026-09-27",
+          "summary": "The per-identifier citation comment of spec 5 is a convention for an adopter's corpus. By the owner's ruling, the code of this repository carries none. Its comments that name an identifier are prose, and the checker does not read them.",
+          "last_verified": "2026-09-27",
+          "title": "The citation comment of spec 5 is for an adopter's corpus, and this repository does not practice it on its own code",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5.5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "governs": [
+              {
+                "to": "tools/cite/check-citations-fixtures.sh",
+                "verified_revision": "sha256:693e8bbb4c2c8278d55d4fa39c7e0cb1388d518c6ae580c455896db62218d00b"
+              }
+            ],
+            "traces_to": [
+              "HW-SPEC-ai-integration"
+            ]
+          }
+        }
+      },
+      {
         "path": "docs/evaluations/a-probe-task-section-is-the-prompt-so-commentary-under-that-heading-is-prompt.md",
         "kind": "evaluation",
         "id": "HW-EVAL-a-probe-task-section-is-the-prompt-so-commentary-under-that-heading-is-prompt",
@@ -12335,6 +12367,11 @@
       },
       {
         "anchor_kind": "code_path",
+        "id": "tools/cite/check-citations-fixtures.sh",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
         "id": "tools/engine/language-spike/**",
         "resolver": "source-tree"
       },
@@ -14752,6 +14789,31 @@
         },
         "attributes": {
           "verified_revision": "sha256:cc62f8db1425466922c618475983155ec51572a77c846a4634a730e18a804ae4"
+        }
+      },
+      {
+        "source": "docs/decisions/0092-the-citation-comment-of-spec-5-is-for-an-adopter-s-corpus-and-this-repository-does-not-practice-it-on-its-own-code.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "tools/cite/check-citations-fixtures.sh",
+          "resolver": "source-tree"
+        },
+        "attributes": {
+          "verified_revision": "sha256:693e8bbb4c2c8278d55d4fa39c7e0cb1388d518c6ae580c455896db62218d00b"
+        }
+      },
+      {
+        "source": "docs/decisions/0092-the-citation-comment-of-spec-5-is-for-an-adopter-s-corpus-and-this-repository-does-not-practice-it-on-its-own-code.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-SPEC-ai-integration",
+          "path": "docs/spec/05-ai-integration.md",
+          "kind": "design_spec"
         }
       },
       {

@@ -481,6 +481,8 @@ anchors
     cited by HW-DR-0083
   code_path `tools/cap-run` via source-tree
     cited by HW-EVAL-one-clone-many-agents-how-this-repository-isolates-the-sessions-that-build-it
+  code_path `tools/cite/check-citations-fixtures.sh` via source-tree
+    cited by HW-DR-0092
   code_path `tools/engine/language-spike/**` via source-tree
     cited by HW-EVAL-language-spike-results
   code_path `tools/engine/language-spike/build.sh` via source-tree
