@@ -265,7 +265,7 @@ fn read_command(
     found: &mut Vec<(usize, Read)>,
 ) {
     for (offset, segment) in segments(command) {
-        if let Some(program) = program_of(segment) {
+        if let Some(program) = program_of(&segment) {
             let line = starts
                 .iter()
                 .rev()
@@ -278,15 +278,16 @@ fn read_command(
 
 /// The parts of a command between the operators that start a new program, each
 /// with its byte offset. An operator inside quotes is part of an argument.
-fn segments(command: &str) -> Vec<(usize, &str)> {
+fn segments(command: &str) -> Vec<(usize, String)> {
     scan(command).segments
 }
 
 /// What one pass over a command finds.
-struct Scan<'a> {
+struct Scan {
     /// The parts between the operators that start a new program, each with
-    /// its byte offset.
-    segments: Vec<(usize, &'a str)>,
+    /// its byte offset, in the order of the offsets. A blank inside a closed
+    /// substitution or expansion within a part reads as `_`.
+    segments: Vec<(usize, String)>,
     /// What stops the command from ending cleanly: the innermost span still
     /// open (`'`, `"`, `a` for `$'…'`, `` ` ``, `(` for `$(`, `<(` and `>(`,
     /// `m` for `$((`, `p` for a `(` inside `$((`, `{` for `${`), `#` for a
@@ -308,25 +309,36 @@ struct Scan<'a> {
 /// kind at the top of the stack. A `)` inside `${…}` and a `}` inside `$( )`
 /// are text, as the shell reads them. `$((` closes on `))`, and a `(` inside
 /// it opens a span that a `)` closes. A `<<` inside `$(( ))` is a shift. The
-/// first word after `$(`, `<(`, `>(` or an opening backtick names a program,
-/// and the text after the closer, up to the next operator, is an argument of
-/// the command around it. Inside single quotes nothing is special but the closing quote. Inside
-/// `$'…'` and backticks a backslash escapes the next character and no quote
-/// opens. Inside double quotes a backslash escapes, and `$(`, `${` and
-/// backticks open. A `#` opens a comment only when no span is open, at the
-/// start of the command or after a blank, `;`, `&` or `|`. An operator starts
-/// a new program only when no quote is open.
-fn scan(command: &str) -> Scan<'_> {
-    let mut out = Vec::new();
-    // Where the part that names the next program starts, or `None` after the
-    // closer of a substitution, where the text up to the next operator is an
-    // argument of the command around it.
+/// first word after `$(`, `<(`, `>(` or an opening backtick names a program.
+/// The command around a substitution reads on after its closer, and the
+/// substitution is part of the word that holds it, so `FOO=$(pwd) npm ci`
+/// runs `npm` as well as `pwd`. Inside single quotes nothing is special but
+/// the closing quote. Inside `$'…'` and backticks a backslash escapes the
+/// next character and no quote opens. Inside double quotes a backslash
+/// escapes, and `$(`, `${` and backticks open. A `#` opens a comment only when
+/// no span is open, at the start of the command or after a blank, `;`, `&` or
+/// `|`. An operator starts a new program only when no quote is open.
+fn scan(command: &str) -> Scan {
+    // Each part that names a program, as a byte range.
+    let mut ranges: Vec<(usize, usize)> = Vec::new();
+    // Each closed substitution, expansion and `$(( ))`, as a byte range from
+    // its opener to the end of its closer. A blank inside one does not split
+    // the word of the command around it.
+    let mut holes: Vec<(usize, usize)> = Vec::new();
+    // Where the part that names the next program starts. `None` after an
+    // operator that ends the command inside a span.
     let mut start = Some(0);
+    // For each open substitution, the part of the command around it, which
+    // resumes after the closer, and where the opener is.
+    let mut saved: Vec<(Option<usize>, usize)> = Vec::new();
     let mut stack: Vec<char> = Vec::new();
+    // Where each span on the stack opens.
+    let mut opened: Vec<usize> = Vec::new();
     let mut heredoc = None;
     let mut escaped = false;
     let bytes = command.as_bytes();
     let mut at = 0;
+    let mut comment = false;
     while at < bytes.len() {
         let c = bytes[at] as char;
         if escaped {
@@ -336,15 +348,26 @@ fn scan(command: &str) -> Scan<'_> {
         }
         let top = stack.last().copied();
         let quoted = stack.iter().any(|span| matches!(span, '\'' | '"' | 'a'));
-        let arithmetic = stack.contains(&'m');
+        // Inside `$(( ))` and no command inside it, a `<<` is a shift.
+        let arithmetic = stack
+            .iter()
+            .rev()
+            .find(|span| matches!(span, 'm' | '(' | '`'))
+            == Some(&'m');
         let next = bytes.get(at + 1).copied();
         match (top, c) {
             (Some('\''), '\'') | (Some('a'), '\'') | (Some('"'), '"') => {
                 stack.pop();
+                opened.pop();
             }
-            (Some('`'), '`') => {
+            (Some('`'), '`') | (Some('('), ')') => {
                 stack.pop();
-                close(command, &mut start, at, &mut out);
+                let opener = opened.pop().unwrap_or(at);
+                if let Some(from) = start {
+                    ranges.push((from, at));
+                }
+                start = saved.pop().and_then(|(outer, _)| outer);
+                holes.push((opener, at + 1));
             }
             (Some('\''), _) => {}
             (Some('a' | '`' | '"' | 'm' | 'p') | None | Some('(' | '{'), '\\') => escaped = true,
@@ -353,59 +376,68 @@ fn scan(command: &str) -> Scan<'_> {
                 if next == Some(b'(') && bytes.get(at + 2) == Some(&b'(') =>
             {
                 stack.push('m');
+                opened.push(at);
                 at += 2;
             }
             (Some('`' | '"' | 'm' | 'p') | None | Some('(' | '{'), '$') if next == Some(b'(') => {
                 stack.push('(');
-                open(command, &mut start, at, 2, &mut out);
+                opened.push(at);
+                saved.push((start, at));
+                start = Some(at + 2);
                 at += 1;
             }
             (Some('`' | '"' | 'm' | 'p') | None | Some('(' | '{'), '$') if next == Some(b'{') => {
                 stack.push('{');
+                opened.push(at);
                 at += 1;
             }
             (Some('"' | 'm' | 'p') | None | Some('(' | '{'), '`') => {
                 stack.push('`');
-                open(command, &mut start, at, 1, &mut out);
+                opened.push(at);
+                saved.push((start, at));
+                start = Some(at + 1);
             }
             (Some('"'), _) => {}
             (None | Some('(' | '{'), '<' | '>') if !quoted && next == Some(b'(') => {
                 stack.push('(');
-                open(command, &mut start, at, 2, &mut out);
+                opened.push(at);
+                saved.push((start, at));
+                start = Some(at + 2);
                 at += 1;
             }
             (None | Some('(' | '{'), '$') if next == Some(b'\'') => {
                 stack.push('a');
+                opened.push(at);
                 at += 1;
             }
-            (None | Some('(' | '{' | 'm' | 'p'), '\'' | '"') => stack.push(c),
-            (Some('m' | 'p'), '(') => stack.push('p'),
+            (None | Some('(' | '{' | 'm' | 'p'), '\'' | '"') => {
+                stack.push(c);
+                opened.push(at);
+            }
+            (Some('m' | 'p'), '(') => {
+                stack.push('p');
+                opened.push(at);
+            }
             (Some('p'), ')') => {
                 stack.pop();
+                opened.pop();
             }
             (Some('m'), ')') if next == Some(b')') => {
                 stack.pop();
+                let opener = opened.pop().unwrap_or(at);
+                holes.push((opener, at + 2));
                 at += 1;
-            }
-            (Some('('), ')') => {
-                stack.pop();
-                close(command, &mut start, at, &mut out);
             }
             (Some('{'), '}') => {
                 stack.pop();
+                let opener = opened.pop().unwrap_or(at);
+                holes.push((opener, at + 1));
             }
             (None, '#')
                 if at == 0 || matches!(bytes[at - 1], b' ' | b'\t' | b';' | b'&' | b'|') =>
             {
-                if let Some(from) = start {
-                    out.push((from, &command[from..at]));
-                }
-                return Scan {
-                    segments: out,
-                    open: Some('#'),
-                    heredoc,
-                    continued: false,
-                };
+                comment = true;
+                break;
             }
             (None | Some('(' | '{'), '<')
                 if !quoted && !arithmetic && heredoc.is_none() && next == Some(b'<') =>
@@ -419,7 +451,7 @@ fn scan(command: &str) -> Scan<'_> {
                     (c == '&') && ((at > 0 && bytes[at - 1] == b'>') || next == Some(b'>'));
                 if !redirect {
                     if let Some(from) = start {
-                        out.push((from, &command[from..at]));
+                        ranges.push((from, at));
                     }
                     while at + 1 < bytes.len() && matches!(bytes[at + 1], b'|' | b'&' | b';') {
                         at += 1;
@@ -431,44 +463,51 @@ fn scan(command: &str) -> Scan<'_> {
         }
         at += 1;
     }
+    let end = at.min(bytes.len());
     if let Some(from) = start {
-        out.push((from, &command[from..]));
+        ranges.push((from, end));
     }
+    // A substitution left open ends each part around it at its opener.
+    for (outer, opener) in saved {
+        if let Some(from) = outer {
+            ranges.push((from, opener));
+        }
+    }
+    ranges.sort_unstable();
+    let segments = ranges
+        .into_iter()
+        .map(|(from, to)| (from, masked(command, from, to, &holes)))
+        .collect();
     Scan {
-        segments: out,
-        open: stack.last().copied(),
+        segments,
+        open: if comment {
+            Some('#')
+        } else {
+            stack.last().copied()
+        },
         heredoc,
-        continued: escaped && stack.is_empty(),
+        continued: !comment && escaped && stack.is_empty(),
     }
 }
 
-/// A substitution opens at `at` with an opener `width` bytes long: the part
-/// before it ends, and the first word inside it names a program.
-fn open<'a>(
-    command: &'a str,
-    start: &mut Option<usize>,
-    at: usize,
-    width: usize,
-    out: &mut Vec<(usize, &'a str)>,
-) {
-    if let Some(from) = *start {
-        out.push((from, &command[from..at]));
-    }
-    *start = Some(at + width);
-}
-
-/// A substitution closes at `at`: its last part ends, and the text after it
-/// up to the next operator is an argument of the command around it.
-fn close<'a>(
-    command: &'a str,
-    start: &mut Option<usize>,
-    at: usize,
-    out: &mut Vec<(usize, &'a str)>,
-) {
-    if let Some(from) = *start {
-        out.push((from, &command[from..at]));
-    }
-    *start = None;
+/// The text of a part from `from` to `to`, with each blank inside a closed
+/// span that lies wholly in the part written as `_`. So `FOO=$(pwd -P)` stays
+/// one word, an assignment, and the word after it names the program.
+fn masked(command: &str, from: usize, to: usize, holes: &[(usize, usize)]) -> String {
+    command[from..to]
+        .char_indices()
+        .map(|(offset, c)| {
+            let at = from + offset;
+            let inside = holes
+                .iter()
+                .any(|&(start, end)| from <= start && end <= to && start <= at && at < end);
+            if inside && c.is_whitespace() {
+                '_'
+            } else {
+                c
+            }
+        })
+        .collect()
 }
 
 /// The program a segment runs, if it names one.
@@ -926,6 +965,58 @@ mod tests {
         assert_eq!(
             names("echo $(echo }) && npm ci\n", false),
             pairs(&[(0, "echo"), (0, "echo"), (0, "npm")])
+        );
+    }
+
+    /// A substitution inside an assignment before a program leaves the program
+    /// read: the command around the substitution reads on after its closer
+    /// (first veto of PR #1217). A substitution with a blank in it stays
+    /// part of one word.
+    #[test]
+    fn a_substitution_in_an_assignment_does_not_hide_the_program() {
+        assert_eq!(
+            names("FOO=$(pwd) npm ci\n", false),
+            pairs(&[(0, "npm"), (0, "pwd")])
+        );
+        assert_eq!(
+            names("FOO=`pwd` npm ci\n", false),
+            pairs(&[(0, "npm"), (0, "pwd")])
+        );
+        assert_eq!(
+            names("PATH=$(pwd)/bin:$PATH headwater check\n", false),
+            pairs(&[(0, "headwater"), (0, "pwd")])
+        );
+        assert_eq!(
+            names("FOO=$(echo a b) BAR=${x:-c d} npm ci\n", false),
+            pairs(&[(0, "npm"), (0, "echo")])
+        );
+    }
+
+    /// The text after the closer of a substitution is an argument of the
+    /// command around it, and names no program.
+    #[test]
+    fn the_text_after_a_closer_is_an_argument() {
+        assert_eq!(
+            names("echo $(date) extra\n", false),
+            pairs(&[(0, "echo"), (0, "date")])
+        );
+        assert_eq!(
+            names("echo `date` extra\n", false),
+            pairs(&[(0, "echo"), (0, "date")])
+        );
+        assert_eq!(
+            names("cat <(whoami) extra && npm ci\n", false),
+            pairs(&[(0, "cat"), (0, "whoami"), (0, "npm")])
+        );
+    }
+
+    /// Inside `$(( ))` a `<<` is a shift even inside a `${…}` there, so the
+    /// block reads on (first veto of PR #1217: no case held this guard).
+    #[test]
+    fn a_shift_inside_an_expansion_inside_arithmetic_opens_no_heredoc() {
+        assert_eq!(
+            names("echo $(( ${x:-1<<2} ))\nnpm ci\n", false),
+            pairs(&[(0, "echo"), (1, "npm")])
         );
     }
 
