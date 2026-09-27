@@ -607,6 +607,14 @@ pub enum Verb {
         #[arg(long, help = JSON_ALONE)]
         json: bool,
     },
+    Show {
+        #[arg(
+            value_name = "path|identifier",
+            help = "the document to print, as a path under the corpus root or as the identifier \
+                    it declares"
+        )]
+        target: Option<String>,
+    },
     Query {
         #[arg(
             value_name = "expression",

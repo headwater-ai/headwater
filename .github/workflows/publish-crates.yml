@@ -10,7 +10,7 @@
 #   HW-DR-0088  the `v*` namespace, the same tag as `release.yml`
 #   HW-PD-0010  the tag is compared with the version `cargo metadata` reads
 #   HW-PD-0011  the fixed order, the skip that lets a rerun continue, the
-#               30-second wait and the wait for a 429
+#               index wait and the wait for a 429
 #   HW-PD-0012  a separate file and one tag value
 name: Publish crates
 
@@ -116,7 +116,11 @@ jobs:
                   echo "$crate $version already on crates.io, skipping"
                   continue
               fi
+              # The index lists every workspace dependency before the crate
+              # publishes, and the crate itself before the next one starts, or
+              # the job stops naming what it waited for (HW-PD-0011, #1197).
+              sh ../tools/repo/crates-index-wait.sh "$crate" "$version"
               echo "publishing $crate $version"
               publish_with_retry "$crate"
-              sleep 30
+              sh ../tools/repo/crates-index-wait.sh --published "$crate" "$version"
           done

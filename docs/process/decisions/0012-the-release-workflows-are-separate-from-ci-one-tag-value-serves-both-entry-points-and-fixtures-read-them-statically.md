@@ -18,7 +18,7 @@ relations:
     - to: .github/workflows/release-taxonomy.yml
       verified_revision: sha256:cc62f8db1425466922c618475983155ec51572a77c846a4634a730e18a804ae4
     - to: .github/workflows/publish-crates.yml
-      verified_revision: sha256:ead2238fa32a3fc4d600d5238d40a072cc5371aee1409a9417fa3fa2d62fea26
+      verified_revision: sha256:f77729188a8b0bffa908fa2b0166cf36a5379a130649855992e3f4844bc7174e
 ---
 
 # The release workflows are separate from CI, one tag value serves both entry points, and fixtures read them statically

@@ -87,6 +87,7 @@ const ROWS: &[Row] = &[
         &["neighbors", "write", "a", "decision"],
     ),
     row("explain", At::Repository, &["explain", "HW-DR-0049"]),
+    row("show", At::Repository, &["show", "HW-DR-0049"]),
     row("query", At::Repository, &["query", "kind"]),
     row("capture", At::Scratch, &["capture"]),
     Row {
