@@ -401,6 +401,7 @@ nav:
       - "No disk floor is stated for a build-order run, and nothing prunes the cargo pool": "obligations/0220-no-disk-floor-is-stated-for-a-build-order-run-and-nothing-prunes-the-cargo-pool.md"
       - "Subagents read skills from the shared checkout, and a worktree-isolated integrator cannot fast-forward it after a merge": "obligations/0221-subagents-read-skills-from-the-shared-checkout-and-a-worktree-isolated-integrator-cannot-fast-forward-it-after-a-merge.md"
       - "Ten rules of the editions ledger have one recorded corpus, so a rule change blessed with an edit to that corpus passes": "obligations/0222-ten-rules-of-the-editions-ledger-have-one-recorded-corpus-so-a-rule-change-blessed-with-an-edit-to-that-corpus-passes.md"
+      - "No run measures whether the documents under docs change what an agent builds": "obligations/0223-no-run-measures-whether-the-documents-under-docs-change-what-an-agent-builds.md"
   - "Probe results":
       - "Probe results": "probe-results/README.md"
       - "Probe result for regression-probe-transcript-for-2026-09-09": "probe-results/regression-probe-transcript-for-2026-09-09.md"
@@ -420,6 +421,8 @@ nav:
       - "A cold agent reaches the governing document through the corpus descriptor": "probes/a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor.md"
       - "A counted tombstone separates a withheld answer from an absent answer": "probes/a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer.md"
       - "A session answers from the register without opening the question it replaced": "probes/a-session-answers-from-the-register-without-opening-the-question-it-replaced.md"
+      - "A session names the event that makes a document accepted": "probes/a-session-names-the-event-that-makes-a-document-accepted.md"
+      - "A session names the status a settled decision carries in its pull request": "probes/a-session-names-the-status-a-settled-decision-carries-in-its-pull-request.md"
       - "A session records an unmeasured claim in the shape this corpus checks": "probes/a-session-records-an-unmeasured-claim-in-the-shape-this-corpus-checks.md"
       - "An agent reaches the adjudication from the document that lost it": "probes/an-agent-reaches-the-adjudication-from-the-document-that-lost-it.md"
       - "The authoring skill reaches an agent that is about to write a governed document": "probes/the-authoring-skill-reaches-an-agent-that-is-about-to-write-a-governed-document.md"

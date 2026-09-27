@@ -449,7 +449,7 @@ impl Target {
             total: total.len(),
             members: patterns
                 .iter()
-                .map(|member| (member.pattern.clone(), member.matched.len()))
+                .map(|member| (member.pattern.clone(), member.matched.clone()))
                 .collect(),
         })
     }
@@ -484,9 +484,11 @@ impl Target {
 pub struct Reach {
     /// The size of the union across every pattern the anchor holds.
     pub total: usize,
-    /// One pair per pattern, in the anchor's own order: the pattern, and how
-    /// many entries it alone matched.
-    pub members: Vec<(String, usize)>,
+    /// One pair per pattern, in the anchor's own order: the pattern, and the
+    /// entries it alone matched, sorted and with no duplicate. The count is
+    /// their length. The edit-time advisory names these entries, so it never
+    /// matches a pattern itself (#1093).
+    pub members: Vec<(String, Vec<String>)>,
 }
 
 /// Resolve every `relations:` block of the census into edges.
