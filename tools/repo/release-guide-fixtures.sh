@@ -68,6 +68,8 @@
 # identifier the header of `release.yml`, `release-taxonomy.yml` or
 # `publish-crates.yml` cites is exactly one record that governs that
 # workflow, and each record that governs one of them is cited in its header.
+# The reasons for `ci.yml` moved into records the same way (#1007), so its
+# header is held by the same judge, though it is not a release workflow.
 # So a reason moved back into a comment with no record, or a record that no
 # header points at, is red. The `governs` edge is what makes a record suspect
 # when its workflow changes, and `headwater check` reads that half.
@@ -229,7 +231,7 @@ judge() {
 }
 
 # ---------------------------------------------------------------------------
-# cites ROOT — the header of each release workflow and the records that
+# cites ROOT — the header of each cited workflow and the records that
 # govern it are one set. Prints one line per finding, and nothing for a tree
 # that holds.
 #
@@ -242,7 +244,7 @@ judge() {
 # that cites nothing is a finding. A record cited in a step comment and not in
 # the header is not read here: a step may cite a record about one line.
 # ---------------------------------------------------------------------------
-release_workflows="release.yml release-taxonomy.yml publish-crates.yml"
+cited_workflows="release.yml release-taxonomy.yml publish-crates.yml ci.yml"
 
 cites_py='
 import fnmatch, glob, os, re, sys
@@ -328,7 +330,7 @@ for line in out:
 '
 
 cites() {
-    python3 -c "$cites_py" "$1" "$release_workflows"
+    python3 -c "$cites_py" "$1" "$cited_workflows"
 }
 
 # copy_tree DEST — the inputs of both judges, copied under DEST.
@@ -479,11 +481,11 @@ else
 fi
 
 echo
-echo "each release workflow header cites the records that govern it"
+echo "each cited workflow header cites the records that govern it"
 
 same "the headers in this tree and the records that govern them are one set" "" \
     "$(cites "$root" | tr '\n' '|' | sed 's/|$//')"
-for wf in $release_workflows; do
+for wf in $cited_workflows; do
     n=$(sed -n '/^[^#]/q;p' "$root/.github/workflows/$wf" | grep -oE 'HW-(DR|PD)-[0-9]{4}' | LC_ALL=C sort -u | wc -l | tr -d ' ')
     if [ "$n" -ge 1 ]; then
         pass "  the header of $wf cites $n records"
@@ -553,6 +555,17 @@ contains "a workflow with its citations removed is red" \
     "the header of publish-crates.yml cites no record" "$out"
 contains "  and each record that governs it is named" \
     "governs publish-crates.yml and its header does not cite" "$out"
+
+# g5. ci.yml with every citation removed, so a reason moved back into its
+# comment and out of a record is red (#1007).
+copy_tree "$scratch/g5"
+sed -E 's/HW-(DR|PD)-[0-9]{4}//g' "$root/.github/workflows/ci.yml" \
+    >"$scratch/g5/.github/workflows/ci.yml"
+out=$(cites "$scratch/g5")
+contains "ci.yml with its citations removed is red" \
+    "the header of ci.yml cites no record" "$out"
+contains "  and each record that governs it is named" \
+    "governs ci.yml and its header does not cite" "$out"
 
 echo
 echo "$passed passed, $failed failed"
