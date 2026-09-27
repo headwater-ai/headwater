@@ -1,0 +1,2 @@
+{"jsonrpc":"2.0","id":1,"result":{"protocolVersion":"2024-11-05","capabilities":{"tools":{"listChanged":false}},"serverInfo":{"name":"headwater","version":"0.4.0"}}}
+{"jsonrpc":"2.0","id":2,"result":{"content":[{"type":"text","text":"no document governs a (x)\ndocs/fake.md (Fake) — nobody\n"}],"isError":false}}

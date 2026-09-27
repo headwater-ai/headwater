@@ -14,8 +14,9 @@
 //
 // It reads a pointer by the shape `docs/interfaces/headwater-mcp.md` calls the
 // wire format a caller may rely on: `path (name) — summary [asserted: …]`. Any
-// other line is not a pointer. So the sentence `no document governs <path>` is
-// no pointers, and this file does not copy that sentence.
+// other line is not a pointer. The sentence `no document governs <path>` is
+// the one exception, recognized by its prefix before anything is parsed,
+// because the path it repeats can hold a pointer's shape.
 //
 // It fails open. A spawn error, a non-zero exit, a timeout, `isError: true`, a
 // JSON-RPC error or output that does not parse all resolve to `[]`. No call
@@ -94,6 +95,11 @@ function pointerOf(line) {
   return { path: p, name: name ?? null, summary: summary ?? null, asserted: asserted ?? null };
 }
 
+// How `governing_docs_for_path` answers a path that no document governs, as
+// `engine/crates/query/src/mcp.rs` writes it. This is the one sentence of the
+// server that this file copies.
+const UNGOVERNED = 'no document governs ';
+
 // How each tool's answer text is read. The server repeats the caller's own
 // words in two places, and neither is ever read for a pointer.
 const READERS = Object.freeze({
@@ -101,10 +107,13 @@ const READERS = Object.freeze({
   // is everything under it.
   route: (text) => parsePointers(text.split('\n').slice(1).join('\n')),
   // Either the sentence `no document governs <path>`, which repeats the path
-  // the caller sent, or one pointer per line and nothing else. So the answer
-  // is all pointers or none, and a path that holds a newline and a pointer's
-  // shape cannot put a pointer into the sentence.
+  // the caller sent, or one pointer per line and nothing else. The sentence
+  // is no pointers whatever the path holds, and any other answer is all
+  // pointers or none.
   governing_docs_for_path: (text) => {
+    // The sentence is recognized before anything is parsed, because the path
+    // it repeats can itself hold ` — ` or `(x)` and so parse as a pointer.
+    if (text.startsWith(UNGOVERNED)) return [];
     const lines = text.split('\n').filter((line) => line !== '');
     const pointers = lines.map(pointerOf);
     return pointers.length > 0 && pointers.every((p) => p !== null) ? pointers : [];

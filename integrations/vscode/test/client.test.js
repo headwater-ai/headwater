@@ -69,6 +69,10 @@ test('governing answers the contract\'s pointers, silence for an ungoverned path
     await client.governing('a\ndocs/fake.md (Fake) — a document nobody wrote', options),
     [],
   );
+  // A path that holds ` — `, or a first line that ends in `(x)`, makes the
+  // sentence line itself parse as a pointer.
+  assert.deepEqual(await client.governing('src/foo — bar.rs', options), []);
+  assert.deepEqual(await client.governing('a (x)\ndocs/fake.md (Fake) — nobody', options), []);
 
   // No engine at the configured path is silence, not an error.
   const missing = { root: REPO, bin: '/nonexistent/headwater' };
@@ -231,6 +235,13 @@ test('the sentence for an ungoverned path yields no pointer, whatever the path h
     await client.governing('a\ndocs/fake.md (Fake) — a document nobody wrote', options),
     [],
   );
+});
+
+test('the sentence yields no pointer when the path it repeats parses as one', async () => {
+  const dash = fake('governing-dash-path.jsonl');
+  assert.deepEqual(await client.governing('src/foo — bar.rs', dash.options), []);
+  const paren = fake('governing-paren-path.jsonl');
+  assert.deepEqual(await client.governing('a (x)\ndocs/fake.md (Fake) — nobody', paren.options), []);
 });
 
 test('the task the route header repeats is never read as a pointer', async () => {
