@@ -211,6 +211,19 @@ fn a_draft_successor_is_silent() {
     assert!(matches!(outcomes[0], Outcome::Passed), "{outcomes:?}");
 }
 
+/// A target still at its initial state is silent. The regime gives a draft no
+/// movement to `superseded`, so the fix would write a transition the lifecycle
+/// refuses, and HW-DR-0085 leaves the same pair unreported. The tutorial
+/// walks a reader through this case.
+#[test]
+fn a_draft_target_of_a_live_successor_is_silent() {
+    let run = run();
+    assert!(against(&run, "notes/still-draft.md").is_none());
+    let outcomes = outcomes_reading(&run, "notes/still-draft.md");
+    assert_eq!(outcomes.len(), 1, "{outcomes:?}");
+    assert!(matches!(outcomes[0], Outcome::Passed), "{outcomes:?}");
+}
+
 /// The half written only as `superseded_by`, from the target end, is still
 /// the same edge in the same direction, and it is still reported.
 #[test]
