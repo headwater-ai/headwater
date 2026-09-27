@@ -11,7 +11,7 @@ relations:
     - to: engine/crates/query/src/explain.rs
       verified_revision: sha256:7295f5c240de3838c3e0bab52ff58e9b287b1768a879d2653bcf3b68bcc3fde9
     - to: engine/crates/census/src/walk.rs
-      verified_revision: sha256:a6963e1e2967c28d0c0a28fa4bee742097a03e44abb2291b81e1759c368a0b9b
+      verified_revision: sha256:bd4c368d26966fe22d9cb9ce3631dbcd70fbe1ceca48341d66cb8b921d5e1e9f
 ---
 
 # headwater show
@@ -20,7 +20,7 @@ relations:
 
     headwater show <path|identifier> [--root <path>]
 
-The target is a path under the corpus root or an identifier declared by a document.
+The target is a path under the corpus root or an identifier declared by a document. A path can have the form that a shell or an editor writes, relative to the repository root, as the Synopsis section of [`headwater explain`](headwater-explain.md#synopsis) states.
 
 ## Description
 

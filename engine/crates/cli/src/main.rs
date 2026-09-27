@@ -4288,32 +4288,57 @@ fn symlink_under(root: &Path, relative: &str) -> Option<String> {
 /// of refusal sentences. A second copy is the drift that #319 and #845 each
 /// repaired in `explain` alone. A refusal is printed here, on standard error,
 /// and the caller returns the status it is handed.
+///
+/// A path target is read the way a shell or an editor spells it
+/// ([#1227](https://github.com/headwater-ai/headwater/issues/1227)): `./x`,
+/// `a/../x` and an absolute path under the root all find the document `x`
+/// finds, through [`headwater_census::walk::typed`]. A relative target is relative to
+/// the repository root, which is `--root`, and not to the working directory of
+/// the process: with `--root elsewhere`, `./x` is `elsewhere/x`. A target that
+/// leaves the repository is refused as outside it. A refusal prints the target
+/// as it was typed, never the normalized form.
 fn find_document(root: &Path, target: &str) -> Result<headwater_query::Explanation, ExitCode> {
     let loaded = load(root)?;
-    match loaded.surface().explain(target) {
-        Some(explanation) => Ok(explanation),
-        None => {
-            // An identifier is asked about first, and a path second: the two
-            // grammars can overlap in principle, and this repository's own
-            // never do (every identifier scheme opens on a namespace, and no
-            // corpus path does). Where they did overlap, a target this shaped
-            // gets the identifier's refusal, because a reader who typed an
-            // identifier is not asking whether it is a path.
-            let text = match loaded.shape.identifier_shaped(target) {
-                true => identifier_text(target),
-                false => {
-                    let corpus = Corpus::declared(
-                        root,
-                        &loaded.consumer.corpus_root,
-                        &loaded.consumer.exclusions,
-                    );
-                    classification_text(target, &corpus.classify(Path::new(target)))
-                }
-            };
-            eprintln!("headwater: {}", err(&text));
-            Err(ExitCode::FAILURE)
-        }
+    let surface = loaded.surface();
+    if let Some(explanation) = surface.explain(target) {
+        return Ok(explanation);
     }
+    // An identifier is asked about first, and a path second: the two
+    // grammars can overlap in principle, and this repository's own
+    // never do (every identifier scheme opens on a namespace, and no
+    // corpus path does). Where they did overlap, a target this shaped
+    // gets the identifier's refusal, because a reader who typed an
+    // identifier is not asking whether it is a path.
+    let text = match loaded.shape.identifier_shaped(target) {
+        true => identifier_text(target),
+        false => match headwater_census::walk::typed(root, target) {
+            None => classification_text(
+                target,
+                &headwater_census::walk::Classification::Unclassifiable,
+            ),
+            Some(relative) => {
+                // A retried spelling is a path, so only a document at that
+                // path answers it: `./HW-DR-0001` names the file `HW-DR-0001`
+                // and never the identifier, as it did before #1227.
+                if relative != target {
+                    if let Some(explanation) = surface
+                        .explain(&relative)
+                        .filter(|explanation| explanation.path == relative)
+                    {
+                        return Ok(explanation);
+                    }
+                }
+                let corpus = Corpus::declared(
+                    root,
+                    &loaded.consumer.corpus_root,
+                    &loaded.consumer.exclusions,
+                );
+                classification_text(target, &corpus.classify(Path::new(&relative)))
+            }
+        },
+    };
+    eprintln!("headwater: {}", err(&text));
+    Err(ExitCode::FAILURE)
 }
 
 /// The sentence [`explain`]'s refusal prints for a target shaped like an
@@ -4354,8 +4379,11 @@ fn classification_text(
         Classification::Outside => {
             format!("`{target}` is outside every corpus root this repository declares")
         }
+        // #1227: this state is reached by a path that leaves the repository,
+        // absolute or by `..`, and by a segment that is not UTF-8, so the
+        // sentence names both.
         Classification::Unclassifiable => {
-            format!("`{target}` is not a path this repository can classify")
+            format!("`{target}` is outside this repository, or is not a path it can read")
         }
     }
 }
@@ -5827,6 +5855,7 @@ fn mcp(root: &Path, now: Option<Date>, writing: bool) -> ExitCode {
         surface: loaded.surface(),
         census: &loaded.census,
         graph: &loaded.graph,
+        root,
         declared: loaded.declared(),
         claims: &loaded.claims,
         package: &loaded.bound.package,

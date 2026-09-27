@@ -2808,6 +2808,34 @@
         }
       },
       {
+        "path": "docs/evaluations/external-evaluation-harnesses-and-benchmarks-for-the-probe-campaign.md",
+        "kind": "evaluation",
+        "id": "HW-EVAL-external-evaluation-harnesses-and-benchmarks-for-the-probe-campaign",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-EVAL-external-evaluation-harnesses-and-benchmarks-for-the-probe-campaign",
+          "status": "current",
+          "status_since": "2026-09-27",
+          "summary": "DeepEval, Promptfoo and Inspect AI can drive a probe session but never grade one. The campaign adopts none, because each reads model text or opens a channel the session can write to.",
+          "last_verified": "2026-09-27",
+          "title": "External evaluation harnesses and benchmarks for the probe campaign",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "mixed",
+            "drafted_by": "claude-opus-5.5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "traces_to": [
+              "HW-SPEC-ai-integration",
+              "HW-SPEC-the-recorder-contract",
+              "HW-DR-0059"
+            ]
+          }
+        }
+      },
+      {
         "path": "docs/evaluations/first-contact.md",
         "kind": "evaluation",
         "id": "HW-EVAL-first-contact",
@@ -4206,7 +4234,7 @@
               },
               {
                 "to": "engine/crates/census/src/walk.rs",
-                "verified_revision": "sha256:a6963e1e2967c28d0c0a28fa4bee742097a03e44abb2291b81e1759c368a0b9b"
+                "verified_revision": "sha256:bd4c368d26966fe22d9cb9ce3631dbcd70fbe1ceca48341d66cb8b921d5e1e9f"
               }
             ]
           }
@@ -15302,6 +15330,39 @@
         }
       },
       {
+        "source": "docs/evaluations/external-evaluation-harnesses-and-benchmarks-for-the-probe-campaign.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-SPEC-ai-integration",
+          "path": "docs/spec/05-ai-integration.md",
+          "kind": "design_spec"
+        }
+      },
+      {
+        "source": "docs/evaluations/external-evaluation-harnesses-and-benchmarks-for-the-probe-campaign.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-SPEC-the-recorder-contract",
+          "path": "docs/spec/15-the-recorder-contract.md",
+          "kind": "design_spec"
+        }
+      },
+      {
+        "source": "docs/evaluations/external-evaluation-harnesses-and-benchmarks-for-the-probe-campaign.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0059",
+          "path": "docs/decisions/0059-a-transform-over-a-harness-session-log-is-an-observed-transcript-when-the-log-arrives-by-a-channel-the-model-cannot-write-to.md",
+          "kind": "decision"
+        }
+      },
+      {
         "source": "docs/evaluations/first-contact.md",
         "relation": "cites_evidence",
         "written_as": "cited_by",
@@ -17155,7 +17216,7 @@
           "resolver": "source-tree"
         },
         "attributes": {
-          "verified_revision": "sha256:a6963e1e2967c28d0c0a28fa4bee742097a03e44abb2291b81e1759c368a0b9b"
+          "verified_revision": "sha256:bd4c368d26966fe22d9cb9ce3631dbcd70fbe1ceca48341d66cb8b921d5e1e9f"
         }
       },
       {
