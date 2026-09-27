@@ -385,6 +385,10 @@ The documents on this shelf, in the reading order this corpus derives. Each head
 
 [HW-DR-0092](../decisions/0092-the-citation-comment-of-spec-5-is-for-an-adopter-s-corpus-and-this-repository-does-not-practice-it-on-its-own-code.md) — The per-identifier citation comment of spec 5 is a convention for an adopter's corpus. By the owner's ruling, the code of this repository carries none. Its comments that name an identifier are prose, and the checker does not read them. (asserted, and no human has accepted it)
 
+## The live account of a domain is its own kind, split on the product and process line, and it draws on the records it cites
+
+[HW-DR-0093](../decisions/0093-the-live-account-of-a-domain-is-its-own-kind-split-on-the-product-and-process-line-and-it-draws-on-the-records-it-cites.md) — explanation and process_explanation state what holds now across one domain, and draws_on reports an account whose source decision ends. (asserted, and no human has accepted it)
+
 ## The APT repository is served from headwater.tools and signed by a subkey the owner's offline key certifies
 
 [HW-DR-0094](../decisions/0094-the-apt-repository-is-served-from-headwater-tools-and-signed-by-a-subkey-the-owner-s-offline-key-certifies.md) — Headwater ships one amd64 Debian package, taxonomy-free, through an APT repository on headwater.tools whose metadata a CI-held signing subkey signs (asserted, and no human has accepted it)

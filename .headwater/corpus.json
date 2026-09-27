@@ -22,7 +22,7 @@
       "taxonomy": {
         "package": "headwater/standard",
         "version": "4.9.1",
-        "lock": "sha256:335e11133f627e54f256de1000ac8a575ded463489833432a1b92ccdc6b07fb4"
+        "lock": "sha256:525065050408d6e7f888083ab59316327759582e6c25a4e9f97d8099b29db526"
       },
       "entry_points": [
         {
@@ -84,6 +84,11 @@
           "shelf": "process_decisions",
           "path": "docs/process/decisions/0001-orchestration-prose-has-one-owner-per-sentence.md",
           "id": "HW-PD-0001"
+        },
+        {
+          "shelf": "process_explanations",
+          "path": "docs/process/explanations/where-a-ci-job-runs.md",
+          "id": "HW-PEXP-where-a-ci-job-runs"
         },
         {
           "shelf": "requirements",

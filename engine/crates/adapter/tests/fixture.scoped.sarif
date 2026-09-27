@@ -323,7 +323,7 @@
               "properties": {
                 "headwater": {
                   "scope": "document",
-                  "version": 5,
+                  "version": 6,
                   "obligations": [
                     "OB-FIX-7"
                   ],
@@ -339,7 +339,7 @@
               "properties": {
                 "headwater": {
                   "scope": "document",
-                  "version": 4,
+                  "version": 5,
                   "obligations": [
                     "OB-FIX-8"
                   ],
@@ -355,7 +355,7 @@
               "properties": {
                 "headwater": {
                   "scope": "document",
-                  "version": 4,
+                  "version": 5,
                   "obligations": [
                     "OB-FIX-22"
                   ],
@@ -816,7 +816,7 @@
             "analysisTarget"
           ],
           "hashes": {
-            "sha-256": "6ca81f740c17f231ecc6c7268544dca0bd1bfd77b4498dccc67bc914ddb09024"
+            "sha-256": "8dd1e0dfc872f7591dc2ce9b4d0ee7c6c6426542e92fc88c78a001c1134fedcb"
           }
         },
         {
@@ -1589,6 +1589,105 @@
         {
           "ruleId": "language.controlled.not_met",
           "ruleIndex": 21,
+          "level": "warning",
+          "kind": "fail",
+          "message": {
+            "text": "`ste_house` holds prose to 25 words a sentence, and this one has 49",
+            "markdown": "`ste_house` holds prose to 25 words a sentence, and this one has 49\n\n**Fix:** split the sentence, or move a clause into its own sentence"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/07-prose-defects.md"
+                },
+                "region": {
+                  "startLine": 35,
+                  "startColumn": 1
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "warn",
+              "fixable": false,
+              "remediation": "split the sentence, or move a clause into its own sentence",
+              "escape": "none",
+              "obligation": "OB-FIX-8",
+              "obligation_severity": "low"
+            }
+          }
+        },
+        {
+          "ruleId": "language.retired_term.used",
+          "ruleIndex": 22,
+          "level": "warning",
+          "kind": "fail",
+          "message": {
+            "text": "`ste_house` retires `robust`, and this sentence writes it: it stands in for the failure the thing survives",
+            "markdown": "`ste_house` retires `robust`, and this sentence writes it: it stands in for the failure the thing survives\n\n**Fix:** rewrite the sentence without `robust`"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/07-prose-defects.md"
+                },
+                "region": {
+                  "startLine": 35,
+                  "startColumn": 1
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "warn",
+              "fixable": false,
+              "remediation": "rewrite the sentence without `robust`",
+              "escape": "none",
+              "obligation": "OB-FIX-22",
+              "obligation_severity": "low"
+            }
+          }
+        },
+        {
+          "ruleId": "voice.forbidden_construction",
+          "ruleIndex": 20,
+          "level": "warning",
+          "kind": "fail",
+          "message": {
+            "text": "`declarative` forbids future_intent, and this sentence writes `will be`",
+            "markdown": "`declarative` forbids future_intent, and this sentence writes `will be`\n\n**Fix:** state what the system does now, or move the sentence to a document whose kind narrates"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/07-prose-defects.md"
+                },
+                "region": {
+                  "startLine": 35,
+                  "startColumn": 1
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "warn",
+              "fixable": false,
+              "remediation": "state what the system does now, or move the sentence to a document whose kind narrates",
+              "escape": "none",
+              "obligation": "OB-FIX-7",
+              "obligation_severity": "low"
+            }
+          }
+        },
+        {
+          "ruleId": "language.controlled.not_met",
+          "ruleIndex": 21,
           "level": "error",
           "kind": "fail",
           "message": {
@@ -1602,7 +1701,7 @@
                   "uri": "check/spec/07-prose-defects.md"
                 },
                 "region": {
-                  "startLine": 39,
+                  "startLine": 43,
                   "startColumn": 1
                 }
               }
@@ -1635,7 +1734,7 @@
                   "uri": "check/spec/07-prose-defects.md"
                 },
                 "region": {
-                  "startLine": 43,
+                  "startLine": 47,
                   "startColumn": 1
                 }
               }
@@ -1668,7 +1767,7 @@
                   "uri": "check/spec/07-prose-defects.md"
                 },
                 "region": {
-                  "startLine": 45,
+                  "startLine": 49,
                   "startColumn": 1
                 }
               }
@@ -1701,7 +1800,7 @@
                   "uri": "check/spec/07-prose-defects.md"
                 },
                 "region": {
-                  "startLine": 56,
+                  "startLine": 60,
                   "startColumn": 1
                 }
               }
@@ -1734,7 +1833,7 @@
                   "uri": "check/spec/07-prose-defects.md"
                 },
                 "region": {
-                  "startLine": 57,
+                  "startLine": 61,
                   "startColumn": 1
                 }
               }
@@ -1767,7 +1866,7 @@
                   "uri": "check/spec/07-prose-defects.md"
                 },
                 "region": {
-                  "startLine": 61,
+                  "startLine": 65,
                   "startColumn": 32
                 }
               }
@@ -1800,7 +1899,7 @@
                   "uri": "check/spec/07-prose-defects.md"
                 },
                 "region": {
-                  "startLine": 63,
+                  "startLine": 67,
                   "startColumn": 28
                 }
               }
@@ -1831,7 +1930,7 @@
                   "uri": "check/spec/07-prose-defects.md"
                 },
                 "region": {
-                  "startLine": 65,
+                  "startLine": 69,
                   "startColumn": 91
                 }
               }
@@ -1862,7 +1961,7 @@
                   "uri": "check/spec/07-prose-defects.md"
                 },
                 "region": {
-                  "startLine": 67,
+                  "startLine": 71,
                   "startColumn": 63
                 }
               }
@@ -1893,7 +1992,7 @@
                   "uri": "check/spec/07-prose-defects.md"
                 },
                 "region": {
-                  "startLine": 69,
+                  "startLine": 73,
                   "startColumn": 46
                 }
               }
@@ -1924,7 +2023,7 @@
                   "uri": "check/spec/07-prose-defects.md"
                 },
                 "region": {
-                  "startLine": 71,
+                  "startLine": 75,
                   "startColumn": 90
                 }
               }
