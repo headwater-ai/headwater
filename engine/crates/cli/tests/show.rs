@@ -190,6 +190,67 @@ fn show_writes_the_bytes_on_disk_for_an_identifier_and_for_its_path() {
     }
 }
 
+/// A file that is not UTF-8 at all is printed byte for byte. The case above
+/// holds CRLF and a missing final newline, and its body is valid UTF-8, so a
+/// lossy decode passed it: `from_utf8_lossy` writes U+FFFD, three bytes, for
+/// each byte it cannot read. These bytes are what that decode changes.
+#[test]
+fn show_writes_bytes_that_are_not_utf_8_unchanged() {
+    let root = Root::new("not-utf-8");
+    let path = "docs/notes/not-utf-8.md";
+    let bytes: &[u8] = b"\xff\xfe# Not UTF-8\r\n\r\nA byte \xe9 alone, and \xc3 cut short\r\n";
+    let at = root.at.join(path);
+    std::fs::create_dir_all(at.parent().expect("it has a parent")).expect("the shelf is made");
+    std::fs::write(&at, bytes).expect("the document writes");
+
+    let shown = root.run(&["show", path]);
+    assert_eq!(
+        shown.status.code(),
+        Some(0),
+        "the census carries the file as a row: {}",
+        String::from_utf8_lossy(&shown.stderr)
+    );
+    assert!(
+        shown.stdout == bytes,
+        "`show` writes bytes that are not UTF-8 unchanged:\n  got  {:?}\n  want {:?}",
+        shown.stdout,
+        bytes
+    );
+}
+
+/// A symlink under the corpus root is a census row that the walk does not
+/// follow, and `show` does not follow it either. Before this case, `show`
+/// read the link's target, which can be any file on the host, outside
+/// `--root`.
+#[cfg(unix)]
+#[test]
+fn show_refuses_a_symlink_and_prints_nothing_of_its_target() {
+    let root = Root::new("symlink");
+    let outside = root.at.with_extension("outside");
+    std::fs::write(&outside, b"a secret outside the root\n").expect("the target writes");
+    let path = "docs/decisions/9998-link.md";
+    std::os::unix::fs::symlink(&outside, root.at.join(path)).expect("the link is made");
+
+    let shown = root.run(&["show", path]);
+    let _ = std::fs::remove_file(&outside);
+    assert_eq!(
+        shown.status.code(),
+        Some(1),
+        "`show` refuses a symlink: {}",
+        String::from_utf8_lossy(&shown.stderr)
+    );
+    assert!(
+        shown.stdout.is_empty(),
+        "`show` prints no byte of the link's target: {:?}",
+        String::from_utf8_lossy(&shown.stdout)
+    );
+    assert!(
+        String::from_utf8_lossy(&shown.stderr).contains("is a symlink"),
+        "the refusal names the link: {}",
+        String::from_utf8_lossy(&shown.stderr)
+    );
+}
+
 /// A bare `show` names what it takes, in the shape a bare `explain` does.
 #[test]
 fn a_bare_show_names_what_it_takes() {
