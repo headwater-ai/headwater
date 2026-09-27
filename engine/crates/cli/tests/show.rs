@@ -394,3 +394,83 @@ fn explain_and_show_refuse_a_path_outside_the_repository_as_outside_it() {
         }
     }
 }
+
+/// A `./` spelling is a path, and never an identifier. `./HW-DR-0001` names
+/// the file `HW-DR-0001` at the root, and no document is written there, so it
+/// is refused as a path outside every corpus root, which is what `main` said
+/// before #1227. Only the path of a document answers a retried spelling.
+#[test]
+fn a_dot_slash_spelling_of_an_identifier_is_a_path_and_is_refused_as_one() {
+    let root = Root::new("dot-identifier");
+    let target = format!("./{IDENTIFIER}");
+    for (how, run) in RUNS {
+        for verb in ["explain", "show"] {
+            let refused = run(&root, &[verb, &target]);
+            let stderr = String::from_utf8_lossy(&refused.stderr);
+            assert_eq!(
+                refused.status.code(),
+                Some(1),
+                "`{verb} {target}` with {how} is not the identifier: {stderr}"
+            );
+            assert!(refused.stdout.is_empty(), "`{verb} {target}` with {how}");
+            assert!(
+                stderr.contains("is outside every corpus root this repository declares"),
+                "`{verb} {target}` with {how} reads as a path: {stderr}"
+            );
+        }
+    }
+}
+
+/// An absolute path with no file behind it, under `--root .`, is a path of
+/// this corpus. No canonical read is possible without a file, so only the
+/// root made absolute can strip it. Without that, the path reads as outside
+/// the repository, and a hook that asks where a new document may go is told
+/// the wrong thing.
+#[test]
+fn an_absolute_path_with_no_file_under_a_relative_root_is_a_path_of_this_corpus() {
+    let root = Root::new("absolute-missing");
+    let target = root
+        .at
+        .join("docs/decisions/0002-not-written.md")
+        .display()
+        .to_string();
+    let refused = root.run_inside(&["explain", &target]);
+    let stderr = String::from_utf8_lossy(&refused.stderr);
+    assert_eq!(refused.status.code(), Some(1), "{stderr}");
+    assert!(
+        stderr.contains("is a path of this corpus, with no document written there yet"),
+        "`explain {target}` with `--root .` reads as a corpus path: {stderr}"
+    );
+}
+
+/// A `--root` reached through a symlink, and a target typed through the real
+/// directory. The two absolute paths share no prefix as written, so only the
+/// canonical read of both finds the document.
+#[cfg(unix)]
+#[test]
+fn an_absolute_target_finds_its_document_under_a_root_reached_through_a_symlink() {
+    let root = Root::new("linked-root");
+    let link = root.at.with_file_name(format!(
+        "{}-link",
+        root.at
+            .file_name()
+            .expect("the root has a name")
+            .to_string_lossy()
+    ));
+    let _ = std::fs::remove_file(&link);
+    std::os::unix::fs::symlink(&root.at, &link).expect("the link is made");
+    let target = root.at.join(DOCUMENT).display().to_string();
+    let shown = Command::new(env!("CARGO_BIN_EXE_headwater"))
+        .args(["show", &target, "--root"])
+        .arg(&link)
+        .output()
+        .expect("the binary runs");
+    let _ = std::fs::remove_file(&link);
+    assert_eq!(
+        shown.status.code(),
+        Some(0),
+        "`show {target}` under a linked root: {}",
+        String::from_utf8_lossy(&shown.stderr)
+    );
+    assert!(shown.stdout == document(), "the bytes on disk");
+}

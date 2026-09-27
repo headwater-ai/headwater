@@ -870,6 +870,51 @@ fn the_explain_tool_reads_every_spelling_of_a_path_and_refuses_one_outside_the_r
             "`{target}` is refused as outside this repository: {refused}"
         );
     }
+
+    // A `./` spelling is a path and never an identifier, as in the verb.
+    assert!(
+        !asked("SPEC-FIX-api").contains("is not a document of this corpus"),
+        "the identifier resolves bare"
+    );
+    assert_eq!(
+        asked("./SPEC-FIX-api"),
+        "./SPEC-FIX-api is not a document of this corpus\n",
+        "`./SPEC-FIX-api` names a path, and no document is written there"
+    );
+}
+
+/// The same reading under a relative root, which is what `headwater mcp
+/// --root .` hands the server. Cargo runs this target from the crate
+/// directory, so `fixtures` is the fixture tree. An absolute argument is
+/// compared with that root made absolute, and a server that compared it
+/// with `fixtures` as written would refuse it as outside the repository.
+#[test]
+fn the_explain_tool_reads_an_absolute_path_under_a_relative_root() {
+    let built = fixture_tree();
+    let relative = Path::new("fixtures");
+    assert_eq!(
+        relative.canonicalize().expect("the fixture tree is there"),
+        fixtures_dir().canonicalize().expect("the fixture tree is there"),
+        "the test runs from the crate directory"
+    );
+    let server = Server {
+        root: relative,
+        ..built.server(RECORDED_AT)
+    };
+    let asked = |target: &str| {
+        content(&once(
+            &server,
+            &calling("explain", &format!(r#"{{"target":"{target}"}}"#)),
+        ))
+        .concat()
+    };
+    let document = "query/specs/api-design.md";
+    let absolute = fixtures_dir().join(document).display().to_string();
+    assert_eq!(
+        asked(&absolute),
+        asked(document),
+        "`{absolute}` explains `{document}` under the root `fixtures`"
+    );
 }
 
 /// An argument each tool accepts, so that a call reaches the read behind it.
