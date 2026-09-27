@@ -517,6 +517,22 @@ contains "a record that governs release.yml and is not cited there is red" \
     "docs/decisions/9998-a-reason-nobody-cites.md governs release.yml and its header does not cite HW-DR-9998" \
     "$(cites "$scratch/g3")"
 
+# g3b. The same record, with `governs` written as one string rather than a list.
+copy_tree "$scratch/g3b"
+printf '%s\n' '---' 'id: HW-DR-9998' 'relations:' '  governs: .github/workflows/release.yml' '---' '' '# A reason nobody cites' \
+    >"$scratch/g3b/docs/decisions/9998-a-reason-nobody-cites.md"
+contains "  and with \`governs\` written as one string" \
+    "docs/decisions/9998-a-reason-nobody-cites.md governs release.yml and its header does not cite HW-DR-9998" \
+    "$(cites "$scratch/g3b")"
+
+# g3c. The same record, with `governs` written as one map.
+copy_tree "$scratch/g3c"
+printf '%s\n' '---' 'id: HW-DR-9998' 'relations:' '  governs:' '    to: .github/workflows/release.yml' '---' '' '# A reason nobody cites' \
+    >"$scratch/g3c/docs/decisions/9998-a-reason-nobody-cites.md"
+contains "  and with \`governs\` written as one map" \
+    "docs/decisions/9998-a-reason-nobody-cites.md governs release.yml and its header does not cite HW-DR-9998" \
+    "$(cites "$scratch/g3c")"
+
 # g4. A workflow with every citation removed from its comments.
 copy_tree "$scratch/g4"
 sed -E 's/HW-(DR|PD)-[0-9]{4}//g' "$root/.github/workflows/publish-crates.yml" \
