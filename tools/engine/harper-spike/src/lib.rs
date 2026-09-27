@@ -46,18 +46,27 @@ pub fn linter() -> LintGroup {
 }
 
 /// One piece of the text given to Harper: `len` bytes at `at` in that text
-/// came from `file` in the source, byte for byte when `verbatim`.
+/// came from `file` in the source, byte for byte when `verbatim`. `owned` is
+/// whether this document's author wrote it as prose.
 #[derive(Clone, Copy, Debug)]
 struct Segment {
     at: usize,
     file: usize,
     len: usize,
     verbatim: bool,
+    owned: bool,
 }
 
-/// The text of one sentence that the author wrote, with the map back to file
-/// bytes. The text equals `Sentence::authored` before its trim.
-fn authored_text(
+/// The text of one sentence as a reader sees it, with the map back to file
+/// bytes and the ownership of each piece.
+///
+/// Code spans and quotations stay in the text Harper reads, and a finding that
+/// touches one is dropped afterwards. The first version of this spike gave
+/// Harper the text of `Sentence::authored`, which removes them, and the
+/// removal wrote errors the author never made: "on a `conflicts_with` edge"
+/// read as "on a edge", so the article rule fired, and the spaces either side
+/// of a removed span met as a double space. The evaluation gives both counts.
+fn sentence_text(
     body: &headwater_doc::body::Body,
     sentence: &headwater_doc::Sentence,
 ) -> (String, Vec<Segment>) {
@@ -69,49 +78,39 @@ fn authored_text(
             continue;
         }
         for run in &block.runs {
-            if run.ownership != Ownership::Authored {
-                continue;
-            }
             let (from, to) = (run.span.start.offset, run.span.end.offset);
             let (lo, hi) = (from.max(low), to.min(high));
             if lo >= hi {
                 continue;
             }
             let verbatim = to - from == run.text.len();
-            let mut piece = if verbatim {
+            let piece = if verbatim {
                 match run.text.get(lo - from..hi - from) {
                     Some(piece) => piece,
                     None => continue,
                 }
-            } else if from >= low && to <= high {
-                run.text.as_str()
             } else {
-                continue;
+                run.text.as_str()
             };
-            let mut file = if verbatim { lo } else { from };
-            // Where a code span or a quotation was dropped, the space before
-            // it and the space after it meet. `Sentence::authored` keeps both,
-            // and Harper reads the pair as a formatting error the author never
-            // made (measured: rule Spaces, on the red run of the fixture). The
-            // second space goes, and the segment starts one byte later so the
-            // map to the file stays exact.
-            if text.ends_with(' ') && piece.starts_with(' ') {
-                let trimmed = piece.trim_start_matches(' ');
-                if verbatim {
-                    file += piece.len() - trimmed.len();
-                }
-                piece = trimmed;
-            }
             segments.push(Segment {
                 at: text.len(),
-                file,
+                file: if verbatim { lo } else { from },
                 len: piece.len(),
                 verbatim,
+                owned: run.ownership == Ownership::Authored,
             });
             text.push_str(piece);
         }
     }
     (text, segments)
+}
+
+/// Whether `start..end` of the text touches anything the author did not write.
+fn touches_foreign(segments: &[Segment], start: usize, end: usize) -> bool {
+    let end = end.max(start + 1);
+    segments
+        .iter()
+        .any(|s| !s.owned && s.at < end && start < s.at + s.len)
 }
 
 /// The file byte range of `start..end` in the text, when both ends fall in
@@ -169,7 +168,7 @@ pub fn authored(path: &str, source: &str, linter: &mut LintGroup) -> Vec<Row> {
     let body = &document.body;
     let mut rows = Vec::new();
     for sentence in body.sentences() {
-        let (text, segments) = authored_text(body, &sentence);
+        let (text, segments) = sentence_text(body, &sentence);
         if text.trim().is_empty() {
             continue;
         }
@@ -178,6 +177,9 @@ pub fn authored(path: &str, source: &str, linter: &mut LintGroup) -> Vec<Row> {
             for lint in lints {
                 let start = byte_of(&text, lint.span.start);
                 let end = byte_of(&text, lint.span.end);
+                if touches_foreign(&segments, start, end) {
+                    continue;
+                }
                 let range = to_file(&segments, start, end);
                 let expect = range
                     .map(|(a, b)| source[a..b].to_string())
