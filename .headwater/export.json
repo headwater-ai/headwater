@@ -3057,7 +3057,7 @@
           "status": "current",
           "status_since": "2026-09-27",
           "summary": "harper-core 2.11.0, fed only the prose an author wrote, found 0 errors in 187 hand-read findings on 25 documents. It adds 496 crates and does not compile at rustc 1.91.",
-          "last_verified": "2026-09-27",
+          "last_verified": "2026-09-28",
           "title": "Harper over this corpus finds no error on a 25-document sample, and version 2.11.0 does not build at the engine's floor of rustc 1.91",
           "provenance": {
             "warrant": "asserted",
@@ -3068,7 +3068,10 @@
           },
           "relations": {
             "governs": [
-              "tools/engine/harper-spike/**"
+              {
+                "to": "tools/engine/harper-spike/**",
+                "verified_revision": "sha256:432b2bb624a36c45c456b9a88d5af8ce8644f1cf26ab32c744ef7e0fe09161ca"
+              }
             ],
             "traces_to": [
               "tools/engine/harper-spike/build.sh"
@@ -15977,6 +15980,9 @@
           "anchor_kind": "code_path",
           "id": "tools/engine/harper-spike/**",
           "resolver": "source-tree"
+        },
+        "attributes": {
+          "verified_revision": "sha256:432b2bb624a36c45c456b9a88d5af8ce8644f1cf26ab32c744ef7e0fe09161ca"
         }
       },
       {
