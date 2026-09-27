@@ -55,7 +55,7 @@
 //! records, and this rule does not close it. Each of these is a skip that
 //! names the owner.
 //!
-//! # The severity is an error, and the patch is the state with its stamp
+//! # The severity is an error where the target is live, and the patch is the state with its stamp
 //!
 //! The remedy is mechanical and total where the target is live: write the
 //! state the edge declares, and write the state-entry date beside it. The
@@ -73,9 +73,19 @@
 //! - the target is not live. A `deprecated` target is terminal already, and
 //!   which terminal state it ends at is the author's call.
 //!
+//! **The last case is advisory, not an error.** Which of two terminal states
+//! the target ends at is a judgment, so the remedy is neither mechanical nor
+//! total, and a finding that stopped a strict run would stop it on a question
+//! only an author can settle. The rule still reports it, at `warn`, with no
+//! patch. The first two cases stay errors: the target is live, the state the
+//! edge sets is the one correct outcome, and only the date is missing for the
+//! engine to write it.
+//!
 //! One instance reads one pair. Two successors of one target each report it,
-//! each with its own stamp. The first patch that lands moves the state, and
-//! the `expect` guard then refuses the second, so one run writes one stamp.
+//! each with its own stamp. `set_facets` in `headwater_scaffold::fix` applies
+//! the first such patch in patch order and skips any later patch that names a
+//! facet this run has already written, so one run writes one stamp. The
+//! `expect` guard does not decide that case: the skip comes first.
 
 use crate::finding::{at, Finding, Severity};
 use crate::instance::Outcome;
@@ -254,6 +264,13 @@ impl EdgeCheck for NotSetByEdge<'_> {
             .entered
             .as_deref()
             .and_then(|name| scalar(target_facets, name).map(|value| (name, value)));
+        // A live target has one correct outcome, the state the edge sets. A
+        // target that is terminal already asks which terminal state it ends
+        // at, and that is a judgment. See the module comment.
+        let severity = match self.facet.standing(target_state) {
+            Standing::Live => Severity::Error,
+            _ => Severity::Warn,
+        };
         let (patch, why_not) = match (self.facet.standing(target_state), stamp, written) {
             (Standing::Live, Some(stamp), Some((entered, was))) => (
                 Some(Patch::Facets {
@@ -309,7 +326,7 @@ impl EdgeCheck for NotSetByEdge<'_> {
 
         Outcome::failed_with(Finding {
             rule: self::RULE,
-            severity: Severity::Error,
+            severity,
             obligation: None,
             path: target.path.to_string(),
             line,
