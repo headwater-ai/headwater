@@ -66,6 +66,15 @@ pub const EXAMINES: &str = "examines";
 pub const EXPECTATION_SECTION: &str = "Expectation";
 /// The key that names the closed answer set inside it.
 pub const ANSWERS: &str = "answers";
+/// The key that names, inside the same block, the values of that set which
+/// satisfy the probe.
+///
+/// The set is the domain a recorder extracts a value from, so a wrong word the
+/// task offers is still recorded as that word and not as no answer. The
+/// expected values are the answer key. Before #1229 the grader read the set as
+/// both, and the one `answered` probe on the shelf declared every word its task
+/// offered, so every in-domain answer passed.
+pub const EXPECTED: &str = "expected";
 
 /// What a probe writes in `oracle` when its expectation is not `patched`.
 ///
@@ -168,6 +177,10 @@ pub struct Selected {
     /// The closed set an `answered` expectation is graded against, sorted, and
     /// empty for every other form. See [`EXPECTATION_SECTION`].
     pub answers: Vec<String>,
+    /// The values of `answers` that satisfy an `answered` expectation, sorted,
+    /// and empty for every other form. A proper subset of `answers`, which the
+    /// plan enforces.
+    pub expected: Vec<String>,
 }
 
 /// Why a run does not happen.
@@ -220,6 +233,17 @@ pub enum Refusal {
     /// An `answered` probe that declares no closed set of answers. Every string
     /// would then be the expected one, and the rate would be the session count.
     AnswersUndeclared { probe: String },
+    /// An `answered` probe that declares a closed set and no expected value in
+    /// it. Nothing then says which answer is right.
+    ExpectedUndeclared { probe: String },
+    /// An `answered` probe whose expected values are not all in its closed
+    /// set. A recorder extracts only a value of the set, so an expected value
+    /// outside it can never be met.
+    ExpectedOutsideAnswers { probe: String, outside: Vec<String> },
+    /// An `answered` probe whose expected values are every value of its closed
+    /// set. Every answer the recorder can extract then satisfies it, and the
+    /// rate is the count of sessions that answered at all.
+    ExpectedEveryAnswer { probe: String },
     /// A probe of another form that declares a closed set of answers. Its
     /// expectation reads no answer, so the set is declared and never read.
     AnswersNotUsed {
@@ -274,6 +298,9 @@ impl Refusal {
             | Refusal::OracleNotUsed { .. }
             | Refusal::OracleUnknown { .. }
             | Refusal::AnswersUndeclared { .. }
+            | Refusal::ExpectedUndeclared { .. }
+            | Refusal::ExpectedOutsideAnswers { .. }
+            | Refusal::ExpectedEveryAnswer { .. }
             | Refusal::AnswersNotUsed { .. }
             | Refusal::ExpectationNamesNothing { .. } => true,
         }
@@ -371,10 +398,32 @@ impl std::fmt::Display for Refusal {
                  probe declares, so a probe without one is satisfied by every string a session \
                  returns"
             ),
+            Refusal::ExpectedUndeclared { probe } => write!(
+                f,
+                "{probe} expects `answered` and declares no `{EXPECTED}` values beside its \
+                 `{ANSWERS}`. The set is the domain a recorder reads, and nothing then says which \
+                 value of it is right"
+            ),
+            Refusal::ExpectedOutsideAnswers { probe, outside } => write!(
+                f,
+                "{probe} expects {} outside its `{ANSWERS}`. A recorder extracts only a value of \
+                 that set, so no session can meet it",
+                outside
+                    .iter()
+                    .map(|value| format!("`{value}`"))
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            ),
+            Refusal::ExpectedEveryAnswer { probe } => write!(
+                f,
+                "{probe} expects every value of its `{ANSWERS}`, so every answer a recorder can \
+                 extract satisfies it and the rate counts the sessions that answered at all. Name \
+                 the right value in `{EXPECTED}`"
+            ),
             Refusal::AnswersNotUsed { probe, expectation } => write!(
                 f,
-                "{probe} expects `{}` and declares an `{ANSWERS}` block. Only `answered` reads the \
-                 final answer, so that set is declared and never read",
+                "{probe} expects `{}` and declares an `{ANSWERS}` or `{EXPECTED}` block. Only \
+                 `answered` reads the final answer, so that set is declared and never read",
                 expectation.name()
             ),
             Refusal::ExpectationNamesNothing { probe, expectation } => write!(
@@ -648,16 +697,42 @@ impl Plan {
                 return plan;
             }
 
-            let mut answers = row
-                .document
-                .as_deref()
-                .map(declared_answers)
-                .unwrap_or_default();
-            answers.sort();
-            answers.dedup();
-            match (expectation, answers.is_empty()) {
-                (Expectation::Answered, true) => {
+            let declared = |key: &str| {
+                let mut values = row
+                    .document
+                    .as_deref()
+                    .map(|document| declared_answers(document, key))
+                    .unwrap_or_default();
+                values.sort();
+                values.dedup();
+                values
+            };
+            let answers = declared(ANSWERS);
+            let expected = declared(EXPECTED);
+            match (expectation, answers.is_empty() && expected.is_empty()) {
+                (Expectation::Answered, _) if answers.is_empty() => {
                     plan.refusal = Some(Refusal::AnswersUndeclared { probe: id });
+                    return plan;
+                }
+                (Expectation::Answered, _) if expected.is_empty() => {
+                    plan.refusal = Some(Refusal::ExpectedUndeclared { probe: id });
+                    return plan;
+                }
+                (Expectation::Answered, _)
+                    if expected.iter().any(|value| !answers.contains(value)) =>
+                {
+                    plan.refusal = Some(Refusal::ExpectedOutsideAnswers {
+                        probe: id,
+                        outside: expected
+                            .iter()
+                            .filter(|value| !answers.contains(value))
+                            .cloned()
+                            .collect(),
+                    });
+                    return plan;
+                }
+                (Expectation::Answered, _) if expected == answers => {
+                    plan.refusal = Some(Refusal::ExpectedEveryAnswer { probe: id });
                     return plan;
                 }
                 (other, false) if other != Expectation::Answered => {
@@ -678,6 +753,7 @@ impl Plan {
                 examines,
                 oracle,
                 answers,
+                expected,
             });
         }
 
@@ -958,6 +1034,9 @@ impl Plan {
             if !selected.answers.is_empty() {
                 let _ = writeln!(out, "    answers: {}", selected.answers.join(", "));
             }
+            if !selected.expected.is_empty() {
+                let _ = writeln!(out, "    expected: {}", selected.expected.join(", "));
+            }
         }
         let _ = writeln!(out);
 
@@ -1023,10 +1102,12 @@ impl Plan {
     }
 }
 
-/// The closed answer set a probe declares, read from the parse the census took.
+/// A list a probe declares under its expectation, read from the parse the
+/// census took: the closed answer set for [`ANSWERS`], and the values of it that
+/// satisfy for [`EXPECTED`].
 ///
 /// The first fenced block under `## [EXPECTATION_SECTION]`, loaded as YAML, and
-/// the `answers` key of it. Anything that does not read that way declares
+/// the `key` of it. Anything that does not read that way declares
 /// nothing, and the caller refuses an `answered` probe that declares nothing —
 /// so a malformed block and an absent one reach one refusal rather than one
 /// refusal and one silent pass.
@@ -1034,7 +1115,7 @@ impl Plan {
 /// It reads the document the census parsed and never the file again, for the
 /// reason [`headwater_census::census::Row`] carries a parse at all: a second
 /// read is a second corpus, and the two accounts can differ.
-fn declared_answers(document: &headwater_doc::Document) -> Vec<String> {
+pub fn declared_answers(document: &headwater_doc::Document, key: &str) -> Vec<String> {
     use headwater_doc::body::BlockKind;
 
     let mut under = false;
@@ -1049,7 +1130,7 @@ fn declared_answers(document: &headwater_doc::Document) -> Vec<String> {
                 let Some(map) = loaded.value.as_map() else {
                     return Vec::new();
                 };
-                let Some(items) = map.get(ANSWERS).and_then(|entry| entry.value.as_seq()) else {
+                let Some(items) = map.get(key).and_then(|entry| entry.value.as_seq()) else {
                     return Vec::new();
                 };
                 return items

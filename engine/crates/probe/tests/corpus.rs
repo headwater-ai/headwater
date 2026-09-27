@@ -38,6 +38,7 @@
 //! number it did not establish. The index is separated by its missing front
 //! matter fence instead, and a fenced document with no identifier fails here.
 
+use headwater_probe::plan::{declared_answers, ANSWERS, EXPECTED};
 use headwater_probe::Expectation;
 use std::path::{Path, PathBuf};
 
@@ -65,6 +66,9 @@ struct Probe {
     path: String,
     id: Option<String>,
     expectation: Option<String>,
+    /// The closed set and the expected values under `## Expectation`, sorted.
+    answers: Vec<String>,
+    expected: Vec<String>,
 }
 
 /// One scalar of the front matter, read without a taxonomy, because this test
@@ -118,6 +122,8 @@ fn probes() -> Vec<Probe> {
             path: format!("{SHELF}/{name}"),
             expectation: scalar(&document, "expectation"),
             id: scalar(&document, "id"),
+            answers: sorted(declared_answers(&document, ANSWERS)),
+            expected: sorted(declared_answers(&document, EXPECTED)),
         });
     }
     assert!(
@@ -225,5 +231,49 @@ fn every_probe_on_the_shelf_declares_a_form_the_engine_grades() {
             .map(Expectation::name)
             .collect::<Vec<_>>()
             .join(", "),
+    );
+}
+
+fn sorted(mut values: Vec<String>) -> Vec<String> {
+    values.sort();
+    values.dedup();
+    values
+}
+
+/// Every `answered` probe on the shelf expects a proper part of its closed set.
+///
+/// `headwater probe plan` refuses the run otherwise, but only when somebody
+/// plans one, and nobody plans a paid run to find out. #1229 found the one
+/// `answered` probe on this shelf declaring every word its task offered as its
+/// set, and the grader then passed every in-domain answer. This case holds the
+/// shelf to the plan's rule on every change.
+#[test]
+fn every_answered_probe_on_the_shelf_expects_a_proper_part_of_its_set() {
+    let bad: Vec<String> = probes()
+        .into_iter()
+        .filter(|probe| probe.expectation.as_deref() == Some(Expectation::Answered.name()))
+        .filter(|probe| {
+            probe.expected.is_empty()
+                || probe.expected.len() >= probe.answers.len()
+                || probe
+                    .expected
+                    .iter()
+                    .any(|value| !probe.answers.contains(value))
+        })
+        .map(|probe| {
+            format!(
+                "{} declares `{ANSWERS}: [{}]` and `{EXPECTED}: [{}]`",
+                probe.path,
+                probe.answers.join(", "),
+                probe.expected.join(", ")
+            )
+        })
+        .collect();
+
+    assert!(
+        bad.is_empty(),
+        "{}.\nThe expected values are the answer key, and a key that holds every value of the set \
+         passes every answer a recorder can extract.",
+        bad.join("; ")
     );
 }

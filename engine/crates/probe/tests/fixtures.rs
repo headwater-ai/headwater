@@ -671,6 +671,7 @@ fn every_predicate_form_has_a_transcript_that_refutes_it() {
             Miss::NeverCited { .. } => "NeverCited",
             Miss::NoAnswerGiven => "NoAnswerGiven",
             Miss::Outside { .. } => "Outside",
+            Miss::Wrong { .. } => "Wrong",
             Miss::OracleReported { .. } => "OracleReported",
         };
         assert_eq!(named, expected, "{probe}");
@@ -688,7 +689,7 @@ fn an_in_domain_answer_that_is_not_the_expected_one_is_not_satisfied() {
     let row = row_of(&results, "PROBE-FIX-answered");
     let verdict = &row.sessions[0].verdict;
     assert!(
-        matches!(verdict, Verdict::NotSatisfied(_)),
+        matches!(verdict, Verdict::NotSatisfied(Miss::Wrong { .. })),
         "`yes` is in the set and is not the expected value: {verdict:?}"
     );
     let said = match verdict {
@@ -777,6 +778,7 @@ fn the_grader_refuses_a_selection_the_plan_would_not_have_produced() {
         }],
         oracle: oracle.map(str::to_string),
         answers,
+        expected: Vec::new(),
     };
     let record = record_of(&transcript("transcript.md"));
 
@@ -787,6 +789,17 @@ fn the_grader_refuses_a_selection_the_plan_would_not_have_produced() {
         ),
         (
             one(Expectation::Answered, None, Vec::new()),
+            NoVerdict::AnswersUndeclared,
+        ),
+        (
+            Selected {
+                expected: vec!["no".into(), "yes".into()],
+                ..one(
+                    Expectation::Answered,
+                    None,
+                    vec!["no".into(), "yes".into()],
+                )
+            },
             NoVerdict::AnswersUndeclared,
         ),
         (
@@ -1136,20 +1149,20 @@ fn an_answered_probe_that_declares_no_closed_set_stops_the_run() {
 #[test]
 fn an_answered_probe_that_expects_every_value_of_its_set_stops_the_run() {
     let plan = plan_over_probe(&|source| source.replace("expected: [no]", "expected: [no, yes]"));
-    let refusal = plan.refusal.as_ref().map(ToString::to_string);
     assert!(
-        refusal.as_deref().is_some_and(|said| said.contains("every value")),
-        "an expected set that equals the domain passes every answer the task offers: {refusal:?}"
+        matches!(plan.refusal, Some(Refusal::ExpectedEveryAnswer { .. })),
+        "an expected set that equals the domain passes every answer the task offers: {:?}",
+        plan.refusal
     );
 }
 
 #[test]
 fn an_answered_probe_that_expects_nothing_stops_the_run() {
     let plan = plan_over_probe(&|source| source.replace("expected: [no]\n", ""));
-    let refusal = plan.refusal.as_ref().map(ToString::to_string);
     assert!(
-        refusal.as_deref().is_some_and(|said| said.contains("`expected`")),
-        "a set with no expected value says nothing about which answer is right: {refusal:?}"
+        matches!(plan.refusal, Some(Refusal::ExpectedUndeclared { .. })),
+        "a set with no expected value says nothing about which answer is right: {:?}",
+        plan.refusal
     );
 }
 
@@ -1158,7 +1171,8 @@ fn an_answered_probe_that_expects_a_value_outside_its_set_stops_the_run() {
     let plan = plan_over_probe(&|source| source.replace("expected: [no]", "expected: [maybe]"));
     let refusal = plan.refusal.as_ref().map(ToString::to_string);
     assert!(
-        refusal.as_deref().is_some_and(|said| said.contains("`maybe`")),
+        matches!(plan.refusal, Some(Refusal::ExpectedOutsideAnswers { .. }))
+            && refusal.as_deref().is_some_and(|said| said.contains("`maybe`")),
         "a recorder extracts only in-domain values, so an expected value outside the set is \
          never met: {refusal:?}"
     );
