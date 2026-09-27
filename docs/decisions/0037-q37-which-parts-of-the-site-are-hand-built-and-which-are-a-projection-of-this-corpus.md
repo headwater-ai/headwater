@@ -43,7 +43,7 @@ relations:
 
 ## Decision
 
-**The site has two halves, and a path is the boundary.** Everything under `site/` is hand-built. The generated projection is this corpus, rendered from the navigation that `.headwater/nav.yml` carries and the graph that `.headwater/export.json` carries. [Q36](0036-q36-which-of-mkdocs-docusaurus-or-astro-this-corpus-emits-navigation-for-and-why.md) picked the generator that reads the first of those two files.
+**The site has two halves, and a path is the boundary.** Everything under `site/` is hand-built. The generated projection is this corpus, rendered from the navigation that `.headwater/nav.yml` carries and the graph that `headwater export --format json` computes at build time. The export is not committed since [#1251](https://github.com/headwater-ai/headwater/issues/1251), because only a build step reads it. [Q36](0036-q36-which-of-mkdocs-docusaurus-or-astro-this-corpus-emits-navigation-for-and-why.md) picked the generator that reads the first of those two files.
 
 **Q16 is amended and not reopened.** Its ruling that Headwater emits the navigation and that a third-party generator renders it stands whole. What narrows is the population that ruling covers. The projection is the corpus, and not the marketing pages that describe the corpus.
 

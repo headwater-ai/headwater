@@ -337,6 +337,8 @@ anchors
     cited by HW-IFACE-headwater-init
   code_path `engine/crates/cli/tests/json.rs` via source-tree
     cited by HW-DR-0043
+  code_path `engine/crates/cli/tests/merge_driver.rs` via source-tree
+    cited by HW-HOW-keep-derived-files-from-conflicting-in-parallel-pull-requests
   code_path `engine/crates/cli/tests/network_boundary.rs` via source-tree
     cited by HW-DR-0075
   code_path `engine/crates/cli/tests/publish.rs` via source-tree

@@ -3,7 +3,7 @@ id: HW-PD-0017
 status: current
 status_since: 2026-09-27
 summary: "A newer push cancels the older run on the same branch or pull request. Runs on main never cancel, because each merge needs its own verdict."
-last_verified: 2026-09-27
+last_verified: 2026-09-28
 title: "CI concurrency is per ref, and every ref but main cancels a superseded run"
 provenance:
   warrant: asserted
@@ -14,7 +14,7 @@ provenance:
 relations:
   governs:
     - to: .github/workflows/ci.yml
-      verified_revision: sha256:9a388898944b9ec3a6af4f28b10c5d8d069b21bc1cb81b0e04bba1cbdf6cfb57
+      verified_revision: sha256:bba23da5697fa592fede0228b80be923bd44ab73d3b4b410c4db6564f72f88b8
 ---
 
 # CI concurrency is per ref, and every ref but main cancels a superseded run

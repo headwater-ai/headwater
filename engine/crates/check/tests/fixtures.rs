@@ -274,8 +274,8 @@ fn load_map(path: &Path) -> Mapping {
 }
 
 /// This repository, resolved. `headwater-resolve` replaced the stand-in that
-/// `headwater-census` used to carry, and `corpus.checks` did not move when it
-/// did.
+/// `headwater-census` used to carry, and the recorded totals did not move when
+/// it did.
 fn repository(root: &Path) -> headwater_resolve::Repository {
     headwater_resolve::repository(root)
         .unwrap_or_else(|errors| panic!("{}", headwater_resolve::render_errors(&errors)))
@@ -686,20 +686,18 @@ fn the_voice_rule_skips_a_document_with_nothing_to_read_rather_than_passing_it()
 
 /// This repository, checked by the taxonomy that types it.
 ///
-/// The recorded file holds the coverage totals, the instance count per rule,
-/// and what each rule serves. It leaves out the per-document accounting for the
-/// reason the census and the graph leave out their own rows: a corpus adds a
-/// document most weeks, and a file that changes on every commit is a file
-/// nobody reads. What stays is the number a regression moves.
+/// Nothing here is recorded. The totals used to be, in `fixtures/corpus.checks`,
+/// and that file opened with a count over the whole corpus, so any two branches
+/// that changed the corpus both rewrote its first line and conflicted on it
+/// (#1251). A count that a document edit legitimately moves is left to the run
+/// itself, and CI publishes it in the step summary. The per-rule regression
+/// record is `fixtures/check.report`, over the pinned fixture tree, and the
+/// properties that no corpus edit may change are asserted below.
 ///
-/// It now leaves out the findings for the same reason, one step further in.
-/// Four of the eleven rules read prose, and a prose finding is a function of a
-/// sentence: recording them here would re-bless this file on every commit that
-/// touched a paragraph of `docs/spec/`. So the properties that a prose edit
-/// must not change are asserted instead, and the count that a prose edit
-/// legitimately moves is left to the run itself. CI publishes it.
+/// The case that would reopen a recorded total: an engine regression that
+/// `check.report` missed and a diff of the corpus totals would have caught.
 #[test]
-fn this_repository_runs_to_the_recorded_report() {
+fn this_repository_holds_the_properties_no_corpus_edit_may_change() {
     let run = corpus_run();
     assert!(
         run.coverage.classified() > 30,
@@ -748,10 +746,10 @@ fn this_repository_runs_to_the_recorded_report() {
         voice::RULE
     );
 
-    compare(
-        &fixtures_dir().join("corpus.checks"),
-        &run.render(Detail::Totals, ColorMode::Plain),
-    );
+    // The totals render, and they state what was seen, which CI's step
+    // summary prints for every run.
+    let totals = run.render(Detail::Totals, ColorMode::Plain);
+    assert!(totals.contains(" seen"), "{totals}");
 }
 
 /// The differential of the correctness root, over the real corpus.
