@@ -247,7 +247,7 @@ judge() {
 cited_workflows="release.yml release-taxonomy.yml publish-crates.yml ci.yml"
 
 cites_py='
-import fnmatch, glob, os, re, sys
+import fnmatch, glob, os, posixpath, re, sys
 try:
     import yaml
 except ImportError:
@@ -276,7 +276,8 @@ def governs_targets(rel):
             entry = entry.get("to")
         for p in as_list(entry):
             if isinstance(p, str):
-                out.append(p)
+                # The engine reads `./x` and `x` as one path, so the judge does too.
+                out.append(posixpath.normpath(p))
     return out
 
 records = {}

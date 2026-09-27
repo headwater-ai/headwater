@@ -27,7 +27,7 @@ A pull request from a fork runs the fork's own copy of `ci.yml`. The fork can de
 
 ## Decision
 
-**The event decides.** The `runs-on` expression of each job reads `github.event_name` to decide whether the job may run on the self-hosted pool. It reads no other field for that choice. It never reads which repository opened a pull request, or any field that the author of a pull request can change.
+**The event decides.** The `runs-on` expression of `engine` and of `headwater` reads `github.event_name` to decide whether the job may run on the self-hosted pool. The `runs-on` of `route` is the literal `ubuntu-latest` ([HW-PD-0018](0018-a-router-sends-a-push-run-to-a-hosted-runner-when-the-self-hosted-pool-is-full-and-it-can-only-take-work-away.md)). It reads no other field for that choice. It never reads which repository opened a pull request, or any field that the author of a pull request can change.
 
 **Every branch.** `on.push.branches` is `['**']` and not `[main]`. A person with commit access writes each push to a feature branch, and nobody reads it yet. That is the case the self-hosted runner exists to make fast. So a push is eligible on every branch.
 
