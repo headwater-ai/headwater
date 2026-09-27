@@ -539,7 +539,9 @@ fn heredoc_end(command: &str) -> Option<String> {
                     word.push(escaped);
                 }
             }
-            (None, _) if c.is_whitespace() || matches!(c, ';' | '|' | '&' | '(' | ')' | '<' | '>') => {
+            (None, _)
+                if c.is_whitespace() || matches!(c, ';' | '|' | '&' | '(' | ')' | '<' | '>') =>
+            {
                 break;
             }
             (None, _) => word.push(c),
@@ -880,10 +882,7 @@ mod tests {
             names("echo a \\\r\nnpm ci\r\n", false),
             pairs(&[(0, "echo"), (1, "npm")])
         );
-        assert_eq!(
-            names("echo a \\\nnpm ci\n", false),
-            pairs(&[(0, "echo")])
-        );
+        assert_eq!(names("echo a \\\nnpm ci\n", false), pairs(&[(0, "echo")]));
     }
 
     /// A `)` inside `${…}` and a `}` inside `$( )` are text, as the shell reads
@@ -905,7 +904,13 @@ mod tests {
         );
         assert_eq!(
             names("echo $(echo \"$(echo })\") && npm ci\nnpm i\n", false),
-            pairs(&[(0, "echo"), (0, "echo"), (0, "echo"), (0, "npm"), (1, "npm")])
+            pairs(&[
+                (0, "echo"),
+                (0, "echo"),
+                (0, "echo"),
+                (0, "npm"),
+                (1, "npm")
+            ])
         );
     }
 
