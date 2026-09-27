@@ -69,6 +69,20 @@ tiers:
 # checkout, the guard `probe-record.sh` already applies to the same argument,
 # because ablating a real checkout is not what an absent-arm workspace is for.
 #
+# **What the seal removes, in both arms.** `docs/probes/`, `docs/probe-runs/`
+# and `docs/probe-results/`, and every file whose bytes name a selected probe
+# by its identifier or its slug: the derived folds under `.headwater/`, the
+# census and graph fixtures under `engine/`, and each obligation and
+# evaluation that names the probe. Those files are the answer key. A probe
+# states its expectation, a recorded run states what a session answered, and
+# the 2026-09-17 tombstone session read its own probe file before it answered
+# (#1229). The "absent" list above leaves `docs/` alone, so before the seal
+# both arms held every probe. No probe's `examines` target names a probe, so
+# the documents that a probe tests survive the seal in both arms.
+# `sh tools/probe/seal.sh <workspace> <probe-id>...` is the mechanism, and
+# `probe-record.sh` refuses a workspace that still names the probe (exit 8).
+# Every transcript on `docs/probe-runs/` was recorded before the seal existed.
+#
 # `session_cost_cents` was a declared number and not a measured one until the
 # first regression run gave it something to fit against. Two committed
 # regression-tier transcripts now carry a realized cost over eight probes
