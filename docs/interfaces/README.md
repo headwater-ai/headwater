@@ -26,6 +26,7 @@ The headings and the second column are the groups and the summaries that `headwa
 | `route` | resolve a task description to the documents that govern it | `headwater route` | [headwater route](headwater-route.md) |
 | `neighbors` | rank summaries by meaning against a task, for the shadow log | `headwater neighbors` | [headwater neighbors](headwater-neighbors.md) |
 | `explain` | why a document is the kind it is, and what it serves | `headwater explain` | [headwater explain](headwater-explain.md) |
+| `show` | print one document's own bytes, found the way `explain` finds it | `headwater show` | [headwater show](headwater-show.md) |
 | `query` | listed in spec 6, and no document says what an expression is | `headwater query` | [headwater query](headwater-query.md) |
 | `capture` | read the capture-cost store back | `headwater capture` | [headwater capture](headwater-capture.md) |
 | `mcp` | serve the reads and one run of the checks to an agent | `headwater mcp` | [headwater mcp](headwater-mcp.md) |

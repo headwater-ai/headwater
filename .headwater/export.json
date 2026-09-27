@@ -4181,6 +4181,29 @@
         }
       },
       {
+        "path": "docs/interfaces/headwater-show.md",
+        "kind": "interface_contract",
+        "id": "HW-IFACE-headwater-show",
+        "facets": {
+          "id": "HW-IFACE-headwater-show",
+          "status": "current",
+          "status_since": "2026-09-27",
+          "summary": "headwater show prints the bytes of one document as they are on disk, found by path or identifier through the resolver that explain uses.",
+          "last_verified": "2026-09-27",
+          "title": "headwater show",
+          "relations": {
+            "governs": [
+              [
+                "engine/crates/cli/src/lib.rs",
+                "engine/crates/cli/src/main.rs"
+              ],
+              "engine/crates/query/src/explain.rs",
+              "engine/crates/census/src/walk.rs"
+            ]
+          }
+        }
+      },
+      {
         "path": "docs/interfaces/headwater-sweep.md",
         "kind": "interface_contract",
         "id": "HW-IFACE-headwater-sweep",
@@ -10552,6 +10575,209 @@
         }
       },
       {
+        "path": "docs/process/decisions/0013-self-hosted-eligibility-in-ci-is-decided-by-the-event-alone-and-a-push-to-any-branch-is-eligible.md",
+        "kind": "process_decision",
+        "id": "HW-PD-0013",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-PD-0013",
+          "status": "current",
+          "status_since": "2026-09-27",
+          "summary": "Only github.event_name decides whether a CI job may run on the self-hosted pool. A push is eligible on every branch, and a pull request never is.",
+          "last_verified": "2026-09-27",
+          "title": "Self-hosted eligibility in CI is decided by the event alone, and a push to any branch is eligible",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5.5",
+            "activity": "draft",
+            "evidence_basis": "reconstructed"
+          },
+          "relations": {
+            "governs": [
+              {
+                "to": ".github/workflows/ci.yml",
+                "verified_revision": "sha256:0b169f95da3831b0a02301180d629ee69fc65c06610567551d235a9a57cb0818"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "path": "docs/process/decisions/0014-the-boundary-against-a-fork-is-the-approval-of-outside-runs-and-a-person-reads-a-github-diff-before-approving-one.md",
+        "kind": "process_decision",
+        "id": "HW-PD-0014",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-PD-0014",
+          "status": "current",
+          "status_since": "2026-09-27",
+          "summary": "No expression in ci.yml defends against a fork. The approval setting for outside contributors is the boundary, and the reader of a .github diff enforces it.",
+          "last_verified": "2026-09-27",
+          "title": "The boundary against a fork is the approval of outside runs, and a person reads a .github diff before approving one",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5.5",
+            "activity": "draft",
+            "evidence_basis": "reconstructed"
+          },
+          "relations": {
+            "governs": [
+              {
+                "to": ".github/workflows/ci.yml",
+                "verified_revision": "sha256:a4195cba139ce6094882dc4531fe20ed780aef3eabfc987a9e906606e46635ee"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "path": "docs/process/decisions/0015-a-condition-in-ci-may-take-work-away-and-never-grant-it-so-one-run-per-commit-comes-from-a-job-level-if.md",
+        "kind": "process_decision",
+        "id": "HW-PD-0015",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-PD-0015",
+          "status": "current",
+          "status_since": "2026-09-27",
+          "summary": "The job-level if skips a duplicate pull_request run and grants nothing. No trigger filter replaces it, and each job name stays a literal.",
+          "last_verified": "2026-09-27",
+          "title": "A condition in CI may take work away and never grant it, so one run per commit comes from a job-level if",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5.5",
+            "activity": "draft",
+            "evidence_basis": "reconstructed"
+          },
+          "relations": {
+            "governs": [
+              {
+                "to": ".github/workflows/ci.yml",
+                "verified_revision": "sha256:a4195cba139ce6094882dc4531fe20ed780aef3eabfc987a9e906606e46635ee"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "path": "docs/process/decisions/0016-ci-runner-is-an-opt-in-that-only-a-push-reads-and-an-unset-value-falls-back-to-ubuntu-latest.md",
+        "kind": "process_decision",
+        "id": "HW-PD-0016",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-PD-0016",
+          "status": "current",
+          "status_since": "2026-09-27",
+          "summary": "The self-hosted labels reach runs-on only when the CI_RUNNER variable names them and the event is a push. The default is a hosted runner.",
+          "last_verified": "2026-09-27",
+          "title": "CI_RUNNER is an opt-in that only a push reads, and an unset value falls back to ubuntu-latest",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5.5",
+            "activity": "draft",
+            "evidence_basis": "reconstructed"
+          },
+          "relations": {
+            "governs": [
+              {
+                "to": ".github/workflows/ci.yml",
+                "verified_revision": "sha256:0b169f95da3831b0a02301180d629ee69fc65c06610567551d235a9a57cb0818"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "path": "docs/process/decisions/0017-ci-concurrency-is-per-ref-and-every-ref-but-main-cancels-a-superseded-run.md",
+        "kind": "process_decision",
+        "id": "HW-PD-0017",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-PD-0017",
+          "status": "current",
+          "status_since": "2026-09-27",
+          "summary": "A newer push cancels the older run on the same branch or pull request. Runs on main never cancel, because each merge needs its own verdict.",
+          "last_verified": "2026-09-27",
+          "title": "CI concurrency is per ref, and every ref but main cancels a superseded run",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5.5",
+            "activity": "draft",
+            "evidence_basis": "reconstructed"
+          },
+          "relations": {
+            "governs": [
+              {
+                "to": ".github/workflows/ci.yml",
+                "verified_revision": "sha256:0b169f95da3831b0a02301180d629ee69fc65c06610567551d235a9a57cb0818"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "path": "docs/process/decisions/0018-a-router-sends-a-push-run-to-a-hosted-runner-when-the-self-hosted-pool-is-full-and-it-can-only-take-work-away.md",
+        "kind": "process_decision",
+        "id": "HW-PD-0018",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-PD-0018",
+          "status": "current",
+          "status_since": "2026-09-27",
+          "summary": "The route job counts the jobs on the self-hosted label and outputs overflow. A failure in it gives an empty output and changes no routing.",
+          "last_verified": "2026-09-27",
+          "title": "A router sends a push run to a hosted runner when the self-hosted pool is full, and it can only take work away",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5.5",
+            "activity": "draft",
+            "evidence_basis": "reconstructed"
+          },
+          "relations": {
+            "governs": [
+              {
+                "to": ".github/workflows/ci.yml",
+                "verified_revision": "sha256:0b169f95da3831b0a02301180d629ee69fc65c06610567551d235a9a57cb0818"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "path": "docs/process/decisions/0019-ci-runs-actions-from-the-actions-organization-only-and-carries-no-build-state-between-self-hosted-jobs.md",
+        "kind": "process_decision",
+        "id": "HW-PD-0019",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-PD-0019",
+          "status": "current",
+          "status_since": "2026-09-27",
+          "summary": "Only actions from GitHub's own organization run in ci.yml. No self-hosted job inherits engine/target from another, and sccache makes a cold target cheap.",
+          "last_verified": "2026-09-27",
+          "title": "CI runs actions from the actions organization only, and carries no build state between self-hosted jobs",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5.5",
+            "activity": "draft",
+            "evidence_basis": "reconstructed"
+          },
+          "relations": {
+            "governs": [
+              {
+                "to": ".github/workflows/ci.yml",
+                "verified_revision": "sha256:a4195cba139ce6094882dc4531fe20ed780aef3eabfc987a9e906606e46635ee"
+              }
+            ]
+          }
+        }
+      },
+      {
         "path": "docs/process/decisions/0020-merges-go-through-the-github-merge-queue-one-squash-commit-per-pull-request.md",
         "kind": "process_decision",
         "id": "HW-PD-0020",
@@ -10574,7 +10800,7 @@
             "governs": [
               {
                 "to": ".github/workflows/ci.yml",
-                "verified_revision": "sha256:b64f97d920da11967ef19e3f6668722397f5333ec50dd87b75a3f5b579f1c9bd"
+                "verified_revision": "sha256:0b169f95da3831b0a02301180d629ee69fc65c06610567551d235a9a57cb0818"
               },
               {
                 "to": "tools/run/queue-done.sh",
@@ -16855,6 +17081,39 @@
         }
       },
       {
+        "source": "docs/interfaces/headwater-show.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "28:engine/crates/cli/src/lib.rs29:engine/crates/cli/src/main.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/interfaces/headwater-show.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/query/src/explain.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/interfaces/headwater-show.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/census/src/walk.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
         "source": "docs/interfaces/headwater-sweep.md",
         "relation": "governs",
         "written_as": "governs",
@@ -19701,6 +19960,104 @@
         }
       },
       {
+        "source": "docs/process/decisions/0013-self-hosted-eligibility-in-ci-is-decided-by-the-event-alone-and-a-push-to-any-branch-is-eligible.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": ".github/workflows/ci.yml",
+          "resolver": "source-tree"
+        },
+        "attributes": {
+          "verified_revision": "sha256:0b169f95da3831b0a02301180d629ee69fc65c06610567551d235a9a57cb0818"
+        }
+      },
+      {
+        "source": "docs/process/decisions/0014-the-boundary-against-a-fork-is-the-approval-of-outside-runs-and-a-person-reads-a-github-diff-before-approving-one.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": ".github/workflows/ci.yml",
+          "resolver": "source-tree"
+        },
+        "attributes": {
+          "verified_revision": "sha256:a4195cba139ce6094882dc4531fe20ed780aef3eabfc987a9e906606e46635ee"
+        }
+      },
+      {
+        "source": "docs/process/decisions/0015-a-condition-in-ci-may-take-work-away-and-never-grant-it-so-one-run-per-commit-comes-from-a-job-level-if.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": ".github/workflows/ci.yml",
+          "resolver": "source-tree"
+        },
+        "attributes": {
+          "verified_revision": "sha256:a4195cba139ce6094882dc4531fe20ed780aef3eabfc987a9e906606e46635ee"
+        }
+      },
+      {
+        "source": "docs/process/decisions/0016-ci-runner-is-an-opt-in-that-only-a-push-reads-and-an-unset-value-falls-back-to-ubuntu-latest.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": ".github/workflows/ci.yml",
+          "resolver": "source-tree"
+        },
+        "attributes": {
+          "verified_revision": "sha256:0b169f95da3831b0a02301180d629ee69fc65c06610567551d235a9a57cb0818"
+        }
+      },
+      {
+        "source": "docs/process/decisions/0017-ci-concurrency-is-per-ref-and-every-ref-but-main-cancels-a-superseded-run.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": ".github/workflows/ci.yml",
+          "resolver": "source-tree"
+        },
+        "attributes": {
+          "verified_revision": "sha256:0b169f95da3831b0a02301180d629ee69fc65c06610567551d235a9a57cb0818"
+        }
+      },
+      {
+        "source": "docs/process/decisions/0018-a-router-sends-a-push-run-to-a-hosted-runner-when-the-self-hosted-pool-is-full-and-it-can-only-take-work-away.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": ".github/workflows/ci.yml",
+          "resolver": "source-tree"
+        },
+        "attributes": {
+          "verified_revision": "sha256:0b169f95da3831b0a02301180d629ee69fc65c06610567551d235a9a57cb0818"
+        }
+      },
+      {
+        "source": "docs/process/decisions/0019-ci-runs-actions-from-the-actions-organization-only-and-carries-no-build-state-between-self-hosted-jobs.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": ".github/workflows/ci.yml",
+          "resolver": "source-tree"
+        },
+        "attributes": {
+          "verified_revision": "sha256:a4195cba139ce6094882dc4531fe20ed780aef3eabfc987a9e906606e46635ee"
+        }
+      },
+      {
         "source": "docs/process/decisions/0020-merges-go-through-the-github-merge-queue-one-squash-commit-per-pull-request.md",
         "relation": "governs",
         "written_as": "governs",
@@ -19711,7 +20068,7 @@
           "resolver": "source-tree"
         },
         "attributes": {
-          "verified_revision": "sha256:b64f97d920da11967ef19e3f6668722397f5333ec50dd87b75a3f5b579f1c9bd"
+          "verified_revision": "sha256:0b169f95da3831b0a02301180d629ee69fc65c06610567551d235a9a57cb0818"
         }
       },
       {

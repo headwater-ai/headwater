@@ -14,7 +14,7 @@ provenance:
 relations:
   governs:
     - to: .github/workflows/ci.yml
-      verified_revision: sha256:b64f97d920da11967ef19e3f6668722397f5333ec50dd87b75a3f5b579f1c9bd
+      verified_revision: sha256:0b169f95da3831b0a02301180d629ee69fc65c06610567551d235a9a57cb0818
     - to: tools/run/queue-done.sh
       verified_revision: sha256:e1d5b097918a1f58af5cdd9610b321f7fe949b0e7f5f2a408643605f2b4e709d
     - to: tools/run/queue-done-fixtures.sh
@@ -60,6 +60,8 @@ The `required_status_checks` rule stays as it is, with one change: `strict_requi
 ## Consequences
 
 `.github/workflows/ci.yml` runs on `merge_group` with the type `checks_requested`. Both required jobs run on that event under the same names, so the queue always gets the two checks that it waits for. A `merge_group` ref is built from branches of this repository that a person with write access queued. So the workflow trusts it as it trusts a `push`, and the job can use the self-hosted runner. The `route` job runs on `merge_group` too, and it measures the pool as it does for a `push`. No job is skipped on the new event. The queue branches are excluded from the `push` trigger, so one queued commit starts one run.
+
+This record amends four others on one point each, and each of them now says so. [HW-PD-0013](0013-self-hosted-eligibility-in-ci-is-decided-by-the-event-alone-and-a-push-to-any-branch-is-eligible.md) and [HW-PD-0016](0016-ci-runner-is-an-opt-in-that-only-a-push-reads-and-an-unset-value-falls-back-to-ubuntu-latest.md) named `push` as the only eligible event. [HW-PD-0018](0018-a-router-sends-a-push-run-to-a-hosted-runner-when-the-self-hosted-pool-is-full-and-it-can-only-take-work-away.md) measured the pool only for a `push`. [HW-PD-0017](0017-ci-concurrency-is-per-ref-and-every-ref-but-main-cancels-a-superseded-run.md) called the run on `main` the only composition check.
 
 The concurrency group is keyed on the ref. Each queue entry has its own ref, so the run of one entry never cancels the run of another entry.
 
