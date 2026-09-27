@@ -355,7 +355,7 @@ The documents on this shelf, in the reading order this corpus derives. Each head
 
 ## The resolved taxonomy is drawn by a verb that prints Mermaid and writes no file
 
-[HW-DR-0082](../decisions/0082-the-resolved-taxonomy-is-drawn-by-a-verb-that-prints-mermaid-and-writes-no-file.md) — `headwater taxonomy graph` prints the resolved taxonomy from the lock as a Mermaid flowchart, and no projection, explain format or export target draws it (asserted, and no human has accepted it)
+[HW-DR-0082](../decisions/0082-the-resolved-taxonomy-is-drawn-by-a-verb-that-prints-mermaid-and-writes-no-file.md) — `headwater taxonomy graph` prints the resolved taxonomy as a Mermaid flowchart, no projection or export target draws it, and D2 is the candidate second format (asserted, and no human has accepted it)
 
 ## Governs and traces_to are created by an agent, because a session proposes the line and a person types it
 
