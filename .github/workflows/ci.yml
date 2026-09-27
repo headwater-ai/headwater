@@ -57,7 +57,7 @@
 # on each `pip install --user` below is what the self-hosted image's PEP 668
 # Python needs, and pip accepts it where PEP 668 does not apply (HW-PD-0019).
 #
-#   gh variable set CI_RUNNER --body '["self-hosted", "headwater"]'  # opt in, push events only
+#   gh variable set CI_RUNNER --body '["self-hosted", "headwater"]'  # opt in, push and merge_group only
 #   gh variable delete CI_RUNNER                                    # back to ubuntu-latest
 #   gh variable list                                                # which one is live
 #   gh variable set CI_SELF_HOSTED_SLOTS --body 3                  # the pool size the router assumes
@@ -65,7 +65,7 @@
 
 name: CI
 
-# `branches: ['**']` rather than `[main]`: a push is eligible for
+# `branches` starts from `'**'` rather than `[main]`: a push is eligible for
 # self-hosted whichever branch it lands on (HW-PD-0013). `merge_group` is
 # the merge queue's trigger, and the queue's own `gh-readonly-queue/`
 # branches are excluded from `push`, so a queued commit starts one run and
@@ -79,7 +79,8 @@ on:
 
 # Per ref, so two pull requests never cancel each other. Every ref but
 # `main` cancels a superseded run, and `main` keeps every run because it
-# alone reads the composition of merges. Key it on the ref and never on
+# is the last check that reads the composition of merges, after the merge
+# queue's run on the group tip (HW-PD-0020). Key it on the ref and never on
 # the event (HW-PD-0017). Each merge queue entry has its own ref,
 # `refs/heads/gh-readonly-queue/main/pr-N-<sha>`, so one entry's run never
 # cancels another's (HW-PD-0020).
