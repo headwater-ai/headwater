@@ -390,6 +390,9 @@ mod tests {
         programs(text, console)
     }
 
+    /// What `names` writes for a remainder the rule cannot read.
+    const UNREADABLE: &str = "<unreadable>";
+
     fn pairs(list: &[(usize, &str)]) -> Vec<(usize, String)> {
         list.iter().map(|(l, n)| (*l, n.to_string())).collect()
     }
@@ -429,19 +432,63 @@ mod tests {
         );
     }
 
-    /// #1135: a quote still open at the end of a line carries into the next
-    /// line, so its closing quote opens no span that hides the chain after it.
+    /// Rule 1 (#1135): a line that ends inside a quote joins nothing. The
+    /// rule reads what the line runs before the quote and reports the rest of
+    /// the block as unreadable, so the chain after the quote is flagged rather
+    /// than hidden.
     #[test]
-    fn a_quote_open_at_the_end_of_a_line_joins_the_next_line() {
+    fn a_quote_open_at_the_end_of_a_line_leaves_the_rest_of_the_block_unreadable() {
         let block = "printf 'a\nheadwater check' && echo RAN-2 && printf 'b'\n";
+        assert_eq!(names(block, false), pairs(&[(0, "printf"), (0, UNREADABLE)]));
         assert_eq!(
-            names(block, false),
-            pairs(&[(0, "printf"), (1, "echo"), (1, "printf")])
+            names("echo ok\nprintf \"a\nnpm install\n", false),
+            pairs(&[(0, "echo"), (1, "printf"), (1, UNREADABLE)])
         );
     }
 
-    /// #1135: inside `$'…'` a backslash escapes the next character, so `\'`
-    /// does not close the span.
+    /// Rule 1: an open `$'…'`, an open pair of backticks and an unclosed `$(`
+    /// leave the rest of the block unreadable in the same way.
+    #[test]
+    fn every_open_span_leaves_the_rest_of_the_block_unreadable() {
+        assert_eq!(
+            names("printf $'a\nheadwater check' && echo RAN\n", false),
+            pairs(&[(0, "printf"), (0, UNREADABLE)])
+        );
+        assert_eq!(
+            names("echo `date\nnpm install\n", false),
+            pairs(&[(0, "echo"), (0, UNREADABLE)])
+        );
+        assert_eq!(
+            names("echo $(date\nnpm install\n", false),
+            pairs(&[(0, "echo"), (0, UNREADABLE)])
+        );
+    }
+
+    /// Rule 1: a quote the block never closes is flagged.
+    #[test]
+    fn a_quote_the_block_never_closes_is_flagged() {
+        assert_eq!(
+            names("echo ok && npm install '\n", false),
+            pairs(&[(0, "echo"), (0, "npm"), (0, UNREADABLE)])
+        );
+    }
+
+    /// Rule 2: a trailing `\` joins the next line, and one in a comment does
+    /// not.
+    #[test]
+    fn a_trailing_backslash_joins_and_one_in_a_comment_does_not() {
+        assert_eq!(
+            names("headwater check \\\n  && npm install\n", false),
+            pairs(&[(0, "headwater"), (1, "npm")])
+        );
+        assert_eq!(
+            names("headwater check # note \\\nnpm install\n", false),
+            pairs(&[(0, "headwater"), (1, "npm")])
+        );
+    }
+
+    /// Rule 3 (#1135): inside `$'…'` a backslash escapes the next character,
+    /// so `\'` does not close the quote.
     #[test]
     fn a_backslash_escapes_a_quote_inside_an_ansi_c_quote() {
         assert_eq!(
@@ -450,67 +497,7 @@ mod tests {
         );
     }
 
-    /// A `#` that starts a word outside quotes opens a comment, so an
-    /// apostrophe in it opens no quote that joins the next line.
-    #[test]
-    fn an_apostrophe_in_a_trailing_comment_joins_nothing() {
-        assert_eq!(
-            names("headwater check # it's here\nnpm install\n", false),
-            pairs(&[(0, "headwater"), (1, "npm")])
-        );
-        // A trailing `\` inside a comment is part of the comment and joins
-        // nothing, so the next line is its own command.
-        assert_eq!(
-            names("headwater check # note \\\nnpm install\n", false),
-            pairs(&[(0, "headwater"), (1, "npm")])
-        );
-    }
-
-    /// A block that ends inside an open quote is still read, so the rule
-    /// fails closed on it rather than dropping the command.
-    #[test]
-    fn a_quote_the_block_never_closes_is_still_read() {
-        assert_eq!(
-            names("echo ok && npm install '\n", false),
-            pairs(&[(0, "echo"), (0, "npm")])
-        );
-    }
-
-    /// An open `$'…'` carries into the next line like any other quote.
-    #[test]
-    fn an_ansi_c_quote_open_at_the_end_of_a_line_joins_the_next_line() {
-        let block = "printf $'a\nheadwater check' && echo RAN && printf 'b'\n";
-        assert_eq!(
-            names(block, false),
-            pairs(&[(0, "printf"), (1, "echo"), (1, "printf")])
-        );
-    }
-
-    /// A `#` after `)`, `<` or `>` starts a word, so it opens a comment and an
-    /// apostrophe in it opens no quote.
-    #[test]
-    fn a_hash_after_a_closing_parenthesis_or_a_redirect_opens_a_comment() {
-        assert_eq!(
-            names("(echo a)#'\nnpm install\n", false),
-            pairs(&[(0, "echo"), (1, "npm")])
-        );
-        assert_eq!(
-            names("echo hi >#it's\nnpm install\n", false),
-            pairs(&[(0, "echo"), (1, "npm")])
-        );
-    }
-
-    /// A comment straight after an operator is no program.
-    #[test]
-    fn a_comment_after_an_operator_is_not_a_program() {
-        assert_eq!(
-            names("echo a &&# it's\nnpm install\n", false),
-            pairs(&[(0, "echo"), (1, "npm")])
-        );
-    }
-
-    /// A quote inside backticks belongs to the command that the backticks
-    /// run, and it opens no quote that joins the next line.
+    /// Rule 3: a quote inside backticks on one line opens nothing.
     #[test]
     fn a_quote_inside_backticks_opens_nothing() {
         assert_eq!(
@@ -519,31 +506,63 @@ mod tests {
         );
     }
 
-    /// A `<<` inside quotes or in a comment opens no here-document, so the
-    /// next line is still read.
+    /// Rule 4: a `#` after a blank, `;`, `&` or `|` opens a comment, so an
+    /// apostrophe in it opens nothing and the comment is no program.
     #[test]
-    fn a_heredoc_opener_in_quotes_or_a_comment_opens_nothing() {
+    fn a_hash_after_a_blank_or_an_operator_opens_a_comment() {
+        assert_eq!(
+            names("headwater check # it's here\nnpm install\n", false),
+            pairs(&[(0, "headwater"), (1, "npm")])
+        );
+        assert_eq!(
+            names("echo a &&# it's\nnpm install\n", false),
+            pairs(&[(0, "echo"), (1, "npm")])
+        );
+    }
+
+    /// Rule 4: a `#` after `)`, `<` or `>` is part of a word. So the chain
+    /// after `$(date)#x` is read, and an apostrophe after `)#` is flagged.
+    #[test]
+    fn a_hash_after_a_parenthesis_or_a_redirect_is_part_of_a_word() {
+        assert_eq!(
+            names("echo $(date)#x && npm install\n", false),
+            pairs(&[(0, "echo"), (0, "npm")])
+        );
+        assert_eq!(
+            names("(echo a)#'\nnpm install\n", false),
+            pairs(&[(0, "echo"), (0, UNREADABLE)])
+        );
+        assert_eq!(
+            names("echo hi >#it's\nnpm install\n", false),
+            pairs(&[(0, "echo"), (0, UNREADABLE)])
+        );
+    }
+
+    /// Rule 5: a `<<` inside quotes or in a comment opens no here-document,
+    /// and an apostrophe in a here-document body is not read.
+    #[test]
+    fn a_heredoc_opens_only_outside_quotes_and_comments() {
         assert_eq!(
             names("printf '<<EOF' && echo hi\nnpm install\n", false),
             pairs(&[(0, "printf"), (0, "echo"), (1, "npm")])
         );
         assert_eq!(
-            names("printf 'a <<EOF\nb' && echo x\nnpm install\n", false),
-            pairs(&[(0, "printf"), (1, "echo"), (2, "npm")])
-        );
-        assert_eq!(
             names("echo hi # see <<EOF\nnpm install\n", false),
             pairs(&[(0, "echo"), (1, "npm")])
         );
-    }
-
-    /// An apostrophe in a here-document body is not read, and the line after
-    /// the end word is.
-    #[test]
-    fn an_apostrophe_in_a_heredoc_body_hides_nothing() {
         assert_eq!(
             names("cat <<'EOF'\ndon't\nEOF\nnpm install && echo RAN\n", false),
             pairs(&[(0, "cat"), (3, "npm"), (3, "echo")])
+        );
+    }
+
+    /// A quote inside `"$( )"` is read as a quote of its own, so the line is
+    /// flagged rather than joined to the next.
+    #[test]
+    fn a_quote_inside_a_quoted_substitution_is_flagged() {
+        assert_eq!(
+            names("echo \"$(echo \"it's\")\" && npm install\nnpm ci\n", false),
+            pairs(&[(0, "echo"), (0, UNREADABLE)])
         );
     }
 }

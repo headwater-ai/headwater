@@ -81,6 +81,12 @@ TUTORIAL = drive.DOC
 # checkout, clone, and a future `config`), `mkdir`/`cd` (scaffolding a fresh
 # repository), `printf` (writing the seed document), `rm` (removing it
 # again in step 8). `cargo` is handled separately, by subcommand.
+# The piece `_pieces` yields in place of the rest of a block once a line
+# ends inside a quote, a pair of backticks or a `$(`. The line number, counted
+# from 1, follows it. `check_piece` never allows it, so the block fails.
+UNREADABLE = ('unreadable: a quote, a pair of backticks or a $( is still open '
+              'at the end of block line ')
+
 ALLOWED_LEADING_WORDS = frozenset({'headwater', 'git', 'mkdir', 'cd', 'printf', 'rm'})
 
 # `cargo` passes only for the subcommands this corpus's real command blocks
@@ -592,45 +598,61 @@ REGRESSION_CASES = [
      'git init\n'
      "printf '# Store attempts in Postgres' > docs/decisions/postgres-note.md",
      []),
-    # #1135: a quote still open at the end of a line carries into the next
-    # line, as a shell reads it, so the closing quote on the second line does
-    # not open a new span that hides the chained command after it.
-    ('a single quote carried across a newline hides no chained command',
+    # #1135, and the parent's ruling on #1195: a line that ends inside a
+    # quote joins nothing. What the line runs before the quote is read, and
+    # the rest of the block is reported as unreadable (rule 1).
+    ('a single quote open at the end of a line leaves the rest of the block '
+     'unreadable',
      "printf 'a\nheadwater check' && echo RAN-2 && printf 'b'",
-     ['echo RAN-2']),
-    # #1135: inside `$'…'` a backslash escapes the next character, so `\'`
-    # does not close the span and the chained command is still split out.
+     [UNREADABLE + '1']),
+    ('an ANSI-C quote open at the end of a line leaves the rest unreadable',
+     "printf $'a\nheadwater check' && echo RAN && printf 'b'",
+     [UNREADABLE + '1']),
+    ('an open pair of backticks leaves the rest unreadable',
+     'echo `date\nnpm install',
+     ['echo `date', UNREADABLE + '1']),
+    ('an unclosed $( leaves the rest unreadable',
+     'echo $(date\nnpm install',
+     ['echo $(date', UNREADABLE + '1']),
+    ('a quote the block never closes is flagged',
+     "echo ok && npm install '",
+     ['echo ok', "npm install '", UNREADABLE + '1']),
+    # Rule 3 (#1135): inside `$'…'` a backslash escapes the next character.
     ('an ANSI-C quote with an escaped quote hides no chained command',
      "printf $'\\'' && echo RAN-3",
      ['echo RAN-3']),
-    # A `#` that starts a word outside quotes opens a comment, so an
-    # apostrophe in a trailing comment opens no quote that joins the next
-    # line into this one.
-    ('an apostrophe in a trailing comment does not hide the next line',
-     "headwater check # it's here\nnpm install",
-     ['npm install']),
-    # The shapes the verifier of #1195 found. A here-document body is not
-    # read, so an apostrophe in it opens no quote.
-    ('an apostrophe in a here-document body does not hide the next line',
-     "cat <<EOF\nit's here\nEOF\nnpm install",
-     ['cat <<EOF', 'npm install']),
-    ('an apostrophe in a quoted here-document body hides no chained command',
-     "cat <<'EOF'\ndon't\nEOF\nnpm install && echo RAN-B2b",
-     ["cat <<'EOF'", 'npm install', 'echo RAN-B2b']),
-    # A `#` after `)`, `<` or `>` starts a word, so it opens a comment.
-    ('a hash after a closing parenthesis opens a comment',
-     "(echo a)#'\nnpm install",
-     ['(echo a)', 'npm install']),
-    ('a hash after a redirect opens a comment',
-     "echo hi >#it's\nnpm install",
-     ['echo hi >', 'npm install']),
-    # A quote inside backticks belongs to the command they run.
+    # Rule 3: a quote inside backticks on one line opens nothing.
     ('a quote inside backticks opens nothing',
      "echo `echo it's` && npm install\nnpm ci",
      ["echo `echo it's`", 'npm install', 'npm ci']),
-    ('an ANSI-C quote open at the end of a line joins the next line',
-     "printf $'a\nheadwater check' && echo RAN && printf 'b'",
-     ['echo RAN']),
+    # Rule 4: a `#` after a blank or an operator opens a comment.
+    ('an apostrophe in a trailing comment does not hide the next line',
+     "headwater check # it's here\nnpm install",
+     ['npm install']),
+    ('a comment straight after && is no piece',
+     "echo a &&# it's\nnpm install",
+     ['echo a', 'npm install']),
+    # Rule 4: a `#` after `)`, `<` or `>` is part of a word.
+    ('a hash after the ) that closes a substitution hides no chained command',
+     'echo $(date)#x && npm install',
+     ['echo $(date)#x', 'npm install']),
+    ('an apostrophe after )# is flagged',
+     "(echo a)#'\nnpm install",
+     ["(echo a)#'", UNREADABLE + '1']),
+    ('an apostrophe after >#it is flagged',
+     "echo hi >#it's\nnpm install",
+     ["echo hi >#it's", UNREADABLE + '1']),
+    # Rule 5: the script skips no here-document body. A body line is read
+    # as a command, and an apostrophe in it flags the rest of the block.
+    ('an apostrophe in a here-document body flags the rest of the block',
+     "cat <<EOF\nit's here\nEOF\nnpm install",
+     ['cat <<EOF', "it's here", UNREADABLE + '2']),
+    ('an apostrophe in a quoted here-document body flags the rest',
+     "cat <<'EOF'\ndon't\nEOF\nnpm install && echo RAN-B2b",
+     ["cat <<'EOF'", "don't", UNREADABLE + '2']),
+    ('a quote inside a quoted substitution is flagged',
+     'echo "$(echo "it\'s")" && npm install\nnpm ci',
+     ['echo "$(echo "it\'s")" && npm install', UNREADABLE + '1']),
 ]
 
 
