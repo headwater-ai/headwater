@@ -300,7 +300,18 @@ impl DocumentCheck for Language {
     /// the rule are all unchanged, so a warm cache from the previous engine
     /// would serve the merged verdict and the fix would read as working while
     /// it did nothing.
-    const VERSION: u32 = 4;
+    ///
+    /// **Edition five, on 2026-09-27 ([#1228](https://github.com/headwater-ai/headwater/issues/1228)).**
+    /// The splitter in `headwater-doc` now holds `U.S.C.` as an abbreviation,
+    /// so `12 U.S.C. 101.` stays one sentence. It also retires the miss of
+    /// [#1218](https://github.com/headwater-ai/headwater/issues/1218), which
+    /// added `U.S.`, `U.K.`, `a.m.`, `p.m.` and `Ph.D.` and raised no edition.
+    /// This rule counts words per sentence, so a citation split in three reported three short sentences where there is one. The document, the lock and the rule are all unchanged, so a warm
+    /// cache from the previous engine would serve the split verdict. The
+    /// `Sentence boundaries` paragraph of `fixtures/check/spec/07-prose-defects.md`
+    /// holds each dotted entry, so `tests/editions.rs` fails the next
+    /// splitter change that moves one of them and leaves this number alone.
+    const VERSION: u32 = 5;
     const NEEDS_BODY: bool = true;
 
     fn instantiates(&self, kind: &str) -> bool {

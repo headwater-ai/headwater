@@ -16,6 +16,12 @@
 //!     HEADWATER_BLESS=1 cargo test -p headwater-check --test fixtures
 //!
 //! Read the diff before committing it. A blessed fixture is the change.
+//!
+//! This file is what HW-VER-0001 names as its proof. The `comment-scan`
+//! resolver binds the verification's `cited_in` edge from any comment in this
+//! file that cites the identifier. This sentence is one such comment, and the
+//! doc comment of the decisive test below is another, so either one alone
+//! binds the edge. That test removes every citation to show the edge unbinds.
 
 use headwater_census::census;
 use headwater_census::census::Census;
@@ -100,22 +106,39 @@ fn run_at(
     cache: &mut Cache,
     adoption: Option<&Mapping>,
 ) -> Run {
+    run_scanning(
+        corpus,
+        root,
+        lock,
+        source,
+        ctx,
+        cache,
+        adoption,
+        &corpus.base,
+    )
+}
+
+/// [`run_at`], with the tree that `comment-scan` reads named apart from the
+/// corpus. A run of the verb reads both from one root, and so does every
+/// caller here except the one that has to show a removed citation unbinding.
+#[allow(clippy::too_many_arguments)]
+fn run_scanning(
+    corpus: &Corpus,
+    root: &Mapping,
+    lock: &str,
+    source: &str,
+    ctx: &Context,
+    cache: &mut Cache,
+    adoption: Option<&Mapping>,
+    scan_base: &Path,
+) -> Run {
     let taxonomy = Taxonomy::read(root).expect("the taxonomy reads");
     let declarations = Declarations::read(root).expect("the declarations read");
     let register = Register::read(root).expect("the register reads");
     let shape = Shape::read(root).expect("the shape reads");
     let taken = census::take(corpus, &taxonomy);
     let config = Config::default();
-    // The resolver set this crate contributes to, and not the corpus set
-    // alone. `Resolvers::over` builds `source-tree`; `headwater_check::anchors`
-    // owns `check-rule`, and `main.rs` is where a run puts the two together.
-    // A fixture that took `over` alone would report every `check_rule` target
-    // in this repository as resolving to nothing, which is the state before
-    // that resolver existed rather than the state a user sees. See the module
-    // comment of `headwater_check::anchors` and #411.
-    let resolvers = Resolvers::over(corpus)
-        .with(Box::new(headwater_check::anchors::Rules::shipped()))
-        .expect("the check-rule resolver is the only one of its name");
+    let resolvers = resolvers(corpus, &declarations, scan_base);
     let graph = Graph::build(&taken, &declarations, &resolvers, corpus, &config);
     headwater_check::run(
         &taken,
@@ -135,6 +158,41 @@ fn run_at(
         ctx,
         cache,
     )
+}
+
+/// The resolver set a run of the verb builds, and not the corpus set alone.
+///
+/// `Resolvers::over` builds `source-tree`; `headwater_check::anchors` owns
+/// `check-rule`, and `main.rs` is where a run puts the two together. A fixture
+/// that took `over` alone would report every `check_rule` target in this
+/// repository as resolving to nothing, which is the state before that resolver
+/// existed rather than the state a user sees. See the module comment of
+/// `headwater_check::anchors` and #411.
+///
+/// `comment-scan` joins on the condition `main.rs` sets: a declared anchor kind
+/// names it and carries a pattern. It reads files and the claim store under
+/// `scan_base`, which a run of the verb sets to the repository root. Leaving
+/// it out records every `test_site` edge of this repository as having no
+/// resolver, which is #411 again for a third resolver (#1097).
+fn resolvers(corpus: &Corpus, declarations: &Declarations, scan_base: &Path) -> Resolvers {
+    let resolvers = Resolvers::over(corpus)
+        .with(Box::new(headwater_check::anchors::Rules::shipped()))
+        .expect("the check-rule resolver is the only one of its name");
+    match declarations
+        .anchors
+        .iter()
+        .find(|anchor| anchor.resolver == "comment-scan")
+        .and_then(|anchor| anchor.pattern.clone())
+    {
+        Some(pattern) => resolvers
+            .with(Box::new(headwater_graph::anchors::CommentScan::new(
+                scan_base,
+                pattern,
+                headwater_graph::anchors::CommentScan::claimed(scan_base),
+            )))
+            .expect("the comment-scan resolver is the only one of its name"),
+        None => resolvers,
+    }
 }
 
 fn fixture_run() -> Run {
@@ -799,6 +857,105 @@ fn a_target_that_binds_to_nothing_is_a_finding_that_names_which_defect_it_is() {
         "{findings:#?}"
     );
     assert_ne!(nothing.line, untyped.line, "{findings:#?}");
+}
+
+/// The path the one verification in this repository cites itself from.
+const CITED: &str = "engine/crates/check/tests/fixtures.rs";
+
+/// The one `test_site` edge this repository carries binds, through the
+/// resolver set the harness builds, and unbinds when its citation goes.
+///
+/// `comment-scan` shipped with fixtures of its own and no live edge, so no run
+/// over a real corpus had ever reached it (#1097). Arm A reads this
+/// repository: `HW-VER-0001` reaches this file under `cited_in`, bound to the
+/// `test_site` anchor kind and to nothing else. Arm B reads the same corpus
+/// with the scanned tree swapped for a copy of this file whose citation is
+/// removed, and the edge is then a blocking target finding that names the
+/// anchor kind. `comment_scan_target.rs` holds the resolver's own cases over a
+/// fixture taxonomy, and this test does not repeat them.
+#[test]
+fn this_repository_binds_hw_ver_0001_under_test_site_and_a_removed_citation_unbinds_it() {
+    let root = repository_root();
+    let resolved = repository(&root);
+    let corpus = corpus_of(&root, &resolved);
+    let taxonomy = Taxonomy::read(&resolved.resolution.taxonomy).expect("the taxonomy reads");
+    let declarations =
+        Declarations::read(&resolved.resolution.taxonomy).expect("the declarations read");
+    let graph = Graph::build(
+        &census::take(&corpus, &taxonomy),
+        &declarations,
+        &resolvers(&corpus, &declarations, &root),
+        &corpus,
+        &Config::default(),
+    );
+
+    // Arm A.
+    let cited: Vec<&headwater_graph::edges::Edge> = graph
+        .edges
+        .iter()
+        .filter(|edge| edge.source.id == "HW-VER-0001" && edge.raw_target == CITED)
+        .filter(|edge| edge.declared == "cited_in")
+        .collect();
+    assert_eq!(cited.len(), 1, "{cited:#?}");
+    match &cited[0].target {
+        headwater_graph::edges::Target::Anchor {
+            anchor_kind,
+            resolver,
+            normalized,
+            ..
+        } => {
+            assert_eq!(anchor_kind, "test_site", "{:#?}", cited[0]);
+            assert_eq!(resolver, "comment-scan", "{:#?}", cited[0]);
+            assert_eq!(normalized, CITED, "{:#?}", cited[0]);
+        }
+        other => panic!("`HW-VER-0001 cited_in {CITED}` did not bind: {other:#?}"),
+    }
+
+    // Arm B. The tree `comment-scan` reads holds the claim store and this file
+    // with every citation of the identifier taken out. Keyed on the test name
+    // and the pid, because cargo runs this file's cases as threads of one
+    // process.
+    let scan = Path::new(env!("CARGO_TARGET_TMPDIR"))
+        .join(format!("removed-citation-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&scan);
+    let claim = ".headwater/ids/verification_id/HW-VER-0001";
+    std::fs::create_dir_all(scan.join(claim).parent().expect("a parent"))
+        .expect("the claim directory");
+    std::fs::copy(root.join(claim), scan.join(claim)).expect("the claim file copies");
+    let source = std::fs::read_to_string(root.join(CITED)).expect("this file reads");
+    std::fs::create_dir_all(scan.join(CITED).parent().expect("a parent"))
+        .expect("the source directory");
+    std::fs::write(scan.join(CITED), source.replace("HW-VER-0001", ""))
+        .expect("the stripped copy writes");
+
+    let lock = headwater_lock::at(&root).expect("the committed lock");
+    let run = run_scanning(
+        &corpus,
+        &resolved.resolution.taxonomy,
+        &lock.digest,
+        headwater_lock::LOCK,
+        &pinned(),
+        &mut Cache::disabled(),
+        lock.adoption.as_ref(),
+        &scan,
+    );
+    let _ = std::fs::remove_dir_all(&scan);
+    let unbound: Vec<&headwater_check::Finding> = run
+        .findings
+        .iter()
+        .filter(|finding| finding.rule == target::RULE && finding.message.contains(CITED))
+        .collect();
+    assert_eq!(unbound.len(), 1, "{unbound:#?}");
+    assert_eq!(
+        unbound[0].severity,
+        headwater_check::Severity::Error,
+        "{unbound:#?}"
+    );
+    assert!(unbound[0].message.contains("test_site"), "{unbound:#?}");
+    assert!(
+        unbound[0].path.starts_with("docs/verifications/0001-"),
+        "{unbound:#?}"
+    );
 }
 
 /// Every way a `relations:` block fails reaches a rule, and a clean block passes.

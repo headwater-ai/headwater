@@ -1033,17 +1033,20 @@ pub enum ProbeWord {
     Plan {
         #[arg(
             long,
-            value_name = "regression|campaign",
+            value_name = "regression|campaign|documentation",
             help = "which tier of `.headwater/probe.yml` to plan against. A tier declares the \
-                    ceiling, the session cost, the repetitions and the arms, and the plan is \
-                    projected against all four. `regression` by default"
+                    ceiling, the session cost, the repetitions, the arms and the ablation its \
+                    absent arm removes, and the plan is projected against them. A paired tier \
+                    refuses a probe whose predicate names a document its own ablation removes. \
+                    `regression` by default"
         )]
         tier: Option<String>,
         #[arg(
             long,
             value_name = "present|absent",
             help = "narrow the selection to one arm the tier declares. Every arm the tier \
-                    declares by default, which is one for `regression` and two for `campaign`. \
+                    declares by default, which is one for `regression` and two for `campaign` and \
+                    `documentation`. \
                     An arm the tier does not declare refuses the run rather than planning \
                     another one, and the refusal names the arms the tier declares"
         )]

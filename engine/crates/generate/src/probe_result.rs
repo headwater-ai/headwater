@@ -72,7 +72,7 @@ use headwater_check::lifecycle_state::{Standing, StateFacet, Stood};
 use headwater_graph::links::Binding;
 use headwater_probe::grade::Results;
 use headwater_probe::intake::{Record, Tree};
-use headwater_probe::{Arm, Tier};
+use headwater_probe::Arm;
 use headwater_query::Surface;
 
 use crate::RefusedTranscript;
@@ -264,7 +264,7 @@ pub(crate) fn emit(
         let record = Record::read(&transcript.source, &tree);
         let results = Results::over(&record, &runs.selected);
         if let (Some(identity), None) = (&record.identity, &record.refusal) {
-            if identity.tier == Tier::Campaign {
+            if identity.tier.pairs_arms() {
                 campaign.push((path.to_string(), identity.clone(), results.refused()));
             }
         }
@@ -316,7 +316,12 @@ pub(crate) fn emit(
 /// reported where the refused-session counts of the pair disagree — or where
 /// no pair could be chosen at all.
 ///
-/// # Why the key is the three of them and not the tier alone
+/// # Why the key is the tier and three more, and not the tier alone
+///
+/// Two tiers pair arms, `campaign` and `documentation`, and their absent arms
+/// remove different trees. A campaign's present arm against a documentation
+/// run's absent arm would compare two ablations as though they were one, so
+/// the tier is the first member of the key.
 ///
 /// `tier: campaign` alone says two transcripts belong to one kind of run,
 /// never that they belong to *one* run of it: a second campaign, recorded
@@ -342,10 +347,11 @@ pub(crate) fn emit(
 /// one transcript on a side is not ambiguous: zero means nothing to compare
 /// yet, and exactly one on each side is the only case with a pair to choose.
 fn pair_arms(campaign: &[(String, headwater_probe::intake::Identity, usize)], plan: &mut Plan) {
-    let mut keys: Vec<(&str, &str, &str)> = campaign
+    let mut keys: Vec<(&str, &str, &str, &str)> = campaign
         .iter()
         .map(|(_, identity, _)| {
             (
+                identity.tier.name(),
                 identity.selection.as_str(),
                 identity.model.as_str(),
                 identity.served_version.as_str(),
@@ -355,12 +361,13 @@ fn pair_arms(campaign: &[(String, headwater_probe::intake::Identity, usize)], pl
     keys.sort_unstable();
     keys.dedup();
 
-    for (selection, model, served_version) in keys {
+    for (tier, selection, model, served_version) in keys {
         let of_arm = |arm: Arm| {
             let mut found: Vec<&(String, headwater_probe::intake::Identity, usize)> = campaign
                 .iter()
                 .filter(|(_, identity, _)| {
-                    identity.selection == selection
+                    identity.tier.name() == tier
+                        && identity.selection == selection
                         && identity.model == model
                         && identity.served_version == served_version
                         && identity.arm == arm
