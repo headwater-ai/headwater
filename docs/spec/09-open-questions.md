@@ -87,7 +87,7 @@ The documents on this shelf, in the reading order this corpus derives. Each head
 
 ## Q61 — How a recorded terminal demonstration is held against a run
 
-[HW-DR-0061](../decisions/0061-q61-how-a-recorded-terminal-demonstration-is-held-against-a-run.md) — A recorded terminal demonstration is a figure under HW-DR-0039. It may show only the tutorial's scratch corpus, where a blocking step already holds every printed output against a run. (asserted, and no human has accepted it)
+[HW-DR-0061](../decisions/0061-q61-how-a-recorded-terminal-demonstration-is-held-against-a-run.md) (superseded) — A recorded terminal demonstration is a figure under HW-DR-0039. It may show only the tutorial's scratch corpus, where a blocking step already holds every printed output against a run. (asserted, and no human has accepted it)
 
 ## Q39 — How a figure reaches a hand-built page
 
@@ -323,7 +323,7 @@ The documents on this shelf, in the reading order this corpus derives. Each head
 
 ## A paragraph limit counts sentences under the language rule and never words
 
-[HW-DR-0069](../decisions/0069-a-paragraph-limit-counts-sentences-under-the-language-rule-and-never-words.md) — No word-length rule joins the check layer. The six-sentence limit of the standard the house regime declares lands as a fifth defect of the language rule, advisory permanently. The paragraph that raised the question is a hand-kept index, and a derived list repairs it where no lexical rule reads it.
+[HW-DR-0069](../decisions/0069-a-paragraph-limit-counts-sentences-under-the-language-rule-and-never-words.md) (superseded) — No word-length rule joins the check layer. The six-sentence limit of the standard the house regime declares lands as a fifth defect of the language rule, advisory permanently. The paragraph that raised the question is a hand-kept index, and a derived list repairs it where no lexical rule reads it.
 
 ## The matched purposes take turns at a route budget, and each pointer states what reached it
 
