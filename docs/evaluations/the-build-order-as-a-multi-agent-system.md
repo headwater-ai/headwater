@@ -3,7 +3,7 @@ id: HW-EVAL-the-build-order-as-a-multi-agent-system
 status: current
 status_since: 2026-09-07
 summary: "What one 20-hour run of the build order measured about its own orchestrator, the cost model those measurements settle, and the architecture that follows. What was rejected, and the numbers the next run is held against."
-last_verified: 2026-09-24
+last_verified: 2026-09-27
 title: "The build order as a multi-agent system"
 provenance:
   warrant: asserted
@@ -41,6 +41,24 @@ Splitting one iteration into adjudication, construction, verification and write-
 | Construction, median of 8 | 196 | 211k | 28.4M | $17 |
 
 Run 22 measured the shape with verification split out. The parent was 9% of the run, against 27% before, and cache reads were 99% of every token billed. What did not move was growth. The parent climbed from 65k to 687k of context in under three hours with no compaction. Its last 84 turns cost about twice its first 84 for the same work. The built-in tool definitions were 28,987 tokens of that context, and the parent called four of the fourteen tools. Returned reports were its largest input class at 113.7k tokens, with a median of 1,475 each. Three agents notified two or three times, re-injecting the whole report on each.
+
+**A builder's late turns cost more than its early turns, and the length of the builder causes that, not the size of its issue.** The `growth` line of `tools/run/run-census.sh` gives the context at 10% and at 90% of the turns of one transcript. It also gives the cost of the first quarter of the turns against the last quarter, at the rates of each turn's own model. On 2026-09-27 it read all 120 `hw-build` transcripts of 13 sessions. These include the baseline session `9ab3be93` of 2026-09-20 and eleven sessions after it. The size of an issue is the additions plus the deletions of the builder's own pull request. It leaves out the derived paths `.headwater/`, `site/` and the recorded corpus fixtures. 115 of the 120 builders named a pull request.
+
+| Builders | Count | Median turns | Median growth | Mean growth |
+|---|---|---|---|---|
+| Baseline `9ab3be93`, Sonnet 5 | 3 | 582 | 4.2x | 4.0x |
+| Other Sonnet 5 builders, before the Opus 5.5 builders | 26 | 190 | 2.8x | 2.8x |
+| Opus 5.5 builders, from 2026-09-23 on | 91 | 109 | 1.4x | 1.6x |
+| 100 turns or fewer | 43 | 72 | 1.1x | 1.2x |
+| 101 to 200 turns | 55 | 140 | 1.9x | 2.0x |
+| 201 to 300 turns | 11 | 244 | 2.4x | 2.6x |
+| More than 300 turns | 11 | 369 | 3.5x | 3.5x |
+
+Across the 115 builders with a size, the rank correlation of growth with turns is 0.77, and of growth with size it is 0.28. Turns and size correlate at 0.49. With size held constant, turns still correlate with growth at 0.75. With turns held constant, size correlates with growth at -0.16. For the 86 Opus 5.5 builders with a size, the same two figures are 0.58 and -0.01. So a large issue costs more per turn only because it makes a long builder. The issue that asked the question measured #88 at 392 turns while it ran, and that builder stopped at 582.
+
+**No bound on the length of a builder is set, because the most that a bound can save is small against what a handoff risks.** The code map and `hw-explore` went into `.claude/agents/hw-build.md` on 2026-09-23. Since then, 8 of 94 builders in eight sessions went past 200 turns, and 1 went past 300. A fresh builder that takes over at turn 200 saves the cost of the later turns. It pays again for the same number of turns at its own start, and those turns include its orientation. Over the 94 builders, a bound at 200 turns saves at most $22.40 of $459.21, or 4.9%. A bound at 150 turns saves at most $47.33, or 10.3%, and it stops 25 of the 94 builders. The estimate charges nothing for the brief or for work that the new agent does again. The run policy resumes a dead agent and does not replace it, because a fresh agent loses a settled design. [HW-PD-0003](../process/decisions/0003-a-dispatch-pays-when-it-retires-more-parent-turns-than-it-costs.md) asks a dispatch to retire more than it costs. A saving of 5% to 10%, before those two costs, does not meet that test with a margin.
+
+**The finding opens again on the last five runs taken together, and one run alone is too small for the test.** It opens when more than one builder in five goes past 200 turns, or when the median growth of those builders goes past 2x. On 2026-09-27, the last five runs, from `861a7465` to `ee0f0553`, had 6 of 59 builders past 200 turns and a median growth of 1.5x. Over those five runs, a bound at 200 turns saves at most $21.28 of $317.28, or 6.7%. One in five is about twice the share of today. At that share, a bound at 200 turns comes near what a bound at 150 turns saves today. That is 10.3% since 2026-09-23, and 11.8% over the five pooled runs. Of the eight single runs since 2026-09-23, `e2a9988f` passes the growth limit with a median of 2.2x. `6fadc105` sits on the share limit with 2 of 10 builders past 200 turns. One builder moves the test on one run, and that is why the test pools five. The `growth` line gives both figures for each builder.
 
 ## The run that measured the orchestrator as the constraint
 
@@ -160,4 +178,4 @@ Four more measurements spend the same unit of cost, a turn at full context. Each
 
 ## What this evaluation cannot show
 
-One run measured the orchestrator, and one run reported the refusals. The width comparison is confounded and is recorded as such. The claim that a compaction preserves a short numbered list and not a long narrative is plausible and untested. The doctrine sizing rests on it. The integrator's net saving of about five parent turns per merge is arithmetic from the measured turn classes. It is not a measurement of the new shape. Each of these is a thing the next measurement can settle.
+One run measured the orchestrator, and one run reported the refusals. The width comparison is confounded and is recorded as such. The claim that a compaction preserves a short numbered list and not a long narrative is plausible and untested. The doctrine sizing rests on it. The integrator's net saving of about five parent turns per merge is arithmetic from the measured turn classes. It is not a measurement of the new shape. The saving that a bound on the length of a builder can make is also arithmetic, because no run has tried a planned handoff. Each of these is a thing the next measurement can settle.
