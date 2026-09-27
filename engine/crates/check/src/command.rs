@@ -187,35 +187,70 @@ fn programs(text: &str, console: bool) -> Vec<(usize, String)> {
             continue;
         }
         starts.push((command.len(), number));
-        match trimmed.strip_suffix('\\') {
-            Some(head) => {
-                command.push_str(head);
+        command.push_str(trimmed);
+        match scan(&command).1 {
+            // A quote still open at the end of the line carries into the next
+            // line, as a shell reads it (#1135).
+            Some('\'' | '"' | 'a') => {
+                command.push('\n');
+                continue;
+            }
+            // A trailing `\` outside quotes and outside a comment joins the
+            // next line.
+            None if command.ends_with('\\') => {
+                command.pop();
                 command.push(' ');
+                continue;
             }
-            None => {
-                command.push_str(trimmed);
-                for (offset, segment) in segments(&command) {
-                    if let Some(program) = program_of(segment) {
-                        let line = starts
-                            .iter()
-                            .rev()
-                            .find(|(start, _)| *start <= offset)
-                            .map_or(number, |(_, line)| *line);
-                        found.push((line, program));
-                    }
-                }
-                heredoc = heredoc_end(&command);
-                command.clear();
-                starts.clear();
-            }
+            _ => {}
         }
+        read_command(&command, &starts, number, &mut found);
+        heredoc = heredoc_end(&command);
+        command.clear();
+        starts.clear();
+    }
+    // A command the block never finishes, with a quote left open or a last
+    // trailing `\`, is still read, so the rule fails closed on it.
+    if let Some(&(_, last)) = starts.last() {
+        read_command(&command, &starts, last, &mut found);
     }
     found
+}
+
+/// Push every program of one joined command, each with the line it starts on.
+fn read_command(
+    command: &str,
+    starts: &[(usize, usize)],
+    number: usize,
+    found: &mut Vec<(usize, String)>,
+) {
+    for (offset, segment) in segments(command) {
+        if let Some(program) = program_of(segment) {
+            let line = starts
+                .iter()
+                .rev()
+                .find(|(start, _)| *start <= offset)
+                .map_or(number, |(_, line)| *line);
+            found.push((line, program));
+        }
+    }
 }
 
 /// The parts of a command between the operators that start a new program, each
 /// with its byte offset. An operator inside quotes is part of an argument.
 fn segments(command: &str) -> Vec<(usize, &str)> {
+    scan(command).0
+}
+
+/// The segments of a command, and what is still open at its end: a quote
+/// (`'`, `"` or `a` for `$'…'`), a comment (`#`), or nothing.
+///
+/// A backslash escapes the next character outside quotes, inside double
+/// quotes and inside ANSI-C quotes (`$'…'`), and is literal inside single
+/// quotes. A `#` that starts a word outside quotes opens a comment to the end
+/// of the line, so an operator or an apostrophe in a comment is neither.
+fn scan(command: &str) -> (Vec<(usize, &str)>, Option<char>) {
+    // `a` marks an ANSI-C quote and `#` a comment.
     let mut out = Vec::new();
     let mut start = 0;
     let mut quote: Option<char> = None;
@@ -230,10 +265,25 @@ fn segments(command: &str) -> Vec<(usize, &str)> {
             continue;
         }
         match (quote, c) {
-            (Some('\''), '\'') | (Some('"'), '"') => quote = None,
-            (Some('"'), '\\') | (None, '\\') => escaped = true,
+            (Some('#'), '\n') => quote = None,
+            (Some('#'), _) => {}
+            (Some('\'' | 'a'), '\'') | (Some('"'), '"') => quote = None,
+            (Some('"' | 'a') | None, '\\') => escaped = true,
             (Some(_), _) => {}
+            (None, '$') if bytes.get(at + 1) == Some(&b'\'') => {
+                quote = Some('a');
+                at += 1;
+            }
             (None, '\'' | '"') => quote = Some(c),
+            (None, '#')
+                if at == 0
+                    || matches!(
+                        bytes[at - 1],
+                        b' ' | b'\t' | b'\n' | b';' | b'&' | b'|' | b'('
+                    ) =>
+            {
+                quote = Some('#');
+            }
             (None, '|' | '&' | ';') => {
                 // `>&` and `&>` redirect a stream and start no program.
                 let redirect = (c == '&')
@@ -251,7 +301,7 @@ fn segments(command: &str) -> Vec<(usize, &str)> {
         at += 1;
     }
     out.push((start, &command[start..]));
-    out
+    (out, quote)
 }
 
 /// The program a segment runs, if it names one.
@@ -381,6 +431,22 @@ mod tests {
         assert_eq!(
             names("headwater check # it's here\nnpm install\n", false),
             pairs(&[(0, "headwater"), (1, "npm")])
+        );
+        // A trailing `\` inside a comment is part of the comment and joins
+        // nothing, so the next line is its own command.
+        assert_eq!(
+            names("headwater check # note \\\nnpm install\n", false),
+            pairs(&[(0, "headwater"), (1, "npm")])
+        );
+    }
+
+    /// A block that ends inside an open quote is still read, so the rule
+    /// fails closed on it rather than dropping the command.
+    #[test]
+    fn a_quote_the_block_never_closes_is_still_read() {
+        assert_eq!(
+            names("echo ok && npm install '\n", false),
+            pairs(&[(0, "echo"), (0, "npm")])
         );
     }
 }
