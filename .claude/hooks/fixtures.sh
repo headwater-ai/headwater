@@ -1649,6 +1649,34 @@ hw_settings_case() {
     trap - EXIT INT TERM
 }
 
+printf '\n# write.sh and derived.sh: the derived-artifact advisory (#1053)\n'
+# A session that edits or merges a file a producer writes, in ignorance of it,
+# is what #1053 exists to prevent. `headwater derived` names each such file,
+# the shape of its record and the command that rebuilds it, and both positions
+# read that report and nothing else. The lock is the member every tree holds.
+if [ -x "$engine" ]; then
+    lock_payload='{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":".headwater/taxonomy.lock"}}'
+    expect 'an edit to the taxonomy lock names the command that rebuilds it' \
+        write.sh 0 'headwater taxonomy resolve' "$lock_payload"
+    expect 'an edit to the taxonomy lock names the shape of its record' \
+        write.sh 0 'A fold' "$lock_payload"
+    refute 'the derived-artifact advisory never denies the edit' \
+        write.sh 'permissionDecision' "$lock_payload"
+    # A member of another shape. The heading is taken per path, and a reader
+    # that took the first heading of the section would name the wrong row here.
+    readme_payload='{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"docs/decisions/README.md"}}'
+    expect 'an edit to a generated index names `headwater generate`' \
+        write.sh 0 'headwater generate' "$readme_payload"
+    expect 'an edit to a generated index names its own row, not the first one' \
+        write.sh 0 'One record for each entity' "$readme_payload"
+    # The control: a path no producer writes.
+    refute 'an edit to a source file says nothing about a derived artifact' \
+        write.sh 'derived artifact' \
+        '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"engine/crates/check/src/lib.rs"}}'
+else
+    skip 'the derived-artifact advisory cases' 'no built engine'
+fi
+
 hw_settings_case 1 intent.sh
 hw_settings_case 2 write.sh
 hw_settings_case 3 touch.sh
