@@ -749,12 +749,14 @@ jobs:
       - name: The APT fetch serves one release whole or stops the site build
         # `tools/site/fetch-apt.sh` decides in the Cloudflare build whether
         # headwater.tools serves an APT repository (HW-DR-0094). Its fixtures
-        # serve signed releases from a local server: a whole one, files of
-        # two releases, a missing file, and a server that never answers. Each
-        # mix is a repository apt refuses, so the script must stop the build.
-        # It needs no `gpg`: the self-hosted runner has none and no `sudo`,
-        # so the fixtures write the clearsign armor themselves there and use
-        # `gpg` where a hosted runner carries it (#764).
+        # serve releases from a local server: a whole one, files of two
+        # releases, a missing file, and a server that never answers. Each mix
+        # is a repository apt refuses, so the script must stop the build. On
+        # a hosted runner the fixtures sign each release with `gpg`. The
+        # self-hosted runner has no `gpg` and no `sudo`, so there they write
+        # the clearsign armor themselves around a block that is not a
+        # signature. `fetch-apt.sh` verifies no signature, so both forms test
+        # it (#764).
         run: sh tools/site/fetch-apt-fixtures.sh
       - name: The crawler files are what the committed pages say
         # `tools/site/refresh-crawler-files.sh` derives `site/llms.txt`,

@@ -16,9 +16,13 @@
 # host, the releases are signed with a throwaway key and `InRelease` is a
 # real clearsigned file. Where it is not, this script writes the armor that
 # `gpg --clearsign` writes, around a signature block that is not a
-# signature. The self-hosted runner has no `gpg` and no `sudo` to install
-# it, and a pull request runs on a hosted runner that has `gpg`, so CI runs
-# both forms (#764). The first line of output says which one ran.
+# signature. A pull request runs on a hosted runner, which has `gpg`, so it
+# runs the signed form. A push runs on the self-hosted runner when the
+# router sends it there, and that runner has no `gpg` and no `sudo` to
+# install it, so it runs the armor form. Up to 2026-09-28 every CI run of
+# this script used the signed form, because each push was routed to a hosted
+# runner. The armor form was run only on a host with `gpg` removed from
+# `PATH` (#764). The first line of output says which form ran.
 #
 # Needs `python3`, `curl` and `sha256sum`, and uses `gpg` when present. It
 # writes only under a temporary directory.
