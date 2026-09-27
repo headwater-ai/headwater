@@ -668,7 +668,7 @@ read set
   version language.controlled.not_met 4
   version language.retired_term.used 4
   version surface.local_path.instructed 5
-  version surface.command.undeclared 2
+  version surface.command.undeclared 3
   version language.source_form.not_met 1
   version section.required.missing 1
   version link.fragment.unresolved 4
