@@ -499,7 +499,7 @@
     {
       "rule": "surface.command.undeclared",
       "scope": "document",
-      "version": 1,
+      "version": 2,
       "obligations": []
     },
     {

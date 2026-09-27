@@ -189,20 +189,18 @@ def _split_unquoted(text, is_boundary):
 
 
 def _scan(text, is_boundary):
-    """The pieces `_split_unquoted` cuts, the quote still open at the end of
-    `text` (`'`, `"`, `$'` or a backtick), or None, and the index of the
-    first `<<` outside quotes and comments, or None.
+    """The pieces `_split_unquoted` cuts, and what is still open at the end
+    of `text`: a quote (`'`, `"` or `$'`), a backtick, `$(`, or None.
 
-    The engine's `scan` in `engine/crates/check/src/command.rs` reads a
+    The engine's `scan` in `engine/crates/check/src/command.rs` reads one
     command by the same rules. `$'…'` is ANSI-C quoting: a backslash inside
-    it escapes the next character, so `$'\\''` is one quoted quote and the
-    span stays open only to the `'` after it. Inside backticks a quote is
-    part of the command the backticks run and opens nothing here. A `#` that
-    starts a word outside quotes opens a comment to the end of the text, and
-    the comment is no part of a piece, so an apostrophe or a `<<` in it is
-    neither. A word starts after a blank, a newline, or one of `;&|()<>`.
+    it escapes the next character, so `$'\\''` is one quoted quote. Inside
+    backticks a quote opens nothing. A `$(` outside quotes opens until its
+    `)`. A `#` at the start of the text, or after a blank, `;`, `&` or `|`,
+    opens a comment to the end, and the comment is no part of a piece. After
+    `)`, `<` or `>` a `#` is part of a word.
     """
-    pieces, buf, quote, heredoc, i = [], [], None, None, 0
+    pieces, buf, quote, depth, i = [], [], None, 0, 0
     while i < len(text):
         ch = text[i]
         if ch == '\\' and quote != "'":
@@ -215,20 +213,23 @@ def _scan(text, is_boundary):
                 quote = None
             i += 1
             continue
-        if ch == '$' and text[i + 1:i + 2] == "'":
-            quote = "$'"
-            buf.append(quote)
+        if ch == '$' and text[i + 1:i + 2] in ("'", '('):
+            if text[i + 1] == "'":
+                quote = "$'"
+            else:
+                depth += 1
+            buf.append(text[i:i + 2])
             i += 2
             continue
+        if ch == ')' and depth:
+            depth -= 1
         if ch in ('"', "'", '`'):
             quote = ch
             buf.append(ch)
             i += 1
             continue
-        if ch == '#' and (i == 0 or text[i - 1] in ' \t\n;&|()<>'):
+        if ch == '#' and (i == 0 or text[i - 1] in ' \t;&|'):
             break
-        if ch == '<' and text[i + 1:i + 2] == '<' and heredoc is None:
-            heredoc = i
         consumed = is_boundary(text, i)
         if consumed:
             pieces.append(''.join(buf))
@@ -238,21 +239,7 @@ def _scan(text, is_boundary):
         buf.append(ch)
         i += 1
     pieces.append(''.join(buf))
-    return pieces, quote, heredoc
-
-
-def _heredoc_end(command):
-    """The word that ends a here-document `command` opens, or None. A `<<`
-    inside quotes or in a comment opens none, and `<<<` is a here-string."""
-    at = _scan(command, lambda _t, _i: 0)[2]
-    if at is None or command[at + 2:at + 3] == '<':
-        return None
-    rest = command[at + 2:]
-    if rest.startswith('-'):
-        rest = rest[1:]
-    word = re.match(r'[^\s;|&)]*', rest.lstrip()).group(0)
-    word = word.replace("'", '').replace('"', '')
-    return word or None
+    return pieces, quote or ('$(' if depth else None)
 
 
 def split_chain(line):
@@ -333,7 +320,7 @@ def check_piece(piece, cargo_allowed=False):
     `cargo` passes only when `cargo_allowed` is set, which
     `undeclared_in_document` does only after the document has already
     given the release download."""
-    if SUBSTITUTION.search(piece):
+    if piece.startswith(UNREADABLE) or SUBSTITUTION.search(piece):
         return False
     tokens = piece.split()
     if not tokens:
@@ -349,35 +336,24 @@ def check_piece(piece, cargo_allowed=False):
 
 
 def _pieces(block):
-    """Every piece of every command of a command block. The body of a
-    here-document is input to a program and is not read."""
-    commands, pending, heredoc = [], None, None
-    for line in block.split('\n'):
-        if heredoc is not None:
-            if line.strip() == heredoc:
-                heredoc = None
+    """Every piece of every line of a command block, one line at a time.
+
+    A line that ends inside a quote, a pair of backticks or a `$(` joins
+    nothing (#1135). Its pieces are yielded, then one `UNREADABLE` piece that
+    names the line, and nothing after it: a checker that joined such a line
+    would have to lex the shell, and each construct it misread would hide
+    the lines after it rather than flag them. No here-document body is
+    skipped, so a body line is read as a command and fails closed.
+    """
+    for number, line in enumerate(block.split('\n'), start=1):
+        stripped = line.strip()
+        if not stripped or stripped.startswith('#'):
             continue
-        if pending is not None:
-            text = pending + '\n' + line
-        else:
-            text = line.strip()
-            if not text or text.startswith('#'):
-                continue
-        # A quote still open at the end of a line carries into the next
-        # line, as a shell reads it (#1135).
-        if _scan(text, lambda _t, _i: 0)[1]:
-            pending = text
-            continue
-        pending = None
-        commands.append(text.strip())
-        heredoc = _heredoc_end(text)
-    # A quote the block never closes is a shell syntax error. Its text is
-    # still read, so a gate fails closed on it rather than skipping it.
-    if pending is not None:
-        commands.append(pending.strip())
-    for command in commands:
-        for segment in split_chain(command):
+        for segment in split_chain(stripped):
             yield from split_pipe(segment)
+        if _scan(stripped, lambda _t, _i: 0)[1]:
+            yield UNREADABLE + str(number)
+            return
 
 
 def undeclared_pieces(block, cargo_allowed=False):

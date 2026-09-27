@@ -89,7 +89,10 @@ impl Undeclared {
 
 impl DocumentCheck for Undeclared {
     const RULE: &'static str = self::RULE;
-    const VERSION: u32 = 1;
+    /// 2 reports the rest of a block as unreadable once a line ends inside a
+    /// quote, a pair of backticks or a `$(` (#1135). The first edition read
+    /// each line alone and could read a quoted chain as one program.
+    const VERSION: u32 = 2;
     const NEEDS_BODY: bool = true;
 
     fn instantiates(&self, _kind: &str) -> bool {
@@ -125,11 +128,31 @@ impl DocumentCheck for Undeclared {
                 .filter(|run| run.ownership == Ownership::Code)
                 .map(|run| run.text.as_str())
                 .collect();
-            for (line, program) in programs(&text, info == "console") {
-                let name = program.rsplit('/').next().unwrap_or(program.as_str());
-                if self.commands.iter().any(|declared| declared == name) {
-                    continue;
-                }
+            for (line, read) in programs(&text, info == "console") {
+                let (message, remediation) = match read {
+                    Read::Unreadable => (
+                        "a line of this shell block ends inside a quote, a pair of backticks or a `$(`, so the rule cannot read the rest of the block (HW-DR-0077)".to_string(),
+                        format!(
+                            "close the quote on the line that opens it, or mark the step as a deliberate exception with `<!-- headwater allow={} scope=block reason=accepted_deviation ... -->`",
+                            self::RULE
+                        ),
+                    ),
+                    Read::Program(program) => {
+                        let name = program.rsplit('/').next().unwrap_or(program.as_str());
+                        if self.commands.iter().any(|declared| declared == name) {
+                            continue;
+                        }
+                        (
+                            format!(
+                                "a shell block runs `{name}`, and `commands` of the consumer surface does not declare it (HW-DR-0077)"
+                            ),
+                            format!(
+                                "add `{name}` to `surface.commands` if an adopter must have it installed, name a declared command that does this, or mark the step as a deliberate exception with `<!-- headwater allow={} scope=block reason=accepted_deviation ... -->`",
+                                self::RULE
+                            ),
+                        )
+                    }
+                };
                 findings.push(Finding {
                     rule: self::RULE,
                     severity: Severity::Error,
@@ -137,13 +160,8 @@ impl DocumentCheck for Undeclared {
                     path: view.path().to_string(),
                     line: first.span.start.line + line,
                     column: 1,
-                    message: format!(
-                        "a shell block runs `{name}`, and `commands` of the consumer surface does not declare it (HW-DR-0077)"
-                    ),
-                    remediation: format!(
-                        "add `{name}` to `surface.commands` if an adopter must have it installed, name a declared command that does this, or mark the step as a deliberate exception with `<!-- headwater allow={} scope=block reason=accepted_deviation ... -->`",
-                        self::RULE
-                    ),
+                    message,
+                    remediation,
                     patch: None,
                 });
             }
@@ -153,9 +171,26 @@ impl DocumentCheck for Undeclared {
     }
 }
 
+/// What the rule reads at one line of a shell block.
+#[derive(Debug, PartialEq, Eq)]
+enum Read {
+    /// A program that a command runs.
+    Program(String),
+    /// The rest of the block, from a line that ends inside a quote, a pair of
+    /// backticks or a `$(`. The rule reads nothing after it.
+    Unreadable,
+}
+
 /// Every program a shell block runs, with the line of the block, counted from
 /// zero, that the command holding it starts on.
-fn programs(text: &str, console: bool) -> Vec<(usize, String)> {
+///
+/// Only a trailing `\` outside quotes and comments joins a line to the next.
+/// A line that ends inside a quote, a pair of backticks or a `$(` joins
+/// nothing (#1135): the rule reads what the line runs, then reports the rest
+/// of the block as unreadable and stops. A checker that joined such a line
+/// would have to lex the shell, and each construct it misread would hide the
+/// lines after it rather than flag them.
+fn programs(text: &str, console: bool) -> Vec<(usize, Read)> {
     let mut found = Vec::new();
     // The joined command so far, and for each line joined into it the byte
     // offset it starts at and its line number.
@@ -189,14 +224,11 @@ fn programs(text: &str, console: bool) -> Vec<(usize, String)> {
         starts.push((command.len(), number));
         command.push_str(trimmed);
         match scan(&command).open {
-            // A quote still open at the end of the line carries into the next
-            // line, as a shell reads it (#1135).
-            Some('\'' | '"' | 'a' | '`') => {
-                command.push('\n');
-                continue;
+            Some('\'' | '"' | 'a' | '`' | '(') => {
+                read_command(&command, &starts, number, &mut found);
+                found.push((number, Read::Unreadable));
+                return found;
             }
-            // A trailing `\` outside quotes and outside a comment joins the
-            // next line.
             None if command.ends_with('\\') => {
                 command.pop();
                 command.push(' ');
@@ -209,8 +241,8 @@ fn programs(text: &str, console: bool) -> Vec<(usize, String)> {
         command.clear();
         starts.clear();
     }
-    // A command the block never finishes, with a quote left open or a last
-    // trailing `\`, is still read, so the rule fails closed on it.
+    // A last trailing `\` leaves a command the block does not finish. It is
+    // still read.
     if let Some(&(_, last)) = starts.last() {
         read_command(&command, &starts, last, &mut found);
     }
@@ -222,7 +254,7 @@ fn read_command(
     command: &str,
     starts: &[(usize, usize)],
     number: usize,
-    found: &mut Vec<(usize, String)>,
+    found: &mut Vec<(usize, Read)>,
 ) {
     for (offset, segment) in segments(command) {
         if let Some(program) = program_of(segment) {
@@ -231,7 +263,7 @@ fn read_command(
                 .rev()
                 .find(|(start, _)| *start <= offset)
                 .map_or(number, |(_, line)| *line);
-            found.push((line, program));
+            found.push((line, Read::Program(program)));
         }
     }
 }
@@ -247,26 +279,28 @@ struct Scan<'a> {
     /// The parts between the operators that start a new program, each with
     /// its byte offset.
     segments: Vec<(usize, &'a str)>,
-    /// What is still open at the end: a quote (`'`, `"`, `a` for `$'…'`, or
-    /// `` ` `` for a command substitution), a comment (`#`), or nothing.
+    /// What is still open at the end: a quote (`'`, `"`, or `a` for `$'…'`),
+    /// a pair of backticks (`` ` ``), a `$(` (`(`), a comment (`#`), or
+    /// nothing.
     open: Option<char>,
     /// The byte offset of the first `<<` outside quotes and comments.
     heredoc: Option<usize>,
 }
 
-/// Read a command as a shell splits it.
+/// Read one command as a shell splits it.
 ///
 /// A backslash escapes the next character outside quotes, inside double
 /// quotes, inside ANSI-C quotes (`$'…'`) and inside backticks, and is literal
-/// inside single quotes. Inside backticks a quote is part of the command that
-/// the backticks run, and it opens nothing here. A `#` that starts a word
-/// outside quotes opens a comment to the end of the command, so an operator,
-/// a quote or a `<<` in a comment is none of them. A word starts after a
-/// blank, a newline, or one of `;`, `&`, `|`, `(`, `)`, `<` and `>`.
+/// inside single quotes. Inside backticks a quote opens nothing. A `$(`
+/// outside quotes opens until its `)`. A `#` at the start of the command, or
+/// after a blank, `;`, `&` or `|`, opens a comment to the end, so an operator,
+/// a quote or a `<<` in a comment is none of them. After `)`, `<` or `>` a
+/// `#` is part of a word.
 fn scan(command: &str) -> Scan<'_> {
     let mut out = Vec::new();
     let mut start = 0;
     let mut quote: Option<char> = None;
+    let mut depth = 0usize;
     let mut heredoc = None;
     let mut escaped = false;
     let bytes = command.as_bytes();
@@ -286,13 +320,14 @@ fn scan(command: &str) -> Scan<'_> {
                 quote = Some('a');
                 at += 1;
             }
+            (None, '$') if bytes.get(at + 1) == Some(&b'(') => {
+                depth += 1;
+                at += 1;
+            }
+            (None, ')') if depth > 0 => depth -= 1,
             (None, '\'' | '"' | '`') => quote = Some(c),
             (None, '#')
-                if at == 0
-                    || matches!(
-                        bytes[at - 1],
-                        b' ' | b'\t' | b'\n' | b';' | b'&' | b'|' | b'(' | b')' | b'<' | b'>'
-                    ) =>
+                if at == 0 || matches!(bytes[at - 1], b' ' | b'\t' | b';' | b'&' | b'|') =>
             {
                 out.push((start, &command[start..at]));
                 return Scan {
@@ -324,7 +359,7 @@ fn scan(command: &str) -> Scan<'_> {
     out.push((start, &command[start..]));
     Scan {
         segments: out,
-        open: quote,
+        open: quote.or((depth > 0).then_some('(')),
         heredoc,
     }
 }
@@ -384,10 +419,16 @@ fn heredoc_end(command: &str) -> Option<String> {
 
 #[cfg(test)]
 mod tests {
-    use super::programs;
+    use super::{Read, programs};
 
     fn names(text: &str, console: bool) -> Vec<(usize, String)> {
         programs(text, console)
+            .into_iter()
+            .map(|(line, read)| match read {
+                Read::Program(name) => (line, name),
+                Read::Unreadable => (line, UNREADABLE.to_string()),
+            })
+            .collect()
     }
 
     /// What `names` writes for a remainder the rule cannot read.
@@ -439,7 +480,10 @@ mod tests {
     #[test]
     fn a_quote_open_at_the_end_of_a_line_leaves_the_rest_of_the_block_unreadable() {
         let block = "printf 'a\nheadwater check' && echo RAN-2 && printf 'b'\n";
-        assert_eq!(names(block, false), pairs(&[(0, "printf"), (0, UNREADABLE)]));
+        assert_eq!(
+            names(block, false),
+            pairs(&[(0, "printf"), (0, UNREADABLE)])
+        );
         assert_eq!(
             names("echo ok\nprintf \"a\nnpm install\n", false),
             pairs(&[(0, "echo"), (1, "printf"), (1, UNREADABLE)])
