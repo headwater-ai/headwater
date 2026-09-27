@@ -384,3 +384,7 @@ The documents on this shelf, in the reading order this corpus derives. Each head
 ## The citation comment of spec 5 is for an adopter's corpus, and this repository does not practice it on its own code
 
 [HW-DR-0092](../decisions/0092-the-citation-comment-of-spec-5-is-for-an-adopter-s-corpus-and-this-repository-does-not-practice-it-on-its-own-code.md) — The per-identifier citation comment of spec 5 is a convention for an adopter's corpus. By the owner's ruling, the code of this repository carries none. Its comments that name an identifier are prose, and the checker does not read them. (asserted, and no human has accepted it)
+
+## Q66 — One library entry may address the keys of an entry it names in requires, and confluence holds over the dependency order
+
+[HW-DR-0095](../decisions/0095-q66-one-library-entry-may-address-the-keys-of-an-entry-it-names-in-requires-and-confluence-holds-over-the-dependency-order.md) — An entry that names another in requires may add into its keys, and every other pair of entries still commutes only over disjoint leaves. (asserted, and no human has accepted it)
