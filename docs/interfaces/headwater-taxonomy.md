@@ -87,7 +87,7 @@ The consumer declaration and package sources must be readable for source operati
 
 ## Environment
 
-The command reads the system date when a subcommand has `--now` and no date is supplied. It reads no other environment variable.
+The command reads the system date when a subcommand has `--now` and no date is supplied. `vendor <location>` also reads the proxy variables for an `https://` request. The first of `ALL_PROXY`, `HTTPS_PROXY` and `HTTP_PROXY` that is set names the proxy, in upper or lower case. `NO_PROXY` names the hosts that the proxy does not serve. A plain `http://` request goes only to a loopback host, and never through a proxy. So no proxy can send it to another machine. The command reads no other environment variable.
 
 ## Files
 
