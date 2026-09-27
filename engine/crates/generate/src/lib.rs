@@ -1715,6 +1715,37 @@ pub(crate) fn shelf_of<'a>(
     }
 }
 
+/// The mark a list row carries for a document that stands at a terminal state,
+/// keyed by path, as ` (superseded)`.
+///
+/// A row of an index that carried no mark listed a superseded decision exactly
+/// as it listed a current one (#1198). Spec 3 says a terminal document is kept
+/// as a record and that nothing new may rest on it, so an index that a reader
+/// picks a document from says which rows are records.
+///
+/// The role is read and never a state name, through
+/// [`headwater_check::lifecycle_state::StateFacet`], which is the one fold of
+/// the roles into live and terminal. So `deprecated` and `discharged` rows are
+/// marked too, and a taxonomy that renames every state is read unchanged. The
+/// mark writes the state as the document writes it. It is not a field of
+/// [`Pointer`], because that struct is a wire format of `route` and `explain`.
+pub(crate) fn terminal_marks(
+    surface: &Surface<'_>,
+    documents: &[Document<'_>],
+) -> std::collections::BTreeMap<String, String> {
+    use headwater_check::lifecycle_state::{Standing, StateFacet, Stood};
+    let facet = StateFacet::of(surface.shape());
+    documents
+        .iter()
+        .filter_map(|document| match facet.stood(document.facets) {
+            Stood::At(state) if facet.standing(state) == Standing::Terminal => {
+                Some((document.path.to_string(), format!(" ({state})")))
+            }
+            _ => None,
+        })
+        .collect()
+}
+
 /// A pointer per document, which is the form the reading order sorts.
 pub(crate) fn pointers(surface: &Surface<'_>, documents: &[Document<'_>]) -> Vec<Pointer> {
     documents

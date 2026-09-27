@@ -413,6 +413,12 @@
       "obligations": []
     },
     {
+      "rule": "lifecycle.state.not_set_by_edge",
+      "scope": "edge",
+      "version": 2,
+      "obligations": []
+    },
+    {
       "rule": "warrant.evidence.unsupported",
       "scope": "edge",
       "version": 2,
