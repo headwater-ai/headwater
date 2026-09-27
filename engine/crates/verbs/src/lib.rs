@@ -307,7 +307,7 @@ pub const VERBS: &[Verb] = &[
             Word {
                 name: "plan",
                 summary: "fix the run identity, and project against a ceiling",
-                description: "Fix the six members of the run identity that exist before a run, and project the sessions against the ceiling that `.headwater/probe.yml` declares for the tier. It refuses a run above it, and it refuses one whose probes name an oracle this engine does not carry or a predicate over no document.",
+                description: "Fix the six members of the run identity that exist before a run, and project the sessions against the ceiling that `.headwater/probe.yml` declares for the tier. It refuses a run above it, one whose probes name an oracle this engine does not carry or a predicate over no document, and one whose probe names a document that the tier's own absent arm removes.",
             },
             Word {
                 name: "record",

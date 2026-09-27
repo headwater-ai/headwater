@@ -61,6 +61,7 @@ The rest wait, because the engine does not reach them yet. Each entry keeps the 
 - [HW-OBL-0015](../obligations/0015-imported-edge-staleness-is-unmeasured-against-scaffolded-edges.md) — Imported edge staleness is unmeasured against scaffolded edges
 - [HW-OBL-0016](../obligations/0016-a-cue-has-no-measured-effect-on-traversal-precision.md) — A cue has no measured effect on traversal precision
 - [HW-OBL-0017](../obligations/0017-publishing-the-read-set-skips-a-re-run-on-two-of-the-eighteen.md) — Publishing the read set skips a re-run on two of the eighteen merges where the question is live
+- [HW-OBL-0223](../obligations/0223-no-run-measures-whether-the-documents-under-docs-change-what-an-agent-builds.md) — No run measures whether the documents under docs change what an agent builds
 
 [HW-OBL-0005](../obligations/0005-a-closed-set-expectation-has-no-reproducibility-reading-under.md) is discharged and it is not in the list above. A second probe run over the same closed-set expectation gave it a reading at last, and the two runs disagreed. That disagreement is a reproducibility finding, measured rather than argued. It is not evidence that the grader is unsound, because the two sessions wrote the same word in a different format. The closed-set derivation correctly refused to read the two as one.
 
