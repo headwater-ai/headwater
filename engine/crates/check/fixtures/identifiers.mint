@@ -1,4 +1,4 @@
-17 schemes
+19 schemes
 
 decision_id
   pattern    {namespace}-DR-{seq:04d}
@@ -26,6 +26,16 @@ evaluation_id
   render     HW-EVAL-<slug>
   needs      slug
   mint       HW-EVAL-a-name
+  admits     true
+  sequence   -
+  refuses    false
+
+explanation_id
+  pattern    {namespace}-EXP-{slug}
+  namespace  HW
+  render     HW-EXP-<slug>
+  needs      slug
+  mint       HW-EXP-a-name
   admits     true
   sequence   -
   refuses    false
@@ -89,6 +99,16 @@ process_decision_id
   admits     true
   sequence   42
   refuses    true
+
+process_explanation_id
+  pattern    {namespace}-PEXP-{slug}
+  namespace  HW
+  render     HW-PEXP-<slug>
+  needs      slug
+  mint       HW-PEXP-a-name
+  admits     true
+  sequence   -
+  refuses    false
 
 register_id
   pattern    {namespace}-REG-{slug}

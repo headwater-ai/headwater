@@ -95,6 +95,7 @@ nav:
       - "Each release states in its notes the release digest that a consumer pins": "decisions/0090-each-release-states-in-its-notes-the-release-digest-that-a-consumer-pins.md"
       - "The runner image of the engine release build is written in the workflow because it sets the glibc floor": "decisions/0091-the-runner-image-of-the-engine-release-build-is-written-in-the-workflow-because-it-sets-the-glibc-floor.md"
       - "The citation comment of spec 5 is for an adopter's corpus, and this repository does not practice it on its own code": "decisions/0092-the-citation-comment-of-spec-5-is-for-an-adopter-s-corpus-and-this-repository-does-not-practice-it-on-its-own-code.md"
+      - "The live account of a domain is its own kind, split on the product and process line, and it draws on the records it cites": "decisions/0093-the-live-account-of-a-domain-is-its-own-kind-split-on-the-product-and-process-line-and-it-draws-on-the-records-it-cites.md"
       - "Harper does not become part of the engine now, and Q41 stands": "decisions/0096-harper-does-not-become-part-of-the-engine-now-and-q41-stands.md"
   - "Acceptance criteria":
       - "Acceptance criteria": "acceptance-criteria/README.md"
@@ -446,6 +447,9 @@ nav:
       - "A router sends a push or merge group run to a hosted runner when the self-hosted pool is full, and it can only take work away": "process/decisions/0018-a-router-sends-a-push-or-merge-group-run-to-a-hosted-runner-when-the-self-hosted-pool-is-full-and-it-can-only-take-work-away.md"
       - "CI runs actions from the actions organization only, and carries no build state between self-hosted jobs": "process/decisions/0019-ci-runs-actions-from-the-actions-organization-only-and-carries-no-build-state-between-self-hosted-jobs.md"
       - "Merges go through the GitHub merge queue, one squash commit per pull request": "process/decisions/0020-merges-go-through-the-github-merge-queue-one-squash-commit-per-pull-request.md"
+  - "Process explanations":
+      - "Process explanations": "process/explanations/README.md"
+      - "Where a CI job runs": "process/explanations/where-a-ci-job-runs.md"
   - "Requirements":
       - "Requirements": "requirements/README.md"
       - "The engine reaches no network at check time": "requirements/0001-the-engine-reaches-no-network-at-check-time.md"

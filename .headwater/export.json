@@ -2350,19 +2350,22 @@
           "id": "HW-DR-0082",
           "status": "current",
           "status_since": "2026-09-24",
-          "summary": "`headwater taxonomy graph` prints the resolved taxonomy from the lock as a Mermaid flowchart, and no projection, explain format or export target draws it",
-          "last_verified": "2026-09-25",
+          "summary": "`headwater taxonomy graph` prints the resolved taxonomy as a Mermaid flowchart, no projection or export target draws it, and D2 and DOT are equal candidates after it",
+          "last_verified": "2026-09-27",
           "title": "The resolved taxonomy is drawn by a verb that prints Mermaid and writes no file",
           "provenance": {
             "warrant": "asserted",
             "agency": "agent",
             "drafted_by": "claude-opus-5.5",
-            "activity": "draft",
+            "activity": "draft+revise",
             "evidence_basis": "evidenced"
           },
           "relations": {
             "governs": [
-              "engine/crates/cli/src/taxonomy_graph.rs"
+              {
+                "to": "engine/crates/cli/src/taxonomy_graph.rs",
+                "verified_revision": "sha256:3231a0b4cf0a9089d889fe1e3c3885c2b6f337bdba6645990aa5f4ea52633444"
+              }
             ]
           }
         }
@@ -2500,7 +2503,7 @@
           "status": "current",
           "status_since": "2026-09-26",
           "summary": "The six-sentence paragraph defect is retired before it lands. 50 of 60 sampled paragraphs past six sentences held one topic, so the count misses what rule 6.5 asks, and no word count replaces it.",
-          "last_verified": "2026-09-26",
+          "last_verified": "2026-09-27",
           "title": "No paragraph limit joins the language rule, because most paragraphs past six sentences hold one topic",
           "provenance": {
             "warrant": "accepted",
@@ -2517,7 +2520,7 @@
             "governs": [
               {
                 "to": "engine/crates/check/src/language.rs",
-                "verified_revision": "sha256:4ed3b112c0e9c08ba9264da27070a07ce958e666a85a085cb591131e52c01bac"
+                "verified_revision": "sha256:073ae8e5e761b16b06ebcde6daee30857483ef016e69d6c00e627d558ace4122"
               }
             ],
             "traces_to": [
@@ -2687,6 +2690,27 @@
             "traces_to": [
               "HW-SPEC-ai-integration"
             ]
+          }
+        }
+      },
+      {
+        "path": "docs/decisions/0093-the-live-account-of-a-domain-is-its-own-kind-split-on-the-product-and-process-line-and-it-draws-on-the-records-it-cites.md",
+        "kind": "decision",
+        "id": "HW-DR-0093",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-DR-0093",
+          "status": "current",
+          "status_since": "2026-09-27",
+          "summary": "explanation and process_explanation state what holds now across one domain, and draws_on reports an account whose source decision ends.",
+          "last_verified": "2026-09-27",
+          "title": "The live account of a domain is its own kind, split on the product and process line, and it draws on the records it cites",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5.5",
+            "activity": "draft",
+            "evidence_basis": "reconstructed"
           }
         }
       },
@@ -10900,6 +10924,52 @@
         }
       },
       {
+        "path": "docs/process/explanations/where-a-ci-job-runs.md",
+        "kind": "process_explanation",
+        "id": "HW-PEXP-where-a-ci-job-runs",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-PEXP-where-a-ci-job-runs",
+          "status": "current",
+          "status_since": "2026-09-27",
+          "summary": "A push or a merge queue run can use the self-hosted pool when CI_RUNNER opts in and the pool has room. A pull request from a fork runs on a hosted runner, and one from a branch here is skipped.",
+          "last_verified": "2026-09-27",
+          "title": "Where a CI job runs",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5.5",
+            "activity": "draft",
+            "evidence_basis": "reconstructed"
+          },
+          "relations": {
+            "draws_on": [
+              {
+                "to": "HW-PD-0013"
+              },
+              {
+                "to": "HW-PD-0014"
+              },
+              {
+                "to": "HW-PD-0015"
+              },
+              {
+                "to": "HW-PD-0016"
+              },
+              {
+                "to": "HW-PD-0017"
+              },
+              {
+                "to": "HW-PD-0018"
+              },
+              {
+                "to": "HW-PD-0019"
+              }
+            ]
+          }
+        }
+      },
+      {
         "path": "docs/requirements/0001-the-engine-reaches-no-network-at-check-time.md",
         "kind": "requirement",
         "id": "HW-REQ-0001",
@@ -14852,6 +14922,9 @@
           "anchor_kind": "code_path",
           "id": "engine/crates/cli/src/taxonomy_graph.rs",
           "resolver": "source-tree"
+        },
+        "attributes": {
+          "verified_revision": "sha256:3231a0b4cf0a9089d889fe1e3c3885c2b6f337bdba6645990aa5f4ea52633444"
         }
       },
       {
@@ -15033,7 +15106,7 @@
           "resolver": "source-tree"
         },
         "attributes": {
-          "verified_revision": "sha256:4ed3b112c0e9c08ba9264da27070a07ce958e666a85a085cb591131e52c01bac"
+          "verified_revision": "sha256:073ae8e5e761b16b06ebcde6daee30857483ef016e69d6c00e627d558ace4122"
         }
       },
       {
@@ -20280,6 +20353,83 @@
         },
         "attributes": {
           "verified_revision": "sha256:c85c8ec0e3240a77e5e6ded53daad36b5d5fe005e2a29a30ef6144b0b548ad0e"
+        }
+      },
+      {
+        "source": "docs/process/explanations/where-a-ci-job-runs.md",
+        "relation": "draws_on",
+        "written_as": "draws_on",
+        "target": {
+          "bound": "document",
+          "id": "HW-PD-0013",
+          "path": "docs/process/decisions/0013-self-hosted-eligibility-in-ci-is-decided-by-the-event-alone-and-a-push-to-any-branch-is-eligible.md",
+          "kind": "process_decision"
+        }
+      },
+      {
+        "source": "docs/process/explanations/where-a-ci-job-runs.md",
+        "relation": "draws_on",
+        "written_as": "draws_on",
+        "target": {
+          "bound": "document",
+          "id": "HW-PD-0014",
+          "path": "docs/process/decisions/0014-the-boundary-against-a-fork-is-the-approval-of-outside-runs-and-a-person-reads-a-github-diff-before-approving-one.md",
+          "kind": "process_decision"
+        }
+      },
+      {
+        "source": "docs/process/explanations/where-a-ci-job-runs.md",
+        "relation": "draws_on",
+        "written_as": "draws_on",
+        "target": {
+          "bound": "document",
+          "id": "HW-PD-0015",
+          "path": "docs/process/decisions/0015-a-condition-in-ci-may-take-work-away-and-never-grant-it-so-one-run-per-commit-comes-from-a-job-level-if.md",
+          "kind": "process_decision"
+        }
+      },
+      {
+        "source": "docs/process/explanations/where-a-ci-job-runs.md",
+        "relation": "draws_on",
+        "written_as": "draws_on",
+        "target": {
+          "bound": "document",
+          "id": "HW-PD-0016",
+          "path": "docs/process/decisions/0016-ci-runner-is-an-opt-in-that-only-a-push-or-a-merge-group-reads-and-an-unset-value-falls-back-to-ubuntu-latest.md",
+          "kind": "process_decision"
+        }
+      },
+      {
+        "source": "docs/process/explanations/where-a-ci-job-runs.md",
+        "relation": "draws_on",
+        "written_as": "draws_on",
+        "target": {
+          "bound": "document",
+          "id": "HW-PD-0017",
+          "path": "docs/process/decisions/0017-ci-concurrency-is-per-ref-and-every-ref-but-main-cancels-a-superseded-run.md",
+          "kind": "process_decision"
+        }
+      },
+      {
+        "source": "docs/process/explanations/where-a-ci-job-runs.md",
+        "relation": "draws_on",
+        "written_as": "draws_on",
+        "target": {
+          "bound": "document",
+          "id": "HW-PD-0018",
+          "path": "docs/process/decisions/0018-a-router-sends-a-push-or-merge-group-run-to-a-hosted-runner-when-the-self-hosted-pool-is-full-and-it-can-only-take-work-away.md",
+          "kind": "process_decision"
+        }
+      },
+      {
+        "source": "docs/process/explanations/where-a-ci-job-runs.md",
+        "relation": "draws_on",
+        "written_as": "draws_on",
+        "target": {
+          "bound": "document",
+          "id": "HW-PD-0019",
+          "path": "docs/process/decisions/0019-ci-runs-actions-from-the-actions-organization-only-and-carries-no-build-state-between-self-hosted-jobs.md",
+          "kind": "process_decision"
         }
       },
       {
