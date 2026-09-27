@@ -77,6 +77,9 @@ fn fixtures_dir() -> PathBuf {
 }
 
 struct Built {
+    /// The root the fixture corpus was read from, which the server reads a
+    /// path argument against.
+    root: PathBuf,
     census: Census,
     /// No store under the fixture tree, so this is empty. The server takes one
     /// as a check run does, and empty is a real answer rather than a stand-in.
@@ -124,6 +127,7 @@ fn fixture_tree_at(at: &Path) -> Built {
         &Config::default(),
     );
     Built {
+        root: at.to_path_buf(),
         census,
         claims: headwater_check::claim::Claims::at(at),
         graph,
@@ -173,6 +177,7 @@ impl Built {
             surface: self.surface(),
             census: &self.census,
             graph: &self.graph,
+            root: &self.root,
             declared: self.declared(),
             claims: &self.claims,
             package: "query-fixture",
@@ -825,6 +830,92 @@ fn resolve_identifier_over_the_wire_states_the_untyped_path_and_never_repeats_th
     assert_eq!(
         text,
         "no typed document carries SPEC-FIX-orphan; query/notes/orphan.md carries it, untyped\n"
+    );
+}
+
+/// [#1227](https://github.com/headwater-ai/headwater/issues/1227): the
+/// `explain` tool reads a path the way `headwater explain` does. `./x` and an
+/// absolute path under the root the server was started over explain the
+/// document `x` names, and a path that leaves the repository is refused as
+/// outside it rather than as a document this corpus lacks.
+#[test]
+fn the_explain_tool_reads_every_spelling_of_a_path_and_refuses_one_outside_the_repository() {
+    let built = fixture_tree();
+    let server = built.server(RECORDED_AT);
+    let asked = |target: &str| {
+        content(&once(
+            &server,
+            &calling("explain", &format!(r#"{{"target":"{target}"}}"#)),
+        ))
+        .concat()
+    };
+    let document = "query/specs/api-design.md";
+    let plain = asked(document);
+    assert!(
+        plain.contains(document) && !plain.contains("is not a document of this corpus"),
+        "the plain path explains the document: {plain}"
+    );
+    let absolute = built.root.join(document).display().to_string();
+    for target in [
+        format!("./{document}"),
+        format!("query/../{document}"),
+        absolute,
+    ] {
+        assert_eq!(asked(&target), plain, "`{target}` explains `{document}`");
+    }
+    for target in ["../outside.md", "/etc/passwd"] {
+        let refused = asked(target);
+        assert!(
+            refused.contains("is outside this repository"),
+            "`{target}` is refused as outside this repository: {refused}"
+        );
+    }
+
+    // A `./` spelling is a path and never an identifier, as in the verb.
+    assert!(
+        !asked("SPEC-FIX-api").contains("is not a document of this corpus"),
+        "the identifier resolves bare"
+    );
+    assert_eq!(
+        asked("./SPEC-FIX-api"),
+        "./SPEC-FIX-api is not a document of this corpus\n",
+        "`./SPEC-FIX-api` names a path, and no document is written there"
+    );
+}
+
+/// The same reading under a relative root, which is what `headwater mcp
+/// --root .` hands the server. Cargo runs this target from the crate
+/// directory, so `fixtures` is the fixture tree. An absolute argument is
+/// compared with that root made absolute, and a server that compared it
+/// with `fixtures` as written would refuse it as outside the repository.
+#[test]
+fn the_explain_tool_reads_an_absolute_path_under_a_relative_root() {
+    let built = fixture_tree();
+    let relative = Path::new("fixtures");
+    assert_eq!(
+        relative.canonicalize().expect("the fixture tree is there"),
+        fixtures_dir()
+            .canonicalize()
+            .expect("the fixture tree is there"),
+        "the test runs from the crate directory"
+    );
+    let server = Server {
+        root: relative,
+        ..built.server(RECORDED_AT)
+    };
+    let asked = |target: &str| {
+        content(&once(
+            &server,
+            &calling("explain", &format!(r#"{{"target":"{target}"}}"#)),
+        ))
+        .concat()
+    };
+    let document = "query/specs/api-design.md";
+    let absolute = fixtures_dir().join(document).display().to_string();
+    assert_eq!(
+        asked(&absolute),
+        asked(document),
+        "`{absolute}` explains `{document}` under the root `fixtures`"
     );
 }
 
