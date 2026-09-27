@@ -276,6 +276,12 @@ fn one_word(line: &str) -> bool {
 /// The three assertions after the comparison hold the instrument rather than the
 /// subject, and they run whether or not `HEADWATER_BLESS` rewrote the file. A
 /// blessed regression to one long line fails on the first of them.
+///
+/// **The recorded file was recorded against this width.** Move `WIDTH` without
+/// re-recording and `compare` fails, which makes the constant a source the
+/// fixture is derived from rather than a number written beside it. This case is
+/// the only one that names the recorded file: a second case that read the file
+/// raced this one's blessed write, which truncates before it writes (#1162).
 #[test]
 fn the_report_wraps_every_line_to_the_width() {
     let rendered = subject().render(headwater_check::paint::ColorMode::Plain);
@@ -293,15 +299,18 @@ fn the_report_wraps_every_line_to_the_width() {
     );
 
     // The fill is tight. A width of 20 would satisfy the bound above and fail
-    // here, so the bound alone is not what this file holds.
+    // here, so the bound alone is not what this file holds. A line of one word
+    // is not a line the fill chose, so it does not count: one long word must not
+    // hide a fill that stops short on every other line.
     let longest = rendered
         .lines()
+        .filter(|line| !one_word(line))
         .map(|line| line.chars().count())
         .max()
-        .expect("the report has lines");
+        .expect("the report has lines of more than one word");
     assert!(
         longest > WIDTH - 12,
-        "the longest line is {longest} of {WIDTH}, so the fill is not reaching the width"
+        "the longest line of more than one word is {longest} of {WIDTH}, so the fill is not reaching the width"
     );
 
     // The remediation of `pin.current` is demonstrably filled rather than
@@ -543,30 +552,6 @@ conformance:
     assert!(
         !rendered.contains(&joined),
         "the fill ran two lines of one title together:\n{rendered}"
-    );
-}
-
-/// **The recorded file was recorded against this width.**
-///
-/// Move `WIDTH` without re-recording and this fails, which makes the constant a
-/// source the fixture is derived from rather than a number written beside it.
-#[test]
-fn the_recorded_block_is_the_one_this_width_produces() {
-    let recorded = std::fs::read_to_string(fixtures_dir().join("wrapped.report"))
-        .expect("the recorded expectation");
-    let longest = recorded
-        .lines()
-        .filter(|line| !one_word(line))
-        .map(|line| line.chars().count())
-        .max()
-        .expect("the recorded block has lines");
-    assert!(
-        longest <= WIDTH,
-        "the recorded block carries a {longest}-character line, over a width of {WIDTH}"
-    );
-    assert!(
-        longest > WIDTH - 12,
-        "the recorded block reaches only {longest} of {WIDTH}, so it was recorded at another width"
     );
 }
 

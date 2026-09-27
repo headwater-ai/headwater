@@ -1,0 +1,2 @@
+{"jsonrpc":"2.0","id":1,"result":{"protocolVersion":"2024-11-05","capabilities":{"tools":{"listChanged":false}},"serverInfo":{"name":"headwater","version":"0.4.0"}}}
+{"jsonrpc":"2.0","id":2,"error":{"code":-32602,"message":"`nosuch` is not a tool this server registers. It registers route, explain, related, resolve_identifier, governing_docs_for_path, check, and it registers no tool that writes."}}

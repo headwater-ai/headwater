@@ -270,6 +270,29 @@ jobs:
         # outside its `cfg` breaks the build a distributor makes without it.
         run: cargo build -p headwater-cli --no-default-features --locked
         working-directory: engine
+      - name: The binary without the fetch refuses a location
+        # A build is not a behavior. `crates/cli/tests/no_fetch.rs` compiles
+        # only without the `fetch` feature, so the workspace run below never
+        # reaches it, and this step runs it by name. Its cases hold that
+        # `taxonomy vendor` answers `https://` and `HTTP://` with the refusal
+        # that names the path form, and writes nothing (#1113).
+        run: cargo test -p headwater-cli --no-default-features --locked --test no_fetch
+        working-directory: engine
+      - name: The fetch crate stays out of the binary without the fetch
+        # The feature is the only edge from `headwater-cli` to
+        # `headwater-fetch`. A second edge, such as a dependency made
+        # non-optional or a feature that names it, would link the socket back
+        # into the build a distributor makes without it, and the build above
+        # would still pass. The tree goes to a file rather than a pipe, so a
+        # failed `cargo tree` fails the step on its own exit status instead of
+        # reading as an empty tree that `grep` then passes.
+        run: |
+          cargo tree -e normal --no-default-features -p headwater-cli --locked > "$RUNNER_TEMP/no-fetch-tree.txt"
+          if grep -q headwater-fetch "$RUNNER_TEMP/no-fetch-tree.txt"; then
+            echo "headwater-fetch reaches the binary built without the fetch feature"
+            exit 1
+          fi
+        working-directory: engine
       - name: The second implementation of SHA-256 the cross-check runs against
         # `crates/hash/tests/oracle.rs` holds this engine's SHA-256 against
         # `sha256sum`. The package digest of a fetched artifact is computed with
@@ -746,6 +769,18 @@ jobs:
         # second is the one a presence grep would pass. It writes only under a
         # temporary directory.
         run: sh tools/site/site-canonical-fixtures.sh
+      - name: The APT fetch serves one release whole or stops the site build
+        # `tools/site/fetch-apt.sh` decides in the Cloudflare build whether
+        # headwater.tools serves an APT repository (HW-DR-0094). Its fixtures
+        # serve releases from a local server: a whole one, files of two
+        # releases, a missing file, and a server that never answers. Each mix
+        # is a repository apt refuses, so the script must stop the build. On
+        # a hosted runner the fixtures sign each release with `gpg`. The
+        # self-hosted runner has no `gpg` and no `sudo`, so there they write
+        # the clearsign armor themselves around a block that is not a
+        # signature. `fetch-apt.sh` verifies no signature, so both forms test
+        # it (#764).
+        run: sh tools/site/fetch-apt-fixtures.sh
       - name: The crawler files are what the committed pages say
         # `tools/site/refresh-crawler-files.sh` derives `site/llms.txt`,
         # `site/robots.txt` and `site/sitemap.xml` from the `<title>`, the
@@ -1465,6 +1500,26 @@ jobs:
         # It needs `python3` and nothing else: no engine, no network, no
         # corpus, and it writes nothing under this checkout.
         run: sh tools/repo/integrations-fixtures.sh
+      - name: The Node runtime the VS Code client's suite runs on
+        # `integrations/vscode` has no npm dependency and no build step, so
+        # this is all the suite below needs. Pinned to one major version so
+        # the hosted and the self-hosted runner run the same `node --test`.
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: The VS Code client reads the built engine's answers and stays silent on every failure
+        # `integrations/vscode`, #497's extension, is packaged surface like
+        # `integrations/headwater-check`: a client of `headwater mcp` that
+        # calls the query class alone. Its suite holds `client.js`, the one
+        # file of the extension that decides anything. One case spawns the
+        # engine this job built, with `--root` at this checkout, and reads
+        # the pointer shape `docs/interfaces/headwater-mcp.md` states as the
+        # wire format. That case fails, rather than skips, when `CI` is set
+        # and `HEADWATER_BIN` is not. The other cases replay recorded
+        # sessions. It writes only under a temporary directory.
+        env:
+          HEADWATER_BIN: ${{ github.workspace }}/engine/target/release/headwater
+        run: node --test integrations/vscode/test/client.test.js
       - name: The composition demonstration reports the one finding it claims
         # `docs/taxonomies/diataxis/fixtures/README.md` records what happens
         # when the `reader_mode` facet of one library entry is read over
