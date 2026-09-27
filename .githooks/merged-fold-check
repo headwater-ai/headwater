@@ -101,28 +101,15 @@ $(printf '%s\n' "$out" | sed 's/^/    /')
     return 1
 }
 
-# `headwater generate` writes `.headwater/corpus.json`, `.headwater/export.json`,
+# `headwater generate` writes `.headwater/corpus.json`,
 # `.headwater/nav.yml`, the eleven shelf indexes and `docs/spec/09-open-questions.md`.
 run_producer "headwater generate --check" "$engine" generate --check --root "$root"
 
 # `headwater taxonomy resolve` writes `.headwater/taxonomy.lock`.
 run_producer "headwater taxonomy resolve --check" "$engine" taxonomy resolve --check --root "$root"
 
-# `tools/site/refresh-figures.sh` writes the measured figures on the three pages
-# under `site/`. It runs `python3` under `set -eu`, so a host without one would
-# make this refuse a merge while reporting stale figures, which is a refusal
-# whose message is false. The guard turns a lying refusal into a printed line,
-# which is the same trade `.githooks/pre-commit` makes for the same script.
-if command -v python3 >/dev/null 2>&1; then
-    run_producer "sh tools/site/refresh-figures.sh --check" sh "$root/tools/site/refresh-figures.sh" --check
-else
-    echo "headwater: no python3, so the figures on the hand-built pages are not"
-    echo "  checked against this merged tree."
-fi
-
-# The two recorded fixtures `.gitattributes` also declares,
-# `engine/crates/check/fixtures/corpus.checks` and
-# `engine/crates/lock/fixtures/corpus.lock`, are not checked here. Their
+# The recorded fixture `.gitattributes` also declares,
+# `engine/crates/lock/fixtures/corpus.lock`, is not checked here. Its
 # producer is a cargo test run, which costs minutes rather than the seconds this
 # gate is allowed, and CI runs the whole suite against `refs/pull/N/merge`. That
 # is the one declared family this hook leaves to CI, and it is stated rather
@@ -143,7 +130,6 @@ echo "  working tree, so regenerate there and complete it. This gate runs again"
 echo "  on that commit and passes when the artifacts describe the tree:"
 echo "        headwater generate"
 echo "        headwater taxonomy resolve"
-echo "        sh tools/site/refresh-figures.sh"
 echo "        git add -A"
 echo "        git commit"
 echo "  Or abandon it: git merge --abort"

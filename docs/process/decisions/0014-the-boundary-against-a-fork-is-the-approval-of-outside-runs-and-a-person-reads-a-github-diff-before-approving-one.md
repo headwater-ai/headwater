@@ -3,7 +3,7 @@ id: HW-PD-0014
 status: current
 status_since: 2026-09-27
 summary: "No expression in ci.yml defends against a fork. The approval setting for outside contributors is the boundary, and the reader of a .github diff enforces it."
-last_verified: 2026-09-27
+last_verified: 2026-09-28
 title: "The boundary against a fork is the approval of outside runs, and a person reads a .github diff before approving one"
 provenance:
   warrant: asserted
@@ -14,7 +14,7 @@ provenance:
 relations:
   governs:
     - to: .github/workflows/ci.yml
-      verified_revision: sha256:9a388898944b9ec3a6af4f28b10c5d8d069b21bc1cb81b0e04bba1cbdf6cfb57
+      verified_revision: sha256:bba23da5697fa592fede0228b80be923bd44ab73d3b4b410c4db6564f72f88b8
 ---
 
 # The boundary against a fork is the approval of outside runs, and a person reads a .github diff before approving one

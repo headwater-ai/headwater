@@ -37,4 +37,9 @@
 # nothing of its own. HW-DR-0047 rules that this is the served directory.
 .headwater/site-deploy/
 
+# The whole graph, as `headwater export --format json` writes it. Only a build
+# step reads it, so the build step computes it. A committed copy moved on
+# nearly every pull request and conflicted on every pair of them (#1251).
+.headwater/export.json
+
 __pycache__/

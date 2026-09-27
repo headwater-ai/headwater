@@ -596,14 +596,14 @@ fn every_output_carries_its_own_marker() {
     }
 }
 
-/// This repository generates its twenty-six artifacts, and it says why for
+/// This repository generates its twenty-five artifacts, and it says why for
 /// everything else.
 ///
 /// A property and not a recording, for the reason the query crate states about
 /// its own repository run: the corpus is prose somebody edits. What is asserted
 /// is what a prose edit must not change.
 ///
-/// **Fifteen of the twenty-six are shelf indexes, one per shelf that holds a
+/// **Fifteen of the twenty-five are shelf indexes, one per shelf that holds a
 /// document.** The first is the decisions shelf, which the package has declared
 /// since the first-run walkthrough and which produced a reason rather than a
 /// file until #124 filled that shelf. The other fourteen are the overlay's own
@@ -619,15 +619,14 @@ fn every_output_carries_its_own_marker() {
 /// change that declared it (#1005), because that change put its first document
 /// on the shelf. Its sibling `explanations` holds none yet and gives a reason.
 ///
-/// **Six of the other eleven are one each, and five are one per committed
+/// **Five of the other ten are one each, and five are one per committed
 /// transcript.** The count in the name of this test therefore moves when a
 /// transcript lands on `docs/probe-runs/`, and this paragraph is the only
 /// thing that says so. The redirect map that the open-questions
 /// tombstone carries. The verb index #257 asked for, which reads the binary
 /// rather than the `interfaces` shelf and is why that shelf is absent from the
 /// index list above. The consumer surface page #1051 asked for, which reads
-/// the `surface` block of the taxonomy and no shelf. The graph export #414 names: the whole graph, for the
-/// reader Q16 draws with no principal to filter for. The site navigation
+/// the `surface` block of the taxonomy and no shelf. The site navigation
 /// HW-DR-0036 and #418 name: MkDocs's `nav:` over the reading order
 /// `by_precedence` derives. The descriptor, at the path Q14 fixes. And one
 /// probe result for each transcript the corpus holds, which is the five
@@ -647,7 +646,7 @@ fn every_output_carries_its_own_marker() {
 /// compares bytes, so a contributor who edits a `summary` and does not
 /// regenerate fails this test before CI runs.
 #[test]
-fn this_repository_generates_its_twenty_six_artifacts_and_accounts_for_the_rest() {
+fn this_repository_generates_its_twenty_five_artifacts_and_accounts_for_the_rest() {
     let root = repository_root();
     let resolved = headwater_resolve::repository(&root)
         .unwrap_or_else(|errors| panic!("{}", headwater_resolve::render_errors(&errors)));
@@ -731,13 +730,11 @@ fn this_repository_generates_its_twenty_six_artifacts_and_accounts_for_the_rest(
             "docs/probe-results/regression-probe-transcript-for-2026-09-17.md",
             "docs/interfaces/README.md",
             "docs/interfaces/consumer-surface.md",
-            ".headwater/export.json",
             ".headwater/nav.yml",
             descriptor::PATH
         ],
         "this repository writes an index for each of its fifteen shelves that hold a \
          document, then the redirect map, the verb index, the consumer surface page, the \
-         graph export, the \
          site navigation and the descriptor, in that order"
     );
     // Two declared shelves hold no document, `specifications` and
@@ -1099,6 +1096,108 @@ fn the_native_export_round_trips_the_graph() {
         .and_then(|node| node.value.as_seq())
         .expect("a loss set");
     assert!(losses.is_empty(), "the native export declared a loss");
+}
+
+/// A list anchor travels with its member patterns, and a single pattern with none.
+///
+/// [#1247](https://github.com/headwater-ai/headwater/issues/1247). A `governs`
+/// entry written as a flow list is one anchor over the union of its members
+/// ([HW-DR-0074](../../../../docs/decisions/0074-a-code-path-anchor-is-a-pattern-over-the-tree-and-it-binds-when-the-pattern-matches-at-least-one-entry.md)),
+/// and its `id` is the length-prefixed identity the graph encodes. A consumer
+/// of the export that read `id` as a path saw a path that matches no file, and
+/// one that split a joined string read the wrong members. So the anchor node
+/// and every edge onto it carry `patterns`, the sorted normalized members,
+/// beside the unchanged `id`. A single-pattern anchor carries no `patterns`,
+/// because its `id` is already its one pattern.
+///
+/// The second list holds `src/a, b.txt`, whose name holds `, `, the separator
+/// of the joined display string. An emitter that wrote the display string
+/// split on `, ` reads three members there and goes red.
+#[test]
+fn the_native_export_carries_the_members_of_a_list_anchor() {
+    let base = fixtures_dir().join("listanchor");
+    let corpus = Corpus::new(&base, "docs");
+    let root = load_map(&fixtures_dir().join("listanchor.taxonomy.yml"));
+    let built = Built::over(&corpus, &root);
+    let surface = built.surface();
+    let projections = Projections::read(&root).expect("the projections read");
+    let profile = projections.profile("default").expect("the default profile");
+    let emission = headwater_generate::export::emit(&surface, profile, Emitter::Json, None)
+        .expect("the native export emits");
+    let read = headwater_yaml::load(&emission.bytes).expect("the export reads back");
+    let map = read.value.as_map().expect("an object");
+    let graph = map
+        .get("graph")
+        .and_then(|node| node.value.as_map())
+        .expect("a graph");
+
+    let text = |entry: &Mapping, key: &str| -> Option<String> {
+        Some(entry.get(key)?.value.as_scalar()?.text.clone())
+    };
+    let patterns = |entry: &Mapping| -> Option<Vec<String>> {
+        Some(
+            entry
+                .get("patterns")?
+                .value
+                .as_seq()?
+                .iter()
+                .map(|item| item.value.as_scalar().expect("a pattern").text.clone())
+                .collect(),
+        )
+    };
+    let cases: [(&str, Option<Vec<&str>>); 4] = [
+        ("src/c.rs", None),
+        ("8:src/a.rs8:src/b.rs", Some(vec!["src/a.rs", "src/b.rs"])),
+        (
+            "12:src/a, b.txt8:src/c.rs",
+            Some(vec!["src/a, b.txt", "src/c.rs"]),
+        ),
+        // Three members, written out of order. An emitter that writes members
+        // for a list of exactly two, rather than for more than one, drops it.
+        (
+            "8:src/a.rs8:src/b.rs8:src/c.rs",
+            Some(vec!["src/a.rs", "src/b.rs", "src/c.rs"]),
+        ),
+    ];
+
+    let anchors: Vec<&Mapping> = graph
+        .get("anchors")
+        .and_then(|node| node.value.as_seq())
+        .expect("anchors")
+        .iter()
+        .map(|item| item.value.as_map().expect("an anchor object"))
+        .collect();
+    assert_eq!(
+        anchors.len(),
+        cases.len(),
+        "four governs entries are four anchor nodes, so the case is not vacuous"
+    );
+    let targets: Vec<&Mapping> = graph
+        .get("edges")
+        .and_then(|node| node.value.as_seq())
+        .expect("edges")
+        .iter()
+        .filter_map(|item| item.value.as_map()?.get("target")?.value.as_map())
+        .filter(|target| text(target, "bound").as_deref() == Some("anchor"))
+        .collect();
+    assert_eq!(targets.len(), cases.len(), "one governs edge per entry");
+
+    for (id, members) in &cases {
+        let expected: Option<Vec<String>> = members
+            .as_ref()
+            .map(|list| list.iter().map(|member| member.to_string()).collect());
+        for (place, entries) in [("graph.anchors[]", &anchors), ("edges[].target", &targets)] {
+            let entry = entries
+                .iter()
+                .find(|entry| text(entry, "id").as_deref() == Some(*id))
+                .unwrap_or_else(|| panic!("{place} holds no entry with id `{id}`"));
+            assert_eq!(
+                patterns(entry),
+                expected,
+                "{place} `{id}` carries the wrong `patterns`"
+            );
+        }
+    }
 }
 
 /// A filter withholds a document whole, and every edge that names it.
