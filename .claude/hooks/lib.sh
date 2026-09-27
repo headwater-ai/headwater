@@ -336,3 +336,75 @@ hw_governed_by_document() {
     fi
     return 0
 }
+
+# The engine's account of one path that a producer writes, or nothing and a
+# non-zero status when the path is not one (#1053). It prints two lines. The
+# first is the heading `headwater derived` writes over the path: the row, the
+# treatment and the reason, as `<row> — takes `<treatment>`, because <why>`.
+# The second is the command that rebuilds the path, and it is empty where no
+# producer rebuilds it.
+#
+# The report is read from `headwater derived`, an existing verb that takes no
+# path and has no `--json`, so this reads the rendered text over the whole tree
+# and picks out the one path. It reads only the section under the line `N paths
+# hold a record whose shape decides its merge`, and it matches a path line
+# exactly: `    <path>` or `    <path> — rerun with `<cmd>``. That is the
+# precedent `hw_ungoverned_in_scope` sets for `route` text. The engine pushes
+# one `format!` per line there and writes no color with no terminal, so no
+# line is folded. HW-OBL-0149 and #1058 are the caution: a reader of rendered
+# text breaks when the engine folds a line, and a fixture holds the shape.
+#
+# The exit status of the verb is ignored. It exits 1 on a disagreement and
+# outside a git repository, and the report it prints is valid in both cases.
+hw_derived_report() {
+    _engine=$(hw_engine) || return 1
+    _derived=$("$_engine" derived --root "$hw_root" 2>/dev/null)
+    [ -n "$_derived" ] || return 1
+    _found=$(printf '%s\n' "$_derived" | awk -v path="$1" '
+        /^[0-9]+ paths hold a record whose shape decides its merge$/ { on = 1; next }
+        !on { next }
+        /^  [^ ].* — takes `/ { head = substr($0, 3); next }
+        /^    / {
+            line = substr($0, 5)
+            if (line == path) { print head; print ""; exit }
+            prefix = path " — rerun with `"
+            if (index(line, prefix) == 1 && substr(line, length(line)) == "`") {
+                cmd = substr(line, length(prefix) + 1)
+                print head
+                print substr(cmd, 1, length(cmd) - 1)
+                exit
+            }
+            next
+        }
+        /^[^ ]/ { head = "" }')
+    [ -n "$_found" ] || return 1
+    printf '%s\n' "$_found"
+}
+
+# Whether `hw_root` is stopped part way through a merge, a rebase, a
+# cherry-pick or a revert, which is the state a conflict leaves (#1053). It
+# prints the operation's name, or nothing and a non-zero status.
+#
+# The git dir is the one of this worktree and not `hw_common_dir`: git writes
+# `MERGE_HEAD` and the rebase directories per worktree, so another worktree's
+# merge is not this one's. The test is one `rev-parse` and five `test -e`
+# calls, and it calls no engine, so a caller can make it on every call.
+hw_merge_state() {
+    _gitdir=$(git -C "$hw_root" rev-parse --git-dir 2>/dev/null) || return 1
+    [ -n "$_gitdir" ] || return 1
+    case $_gitdir in
+        /*) ;;
+        *) _gitdir="$hw_root/$_gitdir" ;;
+    esac
+    if [ -e "$_gitdir/MERGE_HEAD" ]; then printf 'merge'
+    elif [ -e "$_gitdir/rebase-merge" ] || [ -e "$_gitdir/rebase-apply" ]; then printf 'rebase'
+    elif [ -e "$_gitdir/CHERRY_PICK_HEAD" ]; then printf 'cherry-pick'
+    elif [ -e "$_gitdir/REVERT_HEAD" ]; then printf 'revert'
+    else return 1
+    fi
+}
+
+# The paths git reports as unmerged in `hw_root`, one per line, relative to it.
+hw_unmerged_paths() {
+    git -C "$hw_root" diff --name-only --diff-filter=U 2>/dev/null
+}
