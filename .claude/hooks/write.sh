@@ -41,6 +41,17 @@
 #                            from the code it rules. Every fact of this part
 #                            is read from `headwater explain --json`.
 #
+#                            A third part, in the same object: an edit to a
+#                            path that a producer writes names the row and the
+#                            treatment of its record and the command that
+#                            rebuilds it (#1053). Where this worktree is
+#                            stopped in a merge and the path is unmerged, it
+#                            says so, and names the rebuild on the merged tree
+#                            as the resolution. Every fact of this part is read
+#                            from `headwater derived`, through
+#                            `hw_derived_report`, which `derived.sh` shares
+#                            for the conflict moment.
+#
 #   PostToolUse Write|Edit   one line, or nothing. The line names each
 #                            governing edge of the edited path that the edit
 #                            left suspect: the edge records a
@@ -110,11 +121,12 @@ case $path in
 esac
 
 # The impact advisory, on standard output, or nothing. It is one JSON object
-# with up to two parts, worded for an edit that has not happened yet. The
+# with up to three parts, worded for an edit that has not happened yet. The
 # forward part names the documents that govern the path. The reverse part,
 # for a path that is itself a document, names the code paths it governs and
-# the documents that declare an edge onto it (#1008). Either part can be
-# absent, and a call with neither prints nothing.
+# the documents that declare an edge onto it (#1008). The derived part, for a
+# path a producer writes, names its record and its rebuild command (#1053).
+# Any part can be absent, and a call with none prints nothing.
 advise() {
     advisory=
     named=
