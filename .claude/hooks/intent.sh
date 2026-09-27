@@ -48,8 +48,16 @@
 # no vector: the task, the route document as `route` wrote it, and whether the
 # pointers it offered reached the agent.
 #
-# `hw_shadow_log`, below, is the whole of it. It runs once `route` has already
-# answered, so a corpus this cannot log for is a corpus this hook still routes
+# `hw_shadow_log`, below, is the whole of it. It runs once the engine is found,
+# the input parses and the prompt is not an envelope, on every exit after that
+# point: a `route` that fails, or a route document with no `pointers` count,
+# writes a line with `"route":null` and a `"skip"` member naming the reason
+# (`route_failed`, `no_pointers_count`), and a routed prompt writes
+# `"skip":null`. Until #917 those two exits were silent and wrote nothing, so a
+# person prompt they ended could not be told from one the hook never saw. The
+# exits before that point stay unlogged: with no engine the input cannot be
+# read (HW-DR-0055), and HW-DR-0064 puts that checkout outside the population.
+# So a corpus this cannot log for is a corpus this hook still routes
 # for exactly as before it existed: the function only ever adds a write to a
 # file nobody reads back here, and never a line of output or a changed exit
 # status. It fails open the same way every read in this file already does,
@@ -164,12 +172,20 @@ hw_shadow_log() {
     _probe_session_q=$(hw_quote "$_probe_session") || _probe_session_q='""'
     _root_q=$(hw_quote "$hw_root") || return 0
     _task_q=$(hw_quote "$task") || return 0
-    _route_q=$(hw_quote "$route") || return 0
+    # A skipped prompt carries no route document, and `null` says so rather
+    # than a quoted empty string a reader could take for one.
+    if [ -n "${skip:-}" ]; then
+        _route_q=null
+        _skip_q=$(hw_quote "$skip") || return 0
+    else
+        _route_q=$(hw_quote "$route") || return 0
+        _skip_q=null
+    fi
     _version_q=$(hw_quote "$_version") || _version_q='""'
     _lock_q=$(hw_quote "$_lock") || _lock_q='""'
 
-    _line=$(printf '{"at":"%s","session":%s,"prompt_id":%s,"probe_session":%s,"corpus_root":%s,"engine_version":%s,"lock_digest":%s,"task":%s,"injected":%s,"route":%s%s}' \
-        "$_at" "$_session_q" "$_prompt_id_q" "$_probe_session_q" "$_root_q" "$_version_q" "$_lock_q" "$_task_q" "$injected" "$_route_q" "$_embedding") || return 0
+    _line=$(printf '{"at":"%s","session":%s,"prompt_id":%s,"probe_session":%s,"corpus_root":%s,"engine_version":%s,"lock_digest":%s,"task":%s,"injected":%s,"skip":%s,"route":%s%s}' \
+        "$_at" "$_session_q" "$_prompt_id_q" "$_probe_session_q" "$_root_q" "$_version_q" "$_lock_q" "$_task_q" "$injected" "$_skip_q" "$_route_q" "$_embedding") || return 0
 
     # The brace group is what keeps this silent, and not a stylistic choice: a
     # bare `printf ... >> "$_file" 2>/dev/null` still leaks "cannot create" to
@@ -184,6 +200,9 @@ hw_shadow_log() {
 
 input=$(cat)
 engine=$(hw_engine) || exit 0
+# Every read below uses this binary, including the ones after `hw_root` is
+# corrected to a worktree that may hold no build of its own.
+hw_engine_pin=$engine
 
 task=$(hw_field "$input" user_input) || task=$(hw_field "$input" prompt) || exit 0
 [ -n "$task" ] || exit 0
@@ -216,17 +235,27 @@ esac
 # argument this correction has to reach before the call is made.
 hw_root=$(hw_resolve_root "$input")
 
-route=$("$engine" route --root "$hw_root" --json "$task" 2>/dev/null) || exit 0
+skip=
+injected=false
+route=$("$engine" route --root "$hw_root" --json "$task" 2>/dev/null) || {
+    skip=route_failed
+    hw_shadow_log
+    exit 0
+}
 
 # Two reads of one document, and the same engine that wrote it reads it back.
 # `pointers` is written on every run and written empty where the route had
 # nothing to offer, so the count is the decision and the emptiness is a result
 # rather than a failure. A route that offered something then hands back the
 # rendering it wrote. Every other way this can fail — a document that will not
-# parse, a member that is not there, no built engine — leaves the substitution
-# empty or its status non-zero, and both of those end the hook with the prompt
-# untouched.
-pointers=$(hw_count "$route" pointers) || exit 0
+# parse, a member that is not there — leaves the substitution empty or its
+# status non-zero, and both of those end the hook with the prompt untouched and
+# a line that names the skip.
+pointers=$(hw_count "$route" pointers) || {
+    skip=no_pointers_count
+    hw_shadow_log
+    exit 0
+}
 
 # `report` and `injected` are worked out here, ahead of the shadow-log write
 # below, rather than at the two early exits the rest of this hook used before
