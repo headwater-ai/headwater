@@ -34,6 +34,10 @@
 #   renamed  base file renamed with no edit: base line 7 pairs with the
 #            renamed file's line 7 (old), and a same-key finding at line 31,
 #            below the line the change inserted at 30, is new
+#   twice    one finding raised twice at one position (the engine emits such
+#            pairs: two identical code spans on one line), where the base
+#            raised it once: one copy is new and listed, and one is old and
+#            counted, so a match compared as a set calls both old
 #
 # Usage: python3 report-filters.py
 # Exits 0 when every case holds, 1 otherwise. Writes only under a temporary
@@ -56,6 +60,7 @@ MOVED = "docs/decisions/0021-moved.md"
 EDITED = "docs/decisions/0022-edited.md"
 RENAMED_OLD = "docs/decisions/0023-before.md"
 RENAMED_NEW = "docs/decisions/0024-after.md"
+TWICE_DOC = "docs/decisions/0025-twice.md"
 
 
 def finding(rule, path, message, line=5, escape="none", severity="error"):
@@ -92,6 +97,7 @@ EDITED_NOW = finding(K, EDITED, "EDITED-KEY", line=20)
 RENAMED_BASE = finding(K, RENAMED_OLD, "RENAMED-KEY", line=7)
 RENAMED_OLD_NOW = finding(K, RENAMED_NEW, "RENAMED-KEY", line=7)
 RENAMED_NEW_NOW = finding(K, RENAMED_NEW, "RENAMED-KEY", line=31)
+TWICE = finding("surface.local_path.instructed", TWICE_DOC, "RAISED-TWICE", line=46)
 
 DIFF = f"""diff --git a/{DUP} b/{DUP}
 --- a/{DUP}
@@ -146,10 +152,10 @@ def route(path, doc, ident):
 def main():
     current = engine_order(
         [ESCAPED, OLD_KEPT, OLD_GONE, OLD_FAR, NEW_FAR, OLD_SHARED, DUP_NEW_12, DUP_OLD_40, MOVED_NOW, EDITED_NOW,
-         RENAMED_OLD_NOW, RENAMED_NEW_NOW]
+         RENAMED_OLD_NOW, RENAMED_NEW_NOW, TWICE, dict(TWICE)]
     )
     base = engine_order(
-        [ESCAPED, OLD_KEPT, OLD_GONE, OLD_FAR, OLD_SHARED, DUP_BASE_40, MOVED_BASE, EDITED_BASE, RENAMED_BASE]
+        [ESCAPED, OLD_KEPT, OLD_GONE, OLD_FAR, OLD_SHARED, DUP_BASE_40, MOVED_BASE, EDITED_BASE, RENAMED_BASE, TWICE]
     )
     with tempfile.TemporaryDirectory() as work:
         write(os.path.join(work, "changed.txt"), "src/a.rs\n")
@@ -209,16 +215,18 @@ def main():
     expect_listed("edited", EDITED, 20, new=True)
     expect_unlisted("renamed", RENAMED_NEW, 7)
     expect_listed("renamed", RENAMED_NEW, 31, new=True)
-    # Old and elsewhere: OLD_FAR, OLD_SHARED, DUP 40, MOVED 13, RENAMED 7.
-    if "5 more finding(s) stood before this change" not in owed:
-        failed.append("count: the old findings elsewhere are not counted as 5")
+    expect_listed("twice", TWICE_DOC, 46, new=True)
+    # Old and elsewhere: OLD_FAR, OLD_SHARED, DUP 40, MOVED 13, RENAMED 7,
+    # and one copy of TWICE.
+    if "6 more finding(s) stood before this change" not in owed:
+        failed.append("count: the old findings elsewhere are not counted as 6")
 
     for f in failed:
         print(f"FAIL {f}", file=sys.stderr)
     if failed:
         print(text, file=sys.stderr)
         return 1
-    print("report-filters: escape, reach, kept, gone, collide, dup, moved, edited and renamed each hold")
+    print("report-filters: escape, reach, kept, gone, collide, dup, moved, edited, renamed and twice each hold")
     return 0
 
 
