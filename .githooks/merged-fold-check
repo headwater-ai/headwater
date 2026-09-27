@@ -101,7 +101,7 @@ $(printf '%s\n' "$out" | sed 's/^/    /')
     return 1
 }
 
-# `headwater generate` writes `.headwater/corpus.json`, `.headwater/export.json`,
+# `headwater generate` writes `.headwater/corpus.json`,
 # `.headwater/nav.yml`, the eleven shelf indexes and `docs/spec/09-open-questions.md`.
 run_producer "headwater generate --check" "$engine" generate --check --root "$root"
 
@@ -120,9 +120,8 @@ else
     echo "  checked against this merged tree."
 fi
 
-# The two recorded fixtures `.gitattributes` also declares,
-# `engine/crates/check/fixtures/corpus.checks` and
-# `engine/crates/lock/fixtures/corpus.lock`, are not checked here. Their
+# The recorded fixture `.gitattributes` also declares,
+# `engine/crates/lock/fixtures/corpus.lock`, is not checked here. Its
 # producer is a cargo test run, which costs minutes rather than the seconds this
 # gate is allowed, and CI runs the whole suite against `refs/pull/N/merge`. That
 # is the one declared family this hook leaves to CI, and it is stated rather

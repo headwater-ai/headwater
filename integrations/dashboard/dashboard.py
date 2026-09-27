@@ -2,7 +2,7 @@
 """Render a read-only dashboard page from a Headwater `graph_export` JSON file.
 
     python3 integrations/dashboard/dashboard.py \\
-        --export .headwater/export.json [--tree <checkout>] [--out dashboard.html]
+        --export export.json [--tree <checkout>] [--out dashboard.html]
 
 The input is the `json` target of a `graph_export` profile at
 `export_version` 1.1 or later. The output is one self-contained HTML page with

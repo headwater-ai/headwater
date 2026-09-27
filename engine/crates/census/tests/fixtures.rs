@@ -291,7 +291,7 @@ fn every_page_carrying_a_figure_is_declared_unmergeable() {
         .filter_map(|line| line.split_whitespace().next())
         .collect();
     assert!(
-        declared.len() > 5,
+        declared.len() >= 5,
         "only {} paths declare the driver, so this proves nothing",
         declared.len()
     );
@@ -785,7 +785,9 @@ fn a_planted_producer_output_and_a_planted_orphan_are_both_reported() {
 
 /// A recorded fixture is a member only where its opening states a fold.
 ///
-/// This is the rule that separates `corpus.checks` from `corpus.census`.
+/// This is the rule that separates a file that opens with a corpus-wide count
+/// (the recorded `corpus.checks` had that shape until #1251 deleted it) from
+/// `corpus.census`.
 /// HW-DR-0049 decomposed the second so that it merges, and a decomposed
 /// artifact that declared the driver would refuse a merge it is built to take.
 #[test]
@@ -793,7 +795,7 @@ fn a_decomposed_recorded_fixture_is_not_a_member_and_a_folded_one_is() {
     let root = TempTree::new("folds");
     root.write(".gitattributes", "");
     root.write(
-        "engine/crates/check/fixtures/corpus.checks",
+        "engine/crates/check/fixtures/corpus.totals",
         "491 seen, 321 classified\n  a finding\n",
     );
     root.write(
@@ -814,7 +816,7 @@ fn a_decomposed_recorded_fixture_is_not_a_member_and_a_folded_one_is() {
     assert_eq!(
         claimed,
         vec![
-            "engine/crates/check/fixtures/corpus.checks",
+            "engine/crates/check/fixtures/corpus.totals",
             "engine/crates/lock/fixtures/corpus.lock"
         ],
         "the fold rule claimed the wrong recorded fixtures"
