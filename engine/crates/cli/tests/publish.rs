@@ -3039,18 +3039,10 @@ fn serve_artifact(body: Vec<u8>) -> String {
     base
 }
 
-/// #959: `vendor <location>` installs what `vendor <dir>` installs.
-///
-/// HW-DR-0075 lets the verb take a location on the condition that the fetch
-/// changes nothing but where the bytes come from. So the same published
-/// artifact is vendored twice, once by path and once from a zip served on
-/// 127.0.0.1 behind a 302, and the two installed trees are compared byte for
-/// byte. A wrong digest refuses after the fetch and leaves the package area
-/// as it found it. The suite reaches no host but this one.
+/// Publish `acme/fixture` 4.2.0 under `root` and return the artifact
+/// directory with its record.
 #[cfg(feature = "fetch")]
-#[test]
-fn a_location_vendors_the_bytes_the_same_artifact_vendors_by_path() {
-    let root = Root::scratch("vendor-location");
+fn published_fixture(root: &Root) -> (PathBuf, headwater_resolve::release::Release) {
     let publisher = root.path().join("publisher");
     write(
         &publisher.join(".headwater/packages/acme-fixture/package.yml"),
@@ -3078,6 +3070,22 @@ fn a_location_vendors_the_bytes_the_same_artifact_vendors_by_path() {
     );
     assert_eq!(code, Some(0), "{stderr}");
     let record = record_at(&artifact);
+    (artifact, record)
+}
+
+/// #959: `vendor <location>` installs what `vendor <dir>` installs.
+///
+/// HW-DR-0075 lets the verb take a location on the condition that the fetch
+/// changes nothing but where the bytes come from. So the same published
+/// artifact is vendored twice, once by path and once from a zip served on
+/// 127.0.0.1 behind a 302, and the two installed trees are compared byte for
+/// byte. A wrong digest refuses after the fetch and leaves the package area
+/// as it found it. The suite reaches no host but this one.
+#[cfg(feature = "fetch")]
+#[test]
+fn a_location_vendors_the_bytes_the_same_artifact_vendors_by_path() {
+    let root = Root::scratch("vendor-location");
+    let (artifact, record) = published_fixture(&root);
     let base = serve_artifact(zipped(&artifact));
 
     let refused = root.path().join("refused");
@@ -3135,4 +3143,95 @@ fn a_location_vendors_the_bytes_the_same_artifact_vendors_by_path() {
         tree(&by_location.join(package::PACKAGES)),
         "a location installed other bytes than the same artifact by path"
     );
+}
+
+/// #1113: a plain-http location reaches this machine even when the
+/// environment names a proxy.
+///
+/// `headwater-fetch` admits plain http for a loopback host alone, because
+/// nothing authenticates the bytes in transit. A proxy taken from
+/// `HTTP_PROXY` or `ALL_PROXY` would decide for itself what `127.0.0.1`
+/// means, so the gate would hold only in the code and not on the wire. A
+/// second listener stands in for the proxy, counts every connection and
+/// answers 502. The vendor must install the artifact and the proxy must see
+/// no connection. The CLI runs as a subprocess so that no test thread sets a
+/// variable another one reads.
+#[cfg(feature = "fetch")]
+#[test]
+fn a_loopback_location_is_fetched_directly_under_a_proxy_environment() {
+    use std::io::{Read, Write};
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    use std::sync::Arc;
+
+    let root = Root::scratch("vendor-proxy");
+    let (artifact, record) = published_fixture(&root);
+    let base = serve_artifact(zipped(&artifact));
+
+    let proxy_listener = std::net::TcpListener::bind("127.0.0.1:0").expect("a loopback port binds");
+    let proxy = format!(
+        "http://{}",
+        proxy_listener.local_addr().expect("the port reads")
+    );
+    let connections = Arc::new(AtomicUsize::new(0));
+    let seen = Arc::clone(&connections);
+    std::thread::spawn(move || {
+        for stream in proxy_listener.incoming() {
+            let Ok(mut stream) = stream else { continue };
+            seen.fetch_add(1, Ordering::SeqCst);
+            let mut request = [0_u8; 4096];
+            let _ = stream.read(&mut request);
+            let _ = stream.write_all(
+                b"HTTP/1.1 502 Bad Gateway\r\nContent-Length: 0\r\nConnection: close\r\n\r\n",
+            );
+        }
+    });
+
+    let by_path = root.path().join("by-path");
+    std::fs::create_dir_all(&by_path).expect("the adopter root is made");
+    let (code, _stdout, stderr) = consumer_run(
+        &by_path,
+        &[
+            "taxonomy",
+            "vendor",
+            artifact.to_str().expect("the path is UTF-8"),
+            "--expect",
+            &record.digest,
+        ],
+    );
+    assert_eq!(code, Some(0), "{stderr}");
+
+    // A scheme is case-insensitive, so `HTTP://` is the same plain-http
+    // location and must skip the proxy in the same way.
+    let upper = base.replacen("http://", "HTTP://", 1);
+    for (case, location) in [
+        ("lower", format!("{base}/x.zip")),
+        ("upper", format!("{upper}/x.zip")),
+    ] {
+        let adopter = root.path().join(format!("adopter-{case}"));
+        std::fs::create_dir_all(&adopter).expect("the adopter root is made");
+        let output = Command::new(env!("CARGO_BIN_EXE_headwater"))
+            .args(["taxonomy", "vendor", &location, "--expect", &record.digest])
+            .arg("--root")
+            .arg(&adopter)
+            .env("HTTP_PROXY", &proxy)
+            .env("http_proxy", &proxy)
+            .env("ALL_PROXY", &proxy)
+            .env("all_proxy", &proxy)
+            .env_remove("NO_PROXY")
+            .env_remove("no_proxy")
+            .output()
+            .expect("the binary runs");
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        assert_eq!(
+            connections.load(Ordering::SeqCst),
+            0,
+            "the plain-http loopback request {location} went through the proxy:\n{stderr}"
+        );
+        assert_eq!(output.status.code(), Some(0), "{location}: {stderr}");
+        assert_eq!(
+            tree(&by_path.join(package::PACKAGES)),
+            tree(&adopter.join(package::PACKAGES)),
+            "{location} under a proxy environment installed other bytes than the artifact by path"
+        );
+    }
 }

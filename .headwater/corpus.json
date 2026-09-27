@@ -22,7 +22,7 @@
       "taxonomy": {
         "package": "headwater/standard",
         "version": "4.9.1",
-        "lock": "sha256:df2affcc922db573b1dd799163815d279bbd3ec49e81de80a6423ae3f821f8b6"
+        "lock": "sha256:faf07a4737d00d54bb8b88c13cdabff472d612f7d9146d4f609fd950d8107ddb"
       },
       "entry_points": [
         {
@@ -32,7 +32,7 @@
         },
         {
           "shelf": "acceptance_criteria",
-          "path": "docs/acceptance-criteria/0001-no-source-file-of-the-engine-names-a-network-api-and-no-locked-dependency-provides-one.md",
+          "path": "docs/acceptance-criteria/0001-no-engine-source-outside-the-fetch-crate-names-a-network-api-and-no-crate-of-the-checking-loop-reaches-a-network-package.md",
           "id": "HW-AC-0001"
         },
         {
