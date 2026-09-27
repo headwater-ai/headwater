@@ -1777,7 +1777,12 @@ if [ -x "$engine" ]; then
     # keeps `MERGE_HEAD` under `.git/worktrees/<name>/` there, not in the common
     # dir. A merge stopped in the linked tree must speak there, and the main
     # tree, which is not merging, stays silent. A reader of the common dir is
-    # silent in both, and the first case below tells it apart.
+    # silent in both, and the first case below tells it apart. The first two
+    # cases name the tree through `HEADWATER_HOOK_ROOT`, which turns off the
+    # payload's `cwd`, so they test the merge-state reader and not how the
+    # position finds its tree. The third case unsets it and names the main tree
+    # the way the harness does, so only the payload's `cwd` reaches the linked
+    # tree.
     linked_root=$(mktemp -d "${TMPDIR:-/tmp}/headwater-derived-linked-XXXXXX")
     rmdir "$linked_root"
     mg worktree add -b linked "$linked_root" main
@@ -1797,9 +1802,41 @@ if [ -x "$engine" ]; then
     export HEADWATER_HOOK_ROOT
     expect 'the main tree of that linked worktree, not merging, is silent' \
         derived.sh 0 '' "$(linked_payload fixture-1053-h "$merge_root")"
+    linked_name='a merge stopped in a linked worktree is found from the payload cwd, with the harness naming the main tree'
+    linked_out=$(linked_payload fixture-1053-i "$linked_root" | env -u HEADWATER_HOOK_ROOT CLAUDE_PROJECT_DIR="$merge_root" sh "$hooks/derived.sh" 2>&1)
+    case $linked_out in
+        *'`.headwater/taxonomy.lock`: A fold'*)
+            printf 'ok   %s\n' "$linked_name"
+            passed=$((passed + 1))
+            ;;
+        *)
+            printf 'FAIL %s\n  expected output to hold the lock, got:\n%s\n' "$linked_name" "$linked_out"
+            failed=$((failed + 1))
+            ;;
+    esac
     lg merge --abort
     mg worktree remove --force "$linked_root"
     rm -rf "$linked_root"
+
+    # A merge that stops on a file that is not the lock. An edit to the lock
+    # is still an edit to a derived artifact, but this merge did not leave the
+    # lock in conflict, and the advisory must not say it did.
+    mg switch -c notes-other
+    printf 'other\n' > "$merge_root/notes.txt"
+    mg add notes.txt
+    mg commit -m notes-other
+    mg switch main
+    printf 'main\n' > "$merge_root/notes.txt"
+    mg add notes.txt
+    mg commit -m notes-main
+    mg merge notes-other
+    expect 'the control for: a lock edit during a merge that did not leave the lock in conflict' \
+        write.sh 0 'headwater taxonomy resolve' \
+        '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":".headwater/taxonomy.lock"}}'
+    refute 'a lock edit during a merge that did not leave the lock in conflict does not say it did' \
+        write.sh 'left it in conflict' \
+        '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":".headwater/taxonomy.lock"}}'
+    mg merge --abort
 
     HEADWATER_HOOK_ROOT="$root"
     export HEADWATER_HOOK_ROOT
