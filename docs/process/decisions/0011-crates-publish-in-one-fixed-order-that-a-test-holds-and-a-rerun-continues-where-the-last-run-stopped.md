@@ -2,7 +2,7 @@
 id: HW-PD-0011
 status: current
 status_since: 2026-09-27
-summary: "publish-crates.yml walks one leaves-first crate list that publish_order.rs holds against the workspace, skips a published crate so a rerun continues, and waits out a 429."
+summary: "publish-crates.yml walks one leaves-first crate list that publish_order.rs holds, skips a published crate, waits for the index, and waits out a 429."
 last_verified: 2026-09-27
 title: "Crates publish in one fixed order that a test holds, and a rerun continues where the last run stopped"
 provenance:
@@ -14,7 +14,7 @@ provenance:
 relations:
   governs:
     - to: .github/workflows/publish-crates.yml
-      verified_revision: sha256:ead2238fa32a3fc4d600d5238d40a072cc5371aee1409a9417fa3fa2d62fea26
+      verified_revision: sha256:f77729188a8b0bffa908fa2b0166cf36a5379a130649855992e3f4844bc7174e
   traces_to:
     - engine/crates/cli/tests/publish_order.rs
 ---
@@ -39,13 +39,13 @@ One step publishes every crate, in one loop over a fixed list. The list is in th
 
 Before it publishes a crate, the loop asks crates.io whether the crate has this version. If it has, the loop skips the crate. So a second run continues where the first run stopped, and does not start again at the first crate. The request sends a `User-Agent` of its own. The crates.io API refuses the default `User-Agent` of `curl` with a 403, which the loop cannot tell apart from a 404.
 
-After each publish, the loop waits 30 seconds for the index. Nobody measured that interval.
+The loop waits for the index and not for a fixed time. Before it publishes a crate, `tools/repo/crates-index-wait.sh` reads the crates.io sparse index until it lists each workspace dependency of the crate at this version. After `cargo publish` returns, the same script waits until the index lists the crate itself. So a warning from cargo that its own wait timed out does not count as a success. If the index does not list a name after 600 seconds, the script names the crate and the dependency, and the run stops. `engine/crates/cli/tests/publish_order.rs` holds the script against an index on disk.
 
 When `cargo publish` fails with a 429, the loop reads the time from the error. It waits until that time and 5 seconds more, and tries the same crate again. Any other failure stops the run, because waiting cannot fix it.
 
 ## Consequences
 
-A maintainer recovers from a partial publish with a second run of the job, and never with a yank. At `v0.3.0` the first run stopped at `headwater-compat`, because the index did not yet list `headwater-scaffold` after the 30-second wait. A second run published the four crates that were missing. So the wait is not always enough, and the skip is what makes a short wait safe to retry.
+A maintainer recovers from a partial publish with a second run of the job, and never with a yank. At `v0.3.0` the first run stopped at `headwater-compat`, because the index did not yet list `headwater-scaffold` after the 30-second wait. A second run published the four crates that were missing. At `v0.4.0` the first run stopped again, at `headwater-import`, because the index did not yet list `headwater-scaffold`. A second run published the rest. These two occurrences are why the fixed 30-second wait became the index wait ([#1197](https://github.com/headwater-ai/headwater/issues/1197)). The index wait has a deadline, so a slow index can still stop a run. The skip makes that stop safe to retry.
 
 The wait for a 429 has no ceiling. [HW-OBL-0182](../../obligations/0182-the-publish-crates-retry-loop-has-no-retry-ceiling.md) records that gap, and it stays open.
 
