@@ -704,62 +704,86 @@ sh "$driver" --probe PROBE-FIX-opened --session x --task-file "$scratch/task.md"
 same "the driver refuses a workspace carrying a clone's \`.git\` directory" "4" "$?"
 
 # The answer-key guard (#1229), asserted unconditionally and before any harness
-# call. A workspace that holds the probe's own document hands the session its
-# expectation, and the 2026-09-17 tombstone session read exactly that file and
-# then answered. The copy sits outside the probe shelves, so the instrument
-# guard (8) passes it and this guard (9) is the one that answers. The clean
-# half runs with a `PATH` that holds `grep`, `sh` and `awk` and not `jq` or
-# `claude`, so it stops at the tool check (3) and can never start a paid
-# session on a host that has the harness installed.
-mkdir -p "$scratch/keyed/notes" "$scratch/grep-only"
-cp "$root/engine/crates/probe/fixtures/corpus/probes/0001-opened.md" "$scratch/keyed/notes/"
+# call. A document under `docs/` that names the probe states its expected
+# value, a recorded answer or its target, and the 2026-09-17 tombstone session
+# read its own probe file and then answered. The copy sits in `docs/notes/`,
+# outside the probe shelves, so the instrument guard (8) passes it and this
+# guard (9) is the one that answers. The clean half runs with a `PATH` that
+# holds `grep`, `sh` and `awk` and not `jq` or `claude`, so it stops at the tool
+# check (3) and can never start a paid session on a host that has the harness
+# installed.
+mkdir -p "$scratch/keyed/docs/notes" "$scratch/grep-only"
+cp "$root/engine/crates/probe/fixtures/corpus/probes/0001-opened.md" "$scratch/keyed/docs/notes/"
 sh "$driver" --probe PROBE-FIX-opened --session x --task-file "$scratch/task.md" \
     --workspace "$scratch/keyed" >/dev/null 2>"$scratch/driver-key.err"
-same "the driver refuses a workspace that holds the probe's own document" "9" "$?"
-present "and it names the file" "keyed/notes/0001-opened.md" "$scratch/driver-key.err"
+same "the driver refuses a workspace whose docs/ holds the probe's own document" "9" "$?"
+present "and it names the file" "keyed/docs/notes/0001-opened.md" "$scratch/driver-key.err"
 
 for tool in grep sh awk; do
     ln -s "$(command -v "$tool")" "$scratch/grep-only/$tool"
 done
-rm "$scratch/keyed/notes/0001-opened.md"
+rm "$scratch/keyed/docs/notes/0001-opened.md"
 PATH="$scratch/grep-only" "$shell" "$driver" --probe PROBE-FIX-opened --session x \
     --task-file "$scratch/task.md" --workspace "$scratch/keyed" \
     >/dev/null 2>"$scratch/driver-sealed.err"
 same "and it passes the guard once the file is gone" "3" "$?"
 
-# A derived fold names a probe by its slug, the file name on the shelf, and
-# never by its identifier. The guard reads the slug off this checkout's shelf.
+# When both guards apply, the instrument guard answers. A probe document left
+# on its shelf is in the instrument and names the probe, and 8 is the code
+# `ablate.sh --present` is the remedy for.
+mkdir -p "$scratch/both/docs/probes"
+cp "$root/engine/crates/probe/fixtures/corpus/probes/0001-opened.md" "$scratch/both/docs/probes/"
+sh "$driver" --probe PROBE-FIX-opened --session x --task-file "$scratch/task.md" \
+    --workspace "$scratch/both" >/dev/null 2>"$scratch/driver-both.err"
+same "a workspace that trips both guards gets the instrument's 8, not the answer key's 9" "8" "$?"
+present "and the message is the instrument's" "which every arm removes" "$scratch/driver-both.err"
+
+# A record under `docs/` names a probe by its slug, the file name on the shelf,
+# and never by its identifier. The guard reads the slug off this checkout's
+# shelf. A file outside `docs/` that names the slug, a derived fold or a
+# hand-written overlay, states no answer, and the guard passes it.
 tombstone=a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer
-mkdir -p "$scratch/slugged/.headwater"
-printf -- '- docs/probes/%s.md\n' "$tombstone" > "$scratch/slugged/.headwater/nav.yml"
+mkdir -p "$scratch/slugged/docs/obligations"
+printf 'see docs/probes/%s.md\n' "$tombstone" > "$scratch/slugged/docs/obligations/0013.md"
 sh "$driver" --probe "HW-PROBE-$tombstone" --session x --task-file "$scratch/task.md" \
     --workspace "$scratch/slugged" >/dev/null 2>"$scratch/driver-slug.err"
-same "the driver refuses a workspace whose fold names the probe by its slug" "9" "$?"
+same "the driver refuses a workspace whose docs/ names the probe by its slug" "9" "$?"
+mkdir -p "$scratch/folded/.headwater"
+printf -- '- docs/probes/%s.md\n' "$tombstone" > "$scratch/folded/.headwater/nav.yml"
+printf '# HW-PROBE-%s\n' "$tombstone" > "$scratch/folded/.headwater/overlay.yml"
+PATH="$scratch/grep-only" "$shell" "$driver" --probe "HW-PROBE-$tombstone" --session x \
+    --task-file "$scratch/task.md" --workspace "$scratch/folded" \
+    >/dev/null 2>"$scratch/driver-folded.err"
+same "and it passes a fold and an overlay outside docs/ that name the probe" "3" "$?"
 
-# `seal.sh` removes every such file, and the driver then passes its guard.
-mkdir -p "$scratch/sealed/docs/probes" "$scratch/sealed/docs/probe-runs" "$scratch/sealed/docs/spec" "$scratch/sealed/.headwater"
+# `seal.sh` removes the instrument and each record under `docs/` that names the
+# probe, keeps everything else, and the driver then passes both guards.
+mkdir -p "$scratch/sealed/docs/probes" "$scratch/sealed/docs/probe-runs" "$scratch/sealed/docs/spec" "$scratch/sealed/docs/obligations" "$scratch/sealed/.headwater"
 cp "$root/docs/probes/$tombstone.md" "$scratch/sealed/docs/probes/"
 printf 'a run\n' > "$scratch/sealed/docs/probe-runs/run.md"
+printf 'see docs/probes/%s.md\n' "$tombstone" > "$scratch/sealed/docs/obligations/0013.md"
 printf -- '- docs/probes/%s.md\n' "$tombstone" > "$scratch/sealed/.headwater/nav.yml"
+printf '# HW-PROBE-%s\n' "$tombstone" > "$scratch/sealed/.headwater/overlay.yml"
+printf '{}\n' > "$scratch/sealed/.headwater/export.json"
 printf 'a spec that names no probe\n' > "$scratch/sealed/docs/spec/01.md"
 sh "$root/tools/probe/seal.sh" "$scratch/sealed" "HW-PROBE-$tombstone" >/dev/null 2>"$scratch/seal.err"
 same "seal.sh seals a workspace" "0" "$?"
-if [ -e "$scratch/sealed/docs/probes" ] || [ -e "$scratch/sealed/docs/probe-runs" ] || [ -e "$scratch/sealed/.headwater/nav.yml" ]; then
-    fail "and it removes the shelves and every file that names the probe" "$(ls -R "$scratch/sealed")"
+if [ -e "$scratch/sealed/docs/probes" ] || [ -e "$scratch/sealed/docs/probe-runs" ] || [ -e "$scratch/sealed/.headwater/export.json" ] || [ -e "$scratch/sealed/docs/obligations/0013.md" ]; then
+    fail "and it removes the instrument and each record under docs/ that names the probe" "$(ls -aR "$scratch/sealed")"
 else
-    pass "and it removes the shelves and every file that names the probe"
+    pass "and it removes the instrument and each record under docs/ that names the probe"
 fi
-if [ -f "$scratch/sealed/docs/spec/01.md" ]; then
-    pass "and it keeps a file that names no probe"
+if [ -f "$scratch/sealed/docs/spec/01.md" ] && [ -f "$scratch/sealed/.headwater/nav.yml" ] && [ -f "$scratch/sealed/.headwater/overlay.yml" ]; then
+    pass "and it keeps a document that names no probe, the derived fold and the hand-written overlay"
 else
-    fail "and it keeps a file that names no probe" "docs/spec/01.md is gone"
+    fail "and it keeps a document that names no probe, the derived fold and the hand-written overlay" "$(ls -aR "$scratch/sealed")"
 fi
 sh "$root/tools/probe/seal.sh" "$scratch/sealed" "HW-PROBE-$tombstone" >/dev/null 2>&1
 same "and a second seal is a no-op" "0" "$?"
 PATH="$scratch/grep-only" "$shell" "$driver" --probe "HW-PROBE-$tombstone" --session x \
     --task-file "$scratch/task.md" --workspace "$scratch/sealed" \
     >/dev/null 2>"$scratch/driver-sealed2.err"
-same "and the driver passes its guard over the sealed tree" "3" "$?"
+same "and the driver passes both guards over the sealed tree" "3" "$?"
 sh "$root/tools/probe/seal.sh" "$root/docs" "HW-PROBE-$tombstone" >/dev/null 2>&1
 same "seal.sh refuses a path inside this checkout" "6" "$?"
 
@@ -823,6 +847,23 @@ STUB
     same "the driver runs a session whose harness reaches no hook" "0" "$?"
     present "the transcript states that the hook was not live" \
         "The intent hook was not live in this session." "$scratch/dead-run.md"
+
+    # A harness that fails exits with a status of its own choosing, and 7 is
+    # also the code for a subshell that could not enter the workspace. The
+    # driver maps every nonzero harness status to 10 and prints the harness's
+    # own status, so no harness can return a code that a path of the script
+    # returns.
+    cat > "$scratch/bin/claude" <<'STUB'
+#!/bin/sh
+exit 7
+STUB
+    chmod +x "$scratch/bin/claude"
+    PATH="$scratch/bin:$PATH" sh "$driver" --probe PROBE-FIX-opened --session fixture-fails \
+        --task-file "$scratch/task.md" --workspace "$scratch/ws" \
+        >/dev/null 2>"$scratch/failed-run.err"
+    same "a harness that exits 7 makes the driver exit 10, never 7" "10" "$?"
+    present "and the driver names the harness's own status" \
+        "the harness exited 7" "$scratch/failed-run.err"
     rm -f "$scratch/bin/claude"
 else
     printf 'note no engine or no lock, so the liveness cases did not run.\n'

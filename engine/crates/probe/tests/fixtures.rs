@@ -1246,6 +1246,19 @@ fn an_answered_probe_that_expects_every_value_of_its_set_stops_the_run() {
     );
 }
 
+/// A set of one value is the same defect at its smallest: the one word the
+/// recorder can extract is the one that satisfies, so every recorded answer
+/// passes. #1010 added two shelf probes of that shape before #1229 landed.
+#[test]
+fn an_answered_probe_whose_set_is_its_one_expected_value_stops_the_run() {
+    let plan = plan_over_probe(&|source| source.replace("answers: [yes, no]", "answers: [no]"));
+    assert!(
+        matches!(plan.refusal, Some(Refusal::ExpectedEveryAnswer { .. })),
+        "a one-word set that is expected passes every answer a recorder can extract: {:?}",
+        plan.refusal
+    );
+}
+
 #[test]
 fn an_answered_probe_that_expects_nothing_stops_the_run() {
     let plan = plan_over_probe(&|source| source.replace("expected: [no]\n", ""));
