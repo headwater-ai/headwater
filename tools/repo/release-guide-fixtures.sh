@@ -473,7 +473,7 @@ echo "each release workflow header cites the records that govern it"
 same "the headers in this tree and the records that govern them are one set" "" \
     "$(cites "$root" | tr '\n' '|' | sed 's/|$//')"
 for wf in $release_workflows; do
-    n=$(sed -n '/^[^#]/q;p' "$root/.github/workflows/$wf" | grep -oE 'HW-(DR|PD)-[0-9]{4}' | sort -u | wc -l | tr -d ' ')
+    n=$(sed -n '/^[^#]/q;p' "$root/.github/workflows/$wf" | grep -oE 'HW-(DR|PD)-[0-9]{4}' | LC_ALL=C sort -u | wc -l | tr -d ' ')
     if [ "$n" -ge 1 ]; then
         pass "  the header of $wf cites $n records"
     else
