@@ -23,7 +23,7 @@
 //! **error** by severity and carries remediation prose, which is where
 //! `CLAUDE.md` already puts the first reading.
 //!
-//! # Three shapes, and only the first one edits prose
+//! # Four shapes, and only the first one edits prose
 //!
 //! [`Patch::Text`] replaces a byte range of one file. [`Patch::Half`] declares
 //! one edge half in a document's front matter, and the writer for it is
@@ -42,6 +42,13 @@
 //! a fixer that truncated one would destroy a fact a person cannot
 //! reconstruct, which is a worse failure than any wrong report this module can
 //! produce.
+//!
+//! [`Patch::Facets`] rewrites the value of a scalar facet that a document
+//! already declares, and it adds no key. It exists for
+//! `lifecycle.state.not_set_by_edge`, whose fix is a state and its
+//! state-entry date written together. Neither of the first two shapes can
+//! carry that: a text patch is refused inside the front-matter block, and a
+//! half writes only under `relations:`.
 //!
 //! # Nothing here writes, and nothing here reads a file
 //!
@@ -93,6 +100,20 @@ pub enum Patch {
     /// is what answers it. An occupied path is a refusal and never an
     /// overwrite. See the module comment.
     Create { path: String, contents: String },
+    /// Rewrite top-level scalar facets in the front matter of `path`, each
+    /// as `(facet, expect, value)`.
+    ///
+    /// No offset, for [`Patch::Half`]'s reason: the front matter is a
+    /// writer's own, and [`headwater_scaffold::fix`] finds the key. `expect`
+    /// is the value the check read for that facet, and the applier refuses
+    /// the whole patch where any one of them no longer holds. The writes land
+    /// together or none of them do, which is what a state and its
+    /// state-entry date need: spec 2 calls a state change with no stamp a
+    /// defect whatever caused it.
+    Facets {
+        path: String,
+        set: Vec<(String, String, String)>,
+    },
 }
 
 impl Patch {
@@ -104,6 +125,7 @@ impl Patch {
             Patch::Text { path, .. } => path,
             Patch::Half { path, .. } => path,
             Patch::Create { path, .. } => path,
+            Patch::Facets { path, .. } => path,
         }
     }
 }
