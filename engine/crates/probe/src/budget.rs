@@ -404,7 +404,10 @@ tiers:
     fn an_absent_arm_with_no_ablation_is_refused() {
         // Spec 5: the absent arm names a declared ablation. Without one, the
         // absent tree is whatever a script removes, and no claim names it.
-        let source = GOOD.replace("    ablation: [CLAUDE.md, .claude, .githooks, .headwater]\n", "");
+        let source = GOOD.replace(
+            "    ablation: [CLAUDE.md, .claude, .githooks, .headwater]\n",
+            "",
+        );
         assert_eq!(
             Budgets::read(&source),
             Err(Unreadable::AblationUndeclared { tier: "campaign" })
