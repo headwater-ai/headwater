@@ -522,3 +522,137 @@ fn a_state_a_relation_sets_that_the_kinds_own_regime_admits_is_written_with_the_
          the setter's date, and the setter was not read. It reads:\n{bytes}"
     );
 }
+
+/// The output with two setters of one state, on two dates.
+const TWIN: &str = "lifecycle-regime/notices/TWIN.md";
+
+/// The output with setters of two different states.
+const CLASH: &str = "lifecycle-regime/notices/CLASH.md";
+
+/// The output whose one setter carries no date.
+const UNDATED: &str = "lifecycle-regime/notices/UNDATED.md";
+
+/// The bytes the plan writes at `at`, or a panic that names what it declined.
+fn written<'a>(plan: &'a Plan, at: &str) -> &'a str {
+    plan.outputs
+        .iter()
+        .find(|output| output.path == at)
+        .map(|output| output.bytes.as_str())
+        .unwrap_or_else(|| {
+            panic!(
+                "`{at}` was not written. The plan declined {:?}",
+                plan.unwritten
+                    .iter()
+                    .map(|unwritten| (unwritten.at.as_str(), unwritten.reason.as_str()))
+                    .collect::<Vec<_>>()
+            )
+        })
+}
+
+/// Two documents set one state on two dates, and the file entered the state on
+/// the stalest of them (#1111).
+///
+/// HW-DR-0063 derives `state_entered` as "the stalest date on the documents
+/// that set the state". The case above has one setter, so a minimum and a
+/// maximum agree there, and a newest fold passed it. Here the setters carry
+/// `2026-04-10` and `2026-06-10`, and a newest fold writes the second.
+#[test]
+fn two_setters_of_one_state_write_the_stalest_of_their_dates() {
+    let plan = plan_over_lifecycle_regime();
+    let bytes = written(&plan, TWIN);
+
+    assert_eq!(
+        member(bytes, "status"),
+        Some("retired"),
+        "`{TWIN}` does not stand at the state both of its incoming edges set. It reads:\n{bytes}"
+    );
+    assert_eq!(
+        member(bytes, "status_since"),
+        Some("2026-04-10"),
+        "`{TWIN}` did not take the stalest date of the two documents that set its state \
+         (2026-04-10). `2026-06-10` is the newest of them. It reads:\n{bytes}"
+    );
+}
+
+/// Two relations set two different states, and the date comes from the setters
+/// of the state the file stands at, and from no other (#1111).
+///
+/// `set_state` picks the first state in sorted order, `current`. Two documents
+/// set `current`, on `2026-04-20` and `2026-06-20`. One document sets
+/// `retired`, on `2026-03-20`, the oldest date of the three. A fold over every
+/// setter writes `2026-03-20`, a date on which the file entered a state it does
+/// not stand at. A newest fold over the agreeing setters writes `2026-06-20`.
+/// The contract, HW-DR-0063, reads "the documents that set the state", and
+/// only `2026-04-20` answers it.
+#[test]
+fn setters_of_two_states_date_the_file_from_the_setters_of_the_chosen_state_alone() {
+    let plan = plan_over_lifecycle_regime();
+    let bytes = written(&plan, CLASH);
+
+    assert_eq!(
+        member(bytes, "status"),
+        Some("current"),
+        "`{CLASH}` does not stand at `current`, the first in sorted order of the two states its \
+         incoming edges set. It reads:\n{bytes}"
+    );
+    assert_eq!(
+        member(bytes, "status_since"),
+        Some("2026-04-20"),
+        "`{CLASH}` did not take the stalest date of the documents that set `current` \
+         (2026-04-20). `2026-03-20` is the date of the document that sets `retired`, a state the \
+         file does not stand at, and `2026-06-20` is the newest of the agreeing setters. It \
+         reads:\n{bytes}"
+    );
+}
+
+/// No setter carries a date, and the refusal names the fold it would have taken
+/// and the setter that needs the value (#1111).
+///
+/// No page is written in this case, so the word a reader sees is in the
+/// refusal that `generate` prints. The fold for a state an edge sets is the
+/// stalest, and `newest` is the fold for a state no edge sets, over a
+/// different set of documents. The repair is a date on the setter, so the
+/// reason does not send the reader to the taxonomy.
+#[test]
+fn a_setter_with_no_date_refuses_the_file_and_names_the_stalest_fold() {
+    let plan = plan_over_lifecycle_regime();
+
+    assert!(
+        !plan.outputs.iter().any(|output| output.path == UNDATED),
+        "`{UNDATED}` was written, and the one document that sets its state carries no \
+         `status_since`"
+    );
+    let refusal = plan
+        .unwritten
+        .iter()
+        .find(|unwritten| unwritten.at == UNDATED)
+        .unwrap_or_else(|| {
+            panic!(
+                "nothing reported the declaration that writes `{UNDATED}`. The plan declined {:?}",
+                plan.unwritten
+                    .iter()
+                    .map(|unwritten| unwritten.at.as_str())
+                    .collect::<Vec<_>>()
+            )
+        });
+    let reason = refusal.reason.as_str();
+    for wanted in [
+        "status_since",
+        "stalest",
+        "whose edges set this document's state",
+        "carries no value for it",
+        "lifecycle-regime/flaggers/0009-undated-setter.md",
+    ] {
+        assert!(
+            reason.contains(wanted),
+            "the refusal of `{UNDATED}` does not name `{wanted}`. It reads: {reason}"
+        );
+    }
+    for unwanted in ["newest", "taxonomy"] {
+        assert!(
+            !reason.contains(unwanted),
+            "the refusal of `{UNDATED}` names `{unwanted}`. The fold over the setters of a state \
+             is the stalest, and the repair is a date on the setter. It reads: {reason}"
+        );
+    }
+}
