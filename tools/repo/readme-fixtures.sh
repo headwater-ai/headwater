@@ -297,6 +297,26 @@ images_of() {
     ' "$1"
 }
 
+# html_images_of FILE — the `src` of every HTML `<img>` tag outside a fence and
+# outside an inline code span. GitHub renders one in a README, so a judge that
+# reads images by `![alt](target)` alone has a second syntax it cannot see.
+html_images_of() {
+    awk "$awk_helpers"'
+        /^[ \t]*```/ { fence = 1 - fence; next }
+        fence { next }
+        {
+            rest = strip_code($0)
+            while (match(rest, /<[iI][mM][gG][ \t][^>]*[sS][rR][cC][ \t]*=[ \t]*["\047][^"\047]*["\047]/)) {
+                m = substr(rest, RSTART, RLENGTH)
+                sub(/^.*[sS][rR][cC][ \t]*=[ \t]*["\047]/, "", m)
+                sub(/["\047]$/, "", m)
+                print NR "\t" m
+                rest = substr(rest, RSTART + RLENGTH)
+            }
+        }
+    ' "$1"
+}
+
 # urls_of FILE — every absolute URL, fences AND inline code spans included,
 # because the clone command inside the fence names the repository too and a
 # rename breaks it just as quietly as it breaks a badge. This is deliberately
@@ -474,7 +494,8 @@ image_judge() {
 # demonstration in animated GIF form (HW-DR-0061 names the format), PROVIDED a
 # visible `recorded on YYYY-MM-DD` marker sits beside it. The marker is the
 # whole mechanism: nothing here opens the GIF or reads a count inside it, so
-# an embed is a recording candidate by extension alone, and the window this
+# an embed is a recording candidate by extension alone — `.gif` in any case,
+# written as `![alt](target)` or as an HTML `<img src>` — and the window this
 # judge reads is two lines either side of the embed line — a caption printed
 # on the very next line, or one blank line down, or above the embed instead of
 # below it, all read as adjacent; a marker three lines away or more is not
@@ -483,9 +504,11 @@ recording_judge() {
     rj_file=$1
     rj_n=0
     images_of "$rj_file" >"$scratch/recordings"
+    html_images_of "$rj_file" >>"$scratch/recordings"
     while IFS='	' read -r line target; do
-        case $target in
-            *.gif|*.GIF|*.Gif) ;;
+        rj_lc=$(printf '%s' "$target" | tr 'A-Z' 'a-z')
+        case $rj_lc in
+            *.gif) ;;
             *) continue ;;
         esac
         rj_n=$((rj_n + 1))
