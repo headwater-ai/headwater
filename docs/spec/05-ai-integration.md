@@ -288,6 +288,8 @@ Any artifact that an agent produces under the corpus's direction cites the ident
 
 This is cheap, and it survives refactoring better than a link in a commit message. It changes "why does the code do this?" from an investigation into a lookup. It is also what makes attribution work in practice. When generated output is wrong, the citation says whether the corpus misled the agent or the agent ignored the corpus. Those have opposite fixes, and without the citation no one can tell them apart.
 
+The convention is for an adopter's corpus. This repository does not practice it on its own code, and the comments in that code that name an identifier are prose, not citations. [HW-DR-0092](../decisions/0092-the-citation-comment-of-spec-5-is-for-an-adopter-s-corpus-and-this-repository-does-not-practice-it-on-its-own-code.md) records the ruling, the measurement, and the events that reopen the question.
+
 Where sources conflict, the agent cites **both** and flags the conflict ([spec 2](02-taxonomy-model.md#disagreement-is-adjudicated-not-ranked)). If an agent resolves a contradiction silently, it destroys the evidence that one existed.
 
 Where a human already settled the conflict, the agent cites the **adjudication**. A settled disagreement is a decision that `overrides` the document whose effect it displaces, and derived reading precedence puts the successor first. So the agent follows a ruling that a named person made, rather than making the same ruling again with no record ([Q18](09-decisions.md#q18--recording-adjudicated-disagreements)).

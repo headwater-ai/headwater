@@ -306,7 +306,8 @@ echo "what this repository itself carries"
 # corpus. The checker reports it as unresolved, which is right about what it
 # was asked and beside the point about what the line means. That is the whole
 # population of citation comments this repository carries outside this
-# directory, and #844 is the issue for making it a real one.
+# directory, and HW-DR-0092 rules that it stays so: the convention is for an
+# adopter's corpus, and this repository does not practice it on its own code.
 status=$(run sarif docs/spec/05-ai-integration.md)
 same "spec 5 carries exactly one line of the shape" 1 \
     "$(field . 'd["runs"][0]["properties"]["headwater"]["citations"]')"

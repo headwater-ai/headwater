@@ -364,3 +364,7 @@ The documents on this shelf, in the reading order this corpus derives. Each head
 ## A live document that rests on a draft one is reported over every relation, because a draft leaves no record to cite
 
 [HW-DR-0085](../decisions/0085-a-live-document-that-rests-on-a-draft-one-is-reported-over-every-relation-because-a-draft-leaves-no-record-to-cite.md) — A live document with any relation to a draft is a warning, unless the relation writes a state onto its target (asserted, and no human has accepted it)
+
+## The citation comment of spec 5 is for an adopter's corpus, and this repository does not practice it on its own code
+
+[HW-DR-0092](../decisions/0092-the-citation-comment-of-spec-5-is-for-an-adopter-s-corpus-and-this-repository-does-not-practice-it-on-its-own-code.md) — The per-identifier citation comment of spec 5 is a convention for an adopter's corpus. By the owner's ruling, the code of this repository carries none. Its comments that name an identifier are prose, and the checker does not read them. (asserted, and no human has accepted it)
