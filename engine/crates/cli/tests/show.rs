@@ -68,10 +68,8 @@ impl Root {
     /// `label` names the case, because cargo runs the cases of one target as
     /// threads of one process.
     fn new(label: &str) -> Root {
-        let at = std::env::temp_dir().join(format!(
-            "headwater-cli-show-{}-{label}",
-            std::process::id()
-        ));
+        let at =
+            std::env::temp_dir().join(format!("headwater-cli-show-{}-{label}", std::process::id()));
         let _ = std::fs::remove_dir_all(&at);
         std::fs::create_dir_all(&at).expect("the root is made");
 
