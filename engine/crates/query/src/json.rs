@@ -309,7 +309,34 @@ fn of_explanation(explanation: &Explanation) -> Json {
             Json::Array(related.iter().map(of_neighbour).collect()),
         ),
     ]);
+    if let Some(entries) = governed_entries(related) {
+        members.push(("governed_entries", number(entries)));
+    }
     Json::object(members)
+}
+
+/// How many distinct tree entries the document's own `governs` anchors reach,
+/// taken as one union across every such edge. `reach.total` is the union of
+/// one anchor, and two edges can reach one entry: a literal page and a glob
+/// over its directory. The edit-time advisory states this number as the size
+/// the editor has to check (#1093). `None` where no outbound `governs` edge
+/// reaches anything.
+fn governed_entries(related: &[Neighbour]) -> Option<usize> {
+    let mut entries: std::collections::BTreeSet<&str> = std::collections::BTreeSet::new();
+    let mut any = false;
+    for neighbour in related {
+        if neighbour.inbound || neighbour.relation != "governs" {
+            continue;
+        }
+        let Some(reach) = &neighbour.reach else {
+            continue;
+        };
+        any = true;
+        for (_, paths) in &reach.members {
+            entries.extend(paths.iter().map(String::as_str));
+        }
+    }
+    any.then_some(entries.len())
 }
 
 fn of_permitted(permitted: &Permitted) -> Json {
@@ -394,10 +421,11 @@ fn of_reach(reach: &headwater_graph::Reach) -> Json {
                 reach
                     .members
                     .iter()
-                    .map(|(pattern, count)| {
+                    .map(|(pattern, paths)| {
                         Json::object([
                             ("pattern", Json::string(pattern.clone())),
-                            ("matched", number(*count)),
+                            ("matched", number(paths.len())),
+                            ("paths", strings(paths)),
                         ])
                     })
                     .collect(),

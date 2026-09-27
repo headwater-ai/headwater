@@ -27,17 +27,17 @@ graph
         2 unbound
   5 prose links that did not resolve
 
-  check/spec/07-prose-defects.md:63:28
+  check/spec/07-prose-defects.md:67:28
     link: `19-renamed.md` no `check/spec/19-renamed.md` in the repository
-  check/spec/07-prose-defects.md:65:91
+  check/spec/07-prose-defects.md:69:91
     link: `19-renamed.md#a-heading` no `check/spec/19-renamed.md` in the
       repository
-  check/spec/07-prose-defects.md:67:63
+  check/spec/07-prose-defects.md:71:63
     link: `../../../outside.md` `check/spec/../../../outside.md` climbs above
       the repository
-  check/spec/07-prose-defects.md:69:46
+  check/spec/07-prose-defects.md:73:46
     link: `19-renamed.md?v=2` no `check/spec/19-renamed.md` in the repository
-  check/spec/07-prose-defects.md:71:90
+  check/spec/07-prose-defects.md:75:90
     link: `/spec/00-both-halves.md` no `/spec/00-both-halves.md` in the
       repository
   check/spec/13-dangling.md:9:7
@@ -280,9 +280,9 @@ checks
     adoption.task.expired reaches no obligation, so it names none
     language.outside_root.refused reaches no obligation, so it names none
     relation.target.verification.suspect reaches no obligation, so it names none
-  61 findings
+  64 findings
        38 ✗ error
-       23 ▲ warn
+       26 ▲ warn
 
   check/evaluations/epsilon.md:4:1 ▲ warn
     relation.participation.overdue (OB-FIX-6): `evidence-cited`: 219 days since
@@ -371,56 +371,69 @@ checks
     language.controlled.not_met (OB-FIX-8): `ste_house` admits no semicolon in
       running prose, and this sentence writes one
     fix: split the sentence in two, and let each half state one thing
-  check/spec/07-prose-defects.md:39:1 ✗ error
-    language.controlled.not_met (OB-FIX-8): `ste_house` admits no contraction,
-      and this sentence writes `doesn't`
-    fix (mechanical): write `does not`
-  check/spec/07-prose-defects.md:43:1 ✗ error
-    language.retired_term.used (OB-FIX-22): `ste_house` retires `reference
-      system`, and this sentence writes it: the corpus renamed it
-    fix (mechanical): write `taxonomy`
-  check/spec/07-prose-defects.md:45:1 ▲ warn
+  check/spec/07-prose-defects.md:35:1 ▲ warn
+    language.controlled.not_met (OB-FIX-8): `ste_house` holds prose to 25 words
+      a sentence, and this one has 49
+    fix: split the sentence, or move a clause into its own sentence
+  check/spec/07-prose-defects.md:35:1 ▲ warn
     language.retired_term.used (OB-FIX-22): `ste_house` retires `robust`, and
       this sentence writes it: it stands in for the failure the thing survives
     fix: rewrite the sentence without `robust`
-  check/spec/07-prose-defects.md:56:1 ✗ error
+  check/spec/07-prose-defects.md:35:1 ▲ warn
+    voice.forbidden_construction (OB-FIX-7): `declarative` forbids
+      future_intent, and this sentence writes `will be`
+    fix: state what the system does now, or move the sentence to a document
+      whose kind narrates
+  check/spec/07-prose-defects.md:43:1 ✗ error
+    language.controlled.not_met (OB-FIX-8): `ste_house` admits no contraction,
+      and this sentence writes `doesn't`
+    fix (mechanical): write `does not`
+  check/spec/07-prose-defects.md:47:1 ✗ error
+    language.retired_term.used (OB-FIX-22): `ste_house` retires `reference
+      system`, and this sentence writes it: the corpus renamed it
+    fix (mechanical): write `taxonomy`
+  check/spec/07-prose-defects.md:49:1 ▲ warn
+    language.retired_term.used (OB-FIX-22): `ste_house` retires `robust`, and
+      this sentence writes it: it stands in for the failure the thing survives
+    fix: rewrite the sentence without `robust`
+  check/spec/07-prose-defects.md:60:1 ✗ error
     language.source_form.not_met (OB-FIX-21): `ste_house` writes one paragraph
       on one line, and this line continues the paragraph above
     fix: join this line to the line above, or end the paragraph there
-  check/spec/07-prose-defects.md:57:1 ✗ error
+  check/spec/07-prose-defects.md:61:1 ✗ error
     language.source_form.not_met (OB-FIX-21): `ste_house` writes one paragraph
       on one line, and this line continues the paragraph above
     fix: join this line to the line above, or end the paragraph there
-  check/spec/07-prose-defects.md:61:32 ✗ error
+  check/spec/07-prose-defects.md:65:32 ✗ error
     link.fragment.unresolved (OB-FIX-10): `#no-such-section` names no heading of
       this document
     fix: point it at a heading of check/spec/07-prose-defects.md, or write the
       heading it names
-  check/spec/07-prose-defects.md:63:28 ✗ error
+  check/spec/07-prose-defects.md:67:28 ✗ error
     link.path.unresolved: `19-renamed.md` names no file of this repository:
       nothing stands at `check/spec/19-renamed.md`
     fix: point it at a file that exists, or restore `check/spec/19-renamed.md`.
       A document that moved keeps its identifier, so `headwater explain` finds
       where it went
-  check/spec/07-prose-defects.md:65:91 ✗ error
+  check/spec/07-prose-defects.md:69:91 ✗ error
     link.path.unresolved: `19-renamed.md#a-heading` names no file of this
       repository: nothing stands at `check/spec/19-renamed.md`
     fix: point it at a file that exists, or restore `check/spec/19-renamed.md`.
       A document that moved keeps its identifier, so `headwater explain` finds
       where it went
-  check/spec/07-prose-defects.md:67:63 ✗ error
+  check/spec/07-prose-defects.md:71:63 ✗ error
     link.path.unresolved: `../../../outside.md` does not name a path of this
       repository at all: `check/spec/../../../outside.md` climbs above the
       repository
     fix: rewrite the destination as a path relative to the document that writes
       it, or as an absolute address with a scheme
-  check/spec/07-prose-defects.md:69:46 ✗ error
+  check/spec/07-prose-defects.md:73:46 ✗ error
     link.path.unresolved: `19-renamed.md?v=2` names no file of this repository:
       nothing stands at `check/spec/19-renamed.md`
     fix: point it at a file that exists, or restore `check/spec/19-renamed.md`.
       A document that moved keeps its identifier, so `headwater explain` finds
       where it went
-  check/spec/07-prose-defects.md:71:90 ✗ error
+  check/spec/07-prose-defects.md:75:90 ✗ error
     link.path.unresolved: `/spec/00-both-halves.md` names no file of this
       repository: nothing stands at `/spec/00-both-halves.md`
     fix: point it at a file that exists, or restore `/spec/00-both-halves.md`. A
@@ -664,9 +677,9 @@ read set
   version identifier.claimed_twice 1
   version identifier.claim.missing 2
   version identifier.claim.stale 2
-  version voice.forbidden_construction 5
-  version language.controlled.not_met 4
-  version language.retired_term.used 4
+  version voice.forbidden_construction 6
+  version language.controlled.not_met 5
+  version language.retired_term.used 5
   version surface.local_path.instructed 5
   version surface.command.undeclared 3
   version language.source_form.not_met 1
@@ -699,7 +712,7 @@ read set
   input check/spec/04-untyped.md sha256:ef34b3e4254620599be769fb2e28826e330b9a6b8972ed7ef32d2d3baaeddf2b
   input check/spec/05-no-summary.md sha256:e93ab39ba0f3d03cf7593bc046d7c0a5aa0fbf102df0e02e2dbf34c263aa346d
   input check/spec/06-retired.md sha256:d40b65fea5627e9da5693ba6ff1239180b1a3b6a9ab83ed5b414f286d7ded636
-  input check/spec/07-prose-defects.md sha256:6ca81f740c17f231ecc6c7268544dca0bd1bfd77b4498dccc67bc914ddb09024
+  input check/spec/07-prose-defects.md sha256:8dd1e0dfc872f7591dc2ce9b4d0ee7c6c6426542e92fc88c78a001c1134fedcb
   input check/spec/08-contract-met.md sha256:1f137d2e39a164a976bcfb76d662b7469171f99bd3ce643c4d3fb2fd247ba34f
   input check/spec/09-contract-missing.md sha256:6bc8ae424b8a20472a5d244ed71613195ad527e11e4739ec7cf5fa88f4315d4a
   input check/spec/10-suppressed.md sha256:2258c21842ba066fc11cadfee7b462909dda6bd93cf7693e9c93fa786382ebba

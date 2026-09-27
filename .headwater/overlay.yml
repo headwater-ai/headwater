@@ -1208,6 +1208,103 @@ add:
     kind: process_decision
     layout: "{seq:04d}-{slug}.md"
 
+  # --- the live account of a domain -----------------------------------------
+  # A decision answers one question once and changes only by a successor. No
+  # kind stated what holds now across a whole domain, such as where a CI job
+  # runs or what a release tag does. Those facts lived in workflow comments and
+  # in DEVELOPING.md, on no shelf and citing nothing. The two kinds below are
+  # that account, and HW-DR-0093 records the design (#1005).
+  #
+  # **Two kinds, on the line the block above draws.** `process_decision` is
+  # split from `decision` because a ruling about how this repository is built
+  # is true of no adopter. An account of that ruling's domain is true of no
+  # adopter for the same reason, so it goes on a process shelf under its own
+  # kind, and an account of what the product does goes on the other.
+  #
+  # **The purpose is `behavior`, reused rather than redeclared.** The base
+  # package declares it: state what the system does, as it is now. That is the
+  # whole job of this kind. `rationale` is the decision's purpose, and an
+  # account that restated the reasons would compete with the records that own
+  # them. The `Why it is this way` section links to those records and does not
+  # replace them.
+  #
+  # **`draws_on` is lifecycle-sensitive, because the account goes stale with
+  # its sources.** When a decision that an account draws on is superseded or
+  # withdrawn, the account states something that no longer holds. HW-DR-0065
+  # lets a relation declare `lifecycle_sensitive` for itself, and with it
+  # `lifecycle.dependency.on_terminal` reports the account the day its source
+  # ends. The family is `evidence` and the author writes each edge, the shape
+  # `relations.examines` has. No relation names `hook` after HW-OBL-0105.
+  #
+  # **This is not the `diataxis-site` bundle's `explanation` kind, and it does
+  # not settle HW-OBL-0097.** That bundle's shelf is also
+  # `docs/explanations/**`, and this repository cannot select the bundle, for
+  # the reason the `how_to` block above gives. The bundle's kind is one of four
+  # modes of a documentation site. This kind is the one live account of one
+  # domain, and it cites the records it draws on.
+  #
+  # **A slug scheme, minted once, and no layout.** Each document is the one
+  # account of its domain and not a member of a numbered sequence, so the
+  # identifier is the slug of its title, as `how_to_id` is. The file is named
+  # from the title. A second account of one domain is a defect, and the slug
+  # collision is what reports it.
+
+  identifier_schemes.explanation_id:
+    pattern: "{namespace}-EXP-{slug}"
+    namespace: HW
+    allocation: minted-once
+
+  identifier_schemes.process_explanation_id:
+    pattern: "{namespace}-PEXP-{slug}"
+    namespace: HW
+    allocation: minted-once
+
+  kinds.explanation:
+    is_a: governed_document
+    purpose: behavior
+    voice: declarative
+    lifecycle: standard
+    language: ste_house
+    identifier: {scheme: explanation_id}
+    facets:
+      require: [title]
+    sections:
+      require: [Scope, How it works, Why it is this way]
+
+  kinds.process_explanation:
+    is_a: governed_document
+    purpose: behavior
+    voice: declarative
+    lifecycle: standard
+    language: ste_house
+    identifier: {scheme: process_explanation_id}
+    facets:
+      require: [title]
+    sections:
+      require: [Scope, How it works, Why it is this way]
+
+  relations.draws_on:
+    family: evidence
+    from: [explanation, process_explanation]
+    to:   [governed_document]
+    cardinality: many
+    lifecycle_sensitive: true
+    created_by: author
+
+  # Disjoint from every shelf above. `docs/process/explanations/**` is the room
+  # the process-decision block left beside its own path.
+  shelves.explanations:
+    title: Explanations
+    path: docs/explanations/**
+    homogeneous: true
+    kind: explanation
+
+  shelves.process_explanations:
+    title: Process explanations
+    path: docs/process/explanations/**
+    homogeneous: true
+    kind: process_explanation
+
   # --- the library's doctrine -----------------------------------------------
   # The doctrine of each library entry, and the index that admits an entry, are
   # the prose an adopter reads before choosing one. Until #350 the corpus
@@ -1388,9 +1485,11 @@ add_to:
     # a reason rather than passing over it. Naming it now is what makes the
     # first guide on the shelf one change instead of two: the document lands and
     # the index appears, with no second edit to this list by somebody who would
-    # have to notice it was missing.
+    # have to notice it was missing. `explanations` is named for the same
+    # reason: its shelf holds nothing yet (#1005, HW-DR-0093), and its index
+    # appears with its first account.
     - kind: shelf_index
-      for: [spec_series, obligations, evaluations, requirements, acceptance_criteria, verifications, probes, probe_results, probe_runs, reviews, tutorials, how_to, process_decisions]
+      for: [spec_series, obligations, evaluations, requirements, acceptance_criteria, verifications, probes, probe_results, probe_runs, reviews, tutorials, how_to, process_decisions, explanations, process_explanations]
       output: "{shelf}/README.md"
 
     # The redirect map. `docs/spec/09-open-questions.md` is a tombstone: the

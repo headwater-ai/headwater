@@ -22,7 +22,7 @@
 
 lock:
   format: 3
-  digest: sha256:3ff24241d3911f302b8de6ac886da0d94727208debd3c5b49308e274f4f4f1a2
+  digest: sha256:ce6b33e4f7674b705d05e34eeef19de0b47d1d15a0ec2900d3c5a51d975c0a20
   rules: 2
   package: headwater/standard
   version: 4.9.1
@@ -36,7 +36,7 @@ lock:
     - path: .headwater/packages/headwater-standard/bundles/decision-record/bundle.yml
       digest: sha256:d2e1dd60f5adf97dcefd3aa46b0f377ed5e7eca533f82fad8a3d90224f79673f
     - path: .headwater/overlay.yml
-      digest: sha256:e235f8dc8a9a0b2214c394ae0b741bb0e48b3d200c705e495f49b18ca97cc38a
+      digest: sha256:bccbab94669294bae40527fc6edfe2204a430daa3cbc506ce649ba6be823119b
 
 # The adoption payload: the debt this corpus declared when the taxonomy first
 # reached it. Every other line of this file is generated and this block is not.
@@ -450,6 +450,22 @@ resolved:
       lifecycle: standard
       purpose: evidence
       voice: narrative
+    explanation:
+      facets:
+        require:
+          - title
+      identifier:
+        scheme: explanation_id
+      is_a: governed_document
+      language: ste_house
+      lifecycle: standard
+      purpose: behavior
+      sections:
+        require:
+          - Scope
+          - "How it works"
+          - "Why it is this way"
+      voice: declarative
     how_to:
       facets:
         require:
@@ -580,6 +596,22 @@ resolved:
           - Context
           - Decision
           - Consequences
+      voice: declarative
+    process_explanation:
+      facets:
+        require:
+          - title
+      identifier:
+        scheme: process_explanation_id
+      is_a: governed_document
+      language: ste_house
+      lifecycle: standard
+      purpose: behavior
+      sections:
+        require:
+          - Scope
+          - "How it works"
+          - "Why it is this way"
       voice: declarative
     requirement:
       facets:
@@ -767,6 +799,16 @@ resolved:
       reciprocal: required
       to:
         - obligation_record
+    draws_on:
+      cardinality: many
+      created_by: author
+      family: evidence
+      from:
+        - explanation
+        - process_explanation
+      lifecycle_sensitive: true
+      to:
+        - governed_document
     examines:
       cardinality: many
       created_by: author
@@ -829,6 +871,11 @@ resolved:
       kind: evaluation
       path: "docs/evaluations/**"
       title: Evaluations
+    explanations:
+      homogeneous: true
+      kind: explanation
+      path: "docs/explanations/**"
+      title: Explanations
     how_to:
       homogeneous: true
       kind: how_to
@@ -876,6 +923,11 @@ resolved:
       layout: "{seq:04d}-{slug}.md"
       path: "docs/process/decisions/**"
       title: "Process decisions"
+    process_explanations:
+      homogeneous: true
+      kind: process_explanation
+      path: "docs/process/explanations/**"
+      title: "Process explanations"
     requirements:
       homogeneous: true
       kind: requirement
@@ -924,6 +976,10 @@ resolved:
       allocation: minted-once
       namespace: HW
       pattern: "{namespace}-EVAL-{slug}"
+    explanation_id:
+      allocation: minted-once
+      namespace: HW
+      pattern: "{namespace}-EXP-{slug}"
     how_to_id:
       allocation: minted-once
       namespace: HW
@@ -948,6 +1004,10 @@ resolved:
       allocation: reconcile-first
       namespace: HW
       pattern: "{namespace}-PD-{seq:04d}"
+    process_explanation_id:
+      allocation: minted-once
+      namespace: HW
+      pattern: "{namespace}-PEXP-{slug}"
     register_id:
       allocation: minted-once
       namespace: HW
@@ -1010,6 +1070,8 @@ resolved:
         - tutorials
         - how_to
         - process_decisions
+        - explanations
+        - process_explanations
       output: "{shelf}/README.md"
     - kind: shelf_sections
       for:
