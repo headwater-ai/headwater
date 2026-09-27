@@ -23,6 +23,8 @@ relations:
 
 The target is a path under the corpus root or an identifier declared by a document.
 
+A path can have the form that a shell or an editor writes ([#1227](https://github.com/headwater-ai/headwater/issues/1227)). `./x`, `a/../x` and an absolute path under the repository root find the same document as `x`. A relative path is relative to the repository root, which is `--root`. It is not relative to the working directory of the process. With `--root elsewhere`, `./x` is `elsewhere/x`. `headwater_census::walk::typed` reads the path for this verb, for [`headwater show`](headwater-show.md) and for the `explain` tool of [`headwater mcp`](headwater-mcp.md).
+
 ## Description
 
 `headwater explain` prints the census derivation for one document. It states the path, identifier, kind, derivation steps, purpose, summary, warrant, required facets, required sections, permitted relations and related graph edges.
@@ -65,7 +67,7 @@ An identifier resolves through the graph index. A target that matches neither a 
 | Under the corpus root, with no document there | "is a path of this corpus, with no document written there yet" |
 | Under the corpus root, and an exclusion claims it | "is excluded by `<pattern>`" |
 | Outside every corpus root this repository declares | "is outside every corpus root this repository declares" |
-| Not a path this repository can classify | "is not a path this repository can classify" |
+| Outside the repository, as an absolute path or through a `..` that goes above the root, or a segment that is not UTF-8 | "is outside this repository, or is not a path it can read" |
 
 The first row is checked before the other four, and it never runs `Corpus::classify`. `Shape::identifier_shaped` tests the target against the fixed prefix each declared `identifier_schemes` entry opens on. A pattern of `{namespace}-DR-{seq:04d}` opens on `HW-DR-`, for example. A target that opens that way is refused as an identifier, whatever the rest of it says. The last four states classify a path: one matcher decides them, `headwater_census::walk::Corpus::classify`, which the walk also uses for an existing file. In this repository, a harness hook reads the second row and refuses a raw write there.
 
