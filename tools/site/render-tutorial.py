@@ -12,7 +12,10 @@ WHY THIS SCRIPT EXISTS
   with nothing added to the page passed that check silently, because the
   check has nothing to compare an ADDITION against. That is exactly what
   happened to the *Where to go next* section: `tools/headwater-bootstrap.sh`
-  landed in the document and never reached the page.
+  landed in the document and never reached the page. The *Before you start*
+  section drifted the same way after that (#1138): the page condensed the
+  document by hand, a prerequisite added to the document never reached it,
+  and a release bump had to edit the version on both by hand.
 
   This script closes that direction too, by removing the second copy. The
   document is the only place tutorial prose is written by hand from here on;
@@ -55,6 +58,16 @@ WHAT THIS READS, AND THE RULE IT APPLIES TO EACH FENCED BLOCK
   than treating a verification command as invisible scaffolding. Documented
   rather than special-cased, because a special case keyed to one step number
   is exactly the kind of hand-maintained fact this script exists to remove.
+
+WHAT THIS WRITES, AND WHAT IT CARRIES OVER
+
+  Three regions of the page: *Before you start*, the step sections and
+  *Where to go next*. The head, the hero, the glossary and the footer are
+  carried over from the page on disk. *Before you start* carries the
+  document's own words, lists as lists, and the renderer stops when that
+  section names a version (`headwater-vX.Y.Z-`, `releases/tag/vX.Y.Z`,
+  `version X.Y.Z`) other than the tag in its own download link, so a
+  release bump that edits one and not the other fails here.
 
 USAGE
 
@@ -364,17 +377,119 @@ def step_section(number, title, chunk):
                   check_html, right)
 
 
+def blocks(chunk):
+    """`[(kind, value)]` for `chunk` in document order: `("p", text)` for a
+    paragraph, `("ul", [item, ...])` for a `- ` list, and `("fence", text)`
+    for a fenced block. A non-blank line under a list item that does not
+    open a new item continues that item."""
+    out, para, items, fence, inside = [], [], [], [], False
+
+    def flush():
+        if para:
+            out.append(("p", " ".join(para)))
+            para.clear()
+        if items:
+            out.append(("ul", list(items)))
+            items.clear()
+
+    for line in chunk.split("\n"):
+        if is_fence(line):
+            if inside:
+                out.append(("fence", "\n".join(fence)))
+                fence = []
+            else:
+                flush()
+            inside = not inside
+            continue
+        if inside:
+            fence.append(line)
+            continue
+        text = line.strip()
+        if not text:
+            flush()
+        elif text.startswith("- "):
+            if para:
+                flush()
+            items.append(text[2:].strip())
+        elif items:
+            items[-1] += " " + text
+        else:
+            para.append(text)
+    flush()
+    return out
+
+
+# The release a tutorial pins is the tag in its own download link, and every
+# other place the section names a version must name that one (#1138).
+PIN = re.compile(r"releases/download/v(\d+\.\d+\.\d+)/")
+VERSION_MENTIONS = (re.compile(r"headwater-v(\d+\.\d+\.\d+)-"),
+                    re.compile(r"releases/tag/v(\d+\.\d+\.\d+)"),
+                    re.compile(r"\bversion (\d+\.\d+\.\d+)\b"))
+
+
+def check_version_pin(chunk):
+    """Stop when the section names a version other than the tag in its
+    download link. The two used to be edited by hand in step, one release
+    bump at a time, and nothing held one to the other."""
+    pins = set(PIN.findall(chunk))
+    if len(pins) != 1:
+        sys.exit("render-tutorial: Before you start must pin one release in "
+                 "its download link, and it pins %d (%s)"
+                 % (len(pins), ", ".join(sorted(pins)) or "none"))
+    pin = pins.pop()
+    for pattern in VERSION_MENTIONS:
+        for found in pattern.findall(chunk):
+            if found != pin:
+                sys.exit("render-tutorial: Before you start names version %s, "
+                         "and its download link pins v%s" % (found, pin))
+
+
 def render_before_you_start(chunk):
+    """The whole *Before you start* section, read out of the document. The
+    left column holds every block before the paragraph that introduces the
+    first fenced block. The right column holds that paragraph, the fence and
+    everything after it, in document order, with a `**Check.**` paragraph
+    styled as a check."""
+    check_version_pin(chunk)
+    parts = blocks(chunk)
     fences = walk_fences(chunk)
     classify(fences)
-    cmd = next(f for f in fences if f.role == "cmd" and "\n" in f.text)
-    checks = paragraphs(chunk, "check")
-    check_html = ""
-    if checks:
-        body = re.sub(r"^\*\*Check\.\*\*\s*", "", checks[0])
-        check_html = ('<p class="check"><span class="checkword">Check</span> '
-                       "<span>%s</span></p>" % inline(body))
-    return esc(cmd.text), check_html
+    roles = iter(f.role for f in fences)
+    first_fence = next(i for i, (k, _) in enumerate(parts) if k == "fence")
+    split = first_fence - 1 if first_fence and parts[first_fence - 1][0] == "p" \
+        else first_fence
+
+    def render(kind, value, pad):
+        if kind == "ul":
+            return (pad + "<ul>\n"
+                    + "\n".join(pad + "  <li>" + inline(v) + "</li>"
+                                for v in value)
+                    + "\n" + pad + "</ul>")
+        if kind == "fence":
+            return pad + '<pre class="%s verbatim">%s</pre>' % (
+                next(roles), esc(value))
+        if value.lower().lstrip("*").startswith("check."):
+            body = re.sub(r"^\*\*Check\.\*\*\s*", "", value)
+            return (pad + '<p class="check"><span class="checkword">Check'
+                    "</span> <span>%s</span></p>" % inline(body))
+        return pad + para_tag(value)
+
+    pad = "        "
+    left = "\n".join(render(k, v, pad) for k, v in parts[:split])
+    right = "\n".join(render(k, v, pad) for k, v in parts[split:])
+    return """<section>
+  <div class="bar" style="padding-top: 2.5rem; padding-bottom: 2.5rem;">
+    <h2 class="label">Before you start</h2>
+    <div class="split">
+      <div style="font-size: 0.98rem;">
+%s
+      </div>
+      <div>
+%s
+      </div>
+    </div>
+  </div>
+</section>""" % (left, right)
 
 
 def render_where_next(chunk):
@@ -410,6 +525,7 @@ def main():
     intro, sections = top_level_sections(strip_front_matter(DOC_PATH.read_text()))
     steps = split_steps(sections["Steps"])
 
+    before_html = render_before_you_start(sections["Before you start"])
     steps_html = "\n\n".join(step_section(n, t, c) for n, t, c in steps)
     where_next_html = render_where_next(sections["Where to go next"])
 
@@ -417,10 +533,15 @@ def main():
         sys.exit("render-tutorial: site/tutorial/index.html is not there")
     current = PAGE_PATH.read_text()
 
-    # Only the step sections and the where-to-next section are regenerated;
-    # the shell (head, nav, hero, before-you-start, glossary, footer) is
-    # carried over from the file on disk untouched, so this script owns
-    # exactly the two places the drift happened and no others.
+    # Before you start, the step sections and the where-to-next section are
+    # regenerated; the shell (head, nav, hero, glossary, footer) is carried
+    # over from the file on disk untouched, so this script owns exactly the
+    # three places drift happened (#1138 found the third) and no others.
+    before_marker = ('<section>\n  <div class="bar" style="padding-top: '
+                     '2.5rem; padding-bottom: 2.5rem;">\n    '
+                     '<h2 class="label">Before you start</h2>')
+    before_start = current.index(before_marker)
+    before_end = current.index("</section>", before_start) + len("</section>")
     steps_start = current.index('<section class="step">')
     steps_end = current.index('<section class="tint">')
     next_marker = ('<section>\n  <div class="bar pad">\n    '
@@ -428,7 +549,10 @@ def main():
     next_start = current.index(next_marker)
     next_end = current.index("</section>\n\n<footer>")
 
-    new = (current[:steps_start] + steps_html + "\n\n"
+    if not before_end <= steps_start:
+        sys.exit("render-tutorial: Before you start is not above the steps")
+    new = (current[:before_start] + before_html
+           + current[before_end:steps_start] + steps_html + "\n\n"
            + current[steps_end:next_start]
            + '<section>\n  <div class="bar pad">\n    '
              '<h2 class="label">Where to go next</h2>\n'

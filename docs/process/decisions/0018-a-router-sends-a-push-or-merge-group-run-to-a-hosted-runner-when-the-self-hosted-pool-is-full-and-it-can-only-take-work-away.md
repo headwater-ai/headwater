@@ -14,7 +14,7 @@ provenance:
 relations:
   governs:
     - to: .github/workflows/ci.yml
-      verified_revision: sha256:f4b3c176cedc9d969614ad7755edc324f1dc78423d8b55162ab05beb8595f57e
+      verified_revision: sha256:3a19a4b84e9e8150773f1d458c455610ee31d6bc9c40d136115aedf757b476dd
 ---
 
 # A router sends a push or merge group run to a hosted runner when the self-hosted pool is full, and it can only take work away

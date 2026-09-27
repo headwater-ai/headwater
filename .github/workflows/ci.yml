@@ -839,6 +839,14 @@ jobs:
         # the other three and before the assembly, for the same reason each
         # of them does.
         run: python3 tools/site/render-tutorial.py --check
+      - name: The tutorial renderer catches drift in Before you start
+        # The step above holds the page to the document as they stand. This
+        # one plants drift in scratch copies, the page's version, a line in
+        # its install block, a prerequisite added to the document, and a
+        # document whose prose names a version its download link does not
+        # pin, and requires the renderer to refuse each (#1138). It prints
+        # how many cases ran, because an empty run is not a pass.
+        run: sh tools/site/render-tutorial-fixtures.sh
       - name: The two halves of the site compose into one served directory
         # This is the input the deploy serves, and this step is the only place
         # that runs the composition where a person reads the result. The
