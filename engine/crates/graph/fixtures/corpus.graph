@@ -95,6 +95,40 @@ anchors
     cited by HW-OBL-0173
   code_path `.github/workflows/ci.yml` via source-tree
     cited by HW-OBL-0173
+  code_path `.github/workflows/publish-crates.yml` via source-tree
+    cited by HW-DR-0088
+  code_path `.github/workflows/publish-crates.yml` via source-tree
+    cited by HW-PD-0010
+  code_path `.github/workflows/publish-crates.yml` via source-tree
+    cited by HW-PD-0011
+  code_path `.github/workflows/publish-crates.yml` via source-tree
+    cited by HW-PD-0012
+  code_path `.github/workflows/release-taxonomy.yml` via source-tree
+    cited by HW-DR-0088
+  code_path `.github/workflows/release-taxonomy.yml` via source-tree
+    cited by HW-DR-0089
+  code_path `.github/workflows/release-taxonomy.yml` via source-tree
+    cited by HW-DR-0090
+  code_path `.github/workflows/release-taxonomy.yml` via source-tree
+    cited by HW-DR-0091
+  code_path `.github/workflows/release-taxonomy.yml` via source-tree
+    cited by HW-PD-0009
+  code_path `.github/workflows/release-taxonomy.yml` via source-tree
+    cited by HW-PD-0010
+  code_path `.github/workflows/release-taxonomy.yml` via source-tree
+    cited by HW-PD-0012
+  code_path `.github/workflows/release.yml` via source-tree
+    cited by HW-DR-0088
+  code_path `.github/workflows/release.yml` via source-tree
+    cited by HW-DR-0090
+  code_path `.github/workflows/release.yml` via source-tree
+    cited by HW-DR-0091
+  code_path `.github/workflows/release.yml` via source-tree
+    cited by HW-PD-0009
+  code_path `.github/workflows/release.yml` via source-tree
+    cited by HW-PD-0010
+  code_path `.github/workflows/release.yml` via source-tree
+    cited by HW-PD-0012
   code_path `.headwater/adoption.jsonl` via source-tree
     cited by HW-IFACE-headwater-taxonomy
   code_path `.headwater/capture-cost.jsonl` via source-tree
@@ -285,6 +319,8 @@ anchors
     cited by HW-DR-0075
   code_path `engine/crates/cli/tests/publish.rs` via source-tree
     cited by HW-DR-0022
+  code_path `engine/crates/cli/tests/publish_order.rs` via source-tree
+    cited by HW-PD-0011
   code_path `engine/crates/cli/tests/sweep.rs` via source-tree
     cited by HW-IFACE-headwater-sweep
   code_path `engine/crates/cli/tests/verbs.rs` via source-tree
@@ -445,6 +481,8 @@ anchors
     cited by HW-DR-0083
   code_path `tools/cap-run` via source-tree
     cited by HW-EVAL-one-clone-many-agents-how-this-repository-isolates-the-sessions-that-build-it
+  code_path `tools/cite/check-citations-fixtures.sh` via source-tree
+    cited by HW-DR-0092
   code_path `tools/engine/language-spike/**` via source-tree
     cited by HW-EVAL-language-spike-results
   code_path `tools/engine/language-spike/build.sh` via source-tree

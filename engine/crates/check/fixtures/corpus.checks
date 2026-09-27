@@ -1,13 +1,12 @@
-604 seen, 423 classified, 423 checked, 9031 check instances
+613 seen, 432 classified, 432 checked, 9206 check instances
      22 generated, held to regeneration by `headwater generate --check`
      23 skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
-    319 skipped: the target is a document, which holds no revision for an edge to be verified against
-      1 skipped: `HW-REG-open-questions` is a generated document, so this engine writes its state, and `lifecycle.state.set_twice` and `generate --check` read it
+    320 skipped: the target is a document, which holds no revision for an edge to be verified against
       1 skipped: the document at the target end, `HW-IFACE-headwater-init`, declares no warrant, so there is nothing there to say whether it supports an evidenced claim
       3 skipped: the document at the target end, `HW-RUN-regression-probe-transcript-for-2026-09-16`, declares no warrant, so there is nothing there to say whether it supports an evidenced claim
       2 skipped: the document at the target end, `HW-RUN-regression-probe-transcript-for-2026-09-17`, declares no warrant, so there is nothing there to say whether it supports an evidenced claim
       2 skipped: the document at the target end, `HW-RUN-regression-probe-transcript-for-2026-09-17-after-the-probe-corrections`, declares no warrant, so there is nothing there to say whether it supports an evidenced claim
-    847 skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
+    865 skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
 adoption
   0 pairs open, 1 closed, holding 0 findings, in 1 task
   AD-1 0 open, 1 closed, holding 0 findings, owner the specification authors,
@@ -15,38 +14,37 @@ adoption
     The one entry of `.ste-lint-baseline.json` that this corpus still owes. The
       baseline held two when the linter retired. The other named a semicolon
       inside a block quotation, which the engine does not report at all, because
-      the parser hands a quoted block to no lexical rule430 documents in the read set, and 6 barriers that no gate carries across a merge
-    423 instances of facet.required.missing
-    423 instances of facet.value.not_permitted
-    423 instances of facet.value.blank
-    423 instances of identifier.pattern.not_met
-    423 instances of shelf.placement_is_primary
-    787 instances of relation.target.unresolved
-    564 instances of relation.target.suspect
+      the parser hands a quoted block to no lexical rule439 documents in the read set, and 6 barriers that no gate carries across a merge
+    432 instances of facet.required.missing
+    432 instances of facet.value.not_permitted
+    432 instances of facet.value.blank
+    432 instances of identifier.pattern.not_met
+    432 instances of shelf.placement_is_primary
+    807 instances of relation.target.unresolved
+    584 instances of relation.target.suspect
      92 instances of relation.reciprocity.missing
-    450 instances of relation.endpoint.not_permitted
+    451 instances of relation.endpoint.not_permitted
       3 instances of lifecycle.dependency.on_terminal
-    450 instances of lifecycle.dependency.on_initial
-      3 instances of lifecycle.state.not_set_by_edge
-    432 instances of warrant.evidence.unsupported
+    451 instances of lifecycle.dependency.on_initial
+    433 instances of warrant.evidence.unsupported
       5 instances of relation.participation.overdue
-    423 instances of relation.declaration.unusable
-    423 instances of identifier.unusable
+    432 instances of relation.declaration.unusable
+    432 instances of identifier.unusable
       1 instances of identifier.claimed_twice
       1 instances of identifier.claim.missing
       1 instances of identifier.claim.stale
-    384 instances of voice.forbidden_construction
-    402 instances of language.controlled.not_met
-    402 instances of language.retired_term.used
+    393 instances of voice.forbidden_construction
+    411 instances of language.controlled.not_met
+    411 instances of language.retired_term.used
      27 instances of surface.local_path.instructed
      27 instances of surface.command.undeclared
-    402 instances of language.source_form.not_met
-    364 instances of section.required.missing
+    411 instances of language.source_form.not_met
+    373 instances of section.required.missing
       1 instances of link.fragment.unresolved
       1 instances of link.path.unresolved
-    423 instances of warrant.promoted
-    423 instances of lifecycle.transition.not_permitted
-    423 instances of lifecycle.state.not_admitted
+    432 instances of warrant.promoted
+    432 instances of lifecycle.transition.not_permitted
+    432 instances of lifecycle.state.not_admitted
       1 instances of lifecycle.deletion.not_permitted
       1 instances of relation.target.verification.suspect
 suppressions
@@ -79,8 +77,6 @@ rules, and for each the scope that binds it
   lifecycle.dependency.on_terminal
     edge scope, one relation instance and both endpoints
   lifecycle.dependency.on_initial
-    edge scope, one relation instance and both endpoints
-  lifecycle.state.not_set_by_edge
     edge scope, one relation instance and both endpoints
   warrant.evidence.unsupported
     edge scope, one relation instance and both endpoints
@@ -159,7 +155,6 @@ register
       2 producing facts rather than findings
   escaped findings, in the precedence spec 4 fixes: no waiver reaches a check finding, 0 migration-pending, 0 suppressed
   facet.value.blank reaches no obligation, so it names none
-  lifecycle.state.not_set_by_edge reaches no obligation, so it names none
   lifecycle.state.set_twice reaches no obligation, so it names none
   surface.local_path.instructed reaches no obligation, so it names none
   surface.command.undeclared reaches no obligation, so it names none

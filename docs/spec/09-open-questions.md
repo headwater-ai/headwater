@@ -364,3 +364,23 @@ The documents on this shelf, in the reading order this corpus derives. Each head
 ## A live document that rests on a draft one is reported over every relation, because a draft leaves no record to cite
 
 [HW-DR-0085](../decisions/0085-a-live-document-that-rests-on-a-draft-one-is-reported-over-every-relation-because-a-draft-leaves-no-record-to-cite.md) — A live document with any relation to a draft is a warning, unless the relation writes a state onto its target (asserted, and no human has accepted it)
+
+## An engine release and a taxonomy release have disjoint tag namespaces and are cut independently
+
+[HW-DR-0088](../decisions/0088-an-engine-release-and-a-taxonomy-release-have-disjoint-tag-namespaces-and-are-cut-independently.md) — An engine tag matches v* and a taxonomy tag matches taxonomy/headwater-standard/v*, so neither release waits on the other and requires_engine is the only link. (asserted, and no human has accepted it)
+
+## A taxonomy release publishes the source at the tagged commit and never ships the vendored copy
+
+[HW-DR-0089](../decisions/0089-a-taxonomy-release-publishes-the-source-at-the-tagged-commit-and-never-ships-the-vendored-copy.md) — The taxonomy release runs taxonomy publish on taxonomy-source/ at the tag and never zips .headwater/packages/, so the artifact and the tag make one claim. (asserted, and no human has accepted it)
+
+## Each release states in its notes the release digest that a consumer pins
+
+[HW-DR-0090](../decisions/0090-each-release-states-in-its-notes-the-release-digest-that-a-consumer-pins.md) — An engine release and a taxonomy release each print the headwater/standard release.digest in their notes, so an adopter pins it from the tag they downloaded. (asserted, and no human has accepted it)
+
+## The runner image of the engine release build is written in the workflow because it sets the glibc floor
+
+[HW-DR-0091](../decisions/0091-the-runner-image-of-the-engine-release-build-is-written-in-the-workflow-because-it-sets-the-glibc-floor.md) — release.yml names each runner image and never reads CI_RUNNER, because the image sets the glibc floor that README.md states. The build is --locked. (asserted, and no human has accepted it)
+
+## The citation comment of spec 5 is for an adopter's corpus, and this repository does not practice it on its own code
+
+[HW-DR-0092](../decisions/0092-the-citation-comment-of-spec-5-is-for-an-adopter-s-corpus-and-this-repository-does-not-practice-it-on-its-own-code.md) — The per-identifier citation comment of spec 5 is a convention for an adopter's corpus. By the owner's ruling, the code of this repository carries none. Its comments that name an identifier are prose, and the checker does not read them. (asserted, and no human has accepted it)
