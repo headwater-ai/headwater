@@ -9,6 +9,8 @@ relations:
   constrains:
     - HW-DR-0029
     - HW-DR-0056
+  governs:
+    - tools/repo/readme-fixtures.sh
 provenance:
   warrant: asserted
   agency: agent

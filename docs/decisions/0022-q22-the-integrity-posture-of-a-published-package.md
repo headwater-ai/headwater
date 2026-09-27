@@ -15,6 +15,7 @@ provenance:
 relations:
   governs:
     - engine/crates/resolve/tests/publish.rs
+    - engine/crates/cli/tests/publish.rs
   traces_to:
     - HW-SPEC-distribution-and-federation
 ---
