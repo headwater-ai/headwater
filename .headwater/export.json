@@ -4202,6 +4202,29 @@
         }
       },
       {
+        "path": "docs/interfaces/headwater-show.md",
+        "kind": "interface_contract",
+        "id": "HW-IFACE-headwater-show",
+        "facets": {
+          "id": "HW-IFACE-headwater-show",
+          "status": "current",
+          "status_since": "2026-09-27",
+          "summary": "headwater show prints the bytes of one document as they are on disk, found by path or identifier through the resolver that explain uses.",
+          "last_verified": "2026-09-27",
+          "title": "headwater show",
+          "relations": {
+            "governs": [
+              [
+                "engine/crates/cli/src/lib.rs",
+                "engine/crates/cli/src/main.rs"
+              ],
+              "engine/crates/query/src/explain.rs",
+              "engine/crates/census/src/walk.rs"
+            ]
+          }
+        }
+      },
+      {
         "path": "docs/interfaces/headwater-sweep.md",
         "kind": "interface_contract",
         "id": "HW-IFACE-headwater-sweep",
@@ -10784,7 +10807,7 @@
           "id": "HW-PEXP-where-a-ci-job-runs",
           "status": "current",
           "status_since": "2026-09-27",
-          "summary": "A push can run on the self-hosted pool when CI_RUNNER opts in and the pool has room. A pull request always runs on a hosted runner.",
+          "summary": "A push can run on the self-hosted pool when CI_RUNNER opts in and the pool has room. A pull request from a fork runs on a hosted runner, and one from a branch here is skipped.",
           "last_verified": "2026-09-27",
           "title": "Where a CI job runs",
           "provenance": {
@@ -17074,6 +17097,39 @@
           "bound": "anchor",
           "anchor_kind": "code_path",
           "id": "engine/crates/query/src/json.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/interfaces/headwater-show.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "28:engine/crates/cli/src/lib.rs29:engine/crates/cli/src/main.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/interfaces/headwater-show.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/query/src/explain.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/interfaces/headwater-show.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/census/src/walk.rs",
           "resolver": "source-tree"
         }
       },

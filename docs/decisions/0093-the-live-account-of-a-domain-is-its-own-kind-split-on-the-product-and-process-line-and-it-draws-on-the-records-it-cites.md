@@ -27,6 +27,8 @@ The records that make an account possible exist now. The seven CI records are HW
 
 **Two kinds.** `.headwater/overlay.yml` declares `explanation` and `process_explanation`. The split is the line that `decision` and `process_decision` already draw. An account of how this repository is built is true of no adopter, so it goes on a process shelf under its own kind.
 
+**This repository alone gets the two kinds.** They are declared in this repository's overlay and not in the `headwater/standard` package. An adopter gets them only when it copies the overlay block into its own overlay. A move into the package is a later package release.
+
 **The purpose is `behavior`.** The base package declares it as "state what the system does, as it is now". Both kinds reuse it. `rationale` stays with the decision records, and an account links to them in place of a second copy of their reasons.
 
 **Three sections.** Each kind requires `Scope`, `How it works` and `Why it is this way`, in that order.

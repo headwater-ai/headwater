@@ -2,7 +2,7 @@
 id: HW-PEXP-where-a-ci-job-runs
 status: current
 status_since: 2026-09-27
-summary: "A push can run on the self-hosted pool when CI_RUNNER opts in and the pool has room. A pull request always runs on a hosted runner."
+summary: "A push can run on the self-hosted pool when CI_RUNNER opts in and the pool has room. A pull request from a fork runs on a hosted runner, and one from a branch here is skipped."
 last_verified: 2026-09-27
 title: "Where a CI job runs"
 provenance:
@@ -34,7 +34,7 @@ The runner containers are out of scope. They are provisioned outside this reposi
 
 A run has three jobs: `route`, `engine` and `headwater`. The workflow starts on a push to any branch and on a pull request.
 
-1. **`route` measures the pool.** It always runs on `ubuntu-latest`. For a push, it counts the queued and running jobs that ask for the `headwater` label. When no job waits, and the running jobs and the two jobs of this run fit in `CI_SELF_HOSTED_SLOTS`,, it outputs `overflow=false`. Otherwise it outputs `overflow=true`. The default pool size is 3. An error in the router gives an empty output, and the run continues ([HW-PD-0018](../decisions/0018-a-router-sends-a-push-run-to-a-hosted-runner-when-the-self-hosted-pool-is-full-and-it-can-only-take-work-away.md)).
+1. **`route` measures the pool.** It always runs on `ubuntu-latest`. For any other event, it outputs `overflow=true`. For a push, it counts the queued and running jobs that ask for the `headwater` label. When no job waits, and the running jobs and the two jobs of this run fit in `CI_SELF_HOSTED_SLOTS`, it outputs `overflow=false`. Otherwise it outputs `overflow=true`. The default pool size is 3. Two errors are possible. When the script sees an error, it outputs `overflow=false`. A failed API call and a `CI_SELF_HOSTED_SLOTS` that is not a count are errors of this type. When the step fails in a way that the script cannot see, or passes its limit of two minutes, the output is empty. In both cases the run routes by `CI_RUNNER` alone. The router never fails the run ([HW-PD-0018](../decisions/0018-a-router-sends-a-push-run-to-a-hosted-runner-when-the-self-hosted-pool-is-full-and-it-can-only-take-work-away.md)).
 2. **The job-level `if:` removes a duplicate run.** `engine` and `headwater` skip the `pull_request` run for a branch of this repository, because the `push` run on the same commit already gives the result. A pull request from a fork keeps its run ([HW-PD-0015](../decisions/0015-a-condition-in-ci-may-take-work-away-and-never-grant-it-so-one-run-per-commit-comes-from-a-job-level-if.md)).
 3. **`runs-on` chooses the runner.** The expression is the same for `engine` and `headwater`. A job gets the labels in `vars.CI_RUNNER` only when three conditions are true. The event is a `push`, the router did not output `overflow=true`, and `CI_RUNNER` is set. In every other case the job gets `ubuntu-latest` ([HW-PD-0013](../decisions/0013-self-hosted-eligibility-in-ci-is-decided-by-the-event-alone-and-a-push-to-any-branch-is-eligible.md), [HW-PD-0016](../decisions/0016-ci-runner-is-an-opt-in-that-only-a-push-reads-and-an-unset-value-falls-back-to-ubuntu-latest.md)).
 4. **A newer run cancels an older one on the same ref.** The concurrency group is the workflow and `github.ref`. A newer run cancels the older run on every ref except `refs/heads/main`. On `main`, every run completes ([HW-PD-0017](../decisions/0017-ci-concurrency-is-per-ref-and-every-ref-but-main-cancels-a-superseded-run.md)).
