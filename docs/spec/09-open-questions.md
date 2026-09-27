@@ -384,3 +384,7 @@ The documents on this shelf, in the reading order this corpus derives. Each head
 ## The citation comment of spec 5 is for an adopter's corpus, and this repository does not practice it on its own code
 
 [HW-DR-0092](../decisions/0092-the-citation-comment-of-spec-5-is-for-an-adopter-s-corpus-and-this-repository-does-not-practice-it-on-its-own-code.md) — The per-identifier citation comment of spec 5 is a convention for an adopter's corpus. By the owner's ruling, the code of this repository carries none. Its comments that name an identifier are prose, and the checker does not read them. (asserted, and no human has accepted it)
+
+## Harper does not become part of the engine, and Q41 stands
+
+[HW-DR-0096](../decisions/0096-harper-does-not-become-part-of-the-engine-and-q41-stands.md) — harper-core found no error in a 25-document sample of this corpus, and it needs a newer compiler than the engine allows. So the engine does not link it, and Vale stays refused. (asserted, and no human has accepted it)

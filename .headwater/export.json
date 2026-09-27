@@ -2691,6 +2691,34 @@
         }
       },
       {
+        "path": "docs/decisions/0096-harper-does-not-become-part-of-the-engine-and-q41-stands.md",
+        "kind": "decision",
+        "id": "HW-DR-0096",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-DR-0096",
+          "status": "current",
+          "status_since": "2026-09-27",
+          "summary": "harper-core found no error in a 25-document sample of this corpus, and it needs a newer compiler than the engine allows. So the engine does not link it, and Vale stays refused.",
+          "last_verified": "2026-09-27",
+          "title": "Harper does not become part of the engine, and Q41 stands",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5.5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "traces_to": [
+              "HW-DR-0041",
+              "HW-DR-0005",
+              "HW-DR-0024"
+            ]
+          }
+        }
+      },
+      {
         "path": "docs/evaluations/a-probe-task-section-is-the-prompt-so-commentary-under-that-heading-is-prompt.md",
         "kind": "evaluation",
         "id": "HW-EVAL-a-probe-task-section-is-the-prompt-so-commentary-under-that-heading-is-prompt",
@@ -2901,6 +2929,35 @@
               "HW-SPEC-distribution-and-federation",
               "HW-SPEC-check-layer",
               "HW-SPEC-glossary"
+            ]
+          }
+        }
+      },
+      {
+        "path": "docs/evaluations/harper-spike-results.md",
+        "kind": "evaluation",
+        "id": "HW-EVAL-harper-spike-results",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-EVAL-harper-spike-results",
+          "status": "current",
+          "status_since": "2026-09-27",
+          "summary": "harper-core 2.11.0, fed only the prose an author wrote, found 0 errors in 187 hand-read findings on 25 documents. It needs rustc past 1.93 and adds 496 crates.",
+          "last_verified": "2026-09-27",
+          "title": "Harper over this corpus finds no error on a 25-document sample, and it builds only past the engine toolchain",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5.5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "governs": [
+              "tools/engine/harper-spike/**"
+            ],
+            "traces_to": [
+              "tools/engine/harper-spike/build.sh"
             ]
           }
         }
@@ -12635,6 +12692,16 @@
       },
       {
         "anchor_kind": "code_path",
+        "id": "tools/engine/harper-spike/**",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
+        "id": "tools/engine/harper-spike/build.sh",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
         "id": "tools/engine/language-spike/**",
         "resolver": "source-tree"
       },
@@ -15090,6 +15157,39 @@
         }
       },
       {
+        "source": "docs/decisions/0096-harper-does-not-become-part-of-the-engine-and-q41-stands.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0041",
+          "path": "docs/decisions/0041-q41-whether-vale-becomes-a-declared-regime-backend.md",
+          "kind": "decision"
+        }
+      },
+      {
+        "source": "docs/decisions/0096-harper-does-not-become-part-of-the-engine-and-q41-stands.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0005",
+          "path": "docs/decisions/0005-voice-checking-depth.md",
+          "kind": "decision"
+        }
+      },
+      {
+        "source": "docs/decisions/0096-harper-does-not-become-part-of-the-engine-and-q41-stands.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0024",
+          "path": "docs/decisions/0024-q24-readability-and-what-a-sweep-can-be-asked-about.md",
+          "kind": "decision"
+        }
+      },
+      {
         "source": "docs/evaluations/a-probe-task-section-is-the-prompt-so-commentary-under-that-heading-is-prompt.md",
         "relation": "traces_to",
         "written_as": "traces_to",
@@ -15472,6 +15572,28 @@
           "id": "HW-SPEC-glossary",
           "path": "docs/spec/glossary.md",
           "kind": "design_spec"
+        }
+      },
+      {
+        "source": "docs/evaluations/harper-spike-results.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "tools/engine/harper-spike/**",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/evaluations/harper-spike-results.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "tools/engine/harper-spike/build.sh",
+          "resolver": "source-tree"
         }
       },
       {
