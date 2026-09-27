@@ -311,7 +311,15 @@ impl DocumentCheck for Language {
     /// `Sentence boundaries` paragraph of `fixtures/check/spec/07-prose-defects.md`
     /// holds each dotted entry, so `tests/editions.rs` fails the next
     /// splitter change that moves one of them and leaves this number alone.
-    const VERSION: u32 = 5;
+    ///
+    /// **Edition six, on 2026-09-28 ([#1262](https://github.com/headwater-ai/headwater/issues/1262)).**
+    /// An abbreviation in the splitter in `headwater-doc` now matches prose letters only.
+    /// Before, the last letters of a code span such as `--no` or `etc` and the period after it read as `no.` or `etc.`, and the sentence after it merged into it.
+    /// This rule counts words per sentence, so the merged pair reported one sentence past the limit that is two sentences inside it. The document, the lock and the rule are all unchanged, so a warm
+    /// cache from the previous engine would serve the merged verdict. The
+    /// `Sentence boundaries` paragraph of `fixtures/check/spec/07-prose-defects.md`
+    /// ends a sentence on the code spans `no` and `--no`. The pair after `no` is past the length limit only while merged, and the sentence after `--no` writes a retired term and a future, so `tests/editions.rs` holds this change for all three rules.
+    const VERSION: u32 = 6;
     const NEEDS_BODY: bool = true;
 
     fn instantiates(&self, kind: &str) -> bool {

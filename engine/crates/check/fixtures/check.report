@@ -173,9 +173,9 @@ register
   adoption.task.expired reaches no obligation, so it names none
   language.outside_root.refused reaches no obligation, so it names none
   relation.target.verification.suspect reaches no obligation, so it names none
-65 findings
+67 findings
      39 ✗ error
-     26 ▲ warn
+     28 ▲ warn
 
 instances
   facet.required.missing check/evaluations/alpha.md
@@ -957,37 +957,43 @@ check/spec/07-prose-defects.md:35:1 ▲ warn
 check/spec/07-prose-defects.md:35:1 ▲ warn
   voice.forbidden_construction (OB-FIX-7): `declarative` forbids future_intent, and this sentence writes `will be`
   fix: state what the system does now, or move the sentence to a document whose kind narrates
-check/spec/07-prose-defects.md:43:1 ✗ error
-  language.controlled.not_met (OB-FIX-8): `ste_house` admits no contraction, and this sentence writes `doesn't`
-  fix (mechanical): write `does not`
-check/spec/07-prose-defects.md:47:1 ✗ error
-  language.retired_term.used (OB-FIX-22): `ste_house` retires `reference system`, and this sentence writes it: the corpus renamed it
-  fix (mechanical): write `taxonomy`
-check/spec/07-prose-defects.md:49:1 ▲ warn
+check/spec/07-prose-defects.md:39:14 ▲ warn
   language.retired_term.used (OB-FIX-22): `ste_house` retires `robust`, and this sentence writes it: it stands in for the failure the thing survives
   fix: rewrite the sentence without `robust`
-check/spec/07-prose-defects.md:60:1 ✗ error
+check/spec/07-prose-defects.md:39:14 ▲ warn
+  voice.forbidden_construction (OB-FIX-7): `declarative` forbids future_intent, and this sentence writes `will be`
+  fix: state what the system does now, or move the sentence to a document whose kind narrates
+check/spec/07-prose-defects.md:47:1 ✗ error
+  language.controlled.not_met (OB-FIX-8): `ste_house` admits no contraction, and this sentence writes `doesn't`
+  fix (mechanical): write `does not`
+check/spec/07-prose-defects.md:51:1 ✗ error
+  language.retired_term.used (OB-FIX-22): `ste_house` retires `reference system`, and this sentence writes it: the corpus renamed it
+  fix (mechanical): write `taxonomy`
+check/spec/07-prose-defects.md:53:1 ▲ warn
+  language.retired_term.used (OB-FIX-22): `ste_house` retires `robust`, and this sentence writes it: it stands in for the failure the thing survives
+  fix: rewrite the sentence without `robust`
+check/spec/07-prose-defects.md:64:1 ✗ error
   language.source_form.not_met (OB-FIX-21): `ste_house` writes one paragraph on one line, and this line continues the paragraph above
   fix: join this line to the line above, or end the paragraph there
-check/spec/07-prose-defects.md:61:1 ✗ error
+check/spec/07-prose-defects.md:65:1 ✗ error
   language.source_form.not_met (OB-FIX-21): `ste_house` writes one paragraph on one line, and this line continues the paragraph above
   fix: join this line to the line above, or end the paragraph there
-check/spec/07-prose-defects.md:65:32 ✗ error
+check/spec/07-prose-defects.md:69:32 ✗ error
   link.fragment.unresolved (OB-FIX-10): `#no-such-section` names no heading of this document
   fix: point it at a heading of check/spec/07-prose-defects.md, or write the heading it names
-check/spec/07-prose-defects.md:67:28 ✗ error
+check/spec/07-prose-defects.md:71:28 ✗ error
   link.path.unresolved: `19-renamed.md` names no file of this repository: nothing stands at `check/spec/19-renamed.md`
   fix: point it at a file that exists, or restore `check/spec/19-renamed.md`. A document that moved keeps its identifier, so `headwater explain` finds where it went
-check/spec/07-prose-defects.md:69:91 ✗ error
+check/spec/07-prose-defects.md:73:91 ✗ error
   link.path.unresolved: `19-renamed.md#a-heading` names no file of this repository: nothing stands at `check/spec/19-renamed.md`
   fix: point it at a file that exists, or restore `check/spec/19-renamed.md`. A document that moved keeps its identifier, so `headwater explain` finds where it went
-check/spec/07-prose-defects.md:71:63 ✗ error
+check/spec/07-prose-defects.md:75:63 ✗ error
   link.path.unresolved: `../../../outside.md` does not name a path of this repository at all: `check/spec/../../../outside.md` climbs above the repository
   fix: rewrite the destination as a path relative to the document that writes it, or as an absolute address with a scheme
-check/spec/07-prose-defects.md:73:46 ✗ error
+check/spec/07-prose-defects.md:77:46 ✗ error
   link.path.unresolved: `19-renamed.md?v=2` names no file of this repository: nothing stands at `check/spec/19-renamed.md`
   fix: point it at a file that exists, or restore `check/spec/19-renamed.md`. A document that moved keeps its identifier, so `headwater explain` finds where it went
-check/spec/07-prose-defects.md:75:90 ✗ error
+check/spec/07-prose-defects.md:79:90 ✗ error
   link.path.unresolved: `/spec/00-both-halves.md` names no file of this repository: nothing stands at `/spec/00-both-halves.md`
   fix: point it at a file that exists, or restore `/spec/00-both-halves.md`. A document that moved keeps its identifier, so `headwater explain` finds where it went
 check/spec/08-contract-met.md:2:1 ✗ error
