@@ -7366,7 +7366,7 @@ fn init_git(root: &Path, configure: bool) -> ExitCode {
                 ))
             );
             stores_unanswered = true;
-            stores.clone()
+            Vec::new()
         }
         None => stores
             .iter()
@@ -7374,9 +7374,11 @@ fn init_git(root: &Path, configure: bool) -> ExitCode {
             .cloned()
             .collect(),
     };
+    // A store with no answer is neither named nor owed a line: the step writes
+    // none for it, and counts it as neither declared nor withheld.
     let mut unions: Vec<&str> = Vec::new();
     for store in APPEND_ONLY_STORES {
-        if named.iter().any(|path| path == store) {
+        if stores_unanswered || named.iter().any(|path| path == store) {
             continue;
         }
         match covering(store) {
@@ -7390,7 +7392,22 @@ fn init_git(root: &Path, configure: bool) -> ExitCode {
             None => unions.push(store),
         }
     }
-    let declarable = paths.len() + APPEND_ONLY_STORES.len();
+    // What the counts below are over: the stores only where git answered for
+    // them, so that no message counts an unanswered store as declared.
+    let declarable = if stores_unanswered {
+        paths.len()
+    } else {
+        paths.len() + APPEND_ONLY_STORES.len()
+    };
+    let unanswered = if stores_unanswered {
+        format!(
+            ". It wrote no line for the {} append-only stores, because git did not say whether \
+             a line already names them",
+            APPEND_ONLY_STORES.len()
+        )
+    } else {
+        String::new()
+    };
 
     let attributes = root.join(".gitattributes");
     if !missing.is_empty() || !unions.is_empty() {
@@ -7441,6 +7458,15 @@ fn init_git(root: &Path, configure: bool) -> ExitCode {
         for store in &unions {
             println!("  {store} {UNION_ATTRIBUTE}");
         }
+        if stores_unanswered {
+            println!(
+                "and no line for the {} append-only stores, because git did not say whether a \
+                 line already names them",
+                APPEND_ONLY_STORES.len()
+            );
+        }
+    } else if withheld == 0 && stores_unanswered {
+        println!(".gitattributes already declares all {declarable} derived artifacts{unanswered}");
     } else if withheld == 0 {
         println!(
             ".gitattributes already declares all {declarable} derived artifacts and append-only stores"
@@ -7448,7 +7474,7 @@ fn init_git(root: &Path, configure: bool) -> ExitCode {
     } else {
         println!(
             "wrote no line to .gitattributes: {withheld} of {declarable} derived artifacts and \
-             append-only stores may be declared by a nested file the step did not read"
+             append-only stores may be declared by a nested file the step did not read{unanswered}"
         );
     }
 

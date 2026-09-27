@@ -328,8 +328,38 @@ const PROBE: &str = "headwater-probe";
 /// a repository names, so that its answer shows whether the probe line matched.
 const PROBE_MATCHED: &str = "headwater-probe-matched";
 
-/// Characters that make a probe line name something other than the path.
-const UNPROBEABLE: &str = "\"\\*?[!#";
+/// One line of an attributes file whose pattern matches `path` and nothing
+/// else, with `attributes` after it.
+///
+/// The pattern is C-quoted, which git accepts in an attributes file, so a
+/// space, a `#`, a quote or a newline in a directory name stays part of the
+/// pattern. Each glob character and each backslash is escaped with a backslash
+/// first, so that git matches it as itself. The leading `/` anchors the
+/// pattern, so `!` never starts it.
+fn literal_attributes_line(path: &str, attributes: &str) -> String {
+    let mut pattern = String::from("/");
+    for c in path.chars() {
+        if matches!(c, '*' | '?' | '[' | ']' | '\\') {
+            pattern.push('\\');
+        }
+        pattern.push(c);
+    }
+    let mut quoted = String::from("\"");
+    for c in pattern.chars() {
+        match c {
+            '"' => quoted.push_str("\\\""),
+            '\\' => quoted.push_str("\\\\"),
+            '\n' => quoted.push_str("\\n"),
+            '\t' => quoted.push_str("\\t"),
+            c if (c as u32) < 0x20 || c as u32 == 0x7f => {
+                quoted.push_str(&format!("\\{:03o}", c as u32));
+            }
+            c => quoted.push(c),
+        }
+    }
+    quoted.push('"');
+    format!("{quoted} {attributes}\n")
+}
 
 /// Whether any attributes file of the repository names the merge attribute of
 /// each of `paths`, in any form. Each path is relative to `root`.
@@ -356,17 +386,13 @@ const UNPROBEABLE: &str = "\"\\*?[!#";
 /// about the lines of the repository. That is an error and never a `true`, so
 /// a caller does not read "the probe did not answer" as "a line names it".
 ///
-/// `None` and `Some(Err(..))` as [`merge_attributes`] gives them. A path or a
-/// prefix that holds whitespace, a quote or a glob character is refused,
-/// because the probe line would then name a different path.
+/// Each probe line is C-quoted with its glob characters escaped
+/// ([`literal_attributes_line`]), so a directory name with a space, a `#`, a
+/// `!`, a glob character, a quote, a backslash or a newline is probed as it
+/// is spelled.
+///
+/// `None` and `Some(Err(..))` as [`merge_attributes`] gives them.
 pub fn names_merge(root: &Path, paths: &[String]) -> Option<Result<Vec<(String, bool)>, String>> {
-    let unprobeable = |text: &str| {
-        text.chars()
-            .any(|c| c.is_whitespace() || UNPROBEABLE.contains(c))
-    };
-    if let Some(path) = paths.iter().find(|path| unprobeable(path)) {
-        return Some(Err(format!("cannot probe the merge attribute of `{path}`")));
-    }
     // The same question first, so that `None` and a refusal read as they do
     // there.
     if let Err(refusal) = merge_attributes(root, &[])? {
@@ -378,9 +404,12 @@ pub fn names_merge(root: &Path, paths: &[String]) -> Option<Result<Vec<(String, 
         .args(["rev-parse", "--show-prefix"])
         .output()
     {
-        Ok(output) if output.status.success() => String::from_utf8_lossy(&output.stdout)
-            .trim_end_matches('\n')
-            .to_string(),
+        // One newline ends the answer. A directory name can end in a newline
+        // of its own, so only the last one is taken off.
+        Ok(output) if output.status.success() => {
+            let answer = String::from_utf8_lossy(&output.stdout).into_owned();
+            answer.strip_suffix('\n').unwrap_or(&answer).to_string()
+        }
         Ok(output) => {
             return Some(Err(format!(
                 "git did not name where the root sits in the work tree: {}",
@@ -389,9 +418,6 @@ pub fn names_merge(root: &Path, paths: &[String]) -> Option<Result<Vec<(String, 
         }
         Err(error) => return Some(Err(format!("git did not run: {error}"))),
     };
-    if unprobeable(&prefix) {
-        return Some(Err(format!("cannot probe below the directory `{prefix}`")));
-    }
     let probe = std::env::temp_dir().join(format!(
         "headwater-merge-probe-{}-{}",
         std::process::id(),
@@ -401,7 +427,12 @@ pub fn names_merge(root: &Path, paths: &[String]) -> Option<Result<Vec<(String, 
     ));
     let text: String = paths
         .iter()
-        .map(|path| format!("/{prefix}{path} merge={PROBE} {PROBE_MATCHED}\n"))
+        .map(|path| {
+            literal_attributes_line(
+                &format!("{prefix}{path}"),
+                &format!("merge={PROBE} {PROBE_MATCHED}"),
+            )
+        })
         .collect();
     if let Err(error) = std::fs::write(&probe, text) {
         return Some(Err(format!("cannot write the probe file: {error}")));
