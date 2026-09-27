@@ -14,7 +14,7 @@ provenance:
 relations:
   governs:
     - to: .github/workflows/ci.yml
-      verified_revision: sha256:a4195cba139ce6094882dc4531fe20ed780aef3eabfc987a9e906606e46635ee
+      verified_revision: sha256:bfd4ef8959003aeeeb747d4ee09681182987086ddc45ab5b61e1b8c5818a758e
 ---
 
 # Self-hosted eligibility in CI is decided by the event alone, and a push to any branch is eligible

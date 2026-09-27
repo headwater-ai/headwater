@@ -737,6 +737,13 @@ jobs:
         # second is the one a presence grep would pass. It writes only under a
         # temporary directory.
         run: sh tools/site/site-canonical-fixtures.sh
+      - name: The APT fetch serves one release whole or stops the site build
+        # `tools/site/fetch-apt.sh` decides in the Cloudflare build whether
+        # headwater.tools serves an APT repository (HW-DR-0094). Its fixtures
+        # serve signed releases from a local server: a whole one, files of
+        # two releases, a missing file, and a server that never answers. Each
+        # mix is a repository apt refuses, so the script must stop the build.
+        run: sh tools/site/fetch-apt-fixtures.sh
       - name: The crawler files are what the committed pages say
         # `tools/site/refresh-crawler-files.sh` derives `site/llms.txt`,
         # `site/robots.txt` and `site/sitemap.xml` from the `<title>`, the
