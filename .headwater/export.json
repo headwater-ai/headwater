@@ -2500,7 +2500,7 @@
           "status": "current",
           "status_since": "2026-09-26",
           "summary": "The six-sentence paragraph defect is retired before it lands. 50 of 60 sampled paragraphs past six sentences held one topic, so the count misses what rule 6.5 asks, and no word count replaces it.",
-          "last_verified": "2026-09-26",
+          "last_verified": "2026-09-27",
           "title": "No paragraph limit joins the language rule, because most paragraphs past six sentences hold one topic",
           "provenance": {
             "warrant": "accepted",
@@ -2517,7 +2517,7 @@
             "governs": [
               {
                 "to": "engine/crates/check/src/language.rs",
-                "verified_revision": "sha256:4ed3b112c0e9c08ba9264da27070a07ce958e666a85a085cb591131e52c01bac"
+                "verified_revision": "sha256:073ae8e5e761b16b06ebcde6daee30857483ef016e69d6c00e627d558ace4122"
               }
             ],
             "traces_to": [
@@ -2803,6 +2803,34 @@
               "HW-SPEC-taxonomy-model",
               "HW-SPEC-distribution-and-federation",
               "HW-SPEC-glossary"
+            ]
+          }
+        }
+      },
+      {
+        "path": "docs/evaluations/external-evaluation-harnesses-and-benchmarks-for-the-probe-campaign.md",
+        "kind": "evaluation",
+        "id": "HW-EVAL-external-evaluation-harnesses-and-benchmarks-for-the-probe-campaign",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-EVAL-external-evaluation-harnesses-and-benchmarks-for-the-probe-campaign",
+          "status": "current",
+          "status_since": "2026-09-27",
+          "summary": "DeepEval, Promptfoo and Inspect AI can drive a probe session but never grade one. The campaign adopts none, because each reads model text or opens a channel the session can write to.",
+          "last_verified": "2026-09-27",
+          "title": "External evaluation harnesses and benchmarks for the probe campaign",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "mixed",
+            "drafted_by": "claude-opus-5.5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "traces_to": [
+              "HW-SPEC-ai-integration",
+              "HW-SPEC-the-recorder-contract",
+              "HW-DR-0059"
             ]
           }
         }
@@ -14938,7 +14966,7 @@
           "resolver": "source-tree"
         },
         "attributes": {
-          "verified_revision": "sha256:4ed3b112c0e9c08ba9264da27070a07ce958e666a85a085cb591131e52c01bac"
+          "verified_revision": "sha256:073ae8e5e761b16b06ebcde6daee30857483ef016e69d6c00e627d558ace4122"
         }
       },
       {
@@ -15263,6 +15291,39 @@
           "id": "HW-SPEC-glossary",
           "path": "docs/spec/glossary.md",
           "kind": "design_spec"
+        }
+      },
+      {
+        "source": "docs/evaluations/external-evaluation-harnesses-and-benchmarks-for-the-probe-campaign.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-SPEC-ai-integration",
+          "path": "docs/spec/05-ai-integration.md",
+          "kind": "design_spec"
+        }
+      },
+      {
+        "source": "docs/evaluations/external-evaluation-harnesses-and-benchmarks-for-the-probe-campaign.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-SPEC-the-recorder-contract",
+          "path": "docs/spec/15-the-recorder-contract.md",
+          "kind": "design_spec"
+        }
+      },
+      {
+        "source": "docs/evaluations/external-evaluation-harnesses-and-benchmarks-for-the-probe-campaign.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0059",
+          "path": "docs/decisions/0059-a-transform-over-a-harness-session-log-is-an-observed-transcript-when-the-log-arrives-by-a-channel-the-model-cannot-write-to.md",
+          "kind": "decision"
         }
       },
       {
