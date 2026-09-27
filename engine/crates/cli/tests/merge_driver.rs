@@ -1482,11 +1482,11 @@ fn the_git_step_without_git_names_the_refusal_and_writes_no_line_a_nested_file_c
 #[test]
 fn the_git_step_writes_no_line_for_a_producer_the_adopter_does_not_hold() {
     let rows: [(&str, &str, &str, &str, &str); 1] = [(
-            "blessing-producer",
-            "engine/crates/a/fixtures/corpus.a",
-            "426 files\nsha256:0a1b\n",
-            "HEADWATER_BLESS=1 cargo test",
-            "engine/Cargo.toml",
+        "blessing-producer",
+        "engine/crates/a/fixtures/corpus.a",
+        "426 files\nsha256:0a1b\n",
+        "HEADWATER_BLESS=1 cargo test",
+        "engine/Cargo.toml",
     )];
     for (label, path, body, command, holder) in rows {
         let tree = Tree::adopted(label);

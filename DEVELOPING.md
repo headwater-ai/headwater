@@ -125,7 +125,7 @@ Several agent sessions build this repository at the same time, each in its own w
 
 ## What CI runs
 
-`.github/workflows/ci.yml` defines two jobs, `engine` and `headwater`. A push to any branch runs both. For a pull request opened from this repository, that push run is the one that answers, and it is the run whose verdict the branch protection reads. The `pull_request` run skips both jobs rather than build one commit twice. A fork's pull request has no push run here, so its own run does the work, on a GitHub-hosted runner and behind a manual approval. A `merge_group` run tests the commit the merge queue built from `main` and the queued pull requests, and it runs both jobs under the same two names, eligible for the self-hosted runner as a push is. The header comment of that workflow carries why the event decides this and why nothing written in the file may. Everything below is blocking. This list is checked against the workflow by `sh tools/repo/developing-fixtures.sh`, in both directions, so a gate added to CI and not written here fails, and a gate written here that CI does not run fails too.
+`.github/workflows/ci.yml` defines two gating jobs, `engine` and `headwater`. A push to any branch runs both. A third job, `deploy`, runs `tools/site/deploy-site.sh` on a push to `main` alone, and a contributor never runs that script by hand. For a pull request opened from this repository, that push run is the one that answers, and it is the run whose verdict the branch protection reads. The `pull_request` run skips both jobs rather than build one commit twice. A fork's pull request has no push run here, so its own run does the work, on a GitHub-hosted runner and behind a manual approval. A `merge_group` run tests the commit the merge queue built from `main` and the queued pull requests, and it runs both jobs under the same two names, eligible for the self-hosted runner as a push is. The header comment of that workflow carries why the event decides this and why nothing written in the file may. Everything below is blocking. This list is checked against the workflow by `sh tools/repo/developing-fixtures.sh`, in both directions, so a gate added to CI and not written here fails, and a gate written here that CI does not run fails too.
 
 **What that check holds is the name of each gate, and not the flags printed beside it.** The commands below are written as CI writes them so that you can copy a line and run it, but no case compares a flag: `--check` deleted from a line here moves nothing, and `--check` deleted from the workflow moves nothing either. The reason is that the flags on these commands are a pinned clock, a change manifest, an output shape and a check-versus-write switch, and a suite that compared them would redden on a reordering that changed no gate. `--locked` is the one flag anything in this repository holds, and `sh tools/engine/build-declaration-fixtures.sh` is what holds it.
 
@@ -189,6 +189,9 @@ The fixture suites, which are shell and Python rather than cargo, and which you 
     sh tools/site/refresh-crawler-files.sh --check
     sh tools/site/refresh-figures.sh --check
     sh tools/site/figures-fixtures.sh
+    sh tools/site/check-site-figures.sh .headwater/site-deploy
+    sh tools/site/refresh-figures.sh --into .headwater/site-deploy
+    sh tools/site/deploy-site.sh
     sh tools/site/refresh-site-tokens.sh --check
     sh tools/run/board-move-fixtures.sh
     sh tools/run/ci-done-fixtures.sh
