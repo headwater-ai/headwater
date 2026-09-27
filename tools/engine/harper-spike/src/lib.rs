@@ -78,7 +78,7 @@ fn authored_text(
                 continue;
             }
             let verbatim = to - from == run.text.len();
-            let piece = if verbatim {
+            let mut piece = if verbatim {
                 match run.text.get(lo - from..hi - from) {
                     Some(piece) => piece,
                     None => continue,
@@ -88,9 +88,23 @@ fn authored_text(
             } else {
                 continue;
             };
+            let mut file = if verbatim { lo } else { from };
+            // Where a code span or a quotation was dropped, the space before
+            // it and the space after it meet. `Sentence::authored` keeps both,
+            // and Harper reads the pair as a formatting error the author never
+            // made (measured: rule Spaces, on the red run of the fixture). The
+            // second space goes, and the segment starts one byte later so the
+            // map to the file stays exact.
+            if text.ends_with(' ') && piece.starts_with(' ') {
+                let trimmed = piece.trim_start_matches(' ');
+                if verbatim {
+                    file += piece.len() - trimmed.len();
+                }
+                piece = trimmed;
+            }
             segments.push(Segment {
                 at: text.len(),
-                file: if verbatim { lo } else { from },
+                file,
                 len: piece.len(),
                 verbatim,
             });
@@ -103,9 +117,16 @@ fn authored_text(
 /// The file byte range of `start..end` in the text, when both ends fall in
 /// one verbatim segment.
 fn to_file(segments: &[Segment], start: usize, end: usize) -> Option<(usize, usize)> {
-    let _ = segments;
-    let _ = (start, end);
-    None
+    let segment = segments
+        .iter()
+        .find(|s| s.at <= start && end <= s.at + s.len)?;
+    if !segment.verbatim {
+        return None;
+    }
+    Some((
+        segment.file + (start - segment.at),
+        segment.file + (end - segment.at),
+    ))
 }
 
 /// Byte offset of a char index into `text`.
