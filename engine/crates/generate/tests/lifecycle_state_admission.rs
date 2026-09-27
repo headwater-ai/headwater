@@ -689,7 +689,10 @@ fn a_clash_whose_chosen_state_the_regime_refuses_names_only_the_setters_of_that_
     let plan = plan_over_lifecycle_regime();
 
     assert!(
-        !plan.outputs.iter().any(|output| output.path == STRICT_CLASH),
+        !plan
+            .outputs
+            .iter()
+            .any(|output| output.path == STRICT_CLASH),
         "`{STRICT_CLASH}` was written. The first of its edges' states in sorted order is \
          `current`, which `strict` does not name"
     );
