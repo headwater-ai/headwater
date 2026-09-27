@@ -394,10 +394,11 @@ fn of_reach(reach: &headwater_graph::Reach) -> Json {
                 reach
                     .members
                     .iter()
-                    .map(|(pattern, count)| {
+                    .map(|(pattern, paths)| {
                         Json::object([
                             ("pattern", Json::string(pattern.clone())),
-                            ("matched", number(*count)),
+                            ("matched", number(paths.len())),
+                            ("paths", strings(paths)),
                         ])
                     })
                     .collect(),
