@@ -5,7 +5,7 @@ argument-hint: "[iteration count, default 20] [--parallel N]"
 
 Run `$ARGUMENTS` iterations (default 20) of the Headwater build order. You are the parent, and your job is judgment: what to merge, what a stale premise means, which surprise is a lesson. Every stage is an agent definition under `.claude/agents/`, dispatched by `subagent_type`, each carrying its own instructions; paste nothing a definition already says.
 
-**Width.** Without `--parallel N` one issue is in flight, merged before the next starts; with it N build at once and merges stay one at a time through the slot below. Wider is not better: five to eight lost concurrency, per [the evaluation](../../docs/evaluations/the-build-order-as-a-multi-agent-system.md); raise it only on its numbers.
+**Width.** Without `--parallel N` one issue is in flight, merged before the next starts; with it N build at once and merges go through the slot below into the merge queue. Wider is not better: five to eight lost concurrency, per [the evaluation](../../docs/evaluations/the-build-order-as-a-multi-agent-system.md); raise it only on its numbers.
 
 ## The value rule
 
@@ -41,7 +41,7 @@ Ten lines the parent of a build-order run obeys on every turn. A run copies them
 3. **On an adjudicate report.** `VERDICT: BUILD` claims the footprint with `sh tools/run/run-dir.sh claim <run> <issue> <branch> <artifacts>` and dispatches `hw-build` with the same template, the adjudication note's path, and any `WAITS-ON` the claim printed. `VERDICT: REFUSE` is ruled by the three kinds in the `hw-run-policy` skill, written into the run's decisions file, and the next issue is taken in the same turn.
 4. **On a build report.** Dispatch `hw-verify` with the branch, the pull request number, the adjudication note, and the attacks you chose from the `hw-verification-bar` skill. Choosing the attacks is the judgment you keep; running them is not.
 5. **On a verify report.** `VERDICT: PASS` is your cue to rule. If you merge, append the ruling to the integrator queue and dispatch the next adjudicate in the same turn. `VERDICT: FAIL` is the veto below.
-6. **The integrator slot.** Depth one. When nothing is integrating and the queue holds a ruling, dispatch a fresh `hw-integrate` with the pull request, the ruling and the footprint the adjudicator declared. Never two at once, and never a long-lived one ([HW-PD-0003](../../docs/process/decisions/0003-a-dispatch-pays-when-it-retires-more-parent-turns-than-it-costs.md)).
+6. **The integrator slot.** Depth one. When nothing is integrating and the queue holds a ruling, dispatch a fresh `hw-integrate` with every pull request ruled MERGE, each with its ruling and declared footprint. It enqueues all, and an ejected one returns for a new ruling ([HW-PD-0020](../../docs/process/decisions/0020-merges-go-through-the-github-merge-queue-one-squash-commit-per-pull-request.md)). Never two at once, and never a long-lived one ([HW-PD-0003](../../docs/process/decisions/0003-a-dispatch-pays-when-it-retires-more-parent-turns-than-it-costs.md)).
 7. **Every fifth merge, and at the end**, dispatch `headwater-product-owner`: it rules on intake, so a question for it is an intake line, never a decisions note.
 
 ## The veto
