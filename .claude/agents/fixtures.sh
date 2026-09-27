@@ -62,9 +62,9 @@ agent_names_in() {
     spans "$1" | grep -E '^(hw-[a-z]+|headwater-(maintainer|product-owner))$' | sort -u
 }
 
-# --- 1. every agent a command dispatches is a definition on this tree ---------
+# --- 1. every agent a command or an agent dispatches is a definition ----------
 
-printf '# every agent a command dispatches is a definition on this tree\n'
+printf '# every agent a command or an agent dispatches is a definition on this tree\n'
 check_dispatches() {
     file=$1
     missing=''
@@ -73,7 +73,7 @@ check_dispatches() {
     done
     printf '%s' "$missing"
 }
-for file in "$commands"/*.md; do
+for file in "$commands"/*.md "$agents"/*.md; do
     named=$(agent_names_in "$file" | wc -l | tr -d ' ')
     [ "$named" -gt 0 ] || continue
     missing=$(check_dispatches "$file")
@@ -90,6 +90,24 @@ if [ "$missing" = " hw-adjudciate" ]; then
     pass 'and a mistyped agent name is reported'
 else
     fail 'a mistyped agent name is reported' "reported: \`$missing\`"
+fi
+# The build stage dispatches the maintainer before it opens a pull request, so
+# the agent that names stale documents runs on every build and not only when a
+# person asks (#954). A dropped or renamed line fails here, not in silence.
+dispatches_agent() {
+    agent_names_in "$1" | grep -qx "$2"
+}
+if dispatches_agent "$agents/hw-build.md" headwater-maintainer; then
+    pass 'hw-build.md dispatches headwater-maintainer'
+else
+    fail 'hw-build.md dispatches headwater-maintainer' 'no `headwater-maintainer` span in .claude/agents/hw-build.md'
+fi
+# Its refusal arm: the same file with the name removed is reported.
+sed 's/`headwater-maintainer`/the maintainer/g' "$agents/hw-build.md" > "$scratch/hw-build.md"
+if dispatches_agent "$scratch/hw-build.md" headwater-maintainer; then
+    fail 'a build stage without the maintainer dispatch is reported' 'the scratch copy still names it'
+else
+    pass 'and a build stage without the maintainer dispatch is reported'
 fi
 
 # --- 2. every skill an agent invokes is a skill on this tree ------------------
