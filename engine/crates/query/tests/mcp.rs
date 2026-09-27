@@ -1166,7 +1166,10 @@ fn a_route_answer_carries_its_pointers_as_structured_content() {
 
     let response = once(
         &server,
-        &calling("route", r#"{"task":"why is quarantine throttling one quota rule"}"#),
+        &calling(
+            "route",
+            r#"{"task":"why is quarantine throttling one quota rule"}"#,
+        ),
     );
     let text = tool_text(&response);
     let answer = structured(&response).expect("the route answer carries structuredContent");
@@ -1187,8 +1190,8 @@ fn a_route_answer_carries_its_pointers_as_structured_content() {
         "why is quarantine throttling one quota rule",
         headwater_query::Budget::default(),
     );
-    let document = headwater_yaml::load(&headwater_query::json::route(&route))
-        .expect("route --json is JSON");
+    let document =
+        headwater_yaml::load(&headwater_query::json::route(&route)).expect("route --json is JSON");
     assert_eq!(
         canonical(&answer.value),
         canonical(&document.value),
