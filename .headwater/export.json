@@ -2557,7 +2557,7 @@
               },
               {
                 "to": ".github/workflows/publish-crates.yml",
-                "verified_revision": "sha256:ead2238fa32a3fc4d600d5238d40a072cc5371aee1409a9417fa3fa2d62fea26"
+                "verified_revision": "sha256:f77729188a8b0bffa908fa2b0166cf36a5379a130649855992e3f4844bc7174e"
               }
             ]
           }
@@ -3445,7 +3445,7 @@
           "status": "current",
           "status_since": "2026-09-21",
           "summary": "The event that started a run decides which of two machines it takes, and every other condition in the workflow can only take work away.",
-          "last_verified": "2026-09-23",
+          "last_verified": "2026-09-27",
           "title": "Two triggers, one verdict: how this repository's CI decides where a job runs and what it trusts",
           "provenance": {
             "warrant": "asserted",
@@ -10527,7 +10527,7 @@
               },
               {
                 "to": ".github/workflows/publish-crates.yml",
-                "verified_revision": "sha256:ead2238fa32a3fc4d600d5238d40a072cc5371aee1409a9417fa3fa2d62fea26"
+                "verified_revision": "sha256:f77729188a8b0bffa908fa2b0166cf36a5379a130649855992e3f4844bc7174e"
               }
             ]
           }
@@ -10542,7 +10542,7 @@
           "id": "HW-PD-0011",
           "status": "current",
           "status_since": "2026-09-27",
-          "summary": "publish-crates.yml walks one leaves-first crate list that publish_order.rs holds against the workspace, skips a published crate so a rerun continues, and waits out a 429.",
+          "summary": "publish-crates.yml walks one leaves-first crate list that publish_order.rs holds, skips a published crate, waits for the index, and waits out a 429.",
           "last_verified": "2026-09-27",
           "title": "Crates publish in one fixed order that a test holds, and a rerun continues where the last run stopped",
           "provenance": {
@@ -10556,7 +10556,7 @@
             "governs": [
               {
                 "to": ".github/workflows/publish-crates.yml",
-                "verified_revision": "sha256:ead2238fa32a3fc4d600d5238d40a072cc5371aee1409a9417fa3fa2d62fea26"
+                "verified_revision": "sha256:f77729188a8b0bffa908fa2b0166cf36a5379a130649855992e3f4844bc7174e"
               }
             ],
             "traces_to": [
@@ -10596,7 +10596,7 @@
               },
               {
                 "to": ".github/workflows/publish-crates.yml",
-                "verified_revision": "sha256:ead2238fa32a3fc4d600d5238d40a072cc5371aee1409a9417fa3fa2d62fea26"
+                "verified_revision": "sha256:f77729188a8b0bffa908fa2b0166cf36a5379a130649855992e3f4844bc7174e"
               }
             ]
           }
@@ -10625,7 +10625,7 @@
             "governs": [
               {
                 "to": ".github/workflows/ci.yml",
-                "verified_revision": "sha256:a4195cba139ce6094882dc4531fe20ed780aef3eabfc987a9e906606e46635ee"
+                "verified_revision": "sha256:f4b3c176cedc9d969614ad7755edc324f1dc78423d8b55162ab05beb8595f57e"
               }
             ]
           }
@@ -10690,7 +10690,7 @@
         }
       },
       {
-        "path": "docs/process/decisions/0016-ci-runner-is-an-opt-in-that-only-a-push-reads-and-an-unset-value-falls-back-to-ubuntu-latest.md",
+        "path": "docs/process/decisions/0016-ci-runner-is-an-opt-in-that-only-a-push-or-a-merge-group-reads-and-an-unset-value-falls-back-to-ubuntu-latest.md",
         "kind": "process_decision",
         "id": "HW-PD-0016",
         "warrant": "asserted",
@@ -10698,9 +10698,9 @@
           "id": "HW-PD-0016",
           "status": "current",
           "status_since": "2026-09-27",
-          "summary": "The self-hosted labels reach runs-on only when the CI_RUNNER variable names them and the event is a push. The default is a hosted runner.",
+          "summary": "The self-hosted labels reach runs-on only when the CI_RUNNER variable names them and the event is a push or a merge group. The default is a hosted runner.",
           "last_verified": "2026-09-27",
-          "title": "CI_RUNNER is an opt-in that only a push reads, and an unset value falls back to ubuntu-latest",
+          "title": "CI_RUNNER is an opt-in that only a push or a merge group reads, and an unset value falls back to ubuntu-latest",
           "provenance": {
             "warrant": "asserted",
             "agency": "agent",
@@ -10712,7 +10712,7 @@
             "governs": [
               {
                 "to": ".github/workflows/ci.yml",
-                "verified_revision": "sha256:a4195cba139ce6094882dc4531fe20ed780aef3eabfc987a9e906606e46635ee"
+                "verified_revision": "sha256:f4b3c176cedc9d969614ad7755edc324f1dc78423d8b55162ab05beb8595f57e"
               }
             ]
           }
@@ -10741,14 +10741,14 @@
             "governs": [
               {
                 "to": ".github/workflows/ci.yml",
-                "verified_revision": "sha256:a4195cba139ce6094882dc4531fe20ed780aef3eabfc987a9e906606e46635ee"
+                "verified_revision": "sha256:f4b3c176cedc9d969614ad7755edc324f1dc78423d8b55162ab05beb8595f57e"
               }
             ]
           }
         }
       },
       {
-        "path": "docs/process/decisions/0018-a-router-sends-a-push-run-to-a-hosted-runner-when-the-self-hosted-pool-is-full-and-it-can-only-take-work-away.md",
+        "path": "docs/process/decisions/0018-a-router-sends-a-push-or-merge-group-run-to-a-hosted-runner-when-the-self-hosted-pool-is-full-and-it-can-only-take-work-away.md",
         "kind": "process_decision",
         "id": "HW-PD-0018",
         "warrant": "asserted",
@@ -10758,7 +10758,7 @@
           "status_since": "2026-09-27",
           "summary": "The route job counts the jobs on the self-hosted label and outputs overflow. A failure in it gives an empty output and changes no routing.",
           "last_verified": "2026-09-27",
-          "title": "A router sends a push run to a hosted runner when the self-hosted pool is full, and it can only take work away",
+          "title": "A router sends a push or merge group run to a hosted runner when the self-hosted pool is full, and it can only take work away",
           "provenance": {
             "warrant": "asserted",
             "agency": "agent",
@@ -10770,7 +10770,7 @@
             "governs": [
               {
                 "to": ".github/workflows/ci.yml",
-                "verified_revision": "sha256:a4195cba139ce6094882dc4531fe20ed780aef3eabfc987a9e906606e46635ee"
+                "verified_revision": "sha256:f4b3c176cedc9d969614ad7755edc324f1dc78423d8b55162ab05beb8595f57e"
               }
             ]
           }
@@ -10800,6 +10800,43 @@
               {
                 "to": ".github/workflows/ci.yml",
                 "verified_revision": "sha256:a4195cba139ce6094882dc4531fe20ed780aef3eabfc987a9e906606e46635ee"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "path": "docs/process/decisions/0020-merges-go-through-the-github-merge-queue-one-squash-commit-per-pull-request.md",
+        "kind": "process_decision",
+        "id": "HW-PD-0020",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-PD-0020",
+          "status": "current",
+          "status_since": "2026-09-27",
+          "summary": "The integrator hands each ruled pull request to the GitHub merge queue. The queue tests up to five at once on the group tip, and lands one squash commit per pull request.",
+          "last_verified": "2026-09-27",
+          "title": "Merges go through the GitHub merge queue, one squash commit per pull request",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5.5",
+            "activity": "draft",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "governs": [
+              {
+                "to": ".github/workflows/ci.yml",
+                "verified_revision": "sha256:f4b3c176cedc9d969614ad7755edc324f1dc78423d8b55162ab05beb8595f57e"
+              },
+              {
+                "to": "tools/run/queue-done.sh",
+                "verified_revision": "sha256:e1d5b097918a1f58af5cdd9610b321f7fe949b0e7f5f2a408643605f2b4e709d"
+              },
+              {
+                "to": "tools/run/queue-done-fixtures.sh",
+                "verified_revision": "sha256:c85c8ec0e3240a77e5e6ded53daad36b5d5fe005e2a29a30ef6144b0b548ad0e"
               }
             ]
           }
@@ -11643,7 +11680,7 @@
           "status": "current",
           "status_since": "2026-09-22",
           "summary": "The five stages of a build-order run, what each one owns and never does, where the veto sits, and how claims order the merges.",
-          "last_verified": "2026-09-22",
+          "last_verified": "2026-09-27",
           "doc_type": "design_spec",
           "sequence": "17",
           "title": "Orchestration architecture",
@@ -12667,6 +12704,16 @@
       {
         "anchor_kind": "code_path",
         "id": "tools/repo/retire-worktree.sh",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
+        "id": "tools/run/queue-done-fixtures.sh",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
+        "id": "tools/run/queue-done.sh",
         "resolver": "source-tree"
       },
       {
@@ -14972,7 +15019,7 @@
           "resolver": "source-tree"
         },
         "attributes": {
-          "verified_revision": "sha256:ead2238fa32a3fc4d600d5238d40a072cc5371aee1409a9417fa3fa2d62fea26"
+          "verified_revision": "sha256:f77729188a8b0bffa908fa2b0166cf36a5379a130649855992e3f4844bc7174e"
         }
       },
       {
@@ -19903,7 +19950,7 @@
           "resolver": "source-tree"
         },
         "attributes": {
-          "verified_revision": "sha256:ead2238fa32a3fc4d600d5238d40a072cc5371aee1409a9417fa3fa2d62fea26"
+          "verified_revision": "sha256:f77729188a8b0bffa908fa2b0166cf36a5379a130649855992e3f4844bc7174e"
         }
       },
       {
@@ -19917,7 +19964,7 @@
           "resolver": "source-tree"
         },
         "attributes": {
-          "verified_revision": "sha256:ead2238fa32a3fc4d600d5238d40a072cc5371aee1409a9417fa3fa2d62fea26"
+          "verified_revision": "sha256:f77729188a8b0bffa908fa2b0166cf36a5379a130649855992e3f4844bc7174e"
         }
       },
       {
@@ -19970,7 +20017,7 @@
           "resolver": "source-tree"
         },
         "attributes": {
-          "verified_revision": "sha256:ead2238fa32a3fc4d600d5238d40a072cc5371aee1409a9417fa3fa2d62fea26"
+          "verified_revision": "sha256:f77729188a8b0bffa908fa2b0166cf36a5379a130649855992e3f4844bc7174e"
         }
       },
       {
@@ -19984,7 +20031,7 @@
           "resolver": "source-tree"
         },
         "attributes": {
-          "verified_revision": "sha256:a4195cba139ce6094882dc4531fe20ed780aef3eabfc987a9e906606e46635ee"
+          "verified_revision": "sha256:f4b3c176cedc9d969614ad7755edc324f1dc78423d8b55162ab05beb8595f57e"
         }
       },
       {
@@ -20016,7 +20063,7 @@
         }
       },
       {
-        "source": "docs/process/decisions/0016-ci-runner-is-an-opt-in-that-only-a-push-reads-and-an-unset-value-falls-back-to-ubuntu-latest.md",
+        "source": "docs/process/decisions/0016-ci-runner-is-an-opt-in-that-only-a-push-or-a-merge-group-reads-and-an-unset-value-falls-back-to-ubuntu-latest.md",
         "relation": "governs",
         "written_as": "governs",
         "target": {
@@ -20026,7 +20073,7 @@
           "resolver": "source-tree"
         },
         "attributes": {
-          "verified_revision": "sha256:a4195cba139ce6094882dc4531fe20ed780aef3eabfc987a9e906606e46635ee"
+          "verified_revision": "sha256:f4b3c176cedc9d969614ad7755edc324f1dc78423d8b55162ab05beb8595f57e"
         }
       },
       {
@@ -20040,11 +20087,11 @@
           "resolver": "source-tree"
         },
         "attributes": {
-          "verified_revision": "sha256:a4195cba139ce6094882dc4531fe20ed780aef3eabfc987a9e906606e46635ee"
+          "verified_revision": "sha256:f4b3c176cedc9d969614ad7755edc324f1dc78423d8b55162ab05beb8595f57e"
         }
       },
       {
-        "source": "docs/process/decisions/0018-a-router-sends-a-push-run-to-a-hosted-runner-when-the-self-hosted-pool-is-full-and-it-can-only-take-work-away.md",
+        "source": "docs/process/decisions/0018-a-router-sends-a-push-or-merge-group-run-to-a-hosted-runner-when-the-self-hosted-pool-is-full-and-it-can-only-take-work-away.md",
         "relation": "governs",
         "written_as": "governs",
         "target": {
@@ -20054,7 +20101,7 @@
           "resolver": "source-tree"
         },
         "attributes": {
-          "verified_revision": "sha256:a4195cba139ce6094882dc4531fe20ed780aef3eabfc987a9e906606e46635ee"
+          "verified_revision": "sha256:f4b3c176cedc9d969614ad7755edc324f1dc78423d8b55162ab05beb8595f57e"
         }
       },
       {
@@ -20069,6 +20116,48 @@
         },
         "attributes": {
           "verified_revision": "sha256:a4195cba139ce6094882dc4531fe20ed780aef3eabfc987a9e906606e46635ee"
+        }
+      },
+      {
+        "source": "docs/process/decisions/0020-merges-go-through-the-github-merge-queue-one-squash-commit-per-pull-request.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": ".github/workflows/ci.yml",
+          "resolver": "source-tree"
+        },
+        "attributes": {
+          "verified_revision": "sha256:f4b3c176cedc9d969614ad7755edc324f1dc78423d8b55162ab05beb8595f57e"
+        }
+      },
+      {
+        "source": "docs/process/decisions/0020-merges-go-through-the-github-merge-queue-one-squash-commit-per-pull-request.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "tools/run/queue-done.sh",
+          "resolver": "source-tree"
+        },
+        "attributes": {
+          "verified_revision": "sha256:e1d5b097918a1f58af5cdd9610b321f7fe949b0e7f5f2a408643605f2b4e709d"
+        }
+      },
+      {
+        "source": "docs/process/decisions/0020-merges-go-through-the-github-merge-queue-one-squash-commit-per-pull-request.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "tools/run/queue-done-fixtures.sh",
+          "resolver": "source-tree"
+        },
+        "attributes": {
+          "verified_revision": "sha256:c85c8ec0e3240a77e5e6ded53daad36b5d5fe005e2a29a30ef6144b0b548ad0e"
         }
       },
       {
