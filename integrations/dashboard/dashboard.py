@@ -20,6 +20,7 @@ self-hosted page holds one corpus identity and never displays it.
 """
 
 import argparse
+import datetime
 import html
 import os
 import re
@@ -28,6 +29,10 @@ import sys
 
 NONE_STATED = "none stated"
 NEVER_VERIFIED = "never verified"
+EMPTY_CORPUS = (
+    "This export holds no documents, so every view below is empty. "
+    "The corpus it was generated from has no governed document yet."
+)
 MINIMUM_EXPORT_VERSION = (1, 1)
 WARRANT_ORDER = ["asserted", NONE_STATED, "proposed", "accepted"]
 
@@ -77,6 +82,22 @@ def _optional_string(value, where, field):
     return value
 
 
+def _date(value, where, field):
+    """A calendar date, returned in the form YYYY-MM-DD so that text order is date order.
+
+    A string that is not a real date is refused, because the page sorts on
+    this value: `2026-02-30` or "last tuesday" would otherwise take a place
+    in the staleness order that no date holds.
+    """
+    value = _optional_string(value, where, field)
+    if value is None:
+        return None
+    try:
+        return datetime.date.fromisoformat(value).isoformat()
+    except ValueError:
+        _refuse(where, field, "is %r, which is not a calendar date in the form YYYY-MM-DD" % value)
+
+
 def load(export, corpus_identity):
     """Read one export as one corpus's data, keyed by the pair on every row.
 
@@ -116,7 +137,7 @@ def load(export, corpus_identity):
         if not isinstance(facets, dict):
             _refuse(where, "facets", "is not an object")
         # The export carries this field under `facets`, never at the top level.
-        last_verified = _optional_string(facets.get("last_verified"), where, "facets.last_verified")
+        last_verified = _date(facets.get("last_verified"), where, "facets.last_verified")
         # An absent key stays absent. It is never read as `asserted`.
         warrant = _optional_string(document.get("warrant"), where, "warrant")
         if (corpus_identity, identifier) in seen:
@@ -294,6 +315,8 @@ def render(model, coverage=None):
     )
     out.append("<nav><a href=\"#staleness\">Staleness</a><a href=\"#warrant\">Warrant</a>"
                "<a href=\"#coverage\">Coverage</a></nav>")
+    if not model.documents:
+        out.append("<p id=\"empty-corpus\"><strong>%s</strong></p>" % html.escape(EMPTY_CORPUS))
 
     out.append("<h2 id=\"staleness\">Staleness: oldest verification first</h2>")
     out.append("<table><tr><th>Last verified</th><th>Identifier</th><th>Kind</th><th>Title</th></tr>")

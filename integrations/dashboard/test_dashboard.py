@@ -185,6 +185,16 @@ class AMalformedExportIsRefused(unittest.TestCase):
             del export["graph"]["documents"]
         self.refused(mutate, ["graph", "`documents`"])
 
+    def test_a_date_that_is_not_on_the_calendar(self):
+        def mutate(export):
+            export["graph"]["documents"][1]["facets"]["last_verified"] = "2026-02-30"
+        self.refused(mutate, ["FX-OBL-0001", "facets.last_verified", "2026-02-30"])
+
+    def test_a_last_verified_that_is_not_a_date_at_all(self):
+        def mutate(export):
+            export["graph"]["documents"][1]["facets"]["last_verified"] = "last tuesday"
+        self.refused(mutate, ["FX-OBL-0001", "facets.last_verified", "last tuesday"])
+
     def test_two_documents_with_one_id(self):
         def mutate(export):
             export["graph"]["documents"][1]["id"] = "FX-DR-0002"
@@ -198,6 +208,29 @@ class ThePageHoldsWhatItPrints(unittest.TestCase):
         page = dashboard.render(dashboard.load(export, corpus_identity="fixture"))
         self.assertNotIn("<script>", page)
         self.assertIn("&lt;script&gt;alert(1)&lt;/script&gt; &amp; more", page)
+
+    def test_a_code_path_is_escaped_and_never_markup(self):
+        export = load_fixture()
+        export["graph"]["edges"][0]["target"]["id"] = "src/<img src=x onerror=alert(1)>.rs"
+        page = dashboard.render(dashboard.load(export, corpus_identity="fixture"))
+        self.assertNotIn("<img", page)
+        self.assertIn("<code>src/&lt;img src=x onerror=alert(1)&gt;.rs</code>", page)
+
+    def test_an_empty_corpus_renders_and_says_it_holds_no_documents(self):
+        export = load_fixture()
+        export["graph"]["documents"] = []
+        export["graph"]["edges"] = []
+        with tempfile.TemporaryDirectory() as scratch:
+            result, wrote = run_cli(export, scratch)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertTrue(wrote)
+            with open(os.path.join(scratch, "page.html"), encoding="utf-8") as handle:
+                page = handle.read()
+        self.assertIn("This export holds no documents", page)
+
+    def test_a_corpus_with_documents_carries_no_empty_notice(self):
+        page = dashboard.render(dashboard.load(load_fixture(), corpus_identity="fixture"))
+        self.assertNotIn("empty-corpus", page)
 
     def test_an_undated_document_is_listed_first_as_never_verified(self):
         export = load_fixture()

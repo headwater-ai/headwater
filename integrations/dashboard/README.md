@@ -19,7 +19,9 @@ It needs Python 3 and nothing else. It does not need the Headwater engine.
 - `--out` is the page to write. The default is `dashboard.html` in the current directory.
 - `--corpus-identity` names the corpus that the export belongs to. The default is `local`.
 
-If the export is not a valid `graph_export` file, the tool refuses it with exit status 2. It prints one line that names the document and the field, for example ``dashboard: graph.documents[0] (FX-DR-0002): `warrant` is list, not a string`` for the fixture below with a list in its `warrant`. It does not write a page in that case, so a lead never reads a partial page as a complete one.
+If the export is not a valid `graph_export` file, the tool refuses it with exit status 2. It prints one line that names the document and the field, for example ``dashboard: graph.documents[0] (FX-DR-0002): `warrant` is list, not a string`` for the fixture below with a list in its `warrant`. It does not write a page in that case, so a lead never reads a partial page as a complete one. A `last_verified` value must be a real calendar date in the form `YYYY-MM-DD`. The tool refuses `2026-02-30` or `last tuesday`, because either value would take a false place in the staleness order.
+
+An export that holds no documents is valid. The tool writes the page, and the page says at the top that the export holds no documents.
 
 ## How the page reaches a person who runs no command
 
