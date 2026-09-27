@@ -11,6 +11,16 @@ The files of a release archive, as paths inside it.
 - `headwater`
 - `LICENSE`
 
+## What the Debian package installs
+
+The paths the `.deb` package writes on the host that installs it. The package holds no taxonomy, and no maintainer script reads or writes a corpus.
+
+- `/usr/bin/headwater`
+- `/usr/share/doc/headwater/copyright`
+- `/usr/share/bash-completion/completions/headwater`
+- `/usr/share/zsh/vendor-completions/_headwater`
+- `/usr/share/fish/vendor_completions.d/headwater.fish`
+
 ## Integration points
 
 The places where an adopter connects the binary, and what each one needs beyond the binary.

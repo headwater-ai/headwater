@@ -96,6 +96,7 @@ nav:
       - "The runner image of the engine release build is written in the workflow because it sets the glibc floor": "decisions/0091-the-runner-image-of-the-engine-release-build-is-written-in-the-workflow-because-it-sets-the-glibc-floor.md"
       - "The citation comment of spec 5 is for an adopter's corpus, and this repository does not practice it on its own code": "decisions/0092-the-citation-comment-of-spec-5-is-for-an-adopter-s-corpus-and-this-repository-does-not-practice-it-on-its-own-code.md"
       - "The live account of a domain is its own kind, split on the product and process line, and it draws on the records it cites": "decisions/0093-the-live-account-of-a-domain-is-its-own-kind-split-on-the-product-and-process-line-and-it-draws-on-the-records-it-cites.md"
+      - "The APT repository is served from headwater.tools and signed by a subkey the owner's offline key certifies": "decisions/0094-the-apt-repository-is-served-from-headwater-tools-and-signed-by-a-subkey-the-owner-s-offline-key-certifies.md"
       - "Q67 — One library entry may address the keys of an entry it names in requires, and confluence holds over the dependency order": "decisions/0095-q67-one-library-entry-may-address-the-keys-of-an-entry-it-names-in-requires-and-confluence-holds-over-the-dependency-order.md"
       - "Harper does not become part of the engine now, and Q41 stands": "decisions/0096-harper-does-not-become-part-of-the-engine-now-and-q41-stands.md"
   - "Acceptance criteria":
@@ -140,6 +141,7 @@ nav:
       - "Diagnose an isolation failure": "how-to/diagnose-an-isolation-failure.md"
       - "Mine the shadow-mode routing log": "how-to/mine-the-shadow-mode-routing-log.md"
       - "Relocate a shelf": "how-to/relocate-a-shelf.md"
+      - "Rotate or revoke the APT signing subkey": "how-to/rotate-or-revoke-the-apt-signing-subkey.md"
       - "Wire headwater check into your own workflow": "how-to/wire-headwater-check-into-your-own-workflow.md"
   - "The command surface":
       - "The command surface": "interfaces/README.md"

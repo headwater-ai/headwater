@@ -426,6 +426,22 @@ fn the_surface_block_generates_a_page_that_goes_stale_with_it() {
     ] {
         assert!(page.contains(member), "the page names {member}\n{page}");
     }
+    // `surface.deb` (#764): the paths the Debian package installs, under a
+    // heading of their own, so `release.yml` and a reader hold one list.
+    let deb = page
+        .split("## What the Debian package installs")
+        .nth(1)
+        .unwrap_or_else(|| panic!("the page has a section for the Debian package\n{page}"));
+    for path in [
+        "`/usr/bin/headwater`",
+        "`/usr/share/doc/headwater/copyright`",
+        "`/usr/share/bash-completion/completions/headwater`",
+    ] {
+        assert!(
+            deb.contains(path),
+            "the Debian section names {path}\n{page}"
+        );
+    }
     let clean = root.run(&["generate", "--check"]);
     assert_eq!(
         clean.0,

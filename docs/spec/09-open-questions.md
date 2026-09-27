@@ -389,6 +389,10 @@ The documents on this shelf, in the reading order this corpus derives. Each head
 
 [HW-DR-0093](../decisions/0093-the-live-account-of-a-domain-is-its-own-kind-split-on-the-product-and-process-line-and-it-draws-on-the-records-it-cites.md) — explanation and process_explanation state what holds now across one domain, and draws_on reports an account whose source decision ends. (asserted, and no human has accepted it)
 
+## The APT repository is served from headwater.tools and signed by a subkey the owner's offline key certifies
+
+[HW-DR-0094](../decisions/0094-the-apt-repository-is-served-from-headwater-tools-and-signed-by-a-subkey-the-owner-s-offline-key-certifies.md) — Headwater ships one amd64 Debian package, taxonomy-free, through an APT repository on headwater.tools whose metadata a CI-held signing subkey signs (asserted, and no human has accepted it)
+
 ## Q67 — One library entry may address the keys of an entry it names in requires, and confluence holds over the dependency order
 
 [HW-DR-0095](../decisions/0095-q67-one-library-entry-may-address-the-keys-of-an-entry-it-names-in-requires-and-confluence-holds-over-the-dependency-order.md) — An entry that names another in requires may add into its keys, and every other pair of entries still commutes only over disjoint leaves. (asserted, and no human has accepted it)
