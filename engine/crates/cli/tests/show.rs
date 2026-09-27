@@ -290,9 +290,12 @@ fn repoint_bundles(package: &Path) {
     std::fs::write(&manifest, text.replace(from, &to)).expect("the scratch manifest writes");
 }
 
+/// One way to run the binary over a [`Root`].
+type Run = fn(&Root, &[&str]) -> Output;
+
 /// The two ways each path case runs: with an absolute `--root`, and from
 /// inside the root with `--root .`.
-const RUNS: [(&str, fn(&Root, &[&str]) -> Output); 2] = [
+const RUNS: [(&str, Run); 2] = [
     ("--root <absolute>", Root::run),
     ("--root . from inside", Root::run_inside),
 ];
