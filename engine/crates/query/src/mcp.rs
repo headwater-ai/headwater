@@ -207,6 +207,11 @@ pub struct Server<'a> {
     pub census: &'a Census,
     /// The edges that walk produced, for the same two readers.
     pub graph: &'a Graph,
+    /// The repository root the walk read, which is `--root`. The `explain`
+    /// tool reads a path argument against it, so `./x`, `a/../x` and an
+    /// absolute path under it find the document `x` finds (#1227). It is the
+    /// root the server was started over and never a tool argument.
+    pub root: &'a std::path::Path,
     /// The declarations one run of the check layer reads, out of the committed
     /// lock.
     pub declared: Declared<'a>,
@@ -769,6 +774,10 @@ fn call(server: &Server<'_>, message: &Mapping) -> Result<Answer, Failure> {
         "route" => surface
             .route(&argument, Budget::default())
             .render(headwater_check::paint::ColorMode::Plain),
+        // A path argument is read the way `headwater explain` reads one, through
+        // the same `typed`, so the tool and the verb find one document for one
+        // spelling, and refuse a path that leaves the repository as outside it
+        // (#1227).
         "explain" => match surface.explain(&argument) {
             // Plain, unconditionally: an MCP server's own stdout is never a
             // terminal, so a real invocation piped the same way would sense

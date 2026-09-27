@@ -4292,7 +4292,7 @@ fn symlink_under(root: &Path, relative: &str) -> Option<String> {
 /// A path target is read the way a shell or an editor spells it
 /// ([#1227](https://github.com/headwater-ai/headwater/issues/1227)): `./x`,
 /// `a/../x` and an absolute path under the root all find the document `x`
-/// finds, through [`repository_relative`]. A relative target is relative to
+/// finds, through [`headwater_census::walk::typed`]. A relative target is relative to
 /// the repository root, which is `--root`, and not to the working directory of
 /// the process: with `--root elsewhere`, `./x` is `elsewhere/x`. A target that
 /// leaves the repository is refused as outside it. A refusal prints the target
@@ -4311,7 +4311,7 @@ fn find_document(root: &Path, target: &str) -> Result<headwater_query::Explanati
     // identifier is not asking whether it is a path.
     let text = match loaded.shape.identifier_shaped(target) {
         true => identifier_text(target),
-        false => match repository_relative(root, target) {
+        false => match headwater_census::walk::typed(root, target) {
             None => classification_text(
                 target,
                 &headwater_census::walk::Classification::Unclassifiable,
@@ -4333,29 +4333,6 @@ fn find_document(root: &Path, target: &str) -> Result<headwater_query::Explanati
     };
     eprintln!("headwater: {}", err(&text));
     Err(ExitCode::FAILURE)
-}
-
-/// `target`, relative to the repository root `root` and written with `/`, or
-/// `None` where it leaves the repository.
-///
-/// [`headwater_census::walk::relative`] does the reading. What this adds is
-/// the root an absolute target is compared with. `--root .` is relative, so an
-/// absolute target is stripped against the root made absolute first. Where
-/// that misses, both sides are made canonical and compared again, so a target
-/// typed through a symlinked directory (a home directory, a temporary
-/// directory) still finds a root reached the other way. The canonical read
-/// needs a file there, and a target with none gets the lexical answer.
-fn repository_relative(root: &Path, target: &str) -> Option<String> {
-    use headwater_census::walk::relative;
-    let path = Path::new(target);
-    if !path.is_absolute() {
-        return relative(root, path);
-    }
-    let absolute_root = std::path::absolute(root).unwrap_or_else(|_| root.to_path_buf());
-    relative(&absolute_root, path).or_else(|| {
-        let canonical_root = root.canonicalize().ok()?;
-        relative(&canonical_root, &path.canonicalize().ok()?)
-    })
 }
 
 /// The sentence [`explain`]'s refusal prints for a target shaped like an
@@ -5872,6 +5849,7 @@ fn mcp(root: &Path, now: Option<Date>, writing: bool) -> ExitCode {
         surface: loaded.surface(),
         census: &loaded.census,
         graph: &loaded.graph,
+        root,
         declared: loaded.declared(),
         claims: &loaded.claims,
         package: &loaded.bound.package,

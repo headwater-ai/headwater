@@ -176,6 +176,29 @@ pub fn relative(base: &Path, path: &Path) -> Option<String> {
     Some(segments.join("/"))
 }
 
+/// A path as a reader typed it, relative to the repository root `root` and
+/// written with `/`, or `None` where it leaves the repository.
+///
+/// [`relative`] does the reading, and this adds the root an absolute target is
+/// compared with. A root such as `.` is relative, so an absolute target is
+/// stripped against the root made absolute first. Where that misses, both
+/// sides are made canonical and compared again, so a target typed through a
+/// symlinked directory (a home directory, a temporary directory) still finds a
+/// root reached the other way. That second read needs a file on disk, and a
+/// target with none keeps the first answer. A relative target is read against
+/// `root` and never against the working directory of the process.
+pub fn typed(root: &Path, target: &str) -> Option<String> {
+    let path = Path::new(target);
+    if !path.is_absolute() {
+        return relative(root, path);
+    }
+    let absolute_root = std::path::absolute(root).unwrap_or_else(|_| root.to_path_buf());
+    relative(&absolute_root, path).or_else(|| {
+        let canonical_root = root.canonicalize().ok()?;
+        relative(&canonical_root, &path.canonicalize().ok()?)
+    })
+}
+
 /// Where a path falls in a corpus, decided by name alone — the closed set
 /// [#319](https://github.com/headwater-ai/headwater/issues/319) asks for: a
 /// path a caller has not written yet still lands in exactly one of these.

@@ -77,6 +77,9 @@ fn fixtures_dir() -> PathBuf {
 }
 
 struct Built {
+    /// The root the fixture corpus was read from, which the server reads a
+    /// path argument against.
+    root: PathBuf,
     census: Census,
     /// No store under the fixture tree, so this is empty. The server takes one
     /// as a check run does, and empty is a real answer rather than a stand-in.
@@ -124,6 +127,7 @@ fn fixture_tree_at(at: &Path) -> Built {
         &Config::default(),
     );
     Built {
+        root: at.to_path_buf(),
         census,
         claims: headwater_check::claim::Claims::at(at),
         graph,
@@ -173,6 +177,7 @@ impl Built {
             surface: self.surface(),
             census: &self.census,
             graph: &self.graph,
+            root: &self.root,
             declared: self.declared(),
             claims: &self.claims,
             package: "query-fixture",
@@ -826,6 +831,41 @@ fn resolve_identifier_over_the_wire_states_the_untyped_path_and_never_repeats_th
         text,
         "no typed document carries SPEC-FIX-orphan; query/notes/orphan.md carries it, untyped\n"
     );
+}
+
+/// [#1227](https://github.com/headwater-ai/headwater/issues/1227): the
+/// `explain` tool reads a path the way `headwater explain` does. `./x` and an
+/// absolute path under the root the server was started over explain the
+/// document `x` names, and a path that leaves the repository is refused as
+/// outside it rather than as a document this corpus lacks.
+#[test]
+fn the_explain_tool_reads_every_spelling_of_a_path_and_refuses_one_outside_the_repository() {
+    let built = fixture_tree();
+    let server = built.server(RECORDED_AT);
+    let asked = |target: &str| {
+        content(&once(
+            &server,
+            &calling("explain", &format!(r#"{{"target":"{target}"}}"#)),
+        ))
+        .concat()
+    };
+    let document = "query/specs/api-design.md";
+    let plain = asked(document);
+    assert!(
+        plain.contains(document) && !plain.contains("is not a document of this corpus"),
+        "the plain path explains the document: {plain}"
+    );
+    let absolute = built.root.join(document).display().to_string();
+    for target in [format!("./{document}"), format!("query/../{document}"), absolute] {
+        assert_eq!(asked(&target), plain, "`{target}` explains `{document}`");
+    }
+    for target in ["../outside.md", "/etc/passwd"] {
+        let refused = asked(target);
+        assert!(
+            refused.contains("is outside this repository"),
+            "`{target}` is refused as outside this repository: {refused}"
+        );
+    }
 }
 
 /// An argument each tool accepts, so that a call reaches the read behind it.
