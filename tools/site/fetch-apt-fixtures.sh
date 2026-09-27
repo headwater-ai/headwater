@@ -7,18 +7,27 @@
 # network error fails it with 404. Each case below serves a release from a
 # local HTTP server, runs the script against it through
 # `HEADWATER_APT_BASE`, and reads the exit status, the `apt/` it wrote and
-# the line it printed. Two releases, A and B, are built with a throwaway gpg
-# key, so `InRelease` is a real clearsigned file. The case "InRelease of A
-# with the rest of B" is the one a re-verify of #764 found passing.
+# the line it printed. Two releases, A and B, are built. The case
+# "InRelease of A with the rest of B" is the one a re-verify of #764 found
+# passing.
 #
-# Needs `gpg`, `python3`, `curl` and `sha256sum`. It writes only under a
-# temporary directory.
+# `fetch-apt.sh` verifies no signature. It reads the armor of `InRelease`
+# to take the signed text out, and it has no key. So where `gpg` is on the
+# host, the releases are signed with a throwaway key and `InRelease` is a
+# real clearsigned file. Where it is not, this script writes the armor that
+# `gpg --clearsign` writes, around a signature block that is not a
+# signature. The self-hosted runner has no `gpg` and no `sudo` to install
+# it, and a pull request runs on a hosted runner that has `gpg`, so CI runs
+# both forms (#764). The first line of output says which one ran.
+#
+# Needs `python3`, `curl` and `sha256sum`, and uses `gpg` when present. It
+# writes only under a temporary directory.
 
 set -u
 
 root=$(cd "$(dirname "$0")/../.." && pwd)
 tool="$root/tools/site/fetch-apt.sh"
-for need in gpg python3 curl sha256sum; do
+for need in python3 curl sha256sum; do
     command -v "$need" >/dev/null || { echo "fetch-apt-fixtures.sh: needs \`$need\`" >&2; exit 1; }
 done
 
@@ -30,9 +39,33 @@ failed=0
 
 # release NAME VERSION — a signed release as `release.yml` attaches it: the
 # package and four metadata files, flat, in $scratch/rel/NAME.
-export GNUPGHOME="$scratch/gpg"
-mkdir -m 0700 "$GNUPGHOME"
-gpg --batch --quiet --passphrase '' --quick-gen-key "fixture <fixture@invalid>" ed25519 sign never 2>/dev/null
+if command -v gpg >/dev/null; then
+    signer=gpg
+    export GNUPGHOME="$scratch/gpg"
+    mkdir -m 0700 "$GNUPGHOME"
+    gpg --batch --quiet --passphrase '' --quick-gen-key "fixture <fixture@invalid>" ed25519 sign never 2>/dev/null
+else
+    signer=armor
+fi
+
+# sign RELEASE-FILE DIR — write DIR/InRelease and DIR/Release.gpg.
+sign() {
+    if [ "$signer" = gpg ]; then
+        gpg --batch --yes --clearsign -o "$2/InRelease" "$1"
+        gpg --batch --yes --armor --detach-sign -o "$2/Release.gpg" "$1"
+        return
+    fi
+    # The shape of RFC 4880 section 7: an armor header, a blank line, the
+    # text with every line that opens with a dash escaped as `- `, and the
+    # signature block. The block holds no signature, and nothing here reads
+    # one.
+    {
+        printf -- '-----BEGIN PGP SIGNED MESSAGE-----\nHash: SHA512\n\n'
+        sed 's/^-/- -/' "$1"
+        printf -- '-----BEGIN PGP SIGNATURE-----\n\nbm90IGEgc2lnbmF0dXJl\n-----END PGP SIGNATURE-----\n'
+    } >"$2/InRelease"
+    printf -- '-----BEGIN PGP SIGNATURE-----\n\nbm90IGEgc2lnbmF0dXJl\n-----END PGP SIGNATURE-----\n' >"$2/Release.gpg"
+}
 release() {
     dir="$scratch/rel/$1"
     deb="headwater_$2_amd64.deb"
@@ -51,8 +84,7 @@ release() {
         printf 'SHA256:\n %s %s main/binary-amd64/Packages\n' \
             "$(sha256sum "$dir/Packages" | cut -d' ' -f1)" "$(wc -c <"$dir/Packages" | tr -d ' ')"
     } >"$dir/Release"
-    gpg --batch --yes --clearsign -o "$dir/InRelease" "$dir/Release"
-    gpg --batch --yes --armor --detach-sign -o "$dir/Release.gpg" "$dir/Release"
+    sign "$dir/Release" "$dir"
 }
 release A 0.4.0
 release B 0.5.0
@@ -136,7 +168,7 @@ case_() {
 }
 
 base="http://127.0.0.1:$port"
-echo "fetch-apt.sh"
+echo "fetch-apt.sh, with InRelease written by $signer"
 case_ "one signed release is served whole" "$base/B" 0 5 "serving the APT repository"
 case_ "and apt finds each file where Packages and Release say" "$base/B" 0 5 "headwater_0.5.0_amd64.deb"
 [ -f "$scratch/out-and apt finds each file where Packages and Release say/apt/pool/main/h/headwater/headwater_0.5.0_amd64.deb" ] &&
