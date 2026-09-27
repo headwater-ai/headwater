@@ -5847,6 +5847,15 @@ fn mcp(root: &Path, now: Option<Date>, writing: bool) -> ExitCode {
         )
     };
     let fixing = move |format: Format| fix_over(root, &Context::at(now), format);
+    // The `route` tool drops what git ignores, as `headwater route` does, and
+    // over the same base, so the tool and the verb answer the same bytes for
+    // one task (#1161).
+    let corpus = Corpus::declared(
+        root,
+        &loaded.consumer.corpus_root,
+        &loaded.consumer.exclusions,
+    );
+    let ignoring = || headwater_graph::scope::Ignored::read(&corpus.base);
     // The corpus is read once, at startup, and every tool answers from it.
     // That is the same posture every other verb takes, and it is what makes two
     // reads in one session answer the same bytes. A write ends the session,
@@ -5858,6 +5867,7 @@ fn mcp(root: &Path, now: Option<Date>, writing: bool) -> ExitCode {
         root,
         declared: loaded.declared(),
         claims: &loaded.claims,
+        ignored: &ignoring,
         package: &loaded.bound.package,
         version: &loaded.bound.version,
         // The `check` tool runs the check layer over this context, so it takes
