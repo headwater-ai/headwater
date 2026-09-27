@@ -135,17 +135,21 @@ struct Unwritten;
 /// named in one sentence on standard error, in the shape [`report`] writes for
 /// `check`. A standard error that fails leaves nothing to say anything on.
 fn emit(stream: Stream, text: &str) {
+    emit_bytes(stream, text.as_bytes());
+}
+
+/// [`emit`] for bytes that need not be UTF-8, which is what `show` writes: a
+/// document's own bytes, with no decode between the disk and the stream.
+fn emit_bytes(stream: Stream, bytes: &[u8]) {
     use std::io::Write;
     let written = match stream {
         Stream::Out => {
             let mut out = std::io::stdout().lock();
-            out.write_all(text.as_bytes()).and_then(|()| out.flush())
+            out.write_all(bytes).and_then(|()| out.flush())
         }
         Stream::Err => {
             let mut stream = std::io::stderr().lock();
-            stream
-                .write_all(text.as_bytes())
-                .and_then(|()| stream.flush())
+            stream.write_all(bytes).and_then(|()| stream.flush())
         }
     };
     match (written, stream) {
@@ -360,6 +364,10 @@ fn dispatch(root: &Path, verb: Verb) -> ExitCode {
         Verb::Explain { target, json } => match target {
             None => fail("`explain` takes a path or an identifier"),
             Some(target) => explain(root, &target, json),
+        },
+        Verb::Show { target } => match target {
+            None => fail("`show` takes a path or an identifier"),
+            Some(target) => show(root, &target),
         },
         Verb::Mcp { now, write } => mcp(root, now, write),
         Verb::New {
@@ -4189,26 +4197,101 @@ fn neighbors(
 /// this remains a refusal, and what changes is only the English sentence a
 /// caller, or a hook, reads on standard error.
 fn explain(root: &Path, target: &str, json: bool) -> ExitCode {
-    let loaded = match load(root) {
-        Ok(loaded) => loaded,
+    let explanation = match find_document(root, target) {
+        Ok(explanation) => explanation,
         Err(code) => return code,
     };
-    match loaded.surface().explain(target) {
-        Some(explanation) => {
-            let explanation: headwater_query::Explanation = explanation;
-            // A target that names no document is refused below, on standard
-            // error and with the same exit status either way. `--json` selects
-            // the artifact and never the status: a refusal is not a document
-            // with a member missing from it.
-            match json {
-                true => print!("{}", headwater_query::json::explain(&explanation)),
-                false => print!(
-                    "{}",
-                    explanation.render(headwater_cli::paint::stdout_color())
-                ),
-            }
+    // A target that names no document was refused in [`find_document`], on standard
+    // error and with the same exit status either way. `--json` selects the
+    // artifact and never the status: a refusal is not a document with a member
+    // missing from it.
+    match json {
+        true => print!("{}", headwater_query::json::explain(&explanation)),
+        false => print!(
+            "{}",
+            explanation.render(headwater_cli::paint::stdout_color())
+        ),
+    }
+    ExitCode::SUCCESS
+}
+
+/// `headwater show <path|identifier>`: the bytes of one document, as they are
+/// on disk ([#740](https://github.com/headwater-ai/headwater/issues/740)).
+///
+/// The document is found by [`find_document`], the function `explain` calls, so a
+/// target the one refuses the other refuses in the same sentence. The file is
+/// read as bytes and written as bytes: no decode, no rendering, and no newline
+/// added at the end, so a reader who redirects the output gets the file back.
+/// The write goes through [`emit_bytes`], so a full standard output ends the
+/// run with status 1 and never 101.
+fn show(root: &Path, target: &str) -> ExitCode {
+    let explanation = match find_document(root, target) {
+        Ok(explanation) => explanation,
+        Err(code) => return code,
+    };
+    // A census path is relative to the repository root, which is `root`.
+    // The walk does not follow a symlink, and neither does this read: a link
+    // anywhere between the root and the file could name any file on the host,
+    // outside `--root`. So each component is tested before a byte is read.
+    if let Some(link) = symlink_under(root, &explanation.path) {
+        eprintln!(
+            "headwater: {}",
+            err(&format!(
+                "`{link}` is a symlink, which the walk does not follow, so `show` prints nothing"
+            ))
+        );
+        return ExitCode::FAILURE;
+    }
+    let path = root.join(&explanation.path);
+    match std::fs::read(&path) {
+        Ok(bytes) => {
+            emit_bytes(Stream::Out, &bytes);
             ExitCode::SUCCESS
         }
+        Err(error) => {
+            eprintln!(
+                "headwater: {}",
+                err(&format!(
+                    "`{}` is a document of this corpus, and it could not be read: {error}",
+                    explanation.path
+                ))
+            );
+            ExitCode::FAILURE
+        }
+    }
+}
+
+/// The first component of `relative`, joined onto `root` one at a time, that is
+/// a symlink, as the path from `root` down to it. `None` when no component is
+/// one, and also when a component cannot be read: the read that follows then
+/// reports the failure itself.
+fn symlink_under(root: &Path, relative: &str) -> Option<String> {
+    let mut at = root.to_path_buf();
+    let mut walked = PathBuf::new();
+    for component in Path::new(relative).components() {
+        at.push(component);
+        walked.push(component);
+        match std::fs::symlink_metadata(&at) {
+            Ok(meta) if meta.file_type().is_symlink() => {
+                return Some(walked.display().to_string());
+            }
+            Ok(_) => {}
+            Err(_) => return None,
+        }
+    }
+    None
+}
+
+/// Find the document a target names, by path or by identifier, or refuse it.
+///
+/// `explain` and `show` both call this, so there is one resolver and one set
+/// of refusal sentences. A second copy is the drift that #319 and #845 each
+/// repaired in `explain` alone. A refusal is printed here, on standard error,
+/// and the caller returns the status it is handed.
+fn find_document(root: &Path, target: &str) -> Result<headwater_query::Explanation, ExitCode> {
+    let loaded = load(root)?;
+    match loaded.surface().explain(target) {
+        Some(explanation) => Ok(explanation),
         None => {
             // An identifier is asked about first, and a path second: the two
             // grammars can overlap in principle, and this repository's own
@@ -4228,7 +4311,7 @@ fn explain(root: &Path, target: &str, json: bool) -> ExitCode {
                 }
             };
             eprintln!("headwater: {}", err(&text));
-            ExitCode::FAILURE
+            Err(ExitCode::FAILURE)
         }
     }
 }
