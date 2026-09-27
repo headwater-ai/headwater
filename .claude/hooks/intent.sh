@@ -121,7 +121,10 @@ hw_shadow_log() {
     # is a census walk over every classified document, and step 2's
     # `neighbors` verb is where the issue's own build order puts that call,
     # so this line carries no `tree_digest` member until then.
-    _lock=$("$engine" json field lock digest < "$hw_root/.headwater/taxonomy.lock" 2>/dev/null) || _lock=
+    # The brace group matters for the same reason as the write at the bottom:
+    # a skipped route can reach here from a root with no lock, and a `<` that
+    # fails to open reports before a `2>/dev/null` after it takes effect.
+    _lock=$({ "$engine" json field lock digest < "$hw_root/.headwater/taxonomy.lock"; } 2>/dev/null) || _lock=
     _version=$("$engine" -V 2>/dev/null) || _version=
     _at=$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null) || _at=
 
