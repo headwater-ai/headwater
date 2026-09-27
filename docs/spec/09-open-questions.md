@@ -388,3 +388,7 @@ The documents on this shelf, in the reading order this corpus derives. Each head
 ## The live account of a domain is its own kind, split on the product and process line, and it draws on the records it cites
 
 [HW-DR-0093](../decisions/0093-the-live-account-of-a-domain-is-its-own-kind-split-on-the-product-and-process-line-and-it-draws-on-the-records-it-cites.md) — explanation and process_explanation state what holds now across one domain, and draws_on reports an account whose source decision ends. (asserted, and no human has accepted it)
+
+## Harper does not become part of the engine now, and Q41 stands
+
+[HW-DR-0096](../decisions/0096-harper-does-not-become-part-of-the-engine-now-and-q41-stands.md) — harper-core found 0 real errors in 187 hand-read findings on 25 documents of this corpus. So the engine does not link it now, Q41 stands, and a stated precision bar or an adopter request reopens it. (asserted, and no human has accepted it)
