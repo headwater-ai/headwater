@@ -1716,6 +1716,41 @@ jobs:
         # summary is what the checks decided over this tree and never what a
         # disk remembered.
         run: ./engine/target/release/headwater check --no-cache --now "$HEADWATER_NOW" | tee headwater-check.txt
+      - name: headwater check --fix writes nothing here; if it does, run it locally and read each file it writes
+        # This tree is a fixed point of `--fix`, and this step holds it there.
+        # Before it, a contributor who ran `--fix` before a commit got edits to
+        # documents their change never touched, and reverted them by hand.
+        # Most were `verified_revision` stamps: a stamp says that a person
+        # read the document against the file it governs, and the engine can
+        # write the digest but cannot do the reading. So the remedy is not to
+        # commit whatever `--fix` writes. Run it, read each stamped document
+        # against the file it governs, and commit a stamp only where the
+        # document is still true of that file.
+        #
+        # The stamp patch is offered only on a document whose `last_verified`
+        # is on or after `--now`, so this step reads the same injected clock
+        # as the steps above. The tree is compared before and after rather
+        # than required to be clean, because the steps above leave report
+        # files in it, and `--fix` writes its account under `$RUNNER_TEMP`
+        # so the account is not a change of its own. It blocks: a refused
+        # patch exits 1, and so does any file the run wrote.
+        run: |
+          before=$(git status --porcelain)
+          if ! ./engine/target/release/headwater check --fix --no-cache --now "$HEADWATER_NOW" \
+            > /dev/null 2> "$RUNNER_TEMP/fix.err"; then
+            cat "$RUNNER_TEMP/fix.err"
+            exit 1
+          fi
+          after=$(git status --porcelain)
+          if [ "$before" != "$after" ]; then
+            echo "headwater check --fix wrote to this tree, which should be a fixed point of it:"
+            grep '^headwater: fixed ' "$RUNNER_TEMP/fix.err" || true
+            git status --porcelain
+            git diff
+            echo "Run 'headwater check --fix' locally, read each document it stamps against the file it governs, and commit only the stamps that are still true."
+            exit 1
+          fi
+          echo "headwater check --fix wrote nothing"
       - name: The job summary, from the adapter that writes one
         # `--format markdown` is the adapter. Until it existed this step pasted
         # the whole text report into a fenced block, which privileges no forge
