@@ -2350,7 +2350,7 @@
           "id": "HW-DR-0082",
           "status": "current",
           "status_since": "2026-09-24",
-          "summary": "`headwater taxonomy graph` prints the resolved taxonomy as a Mermaid flowchart, no projection or export target draws it, and D2 is the candidate second format",
+          "summary": "`headwater taxonomy graph` prints the resolved taxonomy as a Mermaid flowchart, no projection or export target draws it, and D2 and DOT are equal candidates after it",
           "last_verified": "2026-09-27",
           "title": "The resolved taxonomy is drawn by a verb that prints Mermaid and writes no file",
           "provenance": {

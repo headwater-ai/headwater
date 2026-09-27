@@ -2,7 +2,7 @@
 id: HW-DR-0082
 status: current
 status_since: 2026-09-24
-summary: "`headwater taxonomy graph` prints the resolved taxonomy as a Mermaid flowchart, no projection or export target draws it, and D2 is the candidate second format"
+summary: "`headwater taxonomy graph` prints the resolved taxonomy as a Mermaid flowchart, no projection or export target draws it, and D2 and DOT are equal candidates after it"
 last_verified: 2026-09-27
 title: "The resolved taxonomy is drawn by a verb that prints Mermaid and writes no file"
 provenance:
@@ -43,7 +43,7 @@ The reader is an adopter who resolved a package or an overlay of their own. That
 
 **The output is Mermaid, because the renderer does the layout.** GitHub, MkDocs and most Markdown viewers lay out a Mermaid flowchart. So the engine carries no layout and no position, and the drawing still reads when a release adds kinds or relations. DOT can be a second format later. No reader has asked for it.
 
-**D2 is the candidate second format, and the output stays Mermaid only until an event below opens the question again.** [#1107](https://github.com/headwater-ai/headwater/issues/1107) drew both views by hand in D2 v0.9.0. Its TALA layout gave the most compact drawing of the layouts that the issue tried. The abstract view was 1800 by 1161 pixels, and its 19 `is_a` edges merged into a few shared trunks. D2 also has a native key. But GitHub and the VS Code Markdown preview show Mermaid inline and do not show D2. A D2 drawing is an SVG that somebody makes with the `d2` binary, which is a Go program, and then keeps. In the same test, a glob edge in D2 made no edges and gave no warning. So a D2 emitter must write each edge explicitly and count the edges against the lock, as the Mermaid emitter does. The owner [ruled on 2026-09-27](https://github.com/headwater-ai/headwater/issues/1107#issuecomment-5856183225) to keep Mermaid only.
+**D2 is a candidate second format beside DOT, and the output stays Mermaid only until an event below opens the question again.** [#1107](https://github.com/headwater-ai/headwater/issues/1107) drew both views by hand in D2 v0.9.0. Its TALA layout gave the most compact drawing of the layouts that the issue tried. The abstract view was 1800 by 1161 pixels, and its 19 `is_a` edges merged into a few shared trunks. D2 also has a native key. But GitHub and the VS Code Markdown preview show Mermaid inline. The issue states that, as far as its author knows, neither of them shows D2, and nobody checked that claim again. A D2 drawing is an SVG that somebody makes with the `d2` binary, which is a Go program, and then keeps. In the same test, a glob edge in D2 made no edges and gave no warning. So a D2 emitter must write each edge explicitly and count the edges against the lock, as the Mermaid emitter does. The owner [ruled on 2026-09-27](https://github.com/headwater-ai/headwater/issues/1107#issuecomment-5856183225) to keep Mermaid only.
 
 ## Consequences
 
@@ -53,4 +53,4 @@ An abstract kind is no node of the concrete view. A pair with an abstract kind a
 
 The question opens again on one of three events. A page of the site embeds the output, a consumer asks for a committed file, or an issue for a taxonomy explorer is filed. The first two make a projection worth its regenerate cost. An explorer can filter by purpose, follow one relation and open the document behind a kind. The static drawing then matters less, and Mermaid can stay as the plain fallback.
 
-When one of these events makes a second format necessary, D2 with TALA is the first candidate, before DOT. A D2 emitter first names its consumer, who runs `d2`, and where the SVG is kept. [HW-DR-0013](0013-linkml-and-shacl-as-substrate.md) holds an export target to the same test.
+If one of these events makes a second format necessary, D2 with TALA and DOT are equal candidates. This decision puts no order between them. #1107 did not try DOT. A D2 emitter first names its consumer, who runs `d2`, and where the SVG is kept. [HW-DR-0013](0013-linkml-and-shacl-as-substrate.md) holds an export target to the same test.
