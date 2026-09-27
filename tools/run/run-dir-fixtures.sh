@@ -284,5 +284,29 @@ sh "$tool" log "$loose" "$merged" >/dev/null 2>"$scratch/err"; status=$?
 same 'a broken snapshot never fails the ledger write, and prints nothing' "0 0 1" \
     "$status $(wc -c < "$scratch/err" | tr -d ' ') $(wc -l < "$loose/log.jsonl" | tr -d ' ')"
 
+printf '\n# a bare run id, and the prose a parent writes through it\n'
+prose=$(sh "$tool" start prose 2>/dev/null)
+: > "$prose/decisions.md"
+sh "$tool" decide prose 'ruled #1 MERGE' 2>"$scratch/err"; status=$?
+same 'decide takes a bare run id and appends one dated line' "0 - $(date -u +%Y-%m-%d) — ruled #1 MERGE" \
+    "$status $(cat "$prose/decisions.md")"
+
+printf -- '- #1 | build | a finding\n- #2 | verify | another\n' > "$scratch/lines"
+same 'intake appends a file of lines and says how many' 'INTAKE: 2 lines appended' \
+    "$(sh "$tool" intake prose "$scratch/lines")"
+same '  and both lines are in intake.md' 2 "$(wc -l < "$prose/intake.md" | tr -d ' ')"
+
+sh "$tool" withdraw prose '#2 |' '- #2 | verify | WITHDRAWN' 2>"$scratch/err"; status=$?
+same 'withdraw replaces the one line that holds the match' "0 - #2 | verify | WITHDRAWN" \
+    "$status $(sed -n 2p "$prose/intake.md")"
+same '  and leaves the other line as it was' '- #1 | build | a finding' "$(sed -n 1p "$prose/intake.md")"
+
+sh "$tool" withdraw prose '| ' 'x' 2>"$scratch/err"; status=$?
+same 'withdraw refuses a match that two lines hold, and writes nothing' "1 - #1 | build | a finding" \
+    "$status $(sed -n 1p "$prose/intake.md")"
+
+sh "$tool" decide no-such-run 'x' 2>"$scratch/err"; status=$?
+same 'a bare id that names no run is refused' 1 "$status"
+
 printf '\n%s passed, %s failed\n' "$passed" "$failed"
 [ "$failed" -eq 0 ]
