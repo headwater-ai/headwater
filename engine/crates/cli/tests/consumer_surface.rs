@@ -437,7 +437,10 @@ fn the_surface_block_generates_a_page_that_goes_stale_with_it() {
         "`/usr/share/doc/headwater/copyright`",
         "`/usr/share/bash-completion/completions/headwater`",
     ] {
-        assert!(deb.contains(path), "the Debian section names {path}\n{page}");
+        assert!(
+            deb.contains(path),
+            "the Debian section names {path}\n{page}"
+        );
     }
     let clean = root.run(&["generate", "--check"]);
     assert_eq!(
