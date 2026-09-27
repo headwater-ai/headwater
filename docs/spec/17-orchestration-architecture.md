@@ -3,7 +3,7 @@ id: HW-SPEC-orchestration-architecture
 status: current
 status_since: 2026-09-22
 summary: "The five stages of a build-order run, what each one owns and never does, where the veto sits, and how claims order the merges."
-last_verified: 2026-09-22
+last_verified: 2026-09-27
 doc_type: design_spec
 sequence: 17
 title: "Orchestration architecture"
@@ -59,7 +59,7 @@ flowchart LR
     parent -->|"one issue"| adjudicate["hw-adjudicate"]
     parent -->|"the note, any waits-on"| build["hw-build"]
     parent -->|"the branch, the attacks"| verify["hw-verify"]
-    parent -->|"the ruling, one at a time"| integrate["hw-integrate"]
+    parent -->|"every ruling so far"| integrate["hw-integrate"]
 
     queue -->|"queue.md, ordered"| parent
     adjudicate -->|"BUILD or REFUSE<br/>FOOTPRINT, FIXTURE"| parent
@@ -82,12 +82,12 @@ flowchart LR
     integrate -->|"releases the claims"| claims
     integrate -->|"one line per iteration"| ledger
 
-    integrate ==>|"squash merge, rebuild<br/>headwater generate"| checkout[("the shared checkout<br/>and origin/main")]
+    integrate ==>|"merge queue, rebuild<br/>headwater generate"| checkout[("the shared checkout<br/>and origin/main")]
 ```
 
 **A run is a tree and never a mesh.** Authority flows down from the parent, and a report flows back up. No stage instructs another stage. [HW-PD-0004](../process/decisions/0004-coordination-is-a-create-only-claim-and-authority-stays-on-the-tree.md) settles this on a live case. One session declined to edit a governed file on a peer session's reasoning, and that refusal was correct. A peer's message carries no owner authority. In a mesh, every agent adjudicates provenance on every message. On a tree, provenance is never in question.
 
-**Two channels cross the tree sideways, and neither one carries a decision.** The first is the claim store. The adjudicator declares the artifact footprint of a change. The parent claims each artifact on a turn it already pays for. A second claimant records what it waits on rather than failing. The second channel is the merge order that follows from those claims. The integrator takes the widest footprint first, and it never merges a branch before every branch that branch waits on has merged and regenerated.
+**Two channels cross the tree sideways, and neither one carries a decision.** The first is the claim store. The adjudicator declares the artifact footprint of a change. The parent claims each artifact on a turn it already pays for. A second claimant records what it waits on rather than failing. The second channel is the merge order that follows from those claims. The integrator enqueues the widest footprint first, and it enqueues a branch only after every branch that branch waits on.
 
 **Every stage is an agent definition, and each one loads fresh on every dispatch.** The parent dispatches by name and pastes nothing a definition already states. Each definition declares its own model in its own front matter, so a per-stage model choice is one line rather than a paragraph of prose. Each stage returns a fixed report block, so a parent that has compacted acts by matching a block rather than by recalling a rule.
 
@@ -133,7 +133,7 @@ flowchart LR
 
 **It never merges, never force-pushes and never touches the shared checkout.** The integrator alone writes `main`. A generating verb run in the shared checkout while a merge lands is the silent bad merge from the other direction.
 
-**A `waits-on` line is the integrator's to honor rather than this stage's to build around.** Construction builds against `origin/main` as it stands. The integrator merges the awaited change first and rebases this branch behind it, and nothing rebases a branch whose agent is still running.
+**A `waits-on` line is the integrator's to honor rather than this stage's to build around.** Construction builds against `origin/main` as it stands. The integrator enqueues the awaited change first and this branch after it, and nothing merges `main` into a branch whose agent is still running.
 
 ### The verification stage
 
@@ -147,15 +147,17 @@ flowchart LR
 
 ### The integration stage
 
-[`.claude/agents/hw-integrate.md`](../../.claude/agents/hw-integrate.md) merges one ruled pull request, moves the shared checkout, rebuilds, regenerates, and writes back to the board.
+[`.claude/agents/hw-integrate.md`](../../.claude/agents/hw-integrate.md) hands every ruled pull request to the GitHub merge queue and waits for each to land or be ejected ([HW-PD-0020](../process/decisions/0020-merges-go-through-the-github-merge-queue-one-squash-commit-per-pull-request.md)). Then it moves the shared checkout, rebuilds and regenerates once, and writes back to the board.
 
 **It is the sole owner of the shared checkout and of that checkout's engine target.** Depth one is a mutex rather than a tuning constant, because every merge touches the same checkout, the same target directory and the same `origin/main`. Two of them at once would check out `main` in one directory together.
 
-**A fresh integrator runs each merge and exits with it.** A long-lived integrator accumulates every merge it ran and then compacts, which is the parent's own failure one level down.
+**A fresh integrator runs each dispatch and exits with it.** A long-lived integrator accumulates every merge it ran and then compacts, which is the parent's own failure one level down.
 
-**It fuses six mechanical acts that all touch the one checkout.** The merge, the rebuild, the regenerate, the write-back, the claim release and the ledger line are one dispatch rather than six parent turns. It rebuilds the engine before it regenerates, on every merge. A binary built before the merge writes what the previous engine produced, and then passes its own output.
+**The queue tests the composition, so a branch that is only behind `main` is not brought current by hand.** The queue runs CI on the tip of a group built from `main` and the queued heads. It lands one squash commit for each pull request. The integrator merges `main` into a branch only when the queue reports a conflict. It reports an ejected pull request with the failing check, and the parent rules on it again.
 
-**It never rules and never edits a file by hand.** The definition grants no `Edit` and no `Write`, and that is the boundary. A pull request the parent did not rule on is not this stage's to merge, whatever the verdict says. A derived artifact left stale by a merge is a small pull request of its own rather than a hand edit of `main`.
+**It fuses six mechanical acts that all touch the one checkout.** The merge, the rebuild, the regenerate, the write-back, the claim release and the ledger line are one dispatch rather than six parent turns. It rebuilds the engine before it regenerates, once after the last merge of the dispatch. A binary built before the merges writes what the previous engine produced, and then passes its own output.
+
+**It never rules and never edits a file by hand.** The definition grants no `Edit` and no `Write`, and that is the boundary. A pull request the parent did not rule on is not this stage's to enqueue, whatever the verdict says. A derived artifact left stale by a merge is a small pull request of its own rather than a hand edit of `main`.
 
 ## What the seven rulings settle
 
