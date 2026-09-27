@@ -1,6 +1,7 @@
 #!/bin/sh
 # What holds `integrations/headwater-check`, the composite action #833
-# packages, and the adopter-facing doc beside it.
+# packages, and the adopter-facing doc beside it. Its last case runs the unit
+# tests of `integrations/dashboard` (#505), which need `python3` alone.
 #
 # There is no engine contract for "a published GitHub Action" to extend —
 # #833's own adjudication says so. The nearest precedent is
@@ -283,6 +284,17 @@ runs:
 YAML
 python3 "$guard" "$scratch/env-only.yml" >"$scratch/guard-env.out" 2>&1
 same 'the same expression read back from env: is not flagged' 0 "$?"
+
+# `integrations/dashboard` (#505): the page's own unit tests, which hold
+# HW-DR-0080's (corpus_identity, id) key and #505's decisive fixture, and
+# read this repository's `.headwater/export.json` as the worked example.
+python3 -m unittest discover -s "$root/integrations/dashboard" -p 'test_*.py' >"$scratch/dashboard.out" 2>&1
+status=$?
+if [ "$status" -eq 0 ]; then
+    pass 'integrations/dashboard: its unit tests pass'
+else
+    fail 'integrations/dashboard: its unit tests pass' "$(tail -n 20 "$scratch/dashboard.out")"
+fi
 
 printf '\n%s passed, %s failed\n' "$passed" "$failed"
 [ "$failed" -eq 0 ]
