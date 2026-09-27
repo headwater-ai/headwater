@@ -1,7 +1,9 @@
 #!/bin/sh
 # SPDX-License-Identifier: Apache-2.0
 #
-# Run one cargo command for the spike inside a pinned Rust image.
+# Run one cargo command for the spike inside the Rust image the caller names.
+# build.sh names rust:latest, a tag that moves, so a later run can use a
+# different rustc from the 1.98.1 that the evaluation reports.
 #
 # harper-core 2.11.0 declares no rust-version and does not compile on rustc
 # 1.93.1 or 1.91 (four E0308 errors in its own linting/ modules, measured
