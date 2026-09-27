@@ -1,56 +1,23 @@
 # SPDX-License-Identifier: Apache-2.0
 #
-# The one thing `ci.yml` does not do: hand somebody the binary.
+# The engine release: a `v*` tag, or a hand run with a `tag` input, builds
+# three archives (glibc Linux, static musl Linux, Apple silicon macOS), runs
+# the musl and macOS archives on hosts that did not build them, and creates
+# the GitHub release only when both smoke jobs pass.
 #
-# `ci.yml` builds a release-profile `headwater` on every run and throws it away.
-# So the engine was built for a stranger dozens of times a week and no stranger
-# could ever get one: the only install route was a clone and a source build, and
-# the single release this repository has cut carries an empty asset list.
-#
-# # WHY THIS IS A SEPARATE FILE
-#
-# `ci.yml` triggers on `push: branches: [main]` and on `pull_request`. Neither
-# fires for a tag, so a tag pushed today runs nothing at all — the gap was never
-# a missing upload step, it was a missing run. Adding a tag trigger to `ci.yml`
-# would run every corpus gate, MkDocs and each fixture suite again on a commit
-# that already passed all of them on `main`, for the sake of one upload.
-#
-# # WHAT NOTHING HERE EVER EXERCISES, AND WHAT ANSWERS THAT
-#
-# This file runs zero times on a pull request, by construction. A typo in the
-# trigger, a missing `contents: write` and an asset name that no reader is ever
-# told to ask for are all invisible until a tag is cut, and a tag is cut once.
-#
-# Two things answer that rather than hoping. Group 7 of
-# `tools/repo/readme-fixtures.sh` runs on every push: it reads the asset name out of
-# this file and the asset name out of `README.md` and requires them to be the
-# same string, and it reads the tag pattern below against the tag the first
-# screen pins. And `workflow_dispatch` below takes a tag by hand, so a tag that
-# is already cut can be given an asset without cutting another one. With
-# `publish: false` the same hand run builds every archive, runs the two smoke
-# jobs and stops before the release, which is how a change to this file is run
-# on its own branch before it merges:
+# To run a change to this file on its branch before it merges, with no release:
 #
 #   gh workflow run release.yml --ref <branch> -f tag=v0.1.2 -f publish=false
 #
-# # WHAT A STRANGER CAN RUN, AND WHAT SHOWS IT
+# The reasons live in records, and this file cites them rather than restating
+# them. Each record governs this file, so an edit here makes it suspect:
 #
-# Three archives: glibc Linux, static musl Linux and Apple silicon macOS. The
-# two smoke jobs run the musl and macOS archives on hosts that did not build
-# them and have no Rust, from the uploaded artifact rather than the build tree,
-# and the job that creates the release needs both. An archive that does not run
-# where a stranger runs it stops the release rather than shipping.
-#
-# # THE RUNNER IS PINNED HERE AND NOT READ FROM A VARIABLE
-#
-# `ci.yml` takes its runner from the `CI_RUNNER` repository variable, which is
-# right for a verdict about a commit: moving between the self-hosted runner and
-# a hosted image costs no commit there. It is wrong here. The image decides the
-# glibc floor of bytes handed to strangers, `README.md` states that floor as a
-# fact about the download, and a variable that anybody can change with no commit
-# and no review must not be what moves it. So the image is written here, where
-# changing it is a diff next to the sentence on the first screen that it makes
-# true or false.
+#   HW-DR-0088  the `v*` namespace, apart from the taxonomy release
+#   HW-DR-0090  the release notes state the `release.digest`
+#   HW-DR-0091  the runner images are written here, and the build is `--locked`
+#   HW-PD-0009  every asset goes into the one `gh release create` call
+#   HW-PD-0010  the tag is compared with the version the binary prints
+#   HW-PD-0012  a separate file, one tag value, and names a fixture can read
 name: Release
 
 on:
@@ -80,9 +47,7 @@ jobs:
       tag: ${{ steps.tag.outputs.tag }}
     steps:
       - name: The tag this run is about
-        # One value for both entry points: the ref for a tag push, the input for
-        # a hand run. Every job below reads this output and never
-        # `github.ref_name`, so the two paths cannot diverge.
+        # Every job below reads this output and never `github.ref_name` (HW-PD-0012).
         id: tag
         run: |
           tag="${{ inputs.tag || github.ref_name }}"
@@ -95,18 +60,12 @@ jobs:
   build:
     name: Build ${{ matrix.target }}
     needs: tag
-    # Three archives, one per row. Each name is spelled out in full on its row
-    # rather than assembled from `matrix.target`, for the reason the archive
-    # step states: `tools/repo/readme-fixtures.sh` reads these names against
-    # the ones `README.md` offers, and a name built by concatenation is a name
-    # no judge can read.
-    #
-    # The gnu row is the archive every release so far has carried, and the
-    # `headwater-check` action downloads it by that name, so it stays. It
-    # needs glibc 2.39 or later because `ubuntu-24.04` built it. The musl row
-    # is linked statically and needs no C library on the host at all, and the
-    # darwin row is built on Apple silicon. #975 and HW-DR-0077 are why the
-    # last two exist.
+    # Three archives, one per row, each name written in full (HW-PD-0012).
+    # Each runner image is written here and sets the floor of its archive
+    # (HW-DR-0091): the gnu row needs glibc 2.39 or later because
+    # `ubuntu-24.04` built it. The `headwater-check` action downloads the gnu
+    # archive by that name, so it stays. #975 and HW-DR-0077 are why the musl
+    # and darwin rows exist.
     strategy:
       fail-fast: true
       matrix:
@@ -142,26 +101,12 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y musl-tools
       - name: Build the engine
-        # `--locked` for the reason `tools/engine/build-declaration-fixtures.sh` states
-        # and holds: a copy of the release build that a stranger is handed must
-        # resolve the committed lock rather than whatever resolves today.
+        # `--locked`: HW-DR-0091.
         run: cargo build --release -p headwater-cli --locked --target ${{ matrix.target }}
         working-directory: engine
       - name: The binary prints the version the tag names
-        # A checkout of the wrong ref, or a tag cut before the version bump it
-        # was meant to carry, produces a binary that is not what its name says.
-        # Each row runs its own binary here, on the host that built it; the
-        # smoke jobs below run the two new archives again, on hosts that did
-        # not build them.
-        #
-        # Two lines here are the guard on the guard, and this step passed for
-        # every tag without them. GitHub's default shell for a `run:` block on
-        # Linux is `bash -e {0}` and NOT `bash -eo pipefail {0}`, so the exit
-        # status of the substitution below is `awk`'s and a binary that refuses
-        # to run at all leaves `printed` empty at exit 0. An empty `printed`
-        # then makes the pattern `"$printed"*` the pattern `*`, which matches
-        # every tag there is. So the option is set and the emptiness is refused
-        # by name: a check that cannot run is not a check that passes.
+        # The version guard, and the guard on it: HW-PD-0010. Each row runs its
+        # own binary here, on the host that built it.
         env:
           TAG: ${{ needs.tag.outputs.tag }}
         run: |
@@ -175,11 +120,7 @@ jobs:
               *) echo "::error::the tag names ${TAG#v} and the binary prints $printed" && exit 1 ;;
           esac
       - name: The archive and the checksum beside it
-        # Both names are spelled out in full on the matrix row rather than the
-        # second being built from the first. `tools/repo/readme-fixtures.sh`
-        # compares the names in this file with the names on the first screen,
-        # and a name assembled by shell concatenation is a name no judge can
-        # read — which is the whole defect this workflow is guarded against.
+        # Both names come from the matrix row, written in full (HW-PD-0012).
         #
         # `shasum -a 256` rather than `sha256sum`, because macOS carries only
         # the first. It writes the same line, and `sha256sum -c` reads it.
@@ -327,17 +268,12 @@ jobs:
 
   publish:
     name: Attach the archives to the release
-    # Every archive a release carries has run on a host that did not build it
-    # before this job starts. `publish: false` on a hand run stops here, so the
-    # build and both smoke jobs can be run on a branch against a tag that is
-    # already cut, which is the only run this file ever gets before a tag.
+    # Every archive has run on a host that did not build it before this job
+    # starts. `publish: false` stops here, and this job alone asks for
+    # `contents: write` (HW-PD-0012).
     needs: [tag, build, smoke-linux, smoke-macos]
     if: github.event_name == 'push' || inputs.publish
     runs-on: ubuntu-24.04
-    # The workflow-level default above is `contents: read`, which builds
-    # everything and then fails at the upload with a read-only token. The
-    # override is per job rather than per workflow so that a job added here
-    # later has to ask for it.
     permissions:
       contents: write
     steps:
@@ -348,21 +284,9 @@ jobs:
         with:
           merge-multiple: true
       - name: The digest the package in this tree publishes
-        # `--generate-notes` writes a list of merged pull requests and a compare
-        # link, and nothing else. So an engine release has never stated the
-        # `release.digest` a consumer pins, and `v0.1.2` still does not: a
-        # reader following the front page was sent to the notes of a DIFFERENT
-        # tag for it, which is #775. `release-taxonomy.yml` states the value
-        # because it passes `--notes` as well, and the two lines below build
-        # the same sentence out of the record already in the tree at this tag.
-        #
-        # Nothing here reaches the network, and that is why it is a step of its
-        # own rather than three more lines inside the `gh release create` step.
-        # `tools/repo/readme-fixtures.sh` extracts this `run:` block by the name
-        # above and RUNS it against the checkout, asserting what it writes
-        # against the digest of that checkout's own record. A workflow that
-        # only ever runs on a pushed tag gets no other run before the day
-        # somebody cuts a release, and a grep for the flag is not one.
+        # The notes state the `release.digest` (HW-DR-0090). This step reaches
+        # no network, and `tools/repo/readme-fixtures.sh` runs it by the name
+        # above (HW-PD-0012), so do not rename it.
         run: |
           digest=$(awk '/^release:/{b=1;next} /^[^ \t#]/{b=0} b && /^  digest:/{print $2; exit}' .headwater/packages/headwater-standard/release.yml)
           if [ -z "$digest" ]; then
@@ -370,33 +294,11 @@ jobs:
           fi
           printf 'release.digest: %s\n\nThis tag carries `headwater/standard` with that `release.digest`. Pass the value to `headwater taxonomy vendor <dir> --expect %s`. It is what `headwater taxonomy publish` printed for the package in this tree, and it is not a checksum of any one file.\n' "$digest" "$digest" >release-notes.md
       - name: Attach every archive and its checksum to the release
-        # A pushed tag has no release object until somebody makes one, and
-        # `gh release upload` refuses a tag that has none. `v0.1.1` is why
-        # the two calls this comment used to describe are gone: GitHub now
-        # makes a release immutable the moment `gh release create` returns,
-        # so the `gh release upload` that followed it, on the very next
-        # line, failed every time with "Cannot upload assets to an immutable
-        # release" — not a race, a certainty. Passing the files to `create`
-        # itself is the one call GitHub still permits, because the assets
-        # land before the release becomes the immutable thing.
-        #
-        # That leaves nothing for `--clobber` to reach: a release a first
-        # run already created is immutable before a second run can name it,
-        # so `workflow_dispatch` against a tag that already carries a
-        # release cannot repair it and this step says so rather than
-        # retrying a call GitHub has already refused once. Deleting the
-        # release and running this workflow again is the only way back in,
-        # and that is a person's decision, not this step's.
-        #
-        # `--generate-notes` and `--notes-file` together are one legal call:
-        # `gh` puts the file's text first and appends the generated list to it.
-        # The file is the step above, and it is the only place an engine
-        # release states the `release.digest` a consumer pins.
-        #
-        # The six names are spelled out again here, with variable names no
-        # other step assigns, because `tools/repo/readme-fixtures.sh` resolves
-        # each operand of this call through the assignments in this file and
-        # compares what it finds with what `README.md` offers.
+        # Every asset in the one `create` call, and a tag that has a release
+        # refuses (HW-PD-0009). `--notes-file` is the step above, and `gh`
+        # puts its text before the generated list (HW-DR-0090). The six names
+        # are written again in full for `tools/repo/readme-fixtures.sh`
+        # (HW-PD-0012).
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ needs.tag.outputs.tag }}
