@@ -200,6 +200,21 @@ fn recorded() -> Vec<Recorded> {
             full: false,
             inputs: fixtures_dir().join("state-set-twice"),
         },
+        // The corpus of `lifecycle.state.not_set_by_edge`, which reaches both
+        // directions of an edge, a finding with a patch and one with none, and
+        // two skips. It is its own corpus rather than one more rule on a shared
+        // one (HW-OBL-0222, #1198).
+        Recorded {
+            label: "state-not-set-by-edge",
+            base: fixtures_dir(),
+            name: "state-not-set-by-edge",
+            taxonomy: "state-not-set-by-edge.taxonomy.yml",
+            lock: "sha256:state-not-set-by-edge-fixture".to_string(),
+            clock: "2026-08-12",
+            observations: Observations::empty(),
+            full: false,
+            inputs: fixtures_dir().join("state-not-set-by-edge"),
+        },
         Recorded {
             label: "acceptance-criterion-proven",
             base: fixtures_dir(),

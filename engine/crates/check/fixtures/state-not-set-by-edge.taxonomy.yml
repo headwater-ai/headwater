@@ -1,0 +1,86 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The taxonomy the state-not-set-by-edge tree is checked against. It is the
+# smallest shape `lifecycle.state.not_set_by_edge` needs, and every declaration
+# here is one the rule reads.
+#
+# `supersedes` declares `on_target: {set_state: superseded}`, and its inverse is
+# `superseded_by`, so an author may write the edge from either end. `mentions`
+# declares no state, so no edge of it forms an instance of the rule at all.
+#
+# The state facet reads through roles, and `status_since` carries the
+# `state_entered` role. The fix writes both facets, and it reads the stamp from
+# the successor's own `status_since`, which is the date the supersession landed.
+#
+# `note` binds a regime that names `superseded`. `page` binds the same regime
+# and every file of its shelf is one this engine wrote. `loose` binds no regime
+# at all, which is the pair HW-OBL-0196 records and this rule does not close.
+
+facets:
+  status:
+    role: state
+    values:
+      - {value: draft,      role: initial}
+      - {value: current,    role: live}
+      - {value: superseded, role: terminal-retained}
+      - {value: deprecated, role: terminal-retained}
+  status_since:
+    role: state_entered
+  summary:
+    role: scent
+
+regimes:
+  lifecycle:
+    standard:
+      initial: draft
+      transitions: {draft: [current, deprecated], current: [superseded, deprecated]}
+      retain_terminal: true
+
+identifier_schemes:
+  note_id: {pattern: "NOTE-{namespace}-{slug}", namespace: FIX, allocation: minted-once}
+
+relations:
+  supersedes:
+    family: succession
+    from: [note]
+    to:   [note, page, loose]
+    inverse: superseded_by
+    on_target: {set_state: superseded}
+    created_by: author
+  mentions:
+    family: association
+    from: [note]
+    to:   [note, page, loose]
+    created_by: author
+
+core:
+  requires:
+    - facet_role: state
+    - relation_family: succession
+      lifecycle_sensitive: true
+    - relation_family: association
+
+kinds:
+  note:
+    identifier: {scheme: note_id}
+    lifecycle: standard
+    facets: {require: [status]}
+  page:
+    identifier: {scheme: note_id}
+    lifecycle: standard
+  loose:
+    identifier: {scheme: note_id}
+
+shelves:
+  notes:
+    path: state-not-set-by-edge/notes/**
+    homogeneous: true
+    kind: note
+  pages:
+    path: state-not-set-by-edge/pages/**
+    homogeneous: true
+    kind: page
+  loose:
+    path: state-not-set-by-edge/loose/**
+    homogeneous: true
+    kind: loose
