@@ -317,7 +317,73 @@ pub fn merge_attributes(
         input.extend_from_slice(path.as_bytes());
         input.push(0);
     }
-    Some(check_attr(root, input))
+    Some(check_attr(root, input, None))
+}
+
+/// The value [`names_merge`] gives each path in the attributes file it hands
+/// git, which no line of a repository is expected to carry.
+const PROBE: &str = "headwater-probe";
+
+/// Whether any attributes file of the repository names the merge attribute of
+/// each of `paths`, in any form.
+///
+/// `true` where a line of any `.gitattributes`, or of the clone's own
+/// `info/attributes`, sets, unsets, gives a value to or resets (`!merge`) the
+/// attribute for the path, by a literal path or by a pattern, and whether the
+/// path exists or not. It is the question a step that appends a line must ask
+/// before it appends one: git obeys the later of two lines for a path, so a
+/// line written after an adopter's would override it.
+///
+/// Git's own answer cannot tell `!merge` from no line, since both read
+/// `unspecified`. So git is asked with one more attributes file, named by
+/// `core.attributesFile`, that gives each path `merge=headwater-probe`. Git reads
+/// that file below every `.gitattributes` and `info/attributes`, so the probe
+/// value comes back only where no line of the repository names the attribute.
+/// The option also replaces a user's own `core.attributesFile`, which no other
+/// clone reads.
+///
+/// `None` and `Some(Err(..))` as [`merge_attributes`] gives them. A path that
+/// holds whitespace, a quote or a glob character is refused, because the probe
+/// line would then name a different path.
+pub fn names_merge(root: &Path, paths: &[String]) -> Option<Result<Vec<(String, bool)>, String>> {
+    if let Some(path) = paths.iter().find(|path| {
+        path.chars()
+            .any(|c| c.is_whitespace() || "\"\\*?[!#".contains(c))
+    }) {
+        return Some(Err(format!("cannot probe the merge attribute of `{path}`")));
+    }
+    // The same question first, so that `None` and a refusal read as they do
+    // there.
+    if let Err(refusal) = merge_attributes(root, &[])? {
+        return Some(Err(refusal));
+    }
+    let probe = std::env::temp_dir().join(format!(
+        "headwater-merge-probe-{}-{}",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map_or(0, |elapsed| elapsed.as_nanos())
+    ));
+    let text: String = paths
+        .iter()
+        .map(|path| format!("/{path} merge={PROBE}\n"))
+        .collect();
+    if let Err(error) = std::fs::write(&probe, text) {
+        return Some(Err(format!("cannot write the probe file: {error}")));
+    }
+    let mut input = Vec::new();
+    for path in paths {
+        input.extend_from_slice(path.as_bytes());
+        input.push(0);
+    }
+    let answer = check_attr(root, input, Some(&probe));
+    let _ = std::fs::remove_file(&probe);
+    Some(answer.map(|answers| {
+        answers
+            .into_iter()
+            .map(|(path, value)| (path, value != PROBE))
+            .collect()
+    }))
 }
 
 /// Whether git's own search upward from `root` would stop at a repository.
@@ -507,10 +573,19 @@ fn device_of(_path: &Path) -> Option<u64> {
 }
 
 /// One run of `git check-attr -z --stdin merge` over `input`, parsed.
-fn check_attr(root: &Path, input: Vec<u8>) -> Result<Vec<(String, String)>, String> {
-    let mut child = Command::new("git")
-        .arg("-C")
-        .arg(root)
+fn check_attr(
+    root: &Path,
+    input: Vec<u8>,
+    attributes_file: Option<&Path>,
+) -> Result<Vec<(String, String)>, String> {
+    let mut command = Command::new("git");
+    command.arg("-C").arg(root);
+    if let Some(file) = attributes_file {
+        let mut setting = std::ffi::OsString::from("core.attributesFile=");
+        setting.push(file);
+        command.arg("-c").arg(setting);
+    }
+    let mut child = command
         .args(["check-attr", "-z", "--stdin", "merge"])
         .stdin(std::process::Stdio::piped())
         .stdout(std::process::Stdio::piped())

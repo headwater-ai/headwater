@@ -7339,9 +7339,29 @@ fn init_git(root: &Path, configure: bool) -> ExitCode {
     // driver line on a store would hand a file no producer writes to the
     // regenerate driver. Any line that already names a store, whatever it
     // says, is the adopter's and is left alone.
+    //
+    // "Names" is git's answer, in any form and by any pattern, and whether
+    // the store exists or not, because git obeys the later of two lines and a
+    // union line after an adopter's `merge=ours` would override it. Where git
+    // gives no answer, the root file is read: a literal line that names the
+    // store's merge in any form, or any pattern that names a merge at all,
+    // since this reader expands no pattern.
+    let stores: Vec<String> = APPEND_ONLY_STORES.iter().map(|s| s.to_string()).collect();
+    let named: Vec<String> = match headwater_vcs::names_merge(root, &stores) {
+        Some(Ok(answers)) => answers
+            .into_iter()
+            .filter(|(_, named)| *named)
+            .map(|(path, _)| path)
+            .collect(),
+        _ => stores
+            .iter()
+            .filter(|store| root_names_merge(root, store))
+            .cloned()
+            .collect(),
+    };
     let mut unions: Vec<&str> = Vec::new();
     for store in APPEND_ONLY_STORES {
-        if committed(store).is_some() {
+        if named.iter().any(|path| path == store) {
             continue;
         }
         match covering(store) {
@@ -7500,6 +7520,34 @@ fn init_git(root: &Path, configure: bool) -> ExitCode {
         return ExitCode::FAILURE;
     }
     ExitCode::SUCCESS
+}
+
+/// Whether a line of the root `.gitattributes` may name the merge attribute of
+/// `path`, read without git.
+///
+/// A literal line for the path counts in any form: `merge`, `-merge`,
+/// `!merge`, `merge=<value>` and `binary`. A line whose pattern carries a glob
+/// character and names a merge counts too, because this reader expands no
+/// pattern and a line it cannot rule out is one the step must not override.
+fn root_names_merge(root: &Path, path: &str) -> bool {
+    let Ok(text) = std::fs::read_to_string(root.join(".gitattributes")) else {
+        return false;
+    };
+    text.lines()
+        .map(|line| line.trim().trim_start_matches('\u{feff}'))
+        .filter(|line| !line.starts_with('#'))
+        .any(|line| {
+            let mut fields = line.split_whitespace();
+            let Some(pattern) = fields.next() else {
+                return false;
+            };
+            let names = fields.any(|field| {
+                matches!(field, "merge" | "-merge" | "!merge" | "binary")
+                    || field.starts_with("merge=")
+            });
+            let pattern = pattern.trim_start_matches('/');
+            names && (pattern == path || pattern.contains(['*', '?', '[', '\\', '"']))
+        })
 }
 
 /// Append one driver line for each of `paths` to the clone's own attributes file.
