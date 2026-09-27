@@ -7,7 +7,7 @@
 //                 the recorded line of the same `id`. A line that is not JSON is
 //                 written out on the first request, which is how the garbage
 //                 case reaches the client. A path that names no file is a server
-//                 that never answers and never exits until it is killed.
+//                 that never answers and exits on its own after ten seconds.
 //   FAKE_RECORD   a file this server appends to, one JSON object per line: first
 //                 `{"argv": [...]}`, then `{"message": ...}` for each line read.
 //   FAKE_EXIT     the status to exit with once standard input closes (default 0).
@@ -61,7 +61,9 @@ input.on('line', (line) => {
 });
 input.on('close', () => {
   if (silent) {
-    setInterval(() => {}, 1000);
+    // Outlive any client timeout, and still end on its own, so a client whose
+    // timeout is broken fails its test rather than hanging the suite.
+    setTimeout(() => process.exit(0), 10000);
     return;
   }
   process.exitCode = status;

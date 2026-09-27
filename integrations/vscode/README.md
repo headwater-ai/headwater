@@ -12,7 +12,7 @@ When nothing governs the task or the file, the extension shows nothing. It does 
 
 The extension is a client of `headwater mcp`, the corpus MCP server that the engine ships. For each question it starts `headwater mcp --root <workspace folder>`, sends one request and stops the process. It does not look for a server that is already running, because the server reads standard input and walks the corpus once when it starts. A server kept alive across your edits would answer from an old walk. One session takes about 0.16 seconds on this repository.
 
-It calls two tools of the query class, `route` and `governing_docs_for_path`, and no other tool. It never passes `--write`, so the server it starts registers no tool that writes. It reads each answer by the pointer shape that [the `headwater mcp` interface](../../docs/interfaces/headwater-mcp.md) states as the wire format a caller may rely on: `path (name) — summary [asserted: …]`. A line of any other shape is not a pointer, and the extension does not show it.
+It calls two tools of the query class, `route` and `governing_docs_for_path`, and no other tool. It never passes `--write`, so the server it starts registers no tool that writes. It reads each answer by the pointer shape that [the `headwater mcp` interface](../../docs/interfaces/headwater-mcp.md) states as the wire format a caller may rely on: `path (name) — summary [asserted: …]`. A line of any other shape is not a pointer, and the extension does not show it. A line with neither a name nor a summary is not a pointer either. The server repeats your own words in two places, and the extension never reads a pointer from them: the first line of a `route` answer repeats the task, and the answer for an ungoverned path repeats the path. So a `governing_docs_for_path` answer counts only when every line of it is a pointer.
 
 ## When it does nothing
 
@@ -35,7 +35,9 @@ Build or install the engine so that `headwater` is on your path, or set `headwat
 - Open this folder in VS Code and press F5. This starts a second VS Code window with the extension loaded.
 - Package it with `npx @vscode/vsce package` in this folder, and install the result with `code --install-extension headwater-vscode-0.1.0.vsix`.
 
-The extension has no npm dependencies and no build step.
+The extension has no npm dependencies and no build step. It is licensed under Apache-2.0, and `LICENSE` in this folder is a copy of the repository's license. `.vscodeignore` keeps `test/` out of the package.
+
+What was run and what was not, on 2026-09-27: `npx @vscode/vsce package` in this folder exited 0 with no warning and packaged five files (`LICENSE.txt`, `client.js`, `extension.js`, `package.json`, `readme.md`). Nobody has yet installed that package with `code --install-extension`, or loaded the extension with F5, because no VS Code was available. So `extension.js` has not run inside VS Code.
 
 ## Tests
 

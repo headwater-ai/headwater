@@ -35,13 +35,14 @@ const DEFAULT_TIMEOUT_MS = 5000;
 const MAX_OUTPUT = 1 << 20;
 
 // `path (name) — summary [asserted: warrant]`, where the name, the summary and
-// the warrant are each optional and a pointer carries a name or a summary.
-const POINTER = /^(\S+)(?: \((.+?)\))?(?: — (.+?))?(?: \[asserted: ([^\]]*)\])?$/;
+// the warrant are each optional and a pointer carries a name or a summary. A
+// path may hold a space, so the path runs to the first ` (` or ` — `.
+const POINTER = /^(.+?)(?: \((.+?)\))?(?: — (.+?))?(?: \[asserted: ([^\]]*)\])?$/;
 
 // Where a pointer's head line may start: a path, then the name, the summary or
 // nothing. The server folds a long route line at 80 columns and hangs the rest
 // two columns deeper, and this is what tells a folded pointer from a header.
-const HEAD = /^\S+(?: \(| — |$)/;
+const HEAD = /^(?:\S+$|.+? \(|.+? — )/;
 
 // The lines `route` writes under a pointer, two columns deeper, as it writes
 // a fold. They end the pointer rather than continue it.
@@ -78,21 +79,37 @@ function parsePointers(text) {
     current = { indent, text: body, pointer, open: pointer };
     heads.push(current);
   }
-  const pointers = [];
-  for (const head of heads) {
-    const match = POINTER.exec(head.text);
-    if (!match) continue;
-    const [, p, name, summary, asserted] = match;
-    if (name === undefined && summary === undefined) continue;
-    pointers.push({
-      path: p,
-      name: name ?? null,
-      summary: summary ?? null,
-      asserted: asserted ?? null,
-    });
-  }
-  return pointers;
+  return heads.map((head) => pointerOf(head.text)).filter((p) => p !== null);
 }
+
+// One line as a pointer, or null. A line that carries neither a name nor a
+// summary is not a pointer. Every sentence the server writes around its
+// pointers has that shape, so this guard keeps a sentence from being shown as
+// a document.
+function pointerOf(line) {
+  const match = POINTER.exec(line);
+  if (!match) return null;
+  const [, p, name, summary, asserted] = match;
+  if (name === undefined && summary === undefined) return null;
+  return { path: p, name: name ?? null, summary: summary ?? null, asserted: asserted ?? null };
+}
+
+// How each tool's answer text is read. The server repeats the caller's own
+// words in two places, and neither is ever read for a pointer.
+const READERS = Object.freeze({
+  // The first line is `route "<task>"`, the task the user typed. The report
+  // is everything under it.
+  route: (text) => parsePointers(text.split('\n').slice(1).join('\n')),
+  // Either the sentence `no document governs <path>`, which repeats the path
+  // the caller sent, or one pointer per line and nothing else. So the answer
+  // is all pointers or none, and a path that holds a newline and a pointer's
+  // shape cannot put a pointer into the sentence.
+  governing_docs_for_path: (text) => {
+    const lines = text.split('\n').filter((line) => line !== '');
+    const pointers = lines.map(pointerOf);
+    return pointers.length > 0 && pointers.every((p) => p !== null) ? pointers : [];
+  },
+});
 
 /**
  * One session: spawn, initialize, one `tools/call`, read the answer, stop.
@@ -149,7 +166,7 @@ function ask(tool, args, options = {}) {
         finish([]);
         return;
       }
-      finish(answer(stdout));
+      finish(answer(stdout, tool));
     });
 
     const messages = [
@@ -171,7 +188,7 @@ function ask(tool, args, options = {}) {
 }
 
 // The pointers in the response to the `tools/call`, or `[]`.
-function answer(stdout) {
+function answer(stdout, tool) {
   for (const line of stdout.split('\n')) {
     let message;
     try {
@@ -184,7 +201,7 @@ function answer(stdout) {
     if (!result || result.isError === true) return [];
     const block = Array.isArray(result.content) ? result.content[0] : null;
     if (!block || block.type !== 'text') return [];
-    return parsePointers(block.text);
+    return READERS[tool](block.text);
   }
   return [];
 }

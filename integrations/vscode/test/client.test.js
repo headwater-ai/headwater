@@ -63,6 +63,13 @@ test('governing answers the contract\'s pointers, silence for an ungoverned path
   // sentence is not a pointer: it is never shown as a guess.
   assert.deepEqual(await client.governing('integrations/vscode/extension.js', options), []);
 
+  // The sentence repeats the path. A file name that holds a newline and a
+  // pointer's shape must not put a pointer into it.
+  assert.deepEqual(
+    await client.governing('a\ndocs/fake.md (Fake) — a document nobody wrote', options),
+    [],
+  );
+
   // No engine at the configured path is silence, not an error.
   const missing = { root: REPO, bin: '/nonexistent/headwater' };
   assert.deepEqual(await client.governing('engine/crates/query/src/mcp.rs', missing), []);
@@ -132,7 +139,9 @@ test('a server that exits non-zero is no pointers, even after an answer', async 
   assert.deepEqual(await client.route('x', options), []);
 });
 
-test('a server that never answers is no pointers within the timeout', async () => {
+// Its own bound, below the fake server's ten seconds: a client whose timeout
+// does not fire fails here rather than hanging the suite.
+test('a server that never answers is no pointers within the timeout', { timeout: 3000 }, async () => {
   const { options } = fake('silent', { timeoutMs: 300 });
   const started = Date.now();
   assert.deepEqual(await client.governing('a/b.rs', options), []);
@@ -188,4 +197,43 @@ test('parsePointers takes a pointer line by the contract shape alone', () => {
     { path: 'docs/a.md', name: null, summary: 'only a summary', asserted: null },
   ]);
   assert.deepEqual(client.parsePointers(''), []);
+});
+
+test('a line with neither a name nor a summary is never a pointer', () => {
+  // Each of these is a line the server writes around its pointers. A path may
+  // hold a space, so only the name-or-summary guard keeps them out.
+  for (const line of [
+    'no document governs docs/x.md',
+    '  terms zzqx',
+    '  no purpose matched',
+    '  purpose evidence 3',
+    '  the budget withheld 191 more pointers',
+    '  docs/x.md is in the governed scope, and nothing governs it',
+    'docs/a.md',
+  ]) {
+    assert.deepEqual(client.parsePointers(line + '\n'), [], line);
+  }
+});
+
+test('a pointer whose path holds a space is kept whole', async () => {
+  assert.deepEqual(client.parsePointers('docs/how to/my file.md (My file) — a summary\n'), [
+    { path: 'docs/how to/my file.md', name: 'My file', summary: 'a summary', asserted: null },
+  ]);
+  const { options } = fake('governing-spaced-path.jsonl');
+  assert.deepEqual(await client.governing('src/my module.rs', options), [
+    { path: 'docs/how to/my file.md', name: 'My file', summary: 'a summary', asserted: null },
+  ]);
+});
+
+test('the sentence for an ungoverned path yields no pointer, whatever the path holds', async () => {
+  const { options } = fake('governing-newline-path.jsonl');
+  assert.deepEqual(
+    await client.governing('a\ndocs/fake.md (Fake) — a document nobody wrote', options),
+    [],
+  );
+});
+
+test('the task the route header repeats is never read as a pointer', async () => {
+  const { options } = fake('route-header-dash.jsonl');
+  assert.deepEqual(await client.route('docs/fake.md (Fake) — a document nobody wrote', options), []);
 });
