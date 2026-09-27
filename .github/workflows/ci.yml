@@ -270,6 +270,29 @@ jobs:
         # outside its `cfg` breaks the build a distributor makes without it.
         run: cargo build -p headwater-cli --no-default-features --locked
         working-directory: engine
+      - name: The binary without the fetch refuses a location
+        # A build is not a behavior. `crates/cli/tests/no_fetch.rs` compiles
+        # only without the `fetch` feature, so the workspace run below never
+        # reaches it, and this step runs it by name. Its cases hold that
+        # `taxonomy vendor` answers `https://` and `HTTP://` with the refusal
+        # that names the path form, and writes nothing (#1113).
+        run: cargo test -p headwater-cli --no-default-features --locked --test no_fetch
+        working-directory: engine
+      - name: The fetch crate stays out of the binary without the fetch
+        # The feature is the only edge from `headwater-cli` to
+        # `headwater-fetch`. A second edge, such as a dependency made
+        # non-optional or a feature that names it, would link the socket back
+        # into the build a distributor makes without it, and the build above
+        # would still pass. The tree goes to a file rather than a pipe, so a
+        # failed `cargo tree` fails the step on its own exit status instead of
+        # reading as an empty tree that `grep` then passes.
+        run: |
+          cargo tree -e normal --no-default-features -p headwater-cli --locked > "$RUNNER_TEMP/no-fetch-tree.txt"
+          if grep -q headwater-fetch "$RUNNER_TEMP/no-fetch-tree.txt"; then
+            echo "headwater-fetch reaches the binary built without the fetch feature"
+            exit 1
+          fi
+        working-directory: engine
       - name: The second implementation of SHA-256 the cross-check runs against
         # `crates/hash/tests/oracle.rs` holds this engine's SHA-256 against
         # `sha256sum`. The package digest of a fetched artifact is computed with
