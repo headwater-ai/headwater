@@ -151,6 +151,12 @@ pub struct AnchorNode {
     /// an exported node with it — see `Target::anchor_display`. Equal to
     /// `normalized` for a single pattern, where the two never differ.
     pub display: String,
+    /// Every pattern this node holds, in the sorted order of its identity: one
+    /// entry for a single pattern, and one per member for a list anchor
+    /// ([HW-DR-0074](../../../../docs/decisions/0074-a-code-path-anchor-is-a-pattern-over-the-tree-and-it-binds-when-the-pattern-matches-at-least-one-entry.md)).
+    /// A consumer that has only `normalized` has a length-prefixed encoding for
+    /// a list, which is an identity and not a path (#1247).
+    pub patterns: Vec<String>,
     pub excluded_by: Option<String>,
     pub edges: usize,
 }
@@ -216,9 +222,10 @@ impl Graph {
                 // property of one state of that identity rather than of the
                 // node. `Target::resolution` is where it has to appear. Every
                 // pattern the anchor holds is folded into `normalized`
-                // already, and `Target::reach` is where a caller reads them.
+                // already, and `Target::reach` is where a caller reads what
+                // each one matched. The node keeps the patterns themselves.
                 revision: _,
-                patterns: _,
+                patterns,
             } = &edge.target
             else {
                 continue;
@@ -236,6 +243,7 @@ impl Graph {
                         .target
                         .anchor_display()
                         .unwrap_or_else(|| normalized.clone()),
+                    patterns: patterns.iter().map(|member| member.pattern.clone()).collect(),
                     excluded_by: excluded_by.clone(),
                     edges: 1,
                 }),
