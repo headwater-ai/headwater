@@ -15,6 +15,8 @@ provenance:
   accepted_by: j.baxter
   evidence_basis: evidenced
 relations:
+  governs:
+    - engine/crates/check/src/voice.rs
   cites_evidence:
     - HW-EVAL-graph-export-and-federation
     - HW-EVAL-language-spike-results

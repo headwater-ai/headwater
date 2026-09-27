@@ -8,6 +8,7 @@ title: "headwater init"
 relations:
   governs:
     - [engine/crates/cli/src/lib.rs, engine/crates/cli/src/main.rs]
+    - engine/crates/cli/tests/init.rs
 ---
 
 # headwater init

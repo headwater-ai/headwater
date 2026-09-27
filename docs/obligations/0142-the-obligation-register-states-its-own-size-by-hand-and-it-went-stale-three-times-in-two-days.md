@@ -13,6 +13,9 @@ provenance:
   accepted_by: j.baxter
   evidence_basis: evidenced
 waiting_on: adopter
+relations:
+  governs:
+    - tools/repo/obligation-register-fixtures.sh
 ---
 
 # The obligation register states its own size by hand, and it went stale three times in two days

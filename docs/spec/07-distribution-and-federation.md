@@ -17,6 +17,7 @@ provenance:
 relations:
   governs:
     - [taxonomy-source/headwater-standard, .headwater/packages/headwater-standard]
+    - taxonomy-source/headwater-standard/package.yml
   cites_evidence:
     - HW-EVAL-adjacent-work
     - HW-EVAL-default-taxonomy-first-run

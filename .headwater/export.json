@@ -664,7 +664,8 @@
           },
           "relations": {
             "governs": [
-              "engine/crates/resolve/tests/publish.rs"
+              "engine/crates/resolve/tests/publish.rs",
+              "engine/crates/cli/tests/publish.rs"
             ],
             "traces_to": [
               "HW-SPEC-distribution-and-federation"
@@ -2173,6 +2174,9 @@
             "constrains": [
               "HW-DR-0072",
               "HW-DR-0022"
+            ],
+            "governs": [
+              "engine/crates/cli/tests/network_boundary.rs"
             ]
           },
           "provenance": {
@@ -2413,6 +2417,9 @@
             "constrains": [
               "HW-DR-0029",
               "HW-DR-0056"
+            ],
+            "governs": [
+              "tools/repo/readme-fixtures.sh"
             ]
           },
           "provenance": {
@@ -3823,7 +3830,8 @@
               [
                 "engine/crates/cli/src/lib.rs",
                 "engine/crates/cli/src/main.rs"
-              ]
+              ],
+              "engine/crates/cli/tests/init.rs"
             ]
           }
         }
@@ -8024,7 +8032,12 @@
             "accepted_by": "j.baxter",
             "evidence_basis": "evidenced"
           },
-          "waiting_on": "adopter"
+          "waiting_on": "adopter",
+          "relations": {
+            "governs": [
+              "tools/repo/obligation-register-fixtures.sh"
+            ]
+          }
         }
       },
       {
@@ -10651,6 +10664,9 @@
             "evidence_basis": "evidenced"
           },
           "relations": {
+            "governs": [
+              ".githooks/change-manifest"
+            ],
             "cites_evidence": [
               "HW-EVAL-the-measurement-layer",
               "HW-EVAL-warrant-and-adjudication",
@@ -10814,7 +10830,8 @@
               [
                 "taxonomy-source/headwater-standard",
                 ".headwater/packages/headwater-standard"
-              ]
+              ],
+              "taxonomy-source/headwater-standard/package.yml"
             ],
             "cites_evidence": [
               "HW-EVAL-adjacent-work",
@@ -10943,6 +10960,9 @@
             "evidence_basis": "evidenced"
           },
           "relations": {
+            "governs": [
+              "engine/crates/check/src/voice.rs"
+            ],
             "cites_evidence": [
               "HW-EVAL-graph-export-and-federation",
               "HW-EVAL-language-spike-results",
@@ -11428,6 +11448,11 @@
       },
       {
         "anchor_kind": "code_path",
+        "id": ".githooks/change-manifest",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
         "id": ".githooks/commit-msg",
         "resolver": "source-tree"
       },
@@ -11694,7 +11719,22 @@
       },
       {
         "anchor_kind": "code_path",
+        "id": "engine/crates/cli/tests/init.rs",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
         "id": "engine/crates/cli/tests/json.rs",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
+        "id": "engine/crates/cli/tests/network_boundary.rs",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
+        "id": "engine/crates/cli/tests/publish.rs",
         "resolver": "source-tree"
       },
       {
@@ -12030,6 +12070,16 @@
       {
         "anchor_kind": "code_path",
         "id": "tools/probe/rdf-probe/emit.py",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
+        "id": "tools/repo/obligation-register-fixtures.sh",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
+        "id": "tools/repo/readme-fixtures.sh",
         "resolver": "source-tree"
       },
       {
@@ -12405,6 +12455,17 @@
           "bound": "anchor",
           "anchor_kind": "code_path",
           "id": "engine/crates/resolve/tests/publish.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/decisions/0022-q22-the-integrity-posture-of-a-published-package.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/cli/tests/publish.rs",
           "resolver": "source-tree"
         }
       },
@@ -14010,6 +14071,17 @@
         }
       },
       {
+        "source": "docs/decisions/0075-the-vendor-verb-may-take-a-location-and-the-fetch-lives-only-in-a-crate-the-checking-loop-never-links.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/cli/tests/network_boundary.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
         "source": "docs/decisions/0076-a-probe-budget-prices-a-run-identity-fixed-before-the-run-and-a-committed-transcript-and-a-sweep-has-neither.md",
         "relation": "governs",
         "written_as": "governs",
@@ -14153,6 +14225,17 @@
           "id": "HW-DR-0056",
           "path": "docs/decisions/0056-a-language-regime-reaches-prose-through-a-kind-so-the-starter-kit-s-doctrine-carries-the-writing-profile.md",
           "kind": "decision"
+        }
+      },
+      {
+        "source": "docs/decisions/0084-a-language-rule-reaches-front-door-prose-outside-the-corpus-root-and-no-other-rule-does.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "tools/repo/readme-fixtures.sh",
+          "resolver": "source-tree"
         }
       },
       {
@@ -16025,6 +16108,17 @@
           "bound": "anchor",
           "anchor_kind": "code_path",
           "id": "28:engine/crates/cli/src/lib.rs29:engine/crates/cli/src/main.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/interfaces/headwater-init.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/cli/tests/init.rs",
           "resolver": "source-tree"
         }
       },
@@ -18331,6 +18425,17 @@
         }
       },
       {
+        "source": "docs/obligations/0142-the-obligation-register-states-its-own-size-by-hand-and-it-went-stale-three-times-in-two-days.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "tools/repo/obligation-register-fixtures.sh",
+          "resolver": "source-tree"
+        }
+      },
+      {
         "source": "docs/obligations/0149-the-write-time-hook-still-picks-pointer-lines-out-of-prose-by-their-em-dash.md",
         "relation": "governs",
         "written_as": "governs",
@@ -19619,6 +19724,17 @@
       },
       {
         "source": "docs/spec/03-authoring-and-lifecycle.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": ".githooks/change-manifest",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/spec/03-authoring-and-lifecycle.md",
         "relation": "cites_evidence",
         "written_as": "cites_evidence",
         "target": {
@@ -19949,6 +20065,17 @@
       },
       {
         "source": "docs/spec/07-distribution-and-federation.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "taxonomy-source/headwater-standard/package.yml",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/spec/07-distribution-and-federation.md",
         "relation": "cites_evidence",
         "written_as": "cites_evidence",
         "target": {
@@ -20176,6 +20303,17 @@
           "id": "HW-REG-open-obligations",
           "path": "docs/spec/13-open-obligations.md",
           "kind": "obligation_register"
+        }
+      },
+      {
+        "source": "docs/spec/12-check-layer.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/check/src/voice.rs",
+          "resolver": "source-tree"
         }
       },
       {
