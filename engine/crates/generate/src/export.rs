@@ -75,8 +75,12 @@ use headwater_yaml::value::Value;
 /// gets a warning and continues. Dropping `export_version` stays available as
 /// its own change, at the moment a major bump is worth making.
 ///
+/// [#1247](https://github.com/headwater-ai/headwater/issues/1247) added
+/// `patterns` to a list anchor and to an edge onto one, and moved the minor,
+/// `1.1` to `1.2`. See [`list_members`].
+///
 /// Both keys are written from this constant, so they cannot disagree.
-pub const VERSION: &str = "1.1";
+pub const VERSION: &str = "1.2";
 
 /// What a loss is about.
 ///
@@ -431,6 +435,9 @@ fn native(
             ("id".to_string(), Json::string(&anchor.normalized)),
             ("resolver".to_string(), Json::string(&anchor.resolver)),
         ];
+        if let Some(patterns) = list_members(&anchor.patterns) {
+            members.push(("patterns".to_string(), patterns));
+        }
         if let Some(pattern) = &anchor.excluded_by {
             members.push(("excluded_by".to_string(), Json::string(pattern)));
         }
@@ -521,13 +528,27 @@ fn of_target(target: &Target) -> Json {
             anchor_kind,
             resolver,
             normalized,
+            patterns,
             ..
-        } => Json::object([
-            ("bound", Json::string("anchor")),
-            ("anchor_kind", Json::string(anchor_kind.as_str())),
-            ("id", Json::string(normalized.as_str())),
-            ("resolver", Json::string(resolver.as_str())),
-        ]),
+        } => {
+            let mut members = vec![
+                ("bound".to_string(), Json::string("anchor")),
+                (
+                    "anchor_kind".to_string(),
+                    Json::string(anchor_kind.as_str()),
+                ),
+                ("id".to_string(), Json::string(normalized.as_str())),
+                ("resolver".to_string(), Json::string(resolver.as_str())),
+            ];
+            let patterns: Vec<String> = patterns
+                .iter()
+                .map(|member| member.pattern.clone())
+                .collect();
+            if let Some(patterns) = list_members(&patterns) {
+                members.push(("patterns".to_string(), patterns));
+            }
+            Json::Object(members)
+        }
         Target::Withheld {
             anchor_kind,
             profile,
@@ -544,6 +565,19 @@ fn of_target(target: &Target) -> Json {
             ("reason", Json::string(unbound.to_string())),
         ]),
     }
+}
+
+/// The members of a list anchor, for an anchor node and for an edge onto one.
+///
+/// A list anchor's `id` is the length-prefixed identity of HW-DR-0074, which
+/// is a key and not a path. So a consumer that wants the files an anchor
+/// governs reads `patterns`, the sorted normalized members, and never decodes
+/// `id` (#1247). A single-pattern anchor writes no `patterns`, because its
+/// `id` is already its one pattern: a consumer reads `patterns` when it is
+/// there and `id` as the one pattern when it is not. This member moved the
+/// export version from `1.1` to `1.2`.
+fn list_members(patterns: &[String]) -> Option<Json> {
+    (patterns.len() > 1).then(|| Json::Array(patterns.iter().map(Json::string).collect()))
 }
 
 fn of_value_map(map: &headwater_yaml::Mapping) -> Json {
