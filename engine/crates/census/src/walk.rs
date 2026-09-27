@@ -138,23 +138,42 @@ impl Corpus {
     /// written, which is what lets it answer for a path with no file behind
     /// it.
     fn locate(&self, path: &Path) -> Option<String> {
-        let path = match path.is_absolute() {
-            true => path.strip_prefix(&self.base).ok()?,
-            false => path,
-        };
-        let mut segments: Vec<&str> = Vec::new();
-        for component in path.components() {
-            match component {
-                std::path::Component::Normal(segment) => segments.push(segment.to_str()?),
-                std::path::Component::CurDir => {}
-                std::path::Component::ParentDir => {
-                    segments.pop()?;
-                }
-                std::path::Component::RootDir | std::path::Component::Prefix(_) => return None,
-            }
-        }
-        Some(segments.join("/"))
+        relative(&self.base, path)
     }
+}
+
+/// `path`, relative to the repository root `base` and written with `/`, or
+/// `None` where it leaves the repository: an absolute path outside `base`, a
+/// relative path whose `..` climbs above it, or a segment that is not UTF-8.
+///
+/// This is the one reading of a typed path against a repository.
+/// [`Corpus::classify`] reads it, and so does every verb that finds a document
+/// by a path a shell or an editor spelled: `./x`, `a/../x` and `<base>/x` all
+/// come back as `x` ([#1227](https://github.com/headwater-ai/headwater/issues/1227)).
+/// A relative path is read against `base`, never against the working
+/// directory of the process. An absolute path is compared with `base` as
+/// written, so a caller that holds a relative `base` makes it absolute first.
+///
+/// It never touches the filesystem, so it answers for a path with no file
+/// behind it, and a `..` is lexical: `link/..` is the directory `link` sits
+/// in, whatever `link` points at.
+pub fn relative(base: &Path, path: &Path) -> Option<String> {
+    let path = match path.is_absolute() {
+        true => path.strip_prefix(base).ok()?,
+        false => path,
+    };
+    let mut segments: Vec<&str> = Vec::new();
+    for component in path.components() {
+        match component {
+            std::path::Component::Normal(segment) => segments.push(segment.to_str()?),
+            std::path::Component::CurDir => {}
+            std::path::Component::ParentDir => {
+                segments.pop()?;
+            }
+            std::path::Component::RootDir | std::path::Component::Prefix(_) => return None,
+        }
+    }
+    Some(segments.join("/"))
 }
 
 /// Where a path falls in a corpus, decided by name alone — the closed set
