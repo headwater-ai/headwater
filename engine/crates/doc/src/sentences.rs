@@ -673,6 +673,18 @@ mod tests {
         assert_eq!(texts("Read `x.e.g`. Then stop.\n").len(), 2);
     }
 
+    /// A span can hold only the tail of an entry, so the ownership test reads
+    /// every letter of the entry and not only its first.
+    #[test]
+    fn a_span_that_holds_only_the_tail_of_an_entry_ends_the_sentence() {
+        assert_eq!(texts("Use e.`g`. Then stop.\n").len(), 2);
+    }
+
+    #[test]
+    fn a_span_that_holds_only_the_tail_of_a_dotted_name_ends_the_sentence() {
+        assert_eq!(texts("Sold in the U.`S`. The next one.\n").len(), 2);
+    }
+
     /// The control for the case above: a prose abbreviation after a code span
     /// still ends no sentence.
     #[test]
