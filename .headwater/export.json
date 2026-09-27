@@ -9826,6 +9826,35 @@
         }
       },
       {
+        "path": "docs/obligations/0223-no-run-measures-whether-the-documents-under-docs-change-what-an-agent-builds.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0223",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-OBL-0223",
+          "status": "current",
+          "status_since": "2026-09-27",
+          "summary": "The campaign's absent arm keeps docs/, so no rate says whether the documents change what an agent builds. The documentation tier removes them, and nobody has paid for a run of it.",
+          "last_verified": "2026-09-27",
+          "title": "No run measures whether the documents under docs change what an agent builds",
+          "waiting_on": "measurement",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "mixed",
+            "drafted_by": "claude-opus-5.5",
+            "activity": "draft",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "traces_to": [
+              "HW-SPEC-ai-integration",
+              "HW-OBL-0004",
+              "HW-OBL-0112"
+            ]
+          }
+        }
+      },
+      {
         "path": "docs/probe-results/regression-probe-transcript-for-2026-09-09.md",
         "kind": "probe_result",
         "id": "HW-RESULT-regression-probe-transcript-for-2026-09-09",
@@ -10059,6 +10088,66 @@
             ],
             "traces_to": [
               "HW-OBL-0197"
+            ]
+          }
+        }
+      },
+      {
+        "path": "docs/probes/a-session-names-the-merge-and-not-the-stamp-as-what-accepts-a-document.md",
+        "kind": "probe",
+        "id": "HW-PROBE-a-session-names-the-merge-and-not-the-stamp-as-what-accepts-a-document",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-PROBE-a-session-names-the-merge-and-not-the-stamp-as-what-accepts-a-document",
+          "status": "current",
+          "status_since": "2026-09-27",
+          "summary": "A session says what makes a document accepted, and only the ruling in docs/decisions answers the merge onto main rather than the accepted_by stamp the field name suggests.",
+          "last_verified": "2026-09-27",
+          "probe_category": "sufficiency",
+          "expectation": "answered",
+          "oracle": "none",
+          "title": "A session names the merge and not the stamp as what accepts a document",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "mixed",
+            "drafted_by": "claude-opus-5.5",
+            "activity": "draft",
+            "evidence_basis": "unevidenced"
+          },
+          "relations": {
+            "traces_to": [
+              "HW-OBL-0223",
+              "HW-DR-0034"
+            ]
+          }
+        }
+      },
+      {
+        "path": "docs/probes/a-session-proposes-a-settled-document-at-the-state-it-will-hold-after-the-merge.md",
+        "kind": "probe",
+        "id": "HW-PROBE-a-session-proposes-a-settled-document-at-the-state-it-will-hold-after-the-merge",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-PROBE-a-session-proposes-a-settled-document-at-the-state-it-will-hold-after-the-merge",
+          "status": "current",
+          "status_since": "2026-09-27",
+          "summary": "A session says which status a settled decision carries in its pull request, and only the ruling in docs/decisions answers current rather than the draft the scaffolder writes.",
+          "last_verified": "2026-09-27",
+          "probe_category": "sufficiency",
+          "expectation": "answered",
+          "oracle": "none",
+          "title": "A session proposes a settled document at the state it will hold after the merge",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "mixed",
+            "drafted_by": "claude-opus-5.5",
+            "activity": "draft",
+            "evidence_basis": "unevidenced"
+          },
+          "relations": {
+            "traces_to": [
+              "HW-OBL-0223",
+              "HW-DR-0052"
             ]
           }
         }
@@ -19489,6 +19578,39 @@
         }
       },
       {
+        "source": "docs/obligations/0223-no-run-measures-whether-the-documents-under-docs-change-what-an-agent-builds.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-SPEC-ai-integration",
+          "path": "docs/spec/05-ai-integration.md",
+          "kind": "design_spec"
+        }
+      },
+      {
+        "source": "docs/obligations/0223-no-run-measures-whether-the-documents-under-docs-change-what-an-agent-builds.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-OBL-0004",
+          "path": "docs/obligations/0004-working-tree-write-tools-have-no-measured-effect.md",
+          "kind": "obligation_record"
+        }
+      },
+      {
+        "source": "docs/obligations/0223-no-run-measures-whether-the-documents-under-docs-change-what-an-agent-builds.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-OBL-0112",
+          "path": "docs/obligations/0112-a-surface-cannot-move-the-assisted-fraction-of-a-run.md",
+          "kind": "obligation_record"
+        }
+      },
+      {
         "source": "docs/probes/a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor.md",
         "relation": "examines",
         "written_as": "examines",
@@ -19541,6 +19663,50 @@
           "id": "HW-OBL-0197",
           "path": "docs/obligations/0197-a-superseded-document-claims-no-reliance-and-nothing-measures-whether-a-session-honors-that.md",
           "kind": "obligation_record"
+        }
+      },
+      {
+        "source": "docs/probes/a-session-names-the-merge-and-not-the-stamp-as-what-accepts-a-document.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-OBL-0223",
+          "path": "docs/obligations/0223-no-run-measures-whether-the-documents-under-docs-change-what-an-agent-builds.md",
+          "kind": "obligation_record"
+        }
+      },
+      {
+        "source": "docs/probes/a-session-names-the-merge-and-not-the-stamp-as-what-accepts-a-document.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0034",
+          "path": "docs/decisions/0034-q34-whether-acceptance-means-merged-to-main-and-what-an-agent-may-write-before-that.md",
+          "kind": "decision"
+        }
+      },
+      {
+        "source": "docs/probes/a-session-proposes-a-settled-document-at-the-state-it-will-hold-after-the-merge.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-OBL-0223",
+          "path": "docs/obligations/0223-no-run-measures-whether-the-documents-under-docs-change-what-an-agent-builds.md",
+          "kind": "obligation_record"
+        }
+      },
+      {
+        "source": "docs/probes/a-session-proposes-a-settled-document-at-the-state-it-will-hold-after-the-merge.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0052",
+          "path": "docs/decisions/0052-a-document-is-proposed-at-the-state-it-will-hold-and-the-merge-activates-it.md",
+          "kind": "decision"
         }
       },
       {
