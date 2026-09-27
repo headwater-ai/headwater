@@ -629,6 +629,24 @@ REGRESSION_CASES = [
     ('a quote inside a quoted substitution is flagged',
      'echo "$(echo "it\'s")" && npm install\nnpm ci',
      ['echo "$(echo "it\'s")" && npm install', UNREADABLE + '1']),
+    # Inside `${…}` a `#` is literal and opens no comment (P1e, X1, X2 of
+    # the third verify of #1195).
+    ('a hash inside a parameter expansion hides no chained command',
+     'echo ${x:-a #b} && npm ci',
+     ['echo ${x:-a #b}', 'npm ci']),
+    ('a hash inside a default value after an allowed word hides nothing',
+     'git log ${x:-a #b} && npm ci',
+     ['npm ci']),
+    ('a hash inside a substitution pattern hides no chained command',
+     'echo ${x// #/-} && npm ci',
+     ['echo ${x// #/-}', 'npm ci']),
+    # Rule 1: an open `${`, and a comment inside an open `$(`, are flagged.
+    ('an open ${ leaves the rest unreadable',
+     'echo ${x:-a\nnpm ci',
+     ['echo ${x:-a', UNREADABLE + '1']),
+    ('a comment inside an open $( leaves the rest unreadable',
+     'x=$(ls # c\nnpm ci',
+     ['x=$(ls', UNREADABLE + '1']),
 ]
 
 

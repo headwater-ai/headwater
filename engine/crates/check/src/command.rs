@@ -609,4 +609,36 @@ mod tests {
             pairs(&[(0, "echo"), (0, UNREADABLE)])
         );
     }
+
+    /// Inside `${…}` a `#` is literal and opens no comment, so the chain
+    /// after the expansion is read (P1e, X1, X2 of the third verify).
+    #[test]
+    fn a_hash_inside_a_parameter_expansion_opens_no_comment() {
+        assert_eq!(
+            names("echo ${x:-a #b} && npm ci\n", false),
+            pairs(&[(0, "echo"), (0, "npm")])
+        );
+        assert_eq!(
+            names("git log ${x:-a #b} && npm ci\n", false),
+            pairs(&[(0, "git"), (0, "npm")])
+        );
+        assert_eq!(
+            names("echo ${x// #/-} && npm ci\n", false),
+            pairs(&[(0, "echo"), (0, "npm")])
+        );
+    }
+
+    /// Rule 1: a line that ends with a `${` still open leaves the rest of
+    /// the block unreadable, and so does a comment inside an open `$(`.
+    #[test]
+    fn an_open_expansion_or_a_comment_inside_an_open_substitution_is_flagged() {
+        assert_eq!(
+            names("echo ${x:-a\nnpm ci\n", false),
+            pairs(&[(0, "echo"), (0, UNREADABLE)])
+        );
+        assert_eq!(
+            names("x=$(ls # c\nnpm ci\n", false),
+            pairs(&[(0, UNREADABLE)])
+        );
+    }
 }
