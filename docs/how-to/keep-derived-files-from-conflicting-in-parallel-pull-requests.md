@@ -2,7 +2,7 @@
 id: HW-HOW-keep-derived-files-from-conflicting-in-parallel-pull-requests
 status: current
 status_since: 2026-09-27
-summary: "Commit the derived files a person reads on the forge, and compute the graph export in the build step that reads it. One same-shelf conflict stays."
+summary: "Commit the derived files a person reads on the forge, compute the graph export where a build step reads it, and union the capture-cost store."
 last_verified: 2026-09-27
 title: "Keep derived files from conflicting in parallel pull requests"
 provenance:
@@ -35,9 +35,11 @@ relations:
 3. **Add the path of the export to `.gitignore`, and delete the committed copy.** For example, add `.headwater/export.json` and run `git rm --cached .headwater/export.json`.
 4. **Compute the export in the step that reads it.** Run `headwater export --format json > <path>` in that step, before the reader starts. With no `graph_export` declared, the one profile is `default`, so the command needs no `--profile`.
 5. **Run `headwater generate`, and commit the result.** The descriptor and the lock move once, because they record the projections that you declare.
+6. **Add the line `.headwater/capture-cost.jsonl merge=union` to `.gitattributes`.** Each run of `headwater new` adds one reading at the end of that file. So two branches that each add a document both change its last line, and git reports a conflict. `union` keeps the lines of both sides, and that result is correct for this file because no reading depends on another. `headwater init --git` does not write this line.
 
 ## How to know it worked
 
 - `headwater generate --check`, `headwater taxonomy resolve --check` and `git ls-files .headwater/export.json` all agree: the first two exit 0 and the last prints nothing.
-- Two pull requests that add documents to two different shelves merge with no conflict. This includes a pull request that edits a governed file and records a new `verified_revision`.
+- In a local merge or rebase, two branches that add documents to two different shelves with `headwater new` merge with no conflict. This includes a branch that edits a governed file and records a new `verified_revision`.
+- A forge merge of the same two pull requests can still conflict on `.headwater/capture-cost.jsonl`. Nobody has measured whether GitHub applies `merge=union`. It did not apply `-merge` when this repository measured that attribute on 2026-09-24.
 - One conflict stays. Two branches that each add a document at the end of one shelf both insert a row at one position of the shelf index. Git reports a conflict on that file. Run `headwater generate` on the merged tree, and commit the index that it writes. No attribute or setting on the forge removes this conflict.

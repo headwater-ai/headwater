@@ -1592,6 +1592,13 @@ jobs:
             echo "::error file=.headwater/export.json::the graph export is committed; it is computed at build time (#1251)"
             exit 1
           fi
+          # A `graph_export` at any other path, from the overlay or a bundle,
+          # in any key order: the resolved lock writes every projection with
+          # `kind` first, so one line names each of them.
+          if grep -n '^ *- kind: graph_export$' .headwater/taxonomy.lock; then
+            echo "::error file=.headwater/taxonomy.lock::the taxonomy declares a graph_export, which generate would commit; compute it at build time instead (#1251)"
+            exit 1
+          fi
       - name: This repository is at the rung it claims
         # `headwater conformance` measures the adoption rather than the corpus,
         # and with no flag it exits 0 whatever it finds. `--level L0` is the one

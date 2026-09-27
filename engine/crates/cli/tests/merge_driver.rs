@@ -477,37 +477,61 @@ const EXPORT: &str = ".headwater/export.json";
 const COMMITTED_EXPORT: &str =
     "add_to:\n  projections:\n    - kind: graph_export\n      profile: site\n      output: .headwater/export.json\n";
 
-/// Every `graph_export` entry this repository's own overlay declares, as an
-/// `add_to` block, or nothing when it declares none.
+/// Every `graph_export` projection the resolved lock under `root` holds, as an
+/// `add_to` block an adopter's overlay can carry, or nothing when it holds none.
 ///
-/// This is what ties the decisive case to this repository rather than to a
-/// tree the case invents: the adopted tree commits exactly the graph exports
-/// this repository commits. Before #1251 the block is [`COMMITTED_EXPORT`] and
-/// the case is red. The overlay is read as text, one entry from its
-/// `- kind: graph_export` line to the first line that is not indented under it.
-fn this_repository_s_graph_exports() -> String {
-    let overlay = std::fs::read_to_string(repository().join(".headwater/overlay.yml"))
-        .expect("this repository's overlay reads");
+/// The lock and not the overlay: an overlay entry may name its keys in any
+/// order, and a bundle may declare an export too. `taxonomy resolve` folds all
+/// of that into one list, and the lock is where the list is written. The lock is
+/// read as YAML, so a key order the reader did not expect is not a missed entry
+/// (`a_graph_export_declared_profile_first_is_found_in_the_lock`). An entry
+/// whose value is not a scalar, such as a `filter`, is refused rather than
+/// copied short.
+fn graph_exports_in_lock(root: &Path) -> String {
+    let source = std::fs::read_to_string(root.join(LOCK)).expect("the lock reads");
+    let lock = headwater_yaml::load(&source).expect("the lock is YAML");
+    let projections = lock
+        .value
+        .as_map()
+        .and_then(|top| top.get("resolved"))
+        .and_then(|resolved| resolved.value.as_map())
+        .and_then(|resolved| resolved.get("projections"))
+        .and_then(|projections| projections.value.as_seq())
+        .map(<[_]>::to_vec)
+        .unwrap_or_default();
     let mut entries = String::new();
-    let mut inside = false;
-    for line in overlay.lines() {
-        let trimmed = line.trim_start();
-        if trimmed.starts_with("- kind: graph_export") {
-            inside = true;
-            entries.push_str("    - kind: graph_export\n");
+    for projection in &projections {
+        let Some(fields) = projection.value.as_map() else {
+            continue;
+        };
+        let kind = fields
+            .get("kind")
+            .and_then(|kind| kind.value.as_scalar())
+            .map(|kind| kind.text.as_str());
+        if kind != Some("graph_export") {
             continue;
         }
-        let indent = line.len() - trimmed.len();
-        if inside && indent >= 6 && !trimmed.is_empty() && !trimmed.starts_with('#') {
-            entries.push_str(&format!("      {trimmed}\n"));
-            continue;
+        entries.push_str("    - kind: graph_export\n");
+        for entry in fields.iter().filter(|entry| entry.key.value != "kind") {
+            let value = entry.value.value.as_scalar().unwrap_or_else(|| {
+                panic!(
+                    "a graph_export's `{}` is not a scalar, and this reader copies scalars only",
+                    entry.key.value
+                )
+            });
+            entries.push_str(&format!("      {}: \"{}\"\n", entry.key.value, value.text));
         }
-        inside = false;
     }
     match entries.is_empty() {
         true => String::new(),
         false => format!("add_to:\n  projections:\n{entries}"),
     }
+}
+
+/// The graph exports this repository commits. Before #1251 it was one, at
+/// `.headwater/export.json`, and the decisive case below was red on it.
+fn this_repository_s_graph_exports() -> String {
+    graph_exports_in_lock(&repository())
 }
 
 /// Today in UTC, the date the check layer's clock reads, so that `check --fix`
@@ -562,18 +586,16 @@ impl Tree {
         self.git(&["checkout", "-q", "-b", "a"]);
         self.write(GOVERNED, "#!/bin/sh\necho two\n");
         self.headwater_ok(&["check", "--fix"]);
-        self.decide("0002");
+        // `headwater new`, as an adopter adds a document: it also appends one
+        // reading to `.headwater/capture-cost.jsonl`, which both branches do.
+        self.headwater_ok(&["new", "decision", "--title", "Second"]);
         self.headwater_ok(&["generate"]);
         self.git(&["add", "-A"]);
         self.git(&["commit", "-q", "-m", "a restamp and a decision"]);
 
         self.git(&["checkout", "-q", "main"]);
         self.git(&["checkout", "-q", "-b", "b"]);
-        std::fs::create_dir_all(self.at.join("docs/specifications")).expect("the shelf is made");
-        self.write(
-            "docs/specifications/runs.md",
-            "---\ntitle: Runs\nstatus: draft\nstatus_since: 2026-01-01\nlast_verified: 2026-01-01\nsummary: How a run behaves.\n---\n\n# Runs\n\n## Scope\n\nA run.\n\n## Behavior\n\nIt runs.\n",
-        );
+        self.headwater_ok(&["new", "specification", "--title", "Runs"]);
         self.headwater_ok(&["generate"]);
         self.git(&["add", "-A"]);
         self.git(&["commit", "-q", "-m", "a specification"]);
@@ -582,18 +604,37 @@ impl Tree {
     }
 }
 
+/// The line the how-to tells an adopter to add, because `init --git` does not
+/// write it: every `headwater new` appends one reading to the end of the
+/// capture-cost store, so two branches that each run it conflict there.
+const UNION: &str = ".headwater/capture-cost.jsonl merge=union\n";
+
+/// A specification needs an identifier before `headwater new` writes one, and
+/// the standard package declares none, so the adopted tree declares it.
+const SPEC_ID: &str = "  identifier_schemes.spec_id: {pattern: \"{namespace}-SPEC-{slug}\", namespace: ACME, allocation: minted-once}\n  kinds.specification.identifier: {scheme: spec_id}\n";
+
 /// An adopted tree with a governed code path, committed with `init --git` and
 /// no driver config, which is every clone that has not run `git config`.
-fn governed_tree(label: &str, projections: &str) -> Tree {
+/// `union` adds the capture-cost line the how-to names.
+fn governed_tree(label: &str, projections: &str, union: bool) -> Tree {
     let tree = Tree::adopted(label);
-    if !projections.is_empty() {
-        let overlay = tree.read(".headwater/overlay.yml");
-        tree.write(".headwater/overlay.yml", &format!("{overlay}{projections}"));
-        tree.headwater_ok(&["taxonomy", "resolve"]);
-    }
+    let overlay = tree.read(".headwater/overlay.yml");
+    // Appended to the `add` block `Tree::adopted` left at the end of the file.
+    // A comment above it quotes the namespace line too, so the block is found
+    // by its `add:` line and not by the namespace line alone.
+    let overlay = overlay.replace(
+        "add:\n  identifier_schemes.decision_id.namespace: ACME\n",
+        &format!("add:\n  identifier_schemes.decision_id.namespace: ACME\n{SPEC_ID}"),
+    );
+    tree.write(".headwater/overlay.yml", &format!("{overlay}{projections}"));
+    tree.headwater_ok(&["taxonomy", "resolve"]);
     tree.govern_and_stamp();
     tree.headwater_ok(&["generate"]);
     tree.headwater_ok(&["init", "--git"]);
+    if union {
+        let attributes = tree.read(".gitattributes");
+        tree.write(".gitattributes", &format!("{attributes}{UNION}"));
+    }
     tree.git(&["add", "-A"]);
     tree.git(&["commit", "-q", "-m", "adopt headwater"]);
     tree
@@ -611,7 +652,7 @@ fn governed_tree(label: &str, projections: &str) -> Tree {
 #[test]
 fn two_branches_on_different_shelves_merge_with_no_git_config_and_no_conflict_on_any_derived_path()
 {
-    let tree = governed_tree("two-shelves", &this_repository_s_graph_exports());
+    let tree = governed_tree("two-shelves", &this_repository_s_graph_exports(), true);
     let before = tree.stamp();
 
     let merge = tree.restamp_here_and_add_there();
@@ -634,7 +675,7 @@ fn two_branches_on_different_shelves_merge_with_no_git_config_and_no_conflict_on
 /// case above measures the absence of.
 #[test]
 fn the_same_merge_in_a_tree_that_commits_its_graph_export_conflicts_on_the_export() {
-    let tree = governed_tree("committed-export", COMMITTED_EXPORT);
+    let tree = governed_tree("committed-export", COMMITTED_EXPORT, true);
     assert!(
         tree.at.join(EXPORT).exists(),
         "`generate` writes the declared export"
@@ -649,13 +690,50 @@ fn the_same_merge_in_a_tree_that_commits_its_graph_export_conflicts_on_the_expor
     );
 }
 
+/// The arm that differs in one thing: the tree lacks the capture-cost line the
+/// how-to names. Both branches ran `headwater new`, each appended a reading at
+/// the end of the store, and the merge conflicts there and nowhere else.
+#[test]
+fn the_same_merge_without_the_union_line_conflicts_on_the_capture_cost_store() {
+    let tree = governed_tree("no-union", &this_repository_s_graph_exports(), false);
+    let merge = tree.restamp_here_and_add_there();
+    assert!(!merge.status.success(), "the merge stops on the store");
+    assert_eq!(
+        tree.unmerged(),
+        vec![".headwater/capture-cost.jsonl".to_string()],
+        "the capture-cost store is the one conflicted path"
+    );
+}
+
+/// An overlay entry that names `profile` before `kind` is still a graph export,
+/// and the reader the decisive case uses finds it. A reader of the overlay's
+/// text missed exactly this order, and the decisive case then passed on a tree
+/// that commits an export (#1253 verify).
+#[test]
+fn a_graph_export_declared_profile_first_is_found_in_the_lock() {
+    let tree = Tree::adopted("profile-first");
+    let overlay = tree.read(".headwater/overlay.yml");
+    tree.write(
+        ".headwater/overlay.yml",
+        &format!(
+            "{overlay}add_to:\n  projections:\n    - profile: public\n      kind: graph_export\n      output: site/graph.json\n"
+        ),
+    );
+    tree.headwater_ok(&["taxonomy", "resolve"]);
+    let found = graph_exports_in_lock(&tree.at);
+    assert!(
+        found.contains("- kind: graph_export\n") && found.contains("output: \"site/graph.json\"\n"),
+        "the profile-first entry is read from the lock:\n{found}"
+    );
+}
+
 /// The residual #1251 leaves open: two branches that each add a decision at
 /// the end of one shelf conflict on that shelf's index, because git conflicts
 /// on two insertions at one position and a forge reads no attribute that could
 /// union them. Held exactly, so the set cannot grow without this case moving.
 #[test]
 fn two_decisions_added_at_the_end_of_one_shelf_conflict_on_its_index_alone() {
-    let tree = governed_tree("same-shelf", &this_repository_s_graph_exports());
+    let tree = governed_tree("same-shelf", &this_repository_s_graph_exports(), true);
     tree.git(&["checkout", "-q", "-b", "a"]);
     tree.decide("0002");
     tree.headwater_ok(&["generate"]);
