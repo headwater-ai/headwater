@@ -81,6 +81,13 @@ TUTORIAL = drive.DOC
 # checkout, clone, and a future `config`), `mkdir`/`cd` (scaffolding a fresh
 # repository), `printf` (writing the seed document), `rm` (removing it
 # again in step 8). `cargo` is handled separately, by subcommand.
+# The piece `_pieces` yields in place of the rest of a block once a line
+# ends inside a quote, a pair of backticks, a `$(` or a `${`, or closes one with
+# the wrong `)` or `}`. The line number, counted from 1, follows it.
+# `check_piece` never allows it, so the block fails.
+UNREADABLE = ('unreadable: a quote, a pair of backticks, a $( or a ${ is still '
+              'open, or a ) or } closes the wrong one, on block line ')
+
 ALLOWED_LEADING_WORDS = frozenset({'headwater', 'git', 'mkdir', 'cd', 'printf', 'rm'})
 
 # `cargo` passes only for the subcommands this corpus's real command blocks
@@ -178,25 +185,92 @@ def _split_unquoted(text, is_boundary):
     opens no quoted span, so the chained command is still split out.
     Inside single quotes a backslash is literal.
     """
-    pieces, buf, quote, i = [], [], None, 0
+    pieces = _scan(text, is_boundary)[0]
+    return [p.strip() for p in pieces if p.strip()]
+
+
+def _scan(text, is_boundary):
+    """The pieces `_split_unquoted` cuts, and what stops `text` from ending
+    cleanly: the innermost span still open (`'`, `"`, `$'`, a backtick, `$(`
+    or `${`), `!` for a `)` or `}` that closes a span of the other kind, or
+    None. A comment ends the text cleanly.
+
+    The engine's `scan` in `engine/crates/check/src/command.rs` reads one
+    command by the same rules, with one stack of open spans. Each span closes
+    only the span of its own kind at the top of the stack. A `)` or `}` that
+    meets a `${` or a `$(` of the other kind at the top closes nothing: the
+    scan stops, the rest of the text stays in the last piece, and `!` flags
+    it. Inside single quotes nothing is special but the closing quote. Inside
+    `$'…'` and backticks a backslash escapes the next character and no quote
+    opens. Inside double quotes a backslash escapes, and `$(`, `${` and
+    backticks open. A `#` opens a comment only when no span is open, at the
+    start of the text or after a blank, `;`, `&` or `|`, and the comment is
+    no part of a piece. A boundary splits the text only when no quote is
+    open.
+    """
+    pieces, buf, stack, i = [], [], [], 0
     while i < len(text):
-        ch = text[i]
-        if ch == '\\' and quote != "'":
+        ch, top = text[i], (stack[-1] if stack else None)
+        nxt = text[i + 1:i + 2]
+        quoted = any(span in ("'", '"', "$'") for span in stack)
+        if top == "'":
+            if ch == "'":
+                stack.pop()
+            buf.append(ch)
+            i += 1
+            continue
+        if ch == '\\':
             buf.append(text[i:i + 2])
             i += 2
             continue
-        if quote:
-            buf.append(ch)
-            if ch == quote:
-                quote = None
-            i += 1
-            continue
-        if ch in ('"', "'"):
-            quote = ch
+        if top == "$'":
+            if ch == "'":
+                stack.pop()
             buf.append(ch)
             i += 1
             continue
-        consumed = is_boundary(text, i)
+        if (top == '`' and ch == '`') or (top == '"' and ch == '"'):
+            stack.pop()
+            buf.append(ch)
+            i += 1
+            continue
+        if top in (None, '$(', '${', '`', '"') and ch == '$' and nxt in ('(', '{'):
+            stack.append('$' + nxt)
+            buf.append(ch + nxt)
+            i += 2
+            continue
+        if top in (None, '$(', '${', '"') and ch == '`':
+            stack.append('`')
+            buf.append(ch)
+            i += 1
+            continue
+        if top == '"':
+            buf.append(ch)
+            i += 1
+            continue
+        code = top in (None, '$(', '${')
+        if code and ch == '$' and nxt == "'":
+            stack.append("$'")
+            buf.append("$'")
+            i += 2
+            continue
+        if code and ch in ("'", '"'):
+            stack.append(ch)
+            buf.append(ch)
+            i += 1
+            continue
+        if (top, ch) in (('$(', ')'), ('${', '}')):
+            stack.pop()
+            buf.append(ch)
+            i += 1
+            continue
+        if top in ('$(', '${') and ch in (')', '}'):
+            buf.append(text[i:])
+            pieces.append(''.join(buf))
+            return pieces, '!'
+        if top is None and ch == '#' and (i == 0 or text[i - 1] in ' \t;&|'):
+            break
+        consumed = 0 if quoted else is_boundary(text, i)
         if consumed:
             pieces.append(''.join(buf))
             buf = []
@@ -205,7 +279,7 @@ def _split_unquoted(text, is_boundary):
         buf.append(ch)
         i += 1
     pieces.append(''.join(buf))
-    return [p.strip() for p in pieces if p.strip()]
+    return pieces, (stack[-1] if stack else None)
 
 
 def split_chain(line):
@@ -286,7 +360,7 @@ def check_piece(piece, cargo_allowed=False):
     `cargo` passes only when `cargo_allowed` is set, which
     `undeclared_in_document` does only after the document has already
     given the release download."""
-    if SUBSTITUTION.search(piece):
+    if piece.startswith(UNREADABLE) or SUBSTITUTION.search(piece):
         return False
     tokens = piece.split()
     if not tokens:
@@ -302,13 +376,24 @@ def check_piece(piece, cargo_allowed=False):
 
 
 def _pieces(block):
-    """Every piece of every line of a command block."""
-    for line in block.split('\n'):
+    """Every piece of every line of a command block, one line at a time.
+
+    A line that ends inside a quote, a pair of backticks, a `$(` or a `${` joins
+    nothing (#1135). Its pieces are yielded, then one `UNREADABLE` piece that
+    names the line, and nothing after it: a checker that joined such a line
+    would have to lex the shell, and each construct it misread would hide
+    the lines after it rather than flag them. No here-document body is
+    skipped, so a body line is read as a command and fails closed.
+    """
+    for number, line in enumerate(block.split('\n'), start=1):
         stripped = line.strip()
         if not stripped or stripped.startswith('#'):
             continue
         for segment in split_chain(stripped):
             yield from split_pipe(segment)
+        if _scan(stripped, lambda _t, _i: 0)[1]:
+            yield UNREADABLE + str(number)
+            return
 
 
 def undeclared_pieces(block, cargo_allowed=False):
@@ -529,6 +614,97 @@ REGRESSION_CASES = [
      'git init\n'
      "printf '# Store attempts in Postgres' > docs/decisions/postgres-note.md",
      []),
+    # #1135, and the parent's ruling on #1195: a line that ends inside a
+    # quote joins nothing. What the line runs before the quote is read, and
+    # the rest of the block is reported as unreadable (rule 1).
+    ('a single quote open at the end of a line leaves the rest of the block '
+     'unreadable',
+     "printf 'a\nheadwater check' && echo RAN-2 && printf 'b'",
+     [UNREADABLE + '1']),
+    ('an ANSI-C quote open at the end of a line leaves the rest unreadable',
+     "printf $'a\nheadwater check' && echo RAN && printf 'b'",
+     [UNREADABLE + '1']),
+    ('an open pair of backticks leaves the rest unreadable',
+     'echo `date\nnpm install',
+     ['echo `date', UNREADABLE + '1']),
+    ('an unclosed $( leaves the rest unreadable',
+     'echo $(date\nnpm install',
+     ['echo $(date', UNREADABLE + '1']),
+    ('a quote the block never closes is flagged',
+     "echo ok && npm install '",
+     ['echo ok', "npm install '", UNREADABLE + '1']),
+    # Rule 3 (#1135): inside `$'…'` a backslash escapes the next character.
+    ('an ANSI-C quote with an escaped quote hides no chained command',
+     "printf $'\\'' && echo RAN-3",
+     ['echo RAN-3']),
+    # Rule 3: a quote inside backticks on one line opens nothing.
+    ('a quote inside backticks opens nothing',
+     "echo `echo it's` && npm install\nnpm ci",
+     ["echo `echo it's`", 'npm install', 'npm ci']),
+    # Rule 4: a `#` after a blank or an operator opens a comment.
+    ('an apostrophe in a trailing comment does not hide the next line',
+     "headwater check # it's here\nnpm install",
+     ['npm install']),
+    ('a comment straight after && is no piece',
+     "echo a &&# it's\nnpm install",
+     ['echo a', 'npm install']),
+    # Rule 4: a `#` after `)`, `<` or `>` is part of a word.
+    ('a hash after the ) that closes a substitution hides no chained command',
+     'echo $(date)#x && npm install',
+     ['echo $(date)#x', 'npm install']),
+    ('an apostrophe after )# is flagged',
+     "(echo a)#'\nnpm install",
+     ["(echo a)#'", UNREADABLE + '1']),
+    ('an apostrophe after >#it is flagged',
+     "echo hi >#it's\nnpm install",
+     ["echo hi >#it's", UNREADABLE + '1']),
+    # Rule 5: the script skips no here-document body. A body line is read
+    # as a command, and an apostrophe in it flags the rest of the block.
+    ('an apostrophe in a here-document body flags the rest of the block',
+     "cat <<EOF\nit's here\nEOF\nnpm install",
+     ['cat <<EOF', "it's here", UNREADABLE + '2']),
+    ('an apostrophe in a quoted here-document body flags the rest',
+     "cat <<'EOF'\ndon't\nEOF\nnpm install && echo RAN-B2b",
+     ["cat <<'EOF'", "don't", UNREADABLE + '2']),
+    ('a double quote inside a quoted substitution is a quote of its own',
+     'echo "$(echo "it\'s")" && npm install\nnpm ci',
+     ['echo "$(echo "it\'s")"', 'npm install', 'npm ci']),
+    # Inside `${…}` a `#` is literal and opens no comment (P1e, X1, X2 of
+    # the third verify of #1195).
+    ('a hash inside a parameter expansion hides no chained command',
+     'echo ${x:-a #b} && npm ci',
+     ['echo ${x:-a #b}', 'npm ci']),
+    ('a hash inside a default value after an allowed word hides nothing',
+     'git log ${x:-a #b} && npm ci',
+     ['npm ci']),
+    ('a hash inside a substitution pattern hides no chained command',
+     'echo ${x// #/-} && npm ci',
+     ['echo ${x// #/-}', 'npm ci']),
+    # Rule 1: an open `${`, and a comment inside an open `$(`, are flagged.
+    ('an open ${ leaves the rest unreadable',
+     'echo ${x:-a\nnpm ci',
+     ['echo ${x:-a', UNREADABLE + '1']),
+    # A `#` inside any open span is part of a word, so it opens no comment.
+    ('a hash inside an open $( leaves the rest unreadable',
+     'x=$(ls # c\nnpm ci',
+     ['x=$(ls # c', UNREADABLE + '1']),
+    # The open spans are one stack (the fourth verify of #1195). A closer
+    # that does not match the innermost span flags the rest of the block.
+    ('a close brace inside a substitution inside an expansion is flagged',
+     'echo ${x:-$(echo }) #c} && npm ci\nnpm i',
+     ['echo ${x:-$(echo }) #c} && npm ci', UNREADABLE + '1']),
+    ('a close paren inside an expansion is flagged',
+     'echo ${x:-a)} && npm ci\nnpm i',
+     ['echo ${x:-a)} && npm ci', UNREADABLE + '1']),
+    ('a span closed by its own kind reads on',
+     'echo ${x:-$(echo a) #c} && npm ci',
+     ['echo ${x:-$(echo a) #c}', 'npm ci']),
+    ('a close paren inside double quotes closes nothing',
+     'echo "a)" && npm ci',
+     ['echo "a)"', 'npm ci']),
+    ('an operator inside backticks starts a piece',
+     'echo `a && npm ci`',
+     ['echo `a', 'npm ci`']),
 ]
 
 
