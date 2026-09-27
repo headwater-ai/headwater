@@ -334,6 +334,7 @@ mod tests {
     use super::*;
 
     const GOOD: &str = "\
+instrument: [docs/probes, docs/probe-runs]
 tiers:
   regression:
     budget_cents: 2000
@@ -372,6 +373,25 @@ tiers:
         );
         let regression = budgets.of(Tier::Regression).expect("regression");
         assert!(regression.ablation.is_empty(), "one arm, nothing removed");
+        assert_eq!(budgets.instrument, vec!["docs/probes", "docs/probe-runs"]);
+    }
+
+    #[test]
+    fn a_file_with_no_instrument_removes_nothing_from_any_arm() {
+        let source = GOOD.replace("instrument: [docs/probes, docs/probe-runs]\n", "");
+        assert!(Budgets::read(&source).expect("reads").instrument.is_empty());
+    }
+
+    #[test]
+    fn an_instrument_entry_that_leaves_the_tree_is_refused() {
+        // `tools/probe/ablate.sh` hands every entry to `rm -rf` in every arm.
+        let source = GOOD.replace("[docs/probes, docs/probe-runs]", "[docs/probes, ../x]");
+        assert_eq!(
+            Budgets::read(&source),
+            Err(Unreadable::InstrumentUnsafe {
+                entry: "../x".to_string()
+            })
+        );
     }
 
     #[test]

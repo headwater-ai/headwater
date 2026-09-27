@@ -144,6 +144,22 @@ fn plan_at(tier: Tier, narrowing: &Narrowing) -> Plan {
     )
 }
 
+/// A plan against a declaration other than `fixtures/probe.yml`.
+fn plan_against(tier: Tier, budgets: &Budgets) -> Plan {
+    let root = taxonomy_map();
+    let taken = fixture_census(&root);
+    let graph = fixture_graph(&root, &taken);
+    Plan::over(
+        &taken,
+        &graph,
+        &Config::default(),
+        budgets,
+        LOCK,
+        tier,
+        &Narrowing::default(),
+    )
+}
+
 fn regression() -> Plan {
     plan_at(Tier::Regression, &Narrowing::default())
 }
@@ -887,6 +903,32 @@ fn a_documentation_plan_refuses_a_probe_whose_document_its_absent_arm_removes() 
         "{:?}",
         campaign.refusal
     );
+}
+
+/// The instrument is removed from every arm, the present arm of the regression
+/// tier too, because a probe document states its own expected answer. So a
+/// probe whose predicate names a document under it is refused at every tier:
+/// no session of any arm could open it.
+#[test]
+fn a_probe_whose_document_the_instrument_removes_is_refused_at_every_tier() {
+    let source = std::fs::read_to_string(fixtures_dir().join("probe.yml"))
+        .expect("the budget declaration");
+    let budgets = Budgets::read(&format!("instrument: [corpus/probes]\n{source}"))
+        .expect("the declaration reads");
+    for tier in Tier::ALL {
+        let plan = plan_against(tier, &budgets);
+        assert_eq!(
+            plan.refusal,
+            Some(Refusal::InstrumentExamined {
+                probe: "PROBE-FIX-cited".into(),
+                path: "corpus/probes/0002-answered.md".into(),
+                entry: "corpus/probes".into(),
+            }),
+            "{}",
+            tier.name()
+        );
+        assert!(!plan.refusal.as_ref().is_some_and(Refusal::stops_a_grade));
+    }
 }
 
 /// An arm the tier does not declare refuses, rather than silently planning the
