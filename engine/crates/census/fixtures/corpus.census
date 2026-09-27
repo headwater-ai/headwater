@@ -180,6 +180,16 @@ docs/decisions/0086-a-reciprocal-half-is-owed-once-its-writer-leaves-its-initial
   typed: decision
 docs/decisions/0087-no-paragraph-limit-joins-the-language-rule-because-most-paragraphs-past-six-sentences-hold-one-topic.md
   typed: decision
+docs/decisions/0088-an-engine-release-and-a-taxonomy-release-have-disjoint-tag-namespaces-and-are-cut-independently.md
+  typed: decision
+docs/decisions/0089-a-taxonomy-release-publishes-the-source-at-the-tagged-commit-and-never-ships-the-vendored-copy.md
+  typed: decision
+docs/decisions/0090-each-release-states-in-its-notes-the-release-digest-that-a-consumer-pins.md
+  typed: decision
+docs/decisions/0091-the-runner-image-of-the-engine-release-build-is-written-in-the-workflow-because-it-sets-the-glibc-floor.md
+  typed: decision
+docs/decisions/0092-the-citation-comment-of-spec-5-is-for-an-adopter-s-corpus-and-this-repository-does-not-practice-it-on-its-own-code.md
+  typed: decision
 docs/decisions/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/doctrine/maturity-model.md
@@ -807,6 +817,14 @@ docs/process/decisions/0006-the-entrypoint-keeps-its-name-and-becomes-a-resumabl
 docs/process/decisions/0007-a-background-wait-caps-below-the-cache-lifetime-and-re-issues-itself.md
   typed: process_decision
 docs/process/decisions/0008-the-board-has-an-owner-of-its-structure-and-its-milestones-are-capped-versions.md
+  typed: process_decision
+docs/process/decisions/0009-a-release-gets-all-its-assets-in-one-create-call-and-a-person-deletes-it-to-run-again.md
+  typed: process_decision
+docs/process/decisions/0010-each-release-workflow-compares-the-tag-with-the-version-its-artifact-states-and-refuses-an-empty-reading.md
+  typed: process_decision
+docs/process/decisions/0011-crates-publish-in-one-fixed-order-that-a-test-holds-and-a-rerun-continues-where-the-last-run-stopped.md
+  typed: process_decision
+docs/process/decisions/0012-the-release-workflows-are-separate-from-ci-one-tag-value-serves-both-entry-points-and-fixtures-read-them-statically.md
   typed: process_decision
 docs/process/decisions/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census

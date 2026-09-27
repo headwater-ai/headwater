@@ -306,7 +306,8 @@ echo "what this repository itself carries"
 # corpus. The checker reports it as unresolved, which is right about what it
 # was asked and beside the point about what the line means. That is the whole
 # population of citation comments this repository carries outside this
-# directory, and #844 is the issue for making it a real one.
+# directory, and HW-DR-0092 rules that it stays so: the convention is for an
+# adopter's corpus, and this repository does not practice it on its own code.
 status=$(run sarif docs/spec/05-ai-integration.md)
 same "spec 5 carries exactly one line of the shape" 1 \
     "$(field . 'd["runs"][0]["properties"]["headwater"]["citations"]')"
@@ -315,6 +316,22 @@ same "  at the line the page writes its worked example on" 285 \
 same "  and it does not resolve, because its corpus is imagined" \
     citation.identifier.unresolved "$(rules)"
 same "  so a run over this repository's own prose fails" 1 "$status"
+
+# The scope of that convention, stated where its reader meets it. The owner
+# ruled on #844 that the convention is for an adopter's corpus and that this
+# repository does not practice it on its own code, and HW-DR-0092 records the
+# ruling. A rule stated for every corpus that in fact reaches none of this one
+# is the defect, so the section of the real spec 5, not the scratch copy, must
+# name the decision.
+awk '/^### Generated artifacts cite what licensed them$/ { on = 1; next }
+     on && /^##/ { exit }
+     on { print }' "$root/docs/spec/05-ai-integration.md" >"$scratch/spec5-cite"
+holds "spec 5 says whose corpus the convention is for" \
+    "The convention is for an adopter's corpus." "$scratch/spec5-cite"
+holds "  and that this repository does not practice it on its own code" \
+    "This repository does not practice it on its own code" "$scratch/spec5-cite"
+holds "  and names the decision that records the ruling" HW-DR-0092 \
+    "$scratch/spec5-cite"
 
 echo
 echo "the format a forge annotates a diff with"

@@ -6,7 +6,11 @@
 # by its text. Both are held here against a transcript written by hand whose
 # right answer is known: five lines, four turns, because one response is
 # written as two lines that carry one usage record, and two `gh pr view` calls
-# in one turn that cost one turn and not two.
+# in one turn that cost one turn and not two. A second transcript of eight
+# turns on one model holds the growth line: the context at 10% and at 90% of
+# the turns, and the cost of the first quarter against the last, priced by
+# token class, with a one-hour cache write and a turn split over two lines
+# whose output count grows between them.
 #
 # Run it from anywhere:
 #     sh tools/run/run-census-fixtures.sh
@@ -110,11 +114,11 @@ same '  the same holds for a transcript with no cache-creation field at all' \
 # same 500000-token rewrite. The two expired turns total 1,000,000 tokens,
 # which at $2.50 a million is $2.50.
 cat > "$scratch/expiry.jsonl" <<'EOF'
-{"type":"assistant","timestamp":"2026-01-01T00:00:00.000Z","message":{"id":"e1","usage":{"cache_read_input_tokens":0,"cache_creation_input_tokens":50000},"content":[{"type":"tool_use","name":"Bash","input":{"command":"echo start"}}]}}
-{"type":"assistant","timestamp":"2026-01-01T00:00:30.000Z","message":{"id":"e2","usage":{"cache_read_input_tokens":50000,"cache_creation_input_tokens":0},"content":[{"type":"tool_use","name":"Bash","input":{"command":"echo warm"}}]}}
-{"type":"assistant","timestamp":"2026-01-01T00:07:00.000Z","message":{"id":"e3","usage":{"cache_read_input_tokens":1000,"cache_creation_input_tokens":500000},"content":[{"type":"tool_use","name":"Bash","input":{"command":"echo woke"}}]}}
-{"type":"assistant","timestamp":"2026-01-01T00:07:10.000Z","message":{"id":"e4","usage":{"cache_read_input_tokens":501000,"cache_creation_input_tokens":0},"content":[{"type":"tool_use","name":"Bash","input":{"command":"echo warm again"}}]}}
-{"type":"assistant","timestamp":"2026-01-01T00:15:00.000Z","message":{"id":"e5","usage":{"cache_read_input_tokens":2000,"cache_creation_input_tokens":500000},"content":[{"type":"tool_use","name":"Bash","input":{"command":"echo woke again"}}]}}
+{"type":"assistant","timestamp":"2026-01-01T00:00:00.000Z","message":{"id":"e1","model":"claude-sonnet-5","usage":{"cache_read_input_tokens":0,"cache_creation_input_tokens":50000},"content":[{"type":"tool_use","name":"Bash","input":{"command":"echo start"}}]}}
+{"type":"assistant","timestamp":"2026-01-01T00:00:30.000Z","message":{"id":"e2","model":"claude-sonnet-5","usage":{"cache_read_input_tokens":50000,"cache_creation_input_tokens":0},"content":[{"type":"tool_use","name":"Bash","input":{"command":"echo warm"}}]}}
+{"type":"assistant","timestamp":"2026-01-01T00:07:00.000Z","message":{"id":"e3","model":"claude-sonnet-5","usage":{"cache_read_input_tokens":1000,"cache_creation_input_tokens":500000},"content":[{"type":"tool_use","name":"Bash","input":{"command":"echo woke"}}]}}
+{"type":"assistant","timestamp":"2026-01-01T00:07:10.000Z","message":{"id":"e4","model":"claude-sonnet-5","usage":{"cache_read_input_tokens":501000,"cache_creation_input_tokens":0},"content":[{"type":"tool_use","name":"Bash","input":{"command":"echo warm again"}}]}}
+{"type":"assistant","timestamp":"2026-01-01T00:15:00.000Z","message":{"id":"e5","model":"claude-sonnet-5","usage":{"cache_read_input_tokens":2000,"cache_creation_input_tokens":500000},"content":[{"type":"tool_use","name":"Bash","input":{"command":"echo woke again"}}]}}
 EOF
 
 eout=$(sh "$tool" "$scratch/expiry.jsonl" 2>&1); status=$?
@@ -122,6 +126,16 @@ same 'the expiry census exits 0' 0 "$status"
 same 'a rewrite past the cache lifetime is counted, a reread inside it is not' \
     'expiry-class wake-ups 2  tokens rewritten 1000000  cost $2.50' \
     "$(printf '%s\n' "$eout" | grep '^expiry-class')"
+
+# The same five turns on Opus 5.5 price the rewrite at that model's own
+# five-minute write rate, $5.00 a million and not Sonnet 5's $2.50, so the
+# two expired turns cost $5.00.
+sed 's/"claude-sonnet-5"/"claude-opus-5-5"/' "$scratch/expiry.jsonl" > "$scratch/opus-expiry.jsonl"
+oout=$(sh "$tool" "$scratch/opus-expiry.jsonl" 2>&1); status=$?
+same 'the Opus 5.5 expiry census exits 0' 0 "$status"
+same '  and prices the rewrite at the Opus 5.5 write rate' \
+    'expiry-class wake-ups 2  tokens rewritten 1000000  cost $5.00' \
+    "$(printf '%s\n' "$oout" | grep '^expiry-class')"
 
 # The one-hour lifetime. A parent writes to the one-hour cache, and a gap
 # that would expire a subagent's copy leaves its copy warm. p1 opens the
@@ -131,9 +145,9 @@ same 'a rewrite past the cache lifetime is counted, a reread inside it is not' \
 # after p2, past the hour, and rewrites 500000 tokens. So one turn is in the
 # class, and at the one-hour rate of $4.00 a million it cost $2.00.
 cat > "$scratch/hour.jsonl" <<'EOF'
-{"type":"assistant","timestamp":"2026-01-01T00:00:00.000Z","message":{"id":"p1","usage":{"cache_read_input_tokens":0,"cache_creation_input_tokens":50000,"cache_creation":{"ephemeral_5m_input_tokens":0,"ephemeral_1h_input_tokens":50000}},"content":[{"type":"tool_use","name":"Agent","input":{}}]}}
-{"type":"assistant","timestamp":"2026-01-01T00:20:00.000Z","message":{"id":"p2","usage":{"cache_read_input_tokens":1000,"cache_creation_input_tokens":300000,"cache_creation":{"ephemeral_5m_input_tokens":0,"ephemeral_1h_input_tokens":300000}},"content":[{"type":"tool_use","name":"Agent","input":{}}]}}
-{"type":"assistant","timestamp":"2026-01-01T01:30:00.000Z","message":{"id":"p3","usage":{"cache_read_input_tokens":2000,"cache_creation_input_tokens":500000,"cache_creation":{"ephemeral_5m_input_tokens":0,"ephemeral_1h_input_tokens":500000}},"content":[{"type":"tool_use","name":"Agent","input":{}}]}}
+{"type":"assistant","timestamp":"2026-01-01T00:00:00.000Z","message":{"id":"p1","model":"claude-sonnet-5","usage":{"cache_read_input_tokens":0,"cache_creation_input_tokens":50000,"cache_creation":{"ephemeral_5m_input_tokens":0,"ephemeral_1h_input_tokens":50000}},"content":[{"type":"tool_use","name":"Agent","input":{}}]}}
+{"type":"assistant","timestamp":"2026-01-01T00:20:00.000Z","message":{"id":"p2","model":"claude-sonnet-5","usage":{"cache_read_input_tokens":1000,"cache_creation_input_tokens":300000,"cache_creation":{"ephemeral_5m_input_tokens":0,"ephemeral_1h_input_tokens":300000}},"content":[{"type":"tool_use","name":"Agent","input":{}}]}}
+{"type":"assistant","timestamp":"2026-01-01T01:30:00.000Z","message":{"id":"p3","model":"claude-sonnet-5","usage":{"cache_read_input_tokens":2000,"cache_creation_input_tokens":500000,"cache_creation":{"ephemeral_5m_input_tokens":0,"ephemeral_1h_input_tokens":500000}},"content":[{"type":"tool_use","name":"Agent","input":{}}]}}
 EOF
 
 pout=$(sh "$tool" "$scratch/hour.jsonl" 2>&1); status=$?
@@ -197,6 +211,70 @@ same 'the mean concurrency is agent-minutes over the span' 'mean concurrency 1 a
 same 'one compaction, with the gap on each side of it' ' 2026-01-01T00:50:00Z 5 min since the parent'"'"'s last turn, 10 min to its next dispatch' "$(fleet 2026-01-01T00:50:00Z)"
 same 'a truncated line in an agent transcript is skipped, and the builder still spans 30 minutes' 'hw-build 1 30 5' "$(fleet hw-build)"
 same '  the integrator row is the parent'"'"'s turns per merge' 'hw-integrate 1 20 5' "$(fleet hw-integrate)"
+
+# Growth: what the last quarter of a transcript's turns cost against its first.
+# Eight turns on Sonnet 5, two a quarter, each with a larger context than the
+# one before, so the turn at 10% is g1 and the turn at 90% is g8. Rates per
+# million tokens: input $2.00, cache read $0.20, five-minute write $2.50,
+# one-hour write $4.00, output $10.00.
+#   g1  100 in, 100000 written, 1000 out                      $0.2602
+#   g2  two lines, one message: 100 in, 100000 read, 20000 written. The first
+#       line says 80 out and the second says 2000, because the harness writes
+#       the usage record again as the response streams, so the last line is
+#       the turn's. $0.0902, where the first line alone would be $0.0710.
+#   g7  100 in, 400000 read, 200000 written, 2000 out         $0.6002
+#   g8  100 in, 600000 read, 200000 written of which 100000 to the one-hour
+#       cache, 5000 out                                       $0.8202
+# So the first quarter is $0.3504, the last is $1.4204, and the ratio is 4.05.
+# A count per line reads nine turns; a tool that prices the one-hour write at
+# the five-minute rate reads a last quarter of $1.27; one that keeps the
+# first line of g2 reads a first quarter of $0.33.
+cat > "$scratch/growth.jsonl" <<'EOF'
+{"type":"assistant","message":{"id":"g1","model":"claude-sonnet-5","usage":{"input_tokens":100,"cache_read_input_tokens":0,"cache_creation_input_tokens":100000,"output_tokens":1000},"content":[{"type":"text","text":"start"}]}}
+{"type":"assistant","message":{"id":"g2","model":"claude-sonnet-5","usage":{"input_tokens":100,"cache_read_input_tokens":100000,"cache_creation_input_tokens":20000,"output_tokens":80},"content":[{"type":"text","text":"reading"}]}}
+{"type":"assistant","message":{"id":"g2","model":"claude-sonnet-5","usage":{"input_tokens":100,"cache_read_input_tokens":100000,"cache_creation_input_tokens":20000,"output_tokens":2000},"content":[{"type":"tool_use","name":"Read","input":{"file_path":"x"}}]}}
+{"type":"assistant","message":{"id":"g3","model":"claude-sonnet-5","usage":{"input_tokens":100,"cache_read_input_tokens":120000,"cache_creation_input_tokens":30000,"output_tokens":1000},"content":[{"type":"text","text":"3"}]}}
+{"type":"assistant","message":{"id":"g4","model":"claude-sonnet-5","usage":{"input_tokens":100,"cache_read_input_tokens":150000,"cache_creation_input_tokens":50000,"output_tokens":1000},"content":[{"type":"text","text":"4"}]}}
+{"type":"assistant","message":{"id":"g5","model":"claude-sonnet-5","usage":{"input_tokens":100,"cache_read_input_tokens":200000,"cache_creation_input_tokens":100000,"output_tokens":1000},"content":[{"type":"text","text":"5"}]}}
+{"type":"assistant","message":{"id":"g6","model":"claude-sonnet-5","usage":{"input_tokens":100,"cache_read_input_tokens":300000,"cache_creation_input_tokens":100000,"output_tokens":1000},"content":[{"type":"text","text":"6"}]}}
+{"type":"assistant","message":{"id":"g7","model":"claude-sonnet-5","usage":{"input_tokens":100,"cache_read_input_tokens":400000,"cache_creation_input_tokens":200000,"output_tokens":2000},"content":[{"type":"text","text":"7"}]}}
+{"type":"assistant","message":{"id":"g8","model":"claude-sonnet-5","usage":{"input_tokens":100,"cache_read_input_tokens":600000,"cache_creation_input_tokens":200000,"cache_creation":{"ephemeral_5m_input_tokens":100000,"ephemeral_1h_input_tokens":100000},"output_tokens":5000},"content":[{"type":"text","text":"BRANCH: x"}]}}
+EOF
+gout=$(sh "$tool" "$scratch/growth.jsonl" 2>&1); status=$?
+same 'the growth census exits 0' 0 "$status"
+same 'growth counts turns per message id, reads the last line of a split turn, and prices both write lifetimes' \
+    'growth  turns 8  context at 10% 100100  at 90% 800100  first quarter $0.35  last quarter $1.42  4.1x' \
+    "$(printf '%s\n' "$gout" | grep '^growth')"
+
+# Three turns cannot be cut into quarters, and the line says so rather than
+# dividing by zero. Their context figures are still given. The file ends on a
+# line cut short, the shape an agent stopped mid-write leaves, and the census
+# skips it rather than reporting nothing at all.
+head -4 "$scratch/growth.jsonl" > "$scratch/short.jsonl"
+printf '%s\n' '{"type":"assistant","message":{"id":"g4","model":"claude-sonnet-5","usage":{"input_tok' >> "$scratch/short.jsonl"
+sout=$(sh "$tool" "$scratch/short.jsonl" 2>&1); status=$?
+same 'a three-turn census exits 0' 0 "$status"
+same '  skips a truncated line, and reports too few turns for quarters' \
+    'growth  turns 3  context at 10% 100100  at 90% 150100  too few turns for quarters' \
+    "$(printf '%s\n' "$sout" | grep '^growth')"
+
+# A dated model id is priced at the rate of the model it dates. The harness
+# writes Haiku 4.5 as `claude-haiku-4-5-20251001`. Turns g1 to g4 on that id,
+# at $1.00 input, $0.10 read, $1.25 write and $5.00 output a million, give a
+# first quarter (g1) of $0.1301 and a last quarter (g4) of $0.0826.
+head -5 "$scratch/growth.jsonl" | sed 's/"claude-sonnet-5"/"claude-haiku-4-5-20251001"/' > "$scratch/dated.jsonl"
+dout=$(sh "$tool" "$scratch/dated.jsonl" 2>&1); status=$?
+same 'a dated-model census exits 0' 0 "$status"
+same '  and prices the turns at the undated model'"'"'s rate' \
+    'growth  turns 4  context at 10% 100100  at 90% 200100  first quarter $0.13  last quarter $0.08  0.6x' \
+    "$(printf '%s\n' "$dout" | grep '^growth')"
+
+# A turn with tokens and no rate for its model is not priced as zero. The
+# first transcript above names no model at all, and its line gives the turns
+# and the context and says what it could not price.
+same 'a model with no rate is reported as unpriced, with its context still given' \
+    'growth  turns 7  context at 10% 1000  at 90% 64000  unpriced model (none)' \
+    "$(printf '%s\n' "$out" | grep '^growth')"
 
 sh "$tool" "$scratch/missing.jsonl" >/dev/null 2>&1; status=$?
 same 'a missing file is refused with usage' 2 "$status"

@@ -23,6 +23,8 @@ An investigation on 2026-09-23 found what a figure per issue needs. The notes ar
 - A parent turn is the unit that [HW-PD-0003](../process/decisions/0003-a-dispatch-pays-when-it-retires-more-parent-turns-than-it-costs.md) prices, and it measures orchestration waste. The plan windows do not count turns. They count tokens, weighted by model and by token type.
 - A `pr-link` record in a session transcript is a pointer to the current pull request, and a parent session writes it on most turns. A parent session that ran a whole build order has no `cost-state` record at all.
 
+Since 2026-09-27, the `growth` line of `tools/run/run-census.sh` prices one transcript by model and by token type, which part 1 below asks for (#984). It counts each `message.id` once and reads its usage from the last line of the message. The input and cache counts are the same on each line of one response, but the output count grows as the response streams. The line prices the first and the last quarter of the turns, and not the whole transcript, so part 1 is still open.
+
 ## Obligation
 
 The corpus owes a measure of plan usage for each closed issue, in points of each window. It has five parts:

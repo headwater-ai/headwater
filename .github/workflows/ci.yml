@@ -1253,12 +1253,13 @@ jobs:
         # The step runs over the fixtures rather than over this tree, and
         # the reason is a measurement this suite pins rather than a claim this
         # comment makes. Outside `tools/cite/`, one line of this repository
-        # carries the shape: `docs/spec/05-ai-integration.md` line 290, where
+        # carries the shape: `docs/spec/05-ai-integration.md` line 285, where
         # spec 5 illustrates the convention with an identifier and a path from
         # an imagined corpus. A case reads that real document and holds the
         # count and the line. What this repository carries nowhere is a
         # citation written as a claim about what licensed a line of its own
-        # code, and #844 is the issue for that.
+        # code, and that is by ruling: HW-DR-0092 records that the convention
+        # is for an adopter's corpus, and a case holds that spec 5 says so.
         #
         # It writes only under a temporary directory and it builds no engine:
         # it drives the one the build step above already wrote.
