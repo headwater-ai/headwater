@@ -60,7 +60,7 @@ Your tree and branch stay after the run, for the owner to clean up. Leave the tr
 
 Its last line is `green` or `red` with the failing checks named, and the `run <id>` lines above it are the id your report's `CI:` line wants. Then repair a Format, Lint or unblessed-fixture failure yourself before you report. Seven of ten vetoes in one run were exactly those. A red CI you cannot repair is the first line of your report, not a pull request handed on.
 
-**A `waits-on` line in your dispatch is the integrator's to honor, not yours to build around.** Build against `origin/main` as it stands; the integrator merges the awaited change first and rebases yours behind it. Do not rebase onto another agent's unmerged branch.
+**A `waits-on` line in your dispatch is the integrator's to honor, not yours to build around.** Build against `origin/main` as it stands; the integrator enqueues the awaited change first and yours after it. Do not rebase onto another agent's unmerged branch.
 
 **When you are resumed after a veto, your report goes into the note.** A resumed agent has already handed back once, and a second hand-back does not reach the parent: #1038's answer to its veto in run `20260923-0733` arrived only as the last text of a transcript. Append your answer to `build.md` under a heading `## Follow-up <date>`: what you changed for the finding, the commits, the fixture that now fails without your fix, and the CI run. End your turn with the same four lines and the block. The parent reads the heading.
 

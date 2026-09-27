@@ -3,7 +3,7 @@ id: HW-EVAL-two-triggers-one-verdict-how-this-repository-s-ci-decides-where-a-jo
 status: current
 status_since: 2026-09-21
 summary: "The event that started a run decides which of two machines it takes, and every other condition in the workflow can only take work away."
-last_verified: 2026-09-23
+last_verified: 2026-09-27
 title: "Two triggers, one verdict: how this repository's CI decides where a job runs and what it trusts"
 provenance:
   warrant: asserted
@@ -29,6 +29,8 @@ Three subjects sit next door and are not here. [DEVELOPING.md](../../DEVELOPING.
 A fork can open a pull request against this repository. That pull request runs **the fork's own copy of the workflow file**, including any line the fork rewrote. So no condition written here defends against a hostile fork. A fork may delete a condition, invert it, or hardcode the self-hosted labels in place of the expression that chooses them.
 
 One fact is not like the others. A `push` event fires only for a ref actually written to this repository, and writing one needs an access nobody outside the project holds. A fork pushes to the fork, and that fires a `push` in the fork. So `github.event_name == 'push'` is a claim about how the run was created, and a fork cannot make it true.
+
+A `merge_group` event has the same property. GitHub starts it when the merge queue builds a group. The group holds `main` and the heads of the queued pull requests, and only a person with write access can queue one. A fork can open one of those pull requests, but it cannot put it in the queue. So the workflow treats `merge_group` as it treats `push`, and both are eligible for the self-hosted runner.
 
 That is why self-hosted eligibility is written as a test on the event and never as a test on which repository opened the pull request. The second test reads `github.event.pull_request.head.repo.full_name`, which is webhook data that the pull request's author cannot forge. The distinction that matters is not whether the field is trustworthy. It is that the *condition reading it* lives in a file the author owns on their own fork. So the field is sound as data and unsound as a gate.
 
@@ -60,7 +62,9 @@ The run this replaced did check out the merge commit, and it is worth being exac
 
 The run on `main` is the composition check, and it always was. It is the one run the workflow never cancels, for that reason. Spec 12 already rules the gap ordinary. Hook and CI can disagree only when the mainline moved, and the evaluation that counts is the one against the final merge base.
 
-Closing the gap exactly costs one ruleset field. Turning on `strict_required_status_checks_policy` would require every head to contain the tip of `main` before merging. Under squash-only merges with linear history, a head that contains `main` squashes into the tree it already has. The field is off, on a measurement rather than a preference. Of the last 40 runs on `main`, 39 were green. The one failure was `actions/checkout` erroring on a runner rather than a composition breaking. Zero composition failures in 40 merges does not pay for the re-runs that strict would add to every branch a merge leaves behind. The trigger for revisiting it is a `main` run going red from composition, more than once in a fortnight. Red from composition means both parents green alone and red together.
+Closing the gap exactly costs one ruleset field. Turning on `strict_required_status_checks_policy` requires every head to contain the tip of `main` before merging. Under squash-only merges with linear history, a head that contains `main` squashes into the tree it already has. The field was off when this document was written, on a measurement. Of the last 40 runs on `main`, 39 were green, and the one failure was a runner error. By 2026-09-27 the ruleset had it on, and every merge put each other ruled branch behind `main` and cost it a full CI run.
+
+The merge queue closes the gap without that cost ([HW-PD-0020](../process/decisions/0020-merges-go-through-the-github-merge-queue-one-squash-commit-per-pull-request.md)). It builds a group from `main` and up to five queued pull requests. It runs both required jobs on the tip of the group under the `merge_group` event. Then it lands one squash commit for each pull request. So the composition is tested before it lands, and the strict field goes off again. Each queue entry has its own ref, so the concurrency group, which is keyed on the ref, never cancels one entry's run with another's. The queue's own branches are excluded from the `push` trigger, so a queued commit is built once.
 
 ## The two runners cache different things, because they are different shapes
 
