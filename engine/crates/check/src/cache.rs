@@ -597,6 +597,19 @@ fn encode_patch(patch: Option<&Patch>) -> String {
         Some(Patch::Create { path, contents }) => {
             format!("create\t{}\t{}", escape(path), escape(contents))
         }
+        // The count first, for the reason `attributed` gives.
+        Some(Patch::Facets { path, set }) => {
+            let mut record = format!("facets\t{}\t{}", escape(path), set.len());
+            for (facet, expect, value) in set {
+                record.push_str(&format!(
+                    "\t{}\t{}\t{}",
+                    escape(facet),
+                    escape(expect),
+                    escape(value)
+                ));
+            }
+            record
+        }
     }
 }
 
@@ -642,6 +655,19 @@ fn decode_patch<'a>(fields: &mut impl Iterator<Item = &'a str>) -> Option<Option
             path: unescape(fields.next()?),
             contents: unescape(fields.next()?),
         })),
+        "facets" => {
+            let path = unescape(fields.next()?);
+            let count: usize = fields.next()?.parse().ok()?;
+            let mut set = Vec::with_capacity(count);
+            for _ in 0..count {
+                set.push((
+                    unescape(fields.next()?),
+                    unescape(fields.next()?),
+                    unescape(fields.next()?),
+                ));
+            }
+            Some(Some(Patch::Facets { path, set }))
+        }
         _ => None,
     }
 }
@@ -769,6 +795,32 @@ mod tests {
         let mut fields = record.split('\t');
         assert_eq!(decode_patch(&mut fields), Some(Some(attributed)));
         assert_eq!(decode_patch(&mut fields), Some(Some(bare)));
+        assert_eq!(fields.next(), None);
+    }
+
+    /// A facet patch survives a round trip, with every write in its order, so
+    /// a cached finding keeps the fix it was reported with (#1198).
+    #[test]
+    fn a_facet_patch_round_trips() {
+        let facets = Patch::Facets {
+            path: "docs/a.md".to_string(),
+            set: vec![
+                (
+                    "status".to_string(),
+                    "current".to_string(),
+                    "superseded".to_string(),
+                ),
+                (
+                    "status_since".to_string(),
+                    "2026-07-01".to_string(),
+                    "2026-08-05".to_string(),
+                ),
+            ],
+        };
+        let record = format!("{}\tnone", encode_patch(Some(&facets)));
+        let mut fields = record.split('\t');
+        assert_eq!(decode_patch(&mut fields), Some(Some(facets)));
+        assert_eq!(decode_patch(&mut fields), Some(None));
         assert_eq!(fields.next(), None);
     }
     use super::*;
