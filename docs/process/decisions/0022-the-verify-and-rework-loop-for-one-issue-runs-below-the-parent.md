@@ -50,7 +50,7 @@ The manager is `.claude/agents/hw-iterate.md`. The parent dispatches it after `h
 
 The parent never runs `git show` or `git diff` against a build branch. It rules from the report of `hw-iterate`, from `build.md` and from `verify-report.md`.
 
-Two shapes were considered. In the first shape, the builder dispatches its own verifier. That shape was rejected, because the verifier is then no longer independent of the agent whose work it checks. In the second shape, one manager per issue dispatches both. This decision takes the second shape.
+Two shapes were considered. In the first shape, the builder dispatches its own verifier. That shape was rejected, because the verifier is then not independent of the agent whose work it checks. In the second shape, one manager per issue dispatches both. This decision takes the second shape.
 
 ## Consequences
 
