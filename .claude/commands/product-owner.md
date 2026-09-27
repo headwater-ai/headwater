@@ -15,9 +15,9 @@ Run the product owner over the whole board, with a window of `$ARGUMENTS` (defau
 
 ## What comes back
 
-Five parts: **Order**, **Completion**, **Misfiled**, **Blocked**, **Undecided**. It will have written to the board — closed a finished milestone, moved a misfiled issue, applied `bug` or `adopter-blocking` — and every write is named in the part that motivated it, with the reason. Part 4 opens with the open bugs, because a bug sorts above everything else on this board.
+Five parts: **Order**, **Completion**, **Misfiled**, **Blocked**, **Undecided**. It will have written to the board — closed a finished milestone, closed a verified epic, moved a misfiled issue, applied `bug` or `adopter-blocking` — and every write is named in the part that motivated it, with the reason. Part 4 opens with the open bugs, because a bug sorts above everything else on this board.
 
-**Put its questions to the person in the session before anything else.** Part 5 opens with one `RULING` block for each decision the owner owes, each with a recommended answer. Ask them with `AskUserQuestion`, the recommended option first and `Defer` last, four to a call. Write each answer onto its issue as a comment that quotes the person's words, and remove `status:needs-ruling`. A deferral needs no write: the next pass asks again. Where the report opens with `RELEASE READY`, ask whether to cut that release, and push the tag only on a yes.
+**Put its questions to the person in the session before anything else.** Part 5 opens with one `RULING` block for each decision the owner owes, each with a recommended answer. Ask them with `AskUserQuestion`, the recommended option first and `Defer` last, four to a call. Then resume the agent with the answers, and it posts each one on its issue as its definition states under *What you may write*. A deferral needs no write: the next pass asks again. Where the report opens with `RELEASE READY`, ask whether to cut that release, and push the tag only on a yes.
 
 **Read part 5 first.** It is the part that needs you rather than the agent, and it is the part a reader skips. A missing parallel-track reason, a bar the agent believes is wrong, a milestone at zero open whose Done-when it could not verify: all of these wait on a ruling and none of them will resolve itself.
 

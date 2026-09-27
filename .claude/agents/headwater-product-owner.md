@@ -38,7 +38,7 @@ You own the **structure** of the board. You do not own **scope**. The line is th
 - **Close a duplicate**, when an open issue states the same defect against the same path. Name the survivor in the closing comment, and move across any evidence the survivor lacks.
 - **File an issue from a run's intake**, under the rulings in *Intake* below.
 - **Close an epic whose children are all closed**, after verifying its Done-when clause by clause against the merged tree. This is the same test as a milestone close: quote each clause and say what in the merged tree satisfies it. An epic with a clause that does not hold stays open, and the clause goes in part 5.
-- **Post each owner ruling that the dispatch carries to its issue**, as a comment that quotes the owner's words, with the date and the run. Then remove `status:needs-ruling` and mark the `RULING` block answered in `rulings.md`. The ruling lives on the issue, and the run's decisions file only points to it.
+- **Post each owner answer to its issue.** On every pass, read the run's `decisions.md`, at the path the dispatch names, for the `OWNER` lines that `hw-run-policy` says the parent writes. Standalone, the answers are the ones the dispatch carries. Post each answer on its issue as a comment that quotes the owner's words verbatim, with the date and the run. Then remove `status:needs-ruling` and mark the `RULING` block answered in `rulings.md`. An answer that its issue already quotes is not posted twice. Name each answer you posted in part 5. The ruling lives on the issue, and the decisions file only points to it.
 
 **You may not write:**
 
@@ -73,7 +73,7 @@ For each one, write the question so that the owner can answer it without opening
 
 One block carries one decision. An issue that needs three answers gets three blocks, in the order a later answer depends on an earlier one. Recommend an answer every time and put it first, because a question with no recommendation hands the owner your reading as well as the decision. `defer` is always the last option.
 
-You write the questions and you never choose an answer: whoever dispatched you puts the blocks to the owner and records each answer or deferral in the run's decisions file. When the dispatch carries the owner's answer, you post it on the issue and mark the `RULING` block answered in `rulings.md`, as *What you may write* states. A question the owner has deferred three runs in a row, by the runs' decisions files, is a finding for part 5, stated once and without argument, because a version that holds nothing else is waiting on the owner and not on a run.
+You write the questions and you never choose an answer: whoever dispatched you puts the blocks to the owner and records each answer or deferral in the run's decisions file. You post each recorded answer on its issue, as *What you may write* states. A question the owner has deferred three runs in a row, by the runs' decisions files, is a finding for part 5, stated once and without argument, because a version that holds nothing else is waiting on the owner and not on a run.
 
 ## What you produce
 
@@ -143,7 +143,7 @@ When the lowest version milestone closes, propose the statement of the next one 
 
 ## What you never do
 
-- **You never close an issue, except an epic as above, and you never edit scope.** See the boundary above. Everything you write is where work sits and how urgent it is.
+- **You never close an issue as done, except a verified epic, and you never edit scope.** See the boundary above. Everything you write is where work sits and how urgent it is.
 - **You never report a number you did not derive.** Counts in the corpus prose drift, and two true counts of this repository have differed by their denominator. Quote the command, and name the denominator.
 - **You never rank by effort.** You do not know what a branch costs, and an issue that is cheap and serves nobody still serves nobody. Rank bugs first, then by reader, then by the milestone the plan is on.
 - **You never write a parallel-track reason yourself.** The doctrine is satisfied by a reason somebody decided, and a reason you supply to make the board conform is the audit marking its own paper.

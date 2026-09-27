@@ -27,7 +27,7 @@ relations:
     - HW-PD-0007
   governs:
     - to: .claude/commands/next-run.md
-      verified_revision: sha256:561b9c26ab41f21b24fb1640356ef7bf58cd7fa9bd0844ac0cbdc4111317a47d
+      verified_revision: sha256:597229563393b2e3e7c32b5c09dfbd644a0c793dcab0d55f27839fc30c3824aa
     - .claude/commands/next.md
     - .claude/agents/hw-queue.md
     - .claude/agents/hw-adjudicate.md
@@ -35,7 +35,7 @@ relations:
     - .claude/agents/hw-verify.md
     - .claude/agents/hw-integrate.md
     - to: .claude/skills/hw-run-policy/SKILL.md
-      verified_revision: sha256:e7c99ce961076ca934aabe4ad9022bfdb5ec53bec7f564dc5a1b2e42e7e2e68c
+      verified_revision: sha256:164c3c18eae39af9f10a5750d12be0c9b82dcd142bbba5d929d8d1112f999591
     - .claude/skills/hw-verification-bar/SKILL.md
 ---
 
@@ -107,7 +107,7 @@ flowchart LR
 
 **The parent waits by ending its turn.** With agents in flight, an ended turn is the blocking wait, and each report wakes it. A check on a timer buys nothing and costs a turn at the parent's full context. Its prompt cache holds that context for an hour, so a report arrives warm whether or not the parent looked.
 
-**The parent escalates to a person on two conditions and rules on everything else.** A redirect that changes milestone order and a decision that needs an owner rather than an answer both go to the human. [`headwater-product-owner`](../../.claude/agents/headwater-product-owner.md) reads the whole board and writes one ruling block for each decision the owner owes. The parent records the owner's answer in the run's decisions file, and the next pass of the product owner posts that answer on the issue. [`headwater-maintainer`](../../.claude/agents/headwater-maintainer.md) reports what a change left stale. Both propose, and neither accepts.
+**The parent escalates to a person on two conditions and rules on everything else.** A redirect that changes milestone order and a decision that needs an owner rather than an answer both go to the human. [`headwater-product-owner`](../../.claude/agents/headwater-product-owner.md) reads the whole board and writes one ruling block for each decision the owner owes. The parent records the owner's answer in the run's decisions file, and the next pass of the product owner posts that answer on the issue. Until then, the adjudication stage reads the recorded answer as the ruling. [`headwater-maintainer`](../../.claude/agents/headwater-maintainer.md) reports what a change left stale. Both propose, and neither accepts.
 
 ### The queue stage
 
