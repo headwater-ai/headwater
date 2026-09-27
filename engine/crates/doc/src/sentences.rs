@@ -51,16 +51,24 @@ use headwater_yaml::{Position, Span};
 /// with a capital or, since #1151, with a lower-case word such as `iPhone`.
 /// The titles `Mr.`, `Mrs.`, `Dr.` and `St.` of that chapter are omitted on
 /// purpose. `Dr.` and `St.` also end real sentences as `drive` and `street`,
-/// and a title is not dotted, so it waits on its own evidence. `U.S.C.` needs
-/// no entry, because no space follows its inner periods.
+/// and a title is not dotted, so it waits on its own evidence.
+///
+/// `U.S.C.` is the citation form of the United States Code in the same manual
+/// and in the Bluebook, as in `12 U.S.C. 101` (#1228). No space follows its
+/// inner periods, so they never reach this list. Its final period meets the
+/// section number, and a digit opens a sentence, so without an entry one
+/// citation split into three sentences.
+///
+/// A dotted entry matches in any case, so `u.s.` and `PH.D.` hold as well.
 ///
 /// The cost: an entry suppresses the split without condition. A real sentence
-/// end on an entry, as in `sold in the U.S. The next`, joins with the sentence
-/// after it. The dotted forms end a sentence less often than a name follows
-/// them, so the list takes that cost.
-const ABBREVIATIONS: [&str; 13] = [
+/// end on an entry, as in `sold in the U.S. The next` or `set out in 5 U.S.C.
+/// The next`, joins with the sentence after it. The dotted forms end a
+/// sentence less often than a name or a number follows them, so the list takes
+/// that cost.
+const ABBREVIATIONS: [&str; 14] = [
     "e.g.", "i.e.", "cf.", "etc.", "vs.", "al.", "approx.", "no.", "U.S.", "U.K.", "a.m.", "p.m.",
-    "Ph.D.",
+    "Ph.D.", "U.S.C.",
 ];
 
 /// One sentence of one document.
@@ -478,7 +486,10 @@ mod tests {
             texts("It is sold in the U.S. The next one is not.\n").len(),
             1
         );
-        assert_eq!(texts("It is set out in 5 U.S.C. The next one is not.\n").len(), 1);
+        assert_eq!(
+            texts("It is set out in 5 U.S.C. The next one is not.\n").len(),
+            1
+        );
     }
 
     /// The guard that catches every abbreviation the list misses: a sentence of
