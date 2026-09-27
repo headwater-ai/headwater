@@ -1,0 +1,20 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The #1013 spike: harper-core fed the author-owned text that headwater-doc
+# already segments, never raw Markdown. It is its own workspace so that
+# engine/Cargo.lock does not move. The results are in
+# docs/evaluations/harper-spike-results.md.
+[workspace]
+
+[package]
+name = "harper-spike"
+version = "0.0.0"
+edition = "2021"
+publish = false
+license = "Apache-2.0"
+
+[dependencies]
+# Pinned exactly: a lint set that moves with a minor version is a check
+# version that moves without this repository saying so.
+harper-core = "=2.11.0"
+headwater-doc = { path = "../../../engine/crates/doc" }
