@@ -182,13 +182,83 @@ fn publish_loop() -> String {
     rest[..end].to_string()
 }
 
+/// Runs the workflow's own publish loop under `sh -c`, over the crates `alpha`
+/// and `beta` at version 9.9.9, with every command it calls replaced by a
+/// stub that appends one line to standard output.
+///
+/// `curl` answers 404, so no crate is skipped. `publish_with_retry` prints
+/// `publish <crate>`. `sh`, which is how the loop runs the gate, prints
+/// `gate <arguments>`, and exits 1 when its arguments match `refuse`. The loop
+/// runs under `set -e`, as the workflow step does.
+fn run_publish_loop(refuse: &str) -> (bool, Vec<String>) {
+    let script = format!(
+        "set -e\n\
+         order=\"alpha beta\"\n\
+         version=9.9.9\n\
+         curl() {{ echo 404; }}\n\
+         publish_with_retry() {{ echo \"publish $1\"; }}\n\
+         sh() {{\n\
+             echo \"gate $*\"\n\
+             case \"$*\" in {refuse}) return 1 ;; esac\n\
+         }}\n\
+         {}\n\
+         done\n",
+        publish_loop()
+    );
+    let out = std::process::Command::new("sh")
+        .arg("-c")
+        .arg(&script)
+        .output()
+        .expect("sh runs the publish loop");
+    let lines = String::from_utf8_lossy(&out.stdout)
+        .lines()
+        .filter(|line| line.starts_with("gate ") || line.starts_with("publish "))
+        .map(str::to_string)
+        .collect();
+    (out.status.success(), lines)
+}
+
+/// The loop runs the gate on a crate's dependencies before it publishes the
+/// crate, and on the crate itself after, for every crate.
+///
+/// The loop is executed, not read, so a gate call that is commented out, or
+/// that stands after the publish, fails here (verify of #1197 at c065b76d).
+#[test]
+fn the_publish_loop_runs_the_index_gate_before_and_after_each_publish() {
+    let (ok, lines) = run_publish_loop("nothing-matches");
+    let gate = "gate ../tools/repo/crates-index-wait.sh";
+    let expected = vec![
+        format!("{gate} alpha 9.9.9"),
+        "publish alpha".to_string(),
+        format!("{gate} --published alpha 9.9.9"),
+        format!("{gate} beta 9.9.9"),
+        "publish beta".to_string(),
+        format!("{gate} --published beta 9.9.9"),
+    ];
+    assert!(ok, "the publish loop failed with every gate passing: {lines:?}");
+    assert_eq!(
+        lines, expected,
+        "the publish loop does not run the index gate around each publish"
+    );
+}
+
+/// A gate that refuses stops the loop before the crate publishes.
+#[test]
+fn the_publish_loop_stops_before_a_crate_the_gate_refuses() {
+    let (ok, lines) = run_publish_loop("*crates-index-wait.sh\\ beta\\ *");
+    assert!(!ok, "the publish loop succeeded though the gate refused beta: {lines:?}");
+    assert!(
+        !lines.iter().any(|line| line == "publish beta"),
+        "the publish loop published beta after the gate refused it: {lines:?}"
+    );
+}
+
 /// The loop waits on the index, and not on a clock.
 ///
 /// A fixed sleep is what let v0.3.0 and v0.4.0 publish a crate before
-/// crates.io listed its dependency (#1197). This case reads the shape only; the
-/// behavioral cases below hold what the gate does.
+/// crates.io listed its dependency (#1197).
 #[test]
-fn the_publish_loop_gates_each_crate_on_the_index_and_not_on_a_fixed_sleep() {
+fn the_publish_loop_has_no_fixed_sleep() {
     let body = publish_loop();
     let bare_sleep: Vec<&str> = body
         .lines()
@@ -202,28 +272,17 @@ fn the_publish_loop_gates_each_crate_on_the_index_and_not_on_a_fixed_sleep() {
         bare_sleep.is_empty(),
         "the publish loop waits a fixed time: {bare_sleep:?}"
     );
-    let gate = body
-        .find("crates-index-wait.sh \"$crate\"")
-        .expect("the publish loop calls tools/repo/crates-index-wait.sh on each crate");
-    let publish = body
-        .find("publish_with_retry \"$crate\"")
-        .expect("the publish loop publishes with publish_with_retry");
-    assert!(
-        gate < publish,
-        "the publish loop publishes a crate before it waits for the crate's dependencies"
-    );
-    let published = body
-        .find("crates-index-wait.sh --published \"$crate\"")
-        .expect("the publish loop waits for the index to list the crate it just published");
-    assert!(
-        publish < published,
-        "the publish loop waits for the crate itself before it publishes it"
-    );
 }
 
 /// A sparse index on disk that lists every workspace member at `version`,
-/// except the members `behind` names, which it lists at an older version only.
+/// except the members `behind` names, which it lists at 0.0.1 only.
 fn sparse_index(case: &str, version: &str, behind: &[&str]) -> PathBuf {
+    sparse_index_with(case, version, behind, "")
+}
+
+/// As [`sparse_index`], and each member `behind` names also gets the line
+/// `behind_line`, where `{n}` stands for the name and `{v}` for `version`.
+fn sparse_index_with(case: &str, version: &str, behind: &[&str], behind_line: &str) -> PathBuf {
     use std::sync::atomic::{AtomicUsize, Ordering};
     static NEXT: AtomicUsize = AtomicUsize::new(0);
     let dir = std::env::temp_dir().join(format!(
@@ -240,6 +299,9 @@ fn sparse_index(case: &str, version: &str, behind: &[&str]) -> PathBuf {
             lines.push_str(&format!(
                 "{{\"name\":\"{name}\",\"vers\":\"{version}\",\"deps\":[]}}\n"
             ));
+        } else if !behind_line.is_empty() {
+            lines.push_str(&behind_line.replace("{n}", &name).replace("{v}", version));
+            lines.push('\n');
         }
         std::fs::write(&path, lines).expect("index file");
     }
@@ -314,5 +376,45 @@ fn the_index_gate_refuses_a_published_crate_the_index_does_not_list() {
     assert!(
         !out.status.success() && said.contains("::error::headwater-import:"),
         "the gate passed a published crate the index does not list: {said}"
+    );
+}
+
+/// The gate matches the whole version, so a pre-release whose text begins
+/// with the release version is not the release.
+#[test]
+fn the_index_gate_refuses_a_dependency_listed_only_at_a_pre_release_of_the_version() {
+    let version = headwater_resolve::release::ENGINE;
+    let index = sparse_index_with(
+        "prerelease",
+        version,
+        &["headwater-scaffold"],
+        "{\"name\":\"{n}\",\"vers\":\"{v}-rc1\",\"deps\":[]}",
+    );
+    let out = run_gate(&index, &["headwater-import", version]);
+    let said = String::from_utf8_lossy(&out.stdout).into_owned();
+    let _ = std::fs::remove_dir_all(&index);
+    assert!(
+        !out.status.success() && said.contains("headwater-scaffold"),
+        "the gate read headwater-scaffold {version}-rc1 as {version}: {said}"
+    );
+}
+
+/// A dependency whose release version is yanked cannot be resolved by a new
+/// publish, so the gate does not count it as listed.
+#[test]
+fn the_index_gate_refuses_a_dependency_whose_release_version_is_yanked() {
+    let version = headwater_resolve::release::ENGINE;
+    let index = sparse_index_with(
+        "yanked",
+        version,
+        &["headwater-scaffold"],
+        "{\"name\":\"{n}\",\"vers\":\"{v}\",\"deps\":[],\"yanked\":true}",
+    );
+    let out = run_gate(&index, &["headwater-import", version]);
+    let said = String::from_utf8_lossy(&out.stdout).into_owned();
+    let _ = std::fs::remove_dir_all(&index);
+    assert!(
+        !out.status.success() && said.contains("headwater-scaffold"),
+        "the gate passed headwater-scaffold {version} though the index marks it yanked: {said}"
     );
 }
