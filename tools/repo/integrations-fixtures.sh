@@ -319,6 +319,15 @@ else
         "$(grep '^FAIL' "$scratch/report-filters.out" | tr '\n' ' ')"
 fi
 
+python3 "$root/integrations/headwater-upkeep/fixtures/line-map.py" >"$scratch/line-map.out" 2>&1
+code=$?
+if [ "$code" -eq 0 ]; then
+    pass 'a base finding is carried through the hunks git writes, names with a space or quotes included'
+else
+    fail 'a base finding is carried through the hunks git writes, names with a space or quotes included' \
+        "$(grep '^FAIL' "$scratch/line-map.out" | tr '\n' ' ')"
+fi
+
 # `integrations/dashboard` (#505): the page's own unit tests, which hold
 # HW-DR-0080's (corpus_identity, id) key and #505's decisive fixture, and
 # read this repository's `.headwater/export.json` as the worked example.
