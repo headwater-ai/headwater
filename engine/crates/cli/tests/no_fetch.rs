@@ -24,10 +24,8 @@ const PIN: &str = "sha256:000000000000000000000000000000000000000000000000000000
 /// A new empty adopter root, keyed on the case name so that two cases running
 /// as threads of one process never share one.
 fn scratch(case: &str) -> PathBuf {
-    let dir = std::env::temp_dir().join(format!(
-        "headwater-no-fetch-{}-{case}",
-        std::process::id()
-    ));
+    let dir =
+        std::env::temp_dir().join(format!("headwater-no-fetch-{}-{case}", std::process::id()));
     let _ = std::fs::remove_dir_all(&dir);
     std::fs::create_dir_all(&dir).expect("the adopter root is made");
     dir

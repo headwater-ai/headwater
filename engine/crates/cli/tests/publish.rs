@@ -3160,15 +3160,14 @@ fn a_location_vendors_the_bytes_the_same_artifact_vendors_by_path() {
 #[test]
 fn a_loopback_location_is_fetched_directly_under_a_proxy_environment() {
     use std::io::{Read, Write};
-    use std::sync::Arc;
     use std::sync::atomic::{AtomicUsize, Ordering};
+    use std::sync::Arc;
 
     let root = Root::scratch("vendor-proxy");
     let (artifact, record) = published_fixture(&root);
     let base = serve_artifact(zipped(&artifact));
 
-    let proxy_listener =
-        std::net::TcpListener::bind("127.0.0.1:0").expect("a loopback port binds");
+    let proxy_listener = std::net::TcpListener::bind("127.0.0.1:0").expect("a loopback port binds");
     let proxy = format!(
         "http://{}",
         proxy_listener.local_addr().expect("the port reads")
