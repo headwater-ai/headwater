@@ -56,8 +56,9 @@
 //! [`Patch::Facets`] replaces the value of a top-level scalar facet that the
 //! front matter already declares, and it adds no key. Its guards are
 //! `set_facets`'s: the parsed value and the key's own line both read as the
-//! value the check saw, and the result reads back as the value written. It
-//! runs after the text patches, whose offsets are into the file as it stood.
+//! value the check saw, and the result reads back with the written values
+//! moved and nothing else, which is the read-back [`crate::migrate`] states
+//! for a replaced value. It runs after the text patches, whose offsets are into the file as it stood.
 //!
 //! # One file at a time, and all of a file or none of it
 //!
@@ -383,8 +384,9 @@ fn one_file(root: &Path, path: &str, patches: &[&Patch]) -> Result<Option<Fixed>
 /// have to agree with `expect`: the parsed front matter, and the text of the
 /// key's own line. A value that spans lines or carries a comment fails the
 /// second, so the line this writer replaces is always the whole value. The
-/// result is parsed again, and every written facet has to read back as the
-/// value written.
+/// result is parsed again, and it has to read as the source with the written
+/// values moved and nothing else: the body byte for byte, and every scalar of
+/// the front matter by key path, which is [`crate::migrate`]'s read-back.
 ///
 /// Two patches can name one facet, where two successors each report one
 /// target. The first in patch order lands, and a later one that names a facet
@@ -469,12 +471,34 @@ fn set_facets(path: &str, source: &str, patches: &[&Patch]) -> Result<(String, u
         }
         let reread = headwater_doc::parse(&next)
             .map_err(|errors| refuse(format!("{} parse errors after the write", errors.len())))?;
-        for (facet, _, value) in set {
-            if scalar_of(&reread, facet).as_deref() != Some(value.as_str()) {
-                return Err(refuse(format!(
-                    "`{facet}` does not read back as `{value}` after the write"
-                )));
-            }
+        // The read-back `crate::migrate` states for a replaced value: the
+        // body byte for byte, and every scalar of the front matter by key path
+        // in document order, with the written ones moved and no others.
+        let was = current.get(parsed.block.end.offset..).unwrap_or_default();
+        let now = next.get(reread.block.end.offset..).unwrap_or_default();
+        if was != now {
+            return Err(refuse(
+                "the bytes after the front matter are not the bytes they were".to_string(),
+            ));
+        }
+        let expected: Vec<(String, String)> = crate::migrate::scalars(&parsed.facets, "")
+            .into_iter()
+            .map(|(at, text, _)| {
+                match set.iter().find(|(facet, _, _)| *facet == at) {
+                    Some((_, _, value)) => (at, value.clone()),
+                    None => (at, text),
+                }
+            })
+            .collect();
+        let read: Vec<(String, String)> = crate::migrate::scalars(&reread.facets, "")
+            .into_iter()
+            .map(|(at, text, _)| (at, text))
+            .collect();
+        if expected != read {
+            return Err(refuse(
+                "the front matter does not read back as the values written and no others"
+                    .to_string(),
+            ));
         }
         written.extend(set.iter().map(|(facet, _, _)| facet.as_str()));
         current = next;
