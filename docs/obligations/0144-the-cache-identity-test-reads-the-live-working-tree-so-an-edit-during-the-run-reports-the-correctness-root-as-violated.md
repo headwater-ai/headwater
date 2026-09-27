@@ -35,6 +35,6 @@ The other corpus-reading assertions in the same file compare against recorded to
 
 ## Discharge
 
-This closes when the test proves the same claim without reading a tree an editor can move. A snapshot taken once and compared against itself three times would satisfy it. So would a check that names a mid-run edit as the cause, rather than rendering two disagreeing reports. Either fix must keep the tie the test's own doc comment protects. The report it compares stays a report of the same corpus as the recorded `corpus.checks` fixture beside it. `cargo test --workspace` staying green with an edit landing during the run is the practical proof the fix holds.
+This closes when the test proves the same claim without reading a tree an editor can move. A snapshot taken once and compared against itself three times would satisfy it. So would a check that names a mid-run edit as the cause, rather than rendering two disagreeing reports. Either fix must keep the tie the test's own doc comment protects. The report it compares stays a report of the same corpus as the property test beside it, now that #1251 deleted the recorded `corpus.checks`. `cargo test --workspace` staying green with an edit landing during the run is the practical proof the fix holds.
 
 This waits on an adopter to choose the fix and land it.

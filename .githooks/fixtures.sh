@@ -817,7 +817,7 @@ build_merge_repo() {
     attribute=$1
     same=$2
     rm -rf "$merges/repo"
-    mkdir -p "$merges/repo/engine/crates/check/fixtures" "$merges/repo/.githooks"
+    mkdir -p "$merges/repo/engine/crates/lock/fixtures" "$merges/repo/.githooks"
     cp "$root/.githooks/merge-regenerate" "$merges/repo/.githooks/"
     chmod +x "$merges/repo/.githooks/merge-regenerate"
     (
@@ -828,17 +828,17 @@ build_merge_repo() {
         git config merge.headwater-regenerate.name "regenerate a derived artifact"
         git config merge.headwater-regenerate.driver ".githooks/merge-regenerate %O %A %B %P"
         [ -n "$attribute" ] && printf '%s\n' "$attribute" > .gitattributes
-        printf '386 seen\nrule.one\n' > engine/crates/check/fixtures/corpus.checks
+        printf '386 seen\nrule.one\n' > engine/crates/lock/fixtures/corpus.lock
         git add -A
         git commit -qm base --no-verify
         git branch other
-        sed -i '1s/386/387/' engine/crates/check/fixtures/corpus.checks
+        sed -i '1s/386/387/' engine/crates/lock/fixtures/corpus.lock
         git commit -qam "this branch adds a document" --no-verify
         git checkout -q other
         if [ "$same" = same ]; then
-            sed -i '1s/386/387/' engine/crates/check/fixtures/corpus.checks
+            sed -i '1s/386/387/' engine/crates/lock/fixtures/corpus.lock
         else
-            sed -i '1s/386/999/' engine/crates/check/fixtures/corpus.checks
+            sed -i '1s/386/999/' engine/crates/lock/fixtures/corpus.lock
         fi
         git commit -qam "the other branch adds a different document" --no-verify
         git checkout -q -
@@ -850,25 +850,25 @@ attempt_merge() {
     (cd "$merges/repo" && git merge other -m merged 2>&1)
 }
 
-covered='engine/crates/check/fixtures/corpus.checks merge=headwater-regenerate'
+covered='engine/crates/lock/fixtures/corpus.lock merge=headwater-regenerate'
 
 build_merge_repo "$covered" different
 out=$(attempt_merge); status=$?
 judge 'a covered artifact whose two sides differ is refused' 1 "$status" \
     'is a derived artifact, and this merge did not reconcile it' "$out"
 judge 'and the refusal names the command that regenerates it' 1 "$status" \
-    'HEADWATER_BLESS=1 cargo test -p headwater-check' "$out"
+    'HEADWATER_BLESS=1 cargo test -p headwater-lock' "$out"
 # A driver owns the content of the file it refuses, so git writes no markers.
 # A generated artifact with conflict markers in it is not readable by the tool
 # that reads it, which is why this matters enough to assert.
-markers=$(grep -c '<<<<<<<' "$merges/repo/engine/crates/check/fixtures/corpus.checks" 2>/dev/null || echo 0)
+markers=$(grep -c '<<<<<<<' "$merges/repo/engine/crates/lock/fixtures/corpus.lock" 2>/dev/null || echo 0)
 judge 'and it leaves no conflict marker in the artifact' 0 0 '0' "$markers"
 
 build_merge_repo "$covered" same
 out=$(attempt_merge); status=$?
 judge 'two sides that write the same value merge, which no attribute prevents' 0 "$status" \
     '' "$out"
-value=$(head -1 "$merges/repo/engine/crates/check/fixtures/corpus.checks")
+value=$(head -1 "$merges/repo/engine/crates/lock/fixtures/corpus.lock")
 judge 'and the merged value is the one both sides wrote, true of neither tree' 0 0 \
     '387 seen' "$value"
 

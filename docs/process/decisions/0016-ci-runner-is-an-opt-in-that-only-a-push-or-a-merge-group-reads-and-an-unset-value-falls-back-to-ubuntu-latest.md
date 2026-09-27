@@ -3,7 +3,7 @@ id: HW-PD-0016
 status: current
 status_since: 2026-09-27
 summary: "The self-hosted labels reach runs-on only when the CI_RUNNER variable names them and the event is a push or a merge group. The default is a hosted runner."
-last_verified: 2026-09-27
+last_verified: 2026-09-28
 title: "CI_RUNNER is an opt-in that only a push or a merge group reads, and an unset value falls back to ubuntu-latest"
 provenance:
   warrant: asserted
@@ -14,7 +14,7 @@ provenance:
 relations:
   governs:
     - to: .github/workflows/ci.yml
-      verified_revision: sha256:9a388898944b9ec3a6af4f28b10c5d8d069b21bc1cb81b0e04bba1cbdf6cfb57
+      verified_revision: sha256:bba23da5697fa592fede0228b80be923bd44ab73d3b4b410c4db6564f72f88b8
 ---
 
 # CI_RUNNER is an opt-in that only a push or a merge group reads, and an unset value falls back to ubuntu-latest
