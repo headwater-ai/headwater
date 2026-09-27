@@ -7346,6 +7346,7 @@ fn init_git(root: &Path, configure: bool) -> ExitCode {
     // gives no answer, the root file is read: a literal line that names the
     // store's merge in any form, or any pattern that names a merge at all,
     // since this reader expands no pattern.
+    let mut stores_unanswered = false;
     let stores: Vec<String> = APPEND_ONLY_STORES.iter().map(|s| s.to_string()).collect();
     let named: Vec<String> = match headwater_vcs::names_merge(root, &stores) {
         Some(Ok(answers)) => answers
@@ -7353,7 +7354,21 @@ fn init_git(root: &Path, configure: bool) -> ExitCode {
             .filter(|(_, named)| *named)
             .map(|(path, _)| path)
             .collect(),
-        _ => stores
+        // Inside a repository whose git did not answer, the root file is not
+        // the whole answer, so the step writes no store line and says so, and
+        // exits 1 at the end. It never reads a missing answer as a line.
+        Some(Err(reason)) => {
+            eprintln!(
+                "headwater: {}",
+                err(&format!(
+                    "wrote no line for the append-only stores, because git did not say \
+                     whether a line already names them: {reason}"
+                ))
+            );
+            stores_unanswered = true;
+            stores.clone()
+        }
+        None => stores
             .iter()
             .filter(|store| root_names_merge(root, store))
             .cloned()
@@ -7516,7 +7531,7 @@ fn init_git(root: &Path, configure: bool) -> ExitCode {
         "\nthe driver runs `headwater`, so the binary must be on the PATH git runs with. Run the \
          step again after a producer writes a new file, and `headwater derived` names any it missed"
     );
-    if population.refused.is_some() {
+    if population.refused.is_some() || stores_unanswered {
         return ExitCode::FAILURE;
     }
     ExitCode::SUCCESS

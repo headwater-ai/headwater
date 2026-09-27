@@ -324,8 +324,15 @@ pub fn merge_attributes(
 /// git, which no line of a repository is expected to carry.
 const PROBE: &str = "headwater-probe";
 
+/// The attribute [`names_merge`] sets beside the probe value, which no line of
+/// a repository names, so that its answer shows whether the probe line matched.
+const PROBE_MATCHED: &str = "headwater-probe-matched";
+
+/// Characters that make a probe line name something other than the path.
+const UNPROBEABLE: &str = "\"\\*?[!#";
+
 /// Whether any attributes file of the repository names the merge attribute of
-/// each of `paths`, in any form.
+/// each of `paths`, in any form. Each path is relative to `root`.
 ///
 /// `true` where a line of any `.gitattributes`, or of the clone's own
 /// `info/attributes`, sets, unsets, gives a value to or resets (`!merge`) the
@@ -336,26 +343,54 @@ const PROBE: &str = "headwater-probe";
 ///
 /// Git's own answer cannot tell `!merge` from no line, since both read
 /// `unspecified`. So git is asked with one more attributes file, named by
-/// `core.attributesFile`, that gives each path `merge=headwater-probe`. Git reads
-/// that file below every `.gitattributes` and `info/attributes`, so the probe
-/// value comes back only where no line of the repository names the attribute.
-/// The option also replaces a user's own `core.attributesFile`, which no other
-/// clone reads.
+/// `core.attributesFile`, that gives each path `merge=headwater-probe` and sets
+/// `headwater-probe-matched`. Git reads that file below every `.gitattributes`
+/// and `info/attributes`, so the probe value comes back only where no line of
+/// the repository names the merge attribute. A line in that file is read from
+/// the top of the work tree, so each path is spelled from there, with the
+/// prefix of `root` below the top. The option also replaces a user's own
+/// `core.attributesFile`, which no other clone reads.
 ///
-/// `None` and `Some(Err(..))` as [`merge_attributes`] gives them. A path that
-/// holds whitespace, a quote or a glob character is refused, because the probe
-/// line would then name a different path.
+/// **It fails closed.** Where `headwater-probe-matched` does not come back set
+/// for a path, the probe line did not match it, and git's answer says nothing
+/// about the lines of the repository. That is an error and never a `true`, so
+/// a caller does not read "the probe did not answer" as "a line names it".
+///
+/// `None` and `Some(Err(..))` as [`merge_attributes`] gives them. A path or a
+/// prefix that holds whitespace, a quote or a glob character is refused,
+/// because the probe line would then name a different path.
 pub fn names_merge(root: &Path, paths: &[String]) -> Option<Result<Vec<(String, bool)>, String>> {
-    if let Some(path) = paths.iter().find(|path| {
-        path.chars()
-            .any(|c| c.is_whitespace() || "\"\\*?[!#".contains(c))
-    }) {
+    let unprobeable = |text: &str| {
+        text.chars()
+            .any(|c| c.is_whitespace() || UNPROBEABLE.contains(c))
+    };
+    if let Some(path) = paths.iter().find(|path| unprobeable(path)) {
         return Some(Err(format!("cannot probe the merge attribute of `{path}`")));
     }
     // The same question first, so that `None` and a refusal read as they do
     // there.
     if let Err(refusal) = merge_attributes(root, &[])? {
         return Some(Err(refusal));
+    }
+    let prefix = match Command::new("git")
+        .arg("-C")
+        .arg(root)
+        .args(["rev-parse", "--show-prefix"])
+        .output()
+    {
+        Ok(output) if output.status.success() => String::from_utf8_lossy(&output.stdout)
+            .trim_end_matches('\n')
+            .to_string(),
+        Ok(output) => {
+            return Some(Err(format!(
+                "git did not name where the root sits in the work tree: {}",
+                String::from_utf8_lossy(&output.stderr).trim()
+            )));
+        }
+        Err(error) => return Some(Err(format!("git did not run: {error}"))),
+    };
+    if unprobeable(&prefix) {
+        return Some(Err(format!("cannot probe below the directory `{prefix}`")));
     }
     let probe = std::env::temp_dir().join(format!(
         "headwater-merge-probe-{}-{}",
@@ -366,7 +401,7 @@ pub fn names_merge(root: &Path, paths: &[String]) -> Option<Result<Vec<(String, 
     ));
     let text: String = paths
         .iter()
-        .map(|path| format!("/{path} merge={PROBE}\n"))
+        .map(|path| format!("/{prefix}{path} merge={PROBE} {PROBE_MATCHED}\n"))
         .collect();
     if let Err(error) = std::fs::write(&probe, text) {
         return Some(Err(format!("cannot write the probe file: {error}")));
@@ -376,14 +411,37 @@ pub fn names_merge(root: &Path, paths: &[String]) -> Option<Result<Vec<(String, 
         input.extend_from_slice(path.as_bytes());
         input.push(0);
     }
-    let answer = check_attr(root, input, Some(&probe));
+    let answer = check_attrs(root, input, Some(&probe), &["merge", PROBE_MATCHED]);
     let _ = std::fs::remove_file(&probe);
-    Some(answer.map(|answers| {
+    Some(answer.and_then(|answers| probe_verdict(paths, &answers)))
+}
+
+/// What the answers of the probe run of [`names_merge`] say of each path.
+///
+/// Split out so that the fail-closed branch, which no tree of a test reaches
+/// once the probe is spelled right, is still held by a case.
+fn probe_verdict(
+    paths: &[String],
+    answers: &[(String, String, String)],
+) -> Result<Vec<(String, bool)>, String> {
+    let value = |path: &str, attribute: &str| {
         answers
-            .into_iter()
-            .map(|(path, value)| (path, value != PROBE))
-            .collect()
-    }))
+            .iter()
+            .find(|(seen, named, _)| seen == path && named == attribute)
+            .map(|(_, _, value)| value.as_str())
+    };
+    paths
+        .iter()
+        .map(|path| {
+            if value(path, PROBE_MATCHED) != Some("set") {
+                return Err(format!(
+                    "the probe line did not match `{path}`, so git's answer for it says \
+                     nothing about the lines of the repository"
+                ));
+            }
+            Ok((path.clone(), value(path, "merge") != Some(PROBE)))
+        })
+        .collect()
 }
 
 /// Whether git's own search upward from `root` would stop at a repository.
@@ -578,6 +636,20 @@ fn check_attr(
     input: Vec<u8>,
     attributes_file: Option<&Path>,
 ) -> Result<Vec<(String, String)>, String> {
+    Ok(check_attrs(root, input, attributes_file, &["merge"])?
+        .into_iter()
+        .map(|(path, _, value)| (path, value))
+        .collect())
+}
+
+/// One run of `git check-attr -z --stdin <attributes>` over `input`, parsed
+/// into `(path, attribute, value)`.
+fn check_attrs(
+    root: &Path,
+    input: Vec<u8>,
+    attributes_file: Option<&Path>,
+    attributes: &[&str],
+) -> Result<Vec<(String, String, String)>, String> {
     let mut command = Command::new("git");
     command.arg("-C").arg(root);
     if let Some(file) = attributes_file {
@@ -586,7 +658,8 @@ fn check_attr(
         command.arg("-c").arg(setting);
     }
     let mut child = command
-        .args(["check-attr", "-z", "--stdin", "merge"])
+        .args(["check-attr", "-z", "--stdin"])
+        .args(attributes)
         .stdin(std::process::Stdio::piped())
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped())
@@ -624,7 +697,7 @@ fn check_attr(
         .as_chunks::<3>()
         .0
         .iter()
-        .map(|[path, _, value]| (path.clone(), value.clone()))
+        .map(|[path, attribute, value]| (path.clone(), attribute.clone(), value.clone()))
         .collect())
 }
 
@@ -639,6 +712,50 @@ fn split_nul(bytes: &[u8]) -> Vec<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// A probe line that matched no path is an error, never a line that names
+    /// the path. Read an unmatched probe as "named", and a caller that appends
+    /// a line writes nothing in silence; read it as "not named", and a caller
+    /// overrides a line it never saw. The last two rows are the two answers a
+    /// matched probe gives.
+    #[test]
+    fn a_probe_that_did_not_match_is_an_error_and_never_an_answer() {
+        let paths = vec!["a.jsonl".to_string()];
+        let answer = |merge: &str, matched: &str| {
+            vec![
+                (
+                    "a.jsonl".to_string(),
+                    "merge".to_string(),
+                    merge.to_string(),
+                ),
+                (
+                    "a.jsonl".to_string(),
+                    PROBE_MATCHED.to_string(),
+                    matched.to_string(),
+                ),
+            ]
+        };
+        for merge in ["unspecified", PROBE, "unset"] {
+            assert!(
+                probe_verdict(&paths, &answer(merge, "unspecified")).is_err(),
+                "merge `{merge}` with an unmatched probe is an error"
+            );
+        }
+        assert!(
+            probe_verdict(&paths, &[]).is_err(),
+            "no answer for the path is an error"
+        );
+        assert_eq!(
+            probe_verdict(&paths, &answer("unspecified", "set")),
+            Ok(vec![("a.jsonl".to_string(), true)]),
+            "a matched probe that reads `unspecified` is a line that resets the attribute"
+        );
+        assert_eq!(
+            probe_verdict(&paths, &answer(PROBE, "set")),
+            Ok(vec![("a.jsonl".to_string(), false)]),
+            "a matched probe that reads its own value is no line"
+        );
+    }
 
     /// A repository this crate's own tests build, rather than one under
     /// `fixtures/`: what is under test is the git plumbing, and a fixture
