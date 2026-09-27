@@ -778,12 +778,23 @@ fn call(server: &Server<'_>, message: &Mapping) -> Result<Answer, Failure> {
         // the same `typed`, so the tool and the verb find one document for one
         // spelling, and refuse a path that leaves the repository as outside it
         // (#1227).
-        "explain" => match surface.explain(&argument) {
+        // A path argument is read the way `headwater explain` reads one, through
+        // the same `typed`, so the tool and the verb find one document for one
+        // spelling, and refuse a path that leaves the repository as outside it
+        // (#1227).
+        "explain" => match surface.explain(&argument).or_else(|| {
+            headwater_census::walk::typed(server.root, &argument)
+                .filter(|relative| *relative != argument)
+                .and_then(|relative| surface.explain(&relative))
+        }) {
             // Plain, unconditionally: an MCP server's own stdout is never a
             // terminal, so a real invocation piped the same way would sense
             // the same mode.
             Some(explanation) => explanation.render(headwater_check::paint::ColorMode::Plain),
-            None => format!("{argument} is not a document of this corpus\n"),
+            None => match headwater_census::walk::typed(server.root, &argument) {
+                None => format!("{argument} is outside this repository\n"),
+                Some(_) => format!("{argument} is not a document of this corpus\n"),
+            },
         },
         "related" => match surface.find(&argument) {
             Some(document) => {
