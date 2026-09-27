@@ -534,3 +534,66 @@ fn the_mcp_route_tool_and_the_route_verb_agree_on_an_ignored_path_and_a_tracked_
         );
     }
 }
+
+/// The MCP server reads git's ignore list when a route asks for it, and not
+/// once at start-up (#1161). A session outlives an edit to `.gitignore`, and
+/// the verb reads the list on every run, so a list read once would name a path
+/// the verb had stopped naming. One session routes an untracked file, the case
+/// ignores it, and the same session routes it again.
+#[test]
+fn the_mcp_route_tool_reads_an_ignore_rule_written_after_the_session_started() {
+    use std::io::{BufRead, Write};
+    let root = root("route-mcp-ignored-later");
+    let path = "tools/untracked.sh";
+    std::fs::write(root.at.join(path), "").expect("the tool writes");
+    let init = std::process::Command::new("git")
+        .args(["init", "-q"])
+        .current_dir(&root.at)
+        .status()
+        .expect("git runs");
+    assert!(init.success());
+
+    let mut child = std::process::Command::new(env!("CARGO_BIN_EXE_headwater"))
+        .args(["mcp", "--now", "2026-09-28", "--root"])
+        .arg(&root.at)
+        .stdin(std::process::Stdio::piped())
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::null())
+        .spawn()
+        .expect("the binary runs");
+    let mut input = child.stdin.take().expect("the standard input is piped");
+    let mut output = std::io::BufReader::new(child.stdout.take().expect("piped"));
+    let mut ask = |id: u32, message: String| -> String {
+        writeln!(input, "{message}").expect("the request writes");
+        input.flush().expect("the request flushes");
+        let mut line = String::new();
+        output.read_line(&mut line).expect("the response reads");
+        assert!(line.contains(&format!("\"id\":{id}")), "{line}");
+        line
+    };
+    let route = |id: u32| {
+        format!(
+            "{{\"jsonrpc\":\"2.0\",\"id\":{id},\"method\":\"tools/call\",\"params\":\
+             {{\"name\":\"route\",\"arguments\":{{\"task\":\"edit {path}\"}}}}}}"
+        )
+    };
+    ask(
+        1,
+        "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{}}".to_owned(),
+    );
+    let before = ask(2, route(2));
+    assert!(
+        before.contains("governed scope"),
+        "untracked, named: {before}"
+    );
+
+    std::fs::write(root.at.join(".gitignore"), "untracked.sh\n").expect("the ignore file writes");
+    let after = ask(3, route(3));
+    assert!(
+        !after.contains("governed scope"),
+        "ignored, not named: {after}"
+    );
+
+    drop(input);
+    assert!(child.wait().expect("the server ends").success());
+}
