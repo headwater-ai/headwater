@@ -59,7 +59,11 @@
 //! setters of `retired` on two dates. `clash_notice` has two setters of
 //! `current` and one of `retired`, and the `retired` setter carries the oldest
 //! date, so a fold that reads a setter of the state the file does not stand at
-//! writes a different file. `undated_notice` has one setter with no date.
+//! writes a different file. The `retired` setter's file name sorts first, so
+//! the edge order cannot pick `current` in place of the sort over states.
+//! `strict_clash_notice` takes the same three edges and binds `strict`, so it
+//! is refused, and the refusal names only the `current` setters.
+//! `undated_notice` has one setter with no date.
 //!
 //! This repository's own lock cannot exercise any of the three failing cases:
 //! [HW-OBL-0196](../../../../docs/obligations/0196-a-relation-writes-a-state-onto-a-kind-that-binds-no-lifecycle-regime-and-nothing-reads-that-pair.md)
@@ -591,7 +595,9 @@ fn two_setters_of_one_state_write_the_stalest_of_their_dates() {
 /// setter writes `2026-03-20`, a date on which the file entered a state it does
 /// not stand at. A newest fold over the agreeing setters writes `2026-06-20`.
 /// The contract, HW-DR-0063, reads "the documents that set the state", and
-/// only `2026-04-20` answers it.
+/// only `2026-04-20` answers it. The `retired` setter's file name,
+/// `0003-disagreeing-retired-setter.md`, sorts before both `current` setters,
+/// so its edge arrives first and only the sort over states picks `current`.
 #[test]
 fn setters_of_two_states_date_the_file_from_the_setters_of_the_chosen_state_alone() {
     let plan = plan_over_lifecycle_regime();
@@ -663,4 +669,59 @@ fn a_setter_with_no_date_refuses_the_file_and_names_the_stalest_fold() {
              is the stalest, and the repair is a date on the setter. It reads: {reason}"
         );
     }
+}
+
+/// The output whose kind binds `strict` and takes the same three edges as
+/// [`CLASH`].
+const STRICT_CLASH: &str = "lifecycle-regime/notices/STRICT-CLASH.md";
+
+/// A clash onto a kind whose regime refuses the chosen state names the
+/// setters of that state, and not the setter of the state that lost (#1111).
+///
+/// `set_state` picks `current`, and `strict` has no place for it, so the file
+/// is refused. The repair is on the edges that set `current`, which are
+/// `0006-older-current-setter.md` and `0007-newer-current-setter.md`.
+/// `0003-disagreeing-retired-setter.md` sets `retired`, which `strict` admits,
+/// so a refusal that names it sends the reader to an edge where nothing is
+/// wrong.
+#[test]
+fn a_clash_whose_chosen_state_the_regime_refuses_names_only_the_setters_of_that_state() {
+    let plan = plan_over_lifecycle_regime();
+
+    assert!(
+        !plan.outputs.iter().any(|output| output.path == STRICT_CLASH),
+        "`{STRICT_CLASH}` was written. The first of its edges' states in sorted order is \
+         `current`, which `strict` does not name"
+    );
+    let refusal = plan
+        .unwritten
+        .iter()
+        .find(|unwritten| unwritten.at == STRICT_CLASH)
+        .unwrap_or_else(|| {
+            panic!(
+                "nothing reported the declaration that writes `{STRICT_CLASH}`. The plan declined \
+                 {:?}",
+                plan.unwritten
+                    .iter()
+                    .map(|unwritten| unwritten.at.as_str())
+                    .collect::<Vec<_>>()
+            )
+        });
+    let reason = refusal.reason.as_str();
+    for wanted in [
+        "`current`",
+        "strict",
+        "lifecycle-regime/flaggers/0006-older-current-setter.md",
+        "lifecycle-regime/flaggers/0007-newer-current-setter.md",
+    ] {
+        assert!(
+            reason.contains(wanted),
+            "the refusal of `{STRICT_CLASH}` does not name `{wanted}`. It reads: {reason}"
+        );
+    }
+    assert!(
+        !reason.contains("0003-disagreeing-retired-setter.md"),
+        "the refusal of `{STRICT_CLASH}` names the setter of `retired`, a state the file does not \
+         stand at and `strict` admits. It reads: {reason}"
+    );
 }

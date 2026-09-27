@@ -7,6 +7,7 @@ summary: the newer of the two documents that set the clash notice to current.
 relations:
   flags_clash_current:
     - CL-FIX-clash
+    - SC-FIX-clash
 ---
 
 # Newer current setter
