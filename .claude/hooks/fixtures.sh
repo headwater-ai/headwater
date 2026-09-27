@@ -1098,6 +1098,85 @@ if [ -x "$engine" ]; then
         failed=$((failed + 1))
     fi
 
+    # A work tree with no taxonomy lock names no corpus, so the hook routes
+    # over the project root instead. Before #917 it routed over the lockless
+    # tree, `route` failed, and the prompt got nothing.
+    nolock_tree=$(mktemp -d "${TMPDIR:-/tmp}/headwater-shadow-nolock.XXXXXX")
+    git -C "$nolock_tree" init -q 2>/dev/null
+    nolock_session="fixture-session-shadow-nolock-$$"
+    nolock_file="$shadow_dir/$nolock_session.jsonl"
+    nolock_payload="{\"hook_event_name\":\"UserPromptSubmit\",\"session_id\":\"$nolock_session\",\"cwd\":\"$nolock_tree\",\"user_input\":\"what does a check know about the front matter of a document\"}"
+    nolock_out=$(printf '%s' "$nolock_payload" | env -u HEADWATER_HOOK_ROOT CLAUDE_PROJECT_DIR="$root" sh "$hooks/intent.sh" 2>&1)
+    rm -rf "$nolock_tree"
+    case $nolock_out in
+        *docs/spec/*)
+            printf 'ok   %s\n' 'a prompt from a work tree with no taxonomy lock routes over the project root'
+            passed=$((passed + 1))
+            ;;
+        *)
+            printf 'FAIL %s\n  expected output to hold docs/spec/, got:\n%s\n' 'a prompt from a work tree with no taxonomy lock routes over the project root' "$nolock_out"
+            failed=$((failed + 1))
+            ;;
+    esac
+    if [ -s "$nolock_file" ] && [ "$(tail -n 1 "$nolock_file" | "$engine" json field corpus_root 2>/dev/null)" = "$root" ]; then
+        printf 'ok   %s\n' 'a prompt from a work tree with no taxonomy lock leaves a line that names the project root'
+        passed=$((passed + 1))
+    else
+        printf 'FAIL %s\n' 'a prompt from a work tree with no taxonomy lock left no line naming the project root'
+        failed=$((failed + 1))
+    fi
+
+    # A project root that holds an engine and no taxonomy lock, with a `cwd`
+    # in no work tree: the route fails and the skip is logged. The line is
+    # written without a lock digest, and nothing reaches standard error. The
+    # lock read in `hw_shadow_log` once opened the missing file before its
+    # `2>/dev/null` took effect.
+    lockless_root=$(mktemp -d "${TMPDIR:-/tmp}/headwater-shadow-lockless.XXXXXX")
+    mkdir -p "$lockless_root/engine/target/dev-release"
+    ln -s "$engine" "$lockless_root/engine/target/dev-release/headwater"
+    lockless_session="fixture-session-shadow-lockless-$$"
+    lockless_file="$shadow_dir/$lockless_session.jsonl"
+    lockless_err="$lockless_root.err"
+    lockless_payload="{\"hook_event_name\":\"UserPromptSubmit\",\"session_id\":\"$lockless_session\",\"cwd\":\"/\",\"user_input\":\"what does a check know about the front matter of a document\"}"
+    lockless_out=$(printf '%s' "$lockless_payload" | env -u HEADWATER_HOOK_ROOT CLAUDE_PROJECT_DIR="$lockless_root" sh "$hooks/intent.sh" 2> "$lockless_err")
+    lockless_status=$?
+    if [ "$lockless_status" -eq 0 ] && [ -z "$lockless_out" ] && [ ! -s "$lockless_err" ]; then
+        printf 'ok   %s\n' 'a failed route under a project root with no lock prints nothing on either stream'
+        passed=$((passed + 1))
+    else
+        printf 'FAIL %s\n  status %s, stdout:\n%s\n  stderr:\n%s\n' 'a failed route under a project root with no lock prints nothing on either stream' "$lockless_status" "$lockless_out" "$(cat "$lockless_err")"
+        failed=$((failed + 1))
+    fi
+    if [ -s "$lockless_file" ] && [ "$(tail -n 1 "$lockless_file" | "$engine" json field skip 2>/dev/null)" = "route_failed" ]; then
+        printf 'ok   %s\n' 'a failed route under a project root with no lock leaves a route_failed line'
+        passed=$((passed + 1))
+    else
+        printf 'FAIL %s\n' 'a failed route under a project root with no lock left no route_failed line'
+        failed=$((failed + 1))
+    fi
+    rm -rf "$lockless_root" "$lockless_err"
+
+    # A route document with no `pointers` member. No real engine writes one,
+    # so a stub stands in for `route` alone and hands every other verb to the
+    # real engine. The prompt proceeds in silence and the line names the skip.
+    stub_root=$(mktemp -d "${TMPDIR:-/tmp}/headwater-shadow-stub.XXXXXX")
+    mkdir -p "$stub_root/engine/target/dev-release" "$stub_root/.headwater"
+    cp "$root/.headwater/taxonomy.lock" "$stub_root/.headwater/taxonomy.lock"
+    printf '#!/bin/sh\nif [ "$1" = route ]; then printf %s; exit 0; fi\nexec "%s" "$@"\n' "'{\"text\":\"\"}'" "$engine" > "$stub_root/engine/target/dev-release/headwater"
+    chmod +x "$stub_root/engine/target/dev-release/headwater"
+    stub_session="fixture-session-shadow-stub-$$"
+    stub_file="$shadow_dir/$stub_session.jsonl"
+    stub_payload="{\"hook_event_name\":\"UserPromptSubmit\",\"session_id\":\"$stub_session\",\"user_input\":\"what does a check know about the front matter of a document\"}"
+    stub_out=$(printf '%s' "$stub_payload" | env -u HEADWATER_HOOK_ROOT CLAUDE_PROJECT_DIR="$stub_root" sh "$hooks/intent.sh" 2>&1)
+    rm -rf "$stub_root"
+    if [ -z "$stub_out" ] && [ -s "$stub_file" ] && [ "$(tail -n 1 "$stub_file" | "$engine" json field skip 2>/dev/null)" = "no_pointers_count" ] && tail -n 1 "$stub_file" | grep -q '"route":null'; then
+        printf 'ok   %s\n' 'a route document with no pointers count proceeds in silence and leaves a no_pointers_count line'
+        passed=$((passed + 1))
+    else
+        printf 'FAIL %s\n  output:\n%s\n' 'a route document with no pointers count left no no_pointers_count line' "$stub_out"
+        failed=$((failed + 1))
+    fi
+
     # Step 3 of #819: the recorder's name for its session, which
     # `tools/probe/probe-record.sh` exports before it starts the harness. A
     # person's prompt carries none, and a count subtracts the lines that do.
