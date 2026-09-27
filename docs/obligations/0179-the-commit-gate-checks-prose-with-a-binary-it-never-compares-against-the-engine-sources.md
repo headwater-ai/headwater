@@ -29,7 +29,7 @@ The consequence is a wrong verdict rather than a wrong write. A binary that pred
 
 Measured on 2026-09-08 against this branch. Seventeen files name one of the two binary paths. Two of them gate or write with the binary, and one of those two compares it against `engine/`.
 
-**The figures clause is gone from the gate since #1273.** [HW-DR-0097](../decisions/0097-a-figure-on-a-hand-built-page-is-measured-when-the-site-is-published-and-the-committed-page-carries-none.md) moved the figures out of the committed pages, so `.githooks/pre-commit` no longer runs `refresh-figures.sh`. The script still exits `3` on a stale binary, in CI and in the deploy. The prose clause is now the only clause of the gate that runs the engine, and it still asks nothing.
+**The figures clause is gone from the gate since #1273.** [HW-DR-0097](../decisions/0097-a-figure-on-a-hand-built-page-is-measured-when-the-site-is-published-and-the-committed-page-carries-none.md) moved the figures out of the committed pages, and `.githooks/pre-commit` runs no `refresh-figures.sh`. The script still exits `3` on a stale binary, in CI and in the deploy. The prose clause is now the only clause of the gate that runs the engine, and it still asks nothing.
 
 ## Obligation
 

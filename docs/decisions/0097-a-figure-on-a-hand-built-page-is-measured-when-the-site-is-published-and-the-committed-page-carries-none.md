@@ -2,7 +2,7 @@
 id: HW-DR-0097
 status: current
 status_since: 2026-09-28
-summary: "The pages under site/ commit every data-figure element empty. A CI job on each push to main measures the figures into the assembled copy and deploys it with wrangler, so two pull requests that add documents no longer conflict on the pages."
+summary: "The pages under site/ commit every data-figure element empty. A CI job on each push to main measures the figures into the assembled copy and deploys it with wrangler. Two pull requests that add documents merge without a conflict on the pages."
 last_verified: 2026-09-28
 title: "A figure on a hand-built page is measured when the site is published, and the committed page carries none"
 provenance:
@@ -18,7 +18,6 @@ relations:
     - HW-DR-0047
   traces_to:
     - HW-DR-0037
-    - HW-PD-0020
   governs:
     - tools/site/refresh-figures.sh
     - tools/site/deploy-site.sh
@@ -32,7 +31,7 @@ relations:
 
 [HW-DR-0039](0039-q39-how-a-figure-reaches-a-hand-built-page.md) put the interpolation of a figure before the commit. `tools/site/refresh-figures.sh` wrote each measured number into the committed page, because nothing ran between the commit and the served bytes. That record names its own reopening condition: a build command in the deploy path. [HW-DR-0047](0047-how-the-two-halves-of-the-site-share-one-host.md) put one there, so the condition is met.
 
-**The committed figures made each page a fold over the corpus.** On `origin/main` at `c0caabd9`, three of the eight pages under `site/` carried 106 figure elements over 34 keys: 57 on the landing page, 44 on the proof page and 5 on the how-it-works page. Any pull request that adds a document moves those figures. `.gitattributes` declared the three pages `-merge`, so every such pair of pull requests conflicted on the pages.
+**The committed figures made each page a fold over the corpus.** On `origin/main` at `c0caabd9`, three of the eight pages under `site/` carried 106 figure elements over 34 keys. The landing page carried 57, the proof page 44 and the how-it-works page 5. Any pull request that adds a document moves those figures. `.gitattributes` declared the three pages `-merge`, so every such pair of pull requests conflicted on the pages.
 
 **The cost is serial merging.** [#1273](https://github.com/headwater-ai/headwater/issues/1273) measured 11 pull requests that landed one at a time on 2026-09-27, between 17:12Z and 22:26Z, about 29 minutes each. The merge queue ([HW-PD-0020](../process/decisions/0020-merges-go-through-the-github-merge-queue-one-squash-commit-per-pull-request.md)) takes a group of 5. It used a group of 1, because each entry conflicted with the one before it.
 
@@ -50,9 +49,9 @@ relations:
 
 **A deploy that cannot measure publishes nothing.** The script runs under `set -eu`. A failing measurement, an unknown key, a measured figure that reaches no page, or a marker the pattern cannot read stops it before `wrangler` runs. `tools/site/check-site-figures.sh` then refuses an assembled directory that still holds an empty element. `tools/site/figures-fixtures.sh` holds each of these with `wrangler` stubbed.
 
-**Every CI event measures, and only a push to `main` deploys.** `refresh-figures.sh --check` fails on a value in a committed marker, and also on each measurement failure above. The step after the assembly runs `--into` on the assembled directory. So a merge group finds a key with no measurement before the merge, not at the deploy.
+**Every CI event measures, and only a push to `main` deploys.** `refresh-figures.sh --check` fails on a value in a committed marker. It also fails on each measurement failure above. The step after the assembly runs `--into` on the assembled directory. So a merge group finds a key with no measurement before the merge, not at the deploy.
 
-**The clock partition is removed, not reduced.** The eight figures that read the clock were compared against a committed value, and a second engine run at the page's own date excused a difference that the clock alone caused. Nothing committed is compared against a run now, so that comparison has no input.
+**The clock partition is removed, not reduced.** The eight figures that read the clock were compared against a committed value. A second engine run at the page's own date excused a difference that the clock alone caused. Nothing committed is compared against a run now, so that comparison has no input.
 
 **The pages are not derived artifacts.** `headwater derived` knows three producers, and none of them claims a page under `site/`. `.gitattributes` declares no page under `site/`. The figures clause of `.githooks/pre-commit` is removed. The site arm of `.githooks/merge-regenerate` is removed, and so is the site-review marker that `.githooks/pre-push` and `.githooks/post-rewrite` read.
 
@@ -62,7 +61,7 @@ relations:
 
 **The merge queue can take pull requests in groups again.** No shared derived file moves between two pull requests that each add a document. HW-PD-0020 states the rule.
 
-**A pull request that was open before this record lands conflicts once on each page it touched.** Its own `.gitattributes` still declares the page `-merge`. Keep the branch's prose, run `sh tools/site/refresh-figures.sh --blank`, and commit. After that merge the branch no longer needs updating for the pages.
+**A pull request that was open before this record lands conflicts once on each page it touched.** Its own `.gitattributes` still declares the page `-merge`. Keep the branch's prose, run `sh tools/site/refresh-figures.sh --blank`, and commit. After that merge the pages move only with the prose of the branch.
 
 **The live site shows the figures of the newest deploy, not of the newest commit.** A push to `main` that fails a gate does not deploy, and the live site keeps the last good deploy.
 
