@@ -223,13 +223,14 @@ fn programs(text: &str, console: bool) -> Vec<(usize, Read)> {
         }
         starts.push((command.len(), number));
         command.push_str(trimmed);
-        match scan(&command).open {
+        let scanned = scan(&command);
+        match scanned.open {
             Some('\'' | '"' | 'a' | '`' | '(' | '{') => {
                 read_command(&command, &starts, number, &mut found);
                 found.push((number, Read::Unreadable));
                 return found;
             }
-            None if command.ends_with('\\') => {
+            None if scanned.continued => {
                 command.pop();
                 command.push(' ');
                 continue;
@@ -286,6 +287,9 @@ struct Scan<'a> {
     open: Option<char>,
     /// The byte offset of the first `<<` outside quotes and comments.
     heredoc: Option<usize>,
+    /// Whether the command ends in a `\\` that escapes nothing, outside
+    /// quotes and comments: the one thing that joins the next line.
+    continued: bool,
 }
 
 /// Read one command as a shell splits it.
@@ -343,6 +347,7 @@ fn scan(command: &str) -> Scan<'_> {
                     segments: out,
                     open: Some(if depth > 0 { '(' } else { '#' }),
                     heredoc,
+                    continued: false,
                 };
             }
             (None, '<') if heredoc.is_none() && bytes.get(at + 1) == Some(&b'<') => {
@@ -372,6 +377,7 @@ fn scan(command: &str) -> Scan<'_> {
             .or((depth > 0).then_some('('))
             .or((braces > 0).then_some('{')),
         heredoc,
+        continued: escaped && quote.is_none(),
     }
 }
 
