@@ -664,4 +664,48 @@ mod tests {
             pairs(&[(0, UNREADABLE)])
         );
     }
+
+    /// The open spans are one stack. A `}` inside a `$( )` does not close the
+    /// `${` around it: it closes nothing of its own kind, so the rest of the
+    /// block is unreadable (W1 of the fourth verify). A `)` inside `${…}` is
+    /// the same mismatch.
+    #[test]
+    fn a_closer_that_does_not_match_the_innermost_span_is_flagged() {
+        assert_eq!(
+            names("echo ${x:-$(echo }) #c} && npm ci\nnpm i\n", false),
+            pairs(&[(0, "echo"), (0, UNREADABLE)])
+        );
+        assert_eq!(
+            names("echo ${x:-a)} && npm ci\nnpm i\n", false),
+            pairs(&[(0, "echo"), (0, UNREADABLE)])
+        );
+    }
+
+    /// A span closed by its own kind is read through: after `$(echo a)` the
+    /// `${` is still open, so ` #c` is part of the word and the chain is read.
+    #[test]
+    fn a_span_closed_by_its_own_kind_reads_on() {
+        assert_eq!(
+            names("echo ${x:-$(echo a) #c} && npm ci\n", false),
+            pairs(&[(0, "echo"), (0, "npm")])
+        );
+        assert_eq!(
+            names("echo \"a)\" && npm ci\n", false),
+            pairs(&[(0, "echo"), (0, "npm")])
+        );
+        assert_eq!(
+            names("{ echo a; } #c && npm ci\nnpm i\n", false),
+            pairs(&[(0, "echo"), (1, "npm")])
+        );
+    }
+
+    /// An operator inside backticks starts a new program, as it does on
+    /// `main`, so the rule reads it.
+    #[test]
+    fn an_operator_inside_backticks_starts_a_program() {
+        assert_eq!(
+            names("echo `a && npm ci`\n", false),
+            pairs(&[(0, "echo"), (0, "npm")])
+        );
+    }
 }

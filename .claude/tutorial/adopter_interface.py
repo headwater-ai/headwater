@@ -649,9 +649,27 @@ REGRESSION_CASES = [
     ('an open ${ leaves the rest unreadable',
      'echo ${x:-a\nnpm ci',
      ['echo ${x:-a', UNREADABLE + '1']),
-    ('a comment inside an open $( leaves the rest unreadable',
+    # A `#` inside any open span is part of a word, so it opens no comment.
+    ('a hash inside an open $( leaves the rest unreadable',
      'x=$(ls # c\nnpm ci',
-     ['x=$(ls', UNREADABLE + '1']),
+     ['x=$(ls # c', UNREADABLE + '1']),
+    # The open spans are one stack (the fourth verify of #1195). A closer
+    # that does not match the innermost span flags the rest of the block.
+    ('a close brace inside a substitution inside an expansion is flagged',
+     'echo ${x:-$(echo }) #c} && npm ci\nnpm i',
+     ['echo ${x:-$(echo }) #c} && npm ci', UNREADABLE + '1']),
+    ('a close paren inside an expansion is flagged',
+     'echo ${x:-a)} && npm ci\nnpm i',
+     ['echo ${x:-a)} && npm ci', UNREADABLE + '1']),
+    ('a span closed by its own kind reads on',
+     'echo ${x:-$(echo a) #c} && npm ci',
+     ['echo ${x:-$(echo a) #c}', 'npm ci']),
+    ('a close paren inside double quotes closes nothing',
+     'echo "a)" && npm ci',
+     ['echo "a)"', 'npm ci']),
+    ('an operator inside backticks starts a piece',
+     'echo `a && npm ci`',
+     ['echo `a', 'npm ci`']),
 ]
 
 
