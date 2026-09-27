@@ -702,6 +702,62 @@ sh "$driver" --probe PROBE-FIX-opened --session x --task-file "$scratch/task.md"
     --workspace "$scratch/copied-clone" >/dev/null 2>"$scratch/driver-gitdir.err"
 same "the driver refuses a workspace carrying a clone's \`.git\` directory" "4" "$?"
 
+# The answer-key guard (#1229), asserted unconditionally and before any harness
+# call. A workspace that holds the probe's own document hands the session its
+# expectation, and the 2026-09-17 tombstone session read exactly that file and
+# then answered. The clean half runs with a `PATH` that holds `grep` and not
+# `jq` or `claude`, so it stops at the tool check (3) and can never start a paid
+# session on a host that has the harness installed.
+mkdir -p "$scratch/keyed/docs/probes" "$scratch/grep-only"
+cp "$root/engine/crates/probe/fixtures/corpus/probes/0001-opened.md" "$scratch/keyed/docs/probes/"
+sh "$driver" --probe PROBE-FIX-opened --session x --task-file "$scratch/task.md" \
+    --workspace "$scratch/keyed" >/dev/null 2>"$scratch/driver-key.err"
+same "the driver refuses a workspace that holds the probe's own document" "8" "$?"
+present "and it names the file" "keyed/docs/probes/0001-opened.md" "$scratch/driver-key.err"
+
+ln -s "$(command -v grep)" "$scratch/grep-only/grep"
+rm "$scratch/keyed/docs/probes/0001-opened.md"
+PATH="$scratch/grep-only" "$shell" "$driver" --probe PROBE-FIX-opened --session x \
+    --task-file "$scratch/task.md" --workspace "$scratch/keyed" \
+    >/dev/null 2>"$scratch/driver-sealed.err"
+same "and it passes the guard once the file is gone" "3" "$?"
+
+# A derived fold names a probe by its slug, the file name on the shelf, and
+# never by its identifier. The guard reads the slug off this checkout's shelf.
+tombstone=a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer
+mkdir -p "$scratch/slugged/.headwater"
+printf -- '- docs/probes/%s.md\n' "$tombstone" > "$scratch/slugged/.headwater/nav.yml"
+sh "$driver" --probe "HW-PROBE-$tombstone" --session x --task-file "$scratch/task.md" \
+    --workspace "$scratch/slugged" >/dev/null 2>"$scratch/driver-slug.err"
+same "the driver refuses a workspace whose fold names the probe by its slug" "8" "$?"
+
+# `seal.sh` removes every such file, and the driver then passes its guard.
+mkdir -p "$scratch/sealed/docs/probes" "$scratch/sealed/docs/probe-runs" "$scratch/sealed/docs/spec" "$scratch/sealed/.headwater"
+cp "$root/docs/probes/$tombstone.md" "$scratch/sealed/docs/probes/"
+printf 'a run\n' > "$scratch/sealed/docs/probe-runs/run.md"
+printf -- '- docs/probes/%s.md\n' "$tombstone" > "$scratch/sealed/.headwater/nav.yml"
+printf 'a spec that names no probe\n' > "$scratch/sealed/docs/spec/01.md"
+sh "$root/tools/probe/seal.sh" "$scratch/sealed" "HW-PROBE-$tombstone" >/dev/null 2>"$scratch/seal.err"
+same "seal.sh seals a workspace" "0" "$?"
+if [ -e "$scratch/sealed/docs/probes" ] || [ -e "$scratch/sealed/docs/probe-runs" ] || [ -e "$scratch/sealed/.headwater/nav.yml" ]; then
+    fail "and it removes the shelves and every file that names the probe" "$(ls -R "$scratch/sealed")"
+else
+    pass "and it removes the shelves and every file that names the probe"
+fi
+if [ -f "$scratch/sealed/docs/spec/01.md" ]; then
+    pass "and it keeps a file that names no probe"
+else
+    fail "and it keeps a file that names no probe" "docs/spec/01.md is gone"
+fi
+sh "$root/tools/probe/seal.sh" "$scratch/sealed" "HW-PROBE-$tombstone" >/dev/null 2>&1
+same "and a second seal is a no-op" "0" "$?"
+PATH="$scratch/grep-only" "$shell" "$driver" --probe "HW-PROBE-$tombstone" --session x \
+    --task-file "$scratch/task.md" --workspace "$scratch/sealed" \
+    >/dev/null 2>"$scratch/driver-sealed2.err"
+same "and the driver passes its guard over the sealed tree" "3" "$?"
+sh "$root/tools/probe/seal.sh" "$root/docs" "HW-PROBE-$tombstone" >/dev/null 2>&1
+same "seal.sh refuses a path inside this checkout" "6" "$?"
+
 # ---------------------------------------------------------------------------
 # Step 3 of #819: the recorder names its session, and says whether the hook ran.
 #
