@@ -106,6 +106,7 @@ nav:
       - "Adjacent work and tooling": "evaluations/adjacent-work.md"
       - "The capability-bundle address inventory": "evaluations/capability-bundle-address-inventory.md"
       - "What ships in the box — a first-run walkthrough": "evaluations/default-taxonomy-first-run.md"
+      - "External evaluation harnesses and benchmarks for the probe campaign": "evaluations/external-evaluation-harnesses-and-benchmarks-for-the-probe-campaign.md"
       - "First contact — the Q11, Q12 and Q16 evaluation": "evaluations/first-contact.md"
       - "Governs edges: what an anchor reaches, what covers it, when it ages, and where a session meets it": "evaluations/governs-edges-what-an-anchor-reaches-what-covers-it-when-it-ages-and-where-a-session-meets-it.md"
       - "The graph, its export, and the tier above it": "evaluations/graph-export-and-federation.md"
