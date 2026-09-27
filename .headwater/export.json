@@ -2503,7 +2503,7 @@
           "status": "current",
           "status_since": "2026-09-26",
           "summary": "The six-sentence paragraph defect is retired before it lands. 50 of 60 sampled paragraphs past six sentences held one topic, so the count misses what rule 6.5 asks, and no word count replaces it.",
-          "last_verified": "2026-09-27",
+          "last_verified": "2026-09-28",
           "title": "No paragraph limit joins the language rule, because most paragraphs past six sentences hold one topic",
           "provenance": {
             "warrant": "accepted",
@@ -2520,7 +2520,7 @@
             "governs": [
               {
                 "to": "engine/crates/check/src/language.rs",
-                "verified_revision": "sha256:073ae8e5e761b16b06ebcde6daee30857483ef016e69d6c00e627d558ace4122"
+                "verified_revision": "sha256:73b6425e92ca92586efdf16b4e942b2165a880e68ed6af33c13d96c3b22195db"
               }
             ],
             "traces_to": [
@@ -15294,7 +15294,7 @@
           "resolver": "source-tree"
         },
         "attributes": {
-          "verified_revision": "sha256:073ae8e5e761b16b06ebcde6daee30857483ef016e69d6c00e627d558ace4122"
+          "verified_revision": "sha256:73b6425e92ca92586efdf16b4e942b2165a880e68ed6af33c13d96c3b22195db"
         }
       },
       {

@@ -61,7 +61,11 @@ use headwater_yaml::{Position, Span};
 ///
 /// A dotted entry matches in any case, so `u.s.` and `PH.D.` hold as well.
 ///
-/// The cost: an entry suppresses the split without condition. A real sentence
+/// An entry matches prose letters only. A letter inside a code span is part
+/// of a name, so the period after `` `--no` `` or `` `etc` `` ends the
+/// sentence when a sentence opens after it (#1262).
+///
+/// The cost: an entry in prose suppresses the split without condition. A real sentence
 /// end on an entry, as in `sold in the U.S. The next` or `set out in 5 U.S.C.
 /// The next`, joins with the sentence after it. For `U.S.C.` the cost also
 /// covers a next sentence that opens with a number, as in `set out in 5
@@ -177,7 +181,7 @@ fn ends_a_sentence(chars: &[char], index: usize, block: &Block, links: &[Link]) 
     if !next.is_whitespace() {
         return false;
     }
-    if c == '.' && closes_an_abbreviation(chars, index) {
+    if c == '.' && closes_an_abbreviation(chars, index, block) {
         return false;
     }
     let opening = skip_space(chars, after);
@@ -263,7 +267,7 @@ fn opens_a_link(block: &Block, index: usize, links: &[Link]) -> bool {
         .any(|link| link.span.start.offset <= at && at < link.span.end.offset)
 }
 
-fn closes_an_abbreviation(chars: &[char], index: usize) -> bool {
+fn closes_an_abbreviation(chars: &[char], index: usize, block: &Block) -> bool {
     ABBREVIATIONS.iter().any(|abbreviation| {
         let letters: Vec<char> = abbreviation.chars().collect();
         if letters.len() > index + 1 {
@@ -275,10 +279,14 @@ fn closes_an_abbreviation(chars: &[char], index: usize) -> bool {
         if from > 0 && chars[from - 1].is_alphanumeric() {
             return false;
         }
-        letters
-            .iter()
-            .enumerate()
-            .all(|(offset, letter)| chars[from + offset].eq_ignore_ascii_case(letter))
+        // Prose letters only. The parse removed the backticks, so the tail
+        // of a code span such as `--no` reads as `no.` with the period after
+        // it (#1262). The test is per character, because a span can hold
+        // only part of an entry.
+        letters.iter().enumerate().all(|(offset, letter)| {
+            chars[from + offset].eq_ignore_ascii_case(letter)
+                && ownership_at(block, from + offset) != Ownership::Code
+        })
     })
 }
 
@@ -644,5 +652,44 @@ mod tests {
             texts("```\nfn main() { one(); two(); }\n```\n"),
             Vec::<String>::new()
         );
+    }
+
+    /// #1262. The parse removes the backticks, so the last letters of a code
+    /// span and the prose period after it read as `no.` or `etc.`. An
+    /// abbreviation matches prose letters only, so this period ends the
+    /// sentence whatever the span ends on.
+    #[test]
+    fn a_period_after_a_code_span_ends_the_sentence_whatever_the_span_ends_on() {
+        assert_eq!(
+            texts("Pass `--no`. Then stop.\n"),
+            ["Pass --no.", "Then stop."]
+        );
+        assert_eq!(texts("Write `a, b, etc`. Then stop.\n").len(), 2);
+        assert_eq!(texts("Compare `x-vs`. Then stop.\n").len(), 2);
+        assert_eq!(texts("Name `x.al`. Then stop.\n").len(), 2);
+        // The next sentence opens with a code span.
+        assert_eq!(texts("Write `etc`. `x` opens the next.\n").len(), 2);
+        // A dotted entry whose letters the span holds up to the last period.
+        assert_eq!(texts("Read `x.e.g`. Then stop.\n").len(), 2);
+    }
+
+    /// A span can hold only the tail of an entry, so the ownership test reads
+    /// every letter of the entry and not only its first.
+    #[test]
+    fn a_span_that_holds_only_the_tail_of_an_entry_ends_the_sentence() {
+        assert_eq!(texts("Use e.`g`. Then stop.\n").len(), 2);
+    }
+
+    #[test]
+    fn a_span_that_holds_only_the_tail_of_a_dotted_name_ends_the_sentence() {
+        assert_eq!(texts("Sold in the U.`S`. The next one.\n").len(), 2);
+    }
+
+    /// The control for the case above: a prose abbreviation after a code span
+    /// still ends no sentence.
+    #[test]
+    fn a_prose_abbreviation_after_a_code_span_still_ends_no_sentence() {
+        assert_eq!(texts("Use `x` e.g. Foo holds.\n").len(), 1);
+        assert_eq!(texts("Set `x` to no. Five holds it.\n").len(), 1);
     }
 }
