@@ -125,6 +125,7 @@ nav:
       - "Why corpus counts are derived, not stored": "evaluations/why-corpus-counts-are-derived-not-stored.md"
   - "How-to guides":
       - "How-to guides": "how-to/README.md"
+      - "Cut a release": "how-to/cut-a-release.md"
       - "Diagnose an isolation failure": "how-to/diagnose-an-isolation-failure.md"
       - "Mine the shadow-mode routing log": "how-to/mine-the-shadow-mode-routing-log.md"
       - "Relocate a shelf": "how-to/relocate-a-shelf.md"

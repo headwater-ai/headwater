@@ -1581,6 +1581,15 @@ jobs:
         # This step is therefore a member of its own population, and the page
         # names it. It builds nothing, runs no container and opens no socket.
         run: sh tools/repo/developing-fixtures.sh
+      - name: The release guide still names every release workflow and its trigger
+        # A release is cut a few times a year, so `docs/how-to/cut-a-release.md`
+        # is read that often, and a tag pattern that moved in a workflow would
+        # go unseen until the next person followed the page. This step compares
+        # the guide's table of release workflows with the `on:` block of every
+        # workflow in this directory, in both directions: a workflow that a tag
+        # or a person alone starts must have a row, and every row must match a
+        # trigger on disk. It builds nothing and opens no socket.
+        run: sh tools/repo/release-guide-fixtures.sh
       - name: Every declared export profile is what this corpus produces
         # `export_plan()` is a separate code path from `plan()`: it re-filters
         # the declared projections by `--profile` rather than writing every
