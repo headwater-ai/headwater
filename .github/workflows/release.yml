@@ -29,139 +29,7 @@ on:
       tag:
         description: The tag to build and attach the archives to
         required: true
-      smoke-apt:
-    name: The Debian package installs through a signed APT repository on ${{ matrix.image }}
-    needs: [tag, build]
-    # The decisive test of the APT route (#764). It builds a `file:` repository
-    # from the package the build uploaded, signs it with a key made in this
-    # container and thrown away with it, and installs through apt on the
-    # oldest and the newest distribution the package supports. The owner's
-    # key is never here, so the job runs on every branch. The negative half is
-    # the reason the job exists: the same package, signed by another key or
-    # not signed at all, must be refused, because a job that only installs
-    # would pass on an unsigned repository. Publishing waits on this job.
-    strategy:
-      fail-fast: false
-      matrix:
-        image: ['debian:bullseye', 'ubuntu:24.04']
-    runs-on: ubuntu-24.04
-    container: ${{ matrix.image }}
-    # `sh` is dash here and refuses `pipefail`, as in `smoke-linux`.
-    defaults:
-      run:
-        shell: bash
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          name: headwater-deb
-      - name: Sign a local repository, refuse the badly signed ones, install from the good one
-        env:
-          TAG: ${{ needs.tag.outputs.tag }}
-        run: |
-          set -eo pipefail
-          export DEBIAN_FRONTEND=noninteractive
-          if command -v cargo || command -v rustc; then
-              echo "::error::this container has a Rust toolchain, so it cannot show that the package needs none" && exit 1
-          fi
-          version="${TAG#v}"
-          version="${version/-/\~}"
-          deb="headwater_${version}_amd64.deb"
-          [ -f "$deb" ] || { echo "::error::the build uploaded no $deb" && exit 1; }
-          [ -s surface-deb.txt ] || { echo "::error::the build uploaded no surface.deb list, so this job would pass any package" && exit 1; }
-          # The tools that make and sign a repository, from the distribution's
-          # own mirror, before any Headwater source exists.
-          apt-get update -qq
-          apt-get install -y -qq gnupg apt-utils >/dev/null
-
-          # Two ephemeral keys. `good` is the key apt is told to trust, and
-          # `other` signs the repository apt must refuse.
-          for name in good other; do
-              export GNUPGHOME="/srv/gpg-$name"
-              mkdir -p -m 0700 "$GNUPGHOME"
-              gpg --batch --quiet --passphrase '' --quick-gen-key "Headwater smoke $name <$name@smoke.invalid>" ed25519 sign never
-              gpg --batch --export >"/srv/$name.gpg"
-          done
-
-          # One repository per case, each holding the same package.
-          repo() {
-              local dir="/srv/apt-$1" signer="$2"
-              mkdir -p "$dir/pool/main/h/headwater" "$dir/dists/stable/main/binary-amd64"
-              cp "$deb" "$dir/pool/main/h/headwater/"
-              (cd "$dir" && apt-ftparchive packages pool >dists/stable/main/binary-amd64/Packages)
-              apt-ftparchive -o APT::FTPArchive::Release::Suite=stable -o APT::FTPArchive::Release::Codename=stable \
-                  -o APT::FTPArchive::Release::Components=main -o APT::FTPArchive::Release::Architectures=amd64 \
-                  release "$dir/dists/stable" >/srv/Release
-              mv /srv/Release "$dir/dists/stable/Release"
-              if [ -n "$signer" ]; then
-                  export GNUPGHOME="/srv/gpg-$signer"
-                  gpg --batch --yes --clearsign -o "$dir/dists/stable/InRelease" "$dir/dists/stable/Release"
-                  gpg --batch --yes --armor --detach-sign -o "$dir/dists/stable/Release.gpg" "$dir/dists/stable/Release"
-              fi
-              chmod -R a+rX "$dir"
-          }
-          repo good good
-          repo other other
-          repo unsigned ''
-
-          # apt reads one list per case and no other source, so a case
-          # cannot borrow a result from another.
-          mkdir -p /srv/no-parts
-          apt_case() {
-              printf 'deb [signed-by=/srv/good.gpg] file:/srv/apt-%s stable main\n' "$1" >"/srv/$1.list"
-              rm -rf /var/lib/apt/lists/*
-              apt-get -o Dir::Etc::SourceList="/srv/$1.list" -o Dir::Etc::SourceParts=/srv/no-parts "${@:2}"
-          }
-          for bad in other unsigned; do
-              if apt_case "$bad" update >"/srv/$bad.out" 2>&1; then
-                  cat "/srv/$bad.out"
-                  echo "::error::apt accepted the \`$bad\` repository, which the key it trusts did not sign" && exit 1
-              fi
-              cat "/srv/$bad.out"
-              if ! grep -Eq 'NO_PUBKEY|is not signed|signatures (couldn.t|were invalid)|not be verified' "/srv/$bad.out"; then
-                  echo "::error::apt refused the \`$bad\` repository for a reason that is not its signature" && exit 1
-              fi
-              if apt_case "$bad" install -y headwater >/dev/null 2>&1 || dpkg -s headwater >/dev/null 2>&1; then
-                  echo "::error::headwater installed from the \`$bad\` repository" && exit 1
-              fi
-              echo "apt refused the \`$bad\` repository and installed nothing from it"
-          done
-
-          apt_case good update
-          apt_case good install -y headwater
-
-          [ "$(command -v headwater)" = /usr/bin/headwater ] || { echo "::error::headwater is at $(command -v headwater), not /usr/bin/headwater" && exit 1; }
-          printed=$(headwater --version | awk '{print $NF}')
-          if [ -z "$printed" ]; then
-              echo "::error::the installed binary printed no version on $(head -1 /etc/os-release)" && exit 1
-          fi
-          case "${TAG#v}" in
-              "$printed"*) echo "$TAG carries $printed, installed by apt, on $(grep PRETTY_NAME /etc/os-release)" ;;
-              *) echo "::error::the tag names ${TAG#v} and the installed binary prints $printed" && exit 1 ;;
-          esac
-
-          # What dpkg says it installed, as files, against `surface.deb`.
-          installed=$(dpkg -L headwater | while read -r path; do [ -f "$path" ] && echo "$path"; done | sort)
-          declared=$(sort surface-deb.txt)
-          if [ "$installed" != "$declared" ]; then
-              echo "::error::dpkg -L and surface.deb differ"
-              diff <(echo "$declared") <(echo "$installed") || true
-              exit 1
-          fi
-          for path in $declared; do
-              [ -s "$path" ] || { echo "::error::$path is empty or absent" && exit 1; }
-          done
-          # The package is taxonomy-free and runs nothing at install (#764).
-          if dpkg -L headwater | grep -E 'taxonomy|\.headwater'; then
-              echo "::error::the package carries a taxonomy path" && exit 1
-          fi
-          for script in preinst postinst prerm postrm; do
-              if [ -e "/var/lib/dpkg/info/headwater.$script" ]; then
-                  echo "::error::the package carries a $script script" && exit 1
-              fi
-          done
-          echo "installed exactly surface.deb: $(echo $declared)"
-
-  publish:
+      publish:
         # `false` runs every build and both smoke jobs and creates no release,
         # which is how this file is run on a branch before it merges.
         description: Create the release once every archive has run
@@ -397,6 +265,138 @@ jobs:
               "$printed"*) echo "$TAG carries $printed on $(sw_vers -productVersion) $(uname -m)" ;;
               *) echo "::error::the tag names ${TAG#v} and the binary prints $printed" && exit 1 ;;
           esac
+
+  smoke-apt:
+    name: The Debian package installs through a signed APT repository on ${{ matrix.image }}
+    needs: [tag, build]
+    # The decisive test of the APT route (#764). It builds a `file:` repository
+    # from the package the build uploaded, signs it with a key made in this
+    # container and thrown away with it, and installs through apt on the
+    # oldest and the newest distribution the package supports. The owner's
+    # key is never here, so the job runs on every branch. The negative half is
+    # the reason the job exists: the same package, signed by another key or
+    # not signed at all, must be refused, because a job that only installs
+    # would pass on an unsigned repository. Publishing waits on this job.
+    strategy:
+      fail-fast: false
+      matrix:
+        image: ['debian:bullseye', 'ubuntu:24.04']
+    runs-on: ubuntu-24.04
+    container: ${{ matrix.image }}
+    # `sh` is dash here and refuses `pipefail`, as in `smoke-linux`.
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: headwater-deb
+      - name: Sign a local repository, refuse the badly signed ones, install from the good one
+        env:
+          TAG: ${{ needs.tag.outputs.tag }}
+        run: |
+          set -eo pipefail
+          export DEBIAN_FRONTEND=noninteractive
+          if command -v cargo || command -v rustc; then
+              echo "::error::this container has a Rust toolchain, so it cannot show that the package needs none" && exit 1
+          fi
+          version="${TAG#v}"
+          version="${version/-/\~}"
+          deb="headwater_${version}_amd64.deb"
+          [ -f "$deb" ] || { echo "::error::the build uploaded no $deb" && exit 1; }
+          [ -s surface-deb.txt ] || { echo "::error::the build uploaded no surface.deb list, so this job would pass any package" && exit 1; }
+          # The tools that make and sign a repository, from the distribution's
+          # own mirror, before any Headwater source exists.
+          apt-get update -qq
+          apt-get install -y -qq gnupg apt-utils >/dev/null
+
+          # Two ephemeral keys. `good` is the key apt is told to trust, and
+          # `other` signs the repository apt must refuse.
+          for name in good other; do
+              export GNUPGHOME="/srv/gpg-$name"
+              mkdir -p -m 0700 "$GNUPGHOME"
+              gpg --batch --quiet --passphrase '' --quick-gen-key "Headwater smoke $name <$name@smoke.invalid>" ed25519 sign never
+              gpg --batch --export >"/srv/$name.gpg"
+          done
+
+          # One repository per case, each holding the same package.
+          repo() {
+              local dir="/srv/apt-$1" signer="$2"
+              mkdir -p "$dir/pool/main/h/headwater" "$dir/dists/stable/main/binary-amd64"
+              cp "$deb" "$dir/pool/main/h/headwater/"
+              (cd "$dir" && apt-ftparchive packages pool >dists/stable/main/binary-amd64/Packages)
+              apt-ftparchive -o APT::FTPArchive::Release::Suite=stable -o APT::FTPArchive::Release::Codename=stable \
+                  -o APT::FTPArchive::Release::Components=main -o APT::FTPArchive::Release::Architectures=amd64 \
+                  release "$dir/dists/stable" >/srv/Release
+              mv /srv/Release "$dir/dists/stable/Release"
+              if [ -n "$signer" ]; then
+                  export GNUPGHOME="/srv/gpg-$signer"
+                  gpg --batch --yes --clearsign -o "$dir/dists/stable/InRelease" "$dir/dists/stable/Release"
+                  gpg --batch --yes --armor --detach-sign -o "$dir/dists/stable/Release.gpg" "$dir/dists/stable/Release"
+              fi
+              chmod -R a+rX "$dir"
+          }
+          repo good good
+          repo other other
+          repo unsigned ''
+
+          # apt reads one list per case and no other source, so a case
+          # cannot borrow a result from another.
+          mkdir -p /srv/no-parts
+          apt_case() {
+              printf 'deb [signed-by=/srv/good.gpg] file:/srv/apt-%s stable main\n' "$1" >"/srv/$1.list"
+              rm -rf /var/lib/apt/lists/*
+              apt-get -o Dir::Etc::SourceList="/srv/$1.list" -o Dir::Etc::SourceParts=/srv/no-parts "${@:2}"
+          }
+          for bad in other unsigned; do
+              if apt_case "$bad" update >"/srv/$bad.out" 2>&1; then
+                  cat "/srv/$bad.out"
+                  echo "::error::apt accepted the \`$bad\` repository, which the key it trusts did not sign" && exit 1
+              fi
+              cat "/srv/$bad.out"
+              if ! grep -Eq 'NO_PUBKEY|is not signed|signatures (couldn.t|were invalid)|not be verified' "/srv/$bad.out"; then
+                  echo "::error::apt refused the \`$bad\` repository for a reason that is not its signature" && exit 1
+              fi
+              if apt_case "$bad" install -y headwater >/dev/null 2>&1 || dpkg -s headwater >/dev/null 2>&1; then
+                  echo "::error::headwater installed from the \`$bad\` repository" && exit 1
+              fi
+              echo "apt refused the \`$bad\` repository and installed nothing from it"
+          done
+
+          apt_case good update
+          apt_case good install -y headwater
+
+          [ "$(command -v headwater)" = /usr/bin/headwater ] || { echo "::error::headwater is at $(command -v headwater), not /usr/bin/headwater" && exit 1; }
+          printed=$(headwater --version | awk '{print $NF}')
+          if [ -z "$printed" ]; then
+              echo "::error::the installed binary printed no version on $(head -1 /etc/os-release)" && exit 1
+          fi
+          case "${TAG#v}" in
+              "$printed"*) echo "$TAG carries $printed, installed by apt, on $(grep PRETTY_NAME /etc/os-release)" ;;
+              *) echo "::error::the tag names ${TAG#v} and the installed binary prints $printed" && exit 1 ;;
+          esac
+
+          # What dpkg says it installed, as files, against `surface.deb`.
+          installed=$(dpkg -L headwater | while read -r path; do [ -f "$path" ] && echo "$path"; done | sort)
+          declared=$(sort surface-deb.txt)
+          if [ "$installed" != "$declared" ]; then
+              echo "::error::dpkg -L and surface.deb differ"
+              diff <(echo "$declared") <(echo "$installed") || true
+              exit 1
+          fi
+          for path in $declared; do
+              [ -s "$path" ] || { echo "::error::$path is empty or absent" && exit 1; }
+          done
+          # The package is taxonomy-free and runs nothing at install (#764).
+          if dpkg -L headwater | grep -E 'taxonomy|\.headwater'; then
+              echo "::error::the package carries a taxonomy path" && exit 1
+          fi
+          for script in preinst postinst prerm postrm; do
+              if [ -e "/var/lib/dpkg/info/headwater.$script" ]; then
+                  echo "::error::the package carries a $script script" && exit 1
+              fi
+          done
+          echo "installed exactly surface.deb: $(echo $declared)"
 
   publish:
     name: Attach the archives to the release
