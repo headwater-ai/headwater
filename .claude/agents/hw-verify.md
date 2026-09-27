@@ -40,7 +40,7 @@ Run `git worktree remove` on it before you exit, because nothing else will. Say 
 
 **When your check contradicts the build note, suspect your check first.** Name the denominator before you report a delta.
 
-**Wait on the pull request yourself.** GitHub computes `mergeable` after you ask, so spend one blocking wait, started with `run_in_background: true`:
+**Wait on the pull request yourself.** GitHub computes `mergeable` after you ask, so spend one blocking wait, run in the foreground with a Bash `timeout` of `300000`, and run it again on a `RE-ISSUE` exit:
 
     sh tools/run/wait-for.sh '[ "$(gh pr view <N> --json mergeable -q .mergeable)" != UNKNOWN ]'
 

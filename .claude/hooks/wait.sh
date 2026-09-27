@@ -123,17 +123,17 @@ printf '%s' "$command" | grep -qE '(^|[;&|[:space:]])(until|while)([[:space:]]|$
 printf '%s' "$command" | grep -qE '(^|[;&|[:space:]])gh[[:space:]]+run[[:space:]]+watch' && long=yes
 [ "$long" = yes ] || exit 0
 
-reason="This waits in the foreground, and a foreground call is capped at ten minutes.
+reason="This loop waits in the foreground with no bound, and a foreground call is capped at ten minutes.
 
 When the cap is reached the harness moves this loop into the background and answers \`moved to the background (ID: ...)\`. That line reports the loop, not the build, so it tells you nothing about what you were waiting for, and waiting again asks a question that is already being answered. In run cc7cc6c6 that pattern spent 7.8 hours, a third of every shell call in the run.
 
-Re-issue this same command with \`run_in_background: true\`. There is no cap on it, the loop exits on its own condition however long that takes, and its completion notification is what wakes you. Do not then wait on it again.
+Replace the loop with \`sh tools/run/wait-for.sh '<condition>'\`, run in the foreground with a Bash \`timeout\` of \`300000\`. It polls every thirty seconds and ends inside four minutes, on the condition or on \`RE-ISSUE\`, so it never reaches the ten-minute cap. On \`RE-ISSUE\`, run the identical call again: that attempt has ended. For CI on a commit the condition is \`sh tools/run/ci-done.sh <sha>\`.
 
-In a subagent, a background wait that runs longer than about five minutes outlives the prompt cache, and the turn that reads its notification pays to write the whole context back rather than to read it, at roughly twelve times the cost. Run \`9ab3be93\` paid \$14.85 that way in one four-hour stretch. Wrap a wait that might run that long in \`timeout 240\`, so it exits on its own before the cache would have, and re-issue it if the condition still is not met: the wrapped loop has already ended by then, so this is not the re-issue the line above forbids, which is about a loop the harness itself only moved to the background and is still running. The parent's cache lives an hour, not five minutes, so the parent waits by ending its turn and never re-issues a bounded wait.
+In a subagent, a wait that runs longer than about five minutes outlives the prompt cache, and the turn after it pays to write the whole context back rather than to read it, at roughly twelve times the cost. Run \`9ab3be93\` paid \$14.85 that way in one four-hour stretch. The four-minute cap is what prevents that.
 
-That bounded wait is already written: \`sh tools/run/wait-for.sh '<condition>'\`, started with \`run_in_background: true\`. For CI on a commit the condition is \`sh tools/run/ci-done.sh <sha>\`.
+Do not start the wait with \`run_in_background: true\` in a subagent. A subagent whose only work left is a background wait ends its turn, and every attempt then wakes the parent at its full context to read a line that says nothing. Run \`b5554ef1\` spent about 310 parent turns that way, 28% of what its parent read. The parent's cache lives an hour, not five minutes, so the parent waits by ending its turn and never runs a wait at all.
 
-Every loop that waits belongs in the background, whatever it sleeps for."
+A long job that is not a wait, such as a build or a suite, still goes in the background, and \`wait-for.sh\` waits in the foreground on its exit marker."
 quoted=$(hw_quote "$reason") || exit 0
 printf '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":%s}}\n' "$quoted"
 exit 0

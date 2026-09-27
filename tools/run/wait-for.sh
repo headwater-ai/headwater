@@ -15,7 +15,12 @@
 #     sh tools/run/wait-for.sh '<condition-command>'
 #     sh tools/run/wait-for.sh --cap 240 --poll 30 '<condition-command>'
 #
-# Start it with run_in_background: true. It runs the condition, as a shell
+# Run it in the foreground, with a Bash timeout of 300000 ms, so the agent
+# keeps its turn. A subagent whose only work left is a background wait ends
+# its turn, and every attempt then wakes its parent at full context: run
+# `b5554ef1` spent about 310 parent turns that way [HW-PD-0021].
+#
+# It runs the condition, as a shell
 # command string, every <poll> seconds (default 30, never go under ten: one
 # agent checking a status file every few seconds burned 29% of a whole run)
 # and exits 0 the moment the condition succeeds. If <cap> seconds (default

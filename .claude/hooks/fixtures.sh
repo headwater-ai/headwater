@@ -1596,7 +1596,7 @@ if [ -x "$engine" ]; then
         wait.sh 0 'outlives the prompt cache' \
         '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"until [ -f /tmp/x.status ]; do sleep 30; done"}}'
     expect '  and names the remedy, a bounded wait that re-issues itself' \
-        wait.sh 0 'timeout 240' \
+        wait.sh 0 'RE-ISSUE' \
         '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"until [ -f /tmp/x.status ]; do sleep 30; done"}}'
     expect '  and names the script that is that wait, and the condition for CI' \
         wait.sh 0 'tools/run/ci-done.sh' \

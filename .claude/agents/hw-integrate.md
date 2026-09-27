@@ -34,7 +34,7 @@ The report ends with this block:
 
 **Enqueue each once, and hand the owner the command if you are refused.** For each pull request, in the order above, run `gh pr merge <PR> --squash --match-head-commit <sha>` once. With the `merge_queue` rule on, that adds the pull request to the queue. Before the rule is on, it merges at once, and the steps below hold either way. The squash message is the pull request's title and body, as the repository's squash settings write it, so a message you want on `main` goes into the pull request before you enqueue it. The harness's permission classifier sometimes refuses a merge that earlier merges in the same run were allowed to make. You cannot grant yourself the permission, and no other route is yours: not the REST merge endpoint, not a retry. On a refusal, stop enqueueing. The first line of `LEFT` is then the exact command, with absolute paths, for the owner to run, and the post-merge steps for that pull request go to a fresh integrator.
 
-**Wait for each to land or be ejected.** One blocking wait for each pull request, in the order you enqueued them, started with `run_in_background: true` and re-issued on `RE-ISSUE`:
+**Wait for each to land or be ejected.** One blocking wait for each pull request, in the order you enqueued them, run in the foreground with a Bash `timeout` of `300000` and re-issued on `RE-ISSUE`:
 
     sh tools/run/wait-for.sh 'sh tools/run/queue-done.sh <PR>'
 
@@ -62,7 +62,7 @@ Then `HW_CARGO_SLOT=integrate HEADWATER_BLESS=1 sh tools/hw-cargo test --workspa
 
 **Write one ledger line for each pull request you handed the queue.** `sh tools/run/run-dir.sh log <run> '<json>'` with `iter`, `issue`, `pr`, `merge`, `verdict`, `proved` (what verification proved, never what the build claimed), `opened` and `closed`. `opened` and `closed` are arrays of issue numbers, `[]` when there are none, and never counts. The tool refuses a missing key and a stored total, because totals are derived by whoever reads the log and never stored ([HW-PD-0005](../../docs/process/decisions/0005-the-ledger-is-split-its-tabular-parts-are-jsonl-and-its-totals-are-derived.md)).
 
-**Wait by blocking.** CI on the tip of `main` after the last merge is one blocking wait, never a check per turn, through `tools/run/wait-for.sh`, started with `run_in_background: true` and re-issued on a `RE-ISSUE` exit rather than left running past the cache lifetime ([HW-PD-0007](../../docs/process/decisions/0007-a-background-wait-caps-below-the-cache-lifetime-and-re-issues-itself.md)):
+**Wait by blocking.** CI on the tip of `main` after the last merge is one blocking wait, never a check per turn, through `tools/run/wait-for.sh`, run in the foreground with a Bash `timeout` of `300000` and re-issued on a `RE-ISSUE` exit rather than left running past the cache lifetime ([HW-PD-0007](../../docs/process/decisions/0007-a-background-wait-caps-below-the-cache-lifetime-and-re-issues-itself.md)):
 
     sh tools/run/wait-for.sh 'sh tools/run/ci-done.sh <sha>'
 

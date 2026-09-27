@@ -866,6 +866,8 @@ docs/process/decisions/0019-ci-runs-actions-from-the-actions-organization-only-a
   typed: process_decision
 docs/process/decisions/0020-merges-go-through-the-github-merge-queue-one-squash-commit-per-pull-request.md
   typed: process_decision
+docs/process/decisions/0021-a-subagent-waits-in-the-foreground-because-a-background-wait-wakes-its-parent.md
+  typed: process_decision
 docs/process/decisions/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/process/explanations/README.md
