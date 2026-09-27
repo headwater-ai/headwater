@@ -1310,5 +1310,8 @@ fn governed_entries_counts_an_entry_two_edges_reach_once() {
         .into_iter()
         .filter(|element| element.direction == "outbound" && element.relation == "governs")
         .count();
-    assert_eq!(governs, 2, "the case holds two governs edges, so it is not vacuous");
+    assert_eq!(
+        governs, 2,
+        "the case holds two governs edges, so it is not vacuous"
+    );
 }
