@@ -529,6 +529,23 @@ REGRESSION_CASES = [
      'git init\n'
      "printf '# Store attempts in Postgres' > docs/decisions/postgres-note.md",
      []),
+    # #1135: a quote still open at the end of a line carries into the next
+    # line, as a shell reads it, so the closing quote on the second line does
+    # not open a new span that hides the chained command after it.
+    ('a single quote carried across a newline hides no chained command',
+     "printf 'a\nheadwater check' && echo RAN-2 && printf 'b'",
+     ['echo RAN-2']),
+    # #1135: inside `$'…'` a backslash escapes the next character, so `\'`
+    # does not close the span and the chained command is still split out.
+    ('an ANSI-C quote with an escaped quote hides no chained command',
+     "printf $'\\'' && echo RAN-3",
+     ['echo RAN-3']),
+    # A `#` that starts a word outside quotes opens a comment, so an
+    # apostrophe in a trailing comment opens no quote that joins the next
+    # line into this one.
+    ('an apostrophe in a trailing comment does not hide the next line',
+     "headwater check # it's here\nnpm install",
+     ['npm install']),
 ]
 
 
