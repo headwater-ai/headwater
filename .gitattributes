@@ -52,10 +52,10 @@
 # records it counts.
 #
 # What is listed here is the remainder: the folds whose decomposition costs more
-# than it returns. `corpus.checks` is the case that fixes the price. One record
-# per check instance would be a five-thousand-line file that moves on every
-# commit, which is a file nobody reads, and the count it would replace moves on
-# every commit anyway.
+# than it returns. The lock is the case that fixes the price: its digest is over
+# its whole canonical text, so no one-line-per-entity shape of it still states
+# it. An artifact that only a build step reads is a third case, and it is not
+# committed at all: `.headwater/export.json` is computed where it is read (#1251).
 #
 # Each path below is `-merge`, which needs no configuration: git keeps the
 # current side, writes no marker and records a conflict, in every clone. The
@@ -124,18 +124,17 @@
 #   the file rather than from this list: a generated file whose opening states a
 #   count or a digest is a fold again and is reported until it is listed.
 # - **What is listed below is a fold by construction.** The lock carries a
-#   digest over its whole canonical text. The two recorded fixtures open with a
-#   count and a digest, and `.githooks/fixtures.sh` measures that two sides that
-#   write one count merge to a number true of neither tree. The three pages
+#   digest over its whole canonical text. The recorded lock fixture opens with a
+#   digest, and `.githooks/fixtures.sh` measures that two sides that
+#   write one fold merge to a value true of neither tree. The three pages
 #   under `site/` carry figures, which the block after this one measures.
 #
 # The cost of that split is one conflict less per pair of branches: two branches
-# that each add a document no longer stop on every shelf page, the nav and the
-# export, and CI's `headwater generate --check` over `refs/pull/N/merge` still
+# that each add a document no longer stop on every shelf page and the nav, and
+# CI's `headwater generate --check` over `refs/pull/N/merge` still
 # holds each of them.
 
 .headwater/taxonomy.lock -merge
-engine/crates/check/fixtures/corpus.checks -merge
 engine/crates/lock/fixtures/corpus.lock -merge
 
 # The hand-built pages that carry a measured figure. `tools/site/refresh-figures.sh`
