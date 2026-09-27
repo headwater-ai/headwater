@@ -1680,6 +1680,13 @@ if [ -x "$engine" ]; then
         write.sh 0 'headwater generate' "$readme_payload"
     expect 'an edit to a generated index names its own row, not the first one' \
         write.sh 0 'One record for each entity' "$readme_payload"
+    # A derived-only advisory closes with its own sentence. The closing for a
+    # path no document rules says that nothing writes an edge, and that is
+    # wrong for a file a producer writes.
+    refute 'an edit to the taxonomy lock does not close as an ungoverned path' \
+        write.sh 'nothing here writes the edge' "$lock_payload"
+    refute 'an edit to a generated index does not close as an ungoverned path' \
+        write.sh 'nothing here writes the edge' "$readme_payload"
     # The control: a path no producer writes.
     refute 'an edit to a source file says nothing about a derived artifact' \
         write.sh 'derived artifact' \
@@ -1765,6 +1772,34 @@ if [ -x "$engine" ]; then
     mg merge --abort
     expect 'after the merge is aborted the conflict position is silent' \
         derived.sh 0 '' "$(bash_payload fixture-1053-f)"
+
+    # A linked worktree. Every session in this repository runs in one, and git
+    # keeps `MERGE_HEAD` under `.git/worktrees/<name>/` there, not in the common
+    # dir. A merge stopped in the linked tree must speak there, and the main
+    # tree, which is not merging, stays silent. A reader of the common dir is
+    # silent in both, and the first case below tells it apart.
+    linked_root=$(mktemp -d "${TMPDIR:-/tmp}/headwater-derived-linked-XXXXXX")
+    rmdir "$linked_root"
+    mg worktree add -b linked "$linked_root" main
+    lg() { git -C "$linked_root" -c user.name=fixture -c user.email=fixture@example.invalid "$@" >/dev/null 2>&1; }
+    lg merge other
+    mkdir -p "$linked_root/engine/target/release"
+    cp "$engine" "$linked_root/engine/target/release/headwater"
+    linked_payload() {
+        printf '{"hook_event_name":"PostToolUse","tool_name":"Bash","session_id":"%s","cwd":"%s","tool_input":{"command":"git merge other"}}' \
+            "$1" "$2"
+    }
+    HEADWATER_HOOK_ROOT="$linked_root"
+    export HEADWATER_HOOK_ROOT
+    expect 'a merge stopped in a linked worktree names the lock there' \
+        derived.sh 0 '`.headwater/taxonomy.lock`: A fold' "$(linked_payload fixture-1053-g "$linked_root")"
+    HEADWATER_HOOK_ROOT="$merge_root"
+    export HEADWATER_HOOK_ROOT
+    expect 'the main tree of that linked worktree, not merging, is silent' \
+        derived.sh 0 '' "$(linked_payload fixture-1053-h "$merge_root")"
+    lg merge --abort
+    mg worktree remove --force "$linked_root"
+    rm -rf "$linked_root"
 
     HEADWATER_HOOK_ROOT="$root"
     export HEADWATER_HOOK_ROOT
