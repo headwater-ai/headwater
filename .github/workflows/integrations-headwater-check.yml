@@ -42,9 +42,9 @@ env:
   # `latest` is exercised by `tools/repo/integrations-fixtures.sh` instead,
   # which needs no corpus and no download to hold.
   # v0.2.1 is the first release whose `taxonomy vendor` takes a location and
-  # writes the digest pin, which build-decisive-fixture.sh relies on. v0.3.0
+  # writes the digest pin, which build-decisive-fixture.sh relies on. v0.4.0
   # is the newest release, and it builds and checks that fixture clean.
-  FIXTURE_TAG: v0.3.0
+  FIXTURE_TAG: v0.4.0
   FIXTURE_TAXONOMY_URL: https://github.com/headwater-ai/headwater/releases/download/taxonomy/headwater-standard/v4.2.0/headwater-standard-4.2.0.zip
   FIXTURE_TAXONOMY_DIGEST: sha256:961ecf2ae2c3c74f251adea575d16b2efda37d9a7fb10d2889e12bb77f4c2eb5
 
