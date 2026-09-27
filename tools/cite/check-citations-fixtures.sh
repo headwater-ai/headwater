@@ -326,7 +326,11 @@ same "  so a run over this repository's own prose fails" 1 "$status"
 awk '/^### Generated artifacts cite what licensed them$/ { on = 1; next }
      on && /^##/ { exit }
      on { print }' "$root/docs/spec/05-ai-integration.md" >"$scratch/spec5-cite"
-holds "spec 5 says whose corpus the convention is for" HW-DR-0092 \
+holds "spec 5 says whose corpus the convention is for" \
+    "The convention is for an adopter's corpus." "$scratch/spec5-cite"
+holds "  and that this repository does not practice it on its own code" \
+    "This repository does not practice it on its own code" "$scratch/spec5-cite"
+holds "  and names the decision that records the ruling" HW-DR-0092 \
     "$scratch/spec5-cite"
 
 echo

@@ -14,7 +14,7 @@ provenance:
 relations:
   governs:
     - to: tools/cite/check-citations-fixtures.sh
-      verified_revision: sha256:d2733ba32d5f1032c7d76c694dbd95e3f9a9d9398612035c8a71e43dccc292c8
+      verified_revision: sha256:693e8bbb4c2c8278d55d4fa39c7e0cb1388d518c6ae580c455896db62218d00b
   traces_to:
     - HW-SPEC-ai-integration
 ---
@@ -38,7 +38,7 @@ relations:
 | lines of the citation shape outside `tools/cite/` | 1, in the whole tree | `grep -rEn "(//\|#) per [A-Z][A-Z-]*-?[0-9]+ \("`, with `target`, `.git` and worktrees excluded |
 | where that one line is | `docs/spec/05-ai-integration.md` line 285 | the worked example of spec 5, which names an imagined corpus |
 | citations in this repository's own code | 0 citations in 365 files, exit status 0 | the checker over `engine/crates/*/src`, `engine/crates/*/tests`, `.claude/hooks`, `.claude/agents`, `.claude/skills`, `.claude/commands`, `.githooks` and `.github` |
-| comment lines that name an `HW-` identifier in any shape | 460 lines in 184 files | `grep -rEn` for a comment marker and `HW-[A-Z]+-[0-9]{4}` on one line, over `engine/crates`, `.claude/hooks`, `tools` and `.githooks`, with each `fixtures` and `target` directory excluded |
+| comment lines that name an `HW-` identifier in any shape | 459 lines in 183 files | `grep -rEn` for a comment marker and `HW-[A-Z]+-[0-9]{4}` on one line, over `engine/crates`, `.claude/hooks`, `tools` and `.githooks`, with each `fixtures` and `target` directory excluded |
 | instruction files for an agent that mention the convention | 0 | `CLAUDE.md` and each file under `.claude/agents`, `.claude/skills` and `.claude/commands` |
 
 The population of the checker is `engine/crates` by crate, not whole. `engine/crates/census/fixtures/walk/broken-link.md` is a dangling link on purpose, and the checker exits 2 on it. The population is also not `tools/` whole, because of the planted fixtures, and not `.claude` whole, because `.claude/worktrees/` holds other checkouts.
