@@ -21,8 +21,8 @@
 #           one relation away, which no path of the change names.
 #
 # For every case the run must write nothing inside the checkout: HEAD and
-# `git status --porcelain` do not move, and no file under the corpus is newer
-# than a marker set before the run. The last check is the one that sees a
+# `git status --porcelain` do not move, and no entry under the corpus, a file
+# or a directory, is newer than a marker set before the run. The last check is the one that sees a
 # write to `.headwater/cache/`, which the corpus gitignores, so `git status`
 # cannot.
 #
@@ -118,7 +118,9 @@ run_case() {
         echo "FAIL $1: the run moved HEAD" >&2
         failed=1
     fi
-    written=$(find "$corpus" -path "$corpus/.git" -prune -o -type f -newer "$dir/marker" -print)
+    # Every entry, not only files: a new empty directory is a write too, and
+    # a directory's own time moves when anything is created inside it.
+    written=$(find "$corpus" -path "$corpus/.git" -prune -o -newer "$dir/marker" -print)
     if [ -n "$written" ]; then
         echo "FAIL $1: the run wrote inside the checkout: $written" >&2
         failed=1
