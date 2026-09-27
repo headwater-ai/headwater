@@ -105,6 +105,60 @@ class CoverageView(unittest.TestCase):
         self.assertIn("src/**", page)
 
 
+def with_list_anchor(export):
+    """The fixture export plus one governs edge onto a list anchor of two files.
+
+    The `id` is the length-prefixed identity the engine writes for a list
+    (HW-DR-0074), which matches no file of the tree as a path. The members
+    are under `patterns`, as an export at 1.2 or later writes them (#1247).
+    """
+    target = {
+        "bound": "anchor",
+        "anchor_kind": "code_path",
+        "id": "10:README.txt9:docs/a.md",
+        "resolver": "source-tree",
+        "patterns": ["README.txt", "docs/a.md"],
+    }
+    export["graph"]["anchors"].append(dict((key, target[key]) for key in ("anchor_kind", "id", "resolver", "patterns")))
+    export["graph"]["edges"].append(
+        {"source": "docs/decisions/0002-recent.md", "relation": "governs", "written_as": "governs", "target": target}
+    )
+    return export
+
+
+class AListAnchorIsCountedByItsMembers(unittest.TestCase):
+    """#1247: a list anchor covers the union of its members, and never its identity as a path."""
+
+    def test_the_row_matches_every_file_its_members_match(self):
+        model = dashboard.load(with_list_anchor(load_fixture()), corpus_identity="fixture")
+        coverage = dashboard.coverage_view(model, tree=TREE)
+        matched = dict((row["id"], count) for row, count in coverage.rows)
+        self.assertEqual(matched["10:README.txt9:docs/a.md"], 2)
+        self.assertEqual((coverage.covered, coverage.total), (4, 4))
+
+    def test_the_page_names_the_members_and_counts_them_as_paths(self):
+        model = dashboard.load(with_list_anchor(load_fixture()), corpus_identity="fixture")
+        self.assertEqual(
+            dashboard.governed_paths(model),
+            ["README.txt", "docs/a.md", "missing/path.rs", "src/**", "src/main.rs"],
+        )
+        page = dashboard.render(model)
+        self.assertIn("5 governed code paths", page)
+        self.assertIn("<code>README.txt</code><br><code>docs/a.md</code>", page)
+        self.assertNotIn("10:README.txt", page)
+
+    def test_an_anchor_with_no_patterns_is_its_one_id(self):
+        model = dashboard.load(load_fixture(), corpus_identity="fixture")
+        self.assertEqual(dict((row["id"], row["patterns"]) for row in model.anchors)["src/**"], ["src/**"])
+
+    def test_patterns_that_are_not_a_list_of_strings_are_refused(self):
+        export = with_list_anchor(load_fixture())
+        export["graph"]["edges"][-1]["target"]["patterns"] = "README.txt, docs/a.md"
+        with self.assertRaises(dashboard.ExportRefused) as raised:
+            dashboard.load(export, corpus_identity="fixture")
+        self.assertIn("target.patterns", str(raised.exception))
+
+
 class TheCommandLine(unittest.TestCase):
     def test_writes_one_page_and_nothing_else(self):
         with tempfile.TemporaryDirectory() as scratch:
