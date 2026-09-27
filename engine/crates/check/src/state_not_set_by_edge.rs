@@ -35,6 +35,15 @@
 //! A terminal source still counts, because a successor that was itself
 //! superseded later still superseded its own target.
 //!
+//! A target at its initial state is silent too. The base regimes give a
+//! `draft` no movement to `superseded`, so the fix would write a transition
+//! that `lifecycle.transition.not_permitted` refuses when it lands.
+//! [HW-DR-0085](../../../../docs/decisions/0085-a-live-document-that-rests-on-a-draft-one-is-reported-over-every-relation-because-a-draft-leaves-no-record-to-cite.md)
+//! names this case for `lifecycle.dependency.on_initial` and leaves it
+//! unreported, and this rule leaves it unreported for the same reason. The
+//! tutorial `docs/tutorials/your-first-governed-corpus.md` walks a reader
+//! through it: a live decision supersedes one that is still a draft.
+//!
 //! # Which rule owns which case
 //!
 //! A generated target is this engine's to write, and `generate --check` and
@@ -198,6 +207,12 @@ impl EdgeCheck for NotSetByEdge<'_> {
 
         // A successor still at its initial state retires nothing yet.
         if self.facet.standing(source_state) == Standing::Initial {
+            return Outcome::Passed;
+        }
+        // A target still at its initial state has no movement to the set state
+        // in the base regimes, so no author can follow the fix. See the module
+        // comment: this is the silent case HW-DR-0085 names.
+        if self.facet.standing(target_state) == Standing::Initial {
             return Outcome::Passed;
         }
         if target_state == set {
