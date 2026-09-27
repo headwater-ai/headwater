@@ -82,10 +82,11 @@ TUTORIAL = drive.DOC
 # repository), `printf` (writing the seed document), `rm` (removing it
 # again in step 8). `cargo` is handled separately, by subcommand.
 # The piece `_pieces` yields in place of the rest of a block once a line
-# ends inside a quote, a pair of backticks, a `$(` or a `${`. The line number, counted
-# from 1, follows it. `check_piece` never allows it, so the block fails.
+# ends inside a quote, a pair of backticks, a `$(` or a `${`, or closes one with
+# the wrong `)` or `}`. The line number, counted from 1, follows it.
+# `check_piece` never allows it, so the block fails.
 UNREADABLE = ('unreadable: a quote, a pair of backticks, a $( or a ${ is still '
-              'open at the end of block line ')
+              'open, or a ) or } closes the wrong one, on block line ')
 
 ALLOWED_LEADING_WORDS = frozenset({'headwater', 'git', 'mkdir', 'cd', 'printf', 'rm'})
 
@@ -189,53 +190,87 @@ def _split_unquoted(text, is_boundary):
 
 
 def _scan(text, is_boundary):
-    """The pieces `_split_unquoted` cuts, and what is still open at the end
-    of `text`: a quote (`'`, `"` or `$'`), a backtick, `$(`, `${`, or None.
+    """The pieces `_split_unquoted` cuts, and what stops `text` from ending
+    cleanly: the innermost span still open (`'`, `"`, `$'`, a backtick, `$(`
+    or `${`), `!` for a `)` or `}` that closes a span of the other kind, or
+    None. A comment ends the text cleanly.
 
     The engine's `scan` in `engine/crates/check/src/command.rs` reads one
-    command by the same rules. `$'…'` is ANSI-C quoting: a backslash inside
-    it escapes the next character, so `$'\\''` is one quoted quote. Inside
-    backticks a quote opens nothing. A `$(` outside quotes opens until its
-    `)`, and a `${` until its `}`. A `#` at the start of the text, or after a
-    blank, `;`, `&` or `|`, opens a comment to the end, and the comment is no
-    part of a piece. After `)`, `<` or `>`, and anywhere inside a `${…}`, a
-    `#` is part of a word. A comment inside an open `$(` reports the `$(`.
+    command by the same rules, with one stack of open spans. Each span closes
+    only the span of its own kind at the top of the stack. A `)` or `}` that
+    meets a `${` or a `$(` of the other kind at the top closes nothing: the
+    scan stops, the rest of the text stays in the last piece, and `!` flags
+    it. Inside single quotes nothing is special but the closing quote. Inside
+    `$'…'` and backticks a backslash escapes the next character and no quote
+    opens. Inside double quotes a backslash escapes, and `$(`, `${` and
+    backticks open. A `#` opens a comment only when no span is open, at the
+    start of the text or after a blank, `;`, `&` or `|`, and the comment is
+    no part of a piece. A boundary splits the text only when no quote is
+    open.
     """
-    pieces, buf, quote, depth, braces, i = [], [], None, 0, 0, 0
+    pieces, buf, stack, i = [], [], [], 0
     while i < len(text):
-        ch = text[i]
-        if ch == '\\' and quote != "'":
-            buf.append(text[i:i + 2])
-            i += 2
-            continue
-        if quote:
-            buf.append(ch)
-            if ch == quote[-1]:
-                quote = None
-            i += 1
-            continue
-        if ch == '$' and text[i + 1:i + 2] in ("'", '(', '{'):
-            if text[i + 1] == "'":
-                quote = "$'"
-            elif text[i + 1] == '(':
-                depth += 1
-            else:
-                braces += 1
-            buf.append(text[i:i + 2])
-            i += 2
-            continue
-        if ch == ')' and depth:
-            depth -= 1
-        if ch == '}' and braces:
-            braces -= 1
-        if ch in ('"', "'", '`'):
-            quote = ch
+        ch, top = text[i], (stack[-1] if stack else None)
+        nxt = text[i + 1:i + 2]
+        quoted = any(span in ("'", '"', "$'") for span in stack)
+        if top == "'":
+            if ch == "'":
+                stack.pop()
             buf.append(ch)
             i += 1
             continue
-        if ch == '#' and not braces and (i == 0 or text[i - 1] in ' \t;&|'):
+        if ch == '\\':
+            buf.append(text[i:i + 2])
+            i += 2
+            continue
+        if top == "$'":
+            if ch == "'":
+                stack.pop()
+            buf.append(ch)
+            i += 1
+            continue
+        if (top == '`' and ch == '`') or (top == '"' and ch == '"'):
+            stack.pop()
+            buf.append(ch)
+            i += 1
+            continue
+        if top in (None, '$(', '${', '`', '"') and ch == '$' and nxt in ('(', '{'):
+            stack.append('$' + nxt)
+            buf.append(ch + nxt)
+            i += 2
+            continue
+        if top in (None, '$(', '${', '"') and ch == '`':
+            stack.append('`')
+            buf.append(ch)
+            i += 1
+            continue
+        if top == '"':
+            buf.append(ch)
+            i += 1
+            continue
+        code = top in (None, '$(', '${')
+        if code and ch == '$' and nxt == "'":
+            stack.append("$'")
+            buf.append("$'")
+            i += 2
+            continue
+        if code and ch in ("'", '"'):
+            stack.append(ch)
+            buf.append(ch)
+            i += 1
+            continue
+        if (top, ch) in (('$(', ')'), ('${', '}')):
+            stack.pop()
+            buf.append(ch)
+            i += 1
+            continue
+        if top in ('$(', '${') and ch in (')', '}'):
+            buf.append(text[i:])
+            pieces.append(''.join(buf))
+            return pieces, '!'
+        if top is None and ch == '#' and (i == 0 or text[i - 1] in ' \t;&|'):
             break
-        consumed = is_boundary(text, i)
+        consumed = 0 if quoted else is_boundary(text, i)
         if consumed:
             pieces.append(''.join(buf))
             buf = []
@@ -244,7 +279,7 @@ def _scan(text, is_boundary):
         buf.append(ch)
         i += 1
     pieces.append(''.join(buf))
-    return pieces, quote or ('$(' if depth else '${' if braces else None)
+    return pieces, (stack[-1] if stack else None)
 
 
 def split_chain(line):
@@ -631,9 +666,9 @@ REGRESSION_CASES = [
     ('an apostrophe in a quoted here-document body flags the rest',
      "cat <<'EOF'\ndon't\nEOF\nnpm install && echo RAN-B2b",
      ["cat <<'EOF'", "don't", UNREADABLE + '2']),
-    ('a quote inside a quoted substitution is flagged',
+    ('a double quote inside a quoted substitution is a quote of its own',
      'echo "$(echo "it\'s")" && npm install\nnpm ci',
-     ['echo "$(echo "it\'s")" && npm install', UNREADABLE + '1']),
+     ['echo "$(echo "it\'s")"', 'npm install', 'npm ci']),
     # Inside `${…}` a `#` is literal and opens no comment (P1e, X1, X2 of
     # the third verify of #1195).
     ('a hash inside a parameter expansion hides no chained command',
