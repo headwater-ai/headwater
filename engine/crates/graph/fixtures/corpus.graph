@@ -219,6 +219,8 @@ anchors
     cited by HW-IFACE-headwater-derived
   code_path `engine/crates/census/src/walk.rs` via source-tree
     cited by HW-IFACE-headwater-explain
+  code_path `engine/crates/census/src/walk.rs` via source-tree
+    cited by HW-IFACE-headwater-show
   code_path `engine/crates/check/src/dependency.rs` via source-tree
     cited by HW-DR-0026
   code_path `engine/crates/check/src/facet_blank.rs` via source-tree
@@ -295,6 +297,8 @@ anchors
     cited by HW-IFACE-headwater-query
   code_path `engine/crates/cli/src/lib.rs, engine/crates/cli/src/main.rs` via source-tree
     cited by HW-IFACE-headwater-route
+  code_path `engine/crates/cli/src/lib.rs, engine/crates/cli/src/main.rs` via source-tree
+    cited by HW-IFACE-headwater-show
   code_path `engine/crates/cli/src/lib.rs, engine/crates/cli/src/main.rs` via source-tree
     cited by HW-IFACE-headwater-sweep
   code_path `engine/crates/cli/src/lib.rs, engine/crates/cli/src/main.rs` via source-tree
@@ -397,6 +401,8 @@ anchors
     cited by HW-IFACE-headwater-probe
   code_path `engine/crates/query/src/explain.rs` via source-tree
     cited by HW-IFACE-headwater-explain
+  code_path `engine/crates/query/src/explain.rs` via source-tree
+    cited by HW-IFACE-headwater-show
   code_path `engine/crates/query/src/json.rs` via source-tree
     cited by HW-DR-0070
   code_path `engine/crates/query/src/json.rs` via source-tree

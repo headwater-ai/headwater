@@ -213,6 +213,13 @@ pub const VERBS: &[Verb] = &[
         description: "Why a document is the kind it is, what it serves, and what is consequently required of it.",
         words: &[],
     },
+    Verb {
+        name: "show",
+        group: "Reading a corpus",
+        summary: "print one document's own bytes, found the way `explain` finds it",
+        description: "Print the bytes of one document exactly as they are on disk, found by its path or by the identifier it declares. It finds the document the way `explain` does, and it refuses a target that `explain` refuses in the same sentence.",
+        words: &[],
+    },
     // Listed in spec 6, and no document states what an expression is. The verb
     // states that wait when a caller types it, which is what #146 requires of a
     // declared name. It is a verb of this surface for exactly that reason: a
