@@ -851,8 +851,8 @@ fn a_documentation_plan_refuses_a_probe_whose_document_its_absent_arm_removes() 
         plan.refusal,
         Some(Refusal::AblatedExamined {
             probe: "PROBE-FIX-cited".into(),
-            path: "probes/0002-answered.md".into(),
-            entry: "probes".into(),
+            path: "corpus/probes/0002-answered.md".into(),
+            entry: "corpus/probes".into(),
         }),
         "the first probe by identifier whose predicate names a removed document"
     );

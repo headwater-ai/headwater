@@ -53,6 +53,10 @@ pub struct Envelope {
     /// The arms this tier runs. A campaign runs the pair or it estimates
     /// nothing.
     pub arms: Vec<Arm>,
+    /// The paths, relative to the repository root, that the absent arm
+    /// removes. Spec 5: the absent arm names a declared ablation. Empty for a
+    /// tier that runs no absent arm, and refused as empty for one that does.
+    pub ablation: Vec<String>,
 }
 
 /// Every declared tier.
@@ -171,8 +175,40 @@ fn envelope(tier: Tier, fields: &Mapping) -> Result<Envelope, Unreadable> {
     // the pair is what an efficacy claim rests on. A campaign declaring one arm
     // is a campaign that estimates nothing, which is the regression tier under
     // a name that would let a published claim cite it.
-    if tier == Tier::Campaign && arms.len() != Arm::ALL.len() {
-        return Err(Unreadable::CampaignHasOneArm);
+    if tier.pairs_arms() && arms.len() != Arm::ALL.len() {
+        return Err(Unreadable::PairHasOneArm { tier: name });
+    }
+
+    // Spec 5: the absent arm names a declared ablation. An absent arm with
+    // none is whatever a script happens to remove, and an ablation with no
+    // absent arm is declared and never applied.
+    let mut ablation = Vec::new();
+    if let Some(listed) = fields.get("ablation") {
+        let Some(items) = listed.value.as_seq() else {
+            return Err(Unreadable::Malformed(format!(
+                "`ablation` of the `{name}` tier in {PATH} is not a sequence of paths"
+            )));
+        };
+        for item in items {
+            let entry = item
+                .value
+                .as_scalar()
+                .map(|scalar| scalar.text.clone())
+                .unwrap_or_default();
+            if !ablation_entry_is_safe(&entry) {
+                return Err(Unreadable::AblationUnsafe { tier: name, entry });
+            }
+            if !ablation.contains(&entry) {
+                ablation.push(entry);
+            }
+        }
+    }
+    let absent = arms.contains(&Arm::Absent);
+    if absent && ablation.is_empty() {
+        return Err(Unreadable::AblationUndeclared { tier: name });
+    }
+    if !absent && !ablation.is_empty() {
+        return Err(Unreadable::AblationWithoutAbsent { tier: name });
     }
 
     Ok(Envelope {
@@ -181,7 +217,21 @@ fn envelope(tier: Tier, fields: &Mapping) -> Result<Envelope, Unreadable> {
         session_cost,
         repetitions,
         arms,
+        ablation,
     })
+}
+
+/// Whether an ablation entry names a path inside the tree.
+///
+/// `tools/probe/ablate.sh` hands every entry to `rm -rf` in a copy of the
+/// tree, so an empty entry, an absolute one, or one with a `..` component
+/// would remove the copy itself or something outside it.
+fn ablation_entry_is_safe(entry: &str) -> bool {
+    !entry.is_empty()
+        && !entry.starts_with('/')
+        && entry
+            .split('/')
+            .all(|component| component != ".." && component != "." && !component.is_empty())
 }
 
 fn text(map: &Mapping, key: &str) -> Option<String> {
@@ -207,7 +257,19 @@ pub enum Unreadable {
         tier: &'static str,
         found: String,
     },
-    CampaignHasOneArm,
+    PairHasOneArm {
+        tier: &'static str,
+    },
+    AblationUndeclared {
+        tier: &'static str,
+    },
+    AblationWithoutAbsent {
+        tier: &'static str,
+    },
+    AblationUnsafe {
+        tier: &'static str,
+        entry: String,
+    },
 }
 
 impl std::fmt::Display for Unreadable {
@@ -240,11 +302,28 @@ impl std::fmt::Display for Unreadable {
                 f,
                 "the `{tier}` tier names the arm `{found}`. The arms are `present` and `absent`"
             ),
-            Unreadable::CampaignHasOneArm => write!(
+            Unreadable::PairHasOneArm { tier } => write!(
                 f,
-                "the `campaign` tier names one arm. A campaign estimates a difference, so it runs \
-                 the pair, and a campaign with one arm is the regression tier under a name a \
-                 published claim would cite"
+                "the `{tier}` tier names one arm. It estimates a difference, so it runs the \
+                 pair, and with one arm it is the regression tier under a name a published \
+                 claim would cite"
+            ),
+            Unreadable::AblationUndeclared { tier } => write!(
+                f,
+                "the `{tier}` tier runs the `absent` arm and declares no `ablation`. Spec 5: the \
+                 absent arm names a declared ablation, or the claim it measures is whatever a \
+                 script removed"
+            ),
+            Unreadable::AblationWithoutAbsent { tier } => write!(
+                f,
+                "the `{tier}` tier declares an `ablation` and runs no `absent` arm, so the \
+                 ablation is declared and never applied"
+            ),
+            Unreadable::AblationUnsafe { tier, entry } => write!(
+                f,
+                "the `{tier}` tier's ablation names `{entry}`. An entry is a path inside the \
+                 tree, relative to its root, with no `..`, `.` or empty component, because \
+                 the absent arm removes it with `rm -rf`"
             ),
         }
     }

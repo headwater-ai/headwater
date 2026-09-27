@@ -234,6 +234,20 @@ pub enum Refusal {
         probe: String,
         expectation: Expectation,
     },
+    /// A probe whose predicate names a document that the tier's own absent
+    /// arm removes.
+    ///
+    /// A session in that arm cannot open or cite a document it never had, so
+    /// the rate over the pair would measure the ablation and not the
+    /// documents. `answered` and `patched` probes are admitted whatever they
+    /// examine, because their predicates read the session's output.
+    AblatedExamined {
+        probe: String,
+        /// The examined path, relative to the corpus root.
+        path: String,
+        /// The ablation entry the path equals or sits under.
+        entry: String,
+    },
     /// The projected cost is above the tier's ceiling. Spec 5: a run that does
     /// not happen is the cheaper error.
     OverBudget {
@@ -266,6 +280,9 @@ impl Refusal {
             Refusal::TierUndeclared(_) | Refusal::CampaignNarrowed => false,
             Refusal::ArmNotDeclared { .. } => false,
             Refusal::OverBudget { .. } => false,
+            // A policy about which probes a paired run may carry, decided
+            // after the whole selection is read, like a narrowed campaign.
+            Refusal::AblatedExamined { .. } => false,
             Refusal::NoProbes
             | Refusal::SelectionEmpty { .. }
             | Refusal::Unnameable { .. }
@@ -382,6 +399,13 @@ impl std::fmt::Display for Refusal {
                 "{probe} expects `{}` and names no document with `{EXAMINES}`. That predicate over \
                  an empty set reports the declaration rather than the corpus",
                 expectation.name()
+            ),
+            Refusal::AblatedExamined { probe, path, entry } => write!(
+                f,
+                "{probe} expects a predicate over `{path}`, and this tier's absent arm removes \
+                 `{entry}`. A session cannot open or cite a document it never had, so the pair \
+                 would measure the ablation. Narrow the selection to `answered` and `patched` \
+                 probes, or run it at a tier whose ablation keeps the document"
             ),
             Refusal::OverBudget {
                 sessions,
@@ -762,7 +786,7 @@ impl Plan {
         plan.budget = envelope.budget;
         plan.session_cost = envelope.session_cost;
         plan.arms = arms(envelope, narrowing.arm);
-        if plan.arms.len() < envelope.arms.len() && tier == Tier::Campaign {
+        if plan.arms.len() < envelope.arms.len() && tier.pairs_arms() {
             plan.refusal = Some(Refusal::CampaignNarrowed);
             return plan;
         }
@@ -784,6 +808,16 @@ impl Plan {
             // makes the restore a no-op today and the guard that keeps it one
             // if that ever stops being true.
             plan.arms = envelope.arms.clone();
+        }
+
+        // Before the ceiling: a run over budget could be afforded later, and a
+        // run whose absent arm removes what its probes read cannot measure the
+        // claim at any price, so this is the reason a reader is given.
+        if plan.arms.contains(&Arm::Absent) {
+            if let Some(refusal) = ablated_examined(&plan.selected, &envelope.ablation) {
+                plan.refusal = Some(refusal);
+                return plan;
+            }
         }
 
         plan.sessions =
@@ -1086,9 +1120,88 @@ fn headwater_resolve_version() -> &'static str {
     headwater_resolve::release::ENGINE
 }
 
+/// The first probe, in selection order, whose predicate names a document that
+/// an ablation entry removes.
+pub fn ablated_examined(selected: &[Selected], ablation: &[String]) -> Option<Refusal> {
+    selected
+        .iter()
+        .filter(|probe| probe.expectation.names_documents())
+        .find_map(|probe| {
+            probe.examines.iter().find_map(|examined| {
+                ablation
+                    .iter()
+                    .find(|entry| removes(entry, &examined.path))
+                    .map(|entry| Refusal::AblatedExamined {
+                        probe: probe.id.clone(),
+                        path: examined.path.clone(),
+                        entry: entry.clone(),
+                    })
+            })
+        })
+}
+
+/// Whether removing `entry` removes `path`: the two are equal, or `entry` is a
+/// whole-component prefix of `path`. `docs` removes `docs/a.md` and never
+/// `docsx/a.md`.
+fn removes(entry: &str, path: &str) -> bool {
+    path == entry
+        || path
+            .strip_prefix(entry)
+            .is_some_and(|rest| rest.starts_with('/'))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn probe(id: &str, expectation: Expectation, examined: &str) -> Selected {
+        Selected {
+            path: format!("probes/{id}.md"),
+            id: id.to_string(),
+            category: Category::Sufficiency,
+            expectation,
+            examines: vec![Examined {
+                id: Some("DOC".into()),
+                path: examined.to_string(),
+            }],
+            oracle: None,
+            answers: Vec::new(),
+        }
+    }
+
+    #[test]
+    fn an_ablation_entry_removes_a_whole_component_and_never_a_string_prefix() {
+        assert!(removes("docs", "docs"));
+        assert!(removes("docs", "docs/decisions/0001.md"));
+        assert!(removes("docs/decisions", "docs/decisions/0001.md"));
+        assert!(!removes("docs", "docsx/a.md"));
+        assert!(!removes("docs", "docs.md"));
+        assert!(!removes("docs/decisions", "docs/a.md"));
+    }
+
+    #[test]
+    fn an_answered_or_patched_probe_is_admitted_whatever_it_examines() {
+        let ablation = vec!["docs".to_string()];
+        let admitted = vec![
+            probe("A", Expectation::Answered, "docs/decisions/0001.md"),
+            probe("B", Expectation::Patched, "docs/spec/05.md"),
+        ];
+        assert_eq!(ablated_examined(&admitted, &ablation), None);
+
+        let mixed = vec![
+            admitted[0].clone(),
+            probe("C", Expectation::Cited, "docsx/kept.md"),
+            probe("D", Expectation::Opened, "docs/spec/05.md"),
+        ];
+        assert_eq!(
+            ablated_examined(&mixed, &ablation),
+            Some(Refusal::AblatedExamined {
+                probe: "D".into(),
+                path: "docs/spec/05.md".into(),
+                entry: "docs".into(),
+            })
+        );
+    }
 
     #[test]
     fn a_patched_probe_grades_against_a_rule_this_engine_carries() {

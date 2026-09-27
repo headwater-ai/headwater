@@ -38,36 +38,70 @@ tiers:
   # the mechanism working rather than a value to raise until it stops: a run
   # that does not happen is the cheaper error, and the number moves when a
   # person decides to spend more and not when a harness wants to run.
+  #
+  # The claim it measures is that the governance changes what an agent builds:
+  # its ablation removes the four paths that deliver this repository's
+  # governance and keeps `docs/`.
   campaign:
     budget_cents: 5000
     session_cost_cents: 25
     repetitions: 58
     arms: [present, absent]
+    ablation: [CLAUDE.md, .claude, .githooks, .headwater]
+
+  # Estimate a difference for a second named claim: that the documents under
+  # `docs/` change what an agent builds. Both arms, like the campaign, and the
+  # same ceiling, because nobody has agreed to spend more (#980).
+  #
+  # Its ablation is the campaign's four paths and `docs`. So present against
+  # absent at this tier measures the documents and the governance together.
+  # The documents alone are this tier's absent arm against the campaign's
+  # absent arm, and that difference holds only when both ran in one batch on
+  # one model version. A `campaign` rate is never quoted for this claim.
+  #
+  # A probe whose predicate names a document (`opened`, `not_opened`,
+  # `cited`) cannot be satisfied in an arm that removed the document, so
+  # `headwater probe plan --tier documentation` refuses a selection that holds
+  # one whose `examines` target sits under an ablation entry. `answered` and
+  # `patched` probes are admitted, and `--category sufficiency` is the
+  # selection meant for this tier.
+  #
+  # The absent tree is produced by
+  # `sh tools/probe/ablate.sh documentation <workspace>`. Its cost over the
+  # sufficiency probes is projected at the end of this file.
+  documentation:
+    budget_cents: 5000
+    session_cost_cents: 25
+    repetitions: 58
+    arms: [present, absent]
+    ablation: [CLAUDE.md, .claude, .githooks, .headwater, docs]
 
 # The absent arm names a declared ablation (spec 5, "the counterfactual is not
 # a category, it is an arm of every probe... the absent arm names a declared
-# ablation, so what 'corpus absent' removed is a recorded fact"). This is that
-# record.
+# ablation, so what 'corpus absent' removed is a recorded fact"). The
+# `ablation` field of each paired tier is that record, and the engine refuses
+# a tier that runs the absent arm and declares none.
 #
-# **What "absent" removes.** `CLAUDE.md`, `.claude/`, `.githooks/` and
-# `.headwater/`, and nothing else. Those four are the whole of what delivers
-# this repository's governance to a session: the standing instructions, the
-# skills and agent definitions the harness reads, the commit-time enforcement,
-# and the taxonomy, cache and probe declarations the engine resolves against.
-# Removing them leaves a session with no orchestration prose to read, no skill
-# to invoke, no hook to run and no working `headwater` binary to route or
-# explain with, because `headwater check`, `route` and `explain` all read
-# `.headwater/taxonomy.lock` and refuse with nothing to resolve. `docs/`, the
-# corpus content every probe examines, is untouched: a probe's target
-# document has to exist in both arms, or the two arms are not measuring the
-# same task. `engine/` and `tools/` are untouched for the same reason.
+# **What each path delivers.** `CLAUDE.md`, `.claude/`, `.githooks/` and
+# `.headwater/` are the whole of what delivers this repository's governance to
+# a session: the standing instructions, the skills and agent definitions the
+# harness reads, the commit-time enforcement, and the taxonomy, cache and
+# probe declarations the engine resolves against. Removing them leaves a
+# session with no orchestration prose to read, no skill to invoke, no hook to
+# run and no working `headwater` binary to route or explain with, because
+# `headwater check`, `route` and `explain` all read `.headwater/taxonomy.lock`
+# and refuse with nothing to resolve. `docs/` is the corpus content. The
+# campaign keeps it, so a probe's target document exists in both of its arms;
+# the documentation tier removes it, which is why that tier admits no probe
+# whose predicate names one. `engine/` and `tools/` are untouched in both.
 #
-# **How the tree is produced.** `sh tools/probe/ablate.sh <workspace>` takes a
-# present-arm workspace — the full copy outside this repository that
-# `tools/probe/probe-record.sh` already requires — and deletes the four paths
-# above from it, in place. It refuses a workspace inside this repository's own
-# checkout, the guard `probe-record.sh` already applies to the same argument,
-# because ablating a real checkout is not what an absent-arm workspace is for.
+# **How the tree is produced.** `sh tools/probe/ablate.sh <tier> <workspace>`
+# takes a present-arm workspace — the full copy outside this repository that
+# `tools/probe/probe-record.sh` already requires — and deletes the tier's
+# `ablation` entries from it, in place, reading them from this file in the
+# checkout and never from the workspace. It refuses a tier that declares no
+# ablation, and a workspace inside this repository's own checkout, the guard
+# `probe-record.sh` already applies to the same argument.
 #
 # `session_cost_cents` was a declared number and not a measured one until the
 # first regression run gave it something to fit against. Two committed
@@ -86,3 +120,10 @@ tiers:
 # `budget_cents` here: the campaign tier's own comment above already rules
 # that the ceiling moves only when a person agrees to spend more, and #980 is
 # where that agreement is asked for.
+#
+# The documentation tier over `--category sufficiency` projects the same two
+# ways. Four sufficiency probes, both arms, 58 repetitions is 464 sessions:
+# 4 x 2 x 58 x $0.25 = $116.00 at the declared rate, and 464 x $0.4875 =
+# $226.20 to 464 x $0.50875 = $236.06 at the realized rates. Both are above
+# the $50.00 ceiling, so the plan refuses on budget, which is the mechanism
+# working and not a number to raise.

@@ -5054,7 +5054,8 @@ fn probe_plan(
             Some(tier) => tier,
             None => {
                 return refuse(&format!(
-                    "`--tier {name}` names no tier. The tiers are `regression` and `campaign`"
+                    "`--tier {name}` names no tier. The tiers are `regression`, `campaign` and \
+                     `documentation`"
                 ))
             }
         },
