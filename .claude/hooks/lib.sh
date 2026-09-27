@@ -330,8 +330,9 @@ hw_ungoverned_in_scope() {
 # pattern is a literal and prints as one line. Any other member prints the
 # pattern and its count, then each entry under it, up to
 # `hw_governs_listed_at_most`. Past that bound it prints the pattern and the
-# count and no entry. The heading count is the number of entries named, a
-# pattern past the bound counting every entry it matched, so the count is the
+# count and no entry. The heading count is the number of distinct entries the
+# document's patterns reach, a pattern past the bound counting every entry it
+# matched and an entry two edges reach counting once, so the count is the
 # size the editor has to check and not the number of lines. An edge with no
 # `reach`, an anchor that binds nothing or a document target, prints its
 # `targets` as written.
@@ -339,7 +340,7 @@ hw_governed_by_document() {
     _engine=$(hw_engine) || return 1
     _explain=$("$_engine" explain --json --root "$hw_root" "$1" 2>/dev/null) || return 1
     _total=$(hw_count "$_explain" related) || return 1
-    _governs= _governs_n=0 _cites= _cites_n=0 _at=0
+    _governs= _governs_n=0 _summed=0 _cites= _cites_n=0 _at=0
     while [ "$_at" -lt "$_total" ]; do
         _relation=$(hw_field "$_explain" related "$_at" relation) || _relation=
         _inbound=$(hw_field "$_explain" related "$_at" inbound) || _inbound=
@@ -378,7 +379,7 @@ hw_governed_by_document() {
                     _governs="$_governs
   $_pattern ($_matched $_files, not listed past $hw_governs_listed_at_most)"
                 fi
-                _governs_n=$((_governs_n + _matched))
+                _summed=$((_summed + _matched))
             done
             _at=$((_at + 1))
             continue
@@ -404,6 +405,14 @@ hw_governed_by_document() {
         done
         _at=$((_at + 1))
     done
+    # Two edges can reach one entry, a literal page and a glob over its
+    # directory, so the entries a pattern reached are counted as the engine's
+    # union, `governed_entries`, and never as the sum of `matched` (#1093).
+    # The sum stands in only where an older engine writes no union.
+    if [ "$_summed" -gt 0 ]; then
+        _union=$(hw_field "$_explain" governed_entries) || _union=$_summed
+        _governs_n=$((_governs_n + _union))
+    fi
     [ "$_governs_n" -gt 0 ] || [ "$_cites_n" -gt 0 ] || return 1
     if [ "$_governs_n" -gt 0 ]; then
         printf 'It governs these code paths (%s):%s\n' "$_governs_n" "$_governs"
