@@ -745,9 +745,22 @@ present "and the message is the instrument's" "which every arm removes" "$scratc
 tombstone=a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer
 mkdir -p "$scratch/slugged/docs/obligations"
 printf 'see docs/probes/%s.md\n' "$tombstone" > "$scratch/slugged/docs/obligations/0013.md"
-sh "$driver" --probe "HW-PROBE-$tombstone" --session x --task-file "$scratch/task.md" \
-    --workspace "$scratch/slugged" >/dev/null 2>"$scratch/driver-slug.err"
+PATH="$scratch/grep-only" "$shell" "$driver" --probe "HW-PROBE-$tombstone" --session x \
+    --task-file "$scratch/task.md" --workspace "$scratch/slugged" >/dev/null 2>"$scratch/driver-slug.err"
 same "the driver refuses a workspace whose docs/ names the probe by its slug" "9" "$?"
+
+# An evaluation is where a recorded answer is read and argued, and the three on
+# this shelf that name a probe each state an answer or a target. A guard that
+# skipped `docs/evaluations/` would let one through with no error. The case
+# runs on the `PATH` with no `jq` or `claude`, so such a guard stops at 3 and
+# never reaches a harness.
+mkdir -p "$scratch/evaluated/docs/evaluations"
+printf 'Both sessions closed on `absent`, see docs/probes/%s.md\n' "$tombstone" \
+    > "$scratch/evaluated/docs/evaluations/the-tombstone-readings.md"
+PATH="$scratch/grep-only" "$shell" "$driver" --probe "HW-PROBE-$tombstone" --session x \
+    --task-file "$scratch/task.md" --workspace "$scratch/evaluated" >/dev/null 2>"$scratch/driver-evaluated.err"
+same "the driver refuses a workspace whose docs/evaluations/ states the probe's answer" "9" "$?"
+present "and it names the evaluation" "docs/evaluations/the-tombstone-readings.md" "$scratch/driver-evaluated.err"
 mkdir -p "$scratch/folded/.headwater"
 printf -- '- docs/probes/%s.md\n' "$tombstone" > "$scratch/folded/.headwater/nav.yml"
 printf '# HW-PROBE-%s\n' "$tombstone" > "$scratch/folded/.headwater/overlay.yml"
@@ -762,13 +775,16 @@ mkdir -p "$scratch/sealed/docs/probes" "$scratch/sealed/docs/probe-runs" "$scrat
 cp "$root/docs/probes/$tombstone.md" "$scratch/sealed/docs/probes/"
 printf 'a run\n' > "$scratch/sealed/docs/probe-runs/run.md"
 printf 'see docs/probes/%s.md\n' "$tombstone" > "$scratch/sealed/docs/obligations/0013.md"
+mkdir -p "$scratch/sealed/docs/evaluations"
+printf 'Both sessions closed on `absent`, see docs/probes/%s.md\n' "$tombstone" \
+    > "$scratch/sealed/docs/evaluations/the-tombstone-readings.md"
 printf -- '- docs/probes/%s.md\n' "$tombstone" > "$scratch/sealed/.headwater/nav.yml"
 printf '# HW-PROBE-%s\n' "$tombstone" > "$scratch/sealed/.headwater/overlay.yml"
 printf '{}\n' > "$scratch/sealed/.headwater/export.json"
 printf 'a spec that names no probe\n' > "$scratch/sealed/docs/spec/01.md"
 sh "$root/tools/probe/seal.sh" "$scratch/sealed" "HW-PROBE-$tombstone" >/dev/null 2>"$scratch/seal.err"
 same "seal.sh seals a workspace" "0" "$?"
-if [ -e "$scratch/sealed/docs/probes" ] || [ -e "$scratch/sealed/docs/probe-runs" ] || [ -e "$scratch/sealed/.headwater/export.json" ] || [ -e "$scratch/sealed/docs/obligations/0013.md" ]; then
+if [ -e "$scratch/sealed/docs/probes" ] || [ -e "$scratch/sealed/docs/probe-runs" ] || [ -e "$scratch/sealed/.headwater/export.json" ] || [ -e "$scratch/sealed/docs/obligations/0013.md" ] || [ -e "$scratch/sealed/docs/evaluations/the-tombstone-readings.md" ]; then
     fail "and it removes the instrument and each record under docs/ that names the probe" "$(ls -aR "$scratch/sealed")"
 else
     pass "and it removes the instrument and each record under docs/ that names the probe"
