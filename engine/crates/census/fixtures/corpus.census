@@ -244,6 +244,8 @@ docs/evaluations/why-corpus-counts-are-derived-not-stored.md
   typed: evaluation
 docs/how-to/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
+docs/how-to/cut-a-release.md
+  typed: how_to
 docs/how-to/diagnose-an-isolation-failure.md
   typed: how_to
 docs/how-to/mine-the-shadow-mode-routing-log.md
