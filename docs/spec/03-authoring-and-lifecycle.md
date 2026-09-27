@@ -15,6 +15,8 @@ provenance:
   accepted_by: j.baxter
   evidence_basis: evidenced
 relations:
+  governs:
+    - .githooks/change-manifest
   cites_evidence:
     - HW-EVAL-the-measurement-layer
     - HW-EVAL-warrant-and-adjudication

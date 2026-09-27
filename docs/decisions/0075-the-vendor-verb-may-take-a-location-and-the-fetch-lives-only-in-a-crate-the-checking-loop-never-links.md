@@ -9,6 +9,8 @@ relations:
   constrains:
     - HW-DR-0072
     - HW-DR-0022
+  governs:
+    - engine/crates/cli/tests/network_boundary.rs
 provenance:
   warrant: accepted
   agency: agent
