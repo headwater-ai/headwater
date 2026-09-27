@@ -213,7 +213,10 @@ impl EdgeCheck for NotSetByEdge<'_> {
                 relation.name, target.kind
             ));
         }
-        if !states.as_ref().is_some_and(|states| states.contains(&target_state)) {
+        if !states
+            .as_ref()
+            .is_some_and(|states| states.contains(&target_state))
+        {
             return Outcome::Skipped(format!(
                 "`{}` stands at `{target_state}`, which the lifecycle regime of a `{}` does not \
                  name, and `{}` reports that",

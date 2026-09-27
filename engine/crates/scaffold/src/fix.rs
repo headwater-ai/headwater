@@ -483,12 +483,12 @@ fn set_facets(path: &str, source: &str, patches: &[&Patch]) -> Result<(String, u
         }
         let expected: Vec<(String, String)> = crate::migrate::scalars(&parsed.facets, "")
             .into_iter()
-            .map(|(at, text, _)| {
-                match set.iter().find(|(facet, _, _)| *facet == at) {
+            .map(
+                |(at, text, _)| match set.iter().find(|(facet, _, _)| *facet == at) {
                     Some((_, _, value)) => (at, value.clone()),
                     None => (at, text),
-                }
-            })
+                },
+            )
             .collect();
         let read: Vec<(String, String)> = crate::migrate::scalars(&reread.facets, "")
             .into_iter()
@@ -1120,7 +1120,9 @@ mod tests {
         );
         assert!(composed.refused.is_empty(), "{:?}", composed.refused);
         assert_eq!(composed.files[0].applied, 1);
-        assert!(composed.files[0].text.contains("status_since: 2026-08-05\n"));
+        assert!(composed.files[0]
+            .text
+            .contains("status_since: 2026-08-05\n"));
     }
 
     /// A directory that cleans itself up, so no fixture leaves a tree behind.

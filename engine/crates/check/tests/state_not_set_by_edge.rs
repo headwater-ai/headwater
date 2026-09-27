@@ -263,7 +263,11 @@ fn a_target_at_another_terminal_state_is_reported_with_no_patch() {
     let run = run();
     let finding = against(&run, "notes/deprecated-target.md").expect("the finding");
     assert_eq!(finding.patch, None);
-    assert!(finding.message.contains("`deprecated`"), "{}", finding.message);
+    assert!(
+        finding.message.contains("`deprecated`"),
+        "{}",
+        finding.message
+    );
 }
 
 /// A target whose kind binds no regime that names the set state is skipped,
