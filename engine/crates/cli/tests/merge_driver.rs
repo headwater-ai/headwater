@@ -616,9 +616,10 @@ const ADOPTION: &str = ".headwater/adoption.jsonl";
 /// merges them without a conflict on a file neither of them edited by hand.
 ///
 /// Both branches create the capture-cost store from nothing, which is an
-/// add/add conflict under a text merge. The two documents are of two kinds on
-/// two shelves, so neither the claim store (HW-DR-0054) nor a path collides and
-/// the store is the only file in question. Take the union line out of
+/// add/add conflict under a text merge. Branch `b` holds a decision the other
+/// does not, so the two runs mint two identifiers, neither the claim store
+/// (HW-DR-0054) nor a path collides, and the store is the only file in
+/// question. Take the union line out of
 /// `init --git` and the store is unmerged here.
 #[test]
 fn two_branches_that_each_run_new_merge_the_capture_cost_store_without_a_conflict() {
@@ -628,12 +629,17 @@ fn two_branches_that_each_run_new_merge_the_capture_cost_store_without_a_conflic
     tree.git(&["commit", "-q", "-m", "adopted"]);
 
     tree.git(&["checkout", "-q", "-b", "a"]);
-    tree.headwater_ok(&["new", "design_spec", "--title", "A part on branch a"]);
+    tree.headwater_ok(&["new", "decision", "--title", "A ruling on branch a"]);
     tree.git(&["add", "-A"]);
-    tree.git(&["commit", "-q", "-m", "a part"]);
+    tree.git(&["commit", "-q", "-m", "a ruling"]);
 
     tree.git(&["checkout", "-q", "main"]);
     tree.git(&["checkout", "-q", "-b", "b"]);
+    // A decision already on `b` moves its allocator past `a`'s, so the two
+    // runs mint two identifiers and the claim store does not collide.
+    tree.decide("0005");
+    tree.git(&["add", "-A"]);
+    tree.git(&["commit", "-q", "-m", "a decision by hand"]);
     tree.headwater_ok(&["new", "decision", "--title", "A ruling on branch b"]);
     tree.git(&["add", "-A"]);
     tree.git(&["commit", "-q", "-m", "a ruling"]);
@@ -654,7 +660,7 @@ fn two_branches_that_each_run_new_merge_the_capture_cost_store_without_a_conflic
         "the store holds one reading from each branch:\n{store}"
     );
     assert!(
-        readings.iter().any(|line| line.contains("a-part-on-branch-a"))
+        readings.iter().any(|line| line.contains("a-ruling-on-branch-a"))
             && readings.iter().any(|line| line.contains("a-ruling-on-branch-b")),
         "one reading names each document:\n{store}"
     );
