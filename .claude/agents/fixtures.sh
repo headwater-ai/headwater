@@ -10,7 +10,7 @@
 # definition's instructions, and a skill name nobody matches never loads. This
 # suite is what reports the drift.
 #
-# Eight cases, and the ceilings are the reason two of them exist. The parent's
+# Ten cases, and the ceilings are the reason two of them exist. The parent's
 # context is the unit of cost ([HW-PD-0003]), so the command and the doctrine
 # carry a byte ceiling declared here, once, and CLAUDE.md carries one because
 # every agent pays for it on every dispatch ([HW-PD-0001]).
@@ -294,6 +294,69 @@ if [ -n "$hits" ]; then
     pass 'and a bare cargo build in a fresh file is found'
 else
     fail 'a bare cargo build in a fresh file is found' 'nothing was found'
+fi
+
+# --- 10. the parent dispatches the loop agent, and the loop agent dispatches build and verify
+
+# The verify-and-rework loop for one issue is below the parent (#1276,
+# HW-PD-0021). The parent names `hw-iterate` and never `hw-build` or
+# `hw-verify`; `hw-iterate` names both, gives each its own worktree, and can
+# resume its builder by id, which needs `SendMessage` in its tools.
+printf '\n# the parent dispatches hw-iterate, and hw-iterate dispatches hw-build and hw-verify\n'
+# Prints why the pair fails, or nothing when it holds.
+loop_below_parent() {
+    command_file=$1 iterate_file=$2
+    why=''
+    names=$(agent_names_in "$command_file")
+    printf '%s\n' "$names" | grep -qx hw-iterate || why="$why; $(basename "$command_file") does not dispatch hw-iterate"
+    for stage in hw-build hw-verify; do
+        printf '%s\n' "$names" | grep -qx "$stage" && why="$why; $(basename "$command_file") dispatches $stage itself"
+    done
+    if [ ! -f "$iterate_file" ]; then
+        why="$why; no $(basename "$iterate_file")"
+    else
+        inner=$(agent_names_in "$iterate_file")
+        for stage in hw-build hw-verify; do
+            printf '%s\n' "$inner" | grep -qx "$stage" || why="$why; $(basename "$iterate_file") does not dispatch $stage"
+        done
+        grep -qF 'isolation: "worktree"' "$iterate_file" || why="$why; $(basename "$iterate_file") passes no isolation: \"worktree\""
+        tools=$(sed -n 's/^tools: *//p' "$iterate_file" | head -1 | tr -d ' ')
+        case ",$tools," in
+            *,SendMessage,*) ;;
+            *) why="$why; $(basename "$iterate_file") cannot resume its builder: no SendMessage in tools" ;;
+        esac
+    fi
+    printf '%s' "${why#; }"
+}
+why=$(loop_below_parent "$commands/next-run.md" "$agents/hw-iterate.md")
+if [ -z "$why" ]; then
+    pass 'next-run.md dispatches hw-iterate alone, and hw-iterate dispatches hw-build and hw-verify in worktrees'
+else
+    fail 'the verify-and-rework loop is below the parent' "$why"
+fi
+# The refusal arms, each on a scratch copy.
+cp "$commands/next-run.md" "$scratch/next-run.md"
+printf 'On a build report, dispatch `hw-verify`.\n' >> "$scratch/next-run.md"
+why=$(loop_below_parent "$scratch/next-run.md" "$agents/hw-iterate.md")
+case "$why" in
+    *'dispatches hw-verify itself'*) pass 'and a parent that dispatches hw-verify is reported' ;;
+    *) fail 'a parent that dispatches hw-verify is reported' "reported: \`$why\`" ;;
+esac
+if [ -f "$agents/hw-iterate.md" ]; then
+    sed 's/isolation: "worktree"/isolation unset/g' "$agents/hw-iterate.md" > "$scratch/hw-iterate.md"
+    why=$(loop_below_parent "$commands/next-run.md" "$scratch/hw-iterate.md")
+    case "$why" in
+        *'passes no isolation'*) pass 'and a loop agent that passes no isolation is reported' ;;
+        *) fail 'a loop agent that passes no isolation is reported' "reported: \`$why\`" ;;
+    esac
+    sed '/^tools:/s/, *SendMessage//; /^tools:/s/SendMessage, *//' "$agents/hw-iterate.md" > "$scratch/hw-iterate.md"
+    why=$(loop_below_parent "$commands/next-run.md" "$scratch/hw-iterate.md")
+    case "$why" in
+        *'no SendMessage'*) pass 'and a loop agent that cannot resume its builder is reported' ;;
+        *) fail 'a loop agent that cannot resume its builder is reported' "reported: \`$why\`" ;;
+    esac
+else
+    fail 'the refusal arms on hw-iterate.md run' 'no .claude/agents/hw-iterate.md to copy'
 fi
 
 printf '\n%s passed, %s failed\n' "$passed" "$failed"
