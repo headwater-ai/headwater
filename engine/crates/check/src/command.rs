@@ -966,6 +966,16 @@ mod tests {
             names("echo $(echo }) && npm ci\n", false),
             pairs(&[(0, "echo"), (0, "echo"), (0, "npm")])
         );
+        // The program after an assignment that holds the substitution is read
+        // only if the `}` leaves the `$(` open (second veto of PR #1217).
+        assert_eq!(
+            names("FOO=$(echo }) npm ci\n", false),
+            pairs(&[(0, "npm"), (0, "echo")])
+        );
+        assert_eq!(
+            names("FOO=${x:-$(echo })} npm ci\n", false),
+            pairs(&[(0, "npm"), (0, "echo")])
+        );
     }
 
     /// A substitution inside an assignment before a program leaves the program
