@@ -297,6 +297,26 @@ images_of() {
     ' "$1"
 }
 
+# html_images_of FILE — the `src` of every HTML `<img>` tag outside a fence and
+# outside an inline code span. GitHub renders one in a README, so a judge that
+# reads images by `![alt](target)` alone has a second syntax it cannot see.
+html_images_of() {
+    awk "$awk_helpers"'
+        /^[ \t]*```/ { fence = 1 - fence; next }
+        fence { next }
+        {
+            rest = strip_code($0)
+            while (match(rest, /<[iI][mM][gG][ \t][^>]*[sS][rR][cC][ \t]*=[ \t]*["\047][^"\047]*["\047]/)) {
+                m = substr(rest, RSTART, RLENGTH)
+                sub(/^.*[sS][rR][cC][ \t]*=[ \t]*["\047]/, "", m)
+                sub(/["\047]$/, "", m)
+                print NR "\t" m
+                rest = substr(rest, RSTART + RLENGTH)
+            }
+        }
+    ' "$1"
+}
+
 # urls_of FILE — every absolute URL, fences AND inline code spans included,
 # because the clone command inside the fence names the repository too and a
 # rename breaks it just as quietly as it breaks a badge. This is deliberately
@@ -474,7 +494,8 @@ image_judge() {
 # demonstration in animated GIF form (HW-DR-0061 names the format), PROVIDED a
 # visible `recorded on YYYY-MM-DD` marker sits beside it. The marker is the
 # whole mechanism: nothing here opens the GIF or reads a count inside it, so
-# an embed is a recording candidate by extension alone, and the window this
+# an embed is a recording candidate by extension alone — `.gif` in any case,
+# written as `![alt](target)` or as an HTML `<img src>` — and the window this
 # judge reads is two lines either side of the embed line — a caption printed
 # on the very next line, or one blank line down, or above the embed instead of
 # below it, all read as adjacent; a marker three lines away or more is not
@@ -483,9 +504,11 @@ recording_judge() {
     rj_file=$1
     rj_n=0
     images_of "$rj_file" >"$scratch/recordings"
+    html_images_of "$rj_file" >>"$scratch/recordings"
     while IFS='	' read -r line target; do
-        case $target in
-            *.gif|*.GIF|*.Gif) ;;
+        rj_lc=$(printf '%s' "$target" | tr 'A-Z' 'a-z')
+        case $rj_lc in
+            *.gif) ;;
             *) continue ;;
         esac
         rj_n=$((rj_n + 1))
@@ -2584,14 +2607,15 @@ echo "the recorded terminal demonstration, and its frozen-snapshot marker"
 # is the one thing left to hold, and this group holds it: a recording embed
 # with no marker beside it fails the build, the same as a broken link does.
 
-# 9a. The population, over the real page. The README carries no recording
-#     embed yet (Done-when item 4 of #601 stays open on tooling absence), so
-#     this reads zero offenders over zero embeds — the same "read the real
-#     page and report zero" shape group 2 and group 3 open with, and it goes
-#     red on its own the day a GIF lands with no marker beside it.
+# 9a. The population, over the real page. The README carries one recording
+#     embed, `.github/assets/headwater-demo.gif` (#601), so this reads zero
+#     offenders over exactly one embed. The count is asserted too: zero
+#     offenders over zero embeds is also green, so without it a deleted embed,
+#     or one renamed to an extension the judge does not read, would pass.
 recording_judge "$readme" >"$scratch/recordings.out"
 bad=$(sed '$d' "$scratch/recordings.out")
 same "the real page carries no recording embed with a missing marker" "" "$bad"
+same "  over exactly one recording embed" "1" "$(tail -n 1 "$scratch/recordings.out")"
 
 # 9b. THE DECISIVE CASE OF THIS GROUP, provoked before any real recording
 #     exists. This is the case #601 exists for: a frozen, undisclosed number
@@ -2613,6 +2637,24 @@ printf '%s\n' \
     '*Recorded on 2026-09-21.*' >"$scratch/recording-marked.md"
 got=$(recording_judge "$scratch/recording-marked.md" | sed '$d' | tr '\n' '|')
 same "  and a recording embed with a marker beside it passes" "" "$got"
+
+# 9d. The extension is read without regard to case. GitHub serves `demo.gIf`
+#     as the same animated image as `demo.gif`, so a judge that lists three
+#     spellings of the extension lets the other five reach the page unmarked.
+printf '%s\n' '![headwater check, run against the tutorial corpus](demo.gIf)' >"$scratch/recording-case.md"
+got=$(recording_judge "$scratch/recording-case.md" | sed '$d' | tr '\n' '|')
+same "  and an embed whose extension is in any case is a recording embed" \
+    "1: demo.gIf  no \`recorded on YYYY-MM-DD\` marker within two lines|" \
+    "$got"
+
+# 9e. An HTML `<img src>` embed is a recording embed too. GitHub renders it in
+#     a README, so a judge that reads only `![alt](target)` would let an
+#     unmarked GIF reach the page by the other syntax.
+printf '%s\n' '<p><img src="demo.gif" alt="headwater check"></p>' >"$scratch/recording-html.md"
+got=$(recording_judge "$scratch/recording-html.md" | sed '$d' | tr '\n' '|')
+same "  and an HTML img embed with no marker fails" \
+    "1: demo.gif  no \`recorded on YYYY-MM-DD\` marker within two lines|" \
+    "$got"
 
 echo
 echo "$passed passed, $failed failed"
