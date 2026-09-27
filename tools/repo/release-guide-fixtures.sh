@@ -567,6 +567,15 @@ contains "ci.yml with its citations removed is red" \
 contains "  and each record that governs it is named" \
     "governs ci.yml and its header does not cite" "$out"
 
+# g6. A record that governs `./.github/workflows/ci.yml` and that the header
+# does not cite. The engine reads `./` as the same path, so the judge must too.
+copy_tree "$scratch/g6"
+printf '%s\n' '---' 'id: HW-PD-9997' 'relations:' '  governs:' '    - to: ./.github/workflows/ci.yml' '---' '' '# A reason nobody cites' \
+    >"$scratch/g6/docs/process/decisions/9997-a-reason-nobody-cites.md"
+contains "a record that governs ./.github/workflows/ci.yml and is not cited there is red" \
+    "docs/process/decisions/9997-a-reason-nobody-cites.md governs ci.yml and its header does not cite HW-PD-9997" \
+    "$(cites "$scratch/g6")"
+
 echo
 echo "$passed passed, $failed failed"
 [ "$failed" -eq 0 ]
