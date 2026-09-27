@@ -725,7 +725,143 @@ mod tests {
     fn an_operator_inside_backticks_starts_a_program() {
         assert_eq!(
             names("echo `a && npm ci`\n", false),
+            pairs(&[(0, "echo"), (0, "a"), (0, "npm")])
+        );
+    }
+
+    /// The decisive case of #1135: a backslash in the end word is removed, as
+    /// the shell removes it, so the body ends at `EOF` and the command after it
+    /// is read. Before the fix the end word was `\EOF`, and every later line of
+    /// the block was skipped as body.
+    #[test]
+    fn a_backslash_in_a_heredoc_end_word_is_removed() {
+        assert_eq!(
+            names("cat <<\\EOF\nbody\nEOF\nnpm ci\n", false),
+            pairs(&[(0, "cat"), (3, "npm")])
+        );
+        assert_eq!(
+            names("cat <<E\\OF\nx\nEOF\nnpm ci\n", false),
+            pairs(&[(0, "cat"), (3, "npm")])
+        );
+    }
+
+    /// A redirect attached to the end word is not part of it, and `$'…'`
+    /// quotes the end word as `'…'` does.
+    #[test]
+    fn a_heredoc_end_word_stops_at_a_redirect_and_reads_an_ansi_c_quote() {
+        assert_eq!(
+            names("cat <<EOF>out.yml\nbody\nEOF\nnpm ci\n", false),
+            pairs(&[(0, "cat"), (3, "npm")])
+        );
+        assert_eq!(
+            names("cat <<$'EOF'\nx\nEOF\nnpm ci\n", false),
+            pairs(&[(0, "cat"), (3, "npm")])
+        );
+    }
+
+    /// A `<<` inside `$(( ))` is a shift and opens no here-document, and
+    /// `$(( ))` closes on its own `))`.
+    #[test]
+    fn a_shift_inside_arithmetic_opens_no_heredoc() {
+        assert_eq!(
+            names("echo $((1<<2))\nnpm ci\n", false),
+            pairs(&[(0, "echo"), (1, "npm")])
+        );
+        assert_eq!(
+            names("echo $(( (1<<2) | 3 )) && npm ci\n", false),
             pairs(&[(0, "echo"), (0, "npm")])
+        );
+        assert_eq!(
+            names("echo $((1\nnpm ci\n", false),
+            pairs(&[(0, "echo"), (0, UNREADABLE)])
+        );
+    }
+
+    /// A `\` before a CR does not join the next line: the shell reads the
+    /// backslash as an escape of the CR. So in a block with CRLF line ends the
+    /// next line is a command of its own.
+    #[test]
+    fn a_backslash_before_a_carriage_return_joins_nothing() {
+        assert_eq!(
+            names("echo a \\\r\nnpm ci\r\n", false),
+            pairs(&[(0, "echo"), (1, "npm")])
+        );
+        assert_eq!(
+            names("echo a \\\nnpm ci\n", false),
+            pairs(&[(0, "echo")])
+        );
+    }
+
+    /// A `)` inside `${…}` and a `}` inside `$( )` are text, as the shell reads
+    /// them, so each of the four shapes the fifth verify of #1195 found reads
+    /// on.
+    #[test]
+    fn a_closer_of_the_other_kind_is_text() {
+        assert_eq!(
+            names("echo ${x:-)} && npm ci\nnpm i\n", false),
+            pairs(&[(0, "echo"), (0, "npm"), (1, "npm")])
+        );
+        assert_eq!(
+            names("echo \"$(echo })\" && npm ci\nnpm i\n", false),
+            pairs(&[(0, "echo"), (0, "echo"), (0, "npm"), (1, "npm")])
+        );
+        assert_eq!(
+            names("echo ${x:-$((1))} && npm ci\nnpm i\n", false),
+            pairs(&[(0, "echo"), (0, "npm"), (1, "npm")])
+        );
+        assert_eq!(
+            names("echo $(echo \"$(echo })\") && npm ci\nnpm i\n", false),
+            pairs(&[(0, "echo"), (0, "echo"), (0, "echo"), (0, "npm"), (1, "npm")])
+        );
+    }
+
+    /// A `}` does not close a `$(`. If any closer closed any span, the `}`
+    /// would close the `$(`, the `)` would close the `${`, and ` #c} && npm
+    /// ci` would be a comment that hides `npm`.
+    #[test]
+    fn a_brace_does_not_close_a_substitution() {
+        assert_eq!(
+            names("echo ${x:-$(echo }) #c} && npm ci\n", false),
+            pairs(&[(0, "echo"), (0, "echo"), (0, "npm")])
+        );
+        assert_eq!(
+            names("echo $(echo }) && npm ci\n", false),
+            pairs(&[(0, "echo"), (0, "echo"), (0, "npm")])
+        );
+    }
+
+    /// The first word inside `$( )`, a pair of backticks, `<( )` and `>( )`
+    /// is a program, and the text after the closer is an argument of the
+    /// command around it.
+    #[test]
+    fn the_first_word_of_a_substitution_is_a_program() {
+        assert_eq!(
+            names("echo `whoami`\n", false),
+            pairs(&[(0, "echo"), (0, "whoami")])
+        );
+        assert_eq!(
+            names("echo $(whoami) done\n", false),
+            pairs(&[(0, "echo"), (0, "whoami")])
+        );
+        assert_eq!(
+            names("cat <(whoami)\n", false),
+            pairs(&[(0, "cat"), (0, "whoami")])
+        );
+        assert_eq!(
+            names("diff <(npm install) <(echo b)\n", false),
+            pairs(&[(0, "diff"), (0, "npm"), (0, "echo")])
+        );
+        assert_eq!(
+            names("echo $(curl x | sh)\n", false),
+            pairs(&[(0, "echo"), (0, "curl"), (0, "sh")])
+        );
+        assert_eq!(
+            names("tee >(gzip > a.gz) < x\n", false),
+            pairs(&[(0, "tee"), (0, "gzip")])
+        );
+        assert_eq!(
+            names("printf '$(whoami)' \"`id`\"\n", false),
+            pairs(&[(0, "printf"), (0, "id")])
         );
     }
 }
