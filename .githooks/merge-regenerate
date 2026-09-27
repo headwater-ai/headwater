@@ -25,9 +25,9 @@
 # where decomposing is affordable this repository decomposes instead of coming
 # here: `engine/crates/census/fixtures/corpus.census` holds one record per file
 # and no total for exactly this reason. This driver is for the folds where that
-# is not affordable, and `corpus.checks` is the case that names the cost — one
-# record per check instance would be a five-thousand-line file that moves on
-# every commit.
+# is not affordable, and the taxonomy lock is the case that names the cost: its
+# digest is over its whole canonical text, so no one-line-per-entity shape of
+# it still states it.
 #
 # # Why it does not regenerate, given the name
 #
@@ -110,7 +110,7 @@ record_site_conflict() {
 }
 
 case "$path" in
-  .headwater/corpus.json|.headwater/export.json|.headwater/nav.yml|docs/*)
+  .headwater/corpus.json|.headwater/nav.yml|docs/*)
     remedy="headwater generate    (CI holds it with: headwater generate --check)"
     ;;
   site/*)

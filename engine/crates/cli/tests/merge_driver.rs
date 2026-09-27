@@ -44,6 +44,43 @@ fn binary() -> PathBuf {
     PathBuf::from(env!("CARGO_BIN_EXE_headwater"))
 }
 
+/// Remove `path` and everything under it, and try again until it is gone.
+///
+/// One attempt is not enough. A git process that outlives the command that
+/// started it, such as an automatic maintenance run, can still be writing under
+/// the tree when the case ends, and `remove_dir_all` then fails on a directory
+/// that is not empty. Each tree below turns automatic maintenance off, and this
+/// is the second guard. CI's "The engine suite leaves nothing in its temporary
+/// directory" step fails on anything left.
+fn remove_all(path: &Path) {
+    for _ in 0..50 {
+        let _ = std::fs::remove_dir_all(path);
+        if !path.exists() {
+            return;
+        }
+        std::thread::sleep(std::time::Duration::from_millis(20));
+    }
+}
+
+/// A scratch directory that is removed when this value is dropped: on the
+/// success path, on a panic and on an early return (#1158).
+struct Scratch(PathBuf);
+
+impl Scratch {
+    fn made(path: PathBuf) -> Scratch {
+        remove_all(&path);
+        let scratch = Scratch(path);
+        std::fs::create_dir_all(&scratch.0).expect("the scratch directory is made");
+        scratch
+    }
+}
+
+impl Drop for Scratch {
+    fn drop(&mut self) {
+        remove_all(&self.0);
+    }
+}
+
 const LOCK: &str = ".headwater/taxonomy.lock";
 const DESCRIPTOR: &str = ".headwater/corpus.json";
 
@@ -65,17 +102,24 @@ impl Tree {
 
     /// An adopted tree at `at`, which a case places inside a directory of its own.
     fn adopted_at(at: PathBuf) -> Tree {
-        let _ = std::fs::remove_dir_all(&at);
-        std::fs::create_dir_all(at.join("docs")).expect("the corpus directory is made");
-        std::fs::write(at.join("docs/one.md"), "# a document\n").expect("the document writes");
+        remove_all(&at);
+        // The guard exists before the first byte is written, so a panic while
+        // the tree is built removes what was built.
+        let tree = Tree { at };
+        std::fs::create_dir_all(tree.at.join("docs")).expect("the corpus directory is made");
+        tree.write("docs/one.md", "# a document\n");
         copy_dir(
             &repository().join(".headwater/packages/headwater-standard"),
-            &at.join(".headwater/packages/headwater-standard"),
+            &tree.at.join(".headwater/packages/headwater-standard"),
         );
-        let tree = Tree { at };
         tree.git(&["init", "-q", "-b", "main"]);
         tree.git(&["config", "user.email", "adopter@example.com"]);
         tree.git(&["config", "user.name", "An adopter"]);
+        // No git process outlives the command that started it, so nothing
+        // writes under the tree after the case removes it.
+        tree.git(&["config", "maintenance.auto", "false"]);
+        tree.git(&["config", "gc.auto", "0"]);
+        tree.git(&["config", "gc.autoDetach", "false"]);
         tree.headwater_ok(&["init"]);
         // The one answer `taxonomy resolve` refuses without: a namespace for
         // the decision identifier. It is the overlay's `INTERVIEW 2` question.
@@ -230,7 +274,7 @@ impl Tree {
 
 impl Drop for Tree {
     fn drop(&mut self) {
-        let _ = std::fs::remove_dir_all(&self.at);
+        remove_all(&self.at);
     }
 }
 
@@ -422,6 +466,437 @@ fn a_shelf_index_carries_no_attribute_and_merges_to_what_generate_writes() {
         String::from_utf8_lossy(&merge.stderr)
     );
     tree.headwater_ok(&["generate", "--check"]);
+}
+
+/// Where the graph export lands when a tree declares it as a committed
+/// projection, as this repository did before #1251.
+const EXPORT: &str = ".headwater/export.json";
+
+/// The graph export this repository declared until #1251, as an `add_to` block
+/// an adopter's overlay can carry.
+const COMMITTED_EXPORT: &str =
+    "add_to:\n  projections:\n    - kind: graph_export\n      profile: site\n      output: .headwater/export.json\n";
+
+/// Every `graph_export` projection the resolved lock under `root` holds, as an
+/// `add_to` block an adopter's overlay can carry, or nothing when it holds none.
+///
+/// The lock and not the overlay: an overlay entry may name its keys in any
+/// order, and a bundle may declare an export too. `taxonomy resolve` folds all
+/// of that into one list, and the lock is where the list is written. The lock is
+/// read as YAML, so a key order the reader did not expect is not a missed entry
+/// (`a_graph_export_is_found_in_the_lock_in_every_key_order`). An entry
+/// whose value is not a scalar, such as a `filter`, is refused rather than
+/// copied short.
+fn graph_exports_in_lock(root: &Path) -> String {
+    let source = std::fs::read_to_string(root.join(LOCK)).expect("the lock reads");
+    let lock = headwater_yaml::load(&source).expect("the lock is YAML");
+    let projections = lock
+        .value
+        .as_map()
+        .and_then(|top| top.get("resolved"))
+        .and_then(|resolved| resolved.value.as_map())
+        .and_then(|resolved| resolved.get("projections"))
+        .and_then(|projections| projections.value.as_seq())
+        .map(<[_]>::to_vec)
+        .unwrap_or_default();
+    let mut entries = String::new();
+    for projection in &projections {
+        let Some(fields) = projection.value.as_map() else {
+            continue;
+        };
+        let kind = fields
+            .get("kind")
+            .and_then(|kind| kind.value.as_scalar())
+            .map(|kind| kind.text.as_str());
+        if kind != Some("graph_export") {
+            continue;
+        }
+        entries.push_str("    - kind: graph_export\n");
+        for entry in fields.iter().filter(|entry| entry.key.value != "kind") {
+            let value = entry.value.value.as_scalar().unwrap_or_else(|| {
+                panic!(
+                    "a graph_export's `{}` is not a scalar, and this reader copies scalars only",
+                    entry.key.value
+                )
+            });
+            entries.push_str(&format!("      {}: \"{}\"\n", entry.key.value, value.text));
+        }
+    }
+    match entries.is_empty() {
+        true => String::new(),
+        false => format!("add_to:\n  projections:\n{entries}"),
+    }
+}
+
+/// The graph exports this repository commits. Before #1251 it was one, at
+/// `.headwater/export.json`, and the decisive case below was red on it.
+fn this_repository_s_graph_exports() -> String {
+    graph_exports_in_lock(&repository())
+}
+
+/// Today in UTC, the date the check layer's clock reads, so that `check --fix`
+/// records a stamp on a document verified today.
+fn today() -> String {
+    let output = Command::new("date")
+        .args(["-u", "+%F"])
+        .output()
+        .expect("date runs");
+    String::from_utf8_lossy(&output.stdout).trim().to_string()
+}
+
+const GOVERNED: &str = "tools/run.sh";
+const GOVERNING: &str = "docs/decisions/0001-governs.md";
+
+impl Tree {
+    /// A decision that governs one code path and was verified today, with the
+    /// digest recorded by `check --fix`, the one way a stamp is written
+    /// without typing it.
+    fn govern_and_stamp(&self) {
+        std::fs::create_dir_all(self.at.join("docs/decisions")).expect("the shelf is made");
+        std::fs::create_dir_all(self.at.join("tools")).expect("the directory is made");
+        self.write(GOVERNED, "#!/bin/sh\necho one\n");
+        self.write(
+            GOVERNING,
+            &format!(
+                "---\nid: ACME-DR-0001\ntitle: Governs\nstatus: draft\nstatus_since: 2026-01-01\nlast_verified: {}\nsummary: The decision that governs the run script.\nrelations:\n  governs:\n    - {GOVERNED}\n---\n\n# Governs\n\n## Context\n\nA script.\n\n## Decision\n\nIt runs.\n\n## Consequences\n\nIt ran.\n",
+                today()
+            ),
+        );
+        self.headwater_ok(&["check", "--fix"]);
+    }
+
+    /// The recorded digest on the governing document's one `governs` entry.
+    fn stamp(&self) -> String {
+        let body = self.read(GOVERNING);
+        let line = body
+            .lines()
+            .find(|line| line.trim_start().starts_with("verified_revision:"))
+            .unwrap_or_else(|| panic!("`check --fix` recorded a stamp:\n{body}"));
+        line.trim_start()
+            .trim_start_matches("verified_revision:")
+            .trim()
+            .to_string()
+    }
+
+    /// Branch `a` edits the governed code path, restamps its edge and adds a
+    /// decision. Branch `b` adds a specification, on the other shelf. Each
+    /// branch runs `generate`, as a pull request does, and `b` then merges `a`
+    /// in a clone with no driver config, which is the merge a forge runs.
+    fn restamp_here_and_add_there(&self) -> Output {
+        self.git(&["checkout", "-q", "-b", "a"]);
+        self.write(GOVERNED, "#!/bin/sh\necho two\n");
+        self.headwater_ok(&["check", "--fix"]);
+        // `headwater new`, as an adopter adds a document: it also appends one
+        // reading to `.headwater/capture-cost.jsonl`, which both branches do.
+        self.headwater_ok(&["new", "decision", "--title", "Second"]);
+        self.headwater_ok(&["generate"]);
+        self.git(&["add", "-A"]);
+        self.git(&["commit", "-q", "-m", "a restamp and a decision"]);
+
+        self.git(&["checkout", "-q", "main"]);
+        self.git(&["checkout", "-q", "-b", "b"]);
+        self.headwater_ok(&["new", "specification", "--title", "Runs"]);
+        self.headwater_ok(&["generate"]);
+        self.git(&["add", "-A"]);
+        self.git(&["commit", "-q", "-m", "a specification"]);
+
+        self.git_output(&["merge", "--no-edit", "a"])
+    }
+}
+
+/// The line the how-to tells an adopter to add, because `init --git` does not
+/// write it: every `headwater new` appends one reading to the end of the
+/// capture-cost store, so two branches that each run it conflict there.
+const UNION: &str = ".headwater/capture-cost.jsonl merge=union\n";
+
+/// A specification needs an identifier before `headwater new` writes one, and
+/// the standard package declares none, so the adopted tree declares it.
+const SPEC_ID: &str = "  identifier_schemes.spec_id: {pattern: \"{namespace}-SPEC-{slug}\", namespace: ACME, allocation: minted-once}\n  kinds.specification.identifier: {scheme: spec_id}\n";
+
+/// An adopted tree with a governed code path, committed with `init --git` and
+/// no driver config, which is every clone that has not run `git config`.
+/// `union` adds the capture-cost line the how-to names.
+fn governed_tree(label: &str, projections: &str, union: bool) -> Tree {
+    let tree = Tree::adopted(label);
+    let overlay = tree.read(".headwater/overlay.yml");
+    // Appended to the `add` block `Tree::adopted` left at the end of the file.
+    // A comment above it quotes the namespace line too, so the block is found
+    // by its `add:` line and not by the namespace line alone.
+    let overlay = overlay.replace(
+        "add:\n  identifier_schemes.decision_id.namespace: ACME\n",
+        &format!("add:\n  identifier_schemes.decision_id.namespace: ACME\n{SPEC_ID}"),
+    );
+    tree.write(".headwater/overlay.yml", &format!("{overlay}{projections}"));
+    tree.headwater_ok(&["taxonomy", "resolve"]);
+    tree.govern_and_stamp();
+    tree.headwater_ok(&["generate"]);
+    tree.headwater_ok(&["init", "--git"]);
+    if union {
+        let attributes = tree.read(".gitattributes");
+        tree.write(".gitattributes", &format!("{attributes}{UNION}"));
+    }
+    tree.git(&["add", "-A"]);
+    tree.git(&["commit", "-q", "-m", "adopt headwater"]);
+    tree
+}
+
+/// The decisive case of #1251: two pull requests on two shelves, one of which
+/// restamps a governed edge, merge with no driver and no conflict.
+///
+/// The tree commits the graph exports this repository commits, read from its
+/// overlay. Before #1251 that was one, at `.headwater/export.json`, and this
+/// case was red on it: the export moves on any edit anywhere, so every pair of
+/// branches conflicted on it, and a forge reads no merge attribute that could
+/// stop that. After #1251 the export is computed where it is read, and the
+/// merge is clean. The stamp moves on branch `a` alone, so it merges too.
+#[test]
+fn two_branches_on_different_shelves_merge_with_no_git_config_and_no_conflict_on_any_derived_path()
+{
+    let tree = governed_tree("two-shelves", &this_repository_s_graph_exports(), true);
+    let before = tree.stamp();
+
+    let merge = tree.restamp_here_and_add_there();
+    assert!(
+        merge.status.success(),
+        "the two branches merge with no conflict, and the conflicted paths are {:?}:\n{}",
+        tree.unmerged(),
+        String::from_utf8_lossy(&merge.stdout)
+    );
+    assert_ne!(
+        tree.stamp(),
+        before,
+        "the merged tree carries branch `a`'s restamp"
+    );
+    tree.headwater_ok(&["generate", "--check"]);
+}
+
+/// The arm that differs in one thing: the tree commits a graph export. The same
+/// merge then conflicts on the export and on nothing else, which is what the
+/// case above measures the absence of.
+#[test]
+fn the_same_merge_in_a_tree_that_commits_its_graph_export_conflicts_on_the_export() {
+    let tree = governed_tree("committed-export", COMMITTED_EXPORT, true);
+    assert!(
+        tree.at.join(EXPORT).exists(),
+        "`generate` writes the declared export"
+    );
+
+    let merge = tree.restamp_here_and_add_there();
+    assert!(!merge.status.success(), "the merge stops on the export");
+    assert_eq!(
+        tree.unmerged(),
+        vec![EXPORT.to_string()],
+        "the export is the one conflicted path"
+    );
+}
+
+/// The arm that differs in one thing: the tree lacks the capture-cost line the
+/// how-to names. Both branches ran `headwater new`, each appended a reading at
+/// the end of the store, and the merge conflicts there and nowhere else.
+#[test]
+fn the_same_merge_without_the_union_line_conflicts_on_the_capture_cost_store() {
+    let tree = governed_tree("no-union", &this_repository_s_graph_exports(), false);
+    let merge = tree.restamp_here_and_add_there();
+    assert!(!merge.status.success(), "the merge stops on the store");
+    assert_eq!(
+        tree.unmerged(),
+        vec![".headwater/capture-cost.jsonl".to_string()],
+        "the capture-cost store is the one conflicted path"
+    );
+}
+
+/// A `graph_export` is found in the resolved lock whatever order its overlay
+/// entry names the keys in. `taxonomy resolve` keeps the overlay's key order, so
+/// a reader that expects `kind` first misses the other two rows. A reader of the
+/// overlay's text missed the profile-first row, and a grep of the lock for a
+/// `- kind: graph_export` line missed the output-first row (#1253 verify).
+#[test]
+fn a_graph_export_is_found_in_the_lock_in_every_key_order() {
+    for (label, entry) in [
+        (
+            "kind-first",
+            "    - kind: graph_export\n      profile: public\n      output: site/graph.json\n",
+        ),
+        (
+            "profile-first",
+            "    - profile: public\n      kind: graph_export\n      output: site/graph.json\n",
+        ),
+        (
+            "output-first",
+            "    - output: site/graph.json\n      kind: graph_export\n",
+        ),
+    ] {
+        let tree = Tree::adopted(&format!("order-{label}"));
+        let overlay = tree.read(".headwater/overlay.yml");
+        tree.write(
+            ".headwater/overlay.yml",
+            &format!("{overlay}add_to:\n  projections:\n{entry}"),
+        );
+        tree.headwater_ok(&["taxonomy", "resolve"]);
+        let found = graph_exports_in_lock(&tree.at);
+        assert!(
+            found.contains("- kind: graph_export\n")
+                && found.contains("output: \"site/graph.json\"\n"),
+            "the {label} entry is read from the lock:\n{found}"
+        );
+    }
+}
+
+/// This repository declares no graph export, so `generate` commits none. This
+/// is the decision CI's "The graph export is computed at build time and never
+/// committed" step names: it reads the resolved lock as YAML, through the
+/// reader the case above holds in every key order, rather than a line of text.
+#[test]
+fn this_repository_declares_no_graph_export() {
+    let declared = this_repository_s_graph_exports();
+    assert!(
+        declared.is_empty(),
+        "this repository's lock declares a graph export, which `generate` would commit; \
+         compute it at build time instead (#1251):\n{declared}"
+    );
+}
+
+/// How the second branch meets the first: `git merge` from the second branch,
+/// or `git rebase` of the second branch onto the first. The two swap what
+/// `--ours` and `--theirs` name, which is why the remedy names neither.
+#[derive(Clone, Copy, Debug)]
+enum Meet {
+    Merge,
+    Rebase,
+}
+
+/// Every claim under `.headwater/ids/` names a file that is on the tree.
+///
+/// A claim is written once and holds the path of the document that minted the
+/// identifier ([HW-DR-0054](../../../../docs/decisions/0054-the-upper-bound-of-a-reconcile-first-allocator-is-the-corpus-and-a-claim-store.md)).
+/// `identifier.claim.stale` is advisory, so `check --strict` passes a claim
+/// that names a path which is gone, and this assertion is what refuses it.
+fn assert_every_claim_names_a_document(tree: &Tree) {
+    fn walk(dir: &Path, out: &mut Vec<PathBuf>) {
+        for entry in std::fs::read_dir(dir).expect("the claim directory reads") {
+            let path = entry.expect("the entry reads").path();
+            match path.is_dir() {
+                true => walk(&path, out),
+                false => out.push(path),
+            }
+        }
+    }
+    let mut claims = Vec::new();
+    walk(&tree.at.join(".headwater/ids"), &mut claims);
+    assert!(!claims.is_empty(), "the tree holds claims");
+    for claim in claims {
+        let named = std::fs::read_to_string(&claim).expect("the claim reads");
+        assert!(
+            tree.at.join(named.trim_end()).is_file(),
+            "{} names {}, which is not on the tree",
+            claim.display(),
+            named.trim_end()
+        );
+    }
+}
+
+/// The residual #1251 leaves open, and its remedy, over a merge and a rebase.
+///
+/// Two branches that each run `headwater new decision` both mint the next
+/// number, `ACME-DR-0002`. Meeting them conflicts on the shelf index, because
+/// both insert a row at one position, and on the claim file of the identifier,
+/// by design (HW-DR-0054). Held exactly, so the set cannot grow without this
+/// case moving.
+///
+/// Regenerating is not the remedy: it leaves two documents with one identifier,
+/// and `check --strict` refuses the tree. The remedy the how-to states takes
+/// the claim from the branch that landed first by its name, never by `--ours`
+/// or `--theirs`: under a rebase `--theirs` is the branch being rebased, and it
+/// would rewrite the landed claim to name a path that no longer exists, which
+/// `check --strict` and `generate --check` both pass (#1253 verify 3). Then the
+/// second branch's document takes the next free number and `check --fix` writes
+/// its claim.
+#[test]
+fn two_decisions_minted_on_two_branches_conflict_on_the_index_and_the_claim_and_a_renumber_resolves_them(
+) {
+    for meet in [Meet::Merge, Meet::Rebase] {
+        mint_twice_and_renumber(meet);
+    }
+}
+
+fn mint_twice_and_renumber(meet: Meet) {
+    const CLAIM: &str = ".headwater/ids/decision_id/ACME-DR-0002";
+    let label = format!("same-shelf-{meet:?}").to_lowercase();
+    let tree = governed_tree(&label, &this_repository_s_graph_exports(), true);
+    tree.git(&["checkout", "-q", "-b", "a"]);
+    tree.headwater_ok(&["new", "decision", "--title", "Alpha"]);
+    tree.headwater_ok(&["generate"]);
+    tree.git(&["add", "-A"]);
+    tree.git(&["commit", "-q", "-m", "a decision"]);
+    tree.git(&["checkout", "-q", "main"]);
+    tree.git(&["checkout", "-q", "-b", "b"]);
+    tree.headwater_ok(&["new", "decision", "--title", "Beta"]);
+    tree.headwater_ok(&["generate"]);
+    tree.git(&["add", "-A"]);
+    tree.git(&["commit", "-q", "-m", "another decision"]);
+
+    let met = match meet {
+        Meet::Merge => tree.git_output(&["merge", "--no-edit", "a"]),
+        Meet::Rebase => tree.git_output(&["rebase", "a"]),
+    };
+    assert!(!met.status.success(), "{meet:?}: the two mints conflict");
+    assert_eq!(
+        tree.unmerged(),
+        vec![CLAIM.to_string(), "docs/decisions/README.md".to_string()],
+        "{meet:?}: the claim and the shelf index are the conflicted paths"
+    );
+
+    // The claim of the branch that landed first, taken by its name.
+    tree.git(&["checkout", "a", "--", CLAIM]);
+    assert_eq!(
+        tree.read(CLAIM),
+        "docs/decisions/0002-alpha.md\n",
+        "{meet:?}: the landed claim names the landed document"
+    );
+    tree.headwater_ok(&["generate"]);
+    tree.git(&["add", "-A"]);
+    let strict = tree.headwater(&["check", "--strict"]);
+    assert_eq!(
+        strict.status.code(),
+        Some(1),
+        "{meet:?}: two documents hold ACME-DR-0002, so a strict check refuses the tree"
+    );
+
+    // The renumber: the second branch's document takes the next free number.
+    tree.git(&[
+        "mv",
+        "docs/decisions/0002-beta.md",
+        "docs/decisions/0003-beta.md",
+    ]);
+    let moved = tree.read("docs/decisions/0003-beta.md");
+    tree.write(
+        "docs/decisions/0003-beta.md",
+        &moved.replace("id: ACME-DR-0002\n", "id: ACME-DR-0003\n"),
+    );
+    tree.headwater_ok(&["check", "--fix"]);
+    assert!(
+        tree.at
+            .join(".headwater/ids/decision_id/ACME-DR-0003")
+            .exists(),
+        "{meet:?}: `check --fix` writes the claim of the new number"
+    );
+    tree.headwater_ok(&["generate"]);
+    tree.git(&["add", "-A"]);
+    match meet {
+        Meet::Merge => tree.git(&["commit", "-q", "--no-edit"]),
+        Meet::Rebase => {
+            let continued = tree.git_output(&["-c", "core.editor=true", "rebase", "--continue"]);
+            assert!(
+                continued.status.success(),
+                "{meet:?}: the rebase continues:\n{}",
+                String::from_utf8_lossy(&continued.stderr)
+            );
+            String::new()
+        }
+    };
+    tree.headwater_ok(&["check", "--strict"]);
+    tree.headwater_ok(&["generate", "--check"]);
+    assert_every_claim_names_a_document(&tree);
 }
 
 /// A clone that ran the old `init --git --git-config` has the driver config
@@ -667,12 +1142,11 @@ fn inside_a_repository_where_git_does_not_run_derived_says_so() {
     tree.headwater_ok(&["init", "--git"]);
     tree.headwater_ok(&["derived"]);
 
-    let empty = tree.at.with_extension("empty-path");
-    std::fs::create_dir_all(&empty).expect("the empty directory is made");
+    let empty = Scratch::made(tree.at.with_extension("empty-path"));
     let output = Command::new(binary())
         .args(["derived", "--root"])
         .arg(&tree.at)
-        .env("PATH", &empty)
+        .env("PATH", &empty.0)
         .env("GIT_CONFIG_GLOBAL", "/dev/null")
         .env("GIT_CONFIG_NOSYSTEM", "1")
         .env_remove("GIT_DIR")
@@ -680,7 +1154,6 @@ fn inside_a_repository_where_git_does_not_run_derived_says_so() {
         .env_remove("GIT_WORK_TREE")
         .output()
         .expect("the binary runs");
-    let _ = std::fs::remove_dir_all(&empty);
     let said = format!(
         "{}{}",
         String::from_utf8_lossy(&output.stdout),
@@ -791,10 +1264,8 @@ fn outside_a_repository_with_no_git_derived_reads_the_root_file_and_refuses_noth
         "no directory above the temporary tree holds a `.git` entry"
     );
 
-    let empty = tree.at.with_extension("empty-path-no-repository");
-    std::fs::create_dir_all(&empty).expect("the empty directory is made");
-    let (code, said) = derived_with(&tree, Some(&empty), &[]);
-    let _ = std::fs::remove_dir_all(&empty);
+    let empty = Scratch::made(tree.at.with_extension("empty-path-no-repository"));
+    let (code, said) = derived_with(&tree, Some(&empty.0), &[]);
     assert!(
         !said.contains("git did not"),
         "a tree with no repository names no git failure:\n{said}"
@@ -811,7 +1282,7 @@ struct Outer(PathBuf);
 
 impl Drop for Outer {
     fn drop(&mut self) {
-        let _ = std::fs::remove_dir_all(&self.0);
+        remove_all(&self.0);
     }
 }
 
@@ -960,13 +1431,12 @@ fn the_git_step_writes_no_line_for_a_fold_a_nested_file_declares() {
 fn the_git_step_without_git_names_the_refusal_and_writes_no_line_a_nested_file_could_declare() {
     let tree = Tree::adopted("nested-no-git");
     tree.write(".headwater/.gitattributes", "taxonomy.lock -merge\n");
-    let empty = tree.at.with_extension("nested-no-git-empty-path");
-    std::fs::create_dir_all(&empty).expect("the empty directory is made");
+    let empty = Scratch::made(tree.at.with_extension("nested-no-git-empty-path"));
     for run in ["first", "second"] {
         let output = Command::new(binary())
             .args(["init", "--git", "--root"])
             .arg(&tree.at)
-            .env("PATH", &empty)
+            .env("PATH", &empty.0)
             .env("GIT_CONFIG_GLOBAL", "/dev/null")
             .env("GIT_CONFIG_NOSYSTEM", "1")
             .env_remove("GIT_DIR")
@@ -995,7 +1465,6 @@ fn the_git_step_without_git_names_the_refusal_and_writes_no_line_a_nested_file_c
             "the {run} run exits 1, because git did not give the merge attributes:\n{stderr}"
         );
     }
-    let _ = std::fs::remove_dir_all(&empty);
 }
 
 /// A producer that only this repository holds is neither named by

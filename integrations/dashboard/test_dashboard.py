@@ -26,7 +26,35 @@ import dashboard  # noqa: E402
 
 FIXTURE = os.path.join(HERE, "fixtures", "two-documents.json")
 TREE = os.path.join(HERE, "fixtures", "tree")
-REPO_EXPORT = os.path.join(HERE, "..", "..", ".headwater", "export.json")
+REPO = os.path.join(HERE, "..", "..")
+
+
+def repo_export():
+    """This repository's graph export, which is computed and never committed (#1251).
+
+    `HEADWATER_EXPORT` names a file a caller already computed, which is what
+    `tools/repo/integrations-fixtures.sh` passes. Without it the newer of the two
+    built engines computes one. With neither there is nothing to read, and the
+    case says so rather than reading a stale file.
+    """
+    named = os.environ.get("HEADWATER_EXPORT")
+    if named:
+        with open(named, encoding="utf-8") as handle:
+            return json.load(handle)
+    engines = [
+        os.path.join(REPO, "engine", "target", profile, "headwater")
+        for profile in ("release", "dev-release")
+    ]
+    engines = [path for path in engines if os.access(path, os.X_OK)]
+    if not engines:
+        raise unittest.SkipTest("no built engine to compute the export, and HEADWATER_EXPORT is unset")
+    engine = max(engines, key=os.path.getmtime)
+    written = subprocess.run(
+        [engine, "export", "--format", "json", "--root", REPO],
+        check=True,
+        capture_output=True,
+    )
+    return json.loads(written.stdout)
 
 
 def load_fixture():
@@ -283,11 +311,10 @@ class ThePageHoldsWhatItPrints(unittest.TestCase):
 
 
 class TheWorkedExample(unittest.TestCase):
-    """.headwater/export.json in this repository is the input the issue names."""
+    """This repository's graph export is the input the issue names."""
 
     def test_every_document_of_the_repository_export_is_on_the_page(self):
-        with open(REPO_EXPORT, encoding="utf-8") as handle:
-            export = json.load(handle)
+        export = repo_export()
         model = dashboard.load(export, corpus_identity="headwater")
         documents = export["graph"]["documents"]
         self.assertEqual(len(dashboard.staleness_view(model)), len(documents))
