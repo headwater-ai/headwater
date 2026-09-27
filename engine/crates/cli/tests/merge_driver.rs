@@ -424,6 +424,215 @@ fn a_shelf_index_carries_no_attribute_and_merges_to_what_generate_writes() {
     tree.headwater_ok(&["generate", "--check"]);
 }
 
+/// Where the graph export lands when a tree declares it as a committed
+/// projection, as this repository did before #1251.
+const EXPORT: &str = ".headwater/export.json";
+
+/// The graph export this repository declared until #1251, as an `add_to` block
+/// an adopter's overlay can carry.
+const COMMITTED_EXPORT: &str =
+    "add_to:\n  projections:\n    - kind: graph_export\n      profile: site\n      output: .headwater/export.json\n";
+
+/// Every `graph_export` entry this repository's own overlay declares, as an
+/// `add_to` block, or nothing when it declares none.
+///
+/// This is what ties the decisive case to this repository rather than to a
+/// tree the case invents: the adopted tree commits exactly the graph exports
+/// this repository commits. Before #1251 the block is [`COMMITTED_EXPORT`] and
+/// the case is red. The overlay is read as text, one entry from its
+/// `- kind: graph_export` line to the first line that is not indented under it.
+fn this_repository_s_graph_exports() -> String {
+    let overlay = std::fs::read_to_string(repository().join(".headwater/overlay.yml"))
+        .expect("this repository's overlay reads");
+    let mut entries = String::new();
+    let mut inside = false;
+    for line in overlay.lines() {
+        let trimmed = line.trim_start();
+        if trimmed.starts_with("- kind: graph_export") {
+            inside = true;
+            entries.push_str("    - kind: graph_export\n");
+            continue;
+        }
+        let indent = line.len() - trimmed.len();
+        if inside && indent >= 6 && !trimmed.is_empty() && !trimmed.starts_with('#') {
+            entries.push_str(&format!("      {trimmed}\n"));
+            continue;
+        }
+        inside = false;
+    }
+    match entries.is_empty() {
+        true => String::new(),
+        false => format!("add_to:\n  projections:\n{entries}"),
+    }
+}
+
+/// Today in UTC, the date the check layer's clock reads, so that `check --fix`
+/// records a stamp on a document verified today.
+fn today() -> String {
+    let output = Command::new("date")
+        .args(["-u", "+%F"])
+        .output()
+        .expect("date runs");
+    String::from_utf8_lossy(&output.stdout).trim().to_string()
+}
+
+const GOVERNED: &str = "tools/run.sh";
+const GOVERNING: &str = "docs/decisions/0001-governs.md";
+
+impl Tree {
+    /// A decision that governs one code path and was verified today, with the
+    /// digest recorded by `check --fix`, the one way a stamp is written
+    /// without typing it.
+    fn govern_and_stamp(&self) {
+        std::fs::create_dir_all(self.at.join("docs/decisions")).expect("the shelf is made");
+        std::fs::create_dir_all(self.at.join("tools")).expect("the directory is made");
+        self.write(GOVERNED, "#!/bin/sh\necho one\n");
+        self.write(
+            GOVERNING,
+            &format!(
+                "---\nid: ACME-DR-0001\ntitle: Governs\nstatus: draft\nstatus_since: 2026-01-01\nlast_verified: {}\nsummary: The decision that governs the run script.\nrelations:\n  governs:\n    - {GOVERNED}\n---\n\n# Governs\n\n## Context\n\nA script.\n\n## Decision\n\nIt runs.\n\n## Consequences\n\nIt ran.\n",
+                today()
+            ),
+        );
+        self.headwater_ok(&["check", "--fix"]);
+    }
+
+    /// The recorded digest on the governing document's one `governs` entry.
+    fn stamp(&self) -> String {
+        let body = self.read(GOVERNING);
+        let line = body
+            .lines()
+            .find(|line| line.trim_start().starts_with("verified_revision:"))
+            .unwrap_or_else(|| panic!("`check --fix` recorded a stamp:\n{body}"));
+        line.trim_start()
+            .trim_start_matches("verified_revision:")
+            .trim()
+            .to_string()
+    }
+
+    /// Branch `a` edits the governed code path, restamps its edge and adds a
+    /// decision. Branch `b` adds a specification, on the other shelf. Each
+    /// branch runs `generate`, as a pull request does, and `b` then merges `a`
+    /// in a clone with no driver config, which is the merge a forge runs.
+    fn restamp_here_and_add_there(&self) -> Output {
+        self.git(&["checkout", "-q", "-b", "a"]);
+        self.write(GOVERNED, "#!/bin/sh\necho two\n");
+        self.headwater_ok(&["check", "--fix"]);
+        self.decide("0002");
+        self.headwater_ok(&["generate"]);
+        self.git(&["add", "-A"]);
+        self.git(&["commit", "-q", "-m", "a restamp and a decision"]);
+
+        self.git(&["checkout", "-q", "main"]);
+        self.git(&["checkout", "-q", "-b", "b"]);
+        std::fs::create_dir_all(self.at.join("docs/specifications")).expect("the shelf is made");
+        self.write(
+            "docs/specifications/runs.md",
+            "---\ntitle: Runs\nstatus: draft\nstatus_since: 2026-01-01\nlast_verified: 2026-01-01\nsummary: How a run behaves.\n---\n\n# Runs\n\n## Scope\n\nA run.\n\n## Behavior\n\nIt runs.\n",
+        );
+        self.headwater_ok(&["generate"]);
+        self.git(&["add", "-A"]);
+        self.git(&["commit", "-q", "-m", "a specification"]);
+
+        self.git_output(&["merge", "--no-edit", "a"])
+    }
+}
+
+/// An adopted tree with a governed code path, committed with `init --git` and
+/// no driver config, which is every clone that has not run `git config`.
+fn governed_tree(label: &str, projections: &str) -> Tree {
+    let tree = Tree::adopted(label);
+    if !projections.is_empty() {
+        let overlay = tree.read(".headwater/overlay.yml");
+        tree.write(".headwater/overlay.yml", &format!("{overlay}{projections}"));
+        tree.headwater_ok(&["taxonomy", "resolve"]);
+    }
+    tree.govern_and_stamp();
+    tree.headwater_ok(&["generate"]);
+    tree.headwater_ok(&["init", "--git"]);
+    tree.git(&["add", "-A"]);
+    tree.git(&["commit", "-q", "-m", "adopt headwater"]);
+    tree
+}
+
+/// The decisive case of #1251: two pull requests on two shelves, one of which
+/// restamps a governed edge, merge with no driver and no conflict.
+///
+/// The tree commits the graph exports this repository commits, read from its
+/// overlay. Before #1251 that was one, at `.headwater/export.json`, and this
+/// case was red on it: the export moves on any edit anywhere, so every pair of
+/// branches conflicted on it, and a forge reads no merge attribute that could
+/// stop that. After #1251 the export is computed where it is read, and the
+/// merge is clean. The stamp moves on branch `a` alone, so it merges too.
+#[test]
+fn two_branches_on_different_shelves_merge_with_no_git_config_and_no_conflict_on_any_derived_path()
+{
+    let tree = governed_tree("two-shelves", &this_repository_s_graph_exports());
+    let before = tree.stamp();
+
+    let merge = tree.restamp_here_and_add_there();
+    assert!(
+        merge.status.success(),
+        "the two branches merge with no conflict, and the conflicted paths are {:?}:\n{}",
+        tree.unmerged(),
+        String::from_utf8_lossy(&merge.stdout)
+    );
+    assert_ne!(
+        tree.stamp(),
+        before,
+        "the merged tree carries branch `a`'s restamp"
+    );
+    tree.headwater_ok(&["generate", "--check"]);
+}
+
+/// The arm that differs in one thing: the tree commits a graph export. The same
+/// merge then conflicts on the export and on nothing else, which is what the
+/// case above measures the absence of.
+#[test]
+fn the_same_merge_in_a_tree_that_commits_its_graph_export_conflicts_on_the_export() {
+    let tree = governed_tree("committed-export", COMMITTED_EXPORT);
+    assert!(
+        tree.at.join(EXPORT).exists(),
+        "`generate` writes the declared export"
+    );
+
+    let merge = tree.restamp_here_and_add_there();
+    assert!(!merge.status.success(), "the merge stops on the export");
+    assert_eq!(
+        tree.unmerged(),
+        vec![EXPORT.to_string()],
+        "the export is the one conflicted path"
+    );
+}
+
+/// The residual #1251 leaves open: two branches that each add a decision at
+/// the end of one shelf conflict on that shelf's index, because git conflicts
+/// on two insertions at one position and a forge reads no attribute that could
+/// union them. Held exactly, so the set cannot grow without this case moving.
+#[test]
+fn two_decisions_added_at_the_end_of_one_shelf_conflict_on_its_index_alone() {
+    let tree = governed_tree("same-shelf", &this_repository_s_graph_exports());
+    tree.git(&["checkout", "-q", "-b", "a"]);
+    tree.decide("0002");
+    tree.headwater_ok(&["generate"]);
+    tree.git(&["add", "-A"]);
+    tree.git(&["commit", "-q", "-m", "a decision"]);
+    tree.git(&["checkout", "-q", "main"]);
+    tree.git(&["checkout", "-q", "-b", "b"]);
+    tree.decide("0003");
+    tree.headwater_ok(&["generate"]);
+    tree.git(&["add", "-A"]);
+    tree.git(&["commit", "-q", "-m", "another decision"]);
+
+    let merge = tree.git_output(&["merge", "--no-edit", "a"]);
+    assert!(!merge.status.success(), "the two rows conflict");
+    assert_eq!(
+        tree.unmerged(),
+        vec!["docs/decisions/README.md".to_string()],
+        "the shelf index is the one conflicted path"
+    );
+}
+
 /// A clone that ran the old `init --git --git-config` has the driver config
 /// and no override. Running the step again selects the driver there, because
 /// the committed `-merge` would otherwise deselect it in silence.
