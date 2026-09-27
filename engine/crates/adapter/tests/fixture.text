@@ -655,7 +655,7 @@ read set
   version relation.endpoint.not_permitted 1
   version lifecycle.dependency.on_terminal 1
   version lifecycle.dependency.on_initial 1
-  version lifecycle.state.not_set_by_edge 1
+  version lifecycle.state.not_set_by_edge 2
   version warrant.evidence.unsupported 2
   version relation.participation.overdue 1
   version lifecycle.state.set_twice 2

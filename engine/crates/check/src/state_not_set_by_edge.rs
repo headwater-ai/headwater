@@ -155,7 +155,12 @@ fn scalar<'m>(facets: &'m Mapping, name: &str) -> Option<&'m str> {
 impl EdgeCheck for NotSetByEdge<'_> {
     const RULE: &'static str = self::RULE;
     /// See [`crate::placement::Placement::VERSION`].
-    const VERSION: u32 = 1;
+    ///
+    /// 2: a target already terminal at another state became advisory and a
+    /// draft target became silent. Version 1 never reached `main`, and a
+    /// cache that a branch build wrote at 1 served the error verdict to the
+    /// next binary until the number moved (#1198).
+    const VERSION: u32 = 2;
     /// The Q4 pair: the rule reads a facet at each end.
     const UNIT: EdgeUnit = EdgeUnit::Pair;
 
