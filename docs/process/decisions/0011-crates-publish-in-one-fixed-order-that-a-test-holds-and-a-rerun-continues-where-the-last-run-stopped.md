@@ -14,7 +14,7 @@ provenance:
 relations:
   governs:
     - to: .github/workflows/publish-crates.yml
-      verified_revision: sha256:779cd2d5d7fdcfe330d8fa714fc6b753ca9a59a5c0b0af9ae710d21cc6687763
+      verified_revision: sha256:ead2238fa32a3fc4d600d5238d40a072cc5371aee1409a9417fa3fa2d62fea26
   traces_to:
     - engine/crates/cli/tests/publish_order.rs
 ---

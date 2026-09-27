@@ -18,7 +18,7 @@ relations:
     - to: .github/workflows/release-taxonomy.yml
       verified_revision: sha256:cc62f8db1425466922c618475983155ec51572a77c846a4634a730e18a804ae4
     - to: .github/workflows/publish-crates.yml
-      verified_revision: sha256:779cd2d5d7fdcfe330d8fa714fc6b753ca9a59a5c0b0af9ae710d21cc6687763
+      verified_revision: sha256:ead2238fa32a3fc4d600d5238d40a072cc5371aee1409a9417fa3fa2d62fea26
 ---
 
 # Each release workflow compares the tag with the version its artifact states and refuses an empty reading

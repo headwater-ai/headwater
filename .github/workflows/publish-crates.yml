@@ -61,7 +61,7 @@ jobs:
           fi
           # Leaves first, fixed rather than computed on each run (HW-PD-0011).
           # `engine/crates/cli/tests/publish_order.rs` holds this list against
-          # the workspace, and finds it by the literal `order="`.
+          # the workspace, and it reads the variable below by its name.
           order="headwater-hash headwater-mark headwater-paint headwater-vcs headwater-fetch headwater-verbs headwater-yaml \
                  headwater-doc headwater-ref headwater-meta headwater-resolve \
                  headwater-census headwater-graph headwater-lock headwater-check \
