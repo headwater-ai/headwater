@@ -127,6 +127,16 @@ same 'a rewrite past the cache lifetime is counted, a reread inside it is not' \
     'expiry-class wake-ups 2  tokens rewritten 1000000  cost $2.50' \
     "$(printf '%s\n' "$eout" | grep '^expiry-class')"
 
+# The same five turns on Opus 5.5 price the rewrite at that model's own
+# five-minute write rate, $5.00 a million and not Sonnet 5's $2.50, so the
+# two expired turns cost $5.00.
+sed 's/"claude-sonnet-5"/"claude-opus-5-5"/' "$scratch/expiry.jsonl" > "$scratch/opus-expiry.jsonl"
+oout=$(sh "$tool" "$scratch/opus-expiry.jsonl" 2>&1); status=$?
+same 'the Opus 5.5 expiry census exits 0' 0 "$status"
+same '  and prices the rewrite at the Opus 5.5 write rate' \
+    'expiry-class wake-ups 2  tokens rewritten 1000000  cost $5.00' \
+    "$(printf '%s\n' "$oout" | grep '^expiry-class')"
+
 # The one-hour lifetime. A parent writes to the one-hour cache, and a gap
 # that would expire a subagent's copy leaves its copy warm. p1 opens the
 # cache. p2 arrives twenty minutes later and writes 300000 tokens against a
