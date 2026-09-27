@@ -122,19 +122,8 @@ runs:
       shell: bash
       env:
         TAG: ${{ steps.resolve.outputs.tag }}
-      run: |
-        set -euo pipefail
-        asset="headwater-${TAG}-x86_64-unknown-linux-gnu.tar.gz"
-        base="https://github.com/headwater-ai/headwater/releases/download/${TAG}"
-        stage="${{ runner.temp }}/headwater-check-action"
-        mkdir -p "$stage"
-        curl -fsSL -o "$stage/$asset" "$base/$asset"
-        curl -fsSL -o "$stage/$asset.sha256" "$base/$asset.sha256"
-        ( cd "$stage" && sha256sum -c "$asset.sha256" )
-        tar -xzf "$stage/$asset" -C "$stage" headwater
-        chmod +x "$stage/headwater"
-        echo "$stage" >>"$GITHUB_PATH"
-        "$stage/headwater" --version
+        STAGE: ${{ runner.temp }}/headwater-check-action
+      run: sh "${{ github.action_path }}/install.sh"
 
     - name: Run headwater check
       id: check

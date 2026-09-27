@@ -16,6 +16,7 @@ relations:
     - HW-SPEC-harness-support
   governs:
     - integrations/headwater-check/**
+    - integrations/headwater-upkeep/**
 ---
 
 # Wire headwater check into your own workflow
@@ -73,6 +74,39 @@ The run covers the merge only when you set two things in the branch protection o
 
 1. Make the `check` job a **required status check**. Without this, GitHub lets you merge while the check is red or has not run.
 2. Turn on **require branches to be up to date before merging**. Without this, the result can come from a test merge onto an older base. A change that landed on the base after that merge is not in the tree that the check read.
+
+## Report the upkeep that a pull request owes
+
+A second action writes an upkeep report for each pull request. It needs no model and no assistant, so it works on any harness. The report has four parts:
+
+- **Touched** names each changed document. It also names each changed file that a document governs, with that document and its summary.
+- **Stale** names each edge that the engine reports as suspect.
+- **Owed** lists the findings of `headwater check --change`, by rule and by document.
+- **Unmeasured** names what the report did not see. It names each changed file that no `governs` edge names, and each file under a directory that an edge names by its literal path. It also states that no reader checked a sentence against the change. This part is never empty.
+
+Add a second job to your workflow:
+
+```yaml
+  upkeep:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: headwater-ai/headwater/integrations/headwater-upkeep@main
+        with:
+          root: .
+          version: v0.4.0
+```
+
+The action measures the change from the merge base of the pull request, so the checkout needs the full history. Set `base` to measure from a different revision. The report goes to the job summary. To post it on the pull request as a comment, set `comment: "true"` and give the job `pull-requests: write`.
+
+The report proposes and never accepts. The action commits nothing, and writes nothing in your checkout. A finding in the report does not fail the job. Use the `check` job above as the gate.
+
+An empty Stale part does not mean that nothing is stale. An edge goes suspect only when it records a `verified_revision`, and the action reads no prose. A file that no `governs` edge names is in Unmeasured, not in Touched. Add `governs` edges to your documents, and more of each change moves from Unmeasured to Touched.
 
 ## How to know it worked
 

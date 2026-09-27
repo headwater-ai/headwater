@@ -52,6 +52,9 @@ action="$root/integrations/headwater-check/action.yml"
 doc="$root/docs/how-to/wire-headwater-check-into-your-own-workflow.md"
 resolver="$root/integrations/headwater-check/resolve-latest.py"
 guard="$root/integrations/headwater-check/fixtures/assert-no-inline-expression-in-run.py"
+# The upkeep action (#502) shares this doc, this guard and the resolve and
+# install scripts of `headwater-check`, so this suite holds it too.
+upkeep_action="$root/integrations/headwater-upkeep/action.yml"
 
 passed=0
 failed=0
@@ -87,38 +90,50 @@ same() {
     printf 'no resolve-latest.py at %s\n' "$resolver" >&2
     exit 1
 }
+[ -f "$upkeep_action" ] || {
+    printf 'no upkeep action.yml at %s\n' "$upkeep_action" >&2
+    exit 1
+}
 [ -f "$guard" ] || {
     printf 'no assert-no-inline-expression-in-run.py at %s\n' "$guard" >&2
     exit 1
 }
 
-printf '# the doc'"'"'s usage example names inputs action.yml actually declares\n'
+# doc_inputs_declared <action.yml> <action-name>: every `with:` key the doc's
+# usage example for <action-name> sets is an input <action.yml> declares.
+doc_inputs_declared() {
+action_file=$1
+action_name=$2
+printf '# the doc'"'"'s usage example for %s names inputs its action.yml actually declares\n' "$action_name"
 
 # Every declared input, one per line, by name alone.
 declared_inputs=$(awk '
     /^inputs:/ { in_inputs = 1; next }
     /^[a-z]/ { in_inputs = 0 }
     in_inputs && /^  [a-z][a-z-]*:$/ { gsub(/[: ]/, ""); print }
-' "$action")
+' "$action_file")
 
-# Every `with:` key inside the first fenced code block of the doc that also
-# contains `uses:.*headwater-check`, which is the usage example rather than
-# any other fence on the page (a page may show more than one block).
-used_keys=$(awk '
+# Every `with:` key inside the fenced code block of the doc that also
+# contains `uses:.*<action-name>@`, which is the usage example rather than
+# any other fence on the page (a page shows one block per action).
+used_keys=$(awk -v name="$action_name" '
     /^```/ { fence = 1 - fence; if (fence) { buf = ""; saw_uses = 0 } else { if (saw_uses) print buf; }; next }
-    fence { buf = buf $0 "\n"; if ($0 ~ /uses:.*headwater-check/) saw_uses = 1 }
-' "$doc" | awk '
-    # Only the keys directly under the block'"'"'s own `with:` mapping, one
-    # step indented, so `permissions:`, `jobs:` and the workflow'"'"'s other
-    # keys at every indent are never mistaken for an action input. Written
-    # with the two-argument `match()` (RSTART/RLENGTH), which every awk this
-    # repository already runs (see `tools/repo/readme-fixtures.sh`) supports,
-    # rather than the array form that only `gawk` carries.
+    fence { buf = buf $0 "\n"; if (index($0, "uses:") && index($0, "/" name "@")) saw_uses = 1 }
+' "$doc" | awk -v name="$action_name" '
+    # Only the keys directly under the `with:` mapping of the step that
+    # `uses:` this action, one step indented, so `permissions:`, `jobs:`,
+    # another step'"'"'s `with:` (a checkout'"'"'s `fetch-depth`) and the
+    # workflow'"'"'s other keys at every indent are never mistaken for an
+    # action input. Written with the two-argument `match()` (RSTART/RLENGTH),
+    # which every awk this repository already runs (see
+    # `tools/repo/readme-fixtures.sh`) supports, rather than the array form
+    # that only `gawk` carries.
     {
         n = match($0, /[^ ]/)
         indent = (n > 0) ? n - 1 : -1
     }
-    indent >= 0 && substr($0, n) ~ /^with:[ \t]*$/ { depth = indent; in_with = 1; next }
+    indent >= 0 && substr($0, n) ~ /^- / { armed = (index($0, "uses:") && index($0, "/" name "@")) ? 1 : 0 }
+    armed && indent >= 0 && substr($0, n) ~ /^with:[ \t]*$/ { depth = indent; in_with = 1; next }
     in_with {
         if (indent < 0) next
         if (indent <= depth) { in_with = 0; next }
@@ -147,6 +162,11 @@ else
             "the doc sets$unknown, and action.yml declares: $(printf '%s' "$declared_inputs" | tr '\n' ' ')"
     fi
 fi
+}
+
+doc_inputs_declared "$action" headwater-check
+printf '\n'
+doc_inputs_declared "$upkeep_action" headwater-upkeep
 
 printf '\n# resolve-latest.py, against the three release shapes that matter\n'
 
@@ -211,6 +231,9 @@ trap 'rm -rf "$scratch"' EXIT HUP INT TERM
 
 python3 "$guard" "$action" >"$scratch/guard-real.out" 2>&1
 same 'the real, fixed action.yml has no forbidden inline expression' 0 "$?"
+
+python3 "$guard" "$upkeep_action" >"$scratch/guard-upkeep.out" 2>&1
+same 'the upkeep action.yml has no forbidden inline expression' 0 "$?"
 
 # The exact injection the review found and #1034 fixed: splice
 # `${{ steps.merge.outputs.sarif-path }}` straight into the run: text of

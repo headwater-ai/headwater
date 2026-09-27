@@ -1,0 +1,82 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# CI for `integrations/headwater-upkeep`, the composite action #502 packages.
+# It is the action's own test suite, not a corpus gate: it never reads `docs/`
+# or `.headwater/` under this repository's root.
+#
+# THE DECISIVE FIXTURE. A change edits a code file that a document governs,
+# and the report must name that document; a second changed file that nothing
+# governs must appear under Unmeasured; and the run must leave the checkout as
+# it found it. `fixtures/governed-change.sh` builds that corpus with the
+# pinned release engine and asserts all three against `upkeep.sh`. The second
+# job step then runs the packaged action itself over the same corpus, so the
+# composite wiring (resolve, install, base, report) is held too.
+#
+# The corpus is built fresh each run, with the same engine that reads it, for
+# the reason `.github/workflows/integrations-headwater-check.yml` gives.
+name: integrations/headwater-upkeep
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - integrations/headwater-upkeep/**
+      - integrations/headwater-check/**
+      - docs/how-to/wire-headwater-check-into-your-own-workflow.md
+      - .github/workflows/integrations-headwater-upkeep.yml
+  pull_request:
+    paths:
+      - integrations/headwater-upkeep/**
+      - integrations/headwater-check/**
+      - docs/how-to/wire-headwater-check-into-your-own-workflow.md
+      - .github/workflows/integrations-headwater-upkeep.yml
+
+permissions:
+  contents: read
+
+env:
+  # v0.4.0 is the first release that carries all three verbs this action
+  # runs with the JSON shapes `upkeep-report.py` reads: `change`,
+  # `check --change --format json` and `route --json` with `evidence`.
+  FIXTURE_TAG: v0.4.0
+  FIXTURE_TAXONOMY_URL: https://github.com/headwater-ai/headwater/releases/download/taxonomy/headwater-standard/v4.2.0/headwater-standard-4.2.0.zip
+  FIXTURE_TAXONOMY_DIGEST: sha256:961ecf2ae2c3c74f251adea575d16b2efda37d9a7fb10d2889e12bb77f4c2eb5
+
+jobs:
+  decisive-fixture:
+    name: A change to a governed file names the governing document
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install the pinned release engine, the one FIXTURE_TAG names
+        env:
+          STAGE: ${{ runner.temp }}/fixture-engine
+        run: |
+          set -euo pipefail
+          TAG="$FIXTURE_TAG" GITHUB_PATH=/dev/null sh integrations/headwater-check/install.sh
+          echo "FIXTURE_ENGINE=$STAGE/headwater" >>"$GITHUB_ENV"
+
+      - name: Run the decisive fixture against upkeep.sh
+        run: sh integrations/headwater-upkeep/fixtures/governed-change.sh "$FIXTURE_ENGINE" "$RUNNER_TEMP/upkeep"
+
+      - name: Read the base commit of the fixture corpus
+        id: fixture
+        run: echo "base=$(git -C "$RUNNER_TEMP/upkeep/corpus" rev-parse HEAD)" >>"$GITHUB_OUTPUT"
+
+      - name: Run the packaged action over the same change
+        id: action
+        uses: ./integrations/headwater-upkeep
+        with:
+          root: ${{ runner.temp }}/upkeep/corpus
+          base: ${{ steps.fixture.outputs.base }}
+          version: ${{ env.FIXTURE_TAG }}
+
+      - name: The action's report names the governing document and the ungoverned path
+        env:
+          REPORT: ${{ steps.action.outputs.report-path }}
+        run: |
+          set -euo pipefail
+          grep -q 'src/a.rs`: governed by `docs/decisions/0001-' "$REPORT"
+          sed -n '/^## Unmeasured/,$p' "$REPORT" | grep -q 'src/b.rs'
+          echo "the packaged action wrote the same report: $REPORT"
