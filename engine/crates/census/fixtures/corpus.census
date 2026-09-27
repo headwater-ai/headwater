@@ -192,6 +192,8 @@ docs/decisions/0092-the-citation-comment-of-spec-5-is-for-an-adopter-s-corpus-an
   typed: decision
 docs/decisions/0093-the-live-account-of-a-domain-is-its-own-kind-split-on-the-product-and-process-line-and-it-draws-on-the-records-it-cites.md
   typed: decision
+docs/decisions/0095-q67-one-library-entry-may-address-the-keys-of-an-entry-it-names-in-requires-and-confluence-holds-over-the-dependency-order.md
+  typed: decision
 docs/decisions/0096-harper-does-not-become-part-of-the-engine-now-and-q41-stands.md
   typed: decision
 docs/decisions/README.md
