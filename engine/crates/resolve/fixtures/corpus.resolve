@@ -93,6 +93,7 @@ operations
   add.anchors.test_site (.headwater/overlay.yml)
   add.relations.verified_by (.headwater/overlay.yml)
   add.relations.proven_by (.headwater/overlay.yml)
+  add.relations.cited_in (.headwater/overlay.yml)
   add.shelves.requirements (.headwater/overlay.yml)
   add.shelves.acceptance_criteria (.headwater/overlay.yml)
   add.shelves.verifications (.headwater/overlay.yml)
@@ -122,7 +123,7 @@ declarations, by member count
   regimes: 3 members
   anchors: 3 members
   kinds: 23 members
-  relations: 14 members
+  relations: 15 members
   shelves: 20 members
   identifier_schemes: 19 members
   core: 1 member

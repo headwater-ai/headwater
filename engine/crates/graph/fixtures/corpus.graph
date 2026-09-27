@@ -553,6 +553,8 @@ anchors
     cited by HW-DR-0048
   code_path `wrangler.jsonc` via source-tree
     cited by HW-DR-0047
+  test_site `engine/crates/check/tests/fixtures.rs` via comment-scan
+    cited by HW-VER-0001
 
 docs/requirements/0002-every-document-of-a-kind-that-requires-sections-carries-all-of-them.md:17:7
   edge: `verified_by` -> section.required.missing resolves to nothing at all, and `check_rule` names the resolver `check-rule`, which this run does not have
