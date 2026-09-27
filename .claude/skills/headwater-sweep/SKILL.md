@@ -37,6 +37,19 @@ Report only these five classes:
 
 **A source file is not a slice member either.** The same ruling: `--under engine` names nothing because the census types documents, and `intake` refuses a path that is not a typed row of it. That refusal is what catches a model inventing a path, and over a tree where any file may be a member it weakens to "the file exists".
 
+**A stated practice that no path backs is a hand pass beside the sweep, and it is not a sixth class.** The shape is a document that says a named path holds a practice, and a tree that holds nothing at that path. "Specs live in" a directory, "the source of truth for" a subject, and a literal command such as an `ls` of a directory are the usual forms. It cannot be a class, because its second term is a path in the tree and not a typed document. The second ruling of Q24 makes `intake` refuse a path that is not a census row, so `headwater sweep report` cannot carry this finding. The owner ruled on [#496](https://github.com/headwater-ai/headwater/issues/496#issuecomment-5770898999) on 2026-09-22 that it is a sweep pattern and not a check rule, because to tell an absent directory from one that nobody meant to exist is a judgment. Run it in three steps. First, collect every path that the governing prose names. From the corpus root, this command prints each backticked path whose first segment the tree tracks and whose whole path the tree does not track, with its file and line:
+
+    git ls-files '*.md' | grep -v -e '^docs/reviews/' -e '/fixtures/' | while read -r f; do
+      grep -no '`[.a-zA-Z_][a-zA-Z0-9_.-]*/[a-zA-Z0-9_./-]*`' "$f" | while IFS=: read -r n p; do
+        p=${p#?}; p=${p%?}
+        case "$p" in ./*|*..*) continue;; esac
+        [ -n "$(git ls-files -- "${p%%/*}" | head -n 1)" ] || continue
+        [ -n "$(git ls-files -- "$p" | head -n 1)" ] || printf '%s:%s\t%s\n' "$f" "$n" "$p"
+      done
+    done
+
+Second, read the line of every path it prints, and not a sample. Third, judge each one: a claim about this tree, an example, a path in another repository, a retired tool that the text says is retired, or a file that a build or a run writes. Only the first is a finding. The command misses a path with no slash, a path outside backticks, and a code span that holds a space, such as a whole command. So read the lines around each claim that it finds for the same path in those forms. [The n8n evaluation](../../../docs/evaluations/n8n-worked-example.md#what-this-taxonomy-would-report-and-what-it-does-not) records one run of it over this repository, with its denominator. A finding goes to an obligation record, or to one line of the run's intake file during a build-order run. It never goes to `sweep report`.
+
 Two rules bound what you may report.
 
 **Never report an edge the briefing already lists.** A finding that restates the graph is a defect in the sweep rather than a fact about the corpus. The intake refuses one whether or not you read the briefing, so this rule costs you a finding rather than catching one.
