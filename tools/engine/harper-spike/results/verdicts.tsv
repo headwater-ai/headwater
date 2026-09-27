@@ -1,0 +1,38 @@
+rule	n_rule	drawn	TP	PREF	FP	class	why the false positives fire
+AdjectiveDoubleDegree	1	1	0	0	1	detection-only	"more honest" is correct English
+AnA	4	4	0	0	4	advisory-with-suggestion	reads a code span's letters, not how it is said: "a `SKILL.md`", "an `<h2>`", "A SKOS", "§A"
+Codebase	1	1	0	1	0	advisory-with-suggestion	both spellings are correct
+CompoundNouns	17	10	0	9	1	advisory-with-suggestion	closed compounds are a preference; "key maps" is a noun and a verb
+DiscourseMarkers	17	10	0	10	0	advisory-with-suggestion	comma after an opening "Thus" is optional
+DisjointPrefixes	37	10	0	10	0	advisory-with-suggestion	hyphenated prefixes ("re-run", "non-zero") are a house choice, not an error
+Everyone	7	7	0	0	7	detection-only	"every one of them" is correct and means something else
+ExpandConfiguration	2	2	0	2	0	advisory-with-suggestion	informal abbreviation
+ExpandMemoryShorthands	4	4	0	4	0	advisory-with-suggestion	KiB and GB are standard units in a table of measurements
+ExpandTimeShorthands	11	10	0	10	0	advisory-with-suggestion	ms is a standard unit
+ItsContraction	1	1	0	0	1	detection-only	"counts as its heading" is the possessive
+LitotesDirectPositive	1	1	0	0	1	detection-only	"difficult if not impossible" changes meaning when rewritten
+MassNouns	70	10	0	0	10	detection-only	"a ruling", "a finding", "a briefing" are count nouns
+MissingPreposition	9	9	0	0	9	detection-only	no suggestion; every flagged verb had its complement
+MissingTo	9	9	0	0	9	detection-only	"a failed run", "every resolved scheme" are participles
+ModalBeAdjective	1	1	0	0	1	detection-only	an italic modal quoted as a word
+NounVerbConfusion	4	4	0	0	4	detection-only	"whose effect it displaces" uses the noun correctly
+OhMyGod	2	2	0	0	2	detection-only	OMG is the Object Management Group
+OneOfTheSingular	6	6	0	0	6	detection-only	"one of the two" is correct
+OrthographicConsistency	9	9	0	1	8	detection-only	proper names and file extensions: DEVELOPING.md, Neo4j, Wasm, r/, DoD
+OxfordComma	30	10	0	9	1	advisory-with-suggestion	this corpus writes no serial comma; one flag split an appositive
+PhrasalVerbAsCompoundNoun	3	3	0	0	3	detection-only	"phased-rollout language" is the noun
+PronounInflectionBe	2	2	0	0	2	detection-only	"the reasons for it are" agrees with "reasons"
+PronounKnew	1	1	0	0	1	detection-only	"anything new"
+SentenceCapitalization	105	10	0	0	10	detection-only	list items and table cells that are not sentences
+SingleBe	1	1	0	0	1	detection-only	reads across a masked code span
+Spaces	81	10	0	0	10	detection-only	a code span that opens with a period reads as a sentence end
+SpellCheck	1069	10	0	0	10	advisory-with-suggestion	identifiers and domain terms: Q19, HW-, SHACL, DDL, scaffolder, Terminality
+SplitWords	56	10	0	0	10	detection-only	valid technical words: fixability, reachability, sublanguage
+ThatThan	2	2	0	0	2	detection-only	relative "that"
+There	1	1	0	0	1	detection-only	"the re-entered" split at a hyphen
+ThereIsAgreement	1	1	0	0	1	detection-only	same sentence as PronounInflectionBe
+ToTwoToo	6	6	0	0	6	detection-only	"to" before a masked code span
+WayTooAdjective	1	1	0	0	1	detection-only	"to" before a masked code span
+WereWhere	1	1	0	0	1	detection-only	"Rust and Go were" is correct
+WouldNeverHave	1	1	0	1	0	advisory-with-suggestion	word order preference
+WrongNegative	6	6	0	0	6	detection-only	delinked, unbuilt, disjunction, unselective, unplanted are real words

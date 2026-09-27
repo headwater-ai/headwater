@@ -14,7 +14,7 @@ provenance:
 relations:
   governs:
     - to: .github/workflows/ci.yml
-      verified_revision: sha256:a4195cba139ce6094882dc4531fe20ed780aef3eabfc987a9e906606e46635ee
+      verified_revision: sha256:2986fbfc8dacc637fe94ea48c28de2bcc6c3ddf9d4eb7265e12b487e3b98741f
 ---
 
 # The boundary against a fork is the approval of outside runs, and a person reads a .github diff before approving one

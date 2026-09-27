@@ -98,7 +98,7 @@ pub enum Binding {
         /// cache key of every edge instance, so a verdict about an edge cannot
         /// outlive the advance that falsifies it
         /// ([#160](https://github.com/headwater-ai/headwater/issues/160)).
-        revision: Option<String>,
+        revision: Revision,
     },
     /// A defect, and the message says which one.
     Unresolved(String),
@@ -106,6 +106,85 @@ pub enum Binding {
     /// filter. Somebody's declared decision, and never a defect.
     Withheld { profile: String },
 }
+
+/// What a resolver says a target is at now, read on first use and never
+/// before.
+///
+/// [`SourceTree`] answers with [`tree_revision`], which reads and digests the
+/// bytes of every entry an anchor matched. Two readers want that value: the
+/// suspect rule and the cache key of `headwater check`, which read it for
+/// every edge, and `headwater route`, which reads it only for the governing
+/// edges of the anchors its task names. When every binding digested its bytes
+/// at load, route paid for every governed file on every call, 0.16 s of CPU
+/// against 0.06 s before on this repository (#1160). So a binding carries the
+/// paths and the base, and the first reader computes the digest once for
+/// every clone of the value.
+///
+/// Its `Debug` and its equality are those of the `Option<String>` it stands
+/// for, so [`crate::edges::Target::resolution`] writes the same cache key it
+/// wrote when the digest was computed at load.
+#[derive(Clone)]
+pub struct Revision(std::sync::Arc<RevisionCell>);
+
+struct RevisionCell {
+    value: std::sync::OnceLock<Option<String>>,
+    /// The tree and the entries to digest, where the value is not known yet.
+    tree: Option<(PathBuf, Vec<String>)>,
+}
+
+impl Revision {
+    /// A value the resolver already holds, such as a snapshot's pinned
+    /// revision, or `None` where it has no such notion.
+    pub fn known(value: Option<String>) -> Self {
+        let cell = std::sync::OnceLock::new();
+        let _ = cell.set(value);
+        Self(std::sync::Arc::new(RevisionCell {
+            value: cell,
+            tree: None,
+        }))
+    }
+
+    /// The [`tree_revision`] of `matched` under `base`, computed when it is
+    /// first read.
+    pub fn of_tree(base: &Path, matched: &[String]) -> Self {
+        Self(std::sync::Arc::new(RevisionCell {
+            value: std::sync::OnceLock::new(),
+            tree: Some((base.to_path_buf(), matched.to_vec())),
+        }))
+    }
+
+    /// The value, computed now if nothing has read it yet.
+    pub fn get(&self) -> Option<&str> {
+        self.value().as_deref()
+    }
+
+    fn value(&self) -> &Option<String> {
+        self.0.value.get_or_init(|| match &self.0.tree {
+            Some((base, matched)) => tree_revision(base, matched),
+            None => None,
+        })
+    }
+}
+
+impl From<Option<String>> for Revision {
+    fn from(value: Option<String>) -> Self {
+        Self::known(value)
+    }
+}
+
+impl std::fmt::Debug for Revision {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Debug::fmt(self.value(), f)
+    }
+}
+
+impl PartialEq for Revision {
+    fn eq(&self, other: &Self) -> bool {
+        self.value() == other.value()
+    }
+}
+
+impl Eq for Revision {}
 
 /// The single component that owns identity for one anchor type.
 pub trait Resolver {
@@ -133,9 +212,9 @@ pub trait Resolver {
     /// one member's. `crate::edges` asks this for the union. The default is
     /// `None`, because a snapshot names one item at one revision and a list is
     /// admitted only where the resolver is `source-tree`.
-    fn revision_of(&self, matched: &[String]) -> Option<String> {
+    fn revision_of(&self, matched: &[String]) -> Revision {
         let _ = matched;
-        None
+        Revision::known(None)
     }
 
     /// Whether a normalized literal names a directory rather than a file. A
@@ -288,7 +367,7 @@ impl Resolver for SourceTree {
 
             let matched = vec![normalized.clone()];
             return Binding::Resolved {
-                revision: tree_revision(&self.base, &matched),
+                revision: Revision::of_tree(&self.base, &matched),
                 matched,
                 normalized,
                 excluded_by,
@@ -354,13 +433,13 @@ impl Resolver for SourceTree {
         Binding::Resolved {
             normalized,
             excluded_by: None,
-            revision: tree_revision(&self.base, &matched),
+            revision: Revision::of_tree(&self.base, &matched),
             matched,
         }
     }
 
-    fn revision_of(&self, matched: &[String]) -> Option<String> {
-        tree_revision(&self.base, matched)
+    fn revision_of(&self, matched: &[String]) -> Revision {
+        Revision::of_tree(&self.base, matched)
     }
 }
 
@@ -602,7 +681,7 @@ impl Resolver for CommentScan {
                 excluded_by: None,
                 // A claim file names no revision, and neither does the
                 // source tree it sits beside. See `SourceTree::resolve`.
-                revision: None,
+                revision: Revision::known(None),
             }
         } else {
             Binding::Unresolved(format!(
@@ -919,14 +998,14 @@ mod tests {
         let member = |matched: &[String]| crate::edges::PatternMember {
             pattern: ".claude/hooks/**".to_string(),
             matched: matched.to_vec(),
-            revision: None,
+            revision: None.into(),
         };
         let anchor = |matched: &[String]| crate::edges::Target::Anchor {
             anchor_kind: "code_path".to_string(),
             resolver: "source-tree".to_string(),
             normalized: ".claude/hooks/**".to_string(),
             excluded_by: None,
-            revision: None,
+            revision: None.into(),
             patterns: vec![member(matched)],
         };
         assert_ne!(
