@@ -13,7 +13,8 @@ provenance:
   evidence_basis: evidenced
 relations:
   governs:
-    - .github/workflows/ci.yml
+    - to: .github/workflows/ci.yml
+      verified_revision: sha256:12500507748c6c0298358ead4545caf0233607500e2b649e3c53226400222bda
 ---
 
 # Two triggers, one verdict: how this repository's CI decides where a job runs and what it trusts
@@ -84,7 +85,7 @@ A hosted runner is slower than a free slot, and faster than a full one. Over 35 
 
 The `route` job applies that comparison before the two jobs start. It runs on a hosted runner, because a job that measures a full queue cannot wait in that queue. It lists the queued and running jobs of this repository that ask for the `headwater` label. It uses the run's own token with `actions: read`, and that token cannot list the runners themselves. The rule is this: self-hosted when no such job is queued and the running ones plus two fit the pool, and hosted otherwise. The pool size is the variable `CI_SELF_HOSTED_SLOTS`, three when it is not set. Two routers that read the pool at the same time can both choose it. That costs one wait, which is what every run paid before the router existed.
 
-The router obeys the rule of the section on conditions above, and the proof is in the expression and not in the script. The router gives one word, `overflow`. Each job compares it with the literal `'true'` inside the same `runs-on` expression that first tests for a `push`. A `pull_request` run gets a hosted runner whatever the router says. A `push` run gets `CI_RUNNER` or a hosted runner, and no value of the word gives it a third label. So the router can move work from the self-hosted pool to a hosted runner, and it cannot move work in the other direction.
+The router obeys the rule of the section on conditions above, and the proof is in the expression and not in the script. The router gives one word, `overflow`. Each job compares it with the literal `'true'` inside the same `runs-on` expression that first tests for a `push` or a `merge_group`. A `pull_request` run gets a hosted runner whatever the router says. A `push` or `merge_group` run gets `CI_RUNNER` or a hosted runner, and no value of the word gives it a third label. So the router can move work from the self-hosted pool to a hosted runner, and it cannot move work in the other direction.
 
 A router that fails must not skip the jobs, and the reason is the rule about skipped jobs above. By default, a job whose `needs:` fails or skips is skipped too, and a skipped job reports success to a required check. A router that failed on a fork pull request would therefore pass it without a test. Two mechanisms stop this. The router has no condition of its own, and its one step continues on an error and has a two-minute limit. An error, a missing permission or an answer it cannot read gives an empty word or `false`. The router can also fail as a whole job, when GitHub loses its runner or cannot set it up. For that case, the condition of each job opens with `!cancelled()`, so the job runs after a failed router. In both cases the word is empty or `false`, and the jobs run where they ran before the router existed. The branch that added the router showed each route and the fallback on its own `push` runs.
 

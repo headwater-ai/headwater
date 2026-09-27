@@ -14,7 +14,7 @@ provenance:
 relations:
   governs:
     - to: .github/workflows/ci.yml
-      verified_revision: sha256:a4195cba139ce6094882dc4531fe20ed780aef3eabfc987a9e906606e46635ee
+      verified_revision: sha256:12500507748c6c0298358ead4545caf0233607500e2b649e3c53226400222bda
 ---
 
 # A condition in CI may take work away and never grant it, so one run per commit comes from a job-level if

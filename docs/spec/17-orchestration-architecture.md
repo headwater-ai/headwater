@@ -26,15 +26,24 @@ relations:
     - HW-PD-0006
     - HW-PD-0007
   governs:
-    - .claude/commands/next-run.md
-    - .claude/commands/next.md
-    - .claude/agents/hw-queue.md
-    - .claude/agents/hw-adjudicate.md
-    - .claude/agents/hw-build.md
-    - .claude/agents/hw-verify.md
-    - .claude/agents/hw-integrate.md
-    - .claude/skills/hw-run-policy/SKILL.md
-    - .claude/skills/hw-verification-bar/SKILL.md
+    - to: .claude/commands/next-run.md
+      verified_revision: sha256:597229563393b2e3e7c32b5c09dfbd644a0c793dcab0d55f27839fc30c3824aa
+    - to: .claude/commands/next.md
+      verified_revision: sha256:2187df478cc9af688294a818636190d36e4fda10e8cc416e9581d419ec37b643
+    - to: .claude/agents/hw-queue.md
+      verified_revision: sha256:3e7a6397fd22c80436ff488cb2be0c8059f28924c1698706be5e0d1b782c9c6a
+    - to: .claude/agents/hw-adjudicate.md
+      verified_revision: sha256:c8359200c25bdde102f0ad8cb756a3f7c1de98bef30cdbdca70550ef8a8993b0
+    - to: .claude/agents/hw-build.md
+      verified_revision: sha256:0d713a1cbf71dc57e5faa037d367cb32b6e3ebe7e1a75948fbec7fdbbdf4fee0
+    - to: .claude/agents/hw-verify.md
+      verified_revision: sha256:fb4b14973d51715a6c8a6516eb918a1434bfa04c48f4574619d7601b31257b1b
+    - to: .claude/agents/hw-integrate.md
+      verified_revision: sha256:cd95a48b66c7aa437883a94ed4d81c49fd76692848ed1330be553a97b9a46779
+    - to: .claude/skills/hw-run-policy/SKILL.md
+      verified_revision: sha256:c5bbcf3df41b8f346b0fdc1b6dd143f9128b6186d7a6497aaa038845fc67cf54
+    - to: .claude/skills/hw-verification-bar/SKILL.md
+      verified_revision: sha256:90ea30fa0995ba977d6e5a83fa3418f567d90fff3363718113f9ea81cfc4fcf7
 ---
 
 # 17 — Orchestration architecture
@@ -101,7 +110,7 @@ flowchart LR
 
 **The parent owns three things: the doctrine, the loop and the veto.** The doctrine is at most ten numbered lines and at most six hundred tokens. A run copies it into the run directory, so that a compacted parent acts from it alone. The loop dispatches the queue, fills the slots, and advances on each report. The veto is the merge decision, and it is the one judgment that never leaves the parent.
 
-**The parent never builds, never merges by hand and never reads the board.** It runs no `gh` call and no `cargo build`. Pull request state arrives inside the verifier's report, and board state arrives as a queue file. Every build belongs to the integrator or to a worker's own worktree. [HW-PD-0003](../process/decisions/0003-a-dispatch-pays-when-it-retires-more-parent-turns-than-it-costs.md) is the rule under each of those refusals.
+**The parent never builds, never merges by hand and does not read the board to choose work.** It runs no `cargo build`. Pull request state arrives inside the verifier's report, and board state arrives as a queue file. Two acts on the board stay with the parent, and [`hw-run-policy`](../../.claude/skills/hw-run-policy/SKILL.md) states both. It closes an epic whose children are all done, after it verifies the Done-when clause by clause. It writes each answer of the owner onto its issue. Every build belongs to the integrator or to a worker's own worktree. [HW-PD-0003](../process/decisions/0003-a-dispatch-pays-when-it-retires-more-parent-turns-than-it-costs.md) is the rule under each of those refusals.
 
 **The parent waits by ending its turn.** With agents in flight, an ended turn is the blocking wait, and each report wakes it. A check on a timer buys nothing and costs a turn at the parent's full context. Its prompt cache holds that context for an hour, so a report arrives warm whether or not the parent looked.
 
@@ -129,7 +138,7 @@ flowchart LR
 
 [`.claude/agents/hw-build.md`](../../.claude/agents/hw-build.md) builds one adjudicated issue in a worktree of its own and opens the pull request.
 
-**It owns the branch, the commits and the pull request.** It claims the issue on the board before its first commit, because a board claim is atomic and needs no coordinator. It extends the contract, the decision clause or the case table the note names before it writes any implementation. It repairs its own red continuous-integration run before it reports.
+**It owns the branch, the commits and the pull request.** It claims the issue on the board before its first commit, because a board claim is atomic and needs no coordinator. It extends the contract, the decision clause or the case table the note names before it writes any implementation. It repairs a format, lint or unblessed-fixture failure in its own continuous-integration run before it reports. A red run that it cannot repair is the first line of its report.
 
 **It never merges, never force-pushes and never touches the shared checkout.** The integrator alone writes `main`. A generating verb run in the shared checkout while a merge lands is the silent bad merge from the other direction.
 
@@ -153,7 +162,7 @@ flowchart LR
 
 **A fresh integrator runs each dispatch and exits with it.** A long-lived integrator accumulates every merge it ran and then compacts, which is the parent's own failure one level down.
 
-**The queue tests the composition, so a branch that is only behind `main` is not brought current by hand.** The queue runs CI on the tip of a group built from `main` and the queued heads. It lands one squash commit for each pull request. The integrator merges `main` into a branch only when the queue reports a conflict. It reports an ejected pull request with the failing check, and the parent rules on it again.
+**The queue tests the composition, so a branch that is only behind `main` is not brought current by hand.** The queue runs CI on the tip of a group built from `main` and the queued heads. It lands one squash commit for each pull request. The integrator merges `main` into a branch on two conditions only. The queue ejects the branch for a conflict, or GitHub reports a conflict before the integrator enqueues it. It reports an ejected pull request with the failing check, and the parent rules on it again.
 
 **It fuses six mechanical acts that all touch the one checkout.** The merge, the rebuild, the regenerate, the write-back, the claim release and the ledger line are one dispatch rather than six parent turns. It rebuilds the engine before it regenerates, once after the last merge of the dispatch. A binary built before the merges writes what the previous engine produced, and then passes its own output.
 

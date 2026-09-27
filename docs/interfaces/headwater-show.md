@@ -8,8 +8,10 @@ title: "headwater show"
 relations:
   governs:
     - [engine/crates/cli/src/lib.rs, engine/crates/cli/src/main.rs]
-    - engine/crates/query/src/explain.rs
-    - engine/crates/census/src/walk.rs
+    - to: engine/crates/query/src/explain.rs
+      verified_revision: sha256:7295f5c240de3838c3e0bab52ff58e9b287b1768a879d2653bcf3b68bcc3fde9
+    - to: engine/crates/census/src/walk.rs
+      verified_revision: sha256:a6963e1e2967c28d0c0a28fa4bee742097a03e44abb2291b81e1759c368a0b9b
 ---
 
 # headwater show
