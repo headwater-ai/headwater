@@ -415,6 +415,7 @@ Say whether this probe was in the selection. Answer `yes` or `no`.
 
 ```yaml
 answers: [yes, no]
+expected: [no]
 ```
 ";
 

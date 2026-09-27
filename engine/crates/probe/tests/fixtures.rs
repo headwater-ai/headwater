@@ -794,11 +794,7 @@ fn the_grader_refuses_a_selection_the_plan_would_not_have_produced() {
         (
             Selected {
                 expected: vec!["no".into(), "yes".into()],
-                ..one(
-                    Expectation::Answered,
-                    None,
-                    vec!["no".into(), "yes".into()],
-                )
+                ..one(Expectation::Answered, None, vec!["no".into(), "yes".into()])
             },
             NoVerdict::AnswersUndeclared,
         ),
@@ -1172,7 +1168,9 @@ fn an_answered_probe_that_expects_a_value_outside_its_set_stops_the_run() {
     let refusal = plan.refusal.as_ref().map(ToString::to_string);
     assert!(
         matches!(plan.refusal, Some(Refusal::ExpectedOutsideAnswers { .. }))
-            && refusal.as_deref().is_some_and(|said| said.contains("`maybe`")),
+            && refusal
+                .as_deref()
+                .is_some_and(|said| said.contains("`maybe`")),
         "a recorder extracts only in-domain values, so an expected value outside the set is \
          never met: {refusal:?}"
     );
