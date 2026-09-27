@@ -729,6 +729,142 @@ fn the_git_step_leaves_a_declared_store_alone_and_writes_no_override_for_a_store
     );
 }
 
+/// Every form of a hand-written merge line for a store, in any file and by any
+/// pattern, keeps its effect through `init --git`, with the store absent and
+/// with it present.
+///
+/// Git obeys the later of two lines for a path, so a union line appended after
+/// an adopter's `merge=ours` overrides it with exit 0 and no message. The step
+/// asks git whether anything names the store's merge attribute, which reads a
+/// glob, a nested file, `!merge` and a store that does not exist yet as the
+/// merge itself does. Read the root file's literal `-merge` lines alone, and
+/// the rows other than those go red.
+#[test]
+fn the_git_step_leaves_every_form_of_a_merge_line_for_a_store_in_effect() {
+    let rows: [(&str, &str, &str); 9] = [
+        (
+            "ours",
+            ".gitattributes",
+            ".headwater/capture-cost.jsonl merge=ours\n",
+        ),
+        (
+            "text",
+            ".gitattributes",
+            ".headwater/capture-cost.jsonl merge=text\n",
+        ),
+        (
+            "bang",
+            ".gitattributes",
+            ".headwater/capture-cost.jsonl !merge\n",
+        ),
+        (
+            "set",
+            ".gitattributes",
+            ".headwater/capture-cost.jsonl merge\n",
+        ),
+        ("glob", ".gitattributes", ".headwater/*.jsonl -merge\n"),
+        (
+            "anchored",
+            ".gitattributes",
+            "/.headwater/capture-cost.jsonl -merge\n",
+        ),
+        (
+            "binary",
+            ".gitattributes",
+            ".headwater/capture-cost.jsonl binary\n",
+        ),
+        (
+            "nested",
+            ".headwater/.gitattributes",
+            "capture-cost.jsonl merge=ours\n",
+        ),
+        (
+            "nested-bang",
+            ".headwater/.gitattributes",
+            "capture-cost.jsonl !merge\n",
+        ),
+    ];
+    let mut wrong: Vec<String> = Vec::new();
+    for (label, file, line) in rows {
+        for present in [false, true] {
+            let tree = Tree::adopted(&format!("form-{label}-{present}"));
+            if present {
+                tree.write(CAPTURE_COST, "{\"a\":1}\n");
+            }
+            tree.write(file, line);
+            let before = tree.git(&["check-attr", "merge", "--", CAPTURE_COST]);
+            tree.headwater_ok(&["init", "--git"]);
+            let after = tree.git(&["check-attr", "merge", "--", CAPTURE_COST]);
+            let root = tree.read(".gitattributes");
+            let appended = root.contains(&format!("{CAPTURE_COST} merge=union"));
+            let second = tree.headwater_ok(&["init", "--git"]);
+            let settled = String::from_utf8_lossy(&second.stdout).contains("already declares all");
+            if after != before || appended || !settled {
+                wrong.push(format!(
+                    "{label} (`{}` in {file}, store present: {present}): before `{}`, after \
+                     `{}`, union line appended: {appended}, second run wrote nothing: {settled}",
+                    line.trim_end(),
+                    before.trim_end(),
+                    after.trim_end()
+                ));
+            }
+        }
+    }
+    assert!(
+        wrong.is_empty(),
+        "the adopter's line keeps its effect, the step writes no union line for the store, \
+         and a second run writes nothing:\n{}",
+        wrong.join("\n")
+    );
+}
+
+/// Two branches that each record an adoption reading merge without a conflict
+/// on the adoption store, and it holds both readings.
+///
+/// `headwater taxonomy audit --record` appends one line to
+/// `.headwater/adoption.jsonl`. Both branches create it from nothing, which is
+/// an add/add conflict under a text merge. Drop the adoption store from the
+/// union lines, and this case goes red.
+#[test]
+fn two_branches_that_each_record_an_audit_merge_the_adoption_store_without_a_conflict() {
+    let tree = Tree::adopted("two-audits");
+    tree.headwater_ok(&["init", "--git"]);
+    tree.git(&["add", "-A"]);
+    tree.git(&["commit", "-q", "-m", "adopted"]);
+
+    tree.git(&["checkout", "-q", "-b", "a"]);
+    tree.headwater_ok(&["taxonomy", "audit", "--record", "--now", "2026-01-01"]);
+    tree.git(&["add", "-A"]);
+    tree.git(&["commit", "-q", "-m", "a reading"]);
+
+    tree.git(&["checkout", "-q", "main"]);
+    tree.git(&["checkout", "-q", "-b", "b"]);
+    tree.headwater_ok(&["taxonomy", "audit", "--record", "--now", "2026-02-02"]);
+    tree.git(&["add", "-A"]);
+    tree.git(&["commit", "-q", "-m", "b reading"]);
+
+    let merged = tree.git_output(&["merge", "--no-edit", "a"]);
+    assert_eq!(
+        (merged.status.code(), tree.unmerged()),
+        (Some(0), Vec::<String>::new()),
+        "the merge of two branches that each recorded an audit exits 0 with nothing unmerged:\n{}{}",
+        String::from_utf8_lossy(&merged.stdout),
+        String::from_utf8_lossy(&merged.stderr)
+    );
+    let store = tree.read(ADOPTION);
+    let readings: Vec<&str> = store.lines().collect();
+    assert_eq!(
+        readings.len(),
+        2,
+        "the store holds one reading from each branch:\n{store}"
+    );
+    assert!(
+        readings.iter().any(|line| line.contains("2026-01-01"))
+            && readings.iter().any(|line| line.contains("2026-02-02")),
+        "one reading carries each date:\n{store}"
+    );
+}
+
 /// Every `headwater taxonomy resolve` command the merge hooks of this
 /// repository print as a remedy is one the verb accepts (HW-OBL-0216).
 ///
