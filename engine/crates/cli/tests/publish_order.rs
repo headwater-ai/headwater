@@ -264,7 +264,7 @@ fn run_gate(index: &Path, args: &[&str]) -> std::process::Output {
 /// did not list `headwater-scaffold` 0.4.0.
 #[test]
 fn the_index_gate_refuses_a_crate_whose_dependency_the_index_does_not_list() {
-    let version = env!("CARGO_PKG_VERSION");
+    let version = headwater_resolve::release::ENGINE;
     let index = sparse_index("refuses", version, &["headwater-scaffold"]);
     let out = run_gate(&index, &["headwater-import", version]);
     let said = String::from_utf8_lossy(&out.stdout).into_owned();
@@ -283,7 +283,7 @@ fn the_index_gate_refuses_a_crate_whose_dependency_the_index_does_not_list() {
 /// published crate once the index lists the crate itself.
 #[test]
 fn the_index_gate_passes_a_crate_whose_dependencies_the_index_lists() {
-    let version = env!("CARGO_PKG_VERSION");
+    let version = headwater_resolve::release::ENGINE;
     let index = sparse_index("passes", version, &[]);
     let deps = run_gate(&index, &["headwater-import", version]);
     let published = run_gate(&index, &["--published", "headwater-import", version]);
@@ -306,7 +306,7 @@ fn the_index_gate_passes_a_crate_whose_dependencies_the_index_lists() {
 /// cargo availability timeout cannot count as success for the next crate.
 #[test]
 fn the_index_gate_refuses_a_published_crate_the_index_does_not_list() {
-    let version = env!("CARGO_PKG_VERSION");
+    let version = headwater_resolve::release::ENGINE;
     let index = sparse_index("unlisted", version, &["headwater-import"]);
     let out = run_gate(&index, &["--published", "headwater-import", version]);
     let said = String::from_utf8_lossy(&out.stdout).into_owned();
