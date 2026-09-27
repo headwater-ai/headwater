@@ -3,7 +3,7 @@ id: HW-EVAL-harper-spike-results
 status: current
 status_since: 2026-09-27
 summary: "harper-core 2.11.0, fed only the prose an author wrote, found 0 errors in 187 hand-read findings on 25 documents. It adds 496 crates and does not compile at rustc 1.91."
-last_verified: 2026-09-27
+last_verified: 2026-09-28
 title: "Harper over this corpus finds no error on a 25-document sample, and version 2.11.0 does not build at the engine's floor of rustc 1.91"
 provenance:
   warrant: asserted
@@ -13,7 +13,8 @@ provenance:
   evidence_basis: evidenced
 relations:
   governs:
-    - tools/engine/harper-spike/**
+    - to: tools/engine/harper-spike/**
+      verified_revision: sha256:432b2bb624a36c45c456b9a88d5af8ce8644f1cf26ab32c744ef7e0fe09161ca
   traces_to:
     - tools/engine/harper-spike/build.sh
 ---
@@ -28,7 +29,7 @@ relations:
 
 **Harper reads one sentence at a time, through its plain-English constructor, and never through its own Markdown parser.** The text of a sentence keeps its code spans and quotations. A Harper finding that touches a run the author did not write is dropped. A `--raw` mode gives Harper the whole file through its Markdown parser, for comparison.
 
-**The first version gave Harper the text of `Sentence::authored`, and that text made errors of its own.** `Sentence::authored` removes code spans and quotations. So "on a `conflicts_with` edge" became "on a edge", and the article rule fired. The spaces on each side of a removed span became a double space. On the sample, that version reported 2,182 findings, and the masked version reports 1,580. Of the 602 that went, 178 are comma findings, 257 capitalization findings, 111 space findings, 29 article findings and 4 doubled-word findings. The table is `results/v1-drop-authored.tsv`. A grammar checker needs the words a reader sees, and the engine's `authored` text is correct only for a voice rule.
+**The first version gave Harper the text of `Sentence::authored`, and that text made errors of its own.** `Sentence::authored` removes code spans and quotations. So "on a `conflicts_with` edge" became "on a edge", and the article rule fired. The spaces on each side of a removed span became a double space. On the sample, that version reported 2,182 findings, and the masked version reports 1,580. The net fall is 602. Five rules account for 579 of it: 178 comma findings, 257 capitalization, 111 space, 29 article and 4 doubled-word findings. Twelve other rules fell by 28 in all, and `ToTwoToo` and `WayTooAdjective` rose by 5. The table is `results/v1-drop-authored.tsv`. A grammar checker needs the words a reader sees, and the engine's `authored` text is correct only for a voice rule.
 
 **The decisive fixture is `tests/scoping.rs`.** One file holds the doubled word "the the" in six places. Five are not the author's prose: an inline code span, an inline quotation, a block quote, a fenced code block and an HTML block. The sixth is one authored sentence. The authored mode reports one finding, at the file bytes of the authored occurrence, and the `expect` bytes read from the file match. The raw mode reports the doubled word more than once. Before the offset map existed, the authored mode reported three findings and no file range.
 
@@ -48,11 +49,11 @@ relations:
 | PREF | 57 | 30% |
 | FP | 130 | 70% |
 
-**No rule had a true positive.** The PREF findings are closed compounds, closed prefixes, a comma after "Thus", unit abbreviations and the serial comma. This corpus writes no serial comma by choice. The FP findings have four causes:
+**No rule had a true positive.** There are 57 PREF findings. Of these, 38 are closed compounds (9), closed prefixes (10), a comma after "Thus" (10) and the serial comma (9). A further 16 expand an abbreviation such as "ms", "GB" or "config". This corpus writes no serial comma by choice. The other 3 are one each from `Codebase`, `OrthographicConsistency` and `WouldNeverHave`: "codebase" for "code base", a capitalized proper name, and a word order. The FP findings have four causes:
 
 - Identifiers and domain terms that the dictionary does not hold: "Q19", "HW-", "SHACL", "fixability", "reachability". This is every drawn SpellCheck and SplitWords finding.
 - Correct grammar that a pattern reads wrong: "every one of them", "a ruling", "a finding", "whose effect it displaces", "one of the two".
-- List items and table cells, which are not sentences. This is every drawn capitalization finding.
+- List items and table cells, which are not sentences. This is 9 of the 10 drawn `SentenceCapitalization` findings. The tenth is a prose sentence in `docs/evaluations/adjacent-work.md`, at line 277, that opens with the link text "spec 2" in lower case.
 - The text of a masked code span, which Harper still reads for context. A span that opens with a period, such as `` `.headwater/` ``, reads as the end of a sentence. The word "to" before a code span reads as "too".
 
 ## Misses, against a seeded set and against the engine
@@ -76,7 +77,7 @@ relations:
 **The bar for safe autofix is [spec 12](../spec/12-check-layer.md#fixability).** The remedy must be mechanical and total, and it must fit a `Patch::Text` whose `expect` bytes match the file.
 
 - **Safe autofix: RepeatedWords only, and only as a candidate.** Its suggestion replaces the pair with one word, and the fixture shows that the range and the `expect` bytes match the file. It fired on no document of the sample.
-- **Advisory with a suggestion:** AnA, SpellCheck for a regional spelling, CompoundNouns, DisjointPrefixes, DiscourseMarkers, OxfordComma and the unit expansions. AnA is not safe, because it reads the letters of a code span and not the sound, so "an `<h2>`" is wrong to it.
+- **Advisory with a suggestion:** AnA, SpellCheck for a regional spelling, CompoundNouns, DisjointPrefixes, DiscourseMarkers, OxfordComma, Codebase, WouldNeverHave, and the three expansions ExpandTimeShorthands, ExpandMemoryShorthands and ExpandConfiguration. AnA is not safe, because it reads the letters of a code span and not the sound, so "an `<h2>`" is wrong to it.
 - **Detection only:** every other rule that fired. The verdicts table names the class of each.
 
 ## What each category of `language.rs` gets
@@ -84,13 +85,13 @@ relations:
 | category today | Harper | why |
 |---|---|---|
 | contraction | do not touch | Harper missed the seeded one |
-| British spelling | complement at most | Harper found it, with one wrong suggestion, and its dictionary flags 1,069 correct terms of this corpus |
+| British spelling | complement at most | Harper found it, with one wrong suggestion. Its dictionary flagged 1,069 words on the sample, which are 285 distinct byte strings. The 10 of them read by hand were all correct terms |
 | sentence length, 25 words | do not touch | Harper's threshold is higher, and it missed a 31-word sentence |
 | semicolon | do not touch | Harper missed it |
 | retired terms | do not touch | Harper has no such list, and `retired_terms` is the mechanism |
 | voice categories | do not touch | Harper has no voice rule. It reaches no part of [HW-OBL-0134](../obligations/0134-the-comment-prose-defines-by-contrast-979-times-in-179-000-words-and-no-mechanism-here-performs-an-editorial-pass.md), [HW-OBL-0002](../obligations/0002-declarative-voice-is-called-detectable-at-useful-precision.md) or [HW-OBL-0205](../obligations/0205-hw-obl-0002-s-sample-counts-and-voice-rs-s-own-census-predate-the-scent-role-fix-and-need-retaking.md) |
 
-The only category that Harper adds and the engine lacks is grammar: a doubled word and a wrong article. On this sample, neither fired once on authored text.
+The only category that Harper adds and the engine lacks is grammar: a doubled word and a wrong article. On the authored text of this sample, the doubled-word rule did not fire. The article rule fired 4 times, and all 4 are false. In "a `SKILL.md`", "A SKOS", "§A" and "an `<h2>`", Harper read the letters and not the sound. So the conclusion stands: neither rule found an error in this corpus.
 
 ## Runtime and footprint
 
@@ -118,4 +119,4 @@ The only category that Harper adds and the engine lacks is grammar: a doubled wo
 
 ## Configuration
 
-**Harper takes a user dictionary and pattern rules of its own, called Weir.** An adopter could add terms and house rules through them without a new Headwater rule language. But the word list of this corpus would have to be written first. 1,069 SpellCheck findings on 25 documents is the size of that list. `retired_terms` in the overlay already does what a Weir rule for a retired term would do, and the engine reads it.
+**Harper takes a user dictionary and pattern rules of its own, called Weir.** An adopter could add terms and house rules through them without a new Headwater rule language. But the word list of this corpus would have to be written first. On 25 documents, SpellCheck made 1,069 findings over 285 distinct byte strings, counted with `LC_ALL=C sort -u`. So a list for the sample alone holds at most 285 entries. If the list ignores case, 279 strings are distinct, and this page did not test which one Harper does. Some of those strings can be real errors, because only 10 findings were read by hand. This is a smaller list than the first version of this page stated. The recommendation of [HW-DR-0096](../decisions/0096-harper-does-not-become-part-of-the-engine-now-and-q41-stands.md) does not rest on this number. `retired_terms` in the overlay already does what a Weir rule for a retired term would do, and the engine reads it.
