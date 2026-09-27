@@ -109,14 +109,15 @@ tiers:
 # each: 390 cents and 407 cents, or 48.75 and 50.875 cents per session against
 # the 25 declared above — roughly double.
 #
-# The campaign tier's own count (8 probes, both arms, 58 repetitions)
-# therefore projects two figures and not one. At the declared rate:
-# 8 x 2 x 58 x $0.25 = $232.00 against the $50.00 ceiling above, which is what
-# refuses the plan today. At the realized rate: roughly
-# 8 x 2 x 58 x $0.50 = $464.00 — about four times the $116.00 an earlier
-# draft of the issue that asked for this comparison cited, before #531 added
-# four probes and before a live regression run gave the declared rate
-# anything to be measured against. Neither figure is written into
+# The campaign tier's own count (10 probes since #1010 added two, both arms,
+# 58 repetitions) therefore projects two figures and not one. At the declared
+# rate: 10 x 2 x 58 x $0.25 = $290.00 against the $50.00 ceiling above, which
+# is what refuses the plan today. At the realized rate: roughly
+# 10 x 2 x 58 x $0.50 = $580.00. Over the 8 probes before #1010 the same
+# figures were $232.00 and roughly $464.00, about four times the $116.00 an
+# earlier draft of the issue that asked for this comparison cited, before
+# #531 added four probes and before a live regression run gave the declared
+# rate anything to be measured against. Neither figure is written into
 # `budget_cents` here: the campaign tier's own comment above already rules
 # that the ceiling moves only when a person agrees to spend more, and #980 is
 # where that agreement is asked for.

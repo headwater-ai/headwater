@@ -5026,7 +5026,7 @@ fn sweep_report(root: &Path, path: &Path, format: Option<String>) -> ExitCode {
 /// # It exits 0 on a refusal, and that is the point rather than a leniency
 ///
 /// A probe never gates
-/// ([spec 5](../../../../docs/spec/05-ai-integration.md#two-tiers-and-the-cadence-follows-the-purpose)),
+/// ([spec 5](../../../../docs/spec/05-ai-integration.md#three-tiers-and-the-cadence-follows-the-purpose)),
 /// so no exit status of this binary may carry a fact about a probe run. A plan
 /// that refuses its own run prints the refusal and exits 0, exactly as `sweep
 /// report` does with a refused file. A caller that wants the refusal reads the
@@ -5128,7 +5128,7 @@ fn probe_plan(
 ///
 /// The one verb of this binary that returns a verdict, and the exit status
 /// still carries none. A probe never gates
-/// ([spec 5](../../../../docs/spec/05-ai-integration.md#two-tiers-and-the-cadence-follows-the-purpose)),
+/// ([spec 5](../../../../docs/spec/05-ai-integration.md#three-tiers-and-the-cadence-follows-the-purpose)),
 /// so a run where every expectation was refuted exits 0 exactly as a run where
 /// every one was satisfied does. A caller that wants the rate reads the text,
 /// which is what a person does.
@@ -5256,7 +5256,7 @@ fn probe_record(root: &Path, path: &Path) -> ExitCode {
 /// The two non-zero exits are a caller's and both are true before a read set is
 /// composed: a corpus this binary cannot load, and a budget declaration it
 /// cannot read. A probe never gates
-/// ([spec 5](../../../../docs/spec/05-ai-integration.md#two-tiers-and-the-cadence-follows-the-purpose)),
+/// ([spec 5](../../../../docs/spec/05-ai-integration.md#three-tiers-and-the-cadence-follows-the-purpose)),
 /// and a result going stale is the fact a gate over this verb would carry.
 fn probe_stale(root: &Path) -> ExitCode {
     let declaration = root.join(headwater_probe::budget::PATH);

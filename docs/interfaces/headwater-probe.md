@@ -16,7 +16,7 @@ relations:
 
 ## Synopsis
 
-    headwater probe plan [--tier regression|campaign] [--arm present|absent]
+    headwater probe plan [--tier regression|campaign|documentation] [--arm present|absent]
                           [--category name] [--seed n]
     headwater probe record <path>
     headwater probe grade <path>
@@ -40,7 +40,7 @@ All subcommands require a readable `.headwater/probe.yml`, a readable taxonomy l
 
 | Subcommand | Options | What it does |
 |---|---|---|
-| `plan` | `--tier <regression\|campaign>` | Select the tier. The default is `regression`. |
+| `plan` | `--tier <regression\|campaign\|documentation>` | Select the tier. The default is `regression`. A paired tier refuses a probe whose predicate names a document that its own ablation removes. |
 | `plan` | `--arm <present\|absent>` | Narrow the declared arms. An arm the tier does not declare refuses the run and names the arms it does declare. |
 | `plan` | `--category <name>` | Narrow the selection to one declared category. |
 | `plan` | `--seed <n>` | Record the caller's rotation seed. It does not select a subset. The default is `0`. |
@@ -78,7 +78,7 @@ No subcommand writes a file. Output goes to standard output.
 
 ## See also
 
-[Spec 5](../spec/05-ai-integration.md#two-tiers-and-the-cadence-follows-the-purpose) defines the two tiers, probe categories and transcript contract.
+[Spec 5](../spec/05-ai-integration.md#three-tiers-and-the-cadence-follows-the-purpose) defines the three tiers, probe categories and transcript contract.
 
 [Spec 15](../spec/15-the-recorder-contract.md) defines the recorder and the six members of a probe run identity.
 
