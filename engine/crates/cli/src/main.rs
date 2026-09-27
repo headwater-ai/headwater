@@ -7169,6 +7169,15 @@ const DRIVER_LINE: &str = "headwater merge-driver %O %A %B %P";
 const DRIVER_ATTRIBUTE: &str = "merge=headwater-regenerate";
 /// What the committed `.gitattributes` says for a fold, which needs no driver.
 const COMMITTED_ATTRIBUTE: &str = "-merge";
+/// What the committed `.gitattributes` says for an append-only store.
+const UNION_ATTRIBUTE: &str = "merge=union";
+/// The append-only stores the engine writes. `headwater new` appends to the
+/// first and `headwater taxonomy audit` to the second, and each line of either
+/// depends on no other line (`docs/interfaces/headwater-derived.md`).
+const APPEND_ONLY_STORES: [&str; 2] = [
+    headwater_scaffold::reading::STORE,
+    headwater_audit::reading::STORE,
+];
 
 /// `headwater init --git`: the attribute lines, and the configuration git needs.
 ///
@@ -7195,6 +7204,14 @@ const COMMITTED_ATTRIBUTE: &str = "-merge";
 /// count or digest is one record per entity, and #1058 measured each one
 /// merging as text to what the producer writes. So for an adopter the set is
 /// the lock, unless a generated file states a fold.
+///
+/// **An append-only store takes `merge=union`, and never the driver.**
+/// `headwater new` and `headwater taxonomy audit` each append one line to a
+/// store, and two branches that each ran one would otherwise conflict on a
+/// file neither person edited (#1263). The union line is written even where
+/// the store does not exist yet, and never where any line already names the
+/// store. The stores stay out of the override, because no producer rebuilds
+/// them.
 ///
 /// **The override and the config land together or not at all.** An override
 /// that names a driver no config defines is the text merge again. So the
@@ -7306,9 +7323,32 @@ fn init_git(root: &Path, configure: bool) -> ExitCode {
             None => missing.push(path),
         }
     }
+    // The append-only stores take `merge=union`, which is what
+    // `headwater derived` names for a file of independent lines. They are
+    // kept out of `paths`, because `paths` also feeds the override, and a
+    // driver line on a store would hand a file no producer writes to the
+    // regenerate driver. Any line that already names a store, whatever it
+    // says, is the adopter's and is left alone.
+    let mut unions: Vec<&str> = Vec::new();
+    for store in APPEND_ONLY_STORES {
+        if committed(store).is_some() {
+            continue;
+        }
+        match covering(store) {
+            Some(file) => {
+                withheld += 1;
+                eprintln!(
+                    "headwater: wrote no root line for {store}, because {file} could declare it \
+                     and the step did not read that file"
+                );
+            }
+            None => unions.push(store),
+        }
+    }
+    let declarable = paths.len() + APPEND_ONLY_STORES.len();
 
     let attributes = root.join(".gitattributes");
-    if !missing.is_empty() {
+    if !missing.is_empty() || !unions.is_empty() {
         let mut text = match std::fs::read_to_string(&attributes) {
             Ok(text) => text,
             Err(error) if error.kind() == std::io::ErrorKind::NotFound => String::new(),
@@ -7321,14 +7361,30 @@ fn init_git(root: &Path, configure: bool) -> ExitCode {
                       # so a merge keeps the current side and marks it conflicted in every clone. A forge\n\
                       # ignores it. A clone that also ran `headwater init --git --git-config` names the verb\n\
                       # that rebuilds it. `headwater derived` reports a fold with no line here.\n";
-        if !text.contains(header) {
-            if !text.is_empty() {
-                text.push('\n');
+        if !missing.is_empty() {
+            if !text.contains(header) {
+                if !text.is_empty() {
+                    text.push('\n');
+                }
+                text.push_str(header);
             }
-            text.push_str(header);
+            for path in &missing {
+                text.push_str(&format!("{path} {COMMITTED_ATTRIBUTE}\n"));
+            }
         }
-        for path in &missing {
-            text.push_str(&format!("{path} {COMMITTED_ATTRIBUTE}\n"));
+        let union_header = "# Written by `headwater init --git`. Each path is an append-only store the engine\n\
+                            # writes, one line per reading, and no line depends on another. A merge keeps the\n\
+                            # lines of both sides, which is what either writer would have written.\n";
+        if !unions.is_empty() {
+            if !text.contains(union_header) {
+                if !text.is_empty() {
+                    text.push('\n');
+                }
+                text.push_str(union_header);
+            }
+            for store in &unions {
+                text.push_str(&format!("{store} {UNION_ATTRIBUTE}\n"));
+            }
         }
         if let Err(error) = std::fs::write(&attributes, &text) {
             return refuse(&format!("cannot write .gitattributes: {error}"));
@@ -7337,16 +7393,17 @@ fn init_git(root: &Path, configure: bool) -> ExitCode {
         for path in &missing {
             println!("  {path} {COMMITTED_ATTRIBUTE}");
         }
+        for store in &unions {
+            println!("  {store} {UNION_ATTRIBUTE}");
+        }
     } else if withheld == 0 {
         println!(
-            ".gitattributes already declares all {} derived artifacts",
-            paths.len()
+            ".gitattributes already declares all {declarable} derived artifacts and append-only stores"
         );
     } else {
         println!(
-            "wrote no line to .gitattributes: {withheld} of {} derived artifacts may be declared \
-             by a nested file the step did not read",
-            paths.len()
+            "wrote no line to .gitattributes: {withheld} of {declarable} derived artifacts and \
+             append-only stores may be declared by a nested file the step did not read"
         );
     }
 

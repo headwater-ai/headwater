@@ -469,9 +469,14 @@ fn the_git_step_writes_attributes_for_the_two_verb_producers_and_prints_the_conf
         .collect();
     assert_eq!(
         declared,
-        vec![".headwater/taxonomy.lock -merge"],
+        vec![
+            ".headwater/taxonomy.lock -merge",
+            ".headwater/capture-cost.jsonl merge=union",
+            ".headwater/adoption.jsonl merge=union",
+        ],
         "the attribute lines unset the merge of each fold of the two verb producers, \
-         and the descriptor is one record per entity:\n{attributes}"
+         the descriptor is one record per entity, and each append-only store takes \
+         the union:\n{attributes}"
     );
     assert!(
         !tree.info_attributes().exists(),
@@ -499,6 +504,11 @@ fn the_git_step_writes_attributes_for_the_two_verb_producers_and_prints_the_conf
     assert!(
         stdout.contains(&format!("{LOCK} merge=headwater-regenerate")),
         "the step prints the override line for the lock:\n{stdout}"
+    );
+    assert!(
+        !stdout.contains(".jsonl merge=headwater-regenerate"),
+        "the step prints no override line for an append-only store, which no producer \
+         rebuilds:\n{stdout}"
     );
     assert!(
         stdout.contains("git rev-parse --git-path info/attributes"),
@@ -1045,10 +1055,19 @@ fn the_git_step_writes_no_line_for_a_fold_a_nested_file_declares() {
     for run in ["first", "second"] {
         let output = tree.headwater_ok(&["init", "--git"]);
         let stdout = String::from_utf8_lossy(&output.stdout).into_owned();
+        // The first run writes the union lines of the two append-only stores,
+        // which the nested file does not name. The second finds everything
+        // declared.
         assert!(
-            stdout.contains("already declares all"),
-            "the {run} run finds every derived artifact declared:\n{stdout}"
+            !stdout.contains(&format!("{LOCK} -merge")),
+            "the {run} run reports no root line for the lock:\n{stdout}"
         );
+        if run == "second" {
+            assert!(
+                stdout.contains("already declares all"),
+                "the {run} run finds every derived artifact declared:\n{stdout}"
+            );
+        }
         let root = std::fs::read_to_string(tree.at.join(".gitattributes")).unwrap_or_default();
         assert!(
             !root.contains("taxonomy.lock"),
