@@ -82,7 +82,7 @@ The run on this repository, in a clone outside the checkout, on 2026-09-27:
 
 `task create 1180` wrote the prompt from issue #1136 with its number removed. It wrote `tests.patch` over one file, `engine/crates/cli/tests/fixed_name_shelf.rs`, and `reference.patch` over two files. It protected `engine/crates/cli/tests/`. It could not find a test command for a Cargo workspace under `engine/`, so it wrote the placeholder `false`. A person replaces that placeholder once for each task. `Dockerfile.berbench` is the second file that a person writes, once for each repository. It must copy the tree to `/workspace` and fetch every crate at build time, because the task container has no network.
 
-VALIDATION-RESULT
+`task validate 1180` then passed. The hidden tests failed on the start tree with exit 101, and they passed with the reference patch. The 7 tests of `fixed_name_shelf.rs` all passed in the second phase. The task fingerprint is `8a621f3f6a0be7945fd74bfd9910eec8da9b552042b9cf6b45bd9bbadeb07e48`. `berbench run arms --task 1180 --dry-run` resolved 3 cells and started none. This evaluation made no paid run.
 
 **The absent arm is a `pre` command, and it copies the list that `ablate.sh` holds.** An evaluation block can declare `pre` commands, and each command is part of the cell identity. The block below resolved to three setups:
 
