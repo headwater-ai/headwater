@@ -127,7 +127,13 @@ fn corpus_graph() -> Graph {
             .expect("the comment-scan resolver is the only one of its name"),
         None => Resolvers::over(&corpus),
     };
-    Graph::build(&taken, &declarations, &resolvers, &corpus, &Config::default())
+    Graph::build(
+        &taken,
+        &declarations,
+        &resolvers,
+        &corpus,
+        &Config::default(),
+    )
 }
 
 #[test]
