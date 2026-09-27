@@ -1145,12 +1145,7 @@ fn explain_writes_the_paths_each_pattern_of_an_anchor_matched() {
         .expect("the declaration copies");
     }
     // Written out of sorted order, so a member that does not sort goes red.
-    for name in [
-        "src/glob/c.rs",
-        "src/glob/a.rs",
-        "src/glob/b.rs",
-        "src/lone.rs",
-    ] {
+    for name in ["src/glob/c.rs", "src/glob/a.rs", "src/glob/b.rs", "src/lone.rs"] {
         std::fs::write(at.join(name), "").expect("the source file is written");
     }
     std::fs::write(
