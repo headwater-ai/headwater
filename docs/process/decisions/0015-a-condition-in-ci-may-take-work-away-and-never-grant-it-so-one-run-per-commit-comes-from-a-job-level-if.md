@@ -3,7 +3,7 @@ id: HW-PD-0015
 status: current
 status_since: 2026-09-27
 summary: "The job-level if skips a duplicate pull_request run and grants nothing. No trigger filter replaces it, and each job name stays a literal."
-last_verified: 2026-09-27
+last_verified: 2026-09-28
 title: "A condition in CI may take work away and never grant it, so one run per commit comes from a job-level if"
 provenance:
   warrant: asserted
@@ -14,7 +14,7 @@ provenance:
 relations:
   governs:
     - to: .github/workflows/ci.yml
-      verified_revision: sha256:fa7f2a39b2cc865f5ab7cc8ca489fe637194873cd21a292997fcfac6ad9fe479
+      verified_revision: sha256:320fa7965d87ca289e72f07c35c7c1b9a57d665d0b61e0a5abf4cbe2a0dbfe2f
 ---
 
 # A condition in CI may take work away and never grant it, so one run per commit comes from a job-level if

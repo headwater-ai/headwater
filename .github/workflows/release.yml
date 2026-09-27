@@ -1,9 +1,12 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 # The engine release: a `v*` tag, or a hand run with a `tag` input, builds
-# three archives (glibc Linux, static musl Linux, Apple silicon macOS), runs
-# the musl and macOS archives on hosts that did not build them, and creates
-# the GitHub release only when both smoke jobs pass.
+# three archives (glibc Linux, static musl Linux, Apple silicon macOS) and a
+# Debian package from the musl archive, runs the musl and macOS archives on
+# hosts that did not build them, installs the package through a signed APT
+# repository on two distributions, and creates the GitHub release only when
+# every smoke job passes. With the `APT_SIGNING_KEY` secret set, the release
+# also carries the signed APT metadata the site serves (HW-DR-0094).
 #
 # To run a change to this file on its branch before it merges, with no release:
 #
@@ -18,6 +21,7 @@
 #   HW-PD-0009  every asset goes into the one `gh release create` call
 #   HW-PD-0010  the tag is compared with the version the binary prints
 #   HW-PD-0012  a separate file, one tag value, and names a fixture can read
+#   HW-DR-0094  the APT repository: one amd64 package, signed by a CI subkey
 name: Release
 
 on:
@@ -266,12 +270,266 @@ jobs:
               *) echo "::error::the tag names ${TAG#v} and the binary prints $printed" && exit 1 ;;
           esac
 
+  package-deb:
+    name: The Debian package, from the static Linux archive
+    needs: [tag, build]
+    # One `amd64` package, built from the musl archive the build uploaded, so
+    # it links no C library and needs none on the host that installs it
+    # (HW-DR-0094). It holds the binary, the license and three completion
+    # scripts, no taxonomy and no maintainer script. `dpkg-deb` ships in the
+    # runner image, so the job adds no tool.
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: x86_64-unknown-linux-musl
+      - name: The manifest of the workflow's own commit
+        # `surface.deb` is read at `github.sha` for the reason the build reads
+        # `surface.archive` there: a hand run checks out an older tag.
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          path: manifest
+          sparse-checkout: .headwater/overlay.yml
+          sparse-checkout-cone-mode: false
+      - name: Build the package
+        # The Debian version is the tag without its `v`, with a pre-release
+        # hyphen turned into `~`, so apt orders `0.5.0~rc.1` before `0.5.0`.
+        env:
+          TAG: ${{ needs.tag.outputs.tag }}
+        run: |
+          set -eo pipefail
+          version="${TAG#v}"
+          version="${version/-/\~}"
+          deb="headwater_${version}_amd64.deb"
+          sha256sum -c "headwater-${TAG}-x86_64-unknown-linux-musl.tar.gz.sha256"
+          unpack=$(mktemp -d)
+          tar -xzf "headwater-${TAG}-x86_64-unknown-linux-musl.tar.gz" -C "$unpack"
+          root=$(mktemp -d)/headwater
+          install -D -m 0755 "$unpack/headwater" "$root/usr/bin/headwater"
+          install -d -m 0755 "$root/DEBIAN" "$root/usr/share/doc/headwater" \
+              "$root/usr/share/bash-completion/completions" \
+              "$root/usr/share/zsh/vendor-completions" \
+              "$root/usr/share/fish/vendor_completions.d"
+          "$unpack/headwater" completions bash >"$root/usr/share/bash-completion/completions/headwater"
+          "$unpack/headwater" completions zsh >"$root/usr/share/zsh/vendor-completions/_headwater"
+          "$unpack/headwater" completions fish >"$root/usr/share/fish/vendor_completions.d/headwater.fish"
+          {
+              printf 'Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/\n'
+              printf 'Upstream-Name: headwater\nSource: https://github.com/headwater-ai/headwater\n\n'
+              printf 'Files: *\nCopyright: The Headwater authors\nLicense: Apache-2.0\n'
+              printf ' On Debian systems the full text of the Apache License 2.0 is in\n'
+              printf ' /usr/share/common-licenses/Apache-2.0, and the text this package was\n'
+              printf ' built with follows.\n .\n'
+              sed -e 's/^[[:space:]]*$/./' -e 's/^/ /' "$unpack/LICENSE"
+          } >"$root/usr/share/doc/headwater/copyright"
+          find "$root/usr" -type f ! -path '*/usr/bin/*' -exec chmod 0644 {} +
+          size=$(du -sk --exclude=DEBIAN "$root" | cut -f1)
+          {
+              printf 'Package: headwater\nVersion: %s\nArchitecture: amd64\n' "$version"
+              printf 'Maintainer: Headwater project <https://github.com/headwater-ai/headwater/issues>\n'
+              printf 'Installed-Size: %s\nSection: devel\nPriority: optional\n' "$size"
+              printf 'Homepage: https://headwater.tools\n'
+              printf 'Description: checks a documentation corpus against its taxonomy\n'
+              printf ' A statically linked build of the Headwater engine. It carries no\n'
+              printf ' taxonomy; run `headwater taxonomy vendor` in a corpus to fetch one.\n'
+          } >"$root/DEBIAN/control"
+          mkdir dist-deb
+          # `-Zxz`: `dpkg-deb` on ubuntu-24.04 writes zstd by default, and the
+          # dpkg of Debian 11 refuses a zstd member. `smoke-apt` found it.
+          dpkg-deb -Zxz --build --root-owner-group "$root" "dist-deb/$deb"
+          dpkg-deb --info "dist-deb/$deb"
+      - name: The package holds the paths the consumer surface declares
+        # The same two-way comparison the build makes for `surface.archive`.
+        # The list is uploaded beside the package, so `smoke-apt` holds what
+        # apt installed to the same list without a checkout of its own.
+        env:
+          TAG: ${{ needs.tag.outputs.tag }}
+        run: |
+          set -eo pipefail
+          version="${TAG#v}"
+          version="${version/-/\~}"
+          deb="headwater_${version}_amd64.deb"
+          declared=$(awk '
+              /^  surface:/ { surface = 1; next }
+              surface && /^  [^ ]/ { surface = 0 }
+              surface && /^    deb:/ { list = 1; next }
+              list && /^      - / { sub(/^      - /, ""); print; next }
+              list { list = 0 }
+          ' manifest/.headwater/overlay.yml | sort)
+          if [ -z "$declared" ]; then
+              echo "::error::the overlay at ${{ github.sha }} declares no surface.deb, so this step would pass any package" && exit 1
+          fi
+          held=$(dpkg-deb -c "dist-deb/$deb" | awk '{print $NF}' | grep -v '/$' | sed 's|^\./|/|' | sort)
+          extra=$(comm -13 <(printf '%s\n' "$declared") <(printf '%s\n' "$held"))
+          missing=$(comm -23 <(printf '%s\n' "$declared") <(printf '%s\n' "$held"))
+          if [ -n "$extra" ] || [ -n "$missing" ]; then
+              [ -z "$extra" ] || echo "::error::the package holds paths surface.deb does not declare: $(echo $extra)"
+              [ -z "$missing" ] || echo "::error::the package lacks paths surface.deb declares: $(echo $missing)"
+              exit 1
+          fi
+          printf '%s\n' "$declared" >dist-deb/surface-deb.txt
+          # Cloudflare serves one asset of at most 25 MiB, and the site copies
+          # this package (HW-DR-0094). The binary is about 55 MB unpacked, so
+          # the cap is a number this step holds rather than one it assumes.
+          bytes=$(stat -c %s "dist-deb/$deb")
+          if [ "$bytes" -gt 26214400 ]; then
+              echo "::error::$deb is $bytes bytes, over the 25 MiB a site asset may be" && exit 1
+          fi
+          echo "the package holds exactly surface.deb in $bytes bytes: $(echo $declared)"
+      - name: Three local repositories for smoke-apt, signed by throwaway keys
+        # `good` is signed by the key `smoke-apt` tells apt to trust, `other` by
+        # a second key, and `unsigned` by none. Both keys are made here and
+        # never leave this runner: only the public half of `good` is uploaded.
+        # The repositories are made on the runner, which carries `gpg` and
+        # `apt-ftparchive`, so the smoke containers install nothing from a
+        # mirror, and an end-of-life mirror cannot fail them.
+        env:
+          TAG: ${{ needs.tag.outputs.tag }}
+        run: |
+          set -eo pipefail
+          version="${TAG#v}"
+          version="${version/-/\~}"
+          deb="headwater_${version}_amd64.deb"
+          keys=$(mktemp -d)
+          for name in good other; do
+              mkdir -m 0700 "$keys/$name"
+              GNUPGHOME="$keys/$name" gpg --batch --quiet --passphrase '' --quick-gen-key "Headwater smoke $name <$name@smoke.invalid>" ed25519 sign never
+          done
+          mkdir -p dist-deb/smoke
+          GNUPGHOME="$keys/good" gpg --batch --export >dist-deb/smoke/good.gpg
+          for case in good other unsigned; do
+              dir="dist-deb/smoke/apt-$case"
+              mkdir -p "$dir/pool/main/h/headwater" "$dir/dists/stable/main/binary-amd64"
+              cp "dist-deb/$deb" "$dir/pool/main/h/headwater/"
+              (cd "$dir" && apt-ftparchive packages pool >dists/stable/main/binary-amd64/Packages)
+              apt-ftparchive -o APT::FTPArchive::Release::Suite=stable -o APT::FTPArchive::Release::Codename=stable \
+                  -o APT::FTPArchive::Release::Components=main -o APT::FTPArchive::Release::Architectures=amd64 \
+                  release "$dir/dists/stable" >"$keys/Release"
+              mv "$keys/Release" "$dir/dists/stable/Release"
+              if [ "$case" != unsigned ]; then
+                  GNUPGHOME="$keys/$case" gpg --batch --yes --clearsign -o "$dir/dists/stable/InRelease" "$dir/dists/stable/Release"
+                  GNUPGHOME="$keys/$case" gpg --batch --yes --armor --detach-sign -o "$dir/dists/stable/Release.gpg" "$dir/dists/stable/Release"
+              fi
+          done
+          rm -rf "$keys"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: headwater-deb
+          path: dist-deb/
+          if-no-files-found: error
+
+  smoke-apt:
+    name: The Debian package installs through a signed APT repository on ${{ matrix.image }}
+    needs: [tag, package-deb]
+    # The decisive test of the APT route (#764). `package-deb` signs a `file:`
+    # repository of the package with a throwaway key, and this job installs
+    # through apt from it on the oldest and the newest distribution the
+    # package supports, with nothing added to the image. The owner's key is
+    # never used, so the job runs on every branch. The negative half is
+    # the reason the job exists: the same package, signed by another key or
+    # not signed at all, must be refused, because a job that only installs
+    # would pass on an unsigned repository. Publishing waits on this job.
+    strategy:
+      fail-fast: false
+      matrix:
+        image: ['debian:bullseye', 'ubuntu:24.04']
+    runs-on: ubuntu-24.04
+    container: ${{ matrix.image }}
+    # `sh` is dash here and refuses `pipefail`, as in `smoke-linux`.
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: headwater-deb
+      - name: Sign a local repository, refuse the badly signed ones, install from the good one
+        env:
+          TAG: ${{ needs.tag.outputs.tag }}
+        run: |
+          set -eo pipefail
+          export DEBIAN_FRONTEND=noninteractive
+          if command -v cargo || command -v rustc; then
+              echo "::error::this container has a Rust toolchain, so it cannot show that the package needs none" && exit 1
+          fi
+          version="${TAG#v}"
+          version="${version/-/\~}"
+          deb="headwater_${version}_amd64.deb"
+          [ -f "$deb" ] || { echo "::error::the build uploaded no $deb" && exit 1; }
+          [ -s surface-deb.txt ] || { echo "::error::the build uploaded no surface.deb list, so this job would pass any package" && exit 1; }
+          # The three repositories `package-deb` signed, each holding the
+          # package this job was handed and no other.
+          cp -r smoke/. /srv/
+          chmod -R a+rX /srv
+          for case in good other unsigned; do
+              cmp "$deb" "/srv/apt-$case/pool/main/h/headwater/$deb" || { echo "::error::the $case repository holds another package" && exit 1; }
+          done
+
+          # apt reads one list per case and no other source, so a case
+          # cannot borrow a result from another.
+          mkdir -p /srv/no-parts
+          apt_case() {
+              printf 'deb [signed-by=/srv/good.gpg] file:/srv/apt-%s stable main\n' "$1" >"/srv/$1.list"
+              [ "$2" != update ] || rm -rf /var/lib/apt/lists/*
+              apt-get -o Dir::Etc::SourceList="/srv/$1.list" -o Dir::Etc::SourceParts=/srv/no-parts "${@:2}"
+          }
+          for bad in other unsigned; do
+              if apt_case "$bad" update >"/srv/$bad.out" 2>&1; then
+                  cat "/srv/$bad.out"
+                  echo "::error::apt accepted the \`$bad\` repository, which the key it trusts did not sign" && exit 1
+              fi
+              cat "/srv/$bad.out"
+              if ! grep -Eq 'NO_PUBKEY|is not signed|signatures (couldn.t|were invalid)|not be verified' "/srv/$bad.out"; then
+                  echo "::error::apt refused the \`$bad\` repository for a reason that is not its signature" && exit 1
+              fi
+              if apt_case "$bad" install -y headwater >/dev/null 2>&1 || dpkg -s headwater >/dev/null 2>&1; then
+                  echo "::error::headwater installed from the \`$bad\` repository" && exit 1
+              fi
+              echo "apt refused the \`$bad\` repository and installed nothing from it"
+          done
+
+          apt_case good update
+          apt_case good install -y headwater
+
+          [ "$(command -v headwater)" = /usr/bin/headwater ] || { echo "::error::headwater is at $(command -v headwater), not /usr/bin/headwater" && exit 1; }
+          printed=$(headwater --version | awk '{print $NF}')
+          if [ -z "$printed" ]; then
+              echo "::error::the installed binary printed no version on $(head -1 /etc/os-release)" && exit 1
+          fi
+          case "${TAG#v}" in
+              "$printed"*) echo "$TAG carries $printed, installed by apt, on $(grep PRETTY_NAME /etc/os-release)" ;;
+              *) echo "::error::the tag names ${TAG#v} and the installed binary prints $printed" && exit 1 ;;
+          esac
+
+          # What dpkg says it installed, as files, against `surface.deb`.
+          installed=$(dpkg -L headwater | while read -r path; do [ -f "$path" ] && echo "$path"; done | sort)
+          declared=$(sort surface-deb.txt)
+          if [ "$installed" != "$declared" ]; then
+              echo "::error::dpkg -L and surface.deb differ"
+              diff <(echo "$declared") <(echo "$installed") || true
+              exit 1
+          fi
+          for path in $declared; do
+              [ -s "$path" ] || { echo "::error::$path is empty or absent" && exit 1; }
+          done
+          # The package is taxonomy-free and runs nothing at install (#764).
+          if dpkg -L headwater | grep -E 'taxonomy|\.headwater'; then
+              echo "::error::the package carries a taxonomy path" && exit 1
+          fi
+          for script in preinst postinst prerm postrm; do
+              if [ -e "/var/lib/dpkg/info/headwater.$script" ]; then
+                  echo "::error::the package carries a $script script" && exit 1
+              fi
+          done
+          echo "installed exactly surface.deb: $(echo $declared)"
+
   publish:
-    name: Attach the archives to the release
+    name: Attach the archives and the package to the release
     # Every archive has run on a host that did not build it before this job
     # starts. `publish: false` stops here, and this job alone asks for
     # `contents: write` (HW-PD-0012).
-    needs: [tag, build, smoke-linux, smoke-macos]
+    needs: [tag, build, smoke-linux, smoke-macos, package-deb, smoke-apt]
     if: github.event_name == 'push' || inputs.publish
     runs-on: ubuntu-24.04
     permissions:
@@ -293,12 +551,48 @@ jobs:
               echo "::error::.headwater/packages/headwater-standard/release.yml states no release.digest, so this release would carry none" && exit 1
           fi
           printf 'release.digest: %s\n\nThis tag carries `headwater/standard` with that `release.digest`. Pass the value to `headwater taxonomy vendor <dir> --expect %s`. It is what `headwater taxonomy publish` printed for the package in this tree, and it is not a checksum of any one file.\n' "$digest" "$digest" >release-notes.md
+      - name: Sign the APT metadata
+        # Only where the owner's signing subkey is a secret (HW-DR-0094). The
+        # key is imported into a directory this step makes and removes, and it
+        # is never echoed, written to the tree or uploaded. Without the secret
+        # the release carries the package and no metadata, and the site then
+        # serves no APT repository.
+        env:
+          TAG: ${{ needs.tag.outputs.tag }}
+          APT_SIGNING_KEY: ${{ secrets.APT_SIGNING_KEY }}
+        run: |
+          set -eo pipefail
+          if [ -z "$APT_SIGNING_KEY" ]; then
+              echo "::warning::the APT_SIGNING_KEY secret is not set, so this release carries the Debian package and no signed APT metadata"
+              exit 0
+          fi
+          version="${TAG#v}"
+          version="${version/-/\~}"
+          deb="headwater_${version}_amd64.deb"
+          repo=$(mktemp -d)
+          mkdir -p "$repo/pool/main/h/headwater" "$repo/dists/stable/main/binary-amd64"
+          cp "$deb" "$repo/pool/main/h/headwater/"
+          (cd "$repo" && apt-ftparchive packages pool >dists/stable/main/binary-amd64/Packages)
+          apt-ftparchive -o APT::FTPArchive::Release::Origin=Headwater -o APT::FTPArchive::Release::Label=Headwater \
+              -o APT::FTPArchive::Release::Suite=stable -o APT::FTPArchive::Release::Codename=stable \
+              -o APT::FTPArchive::Release::Components=main -o APT::FTPArchive::Release::Architectures=amd64 \
+              release "$repo/dists/stable" >Release
+          cp "$repo/dists/stable/main/binary-amd64/Packages" Packages
+          GNUPGHOME=$(mktemp -d)
+          export GNUPGHOME
+          printf '%s\n' "$APT_SIGNING_KEY" | gpg --batch --quiet --import
+          gpg --batch --yes --clearsign -o InRelease Release
+          gpg --batch --yes --armor --detach-sign -o Release.gpg Release
+          gpg --batch --verify InRelease
+          gpg --batch --verify Release.gpg Release
+          rm -rf "$GNUPGHOME" "$repo"
       - name: Attach every archive and its checksum to the release
         # Every asset in the one `create` call, and a tag that has a release
         # refuses (HW-PD-0009). `--notes-file` is the step above, and `gh`
         # puts its text before the generated list (HW-DR-0090). The six names
-        # are written again in full for `tools/repo/readme-fixtures.sh`
-        # (HW-PD-0012).
+        # and the package are written again in full for
+        # `tools/repo/readme-fixtures.sh` (HW-PD-0012). The four APT files go
+        # in only when the step above wrote them (HW-DR-0094).
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ needs.tag.outputs.tag }}
@@ -309,10 +603,17 @@ jobs:
           musl_sum="headwater-${TAG}-x86_64-unknown-linux-musl.tar.gz.sha256"
           darwin="headwater-${TAG}-aarch64-apple-darwin.tar.gz"
           darwin_sum="headwater-${TAG}-aarch64-apple-darwin.tar.gz.sha256"
+          version="${TAG#v}"
+          version="${version/-/\~}"
+          deb="headwater_${version}_amd64.deb"
+          apt=()
+          if [ -f InRelease ]; then
+              apt=(Packages Release InRelease Release.gpg)
+          fi
           if gh release view "$TAG" >/dev/null 2>&1; then
               echo "::error::$TAG already has a release, and GitHub will not let this step add assets to it. Delete the release (not the tag) and run this workflow again." && exit 1
           fi
-          gh release create "$TAG" "$gnu" "$gnu_sum" "$musl" "$musl_sum" "$darwin" "$darwin_sum" --title "$TAG" --generate-notes --notes-file release-notes.md
+          gh release create "$TAG" "$gnu" "$gnu_sum" "$musl" "$musl_sum" "$darwin" "$darwin_sum" "$deb" "${apt[@]}" --title "$TAG" --generate-notes --notes-file release-notes.md
       - name: What the release now carries
         env:
           GH_TOKEN: ${{ github.token }}

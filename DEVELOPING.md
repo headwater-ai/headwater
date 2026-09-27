@@ -129,13 +129,17 @@ Several agent sessions build this repository at the same time, each in its own w
 
 **What that check holds is the name of each gate, and not the flags printed beside it.** The commands below are written as CI writes them so that you can copy a line and run it, but no case compares a flag: `--check` deleted from a line here moves nothing, and `--check` deleted from the workflow moves nothing either. The reason is that the flags on these commands are a pinned clock, a change manifest, an output shape and a check-versus-write switch, and a suite that compared them would redden on a reordering that changed no gate. `--locked` is the one flag anything in this repository holds, and `sh tools/engine/build-declaration-fixtures.sh` is what holds it.
 
-The cargo commands. The `engine` job runs the first four; the `headwater` job runs the build, because it needs the binary before it can run a verb over the corpus:
+The cargo commands. The `engine` job runs the first six. The `headwater` job runs the build, because it needs the binary before it can run a verb over the corpus:
 
     cargo --version
     cargo fmt --check
     cargo clippy --all-targets --locked -- -D warnings
     cargo test --locked
+    cargo test -p headwater-cli --no-default-features --locked --test no_fetch
+    cargo tree -e normal --no-default-features -p headwater-cli --locked
     cargo build --release -p headwater-cli --locked
+
+The two commands with `--no-default-features` hold the binary without the `fetch` feature. The first runs its refusal of a location, and the second fails when `headwater-fetch` is in its tree.
 
 A green clippy on your host is not evidence about CI. Three toolchains disagree about this source — the pinned container, your host, and CI's current stable — and a host clippy has reported zero warnings on a tree that CI rejected with two errors. Push and read CI rather than reproducing it locally.
 
@@ -195,6 +199,7 @@ The fixture suites, which are shell and Python rather than cargo, and which you 
     sh tools/run/run-dir-fixtures.sh
     sh tools/run/wait-for-fixtures.sh
     sh tools/site/check-site-footer.sh .headwater/site-deploy
+    sh tools/site/fetch-apt-fixtures.sh
     sh tools/site/site-canonical-fixtures.sh
     sh tools/site/site-console-fixtures.sh
     sh tools/site/site-footer-fixtures.sh
@@ -278,7 +283,7 @@ Seven suites hold the scripts a build-order stage calls in place of a command it
 
 `sh tools/cite/check-citations-fixtures.sh` holds `tools/cite/check-citations.py`, the one checker here that reads a code file rather than a document. [Spec 5](docs/spec/05-ai-integration.md#generated-artifacts-cite-what-licensed-them) asks generated code to carry `# per <IDENTIFIER> (<path>)` naming the document that licensed the line above it, and states the purpose that rests on the comment being true; nothing checked it, and a citation that aged out read exactly like one that still holds. The tool drives the shipped binary for every answer, so it carries no second opinion about what a document is: `headwater explain <id> --json` for the identifier and the warrant, and the `governing_docs_for_path` tool of `headwater mcp` for the governing set, which is the one read of this engine with no command-line counterpart. The suite plants each fixture at a path this repository really governs, or really does not, in a scratch copy of the corpus, because a governing set is a property of a path and a file checked in under `tools/cite/fixtures/` is governed by nothing. The case that carries the tool is the middle one: an identifier that resolves, in a file the cited document does not govern, reported under a different rule from an identifier nothing carries. The advisory third class, a cited document whose warrant is `asserted`, is reported and leaves the exit status at 0, which is the same argument spec 5 makes for impact detection being advisory. Four cases hold what the tool refuses rather than guesses, because a scanner that found nothing reports a clean tree and every way of quietly scanning nothing is therefore a way of quietly passing: a missing engine, a scan target that does not exist, a directory this process cannot read, and a symbolic link with nothing behind it all exit 2 and none of them prints a clean bill of health. The first version exited 0 on three of those four. The step runs over the fixtures rather than over this tree, and the reason is measured rather than assumed. Outside `tools/cite/`, one line of this repository carries the shape: `docs/spec/05-ai-integration.md` line 285, where spec 5 illustrates the convention with an identifier and a path from an imagined corpus. A case in the suite reads that real document and pins both the count and the line, so the sentence you are reading cannot go stale quietly. What this repository carries **nowhere** is a citation written as a claim about what licensed a line of its own code, and that is by ruling: the convention is for an adopter's corpus, and [HW-DR-0092](docs/decisions/0092-the-citation-comment-of-spec-5-is-for-an-adopter-s-corpus-and-this-repository-does-not-practice-it-on-its-own-code.md) records that this repository does not practice it on its own code, with the measurement and the events that reopen the question. A second case holds that spec 5 names that record where it states the convention.
 
-`sh .claude/skills/fixtures.sh` holds every claim the skill and agent files make about the engine. It is a blocking CI step, half of its cases are derived from the files rather than listed, and it writes only into a scratch copy of the corpus. `headwater sweep` is the one mechanism among the skills that no engine performs: `headwater sweep plan` writes the briefing, a model reads the documents, and `headwater sweep report` says what the engine could confirm about what came back. Nothing gates on it, and no crate of this engine opens a socket.
+`sh .claude/skills/fixtures.sh` holds every claim the skill and agent files make about the engine. It is a blocking CI step, half of its cases are derived from the files rather than listed, and it writes only into a scratch copy of the corpus. `headwater sweep` is the one mechanism among the skills that no engine performs: `headwater sweep plan` writes the briefing, a model reads the documents, and `headwater sweep report` says what the engine could confirm about what came back. Nothing gates on it. It opens no socket, and `headwater-fetch`, which only `taxonomy vendor` reaches, is the one crate of this engine that opens one.
 
 ### What holds the first screen, and what still does not
 

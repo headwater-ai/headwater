@@ -93,12 +93,20 @@ operations
   add.anchors.test_site (.headwater/overlay.yml)
   add.relations.verified_by (.headwater/overlay.yml)
   add.relations.proven_by (.headwater/overlay.yml)
+  add.relations.cited_in (.headwater/overlay.yml)
   add.shelves.requirements (.headwater/overlay.yml)
   add.shelves.acceptance_criteria (.headwater/overlay.yml)
   add.shelves.verifications (.headwater/overlay.yml)
   add.identifier_schemes.process_decision_id (.headwater/overlay.yml)
   add.kinds.process_decision (.headwater/overlay.yml)
   add.shelves.process_decisions (.headwater/overlay.yml)
+  add.identifier_schemes.explanation_id (.headwater/overlay.yml)
+  add.identifier_schemes.process_explanation_id (.headwater/overlay.yml)
+  add.kinds.explanation (.headwater/overlay.yml)
+  add.kinds.process_explanation (.headwater/overlay.yml)
+  add.relations.draws_on (.headwater/overlay.yml)
+  add.shelves.explanations (.headwater/overlay.yml)
+  add.shelves.process_explanations (.headwater/overlay.yml)
   add.identifier_schemes.library_doctrine_id (.headwater/overlay.yml)
   add.kinds.library_doctrine (.headwater/overlay.yml)
   add.shelves.library_doctrine (.headwater/overlay.yml)
@@ -114,15 +122,15 @@ declarations, by member count
   facets: 14 members
   regimes: 3 members
   anchors: 3 members
-  kinds: 21 members
-  relations: 13 members
-  shelves: 18 members
-  identifier_schemes: 17 members
+  kinds: 23 members
+  relations: 15 members
+  shelves: 20 members
+  identifier_schemes: 19 members
   core: 1 member
   projections: 8 items
   obligations: 37 members
   controls: 34 members
-  surface: 7 members
+  surface: 8 members
 
 `taxonomy validate`: valid
 

@@ -23,6 +23,11 @@ findings before
   check/spec/07-prose-defects.md language.controlled.not_met `ste_house` admits no contraction, and this sentence writes `doesn't`
   check/spec/07-prose-defects.md language.controlled.not_met `ste_house` declares the tag `en-US`, and this sentence writes `behaviour`
   check/spec/07-prose-defects.md language.controlled.not_met `ste_house` admits no semicolon in running prose, and this sentence writes one
+  check/spec/07-prose-defects.md language.controlled.not_met `ste_house` holds prose to 25 words a sentence, and this one has 49
+  check/spec/07-prose-defects.md language.retired_term.used `ste_house` retires `robust`, and this sentence writes it: it stands in for the failure the thing survives
+  check/spec/07-prose-defects.md voice.forbidden_construction `declarative` forbids future_intent, and this sentence writes `will be`
+  check/spec/07-prose-defects.md language.retired_term.used `ste_house` retires `robust`, and this sentence writes it: it stands in for the failure the thing survives
+  check/spec/07-prose-defects.md voice.forbidden_construction `declarative` forbids future_intent, and this sentence writes `will be`
   check/spec/07-prose-defects.md language.controlled.not_met `ste_house` admits no contraction, and this sentence writes `doesn't`
   check/spec/07-prose-defects.md language.retired_term.used `ste_house` retires `reference system`, and this sentence writes it: the corpus renamed it
   check/spec/07-prose-defects.md language.retired_term.used `ste_house` retires `robust`, and this sentence writes it: it stands in for the failure the thing survives
@@ -82,6 +87,11 @@ findings after
   check/spec/07-prose-defects.md voice.forbidden_construction `declarative` forbids phased_rollout, and this sentence writes `for now`
   check/spec/07-prose-defects.md language.controlled.not_met `ste_house` holds prose to 25 words a sentence, and this one has 43
   check/spec/07-prose-defects.md language.controlled.not_met `ste_house` admits no semicolon in running prose, and this sentence writes one
+  check/spec/07-prose-defects.md language.controlled.not_met `ste_house` holds prose to 25 words a sentence, and this one has 49
+  check/spec/07-prose-defects.md language.retired_term.used `ste_house` retires `robust`, and this sentence writes it: it stands in for the failure the thing survives
+  check/spec/07-prose-defects.md voice.forbidden_construction `declarative` forbids future_intent, and this sentence writes `will be`
+  check/spec/07-prose-defects.md language.retired_term.used `ste_house` retires `robust`, and this sentence writes it: it stands in for the failure the thing survives
+  check/spec/07-prose-defects.md voice.forbidden_construction `declarative` forbids future_intent, and this sentence writes `will be`
   check/spec/07-prose-defects.md language.retired_term.used `ste_house` retires `robust`, and this sentence writes it: it stands in for the failure the thing survives
   check/spec/07-prose-defects.md language.source_form.not_met `ste_house` writes one paragraph on one line, and this line continues the paragraph above
   check/spec/07-prose-defects.md language.source_form.not_met `ste_house` writes one paragraph on one line, and this line continues the paragraph above

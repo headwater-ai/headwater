@@ -51,16 +51,30 @@ use headwater_yaml::{Position, Span};
 /// with a capital or, since #1151, with a lower-case word such as `iPhone`.
 /// The titles `Mr.`, `Mrs.`, `Dr.` and `St.` of that chapter are omitted on
 /// purpose. `Dr.` and `St.` also end real sentences as `drive` and `street`,
-/// and a title is not dotted, so it waits on its own evidence. `U.S.C.` needs
-/// no entry, because no space follows its inner periods.
+/// and a title is not dotted, so it waits on its own evidence.
 ///
-/// The cost: an entry suppresses the split without condition. A real sentence
-/// end on an entry, as in `sold in the U.S. The next`, joins with the sentence
-/// after it. The dotted forms end a sentence less often than a name follows
-/// them, so the list takes that cost.
-const ABBREVIATIONS: [&str; 13] = [
+/// `U.S.C.` is the citation form of the United States Code in the same manual
+/// and in the Bluebook, as in `12 U.S.C. 101` (#1228). No space follows its
+/// inner periods, so they never reach this list. Its final period meets the
+/// section number, and a digit opens a sentence, so without an entry one
+/// citation split into three sentences.
+///
+/// A dotted entry matches in any case, so `u.s.` and `PH.D.` hold as well.
+///
+/// An entry matches prose letters only. A letter inside a code span is part
+/// of a name, so the period after `` `--no` `` or `` `etc` `` ends the
+/// sentence when a sentence opens after it (#1262).
+///
+/// The cost: an entry in prose suppresses the split without condition. A real sentence
+/// end on an entry, as in `sold in the U.S. The next` or `set out in 5 U.S.C.
+/// The next`, joins with the sentence after it. For `U.S.C.` the cost also
+/// covers a next sentence that opens with a number, as in `set out in 5
+/// U.S.C. 12 agencies read it`, because the section number that the entry
+/// exists for is a number too. The dotted forms end a sentence less often than
+/// a name or a number follows them, so the list takes that cost.
+const ABBREVIATIONS: [&str; 14] = [
     "e.g.", "i.e.", "cf.", "etc.", "vs.", "al.", "approx.", "no.", "U.S.", "U.K.", "a.m.", "p.m.",
-    "Ph.D.",
+    "Ph.D.", "U.S.C.",
 ];
 
 /// One sentence of one document.
@@ -167,7 +181,7 @@ fn ends_a_sentence(chars: &[char], index: usize, block: &Block, links: &[Link]) 
     if !next.is_whitespace() {
         return false;
     }
-    if c == '.' && closes_an_abbreviation(chars, index) {
+    if c == '.' && closes_an_abbreviation(chars, index, block) {
         return false;
     }
     let opening = skip_space(chars, after);
@@ -253,7 +267,7 @@ fn opens_a_link(block: &Block, index: usize, links: &[Link]) -> bool {
         .any(|link| link.span.start.offset <= at && at < link.span.end.offset)
 }
 
-fn closes_an_abbreviation(chars: &[char], index: usize) -> bool {
+fn closes_an_abbreviation(chars: &[char], index: usize, block: &Block) -> bool {
     ABBREVIATIONS.iter().any(|abbreviation| {
         let letters: Vec<char> = abbreviation.chars().collect();
         if letters.len() > index + 1 {
@@ -265,10 +279,14 @@ fn closes_an_abbreviation(chars: &[char], index: usize) -> bool {
         if from > 0 && chars[from - 1].is_alphanumeric() {
             return false;
         }
-        letters
-            .iter()
-            .enumerate()
-            .all(|(offset, letter)| chars[from + offset].eq_ignore_ascii_case(letter))
+        // Prose letters only. The parse removed the backticks, so the tail
+        // of a code span such as `--no` reads as `no.` with the period after
+        // it (#1262). The test is per character, because a span can hold
+        // only part of an entry.
+        letters.iter().enumerate().all(|(offset, letter)| {
+            chars[from + offset].eq_ignore_ascii_case(letter)
+                && ownership_at(block, from + offset) != Ownership::Code
+        })
     })
 }
 
@@ -443,6 +461,30 @@ mod tests {
         assert_eq!(texts("It closes at 5 p.m. Friday.\n").len(), 1);
         assert_eq!(texts("She holds a Ph.D. in it.\n").len(), 1);
         assert_eq!(texts("She holds a Ph.D. From Leeds.\n").len(), 1);
+        assert_eq!(texts("Read 12 U.S.C. Section 101 first.\n").len(), 1);
+    }
+
+    /// A statute citation before a section number (#1228). The period after
+    /// `U.S.C.` met the digit of `101`, and a digit opens a sentence, so one
+    /// sentence split into three.
+    #[test]
+    fn a_statute_citation_before_a_number_ends_no_sentence() {
+        assert_eq!(
+            texts("Read 12 U.S.C. 101. Then stop.\n"),
+            ["Read 12 U.S.C. 101.", "Then stop."]
+        );
+    }
+
+    /// A dotted entry matches in any case (#1228). Each case is followed by a
+    /// word that opens a sentence, a capital or a name such as `iPhone`, so a
+    /// case-sensitive match splits it. After a plain lower-case word the
+    /// lower-case guard joins the two anyway, and the case would prove nothing.
+    #[test]
+    fn a_dotted_abbreviation_matches_in_any_case() {
+        assert_eq!(texts("The u.s. iPhone ships it.\n").len(), 1);
+        assert_eq!(texts("It opens at 9 A.M. Monday.\n").len(), 1);
+        assert_eq!(texts("She holds a PH.D. From Leeds.\n").len(), 1);
+        assert_eq!(texts("Read 12 u.s.c. 101 first.\n").len(), 1);
     }
 
     /// The cost of the dotted entries, held so that nobody reads it as a bug:
@@ -452,6 +494,14 @@ mod tests {
     fn a_sentence_that_ends_on_a_dotted_abbreviation_joins_the_next() {
         assert_eq!(
             texts("It is sold in the U.S. The next one is not.\n").len(),
+            1
+        );
+        assert_eq!(
+            texts("It is set out in 5 U.S.C. The next one is not.\n").len(),
+            1
+        );
+        assert_eq!(
+            texts("It is set out in 5 U.S.C. 12 agencies read it.\n").len(),
             1
         );
     }
@@ -602,5 +652,44 @@ mod tests {
             texts("```\nfn main() { one(); two(); }\n```\n"),
             Vec::<String>::new()
         );
+    }
+
+    /// #1262. The parse removes the backticks, so the last letters of a code
+    /// span and the prose period after it read as `no.` or `etc.`. An
+    /// abbreviation matches prose letters only, so this period ends the
+    /// sentence whatever the span ends on.
+    #[test]
+    fn a_period_after_a_code_span_ends_the_sentence_whatever_the_span_ends_on() {
+        assert_eq!(
+            texts("Pass `--no`. Then stop.\n"),
+            ["Pass --no.", "Then stop."]
+        );
+        assert_eq!(texts("Write `a, b, etc`. Then stop.\n").len(), 2);
+        assert_eq!(texts("Compare `x-vs`. Then stop.\n").len(), 2);
+        assert_eq!(texts("Name `x.al`. Then stop.\n").len(), 2);
+        // The next sentence opens with a code span.
+        assert_eq!(texts("Write `etc`. `x` opens the next.\n").len(), 2);
+        // A dotted entry whose letters the span holds up to the last period.
+        assert_eq!(texts("Read `x.e.g`. Then stop.\n").len(), 2);
+    }
+
+    /// A span can hold only the tail of an entry, so the ownership test reads
+    /// every letter of the entry and not only its first.
+    #[test]
+    fn a_span_that_holds_only_the_tail_of_an_entry_ends_the_sentence() {
+        assert_eq!(texts("Use e.`g`. Then stop.\n").len(), 2);
+    }
+
+    #[test]
+    fn a_span_that_holds_only_the_tail_of_a_dotted_name_ends_the_sentence() {
+        assert_eq!(texts("Sold in the U.`S`. The next one.\n").len(), 2);
+    }
+
+    /// The control for the case above: a prose abbreviation after a code span
+    /// still ends no sentence.
+    #[test]
+    fn a_prose_abbreviation_after_a_code_span_still_ends_no_sentence() {
+        assert_eq!(texts("Use `x` e.g. Foo holds.\n").len(), 1);
+        assert_eq!(texts("Set `x` to no. Five holds it.\n").len(), 1);
     }
 }

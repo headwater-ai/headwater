@@ -3,7 +3,7 @@ id: HW-EVAL-two-triggers-one-verdict-how-this-repository-s-ci-decides-where-a-jo
 status: current
 status_since: 2026-09-21
 summary: "The event that started a run decides which of two machines it takes, and every other condition in the workflow can only take work away."
-last_verified: 2026-09-27
+last_verified: 2026-09-28
 title: "Two triggers, one verdict: how this repository's CI decides where a job runs and what it trusts"
 provenance:
   warrant: asserted
@@ -14,7 +14,7 @@ provenance:
 relations:
   governs:
     - to: .github/workflows/ci.yml
-      verified_revision: sha256:fa7f2a39b2cc865f5ab7cc8ca489fe637194873cd21a292997fcfac6ad9fe479
+      verified_revision: sha256:320fa7965d87ca289e72f07c35c7c1b9a57d665d0b61e0a5abf4cbe2a0dbfe2f
 ---
 
 # Two triggers, one verdict: how this repository's CI decides where a job runs and what it trusts

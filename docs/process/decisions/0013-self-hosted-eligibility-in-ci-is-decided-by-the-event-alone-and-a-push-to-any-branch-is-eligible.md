@@ -3,7 +3,7 @@ id: HW-PD-0013
 status: current
 status_since: 2026-09-27
 summary: "Only github.event_name decides whether a CI job may run on the self-hosted pool. A push is eligible on every branch, and a pull request never is."
-last_verified: 2026-09-27
+last_verified: 2026-09-28
 title: "Self-hosted eligibility in CI is decided by the event alone, and a push to any branch is eligible"
 provenance:
   warrant: asserted
@@ -14,7 +14,7 @@ provenance:
 relations:
   governs:
     - to: .github/workflows/ci.yml
-      verified_revision: sha256:fa7f2a39b2cc865f5ab7cc8ca489fe637194873cd21a292997fcfac6ad9fe479
+      verified_revision: sha256:320fa7965d87ca289e72f07c35c7c1b9a57d665d0b61e0a5abf4cbe2a0dbfe2f
 ---
 
 # Self-hosted eligibility in CI is decided by the event alone, and a push to any branch is eligible

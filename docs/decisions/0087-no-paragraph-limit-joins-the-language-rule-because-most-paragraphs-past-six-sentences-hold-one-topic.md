@@ -3,7 +3,7 @@ id: HW-DR-0087
 status: current
 status_since: 2026-09-26
 summary: "The six-sentence paragraph defect is retired before it lands. 50 of 60 sampled paragraphs past six sentences held one topic, so the count misses what rule 6.5 asks, and no word count replaces it."
-last_verified: 2026-09-26
+last_verified: 2026-09-28
 title: "No paragraph limit joins the language rule, because most paragraphs past six sentences hold one topic"
 provenance:
   warrant: accepted
@@ -17,7 +17,7 @@ relations:
     - HW-DR-0069
   governs:
     - to: engine/crates/check/src/language.rs
-      verified_revision: sha256:4ed3b112c0e9c08ba9264da27070a07ce958e666a85a085cb591131e52c01bac
+      verified_revision: sha256:73b6425e92ca92586efdf16b4e942b2165a880e68ed6af33c13d96c3b22195db
   traces_to:
     - HW-DR-0005
 ---

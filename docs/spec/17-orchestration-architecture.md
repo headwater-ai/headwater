@@ -3,7 +3,7 @@ id: HW-SPEC-orchestration-architecture
 status: current
 status_since: 2026-09-22
 summary: "The five stages of a build-order run, what each one owns and never does, where the veto sits, and how claims order the merges."
-last_verified: 2026-09-27
+last_verified: 2026-09-28
 doc_type: design_spec
 sequence: 17
 title: "Orchestration architecture"
@@ -35,7 +35,7 @@ relations:
     - to: .claude/agents/hw-adjudicate.md
       verified_revision: sha256:c8359200c25bdde102f0ad8cb756a3f7c1de98bef30cdbdca70550ef8a8993b0
     - to: .claude/agents/hw-build.md
-      verified_revision: sha256:0d713a1cbf71dc57e5faa037d367cb32b6e3ebe7e1a75948fbec7fdbbdf4fee0
+      verified_revision: sha256:562d9f7d962f05931a9062f1d687de2fb4a6d019ad8ef83c59c3ef1589e84e8e
     - to: .claude/agents/hw-verify.md
       verified_revision: sha256:fb4b14973d51715a6c8a6516eb918a1434bfa04c48f4574619d7601b31257b1b
     - to: .claude/agents/hw-integrate.md

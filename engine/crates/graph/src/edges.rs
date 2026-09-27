@@ -41,7 +41,7 @@
 //! tie and bound to neither, on the precedent that
 //! [`headwater_census::resolve`] set for two shelves of equal specificity.
 
-use crate::anchors::{Binding, Resolvers};
+use crate::anchors::{Binding, Resolvers, Revision};
 use crate::declarations::{Declarations, Direction};
 use crate::index::Index;
 use crate::Config;
@@ -157,7 +157,7 @@ pub enum Target {
         /// member's matched entries, from [`crate::anchors::Resolver::revision_of`].
         /// `None` for every other resolver, and for a literal that names a
         /// directory.
-        revision: Option<String>,
+        revision: Revision,
         /// One entry per pattern the anchor holds, in the identity order
         /// above. A value with no wildcard is one anchor with one member here.
         /// `headwater explain` reads each member's own matched count, and the
@@ -188,7 +188,7 @@ pub struct PatternMember {
     /// The revision the resolver gave this one pattern, straight from
     /// [`crate::anchors::Binding::Resolved::revision`]. The graph states what
     /// the resolver said, and a rule decides what a `None` means.
-    pub revision: Option<String>,
+    pub revision: Revision,
 }
 
 /// Why a target bound to nothing. The set is closed, and two of its members
@@ -367,15 +367,12 @@ impl Edge {
     /// and `headwater route` names it on the pointer of a governing document
     /// (#953), so the two can never disagree about which edge went stale.
     pub fn suspect_revisions(&self) -> Option<(&str, &str)> {
-        let Target::Anchor {
-            revision: Some(current),
-            ..
-        } = &self.target
-        else {
+        let Target::Anchor { revision, .. } = &self.target else {
             return None;
         };
         let verified = self.verified_revision()?;
-        (verified != current).then_some((verified, current.as_str()))
+        let current = revision.get()?;
+        (verified != current).then_some((verified, current))
     }
 }
 
@@ -449,7 +446,7 @@ impl Target {
             total: total.len(),
             members: patterns
                 .iter()
-                .map(|member| (member.pattern.clone(), member.matched.len()))
+                .map(|member| (member.pattern.clone(), member.matched.clone()))
                 .collect(),
         })
     }
@@ -484,9 +481,11 @@ impl Target {
 pub struct Reach {
     /// The size of the union across every pattern the anchor holds.
     pub total: usize,
-    /// One pair per pattern, in the anchor's own order: the pattern, and how
-    /// many entries it alone matched.
-    pub members: Vec<(String, usize)>,
+    /// One pair per pattern, in the anchor's own order: the pattern, and the
+    /// entries it alone matched, sorted and with no duplicate. The count is
+    /// their length. The edit-time advisory names these entries, so it never
+    /// matches a pattern itself (#1093).
+    pub members: Vec<(String, Vec<String>)>,
 }
 
 /// Resolve every `relations:` block of the census into edges.
@@ -710,7 +709,7 @@ fn read_relation_entry(
 struct Resolved {
     normalized: String,
     excluded_by: Option<String>,
-    revision: Option<String>,
+    revision: Revision,
     matched: Vec<String>,
 }
 
@@ -899,7 +898,10 @@ fn bind(
                 let revision = declarations
                     .anchor(anchor_kind)
                     .and_then(|anchor| resolvers.get(&anchor.resolver))
-                    .and_then(|resolver| resolver.revision_of(&union));
+                    .map_or_else(
+                        || Revision::known(None),
+                        |resolver| resolver.revision_of(&union),
+                    );
                 (None, revision)
             }
         };
@@ -1023,11 +1025,11 @@ mod tests {
             resolver: "source-tree".to_string(),
             normalized: ".claude/hooks/lib.sh".to_string(),
             excluded_by: None,
-            revision: None,
+            revision: None.into(),
             patterns: vec![PatternMember {
                 pattern: ".claude/hooks/lib.sh".to_string(),
                 matched: vec![".claude/hooks/lib.sh".to_string()],
-                revision: None,
+                revision: None.into(),
             }],
         }
     }
@@ -1041,11 +1043,11 @@ mod tests {
             resolver: "ado-snapshot".to_string(),
             normalized: "12345".to_string(),
             excluded_by: None,
-            revision: Some(revision.to_string()),
+            revision: Some(revision.to_string()).into(),
             patterns: vec![PatternMember {
                 pattern: "12345".to_string(),
                 matched: vec!["12345".to_string()],
-                revision: Some(revision.to_string()),
+                revision: Some(revision.to_string()).into(),
             }],
         }
     }
@@ -1095,11 +1097,11 @@ mod tests {
             resolver: "source-tree".to_string(),
             normalized: ".claude/hooks/lib.sh".to_string(),
             excluded_by: Some("engine/**".to_string()),
-            revision: None,
+            revision: None.into(),
             patterns: vec![PatternMember {
                 pattern: ".claude/hooks/lib.sh".to_string(),
                 matched: vec![".claude/hooks/lib.sh".to_string()],
-                revision: None,
+                revision: None.into(),
             }],
         };
         let others = [

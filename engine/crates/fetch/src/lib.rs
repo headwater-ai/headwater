@@ -16,6 +16,11 @@
 //! nothing about the bytes. The digest check stays in
 //! `headwater_resolve::package::vendor`, which reads the directory exactly as
 //! it reads one a person fetched by hand.
+//!
+//! An https request goes through the proxy that the first of `ALL_PROXY`,
+//! `HTTPS_PROXY` and `HTTP_PROXY` names, in either case, unless `NO_PROXY`
+//! excludes the host. A plain-http request goes to a loopback host alone and
+//! never through a proxy.
 
 use std::fmt;
 use std::io::Cursor;
@@ -61,7 +66,8 @@ fn scheme(location: &str) -> Option<&'static str> {
 /// Whether a request may go to `location`. A fetch that began over https
 /// stays on https for every hop, and plain http reaches only this machine,
 /// whichever hop names it. This is the one gate, read at the first request
-/// and again at every redirect.
+/// and again at every redirect. [`fetch`] sends a plain-http hop without a
+/// proxy, so that no proxy in the environment carries it to another machine.
 fn allowed(started_https: bool, location: &str) -> bool {
     match scheme(location) {
         Some("https") => true,
@@ -218,11 +224,26 @@ fn follow<T>(
 pub fn fetch(location: &str) -> Result<Fetched, Error> {
     // The client follows no redirect itself. `follow` reads each hop and puts
     // it through the same gate as the first request.
-    let agent: ureq::Agent = ureq::Agent::config_builder()
+    //
+    // An https hop honors the proxy the environment names, because TLS still
+    // authenticates the named host through the tunnel. A plain-http hop never
+    // goes through a proxy: `allowed` admits it only for a loopback host, and
+    // a proxy would decide for itself what that host means (#1113).
+    let proxied: ureq::Agent = ureq::Agent::config_builder()
         .max_redirects(0)
         .build()
         .into();
+    let direct: ureq::Agent = ureq::Agent::config_builder()
+        .max_redirects(0)
+        .proxy(None)
+        .build()
+        .into();
     let mut response = follow(location, |at| {
+        let agent = if scheme(at) == Some("http") {
+            &direct
+        } else {
+            &proxied
+        };
         let response = agent
             .get(at)
             .call()
