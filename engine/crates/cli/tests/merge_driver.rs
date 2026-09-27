@@ -1430,6 +1430,134 @@ fn below_the_top_of_the_repository_the_git_step_writes_each_store_line_it_owes()
     );
 }
 
+/// A corpus below a directory whose name holds a character that means
+/// something in an attributes file gets both union lines, and a line of its own
+/// for a store is left alone, with exit 0.
+///
+/// The probe line is C-quoted with its glob characters escaped, so it names the
+/// store as it is spelled. Spell it unquoted, and a space ends the pattern, a
+/// `[1]` matches `1`, and the probe matches nothing: the step fails closed and
+/// exits 1 on every run in such a tree.
+#[test]
+fn below_a_directory_with_a_special_name_the_git_step_probes_the_store_as_spelled() {
+    let names = [
+        ("space", "my corpus"),
+        ("hash", "#notes"),
+        ("bang", "!bang"),
+        ("bracket", "br[1]"),
+        ("star", "st*r"),
+        ("quote", "quo\"te"),
+        ("backslash", "back\\slash"),
+        ("newline", "new\nline"),
+    ];
+    let mut wrong: Vec<String> = Vec::new();
+    for (label, name) in names {
+        for owned in [false, true] {
+            let top = std::env::temp_dir().join(format!(
+                "headwater-cli-merge-driver-{}-named-{label}-{owned}",
+                std::process::id()
+            ));
+            remove_all(&top);
+            let _top = Tree { at: top.clone() };
+            let tree = Tree::adopted_in(top.join(name), &top);
+            if owned {
+                tree.write(".gitattributes", &format!("{CAPTURE_COST} merge=ours\n"));
+            }
+            let output = tree.headwater(&["init", "--git"]);
+            let attributes =
+                std::fs::read_to_string(tree.at.join(".gitattributes")).unwrap_or_default();
+            for store in [CAPTURE_COST, ADOPTION] {
+                let expected = if owned && store == CAPTURE_COST {
+                    "ours"
+                } else {
+                    "union"
+                };
+                let answer = tree.git(&["check-attr", "merge", "--", store]);
+                let lines = attributes
+                    .lines()
+                    .filter(|line| line.starts_with(store))
+                    .count();
+                if !answer.trim_end().ends_with(&format!(": {expected}")) || lines != 1 {
+                    wrong.push(format!(
+                        "{label}, owned {owned}, {store}: git answers `{}`, {lines} lines name it",
+                        answer.trim_end()
+                    ));
+                }
+            }
+            if output.status.code() != Some(0) {
+                wrong.push(format!(
+                    "{label}, owned {owned}: exit {:?}: {}",
+                    output.status.code(),
+                    String::from_utf8_lossy(&output.stderr).trim_end()
+                ));
+            }
+        }
+    }
+    assert!(
+        wrong.is_empty(),
+        "below each directory name, the step writes the union line each store is owed, leaves \
+         the adopter's line alone and exits 0:\n{}",
+        wrong.join("\n")
+    );
+}
+
+/// Where git is there and the probe gets no answer, the step exits 1, names
+/// why, writes no store line, and says truthfully on a second run that it
+/// wrote none.
+///
+/// The probe file goes in the temporary directory, so a `TMPDIR` that does not
+/// exist is a probe with no answer. Fall back to the root file in silence
+/// there, and the union lines appear and the exit is 0. Count an unanswered
+/// store as declared, and the second run says `.gitattributes` declares it.
+#[test]
+fn a_probe_with_no_answer_exits_1_writes_no_store_line_and_says_so_again() {
+    let tree = Tree::adopted("no-answer");
+    let missing = tree.at.join("no-such-temporary-directory");
+    let run = || {
+        Command::new(binary())
+            .args(["init", "--git", "--root"])
+            .arg(&tree.at)
+            .env("TMPDIR", &missing)
+            .env("GIT_CONFIG_GLOBAL", "/dev/null")
+            .env("GIT_CONFIG_NOSYSTEM", "1")
+            .env_remove("GIT_DIR")
+            .env_remove("GIT_INDEX_FILE")
+            .env_remove("GIT_WORK_TREE")
+            .output()
+            .expect("the binary runs")
+    };
+    for attempt in ["first", "second"] {
+        let output = run();
+        let stdout = String::from_utf8_lossy(&output.stdout).into_owned();
+        let stderr = String::from_utf8_lossy(&output.stderr).into_owned();
+        assert_eq!(
+            output.status.code(),
+            Some(1),
+            "the {attempt} run exits 1:\n{stdout}{stderr}"
+        );
+        assert!(
+            stderr.contains("wrote no line for the append-only stores")
+                && stderr.contains("cannot write the probe file"),
+            "the {attempt} run names why on standard error:\n{stderr}"
+        );
+        let attributes = tree.read(".gitattributes");
+        for store in [CAPTURE_COST, ADOPTION] {
+            assert!(
+                !attributes.contains(store),
+                "the {attempt} run writes no line for {store}:\n{attributes}"
+            );
+        }
+        assert!(
+            !stdout.contains("append-only stores\n") && !stdout.contains("and append-only stores"),
+            "the {attempt} run does not count the stores as declared:\n{stdout}"
+        );
+        assert!(
+            stdout.contains("no line for the 2 append-only stores"),
+            "the {attempt} run says on standard output that it wrote no store line:\n{stdout}"
+        );
+    }
+}
+
 /// Every `headwater taxonomy resolve` command the merge hooks of this
 /// repository print as a remedy is one the verb accepts (HW-OBL-0216).
 ///
