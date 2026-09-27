@@ -163,6 +163,28 @@ refuse "an indented sub-bullet is refused" sub-bullet \
   - An indented sub-item." \
     "your-first-governed-corpus.md line"
 
+refuse "a table is refused" table \
+    "- About twenty minutes." "- About twenty minutes.
+
+| tool | why |
+|---|---|
+| git | history |" \
+    "your-first-governed-corpus.md line"
+refuse "an inner heading is refused" inner-heading \
+    "Three facts about the blocks below." "### Facts
+
+Three facts about the blocks below." \
+    "your-first-governed-corpus.md line"
+refuse "a quote is refused" quote \
+    "- About twenty minutes." "- About twenty minutes.
+
+> A quoted line." \
+    "your-first-governed-corpus.md line"
+refuse "a star bullet is refused" star-bullet \
+    "- About twenty minutes." "- About twenty minutes.
+* A star bullet." \
+    "your-first-governed-corpus.md line"
+
 echo "a heading the renderer reads"
 refuse "a renamed Before you start heading is refused by name" renamed \
     "## Before you start" "## Before you begin" \
