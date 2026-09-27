@@ -894,7 +894,9 @@ fn the_explain_tool_reads_an_absolute_path_under_a_relative_root() {
     let relative = Path::new("fixtures");
     assert_eq!(
         relative.canonicalize().expect("the fixture tree is there"),
-        fixtures_dir().canonicalize().expect("the fixture tree is there"),
+        fixtures_dir()
+            .canonicalize()
+            .expect("the fixture tree is there"),
         "the test runs from the crate directory"
     );
     let server = Server {
