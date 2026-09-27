@@ -119,6 +119,50 @@ def pointer_lines(pointers):
 HUNK = re.compile(r"^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@")
 
 
+C_ESCAPES = {"a": 7, "b": 8, "t": 9, "n": 10, "v": 11, "f": 12, "r": 13, '"': 34, "\\": 92}
+
+
+def unquote(name):
+    """Undo git's C-style quoting of a path. Git quotes a path that holds a
+    double quote, a backslash, a control byte or (with the default
+    `core.quotePath`) a byte above 0x7f. It writes each such byte as a
+    backslash escape or as three octal digits. An unquoted path is returned
+    as it is."""
+    if len(name) < 2 or not (name.startswith('"') and name.endswith('"')):
+        return name
+    body, out, i = name[1:-1], bytearray(), 0
+    while i < len(body):
+        ch = body[i]
+        if ch == "\\" and i + 1 < len(body):
+            nxt = body[i + 1]
+            if nxt in C_ESCAPES:
+                out.append(C_ESCAPES[nxt])
+                i += 2
+                continue
+            octal = body[i + 1:i + 4]
+            if len(octal) == 3 and all(c in "01234567" for c in octal):
+                out.append(int(octal, 8))
+                i += 4
+                continue
+        out.extend(ch.encode("utf-8"))
+        i += 1
+    return out.decode("utf-8", errors="replace")
+
+
+def side_path(field, prefix):
+    """Read the name on a `---` or `+++` line. Git ends an unquoted name that
+    holds a space with a TAB, so that a patch tool can find where the name
+    ends. A name with a TAB of its own is always quoted, so the one trailing
+    TAB of an unquoted name is git's and never the file's. Return None for
+    /dev/null."""
+    if field == "/dev/null":
+        return None
+    if not field.startswith('"') and field.endswith("\t"):
+        field = field[:-1]
+    field = unquote(field)
+    return field[len(prefix):] if field.startswith(prefix) else field
+
+
 def parse_diff(text):
     """Read `git diff -U0 -M` into {old path: (new path or None, hunks)}.
     Each hunk is (old start, old count, new start, new count). A file the
@@ -133,15 +177,17 @@ def parse_diff(text):
         elif hunks is None:
             continue
         elif line.startswith("rename from "):
-            old = line[len("rename from "):]
+            old = unquote(line[len("rename from "):])
         elif line.startswith("rename to "):
-            new = line[len("rename to "):]
+            new = unquote(line[len("rename to "):])
+            # A pure rename carries no `---`/`+++` pair, so it is recorded
+            # here. A later `+++` line replaces it with the hunks.
+            if old is not None:
+                files.setdefault(old, (new, hunks))
         elif line.startswith("--- "):
-            side = line[4:]
-            old = None if side == "/dev/null" else side[2:] if side.startswith("a/") else side
+            old = side_path(line[4:], "a/")
         elif line.startswith("+++ "):
-            side = line[4:]
-            new = None if side == "/dev/null" else side[2:] if side.startswith("b/") else side
+            new = side_path(line[4:], "b/")
             if old is not None:
                 files[old] = (new, hunks)
         else:
@@ -149,10 +195,6 @@ def parse_diff(text):
             if m:
                 a, b, c, d = m.groups()
                 hunks.append((int(a), 1 if b is None else int(b), int(c), 1 if d is None else int(d)))
-        # A pure rename carries no `---`/`+++` pair, so record it on the
-        # `rename to` line as well; a later `+++` overwrites it with hunks.
-        if line.startswith("rename to ") and old is not None:
-            files.setdefault(old, (new, hunks))
     return files
 
 
