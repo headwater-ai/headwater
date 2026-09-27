@@ -15,10 +15,17 @@
 # `lib.sh`, which reads `headwater derived`. That is an existing verb, and no
 # hook introduces a verb (spec 5, "The hook contract").
 #
-# Cost: most `Bash` calls meet no merge. The state test comes first and calls
-# no engine: one `git rev-parse --git-dir` and five `test -e` on the files git
-# leaves in this worktree's own git dir. The engine runs only inside a stopped
-# merge that has an unmerged path. Spec 16 C5 records both costs as measured.
+# Cost: most `Bash` calls meet no merge. Every call reads the event name and
+# the `cwd` of its payload with `headwater json field`, two small engine calls,
+# because the root of the worktree comes from that `cwd`. The state test after
+# them calls no engine: one `git rev-parse --git-dir` and five `test -e` on the
+# files git leaves in this worktree's own git dir. `headwater derived` runs
+# only inside a stopped merge that has an unmerged path. Spec 16 C5 records
+# both costs as measured.
+#
+# The git dir is the per-worktree one, never the common dir: `MERGE_HEAD` and
+# its siblings live under `.git/worktrees/<name>/` in a linked worktree, and
+# every session in this repository runs in one. A fixture holds that.
 #
 # Once per state, not once per call. The advisory speaks once for one session,
 # one `HEAD` and one set of unmerged members, and every later `Bash` call of
