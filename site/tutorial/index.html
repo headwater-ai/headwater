@@ -222,11 +222,11 @@
       </div>
       <div>
         <pre class="cmd verbatim">mkdir -p ~/.local/bin
-curl -fsSLO https://github.com/headwater-ai/headwater/releases/download/v0.3.0/headwater-v0.3.0-x86_64-unknown-linux-musl.tar.gz
-tar -xzf headwater-v0.3.0-x86_64-unknown-linux-musl.tar.gz -C ~/.local/bin headwater</pre>
-        <p>On macOS on Apple silicon, the archive is <code>headwater-v0.3.0-aarch64-apple-darwin.tar.gz</code>. Use that name in the <code>curl</code> line and in the <code>tar</code> line. Each archive has a <code>.sha256</code> file beside it on the release, for <code>sha256sum -c</code> or <code>shasum -a 256 -c</code>.</p>
+curl -fsSLO https://github.com/headwater-ai/headwater/releases/download/v0.4.0/headwater-v0.4.0-x86_64-unknown-linux-musl.tar.gz
+tar -xzf headwater-v0.4.0-x86_64-unknown-linux-musl.tar.gz -C ~/.local/bin headwater</pre>
+        <p>On macOS on Apple silicon, the archive is <code>headwater-v0.4.0-aarch64-apple-darwin.tar.gz</code>. Use that name in the <code>curl</code> line and in the <code>tar</code> line. Each archive has a <code>.sha256</code> file beside it on the release, for <code>sha256sum -c</code> or <code>shasum -a 256 -c</code>.</p>
         <p class="check"><span class="checkword">Check</span> <span><code>headwater --version</code> prints a number. Many Linux distributions put <code>~/.local/bin</code> on your <code>PATH</code> when the directory exists at login, and macOS does not. If your shell cannot find <code>headwater</code>, add the directory to your <code>PATH</code> and open a new shell.</span></p>
-        <p>This installs version 0.3.0 of the engine. It does not get you <code>taxonomy-source</code>, which step 3 fetches. With a Rust toolchain, <code>cargo install headwater-cli</code> is the alternative, and the repository&rsquo;s README names it under <em>Obtaining a named version</em>.</p>
+        <p>This installs version 0.4.0 of the engine. It does not get you <code>taxonomy-source</code>, which step 3 fetches. With a Rust toolchain, <code>cargo install headwater-cli</code> is the alternative, and the repository&rsquo;s README names it under <em>Obtaining a named version</em>.</p>
       </div>
     </div>
   </div>
