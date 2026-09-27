@@ -2549,7 +2549,7 @@
             "governs": [
               {
                 "to": ".github/workflows/release.yml",
-                "verified_revision": "sha256:e2004f70a412b80dbc2ba92887f1a694973f8e21905114badd18a548ce4b4296"
+                "verified_revision": "sha256:66aeccf8d5dd9a9a73f5a2e93de8062823828f404e2f46253368cbcc296cb15f"
               },
               {
                 "to": ".github/workflows/release-taxonomy.yml",
@@ -2615,7 +2615,7 @@
             "governs": [
               {
                 "to": ".github/workflows/release.yml",
-                "verified_revision": "sha256:e2004f70a412b80dbc2ba92887f1a694973f8e21905114badd18a548ce4b4296"
+                "verified_revision": "sha256:66aeccf8d5dd9a9a73f5a2e93de8062823828f404e2f46253368cbcc296cb15f"
               },
               {
                 "to": ".github/workflows/release-taxonomy.yml",
@@ -2648,7 +2648,7 @@
             "governs": [
               {
                 "to": ".github/workflows/release.yml",
-                "verified_revision": "sha256:e2004f70a412b80dbc2ba92887f1a694973f8e21905114badd18a548ce4b4296"
+                "verified_revision": "sha256:66aeccf8d5dd9a9a73f5a2e93de8062823828f404e2f46253368cbcc296cb15f"
               },
               {
                 "to": ".github/workflows/release-taxonomy.yml",
@@ -2686,6 +2686,39 @@
             ],
             "traces_to": [
               "HW-SPEC-ai-integration"
+            ]
+          }
+        }
+      },
+      {
+        "path": "docs/decisions/0094-the-apt-repository-is-served-from-headwater-tools-and-signed-by-a-subkey-the-owner-s-offline-key-certifies.md",
+        "kind": "decision",
+        "id": "HW-DR-0094",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-DR-0094",
+          "status": "current",
+          "status_since": "2026-09-27",
+          "summary": "Headwater ships one amd64 Debian package, taxonomy-free, through an APT repository on headwater.tools whose metadata a CI-held signing subkey signs",
+          "last_verified": "2026-09-27",
+          "title": "The APT repository is served from headwater.tools and signed by a subkey the owner's offline key certifies",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5.5",
+            "activity": "draft",
+            "evidence_basis": "direct"
+          },
+          "relations": {
+            "governs": [
+              {
+                "to": ".github/workflows/release.yml",
+                "verified_revision": "sha256:66aeccf8d5dd9a9a73f5a2e93de8062823828f404e2f46253368cbcc296cb15f"
+              },
+              {
+                "to": "tools/site/fetch-apt.sh",
+                "verified_revision": "sha256:5936a326b4706692990c033879ca7ba4bd259085336992f1f98fbf5a8b19de89"
+              }
             ]
           }
         }
@@ -3634,6 +3667,27 @@
             "traces_to": [
               "HW-SPEC-taxonomy-model"
             ]
+          }
+        }
+      },
+      {
+        "path": "docs/how-to/rotate-or-revoke-the-apt-signing-subkey.md",
+        "kind": "how_to",
+        "id": "HW-HOW-rotate-or-revoke-the-apt-signing-subkey",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-HOW-rotate-or-revoke-the-apt-signing-subkey",
+          "status": "current",
+          "status_since": "2026-09-27",
+          "summary": "The order in which a maintainer replaces or withdraws the subkey that signs the Headwater APT metadata, from a new subkey to the old one's expiry",
+          "last_verified": "2026-09-27",
+          "title": "Rotate or revoke the APT signing subkey",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5.5",
+            "activity": "draft",
+            "evidence_basis": "direct"
           }
         }
       },
@@ -10435,7 +10489,7 @@
             "governs": [
               {
                 "to": ".github/workflows/release.yml",
-                "verified_revision": "sha256:e2004f70a412b80dbc2ba92887f1a694973f8e21905114badd18a548ce4b4296"
+                "verified_revision": "sha256:66aeccf8d5dd9a9a73f5a2e93de8062823828f404e2f46253368cbcc296cb15f"
               },
               {
                 "to": ".github/workflows/release-taxonomy.yml",
@@ -10468,7 +10522,7 @@
             "governs": [
               {
                 "to": ".github/workflows/release.yml",
-                "verified_revision": "sha256:e2004f70a412b80dbc2ba92887f1a694973f8e21905114badd18a548ce4b4296"
+                "verified_revision": "sha256:66aeccf8d5dd9a9a73f5a2e93de8062823828f404e2f46253368cbcc296cb15f"
               },
               {
                 "to": ".github/workflows/release-taxonomy.yml",
@@ -10537,7 +10591,7 @@
             "governs": [
               {
                 "to": ".github/workflows/release.yml",
-                "verified_revision": "sha256:e2004f70a412b80dbc2ba92887f1a694973f8e21905114badd18a548ce4b4296"
+                "verified_revision": "sha256:66aeccf8d5dd9a9a73f5a2e93de8062823828f404e2f46253368cbcc296cb15f"
               },
               {
                 "to": ".github/workflows/release-taxonomy.yml",
@@ -12636,6 +12690,11 @@
       {
         "anchor_kind": "code_path",
         "id": "tools/site/cloudflare-build.sh",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
+        "id": "tools/site/fetch-apt.sh",
         "resolver": "source-tree"
       },
       {
@@ -14893,7 +14952,7 @@
           "resolver": "source-tree"
         },
         "attributes": {
-          "verified_revision": "sha256:e2004f70a412b80dbc2ba92887f1a694973f8e21905114badd18a548ce4b4296"
+          "verified_revision": "sha256:66aeccf8d5dd9a9a73f5a2e93de8062823828f404e2f46253368cbcc296cb15f"
         }
       },
       {
@@ -14949,7 +15008,7 @@
           "resolver": "source-tree"
         },
         "attributes": {
-          "verified_revision": "sha256:e2004f70a412b80dbc2ba92887f1a694973f8e21905114badd18a548ce4b4296"
+          "verified_revision": "sha256:66aeccf8d5dd9a9a73f5a2e93de8062823828f404e2f46253368cbcc296cb15f"
         }
       },
       {
@@ -14977,7 +15036,7 @@
           "resolver": "source-tree"
         },
         "attributes": {
-          "verified_revision": "sha256:e2004f70a412b80dbc2ba92887f1a694973f8e21905114badd18a548ce4b4296"
+          "verified_revision": "sha256:66aeccf8d5dd9a9a73f5a2e93de8062823828f404e2f46253368cbcc296cb15f"
         }
       },
       {
@@ -15017,6 +15076,34 @@
           "id": "HW-SPEC-ai-integration",
           "path": "docs/spec/05-ai-integration.md",
           "kind": "design_spec"
+        }
+      },
+      {
+        "source": "docs/decisions/0094-the-apt-repository-is-served-from-headwater-tools-and-signed-by-a-subkey-the-owner-s-offline-key-certifies.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": ".github/workflows/release.yml",
+          "resolver": "source-tree"
+        },
+        "attributes": {
+          "verified_revision": "sha256:66aeccf8d5dd9a9a73f5a2e93de8062823828f404e2f46253368cbcc296cb15f"
+        }
+      },
+      {
+        "source": "docs/decisions/0094-the-apt-repository-is-served-from-headwater-tools-and-signed-by-a-subkey-the-owner-s-offline-key-certifies.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "tools/site/fetch-apt.sh",
+          "resolver": "source-tree"
+        },
+        "attributes": {
+          "verified_revision": "sha256:5936a326b4706692990c033879ca7ba4bd259085336992f1f98fbf5a8b19de89"
         }
       },
       {
@@ -19730,7 +19817,7 @@
           "resolver": "source-tree"
         },
         "attributes": {
-          "verified_revision": "sha256:e2004f70a412b80dbc2ba92887f1a694973f8e21905114badd18a548ce4b4296"
+          "verified_revision": "sha256:66aeccf8d5dd9a9a73f5a2e93de8062823828f404e2f46253368cbcc296cb15f"
         }
       },
       {
@@ -19758,7 +19845,7 @@
           "resolver": "source-tree"
         },
         "attributes": {
-          "verified_revision": "sha256:e2004f70a412b80dbc2ba92887f1a694973f8e21905114badd18a548ce4b4296"
+          "verified_revision": "sha256:66aeccf8d5dd9a9a73f5a2e93de8062823828f404e2f46253368cbcc296cb15f"
         }
       },
       {
@@ -19825,7 +19912,7 @@
           "resolver": "source-tree"
         },
         "attributes": {
-          "verified_revision": "sha256:e2004f70a412b80dbc2ba92887f1a694973f8e21905114badd18a548ce4b4296"
+          "verified_revision": "sha256:66aeccf8d5dd9a9a73f5a2e93de8062823828f404e2f46253368cbcc296cb15f"
         }
       },
       {

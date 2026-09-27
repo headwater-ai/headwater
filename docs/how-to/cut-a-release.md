@@ -25,7 +25,7 @@ Four workflows under `.github/workflows/` take part in a release. A pushed tag s
 
 | workflow | what starts it | what it does |
 |---|---|---|
-| `.github/workflows/release.yml` | `v*` | Builds three archives, runs two smoke jobs on hosts that did not build them, and creates the GitHub release. |
+| `.github/workflows/release.yml` | `v*` | Builds three archives and a Debian package, runs three smoke jobs on hosts that did not build them, and creates the GitHub release. With the `APT_SIGNING_KEY` secret set, it also signs the APT metadata. |
 | `.github/workflows/publish-crates.yml` | `v*` | Publishes every workspace crate to crates.io, leaves first, in the order that its `order` variable states. |
 | `.github/workflows/release-taxonomy.yml` | `taxonomy/headwater-standard/v*` | Publishes `taxonomy-source/headwater-standard` at the tagged commit and attaches the zip to the release. |
 | `.github/workflows/yank-crates.yml` | `workflow_dispatch` | Yanks the crate versions that a person names. No push and no tag starts it. |
@@ -61,6 +61,8 @@ Before an engine release, make sure that these conditions are true:
 
 The asset names follow the pattern `headwater-<tag>-<target>.tar.gz`, and each archive has a `.sha256` file beside it. The matrix in `release.yml` is the list of targets. Group 7 of `tools/repo/readme-fixtures.sh` holds that list against `README.md`, so this page does not copy it.
 
+The release also carries the Debian package `headwater_<version>_amd64.deb`, where a pre-release hyphen in the version becomes `~`. When the `APT_SIGNING_KEY` secret is set, the release also carries `Packages`, `Release`, `InRelease` and `Release.gpg`. The next build of the site copies these into `https://headwater.tools/apt/`. When the secret is not set, the `publish` job prints a warning that names it. [HW-DR-0094](../decisions/0094-the-apt-repository-is-served-from-headwater-tools-and-signed-by-a-subkey-the-owner-s-offline-key-certifies.md) is the decision, and [Rotate or revoke the APT signing subkey](rotate-or-revoke-the-apt-signing-subkey.md) is the procedure for the key.
+
 ### The taxonomy release
 
 The four-step process in the header of `.headwater/packages/headwater-standard/package.yml` is the maintenance loop. A taxonomy release adds a tag to its result.
@@ -85,7 +87,7 @@ The workflows do not depend on each other, and a taxonomy release needs no engin
 
 ## How to know it worked
 
-- `gh release view v<version> --json url,assets` lists three archives and three `.sha256` files, one pair for each row of the matrix in `release.yml`.
+- `gh release view v<version> --json url,assets` lists three archives and three `.sha256` files, one pair for each row of the matrix in `release.yml`. It also lists `headwater_<version>_amd64.deb`, and, when the `APT_SIGNING_KEY` secret is set, `Packages`, `Release`, `InRelease` and `Release.gpg`.
 - For each crate in the `order` variable of `publish-crates.yml`, `https://crates.io/api/v1/crates/<name>` reports the new version as `max_version`. The crates.io API refuses a request that has no `User-Agent` header, so send one.
 - `site/changelog/index.html` has an entry for the new version.
 - CI is green on the pull request that moves the install text, which includes `tools/repo/readme-fixtures.sh`.
