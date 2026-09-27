@@ -43,13 +43,23 @@
 #
 # TIME
 #
-#   Every download gives up after `HEADWATER_APT_MAX_TIME` seconds (300 by
-#   default) and a connection after 20, so a server that never answers fails
-#   the build rather than holding it until the platform's own timeout.
-#   `--retry 3` retries what curl counts as transient: a timeout, and HTTP
-#   408, 429, 500, 502, 503 and 504. `--retry-all-errors` is not used,
-#   because it needs curl 7.71 or later, and nothing states which curl the
-#   Cloudflare build image carries.
+#   The whole script has one deadline, `HEADWATER_APT_DEADLINE` seconds
+#   from its start (600 by default). Each try of a download may take at most
+#   `HEADWATER_APT_MAX_TIME` seconds (120 by default), and never more than
+#   what is left of the deadline. A download is tried at most four times: a
+#   transport failure and HTTP 408, 429, 500, 502, 503 and 504 are tried
+#   again after one second, and every other answer is final. When the
+#   deadline has passed, the next try is not started and the build stops.
+#
+#   So the worst case is the deadline plus the one-second pauses and the
+#   local work: under 11 minutes with the defaults, whatever number of
+#   files never answer. That is inside the 20 minutes Cloudflare Workers
+#   Builds gives a build, so a silent server fails this build rather than
+#   the platform's timeout. `tools/site/fetch-apt-fixtures.sh` holds the
+#   bound with two silent files and a ten-second deadline.
+#
+#   The retries are this script's own loop and not `curl --retry`, because
+#   curl's retries each get a full `--max-time` and so multiply it.
 #
 # Usage: sh tools/site/fetch-apt.sh <served directory>
 set -eu
@@ -57,7 +67,8 @@ set -eu
 out=${1:?usage: fetch-apt.sh <served directory>}
 # `HEADWATER_APT_BASE` points the script at another server, for a test.
 base=${HEADWATER_APT_BASE:-https://github.com/headwater-ai/headwater/releases/latest/download}
-max_time=${HEADWATER_APT_MAX_TIME:-300}
+max_time=${HEADWATER_APT_MAX_TIME:-120}
+deadline=$(( $(date +%s) + ${HEADWATER_APT_DEADLINE:-600} ))
 
 stage=$(mktemp -d)
 
@@ -69,11 +80,25 @@ stop() {
 }
 
 # get NAME DEST — download one asset of the newest release, and print the
-# HTTP status. A transport failure after the retries stops the build.
+# HTTP status. Four tries at most, each inside the deadline. A transport
+# failure on the last try, or a deadline that has passed, stops the build.
 get() {
-    code=$(curl -sSL --retry 3 --connect-timeout 20 --max-time "$max_time" -o "$2" -w '%{http_code}' "$base/$1") ||
-        stop "$1 could not be downloaded"
-    echo "$code"
+    try=1
+    while :; do
+        left=$(( deadline - $(date +%s) ))
+        [ "$left" -gt 0 ] || stop "the deadline passed before $1 was downloaded"
+        limit=$max_time
+        [ "$left" -ge "$limit" ] || limit=$left
+        if code=$(curl -sSL --connect-timeout 20 --max-time "$limit" -o "$2" -w '%{http_code}' "$base/$1"); then
+            case "$code" in
+                408 | 429 | 500 | 502 | 503 | 504) ;;
+                *) echo "$code"; return 0 ;;
+            esac
+        fi
+        [ "$try" -lt 4 ] || stop "$1 could not be downloaded"
+        try=$((try + 1))
+        sleep 1
+    done
 }
 
 code=$(get InRelease "$stage/InRelease")

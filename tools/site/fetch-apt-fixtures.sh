@@ -80,10 +80,27 @@ rm "$scratch/rel/unsigned/InRelease"
 mkdir -p "$scratch/rel/no-release"
 cp "$scratch/rel/B/"* "$scratch/rel/no-release/"
 rm "$scratch/rel/no-release/Release"
+mkdir -p "$scratch/rel/slow"
+cp "$scratch/rel/B/"* "$scratch/rel/slow/"
 
 # One server for every release, and one that accepts and never answers.
+# Under `slow/` the server answers InRelease and Release, and holds the
+# request for Release.gpg and for Packages open without a byte: two files
+# that never answer on a server that does.
 port=$(python3 -c 'import socket; s=socket.socket(); s.bind(("127.0.0.1",0)); print(s.getsockname()[1])')
-python3 -m http.server "$port" --bind 127.0.0.1 --directory "$scratch/rel" >/dev/null 2>&1 &
+python3 -c '
+import functools, http.server, sys, time
+class Handler(http.server.SimpleHTTPRequestHandler):
+    def do_GET(self):
+        if self.path in ("/slow/Release.gpg", "/slow/Packages"):
+            time.sleep(3600)
+        return super().do_GET()
+    def log_message(self, *args):
+        pass
+http.server.ThreadingHTTPServer.daemon_threads = True
+http.server.ThreadingHTTPServer(("127.0.0.1", int(sys.argv[1])),
+    functools.partial(Handler, directory=sys.argv[2])).serve_forever()
+' "$port" "$scratch/rel" >/dev/null 2>&1 &
 server=$!
 silent_port=$(python3 -c 'import socket; s=socket.socket(); s.bind(("127.0.0.1",0)); print(s.getsockname()[1])')
 python3 -c '
@@ -104,7 +121,7 @@ done
 case_() {
     out="$scratch/out-$1"
     mkdir -p "$out"
-    (cd "$root" && HEADWATER_APT_BASE="$2" HEADWATER_APT_MAX_TIME=3 sh "$tool" "$out" >"$out.log" 2>&1)
+    (cd "$root" && HEADWATER_APT_BASE="$2" HEADWATER_APT_MAX_TIME=3 HEADWATER_APT_DEADLINE="${deadline:-600}" sh "$tool" "$out" >"$out.log" 2>&1)
     got=$?
     files=none
     [ -d "$out/apt" ] && files=$(find "$out/apt" -type f | wc -l | tr -d ' ')
@@ -136,11 +153,27 @@ case_ "a server nobody can reach stops the build" "http://127.0.0.1:1" 1 none "I
 start=$(date +%s)
 case_ "a server that never answers stops the build" "http://127.0.0.1:$silent_port" 1 none "InRelease could not be downloaded"
 took=$(( $(date +%s) - start ))
-# Three seconds a try, four tries, and curl's own back-off between them.
-if [ "$took" -le 40 ]; then
+# Three seconds a try, four tries, and a one-second pause between them.
+if [ "$took" -le 20 ]; then
     passed=$((passed + 1)); echo "  ok      and gives up in ${took}s, not at the platform timeout"
 else
     failed=$((failed + 1)); echo "  FAIL    and gives up in ${took}s"
+fi
+
+# The whole script answers to one deadline, however many files never
+# answer. With a ten-second deadline, two silent files may not take the
+# script past it by more than a pause and the local work. Tries that each
+# got a full timeout, as `curl --retry` gives them, would take 19 seconds a
+# file and fail this case.
+deadline=10
+start=$(date +%s)
+case_ "two files that never answer stop the build at the deadline" "$base/slow" 1 none "the deadline passed before"
+took=$(( $(date +%s) - start ))
+deadline=
+if [ "$took" -le 13 ]; then
+    passed=$((passed + 1)); echo "  ok      in ${took}s against a deadline of 10s"
+else
+    failed=$((failed + 1)); echo "  FAIL    in ${took}s against a deadline of 10s"
 fi
 
 echo
