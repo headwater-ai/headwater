@@ -783,6 +783,41 @@ fn a_planted_producer_output_and_a_planted_orphan_are_both_reported() {
     }
 }
 
+/// A hand-built page under `site/` is written by no producer, blank markers or not.
+///
+/// Before #1273 the figure refresh substituted measured numbers into the
+/// committed pages, and a page that carried a `data-figure` element was a fold
+/// that needed `-merge`. The refresh now fills an assembled copy at publish
+/// time, and the committed page holds only empty markers, so it merges as the
+/// text it is. A tree that still holds `tools/site/refresh-figures.sh` is asked
+/// no attribute for the page.
+#[test]
+fn a_page_under_site_whose_figures_are_blank_is_claimed_by_no_producer() {
+    let root = TempTree::new("blank-figures");
+    root.write(".gitattributes", "# no merge attribute anywhere\n");
+    root.write(
+        "site/index.html",
+        "<p><span data-figure=\"census.seen\"></span> documents</p>\n",
+    );
+
+    let population = headwater_census::derived::population(root.path());
+
+    assert!(
+        population
+            .outputs
+            .iter()
+            .all(|output| output.path != "site/index.html"),
+        "a page under site/ is still claimed by a producer: {:?}",
+        population.outputs
+    );
+    assert!(
+        population.undeclared.is_empty(),
+        "the verb asks -merge of a hand-built page: {:?}",
+        population.undeclared
+    );
+    assert!(population.agrees(), "the tree does not agree");
+}
+
 /// A recorded fixture is a member only where its opening states a fold.
 ///
 /// This is the rule that separates a file that opens with a corpus-wide count
