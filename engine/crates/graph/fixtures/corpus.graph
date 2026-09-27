@@ -71,6 +71,8 @@ anchors
     cited by HW-DR-0061
   code_path `.gitattributes` via source-tree
     cited by HW-DR-0049
+  code_path `.githooks/change-manifest` via source-tree
+    cited by HW-SPEC-authoring-and-lifecycle
   code_path `.githooks/commit-msg` via source-tree
     cited by HW-EVAL-one-clone-many-agents-how-this-repository-isolates-the-sessions-that-build-it
   code_path `.githooks/fixtures.sh` via source-tree
@@ -195,6 +197,8 @@ anchors
     cited by HW-OBL-0071
   code_path `engine/crates/check/src/voice.rs` via source-tree
     cited by HW-OBL-0168
+  code_path `engine/crates/check/src/voice.rs` via source-tree
+    cited by HW-SPEC-check-layer
   code_path `engine/crates/check/tests/fixtures.rs` via source-tree
     cited by HW-VER-0001
   code_path `engine/crates/cli/Cargo.toml` via source-tree
@@ -273,8 +277,14 @@ anchors
     cited by HW-DR-0042
   code_path `engine/crates/cli/tests/help.rs` via source-tree
     cited by HW-DR-0045
+  code_path `engine/crates/cli/tests/init.rs` via source-tree
+    cited by HW-IFACE-headwater-init
   code_path `engine/crates/cli/tests/json.rs` via source-tree
     cited by HW-DR-0043
+  code_path `engine/crates/cli/tests/network_boundary.rs` via source-tree
+    cited by HW-DR-0075
+  code_path `engine/crates/cli/tests/publish.rs` via source-tree
+    cited by HW-DR-0022
   code_path `engine/crates/cli/tests/sweep.rs` via source-tree
     cited by HW-IFACE-headwater-sweep
   code_path `engine/crates/cli/tests/verbs.rs` via source-tree
@@ -429,6 +439,8 @@ anchors
     cited by HW-DR-0053
   code_path `taxonomy-source/headwater-standard/package.yml` via source-tree
     cited by HW-OBL-0174
+  code_path `taxonomy-source/headwater-standard/package.yml` via source-tree
+    cited by HW-SPEC-distribution-and-federation
   code_path `taxonomy-source/headwater-standard/taxonomy.yml` via source-tree
     cited by HW-DR-0083
   code_path `tools/cap-run` via source-tree
@@ -447,6 +459,10 @@ anchors
     cited by HW-SPEC-the-recorder-contract
   code_path `tools/probe/rdf-probe/emit.py` via source-tree
     cited by HW-EVAL-owl-skos-worked-example
+  code_path `tools/repo/obligation-register-fixtures.sh` via source-tree
+    cited by HW-OBL-0142
+  code_path `tools/repo/readme-fixtures.sh` via source-tree
+    cited by HW-DR-0084
   code_path `tools/repo/retire-worktree.sh` via source-tree
     cited by HW-EVAL-one-clone-many-agents-how-this-repository-isolates-the-sessions-that-build-it
   code_path `tools/repo/retire-worktree.sh` via source-tree
