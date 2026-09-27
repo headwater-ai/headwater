@@ -4230,6 +4230,18 @@ fn show(root: &Path, target: &str) -> ExitCode {
         Err(code) => return code,
     };
     // A census path is relative to the repository root, which is `root`.
+    // The walk does not follow a symlink, and neither does this read: a link
+    // anywhere between the root and the file could name any file on the host,
+    // outside `--root`. So each component is tested before a byte is read.
+    if let Some(link) = symlink_under(root, &explanation.path) {
+        eprintln!(
+            "headwater: {}",
+            err(&format!(
+                "`{link}` is a symlink, which the walk does not follow, so `show` prints nothing"
+            ))
+        );
+        return ExitCode::FAILURE;
+    }
     let path = root.join(&explanation.path);
     match std::fs::read(&path) {
         Ok(bytes) => {
@@ -4247,6 +4259,27 @@ fn show(root: &Path, target: &str) -> ExitCode {
             ExitCode::FAILURE
         }
     }
+}
+
+/// The first component of `relative`, joined onto `root` one at a time, that is
+/// a symlink, as the path from `root` down to it. `None` when no component is
+/// one, and also when a component cannot be read: the read that follows then
+/// reports the failure itself.
+fn symlink_under(root: &Path, relative: &str) -> Option<String> {
+    let mut at = root.to_path_buf();
+    let mut walked = PathBuf::new();
+    for component in Path::new(relative).components() {
+        at.push(component);
+        walked.push(component);
+        match std::fs::symlink_metadata(&at) {
+            Ok(meta) if meta.file_type().is_symlink() => {
+                return Some(walked.display().to_string());
+            }
+            Ok(_) => {}
+            Err(_) => return None,
+        }
+    }
+    None
 }
 
 /// Find the document a target names, by path or by identifier, or refuse it.
