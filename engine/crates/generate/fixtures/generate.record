@@ -8,7 +8,7 @@ the plan
 The documents on this shelf, in the reading order this corpus derives.
 
 - [Rebuild the graph on every run](0002-rebuild-the-graph.md) — the graph is rebuilt on every run and never stored, which supersedes DR-FIX-0001
-- [Store the graph on disk](0001-store-the-graph.md) — the first ruling on where the corpus graph lives, replaced by DR-FIX-0002
+- [Store the graph on disk](0001-store-the-graph.md) (superseded) — the first ruling on where the corpus graph lives, replaced by DR-FIX-0002
 
 === generate/guides/README.md (shelf_index) ===
 <!-- headwater:generated shelf_index. `headwater generate` writes this file, and `headwater generate --check` holds it. Edit the corpus, not this file. -->
@@ -33,7 +33,7 @@ The documents on this shelf, in the reading order this corpus derives. Each head
 
 ## Store the graph on disk
 
-[DR-FIX-0001](0001-store-the-graph.md) — the first ruling on where the corpus graph lives, replaced by DR-FIX-0002
+[DR-FIX-0001](0001-store-the-graph.md) (superseded) — the first ruling on where the corpus graph lives, replaced by DR-FIX-0002
 
 === generate/archive/RETIRED.md (shelf_sections) ===
 ---
@@ -58,7 +58,7 @@ The documents on this shelf, in the reading order this corpus derives. Each head
 
 ## Store the graph on disk
 
-[DR-FIX-0001](../decisions/0001-store-the-graph.md) — the first ruling on where the corpus graph lives, replaced by DR-FIX-0002
+[DR-FIX-0001](../decisions/0001-store-the-graph.md) (superseded) — the first ruling on where the corpus graph lives, replaced by DR-FIX-0002
 
 === exports/native.json (graph_export) ===
 {
