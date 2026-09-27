@@ -531,6 +531,19 @@ if [ -x "$engine" ]; then
     # reverse part has to read each target apart and never split a joined one.
     : > "$reverse_root/tools/a,b.sh"
     reverse_doc 0008-theta.md HW-PD-0008 'Theta governs a list' 'relations:\n  governs:\n    - ["tools/a,b.sh", tools/alpha.sh]\n'
+    # Iota, Kappa and Lambda each govern one glob, over 3, 21 and 20 files:
+    # the two outcomes of the owner's ruling on #1093 and the bound itself.
+    # The engine names the matched files, and the hook never matches a glob.
+    mkdir -p "$reverse_root/tools/glob" "$reverse_root/tools/many" "$reverse_root/tools/bound"
+    for n in 1 2 3; do : > "$reverse_root/tools/glob/g$n.sh"; done
+    for n in 01 02 03 04 05 06 07 08 09 10 11 12 13 14 15 16 17 18 19 20; do
+        : > "$reverse_root/tools/many/f$n.sh"
+        : > "$reverse_root/tools/bound/b$n.sh"
+    done
+    : > "$reverse_root/tools/many/f21.sh"
+    reverse_doc 0009-iota.md HW-PD-0009 'Iota governs a glob of three' 'relations:\n  governs:\n    - "tools/glob/**"\n'
+    reverse_doc 0010-kappa.md HW-PD-0010 'Kappa governs a glob of twenty-one' 'relations:\n  governs:\n    - "tools/many/**"\n'
+    reverse_doc 0011-lambda.md HW-PD-0011 'Lambda governs a glob of twenty' 'relations:\n  governs:\n    - "tools/bound/**"\n'
     reverse_doc 0006-zeta.md HW-PD-0006 'Zeta verified beta once' 'relations:\n  governs:\n    - to: tools/beta.sh\n      verified_revision: sha256:0000\n'
 
     if resolved=$("$reverse_root/engine/target/release/headwater" taxonomy resolve --root "$reverse_root" 2>&1); then
@@ -559,6 +572,21 @@ if [ -x "$engine" ]; then
         theta='{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"docs/process/decisions/0008-theta.md"}}'
         expect 'a list anchor is named one target to a line, a comma inside a member kept' \
             write.sh 0 'It governs these code paths (2):\n  tools/a,b.sh\n  tools/alpha.sh' "$theta"
+        # The decisive cases of #1093: a glob is named by the files the engine
+        # says it matched, up to the bound, and past it by its count alone.
+        iota='{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"docs/process/decisions/0009-iota.md"}}'
+        expect 'a glob under the bound is named with its count and each file it matched' \
+            write.sh 0 'It governs these code paths (3):\n  tools/glob/** (3 files):\n    tools/glob/g1.sh\n    tools/glob/g2.sh\n    tools/glob/g3.sh' "$iota"
+        kappa='{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"docs/process/decisions/0010-kappa.md"}}'
+        expect 'a glob past the bound is named by its pattern and count' \
+            write.sh 0 'It governs these code paths (21):\n  tools/many/** (21 files, not listed past 20)' "$kappa"
+        refute 'a glob past the bound lists no file' \
+            write.sh 'tools/many/f01.sh' "$kappa"
+        lambda='{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"docs/process/decisions/0011-lambda.md"}}'
+        expect 'a glob at the bound is still listed in full' \
+            write.sh 0 '  tools/bound/** (20 files):\n    tools/bound/b01.sh' "$lambda"
+        expect 'a glob at the bound lists its last file' \
+            write.sh 0 '    tools/bound/b20.sh' "$lambda"
         expect 'a document with no edge in either direction is silent' \
             write.sh 0 '' \
             '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"docs/process/decisions/0004-delta.md"}}'
