@@ -1,6 +1,6 @@
 ---
 name: hw-integrate
-description: Merges one ruled pull request of the Headwater build order, moves the shared checkout, rebuilds and regenerates, and writes back to the board. Use as the last stage of an iteration, one in flight at a time, fresh per merge. It is the sole owner of the main checkout and its engine target, it edits no file by hand, and it never rules.
+description: Hands every ruled pull request of the Headwater build order to the merge queue, waits for each to land or be ejected, then moves the shared checkout, rebuilds and regenerates once, and writes back to the board. Use as the last stage of an iteration, one in flight at a time, fresh per dispatch. It is the sole owner of the main checkout and its engine target, it edits no file by hand, and it never rules.
 tools: ["*"]
 ---
 

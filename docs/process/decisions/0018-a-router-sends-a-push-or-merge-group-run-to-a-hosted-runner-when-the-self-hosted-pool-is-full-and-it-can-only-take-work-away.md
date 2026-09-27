@@ -4,7 +4,7 @@ status: current
 status_since: 2026-09-27
 summary: "The route job counts the jobs on the self-hosted label and outputs overflow. A failure in it gives an empty output and changes no routing."
 last_verified: 2026-09-27
-title: "A router sends a push run to a hosted runner when the self-hosted pool is full, and it can only take work away"
+title: "A router sends a push or merge group run to a hosted runner when the self-hosted pool is full, and it can only take work away"
 provenance:
   warrant: asserted
   agency: agent
@@ -14,10 +14,10 @@ provenance:
 relations:
   governs:
     - to: .github/workflows/ci.yml
-      verified_revision: sha256:bfd4ef8959003aeeeb747d4ee09681182987086ddc45ab5b61e1b8c5818a758e
+      verified_revision: sha256:50ccbd163aac286bbfdc9b1b66bd975dda4ea10081ca650d2f49e0cd9a444a97
 ---
 
-# A router sends a push run to a hosted runner when the self-hosted pool is full, and it can only take work away
+# A router sends a push or merge group run to a hosted runner when the self-hosted pool is full, and it can only take work away
 
 ## Context
 
@@ -29,7 +29,9 @@ The comment on the router recorded them in short. A self-hosted job is faster th
 
 **What the router does.** The `route` job runs on `ubuntu-latest`, because it cannot wait in the queue of the pool that it measures. For a `push`, it counts the queued and running jobs that ask for the `headwater` label. When no job waits, and the running jobs plus the two jobs of this run fit in `CI_SELF_HOSTED_SLOTS`, it outputs `overflow=false`. Otherwise it outputs `overflow=true`, and `runs-on` sends both jobs to `ubuntu-latest`. The default pool size is 3.
 
-**One word and one comparison.** The router outputs one word. `runs-on` compares it with the literal `'true'`. So a job can get only `vars.CI_RUNNER` or `ubuntu-latest` ([HW-PD-0016](0016-ci-runner-is-an-opt-in-that-only-a-push-reads-and-an-unset-value-falls-back-to-ubuntu-latest.md)). The router can take the self-hosted pool away from a job, and it never grants the pool ([HW-PD-0015](0015-a-condition-in-ci-may-take-work-away-and-never-grant-it-so-one-run-per-commit-comes-from-a-job-level-if.md)).
+**A `merge_group` run is measured as a push is.** Since [HW-PD-0020](0020-merges-go-through-the-github-merge-queue-one-squash-commit-per-pull-request.md), the router treats a `merge_group` run as it treats a `push`.
+
+**One word and one comparison.** The router outputs one word. `runs-on` compares it with the literal `'true'`. So a job can get only `vars.CI_RUNNER` or `ubuntu-latest` ([HW-PD-0016](0016-ci-runner-is-an-opt-in-that-only-a-push-or-a-merge-group-reads-and-an-unset-value-falls-back-to-ubuntu-latest.md)). The router can take the self-hosted pool away from a job, and it never grants the pool ([HW-PD-0015](0015-a-condition-in-ci-may-take-work-away-and-never-grant-it-so-one-run-per-commit-comes-from-a-job-level-if.md)).
 
 **The router never fails a run.** Its step continues on an error and stops after two minutes, so an error gives an empty output. The `if:` of `engine` and `headwater` opens with `!cancelled()`, so both jobs run when `route` fails as a job. An empty output routes the run by `CI_RUNNER` alone. `route` has no `if:` of its own.
 

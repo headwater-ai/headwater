@@ -14,7 +14,7 @@ provenance:
 relations:
   governs:
     - to: .github/workflows/ci.yml
-      verified_revision: sha256:bfd4ef8959003aeeeb747d4ee09681182987086ddc45ab5b61e1b8c5818a758e
+      verified_revision: sha256:50ccbd163aac286bbfdc9b1b66bd975dda4ea10081ca650d2f49e0cd9a444a97
 ---
 
 # Self-hosted eligibility in CI is decided by the event alone, and a push to any branch is eligible
@@ -27,15 +27,15 @@ A pull request from a fork runs the fork's own copy of `ci.yml`. The fork can de
 
 ## Decision
 
-**The event decides.** The `runs-on` expression of `engine` and of `headwater` reads `github.event_name` to decide whether the job may run on the self-hosted pool. The `runs-on` of `route` is the literal `ubuntu-latest` ([HW-PD-0018](0018-a-router-sends-a-push-run-to-a-hosted-runner-when-the-self-hosted-pool-is-full-and-it-can-only-take-work-away.md)). It reads no other field for that choice. It never reads which repository opened a pull request, or any field that the author of a pull request can change.
+**The event decides.** The `runs-on` expression of `engine` and of `headwater` reads `github.event_name` to decide whether the job may run on the self-hosted pool. The `runs-on` of `route` is the literal `ubuntu-latest` ([HW-PD-0018](0018-a-router-sends-a-push-or-merge-group-run-to-a-hosted-runner-when-the-self-hosted-pool-is-full-and-it-can-only-take-work-away.md)). It reads no other field for that choice. It never reads which repository opened a pull request, or any field that the author of a pull request can change.
 
-**Every branch.** `on.push.branches` is `['**']` and not `[main]`. A person with commit access writes each push to a feature branch, and nobody reads it yet. That is the case the self-hosted runner exists to make fast. So a push is eligible on every branch.
+**Every branch.** `on.push.branches` is `['**', '!gh-readonly-queue/**']` and not `[main]`. The one exclusion is the merge queue's own branches, which run under `merge_group` instead ([HW-PD-0020](0020-merges-go-through-the-github-merge-queue-one-squash-commit-per-pull-request.md)). A person with commit access writes each push to a feature branch, and nobody reads it yet. That is the case the self-hosted runner exists to make fast. So a push is eligible on every branch.
 
-**The router cannot grant.** The router of [HW-PD-0018](0018-a-router-sends-a-push-run-to-a-hosted-runner-when-the-self-hosted-pool-is-full-and-it-can-only-take-work-away.md) can send an eligible job to a hosted runner. It never makes a job eligible.
+**The router cannot grant.** The router of [HW-PD-0018](0018-a-router-sends-a-push-or-merge-group-run-to-a-hosted-runner-when-the-self-hosted-pool-is-full-and-it-can-only-take-work-away.md) can send an eligible job to a hosted runner. It never makes a job eligible.
 
 ## Consequences
 
-A pull request always runs on a hosted runner. A push runs on the self-hosted pool only when `CI_RUNNER` names it ([HW-PD-0016](0016-ci-runner-is-an-opt-in-that-only-a-push-reads-and-an-unset-value-falls-back-to-ubuntu-latest.md)) and the pool has space.
+A pull request always runs on a hosted runner. A push runs on the self-hosted pool only when `CI_RUNNER` names it ([HW-PD-0016](0016-ci-runner-is-an-opt-in-that-only-a-push-or-a-merge-group-reads-and-an-unset-value-falls-back-to-ubuntu-latest.md)) and the pool has space. Since [HW-PD-0020](0020-merges-go-through-the-github-merge-queue-one-squash-commit-per-pull-request.md), a `merge_group` run is eligible in the same way as a push, because only a person with write access can queue a pull request.
 
 A `runs-on` that reads a field of a pull request is a defect, even when it looks safer. A fork removes that condition in its own copy, so the condition protects nothing and hides where the boundary is ([HW-PD-0014](0014-the-boundary-against-a-fork-is-the-approval-of-outside-runs-and-a-person-reads-a-github-diff-before-approving-one.md)).
 
