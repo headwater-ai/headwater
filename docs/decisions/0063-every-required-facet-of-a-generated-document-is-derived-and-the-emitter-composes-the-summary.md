@@ -3,7 +3,7 @@ id: HW-DR-0063
 status: current
 status_since: 2026-09-11
 summary: "Nine required facets went unwritten on two generated documents. The engine derives seven from committed bytes, the emitter composes the summary, and the declaration block stays closed at three scalars."
-last_verified: 2026-09-26
+last_verified: 2026-09-27
 title: "Every required facet of a generated document is derived, and the emitter composes the summary"
 provenance:
   warrant: asserted
@@ -16,7 +16,7 @@ relations:
     - HW-SPEC-engine-architecture
   governs:
     - to: engine/crates/generate/src/derived.rs
-      verified_revision: sha256:402da8aa3219803a14f060977e36f950326d43dce66233996fc22cbd0cf3bf6e
+      verified_revision: sha256:df3fe720e5c546530ce4ee6dca826bafc78acea352450581e4513f9a900cd171
 ---
 
 # Every required facet of a generated document is derived, and the emitter composes the summary

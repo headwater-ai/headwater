@@ -492,6 +492,8 @@ fn a_required_facet_whose_role_finds_no_value_in_the_sources_names_the_sources()
     for wanted in [
         "last_verified",
         "freshness",
+        // The fold for freshness is the stalest value (#1111).
+        "as the stalest value",
         NO_VALUE,
         "generate/decisions/0001-store-the-graph.md",
         "generate/decisions/0002-rebuild-the-graph.md",
