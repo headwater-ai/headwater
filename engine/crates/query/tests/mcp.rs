@@ -1179,7 +1179,7 @@ fn strings_under(value: &Value, at: &str, found: &mut Vec<(String, String)>) {
             }
         }
         Value::Map(map) => {
-            for entry in map.iter() {
+            for entry in map {
                 strings_under(
                     &entry.value.value,
                     &format!("{at}.{}", entry.key.value),
