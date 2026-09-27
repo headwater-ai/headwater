@@ -1556,6 +1556,12 @@ surface:
     - "headwater probe"
     - "headwater neighbors"
     - "headwater sweep"
+  deb:
+    - "/usr/bin/headwater"
+    - "/usr/share/doc/headwater/copyright"
+    - "/usr/share/bash-completion/completions/headwater"
+    - "/usr/share/zsh/vendor-completions/_headwater"
+    - "/usr/share/fish/vendor_completions.d/headwater.fish"
   integration_points:
     agent_harness:
       depends_on: []

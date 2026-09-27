@@ -49,7 +49,7 @@ Until the owner adds `APT_SIGNING_KEY`, a release carries the `.deb` and no meta
 
 The APT key authenticates the publisher of the engine on the APT route only. It does not authenticate a taxonomy package, so [HW-OBL-0115](../obligations/0115-a-pinned-digest-authenticates-the-pin-and-never-the-publisher.md) stays open.
 
-Cloudflare serves one asset of at most 25 MiB. The package built from the v0.4.0 archive is 8,132,344 bytes. The package job and `fetch-apt.sh` each refuse a larger package.
+Cloudflare serves one asset of at most 25 MiB. The package built from the v0.4.0 archive is 8,132,796 bytes. The package job and `fetch-apt.sh` each refuse a larger package.
 
 [Rotate or revoke the APT signing subkey](../how-to/rotate-or-revoke-the-apt-signing-subkey.md) gives the order of steps for a new subkey.
 

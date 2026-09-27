@@ -138,6 +138,8 @@ anchors
   code_path `.github/workflows/release.yml` via source-tree
     cited by HW-DR-0091
   code_path `.github/workflows/release.yml` via source-tree
+    cited by HW-DR-0094
+  code_path `.github/workflows/release.yml` via source-tree
     cited by HW-PD-0009
   code_path `.github/workflows/release.yml` via source-tree
     cited by HW-PD-0010
@@ -529,6 +531,8 @@ anchors
     cited by HW-DR-0047
   code_path `tools/site/cloudflare-build.sh` via source-tree
     cited by HW-DR-0047
+  code_path `tools/site/fetch-apt.sh` via source-tree
+    cited by HW-DR-0094
   code_path `tools/site/refresh-crawler-files.sh` via source-tree
     cited by HW-DR-0048
   code_path `tools/site/refresh-figures.sh` via source-tree
