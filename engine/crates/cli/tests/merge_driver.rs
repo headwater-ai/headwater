@@ -605,6 +605,110 @@ fn the_description_of_init_says_git_commits_unset_merge_and_selects_the_driver_p
     }
 }
 
+/// The store `headwater new` appends a capture-cost reading to, and the one
+/// `headwater taxonomy audit` appends an adoption reading to. Each line depends
+/// on no other line, so a union of two branches is what either writer would
+/// have written (`docs/interfaces/headwater-derived.md`).
+const CAPTURE_COST: &str = ".headwater/capture-cost.jsonl";
+const ADOPTION: &str = ".headwater/adoption.jsonl";
+
+/// An adopter who ran `init --git` and then `headwater new` on two branches
+/// merges them without a conflict on a file neither of them edited by hand.
+///
+/// Both branches create the capture-cost store from nothing, which is an
+/// add/add conflict under a text merge. The two documents are of two kinds on
+/// two shelves, so neither the claim store (HW-DR-0054) nor a path collides and
+/// the store is the only file in question. Take the union line out of
+/// `init --git` and the store is unmerged here.
+#[test]
+fn two_branches_that_each_run_new_merge_the_capture_cost_store_without_a_conflict() {
+    let tree = Tree::adopted("two-news");
+    tree.headwater_ok(&["init", "--git"]);
+    tree.git(&["add", "-A"]);
+    tree.git(&["commit", "-q", "-m", "adopted"]);
+
+    tree.git(&["checkout", "-q", "-b", "a"]);
+    tree.headwater_ok(&["new", "design_spec", "--title", "A part on branch a"]);
+    tree.git(&["add", "-A"]);
+    tree.git(&["commit", "-q", "-m", "a part"]);
+
+    tree.git(&["checkout", "-q", "main"]);
+    tree.git(&["checkout", "-q", "-b", "b"]);
+    tree.headwater_ok(&["new", "decision", "--title", "A ruling on branch b"]);
+    tree.git(&["add", "-A"]);
+    tree.git(&["commit", "-q", "-m", "a ruling"]);
+
+    let merged = tree.git_output(&["merge", "--no-edit", "a"]);
+    assert_eq!(
+        (merged.status.code(), tree.unmerged()),
+        (Some(0), Vec::<String>::new()),
+        "the merge of two branches that each ran `new` exits 0 with nothing unmerged:\n{}{}",
+        String::from_utf8_lossy(&merged.stdout),
+        String::from_utf8_lossy(&merged.stderr)
+    );
+    let store = tree.read(CAPTURE_COST);
+    let readings: Vec<&str> = store.lines().collect();
+    assert_eq!(
+        readings.len(),
+        2,
+        "the store holds one reading from each branch:\n{store}"
+    );
+    assert!(
+        readings.iter().any(|line| line.contains("a-part-on-branch-a"))
+            && readings.iter().any(|line| line.contains("a-ruling-on-branch-b")),
+        "one reading names each document:\n{store}"
+    );
+}
+
+/// The union lines are appended only where `.gitattributes` says nothing of the
+/// store, and they never reach the override that selects the driver.
+///
+/// An adopter who already declared the capture-cost store `-merge` keeps that
+/// line byte for byte, and gets no union line after it that would win. The
+/// adoption store, which the file does not name, gets its union line. Under
+/// `--git-config` the override names the lock alone, because a driver line on a
+/// store would hand a file no producer writes to the regenerate driver.
+#[test]
+fn the_git_step_leaves_a_declared_store_alone_and_writes_no_override_for_a_store() {
+    let tree = Tree::adopted("declared-store");
+    let own = format!("# the adopter's own line\n{CAPTURE_COST} -merge\n");
+    tree.write(".gitattributes", &own);
+    tree.headwater_ok(&["init", "--git", "--git-config"]);
+
+    let attributes = tree.read(".gitattributes");
+    assert!(
+        attributes.starts_with(&own),
+        "the adopter's lines are kept byte for byte:\n{attributes}"
+    );
+    let about_capture_cost: Vec<&str> = attributes
+        .lines()
+        .filter(|line| line.starts_with(CAPTURE_COST))
+        .collect();
+    assert_eq!(
+        about_capture_cost,
+        vec![format!("{CAPTURE_COST} -merge").as_str()],
+        "no line after the adopter's overrides it:\n{attributes}"
+    );
+    assert!(
+        attributes
+            .lines()
+            .any(|line| line == format!("{ADOPTION} merge=union")),
+        "the store the file does not name gets its union line:\n{attributes}"
+    );
+
+    let over = std::fs::read_to_string(tree.info_attributes()).expect("the override is written");
+    for store in [CAPTURE_COST, ADOPTION] {
+        assert!(
+            !over.contains(store),
+            "the override names no store:\n{over}"
+        );
+    }
+    assert!(
+        over.contains(&format!("{LOCK} merge=headwater-regenerate")),
+        "the override still names the lock:\n{over}"
+    );
+}
+
 /// Every `headwater taxonomy resolve` command the merge hooks of this
 /// repository print as a remedy is one the verb accepts (HW-OBL-0216).
 ///
