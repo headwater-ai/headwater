@@ -18,3 +18,4 @@ tiers:
     session_cost_cents: 25
     repetitions: 4
     arms: [present, absent]
+    ablation: [CLAUDE.md, .claude, .githooks, .headwater]

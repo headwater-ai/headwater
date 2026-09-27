@@ -1477,6 +1477,26 @@ jobs:
         # It needs `python3` and nothing else: no engine, no network, no
         # corpus, and it writes nothing under this checkout.
         run: sh tools/repo/integrations-fixtures.sh
+      - name: The Node runtime the VS Code client's suite runs on
+        # `integrations/vscode` has no npm dependency and no build step, so
+        # this is all the suite below needs. Pinned to one major version so
+        # the hosted and the self-hosted runner run the same `node --test`.
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: The VS Code client reads the built engine's answers and stays silent on every failure
+        # `integrations/vscode`, #497's extension, is packaged surface like
+        # `integrations/headwater-check`: a client of `headwater mcp` that
+        # calls the query class alone. Its suite holds `client.js`, the one
+        # file of the extension that decides anything. One case spawns the
+        # engine this job built, with `--root` at this checkout, and reads
+        # the pointer shape `docs/interfaces/headwater-mcp.md` states as the
+        # wire format. That case fails, rather than skips, when `CI` is set
+        # and `HEADWATER_BIN` is not. The other cases replay recorded
+        # sessions. It writes only under a temporary directory.
+        env:
+          HEADWATER_BIN: ${{ github.workspace }}/engine/target/release/headwater
+        run: node --test integrations/vscode/test/client.test.js
       - name: The composition demonstration reports the one finding it claims
         # `docs/taxonomies/diataxis/fixtures/README.md` records what happens
         # when the `reader_mode` facet of one library entry is read over

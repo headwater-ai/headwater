@@ -1,0 +1,188 @@
+rule	n_rule	path	line	flagged	suggestion	context	verdict
+AdjectiveDoubleDegree	1	docs/evaluations/adjacent-work.md	307	more honest	replace:honest	ps it. One data point on each side is a [[more honest]] input to the decision than one. - **A p	
+AnA	4	docs/spec/16-harness-support.md	109	a	replace:an	ready ships.** All three harnesses read [[a]] `SKILL.md` under a per-skill directory.	
+AnA	4	docs/spec/02-taxonomy-model.md	630	A	replace:AN	 it is the only party that reads them.  [[A]] SKOS projection of the resolved taxonom	
+AnA	4	docs/evaluations/adjacent-work.md	214	A	replace:AN	e do not have  The TBox/ABox framing (§[[A]]) is the valuable half and stands indepe	
+AnA	4	docs/how-to/cut-a-release.md	50	an	replace:a	. 4. **Write the changelog entry.** Add [[an]] `<h2>` section for the new version at t	
+Codebase	1	docs/evaluations/adjacent-work.md	864	code base	replace:codebase	gues model debugging as foraging over a [[code base]]. The PFIS family scores the cues visibl	
+CompoundNouns	17	docs/spec/07-distribution-and-federation.md	93	file system	replace:filesystem	on it is the repository rather than the [[file system]]. Every other key is held to the package	
+CompoundNouns	17	docs/spec/07-distribution-and-federation.md	418	plain text	replace:plaintext	 the only reader. The file is committed [[plain text]], so every reader of the repository reco	
+CompoundNouns	17	docs/spec/02-taxonomy-model.md	881	lock file	replace:lockfile	n is a hard failure, not a warning. The [[lock file]] records the taxonomy version and the me	
+CompoundNouns	17	docs/spec/03-authoring-and-lifecycle.md	138	file name	replace:filename	f whose path puts a glob before a fixed [[file name]] does not decide the directory, so the s	
+CompoundNouns	17	docs/spec/03-authoring-and-lifecycle.md	138	file name	replace:filename	ctory, and the shelf layout decides the [[file name]]. A shelf whose path puts a glob before 	
+CompoundNouns	17	docs/spec/03-authoring-and-lifecycle.md	150	file name	replace:filename	eads alike. Either state means that the [[file name]] does not determine the identifier, whic	
+CompoundNouns	17	docs/how-to/mine-the-shadow-mode-routing-log.md	55	log file	replace:logfile	is the transcript's `promptId`, and the [[log file]] name is the session identifier. A typed	
+CompoundNouns	17	docs/spec/03-authoring-and-lifecycle.md	279	plain text	replace:plaintext	 the same reason. The file is committed [[plain text]], so every reader of the repository reco	
+CompoundNouns	17	docs/spec/07-distribution-and-federation.md	95	file system	replace:filesystem	y and the declared value, rather than a [[file system]] error out of a copy. A file whose name 	
+CompoundNouns	17	docs/spec/07-distribution-and-federation.md	77	key maps	replace:keymaps	d, under `unresolved_references`.** The [[key maps]] a member the artifact carries to the ta	
+DiscourseMarkers	17	docs/spec/07-distribution-and-federation.md	372	Thus	insert:,	 what moved and what must be re-stated. [[Thus]] it knows which rules it broke for which	
+DiscourseMarkers	17	docs/spec/03-authoring-and-lifecycle.md	126	Thus	insert:,	is generated from the kind declaration. [[Thus]] the required sections and the required 	
+DiscourseMarkers	17	docs/decisions/0002-schema-format.md	52	Thus	insert:,	d result that nobody authored directly. [[Thus]] `explain`, `resolve`, and a readable lo	
+DiscourseMarkers	17	docs/spec/07-distribution-and-federation.md	432	Thus	insert:,	ion. The rules ship *with the package*. [[Thus]] a pin advance brings newly-added requir	
+DiscourseMarkers	17	docs/evaluations/adjacent-work.md	400	Otherwise	insert:,	 wins, and suppresses the project copy. [[Otherwise]] an existing project copy stays untouche	
+DiscourseMarkers	17	docs/spec/07-distribution-and-federation.md	183	Thus	insert:,	writes the lock. The lock is committed. [[Thus]] the corpus is checked against a resolve	
+DiscourseMarkers	17	docs/spec/01-conceptual-model.md	68	Thus	insert:,	e loudest signal that a document sends. [[Thus]] the schema treats placement as authorit	
+DiscourseMarkers	17	docs/spec/07-distribution-and-federation.md	45	Thus	insert:,	as an overlay against a versioned base. [[Thus]] an upgrade is a package bump and a re-r	
+DiscourseMarkers	17	docs/evaluations/adjacent-work.md	317	Thus	insert:,	we work with decided to adopt the tool. [[Thus]] \"can a Headwater corpus sit downstream 	
+DiscourseMarkers	17	docs/evaluations/adjacent-work.md	400	Otherwise	insert:,	 existing project copy stays untouched. [[Otherwise]] the shipped template lands in the proje	
+DisjointPrefixes	37	docs/evaluations/adjacent-work.md	824	re-runs	replace:reruns	 discards the speculation behind it and [[re-runs]]. That is optimistic concurrency with a 	
+DisjointPrefixes	37	docs/spec/02-taxonomy-model.md	569	re-entered	replace:reentered	arms any expectation conditioned on the [[re-entered]] state. That is usually the right semant	
+DisjointPrefixes	37	docs/how-to/mine-the-shadow-mode-routing-log.md	53	re-run	replace:rerun	ompare at the time of the prompt. Never [[re-run]] the router over a later tree, because a	
+DisjointPrefixes	37	docs/spec/07-distribution-and-federation.md	598	re-reads	replace:rereads	ory, because the remedy is a person who [[re-reads]] the upstream item. The revision reaches	
+DisjointPrefixes	37	docs/evaluations/adjacent-work.md	984	re-runs	replace:reruns	ocumentation states no report. A person [[re-runs]] the generator | | ESLint `eslint-suppre	
+DisjointPrefixes	37	docs/evaluations/adjacent-work.md	551	counter-example	replace:counterexample	 under load.  GraphQL federation is the [[counter-example]], and it proves the rule. Apollo's route	
+DisjointPrefixes	37	docs/spec/07-distribution-and-federation.md	156	re-statement	replace:restatement	open task, which is the same shape as a [[re-statement]] step. The vocabulary holds no fourth su	
+DisjointPrefixes	37	docs/spec/07-distribution-and-federation.md	201	non-zero	replace:nonzero	orts it and `--level L0` makes the exit [[non-zero]]. Installed bytes that differ from their	
+DisjointPrefixes	37	docs/spec/03-authoring-and-lifecycle.md	265	non-zero	replace:nonzero	 landed and whose reading did not exits [[non-zero]]. A silent hole in the denominator is th	
+DisjointPrefixes	37	docs/spec/16-harness-support.md	117	sub-task	replace:subtask	launch a named persona as an in-process [[sub-task]]. It reads the report back, synchronousl	
+Everyone	7	docs/spec/07-distribution-and-federation.md	87	every one	replace:everyone	at does not parse would otherwise evade [[every one]] of them and report a pass. A quoted pla	
+Everyone	7	docs/spec/07-distribution-and-federation.md	514	Every one	replace:Everyone	ention in the field pretends otherwise. [[Every one]] of them presumes a client that already 	
+Everyone	7	docs/spec/02-taxonomy-model.md	630	every one	replace:everyone	te) orders six emitter targets and puts [[every one]] after the second behind a named externa	
+Everyone	7	docs/spec/02-taxonomy-model.md	906	every one	replace:everyone	clare any number of relation types, but [[every one]] must belong to one of the six families.	
+Everyone	7	docs/evaluations/adjacent-work.md	155	Every one	replace:Everyone	uence expectations are all expressible. [[Every one]] of them needs a drop to SPARQL. SHACL C	
+Everyone	7	docs/evaluations/adjacent-work.md	629	every one	replace:everyone	 file. A copy-and-paste recovered it in [[every one]]. The authoritative guidance is unambigu	
+Everyone	7	docs/how-to/diagnose-an-isolation-failure.md	57	every one	replace:everyone	a pass.  Build the cheap profile, which [[every one]] of those positions accepts:      sh too	
+ExpandConfiguration	2	docs/spec/00-vision-and-scope.md	67	config	replace:configuration	rs already solve this | Emit navigation [[config]] for MkDocs / Docusaurus / Astro | | A w	
+ExpandConfiguration	2	docs/evaluations/adjacent-work.md	263	config	replace:configuration	 is a `knowledge.json` under the user's [[config]] directory — the only format that roun	
+ExpandMemoryShorthands	4	docs/spec/07-distribution-and-federation.md	91	KiB	replace:kibibytes	s own library they are 71 files and 227 [[KiB]] of prose that no consumer resolves ([#5	
+ExpandMemoryShorthands	4	docs/decisions/0001-implementation-language.md	57	KiB	replace:kibibytes	native Node addon and as `wasm32` | 600 [[KiB]] addon, 113 KiB wasm, identical output |	
+ExpandMemoryShorthands	4	docs/decisions/0001-implementation-language.md	57	KiB	replace:kibibytes	on and as `wasm32` | 600 KiB addon, 113 [[KiB]] wasm, identical output | | A warm chang	
+ExpandMemoryShorthands	4	docs/evaluations/adjacent-work.md	511	GB	replace:gigabyte	fter `.git` directories reached about 1 [[GB]]. CocoaPods moved to a content delivery 	
+ExpandTimeShorthands	11	docs/decisions/0001-implementation-language.md	58	ms	replace:milliseconds	1,000 documents, under 200 ms | about 2 [[ms]] |  The scope-leak item ran first, becau	
+ExpandTimeShorthands	11	docs/spec/07-distribution-and-federation.md	573	ms	replace:milliseconds	ure.md#performance-targets) budgets 100 [[ms]] for a route query. A fan-out across est	
+ExpandTimeShorthands	11	docs/decisions/0001-implementation-language.md	27	ms	replace:milliseconds	o toolchain per check, and it gives 200 [[ms]] to the change-scoped run that a commit 	
+ExpandTimeShorthands	11	docs/spec/16-harness-support.md	57	ms	replace:milliseconds	 A shell call with no merge cost 8 to 9 [[ms]]. On that call the position reads the pa	
+ExpandTimeShorthands	11	docs/spec/16-harness-support.md	61	ms	replace:milliseconds	#953, at the same load, cost 197 to 207 [[ms]]. The difference is the pointers that th	
+ExpandTimeShorthands	11	docs/spec/16-harness-support.md	61	ms	replace:milliseconds	.claude/hooks/write.sh` cost 232 to 237 [[ms]] over six runs, on a host at a load aver	
+ExpandTimeShorthands	11	docs/spec/16-harness-support.md	61	ms	replace:milliseconds	nd a warm cache. One read cost 69 to 78 [[ms]], over six runs on each of three paths. 	
+ExpandTimeShorthands	11	docs/spec/16-harness-support.md	57	ms	replace:milliseconds	ys that once. That call cost 365 to 440 [[ms]] at the same load.  **C11 — read advis	
+ExpandTimeShorthands	11	docs/decisions/0001-implementation-language.md	58	ms	replace:milliseconds	ped run over 1,000 documents, under 200 [[ms]] | about 2 ms |  The scope-leak item ran	
+ExpandTimeShorthands	11	docs/spec/16-harness-support.md	57	ms	replace:milliseconds	ll inside a stopped merge cost 20 to 21 [[ms]]. One run of `headwater derived` over th	
+ItsContraction	1	docs/spec/03-authoring-and-lifecycle.md	259	its	replace:it's	each proposed edge. A section counts as [[its]] heading and never as its prose. The hea	
+LitotesDirectPositive	1	docs/evaluations/adjacent-work.md	651	not impossible	replace:possible	t eliminating inference is difficult if [[not impossible]]. It calls classification rules a consta	
+MassNouns	70	docs/decisions/0024-q24-readability-and-what-a-sweep-can-be-asked-about.md	30	a briefing	replace:briefing	hape this work wants. The engine writes [[a briefing]], a model reads the documents, and `head	
+MassNouns	70	docs/evaluations/default-taxonomy-first-run.md	27	a leaning	replace:leaning	in-the-box). Q3 named three options and [[a leaning]], and it argued them on adoption feel: t	
+MassNouns	70	docs/spec/16-harness-support.md	79	a binding	replace:binding	atever the harness  Four terms hold for [[a binding]] to any harness, and the first three res	
+MassNouns	70	docs/spec/07-distribution-and-federation.md	388	an expiry	replace:expiry	t that does not yet fit carries a name, [[an expiry]], and a line in the coverage report. Tha	
+MassNouns	70	docs/evaluations/adjacent-work.md	503	a ruling	replace:ruling	ing symbols.  That last detail confirms [[a ruling]] that Headwater reached for an unrelated	
+MassNouns	70	docs/spec/07-distribution-and-federation.md	378	a ruling	replace:ruling	, and that is a measurement rather than [[a ruling]].** The lock of this repository is the i	
+MassNouns	70	docs/spec/02-taxonomy-model.md	334	one chosen	replace:one piece of chosen	elation type carries two properties — [[one chosen]], one usually inherited. Together they t	
+MassNouns	70	docs/spec/01-conceptual-model.md	224	a finding	replace:finding	` and the other end is not, the edge is [[a finding]]. An edge that ends on an external ancho	
+MassNouns	70	docs/spec/07-distribution-and-federation.md	576	a finding	replace:finding	(unmapped) a finding	
+MassNouns	70	docs/spec/02-taxonomy-model.md	497	a finding	replace:finding	 silently pick a value. The conflict is [[a finding]] against the satellite. A satellite that	
+MissingPreposition	9	docs/spec/07-distribution-and-federation.md	544	is 		roots, entry points and profiles, which [[is ]]organizational structure. An export prof	
+MissingPreposition	9	docs/spec/01-conceptual-model.md	52	is 		sets is not one corpus under strain. It [[is ]]several corpora that share a working tre	
+MissingPreposition	9	docs/spec/01-conceptual-model.md	139	rest 		e default *enables* a minimal four. The [[rest ]]are complete declarations that an overla	
+MissingPreposition	9	docs/spec/02-taxonomy-model.md	293	does 		nd, and the validator says so.  Purpose [[does ]]real work downstream:  - **Routing** ([s	
+MissingPreposition	9	docs/spec/02-taxonomy-model.md	496	corpus 		ther side. It reports the pair, and the [[corpus ]]is incoherent there until an author reso	
+MissingPreposition	9	docs/evaluations/adjacent-work.md	269	is 		iticism. For an export format, lenience [[is ]]correct engineering: the obligation is t	
+MissingPreposition	9	docs/evaluations/adjacent-work.md	406	is 		als are the machinery this lacks, which [[is ]]mild confirmation that they earn their c	
+MissingPreposition	9	docs/evaluations/adjacent-work.md	557	distinction 		 adoption rather than efficacy, and the [[distinction ]]is worth holding. They say what a mechan	
+MissingPreposition	9	docs/evaluations/adjacent-work.md	970	levels 		 correctness. The stated purpose of the [[levels ]]is gradual adoption, one file at a time.	
+MissingTo	9	docs/spec/07-distribution-and-federation.md	195	failed	insert: to	hen reports the stale pin. A refused or [[failed]] run leaves the declaration byte-identic	
+MissingTo	9	docs/spec/07-distribution-and-federation.md	325	resolved	insert: to	tifier integrity` requires one on every [[resolved]] scheme ([spec 2](02-taxonomy-model.md#t	
+MissingTo	9	docs/spec/07-distribution-and-federation.md	454	decides	insert: to	e taxonomy. `taxonomy validate` already [[decides]] core satisfaction, and `taxonomy resolv	
+MissingTo	9	docs/spec/16-harness-support.md	82	fails	insert: to	ding fails open, even where the harness [[fails]] closed.** Copilot's documentation makes	
+MissingTo	9	docs/spec/16-harness-support.md	113	fail	insert: to	nd it.** Copilot's `agentStop` does not [[fail]] closed on exit 2. An exit-2 hook there 	
+MissingTo	9	docs/spec/02-taxonomy-model.md	601	resolved	insert: to	tifier integrity` requires one on every [[resolved]] scheme, and no core entry can ask for t	
+MissingTo	9	docs/spec/02-taxonomy-model.md	770	resolve	insert: to	s on one path do not commute either. At [[resolve]] time, the resolver rejects any pair tha	
+MissingTo	9	docs/evaluations/adjacent-work.md	319	needs	insert: to	ture. The pieces that an RM integration [[needs]] are already specified:  - `traces_to` i	
+MissingTo	9	docs/evaluations/adjacent-work.md	394	means	insert: to	d is real. A cue on a relation instance [[means]] prose on an edge. It adds an authoring 	
+ModalBeAdjective	1	docs/evaluations/adjacent-work.md	607	should	insert: be	e. Its human-in-the-loop language is a *[[should]]* addressed to clients, and it concedes 	
+NounVerbConfusion	4	docs/spec/03-authoring-and-lifecycle.md	83	effect	replace:affect	decision that `overrides` the one whose [[effect]] it displaces, and the loser stays in pl	
+NounVerbConfusion	4	docs/spec/02-taxonomy-model.md	404	effect	replace:affect	d that decision overrides the one whose [[effect]] it displaces. The claim in the table ab	
+NounVerbConfusion	4	docs/spec/02-taxonomy-model.md	404	effect	replace:affect	 exactly: the loser stays, and only its [[effect]] goes. So `overrides` declares an invers	
+NounVerbConfusion	4	docs/spec/02-taxonomy-model.md	510	effect	replace:affect	 `overrides` against the document whose [[effect]] it displaces. The adjudicator is the na	
+OhMyGod	2	docs/evaluations/adjacent-work.md	317	OMG	replace:Oh my god	ces are the ADO REST API and ReqIF, the [[OMG]] Requirements Interchange Format, which 	
+OhMyGod	2	docs/evaluations/adjacent-work.md	766	OMG	replace:Oh my god	rt-at-the-origin rule.  ReqIF is a real [[OMG]] standard, and this survey places it on 	
+OneOfTheSingular	6	docs/spec/03-authoring-and-lifecycle.md	160	three	replace:threes	scheme. The namespace is the one of the [[three]] that no published package declares. A p	
+OneOfTheSingular	6	docs/spec/07-distribution-and-federation.md	207	two	replace:twos	d files in the whole corpus. One of the [[two]] is this repository's own doctrine page.	
+OneOfTheSingular	6	docs/decisions/0026-q26-whether-terminality-belongs-to-a-state-or-to-a-state-and-a-regime.md	32	two	replace:twos	ough `retired` has to rename one of the [[two]]. Nothing had ruled on whether that is r	
+OneOfTheSingular	6	docs/evaluations/adjacent-work.md	497	seven	replace:sevens	 §M binds them in full. Not one of the [[seven]] below measured whether structured knowl	
+OneOfTheSingular	6	docs/evaluations/adjacent-work.md	647	three	replace:threes	n. A count in a footer gives one of the [[three]]. A placeholder at the position, carryin	
+OneOfTheSingular	6	docs/evaluations/adjacent-work.md	798	two	replace:twos	 carry measured numbers, and one of the [[two]] is our own repository.  ### Q.1 Every c	
+OrthographicConsistency	9	docs/spec/07-distribution-and-federation.md	376	semver	replace:SemVer	s the one about this field. `from` is a [[semver]] and the release digest `.headwater/taxo	
+OrthographicConsistency	9	docs/decisions/0026-q26-whether-terminality-belongs-to-a-state-or-to-a-state-and-a-regime.md	52	DoD	replace:DOD	-management finding rests on the public [[DoD]] 5015.02 standard and on secondary quota	
+OrthographicConsistency	9	docs/decisions/0001-implementation-language.md	57	wasm	replace:WASM	nd as `wasm32` | 600 KiB addon, 113 KiB [[wasm]], identical output | | A warm change-sco	
+OrthographicConsistency	9	docs/evaluations/adjacent-work.md	178	r	replace:R	iki  There are two related sources: the [[r]]/OntologyEngineering community, and Karp	
+OrthographicConsistency	9	docs/evaluations/adjacent-work.md	301	Neo4j	replace:Neo4J	nships** into a graph store (Cassandra, [[Neo4j]], Memgraph or FalkorDB). Embeddings live	
+OrthographicConsistency	9	docs/evaluations/adjacent-work.md	1028	r	replace:R	 Non-adoption reasoned and recorded | | [[r]]/OntologyEngineering | Ontology-first me	
+OrthographicConsistency	9	docs/how-to/cut-a-release.md	49	md	replace:MD	ith `HEADWATER_BLESS=1`, as [DEVELOPING.[[md]]](../../DEVELOPING.md) says. Read the di	
+OrthographicConsistency	9	docs/how-to/cut-a-release.md	60	md	replace:MD	ge says the tag is not cut. [DEVELOPING.[[md]]](../../DEVELOPING.md) states that exclu	
+OrthographicConsistency	9	docs/how-to/diagnose-an-isolation-failure.md	34	md	replace:MD	 also need a built engine.  [DEVELOPING.[[md]]](../../DEVELOPING.md), under the headin	
+OxfordComma	30	docs/evaluations/adjacent-work.md	361	project	insert:,	rena-specific convention 7. two scopes, [[project]] and global, compose freely  The exclusi	
+OxfordComma	30	docs/evaluations/adjacent-work.md	1059	position	insert:,	2(b), FRCP 26(b)(5), HTTP 451 | Amount, [[position]] and reason, at the site of the cut — 	
+OxfordComma	30	docs/evaluations/adjacent-work.md	446	cheap	insert:,	 establish that the choice is ordinary, [[cheap]] and unsurprising. They lower the risk o	
+OxfordComma	30	docs/evaluations/adjacent-work.md	263	indexes	insert:,	 Markdown is the corpus, and the graph, [[indexes]] and rules are projections out of *that*	
+OxfordComma	30	docs/spec/02-taxonomy-model.md	330	identifier	insert:,	nt. It has no kind, no front matter, no [[identifier]] and no lifecycle state, and it is not a	
+OxfordComma	30	docs/spec/07-distribution-and-federation.md	354	plan	insert:,	reading. There is no census, no run, no [[plan]] and no graph under a taxonomy that did 	
+OxfordComma	30	docs/evaluations/adjacent-work.md	412	timestamp	insert:,	d mints a per-fact receipt with source, [[timestamp]] and derivation method (§J). Serena wri	
+OxfordComma	30	docs/spec/07-distribution-and-federation.md	360	kind	insert:,	Every operation keeps its position, its [[kind]] and its value, and every address this r	
+OxfordComma	30	docs/obligations/0037-the-register-is-not-a-projection-of-the-lock-alone-so-generate.md	28	lock	insert:,	tifact is a function of the corpus, the [[lock]] and the clock.  ## Obligation  A commit	
+OxfordComma	30	docs/spec/07-distribution-and-federation.md	530	output	insert:,	rt row states its name, its target, its [[output]] and its grain, and never its filter.** 	
+PhrasalVerbAsCompoundNoun	3	docs/spec/03-authoring-and-lifecycle.md	101	rollout	replace:roll out	ehavior, no change narration, no phased-[[rollout]] language, no comparatives against a pri	
+PhrasalVerbAsCompoundNoun	3	docs/spec/03-authoring-and-lifecycle.md	114	rollout	replace:roll out	where-promotion-cannot-finish)). Phased-[[rollout]] language is the most likely candidate f	
+PhrasalVerbAsCompoundNoun	3	docs/spec/01-conceptual-model.md	170	rollout	replace:roll out	tent, no narration of change, no phased-[[rollout]] language), *narrative* (time-boxed expl	
+PronounInflectionBe	2	docs/spec/03-authoring-and-lifecycle.md	64	are	replace:is	) is the ruling, and the reasons for it [[are]] there rather than here.  **A taxonomy t	
+PronounInflectionBe	2	docs/spec/02-taxonomy-model.md	570	are	replace:is	or it. Expectation instances against it [[are]] skipped with reason `missing-origin` an	
+PronounKnew	1	docs/evaluations/adjacent-work.md	678	new	replace:knew	ated remedy is default-deny on anything [[new]], plus a version. An export filter writt	
+SentenceCapitalization	105	docs/spec/02-taxonomy-model.md	826	coverage	replace:Coverage	two shelf patterns over one path are. - [[coverage]] — every shelf resolves to at least on	
+SentenceCapitalization	105	docs/spec/02-taxonomy-model.md	45	complete	replace:Complete	**declarative** — data, not code. - **[[complete]]** — nothing structural known only to 	
+SentenceCapitalization	105	docs/evaluations/adjacent-work.md	277	spec	replace:Spec	er was embarrassing rather than novel. [[[spec]] 2](../spec/02-taxonomy-model.md#the-dec	
+SentenceCapitalization	105	docs/spec/07-distribution-and-federation.md	150	one	replace:One	classification` | | `overlay_address` | [[one]] path into the taxonomy, and every entry	
+SentenceCapitalization	105	docs/obligations/0002-declarative-voice-is-called-detectable-at-useful-precision.md	75	a	replace:A	100` | `no longer` | `false_positive` | [[a]] table row that defines a state | | `doc	
+SentenceCapitalization	105	docs/obligations/0002-declarative-voice-is-called-detectable-at-useful-precision.md	74	tells	replace:Tells	ctrine.md:69` | `no longer` | genuine | [[tells]] a move of a facet to the base | | `docs	
+SentenceCapitalization	105	docs/spec/01-conceptual-model.md	77	the	replace:The	s a kind a genre rather than a shape. - [[the]] **section contract** — headings that 	
+SentenceCapitalization	105	docs/spec/02-taxonomy-model.md	408	two	replace:Two	 which succession alone can express:  - [[two]] `current` decisions joined by `conflict	
+SentenceCapitalization	105	docs/spec/03-authoring-and-lifecycle.md	90	the	replace:The	t and plausibility (no future dates). - [[the]] engine reports documents past the stale	
+SentenceCapitalization	105	docs/spec/03-authoring-and-lifecycle.md	77	an	replace:An	-no-record-to-cite.md) is the ruling. - [[an]] authored document stands at the state t	
+SingleBe	1	docs/obligations/0002-declarative-voice-is-called-detectable-at-useful-precision.md	86	 are	remove	ve regime. Both occurrences of `will be`[[ are]] inside a quotation, which the rule does	
+Spaces	81	docs/spec/07-distribution-and-federation.md	209	 	remove	replacement is whole, and a copy outside[[ ]]`.headwater/packages/` has no such story	
+Spaces	81	docs/spec/07-distribution-and-federation.md	219	 	remove	l.md) moved the root from `packages/` to[[ ]]`.headwater/packages/`, so a tree vendor	
+Spaces	81	docs/how-to/diagnose-an-isolation-failure.md	67	 	remove	ee of the clone shares. Every hook under[[ ]]`.githooks/` hands off to the copy under	
+Spaces	81	docs/spec/16-harness-support.md	88	 	remove	the same way, in `.codex/hooks.json` and[[ ]]`.github/hooks/*.json`, and `.claude/hoo	
+Spaces	81	docs/spec/07-distribution-and-federation.md	504	 	remove	.  **So the authored source moves out of[[ ]]`.headwater/packages/`, and `taxonomy pu	
+Spaces	81	docs/spec/07-distribution-and-federation.md	518	 	remove	ave told them. So the descriptor sits at[[ ]]`.headwater/corpus.json`, relative to th	
+Spaces	81	docs/spec/07-distribution-and-federation.md	195	 	remove	to that value. Only when they match, and[[ ]]`.headwater/taxonomy.yml` declares no `t	
+Spaces	81	docs/how-to/diagnose-an-isolation-failure.md	75	 	remove	e.  **A failure that quotes a path under[[ ]]`.claude/worktrees/` that is absent from	
+Spaces	81	docs/spec/07-distribution-and-federation.md	502	 	remove	r` never wrote it. Two directories under[[ ]]`.headwater/packages/` that both declare	
+Spaces	81	docs/spec/07-distribution-and-federation.md	205	 	remove	other. The answer is no. `vendor` writes[[ ]]`.headwater/packages/<name>`, `.headwate	
+SpellCheck	1069	docs/spec/03-authoring-and-lifecycle.md	64	Terminality	replace:Terminally	ds and another lets move on is refused. [[Terminality]] is a property of a state, and never of 	
+SpellCheck	1069	docs/evaluations/adjacent-work.md	774	Q19's	replace:Q&A's	ed.  That is the shape of the answer to [[Q19's]] redistribution point, and Headwater nee	
+SpellCheck	1069	docs/obligations/0002-declarative-voice-is-called-detectable-at-useful-precision.md	46	HW	replace:Ha	h bind `narrative` and forbid nothing. [[[HW]]-OBL-0168](0168-a-saturated-pattern-set-	
+SpellCheck	1069	docs/spec/03-authoring-and-lifecycle.md	134	scaffolder	replace:scaffold's	eding the scaffolder. A source that the [[scaffolder]] read would be a second authoring surfac	
+SpellCheck	1069	docs/evaluations/adjacent-work.md	167	SHACL	replace:Shack	ine readers, deliberately *not* RDF/OWL/[[SHACL]]. That is an independent data point that	
+SpellCheck	1069	docs/evaluations/adjacent-work.md	117	DDL	replace:Dd	L, RDF/OWL, ShEx, Pydantic classes, SQL [[DDL]], and GraphQL. It also has a validation 	
+SpellCheck	1069	docs/spec/07-distribution-and-federation.md	422	HW	replace:Ha	eries adds, and no engine supplies it ([[[HW]]-OBL-0008](../obligations/0008-an-adopti	
+SpellCheck	1069	docs/evaluations/a-probe-task-section-is-the-prompt-so-commentary-under-that-heading-is-prompt.md	56	Q8	replace:QA	d). That record is the adjudication for [[Q8]]. The index is a pointer at it and not a	
+SpellCheck	1069	docs/evaluations/adjacent-work.md	962	Q17	replace:Qua	host is.  That is the line that [Q7 and [[Q17]] both left open](../spec/13-open-obligat	
+SpellCheck	1069	docs/spec/16-harness-support.md	100	IDE's	replace:IDA's	on the CLI and the cloud agent, and the [[IDE's]] `Stop` cannot block | `Stop` is documen	
+SplitWords	56	docs/evaluations/adjacent-work.md	551	supergraph	replace:super graph	 a build-time step that yields a static [[supergraph]] artifact. Entities join on a declared `	
+SplitWords	56	docs/spec/03-authoring-and-lifecycle.md	114	fixability	replace:fix ability	ion.  **Posture per category comes from [[fixability]] and never from precision.** A category 	
+SplitWords	56	docs/evaluations/adjacent-work.md	998	trialability	replace:trial ability	or-an-existing-corpus) are the whole of [[trialability]]. [Q16](../spec/09-decisions.md#q16--pub	
+SplitWords	56	docs/evaluations/adjacent-work.md	669	leakproof	replace:leak proof	s everything and writes free prose is a [[leakproof]] violation with better grammar. The clou	
+SplitWords	56	docs/spec/03-authoring-and-lifecycle.md	220	acceptor	replace:accept or	ecification.** A document that names an [[acceptor]] is `accepted`. To let the two coexist g	
+SplitWords	56	docs/spec/16-harness-support.md	90	reachability	replace:reach ability	ixtures-live.sh` on 2026-09-09. Its own [[reachability]] probe and per-case timeout undercounted	
+SplitWords	56	docs/spec/02-taxonomy-model.md	281	sublanguage	replace:sub language	a change, and this change also cost the [[sublanguage]] a rule. Both blocks are keyed by the id	
+SplitWords	56	docs/evaluations/adjacent-work.md	460	testerstories	replace:tester stories	What stands behind it | |---|---|---| | [[testerstories]] (§B) | An ontology yields better gener	
+SplitWords	56	docs/spec/02-taxonomy-model.md	835	ascertainability	replace:ascertain ability	ment. - **facet canons** — relevance, [[ascertainability]], and permanence hold for every facet (t	
+SplitWords	56	docs/evaluations/adjacent-work.md	762	upstream's	replace:up stream's	tory-corpora)'s one-pattern rule is the [[upstream's]] own concept here.  The sharper result i	
+ThatThan	2	docs/spec/07-distribution-and-federation.md	191	that	replace:than	m the manifest, and it refuses a header [[that]] disagrees. `taxonomy diff` and `taxonom	
+ThatThan	2	docs/spec/00-vision-and-scope.md	93	that	replace:than	 and say which one that is. An exporter [[that]] cannot evaluate its filter therefore em	
+There	1	docs/spec/02-taxonomy-model.md	569	the re	replace:there	 re-arms any expectation conditioned on [[the re]]-entered state. That is usually the righ	
+ThereIsAgreement	1	docs/spec/03-authoring-and-lifecycle.md	64	are there rather	replace:is there a rather	) is the ruling, and the reasons for it [[are there rather]] than here.  **A taxonomy that wants bot	
+ToTwoToo	6	docs/spec/03-authoring-and-lifecycle.md	77	to	replace:too	se the base regimes give it no movement [[to]] `superseded`. A generated target is not	
+ToTwoToo	6	docs/spec/03-authoring-and-lifecycle.md	234	to	replace:too	transition, from the `asserted` warrant [[to]] `accepted`. [Spec 12](12-check-layer.md	
+ToTwoToo	6	docs/spec/03-authoring-and-lifecycle.md	240	to	replace:too	 change moved a warrant from `asserted` [[to]] `accepted`. No change made a state move	
+ToTwoToo	6	docs/evaluations/default-taxonomy-first-run.md	233	to	replace:too	 closing one is the ordinary transition [[to]] `current`. The blocking lines are `cons	
+ToTwoToo	6	docs/obligations/0011-nothing-has-been-promoted-out-of-the-synthesized-tier.md	35	to	replace:too	transition, from the `asserted` warrant [[to]] `accepted`. `warrant.promoted` declares	
+ToTwoToo	6	docs/obligations/0011-nothing-has-been-promoted-out-of-the-synthesized-tier.md	37	to	replace:too	ory has moved a warrant from `asserted` [[to]] `accepted`. So the count has been zero 	
+WayTooAdjective	1	docs/decisions/0026-q26-whether-terminality-belongs-to-a-state-or-to-a-state-and-a-regime.md	52	to	replace:too	nt for a Standards Track PEP on its way [[to]] `Final`. PEP 1 never states that readin	
+WereWhere	1	docs/decisions/0001-implementation-language.md	29	were	replace:where	et before any work begins.  Rust and Go [[were]] the real question, and performance is t	
+WouldNeverHave	1	docs/spec/02-taxonomy-model.md	377	could never have	replace:never could have	fferently, which is why one declaration [[could never have]] served both.  The engine uses the deriv	
+WrongNegative	6	docs/spec/01-conceptual-model.md	171	delinked	replace:unlinked	. superseded documents are retained and [[delinked]] from live dependency paths).  An earlie	
+WrongNegative	6	docs/spec/02-taxonomy-model.md	630	unbuilt	replace:inbuilt	 of the resolved taxonomy is staged and [[unbuilt]]. [Q13](09-decisions.md#q13--linkml-and-	
+WrongNegative	6	docs/decisions/0002-schema-format.md	32	disjunction	replace:injunction	`. The workaround is a default inside a [[disjunction]], which makes the publisher pre-enumerat	
+WrongNegative	6	docs/evaluations/adjacent-work.md	491	unbuilt	replace:inbuilt	ts either. It has a design for them, an [[unbuilt]] engine, and now a written obligation no	
+WrongNegative	6	docs/evaluations/adjacent-work.md	619	unselective	replace:deselective	cumentation, and both are about what an [[unselective]] write channel does to the people who ma	
+WrongNegative	6	docs/evaluations/capability-bundle-address-inventory.md	38	unplanted	replace:implanted	indings is unfixable rather than merely [[unplanted]].  **`standards-spec` and `brd-prd` avoi	
