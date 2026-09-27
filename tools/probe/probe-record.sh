@@ -177,7 +177,14 @@ if [ "$identity_only" = 0 ] && [ "$provider_only" = 0 ] && [ "$answer_only" = 0 
     # The instrument: the probe shelves every arm removes, because a probe
     # document states the answer it expects. A workspace that still holds one
     # hands the session its own answer key.
-    for path in $(sh "$root/tools/probe/ablate.sh" --instrument); do
+    # Fail closed: an instrument this script cannot read is a workspace it
+    # cannot clear, and a loop over the output of a failed command runs zero
+    # times and lets the session start.
+    instrument=$(sh "$root/tools/probe/ablate.sh" --instrument) || {
+        echo "probe-record: the instrument of the probe declaration could not be read, so this workspace cannot be cleared of it." >&2
+        exit 8
+    }
+    for path in $instrument; do
         if [ -e "$here/$path" ]; then
             echo "probe-record: the workspace at $here still holds \`$path\`, which every arm removes." >&2
             echo "probe-record: prepare it with \`sh tools/probe/ablate.sh --present <workspace>\` or \`sh tools/probe/ablate.sh <tier> <workspace>\`." >&2

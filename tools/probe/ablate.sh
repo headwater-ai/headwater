@@ -114,6 +114,10 @@ listing=$(awk -v want="$tier" -v arm="$arm" '
         for (i = 1; i <= n; i++) if (c[i] == ".." || c[i] == "." || c[i] == "") bad = 1
         print (bad ? "unsafe " : (kind == "instrument" ? "instrument " : "entry ")) e
     }
+    # A YAML comment starts at a `#` after whitespace, and the engine reads
+    # past it. So does this, or a comment the plan accepts would make the
+    # sequence malformed here and nowhere else.
+    function uncomment(s) { sub(/(^|[ \t])#.*$/, "", s); return trim(s) }
     function unquote(s) {
         s = trim(s)
         if (s ~ /^".*"$/ || s ~ /^\047.*\047$/) s = substr(s, 2, length(s) - 2)
@@ -121,7 +125,7 @@ listing=$(awk -v want="$tier" -v arm="$arm" '
     }
     /^instrument:/ {
         intiers = 0; cur = ""; block = 0
-        rest = trim(substr($0, index($0, ":") + 1))
+        rest = uncomment(substr($0, index($0, ":") + 1))
         if (rest == "") { iblock = 1; next }
         if (rest !~ /^\[.*\]$/) { print "malformed"; next }
         rest = substr(rest, 2, length(rest) - 2)
@@ -130,7 +134,7 @@ listing=$(awk -v want="$tier" -v arm="$arm" '
         for (i = 1; i <= n; i++) emit(unquote(parts[i]), "instrument")
         next
     }
-    iblock && /^  - / { emit(unquote(substr($0, 5)), "instrument"); next }
+    iblock && /^  - / { emit(unquote(uncomment(substr($0, 5))), "instrument"); next }
     /^[^ #]/ { iblock = 0; intiers = ($0 ~ /^tiers:/); cur = ""; block = 0; next }
     !intiers { next }
     /^  [^ #][^:]*:[ \t]*$/ {
@@ -140,7 +144,7 @@ listing=$(awk -v want="$tier" -v arm="$arm" '
     }
     cur != want { next }
     /^    ablation:/ {
-        rest = trim(substr($0, index($0, ":") + 1))
+        rest = uncomment(substr($0, index($0, ":") + 1))
         if (rest == "") { block = 1; print "declared"; next }
         if (rest !~ /^\[.*\]$/) { print "malformed"; next }
         print "declared"
@@ -150,7 +154,7 @@ listing=$(awk -v want="$tier" -v arm="$arm" '
         for (i = 1; i <= n; i++) emit(unquote(parts[i]))
         next
     }
-    block && /^      - / { emit(unquote(substr($0, 9))); next }
+    block && /^      - / { emit(unquote(uncomment(substr($0, 9)))); next }
     block && /^      -$/ { emit(""); next }
     /^    [^ ]/ { block = 0 }
 ' "$declaration")

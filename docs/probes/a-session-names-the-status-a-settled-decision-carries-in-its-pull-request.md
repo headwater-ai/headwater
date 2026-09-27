@@ -46,6 +46,8 @@ The task offers two values, and the closed set holds one. So `draft` is an answe
 
 **Where else the answer is written, and which arm holds it.** This document states the answer, so it is part of the instrument that `.headwater/probe.yml` names, and every arm of every tier removes it. The name of this document states no answer, because `engine/crates/census/fixtures/corpus.census` lists it and that file sits outside `docs/`. The same census fixture lists the file name of the decision, and that name states the ruling. So the `documentation` ablation removes the census fixture with `docs/`. The hand-built tutorial page `site/tutorial/index.html` states the ruling in one step, and the same ablation removes it. The authoring skill under `.claude/` also states the ruling, and both absent arms remove it.
 
+**A hint stays in both absent arms, so the difference is a lower bound.** A test comment in `engine/crates/scaffold/tests/pipeline.rs` calls a move from `draft` to `current` the author's promotion by hand, as HW-DR-0052 has it. That is not the ruling, but a session that reads it can reach `current` without a document. It sits in both absent arms, so it lowers the difference between them and cannot inflate it.
+
 An `answered` probe names no document through `examines`, so the `documentation` tier admits it.
 
 [HW-OBL-0223](../obligations/0223-no-run-measures-whether-the-documents-under-docs-change-what-an-agent-builds.md) records the unmeasured claim. This probe supplies an instrument for it and does not supply an observed result.

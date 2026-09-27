@@ -788,6 +788,8 @@ fresh_workspace() {
         "$scratch/ablate-ws/engine/crates/census/fixtures" \
         "$scratch/ablate-ws/site/tutorial" "$scratch/ablate-ws/tools"
     : > "$scratch/ablate-ws/CLAUDE.md"
+    : > "$scratch/ablate-ws/.headwater/export.json"
+    : > "$scratch/ablate-ws/.headwater/taxonomy.lock"
     : > "$scratch/ablate-ws/docs/spec/05.md"
     : > "$scratch/ablate-ws/docs/probes/p.md"
     : > "$scratch/ablate-ws/engine/crates/census/fixtures/corpus.census"
@@ -835,12 +837,12 @@ fresh_workspace
 sh "$ablate" --present "$scratch/ablate-ws" >/dev/null 2>"$scratch/ablate.err"
 same "ablate.sh produces a present arm" "0" "$?"
 kept "a present arm loses the instrument and nothing else" \
-    CLAUDE.md .claude .githooks .headwater docs/spec/05.md \
+    CLAUDE.md .claude .githooks .headwater/taxonomy.lock docs/spec/05.md \
     engine/crates/census/fixtures/corpus.census site/tutorial/index.html \
-    -- docs/probes docs/probe-runs
+    -- docs/probes docs/probe-runs .headwater/export.json
 
 same "ablate.sh lists the instrument the checkout declares" \
-    "docs/probes docs/probe-runs docs/probe-results" \
+    "docs/probes docs/probe-runs docs/probe-results .headwater/export.json" \
     "$(sh "$ablate" --instrument | tr '\n' ' ' | sed 's/ $//')"
 
 printf 'tiers:\n  regression:\n    budget_cents: 1\n    session_cost_cents: 1\n    repetitions: 1\n    arms: [present]\n' \
@@ -852,12 +854,39 @@ same "a present arm with no instrument declared exits 0" "0" "$?"
 kept "and removes nothing, and never the workspace itself" \
     CLAUDE.md .claude docs docs/probes engine tools --
 
+printf 'instrument: [docs/probes] # the shelf\ntiers:\n  campaign:\n    arms: [present, absent]\n    ablation: [docs] # the documents\n' \
+    > "$scratch/commented.yml"
+same "ablate.sh reads past a trailing YAML comment, as the engine does" "docs/probes" \
+    "$(HW_PROBE_YML="$scratch/commented.yml" sh "$ablate" --instrument 2>&1)"
+
+# The two refusals of the driver below are asserted with a stub harness first
+# on PATH. It records that it ran and exits nonzero, so a refusal that
+# regresses shows up as a marker file here and never as a paid session.
+mkdir -p "$scratch/refuse-bin"
+cat > "$scratch/refuse-bin/claude" <<STUB
+#!/bin/sh
+: > "$scratch/harness-ran"
+exit 1
+STUB
+chmod +x "$scratch/refuse-bin/claude"
+
 fresh_workspace
-sh "$driver" --probe PROBE-FIX-opened --session x --task-file "$scratch/task.md" \
-    --workspace "$scratch/ablate-ws" >/dev/null 2>"$scratch/driver-instrument.err"
+rm -f "$scratch/harness-ran"
+PATH="$scratch/refuse-bin:$PATH" sh "$driver" --probe PROBE-FIX-opened --session x \
+    --task-file "$scratch/task.md" --workspace "$scratch/ablate-ws" \
+    >/dev/null 2>"$scratch/driver-instrument.err"
 same "the driver refuses a workspace that still holds the instrument" "8" "$?"
 present "and it names the path and the command that prepares the arm" \
     "sh tools/probe/ablate.sh --present" "$scratch/driver-instrument.err"
+same "and no session started" "no" "$([ -e "$scratch/harness-ran" ] && echo yes || echo no)"
+
+fresh_workspace
+rm -f "$scratch/harness-ran"
+HW_PROBE_YML="$scratch/no-such-probe.yml" PATH="$scratch/refuse-bin:$PATH" sh "$driver" \
+    --probe PROBE-FIX-opened --session x --task-file "$scratch/task.md" \
+    --workspace "$scratch/ablate-ws" >/dev/null 2>"$scratch/driver-unread.err"
+same "the driver fails closed when the instrument cannot be read" "8" "$?"
+same "and no session started" "no" "$([ -e "$scratch/harness-ran" ] && echo yes || echo no)"
 
 fresh_workspace
 sh "$ablate" regression "$scratch/ablate-ws" >/dev/null 2>"$scratch/ablate.err"

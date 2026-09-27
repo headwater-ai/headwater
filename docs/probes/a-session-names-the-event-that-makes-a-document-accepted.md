@@ -46,6 +46,8 @@ The task offers two values, and the closed set holds one. So `stamp` is an answe
 
 **Where else the answer is written, and which arm holds it.** This document states the answer, so it is part of the instrument that `.headwater/probe.yml` names, and every arm of every tier removes it. The name of this document states no answer, because `engine/crates/census/fixtures/corpus.census` lists it and that file sits outside `docs/`. The same census fixture lists the file name of the decision, and that name states the ruling. So the `documentation` ablation removes the census fixture with `docs/`. The authoring skill under `.claude/` also states the ruling, and both absent arms remove it.
 
+**A hint stays in both absent arms, so the difference is a lower bound.** `engine/crates/query/src/mcp.rs` says twice that acceptance is a human act and that no tool of the server lands a commit, a push or a merge. That is not the ruling, but a session that reads it can reach `merge` without a document. It sits in both absent arms, so it lowers the difference between them and cannot inflate it.
+
 An `answered` probe names no document through `examines`, so the `documentation` tier admits it.
 
 [HW-OBL-0223](../obligations/0223-no-run-measures-whether-the-documents-under-docs-change-what-an-agent-builds.md) records the unmeasured claim. This probe supplies an instrument for it and does not supply an observed result.

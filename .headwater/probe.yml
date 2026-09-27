@@ -21,7 +21,24 @@
 # not the treatment, so no arm holds them, and the claim of each tier stays
 # about the paths its ablation names. `headwater probe plan` refuses a probe
 # whose predicate names a document under one of them, at every tier.
-instrument: [docs/probes, docs/probe-runs, docs/probe-results]
+#
+# `.headwater/export.json` is here too. It is a projection that `headwater
+# generate` writes and that nothing reads at session time, and it restates
+# every probe's expectation and `examines` target, which names the document
+# an `opened` or `cited` probe is graded on. A session that regenerates it in
+# an arm writes a copy with no probe in it, because the shelves are gone.
+#
+# Other derived files name a probe by its path or title and state neither its
+# expectation nor its answer: `.headwater/nav.yml`, `.headwater/corpus.json`,
+# `.headwater/capture-cost.jsonl` and the census and graph fixtures under
+# `engine/`. They stay, and a title can hint at a target. So a present-arm
+# rate over an `opened` probe is an upper bound on what the documents alone
+# achieve.
+instrument:
+  - docs/probes
+  - docs/probe-runs
+  - docs/probe-results
+  - .headwater/export.json
 
 tiers:
 
