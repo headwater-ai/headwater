@@ -562,6 +562,24 @@ fn the_drawing_holds_every_kind_anchor_and_pair_the_committed_lock_declares() {
     assert_eq!(ran.code, Some(0), "the graph draws: {ran:?}");
     let text = ran.text();
     holds(&text, &expected);
+    // Every anchor kind this repository declares is reached by a relation, so
+    // no resolver it ships goes unasked. `test_site` was the one that was not
+    // until `cited_in` (#1097), and `holds` draws an anchor whether or not any
+    // edge reaches it.
+    for anchor in &expected.anchors {
+        let reached = expected
+            .drawn
+            .iter()
+            .chain(&expected.captioned)
+            .any(|(_, _, to)| to == anchor);
+        assert!(reached, "no relation reaches the anchor `{anchor}`:\n{text}");
+    }
+    assert!(
+        edges(&text)
+            .iter()
+            .any(|edge| edge.ends_with("-->|cited_in| anchor_test_site")),
+        "`cited_in` reaches `test_site` in the drawing:\n{text}"
+    );
     // The note reads these, and they are counted here rather than written down.
     eprintln!(
         "concrete kinds {}, purposes {}, anchors {}, drawn pairs {}, captioned pairs {}",

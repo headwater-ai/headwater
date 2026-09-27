@@ -1117,6 +1117,23 @@ add:
     reciprocal: required
     created_by: scaffold
 
+  # HW-DR-0073 ruling 4 ships the `comment-scan` resolver for `test_site`, and
+  # until #1097 no relation named that anchor kind at either end, so no run
+  # over this corpus ever asked the resolver anything. `cited_in` is the
+  # relation that reaches it: `HW-VER-0001 cited_in <file>` binds when a
+  # comment in that file cites the verification's own identifier. It is not a
+  # wider `governs`. `edges::bind` asks every anchor kind a relation admits, and
+  # a `.rs` file that carries the citation resolves under both `code_path` and
+  # `test_site`, which is `AmbiguousAnchor` rather than an edge. An anchor
+  # cannot declare the other half of an edge, so there is no `inverse` and no
+  # `reciprocal`, exactly as `governs` has none.
+  relations.cited_in:
+    family: evidence
+    from: [verification]
+    to:   [test_site]
+    cardinality: many
+    created_by: agent
+
   shelves.requirements:
     title: Requirements
     path: docs/requirements/**

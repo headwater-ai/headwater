@@ -11879,6 +11879,9 @@
             "governs": [
               "engine/crates/check/tests/fixtures.rs"
             ],
+            "cited_in": [
+              "engine/crates/check/tests/fixtures.rs"
+            ],
             "proves": [
               "HW-AC-0002"
             ]
@@ -12267,6 +12270,11 @@
         "anchor_kind": "code_path",
         "id": "engine/crates/check/tests/fixtures.rs",
         "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "test_site",
+        "id": "engine/crates/check/tests/fixtures.rs",
+        "resolver": "comment-scan"
       },
       {
         "anchor_kind": "code_path",
@@ -21846,6 +21854,17 @@
           "anchor_kind": "code_path",
           "id": "engine/crates/check/tests/fixtures.rs",
           "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/verifications/0001-the-section-heading-rule-has-no-case-table-and-a-golden-fixture-report-is-what-proves-it-runs.md",
+        "relation": "cited_in",
+        "written_as": "cited_in",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "test_site",
+          "id": "engine/crates/check/tests/fixtures.rs",
+          "resolver": "comment-scan"
         }
       },
       {

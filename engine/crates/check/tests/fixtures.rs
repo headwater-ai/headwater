@@ -16,6 +16,10 @@
 //!     HEADWATER_BLESS=1 cargo test -p headwater-check --test fixtures
 //!
 //! Read the diff before committing it. A blessed fixture is the change.
+//!
+//! This file is what HW-VER-0001 names as its proof. The citation in that
+//! sentence is what the `comment-scan` resolver reads to bind the verification's
+//! `cited_in` edge, and the test that removes it is below.
 
 use headwater_census::census;
 use headwater_census::census::Census;
@@ -153,10 +157,31 @@ fn run_scanning(
 /// repository as resolving to nothing, which is the state before that resolver
 /// existed rather than the state a user sees. See the module comment of
 /// `headwater_check::anchors` and #411.
-fn resolvers(corpus: &Corpus, _declarations: &Declarations, _scan_base: &Path) -> Resolvers {
-    Resolvers::over(corpus)
+///
+/// `comment-scan` joins on the condition `main.rs` sets: a declared anchor kind
+/// names it and carries a pattern. It reads files and the claim store under
+/// `scan_base`, which a run of the verb sets to the repository root. Leaving
+/// it out records every `test_site` edge of this repository as having no
+/// resolver, which is #411 again for a third resolver (#1097).
+fn resolvers(corpus: &Corpus, declarations: &Declarations, scan_base: &Path) -> Resolvers {
+    let resolvers = Resolvers::over(corpus)
         .with(Box::new(headwater_check::anchors::Rules::shipped()))
-        .expect("the check-rule resolver is the only one of its name")
+        .expect("the check-rule resolver is the only one of its name");
+    match declarations
+        .anchors
+        .iter()
+        .find(|anchor| anchor.resolver == "comment-scan")
+        .and_then(|anchor| anchor.pattern.clone())
+    {
+        Some(pattern) => resolvers
+            .with(Box::new(headwater_graph::anchors::CommentScan::new(
+                scan_base,
+                pattern,
+                headwater_graph::anchors::CommentScan::claimed(scan_base),
+            )))
+            .expect("the comment-scan resolver is the only one of its name"),
+        None => resolvers,
+    }
 }
 
 fn fixture_run() -> Run {
