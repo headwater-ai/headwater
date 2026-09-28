@@ -1317,6 +1317,8 @@ mod arms {
             source_path: CITER.to_string(),
             destination: destination.to_string(),
             fragment: fragment.map(str::to_string),
+            text: String::new(),
+            names: None,
             form: LinkForm::Inline,
             span: span(),
             binding,

@@ -158,6 +158,7 @@ pub mod initial_dependency;
 pub mod instance;
 pub mod language;
 pub mod lifecycle_state;
+pub mod link_identifier;
 pub mod link_path;
 pub mod observation;
 pub mod outside_root;
