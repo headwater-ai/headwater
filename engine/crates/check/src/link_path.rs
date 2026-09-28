@@ -189,6 +189,7 @@ mod tests {
             fragment: None,
             text: String::new(),
             names: None,
+            source_id: None,
             form: LinkForm::Inline,
             span: span(30, 5),
             binding,

@@ -299,6 +299,59 @@ fn padded_and_code_span_text_is_read_as_the_identifier_it_holds() {
     }
 }
 
+/// Two forms the inline case does not reach. A reference-style link binds
+/// through its definition, and a link into the same document reaches the
+/// document that wrote it, whose identifier is `SPEC-FIX-both-halves`. Each
+/// one, with text that names another document, is one finding at its line.
+#[test]
+fn a_reference_link_and_a_same_document_link_are_read_too() {
+    let base = scratch("forms");
+
+    let payload = debt_of(&run_over(&base, None));
+    let landed = append(
+        &base,
+        &[
+            "Reference: [SPEC-FIX-cited-only][elsewhere] reaches the wrong file.",
+            "[elsewhere]: 20-fragment-target.md",
+            "Same document: [SPEC-FIX-cited-only](#both-halves) lands on this file.",
+            "Same document, agreeing: [SPEC-FIX-both-halves](#both-halves) lands on this file.",
+        ],
+    );
+    let (reference, same, agreeing) = (landed[0], landed[2], landed[3]);
+
+    let after = run_over(&base, Some(&payload));
+    let at_reference = at(&after, RULE, reference);
+    assert_eq!(at_reference.len(), 1, "{:#?}", after.findings);
+    assert!(
+        at_reference[0].message.contains("SPEC-FIX-fragment-target"),
+        "{:#?}",
+        at_reference[0]
+    );
+    let at_same = at(&after, RULE, same);
+    assert_eq!(at_same.len(), 1, "{:#?}", after.findings);
+    assert!(
+        at_same[0].message.contains("SPEC-FIX-both-halves"),
+        "{:#?}",
+        at_same[0]
+    );
+    assert!(
+        at(&after, RULE, agreeing).is_empty(),
+        "{:#?}",
+        after.findings
+    );
+    for line in [reference, same, agreeing] {
+        for neighbor in [
+            headwater_check::link_path::RULE,
+            headwater_check::fragment::RULE,
+        ] {
+            assert!(
+                at(&after, neighbor, line).is_empty(),
+                "{neighbor} on {line}"
+            );
+        }
+    }
+}
+
 /// The matched link alone leaves the run green: the rule reads a link whose
 /// text is an identifier, and passes it when the path agrees.
 #[test]

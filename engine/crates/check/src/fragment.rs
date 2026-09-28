@@ -1319,6 +1319,7 @@ mod arms {
             fragment: fragment.map(str::to_string),
             text: String::new(),
             names: None,
+            source_id: None,
             form: LinkForm::Inline,
             span: span(),
             binding,

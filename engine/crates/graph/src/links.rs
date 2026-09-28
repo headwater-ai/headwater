@@ -81,6 +81,10 @@ pub struct Link {
     /// the index holds, and nothing otherwise. The index answers whether text
     /// is an identifier, so no check carries a second pattern for the schemes.
     pub names: Option<String>,
+    /// The identifier of the document that wrote the link, when it has one.
+    /// A link into the same document reaches this identifier, and the binding
+    /// carries none for that case.
+    pub source_id: Option<String>,
     pub form: LinkForm,
     pub span: Span,
     pub binding: Binding,
@@ -167,6 +171,7 @@ pub fn bind(
         let Some(document) = &row.document else {
             continue;
         };
+        let source_id = index.by_path(&row.path).and_then(|entry| entry.id.clone());
         for link in &document.body.links {
             if link.quoted {
                 skipped.quoted += 1;
@@ -185,6 +190,7 @@ pub fn bind(
                 fragment,
                 text: link.text.clone(),
                 names,
+                source_id: source_id.clone(),
                 form: link.form,
                 span: link.span,
                 binding: binding_of(&row.path, path, index, base),

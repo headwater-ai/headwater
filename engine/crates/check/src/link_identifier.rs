@@ -28,6 +28,11 @@
 //! false-positive rate, and none is read here. A link inside a block quote is
 //! skipped by the bind, as it is for every link rule.
 //!
+//! A link into the same document (`#context`) reaches the document that wrote
+//! it, so it is compared against that document's own identifier. The form of
+//! the link does not matter: an inline link and a reference-style link bind
+//! the same way.
+//!
 //! # Why the corpus grain
 //!
 //! [`crate::link_path`]'s argument, unchanged: a renumbering of the target
@@ -74,13 +79,16 @@ impl CorpusCheck for Identifiers {
 /// reaches a document that carries another.
 fn finding(link: &Link) -> Option<Finding> {
     let named = link.names.as_deref()?;
-    let Binding::Corpus {
-        path,
-        id: Some(reached),
-        ..
-    } = &link.binding
-    else {
-        return None;
+    // A link into the same document reaches the document that wrote it, so
+    // the identifier it reaches is the citing document's own.
+    let (path, reached) = match &link.binding {
+        Binding::Corpus {
+            path,
+            id: Some(reached),
+            ..
+        } => (path.as_str(), reached.as_str()),
+        Binding::SameDocument => (link.source_path.as_str(), link.source_id.as_deref()?),
+        _ => return None,
     };
     if named == reached {
         return None;
@@ -133,6 +141,7 @@ mod tests {
             fragment: destination.split_once('#').map(|(_, f)| f.to_string()),
             text: text.to_string(),
             names: names.map(str::to_string),
+            source_id: Some("HW-DR-0002".to_string()),
             form: LinkForm::Inline,
             span: span(40, 3),
             binding,
@@ -213,6 +222,36 @@ mod tests {
     /// missing path is `link.path.unresolved`'s, and the others reach nothing
     /// that has an identifier to compare.
     #[test]
+    fn a_same_document_link_reaches_the_citing_documents_own_identifier() {
+        // The helper writes the link in HW-DR-0002.
+        let found = finding(&link(
+            "#context",
+            "HW-DR-0001",
+            Some("HW-DR-0001"),
+            Binding::SameDocument,
+        ))
+        .expect("text naming another document on a link into this one");
+        assert!(found.message.contains("HW-DR-0001"), "{found:#?}");
+        assert!(found.message.contains("HW-DR-0002"), "{found:#?}");
+        assert!(finding(&link(
+            "#context",
+            "HW-DR-0002",
+            Some("HW-DR-0002"),
+            Binding::SameDocument,
+        ))
+        .is_none());
+        // A citing document with no identifier has nothing to compare.
+        let mut unnamed = link(
+            "#context",
+            "HW-DR-0001",
+            Some("HW-DR-0001"),
+            Binding::SameDocument,
+        );
+        unnamed.source_id = None;
+        assert!(finding(&unnamed).is_none());
+    }
+
+    #[test]
     fn a_target_with_no_identifier_is_nothing() {
         for binding in [
             Binding::Missing {
@@ -223,7 +262,6 @@ mod tests {
                 path: "CLAUDE.md".to_string(),
             },
             Binding::External,
-            Binding::SameDocument,
             Binding::Unnormalizable {
                 why: "climbs above the repository root".to_string(),
             },
