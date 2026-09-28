@@ -329,11 +329,8 @@ fn a_pin_whose_path_leaves_the_repository_through_a_symlink_is_refused_by_name()
     // A symlink that stays under the root is a path under the root.
     let inside = Scratch::new("symlink-inside");
     inside.write("exports/repo-b.json", &export(&["svc-a"], false));
-    std::os::unix::fs::symlink(
-        inside.path().join("exports"),
-        inside.path().join("harvest"),
-    )
-    .expect("the symlink is made");
+    std::os::unix::fs::symlink(inside.path().join("exports"), inside.path().join("harvest"))
+        .expect("the symlink is made");
     inside.write(
         CONSUMER,
         &format!(

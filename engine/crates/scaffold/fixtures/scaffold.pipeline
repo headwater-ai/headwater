@@ -112,6 +112,8 @@ rules, and for each the scope that binds it
     taxonomy scope, the resolved taxonomy, and no document
   taxonomy.pin.diverged
     taxonomy scope, the resolved taxonomy, and no document
+  harvest.pin.unread
+    taxonomy scope, the resolved taxonomy, and no document
   relation.target.verification.suspect
     edge scope, one relation instance and both endpoints, and the committed observation snapshot
 register
@@ -162,6 +164,7 @@ register
   adoption.task.expired reaches no obligation, so it names none
   language.outside_root.refused reaches no obligation, so it names none
   taxonomy.pin.diverged reaches no obligation, so it names none
+  harvest.pin.unread reaches no obligation, so it names none
   relation.target.verification.suspect reaches no obligation, so it names none
 1 findings
       1 ✗ error

@@ -188,6 +188,7 @@ fn run_under(root: &Path, today: &str, cache: &mut Cache, source: &str) -> Run {
             adoption: None,
             observations: &Observations::empty(),
             pin: None,
+            harvests: &[],
             source: "engine/crates/check/fixtures/governs-suspect.taxonomy.yml",
         },
         &headwater_check::claim::Claims::empty(),

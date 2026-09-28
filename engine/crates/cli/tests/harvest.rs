@@ -493,13 +493,21 @@ fn an_unread_pin_that_no_anchor_names_is_a_finding_that_names_the_pin() {
         pins[0]
     );
     assert!(pins[0].contains("did not read"), "{}", pins[0]);
-    assert_eq!(unresolved(&ran), Vec::<String>::new(), "A and B bind: {ran:?}");
+    assert_eq!(
+        unresolved(&ran),
+        Vec::<String>::new(),
+        "A and B bind: {ran:?}"
+    );
 
     // Both pins that read are silent, and so is a run where C is repaired.
     root.write(EXPORT_C, &export("tin"));
     declare(&root, "sha256:0000", &root.digest(EXPORT_C));
     let ran = root.run(&["check", "--strict"]);
-    assert!(!ran.out.contains(PIN_RULE), "{ran:?}");
+    assert_eq!(
+        Root::errors_on(&ran, ".headwater/taxonomy.yml"),
+        Vec::<String>::new(),
+        "{ran:?}"
+    );
     assert_eq!(ran.code, Some(0), "{ran:?}");
 }
 

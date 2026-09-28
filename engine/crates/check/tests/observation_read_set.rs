@@ -83,6 +83,7 @@ fn run_over(root: &Path) -> Run {
             register: &register,
             observations: &observations,
             pin: None,
+            harvests: &[],
             adoption: None,
             source: "engine/crates/check/tests/observation_read_set.rs",
         },

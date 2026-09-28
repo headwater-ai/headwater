@@ -133,6 +133,11 @@ impl Export {
     pub fn held(&self) -> usize {
         self.ids.len()
     }
+
+    /// Why this resolver binds nothing, and `None` where the export read.
+    pub fn unread(&self) -> Option<&str> {
+        self.unavailable.as_deref()
+    }
 }
 
 impl Resolver for Export {
@@ -251,6 +256,28 @@ fn documents(bytes: &[u8]) -> Result<(Vec<String>, bool), String> {
 /// order.
 pub fn over(root: &Path, pins: &[Pin]) -> Vec<Export> {
     pins.iter().map(|pin| open(root, pin)).collect()
+}
+
+/// What a run of the checks is told about each pin, beside the resolver
+/// [`over`] built for it: its name, its path, the digest of the bytes there,
+/// and why it binds nothing where it does not. `exports` is what [`over`]
+/// returned for `pins`, in the same order. See [`headwater_check::harvest`].
+pub fn readings(
+    root: &Path,
+    pins: &[Pin],
+    exports: &[Export],
+) -> Vec<headwater_check::harvest::Harvest> {
+    pins.iter()
+        .zip(exports)
+        .map(|(pin, export)| headwater_check::harvest::Harvest {
+            name: pin.name.clone(),
+            at: pin.at.clone(),
+            digest: std::fs::read(root.join(&pin.at))
+                .ok()
+                .map(|bytes| headwater_hash::digest(&bytes)),
+            unread: export.unread().map(str::to_string),
+        })
+        .collect()
 }
 
 /// Every pinned export this repository declares, in declaration order.
