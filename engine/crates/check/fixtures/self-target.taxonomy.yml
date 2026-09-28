@@ -1,0 +1,34 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The taxonomy the self-target tree is checked against. One relation goes from
+# a kind to that same kind, so an edge from a document to itself has both ends
+# admitted: `relation.endpoint.not_permitted` passes it, and cannot be the rule
+# that reports it.
+#
+# The relation declares an inverse, so that a document can also write the
+# inverse half onto itself, and the rule has to read either half.
+
+facets:
+  summary:
+    role: scent
+
+identifier_schemes:
+  note_id: {pattern: "NOTE-{namespace}-{slug}", namespace: FIX, allocation: minted-once}
+
+relations:
+  draws_on:
+    family: evidence
+    from: [explanation]
+    to:   [explanation]
+    inverse: drawn_on_by
+    created_by: author
+
+kinds:
+  explanation:
+    identifier: {scheme: note_id}
+
+shelves:
+  notes:
+    path: self-target/notes/**
+    homogeneous: true
+    kind: explanation

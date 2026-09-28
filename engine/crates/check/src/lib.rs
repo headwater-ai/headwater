@@ -172,6 +172,7 @@ pub mod register;
 pub mod retention;
 pub mod retired;
 pub mod scope;
+pub mod self_target;
 pub mod sections;
 pub mod shape;
 pub mod source_form;
