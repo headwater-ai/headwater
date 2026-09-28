@@ -108,7 +108,10 @@ fn check_no_cache_finishes_when_a_governs_edge_reaches_a_named_pipe() {
     // the suspect rule must not call it a directory or tell the author to
     // write `tools/pipe/**`, which names nothing.
     assert!(!out.contains("tools/pipe/**"), "no directory remedy: {out}");
-    assert!(!out.contains("names a directory"), "no directory finding: {out}");
+    assert!(
+        !out.contains("names a directory"),
+        "no directory finding: {out}"
+    );
 }
 
 #[test]
