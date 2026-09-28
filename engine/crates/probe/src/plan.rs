@@ -660,38 +660,7 @@ impl Plan {
         };
 
         let mut probes = Vec::new();
-        // The digest of every document the walk read bytes of, by path, which
-        // is what a read-set member is looked up in. It comes from the same
-        // walk the tree digest comes from, because two passes over one corpus
-        // can disagree and a read set that disagreed with the tree would report
-        // a state that no plan fixed.
-        //
-        // # Two populations, and this loop used to treat them as one
-        //
-        // The lookup is over every row that carries a digest. The corpus count
-        // and the tree digest below are over the typed rows alone. Those are
-        // different populations, and collecting the lookup inside the typed
-        // filter made a generated document unreachable.
-        //
-        // A generated document is classified `generated` rather than `typed`,
-        // and the census still carries the digest of the bytes it read. An
-        // `examines` edge may name one, because such a document is a file a
-        // session can open: `docs/spec/09-open-questions.md` is a generated
-        // shelf index that the decision register superseded, and a probe over
-        // it asks whether a session opens the document that lost.
-        //
-        // Under the typed-only lookup that member reached the listing below as
-        // the literal `-` that stands for "no digest". So the read-set digest
-        // did not move when the document moved, and a recorded result over it
-        // could never be reported stale — the silent-success shape, where a
-        // comparison that cannot fire reads as a comparison that passed. The
-        // listing still writes `-` for a member the walk read no bytes of,
-        // which is a real absence rather than a lookup that missed.
-        let mut digests: Vec<(&str, Option<&str>)> = Vec::new();
         for row in &census.rows {
-            if row.digest.is_some() {
-                digests.push((row.path.as_str(), row.digest.as_deref()));
-            }
             let Outcome::Typed { kind, .. } = &row.outcome else {
                 continue;
             };
@@ -896,59 +865,10 @@ impl Plan {
             .collect();
         plan.selection = selection_digest(&names);
 
-        // The read set: every probe of the selection, and every document any of
-        // them examines. A path that is both is one member, and the probe is
-        // the reason a reader is given, because a probe document is in the set
-        // whether or not anything examines it.
-        let mut reads: Vec<Read> = Vec::new();
-        let mut anchors: Vec<String> = Vec::new();
-        for selected in &plan.selected {
-            let mut add = |path: &str, because: Because| {
-                if let Some(known) = reads.iter_mut().find(|read| read.path == path) {
-                    // A probe that another probe examines is in the set for
-                    // both reasons, and the reader is told the stronger one: it
-                    // is in the set whether or not anything examines it.
-                    if because == Because::Probe {
-                        known.because = Because::Probe;
-                    }
-                    return;
-                }
-                let digest = digests
-                    .iter()
-                    .find(|(known, _)| *known == path)
-                    .and_then(|(_, digest)| digest.map(|text| text.to_string()));
-                reads.push(Read {
-                    path: path.to_string(),
-                    digest,
-                    because,
-                });
-            };
-            add(&selected.path, Because::Probe);
-            for examined in &selected.examines {
-                match examined.id {
-                    // A document of this corpus, which the census hashes.
-                    Some(_) => add(&examined.path, Because::Examined),
-                    // An external anchor. Spec 12: it is in no read set.
-                    None => {
-                        if !anchors.contains(&examined.path) {
-                            anchors.push(examined.path.clone());
-                        }
-                    }
-                }
-            }
-        }
-        reads.sort_by(|a, b| a.path.cmp(&b.path));
-        anchors.sort();
-        let mut listing = String::new();
-        for read in &reads {
-            listing.push_str(&read.path);
-            listing.push('\t');
-            listing.push_str(read.digest.as_deref().unwrap_or("-"));
-            listing.push('\n');
-        }
-        plan.read_set = headwater_hash::digest(listing.as_bytes());
-        plan.reads = reads;
-        plan.anchors = anchors;
+        let composed = read_set_over(&plan.selected, census);
+        plan.read_set = composed.digest;
+        plan.reads = composed.reads;
+        plan.anchors = composed.anchors;
 
         let Some(envelope) = budgets.of(tier) else {
             plan.refusal = Some(Refusal::TierUndeclared(tier));
@@ -1269,6 +1189,119 @@ impl Plan {
         );
         out
     }
+}
+
+/// The read set of a selection over a census, and the digest a plan fixes
+/// for it.
+///
+/// [`Plan::over`] takes it over the selection it composes. The intake takes
+/// it again over the part of the selection a transcript was planned over,
+/// on the tree in front of it, and that is what lets a transcript whose lock
+/// moved stay gradable where its read set did not move (#1292).
+pub fn read_set_over(selected: &[Selected], census: &Census) -> ReadSet {
+    // The digest of every document the walk read bytes of, by path, which
+    // is what a read-set member is looked up in. It comes from the same
+    // walk the tree digest comes from, because two passes over one corpus
+    // can disagree and a read set that disagreed with the tree would report
+    // a state that no plan fixed.
+    //
+    // # Two populations, and this loop used to treat them as one
+    //
+    // The lookup is over every row that carries a digest. The corpus count
+    // and the tree digest of [`Plan::over`] are over the typed rows alone. Those are
+    // different populations, and collecting the lookup inside the typed
+    // filter of that loop made a generated document unreachable.
+    //
+    // A generated document is classified `generated` rather than `typed`,
+    // and the census still carries the digest of the bytes it read. An
+    // `examines` edge may name one, because such a document is a file a
+    // session can open: `docs/spec/09-open-questions.md` is a generated
+    // shelf index that the decision register superseded, and a probe over
+    // it asks whether a session opens the document that lost.
+    //
+    // Under the typed-only lookup that member reached the listing below as
+    // the literal `-` that stands for "no digest". So the read-set digest
+    // did not move when the document moved, and a recorded result over it
+    // could never be reported stale — the silent-success shape, where a
+    // comparison that cannot fire reads as a comparison that passed. The
+    // listing still writes `-` for a member the walk read no bytes of,
+    // which is a real absence rather than a lookup that missed.
+    let digests: Vec<(&str, Option<&str>)> = census
+        .rows
+        .iter()
+        .filter_map(|row| {
+            row.digest
+                .as_deref()
+                .map(|digest| (row.path.as_str(), Some(digest)))
+        })
+        .collect();
+    // The read set: every probe of the selection, and every document any of
+    // them examines. A path that is both is one member, and the probe is
+    // the reason a reader is given, because a probe document is in the set
+    // whether or not anything examines it.
+    let mut reads: Vec<Read> = Vec::new();
+    let mut anchors: Vec<String> = Vec::new();
+    for selected in selected {
+        let mut add = |path: &str, because: Because| {
+            if let Some(known) = reads.iter_mut().find(|read| read.path == path) {
+                // A probe that another probe examines is in the set for
+                // both reasons, and the reader is told the stronger one: it
+                // is in the set whether or not anything examines it.
+                if because == Because::Probe {
+                    known.because = Because::Probe;
+                }
+                return;
+            }
+            let digest = digests
+                .iter()
+                .find(|(known, _)| *known == path)
+                .and_then(|(_, digest)| digest.map(|text| text.to_string()));
+            reads.push(Read {
+                path: path.to_string(),
+                digest,
+                because,
+            });
+        };
+        add(&selected.path, Because::Probe);
+        for examined in &selected.examines {
+            match examined.id {
+                // A document of this corpus, which the census hashes.
+                Some(_) => add(&examined.path, Because::Examined),
+                // An external anchor. Spec 12: it is in no read set.
+                None => {
+                    if !anchors.contains(&examined.path) {
+                        anchors.push(examined.path.clone());
+                    }
+                }
+            }
+        }
+    }
+    reads.sort_by(|a, b| a.path.cmp(&b.path));
+    anchors.sort();
+    let mut listing = String::new();
+    for read in &reads {
+        listing.push_str(&read.path);
+        listing.push('\t');
+        listing.push_str(read.digest.as_deref().unwrap_or("-"));
+        listing.push('\n');
+    }
+    ReadSet {
+        digest: headwater_hash::digest(listing.as_bytes()),
+        reads,
+        anchors,
+    }
+}
+
+/// What [`read_set_over`] composes.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ReadSet {
+    /// The digest over the listing of `reads`, by path and content.
+    pub digest: String,
+    /// The documents the digest covers, in path order.
+    pub reads: Vec<Read>,
+    /// Targets an `examines` edge names that are not documents of this
+    /// corpus. See [`Plan::anchors`].
+    pub anchors: Vec<String>,
 }
 
 /// A list a probe declares under its expectation, read from the parse the

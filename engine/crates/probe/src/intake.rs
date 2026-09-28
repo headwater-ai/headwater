@@ -12,9 +12,15 @@
 //! # What is confirmed
 //!
 //! 1. **The taxonomy.** The transcript names the lock it was planned against. A
-//!    transcript planned against another one is refused whole: a rate over
-//!    documents that a different taxonomy typed is a rate about a corpus that
-//!    is not in front of this run.
+//!    transcript planned against another one is refused whole, unless the read
+//!    set it recorded is the read set this tree composes for its probes. The
+//!    grader reads the lock through nothing else: an `answered` or `opened`
+//!    expectation is declared in a probe document, and a `patched` verdict
+//!    reads the findings the recorder stored when the session ran. So a lock
+//!    move that leaves every probe and every document they examine alone
+//!    changes no verdict, and a move that reaches one of them is refused
+//!    (#1292). Without that rule, every taxonomy change that landed during a
+//!    batch voided the batch.
 //! 2. **The identity is complete.** Every member of spec 5's run identity is
 //!    present. An incomplete identity is a measurement nobody can locate, and a
 //!    missing served version is the one that
@@ -40,6 +46,7 @@
 //! `Record` that carried an expectation's verdict would be a grader written
 //! where nobody is looking for one.
 
+use crate::plan::Selected;
 use crate::{Arm, Cents, Tier};
 use headwater_census::census::{Census, Outcome};
 use headwater_check::paint::{paint, ColorMode, Role};
@@ -96,6 +103,12 @@ pub struct Tree<'a> {
     pub config: &'a Config,
     /// The digest of the lock this tree carries.
     pub lock: &'a str,
+    /// The selection this tree composes, where the caller took a plan.
+    ///
+    /// A transcript whose lock differs from [`Tree::lock`] is gradable only
+    /// where its read set is the one this selection composes, so a caller
+    /// with no selection refuses every such transcript, as before #1292.
+    pub selected: Option<&'a [Selected]>,
 }
 
 /// The part of the run identity that belongs to the run.
@@ -155,6 +168,11 @@ pub enum Refusal {
     TaxonomyMoved {
         claimed: String,
         tree: String,
+        /// The read set this tree composes for the transcript's probes, where
+        /// it composed one. It differs from the recorded one, or it is `None`
+        /// because no selection was in hand or the recorded one is not a part
+        /// of it.
+        composed: Option<String>,
     },
     UnknownTier(String),
     UnknownArm(String),
@@ -189,9 +207,23 @@ impl std::fmt::Display for Refusal {
                 "the run identity carries no `{what}`, and an incomplete identity is a measurement \
                  nobody can locate again"
             ),
-            Refusal::TaxonomyMoved { claimed, tree } => write!(
+            Refusal::TaxonomyMoved {
+                claimed,
+                tree,
+                composed: Some(composed),
+            } => write!(
                 f,
-                "it was planned against taxonomy {claimed} and this tree carries {tree}"
+                "it was planned against taxonomy {claimed} and this tree carries {tree}, and \
+                 the read set of its probes moved with it: this tree composes {composed}"
+            ),
+            Refusal::TaxonomyMoved {
+                claimed,
+                tree,
+                composed: None,
+            } => write!(
+                f,
+                "it was planned against taxonomy {claimed} and this tree carries {tree}, and no \
+                 read set was composed over its probes to show that the move left them alone"
             ),
             Refusal::UnknownTier(found) => write!(
                 f,
@@ -373,6 +405,10 @@ pub struct Record {
     /// Probes this corpus declares, which is the denominator the run covered
     /// part of.
     pub declared: usize,
+    /// The lock the transcript names, where it is not the lock of this tree
+    /// and the transcript was graded anyway, because the read set of its
+    /// probes did not move (#1292). `None` where the two locks are one.
+    pub lock_moved: Option<String>,
 }
 
 impl Record {
@@ -392,6 +428,7 @@ impl Record {
             rejected: Vec::new(),
             refusal: None,
             declared: 0,
+            lock_moved: None,
         };
 
         let mut known = Vec::new();
@@ -413,7 +450,7 @@ impl Record {
             }
         }
 
-        match identity(source, tree) {
+        match identity(source) {
             Ok(identity) => record.identity = Some(identity),
             Err(refusal) => {
                 record.refusal = Some(refusal);
@@ -549,6 +586,37 @@ impl Record {
         }
         record.probes.sort();
         record.sessions = sessions.len();
+
+        // The first confirmation, decided last because it needs the probes the
+        // events name. A lock move is harmless where the read set of those
+        // probes did not move, and refused where it did (#1292).
+        let identity = record.identity.as_ref().expect("read above");
+        if identity.lock != tree.lock {
+            let composed = composed_read_set(identity, &record.probes, tree);
+            if composed.as_deref() == Some(identity.read_set.as_str()) {
+                record.lock_moved = Some(identity.lock.clone());
+            } else {
+                let refusal = Refusal::TaxonomyMoved {
+                    claimed: identity.lock.clone(),
+                    tree: tree.lock.to_string(),
+                    composed,
+                };
+                // A refused transcript reports nothing but its refusal, which
+                // is what every other refusal of the identity leaves.
+                return Record {
+                    identity: None,
+                    read: 0,
+                    probes: Vec::new(),
+                    sessions: 0,
+                    calls: 0,
+                    events: Vec::new(),
+                    rejected: Vec::new(),
+                    refusal: Some(refusal),
+                    declared: record.declared,
+                    lock_moved: None,
+                };
+            }
+        }
         record
     }
 
@@ -594,6 +662,14 @@ impl Record {
             "realized cost {}, which the adaptive layer reads as the cost of its own instrument.",
             crate::dollars(identity.cost)
         );
+        if let Some(claimed) = &self.lock_moved {
+            let _ = writeln!(
+                out,
+                "It was planned against taxonomy {claimed}, and this tree carries another. The \
+                 read set of its probes is the one this tree composes, so the move reaches no \
+                 document a verdict reads, and the transcript is read over this tree."
+            );
+        }
         let _ = writeln!(out);
 
         let _ = writeln!(
@@ -625,8 +701,9 @@ impl Record {
             "The engine confirmed the taxonomy, that every member of the run identity is \
              present, the membership of every probe named, that no key outside the closed set \
              appears, and that a realized cost was recorded. Present is not confirmed: of the \
-             six members a plan fixes before a run, the lock is the one compared here, and it \
-             refuses the file. `{}` compares the read set against the tree in \
+             six members a plan fixes before a run, the lock is the one compared here. A lock \
+             that differs refuses the file unless the read set of its probes is the one this \
+             tree composes. `{}` compares the read set against the tree in \
              front of it. It graded nothing: a verdict is a function of this transcript, the \
              expectations these probes declare and a grader version, and `{}` \
              is the verb that holds all three.",
@@ -637,8 +714,39 @@ impl Record {
     }
 }
 
+/// The read set this tree composes over the probes a transcript was planned
+/// over, or `None` where it composes none.
+///
+/// The part is found the way [`crate::grade::narrowed`] finds it: the whole
+/// selection where the recorded digest is the digest of the whole, and the
+/// probes the events name where it is the digest of those. A recorded
+/// selection that is neither is not a part of this tree's selection, so no
+/// read set of this tree is the one the run was planned over.
+fn composed_read_set(identity: &Identity, probes: &[String], tree: &Tree<'_>) -> Option<String> {
+    let selection = tree.selected?;
+    let whole: Vec<&str> = selection
+        .iter()
+        .map(|selected| selected.id.as_str())
+        .collect();
+    let part: Vec<Selected> = if crate::plan::selection_digest(&whole) == identity.selection {
+        selection.to_vec()
+    } else {
+        let part: Vec<Selected> = selection
+            .iter()
+            .filter(|selected| probes.contains(&selected.id))
+            .cloned()
+            .collect();
+        let ids: Vec<&str> = part.iter().map(|selected| selected.id.as_str()).collect();
+        if part.is_empty() || crate::plan::selection_digest(&ids) != identity.selection {
+            return None;
+        }
+        part
+    };
+    Some(crate::plan::read_set_over(&part, tree.census).digest)
+}
+
 /// The run identity block, read and tested.
-fn identity(source: &str, tree: &Tree<'_>) -> Result<Identity, Refusal> {
+fn identity(source: &str) -> Result<Identity, Refusal> {
     let block = fenced(source, "Run identity").ok_or(Refusal::NoBlock("Run identity"))?;
     let loaded = headwater_yaml::load(block).map_err(|errors| Refusal::Unparsed {
         block: "Run identity",
@@ -658,13 +766,9 @@ fn identity(source: &str, tree: &Tree<'_>) -> Result<Identity, Refusal> {
     }
 
     let need = |key: &'static str| text(map, key).ok_or(Refusal::Missing(key));
+    // The lock is compared in `Record::read`, once the events have named the
+    // probes whose read set decides whether a moved lock is refused.
     let lock = need("lock")?;
-    if lock != tree.lock {
-        return Err(Refusal::TaxonomyMoved {
-            claimed: lock,
-            tree: tree.lock.to_string(),
-        });
-    }
     let tier_name = need("tier")?;
     let tier = Tier::read(&tier_name).ok_or(Refusal::UnknownTier(tier_name))?;
     let arm_name = need("arm")?;

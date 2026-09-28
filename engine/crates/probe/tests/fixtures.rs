@@ -172,6 +172,7 @@ fn record_of(source: &str) -> Record {
         census: &taken,
         config: &config,
         lock: LOCK,
+        selected: None,
     };
     Record::read(source, &tree)
 }
@@ -253,6 +254,7 @@ fn staleness_at(dir: &Path) -> Staleness {
         census: &taken,
         config: &config,
         lock: LOCK,
+        selected: None,
     };
     let source = std::fs::read_to_string(dir.join(COMMITTED)).expect("the committed transcript");
     let record = Record::read(&source, &tree);
@@ -1382,10 +1384,88 @@ fn a_transcript_planned_against_another_taxonomy_is_refused_whole() {
     assert!(
         matches!(
             record_of(&source).refusal,
-            Some(headwater_probe::intake::Refusal::TaxonomyMoved { .. })
+            Some(headwater_probe::intake::Refusal::TaxonomyMoved { composed: None, .. })
         ),
-        "a rate over documents another taxonomy typed is a rate about another corpus"
+        "with no selection in hand nothing shows that the move left the probes alone, so a \
+         rate over documents another taxonomy typed is a rate about another corpus"
     );
+}
+
+/// The fixture transcript, stamped with the selection and the read set the
+/// fixture plan composes, so the only thing left to move is the lock.
+fn planned_by_the_fixture(lock: &str, read_set: &str) -> String {
+    let plan = regression();
+    let recorded = transcript("transcript.md");
+    let recorded_read_set = recorded
+        .lines()
+        .find_map(|line| line.strip_prefix("read_set: "))
+        .expect("the fixture records a read set")
+        .to_string();
+    recorded
+        .replace("lock: sha256:fixture", &format!("lock: {lock}"))
+        .replace(
+            "selection: sha256:fixture-selection",
+            &format!("selection: {}", plan.selection),
+        )
+        .replace(
+            &format!("read_set: {recorded_read_set}"),
+            &format!("read_set: {read_set}"),
+        )
+}
+
+fn record_over_the_fixture_selection(source: &str) -> Record {
+    let root = taxonomy_map();
+    let taken = fixture_census(&root);
+    let config = Config::default();
+    let plan = regression();
+    let tree = Tree {
+        census: &taken,
+        config: &config,
+        lock: LOCK,
+        selected: Some(&plan.selected),
+    };
+    Record::read(source, &tree)
+}
+
+/// #1292. The grader reads a lock through nothing but the probes and the
+/// documents they examine, so a lock move that reaches none of them changes no
+/// verdict. Refusing such a transcript voided a whole campaign batch on a
+/// taxonomy change to a kind no probe of it read.
+#[test]
+fn a_moved_lock_the_read_set_does_not_see_leaves_the_transcript_gradable() {
+    let plan = regression();
+    let unmoved = record_over_the_fixture_selection(&planned_by_the_fixture(LOCK, &plan.read_set));
+    let moved =
+        record_over_the_fixture_selection(&planned_by_the_fixture("sha256:other", &plan.read_set));
+    assert_eq!(moved.refusal, None, "{:?}", moved.refusal);
+    assert_eq!(moved.lock_moved.as_deref(), Some("sha256:other"));
+    assert_eq!(unmoved.lock_moved, None);
+    assert_eq!(
+        moved.events, unmoved.events,
+        "a lock move the read set does not see reads every event the same"
+    );
+    assert!(
+        moved
+            .render(headwater_check::paint::ColorMode::Plain)
+            .contains("planned against taxonomy sha256:other"),
+        "a reader of the record is told the lock moved and why it still reads"
+    );
+}
+
+#[test]
+fn a_moved_lock_whose_read_set_moved_is_refused_and_names_what_this_tree_composes() {
+    let plan = regression();
+    let source = planned_by_the_fixture(
+        "sha256:other",
+        "sha256:a-read-set-this-tree-does-not-compose",
+    );
+    match record_over_the_fixture_selection(&source).refusal {
+        Some(headwater_probe::intake::Refusal::TaxonomyMoved {
+            composed: Some(composed),
+            ..
+        }) => assert_eq!(composed, plan.read_set),
+        other => panic!("a lock move that reached a probe's documents stays refused: {other:?}"),
+    }
 }
 
 #[test]
