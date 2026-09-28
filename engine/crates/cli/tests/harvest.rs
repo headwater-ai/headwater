@@ -487,9 +487,19 @@ fn an_unread_pin_that_no_anchor_names_is_a_finding_that_names_the_pin() {
         .filter(|block| block.contains(PIN_RULE))
         .collect();
     assert_eq!(pins.len(), 1, "one finding, for C alone: {ran:?}");
+    // The head of the message is the rule's own naming of the pin. The
+    // resolver's reason also names `repo-c`, so a bare `contains("repo-c")`
+    // passes a finding headed by another pin's name.
     assert!(
-        pins[0].contains("repo-c") && pins[0].contains(EXPORT_C),
+        pins[0].contains(&format!(
+            "`harvests.repo-c` pins an export at `{EXPORT_C}` that binds nothing"
+        )),
         "the finding names the pin and where it is: {}",
+        pins[0]
+    );
+    assert!(
+        !pins[0].contains("`harvests.repo-a`") && !pins[0].contains("`harvests.repo-b`"),
+        "{}",
         pins[0]
     );
     assert!(pins[0].contains("did not read"), "{}", pins[0]);
@@ -541,6 +551,45 @@ fn a_pinned_export_joins_the_read_set_and_a_gate_sees_it_move() {
     assert!(
         moved.out.contains(EXPORT_B),
         "the gate names the export that moved: {moved:?}"
+    );
+}
+
+/// A pinned export that is absent joins the read set too, with no digest. The
+/// gate then carries no verdict across it, over the same tree or once the file
+/// appears, because nothing compares. An absent export is the case the rule
+/// reports, so it is the case a read set must not drop: dropped, the gate would
+/// say nothing about the export at all.
+#[test]
+fn an_absent_pinned_export_joins_the_read_set_and_a_gate_never_carries_across_it() {
+    let root = Root::new("read-set-absent");
+    let pinned = export("tin");
+    declare(
+        &root,
+        "    resolver: export-repo-b\n",
+        &format!(
+            "    resolver: export-repo-b\n  repo-c:\n    at: {EXPORT_C}\n    digest: {}\n    \
+             resolver: export-repo-c\n",
+            headwater_hash::digest(pinned.as_bytes())
+        ),
+    );
+    let read_set = root.at.join("absent.readset");
+    let read_set = read_set.to_str().expect("the read set path is UTF-8");
+    let ran = root.run(&["check", "--read-set", read_set]);
+    let recorded = std::fs::read_to_string(read_set)
+        .unwrap_or_else(|error| panic!("the read set is written: {error}: {ran:?}"));
+    assert!(
+        recorded.lines().any(|line| line.contains(EXPORT_C)),
+        "the read set lists the absent export: {recorded}"
+    );
+    let unhashed = format!("{EXPORT_C} carried no hash when it was read");
+    let still = root.run(&["gate", "--read-set", read_set]);
+    assert!(still.out.contains(&unhashed), "{still:?}");
+
+    root.write(EXPORT_C, &pinned);
+    let appeared = root.run(&["gate", "--read-set", read_set]);
+    assert!(
+        appeared.out.contains(&unhashed),
+        "the gate names the export that appeared: {appeared:?}"
     );
 }
 

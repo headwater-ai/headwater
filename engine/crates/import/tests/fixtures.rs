@@ -908,4 +908,13 @@ fn an_import_whose_path_leaves_the_repository_through_a_symlink_is_refused_by_na
         why.contains("imports.ado.at") && why.contains("imports/ado"),
         "{why}"
     );
+
+    // The snapshot behind the symlink need not exist: the leading part that
+    // does exist is what resolves out of the root.
+    std::fs::remove_dir_all(outside.path().join("ado")).expect("the snapshot is removed");
+    let why = headwater_import::declared(scratch.path()).expect_err("it is refused");
+    assert!(
+        why.contains("imports.ado.at") && why.contains("imports/ado"),
+        "{why}"
+    );
 }

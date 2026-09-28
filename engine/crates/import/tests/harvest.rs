@@ -326,6 +326,16 @@ fn a_pin_whose_path_leaves_the_repository_through_a_symlink_is_refused_by_name()
         "{why}"
     );
 
+    // The file behind the symlink need not exist: the leading part that does
+    // exist is what resolves out of the root, so the pin is still refused
+    // rather than read as a missing export.
+    std::fs::remove_file(outside.path().join("repo-b.json")).expect("the export is removed");
+    let why = harvest::declared(scratch.path()).expect_err("it is refused");
+    assert!(
+        why.contains("harvests.repo-a.at") && why.contains(AT),
+        "{why}"
+    );
+
     // A symlink that stays under the root is a path under the root.
     let inside = Scratch::new("symlink-inside");
     inside.write("exports/repo-b.json", &export(&["svc-a"], false));
