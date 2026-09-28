@@ -9,7 +9,7 @@
 # It builds the corpus of `headwater-check/fixtures/build-decisive-fixture.sh`
 # with the engine it is given. The decision ACME-DR-0001 governs `src/a.rs`,
 # and a second decision ACME-DR-0002 `traces_to` it. The corpus also holds
-# `src/b.rs`, which nothing governs. That is committed as the base, and three
+# `src/b.rs`, which nothing governs. That is committed as the base, and four
 # changes are run over it, each from a clean base:
 #
 #   edit    edit `src/a.rs` and `src/b.rs`. Touched names ACME-DR-0001
@@ -17,10 +17,13 @@
 #   rename  rename `src/a.rs` to `src/c.rs`. Touched names the old path and
 #           the document that governed it, and Owed lists the finding the
 #           broken edge raises on that document, marked new.
-#   hop     delete ACME-DR-0001. Touched names `src/a.rs`, which the change
-#           did not edit, because the change deleted the document that
-#           governed it. Owed lists the new finding on ACME-DR-0002, one
-#           relation away, which no path of the change names.
+#   rename-doc  rename ACME-DR-0001's file. The document keeps its edges,
+#           so Touched names no path as one that lost its governor.
+#   hop     delete ACME-DR-0001 and `src/b.rs`. Touched names `src/a.rs`,
+#           which the change did not edit, because the change deleted the
+#           document that governed it, and no document governs it now. Owed
+#           lists the new finding on ACME-DR-0002, one relation away, which
+#           no path of the change names.
 #
 # For every case the run must write nothing inside the checkout: HEAD and
 # `git status --porcelain` do not move, and no entry under the corpus, a file
@@ -187,13 +190,26 @@ assert rename "any('$d1' in line and '(new with this change)' in line for line i
 assert rename "'that governed it at the base' not in (T or '')" \
     "Touched names a lost governor, and renaming a governed code file deletes no document"
 
-# The hop case: a finding one relation away from any changed path.
+# The rename-doc case: a renamed document keeps its edges, because an edge
+# lives in the document, so no path loses its governor.
 reset_to_base
-git -C "$corpus" rm -q "docs/decisions/$d1"
+git -C "$corpus" mv "docs/decisions/$d1" docs/decisions/0001-renamed.md
+git -C "$corpus" -c user.name=fixture -c user.email=fixture@example.invalid commit -q -m rename-doc
+run_case rename-doc
+assert rename-doc "'that governed it at the base' not in (T or '')" \
+    "Touched names a lost governor, and renaming the governing document keeps its edges"
+
+# The hop case: a finding one relation away from any changed path. It also
+# deletes src/b.rs, which is not a document, so `explain` refuses it and the
+# run goes on.
+reset_to_base
+git -C "$corpus" rm -q "docs/decisions/$d1" src/b.rs
 git -C "$corpus" -c user.name=fixture -c user.email=fixture@example.invalid commit -q -m delete
 run_case hop
-assert hop "any(e.startswith('- \`src/a.rs\`') and '$d1' in e and 'deleted' in e for e in entries(T))" \
-    "Touched does not name src/a.rs, whose governor $d1 the change deleted"
+assert hop "any(e.startswith('- \`src/a.rs\`') and '$d1' in e and 'deleted' in e and 'no document governs it now' in e for e in entries(T))" \
+    "Touched does not name src/a.rs, whose governor $d1 the change deleted, as a path no document governs now"
+assert hop "not any(e.startswith('- \`src/b.rs\`: this change deleted') for e in entries(T))" \
+    "Touched names src/b.rs as a path that lost its governor, and nothing governed it"
 assert hop "any('$d2' in line and '(new with this change)' in line for line in (O or '').splitlines())" \
     "Owed does not list the new finding on $d2, which traces_to the deleted $d1"
 
@@ -205,4 +221,4 @@ printf 'pub fn b() -> u8 { 2 }\n' >"$corpus/src/b.rs"
 if [ "$failed" -ne 0 ]; then
     exit 1
 fi
-echo "$0: edit, rename and hop each name what they must, and no run wrote in the checkout" >&2
+echo "$0: edit, rename, rename-doc and hop each name what they must, and no run wrote in the checkout" >&2

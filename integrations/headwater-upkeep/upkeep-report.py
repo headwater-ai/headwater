@@ -136,10 +136,11 @@ def lost_governors(work, keep):
             "summary": data.get("summary"),
         }
         for edge in data.get("related") or []:
-            # A document target carries a pointer. Only an anchor edge that
-            # this document declared, with this document as the governing end,
-            # names a path the document governed.
-            if edge.get("inbound") or edge.get("pointer") is not None or edge.get("governs") != "source":
+            # Only an edge that this document declared, with this document as
+            # the governing end, names a path the document governed. A
+            # document target names an identifier, which is no path on the
+            # tree, so the existence test in `keep` drops it.
+            if edge.get("inbound") or edge.get("governs") != "source":
                 continue
             members = (edge.get("reach") or {}).get("members")
             if members is None:
