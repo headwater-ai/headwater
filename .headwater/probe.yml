@@ -56,15 +56,26 @@ tiers:
   # Estimate a difference for one named claim. Both arms, powered, one batch,
   # one model version.
   #
-  # **The ceiling is the amount somebody has actually agreed to spend, and it is
-  # below what a powered campaign over this corpus costs.** Spec 5 takes the
-  # session count from statistical power rather than from taste: 0.50 against
-  # 0.75 at 80% power and a 5% two-sided level is about 58 sessions per arm. So
-  # a campaign over the probes this corpus declares projects above this number
-  # and `headwater probe plan --tier campaign` refuses it today. That refusal is
-  # the mechanism working rather than a value to raise until it stops: a run
-  # that does not happen is the cheaper error, and the number moves when a
-  # person decides to spend more and not when a harness wants to run.
+  # **The ceiling is the amount somebody has actually agreed to spend.** The
+  # owner agreed on #980 on 2026-09-22 to roughly $464 for a powered campaign,
+  # and ruled on 2026-09-28 on the design posted there: 30 repetitions per
+  # probe, on `claude-sonnet-5`, with $300.00 here and $130.00 at the
+  # documentation tier. That is $430.00 in all, inside the amount agreed. The
+  # number moved because a person decided to spend more, which is the only
+  # reason it may move.
+  #
+  # Spec 5 takes the session count from statistical power rather than from
+  # taste: 0.50 against 0.75 at 80% power and a 5% two-sided level is about 58
+  # sessions per arm. That count is per arm of one claim, and a result pools
+  # every probe of its selection into one rate. So 30 repetitions over the 4
+  # sufficiency probes is 120 sessions per arm, and over the 9 probes a
+  # campaign can plan it is 270. Both clear 58. The 58 this tier declared
+  # before bought that count once per probe, which is nine times the sessions
+  # the claim needs over 9 probes (#980).
+  #
+  # `session_cost_cents` is the realized rate and not a guess: the two most
+  # recent regression recordings on `claude-sonnet-5` spent 48.75 and 50.875
+  # cents per session.
   #
   # The claim it measures is that the governance changes what an agent builds:
   # its ablation removes the four paths that deliver this repository's
@@ -79,16 +90,24 @@ tiers:
   # That probe is a regression-tier instrument. A campaign runs over a
   # category that excludes it (`--category navigability` or
   # `--category sufficiency`), and there the ceiling is what refuses it.
+  #
+  # The discovery category holds that probe too. `--exclude` names it out, so
+  # the other two discovery probes, which the machine half of Q16 rests on,
+  # plan at this tier (#980).
   campaign:
-    budget_cents: 5000
-    session_cost_cents: 25
-    repetitions: 58
+    budget_cents: 30000
+    session_cost_cents: 50
+    repetitions: 30
     arms: [present, absent]
     ablation: [CLAUDE.md, .claude, .githooks, .headwater]
 
   # Estimate a difference for a second named claim: that the documents under
-  # `docs/` change what an agent builds. Both arms, like the campaign, and the
-  # same ceiling, because nobody has agreed to spend more (#980).
+  # `docs/` change what an agent builds. Both arms, like the campaign. The
+  # ceiling is the $130.00 the owner agreed to on #980 on 2026-09-28: 4
+  # sufficiency probes, 30 repetitions, at the realized rate, for the absent
+  # arm and a contingency. The present arm is the campaign's, recorded once,
+  # because a present tree is the same tree at every tier (the owner's ruling
+  # of the same day).
   #
   # Its ablation is the campaign's four paths and `docs`. So present against
   # absent at this tier measures the documents and the governance together.
@@ -113,9 +132,9 @@ tiers:
   # `sh tools/probe/ablate.sh documentation <workspace>`. Its cost over the
   # sufficiency probes is projected at the end of this file.
   documentation:
-    budget_cents: 5000
-    session_cost_cents: 25
-    repetitions: 58
+    budget_cents: 13000
+    session_cost_cents: 50
+    repetitions: 30
     arms: [present, absent]
     ablation:
       - CLAUDE.md
@@ -180,29 +199,17 @@ tiers:
 #
 # `session_cost_cents` was a declared number and not a measured one until the
 # first regression run gave it something to fit against. Two committed
-# regression-tier transcripts now carry a realized cost over eight probes
-# each: 390 cents and 407 cents, or 48.75 and 50.875 cents per session against
-# the 25 declared above — roughly double.
+# regression-tier transcripts carry a realized cost over eight probes each: 390
+# cents and 407 cents, or 48.75 and 50.875 cents per session. The paired tiers
+# now declare 50. The regression tier keeps 25, because its ceiling already
+# clears ten sessions at the realized rate.
 #
-# The campaign tier's own count (10 probes since #1010 added two, both arms,
-# 58 repetitions) therefore projects two figures and not one. At the declared
-# rate: 10 x 2 x 58 x $0.25 = $290.00 against the $50.00 ceiling above. At the
-# realized rate: roughly 10 x 2 x 58 x $0.50 = $580.00. Neither is what refuses
-# an unnarrowed campaign plan today: the authoring-skill probe refuses it
-# first (see the campaign tier's comment). Its sufficiency selection (4
-# probes, 464 sessions, $116.00 declared) refuses on the ceiling. Over the 8
-# probes before #1010 the same
-# figures were $232.00 and roughly $464.00, about four times the $116.00 an
-# earlier draft of the issue that asked for this comparison cited, before
-# #531 added four probes and before a live regression run gave the declared
-# rate anything to be measured against. Neither figure is written into
-# `budget_cents` here: the campaign tier's own comment above already rules
-# that the ceiling moves only when a person agrees to spend more, and #980 is
-# where that agreement is asked for.
-#
-# The documentation tier over `--category sufficiency` projects the same two
-# ways. Four sufficiency probes, both arms, 58 repetitions is 464 sessions:
-# 4 x 2 x 58 x $0.25 = $116.00 at the declared rate, and 464 x $0.4875 =
-# $226.20 to 464 x $0.50875 = $236.06 at the realized rates. Both are above
-# the $50.00 ceiling, so the plan refuses on budget, which is the mechanism
-# working and not a number to raise.
+# What a campaign costs at these numbers. The plan projects each category on
+# its own: sufficiency 4 x 2 x 30 = 240 sessions, $120.00; navigability 3 x 2 x
+# 30 = 180 sessions, $90.00; discovery without the authoring-skill probe 2 x 2
+# x 30 = 120 sessions, $60.00. That is $270.00 against the campaign's $300.00.
+# The documentation tier plans its sufficiency selection at 240 sessions,
+# $120.00, against $130.00, and a batch records only its absent arm, 120
+# sessions, because the present arm is the campaign's. The plan checks one
+# selection against the ceiling, and `tools/probe/campaign.sh` holds the sum
+# of a tier's sessions to it while it spends.
