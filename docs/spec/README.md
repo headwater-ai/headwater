@@ -19,5 +19,5 @@ The documents on this shelf, in the reading order this corpus derives.
 - [The check layer](12-check-layer.md) — What a check is, how a scope constrains it, where it comes from, and what the check layer owes the engine.
 - [The recorder contract](15-the-recorder-contract.md) — Everything an external recorder writes into a transcript, and the closed key sets that refuse a file. This part also names the one member of the run identity this engine compares, and the period a result stays citable. (asserted, and no human has accepted it)
 - [Harness support](16-harness-support.md) — The eleven capabilities a harness supplies at the four moments, stated once for every harness, and the recorded support of Claude Code, GitHub Copilot and OpenAI Codex.
-- [Orchestration architecture](17-orchestration-architecture.md) — The five stages of a build-order run, what each one owns and never does, where the veto sits, and how claims order the merges. (asserted, and no human has accepted it)
+- [Orchestration architecture](17-orchestration-architecture.md) — The six stages of a build-order run, what each one owns and never does, where the veto sits, and how claims order the merges. (asserted, and no human has accepted it)
 - [Glossary](glossary.md) — One line for every named concept in the specification, with a link to the section that defines it.
