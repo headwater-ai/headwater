@@ -463,7 +463,6 @@ stage() {
     case $issue in
         ''|*[!0-9]*) echo "run-dir: \`$issue\` is not an issue number." >&2; exit 2 ;;
     esac
-    body=$(printf 'stage %s' "$reached")
     for pair in "$@"; do
         key=${pair%%=*} value=${pair#*=}
         case $pair in
@@ -477,7 +476,18 @@ stage() {
         case $value in
             *[[:space:]]*) echo "run-dir: the value of \`$key\` holds whitespace, and a field is one line of one word." >&2; exit 2 ;;
         esac
-        body=$(printf '%s\n%s %s' "$body" "$key" "$value")
+    done
+    # Every field this call does not name carries from the checkpoint before,
+    # so a parent that vetoes a PASS names only the stage and the veto file.
+    # The fields are written in the order `fields` declares.
+    body=$(printf 'stage %s' "$reached")
+    for key in $fields; do
+        value=''
+        for pair in "$@"; do
+            [ "${pair%%=*}" = "$key" ] && value=${pair#*=}
+        done
+        [ -n "$value" ] || value=$(sed -n "s/^$key //p" "$dir/handover/$issue" 2>/dev/null | tail -n 1)
+        [ -n "$value" ] && body=$(printf '%s\n%s %s' "$body" "$key" "$value")
     done
     mkdir -p "$dir/handover"
     tmp="$dir/handover/.$issue.$$"
@@ -494,14 +504,22 @@ logged_issues() {
     jq -r '.issue // empty' "$1/log.jsonl" 2>/dev/null | tr '\n' ' '
 }
 
-# The last ruling of each issue in decisions.md, one `<issue> <kind>` per line.
+# The last ruling of each issue in decisions.md that this run wrote, one
+# `<issue> <kind>` per line. `start` seeds decisions.md from the previous run,
+# so a RULED line names the run that wrote it and binds that run alone: a
+# deferral is "for this run alone" (hw-run-policy), and a gate or a refusal is
+# ruled again by the run that meets the issue again.
 ruled_issues() {
     [ -f "$1/decisions.md" ] || return 0
-    sed -n 's/^.* — RULED #\([0-9][0-9]*\) \(gated\|deferred\|refused\|open\):.*/\1 \2/p' "$1/decisions.md" \
-        | awk '{ last[$1] = $2 } END { for (i in last) print i, last[i] }'
+    sed -n 's/^.* — RULED #\([0-9][0-9]*\) \(gated\|deferred\|refused\|open\) (run \([^)]*\)):.*/\1 \2 \3/p' "$1/decisions.md" \
+        | awk -v run="$(basename "$1")" '$3 == run { last[$1] = $2 } END { for (i in last) print i, last[i] }'
 }
 
-# The issues an OWNER line in decisions.md answers, space-separated.
+# The issues an OWNER line in decisions.md answers, space-separated. Unlike a
+# RULED line, an OWNER line from an earlier run still counts, on purpose: it
+# is the owner's own answer, the product owner posts it on the issue, and it
+# holds until the owner changes it. So it answers a `ruling` queue line in
+# every later run.
 answered_issues() {
     [ -f "$1/decisions.md" ] || return 0
     sed -n 's/^.*OWNER\( ([^)]*)\)\{0,1\} #\([0-9][0-9]*\).*/\2/p' "$1/decisions.md" | tr '\n' ' '
@@ -512,7 +530,8 @@ answered_issues() {
 # out. It is ruled out when its last `RULED` line says gated, deferred or
 # refused, or when its queue line is marked `ruling` and neither an `OWNER`
 # line nor a `RULED ... open` line answers it (hw-run-policy: an unanswered
-# ruling waits, and a deferral skips the issue for the run). `DRAIN` when the
+# ruling waits, and a deferral skips the issue for the run). A RULED line
+# binds only the run that wrote it, and an OWNER line binds every run. `DRAIN` when the
 # run is draining, and `EMPTY` when nothing is left.
 next() {
     dir=$1
@@ -545,10 +564,10 @@ next() {
 }
 
 # A ruling the parent makes on one issue, appended to decisions.md in the one
-# form `next` reads: `- <date> — RULED #<issue> <kind>: <reason>`. The prose
+# form `next` reads: `- <date> — RULED #<issue> <kind> (run <run-id>): <reason>`. The prose
 # around it stays prose, and the last ruling of an issue is the one that holds.
 rule() {
-    dir=$1 issue=$2 kind=$3
+    dir=${1%/} issue=$2 kind=$3
     shift 3
     [ -d "$dir" ] || { echo "run-dir: $dir is not a run directory." >&2; exit 1; }
     case $issue in ''|*[!0-9]*) echo "run-dir: \`$issue\` is not an issue number." >&2; exit 2 ;; esac
@@ -558,7 +577,7 @@ rule() {
     esac
     reason="$*"
     [ -n "$reason" ] || { echo "run-dir: a ruling carries its reason." >&2; exit 2; }
-    printf -- '- %s — RULED #%s %s: %s\n' "$(date -u +%Y-%m-%d)" "$issue" "$kind" "$reason" >> "$dir/decisions.md"
+    printf -- '- %s — RULED #%s %s (run %s): %s\n' "$(date -u +%Y-%m-%d)" "$issue" "$kind" "${dir##*/}" "$reason" >> "$dir/decisions.md"
     printf 'RULED: #%s %s\n' "$issue" "$kind"
 }
 

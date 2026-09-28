@@ -445,7 +445,7 @@ sh "$tool" stage "$veto" 50 verified-pass verify=/s/verify.md rounds=1 >/dev/nul
 same 'resume, verified-pass: the parent rules' '50 verified-pass rule' "$(sh "$tool" resume "$veto" 2>&1)"
 sh "$tool" stage "$veto" 50 verified-fail verify=/s/veto-1.md >/dev/null 2>&1
 same 'a veto writes verified-fail with the veto as the finding, and resume sends it to hw-iterate' \
-    '50 verified-fail iterate|verify /s/veto-1.md|note /s/adj.md|pr 500' \
+    '50 verified-fail iterate|verify /s/veto-1.md|pr 500|note /s/adj.md' \
     "$(sh "$tool" resume "$veto" 2>&1)|$(grep -E '^(verify|note|pr) ' "$veto/handover/50" | sort -r | paste -sd'|')"
 sh "$tool" stage "$veto" 50 ruled-merge >/dev/null 2>&1
 same 'resume, ruled-merge: integrate' '50 ruled-merge integrate' "$(sh "$tool" resume "$veto" 2>&1)"
