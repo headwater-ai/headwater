@@ -2088,20 +2088,25 @@ fn the_scope_of_every_rule_comes_from_the_trait_that_binds_it() {
          document's identity, and it is a barrier"
     );
 
-    // Exactly two rules read the clock, and the report names them. A reader
-    // who asks why a warm run re-evaluated one rule and not another reads it
-    // here. The suspect rule reads it to decide whether a document was
-    // verified today, which is when it may offer a fix (#952).
-    let mut clocked: Vec<&str> = run
+    // Exactly one rule reads the clock, and the report names it. A reader who
+    // asks why a warm run re-evaluated one rule and not another reads it here.
+    // The suspect rule read it until #1259, to decide whether a document was
+    // verified today. The change decides that now, and the rule reads the
+    // version of the declaring document before the change instead.
+    let clocked: Vec<&str> = run
         .served
         .iter()
         .filter(|served| served.scope.needs_clock())
         .map(|served| served.rule)
         .collect();
-    clocked.sort_unstable();
-    let mut expected = [participation::RULE, headwater_check::suspect::RULE];
-    expected.sort_unstable();
-    assert_eq!(clocked, expected);
+    assert_eq!(clocked, [participation::RULE]);
+    let restated: Vec<&str> = run
+        .served
+        .iter()
+        .filter(|served| served.scope.needs_declarer_prior())
+        .map(|served| served.rule)
+        .collect();
+    assert_eq!(restated, [headwater_check::suspect::RULE]);
     assert_eq!(run.served[14].rule, participation::RULE);
     assert_eq!(
         run.served[14].scope.render(),

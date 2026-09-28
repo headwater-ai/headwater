@@ -1847,10 +1847,11 @@ jobs:
         # what a contributor does when it fails, and the suite on the line
         # before it provokes each arm with a stub in place of the engine.
         #
-        # The stamp patch is offered only on a document whose `last_verified`
-        # is on or after `--now`, so this step reads the same injected clock
-        # as the steps above. It blocks: a refused patch exits 1, and so does
-        # any byte the run wrote.
+        # The stamp patch is offered only in a run with `--change`, on a
+        # document the change re-verified (#1259). This step passes no change,
+        # so no stamp is ever offered here and its answer does not move with
+        # `--now`. It blocks: a refused patch exits 1, and so does any byte the
+        # run wrote.
         run: |
           sh tools/repo/fix-fixed-point-fixtures.sh
           sh tools/repo/fix-fixed-point.sh ./engine/target/release/headwater --now "$HEADWATER_NOW"
@@ -2048,68 +2049,20 @@ jobs:
         run: sh tools/repo/decision-record-fixtures.sh
 
   deploy:
-    # The one deploy path of https://headwater.tools/ since #1273. It is not a
-    # required check (the `Protect main` ruleset requires `Engine tests` and
-    # `headwater check (advisory)`), it runs on a push to `main` and on no
-    # other event, and it waits for both gating jobs of that push. So a pull
-    # request and a merge group never run it, and a failure here turns this
-    # job red and nothing else.
+    # The one deploy path of https://headwater.tools/ since #1273. The job
+    # lives in `deploy-site.yml`, which this job and a job of `release.yml`
+    # call, so both callers run one job definition in one concurrency group.
+    # This call is not a required check (the `Protect main` ruleset requires
+    # `Engine tests` and `headwater check (advisory)`), it runs on a push to
+    # `main` and on no other event of this workflow, and it waits for both
+    # gating jobs of that push. So a pull request and a merge group never run
+    # it, and a failure here turns this job red and nothing else.
     #
-    # `tools/site/deploy-site.sh` renders, assembles, measures the figures
-    # into the assembled pages, adds the APT repository and calls `wrangler
-    # deploy`, under `set -eu`, so a step that fails publishes nothing and
-    # the live site goes on serving the last good deploy. Cloudflare Workers
-    # Builds deployed the site before; it cannot wait for CI and has no engine
-    # to measure with, which the decision that supersedes HW-DR-0039 records.
+    # Cloudflare Workers Builds deployed the site before; it cannot wait for
+    # CI and has no engine to measure with, which the decision that
+    # supersedes HW-DR-0039 records.
     name: Deploy the site
     if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     needs: [engine, headwater]
-    runs-on: ubuntu-latest
-    # Two pushes deploy in the order they landed, and neither cancels the
-    # other, so the last deploy is always the newest `main`.
-    concurrency:
-      group: deploy-site
-      cancel-in-progress: false
-    steps:
-      - name: The two Cloudflare secrets are set
-        # Until the owner sets both secrets this job fails here, alone, with one
-        # line that names what is missing.
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: |
-          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
-            echo "::error::The site is not deployed: set both repository secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID (gh secret set CLOUDFLARE_API_TOKEN; gh secret set CLOUDFLARE_ACCOUNT_ID)."
-            exit 1
-          fi
-      - uses: actions/checkout@v4
-      - name: The cargo cache
-        # The `headwater` job's key, because this job builds the same release
-        # binary and a warm cache from that job saves the whole compile.
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry/index
-            ~/.cargo/registry/cache
-            ~/.cargo/git/db
-            engine/target
-          key: cargo-${{ runner.os }}-headwater-${{ hashFiles('engine/Cargo.lock') }}
-          restore-keys: cargo-${{ runner.os }}-headwater-
-      - name: The toolchain this build needs
-        run: |
-          rustup update --no-self-update stable
-          rustup default stable
-      - name: Build the engine
-        run: cargo build --release -p headwater-cli --locked
-        working-directory: engine
-      - name: The site toolchain
-        # The pins of the `headwater` job's site step, for the reasons written
-        # there.
-        run: |
-          python3 -m pip install --user --break-system-packages \
-            mkdocs==1.6.1 pymdown-extensions==10.11.2 PyYAML
-      - name: Deploy
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: sh tools/site/deploy-site.sh
+    uses: ./.github/workflows/deploy-site.yml
+    secrets: inherit
