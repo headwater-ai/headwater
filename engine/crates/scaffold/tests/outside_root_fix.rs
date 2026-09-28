@@ -63,6 +63,7 @@ fn a_contraction_outside_the_root_is_fixed_and_the_read_back_holds() {
             config: &config,
             register: &register,
             observations: &headwater_check::Observations::empty(),
+            pin: None,
             adoption: None,
             source: "engine/crates/check/fixtures/outside-root.taxonomy.yml",
         },
