@@ -96,7 +96,7 @@ The program exclusion applies only to a whole bare token, so `mkdocs/build.sh` c
 | The host has no readable clock and no `--now` was passed | `check`, before the corpus is walked |
 | `--change` names a manifest that did not read | `check`, before the corpus is walked |
 | `--fix` composed a patch and the write did not land | `fix`, before the report |
-| The lock is absent, or a declaration under it did not read. Or the `imports` or `harvests` block of `.headwater/taxonomy.yml` did not read, or two of its entries name one resolver. The block or one of its entries is not a mapping, or the `at` path of an entry is outside the repository root, through `..`, an absolute path or a symlink | `load`, called by `check` |
+| The lock is absent, or a declaration under it did not read. Or the `imports` or `harvests` block of `.headwater/taxonomy.yml` did not read, or two of its entries name one resolver. Or the block or one of its entries is not a mapping. Or the `at` path of an entry is outside the repository root, through `..`, an absolute path or a symlink | `load`, called by `check` |
 | Standard output or standard error could not be written | wherever the write is |
 | The report lost a finding that no declared loss reason covers | the adapter census, after the report is written |
 | `--read-set` names a file that could not be written | after the report is written |
