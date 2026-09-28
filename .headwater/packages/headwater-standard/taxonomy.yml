@@ -237,7 +237,12 @@ taxonomy: headwater/standard
 # each carries a recipe rather than a bare instruction. One package version
 # covers every content file it publishes, this one included, so the number
 # here moves with a change to either.
-version: 4.9.1
+#
+# 4.10.0 adds `OB-LINK-3` and `CT-LINK-3`: a prose link whose text is exactly
+# the identifier of a document reaches the document that carries it (#1213). It
+# is a minor because a new rule reports a defect no earlier version read, and a
+# consumer corpus with no such link sees no change.
+version: 4.10.0
 
 purposes:
   rationale:
@@ -648,6 +653,13 @@ obligations:
   OB-LINK-2:
     statement: A prose link of a document resolves to a file of the repository
     rationale: A document that moves takes every citation of it with it, and the author who moved it reads nothing about the nine documents that now point at a path with no file. The break is silent in a way an author cannot notice, because each dead citation sits in a document that was not edited
+    class: cohesion
+    prevents: content.inconsistent
+    severity: medium
+
+  OB-LINK-3:
+    statement: A prose link whose text is the identifier of a document reaches the document that carries that identifier
+    rationale: A link whose text names one decision and whose path reaches another resolves, so no path or heading rule reads it. The reader follows it, reads the wrong document, and has no signal that it is wrong
     class: cohesion
     prevents: content.inconsistent
     severity: medium
@@ -1066,6 +1078,13 @@ controls:
   CT-LINK-2:
     mechanism: check:link.path.unresolved
     discharges: [OB-LINK-2]
+    trigger: pull_request
+    posture: advisory
+    acts: detective
+
+  CT-LINK-3:
+    mechanism: check:link.identifier.mismatch
+    discharges: [OB-LINK-3]
     trigger: pull_request
     posture: advisory
     acts: detective
