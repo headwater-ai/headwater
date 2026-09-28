@@ -6128,13 +6128,32 @@ fn derived(root: &Path) -> ExitCode {
 ///
 /// It writes to standard error. `--format` puts one artifact on standard
 /// output, and a line about a file this run wrote is not part of that artifact.
-fn fix(root: &Path, ctx: &Context, cached: bool) -> Result<Fixed, ExitCode> {
+///
+/// **The run the patches come from is scoped to the same change as the report
+/// run**, bound against the corpus this run walked. A patch that records a
+/// verification is offered only where the change states that its author
+/// re-read the document (#1259), so a fix run with no change would offer none
+/// even under `--fix --change`.
+fn fix(
+    root: &Path,
+    ctx: &Context,
+    change: Option<&headwater_check::change::Unbound>,
+    cached: bool,
+) -> Result<Fixed, ExitCode> {
     let loaded = load(root)?;
     let mut cache = match cached {
         true => Cache::at(root, &loaded.bound.digest, &rules_digest()),
         false => Cache::disabled(),
     };
-    let run = loaded.check(root, &loaded.declared(), ctx, &mut cache);
+    let ctx = match change {
+        None => ctx.clone(),
+        Some(unbound) => ctx.clone().scoped_to(
+            unbound
+                .clone()
+                .bind(|path| loaded.census.rows.iter().any(|row| row.path == path)),
+        ),
+    };
+    let run = loaded.check(root, &loaded.declared(), &ctx, &mut cache);
     // Held for the account rather than said here. A standard error that
     // cannot take this line must not stop the patches below, and the account
     // is where the caller reads what this run did to the disk.
@@ -6254,7 +6273,7 @@ fn refusal_account(refused: &[headwater_scaffold::fix::Refused]) -> String {
 /// [`headwater_adapter::render`] wrote, so it is byte for byte what a terminal
 /// reads on standard output. No cache, on the rule the whole server follows.
 fn fix_over(root: &Path, ctx: &Context, format: Format) -> Result<Written, String> {
-    let fixed = fix(root, ctx, false).map_err(|_| {
+    let fixed = fix(root, ctx, None, false).map_err(|_| {
         "the fixer refused a file, and the account is on the standard error of the process \
          serving this"
             .to_string()
@@ -6389,7 +6408,7 @@ fn checked(root: &Path, asked: Asked) -> Result<ExitCode, ExitCode> {
     let mut unsaid = false;
     let refused = match fixing {
         false => Vec::new(),
-        true => match fix(root, &ctx, cached) {
+        true => match fix(root, &ctx, unbound.as_ref(), cached) {
             Ok(fixed) => {
                 unsaid = say(&fixed.account).is_err();
                 fixed.refused
