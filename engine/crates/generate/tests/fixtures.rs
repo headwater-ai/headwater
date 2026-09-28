@@ -752,9 +752,10 @@ fn this_repository_generates_its_thirty_nine_artifacts_and_accounts_for_the_rest
          document, then the redirect map, the verb index, the consumer surface page, the \
          site navigation and the descriptor, in that order"
     );
-    // Two declared shelves hold no document, `specifications` and
+    // Three declared shelves hold no document: `specifications`,
     // `explanations` (#1005, which put its first account on the process
-    // shelf and none on the product one). The
+    // shelf and none on the product one) and `subsystems` (HW-DR-0098, whose
+    // first spec #1288 writes, and which moves this literal back to 7). The
     // `process_decisions` shelf held none for one commit, which put this
     // literal at 8 and left `docs/process/decisions/README.md` out of the
     // list above, and `how_to` held none from the taxonomy that declared it
@@ -768,7 +769,7 @@ fn this_repository_generates_its_thirty_nine_artifacts_and_accounts_for_the_rest
     // reason is a property of this engine rather than of the corpus.
     assert_eq!(
         plan.unwritten.len(),
-        7,
+        8,
         "a projection produced neither a file nor a reason"
     );
     for unwritten in &plan.unwritten {

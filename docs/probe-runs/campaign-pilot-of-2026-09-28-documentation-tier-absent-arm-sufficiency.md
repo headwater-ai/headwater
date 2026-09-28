@@ -1,8 +1,8 @@
 ---
 id: HW-RUN-campaign-pilot-of-2026-09-28-documentation-tier-absent-arm-sufficiency
-status: current
+status: deprecated
 status_since: 2026-09-28
-summary: "The absent arm of the documentation tier over the sufficiency selection: 12 sessions, 236 cents, the intent hook live in 0."
+summary: "The absent arm of the documentation tier over the sufficiency selection: 12 sessions, 236 cents, the intent hook live in 0. The recording is retired, because a later change moved the lock it pins."
 last_verified: 2026-09-28
 tier: documentation
 arm: absent
@@ -33,6 +33,8 @@ cost_cents: 236
 **One batch, one tree.** Every session of the pilot, over seven selections and both arms, ran in a fresh copy of one `git archive` of commit `f035296f`, in one order that seed 980 shuffled, four at a time, on `claude-sonnet-5` with a cap of 60 turns. Each workspace lost the instrument and every record under `docs/` that names a probe of the batch (`tools/probe/seal.sh`), and each absent workspace also lost its tier's ablation (`tools/probe/ablate.sh`). No workspace held a `.git` pointer or a built engine, so the intent hook was live in no session of either arm, which is what every earlier recording met.
 
 **The oracle.** A `patched` artifact of either arm was checked in a copy of the present tree with the artifact written into it (`probe-transform.sh --oracle-tree`), so one oracle graded both arms.
+
+**This transcript stands at `deprecated`, and the reason is the lock it pins.** The digest above is the lock of the tree that these pilot sessions met. The taxonomy change that declared the `subsystem_spec` kind on 2026-09-28 moved that lock, and the first of the five confirmations now refuses this recording. The result derived from it carries no verdict on a later tree, and its verdicts stand only in the history of that result. A reader may take no rate from it as a measurement of a tree whose lock differs from the digest above. The full campaign batch records its own sessions.
 
 ## Events
 

@@ -1,8 +1,8 @@
 ---
 id: HW-RUN-second-campaign-pilot-of-2026-09-28-campaign-tier-present-arm-navigability
-status: current
+status: deprecated
 status_since: 2026-09-28
-summary: "The present arm of the campaign tier over the navigability selection: 3 sessions, 98 cents, the intent hook live in 3."
+summary: "The present arm of the campaign tier over the navigability selection: 3 sessions, 98 cents, the intent hook live in 3. The recording is retired, because a later change moved the lock it pins."
 last_verified: 2026-09-28
 tier: campaign
 arm: present
@@ -31,6 +31,8 @@ cost_cents: 98
 **This is a second pilot and not the campaign.** `tools/probe/campaign.sh` recorded it on 2026-09-28 at one repetition per probe, to test the three changes the owner ruled on [#980](https://github.com/headwater-ai/headwater/issues/980) after the first pilot. First, every workspace of both arms carries the built `headwater`, so the intent hook can run in a present-arm session. Second, a closed-set word alone on the final line is the answer. Third, the seal removes HW-OBL-0198, the answer key of the `patched` probe. No comparison pools it with the full run, and no obligation is restated on it.
 
 **One batch, one tree.** Every session ran in a fresh copy of one `git archive` of commit `ed9e61a7`, with the engine that commit builds, in one order that seed 981 shuffled, four at a time, on `claude-sonnet-5` with a cap of 60 turns. Each workspace lost the instrument, every record under `docs/` that names a probe of the batch, and the answer keys of those probes. Each absent workspace also lost its tier's ablation.
+
+**This transcript stands at `deprecated`, and the reason is the lock it pins.** The digest above is the lock of the tree that these pilot sessions met. The taxonomy change that declared the `subsystem_spec` kind on 2026-09-28 moved that lock, and the first of the five confirmations now refuses this recording. The result derived from it carries no verdict on a later tree, and its verdicts stand only in the history of that result. A reader may take no rate from it as a measurement of a tree whose lock differs from the digest above. The full campaign batch records its own sessions.
 
 ## Events
 
