@@ -136,6 +136,7 @@ fn run_over(base: &Path, adoption: Option<&Mapping>) -> Run {
             config: &config,
             register: &register,
             observations: &headwater_check::Observations::empty(),
+            pin: None,
             adoption,
             source: "fixtures/check.taxonomy.yml",
         },

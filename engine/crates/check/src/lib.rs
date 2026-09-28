@@ -223,7 +223,7 @@ use headwater_graph::{Declarations, Graph};
 /// The order is the five origins of
 /// [spec 12](../../../../docs/spec/12-check-layer.md#the-five-origins-of-a-check),
 /// which is Shape, then Graph, then the runner's own accounting.
-pub const RULES: [&str; 41] = [
+pub const RULES: [&str; 42] = [
     facet_required::RULE,
     facet_value::RULE,
     facet_blank::RULE,
