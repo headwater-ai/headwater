@@ -1659,6 +1659,10 @@ surface:
     - rm
     - wc
     - xargs
+    - apt-get
+    - sudo
+    - install
+    - tee
   companions:
     - "headwater probe"
     - "headwater neighbors"

