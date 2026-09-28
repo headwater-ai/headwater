@@ -3,8 +3,8 @@
 //!
 //! # The gap this closes
 //!
-//! A document could draw on itself, supersede itself or conflict with itself,
-//! and no rule reported it ([#1232](https://github.com/headwater-ai/headwater/issues/1232)).
+//! A document could draw on itself, supersede itself or govern itself, and no
+//! rule reported it ([#1232](https://github.com/headwater-ai/headwater/issues/1232)).
 //! The target resolved, so [`crate::target`] passed it. The relation admits the
 //! document's kind at both ends, so [`crate::endpoint`] passed it too. The
 //! graph kept an edge whose two ends are one node.
