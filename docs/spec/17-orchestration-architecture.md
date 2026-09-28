@@ -28,15 +28,22 @@ relations:
   governs:
     - to: .claude/commands/next-run.md
       verified_revision: sha256:597229563393b2e3e7c32b5c09dfbd644a0c793dcab0d55f27839fc30c3824aa
-    - .claude/commands/next.md
-    - .claude/agents/hw-queue.md
-    - .claude/agents/hw-adjudicate.md
-    - .claude/agents/hw-build.md
-    - .claude/agents/hw-verify.md
-    - .claude/agents/hw-integrate.md
+    - to: .claude/commands/next.md
+      verified_revision: sha256:2187df478cc9af688294a818636190d36e4fda10e8cc416e9581d419ec37b643
+    - to: .claude/agents/hw-queue.md
+      verified_revision: sha256:3e7a6397fd22c80436ff488cb2be0c8059f28924c1698706be5e0d1b782c9c6a
+    - to: .claude/agents/hw-adjudicate.md
+      verified_revision: sha256:c957a511466d03fcf8d7d628b97ebc8e416ce61f85d1aab1a379342ff8a7c8d0
+    - to: .claude/agents/hw-build.md
+      verified_revision: sha256:562d9f7d962f05931a9062f1d687de2fb4a6d019ad8ef83c59c3ef1589e84e8e
+    - to: .claude/agents/hw-verify.md
+      verified_revision: sha256:fb4b14973d51715a6c8a6516eb918a1434bfa04c48f4574619d7601b31257b1b
+    - to: .claude/agents/hw-integrate.md
+      verified_revision: sha256:6029c93103316f8fc40e7f06ce0cc772bcffa9ccb27ec931ecb3ed4dfef369b4
     - to: .claude/skills/hw-run-policy/SKILL.md
       verified_revision: sha256:164c3c18eae39af9f10a5750d12be0c9b82dcd142bbba5d929d8d1112f999591
-    - .claude/skills/hw-verification-bar/SKILL.md
+    - to: .claude/skills/hw-verification-bar/SKILL.md
+      verified_revision: sha256:90ea30fa0995ba977d6e5a83fa3418f567d90fff3363718113f9ea81cfc4fcf7
 ---
 
 # 17 — Orchestration architecture
@@ -131,7 +138,7 @@ flowchart LR
 
 [`.claude/agents/hw-build.md`](../../.claude/agents/hw-build.md) builds one adjudicated issue in a worktree of its own and opens the pull request.
 
-**It owns the branch, the commits and the pull request.** It claims the issue on the board before its first commit, because a board claim is atomic and needs no coordinator. It extends the contract, the decision clause or the case table the note names before it writes any implementation. It repairs its own red continuous-integration run before it reports.
+**It owns the branch, the commits and the pull request.** It claims the issue on the board before its first commit, because a board claim is atomic and needs no coordinator. It extends the contract, the decision clause or the case table the note names before it writes any implementation. It repairs a format, lint or unblessed-fixture failure in its own continuous-integration run before it reports. A red run that it cannot repair is the first line of its report.
 
 **It never merges, never force-pushes and never touches the shared checkout.** The integrator alone writes `main`. A generating verb run in the shared checkout while a merge lands is the silent bad merge from the other direction.
 
@@ -155,7 +162,7 @@ flowchart LR
 
 **A fresh integrator runs each dispatch and exits with it.** A long-lived integrator accumulates every merge it ran and then compacts, which is the parent's own failure one level down.
 
-**The queue tests the composition, so a branch that is only behind `main` is not brought current by hand.** The queue runs CI on the tip of a group built from `main` and the queued heads. It lands one squash commit for each pull request. The integrator merges `main` into a branch only when the queue reports a conflict. It reports an ejected pull request with the failing check, and the parent rules on it again.
+**The queue tests the composition, so a branch that is only behind `main` is not brought current by hand.** The queue runs CI on the tip of a group built from `main` and the queued heads. It lands one squash commit for each pull request. The integrator merges `main` into a branch on two conditions only. The queue ejects the branch for a conflict, or GitHub reports a conflict before the integrator enqueues it. It reports an ejected pull request with the failing check, and the parent rules on it again.
 
 **It fuses six mechanical acts that all touch the one checkout.** The merge, the rebuild, the regenerate, the write-back, the claim release and the ledger line are one dispatch rather than six parent turns. It rebuilds the engine before it regenerates, once after the last merge of the dispatch. A binary built before the merges writes what the previous engine produced, and then passes its own output.
 

@@ -3,7 +3,7 @@ id: HW-DR-0049
 status: current
 status_since: 2026-09-23
 summary: "A recorded artifact holds one record per entity and derives every total, because two branches that each add one document write the same new total and a merge takes it without a conflict."
-last_verified: 2026-09-27
+last_verified: 2026-09-28
 title: "A corpus-wide fold is derived and never stored"
 provenance:
   warrant: accepted
@@ -15,7 +15,7 @@ provenance:
 relations:
   governs:
     - to: .gitattributes
-      verified_revision: sha256:73a7006dde08da70ee169db44df8c313234197560d3a5c667ab587d6e2245bc5
+      verified_revision: sha256:b925d4bb29ba3ab5498d00accf3c11a74dd83cc88cecc6fc37ef931163f95ec8
   traces_to:
     - HW-EVAL-what-a-check-can-know
     - engine/crates/census/src/census.rs
