@@ -977,6 +977,15 @@ mod tests {
             Ok(clean),
             "the clean candidate after it is taken"
         );
+
+        // A gitfile names a repository as a `.git` directory does, and a
+        // worktree of a repository has one. Read only a directory, and this fails.
+        std::fs::remove_dir_all(outer.join(".git")).expect("the directory goes");
+        std::fs::write(outer.join(".git"), "gitdir: /elsewhere\n").expect("the gitfile writes");
+        assert!(
+            clean_base(&[outer.join("tmp")]).is_err(),
+            "a candidate below a gitfile is no base"
+        );
     }
 
     /// An add and a modify, held against a hand-written manifest.

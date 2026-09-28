@@ -73,6 +73,13 @@ pub(crate) fn clean_base(candidates: &[PathBuf]) -> Result<PathBuf, String> {
     Err(refused.join("; "))
 }
 
+/// The directory [`outside_base`] finds, or `std::env::temp_dir()` with
+/// nothing printed where there is none, for a scratch tree whose cases do
+/// not all need it outside git.
+pub(crate) fn scratch_base() -> PathBuf {
+    clean_base(&base_candidates()).unwrap_or_else(|_| std::env::temp_dir())
+}
+
 /// `std::env::temp_dir()`, then on unix the three directories a host keeps
 /// for scratch files, in the order [`outside_base`] tries them.
 fn base_candidates() -> Vec<PathBuf> {
@@ -138,8 +145,7 @@ impl Root {
         // Under a directory outside every git repository where one is found,
         // so a case that reads the root before `git init` reads no repository
         // above it. Where none is, such a case returns before it calls this.
-        let base = clean_base(&base_candidates()).unwrap_or_else(|_| std::env::temp_dir());
-        let at = base.join(format!("headwater-cli-root-{}-{label}", std::process::id()));
+        let at = scratch_base().join(format!("headwater-cli-root-{}-{label}", std::process::id()));
         let _ = std::fs::remove_dir_all(&at);
         std::fs::create_dir_all(&at).expect("the root is made");
 
