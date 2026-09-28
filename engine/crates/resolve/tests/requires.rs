@@ -49,10 +49,14 @@ fn a_bundle_that_names_two_waits_for_both() {
         .expect("it orders");
     assert_eq!(ordered.order, vec![1, 2, 0]);
     assert_eq!(ordered.requires[2], vec![0, 1]);
+
+    // The same names listed the other way round, so the first name in
+    // `requires` is the last of the two in the list.
+    let ordered = order::order(&[bundle("c", "a, bb"), bundle("bb", ""), bundle("a", "")])
+        .expect("it orders");
+    assert_eq!(ordered.order, vec![1, 2, 0]);
 }
 
-/// A bundle that is ready keeps its place in the list, and one that waits is
-/// passed by every ready bundle listed after it.
 #[test]
 fn a_waiting_bundle_is_passed_by_a_later_bundle_that_is_ready() {
     let bundle = |name: &str, requires: &str| {

@@ -4,11 +4,6 @@
 # This one appends to a list the `provider` bundle declares, and adds a key
 # under a mapping the provider declares.
 #
-# It is listed first on purpose. The resolver applies the provider first
-# whatever order the selection states, so both permutations of this case give
-# one taxonomy, and the lock a consumer writes does not depend on the order of
-# its `bundles:` list.
-#
 # The `add_to` meets the provider's `add` at one list, so without `requires`
 # the pair does not commute (`dependent-add-to-without-requires`). The `add`
 # writes a leaf the provider does not write, so it commutes with or without

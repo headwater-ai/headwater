@@ -97,17 +97,10 @@ fn selected_as(file: &str) -> Option<String> {
         .then(|| name.to_string())
 }
 
-/// HW-DR-0095: a bundle applies after every bundle it names in `requires`, so
-/// a consumer whose `bundles:` list states a dependent before its dependency
-/// writes the lock one that states them the other way writes, byte for byte,
-/// and not only one digest. The `sources:` list is in the bytes, and it is
-/// listed in application order.
-///
-/// This repository's own selection is the case: `design-spec` and
-/// `decision-record` both require `evidence-and-obligation`. The order between
-/// those two is held fixed, `design-spec` first. The three orders that place
-/// `evidence-and-obligation` first, between, and last are written out, and
-/// each applies it first and then the other two in list order.
+/// This repository's own selection: `design-spec` and `decision-record` both
+/// require `evidence-and-obligation`. The order between those two is held
+/// fixed, `design-spec` first. The three orders that place
+/// `evidence-and-obligation` first, between, and last are written out.
 #[test]
 fn every_order_of_a_selection_writes_one_lock_and_lists_each_dependency_first() {
     let root = repository_root();
