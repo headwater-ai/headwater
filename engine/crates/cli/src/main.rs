@@ -3818,6 +3818,30 @@ fn load_against(root: &Path, bound: Bound) -> Result<Loaded, ExitCode> {
             }
         };
     }
+    // One resolver per pinned corpus export (#1233), in the same shape as the
+    // imports above. Each pin names its own resolver, so an anchor into one
+    // repository is looked up in that repository's export and in no other.
+    let harvests = match headwater_import::harvest::declared(root) {
+        Ok(harvests) => harvests,
+        Err(why) => {
+            eprintln!(
+                "headwater: {}",
+                err("the pinned export declarations did not read")
+            );
+            eprintln!("{}", indent(&err(&why)));
+            return Err(ExitCode::FAILURE);
+        }
+    };
+    for export in headwater_import::harvest::over(root, &harvests) {
+        resolvers = match resolvers.with(Box::new(export)) {
+            Ok(resolvers) => resolvers,
+            Err(why) => {
+                eprintln!("headwater: {}", err("the resolver set is ambiguous"));
+                eprintln!("{}", indent(&err(&why)));
+                return Err(ExitCode::FAILURE);
+            }
+        };
+    }
 
     // `comment-scan`: registered only where a declared anchor kind names it and
     // carries a pattern. HW-DR-0073 ruling 4 puts that pattern in the overlay
