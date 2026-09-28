@@ -6,10 +6,11 @@ summary: "The integrator hands each ruled pull request to the GitHub merge queue
 last_verified: 2026-09-28
 title: "Merges go through the GitHub merge queue, one squash commit per pull request"
 provenance:
-  warrant: asserted
+  warrant: accepted
   agency: agent
   drafted_by: claude-opus-5.5
   activity: draft
+  accepted_by: j.baxter
   evidence_basis: evidenced
 relations:
   governs:

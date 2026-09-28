@@ -6,10 +6,11 @@ summary: "The pages under site/ commit every data-figure element empty. A CI job
 last_verified: 2026-09-28
 title: "A figure on a hand-built page is measured when the site is published, and the committed page carries none"
 provenance:
-  warrant: asserted
+  warrant: accepted
   agency: agent
   drafted_by: claude-opus-5
   activity: measure+draft
+  accepted_by: j.baxter
   evidence_basis: evidenced
 relations:
   supersedes:
