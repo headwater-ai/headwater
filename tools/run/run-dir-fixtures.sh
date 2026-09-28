@@ -428,6 +428,31 @@ same '  but the next run hands the issue out again' 40 "$(sh "$tool" next "$runb
 sh "$tool" claim "$runb" 40 issue-40 f40 >/dev/null 2>&1
 same '  and the OWNER line of the earlier run still answers the ruling line' 41 "$(sh "$tool" next "$runb" 2>&1)"
 
+printf '\n# the stage form next-run.md gives the parent leaves a handover resume can act on\n'
+# Verify-2 of PR #1281: next-run.md told the parent to run a bare
+# `stage <run> <issue> adjudicated`. Followed into a drain, that left a
+# handover `resume` read as `claim ` with no artifacts and no note. This case
+# takes the form from next-run.md itself, fills its placeholders, and follows
+# it into a drain and a resume, so a command file that drops a field goes red.
+cmd="$root/.claude/commands/next-run.md"
+form=$(grep -o 'run-dir\.sh stage <run> <issue> adjudicated[^`]*' "$cmd" | head -n 1)
+same 'next-run.md gives the parent a stage form for a BUILD report' 1 "$([ -n "$form" ] && echo 1 || echo 0)"
+own=$(sh "$tool" start own-form 2>/dev/null)
+printf '# Queue\n\n1. #60 A | none | x\n' > "$own/queue.md"
+touch "$own/drain"
+filled=$(printf '%s' "$form" | sed -e "s|^run-dir\.sh stage <run> <issue>|stage $own 60|" \
+    -e 's|<path>|/s/adjudication.md|g' -e 's|<name>|issue-60|g' -e 's|<a,b>|f60,g60|g')
+# shellcheck disable=SC2086
+sh "$tool" $filled >/dev/null 2>&1; status=$?
+same '  and in drain that form writes the checkpoint' '0 stage adjudicated' "$status $(head -n 1 "$own/handover/60" 2>/dev/null)"
+sh "$tool" claim "$own" 60 issue-60 f60 g60 >/dev/null 2>&1
+rm -f "$own/drain"
+same '  and the next session claims the footprint it names' '60 adjudicated claim f60 g60' "$(sh "$tool" resume "$own" 2>&1)"
+same '  and the note it names reaches hw-iterate' 'note /s/adjudication.md' "$(grep '^note ' "$own/handover/60" 2>/dev/null)"
+sh "$tool" stage "$own" 61 adjudicated >/dev/null 2>"$scratch/err"; status=$?
+same 'a bare stage adjudicated, with no note and no footprint, is refused with exit 2' '2 0' \
+    "$status $(ls "$own/handover" | grep -c '^61$')"
+
 printf '\n# a veto after a restart: verified-pass goes back to verified-fail, and the fields carry\n'
 # Verify-1 of PR #1281: after a restart, the parent rules a verified-pass
 # handover and may veto it, but no path took the veto back to a builder. The
