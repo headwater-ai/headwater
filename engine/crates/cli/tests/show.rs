@@ -395,6 +395,108 @@ fn explain_and_show_refuse_a_path_outside_the_repository_as_outside_it() {
     }
 }
 
+/// [#1249](https://github.com/headwater-ai/headwater/issues/1249): five routes
+/// find a document by a typed path, and a path outside the repository gets one
+/// sentence from all five, byte for byte. The routes are `explain` and `show`,
+/// and the MCP `explain`, `related` and `governing_docs_for_path` tools. A
+/// symlink in the root that leads out of it is outside too: `escape/x.md` is
+/// a file on another part of the host, and no route reads it as a path of
+/// this corpus.
+#[cfg(unix)]
+#[test]
+fn every_path_route_refuses_a_path_outside_the_repository_in_one_sentence() {
+    use std::io::Write;
+
+    let root = Root::new("one-sentence");
+    let elsewhere = root.at.with_extension("elsewhere");
+    let _ = std::fs::remove_dir_all(&elsewhere);
+    std::fs::create_dir_all(&elsewhere).expect("the outside directory is made");
+    std::fs::write(elsewhere.join("x.md"), b"a file outside the root\n")
+        .expect("the outside file writes");
+    std::os::unix::fs::symlink(&elsewhere, root.at.join("escape")).expect("the link is made");
+
+    let targets = [
+        "escape/x.md",
+        "./escape/x.md",
+        "/etc/passwd",
+        "../outside.md",
+    ];
+    let mut failures: Vec<String> = Vec::new();
+    for target in targets {
+        let sentence = headwater_query::outside_text(target);
+        assert_eq!(
+            sentence,
+            format!("`{target}` is outside this repository, or is not a path it can read"),
+            "the shared sentence is the documented one"
+        );
+        for (how, run) in RUNS {
+            for verb in ["explain", "show"] {
+                let refused = run(&root, &[verb, target]);
+                let stderr = String::from_utf8_lossy(&refused.stderr).into_owned();
+                if refused.status.code() != Some(1)
+                    || !refused.stdout.is_empty()
+                    || stderr != format!("headwater: {sentence}\n")
+                {
+                    failures.push(format!("`{verb} {target}` with {how}: {stderr:?}"));
+                }
+            }
+        }
+
+        let mut input = String::from(
+            "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{}}\n",
+        );
+        let tools = [
+            ("explain", "target"),
+            ("related", "target"),
+            ("governing_docs_for_path", "path"),
+        ];
+        for (at, (tool, key)) in tools.iter().enumerate() {
+            input.push_str(&format!(
+                "{{\"jsonrpc\":\"2.0\",\"id\":{},\"method\":\"tools/call\",\"params\":\
+                 {{\"name\":\"{tool}\",\"arguments\":{{\"{key}\":\"{target}\"}}}}}}\n",
+                at + 2
+            ));
+        }
+        let mut child = Command::new(env!("CARGO_BIN_EXE_headwater"))
+            .args(["mcp", "--now", "2026-09-28", "--root"])
+            .arg(&root.at)
+            .stdin(std::process::Stdio::piped())
+            .stdout(std::process::Stdio::piped())
+            .stderr(std::process::Stdio::null())
+            .spawn()
+            .expect("the binary runs");
+        child
+            .stdin
+            .take()
+            .expect("the standard input is piped")
+            .write_all(input.as_bytes())
+            .expect("the requests write");
+        let served = child.wait_with_output().expect("the server ends");
+        let stdout = String::from_utf8_lossy(&served.stdout).into_owned();
+        for (at, (tool, _)) in tools.iter().enumerate() {
+            let id = format!("\"id\":{},", at + 2);
+            let line = stdout.lines().find(|line| line.contains(&id)).unwrap_or("");
+            // The sentence holds no quote, so the text member ends at the
+            // first one, and its one escape is the closing newline.
+            let text = line
+                .split("\"text\":\"")
+                .nth(1)
+                .and_then(|rest| rest.split('"').next())
+                .unwrap_or("")
+                .replace("\\n", "\n");
+            if text != format!("{sentence}\n") {
+                failures.push(format!("MCP `{tool} {target}`: {text:?}"));
+            }
+        }
+    }
+    let _ = std::fs::remove_dir_all(&elsewhere);
+    assert!(
+        failures.is_empty(),
+        "each route refuses in the one sentence:\n{}",
+        failures.join("\n")
+    );
+}
+
 /// A `./` spelling is a path, and never an identifier. `./HW-DR-0001` names
 /// the file `HW-DR-0001` at the root, and no document is written there, so it
 /// is refused as a path outside every corpus root, which is what `main` said

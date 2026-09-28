@@ -92,6 +92,7 @@
 //! links.
 
 pub mod anchors;
+pub mod harvest;
 pub mod snapshot;
 pub mod write;
 

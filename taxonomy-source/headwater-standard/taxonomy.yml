@@ -158,7 +158,14 @@ taxonomy: headwater/standard
 # obligation and one more blocking control. The rule and its severities do not
 # change: a live target that an incoming edge sets to another state is an
 # error, and a target already terminal at another state is a warning (#1212).
-# It follows 4.9.1 (#1106).
+# It follows 4.9.2 (#1191).
+#
+# 4.9.2 changes the starter doctrine and nothing else. Its *Your writing
+# profile* paragraph now names `outside_root` as the second route by which a
+# language regime reaches prose, as HW-DR-0084 promised once the engine read
+# it (#1191). No rule reads the doctrine, so this is a patch. It takes a new
+# version rather than new bytes under 4.9.1, because one version that names
+# two digests is drift. It follows 4.9.1.
 #
 # 4.9.1 changes the promotion threshold of `CT-ID-5` and nothing else. The
 # threshold said that `identifier.claim.stale` reports nothing for a claimant

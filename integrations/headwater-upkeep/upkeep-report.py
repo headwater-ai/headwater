@@ -6,7 +6,10 @@
 #
 #   Touched     the changed documents, each changed path that a document
 #               governs with that document, and each path the change deleted
-#               or renamed away with the document that governed it at the base
+#               or renamed away with the document that governed it at the base,
+#               and each path still on the tree that a document the change
+#               deleted governed at the base, whether or not the change
+#               names that path
 #   Stale       what the engine reports as suspect: `relation.target.suspect`
 #               findings and the `evidence.suspect` edges of `route`
 #   Owed        the other findings of `headwater check --change`, by rule and
@@ -34,9 +37,12 @@
 # finding that a gate reads.
 #
 # Usage: upkeep-report.py <work-dir> <report-path>
+#        upkeep-report.py --lost <work-dir> <root>
 # <work-dir> holds what `upkeep.sh` wrote: changed.txt, gone.tsv,
 # check.json, check.exit, base-check.json, diff.patch, routes.tsv, route/<n>.json,
-# routes-base.tsv and route-base/<n>.json.
+# routes-base.tsv, route-base/<n>.json, explains-base.tsv, explain-base/<n>.json,
+# lost.txt, routes-lost.tsv and route-lost/<n>.json. The `--lost` form prints
+# lost.txt: each path a deleted document governed that is still under <root>.
 import json
 import os
 import re
@@ -107,6 +113,53 @@ def classify(path, route):
     return "no_edge", None, suspect
 
 
+GLOB_BYTES = set("*?[{")
+
+
+def lost_governors(work, keep):
+    """Read what each document the change deleted governed at the base, from
+    `explain-base/<n>.json`. Return (lost, unexpanded). `lost` maps each
+    governed path for which `keep(path)` holds to the deleted documents that
+    governed it. `unexpanded` holds (pattern, document, matched count) for a
+    pattern the engine did not expand: an engine before `reach.members[].paths`
+    names the paths only of a literal anchor."""
+    lost, unexpanded = defaultdict(list), []
+    for line in read_lines(os.path.join(work, "explains-base.tsv")):
+        n, doc = line.split("\t", 1)
+        data = load_json(os.path.join(work, "explain-base", f"{n}.json"))
+        if data is None:
+            continue
+        document = {
+            "path": data.get("path") or doc,
+            "id": data.get("id"),
+            "kind": data.get("kind"),
+            "summary": data.get("summary"),
+        }
+        for edge in data.get("related") or []:
+            # Only an edge that this document declared, with this document as
+            # the governing end, names a path the document governed. A
+            # document target names an identifier, which is no path on the
+            # tree, so the existence test in `keep` drops it.
+            if edge.get("inbound") or edge.get("governs") != "source":
+                continue
+            members = (edge.get("reach") or {}).get("members")
+            if members is None:
+                members = [{"pattern": t} for t in edge.get("targets") or []]
+            for member in members:
+                pattern = member.get("pattern") or ""
+                if "paths" in member:
+                    paths = member.get("paths") or []
+                elif pattern and not set(pattern) & GLOB_BYTES:
+                    paths = [pattern]
+                else:
+                    unexpanded.append((pattern, document, member.get("matched")))
+                    continue
+                for path in paths:
+                    if keep(path) and document not in lost[path]:
+                        lost[path].append(document)
+    return lost, unexpanded
+
+
 def pointer_lines(pointers):
     out = []
     for pointer in pointers:
@@ -150,14 +203,15 @@ def unquote(name):
 
 
 def side_path(field, prefix):
-    """Read the name on a `---` or `+++` line. Git ends an unquoted name that
-    holds a space with a TAB, so that a patch tool can find where the name
-    ends. A name with a TAB of its own is always quoted, so the one trailing
-    TAB of an unquoted name is git's and never the file's. Return None for
+    """Read the name on a `---` or `+++` line. Git ends a name that holds a
+    space with a TAB, so that a patch tool can find where the name ends, and
+    it does so whether or not it also quotes the name. A name with a TAB of
+    its own is always quoted, and git writes that TAB as `\\t` inside the
+    quotes, so a trailing TAB is git's and never the file's. Return None for
     /dev/null."""
     if field == "/dev/null":
         return None
-    if not field.startswith('"') and field.endswith("\t"):
+    if field.endswith("\t"):
         field = field[:-1]
     field = unquote(field)
     return field[len(prefix):] if field.startswith(prefix) else field
@@ -256,10 +310,26 @@ def split_findings(findings, base_findings, reached, diff):
     return listed, elsewhere, escaped
 
 
+def print_lost(work, root):
+    """`--lost`: print each path a deleted document governed at the base that
+    is still on the tree under <root>, one per line, for `upkeep.sh` to
+    route. A path the change deleted or renamed away is not on the tree, so
+    the one test drops it too."""
+    lost, _ = lost_governors(work, lambda path: os.path.exists(os.path.join(root, path)))
+    for path in sorted(lost):
+        print(path)
+
+
 def main():
+    if sys.argv[1] == "--lost":
+        print_lost(sys.argv[2], sys.argv[3])
+        return
     work, out = sys.argv[1], sys.argv[2]
     changed = read_lines(os.path.join(work, "changed.txt"))
     gone = [line.split("\t") for line in read_lines(os.path.join(work, "gone.tsv"))]
+    lost_paths = set(read_lines(os.path.join(work, "lost.txt")))
+    lost, unexpanded = lost_governors(work, lambda path: path in lost_paths)
+    lost_routes = load_routes(work, "routes-lost.tsv", "route-lost")
     check = load_json(os.path.join(work, "check.json"))
     base_check = load_json(os.path.join(work, "base-check.json"))
     check_exit = "".join(read_lines(os.path.join(work, "check.exit"))) or "?"
@@ -308,6 +378,11 @@ def main():
         f"This change touches {len(changed)} path(s): {len(documents)} document(s) and "
         f"{len(others)} other path(s). A governs edge reaches {governed_count} "
         f"of the {len(others)} other path(s) by name. It deletes or renames away {len(gone)} path(s)."
+        + (
+            f" It deletes a document that governed {len(lost)} path(s) still on the tree."
+            if lost
+            else ""
+        )
     )
     lines.append("")
 
@@ -332,6 +407,20 @@ def main():
             lines.extend(pointer_lines(detail))
         else:
             lines.append(f"- {code(old)}: {what}")
+    # A path the change may not name at all: the document that governed it
+    # is gone, and the path is still here.
+    for path in sorted(lost):
+        kind, detail, _ = classify(path, lost_routes.get(path))
+        if kind == "governed":
+            now = f"{len(detail)} other document(s) govern it now"
+        elif kind == "unread":
+            now = "`route` wrote no report for it, so whether a document governs it now is not measured"
+        else:
+            now = "no document governs it now"
+        lines.append(
+            f"- {code(path)}: this change deleted {len(lost[path])} document(s) that governed it at the base, and {now}"
+        )
+        lines.extend(pointer_lines(lost[path]))
     if len(lines) == before:
         lines.append("No changed path is a document, and no governs edge names a changed path.")
     lines.append("")
@@ -402,6 +491,11 @@ def main():
                 )
         elif kind == "in_scope":
             lines.append(f"- {code(path)}: in the governed scope this corpus declares, and no document governs it.")
+        elif kind == "no_edge" and path in lost:
+            lines.append(
+                f"- {code(path)}: no governs edge names it now. Touched names the document that governed it "
+                "at the base, which this change deleted."
+            )
         elif kind == "no_edge":
             lines.append(f"- {code(path)}: no governs edge names it, so nothing here says which document it could stale.")
         elif kind == "unread":
@@ -419,6 +513,13 @@ def main():
             lines.append(f"- {code(old)}: `route` over the base tree wrote no report for it.")
         elif kind != "governed":
             lines.append(f"- {code(old)}: no governs edge named it at the base.")
+    for pattern, document, matched in unexpanded:
+        what = "the paths it matched there" if matched is None else f"the {matched} path(s) it matched there"
+        lines.append(
+            f"- {code(pattern)}: at the base, {code(document.get('path', '?'))} governed this pattern, and this change "
+            f"deleted that document. The engine that ran does not list the paths a pattern matches, so this report "
+            f"does not name {what}."
+        )
     if check is None:
         lines.append("- Every finding: `headwater check --change` wrote no report.")
     elif base_findings is None:
