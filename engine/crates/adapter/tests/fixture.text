@@ -1,6 +1,6 @@
 taxonomy
   headwater/fixture 1.0.0
-  9df1915ec6a29614e9cba30132a126a5cc7591315ce0e880fda4b551982640c0
+  87e6df6eaf5a191d7c8a55956a8fb20fde7ef00970a921d840ae3d84698c54b6
 
 clock
   2026-08-12
@@ -68,7 +68,7 @@ graph
     identifier: the identifier is not a scalar, and an identifier is a word
 
 checks
-  31 seen, 29 classified, 28 checked, 357 check instances
+  31 seen, 29 classified, 28 checked, 358 check instances
         1 generated, held to regeneration by `headwater generate --check`
         1 skipped: no `id` facet, which is the key this engine reads an
           identifier from and which no declaration states
@@ -91,7 +91,7 @@ checks
     AD-1 1 open, 0 closed, holding 1 finding, owner the fixture tree, until
       2027-01-01
       one pair, so that a run carries a migration-pending finding31 documents in
-        the read set, and 6 barriers that no gate carries across a merge
+        the read set, and 7 barriers that no gate carries across a merge
        28 instances of facet.required.missing
        28 instances of facet.value.not_permitted
        28 instances of facet.value.blank
@@ -116,6 +116,7 @@ checks
         2 instances of section.required.missing
         1 instances of link.fragment.unresolved
         1 instances of link.path.unresolved
+        1 instances of link.identifier.mismatch
        29 instances of warrant.promoted
         1 instances of lifecycle.deletion.not_permitted
   suppressions
@@ -196,6 +197,8 @@ checks
       corpus scope, every row of the census, and it is a barrier
     link.path.unresolved
       corpus scope, every row of the census, and it is a barrier
+    link.identifier.mismatch
+      corpus scope, every row of the census, and it is a barrier
     warrant.promoted
       document scope, one document and its front matter, and the version of it
         that stood before the change
@@ -223,9 +226,9 @@ checks
       edge scope, one relation instance and both endpoints, and the committed
         observation snapshot
   register
-    27 obligations: 21 verified, 2 gap, 1 unverifiable, 3 with no disposition
+    28 obligations: 22 verified, 2 gap, 1 unverifiable, 3 with no disposition
        10 high, 9 verified
-        9 medium, 7 verified
+       10 medium, 8 verified
         8 low, 5 verified
     OB-FIX-1 verified, 1 finding is migration-pending under it
     OB-FIX-7 verified, 1 finding escaped under it
@@ -243,16 +246,16 @@ checks
     OB-FIX-20 gap, owner the fixture tree, and no target, and CT-FIX-17 claims
       to discharge it under a mechanism this engine does not implement, which is
       two dispositions
-    24 controls
-       23 posture advisory
+    25 controls
+       24 posture advisory
         1 posture blocking
-       23 acts detective
+       24 acts detective
         1 acts preventive
-       20 name a rule this engine carries
+       21 name a rule this engine carries
         1 name a phase this engine runs
         2 name a mechanism this engine does not implement
         1 name a mechanism outside this engine
-       22 with no promotion record, so nothing states what would promote them
+       23 with no promotion record, so nothing states what would promote them
         1 with criteria
         1 producing facts rather than findings
     escaped findings, in the precedence spec 4 fixes: no waiver reaches a check
@@ -280,8 +283,8 @@ checks
     adoption.task.expired reaches no obligation, so it names none
     language.outside_root.refused reaches no obligation, so it names none
     relation.target.verification.suspect reaches no obligation, so it names none
-  66 findings
-       38 ✗ error
+  67 findings
+       39 ✗ error
        28 ▲ warn
 
   check/evaluations/epsilon.md:4:1 ▲ warn
@@ -448,6 +451,13 @@ checks
     fix: point it at a file that exists, or restore `/spec/00-both-halves.md`. A
       document that moved keeps its identifier, so `headwater explain` finds
       where it went
+  check/spec/07-prose-defects.md:81:70 ✗ error
+    link.identifier.mismatch (OB-FIX-28): the link text names
+      `SPEC-FIX-cited-only`, but `20-fragment-target.md` reaches
+      `check/spec/20-fragment-target.md`, which is `SPEC-FIX-fragment-target`
+    fix: point the link at the document that carries `SPEC-FIX-cited-only`, or
+      change the text to `SPEC-FIX-fragment-target`. `headwater explain
+      SPEC-FIX-cited-only` names where `SPEC-FIX-cited-only` lives
   check/spec/08-contract-met.md:2:1 ✗ error
     identifier.claim.missing: `DR-FIX-0008` is spent by
       check/spec/08-contract-met.md and no file of `.headwater/ids` claims it,
@@ -657,13 +667,14 @@ not reported
       false_positive, until 2030-01-01 (the length is the fixture)
 
 read set
-  lock 9df1915ec6a29614e9cba30132a126a5cc7591315ce0e880fda4b551982640c0
+  lock 87e6df6eaf5a191d7c8a55956a8fb20fde7ef00970a921d840ae3d84698c54b6
   clock 2026-08-12
   barrier identifier.claimed_twice
   barrier identifier.claim.missing
   barrier identifier.claim.stale
   barrier link.fragment.unresolved
   barrier link.path.unresolved
+  barrier link.identifier.mismatch
   barrier lifecycle.deletion.not_permitted
   windowed relation.participation.overdue
   version facet.required.missing 1
@@ -695,6 +706,7 @@ read set
   version section.required.missing 1
   version link.fragment.unresolved 4
   version link.path.unresolved 1
+  version link.identifier.mismatch 1
   version warrant.promoted 1
   version lifecycle.transition.not_permitted 2
   version lifecycle.state.not_admitted 1
@@ -714,14 +726,14 @@ read set
   input check/evaluations/eta.md sha256:d1882e10c05b15d1c6aafcc982b2ecbf429ec169a0fcd7ad11f79dbf5b20228a
   input check/evaluations/gamma.md sha256:bb74fe7df19ea383b01be2f8686fb87dbea18757b4134e601e3e718aeee9e09b
   input check/evaluations/zeta.md sha256:78ec68e48f9e8e1f8826c1280bdb523820556b14e2ac375f21cf8c1915240964
-  input check/spec/00-both-halves.md sha256:765e2163c2bbe8f9455a21519223192112ec14cae419e5cad3324a5c40638632
+  input check/spec/00-both-halves.md sha256:8cdc1e857f7d3693d206faddeec09ef622aa44fbe9d1e378744ae9e2ac49600b
   input check/spec/01-one-half.md sha256:20a913097b2d04bc39e5ff8271b47a21dfaa135f78b5fdda234e38c3a30c7017
   input check/spec/02-cited-only.md sha256:9f4f5fff759b2f04d2956dabbb3cdc0e86bdc8f306159a58ad4f7f80cbad9c82
   input check/spec/03-no-instance.md sha256:bb254e9a27d62cf8ff126895c545a797d9eeadee7e756bd34a7536ce21cba7ad
   input check/spec/04-untyped.md sha256:ef34b3e4254620599be769fb2e28826e330b9a6b8972ed7ef32d2d3baaeddf2b
   input check/spec/05-no-summary.md sha256:e93ab39ba0f3d03cf7593bc046d7c0a5aa0fbf102df0e02e2dbf34c263aa346d
   input check/spec/06-retired.md sha256:d40b65fea5627e9da5693ba6ff1239180b1a3b6a9ab83ed5b414f286d7ded636
-  input check/spec/07-prose-defects.md sha256:15d94e43a05082553a4abfc5753fa0d59393ab379b0a1a4f96c02705285a93eb
+  input check/spec/07-prose-defects.md sha256:0374176cdaaae0476d0f195b7530f5a93646c00bd9c41fe16bcdaf480ec2410d
   input check/spec/08-contract-met.md sha256:1f137d2e39a164a976bcfb76d662b7469171f99bd3ce643c4d3fb2fd247ba34f
   input check/spec/09-contract-missing.md sha256:6bc8ae424b8a20472a5d244ed71613195ad527e11e4739ec7cf5fa88f4315d4a
   input check/spec/10-suppressed.md sha256:2258c21842ba066fc11cadfee7b462909dda6bd93cf7693e9c93fa786382ebba
