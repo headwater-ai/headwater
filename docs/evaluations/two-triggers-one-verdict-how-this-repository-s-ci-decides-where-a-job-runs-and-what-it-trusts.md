@@ -14,7 +14,7 @@ provenance:
 relations:
   governs:
     - to: .github/workflows/ci.yml
-      verified_revision: sha256:c20d607dad2801fe4571a935454c60ba58624f8645ec69004e2b5909f9396efc
+      verified_revision: sha256:fa7e4036e843853f29e8363b64046cfda1c380348fbe4362b9036f4bec440086
 ---
 
 # Two triggers, one verdict: how this repository's CI decides where a job runs and what it trusts

@@ -16,7 +16,7 @@ relations:
     - to: .claude/hooks/wait.sh
       verified_revision: sha256:f4db17bb02513282424adfa8fe12432a834a2329b94c097d0b4c002b873100e6
     - to: tools/run/run-census.sh
-      verified_revision: sha256:994b024bf0bdcfa62bf4a74771ad2338ab6398f3747bf938f66cdddd781795e6
+      verified_revision: sha256:57954a4dfd1fff9fd92571099130aa42cd9dd186df50a2dabce2d4d12e64fe69
     - to: .claude/skills/hw-run-policy/SKILL.md
       verified_revision: sha256:164c3c18eae39af9f10a5750d12be0c9b82dcd142bbba5d929d8d1112f999591
 ---
