@@ -63,6 +63,9 @@
 # also skips an issue the run ruled out with `rule`, and a queue line marked
 # `ruling` that no `OWNER` line answers, because a resumed parent reads only
 # the last five ledger lines and would otherwise dispatch a gated issue.
+# A `RULED` line names the run that wrote it and binds that run alone, and an
+# `OWNER` line binds every later run too (see `ruled_issues`). A `stage` call
+# carries every field it does not name from the checkpoint before.
 # `parent.session` holds one line per parent session: `start` writes the
 # first and `session` appends each resumed one, and a usage sample takes the
 # last line, which is the live session.

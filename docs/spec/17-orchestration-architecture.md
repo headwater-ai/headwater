@@ -29,7 +29,7 @@ relations:
     - HW-PD-0023
   governs:
     - to: .claude/commands/next-run.md
-      verified_revision: sha256:278227f28df2ccb57394e209d1bc317edc3c0dc76890a1cb79d9f9eacbd1f0f1
+      verified_revision: sha256:6f9bd0215e7853aabf1642b2165b7bad2f9d61067088f4e152fb0c80ee154ce4
     - to: .claude/commands/next.md
       verified_revision: sha256:974d493829d7c81eacf06f5058e7e02f01f7fd409b82e0589d7bdd21a7783b09
     - to: .claude/agents/hw-queue.md
@@ -37,7 +37,7 @@ relations:
     - to: .claude/agents/hw-adjudicate.md
       verified_revision: sha256:c957a511466d03fcf8d7d628b97ebc8e416ce61f85d1aab1a379342ff8a7c8d0
     - to: .claude/agents/hw-iterate.md
-      verified_revision: sha256:05a062674bb48edf1481cb4818752861cd614d25f1e28da8305976ba528c5ec9
+      verified_revision: sha256:5b9e09a929ebbf05a557a6fefd7f1786f75a373d25a739fdd534f62722e2b51a
     - to: .claude/agents/hw-build.md
       verified_revision: sha256:76b22e56cb1ec60b94efa588c40db19b23bbd80795bbba510c172e9de7a137e8
     - to: .claude/agents/hw-verify.md
@@ -45,7 +45,7 @@ relations:
     - to: .claude/agents/hw-integrate.md
       verified_revision: sha256:6029c93103316f8fc40e7f06ce0cc772bcffa9ccb27ec931ecb3ed4dfef369b4
     - to: .claude/skills/hw-run-policy/SKILL.md
-      verified_revision: sha256:045eeaf3d299128802f7d3096b6df2f65bbd079b92cacb3cb7abb12af90a3217
+      verified_revision: sha256:554a0c6c72dc847371d2f3b41e6ba91ecaf99306baa6f1c111381ecb522eea28
     - to: .claude/skills/hw-verification-bar/SKILL.md
       verified_revision: sha256:a68ce6b14b5a8d7068aeafd8c7443e0497a55b4e444e2b971daa1da738c2153b
 ---
@@ -121,7 +121,7 @@ flowchart LR
 
 **The parent waits by ending its turn.** With agents in flight, an ended turn is the blocking wait, and each report wakes it. A check on a timer buys nothing and costs a turn at the parent's full context. Its prompt cache holds that context for an hour, so a report arrives warm whether or not the parent looked.
 
-**A parent session ends every few merges, and the run outlives it.** The parent reads its whole context again on every call, so a long session pays more for each call than the call before it. `tools/run/supervise.sh` starts each session after the first. It creates a drain file when a call passes a context threshold or when the session reaches a count of merges. In drain the parent starts no new stage, and it exits when nothing is in flight, because every subagent ends with its process. The next session reads the handover file of each issue and dispatches the stage that each one needs. [HW-PD-0023](../process/decisions/0023-a-build-order-parent-restarts-every-few-merges-drains-to-zero-first-and-resumes-from-the-handover-files-on-disk.md) records the three rulings and the measurement.
+**A parent session ends every few merges, and the run outlives it.** The parent reads its whole context again on every call, so a long session pays more for each call than the call before it. `tools/run/supervise.sh` starts each session after the first. It creates a drain file when a call passes a context threshold or when the session reaches a count of merges. In drain the parent starts no new stage, and it exits when nothing is in flight, because every subagent ends with its process. The next session reads the handover file of each issue and dispatches the stage that each one needs. A veto of a `PASS` whose `hw-iterate` ended with the old session goes back through the handover file as a failed verify. [HW-PD-0023](../process/decisions/0023-a-build-order-parent-restarts-every-few-merges-drains-to-zero-first-and-resumes-from-the-handover-files-on-disk.md) records the three rulings and the measurement.
 
 **The parent escalates to a person on two conditions and rules on everything else.** A redirect that changes milestone order and a decision that needs an owner rather than an answer both go to the human. [`headwater-product-owner`](../../.claude/agents/headwater-product-owner.md) reads the whole board and writes one ruling block for each decision the owner owes. The parent records the owner's answer in the run's decisions file, and the next pass of the product owner posts that answer on the issue. Until then, the adjudication stage reads the recorded answer as the ruling. [`headwater-maintainer`](../../.claude/agents/headwater-maintainer.md) reports what a change left stale. Both propose, and neither accepts.
 

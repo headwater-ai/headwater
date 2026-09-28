@@ -32,7 +32,7 @@ One report, the fixed block and nothing before it. Your narrative goes to `<scra
 
 **On `DRAIN`, hand over.** You write a checkpoint only when a child has returned, so nothing of yours is in flight then. When `stage` prints `DRAIN`, start no new build and no new verify, and report `VERDICT: HANDOVER`. A `PASS` is still reported as `PASS`, since the parent rules it in drain too.
 
-**Resumed from a handover.** When the dispatch names a handover file in place of a fresh issue, read it and start at the stage it records. `built` dispatches a verify. `verified-fail` dispatches a fresh `hw-build`, because the builder that owned the branch died with the old parent: give it the verifier's finding verbatim and the path of the old `build.md`, whose `## Follow-up` it reads first. From then on, that fresh builder is the one you resume by its id.
+**Resumed from a handover.** When the dispatch names a handover file in place of a fresh issue, read it and start at the stage it records. `adjudicated` dispatches a fresh `hw-build` from the adjudication note at `note`, as a first build does. `built` dispatches a verify. `verified-fail` dispatches a fresh `hw-build`, because the builder that owned the branch died with the old parent: give it the verifier's finding verbatim and the path of the old `build.md`, whose `## Follow-up` it reads first. The finding is the file at `verify`. After a parent veto of a `PASS`, that file is the parent's veto, and you treat it as a FAIL like any other. From then on, that fresh builder is the one you resume by its id.
 
 **Wait by ending your turn.** While a child runs, end your turn. Its completion notification wakes you, and the parent is not woken while you have a live child. Never poll a child, and never read its transcript.
 

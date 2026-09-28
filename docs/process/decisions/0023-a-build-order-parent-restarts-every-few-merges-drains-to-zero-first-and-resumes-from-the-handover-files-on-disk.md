@@ -25,7 +25,7 @@ relations:
 
 The parent of a build-order run reads its whole context again on every call. [HW-PD-0003](0003-a-dispatch-pays-when-it-retires-more-parent-turns-than-it-costs.md) makes one parent turn at full context the unit of cost. A parent that runs a whole build order in one session therefore pays more for each call than the call before it.
 
-Run `20260927-0443` measured that cost in session `b5554ef1`. The parent made 1,368 calls and read 245M tokens of context, a mean of 179k for each call. Its first call was 52k. Its context grew by about 1.2k for each call between compactions, and the owner made all 7 compactions by hand. The parent made about 30 calls for each closed issue. The owner pays the 5-hour and 7-day windows of the plan, and those windows cap how many issues a run can close.
+Run `20260927-0443` measured that cost in session `b5554ef1`. The parent made 1,368 calls and read 245M tokens of context, a mean of 179k for each call. Its first call was 52k. Its context grew by about 1.2k for each call between compactions, and each of the 7 compactions was made by hand. The parent made about 30 calls for each closed issue. The owner pays the 5-hour and 7-day windows of the plan, and those windows cap how many issues a run can close.
 
 A subagent runs inside the process of its parent and ends with it. A test with a headless `claude -p` parent showed that nothing reattaches to a new session. Only what is on disk survives a restart. Issue #1275 sets the bar: a mean under 120k for each call, over all parent sessions of one run.
 
@@ -33,11 +33,14 @@ The same run measured the time of each stage, as median and 75th percentile. Adj
 
 ## Decision
 
-The owner ruled three points on #1275 on 2026-09-28.
+The owner posted three rulings on #1275 on 2026-09-28, in the comment titled "Design, with the owner's rulings (2026-09-28)". They are quoted here in full. One thing changes: the target of the HW-PD-0007 link. The comment wrote it relative to the issue page, and this copy writes it relative to this file.
 
-1. **Stop and drain.** A parent session drains to zero in flight before it exits. The next session starts only after the old one exits. An overlapping handover is not built.
-2. **Rework after a restart goes to a fresh builder.** The builder of a branch dies with the parent, so it cannot be resumed by its id. A fresh `hw-iterate` gets the handover file. It sends the finding of the last verify and the `## Follow-up` of the old `build.md` to a fresh builder. [HW-PD-0022](0022-the-verify-and-rework-loop-for-one-issue-runs-below-the-parent.md) keeps its rule inside one parent session.
-3. **The handover recovers the per-issue loop agent.** The handover file has one shape, whether the parent or `hw-iterate` ends the stage.
+> 1. **Stop and drain.** A parent session drains to zero in flight before it exits. An overlapping handover, where the next session starts while the old one drains, is not built now.
+> 2. **Rework after a restart goes to a fresh `hw-build`.** Doctrine line 7 sends a FAIL back to the agent that built the branch. After a handover that agent no longer exists, so a fresh builder gets the verifier's finding and the `## Follow-up` of the old `build.md`. The token cost is about the same: verify takes 6.0 min at the median, which is past the subagent's five-minute cache lifetime ([HW-PD-0007](0007-a-background-wait-caps-below-the-cache-lifetime-and-re-issues-itself.md)), so a resumed builder already writes its whole context again. Line 7 is amended to say so.
+> 3. **The handover recovers the per-issue manager of #1276 as well as a bare stage.** The handover file has one shape whether the parent or a manager runs the stages.
+<!-- headwater allow=language.controlled.not_met scope=block until=2027-12-31 reason=accepted_deviation note=the owner's rulings quoted verbatim -->
+
+The manager of #1276 is `hw-iterate`. Ruling 2 narrows [HW-PD-0022](0022-the-verify-and-rework-loop-for-one-issue-runs-below-the-parent.md), which resumes a builder by its id, to one parent session. After a restart, a fresh `hw-iterate` reads the handover file and gives the rework to a fresh builder.
 
 `tools/run/supervise.sh` runs one parent session at a time, as `claude -p "/next-run --resume <run-id>"`. It reads the context of each call from the stream. It creates `<run>/drain` when a call passes 130k tokens, or when the session has made 4 merges. The first session of a run stays interactive, because it puts the rulings of the product owner to the owner.
 
@@ -55,7 +58,7 @@ An adjudicate that reports during a drain is not claimed, because `claim` writes
 
 ## Consequences
 
-Tokens alone favor frequent restarts. A restart costs about 50k tokens of one-hour cache write, and about 20 calls at a smaller context pay it back. Throughput limits the rate. A drain empties the slots for about 25 minutes. At 2.5 merges for each hour and a restart every 4 merges, stop and drain loses an estimated 13 to 15% of throughput. The owner accepted that loss for the simpler design.
+Tokens alone favor frequent restarts. A restart costs about 50k tokens of one-hour cache write, and about 20 calls at a smaller context pay it back. Throughput limits the rate. A drain empties the slots for about 25 minutes. At 2.5 merges for each hour and a restart every 4 merges, stop and drain loses an estimated 13 to 15% of throughput. The comment of 2026-09-28 states the owner's position on it: "We accept that loss for the simpler design."
 
 A session that starts near 60k and drains from about 130k reaches a peak near 142k and a mean near 100k. That mean is under the bar. K is a ceiling behind the threshold. It is 4 at about 30 parent calls for each issue, and about 6 is correct after #1274 and #1276.
 

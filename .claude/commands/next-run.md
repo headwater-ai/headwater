@@ -34,18 +34,18 @@ Ten lines the parent of a build-order run obeys on every turn. A run copies them
 
 ## The loop
 
-`sh tools/run/run-dir.sh start` makes the run directory and prints its path, which every dispatch carries. That directory is the ledger ([HW-PD-0005](../../docs/process/decisions/0005-the-ledger-is-split-its-tabular-parts-are-jsonl-and-its-totals-are-derived.md)): its `log` takes one line per iteration, `tail` is what you read, and `lessons.md` and `decisions.md` are yours to append with `Edit`. Read `lessons.md` by heading, only the parent's sections, never whole. Append to the integrator queue; never rewrite it. Ask an agent one line by `SendMessage`, never `ListAgents`.
+`sh tools/run/run-dir.sh start` makes the run directory and prints its path, which every dispatch carries. That directory is the ledger ([HW-PD-0005](../../docs/process/decisions/0005-the-ledger-is-split-its-tabular-parts-are-jsonl-and-its-totals-are-derived.md)): its `log` takes one line per iteration, `tail` is what you read, `net` derives opened minus closed, and `lessons.md` and `decisions.md` are yours to append with `Edit`. Read `lessons.md` by heading, only the parent's sections, never whole. Append to the integrator queue; never rewrite it. Ask an agent one line by `SendMessage`, never `ListAgents`.
 
 1. **Top of the run.** Dispatch `headwater-product-owner` and `hw-queue` in one turn. Read the queue agent's report and nothing else. Put the product owner's `RULING` blocks to the owner before you fill.
 2. **Fill.** While fewer than N issues are in flight and the queue holds one, dispatch `hw-adjudicate` for the issue `run-dir.sh next` prints, with the template below.
 3. **On an adjudicate report.** `VERDICT: BUILD` runs `run-dir.sh stage <run> <issue> adjudicated`, claims the footprint with `run-dir.sh claim <run> <issue> <branch> <artifacts>`, and dispatches `hw-iterate` with the same template, the adjudication note's path, and any `WAITS-ON` the claim printed. It owns build, verify and rework, and reports once. `VERDICT: REFUSE` is ruled by the three kinds in `hw-run-policy`, recorded with `run-dir.sh rule`, and the next issue is taken in the same turn.
 4. **On an iterate report.** `VERDICT: PASS` is your cue to rule, from the verdict and the notes it names, never from `git show` or `git diff` of the branch ([HW-PD-0022](../../docs/process/decisions/0022-the-verify-and-rework-loop-for-one-issue-runs-below-the-parent.md)). If you merge, append the ruling to the integrator queue and dispatch the next adjudicate in the same turn. `VERDICT: STOP` is ruled like a refusal.
 5. **The integrator slot.** Depth one. When nothing is integrating and the queue holds a ruling, dispatch a fresh `hw-integrate` with every pull request ruled MERGE, each with its ruling and declared footprint. It enqueues all, and an ejected one returns for a new ruling ([HW-PD-0020](../../docs/process/decisions/0020-merges-go-through-the-github-merge-queue-one-squash-commit-per-pull-request.md)). Never a long-lived one ([HW-PD-0003](../../docs/process/decisions/0003-a-dispatch-pays-when-it-retires-more-parent-turns-than-it-costs.md)).
-6. **Every fifth merge, and at the end**, dispatch `headwater-product-owner`: it rules on intake, so a question for it is an intake line, never a decisions note.
+6. **Every fifth merge, and at the end**, dispatch `headwater-product-owner`.
 
 ## The veto
 
-Your veto of a `PASS` goes by `SendMessage` to that `hw-iterate` id, with your finding. It counts toward the three `FAIL`s at which that agent stops.
+Your veto of a `PASS` goes by `SendMessage` to that `hw-iterate` id, with your finding. It counts toward the three `FAIL`s at which that agent stops: something upstream is wrong, and a fourth will not find it.
 
 ## Resume
 
