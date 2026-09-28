@@ -145,7 +145,11 @@ fn an_export_that_is_not_the_pinned_artifact_binds_nothing_and_names_the_pin() {
 fn a_missing_export_binds_nothing_and_names_the_pin() {
     let scratch = Scratch::new("missing");
     let resolver = harvest::open(scratch.path(), &pin(Some("sha256:00".to_string())));
-    assert_eq!(resolver.name(), "export-repo-b", "the resolver is still there");
+    assert_eq!(
+        resolver.name(),
+        "export-repo-b",
+        "the resolver is still there"
+    );
     let why = reason(resolver.resolve("SVC-1"));
     assert!(why.contains("`repo-b`") && why.contains(AT), "{why}");
 }
@@ -218,7 +222,10 @@ fn a_pin_with_no_resolver_is_refused_by_name() {
         "harvests:\n  repo-a:\n    at: a.json\n    digest: sha256:aa\n",
     );
     let why = harvest::declared(scratch.path()).expect_err("it is refused");
-    assert!(why.contains("harvests.repo-a") && why.contains("resolver"), "{why}");
+    assert!(
+        why.contains("harvests.repo-a") && why.contains("resolver"),
+        "{why}"
+    );
 }
 
 #[test]
@@ -229,7 +236,10 @@ fn a_pin_with_no_path_is_refused_by_name() {
         "harvests:\n  repo-a:\n    digest: sha256:aa\n    resolver: export-a\n",
     );
     let why = harvest::declared(scratch.path()).expect_err("it is refused");
-    assert!(why.contains("harvests.repo-a") && why.contains("`at`"), "{why}");
+    assert!(
+        why.contains("harvests.repo-a") && why.contains("`at`"),
+        "{why}"
+    );
 }
 
 #[test]

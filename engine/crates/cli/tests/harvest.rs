@@ -309,7 +309,11 @@ fn a_missing_export_is_a_finding_that_names_its_pin_and_never_a_lookup_elsewhere
         !finding.contains("repo-a") && !finding.contains("which this run does not have"),
         "the finding names B's pin, not A's and not a missing resolver: {finding}"
     );
-    assert_eq!(Root::errors(&ran).len(), 1, "nothing else is wrong: {ran:?}");
+    assert_eq!(
+        Root::errors(&ran).len(),
+        1,
+        "nothing else is wrong: {ran:?}"
+    );
 }
 
 /// B's export is back with one byte changed, so it is not the pinned artifact.
@@ -359,9 +363,11 @@ fn an_identifier_only_the_other_export_holds_is_unresolved() {
     let unresolved = unresolved(&ran);
     assert_eq!(unresolved.len(), 2, "{unresolved:?}");
     assert!(
-        unresolved.iter().any(|finding| finding.contains("uses_service_in_b")
-            && finding.contains("`repo-b`")
-            && finding.contains("SVC-2")),
+        unresolved
+            .iter()
+            .any(|finding| finding.contains("uses_service_in_b")
+                && finding.contains("`repo-b`")
+                && finding.contains("SVC-2")),
         "{unresolved:?}"
     );
 }

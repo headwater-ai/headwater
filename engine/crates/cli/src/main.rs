@@ -3824,7 +3824,10 @@ fn load_against(root: &Path, bound: Bound) -> Result<Loaded, ExitCode> {
     let harvests = match headwater_import::harvest::declared(root) {
         Ok(harvests) => harvests,
         Err(why) => {
-            eprintln!("headwater: {}", err("the pinned export declarations did not read"));
+            eprintln!(
+                "headwater: {}",
+                err("the pinned export declarations did not read")
+            );
             eprintln!("{}", indent(&err(&why)));
             return Err(ExitCode::FAILURE);
         }

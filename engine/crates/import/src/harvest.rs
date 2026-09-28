@@ -216,7 +216,8 @@ pub fn open(root: &Path, pin: &Pin) -> Export {
 /// filter.
 fn documents(bytes: &[u8]) -> Result<(Vec<String>, bool), String> {
     let text = std::str::from_utf8(bytes).map_err(|_| "it is not UTF-8".to_string())?;
-    let root = headwater_yaml::load(text).map_err(|errors| headwater_yaml::error::render(&errors))?;
+    let root =
+        headwater_yaml::load(text).map_err(|errors| headwater_yaml::error::render(&errors))?;
     let map = root
         .value
         .as_map()
@@ -294,7 +295,9 @@ pub fn declared(root: &Path) -> Result<Vec<Pin>, String> {
                 .filter(|text| !text.is_empty())
         };
         let at = text_of("at").ok_or_else(|| {
-            format!("`harvests.{name}` names no `at`, so nothing says where the committed export is")
+            format!(
+                "`harvests.{name}` names no `at`, so nothing says where the committed export is"
+            )
         })?;
         let resolver = text_of("resolver").ok_or_else(|| {
             format!(
