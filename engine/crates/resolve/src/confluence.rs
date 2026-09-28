@@ -238,6 +238,25 @@ mod tests {
         assert!(found.is_empty(), "{found:?}");
     }
 
+    /// Two `add` operations that write one leaf state two values for it, and
+    /// no order makes that a write into the dependency. The pair keeps the
+    /// leaf predicate, so the refusal names both bundles rather than leaving
+    /// the merge to report a collision that names one.
+    #[test]
+    fn a_dependent_add_over_a_leaf_its_dependency_sets_is_refused() {
+        let found = errors_requiring(
+            &[
+                "add:\n  kinds.design_spec: {purpose: behavior}\n",
+                "add:\n  kinds.design_spec.purpose: rationale\n",
+            ],
+            &[(1, 0)],
+        );
+        assert_eq!(found.len(), 1, "{found:?}");
+        let text = found[0].to_string();
+        assert!(text.contains("kinds.design_spec.purpose"), "{text}");
+        assert!(text.contains("source-0"), "{text}");
+    }
+
     #[test]
     fn the_same_add_to_without_requires_is_refused() {
         let found = errors(&[DEPENDENCY, DEPENDENT]);
