@@ -54,6 +54,17 @@
 # that workflow passed for every tag on a binary that refused to run. Both
 # defects are in what the file DOES, and no reader of what it SAYS can see them.
 #
+# Group 10 reads the page's APT block against three files and fetches nothing:
+# the `Sign the APT metadata` step of `release.yml` for the suite and the
+# component it publishes and the `Package:` it builds, `tools/site/fetch-apt.sh`
+# for the keyring it copies into `apt/`, and `site/apt/` for that keyring. apt
+# accepts a sources line naming a suite nobody publishes, and only
+# `apt-get update` on the reader's machine refuses it. What the group cannot
+# hold is that `https://headwater.tools/apt` serves anything. The `smoke-apt`
+# job in `release.yml` installs the package from a repository it signs itself,
+# so it holds the package and not the site. Only a run of the block in a clean
+# container holds the site.
+#
 # Run it from anywhere:
 #     sh tools/repo/readme-fixtures.sh
 #
@@ -2732,7 +2743,8 @@ echo "the APT route the page offers, and the repository the release publishes"
 #
 # What this group cannot hold is that `https://headwater.tools/apt` serves
 # anything. That needs a socket, which no case here opens. The `smoke-apt` job
-# in `release.yml` and a run of the block in a clean container hold it.
+# in `release.yml` signs a local repository, so it does not hold it either, and
+# only a run of the block in a clean container does.
 
 apt_fetch="$root/tools/site/fetch-apt.sh"
 apt_sign_step="Sign the APT metadata"
@@ -2785,7 +2797,7 @@ apt_field() {
 # the release runs rather than from a copy of it.
 apt_published() {
     workflow_step_run "$2" "$apt_sign_step" |
-        sed -n "s/.*APT::FTPArchive::Release::$1=\([^ \t\\\\]*\).*/\1/p" |
+        sed -n "s/.*APT::FTPArchive::Release::$1=\([^[:space:]\\\\]*\).*/\1/p" |
         head -1 | tr -d '\42\47'
 }
 
@@ -2839,7 +2851,7 @@ apt_suite_judge() {
 # repository it adds, under the name `fetch-apt.sh` copies out of `site/apt/`,
 # and that file is in the tree ROOT.
 apt_keyring_judge() {
-    akj_name=$(sed -n 's|^[ \t]*cp site/apt/\([^ \t]*\)[ \t].*|\1|p' "$2" | head -1)
+    akj_name=$(sed -n 's|^[[:space:]]*cp site/apt/\([^[:space:]]*\)[[:space:]].*|\1|p' "$2" | head -1)
     if [ -z "$akj_name" ]; then
         echo "fetch-apt.sh copies no keyring out of site/apt/"
         return
@@ -2848,7 +2860,7 @@ apt_keyring_judge() {
         echo "fetch-apt.sh copies site/apt/$akj_name, and the tree has no such file"
         return
     fi
-    akj_url=$(apt_fence_lines "$1" | grep -o 'https\?://[^ \t"'\'']*\.\(asc\|gpg\)' | head -1)
+    akj_url=$(apt_fence_lines "$1" | grep -o 'https\?://[^[:space:]"'\'']*\.\(asc\|gpg\)' | head -1)
     akj_want="$(apt_field 2 "$1")/$akj_name"
     if [ "$akj_url" = "$akj_want" ]; then
         echo ok
@@ -2861,7 +2873,7 @@ apt_keyring_judge() {
 # path `signed-by` names. A mismatch is `NO_PUBKEY` on the reader's machine.
 apt_signedby_judge() {
     asb_sb=$(apt_field 1 "$1")
-    asb_to=$(apt_fence_lines "$1" | grep 'https\?://[^ \t]*\.\(asc\|gpg\)' | head -1 | tr -d '\42\47' | awk '
+    asb_to=$(apt_fence_lines "$1" | grep 'https\?://[^[:space:]]*\.\(asc\|gpg\)' | head -1 | tr -d '\42\47' | awk '
         {
             for (k = 1; k < NF; k++)
                 if ($k == "-o" || $k == "--output" || $k == "tee" || $k == ">") to = $(k + 1)
