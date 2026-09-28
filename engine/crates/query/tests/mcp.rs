@@ -950,6 +950,100 @@ fn the_explain_tool_reads_every_spelling_of_a_path_and_refuses_one_outside_the_r
     );
 }
 
+/// The one sentence every path route prints for a target outside the
+/// repository (#1249), as `docs/interfaces/headwater-explain.md` writes it.
+/// Stated here as a literal so the contract is read off the page, and checked
+/// against the function that prints it so no route keeps a second wording.
+fn outside(target: &str) -> String {
+    format!("`{target}` is outside this repository, or is not a path it can read\n")
+}
+
+/// [#1249](https://github.com/headwater-ai/headwater/issues/1249): the
+/// `related` and `governing_docs_for_path` tools read a path the way the
+/// `explain` tool does. `./x`, `a/../x` and an absolute path under the root
+/// answer what `x` answers, byte for byte, and a path that leaves the
+/// repository gets the one outside sentence from all three tools.
+#[test]
+fn the_related_and_governing_tools_read_every_spelling_of_a_path_as_explain_does() {
+    let built = fixture_tree();
+    let server = built.server(RECORDED_AT);
+    let asked = |tool: &str, key: &str, target: &str| {
+        let response = once(
+            &server,
+            &calling(tool, &format!(r#"{{"{key}":"{target}"}}"#)),
+        );
+        let text = content(&response).concat();
+        let structured = structured(&response).map(|answer| canonical(&answer.value));
+        (text, structured)
+    };
+
+    let document = "query/specs/api-design.md";
+    let (plain, _) = asked("related", "target", document);
+    assert!(
+        !plain.contains("is not a document of this corpus"),
+        "the plain path is a document: {plain}"
+    );
+    let absolute = built.root.join(document).display().to_string();
+    for target in [
+        format!("./{document}"),
+        format!("query/../{document}"),
+        absolute,
+    ] {
+        assert_eq!(
+            asked("related", "target", &target).0,
+            plain,
+            "`related {target}` answers what `related {document}` answers"
+        );
+    }
+    assert_eq!(
+        asked("related", "target", "./SPEC-FIX-api").0,
+        "./SPEC-FIX-api is not a document of this corpus\n",
+        "`./SPEC-FIX-api` names a path for `related` too, never the identifier"
+    );
+
+    let code = "src/ingest/mod.rs";
+    let governed = asked("governing_docs_for_path", "path", code);
+    assert!(
+        !governed.0.contains("no document governs"),
+        "the plain path is governed: {}",
+        governed.0
+    );
+    let absolute = built.root.join(code).display().to_string();
+    for target in [format!("./{code}"), format!("src/../{code}"), absolute] {
+        assert_eq!(
+            asked("governing_docs_for_path", "path", &target),
+            governed,
+            "`governing_docs_for_path {target}` answers what `{code}` answers, text and structure"
+        );
+    }
+
+    for target in ["../outside.md", "/etc/passwd"] {
+        assert_eq!(
+            outside(target),
+            format!("{}\n", headwater_query::outside_text(target)),
+            "the function prints the documented sentence"
+        );
+        for (tool, key) in [
+            ("explain", "target"),
+            ("related", "target"),
+            ("governing_docs_for_path", "path"),
+        ] {
+            assert_eq!(
+                asked(tool, key, target).0,
+                outside(target),
+                "`{tool} {target}` is refused in the one outside sentence"
+            );
+        }
+        let (_, refused) = asked("governing_docs_for_path", "path", target);
+        let empty = headwater_yaml::load(r#"{"pointers":[]}"#).expect("it loads");
+        assert_eq!(
+            refused,
+            Some(canonical(&empty.value)),
+            "the refusal keeps the machine contract's member (#1248)"
+        );
+    }
+}
+
 /// The same reading under a relative root, which is what `headwater mcp
 /// --root .` hands the server. Cargo runs this target from the crate
 /// directory, so `fixtures` is the fixture tree. An absolute argument is
