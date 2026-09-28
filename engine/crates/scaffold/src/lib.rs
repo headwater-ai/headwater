@@ -569,7 +569,7 @@ pub enum Refusal {
     Unnameable {
         kind: String,
         relations: Vec<String>,
-        proposal: Option<SchemeProposal>,
+        proposal: Option<Box<SchemeProposal>>,
     },
     IdentifierTaken {
         id: String,
@@ -1638,7 +1638,7 @@ fn mint(
             false => Err(Refusal::Unnameable {
                 kind: kind.to_string(),
                 relations: naming,
-                proposal: propose_scheme(sources.shape, kind),
+                proposal: propose_scheme(sources.shape, kind).map(Box::new),
             }),
         };
     };
@@ -2013,7 +2013,7 @@ mod proposal {
         let message = Refusal::Unnameable {
             kind: "design_note".to_string(),
             relations: vec!["governs".to_string()],
-            proposal: Some(proposal),
+            proposal: Some(Box::new(proposal)),
         }
         .to_string();
         assert!(
@@ -2043,7 +2043,7 @@ mod proposal {
         let message = Refusal::Unnameable {
             kind: "specification".to_string(),
             relations: vec!["governs".to_string()],
-            proposal: Some(proposal),
+            proposal: Some(Box::new(proposal)),
         }
         .to_string();
         assert!(!message.contains("stands in for yours"), "{message}");
