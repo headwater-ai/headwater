@@ -170,6 +170,10 @@ pub enum Miss {
     },
     /// The oracle reported over every produced artifact.
     OracleReported { artifacts: usize, oracle: String },
+    /// A `patched` session produced no artifact, so the oracle had nothing to
+    /// read. The pilot of #980 printed this as the oracle reporting "over each
+    /// of the 0 produced artifacts", which names a finding nobody made.
+    NothingProduced,
 }
 
 impl std::fmt::Display for Miss {
@@ -214,6 +218,10 @@ impl std::fmt::Display for Miss {
                 f,
                 "`{oracle}` reported over each of the {}",
                 crate::plural(*artifacts, "produced artifact")
+            ),
+            Miss::NothingProduced => write!(
+                f,
+                "the session produced no artifact, so the oracle had nothing to read"
             ),
         }
     }
@@ -928,6 +936,9 @@ fn patched(selected: &Selected, session: &[&Event]) -> Verdict {
     let Some(artifacts) = recorded_produced(session) else {
         return Verdict::Refused(Refusal::Unrecorded { what: "produced" });
     };
+    if artifacts.is_empty() {
+        return Verdict::NotSatisfied(Miss::NothingProduced);
+    }
     for (at, artifact) in &artifacts {
         let Some(findings) = &artifact.findings else {
             return Verdict::Refused(Refusal::NotChecked {

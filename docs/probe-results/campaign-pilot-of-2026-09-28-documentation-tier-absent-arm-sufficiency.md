@@ -44,9 +44,9 @@ A documentation run in the absent arm, on claude-sonnet-5 at served version clau
     session L3-documentation-absent-p3-r2: not satisfied — event 8 answered `draft`, and the probe expects `current`
     session L3-documentation-absent-p3-r3: satisfied — event 9: answered `current`
 - HW-PROBE-a-session-records-an-unmeasured-claim-in-the-shape-this-corpus-checks (sufficiency, expects patched)
-    session L3-documentation-absent-p4-r1: not satisfied — `section.required.missing` reported over each of the 0 produced artifacts
-    session L3-documentation-absent-p4-r2: not satisfied — `section.required.missing` reported over each of the 0 produced artifacts
-    session L3-documentation-absent-p4-r3: not satisfied — `section.required.missing` reported over each of the 0 produced artifacts
+    session L3-documentation-absent-p4-r1: not satisfied — the session produced no artifact, so the oracle had nothing to read
+    session L3-documentation-absent-p4-r2: not satisfied — the session produced no artifact, so the oracle had nothing to read
+    session L3-documentation-absent-p4-r3: not satisfied — the session produced no artifact, so the oracle had nothing to read
 
 ## The rate, and the denominator it is over
 

@@ -45,6 +45,46 @@ case $0 in
 esac
 root=$(cd "$invoked_from/../.." && pwd -P)
 
+# The answer keys `.headwater/probe.yml` declares for one probe, one per line
+# as `<identifier> <path>`. The declaration and the key's identifier are read
+# from this checkout and never from the workspace, which is the tree being
+# sealed. A key whose document carries no `id:` is printed with its slug as
+# the identifier, so the line removal below still has a name to match.
+answer_keys() {
+    declaration=${HW_PROBE_YML:-$root/.headwater/probe.yml}
+    awk -v want="$1" '
+        /^answer_keys:/ { on = 1; next }
+        on && /^[^ #]/ { on = 0 }
+        on {
+            line = $0
+            sub(/^[ ]+/, "", line)
+            if (index(line, want ":") != 1) next
+            sub(/^[^[]*\[/, "", line)
+            sub(/\].*$/, "", line)
+            n = split(line, paths, ",")
+            for (i = 1; i <= n; i++) {
+                gsub(/^[ ]+|[ ]+$/, "", paths[i])
+                if (paths[i] != "") print paths[i]
+            }
+        }
+    ' "$declaration" | while IFS= read -r path; do
+        id=$(sed -n 's/^id: *//p' "$root/$path" 2>/dev/null | head -1)
+        if [ -z "$id" ]; then
+            id=${path##*/}
+            id=${id%.md}
+        fi
+        printf '%s %s\n' "$id" "$path"
+    done
+}
+
+# `--keys <probe>` prints the answer keys of one probe and touches nothing.
+# `probe-record.sh` reads it to refuse a workspace that still names one.
+if [ "${1:-}" = --keys ]; then
+    [ -n "${2:-}" ] || { echo "usage: sh tools/probe/seal.sh --keys <probe-id>" >&2; exit 2; }
+    answer_keys "$2"
+    exit 0
+fi
+
 workspace=${1:-}
 [ -n "$workspace" ] && [ "$#" -ge 2 ] || {
     echo "usage: sh tools/probe/seal.sh <workspace> <probe-id>..." >&2
@@ -112,4 +152,41 @@ for probe in "$@"; do
         IFS=$old_ifs
     fi
     echo "seal: removed $count documents under docs/ naming $probe${slug:+ or $slug}"
+
+    # The answer keys of the probe (#980). The key is removed whole, with its
+    # identifier claim. Every other file loses the lines that name the key and
+    # keeps the rest, because the files that cite a key are shelf indexes,
+    # registers and paragraphs, and each one is one line per item.
+    keys=$(answer_keys "$probe")
+    old_ifs=$IFS
+    IFS='
+'
+    for pair in $keys; do
+        IFS=$old_ifs
+        key_id=${pair%% *}
+        key_path=${pair#* }
+        key_slug=${key_path##*/}
+        key_slug=${key_slug%.md}
+        rm -f -- "$here/$key_path"
+        for claim in "$here"/.headwater/ids/*/"$key_id"; do
+            if [ -e "$claim" ]; then
+                rm -f -- "$claim"
+            fi
+        done
+        lines=0
+        naming=$(grep -rlIF -e "$key_id" -e "$key_slug" -- "$here" 2>/dev/null) || naming=""
+        IFS='
+'
+        for file in $naming; do
+            grep -vF -e "$key_id" -e "$key_slug" -- "$file" > "$file.seal" || true
+            lines=$((lines + $(grep -cF -e "$key_id" -e "$key_slug" -- "$file")))
+            cat -- "$file.seal" > "$file"
+            rm -f -- "$file.seal"
+        done
+        IFS=$old_ifs
+        echo "seal: removed the answer key $key_id of $probe, and $lines lines naming it"
+        IFS='
+'
+    done
+    IFS=$old_ifs
 done

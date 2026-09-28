@@ -41,6 +41,23 @@ instrument:
   - docs/probe-results
   - .headwater/export.json
 
+# Answer keys: documents that an earlier session wrote in answer to a probe's
+# task, and that name neither the probe nor its slug, so the seal below would
+# keep them. A session that meets one finds its task already done. On the
+# pilot of #980 every present-arm session of the `patched` probe found
+# HW-OBL-0198, which a session of that probe wrote on 2026-09-16, and declined
+# to write a duplicate. So the probe failed in every arm for a reason that was
+# not about the corpus.
+#
+# `tools/probe/seal.sh` removes each key from a workspace, with its claim under
+# `.headwater/ids/`, and removes every line of any other file that names the
+# key's identifier or slug. A shelf index, spec 13's register and a paragraph
+# that cites the key each lose that line and keep the rest. `probe-record.sh`
+# refuses a workspace that still names a key. The engine reads no key of this
+# block. One probe per line, and a flow sequence of paths relative to the root.
+answer_keys:
+  HW-PROBE-a-session-records-an-unmeasured-claim-in-the-shape-this-corpus-checks: [docs/obligations/0198-nothing-states-how-much-of-a-session-s-budget-the-standing-instructions-consume-before-work-starts.md]
+
 tiers:
 
   # Detect that something moved. One arm, one repetition, against a recorded

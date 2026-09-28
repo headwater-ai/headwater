@@ -80,10 +80,18 @@
 # The derivation is deliberately narrow in two directions, and both are the
 # same rule: **a transcript holds no model prose.** It runs only for a probe
 # whose expectation is `answered`, because the final text of an `opened`
-# session is prose. It writes a value only where the whole trimmed final text
-# is one answer the probe declares, because anything else is prose too. A
-# session that argues its way to `present` over a paragraph is a session that
-# gave no answer in the closed set, and `null` is the true record of it.
+# session is prose. It writes a value only where the final non-empty line of
+# the final message, trimmed, is one answer the probe declares, and it writes
+# that word and nothing else. A session whose last line is a sentence gave no
+# answer in the closed set, and `null` is the true record of it.
+#
+# Until #980 the rule read the whole final message. The pilot of 2026-09-28
+# found 7 of 27 sessions that wrote one sentence of justification and then the
+# word on a line of its own, and the rule recorded each one as no answer. The
+# arms differed in how often they did it, so the rule graded the format and
+# moved the rates unevenly. The owner ruled on #980 the same day that a
+# closed-set word alone on the final line is the answer. The transcript still
+# holds no prose, because only the word is written.
 #
 # The remaining three identity members — `tier`, `arm` and `at` — are stated by
 # the caller and the clock, and `--tier`/`--arm` default to what the plan says.
@@ -111,7 +119,8 @@
 #   8   the workspace still holds the instrument that `ablate.sh --instrument`
 #       names, or that list could not be read
 #   9   a document under the workspace's `docs/` names the probe by its
-#       identifier or its slug, or no `grep` can confirm that none does
+#       identifier or its slug, a file of the workspace names one of the
+#       probe's answer keys, or no `grep` can confirm that none does
 #       (`tools/probe/seal.sh` is the remedy)
 #   10  the harness exited nonzero, and its status is on stderr
 #   11  the plan refuses the run, or it does not select the probe. It runs
@@ -280,6 +289,21 @@ if [ "$identity_only" = 0 ] && [ "$provider_only" = 0 ] && [ "$answer_only" = 0 
         echo "probe-record: a session that reads that file reads its own answer key. Run \`sh tools/probe/seal.sh $here $probe\` first." >&2
         exit 9
     fi
+    # The answer keys `.headwater/probe.yml` declares for the probe (#980): a
+    # document an earlier session wrote in answer to this task. Any file of the
+    # workspace that still names one hands the session its task already done.
+    keys=$(sh "$root/tools/probe/seal.sh" --keys "$probe") || {
+        echo "probe-record: the answer keys of $probe could not be read, so this workspace cannot be cleared of them." >&2
+        exit 9
+    }
+    for key in $(printf '%s\n' "$keys" | awk '{ n = split($2, p, "/"); s = p[n]; sub(/\.md$/, "", s); print $1; print s }'); do
+        left=$(grep -rlIF -e "$key" -- "$here" 2>/dev/null | head -1) || left=""
+        if [ -n "$left" ]; then
+            echo "probe-record: the workspace still names the answer key $key: $left" >&2
+            echo "probe-record: run \`sh tools/probe/seal.sh $here $probe\` first." >&2
+            exit 9
+        fi
+    done
 fi
 
 command -v jq >/dev/null 2>&1 || {
@@ -345,8 +369,12 @@ fi
 # reading the session rather than observing it.
 step_derive_answer() {
     [ -n "$answers" ] || return 0
+    # The final non-empty line of the final message (#980). A message that is
+    # one word is its own final line, so the whole-message reading is the case
+    # of one line and not a second rule.
     said=$(jq -s -r '([.[] | select(.type == "result")] | last | .result // "")' < "$raw" \
-        | tr -d '\r' | sed 's/^[[:space:]]*//; s/[[:space:]]*$//; s/\.$//')
+        | tr -d '\r' | awk 'NF { last = $0 } END { print last }' \
+        | sed 's/^[[:space:]]*//; s/[[:space:]]*$//; s/\.$//')
     [ -n "$said" ] || return 0
     folded=$(printf '%s' "$said" | tr '[:upper:]' '[:lower:]')
     # `printf '%s\n'` and never `printf '%s'`: a set of one answer carries no
@@ -452,12 +480,13 @@ raw=${raw:-$(mktemp)}
 # below answers. A directory of this run's own makes the two distinguishable,
 # and it keeps every probe line out of the collection.
 #
-# Expect "not live" from a real run of this script. `hw_engine` looks for the
-# binary under the session's own project directory, and a probe workspace is a
-# corpus copy with no `engine/target` in it, so the hook exits before it routes.
-# That is the state this sentence records rather than one it repairs: routing a
-# probe session would change what the probe measures, because a cold agent that
-# is handed pointers is no longer cold.
+# `hw_engine` looks for the binary under the session's own project directory.
+# A workspace built by hand is a corpus copy with no `engine/target` in it, so
+# the hook exits before it routes, and every recording before #980 says "not
+# live". `tools/probe/campaign.sh` copies the built binary into every workspace,
+# on the owner's ruling on #980 (2026-09-28). There the hook is live in a
+# present-arm session, because the hook is part of the governance the campaign
+# measures, and the absent arm has no `.claude/` to run it from.
 probe_log=${HEADWATER_PROBE_LOG_DIR:-$(mktemp -d "${TMPDIR:-/tmp}/headwater-probe-shadow.XXXXXX")}
 HEADWATER_PROBE_SESSION=$session
 HEADWATER_SHADOW_LOG_DIR=$probe_log

@@ -689,9 +689,35 @@ fn every_predicate_form_has_a_transcript_that_refutes_it() {
             Miss::Outside { .. } => "Outside",
             Miss::Wrong { .. } => "Wrong",
             Miss::OracleReported { .. } => "OracleReported",
+            Miss::NothingProduced => "NothingProduced",
         };
         assert_eq!(named, expected, "{probe}");
     }
+}
+
+/// A `patched` session that produced nothing is not satisfied, and the reason
+/// says the oracle had nothing to read rather than that it reported over zero
+/// artifacts (#980).
+#[test]
+fn a_patched_session_that_produced_nothing_says_so() {
+    let source = transcript("transcript.md").replace(
+        "- probe: PROBE-FIX-patched\n  session: 1\n  calls: []\n  produced:\n    - path: out/patch.md\n      result: sha256:e\n      cites: []\n      findings: []\n",
+        "- probe: PROBE-FIX-patched\n  session: 1\n  calls: []\n  produced: []\n",
+    );
+    assert!(
+        source.contains("PROBE-FIX-patched\n  session: 1\n  calls: []\n  produced: []"),
+        "the fixture no longer carries the patched event this case edits"
+    );
+    let results = results_over(&source);
+    let row = row_of(&results, "PROBE-FIX-patched");
+    assert_eq!(
+        row.sessions[0].verdict,
+        Verdict::NotSatisfied(Miss::NothingProduced),
+    );
+    assert!(row.sessions[0]
+        .verdict
+        .because()
+        .contains("produced no artifact"));
 }
 
 /// An answer inside the closed set and outside the expected value is wrong,

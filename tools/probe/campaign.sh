@@ -40,11 +40,16 @@
 # committed here until the batch is done: the script refuses to start a session
 # once `HEAD` moves.
 #
-# Nothing under `engine/target` is in an archive. So no workspace holds a built
-# engine, the intent hook fails open in every session of both arms, and a
-# session that wants `headwater` builds it. That is what every earlier
-# recording met (#917), and a campaign keeps it rather than changing the
-# instrument between runs.
+# Nothing under `engine/target` is in an archive, so the driver copies this
+# checkout's built `headwater` into every tree at the path the skills and the
+# intent hook look for it. The pilot of #980 ran without one: the skills sent a
+# present-arm session to `headwater route`, it found no binary, and the intent
+# hook was live in none of 66 sessions. So the present arm measured the
+# governance prose without the tool it points at. The owner ruled on #980 on
+# 2026-09-28 that every workspace of both arms carries the binary. In an absent
+# arm it refuses, because `.headwater/` is gone, which is what that arm is
+# declared to remove. The driver refuses a binary older than the last commit
+# that touched `engine/`, because a stale build is not the pinned engine.
 #
 # ## The trees
 #
@@ -307,6 +312,12 @@ if [ -n "$(git -C "$root" status --porcelain --untracked-files=no)" ]; then
     exit 4
 fi
 head=$(git -C "$root" rev-parse HEAD)
+built=$(stat -c %Y "$engine")
+changed=$(git -C "$root" log -1 --format=%ct -- engine/)
+if [ "$built" -lt "$changed" ]; then
+    echo "campaign: $engine is older than the last commit that touched engine/. Build it again, so every workspace carries the pinned engine." >&2
+    exit 3
+fi
 if [ -f "$out/head" ] && [ "$(cat "$out/head")" != "$head" ]; then
     echo "campaign: $out holds a batch of $(cat "$out/head"), and HEAD is $head. Use another directory." >&2
     exit 4
@@ -364,6 +375,9 @@ if [ ! -d "$out/trees/oracle" ]; then
     mkdir -p "$out/trees/base"
     git -C "$root" archive "$head" | tar -x -C "$out/trees/base" || exit 3
     mv "$out/trees/base" "$out/trees/oracle"
+    mkdir -p "$out/trees/oracle/engine/target/dev-release"
+    cp "$engine" "$out/trees/oracle/engine/target/dev-release/headwater" || exit 3
+    sha256sum "$engine" | awk '{ print $1 }' > "$out/engine.sha256"
     sh "$root/tools/probe/ablate.sh" --present "$out/trees/oracle" >/dev/null || exit 3
     # shellcheck disable=SC2086
     sh "$root/tools/probe/seal.sh" "$out/trees/oracle" $probes >/dev/null || exit 3
