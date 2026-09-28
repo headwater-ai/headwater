@@ -410,6 +410,11 @@ nav:
       - "No run measures whether the documents under docs change what an agent builds": "obligations/0223-no-run-measures-whether-the-documents-under-docs-change-what-an-agent-builds.md"
   - "Probe results":
       - "Probe results": "probe-results/README.md"
+      - "Probe result for campaign-of-2026-09-28-campaign-tier-absent-arm-navigability": "probe-results/campaign-of-2026-09-28-campaign-tier-absent-arm-navigability.md"
+      - "Probe result for campaign-of-2026-09-28-campaign-tier-absent-arm-sufficiency": "probe-results/campaign-of-2026-09-28-campaign-tier-absent-arm-sufficiency.md"
+      - "Probe result for campaign-of-2026-09-28-campaign-tier-present-arm-navigability": "probe-results/campaign-of-2026-09-28-campaign-tier-present-arm-navigability.md"
+      - "Probe result for campaign-of-2026-09-28-campaign-tier-present-arm-sufficiency": "probe-results/campaign-of-2026-09-28-campaign-tier-present-arm-sufficiency.md"
+      - "Probe result for campaign-of-2026-09-28-documentation-tier-absent-arm-sufficiency": "probe-results/campaign-of-2026-09-28-documentation-tier-absent-arm-sufficiency.md"
       - "Probe result for campaign-pilot-of-2026-09-28-campaign-tier-absent-arm-discovery": "probe-results/campaign-pilot-of-2026-09-28-campaign-tier-absent-arm-discovery.md"
       - "Probe result for campaign-pilot-of-2026-09-28-campaign-tier-absent-arm-navigability": "probe-results/campaign-pilot-of-2026-09-28-campaign-tier-absent-arm-navigability.md"
       - "Probe result for campaign-pilot-of-2026-09-28-campaign-tier-absent-arm-sufficiency": "probe-results/campaign-pilot-of-2026-09-28-campaign-tier-absent-arm-sufficiency.md"
@@ -431,6 +436,11 @@ nav:
       - "Probe result for second-campaign-pilot-of-2026-09-28-documentation-tier-absent-arm-sufficiency": "probe-results/second-campaign-pilot-of-2026-09-28-documentation-tier-absent-arm-sufficiency.md"
   - "Probe runs":
       - "Probe runs": "probe-runs/README.md"
+      - "Campaign of 2026-09-28, campaign tier, absent arm, navigability": "probe-runs/campaign-of-2026-09-28-campaign-tier-absent-arm-navigability.md"
+      - "Campaign of 2026-09-28, campaign tier, absent arm, sufficiency": "probe-runs/campaign-of-2026-09-28-campaign-tier-absent-arm-sufficiency.md"
+      - "Campaign of 2026-09-28, campaign tier, present arm, navigability": "probe-runs/campaign-of-2026-09-28-campaign-tier-present-arm-navigability.md"
+      - "Campaign of 2026-09-28, campaign tier, present arm, sufficiency": "probe-runs/campaign-of-2026-09-28-campaign-tier-present-arm-sufficiency.md"
+      - "Campaign of 2026-09-28, documentation tier, absent arm, sufficiency": "probe-runs/campaign-of-2026-09-28-documentation-tier-absent-arm-sufficiency.md"
       - "Campaign pilot of 2026-09-28, campaign tier, absent arm, discovery": "probe-runs/campaign-pilot-of-2026-09-28-campaign-tier-absent-arm-discovery.md"
       - "Campaign pilot of 2026-09-28, campaign tier, absent arm, navigability": "probe-runs/campaign-pilot-of-2026-09-28-campaign-tier-absent-arm-navigability.md"
       - "Campaign pilot of 2026-09-28, campaign tier, absent arm, sufficiency": "probe-runs/campaign-pilot-of-2026-09-28-campaign-tier-absent-arm-sufficiency.md"
