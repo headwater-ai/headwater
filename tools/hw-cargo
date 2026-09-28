@@ -54,7 +54,7 @@
 #                   is depth one by HW-PD-0003, so its reserved slot is never
 #                   contended; give a role with no such guarantee its own name
 #                   too rather than share one across roles. hw-verify takes
-#                   `verify`: in run 20260923-0733 a verifier queued on slot 1
+#                   `verify-<N>` for its issue: in run 20260923-0733 a verifier queued on slot 1
 #                   behind three builders, gave up on its engine, and skipped
 #                   `headwater check` and `generate --check`. Two verifiers at
 #                   once queue on each other and never on a builder.

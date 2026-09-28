@@ -12,7 +12,7 @@ waiting_on: build
 
 ## Context
 
-Every cargo command of a build-order run goes through `tools/hw-cargo`. The script keeps one target directory for each slot under `~/.cache/headwater/cargo-pool/`. The skill `hw-run-policy` states that one slot target holds 10 to 13 GB, and that seven slots once took the host disk to 96%. It tells a verifier on its own slot to remove that slot target when it reports. It tells the parent to read `df -h /` before it dispatches a verify.
+Every cargo command of a build-order run goes through `tools/hw-cargo`. The script keeps one target directory for each slot under `~/.cache/headwater/cargo-pool/`. The skill `hw-run-policy` states that one slot target holds 10 to 13 GB, and that seven slots once took the host disk to 96%. It tells a verifier on its own slot to remove that slot target when it reports. It tells `hw-iterate` to read `df -h /` before it dispatches a verify. Before #1276 that duty was the parent's.
 
 Run `20260926-1327` met this gap. The product owner ruled it Record, because the run tooling does not ship to an adopter.
 

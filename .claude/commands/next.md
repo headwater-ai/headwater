@@ -9,7 +9,7 @@ Work one iteration of the Headwater build order (org project "Headwater build or
 
 ## What is the same
 
-The stages are the same five agent definitions the run uses, dispatched by `subagent_type` and in the same order: `hw-adjudicate`, then `hw-build`, then `hw-verify`, and `hw-integrate` once the merge is ruled. Each carries its own procedure, its own write boundary and its own fixed report block, and the `hw-run-policy` and `hw-verification-bar` skills carry the rest. Use the dispatch template from `.claude/commands/next-run.md` and pass paths, never pasted prose.
+The stages are the same agent definitions the run uses, dispatched by `subagent_type` and in the same order: `hw-adjudicate`, then `hw-iterate`, which dispatches the builder and the verifier and reports once, and `hw-integrate` once the merge is ruled. A veto of its PASS goes back to it by `SendMessage`. Each carries its own procedure, its own write boundary and its own fixed report block, and the `hw-run-policy` and `hw-verification-bar` skills carry the rest. Use the dispatch template from `.claude/commands/next-run.md` and pass paths, never pasted prose.
 
 ## What differs
 

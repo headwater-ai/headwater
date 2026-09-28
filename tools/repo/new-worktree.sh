@@ -32,7 +32,9 @@
 # already set in the environment, passes through untouched, so a caller with
 # a reserved slot keeps it.
 #
-# How hw-verify calls it, and why, as run 20260923-0733 found:
+# How hw-verify called it before #1276, and why, as run 20260923-0733 found.
+# hw-verify now works in a tree the harness makes for it and does not call
+# this script, and a person making a verify tree by hand still can:
 #
 #     HW_CARGO_SLOT=verify sh tools/repo/new-worktree.sh <path> --detach origin/<branch>
 #

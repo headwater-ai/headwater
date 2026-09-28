@@ -11,6 +11,10 @@ anchors
     cited by HW-SPEC-orchestration-architecture
   code_path `.claude/agents/hw-integrate.md` via source-tree
     cited by HW-SPEC-orchestration-architecture
+  code_path `.claude/agents/hw-iterate.md` via source-tree
+    cited by HW-PD-0022
+  code_path `.claude/agents/hw-iterate.md` via source-tree
+    cited by HW-SPEC-orchestration-architecture
   code_path `.claude/agents/hw-queue.md` via source-tree
     cited by HW-SPEC-orchestration-architecture
   code_path `.claude/agents/hw-verify.md` via source-tree
@@ -20,7 +24,11 @@ anchors
   code_path `.claude/commands/next-run.md` via source-tree
     cited by HW-PD-0001
   code_path `.claude/commands/next-run.md` via source-tree
+    cited by HW-PD-0022
+  code_path `.claude/commands/next-run.md` via source-tree
     cited by HW-SPEC-orchestration-architecture
+  code_path `.claude/commands/next.md` via source-tree
+    cited by HW-PD-0022
   code_path `.claude/commands/next.md` via source-tree
     cited by HW-SPEC-orchestration-architecture
   code_path `.claude/hooks/**` via source-tree
