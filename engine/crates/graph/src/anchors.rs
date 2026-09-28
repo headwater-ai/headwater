@@ -1453,9 +1453,23 @@ mod tests {
         );
 
         // A socket and a device are left out like the pipe, not only a pipe.
-        // A reader that opened `/dev/zero` would read without end.
+        // A reader that opened `/dev/zero` would read without end. A socket
+        // path must fit in 108 bytes, and a temporary directory on a CI
+        // runner does not, so the socket is bound under a short directory in
+        // `/tmp` and reached through a link, which the reader follows.
+        let short = Scratch(std::path::PathBuf::from(format!(
+            "/tmp/hw-sock-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .expect("a clock later than the epoch")
+                .subsec_nanos()
+        )));
+        std::fs::create_dir_all(&*short).expect("a short directory");
         let _socket =
-            std::os::unix::net::UnixListener::bind(dir.join("sock")).expect("the socket is bound");
+            std::os::unix::net::UnixListener::bind(short.join("s")).expect("the socket is bound");
+        std::os::unix::fs::symlink(short.join("s"), dir.join("sock"))
+            .expect("the link to the socket is made");
         assert_eq!(
             tree_revision(&dir, &["a.sh".to_owned(), "sock".to_owned()]),
             file_only,
