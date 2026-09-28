@@ -788,6 +788,7 @@ fn a_projection_that_is_not_what_the_plan_produces_is_a_gap() {
         outputs: vec![headwater_generate::Output {
             path: "index.md".to_string(),
             kind: headwater_generate::Kind::ShelfIndex,
+            committed: true,
             bytes: "what the plan produces\n".to_string(),
         }],
         ..Default::default()

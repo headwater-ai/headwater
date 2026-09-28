@@ -215,6 +215,7 @@ pub(crate) fn emit(
             bytes,
             path,
             kind: Kind::ShelfIndex,
+            committed: true,
         });
     }
 }

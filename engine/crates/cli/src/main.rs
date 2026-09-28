@@ -5770,7 +5770,7 @@ fn export(
         };
         let report = match check_only {
             true => headwater_generate::check(root, &plan),
-            false => headwater_generate::write(root, &plan),
+            false => headwater_generate::publish(root, &plan),
         };
         print!("{}", report.render(headwater_cli::paint::stdout_color()));
         // A declared export was written by an emitter set too, so the same
