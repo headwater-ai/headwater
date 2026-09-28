@@ -12,9 +12,12 @@
 //!
 //! A bundle may declare `requires:`, and
 //! [HW-DR-0040](../../../../docs/decisions/0040-q40-whether-extends-bundle-requires-and-an-overlay-s-taxonomy-key-are-a-mechanism-or-a-label.md)
-//! ruled that key a label: the engine reads nothing from it, and the meta-schema
-//! says so beside the key. That ruling stands and this module does not disturb
-//! it. Three measurements are why the label is not the answer here anyway.
+//! ruled that key a label, and it never adds a bundle to a selection.
+//! [Q67](../../../../docs/decisions/0095-q67-one-library-entry-may-address-the-keys-of-an-entry-it-names-in-requires-and-confluence-holds-over-the-dependency-order.md)
+//! later gave it one reader, [`crate::order`], which orders a selection and lets
+//! a bundle write into the bundles it names. Neither ruling makes the key a list
+//! of what a selection lacks, and this module does not read it. Three
+//! measurements are why the label is not the answer here anyway.
 //!
 //! 1. **The label is optional, and most publishers leave it empty.** Five of the
 //!    seven bundles this repository's own package ships declare `requires: []`:
