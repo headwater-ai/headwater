@@ -10,11 +10,12 @@ The page has three views:
 
 ## Run it
 
-It needs Python 3.7 or later and nothing else. 3.7 is the first version with `date.fromisoformat` and the `capture_output` argument of `subprocess.run`, which the tool uses. It does not need the Headwater engine.
+It needs Python 3.7 or later and nothing else. 3.7 is the first version with `date.fromisoformat` and the `capture_output` argument of `subprocess.run`, which the tool uses. It does not need the Headwater engine. The step before it does, because the export is computed and not committed:
 
-    python3 integrations/dashboard/dashboard.py --export .headwater/export.json --tree . --out dashboard.html
+    headwater export --format json > export.json
+    python3 integrations/dashboard/dashboard.py --export export.json --tree . --out dashboard.html
 
-- `--export` is the `json` target of a `graph_export` profile, at `export_version` 1.1 or later. This repository's own `.headwater/export.json` is the worked example, and the tests read it. The tool refuses an earlier version.
+- `--export` is the `json` target of a `graph_export` profile, at `export_version` 1.1 or later. This repository's own export is the worked example. The tests read the file that `HEADWATER_EXPORT` names, or compute one with the built engine, and `tools/repo/integrations-fixtures.sh` computes it for them. The tool refuses an earlier version.
 - `--tree` is optional. Give it a checkout of the commit that the export was generated from. In a git checkout the file list is `git ls-files`. In any other directory, it is every file except those under `.git`. Without `--tree`, the coverage view lists the governed paths and states no share.
 - `--out` is the page to write. The default is `dashboard.html` in the current directory.
 - `--corpus-identity` names the corpus that the export belongs to. The default is `local`.
@@ -27,8 +28,8 @@ An export that holds no documents is valid. The tool writes the page, and the pa
 
 One person runs the command, and every other reader only opens a file. There are two ways to do this:
 
-- **A person who already works in the repository** runs the command after `headwater generate` writes a new `.headwater/export.json`. That person then puts `dashboard.html` where the team can open it, for example a shared drive, a wiki attachment, or a static web server. The page is one HTML file that loads nothing from the network, so you can copy it anywhere. A browser opens it directly from disk.
-- **A CI job** runs the same command on each push to the default branch and publishes `dashboard.html` as a build artifact or to a static site. The lead opens the link. Nobody runs a command by hand.
+- **A person who already works in the repository** runs the two commands after the corpus changes. That person then puts `dashboard.html` where the team can open it, for example a shared drive, a wiki attachment, or a static web server. The page is one HTML file that loads nothing from the network, so you can copy it anywhere. A browser opens it directly from disk.
+- **A CI job** runs the same two commands on each push to the default branch and publishes `dashboard.html` as a build artifact or to a static site. The lead opens the link. Nobody runs a command by hand.
 
 This repository does not publish the page. It gives you the tool only. Where a team puts the page is the team's decision.
 
@@ -38,7 +39,9 @@ This repository does not publish the page. It gives you the tool only. Where a t
 |---|---|
 | staleness | `graph.documents[].facets.last_verified`. The export has no top-level `last_verified`. |
 | warrant | `graph.documents[].warrant`. When the key is absent, the page shows "none stated". |
-| coverage | `graph.edges[]` whose `relation` is `governs` and whose target is a `code_path` anchor |
+| coverage | `graph.edges[]` whose `relation` is `governs` and whose target is a `code_path` anchor. The paths are `target.patterns` when the export writes it, and `target.id` when it does not. |
+
+A document can govern a list of paths as one entry, such as `[src/a.rs, src/b.rs]`. The export writes that entry as one anchor. Its `id` is a key and not a path, and its `patterns` holds the paths (export version 1.2 or later). The page shows one row for the list, names every path in it, and counts the files that any of the paths match.
 
 A code path is an exact file, a directory, or a glob, where `*` stays inside one path segment and `**` crosses segments. A path that matches no file in the tree shows 0 files matched. This is often a sign that the path in the document is wrong.
 

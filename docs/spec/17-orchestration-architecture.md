@@ -33,15 +33,15 @@ relations:
     - to: .claude/agents/hw-queue.md
       verified_revision: sha256:3e7a6397fd22c80436ff488cb2be0c8059f28924c1698706be5e0d1b782c9c6a
     - to: .claude/agents/hw-adjudicate.md
-      verified_revision: sha256:c8359200c25bdde102f0ad8cb756a3f7c1de98bef30cdbdca70550ef8a8993b0
+      verified_revision: sha256:c957a511466d03fcf8d7d628b97ebc8e416ce61f85d1aab1a379342ff8a7c8d0
     - to: .claude/agents/hw-build.md
       verified_revision: sha256:562d9f7d962f05931a9062f1d687de2fb4a6d019ad8ef83c59c3ef1589e84e8e
     - to: .claude/agents/hw-verify.md
       verified_revision: sha256:fb4b14973d51715a6c8a6516eb918a1434bfa04c48f4574619d7601b31257b1b
     - to: .claude/agents/hw-integrate.md
-      verified_revision: sha256:cd95a48b66c7aa437883a94ed4d81c49fd76692848ed1330be553a97b9a46779
+      verified_revision: sha256:6029c93103316f8fc40e7f06ce0cc772bcffa9ccb27ec931ecb3ed4dfef369b4
     - to: .claude/skills/hw-run-policy/SKILL.md
-      verified_revision: sha256:c5bbcf3df41b8f346b0fdc1b6dd143f9128b6186d7a6497aaa038845fc67cf54
+      verified_revision: sha256:164c3c18eae39af9f10a5750d12be0c9b82dcd142bbba5d929d8d1112f999591
     - to: .claude/skills/hw-verification-bar/SKILL.md
       verified_revision: sha256:90ea30fa0995ba977d6e5a83fa3418f567d90fff3363718113f9ea81cfc4fcf7
 ---
@@ -110,11 +110,11 @@ flowchart LR
 
 **The parent owns three things: the doctrine, the loop and the veto.** The doctrine is at most ten numbered lines and at most six hundred tokens. A run copies it into the run directory, so that a compacted parent acts from it alone. The loop dispatches the queue, fills the slots, and advances on each report. The veto is the merge decision, and it is the one judgment that never leaves the parent.
 
-**The parent never builds, never merges by hand and does not read the board to choose work.** It runs no `cargo build`. Pull request state arrives inside the verifier's report, and board state arrives as a queue file. Two acts on the board stay with the parent, and [`hw-run-policy`](../../.claude/skills/hw-run-policy/SKILL.md) states both. It closes an epic whose children are all done, after it verifies the Done-when clause by clause. It writes each answer of the owner onto its issue. Every build belongs to the integrator or to a worker's own worktree. [HW-PD-0003](../process/decisions/0003-a-dispatch-pays-when-it-retires-more-parent-turns-than-it-costs.md) is the rule under each of those refusals.
+**The parent never builds, never merges by hand and never reads the board.** It runs no `gh` call and no `cargo build`. Pull request state arrives inside the verifier's report, and board state arrives as a queue file. Every build belongs to the integrator or to a worker's own worktree. [HW-PD-0003](../process/decisions/0003-a-dispatch-pays-when-it-retires-more-parent-turns-than-it-costs.md) is the rule under each of those refusals.
 
 **The parent waits by ending its turn.** With agents in flight, an ended turn is the blocking wait, and each report wakes it. A check on a timer buys nothing and costs a turn at the parent's full context. Its prompt cache holds that context for an hour, so a report arrives warm whether or not the parent looked.
 
-**The parent escalates to a person on two conditions and rules on everything else.** A redirect that changes milestone order and a decision that needs an owner rather than an answer both go to the human. [`headwater-product-owner`](../../.claude/agents/headwater-product-owner.md) reads the whole board and writes one ruling block for each decision the owner owes, and [`headwater-maintainer`](../../.claude/agents/headwater-maintainer.md) reports what a change left stale. Both propose, and neither accepts.
+**The parent escalates to a person on two conditions and rules on everything else.** A redirect that changes milestone order and a decision that needs an owner rather than an answer both go to the human. [`headwater-product-owner`](../../.claude/agents/headwater-product-owner.md) reads the whole board and writes one ruling block for each decision the owner owes. The parent records the owner's answer in the run's decisions file, and the next pass of the product owner posts that answer on the issue. Until then, the adjudication stage reads the recorded answer as the ruling. [`headwater-maintainer`](../../.claude/agents/headwater-maintainer.md) reports what a change left stale. Both propose, and neither accepts.
 
 ### The queue stage
 
@@ -201,7 +201,7 @@ The front matter of this part declares a `governs` edge onto each `.claude/` fil
 | [`.claude/agents/hw-integrate.md`](../../.claude/agents/hw-integrate.md) | The integration stage: the merge, the rebuild, the regenerate, the write-back, the claim release and the ledger line |
 | [`.claude/skills/hw-run-policy/SKILL.md`](../../.claude/skills/hw-run-policy/SKILL.md) | The standing rulings, the environment of a run, and the same list read for cost |
 | [`.claude/skills/hw-verification-bar/SKILL.md`](../../.claude/skills/hw-verification-bar/SKILL.md) | The adversarial checks a branch survives before it merges, and the review questions behind them |
-| [`.claude/agents/headwater-product-owner.md`](../../.claude/agents/headwater-product-owner.md) | Board judgment: milestone order, what is finished and unclosed, and the rulings the owner owes |
+| [`.claude/agents/headwater-product-owner.md`](../../.claude/agents/headwater-product-owner.md) | Board judgment: milestone order, what is finished and unclosed, the rulings the owner owes, ruling write-back and epic closure |
 | [`.claude/agents/headwater-maintainer.md`](../../.claude/agents/headwater-maintainer.md) | What one change touched, what it left stale, and what the corpus is owed |
 | [The evaluation](../evaluations/the-build-order-as-a-multi-agent-system.md) | The measurements under every ruling above, and the numbers a later run answers to |
 | [`docs/process/decisions/`](../process/decisions/README.md) | The seven rulings this part states, each with the argument that settled it |

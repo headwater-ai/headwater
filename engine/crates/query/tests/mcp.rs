@@ -30,6 +30,7 @@ use headwater_graph::declarations::Declarations;
 use headwater_graph::{Config, Graph};
 use headwater_query::mcp::{self, Server, Session, Writing, Written, QUERY_CLASS, WRITE_CLASS};
 use headwater_query::Surface;
+use headwater_yaml::{Spanned, Value};
 use std::path::{Path, PathBuf};
 
 /// The date the recorded session is answered at.
@@ -180,6 +181,9 @@ impl Built {
             root: &self.root,
             declared: self.declared(),
             claims: &self.claims,
+            // The fixture tree is read as one git ignores nothing under, so
+            // the recorded sessions name what they named before #1161.
+            ignored: &headwater_graph::scope::Ignored::default,
             package: "query-fixture",
             version: "0.0.0",
             now: Context::at(Date::parse(at).expect("a date")),
@@ -320,6 +324,69 @@ fn tool_text(response: &str) -> String {
     let blocks = content(response);
     assert_eq!(blocks.len(), 1, "a read answers with one block");
     blocks.into_iter().next().expect("one block")
+}
+
+/// The `structuredContent` a call returned, out of the JSON-RPC envelope, or
+/// `None` where the result carries no such member.
+fn structured(response: &str) -> Option<Spanned<Value>> {
+    headwater_yaml::load(response)
+        .expect("a response is JSON")
+        .value
+        .as_map()
+        .expect("an object")
+        .get("result")
+        .expect("a result rather than an error")
+        .value
+        .as_map()
+        .expect("an object")
+        .get("structuredContent")
+        .cloned()
+}
+
+/// The string member `key` of an object node, where the object has one.
+fn member(node: &Spanned<Value>, key: &str) -> Option<String> {
+    node.value
+        .as_map()
+        .expect("an object")
+        .get(key)
+        .and_then(|value| value.value.as_scalar())
+        .map(|scalar| scalar.text.clone())
+}
+
+/// A value without its spans, so two documents written in two layouts compare
+/// on what they say.
+fn canonical(value: &Value) -> String {
+    match value {
+        Value::Scalar(scalar) => format!("{:?}", scalar.text),
+        Value::Seq(items) => format!(
+            "[{}]",
+            items
+                .iter()
+                .map(|item| canonical(&item.value))
+                .collect::<Vec<_>>()
+                .join(",")
+        ),
+        Value::Map(map) => format!(
+            "{{{}}}",
+            map.iter()
+                .map(|entry| format!("{:?}:{}", entry.key.value, canonical(&entry.value.value)))
+                .collect::<Vec<_>>()
+                .join(",")
+        ),
+    }
+}
+
+/// The list member `pointers` of a structured answer.
+fn pointers_of(node: &Spanned<Value>) -> Vec<Spanned<Value>> {
+    node.value
+        .as_map()
+        .expect("an object")
+        .get("pointers")
+        .expect("pointers")
+        .value
+        .as_seq()
+        .expect("a list")
+        .to_vec()
 }
 
 fn call_check(server: &Server<'_>, format: &str) -> String {
@@ -935,6 +1002,39 @@ fn an_argument_for(tool: &str) -> &'static str {
     }
 }
 
+/// A copy of the fixture tree that removes itself.
+struct Scratch(PathBuf);
+
+impl Scratch {
+    fn of(from: &Path, case: &str) -> Self {
+        let name = format!("headwater-query-{}-{case}", std::process::id());
+        let at = std::env::temp_dir().join(name);
+        let _ = std::fs::remove_dir_all(&at);
+        copy(from, &at);
+        Scratch(at)
+    }
+}
+
+impl Drop for Scratch {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_dir_all(&self.0);
+    }
+}
+
+fn copy(from: &Path, to: &Path) {
+    std::fs::create_dir_all(to).expect("the scratch tree is made");
+    for entry in std::fs::read_dir(from).expect("the fixture tree") {
+        let entry = entry.expect("an entry").path();
+        let target = to.join(entry.file_name().expect("a name"));
+        match entry.is_dir() {
+            true => copy(&entry, &target),
+            false => {
+                std::fs::copy(&entry, &target).expect("a fixture is copied");
+            }
+        }
+    }
+}
+
 /// The tree the server ran over is the tree it found.
 ///
 /// The read-only property is a claim about the filesystem, so it is asserted
@@ -955,39 +1055,6 @@ fn an_argument_for(tool: &str) -> &'static str {
 /// the cases of one binary as threads of one process.
 #[test]
 fn a_session_writes_nothing_to_the_corpus_it_reads() {
-    /// A copy of the fixture tree that removes itself.
-    struct Scratch(PathBuf);
-
-    impl Scratch {
-        fn of(from: &Path, case: &str) -> Self {
-            let name = format!("headwater-query-{}-{case}", std::process::id());
-            let at = std::env::temp_dir().join(name);
-            let _ = std::fs::remove_dir_all(&at);
-            copy(from, &at);
-            Scratch(at)
-        }
-    }
-
-    impl Drop for Scratch {
-        fn drop(&mut self) {
-            let _ = std::fs::remove_dir_all(&self.0);
-        }
-    }
-
-    fn copy(from: &Path, to: &Path) {
-        std::fs::create_dir_all(to).expect("the scratch tree is made");
-        for entry in std::fs::read_dir(from).expect("the fixture tree") {
-            let entry = entry.expect("an entry").path();
-            let target = to.join(entry.file_name().expect("a name"));
-            match entry.is_dir() {
-                true => copy(&entry, &target),
-                false => {
-                    std::fs::copy(&entry, &target).expect("a fixture is copied");
-                }
-            }
-        }
-    }
-
     fn snapshot(at: &Path) -> Vec<(PathBuf, Vec<u8>)> {
         let mut found = Vec::new();
         let mut stack = vec![at.to_path_buf()];
@@ -1056,4 +1123,182 @@ fn a_session_writes_nothing_to_the_corpus_it_reads() {
         );
     }
     assert_eq!(before, snapshot(&scratch.0));
+}
+
+/// The document path both structured cases add: it holds ` (`, which the text
+/// form split early.
+const PAREN_PATH: &str = "query/decisions/a (draft) note.md";
+
+/// A private copy of the fixture tree with one more document at
+/// [`PAREN_PATH`], named `name`, summarized by `summary`, and governing
+/// `src/ingest/mod.rs`. The checked-in taxonomy declares no facet in the `name`
+/// role, so the copy declares one, and a pointer then renders as
+/// `path (name) — summary`.
+fn a_corpus_with_one_named_document(case: &str, name: &str, summary: &str) -> (Scratch, Built) {
+    let scratch = Scratch::of(&fixtures_dir(), case);
+    let taxonomy = scratch.0.join("query.taxonomy.yml");
+    let declared = std::fs::read_to_string(&taxonomy).expect("the fixture taxonomy");
+    let scent = "  summary:\n    role: scent\n    required: true\n";
+    assert!(declared.contains(scent), "the taxonomy declares a scent");
+    std::fs::write(
+        &taxonomy,
+        declared.replacen(scent, &format!("{scent}  title:\n    role: name\n"), 1),
+    )
+    .expect("the taxonomy");
+    std::fs::write(
+        scratch.0.join(PAREN_PATH),
+        format!(
+            "---\nid: DR-FIX-0099\ntitle: {name}\nstatus: current\nstatus_since: 2026-02-01\nsummary: {summary}\nprovenance:\n  warrant: accepted\n  accepted_by: the fixture tree\nrelations:\n  governs:\n    - src/ingest/mod.rs\n---\n\n# {name}\n\nA document whose path, name and summary the text form cannot carry.\n"
+        ),
+    )
+    .expect("the document");
+    let built = fixture_tree_at(&scratch.0);
+    (scratch, built)
+}
+
+/// A mapping with one member removed, and any other value as it stands.
+fn without(value: &Value, key: &str) -> Value {
+    match value {
+        Value::Map(map) => Value::Map(headwater_yaml::Mapping::new(
+            map.iter()
+                .filter(|entry| entry.key.value != key)
+                .cloned()
+                .collect(),
+        )),
+        other => other.clone(),
+    }
+}
+
+/// Every string under a value, with the path of members that reaches it.
+fn strings_under(value: &Value, at: &str, found: &mut Vec<(String, String)>) {
+    match value {
+        Value::Scalar(scalar) => found.push((at.to_string(), scalar.text.clone())),
+        Value::Seq(items) => {
+            for (index, item) in items.iter().enumerate() {
+                strings_under(&item.value, &format!("{at}[{index}]"), found);
+            }
+        }
+        Value::Map(map) => {
+            for entry in map {
+                strings_under(
+                    &entry.value.value,
+                    &format!("{at}.{}", entry.key.value),
+                    found,
+                );
+            }
+        }
+    }
+}
+
+/// A path with ` (` in it, a name with spaces and a summary past eighty
+/// columns come back exactly from `structuredContent`, and the text block
+/// shows the pointer on one line (#1248).
+///
+/// The text form cannot carry these three faithfully. A client that took the
+/// path up to the first ` (` split `a (draft) note.md` early, and a fold at
+/// eighty columns put the tail of the summary on a line indented as evidence
+/// is, which a client then read as evidence. The summary is written so that
+/// the fold at eighty columns would begin its continuation with `governs`.
+#[test]
+fn a_route_answer_carries_its_pointers_as_structured_content() {
+    let path = PAREN_PATH;
+    let name = "Quota notes at the edge";
+    let summary = "why the quota governs each retry of a tenant, and what quarantine throttling does at the edge";
+    let (_scratch, built) = a_corpus_with_one_named_document(
+        "a_route_answer_carries_its_pointers_as_structured_content",
+        name,
+        summary,
+    );
+    let server = built.server(RECORDED_AT);
+
+    let response = once(
+        &server,
+        &calling(
+            "route",
+            r#"{"task":"why is quarantine throttling one quota rule"}"#,
+        ),
+    );
+    let text = tool_text(&response);
+    let answer = structured(&response).expect("the route answer carries structuredContent");
+    let pointer = pointers_of(&answer)
+        .into_iter()
+        .find(|pointer| member(pointer, "path").as_deref() == Some(path))
+        .unwrap_or_else(|| panic!("the route offers {path}: {text}"));
+    assert_eq!(member(&pointer, "name").as_deref(), Some(name));
+    assert_eq!(member(&pointer, "summary").as_deref(), Some(summary));
+    assert!(
+        text.lines()
+            .any(|line| line.contains(path) && line.ends_with(summary)),
+        "the pointer is one line of the text block: {text}"
+    );
+    // The member is the `route --json` document for the same task less its
+    // `text`, which is folded for a terminal, so one parser reads both.
+    let route = built.surface().route(
+        "why is quarantine throttling one quota rule",
+        headwater_query::Budget::default(),
+    );
+    let document =
+        headwater_yaml::load(&headwater_query::json::route(&route)).expect("route --json is JSON");
+    assert!(
+        member(&answer, "text").is_none(),
+        "structuredContent carries no folded text"
+    );
+    assert_eq!(
+        canonical(&answer.value),
+        canonical(&without(&document.value, "text")),
+        "structuredContent is the route --json document less its text"
+    );
+
+    let response = once(
+        &server,
+        &calling("governing_docs_for_path", r#"{"path":"src/ingest/mod.rs"}"#),
+    );
+    let answer = structured(&response).expect("the governing answer carries structuredContent");
+    let pointer = pointers_of(&answer)
+        .into_iter()
+        .find(|pointer| member(pointer, "path").as_deref() == Some(path))
+        .unwrap_or_else(|| panic!("{path} governs src/ingest/mod.rs: {response}"));
+    assert_eq!(member(&pointer, "name").as_deref(), Some(name));
+    assert_eq!(member(&pointer, "summary").as_deref(), Some(summary));
+}
+
+/// No string under `structuredContent` holds a newline, even where a name is
+/// longer than the fold width (#1248). A fold inside a structured member is a
+/// newline a client reads as a second line, and `route --json` folds its
+/// `text` at eighty columns, so that member stays out of the MCP answer.
+#[test]
+fn no_string_under_structured_content_is_folded() {
+    let name = "Quota notes at the edge, and why each retry of a tenant answers to one rule and never to two";
+    assert!(name.chars().count() > 80, "the name is past the fold width");
+    let summary = "why the quota governs each retry of a tenant, and what quarantine throttling does at the edge";
+    let (_scratch, built) = a_corpus_with_one_named_document(
+        "no_string_under_structured_content_is_folded",
+        name,
+        summary,
+    );
+    let server = built.server(RECORDED_AT);
+    for (tool, arguments) in [
+        (
+            "route",
+            r#"{"task":"why is quarantine throttling one quota rule"}"#,
+        ),
+        ("governing_docs_for_path", r#"{"path":"src/ingest/mod.rs"}"#),
+    ] {
+        let response = once(&server, &calling(tool, arguments));
+        let answer = structured(&response).expect("the answer carries structuredContent");
+        assert!(
+            pointers_of(&answer)
+                .iter()
+                .any(|pointer| member(pointer, "name").as_deref() == Some(name)),
+            "{tool} names the long-named document: {response}"
+        );
+        let mut found = Vec::new();
+        strings_under(&answer.value, "structuredContent", &mut found);
+        for (at, text) in &found {
+            assert!(
+                !text.contains('\n'),
+                "{tool}: {at} holds a newline: {text:?}"
+            );
+        }
+    }
 }

@@ -110,7 +110,8 @@
 //! - a probe declares `patched` and names an oracle that is not one of the
 //!   [`headwater_check::RULES`] this engine carries;
 //! - a probe declares an expectation over documents and names none;
-//! - a probe declares `answered` and no closed set of answers;
+//! - a probe declares `answered` and no closed set of answers, no expected
+//!   value inside that set, or every value of it as expected;
 //! - a probe of another form declares a rule or a closed set that its
 //!   expectation never reads.
 //!

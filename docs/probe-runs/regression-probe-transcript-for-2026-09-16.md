@@ -34,6 +34,8 @@ Two of the eight sessions — the `patched` probe and the `cited` probe, both ne
 
 This transcript stands at `current`, and it is not the same lock the last recording carried. [HW-DR-0062](../decisions/0062-a-refused-recording-is-held-by-the-reliance-its-state-claims-and-not-by-promotion.md) is the ruling that separates a transcript's state from its promotion, and [spec 15](../spec/15-the-recorder-contract.md) states what a run does about a refusal. This transcript's own commit touches no key of `.headwater/taxonomy.lock` or `.headwater/overlay.yml`, which is the ordering that invalidated the 2026-09-11 recording on the day it landed: that recording's own commit moved the taxonomy lock it pinned, and nothing could report the collision because the refusal text was itself the derived output.
 
+**This transcript predates the sealed workspace (#1229).** Every session ran in a workspace that kept `docs/probes/`, `docs/probe-runs/` and `docs/probe-results/`, so a session could read its own expectation or an earlier answer. In 9 calls, the sessions of 1 of the 8 probes named a path on one of those shelves. No rate graded from this transcript is a clean with-guidance rate. [`tools/probe/seal.sh`](../../tools/probe/seal.sh) now removes those files before a session runs.
+
 ## Events
 
 ```yaml

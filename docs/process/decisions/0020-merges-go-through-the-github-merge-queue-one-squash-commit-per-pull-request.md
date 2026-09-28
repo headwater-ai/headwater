@@ -14,7 +14,7 @@ provenance:
 relations:
   governs:
     - to: .github/workflows/ci.yml
-      verified_revision: sha256:320fa7965d87ca289e72f07c35c7c1b9a57d665d0b61e0a5abf4cbe2a0dbfe2f
+      verified_revision: sha256:c20d607dad2801fe4571a935454c60ba58624f8645ec69004e2b5909f9396efc
     - to: tools/run/queue-done.sh
       verified_revision: sha256:e1d5b097918a1f58af5cdd9610b321f7fe949b0e7f5f2a408643605f2b4e709d
     - to: tools/run/queue-done-fixtures.sh
@@ -40,6 +40,8 @@ Earlier in run `20260927-0443`, pull request #1211 tried a batch branch. It merg
 **An ejection is reported, and nothing enqueues it again.** The integrator reports an ejected pull request with the reason that `queue-done.sh` prints, which names the failing check or the conflict. A new attempt is a new ruling, and the parent makes it.
 
 **A branch that is only behind `main` is not brought current by hand.** The queue tests the composition, so the strict up-to-date rule has no work left to do. The ruleset drops it. The integrator merges `origin/main` into a branch only when the queue reports a conflict. GitHub merges with no custom merge driver, so it can write a derived artifact wrong. That artifact fails the projection step of the `headwater` job on the group tip, and the queue ejects the pull request.
+
+**The integrator enqueues every ruled pull request together, and the queue groups them.** Until #1273 every pull request that added a document moved the measured figures on three pages under `site/`, and each page was declared `-merge`. So each queue entry conflicted with the entry before it, and a parent ruled that the integrator enqueue one at a time. [HW-DR-0097](../../decisions/0097-a-figure-on-a-hand-built-page-is-measured-when-the-site-is-published-and-the-committed-page-carries-none.md) moved the figures out of the committed pages, so no shared derived file moves between two such pull requests.
 
 **The batch branch of #1211 is retired.** No integrator merges several pull requests into one branch again.
 

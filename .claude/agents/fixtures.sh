@@ -27,7 +27,6 @@ root=$(cd "$(dirname "$0")/../.." && pwd)
 agents="$root/.claude/agents"
 commands="$root/.claude/commands"
 skills="$root/.claude/skills"
-export_json="$root/.headwater/export.json"
 
 # The three ceilings, in bytes. Declared here and nowhere else.
 claude_md_ceiling=9216
@@ -132,8 +131,14 @@ done
 # --- 3. every ruling cited under .claude/ exists and is not superseded --------
 
 printf '\n# every ruling cited under .claude/ is on the graph and not superseded\n'
-if [ ! -f "$export_json" ]; then
-    fail 'the graph export is on this tree' "$export_json is missing"
+# The graph export is computed and never committed (#1251), so this computes
+# it from the newer of the two built engines, the way any reader of it does.
+export_json="$scratch/export.json"
+. "$root/tools/repo/resolve-engine.sh"
+if ! engine=$(hw_resolve_engine_bin "$root"); then
+    fail 'the built engine exports this repository' "$(hw_resolve_engine_missing_message "$root")"
+elif ! "$engine" export --format json --root "$root" >"$export_json" 2>"$scratch/export.err"; then
+    fail 'the built engine exports this repository' "$(tail -n 5 "$scratch/export.err")"
 else
     missing=''
     superseded=''

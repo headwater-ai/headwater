@@ -63,8 +63,8 @@ The documents on this shelf, in the reading order this corpus derives. Each head
 === exports/native.json (graph_export) ===
 {
   "headwater:generated": "graph_export. `headwater generate` writes this file, and `headwater generate --check` holds it. Edit the corpus, not this file.",
-  "version": "1.1",
-  "export_version": "1.1",
+  "version": "1.2",
+  "export_version": "1.2",
   "profile": {
     "name": "default",
     "target": "json",
@@ -225,8 +225,8 @@ The documents on this shelf, in the reading order this corpus derives. Each head
 === exports/front-matter.schema.json (graph_export) ===
 {
   "headwater:generated": "graph_export. `headwater generate` writes this file, and `headwater generate --check` holds it. Edit the corpus, not this file.",
-  "version": "1.1",
-  "export_version": "1.1",
+  "version": "1.2",
+  "export_version": "1.2",
   "profile": {
     "name": "default",
     "target": "jsonschema",
@@ -483,8 +483,8 @@ The documents on this shelf, in the reading order this corpus derives. Each head
 === exports/partner.json (graph_export) ===
 {
   "headwater:generated": "graph_export. `headwater generate` writes this file, and `headwater generate --check` holds it. Edit the corpus, not this file.",
-  "version": "1.1",
-  "export_version": "1.1",
+  "version": "1.2",
+  "export_version": "1.2",
   "profile": {
     "name": "partner",
     "target": "json",

@@ -4,9 +4,10 @@
 //! [#321](https://github.com/headwater-ai/headwater/issues/321) asks that
 //! `route` and `explain` "emit JSON that `python3 -m json.tool` parses". These
 //! two documents are that JSON. They are the first machine surface either read
-//! has ever had: the MCP server serves both as [`Route::render`] and
+//! has ever had: the MCP server served both as [`Route::render`] and
 //! [`Explanation::render`] inside a text block, and a caller who wanted the
-//! parts had to take them out of prose.
+//! parts had to take them out of prose. The MCP `route` tool now carries the
+//! route document, less its folded `text`, as its `structuredContent` (#1248).
 //!
 //! # Three rules that hold for every document this module writes
 //!
@@ -47,6 +48,34 @@ pub const VERSION: &str = "1.0";
 /// One route as JSON.
 pub fn route(route: &Route) -> String {
     of_route(route).render_pretty()
+}
+
+/// One route as the MCP `route` tool carries it in `structuredContent`: the
+/// `route --json` document with every member but `text` (#1248).
+///
+/// `text` is the report folded at eighty columns for a terminal, and a fold
+/// inside a name or a summary is a newline a client could read as structure.
+/// The MCP answer carries the report once, unfolded, in its text block.
+pub fn route_structured(route: &Route) -> Json {
+    match of_route(route) {
+        Json::Object(members) => Json::Object(
+            members
+                .into_iter()
+                .filter(|(key, _)| key != "text")
+                .collect(),
+        ),
+        other => other,
+    }
+}
+
+/// A list of pointers as `{"pointers": [...]}`, each element the pointer
+/// `route` writes. The MCP `governing_docs_for_path` tool carries it as its
+/// `structuredContent` (#1248).
+pub fn pointers_value(pointers: &[Pointer]) -> Json {
+    Json::object([(
+        "pointers",
+        Json::Array(pointers.iter().map(of_pointer).collect()),
+    )])
 }
 
 /// One explanation as JSON.
