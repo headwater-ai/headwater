@@ -594,6 +594,35 @@ $out" ;;
         0 'docs/decisions/0052-a-document-is-proposed-at-the-state-it-will-hold-and-the-merge-activates-it.md' \
         "$engine" route --root "$scratch/arm" "$status_task"
 
+    # The same probe, answered from a prior alone. On 2026-09-28 every absent
+    # session answered the value `current` with no tool call, so a closed set
+    # that the value alone satisfies measured the model and not the documents.
+    # The set the plan prints must record the bare value as no answer, and the
+    # value with the ruling's identifier as that line.
+    name='the status probe records the value alone as no answer, and the value with the ruling as itself'
+    status_answers=$("$engine" probe plan --root "$root" --tier documentation \
+        --category sufficiency --repetitions 1 2>/dev/null \
+        | awk '/^- HW-PROBE-a-session-names-the-status-a-settled-decision/ { on = 1; next }
+               /^- / { on = 0 }
+               on && /^    answers: / { sub(/^    answers: /, ""); print; exit }')
+    printf '%s\n' '{"type":"result","result":"current"}' > "$scratch/bare.jsonl"
+    printf '%s\n' '{"type":"result","result":"current HW-DR-0052"}' > "$scratch/ruled.jsonl"
+    bare=$(sh "$root/tools/probe/probe-record.sh" --answer-only "$scratch/bare.jsonl" --answers "$status_answers")
+    ruled=$(sh "$root/tools/probe/probe-record.sh" --answer-only "$scratch/ruled.jsonl" --answers "$status_answers")
+    if [ -z "$status_answers" ]; then
+        fail "$name" 'the plan printed no answers for the status probe'
+    elif ! printf '%s' "$status_task" | grep -qF 'the identifier in its `id` field'; then
+        # A set that wants the identifier, under a task that never asks for
+        # one, fails every session whatever the documents say.
+        fail "$name" 'the task no longer asks for the identifier that the answer set requires'
+    elif [ -n "$bare" ]; then
+        fail "$name" "the bare value is recorded as \`$bare\` against the set \`$status_answers\`"
+    elif [ "$ruled" != 'current HW-DR-0052' ]; then
+        fail "$name" "the value with the ruling is recorded as \`$ruled\` against the set \`$status_answers\`"
+    else
+        pass "$name"
+    fi
+
     printf '\n# headwater-maintainer, against the hook it invokes\n'
 
     # The agent tells its reader to drive the write hook by hand, one path at a
