@@ -23,7 +23,7 @@ relations:
     - to: tools/site/refresh-figures.sh
       verified_revision: sha256:7408acc04eb80e92801ee2037319fd873f65522cb8b6d5a7c0f0a1a206a388c7
     - to: tools/site/deploy-site.sh
-      verified_revision: sha256:a79c1be5f5371afcedad9d9d666df24ed76e9e3aa367021aaa18d4d99c0de01c
+      verified_revision: sha256:18f7b6be6591074451fd39faa0c38346e59437285e3b0f930142da87ac33faa0
     - to: tools/site/check-site-figures.sh
       verified_revision: sha256:52ae77f1c1c66f68649935759cb305401f8608cf1b9320b4f69aac207ae88974
     - to: tools/site/figures-fixtures.sh
