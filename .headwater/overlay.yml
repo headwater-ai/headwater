@@ -594,12 +594,25 @@ add:
   # a part of that series and nothing reads an order among them. Dropping
   # `sequence` from `design_spec` here would leave the series layout
   # `{sequence:02d}-{slug}.md` with a hole for every new part. So this is a
-  # second kind that requires the title alone.
+  # second kind that requires no sequence.
   #
   # **Why `behavior`, and why `spec_id`.** The purpose states what the system
   # does as it is now, which a subsystem spec does at a smaller scale. The
   # identifier reuses `spec_id`, the way `register_id` serves two kinds, so a
   # subsystem spec reads as `HW-SPEC-<slug>` beside the parts it refines.
+  #
+  # **Why not `technical_spec`.** The standards-spec bundle declares one, and
+  # its doctrine reads a technical spec with no functional spec as a defect.
+  # HW-DR-0098 rules that no subsystem gets a functional spec, and `realizes`
+  # reaches only a `functional_spec`, so every subsystem spec would stand
+  # unpaired by that bundle's own reading. Selecting the bundle would also bring
+  # two kinds, two relations, a purpose and two shelves that this corpus does
+  # not use. The section contract below takes the part of that kind that fits.
+  #
+  # **The sections.** `Scope` names the crates and the pipeline stages the
+  # subsystem owns. `Design` states the data structures and algorithms, and
+  # the reasons for them. `Invariants` states what holds across every run,
+  # which is what an editor of the code must not break.
   #
   # This lives in the overlay because the subsystems are this engine's, and no
   # adopter's corpus has them.
@@ -612,6 +625,8 @@ add:
     identifier: {scheme: spec_id}
     facets:
       require: [title]
+    sections:
+      require: [Scope, Design, Invariants]
 
   # Disjoint from every shelf above it. No `layout`, because nothing numbers a
   # subsystem spec: the file is named from the title.

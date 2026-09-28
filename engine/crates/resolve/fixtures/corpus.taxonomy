@@ -621,6 +621,11 @@ kinds:
     language: ste_house
     lifecycle: standard
     purpose: behavior
+    sections:
+      require:
+        - Scope
+        - Design
+        - Invariants
     voice: declarative
   tutorial:
     facets:
