@@ -1080,6 +1080,24 @@ pub enum ProbeWord {
                     selected — so it identifies a run rather than choosing one"
         )]
         seed: u64,
+        #[arg(
+            long,
+            value_name = "probe",
+            help = "leave one probe out of the selection, by its identifier. Repeat it for more \
+                    than one. The selection digest is taken after the exclusion, so it states \
+                    the run that happens, and an identifier the selection does not hold is \
+                    refused rather than ignored"
+        )]
+        exclude: Vec<String>,
+        #[arg(
+            long,
+            value_name = "n",
+            help = "run fewer repetitions than the tier declares, for a pilot of the same \
+                    selection and arms. It may only lower the count: a higher one is refused, \
+                    because spending more is a change to `.headwater/probe.yml` that a person \
+                    makes"
+        )]
+        repetitions: Option<u32>,
     },
     Record {
         #[arg(

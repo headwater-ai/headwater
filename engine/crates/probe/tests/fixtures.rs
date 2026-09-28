@@ -1936,3 +1936,90 @@ fn the_colored_results_strip_to_the_plain_results() {
     );
     assert_eq!(stripped(&ansi), plain);
 }
+
+/// A probe named out of the selection leaves it before the digest is taken,
+/// so the digest states the run that happens (#980). The machine half of Q16
+/// had no selection that planned until one probe of the discovery category
+/// could be named out of it.
+#[test]
+fn an_excluded_probe_leaves_the_selection_and_its_digest() {
+    let whole = plan_at(Tier::Campaign, &Narrowing::default());
+    let narrowed = plan_at(
+        Tier::Campaign,
+        &Narrowing {
+            exclude: vec!["PROBE-FIX-cited".to_string()],
+            repetitions: Some(1),
+            ..Narrowing::default()
+        },
+    );
+    assert_eq!(narrowed.selected.len(), whole.selected.len() - 1);
+    assert!(narrowed
+        .selected
+        .iter()
+        .all(|selected| selected.id != "PROBE-FIX-cited"));
+    assert_ne!(narrowed.selection, whole.selection);
+    assert_eq!(narrowed.sessions, 4 * 2, "four probes, two arms, one repetition");
+}
+
+/// An exclusion that removes nothing is refused, because a misspelled
+/// identifier would otherwise plan the unnarrowed run under a command line
+/// that asked for less.
+#[test]
+fn an_exclusion_the_selection_does_not_hold_is_refused() {
+    let plan = plan_at(
+        Tier::Regression,
+        &Narrowing {
+            exclude: vec!["PROBE-FIX-nowhere".to_string()],
+            ..Narrowing::default()
+        },
+    );
+    assert_eq!(
+        plan.refusal,
+        Some(Refusal::ExcludedUnknown {
+            probe: "PROBE-FIX-nowhere".to_string()
+        })
+    );
+}
+
+/// The repetitions narrowing may lower the count for a pilot and never raise
+/// it, because a higher count spends more than a person agreed to (#980).
+#[test]
+fn the_repetitions_narrowing_lowers_the_count_and_never_raises_it() {
+    let pilot = plan_at(
+        Tier::Campaign,
+        &Narrowing {
+            repetitions: Some(3),
+            ..Narrowing::default()
+        },
+    );
+    assert_eq!(pilot.repetitions, 3);
+    assert_eq!(pilot.declared_repetitions, 58);
+    assert_eq!(pilot.sessions, 5 * 2 * 3);
+    assert!(pilot
+        .render(ColorMode::Plain)
+        .contains("narrowed the repetitions to 3 of the 58"));
+
+    let raised = plan_at(
+        Tier::Campaign,
+        &Narrowing {
+            repetitions: Some(59),
+            ..Narrowing::default()
+        },
+    );
+    assert_eq!(
+        raised.refusal,
+        Some(Refusal::RepetitionsRaised {
+            asked: 59,
+            declared: 58
+        })
+    );
+
+    let none = plan_at(
+        Tier::Campaign,
+        &Narrowing {
+            repetitions: Some(0),
+            ..Narrowing::default()
+        },
+    );
+    assert_eq!(none.refusal, Some(Refusal::RepetitionsZero));
+}

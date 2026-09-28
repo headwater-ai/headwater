@@ -12,7 +12,7 @@
 # what a transcript kept and what it dropped.
 #
 #     tools/probe/probe-record.sh … | tools/probe/probe-transform.sh --probe PROBE-X \
-#         --session one --root . [--workspace /tmp/copy] [--produced docs/x.md]…
+#         --session one --root . [--workspace /tmp/copy] [--oracle-tree /tmp/ref] [--produced docs/x.md]…
 #
 # ## What it keeps
 #
@@ -88,6 +88,7 @@ probe=
 session=
 root=.
 workspace=
+oracle_tree=
 produced_paths=
 
 while [ $# -gt 0 ]; do
@@ -96,6 +97,7 @@ while [ $# -gt 0 ]; do
         --session) session=${2:-}; shift 2 ;;
         --root) root=${2:-}; shift 2 ;;
         --workspace) workspace=${2:-}; shift 2 ;;
+        --oracle-tree) oracle_tree=${2:-}; shift 2 ;;
         --produced) produced_paths="$produced_paths${2:-}
 "; shift 2 ;;
         --answer) answer=${2:-}; shift 2 ;;
@@ -105,7 +107,7 @@ done
 answer=${answer:-}
 
 [ -n "$probe" ] && [ -n "$session" ] || {
-    echo "usage: probe-transform.sh --probe <id> --session <name> [--root <dir>] [--workspace <dir>] [--produced <path>]… [--answer <text>]" >&2
+    echo "usage: probe-transform.sh --probe <id> --session <name> [--root <dir>] [--workspace <dir>] [--oracle-tree <dir>] [--produced <path>]… [--answer <text>]" >&2
     exit 2
 }
 command -v jq >/dev/null 2>&1 || {
@@ -260,6 +262,15 @@ step_derive_cites() {
 # The run is over the base, which is the workspace where a driver named one,
 # because that is the tree that holds the artifact.
 #
+# **`--oracle-tree` moves the run off the workspace (#980).** An absent-arm
+# workspace has no `.headwater/`, so `headwater check` refuses there and no
+# `patched` session of that arm could be recorded at all. The oracle is the
+# instrument and not the treatment, so it has to read both arms the same way.
+# Given a reference tree — the pinned present-arm tree with no session's edits
+# in it — this copies the tree, writes the one artifact into the copy at its own
+# path, and checks the copy. Both arms of a campaign pass the same reference
+# tree, so a finding differs between them only where the artifact does.
+#
 # An empty `findings` list is a claim that no rule reported over the artifact.
 # So a failure here refuses rather than writes one, on the same reasoning as
 # the observation guard above: a derivation that could not run is not a
@@ -273,6 +284,26 @@ step_derive_findings() {
         echo "probe-transform: refusing to write an empty list, which claims that no rule reported." >&2
         exit 5
     }
+    if [ -n "$oracle_tree" ]; then
+        [ -d "$oracle_tree/.headwater" ] || {
+            echo "probe-transform: the oracle tree at $oracle_tree holds no \`.headwater/\`, so it cannot check anything." >&2
+            exit 5
+        }
+        rm -rf "$scratch/oracle" "$scratch/oracle.json"
+        cp -a "$oracle_tree" "$scratch/oracle" || exit 5
+        mkdir -p "$scratch/oracle/${file%/*}" && cp "$base/$file" "$scratch/oracle/$file" || {
+            echo "probe-transform: the artifact $file could not be copied into the oracle tree." >&2
+            exit 5
+        }
+        "$engine" check --root "$scratch/oracle" --format json > "$scratch/oracle.json" 2>"$scratch/check.err" || {
+            echo "probe-transform: \`headwater check --format json\` failed over the oracle tree:" >&2
+            tail -3 "$scratch/check.err" >&2
+            exit 5
+        }
+        jq -r --arg path "$file" '.findings[] | select(.path == $path) | .rule' \
+            < "$scratch/oracle.json" | sort -u
+        return 0
+    fi
     if [ ! -f "$scratch/check.json" ]; then
         "$engine" check --root "$base" --format json > "$scratch/check.json" 2>"$scratch/check.err" || {
             echo "probe-transform: \`headwater check --format json\` failed:" >&2

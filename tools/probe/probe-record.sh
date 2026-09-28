@@ -114,6 +114,25 @@
 #       identifier or its slug, or no `grep` can confirm that none does
 #       (`tools/probe/seal.sh` is the remedy)
 #   10  the harness exited nonzero, and its status is on stderr
+#   11  the plan refuses the run, or it does not select the probe. It runs
+#       before any harness call, so it spends nothing
+#
+# ## The plan's refusal is this script's refusal
+#
+# `headwater probe plan` exits 0 when it refuses a run, on purpose: a probe
+# never gates, so no exit status of the engine carries a fact about a run, and a
+# caller reads the text. Until #980 this script read the six identity members
+# out of that text and never the refusal beside them, so a run over the
+# ceiling, or over a probe the tier's absent arm cannot measure, recorded as if
+# it had planned. The ceiling in `.headwater/probe.yml` held only where a
+# person ran the plan first. Now this script reads the heading the plan prints
+# above a refusal and stops, and it stops too when the plan does not select the
+# probe it was asked to record.
+#
+# `--category`, `--exclude` and `--repetitions` reach the plan unchanged, so the
+# selection digest a narrowed run records is the digest of the run it planned.
+# `--max-turns` reaches the harness, so a batch can hold every session of both
+# arms to one cap. `--oracle-tree` reaches the transform (see there).
 
 set -u
 
@@ -125,6 +144,10 @@ workspace=
 raw=
 tier=
 arm=
+category=
+excludes=
+repetitions=
+max_turns=
 identity_only=0
 provider_only=0
 answer_only=0
@@ -141,6 +164,11 @@ while [ $# -gt 0 ]; do
         --raw) raw=${2:-}; shift 2 ;;
         --tier) tier=${2:-}; shift 2 ;;
         --arm) arm=${2:-}; shift 2 ;;
+        --category) category=${2:-}; shift 2 ;;
+        --exclude) excludes="$excludes --exclude ${2:-}"; shift 2 ;;
+        --repetitions) repetitions=${2:-}; shift 2 ;;
+        --max-turns) max_turns=${2:-}; shift 2 ;;
+        --oracle-tree) transform_args="$transform_args --oracle-tree ${2:-}"; shift 2 ;;
         --identity-only) identity_only=1; shift ;;
         --provider-only) provider_only=1; raw=${2:-}; shift 2 ;;
         --answer-only) answer_only=1; raw=${2:-}; shift 2 ;;
@@ -355,7 +383,10 @@ fi
 # than recomputing them is the whole point: a recomputed digest is a second
 # measurement, and two measurements of a moving tree do not have to agree.
 step_copy_plan_identity() {
-    "$engine" probe plan --root "$root" ${tier:+--tier "$tier"} > "$1" 2>"$1.err"
+    # shellcheck disable=SC2086
+    "$engine" probe plan --root "$root" ${tier:+--tier "$tier"} \
+        ${category:+--category "$category"} $excludes \
+        ${repetitions:+--repetitions "$repetitions"} > "$1" 2>"$1.err"
 }
 
 plan=$(mktemp) || exit 1
@@ -365,6 +396,15 @@ step_copy_plan_identity "$plan" || {
     cat "$plan.err" >&2
     exit 5
 }
+if grep -q '^## This run does not start' "$plan"; then
+    echo "probe-record: \`headwater probe plan\` refuses this run:" >&2
+    sed -n '/^## This run does not start/,$p' "$plan" | sed '1,2d' >&2
+    exit 11
+fi
+if [ "$identity_only" = 0 ] && [ -n "$probe" ] && ! grep -q "^- $probe (" "$plan"; then
+    echo "probe-record: the plan does not select $probe, so a session of it records nothing this run planned." >&2
+    exit 11
+fi
 
 member() { sed -n "s/^${1}: *//p" "$plan" | head -1; }
 
@@ -435,6 +475,7 @@ rm -f "$raw.nocd"
     cd "$here" || { : > "$raw.nocd"; exit 1; }
     claude -p --output-format stream-json --verbose \
         ${model:+--model "$model"} \
+        ${max_turns:+--max-turns "$max_turns"} \
         "$task"
 ) > "$raw" 2>"$raw.err"
 status=$?

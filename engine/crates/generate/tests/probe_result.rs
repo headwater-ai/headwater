@@ -567,22 +567,66 @@ cost_cents: 25
 ```
 ";
 
+/// The absent arm again, with every key recorded: the session read nothing,
+/// which an `opened` probe grades as not satisfied rather than refused.
+const CAMPAIGN_ABSENT_CLEAN: &str = "\
+---
+id: RUN-FIX-campaign-absent-clean
+status: current
+status_since: 2026-09-20
+summary: One recorded campaign session of the absent arm, with every key recorded.
+tier: campaign
+arm: absent
+---
+
+# One recorded campaign session, absent arm
+
+## Run identity
+
+```yaml
+model: a-model
+served_version: a-model-20260701
+tree: sha256:fixture-tree
+lock: sha256:fixture
+selection: sha256:c6f58f5bd22dfb4b353528edb188b7de55e447426fd4ad335559d172e000a9f9
+read_set: sha256:e8c65e754bbaffdf1e27684483ca8d23fbca37d804d298d58cb5086c3947dacf
+seed: 0
+harness: 0.2.0
+tier: campaign
+arm: absent
+at: 2026-09-20
+cost_cents: 25
+```
+
+## Events
+
+```yaml
+- probe: PROBE-FIX-opened
+  session: watched
+  calls: []
+  produced: []
+  answer: null
+- probe: PROBE-FIX-answered
+  session: watched
+  calls: []
+  produced: []
+  answer: \"yes\"
+```
+";
+
 /// The decisive fixture for the two-arm comparison: two campaign transcripts
-/// that share one selection digest, one model and one served version, where
-/// one records a refused session the other does not.
+/// that share one selection digest, one model, one served version and one tree,
+/// where the absent arm records a session with no `calls` key.
 ///
-/// [The module the issue points at](https://github.com/headwater-ai/headwater/blob/main/docs/spec/05-ai-integration.md)
-/// already states the rule for one transcript against itself: "A difference
-/// in refused sessions between arms is a defect of the run and not a
-/// finding." Nothing before this test read two transcripts together at all,
-/// so nothing enforced that rule between two arms — the plan wrote two
-/// results with two different denominators and called the run clean.
+/// A missing key is a condition of the recorder and not of the session, so the
+/// absent arm's rate is over a session nobody graded. The owner ruled on #980
+/// (2026-09-28) that a refusal the recorder caused is a defect whose remedy is
+/// to record the session again, so a compared arm that holds one fails the run.
 ///
-/// This runs red before `Plan::mismatched_arms` existed: no field on a plan
-/// carried a pairing at all, so the comparison this test asserts had no code
-/// path to reach.
+/// This ran red before the rule existed as the older rule's test: the two arms'
+/// refused counts disagree here too, and nothing read two transcripts together.
 #[test]
-fn two_arms_of_one_campaign_disagreeing_on_refused_sessions_fail_the_run() {
+fn a_compared_arm_with_a_recorder_defect_fails_the_run() {
     let at = copied("campaign-arms");
     std::fs::write(
         at.join("runs/probe-runs/campaign-present.md"),
@@ -596,48 +640,178 @@ fn two_arms_of_one_campaign_disagreeing_on_refused_sessions_fail_the_run() {
     .expect("the absent-arm transcript lands");
 
     let plan = plan_over(&at);
-    let mismatched = match plan.mismatched_arms.as_slice() {
+    let defective = match plan.defective_arms.as_slice() {
         [one] => one,
         other => panic!(
-            "the plan reported {} mismatched pairs, not one: {:?}",
+            "the plan reported {} defective pairs, not one: {:?}",
             other.len(),
             other
         ),
     };
-    assert_eq!(mismatched.present, "runs/probe-runs/campaign-present.md");
-    assert_eq!(mismatched.absent, "runs/probe-runs/campaign-absent.md");
-    assert_eq!(mismatched.present_refused, 0);
-    assert_eq!(mismatched.absent_refused, 1);
+    assert_eq!(defective.present, "runs/probe-runs/campaign-present.md");
+    assert_eq!(defective.absent, "runs/probe-runs/campaign-absent.md");
+    assert_eq!(defective.present_defects, 0);
+    assert_eq!(defective.absent_defects, 1);
 
     let report = write(&at, &plan);
     assert!(
         report.has_errors(),
-        "a campaign pair whose refused-session counts disagree is a defective run"
+        "a compared arm with a recorder defect is a defective run"
     );
     assert!(
         report
             .remedy()
-            .is_some_and(|remedy| remedy.contains("refused-session counts disagree")),
-        "the run's remedy does not name the mismatch: {:?}",
+            .is_some_and(|remedy| remedy.contains("the recorder or the probe declaration caused")),
+        "the run's remedy does not name the defect: {:?}",
         report.remedy()
     );
     assert!(
-        report.render(ColorMode::Plain).contains("mismatched arms"),
-        "the run prints the mismatch where a reader of the run sees it"
+        report.render(ColorMode::Plain).contains("defective arms"),
+        "the run prints the defect where a reader of the run sees it"
     );
 }
 
-/// Two paired tiers remove two different trees, so a campaign's present arm
-/// and a documentation run's absent arm are not one comparison, whatever
-/// selection, model and served version they share (#1010).
+/// Two clean arms of one campaign are compared, and each result carries the
+/// difference with its Newcombe interval (#980).
 ///
-/// The absent transcript here is [`CAMPAIGN_ABSENT`] recorded at the
-/// `documentation` tier. Keyed without the tier, the pair is chosen and its
-/// refused-session counts disagree, so the run fails on a comparison nobody
-/// made. Keyed with it, each side is alone and nothing is compared.
+/// Before the comparison existed nothing computed a difference at all: the
+/// pairing checked refused counts and wrote no number, so the effect the
+/// campaign is run for had no derived home.
 #[test]
-fn a_campaign_arm_never_pairs_with_a_documentation_arm() {
-    let at = copied("tiers-apart");
+fn two_clean_arms_carry_their_difference_in_each_result() {
+    let at = copied("campaign-compared");
+    std::fs::write(
+        at.join("runs/probe-runs/campaign-present.md"),
+        CAMPAIGN_PRESENT,
+    )
+    .expect("the present-arm transcript lands");
+    std::fs::write(
+        at.join("runs/probe-runs/campaign-absent.md"),
+        CAMPAIGN_ABSENT_CLEAN,
+    )
+    .expect("the absent-arm transcript lands");
+
+    let plan = plan_over(&at);
+    assert!(plan.defective_arms.is_empty(), "{:?}", plan.defective_arms);
+    assert!(plan.ambiguous_arms.is_empty(), "{:?}", plan.ambiguous_arms);
+    for path in [
+        "runs/probe-results/campaign-present.md",
+        "runs/probe-results/campaign-absent.md",
+    ] {
+        let bytes = &plan
+            .outputs
+            .iter()
+            .find(|output| output.path == path)
+            .unwrap_or_else(|| panic!("no result at {path}"))
+            .bytes;
+        assert!(
+            bytes.contains("## The comparisons this arm takes part in"),
+            "{path} carries no comparison:\n{bytes}"
+        );
+        assert!(
+            bytes.contains("What the governance changes."),
+            "{path} does not name the claim it measures:\n{bytes}"
+        );
+        assert!(
+            bytes.contains("in a 95% Newcombe interval of"),
+            "{path} carries no difference interval:\n{bytes}"
+        );
+    }
+}
+
+/// Two arms recorded over two trees are two corpora, and the key keeps them
+/// apart (#980). Keyed without the tree, the pair below is chosen and its
+/// recorder defect fails the run over a comparison nobody made.
+#[test]
+fn two_arms_over_two_trees_are_not_compared() {
+    let at = copied("trees-apart");
+    std::fs::write(
+        at.join("runs/probe-runs/campaign-present.md"),
+        CAMPAIGN_PRESENT,
+    )
+    .expect("the present-arm transcript lands");
+    std::fs::write(
+        at.join("runs/probe-runs/campaign-absent.md"),
+        CAMPAIGN_ABSENT.replace("tree: sha256:fixture-tree", "tree: sha256:another-tree"),
+    )
+    .expect("the absent-arm transcript lands");
+
+    let plan = plan_over(&at);
+    assert!(
+        plan.defective_arms.is_empty(),
+        "two trees were compared as one run: {:?}",
+        plan.defective_arms
+    );
+    assert!(plan.ambiguous_arms.is_empty(), "{:?}", plan.ambiguous_arms);
+}
+
+/// A transcript planned over part of the selection is graded against that
+/// part, so a probe it never planned is not a refused session (#980).
+///
+/// Graded against the whole selection, the probe outside the run reads as
+/// `NotRun`, which is a recorder defect, and every campaign planned by
+/// category would fail its own comparison.
+#[test]
+fn a_narrowed_transcript_is_graded_against_its_own_part_of_the_selection() {
+    let at = copied("narrowed");
+    let part = headwater_probe::plan::selection_digest(&["PROBE-FIX-answered"]);
+    let narrowed = |arm: &str| {
+        CAMPAIGN_PRESENT
+            .replace(SELECTION, &part)
+            .replace("arm: present", &format!("arm: {arm}"))
+            .replace("RUN-FIX-campaign-present", &format!("RUN-FIX-narrowed-{arm}"))
+            .replace(
+                "- probe: PROBE-FIX-opened\n  session: watched\n  calls:\n    - tool: read\n      argument: /home/runner/repo/runs/probes/0002-answered.md\n      result: sha256:728adf39f9e72aac6e6e685d9efd960927709e5286c887ba13a8a8ea5b3f3f75\n  produced: []\n  answer: null\n",
+                "",
+            )
+    };
+    let present = narrowed("present");
+    assert!(
+        !present.contains("PROBE-FIX-opened"),
+        "the fixture still names the probe outside the part"
+    );
+    std::fs::write(at.join("runs/probe-runs/narrowed-present.md"), &present)
+        .expect("the present-arm transcript lands");
+    std::fs::write(
+        at.join("runs/probe-runs/narrowed-absent.md"),
+        narrowed("absent"),
+    )
+    .expect("the absent-arm transcript lands");
+
+    let plan = plan_over(&at);
+    assert!(
+        plan.defective_arms.is_empty(),
+        "a probe outside the planned part was graded as a refused session: {:?}",
+        plan.defective_arms
+    );
+    let bytes = &plan
+        .outputs
+        .iter()
+        .find(|output| output.path == "runs/probe-results/narrowed-present.md")
+        .expect("the narrowed result is written")
+        .bytes;
+    assert!(
+        bytes.contains("is the digest of 1 of the 2 probes this corpus composes"),
+        "the narrowed digest was not recognized:\n{bytes}"
+    );
+    assert!(
+        !bytes.contains("PROBE-FIX-opened"),
+        "the result grades a probe the run never planned:\n{bytes}"
+    );
+}
+
+/// A present arm is one tree at every tier, so the `documentation` absent arm
+/// is compared with the `campaign` present arm when no `documentation` present
+/// arm was recorded. The owner ruled on #980 (2026-09-28) that a run records
+/// that arm once.
+///
+/// Before the ruling the tier was the first member of the key and this pair
+/// was never compared. The absent transcript here holds a recorder defect, so
+/// a comparison that is chosen fails the run, and one that is not leaves it
+/// clean.
+#[test]
+fn a_documentation_absent_arm_is_compared_with_the_campaign_present_arm() {
+    let at = copied("tiers-shared");
     std::fs::write(
         at.join("runs/probe-runs/campaign-present.md"),
         CAMPAIGN_PRESENT,
@@ -645,17 +819,55 @@ fn a_campaign_arm_never_pairs_with_a_documentation_arm() {
     .expect("the present-arm transcript lands");
     std::fs::write(
         at.join("runs/probe-runs/documentation-absent.md"),
-        CAMPAIGN_ABSENT.replace("tier: campaign", "tier: documentation"),
+        CAMPAIGN_ABSENT_CLEAN.replace("tier: campaign", "tier: documentation"),
     )
     .expect("the absent-arm transcript lands");
 
     let plan = plan_over(&at);
-    assert!(
-        plan.mismatched_arms.is_empty(),
-        "two tiers were paired as one run: {:?}",
-        plan.mismatched_arms
-    );
+    assert!(plan.defective_arms.is_empty(), "{:?}", plan.defective_arms);
     assert!(plan.ambiguous_arms.is_empty(), "{:?}", plan.ambiguous_arms);
+    let bytes = &plan
+        .outputs
+        .iter()
+        .find(|output| output.path == "runs/probe-results/documentation-absent.md")
+        .expect("the documentation result is written")
+        .bytes;
+    assert!(
+        bytes.contains("What the documents and the governance change together."),
+        "the shared present arm was not compared:\n{bytes}"
+    );
+}
+
+/// The two absent arms of one run are the documents claim, and spec 5 names
+/// that difference as its only reading (HW-OBL-0223).
+#[test]
+fn the_two_absent_arms_measure_the_documents() {
+    let at = copied("absent-arms");
+    std::fs::write(
+        at.join("runs/probe-runs/campaign-absent.md"),
+        CAMPAIGN_ABSENT_CLEAN,
+    )
+    .expect("the campaign absent transcript lands");
+    std::fs::write(
+        at.join("runs/probe-runs/documentation-absent.md"),
+        CAMPAIGN_ABSENT_CLEAN
+            .replace("tier: campaign", "tier: documentation")
+            .replace("RUN-FIX-campaign-absent-clean", "RUN-FIX-documentation-absent"),
+    )
+    .expect("the documentation absent transcript lands");
+
+    let plan = plan_over(&at);
+    assert!(plan.defective_arms.is_empty(), "{:?}", plan.defective_arms);
+    let bytes = &plan
+        .outputs
+        .iter()
+        .find(|output| output.path == "runs/probe-results/campaign-absent.md")
+        .expect("the campaign absent result is written")
+        .bytes;
+    assert!(
+        bytes.contains("What the documents change."),
+        "the two absent arms were not compared:\n{bytes}"
+    );
 }
 
 /// A second present-arm transcript under the same key as
@@ -720,7 +932,7 @@ cost_cents: 25
 /// [`two_arms_of_one_campaign_disagreeing_on_refused_sessions_fail_the_run`].
 ///
 /// This runs red under the sort-and-zip pairing this file's first version
-/// shipped with: `plan.mismatched_arms` came back empty and
+/// shipped with: `plan.defective_arms` came back empty and
 /// `report.has_errors()` was `false`, because the extra transcript zipped
 /// against the absent one instead (both grade clean, so nothing mismatched)
 /// and the genuine present/absent pair was silently unpaired. It passes
@@ -748,10 +960,10 @@ fn an_ambiguous_pair_is_reported_rather_than_silently_zipped_by_path_order() {
 
     let plan = plan_over(&at);
     assert!(
-        plan.mismatched_arms.is_empty(),
+        plan.defective_arms.is_empty(),
         "an ambiguous key is reported as ambiguous, not narrowed to a pairing that might hide a \
          real mismatch: {:?}",
-        plan.mismatched_arms
+        plan.defective_arms
     );
     let ambiguous = match plan.ambiguous_arms.as_slice() {
         [one] => one,

@@ -279,6 +279,21 @@ pub enum Refusal {
         path: String,
         entry: String,
     },
+    /// The caller excluded a probe that is not in the selection the other
+    /// filters left.
+    ///
+    /// An exclusion that removes nothing plans the same run as no exclusion,
+    /// and a misspelled identifier would then read as a probe kept out of a
+    /// run it was never in (#980).
+    ExcludedUnknown { probe: String },
+    /// The caller asked for more repetitions than the tier declares.
+    ///
+    /// The narrowing may only lower the count. Raising it is spending more,
+    /// and the number that says how much moves when a person edits the
+    /// declaration and not when a caller passes a flag.
+    RepetitionsRaised { asked: u32, declared: u32 },
+    /// The caller asked for no repetitions, which plans a run of nothing.
+    RepetitionsZero,
     /// The projected cost is above the tier's ceiling. Spec 5: a run that does
     /// not happen is the cheaper error.
     OverBudget {
@@ -311,6 +326,11 @@ impl Refusal {
             Refusal::TierUndeclared(_) | Refusal::CampaignNarrowed => false,
             Refusal::ArmNotDeclared { .. } => false,
             Refusal::OverBudget { .. } => false,
+            // A grade composes its selection with no narrowing, so neither of
+            // these is reachable from one. They are about what a caller asked
+            // a run to be, like an arm the tier does not declare.
+            Refusal::RepetitionsRaised { .. } | Refusal::RepetitionsZero => false,
+            Refusal::ExcludedUnknown { .. } => true,
             // A policy about which probes a paired run may carry, decided
             // after the whole selection is read, like a narrowed campaign.
             Refusal::AblatedExamined { .. } => false,
@@ -470,6 +490,21 @@ impl std::fmt::Display for Refusal {
                  instrument, because a probe document states the answer it expects. No session \
                  could open or cite it"
             ),
+            Refusal::ExcludedUnknown { probe } => write!(
+                f,
+                "`--exclude {probe}` names no probe of the selection, so the exclusion removes \
+                 nothing and the run would be the one planned without it"
+            ),
+            Refusal::RepetitionsRaised { asked, declared } => write!(
+                f,
+                "`--repetitions {asked}` is above the {declared} the tier declares. The narrowing \
+                 may only lower the count, because a higher one spends more than a person agreed \
+                 to"
+            ),
+            Refusal::RepetitionsZero => write!(
+                f,
+                "`--repetitions 0` plans a run of no session"
+            ),
             Refusal::OverBudget {
                 sessions,
                 projected,
@@ -491,6 +526,11 @@ pub struct Plan {
     pub tier: Tier,
     pub arms: Vec<Arm>,
     pub repetitions: u32,
+    /// The repetitions the tier declares, which `repetitions` equals unless
+    /// the caller narrowed it for a pilot.
+    pub declared_repetitions: u32,
+    /// The probes the caller named out of the selection, in the order given.
+    pub excluded: Vec<String>,
     /// The digest of the lock this plan was taken against.
     pub lock: String,
     /// The digest over every classified document of this corpus, by path and
@@ -539,6 +579,33 @@ pub struct Narrowing {
     pub category: Option<Category>,
     pub arm: Option<Arm>,
     pub seed: u64,
+    /// Probes to leave out of the selection, by identifier.
+    ///
+    /// A category is the coarsest selection a campaign can name, and one probe
+    /// of the discovery category examines a path every campaign absent arm
+    /// removes. So the machine half of Q16 had no selection that planned until
+    /// a probe could be named out of it (#980). An excluded probe leaves the
+    /// selection before its digest is taken, so the digest states the run that
+    /// happens.
+    pub exclude: Vec<String>,
+    /// Fewer repetitions than the tier declares, for a pilot of the same
+    /// selection and arms.
+    ///
+    /// It is not a member of the run identity. A pilot and the run it tests
+    /// share every member the plan fixes, so what keeps a pilot out of a
+    /// comparison is the `tree` digest, which moves when the pilot's own
+    /// transcripts are committed.
+    pub repetitions: Option<u32>,
+}
+
+/// The selection digest: the identifiers selected, in identifier order, one per
+/// line.
+///
+/// A plan takes it, and a grade takes it again over the probes a transcript
+/// names, to find the narrowed selection that transcript was planned over. Two
+/// computations of one digest are one function, or they drift.
+pub fn selection_digest(ids: &[&str]) -> String {
+    headwater_hash::digest(ids.join("\n").as_bytes())
 }
 
 /// The corpus tree digest: every typed row's path and content digest, in census
@@ -576,6 +643,8 @@ impl Plan {
             tier,
             arms: Vec::new(),
             repetitions: 0,
+            declared_repetitions: 0,
+            excluded: narrowing.exclude.clone(),
             lock: lock.to_string(),
             tree: String::new(),
             selection: String::new(),
@@ -805,6 +874,22 @@ impl Plan {
                 return plan;
             }
         }
+        for excluded in &narrowing.exclude {
+            let before = plan.selected.len();
+            plan.selected.retain(|selected| &selected.id != excluded);
+            if plan.selected.len() == before {
+                plan.refusal = Some(Refusal::ExcludedUnknown {
+                    probe: excluded.clone(),
+                });
+                return plan;
+            }
+        }
+        if plan.selected.is_empty() {
+            plan.refusal = Some(Refusal::SelectionEmpty {
+                category: narrowing.category,
+            });
+            return plan;
+        }
         plan.selected.sort_by(|a, b| a.id.cmp(&b.id));
 
         let names: Vec<&str> = plan
@@ -812,7 +897,7 @@ impl Plan {
             .iter()
             .map(|selected| selected.id.as_str())
             .collect();
-        plan.selection = headwater_hash::digest(names.join("\n").as_bytes());
+        plan.selection = selection_digest(&names);
 
         // The read set: every probe of the selection, and every document any of
         // them examines. A path that is both is one member, and the probe is
@@ -873,6 +958,22 @@ impl Plan {
             return plan;
         };
         plan.repetitions = envelope.repetitions;
+        plan.declared_repetitions = envelope.repetitions;
+        match narrowing.repetitions {
+            None => {}
+            Some(0) => {
+                plan.refusal = Some(Refusal::RepetitionsZero);
+                return plan;
+            }
+            Some(asked) if asked > envelope.repetitions => {
+                plan.refusal = Some(Refusal::RepetitionsRaised {
+                    asked,
+                    declared: envelope.repetitions,
+                });
+                return plan;
+            }
+            Some(asked) => plan.repetitions = asked,
+        }
         plan.budget = envelope.budget;
         plan.session_cost = envelope.session_cost;
         plan.arms = arms(envelope, narrowing.arm);
@@ -1045,6 +1146,14 @@ impl Plan {
                  forecast.",
                 crate::budget::PATH
             );
+            if self.repetitions < self.declared_repetitions {
+                let _ = writeln!(
+                    out,
+                    "The caller narrowed the repetitions to {} of the {} the tier declares. That \
+                     is a pilot of this run and not the run, and no comparison pools the two.",
+                    self.repetitions, self.declared_repetitions
+                );
+            }
             let _ = writeln!(out);
         }
 
@@ -1061,6 +1170,15 @@ impl Plan {
 
         let _ = writeln!(out, "{}", paint(Role::Heading, "## The selection", mode));
         let _ = writeln!(out);
+        if !self.excluded.is_empty() {
+            let _ = writeln!(
+                out,
+                "The caller excluded {}: {}.",
+                crate::plural(self.excluded.len(), "probe"),
+                self.excluded.join(", ")
+            );
+            let _ = writeln!(out);
+        }
         for selected in &self.selected {
             let _ = writeln!(
                 out,

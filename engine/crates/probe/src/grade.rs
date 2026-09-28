@@ -252,6 +252,35 @@ pub enum Refusal {
     NotChecked { artifact: String },
 }
 
+impl Refusal {
+    /// Whether the session caused this refusal, rather than the recorder or
+    /// the probe declaration.
+    ///
+    /// The owner ruled on #980 (2026-09-28) that the two classes are different
+    /// facts. A refusal the recorder or the declaration caused is a defect: the
+    /// remedy is to record the session again, and a paired run that still holds
+    /// one fails. A refusal the session caused is data about the arm it ran in:
+    /// a `not_opened` session that made no call did nothing, and an arm whose
+    /// sessions do nothing more often is a finding. So it is counted per arm and
+    /// never fails the run. Before the ruling any difference in the refused
+    /// count between two arms failed the run, and across hundreds of sessions
+    /// per arm one stray session would discard the batch.
+    ///
+    /// This is an exhaustive match, so that a refusal added later has to answer
+    /// the question rather than inherit an answer.
+    pub fn is_session(&self) -> bool {
+        match self {
+            Refusal::NothingObserved => true,
+            Refusal::NotRun
+            | Refusal::OracleUndeclared
+            | Refusal::AnswersUndeclared
+            | Refusal::NothingCitable { .. }
+            | Refusal::Unrecorded { .. }
+            | Refusal::NotChecked { .. } => false,
+        }
+    }
+}
+
 impl std::fmt::Display for Refusal {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -351,6 +380,62 @@ pub struct Interval {
     pub high: f64,
 }
 
+impl Interval {
+    /// The difference `self - other`, with a Newcombe hybrid score interval.
+    ///
+    /// Spec 5 powers a campaign for a two-sample test: 0.50 against 0.75 at 80%
+    /// power and a 5% two-sided level is about 58 sessions per arm. Reading the
+    /// two arms' Wilson intervals for overlap is a much stricter test, with
+    /// roughly half that power at the same count (#980). This interval is the
+    /// test the count was taken for. It is built from the two Wilson intervals
+    /// the grader already reports, so it stays inside minus one and one at the
+    /// session counts a pilot runs, and the difference is significant at the
+    /// 5% level where it excludes zero.
+    pub fn minus(&self, other: &Interval) -> Interval {
+        let point = self.point - other.point;
+        let low = point
+            - ((self.point - self.low).powi(2) + (other.high - other.point).powi(2)).sqrt();
+        let high = point
+            + ((self.high - self.point).powi(2) + (other.point - other.low).powi(2)).sqrt();
+        Interval {
+            point,
+            low: low.max(-1.0),
+            high: high.min(1.0),
+        }
+    }
+}
+
+/// The part of a selection a transcript was planned over, where that is not the
+/// whole selection.
+///
+/// A campaign is planned by category, and a probe can be named out of it
+/// (#980), so its transcript records a selection digest over fewer probes than
+/// this corpus declares. Graded against the whole selection, every probe the
+/// run never planned reads as a refused session, and a refusal is a defect of
+/// the recorder. So the probes the transcript names are taken out of the
+/// selection, and they are the selection the run was planned over only when
+/// their digest is the one the transcript recorded. Anything else is `None`,
+/// and the caller grades against the whole selection as before: a narrowed run
+/// that lost a probe entirely is a run whose digest no longer matches, and its
+/// missing probe is reported rather than quietly dropped.
+pub fn narrowed(selection: &[Selected], record: &Record) -> Option<Vec<Selected>> {
+    let recorded = &record.identity.as_ref()?.selection;
+    let whole: Vec<&str> = selection.iter().map(|selected| selected.id.as_str()).collect();
+    if &crate::plan::selection_digest(&whole) == recorded {
+        return None;
+    }
+    let part: Vec<Selected> = selection
+        .iter()
+        .filter(|selected| record.probes.contains(&selected.id))
+        .cloned()
+        .collect();
+    let ids: Vec<&str> = part.iter().map(|selected| selected.id.as_str()).collect();
+    match !part.is_empty() && &crate::plan::selection_digest(&ids) == recorded {
+        true => Some(part),
+        false => None,
+    }
+}
+
 /// Every verdict of one transcript.
 #[derive(Clone, Debug)]
 pub struct Results {
@@ -430,6 +515,22 @@ impl Results {
     pub fn satisfied(&self) -> usize {
         self.verdicts()
             .filter(|verdict| matches!(verdict, Verdict::Satisfied(_)))
+            .count()
+    }
+
+    /// Refused sessions that the recorder or the probe declaration caused. See
+    /// [`Refusal::is_session`].
+    pub fn defects(&self) -> usize {
+        self.verdicts()
+            .filter(|verdict| matches!(verdict, Verdict::Refused(refusal) if !refusal.is_session()))
+            .count()
+    }
+
+    /// Refused sessions that the session itself caused. See
+    /// [`Refusal::is_session`].
+    pub fn session_refusals(&self) -> usize {
+        self.verdicts()
+            .filter(|verdict| matches!(verdict, Verdict::Refused(refusal) if refusal.is_session()))
             .count()
     }
 
@@ -585,8 +686,13 @@ impl Results {
 }
 
 /// A proportion, as a reader reads it.
-fn percent(value: f64) -> String {
+pub fn percent(value: f64) -> String {
     format!("{:.1}%", value * 100.0)
+}
+
+/// A difference of two proportions, in percentage points and with its sign.
+pub fn points(value: f64) -> String {
+    format!("{:+.1} points", value * 100.0)
 }
 
 /// The events of one probe, grouped by session, in the order the sessions first
@@ -845,6 +951,57 @@ fn patched(selected: &Selected, session: &[&Event]) -> Verdict {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// 29 of 58 against 43 of 58: the Newcombe interval of the difference is
+    /// narrower than the gap the two Wilson intervals leave, which is why the
+    /// overlap reading has less power than the count was taken for (#980).
+    #[test]
+    fn the_difference_interval_is_the_newcombe_hybrid_score_interval() {
+        let wilson = |satisfied: f64, n: f64| {
+            let p = satisfied / n;
+            let denominator = 1.0 + Z * Z / n;
+            let center = (p + Z * Z / (2.0 * n)) / denominator;
+            let half = Z * (p * (1.0 - p) / n + Z * Z / (4.0 * n * n)).sqrt() / denominator;
+            Interval {
+                point: p,
+                low: center - half,
+                high: center + half,
+            }
+        };
+        let (present, absent) = (wilson(43.0, 58.0), wilson(29.0, 58.0));
+        let difference = present.minus(&absent);
+        assert!((difference.point - 14.0 / 58.0).abs() < 1e-9);
+        assert!(
+            difference.low > 0.0,
+            "a 24-point difference at 58 per arm excludes zero: {difference:?}"
+        );
+        assert!(
+            present.low < absent.high,
+            "the two Wilson intervals overlap, so the overlap reading misses it"
+        );
+        let reversed = absent.minus(&present);
+        assert!((reversed.low + difference.high).abs() < 1e-9);
+        assert!((reversed.high + difference.low).abs() < 1e-9);
+    }
+
+    /// The owner's ruling on #980: a session that did nothing is data, and
+    /// every refusal the recorder or the declaration caused is a defect.
+    #[test]
+    fn only_a_session_that_did_nothing_is_a_session_refusal() {
+        assert!(Refusal::NothingObserved.is_session());
+        for defect in [
+            Refusal::NotRun,
+            Refusal::OracleUndeclared,
+            Refusal::AnswersUndeclared,
+            Refusal::NothingCitable { over: 1 },
+            Refusal::Unrecorded { what: "calls" },
+            Refusal::NotChecked {
+                artifact: "docs/x.md".to_string(),
+            },
+        ] {
+            assert!(!defect.is_session(), "{defect:?}");
+        }
+    }
 
     fn target(id: Option<&str>, path: &str) -> Examined {
         Examined {

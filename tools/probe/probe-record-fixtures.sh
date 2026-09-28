@@ -835,7 +835,7 @@ STUB
     chmod +x "$scratch/bin/claude"
 
     HEADWATER_PROBE_LOG_DIR="$scratch/probe-log" HEADWATER_MODEL_DIR="$scratch/nomodel" \
-        PATH="$scratch/bin:$PATH" sh "$driver" --probe PROBE-FIX-opened \
+        PATH="$scratch/bin:$PATH" sh "$driver" --probe "HW-PROBE-$tombstone" \
         --session fixture-live --task-file "$scratch/task.md" \
         --workspace "$scratch/ws" > "$scratch/live-run.md" 2>"$scratch/live-run.err"
     same "the driver runs a session through the stub harness" "0" "$?"
@@ -857,7 +857,7 @@ STUB
     mkdir -p "$scratch/probe-log"
 
     HEADWATER_PROBE_LOG_DIR="$scratch/probe-log" PATH="$scratch/bin:$PATH" \
-        sh "$driver" --probe PROBE-FIX-opened --session fixture-dead \
+        sh "$driver" --probe "HW-PROBE-$tombstone" --session fixture-dead \
         --task-file "$scratch/task.md" --workspace "$scratch/ws" \
         > "$scratch/dead-run.md" 2>"$scratch/dead-run.err"
     same "the driver runs a session whose harness reaches no hook" "0" "$?"
@@ -874,12 +874,30 @@ STUB
 exit 7
 STUB
     chmod +x "$scratch/bin/claude"
-    PATH="$scratch/bin:$PATH" sh "$driver" --probe PROBE-FIX-opened --session fixture-fails \
+    PATH="$scratch/bin:$PATH" sh "$driver" --probe "HW-PROBE-$tombstone" --session fixture-fails \
         --task-file "$scratch/task.md" --workspace "$scratch/ws" \
         >/dev/null 2>"$scratch/failed-run.err"
     same "a harness that exits 7 makes the driver exit 10, never 7" "10" "$?"
     present "and the driver names the harness's own status" \
         "the harness exited 7" "$scratch/failed-run.err"
+
+    # The plan's refusal is the driver's refusal (#980). The harness here is
+    # the stub that exits 7, so a driver that reached it would exit 10: an 11
+    # proves the refusal came before any harness call, which is before any
+    # spend. The unnarrowed campaign refuses on a probe its absent arm cannot
+    # measure, and a probe the plan does not select is not a session it owes.
+    PATH="$scratch/bin:$PATH" sh "$driver" --probe "HW-PROBE-$tombstone" --session fixture-refused \
+        --tier campaign --task-file "$scratch/task.md" --workspace "$scratch/ws" \
+        >/dev/null 2>"$scratch/refused-plan.err"
+    same "a run the plan refuses exits 11 before the harness is called" "11" "$?"
+    present "and the driver prints the plan's refusal" \
+        "refuses this run" "$scratch/refused-plan.err"
+    PATH="$scratch/bin:$PATH" sh "$driver" --probe PROBE-FIX-opened --session fixture-unselected \
+        --task-file "$scratch/task.md" --workspace "$scratch/ws" \
+        >/dev/null 2>"$scratch/unselected.err"
+    same "a probe the plan does not select exits 11 before the harness is called" "11" "$?"
+    present "and the driver names the probe" \
+        "the plan does not select PROBE-FIX-opened" "$scratch/unselected.err"
     rm -f "$scratch/bin/claude"
 else
     printf 'note no engine or no lock, so the liveness cases did not run.\n'
