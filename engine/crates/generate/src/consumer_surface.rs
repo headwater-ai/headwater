@@ -108,6 +108,7 @@ pub(crate) fn emit(declared: Option<&Declared>, declaration: &Declaration, plan:
         bytes: render(&path, declared),
         path,
         kind: Kind::ConsumerSurface,
+        committed: true,
     });
 }
 

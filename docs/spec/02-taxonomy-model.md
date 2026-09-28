@@ -243,6 +243,7 @@ projections:
     output: .headwater/export/partner.json
     filter: {exclude: {confidentiality: [internal, secret]}}
     tombstone: counted                 # counted | sealed
+    committed: false                   # built at publish time by `headwater export`, never in the tree
   - kind: transcription                # requirement text copied from a pinned snapshot
     from: {anchor: ado_work_item}      # the resolver that owns the pin
     output: docs/requirements/

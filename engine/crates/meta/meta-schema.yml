@@ -76,12 +76,18 @@ meta_schema: headwater/taxonomy
 # the resolver rather than in a fourteenth root. It is a minor by the same
 # rule, because a source that wrote no scope declares none.
 #
+# 0.8.0 adds `projection.committed`, an optional boolean that says whether the
+# tree holds a projection's output (#1261). Spec 6 makes whether an export is
+# committed a schema decision, and until this member no schema could state it,
+# so a declared `graph_export` had to be committed and current. It is a minor,
+# because a source that wrote none declares the default, which is committed.
+#
 # No consumer compares this value against anything. `fixtures/schema.record`
 # carries it, so a bump shows up in a diff, and nothing refuses a source for
 # the version it was written against. So the position of a digit here is a
 # statement to a reader and never a gate: the removal above is refused at the
 # member and never at the version.
-version: 0.7.0
+version: 0.8.0
 
 # --- the root of a taxonomy source ------------------------------------------
 #
@@ -572,6 +578,13 @@ definitions:
       tombstone: {enum: [counted, sealed]}
       from: {block: projection_pin}
       identity: {block: projection_identity}
+      # Whether the tree holds the output. `false` says that `headwater export`
+      # builds the file at publish time, so `generate` does not write it and
+      # `--check` does not compare it (#1261). Spec 6 makes whether an export
+      # is committed a schema decision, and this is where a schema states it.
+      # The engine takes `false` on a `graph_export` alone, because every other
+      # kind is read in the tree.
+      committed: {scalar: boolean}
 
   # What a generated document is, for a projection whose output is a document of
   # the corpus rather than a list beside it.
