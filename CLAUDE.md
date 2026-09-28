@@ -66,7 +66,7 @@ Nothing makes a skill load ([spec 5](docs/spec/05-ai-integration.md#how-a-skill-
 | `repo-cleanup` | you retire a worktree, or a local or remote branch that a merged change left behind |
 | `headwater-sweep` | you are asked to read a slice of the corpus for what no check can see |
 
-`hw-verification-bar` and `hw-run-policy` load only from the build-order agents under `.claude/agents/` that name them. The first two above are ordered: orientation finds the document, and authoring writes one. `headwater explain` answers from the graph the engine already built, so open a specification part only after it has named the right one.
+`hw-verification-bar` loads only from the build-order agents under `.claude/agents/` that name it. `hw-run-policy` loads from those agents and from `.claude/commands/next-run.md`, which loads it at the start of every session of the parent. The first two above are ordered: orientation finds the document, and authoring writes one. `headwater explain` answers from the graph the engine already built, so open a specification part only after it has named the right one.
 
 `.claude/agents/headwater-maintainer.md` reports what a change touched, what is now stale, and what the corpus is owed; it proposes and never accepts. `.claude/agents/headwater-product-owner.md` reads the whole board, owns its structure and never its scope, and `/product-owner` runs it standalone. **The value rule both serve:** work must name a reader who is not this repository. `.claude/commands/next-run.md` states it once, and every other file cites it rather than restating it.
 
