@@ -6,10 +6,11 @@ summary: "One agent per issue, hw-iterate, dispatches the builder and each verif
 last_verified: 2026-09-27
 title: "The verify and rework loop for one issue runs below the parent"
 provenance:
-  warrant: asserted
+  warrant: accepted
   agency: agent
   drafted_by: claude-opus-5-5
   activity: measure+draft
+  accepted_by: j.baxter
   evidence_basis: evidenced
 relations:
   governs:

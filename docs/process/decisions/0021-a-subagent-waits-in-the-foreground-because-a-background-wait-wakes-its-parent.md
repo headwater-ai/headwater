@@ -6,10 +6,11 @@ summary: "A stage runs its bounded wait in the foreground and keeps its turn. A 
 last_verified: 2026-09-28
 title: "A subagent waits in the foreground, because a background wait wakes its parent"
 provenance:
-  warrant: asserted
+  warrant: accepted
   agency: agent
   drafted_by: claude
   activity: measure+draft
+  accepted_by: j.baxter
   evidence_basis: evidenced
 relations:
   governs:

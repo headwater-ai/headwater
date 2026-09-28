@@ -6,10 +6,11 @@ summary: "`headwater taxonomy graph` prints the resolved taxonomy as a Mermaid f
 last_verified: 2026-09-27
 title: "The resolved taxonomy is drawn by a verb that prints Mermaid and writes no file"
 provenance:
-  warrant: asserted
+  warrant: accepted
   agency: agent
   drafted_by: claude-opus-5.5
   activity: draft+revise
+  accepted_by: j.baxter
   evidence_basis: evidenced
 relations:
   governs:

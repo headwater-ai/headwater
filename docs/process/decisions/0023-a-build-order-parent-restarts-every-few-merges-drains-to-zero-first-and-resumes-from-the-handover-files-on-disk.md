@@ -6,10 +6,11 @@ summary: "A loop script restarts the build-order parent when a call passes 130k 
 last_verified: 2026-09-28
 title: "A build-order parent restarts every few merges, drains to zero first, and resumes from the handover files on disk"
 provenance:
-  warrant: asserted
+  warrant: accepted
   agency: agent
   drafted_by: claude-opus-5-5
   activity: measure+draft
+  accepted_by: j.baxter
   evidence_basis: evidenced
 relations:
   governs:

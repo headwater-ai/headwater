@@ -91,7 +91,7 @@ The documents on this shelf, in the reading order this corpus derives. Each head
 
 ## A figure on a hand-built page is measured when the site is published, and the committed page carries none
 
-[HW-DR-0097](../decisions/0097-a-figure-on-a-hand-built-page-is-measured-when-the-site-is-published-and-the-committed-page-carries-none.md) — The pages under site/ commit every data-figure element empty. A CI job on each push to main measures the figures into the assembled copy and deploys it with wrangler. Two pull requests that add documents merge without a conflict on the pages. (asserted, and no human has accepted it)
+[HW-DR-0097](../decisions/0097-a-figure-on-a-hand-built-page-is-measured-when-the-site-is-published-and-the-committed-page-carries-none.md) — The pages under site/ commit every data-figure element empty. A CI job on each push to main measures the figures into the assembled copy and deploys it with wrangler. Two pull requests that add documents merge without a conflict on the pages.
 
 ## Q39 — How a figure reaches a hand-built page
 
@@ -359,7 +359,7 @@ The documents on this shelf, in the reading order this corpus derives. Each head
 
 ## The resolved taxonomy is drawn by a verb that prints Mermaid and writes no file
 
-[HW-DR-0082](../decisions/0082-the-resolved-taxonomy-is-drawn-by-a-verb-that-prints-mermaid-and-writes-no-file.md) — `headwater taxonomy graph` prints the resolved taxonomy as a Mermaid flowchart, no projection or export target draws it, and D2 and DOT are equal candidates after it (asserted, and no human has accepted it)
+[HW-DR-0082](../decisions/0082-the-resolved-taxonomy-is-drawn-by-a-verb-that-prints-mermaid-and-writes-no-file.md) — `headwater taxonomy graph` prints the resolved taxonomy as a Mermaid flowchart, no projection or export target draws it, and D2 and DOT are equal candidates after it
 
 ## Governs and traces_to are created by an agent, because a session proposes the line and a person types it
 
