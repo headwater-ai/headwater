@@ -46,7 +46,10 @@ inputs:
       The `headwater-ai/headwater` release tag to install, for example
       `v0.4.0`, or `latest`. It resolves exactly as it does for
       `integrations/headwater-check`. The engine verbs this action runs
-      (`change`, `check --change`, `route --json`) are in v0.4.0.
+      (`change`, `check --change`, `route --json`, `explain --json`) are in
+      v0.4.0. An engine whose `explain --json` lists the paths each pattern
+      matches lets the report name every file a deleted document governed
+      through a pattern. With v0.4.0 it names only a literal path.
     required: false
     default: latest
   root:

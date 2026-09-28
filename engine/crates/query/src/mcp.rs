@@ -207,11 +207,16 @@ pub struct Server<'a> {
     pub census: &'a Census,
     /// The edges that walk produced, for the same two readers.
     pub graph: &'a Graph,
-    /// The repository root the walk read, which is `--root`. The `explain`
-    /// tool reads a path argument against it, so `./x`, `a/../x` and an
-    /// absolute path under it find the document `x` finds (#1227). It is the
-    /// root the server was started over and never a tool argument.
+    /// The repository root the walk read, which is `--root`. The `explain`,
+    /// `related` and `governing_docs_for_path` tools read a path argument
+    /// against it, so `./x`, `a/../x` and an absolute path under it answer
+    /// what `x` answers (#1227, #1249). It is the root the server was started
+    /// over and never a tool argument.
     pub root: &'a std::path::Path,
+    /// The corpus root under `root`, as the consumer declaration names it. The
+    /// walk follows it when it is a symlink, so a path tool reads a path under
+    /// it as inside the repository wherever it leads (#1249).
+    pub corpus_root: &'a str,
     /// The declarations one run of the check layer reads, out of the committed
     /// lock.
     pub declared: Declared<'a>,
@@ -799,29 +804,27 @@ fn call(server: &Server<'_>, message: &Mapping) -> Result<Answer, Failure> {
             route.render_at(headwater_check::paint::ColorMode::Plain, None)
         }
         // A path argument is read the way `headwater explain` reads one, through
-        // the same `typed`, so the tool and the verb find one document for one
-        // spelling, and refuse a path that leaves the repository as outside it
-        // (#1227). A retried spelling is a path, so only a document at that
-        // path answers it, and `./<identifier>` never finds the identifier.
-        "explain" => match surface.explain(&argument).or_else(|| {
-            headwater_census::walk::typed(server.root, &argument)
-                .filter(|relative| *relative != argument)
-                .and_then(|relative| {
-                    surface
-                        .explain(&relative)
-                        .filter(|explanation| explanation.path == relative)
-                })
-        }) {
+        // the same `typed`, so each path tool and the verb find one document for
+        // one spelling, and refuse a path that leaves the repository in the
+        // verb's own sentence (#1227, #1249).
+        "explain" => match retried(
+            server,
+            &argument,
+            |target| surface.explain(target),
+            |found| found.path.as_str(),
+        ) {
             // Plain, unconditionally: an MCP server's own stdout is never a
             // terminal, so a real invocation piped the same way would sense
             // the same mode.
             Some(explanation) => explanation.render(headwater_check::paint::ColorMode::Plain),
-            None => match headwater_census::walk::typed(server.root, &argument) {
-                None => format!("{argument} is outside this repository\n"),
-                Some(_) => format!("{argument} is not a document of this corpus\n"),
-            },
+            None => missing(server, &argument),
         },
-        "related" => match surface.find(&argument) {
+        "related" => match retried(
+            server,
+            &argument,
+            |target| surface.find(target),
+            |found| found.path,
+        ) {
             Some(document) => {
                 let mut out = String::new();
                 for neighbour in surface.related(&document) {
@@ -833,7 +836,7 @@ fn call(server: &Server<'_>, message: &Mapping) -> Result<Answer, Failure> {
                     false => out,
                 }
             }
-            None => format!("{argument} is not a document of this corpus\n"),
+            None => missing(server, &argument),
         },
         "resolve_identifier" => match surface.resolve_identifier(&argument) {
             Resolved::Document(pointer) => format!("{}\n", pointer.render()),
@@ -842,10 +845,22 @@ fn call(server: &Server<'_>, message: &Mapping) -> Result<Answer, Failure> {
             }
             Resolved::Nothing => format!("no document carries {argument}\n"),
         },
+        // The argument is a code path and not a document, so it is always
+        // read through `within` rather than retried: `./src/x.rs` is
+        // `src/x.rs`, and a path outside the repository is refused in the
+        // verb's sentence rather than answered as governed by nothing (#1249).
+        // The refusal keeps `pointers`, empty, so the machine contract of
+        // #1248 never loses its member.
         "governing_docs_for_path" => {
-            let governing = surface.governing_docs_for_path(&argument);
+            let reached =
+                headwater_census::walk::within(server.root, server.corpus_root, &argument);
+            let governing = match &reached {
+                Some(relative) => surface.governing_docs_for_path(relative),
+                None => Vec::new(),
+            };
             structured = Some(crate::json::pointers_value(&governing));
             match governing.is_empty() {
+                true if reached.is_none() => format!("{}\n", crate::outside_text(&argument)),
                 true => format!("no document governs {argument}\n"),
                 false => {
                     let mut out = String::new();
@@ -875,6 +890,38 @@ fn call(server: &Server<'_>, message: &Mapping) -> Result<Answer, Failure> {
         // the query class, and this is the line that spends nothing.
         landed: false,
     })
+}
+
+/// The document a path tool's argument names, read the way `headwater
+/// explain` reads one (#1227, #1249). The argument as written is tried first,
+/// so an identifier and a bare path answer as they always did. On a miss it is
+/// read through [`headwater_census::walk::typed`], and a spelling that reads
+/// differently is tried again. A retried spelling is a path, so only a
+/// document at that path answers it, and `./<identifier>` never finds the
+/// identifier. `explain` and `related` both call this, so the two tools cannot
+/// read one spelling two ways.
+fn retried<T>(
+    server: &Server<'_>,
+    argument: &str,
+    lookup: impl Fn(&str) -> Option<T>,
+    path: impl Fn(&T) -> &str,
+) -> Option<T> {
+    lookup(argument).or_else(|| {
+        headwater_census::walk::typed(server.root, argument)
+            .filter(|relative| relative != argument)
+            .and_then(|relative| lookup(&relative).filter(|found| path(found) == relative))
+    })
+}
+
+/// The refusal a path tool answers when [`retried`] found nothing: the one
+/// outside sentence where the path leaves the repository, through a symlink
+/// too ([`headwater_census::walk::within`]), and "not a document" where it
+/// stays inside.
+fn missing(server: &Server<'_>, argument: &str) -> String {
+    match headwater_census::walk::within(server.root, server.corpus_root, argument) {
+        None => format!("{}\n", crate::outside_text(argument)),
+        Some(_) => format!("{argument} is not a document of this corpus\n"),
+    }
 }
 
 /// One or two content blocks, in the shape a tool result takes.

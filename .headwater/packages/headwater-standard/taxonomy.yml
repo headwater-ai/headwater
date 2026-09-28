@@ -149,6 +149,18 @@ taxonomy: headwater/standard
 # on load where they differ, and it names both files and both numbers. A bump
 # moves both or neither. `package.yml` states why the value is declared twice.
 #
+# 4.10.0 adds `OB-LINK-3` and `CT-LINK-3`: a prose link whose text is exactly
+# the identifier of a document reaches the document that carries it (#1213). It
+# is a minor because a new rule reports a defect that no earlier version read.
+# A consumer corpus with no such link sees no change. It follows 4.9.2.
+#
+# 4.9.2 changes the starter doctrine and nothing else. Its *Your writing
+# profile* paragraph now names `outside_root` as the second route by which a
+# language regime reaches prose, as HW-DR-0084 promised once the engine read
+# it (#1191). No rule reads the doctrine, so this is a patch. It takes a new
+# version rather than new bytes under 4.9.1, because one version that names
+# two digests is drift. It follows 4.9.1.
+#
 # 4.9.1 changes the promotion threshold of `CT-ID-5` and nothing else. The
 # threshold said that `identifier.claim.stale` reports nothing for a claimant
 # the corpus no longer holds, and that stopped being true when the rule began to
@@ -237,11 +249,6 @@ taxonomy: headwater/standard
 # each carries a recipe rather than a bare instruction. One package version
 # covers every content file it publishes, this one included, so the number
 # here moves with a change to either.
-#
-# 4.10.0 adds `OB-LINK-3` and `CT-LINK-3`: a prose link whose text is exactly
-# the identifier of a document reaches the document that carries it (#1213). It
-# is a minor because a new rule reports a defect no earlier version read, and a
-# consumer corpus with no such link sees no change.
 version: 4.10.0
 
 purposes:
