@@ -41,6 +41,11 @@
           "id": "HW-EVAL-a-probe-task-section-is-the-prompt-so-commentary-under-that-heading-is-prompt"
         },
         {
+          "shelf": "explanations",
+          "path": "docs/explanations/how-a-headwater-release-reaches-an-adopter.md",
+          "id": "HW-EXP-how-a-headwater-release-reaches-an-adopter"
+        },
+        {
           "shelf": "how_to",
           "path": "docs/how-to/cut-a-release.md",
           "id": "HW-HOW-cut-a-release"
