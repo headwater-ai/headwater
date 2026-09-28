@@ -312,12 +312,10 @@ def split_findings(findings, base_findings, reached, diff):
 
 def print_lost(work, root):
     """`--lost`: print each path a deleted document governed at the base that
-    is still on the tree under <root> and is not itself deleted or renamed
-    away, one per line, for `upkeep.sh` to route."""
-    gone_paths = {line.split("\t")[1] for line in read_lines(os.path.join(work, "gone.tsv"))}
-    lost, _ = lost_governors(
-        work, lambda path: path not in gone_paths and os.path.exists(os.path.join(root, path))
-    )
+    is still on the tree under <root>, one per line, for `upkeep.sh` to
+    route. A path the change deleted or renamed away is not on the tree, so
+    the one test drops it too."""
+    lost, _ = lost_governors(work, lambda path: os.path.exists(os.path.join(root, path)))
     for path in sorted(lost):
         print(path)
 
