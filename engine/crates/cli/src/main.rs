@@ -5315,6 +5315,7 @@ fn probe_grade(root: &Path, path: &Path) -> ExitCode {
         census: &loaded.census,
         config: &loaded.config,
         lock: &loaded.bound.digest,
+        selected: Some(selected),
     };
     let record = headwater_probe::Record::read(&source, &tree);
     // A run planned over part of the selection is graded against that part,
@@ -5350,10 +5351,29 @@ fn probe_record(root: &Path, path: &Path) -> ExitCode {
         Ok(loaded) => loaded,
         Err(code) => return code,
     };
+    // A transcript whose lock moved is decided by the read set of its probes,
+    // which needs the selection a plan composes (#1292). Where the budget
+    // declaration does not read there is no plan, and such a transcript is
+    // refused as it was before, which is the answer a caller can act on.
+    let budgets = std::fs::read_to_string(root.join(headwater_probe::budget::PATH))
+        .ok()
+        .and_then(|source| headwater_probe::Budgets::read(&source).ok());
+    let plan = budgets.map(|budgets| {
+        headwater_probe::Plan::over(
+            &loaded.census,
+            &loaded.graph,
+            &loaded.config,
+            &budgets,
+            &loaded.bound.digest,
+            headwater_probe::Tier::Regression,
+            &headwater_probe::plan::Narrowing::default(),
+        )
+    });
     let tree = headwater_probe::intake::Tree {
         census: &loaded.census,
         config: &loaded.config,
         lock: &loaded.bound.digest,
+        selected: plan.as_ref().and_then(|plan| plan.gradable().ok()),
     };
     let record = headwater_probe::Record::read(&source, &tree);
     print!("{}", record.render(headwater_cli::paint::stdout_color()));
@@ -5427,6 +5447,7 @@ fn probe_stale(root: &Path) -> ExitCode {
         census: &loaded.census,
         config: &loaded.config,
         lock: &loaded.bound.digest,
+        selected: plan.gradable().ok(),
     };
     let mode = headwater_cli::paint::stdout_color();
     let mut tally = headwater_probe::read_set::Tally::default();

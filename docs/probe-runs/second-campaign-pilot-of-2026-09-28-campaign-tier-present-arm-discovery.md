@@ -2,7 +2,7 @@
 id: HW-RUN-second-campaign-pilot-of-2026-09-28-campaign-tier-present-arm-discovery
 status: deprecated
 status_since: 2026-09-28
-summary: "The present arm of the campaign tier over the discovery selection: 2 sessions, 88 cents, the intent hook live in 2. The recording is retired, because a later change moved the lock it pins."
+summary: "The present arm of the campaign tier over the discovery selection: 2 sessions, 88 cents, the intent hook live in 2. The recording is retired as a pilot, and it is graded again since #1292."
 last_verified: 2026-09-28
 tier: campaign
 arm: present
@@ -32,7 +32,7 @@ cost_cents: 88
 
 **One batch, one tree.** Every session ran in a fresh copy of one `git archive` of commit `ed9e61a7`, with the engine that commit builds, in one order that seed 981 shuffled, four at a time, on `claude-sonnet-5` with a cap of 60 turns. Each workspace lost the instrument, every record under `docs/` that names a probe of the batch, and the answer keys of those probes. Each absent workspace also lost its tier's ablation.
 
-**This transcript stands at `deprecated`, and the reason is the lock it pins.** The digest above is the lock of the tree that these pilot sessions met. The taxonomy change that declared the `subsystem_spec` kind on 2026-09-28 moved that lock, and the first of the five confirmations now refuses this recording. The result derived from it carries no verdict on a later tree, and its verdicts stand only in the history of that result. A reader may take no rate from it as a measurement of a tree whose lock differs from the digest above. The full campaign batch records its own sessions.
+**This transcript stands at `deprecated`, and the reason is the lock it pins.** The digest above is the lock of the tree that these pilot sessions met. The taxonomy change that declared the `subsystem_spec` kind on 2026-09-28 moved that lock, and the first of the five confirmations refused this recording until #1292. Since #1292, that confirmation reads a transcript with a moved lock when the read set of its probes did not move. The read set of this selection did not move, so the result derived from it carries verdicts again. The transcript stays at `deprecated` because it is a pilot. No comparison pools it with the full run, and a reader may take no rate from it as a measurement. The full campaign batch records its own sessions.
 
 ## Events
 

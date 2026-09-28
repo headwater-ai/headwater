@@ -149,13 +149,15 @@ A recorder that reads the probe is a grader with no fixture set and no version. 
 
 `headwater probe record` confirms five things and evaluates no expectation.
 
-1. **The taxonomy.** The `lock` the transcript names is compared against the lock of this tree, and a transcript planned against another one is refused whole.
+1. **The taxonomy.** The `lock` that the transcript names is compared with the lock of this tree. A transcript that names another lock is refused whole, unless the read set of its probes is the read set that this tree composes for them.
 2. **The identity is complete.** Every one of the twelve keys is present.
 3. **Membership.** Every probe an event names is a classified probe of this corpus.
 4. **No prose.** Every key of every block is a member of one of the four sets above.
 5. **A realized cost.** `cost_cents` is a whole number of cents.
 
-Present is not confirmed, and the difference is what the rest of this section states. Of the six members the plan fixed, this verb compares one. `headwater generate` compares a second and `headwater probe stale` compares a third. The other three are not compared at all, and each of the three has a reason of its own.
+**A moved lock is refused only where it can reach a verdict.** The grader reads the lock through nothing but the probe documents and the documents that they examine. An `answered` or an `opened` expectation is declared in a probe document. A `patched` verdict reads the findings that the recorder stored when the session ran, and no rule runs again at intake. So a lock move that leaves the read set of the probes alone changes no verdict, and the transcript is read over this tree. A move that changes the read set is refused, because this tree can no longer show that the move left the probes alone. Before #1292, every lock move refused the transcript, and a taxonomy change to a kind that no probe reads voided a whole campaign batch.
+
+Present is not confirmed, and the difference is what the rest of this section states. Of the six members the plan fixed, this verb compares one, and it reads the read set only when that one moved. `headwater generate` compares a second and `headwater probe stale` compares a third. The other three are not compared at all, and each of the three has a reason of its own.
 
 **The `selection` digest is compared, and the comparison is reported rather than refused.** `headwater generate` writes the comparison into the probe result. The digest covers the identifiers of the probes selected and nothing else. So it holds still when the prose of a probe is edited. It moves when a probe is added, removed or renamed. That is the one change that makes a recorded run cover a population this corpus does not declare. A refusal there replaces a graded rate with a notice on the day somebody adds a probe. So the result names both digests, and the reader decides.
 

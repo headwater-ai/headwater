@@ -194,6 +194,7 @@ pub(crate) fn emit(
         census,
         config: surface.config(),
         lock: &identity.lock,
+        selected: Some(&runs.selected),
     };
     // Every transcript is graded before any body is written, because a body
     // of a paired run carries the comparisons its transcript takes part in,
