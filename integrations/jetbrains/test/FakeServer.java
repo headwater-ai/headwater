@@ -13,6 +13,8 @@
 //   FAKE_RECORD   a file this server appends to, one JSON object per line: first
 //                 `{"argv": [...]}`, then `{"message": ...}` for each line read.
 //   FAKE_EXIT     the status to exit with once standard input closes (default 0).
+//   FAKE_FLOOD    a count of bytes: one line of that many `x` is written before
+//                 the first answer, which is how the output cap is reached.
 
 import ai.headwater.jetbrains.Client;
 import java.io.BufferedReader;
@@ -66,6 +68,8 @@ public class FakeServer {
             note(record, "{\"message\":" + line + "}");
             if (silent || !(message instanceof Map<?, ?> m) || !m.containsKey("id")) continue;
             if (!answered) {
+                String flood = System.getenv("FAKE_FLOOD");
+                if (flood != null && !flood.isEmpty()) out.println("x".repeat(Integer.parseInt(flood)));
                 for (String g : garbage) out.println(g);
                 answered = true;
             }

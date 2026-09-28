@@ -234,6 +234,16 @@ public class ClientTest {
             equal(Client.governing("a/b.rs", fake("is-error.jsonl").options()), List.of());
         });
 
+        test("isError: true is no pointers even when the answer carries structuredContent pointers", () -> {
+            // `route-paren-path.jsonl` with `isError` set, so the flag alone decides.
+            equal(Client.route("why is quarantine throttling one quota rule", fake("is-error-with-pointers.jsonl").options()), Answer.NONE);
+        });
+
+        test("output past one megabyte is no pointers, and output below it is read", () -> {
+            equal(Client.route("x", fake("route-paren-path.jsonl", Map.of("FAKE_FLOOD", "2000000")).options()), Answer.NONE);
+            equal(Client.route("x", fake("route-paren-path.jsonl", Map.of("FAKE_FLOOD", "500000")).options()).pointers().size(), 1);
+        });
+
         test("garbage on stdout is no pointers", () -> {
             equal(Client.governing("a/b.rs", fake("garbage.jsonl").options()), List.of());
         });
