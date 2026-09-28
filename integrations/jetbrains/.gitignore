@@ -1,0 +1,5 @@
+# What `gradle buildPlugin` writes in this directory.
+.gradle/
+.intellijPlatform/
+.kotlin/
+build/

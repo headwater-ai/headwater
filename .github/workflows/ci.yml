@@ -1550,6 +1550,31 @@ jobs:
         env:
           HEADWATER_BIN: ${{ github.workspace }}/engine/target/release/headwater
         run: node --test integrations/vscode/test/client.test.js
+      - name: The JDK the JetBrains client's suite runs on
+        # `integrations/jetbrains/test/RunTests.java` runs under the source
+        # launcher and compiles the client with the `jdk.compiler` module, so
+        # this is all the suite below needs: no Gradle, no JUnit and no
+        # IntelliJ Platform. Pinned to one major version so the hosted and the
+        # self-hosted runner run the same launcher.
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+      - name: The JetBrains client reads the built engine's answers, reports what the budget withheld, and stays silent on every failure
+        # `integrations/jetbrains`, #498's plugin, is a second client of
+        # `headwater mcp` beside `integrations/vscode`, and it calls the same
+        # two tools of the query class. Its suite holds `Client.java`, the one
+        # class of the plugin that decides anything. One case starts the
+        # engine this job built, with `--root` at this checkout, and reads the
+        # `structuredContent` pointers and the route's `withheld` count that
+        # `docs/interfaces/headwater-mcp.md` states. That case fails, rather
+        # than skips, when `CI` is set and `HEADWATER_BIN` is not. The other
+        # cases replay recorded sessions. It writes only under a temporary
+        # directory. `integrations-jetbrains.yml` compiles the glue classes
+        # against the IntelliJ Platform, on a change to the plugin alone.
+        env:
+          HEADWATER_BIN: ${{ github.workspace }}/engine/target/release/headwater
+        run: java integrations/jetbrains/test/RunTests.java
       - name: The composition demonstration reports the one finding it claims
         # `docs/taxonomies/diataxis/fixtures/README.md` records what happens
         # when the `reader_mode` facet of one library entry is read over
