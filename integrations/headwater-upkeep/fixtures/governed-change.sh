@@ -17,8 +17,10 @@
 #   rename  rename `src/a.rs` to `src/c.rs`. Touched names the old path and
 #           the document that governed it, and Owed lists the finding the
 #           broken edge raises on that document, marked new.
-#   hop     delete ACME-DR-0001. Owed lists the new finding on ACME-DR-0002,
-#           one relation away, which no path of the change names.
+#   hop     delete ACME-DR-0001. Touched names `src/a.rs`, which the change
+#           did not edit, because the change deleted the document that
+#           governed it. Owed lists the new finding on ACME-DR-0002, one
+#           relation away, which no path of the change names.
 #
 # For every case the run must write nothing inside the checkout: HEAD and
 # `git status --porcelain` do not move, and no entry under the corpus, a file
@@ -182,12 +184,16 @@ assert rename "any(e.startswith('- \`src/a.rs\`: renamed to \`src/c.rs\`') and '
     "Touched does not name the old path src/a.rs, its new name and $d1, which governed it"
 assert rename "any('$d1' in line and '(new with this change)' in line for line in (O or '').splitlines())" \
     "Owed does not list the new finding the broken edge raises on $d1"
+assert rename "'that governed it at the base' not in (T or '')" \
+    "Touched names a lost governor, and renaming a governed code file deletes no document"
 
 # The hop case: a finding one relation away from any changed path.
 reset_to_base
 git -C "$corpus" rm -q "docs/decisions/$d1"
 git -C "$corpus" -c user.name=fixture -c user.email=fixture@example.invalid commit -q -m delete
 run_case hop
+assert hop "any(e.startswith('- \`src/a.rs\`') and '$d1' in e and 'deleted' in e for e in entries(T))" \
+    "Touched does not name src/a.rs, whose governor $d1 the change deleted"
 assert hop "any('$d2' in line and '(new with this change)' in line for line in (O or '').splitlines())" \
     "Owed does not list the new finding on $d2, which traces_to the deleted $d1"
 
