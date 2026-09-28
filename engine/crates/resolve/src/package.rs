@@ -624,8 +624,8 @@ pub(crate) fn bundle_names(
 /// bundles collide is refused whether or not it carries a migration payload.
 ///
 /// The prefix on a refusal says which question reached it, because the only
-/// failures a maximal selection can take are `NotConfluent` and `AddCollides`
-/// and neither one names the reason it was asked.
+/// failures a maximal selection can take are `NotConfluent`, `AddCollides` and
+/// `RequiresCycle`, and none of them names the reason it was asked.
 fn maximal_from(
     root: &Path,
     directory: &Path,
