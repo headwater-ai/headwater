@@ -604,6 +604,9 @@ contains "a record that governs ./.github/workflows/ci.yml and is not cited ther
 #     back to the tagged tree. With no `if:`, a skipped or failed `publish`
 #     skips the deploy, and an `if: always()` would deploy on a
 #     `publish: false` hand run.
+#   - `deploy-site.yml` checks out `inputs.ref`, so the `ref: main` a caller
+#     passes reaches the checkout, and each caller passes `secrets`, without
+#     which the deploy has no Cloudflare token.
 # ---------------------------------------------------------------------------
 deploys_py='
 import glob, os, re, sys
@@ -662,6 +665,18 @@ if "deploy-site.yml" in docs and not any(
     for b in jobs("deploy-site.yml").values() for s in as_list(b.get("steps"))
 ):
     out.append("deploy-site.yml runs no step of tools/site/deploy-site.sh")
+if "deploy-site.yml" in docs:
+    checkouts = [s for b in jobs("deploy-site.yml").values() for s in as_list(b.get("steps"))
+                 if isinstance(s, dict) and str(s.get("uses", "")).startswith("actions/checkout@")]
+    if not checkouts or any(not isinstance(s.get("with"), dict)
+                            or str(s["with"].get("ref", "")).replace(" ", "") != "${{inputs.ref}}"
+                            for s in checkouts):
+        out.append("deploy-site.yml checks out a tree other than inputs.ref, so a caller cannot name main")
+
+for name in ("ci.yml", "release.yml"):
+    for job, body in sorted(callers(name).items()):
+        if "secrets" not in body:
+            out.append("%s job %s passes no secrets, so the deploy has no Cloudflare token" % (name, job))
 
 if not callers("ci.yml"):
     out.append("ci.yml has no job that calls deploy-site.yml, so a push to main deploys nothing")
@@ -742,10 +757,26 @@ if [ -n "$rel_job" ]; then
     same "a deploy with if: always() is red" \
         "release.yml job $rel_job has an if:, so it can deploy when publish did not run" \
         "$(deploys "$scratch/d4" | tr '\n' '|' | sed 's/|$//')"
+
+    # d7. The release caller passes no secrets, so the deploy fails on the token.
+    copy_tree "$scratch/d7"
+    edit_wf "$scratch/d7" release.yml "doc['jobs']['$rel_job'].pop('secrets')"
+    same "a release deploy that passes no secrets is red" \
+        "release.yml job $rel_job passes no secrets, so the deploy has no Cloudflare token" \
+        "$(deploys "$scratch/d7" | tr '\n' '|' | sed 's/|$//')"
 else
     fail "release.yml has a job that calls deploy-site.yml" \
         "none, so the arms d1 to d4 have no job to edit"
 fi
+
+# d8. The called workflow checks out its caller's ref, whatever the input, so
+# a release deploys its tag.
+copy_tree "$scratch/d8"
+if [ -f "$scratch/d8/.github/workflows/deploy-site.yml" ]; then
+    edit_wf "$scratch/d8" deploy-site.yml "[s.pop('with', None) for j in doc['jobs'].values() for s in j.get('steps', []) if str(s.get('uses', '')).startswith('actions/checkout@')]"
+fi
+contains "a deploy-site.yml that ignores inputs.ref is red" \
+    "deploy-site.yml checks out a tree other than inputs.ref" "$(deploys "$scratch/d8")"
 
 # d5. A copy of the deploy steps inlined into release.yml: two deploy paths.
 copy_tree "$scratch/d5"
