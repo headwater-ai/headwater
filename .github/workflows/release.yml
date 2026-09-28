@@ -619,3 +619,19 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ needs.tag.outputs.tag }}
         run: gh release view "$TAG" --json assets --jq '.assets[].name'
+
+  deploy-site:
+    name: Deploy the site, so apt/ serves this release
+    # `tools/site/fetch-apt.sh` copies the APT repository out of
+    # `releases/latest`, and the deploy of the version-bump push ran before
+    # this release existed, so until this job runs `apt/` serves the previous
+    # version (#1316). It waits for `publish`, so a `publish: false` run or a
+    # failed publish skips it; give it no `if:` that would run it anyway. It
+    # deploys `main` and not the tag, because inside a called workflow
+    # `github.ref` is this run's tag, and the guide merges the install text
+    # after the tag. `deploy-site.yml` holds the one deploy job.
+    needs: publish
+    uses: ./.github/workflows/deploy-site.yml
+    with:
+      ref: main
+    secrets: inherit

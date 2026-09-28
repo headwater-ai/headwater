@@ -244,7 +244,7 @@ judge() {
 # that cites nothing is a finding. A record cited in a step comment and not in
 # the header is not read here: a step may cite a record about one line.
 # ---------------------------------------------------------------------------
-cited_workflows="release.yml release-taxonomy.yml publish-crates.yml ci.yml"
+cited_workflows="release.yml release-taxonomy.yml publish-crates.yml ci.yml deploy-site.yml"
 
 cites_py='
 import fnmatch, glob, os, posixpath, re, sys
