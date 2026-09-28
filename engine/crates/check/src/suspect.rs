@@ -96,32 +96,47 @@
 //! instance over each of its document edges, and a pass there would count an
 //! edge that could never be suspect.
 //!
-//! **The exception is an unrecorded edge on a document verified today.** The
-//! document's freshness facet (`last_verified` in the standard package) is at
-//! or after the run's clock, so its author has just re-read it, and the rule
-//! reports at `Info` with a patch that records the digest the edge reaches
-//! now. Only where the relation declares `verified_revision`, because spec 2
-//! makes an attribute the relation does not declare a finding. That patch is the one way a digest is recorded without typing it.
+//! **The exception is an unrecorded edge on a document the change
+//! re-verified.** The change states that its author has just re-read the
+//! document (see below), and the rule reports at `Info` with a patch that
+//! records the digest the edge reaches now. Only where the relation declares
+//! `verified_revision`, because spec 2 makes an attribute the relation does
+//! not declare a finding. That patch is the one way a digest is recorded
+//! without typing it.
 //!
-//! # When a fix is offered, and why the clock decides it
+//! # When a fix is offered, and why the change decides it
 //!
 //! A patch that writes `verified_revision` records a verification. So it is
-//! offered only where the document says one happened today: its freshness
-//! facet is at or after the injected clock, compared as dates because the
-//! facet is a date. On any other document the finding carries its remedy as
-//! prose and no patch, because `headwater check --fix` would then record a
-//! verification nobody performed. The patch is a [`crate::Patch::Half`] with
+//! offered only where the run's change states that one happened: the run
+//! carries a change, and the change adds the document that declares the
+//! edge, or moves that document's freshness facet (`last_verified` in the
+//! standard package) off the value it held before. On any other document the
+//! finding carries its remedy as prose and no patch, because
+//! `headwater check --fix` would then record a verification nobody performed.
+//!
+//! Before #1259 the clock decided: a document whose freshness facet was at or
+//! after the run's date was stamped. That stamped every document that any
+//! merge of the day had re-verified, whatever the change in hand had read, and
+//! the same tree was fixable on one date and not on the next. The target is
+//! not what decides either. A change that edits a governed file makes every
+//! edge onto it suspect, and a stamp on those edges is the unread stamp this
+//! rule exists to refuse. The declarer's re-verification also covers the one
+//! honest case the target misses: an author who re-reads a document whose
+//! edge went suspect in an earlier change.
+//!
+//! The patch is a [`crate::Patch::Half`] with
 //! the edge's attributes, which [`headwater_scaffold::write::splice`] writes
 //! over the entry that names the target and reads back. It turns a bare entry
 //! into the mapping form, and keeps every other attribute the entry had. An
 //! entry with a list target, or an attribute that is not a scalar, gets no
 //! patch, because the splice matches an entry by one scalar `to`.
 
+use crate::change::Prior;
 use crate::finding::{at, Finding, Severity};
 use crate::instance::Outcome;
 use crate::scope::{EdgeCheck, EdgeUnit, EdgeView};
 use crate::shape::Shape;
-use crate::{Date, Patch};
+use crate::Patch;
 use headwater_graph::declarations::Relation;
 use headwater_graph::edges::VERIFIED_REVISION;
 use headwater_graph::{Declarations, Direction, Edge, Target};
@@ -171,19 +186,25 @@ impl<'a> Suspect<'a> {
         }
     }
 
-    /// Whether the document that declared this edge says it was verified on
-    /// or after the run's clock.
-    fn verified_today(&self, view: &EdgeView<'_>) -> bool {
-        let (Some(facet), Some(now), Some(facets)) =
-            (self.freshness, view.now(), view.declarer_facets())
-        else {
+    /// Whether the run's change states that the document that declared this
+    /// edge was re-verified: the change adds it, or moves its freshness facet
+    /// off the value the prior version held. No change, a change that does not
+    /// carry the document, and a prior version this engine could not read all
+    /// state nothing. See the module comment.
+    fn re_verified(&self, view: &EdgeView<'_>) -> bool {
+        let Some(facet) = self.freshness else {
             return false;
         };
-        facets
-            .get(facet)
-            .and_then(|node| node.value.as_scalar())
-            .and_then(|scalar| Date::parse(&scalar.text))
-            .is_some_and(|verified| verified >= now)
+        match view.declarer_prior() {
+            Some(Prior::Added) => true,
+            Some(Prior::Committed { facets: before, .. }) => {
+                let now = view
+                    .declarer_facets()
+                    .and_then(|facets| freshness(facets, facet));
+                now.is_some() && now != freshness(before, facet)
+            }
+            Some(Prior::Unchanged) | None => false,
+        }
     }
 }
 
@@ -199,10 +220,17 @@ impl EdgeCheck for Suspect<'_> {
     /// reported as one, so a verdict cached at 4 over such an edge is stale.
     /// That is a socket, a device, an unreadable file or a gone entry, since a
     /// named pipe never finished at 4 (#1269).
-    const VERSION: u32 = 5;
-    /// The fix is offered only on a document verified on or after the clock,
-    /// so the clock is an input and has to be in the key.
-    const NEEDS_CLOCK: bool = true;
+    ///
+    /// 6: the fix, and the `Info` report over an unrecorded edge, are decided
+    /// by the change rather than by the clock, so a verdict cached at 5 on a
+    /// document verified today is stale (#1259).
+    const VERSION: u32 = 6;
+    /// The change decides the fix, and the clock decides nothing (#1259).
+    const NEEDS_CLOCK: bool = false;
+    /// The fix is offered only on a document the change re-verified, so the
+    /// version of that document before the change is an input, and it has to
+    /// be in the key.
+    const NEEDS_DECLARER_PRIOR: bool = true;
     /// As [`crate::target`]: an anchor target has no far document, so there is
     /// no pair to group two halves into.
     const UNIT: EdgeUnit = EdgeUnit::Entry;
@@ -235,7 +263,7 @@ impl EdgeCheck for Suspect<'_> {
         // A fix writes `verified_revision`, so it is offered only where the
         // relation declares that attribute: spec 2 makes an undeclared one a
         // finding, and a fix must not write what a later rule refuses.
-        let today = self.verified_today(view)
+        let restated = self.re_verified(view)
             && self
                 .declared
                 .iter()
@@ -292,7 +320,7 @@ impl EdgeCheck for Suspect<'_> {
 
         if edge.verified_revision().is_none() {
             // The one report an unrecorded edge gets. See the module comment.
-            if !today || resolver != SOURCE_TREE {
+            if !restated || resolver != SOURCE_TREE {
                 return Outcome::Passed;
             }
             let Some(patch) = recording(edge, current) else {
@@ -302,8 +330,9 @@ impl EdgeCheck for Suspect<'_> {
                 Severity::Info,
                 unrecorded(&edge.source.id, &edge.name, &edge.raw_target, current),
                 format!(
-                    "run `headwater check --fix` to record `{VERIFIED_REVISION}: {current}` on \
-                     this entry, so that a later change to what it reaches is reported"
+                    "run `headwater check --fix` with the same `--change` to record \
+                     `{VERIFIED_REVISION}: {current}` on this entry, so that a later change to \
+                     what it reaches is reported"
                 ),
                 Some(patch),
             ));
@@ -352,9 +381,9 @@ impl EdgeCheck for Suspect<'_> {
             ),
         };
         // A snapshot's revision is never fixed here: see `remediation`. A
-        // source-tree digest is, on a document verified today, because then
-        // the verification the patch records is one the author stated.
-        let patch = match resolver == SOURCE_TREE && today {
+        // source-tree digest is, on a document the change re-verified, because
+        // then the verification the patch records is one the author stated.
+        let patch = match resolver == SOURCE_TREE && restated {
             true => recording(edge, current),
             false => None,
         };
@@ -484,17 +513,29 @@ fn moved(id: &str, name: &str, raw: &str, verified: &str, current: &str, reach: 
 fn reread(current: &str) -> String {
     format!(
         "re-read what the entry reaches and correct this document where it no longer holds; then \
-         set its `last_verified` to today and run `headwater check --fix`, which records \
+         set its `last_verified` to today, write the change with `headwater change <base> <dir>`, \
+         and run `headwater check --fix --change <dir>/manifest`, which records \
          `{VERIFIED_REVISION}: {current}` on this entry"
     )
 }
 
-/// An unrecorded edge on a document verified today.
+/// An unrecorded edge on a document the change re-verified.
 fn unrecorded(id: &str, name: &str, raw: &str, current: &str) -> String {
     format!(
-        "`{id}` declares `{name}: {raw}` with no `{VERIFIED_REVISION}`, and the document was \
-         verified today, so the content it reaches now, `{current}`, can be recorded"
+        "`{id}` declares `{name}: {raw}` with no `{VERIFIED_REVISION}`, and the change \
+         re-verified the document, so the content it reaches now, `{current}`, can be recorded"
     )
+}
+
+/// The value of the freshness facet in one front matter, as written.
+///
+/// Compared as text rather than as a date, because the question is whether
+/// the author moved it, and any edit to it is a statement that they did.
+fn freshness<'m>(facets: &'m headwater_yaml::Mapping, facet: &str) -> Option<&'m str> {
+    facets
+        .get(facet)
+        .and_then(|node| node.value.as_scalar())
+        .map(|scalar| scalar.text.as_str())
 }
 
 /// What moved, in the terms of the document that declares the edge.

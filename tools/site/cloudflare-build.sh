@@ -63,8 +63,9 @@
 # THIS IS NO LONGER THE DEPLOY PATH (#1273)
 #
 #   The site is deployed by the `Deploy the site` job of
-#   `.github/workflows/ci.yml`, which runs `tools/site/deploy-site.sh` on a
-#   push to `main` after every gating job is green. That script measures the
+#   `.github/workflows/deploy-site.yml`, which runs `tools/site/deploy-site.sh`.
+#   `ci.yml` calls it on a push to `main` after every gating job is green, and
+#   `release.yml` calls it after it creates a release. That script measures the
 #   figures into the assembled pages, and nothing here can: a Workers Build has
 #   no built engine, and it starts on the push rather than after CI.
 #
