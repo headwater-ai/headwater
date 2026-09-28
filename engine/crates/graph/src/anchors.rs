@@ -29,7 +29,8 @@
 //! tree under the corpus base. The second resolver this specification names, a
 //! committed snapshot of an external system of record, reads committed files by
 //! the same rule and lives in `headwater_import::anchors`. The third, a pinned
-//! corpus export at the federation tier, does not exist yet.
+//! corpus export at the federation tier, reads the committed export that a
+//! `harvests.<name>` pin names, and lives in `headwater_import::harvest`.
 //!
 //! # Why the snapshot resolver is not in this file
 //!
@@ -78,8 +79,10 @@ pub enum Binding {
         /// What the resolver's source says the target is at now, and `None`
         /// where the resolver has no such notion.
         ///
-        /// Two resolvers have one. A committed snapshot pins an identity and a
-        /// revision for every item in it, so its answer carries both.
+        /// Three resolvers have one. A committed snapshot pins an identity and
+        /// a revision for every item in it, so its answer carries both. A
+        /// pinned corpus export answers with the digest of the export's bytes,
+        /// so every edge into it moves when the harvest moves.
         /// [`SourceTree`] answers with [`tree_revision`]: a digest of the
         /// bytes of every entry the anchor matched, keyed by path. That is
         /// not a commit, and it is not meant to be one. A working tree is at

@@ -1,0 +1,42 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!--
+  The plugin registers one action, one tool window, one save listener and one
+  notification group. Each of them calls `Client`, which starts
+  `headwater mcp` without `write` and calls `route` or `governing_docs_for_path`
+  and no other tool.
+-->
+<idea-plugin>
+  <id>ai.headwater.jetbrains</id>
+  <name>Headwater</name>
+  <vendor url="https://github.com/headwater-ai/headwater">headwater-ai</vendor>
+  <description><![CDATA[
+    Shows the documents that govern a task, the file in the selected editor, and a saved file,
+    from the <code>headwater mcp</code> server that the Headwater engine ships.
+    It shows nothing when nothing governs the task or the file, and it does nothing
+    when no <code>headwater</code> binary is reachable.
+  ]]></description>
+
+  <depends>com.intellij.modules.platform</depends>
+
+  <actions>
+    <action id="Headwater.WhatGoverns"
+            class="ai.headwater.jetbrains.WhatGovernsAction"
+            text="Headwater: What Governs This Task?"
+            description="Lists the documents that govern a task you describe">
+      <add-to-group group-id="ToolsMenu" anchor="last"/>
+    </action>
+  </actions>
+
+  <extensions defaultExtensionNs="com.intellij">
+    <toolWindow id="Headwater"
+                anchor="right"
+                secondary="true"
+                factoryClass="ai.headwater.jetbrains.GoverningToolWindowFactory"/>
+    <notificationGroup id="Headwater" displayType="BALLOON"/>
+  </extensions>
+
+  <applicationListeners>
+    <listener class="ai.headwater.jetbrains.SaveListener"
+              topic="com.intellij.openapi.fileEditor.FileDocumentManagerListener"/>
+  </applicationListeners>
+</idea-plugin>

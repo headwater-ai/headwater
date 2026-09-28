@@ -783,6 +783,22 @@ fn the_shipped_starter_recipe_publishes_vendors_and_resolves() {
             .is_file(),
         "the doctrine did not arrive with the vendored package"
     );
+    // HW-DR-0084 promises that the doctrine names `outside_root` once the
+    // engine reads it, and #1191 is the page that broke that promise. The
+    // adopter receives the promise here, in the vendored doctrine, so the
+    // assertion reads this copy and not the source.
+    let doctrine = std::fs::read_to_string(
+        consumer.join(".headwater/packages/headwater-starter/doctrine/starter/starter.md"),
+    )
+    .expect("the vendored doctrine is readable");
+    assert!(
+        doctrine.contains("outside_root"),
+        "the starter doctrine does not name `outside_root`, the second route a language regime has to prose (HW-DR-0084)"
+    );
+    assert!(
+        !doctrine.contains("reaches prose only through the kinds that bind it"),
+        "the starter doctrine still says a kind is the only route a language regime has to prose"
+    );
 
     let (code, _stdout, stderr) = consumer_run(&consumer, &["taxonomy", "resolve"]);
     assert_eq!(code, Some(0), "{stderr}");
