@@ -27,7 +27,7 @@ relations:
 
 - You have adopted Headwater, and `headwater generate --check` passes on your default branch.
 - You know which build step or deploy reads each file that `headwater generate` writes. `headwater derived` lists the files.
-- To add a document on a second shelf with `headwater new`, that shelf's kind needs an identifier. In the standard package, `decision` has one after `headwater init`. `specification` does not, and `headwater new specification` refuses until your overlay declares `kinds.specification.identifier` and its scheme ([#1264](https://github.com/headwater-ai/headwater/issues/1264)).
+- To add a document on a second shelf with `headwater new`, that shelf's kind needs an identifier. In the standard package, `decision` has one after `headwater init`. `specification` does not, and `headwater new specification` refuses until your overlay declares `kinds.specification.identifier` and its scheme. The refusal prints the two lines to add under `add:` in `.headwater/overlay.yml`. Paste them, run `headwater taxonomy resolve`, and run `headwater new specification` again ([#1264](https://github.com/headwater-ai/headwater/issues/1264)).
 
 ## Steps
 
