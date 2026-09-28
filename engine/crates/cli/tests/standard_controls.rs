@@ -30,21 +30,20 @@ const LIFECYCLE: [&str; 6] = [
 fn every_lifecycle_rule_reaches_one_obligation_of_the_standard_package() {
     let root = Root::shaped("standard-controls", |_| {});
     let ran = root.run(&["check"]);
+    // The register wraps a line at the report's width, and a rule bound to
+    // two obligations prints a line long enough to wrap, so the case reads the
+    // output with each run of whitespace folded to one space.
+    let flat = ran.out.split_whitespace().collect::<Vec<_>>().join(" ");
     assert!(
-        ran.out.contains("reaches no obligation")
-            || ran
-                .out
-                .contains("every rule this engine carries reaches one obligation"),
+        flat.contains("so it names none")
+            || flat.contains("every rule this engine carries reaches one obligation"),
         "the register block is not in the output, so this case reads nothing: {ran:?}"
     );
+    // The register prints a line for a rule only where the rule reaches no
+    // obligation or more than one, and each such line opens with the rule.
     let unbound: Vec<&str> = LIFECYCLE
         .into_iter()
-        .filter(|rule| {
-            ran.out.lines().any(|line| {
-                let line = line.trim_start();
-                line.starts_with(&format!("{rule} reaches ")) && line.ends_with("so it names none")
-            })
-        })
+        .filter(|rule| flat.contains(&format!(" {rule} reaches ")))
         .collect();
     assert!(
         unbound.is_empty(),
