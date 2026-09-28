@@ -454,6 +454,15 @@ impl Resolver for SourceTree {
 /// governed pattern, or removed from it, changes the manifest, and so does one
 /// changed byte of any entry.
 ///
+/// Only a regular file reaches the manifest. A named pipe, a socket and a
+/// device are left out and never opened, because opening a named pipe that
+/// has no writer blocks the process forever, and a `check` that met one under
+/// a `governs` edge never ended (#1269). The walk reports such an entry as a
+/// file, so this reader is the one place that can refuse it. A symlink is
+/// followed, so a link to a pipe is left out too. When every entry was left
+/// out this way, the value is `None` rather than the digest of an empty
+/// manifest, which would be a revision that can never change.
+///
 /// `None` when any entry cannot be read as a file. That is a directory named
 /// by a literal, the one shape this corpus declares where it happens
 /// (`.headwater/packages`), and an entry that went away between the walk and
@@ -470,16 +479,25 @@ pub fn tree_revision(base: &Path, matched: &[String]) -> Option<String> {
     sorted.sort();
     sorted.dedup();
     let mut manifest = String::new();
+    let mut skipped = false;
     for path in sorted {
         let at = base.join(path);
-        if at.is_dir() {
+        let kind = std::fs::metadata(&at).ok()?;
+        if kind.is_dir() {
             return None;
+        }
+        if !kind.is_file() {
+            skipped = true;
+            continue;
         }
         let bytes = std::fs::read(&at).ok()?;
         manifest.push_str(path);
         manifest.push('\0');
         manifest.push_str(&headwater_hash::digest(&bytes));
         manifest.push('\n');
+    }
+    if skipped && manifest.is_empty() {
+        return None;
     }
     Some(headwater_hash::digest(manifest.as_bytes()))
 }
@@ -1325,5 +1343,34 @@ mod tests {
 
         assert!(why.contains("HW-SPEC-x"), "{why}");
         assert!(why.contains("does not start `HW-VER-`"), "{why}");
+    }
+
+    /// A named pipe reaches no line of the manifest, so it is never opened
+    /// (#1269). Opening one that has no writer blocks forever, so a reader
+    /// that opens it hangs this test rather than failing it. A set of entries
+    /// that holds only a pipe has no revision.
+    #[cfg(unix)]
+    #[test]
+    fn a_named_pipe_is_left_out_of_the_tree_revision() {
+        let dir = scratch("named-pipe");
+        std::fs::write(dir.join("a.sh"), "echo a\n").expect("a fixture file");
+        let fifo = std::process::Command::new("mkfifo")
+            .arg(dir.join("pipe"))
+            .status()
+            .expect("mkfifo runs");
+        assert!(fifo.success(), "the named pipe is made");
+
+        let file_only = tree_revision(&dir, &["a.sh".to_owned()]);
+        assert!(file_only.is_some(), "a regular file has a revision");
+        assert_eq!(
+            tree_revision(&dir, &["a.sh".to_owned(), "pipe".to_owned()]),
+            file_only,
+            "the pipe changes nothing"
+        );
+        assert_eq!(tree_revision(&dir, &["pipe".to_owned()]), None);
+        assert!(
+            tree_revision(&dir, &[]).is_some(),
+            "an empty match keeps its revision, as before"
+        );
     }
 }
