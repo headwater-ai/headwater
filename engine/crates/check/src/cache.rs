@@ -1216,6 +1216,48 @@ mod tests {
         }
     }
 
+    /// The edge grain's reading of the prior version, on the same terms as the
+    /// case above, plus the one state that grain adds: a run with no change is
+    /// keyed, and it keys apart from every state a change can hand over
+    /// (#1259). A key that wrote one value for all five would serve a stamp
+    /// decided under one change to a run under another.
+    #[test]
+    fn five_states_of_the_declarer_prior_are_five_keys_at_edge_grain() {
+        let scope = Scope::edge(false, false, true);
+        let key = |prior: Option<Prior<'_>>| {
+            cache().key(
+                "relation.target.suspect",
+                1,
+                scope,
+                "a.md\u{1f}governs\u{1f}tools/run.sh",
+                &inputs(Some("sha256:one")),
+                None,
+                prior,
+                Some("resolved"),
+            )
+        };
+        let facets = Mapping::default();
+        let states = [
+            key(None),
+            key(Some(Prior::Unchanged)),
+            key(Some(Prior::Added)),
+            key(Some(Prior::Committed {
+                digest: "sha256:before",
+                facets: &facets,
+            })),
+            key(Some(Prior::Committed {
+                digest: "sha256:another",
+                facets: &facets,
+            })),
+        ];
+        for (index, state) in states.iter().enumerate() {
+            assert!(state.is_some(), "state {index} lost its key");
+            for other in &states[index + 1..] {
+                assert_ne!(state, other, "two states of the declarer prior share a key");
+            }
+        }
+    }
+
     /// A scope that declares the prior version and was handed none is not
     /// keyed, and one that declares nothing keys as it did before the input
     /// existed.

@@ -168,6 +168,19 @@ fn change(entries: &[(&str, Option<String>)]) -> Change {
     .bind(|_| true)
 }
 
+/// A change that names the document at `path` with a prior version that does
+/// not open. The change then states nothing about the document, so no stamp
+/// may be offered: reading the failure as an added document would record a
+/// verification nobody stated.
+fn unreadable(path: &str) -> Change {
+    Unbound::read(
+        &format!("headwater change 1\nprior\t{path}\tprior/missing\n"),
+        |_: &Path| Err(std::io::Error::from(std::io::ErrorKind::NotFound)),
+    )
+    .expect("the manifest reads")
+    .bind(|_| true)
+}
+
 /// The same document as it stood yesterday: every entry as it is now, and the
 /// freshness facet one day earlier. A change that carries this as the prior
 /// version states that its author re-read the document.
@@ -404,6 +417,10 @@ fn an_unrecorded_entry_the_change_did_not_re_verify_is_silent() {
         (
             "a change that names another document",
             at(TODAY).scoped_to(change(&[(OTHER, None)])),
+        ),
+        (
+            "a change whose prior version of the document does not open",
+            at(TODAY).scoped_to(unreadable(DOCUMENT)),
         ),
     ] {
         let ran = run_in(&root, &ctx, &mut Cache::disabled(), &taxonomy());
