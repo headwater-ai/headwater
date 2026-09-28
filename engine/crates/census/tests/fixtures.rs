@@ -676,7 +676,9 @@ fn words_of(line: &str) -> Vec<String> {
 /// file carries one, and that is the whole reason it is reported. A rule that read a list would report nothing here.
 #[test]
 fn a_planted_producer_output_and_a_planted_orphan_are_both_reported() {
-    let root = TempTree::new("planted");
+    let Some(root) = TempTree::outside("planted") else {
+        return;
+    };
     root.write(
         ".gitattributes",
         "# a comment naming merge=headwater-regenerate, which is not a declaration\n\
@@ -742,7 +744,9 @@ fn a_planted_producer_output_and_a_planted_orphan_are_both_reported() {
 /// no attribute for the page.
 #[test]
 fn a_page_under_site_whose_figures_are_blank_is_claimed_by_no_producer() {
-    let root = TempTree::new("blank-figures");
+    let Some(root) = TempTree::outside("blank-figures") else {
+        return;
+    };
     root.write("tools/site/refresh-figures.sh", "#!/bin/sh\n");
     root.write(".gitattributes", "# no merge attribute anywhere\n");
     root.write(
@@ -777,7 +781,9 @@ fn a_page_under_site_whose_figures_are_blank_is_claimed_by_no_producer() {
 /// artifact that declared the driver would refuse a merge it is built to take.
 #[test]
 fn a_decomposed_recorded_fixture_is_not_a_member_and_a_folded_one_is() {
-    let root = TempTree::new("folds");
+    let Some(root) = TempTree::outside("folds") else {
+        return;
+    };
     root.write(".gitattributes", "");
     root.write(
         "engine/crates/check/fixtures/corpus.totals",
@@ -887,7 +893,9 @@ fn no_path_of_this_tree_carries_an_attribute_that_is_not_its_shapes_treatment() 
 fn every_disagreement_between_a_shape_and_a_treatment_is_reported() {
     use headwater_census::derived::{Shape, Treatment};
 
-    let root = TempTree::new("shapes");
+    let Some(root) = TempTree::outside("shapes") else {
+        return;
+    };
     root.write(
         ".gitattributes",
         "store/appended.jsonl merge=headwater-regenerate\n\
@@ -1000,7 +1008,9 @@ fn every_disagreement_between_a_shape_and_a_treatment_is_reported() {
 /// One file of each shape, which is what the contract asks for.
 #[test]
 fn the_report_names_the_row_the_treatment_and_the_rebuild_for_one_file_of_each_shape() {
-    let root = TempTree::new("render");
+    let Some(root) = TempTree::outside("render") else {
+        return;
+    };
     root.write(
         ".gitattributes",
         "store/readings.jsonl merge=union\n\
@@ -1070,7 +1080,9 @@ fn the_report_uses_the_words_of_the_evaluation_table() {
 /// looks exactly like a declaration that agrees.
 #[test]
 fn a_merge_attribute_behind_a_glob_is_reported_rather_than_skipped() {
-    let root = TempTree::new("glob");
+    let Some(root) = TempTree::outside("glob") else {
+        return;
+    };
     root.write(
         ".gitattributes",
         "# a comment naming merge=union, which is not a declaration\n\
@@ -1110,7 +1122,9 @@ fn a_merge_attribute_behind_a_glob_is_reported_rather_than_skipped() {
 fn a_producer_output_whose_every_line_is_a_record_is_a_fold() {
     use headwater_census::derived::{Producer, Shape};
 
-    let root = TempTree::new("order");
+    let Some(root) = TempTree::outside("order") else {
+        return;
+    };
     root.write(".gitattributes", "");
     root.write(
         "engine/crates/a/fixtures/corpus.a",
@@ -1160,7 +1174,9 @@ fn a_tree_that_lacks_a_producer_is_not_told_to_run_it() {
     use headwater_census::derived::Producer;
 
     const FOLD: &str = "engine/crates/a/fixtures/corpus.a";
-    let root = TempTree::adopter("adopter");
+    let Some(root) = TempTree::outside_adopter("adopter") else {
+        return;
+    };
     root.write(".gitattributes", "");
     root.write(FOLD, "426 files\nsha256:0a1b\n");
 
@@ -1279,7 +1295,9 @@ fn derived_agrees_with_git_check_attr_on_every_path() {
 fn outside_a_git_repository_the_root_gitattributes_alone_is_read() {
     use headwater_census::derived::Treatment;
 
-    let root = TempTree::new("no-repository");
+    let Some(root) = TempTree::outside("no-repository") else {
+        return;
+    };
     plant_attribute_layouts(&root, false);
 
     let population = headwater_census::derived::population(root.path());
@@ -1347,7 +1365,9 @@ fn outside_a_git_repository_the_root_gitattributes_alone_is_read() {
 /// for a file it did not read.
 #[test]
 fn outside_a_git_repository_a_nested_file_under_a_glob_character_is_named() {
-    let root = TempTree::new("glob-named-directories");
+    let Some(root) = TempTree::outside("glob-named-directories") else {
+        return;
+    };
     for path in [
         "br[1]/.gitattributes",
         "q?/x/.gitattributes",
@@ -1384,7 +1404,9 @@ fn outside_a_git_repository_a_nested_file_under_a_glob_character_is_named() {
 /// shows `gen.md` undeclared and `/gen.md` unproduced.
 #[test]
 fn outside_a_git_repository_a_leading_slash_of_a_root_line_is_not_part_of_the_path() {
-    let root = TempTree::new("leading-slash-no-repository");
+    let Some(root) = TempTree::outside("leading-slash-no-repository") else {
+        return;
+    };
     root.write(".gitattributes", "/gen.md merge=headwater-regenerate\n");
     root.write(
         "gen.md",
@@ -1819,9 +1841,37 @@ impl TempTree {
     }
 
     /// A tree that holds only the two verb producers, as an adopter's does.
+    ///
+    /// It sits under the directory [`outside_base`] finds where there is one,
+    /// so what a repository above it declares or ignores does not reach a
+    /// case that runs `git init` in it either (#1192).
     fn adopter(label: &str) -> TempTree {
-        let path =
-            std::env::temp_dir().join(format!("headwater-derived-{}-{label}", std::process::id()));
+        let base = clean_base(&base_candidates()).unwrap_or_else(|_| std::env::temp_dir());
+        TempTree::made(base.join(format!("headwater-derived-{}-{label}", std::process::id())))
+    }
+
+    /// A tree as [`TempTree::new`] makes it, under a directory with no `.git`
+    /// entry above it, for a case that reads the tree with no git answer. A
+    /// case that never runs `git init` is one: a repository above it would
+    /// answer for it, with whatever that repository declares and ignores.
+    /// `None` when no such directory is found, and the case then returns
+    /// with the reason on standard error.
+    fn outside(label: &str) -> Option<TempTree> {
+        let tree = TempTree::outside_adopter(label)?;
+        tree.write(ENGINE_MANIFEST, "[workspace]\n");
+        Some(tree)
+    }
+
+    /// A tree as [`TempTree::adopter`] makes it, under the same terms as
+    /// [`TempTree::outside`].
+    fn outside_adopter(label: &str) -> Option<TempTree> {
+        Some(TempTree::made(outside_base()?.join(format!(
+            "headwater-derived-{}-{label}",
+            std::process::id()
+        ))))
+    }
+
+    fn made(path: PathBuf) -> TempTree {
         let _ = std::fs::remove_dir_all(&path);
         std::fs::create_dir_all(&path).expect("a temporary tree");
         TempTree(path)
@@ -1858,4 +1908,122 @@ impl Drop for TempTree {
     fn drop(&mut self) {
         let _ = std::fs::remove_dir_all(&self.0);
     }
+}
+
+/// A directory for a tree outside every git repository, or `None`, with one
+/// line on standard error, when no candidate is one.
+///
+/// `std::env::temp_dir()` follows `TMPDIR`, and a `TMPDIR` inside a git work
+/// tree puts that work tree above every scratch tree, so git finds it and
+/// `population` reads git's answer rather than the root file's (#1192).
+/// `population` runs in this process, so no per-command environment reaches
+/// it, and a case does not change the environment of a process that cargo
+/// shares between the cases of one target.
+fn outside_base() -> Option<PathBuf> {
+    clean_base(&base_candidates())
+        .map_err(|refused| eprintln!("skipped, no scratch base outside git: {refused}"))
+        .ok()
+}
+
+/// `std::env::temp_dir()`, then on unix the three directories a host keeps
+/// for scratch files, in the order [`outside_base`] tries them.
+fn base_candidates() -> Vec<PathBuf> {
+    let mut candidates = vec![std::env::temp_dir()];
+    if cfg!(unix) {
+        candidates.extend(["/tmp", "/var/tmp", "/dev/shm"].map(PathBuf::from));
+    }
+    candidates
+}
+
+/// The first of `candidates` that is a directory with no `.git` entry in it
+/// or in any directory above it, canonical, or every refusal in one line.
+fn clean_base(candidates: &[PathBuf]) -> Result<PathBuf, String> {
+    let mut refused = Vec::new();
+    for candidate in candidates {
+        let at = match candidate.canonicalize() {
+            Ok(at) if at.is_dir() => at,
+            Ok(_) => {
+                refused.push(format!("{} is not a directory", candidate.display()));
+                continue;
+            }
+            Err(error) => {
+                refused.push(format!("{}: {error}", candidate.display()));
+                continue;
+            }
+        };
+        match at
+            .ancestors()
+            .map(|dir| dir.join(".git"))
+            .find(|git| git.exists())
+        {
+            Some(git) => refused.push(format!(
+                "{} is below {}",
+                candidate.display(),
+                git.display()
+            )),
+            None => return Ok(at),
+        }
+    }
+    Err(refused.join("; "))
+}
+
+/// The scratch base is the first candidate with no `.git` entry above it.
+///
+/// A candidate below a directory that holds `.git` is passed over and named,
+/// and the clean candidate after it is taken. Test only the candidate itself,
+/// or take the first candidate unread, and this case fails (#1192).
+#[test]
+fn the_scratch_base_passes_over_a_candidate_inside_a_git_work_tree() {
+    let Some(clean) = outside_base() else {
+        return;
+    };
+    let outer = TempTree(clean.join(format!(
+        "headwater-derived-{}-base-selection",
+        std::process::id()
+    )));
+    let _ = std::fs::remove_dir_all(outer.path());
+    std::fs::create_dir_all(outer.path().join(".git")).expect("a directory");
+    std::fs::create_dir_all(outer.path().join("tmp")).expect("a directory");
+    let inside = outer.path().join("tmp");
+
+    let refused = clean_base(std::slice::from_ref(&inside))
+        .expect_err("a candidate inside a work tree is no base");
+    assert!(
+        refused.contains(&outer.path().join(".git").display().to_string()),
+        "the refusal names the `.git` entry above the candidate: {refused}"
+    );
+    assert_eq!(
+        clean_base(&[inside, clean.clone()]),
+        Ok(clean),
+        "the clean candidate after it is taken"
+    );
+
+    // A candidate that is a link into a work tree is inside it. Read the
+    // ancestors of the link rather than of its target, and this fails.
+    #[cfg(unix)]
+    {
+        let link = TempTree(outer.path().with_extension("link"));
+        let _ = std::fs::remove_file(&link.0);
+        std::os::unix::fs::symlink(outer.path().join("tmp"), &link.0).expect("the link is made");
+        assert!(
+            clean_base(std::slice::from_ref(&link.0)).is_err(),
+            "a link into a work tree is no base"
+        );
+    }
+
+    // A candidate that holds `.git` itself is the top of a work tree. Read
+    // only the directories above a candidate, and this fails.
+    assert!(
+        clean_base(std::slice::from_ref(&outer.0)).is_err(),
+        "a candidate that holds `.git` is no base"
+    );
+
+    // A gitfile names a repository as a `.git` directory does, and a
+    // worktree of a repository has one. Read only a directory, and this fails.
+    std::fs::remove_dir_all(outer.path().join(".git")).expect("the directory goes");
+    std::fs::write(outer.path().join(".git"), "gitdir: /elsewhere\n").expect("the gitfile writes");
+    assert!(
+        clean_base(&[outer.path().join("tmp")]).is_err(),
+        "a candidate below a gitfile is no base"
+    );
 }
