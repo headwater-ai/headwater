@@ -150,14 +150,15 @@ def unquote(name):
 
 
 def side_path(field, prefix):
-    """Read the name on a `---` or `+++` line. Git ends an unquoted name that
-    holds a space with a TAB, so that a patch tool can find where the name
-    ends. A name with a TAB of its own is always quoted, so the one trailing
-    TAB of an unquoted name is git's and never the file's. Return None for
+    """Read the name on a `---` or `+++` line. Git ends a name that holds a
+    space with a TAB, so that a patch tool can find where the name ends, and
+    it does so whether or not it also quotes the name. A name with a TAB of
+    its own is always quoted, and git writes that TAB as `\\t` inside the
+    quotes, so a trailing TAB is git's and never the file's. Return None for
     /dev/null."""
     if field == "/dev/null":
         return None
-    if not field.startswith('"') and field.endswith("\t"):
+    if field.endswith("\t"):
         field = field[:-1]
     field = unquote(field)
     return field[len(prefix):] if field.startswith(prefix) else field
