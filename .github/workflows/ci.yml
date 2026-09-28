@@ -1182,6 +1182,19 @@ jobs:
             exit 0
           fi
           exit "$status"
+      - name: The parent restart loop drains on context or merges, and stops on each of its conditions
+        # `tools/run/supervise.sh` restarts the build-order parent every few
+        # merges, so its context stays small (#1275). A stub `claude` prints
+        # canned stream-json, so no case calls a model. It needs `jq`, and a
+        # runner without it skips with a warning.
+        run: |
+          status=0
+          sh tools/run/supervise-fixtures.sh || status=$?
+          if [ "$status" = 3 ]; then
+            echo "::warning title=Supervise fixtures skipped::No jq on this runner, so none of these cases ran."
+            exit 0
+          fi
+          exit "$status"
       - name: The retirement sweep refuses a locked, dirty, open, occupied or empty worktree
         # `tools/repo/retire-worktree.sh` deletes directories and branches, so what
         # this holds is mostly what it refuses. The tool exists because the
