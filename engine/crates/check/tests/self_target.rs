@@ -116,7 +116,10 @@ fn a_document_that_draws_on_itself_is_reported_and_one_that_draws_on_another_is_
         .find(|finding| finding.rule == RULE)
         .expect("a finding");
     assert_eq!(rule.severity, headwater_check::Severity::Error);
-    assert!(rule.patch.is_none(), "only the author knows the target meant");
+    assert!(
+        rule.patch.is_none(),
+        "only the author knows which target was meant"
+    );
 }
 
 /// The inverse half is an entry an author wrote, and it names its own document
