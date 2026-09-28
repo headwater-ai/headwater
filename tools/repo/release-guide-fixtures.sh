@@ -577,6 +577,191 @@ contains "a record that governs ./.github/workflows/ci.yml and is not cited ther
     "docs/process/decisions/9997-a-reason-nobody-cites.md governs ci.yml and its header does not cite HW-PD-9997" \
     "$(cites "$scratch/g6")"
 
+# ---------------------------------------------------------------------------
+# deploys ROOT — the site is deployed by one job, and a release runs it after
+# the release exists (#1316). Prints one line per finding, and nothing for a
+# tree that holds.
+#
+# `tools/site/fetch-apt.sh` copies the APT repository out of
+# `releases/latest`, so a deploy that runs before the release exists serves
+# the previous version. The push to `main` that bumps the version deploys
+# before the tag's `release.yml` has created the release, and v0.4.1 served a
+# 404 under `apt/` until the next push. So `release.yml` calls the deploy
+# after `publish`. It is not an `on: release` workflow, because `publish`
+# creates the release with `GITHUB_TOKEN`, and GitHub starts no workflow from
+# an event that token caused.
+#
+# What is held, each in one line:
+#
+#   - `deploy-site.yml` is started by `workflow_call` alone, and it is the one
+#     workflow whose steps run `tools/site/deploy-site.sh` or `wrangler
+#     deploy`, so two callers share one job and one concurrency group
+#     (HW-DR-0047's one deploy path).
+#   - `ci.yml` has a job that calls it.
+#   - `release.yml` has a job that calls it, that `needs` `publish`, that
+#     passes `ref: main`, and that carries no `if:`. Inside a called workflow
+#     `github.ref` is the caller's tag, so without `ref: main` the site rolls
+#     back to the tagged tree. With no `if:`, a skipped or failed `publish`
+#     skips the deploy, and an `if: always()` would deploy on a
+#     `publish: false` hand run.
+# ---------------------------------------------------------------------------
+deploys_py='
+import glob, os, re, sys
+try:
+    import yaml
+except ImportError:
+    print("PyYAML is not installed, so no workflow can be read")
+    sys.exit(0)
+
+callee = "./.github/workflows/deploy-site.yml"
+runs_deploy = re.compile(r"tools/site/deploy-site\.sh|\bwrangler\s+deploy\b")
+
+def as_list(v):
+    if v is None:
+        return []
+    if isinstance(v, (list, tuple)):
+        return list(v)
+    return [v]
+
+d = os.path.join(sys.argv[1], ".github", "workflows")
+docs = {}
+for path in sorted(glob.glob(os.path.join(d, "*.yml")) + glob.glob(os.path.join(d, "*.yaml"))):
+    try:
+        with open(path, encoding="utf-8") as f:
+            docs[os.path.basename(path)] = yaml.safe_load(f)
+    except Exception as e:
+        print("%s does not parse: %s" % (os.path.basename(path), str(e).splitlines()[0]))
+
+def jobs(name):
+    doc = docs.get(name)
+    if not isinstance(doc, dict) or not isinstance(doc.get("jobs"), dict):
+        return {}
+    return {k: v for k, v in doc["jobs"].items() if isinstance(v, dict)}
+
+def callers(name):
+    return {k: v for k, v in jobs(name).items() if v.get("uses") == callee}
+
+out = []
+if "deploy-site.yml" not in docs:
+    out.append("no .github/workflows/deploy-site.yml, so the site has no one deploy job")
+else:
+    doc = docs["deploy-site.yml"]
+    on = doc.get("on", doc.get(True)) if isinstance(doc, dict) else None
+    events = set(on) if isinstance(on, dict) else set(as_list(on))
+    if events != {"workflow_call"}:
+        out.append("deploy-site.yml is started by %s and not by workflow_call alone" % ", ".join(sorted(map(str, events))))
+
+for name in sorted(docs):
+    for job, body in jobs(name).items():
+        for step in as_list(body.get("steps")):
+            if isinstance(step, dict) and runs_deploy.search(str(step.get("run", ""))):
+                if name != "deploy-site.yml":
+                    out.append("%s job %s runs the deploy itself, so the site has two deploy paths" % (name, job))
+if "deploy-site.yml" in docs and not any(
+    isinstance(s, dict) and runs_deploy.search(str(s.get("run", "")))
+    for b in jobs("deploy-site.yml").values() for s in as_list(b.get("steps"))
+):
+    out.append("deploy-site.yml runs no step of tools/site/deploy-site.sh")
+
+if not callers("ci.yml"):
+    out.append("ci.yml has no job that calls deploy-site.yml, so a push to main deploys nothing")
+
+rel = callers("release.yml")
+if not rel:
+    out.append("release.yml has no job that calls deploy-site.yml, so apt/ serves the previous release until the next push to main")
+for job, body in sorted(rel.items()):
+    if "publish" not in as_list(body.get("needs")):
+        out.append("release.yml job %s does not need publish, so it can deploy before the release exists" % job)
+    w = body.get("with")
+    if not isinstance(w, dict) or w.get("ref") != "main":
+        out.append("release.yml job %s does not pass ref: main, so it deploys the tagged tree" % job)
+    if "if" in body:
+        out.append("release.yml job %s has an if:, so it can deploy when publish did not run" % job)
+
+for line in out:
+    print(line)
+'
+
+deploys() {
+    python3 -c "$deploys_py" "$1"
+}
+
+# edit_wf DIR FILE PYTHON — loads DIR/.github/workflows/FILE, runs PYTHON on
+# it as `doc`, and writes it back. A copy loses its comments, which no judge
+# here reads.
+edit_wf() {
+    python3 -c '
+import sys, yaml
+path = sys.argv[1] + "/.github/workflows/" + sys.argv[2]
+with open(path, encoding="utf-8") as f:
+    doc = yaml.safe_load(f)
+exec(sys.argv[3])
+with open(path, "w", encoding="utf-8") as f:
+    yaml.safe_dump(doc, f, sort_keys=False)
+' "$1" "$2" "$3"
+}
+
+echo
+echo "a release deploys the site after it publishes"
+
+same "the tree deploys the site from one job, after the release exists" "" \
+    "$(deploys "$root" | tr '\n' '|' | sed 's/|$//')"
+
+# The name of the job in release.yml that calls the deploy, for the arms.
+rel_job=$(python3 -c '
+import sys, yaml
+jobs = yaml.safe_load(open(sys.argv[1] + "/.github/workflows/release.yml", encoding="utf-8"))["jobs"]
+print(" ".join(k for k, v in jobs.items() if isinstance(v, dict) and v.get("uses") == "./.github/workflows/deploy-site.yml"))
+' "$root" 2>/dev/null)
+
+if [ -n "$rel_job" ]; then
+    # d1. The deploy job is deleted from release.yml: the case #1316 exists for.
+    copy_tree "$scratch/d1"
+    edit_wf "$scratch/d1" release.yml "del doc['jobs']['$rel_job']"
+    same "a release with no deploy job is red" \
+        "release.yml has no job that calls deploy-site.yml, so apt/ serves the previous release until the next push to main" \
+        "$(deploys "$scratch/d1" | tr '\n' '|' | sed 's/|$//')"
+
+    # d2. The deploy no longer waits for publish, so it races the release.
+    copy_tree "$scratch/d2"
+    edit_wf "$scratch/d2" release.yml "doc['jobs']['$rel_job']['needs'] = [n for n in (doc['jobs']['$rel_job']['needs'] if isinstance(doc['jobs']['$rel_job']['needs'], list) else [doc['jobs']['$rel_job']['needs']]) if n != 'publish'] or ['tag']"
+    same "a deploy that does not need publish is red" \
+        "release.yml job $rel_job does not need publish, so it can deploy before the release exists" \
+        "$(deploys "$scratch/d2" | tr '\n' '|' | sed 's/|$//')"
+
+    # d3. The deploy checks out the caller's ref, which is the tag.
+    copy_tree "$scratch/d3"
+    edit_wf "$scratch/d3" release.yml "doc['jobs']['$rel_job']['with'].pop('ref')"
+    same "a deploy with no ref: main is red" \
+        "release.yml job $rel_job does not pass ref: main, so it deploys the tagged tree" \
+        "$(deploys "$scratch/d3" | tr '\n' '|' | sed 's/|$//')"
+
+    # d4. An if: always() deploys on a publish: false hand run.
+    copy_tree "$scratch/d4"
+    edit_wf "$scratch/d4" release.yml "doc['jobs']['$rel_job']['if'] = 'always()'"
+    same "a deploy with if: always() is red" \
+        "release.yml job $rel_job has an if:, so it can deploy when publish did not run" \
+        "$(deploys "$scratch/d4" | tr '\n' '|' | sed 's/|$//')"
+else
+    fail "release.yml has a job that calls deploy-site.yml" \
+        "none, so the arms d1 to d4 have no job to edit"
+fi
+
+# d5. A copy of the deploy steps inlined into release.yml: two deploy paths.
+copy_tree "$scratch/d5"
+edit_wf "$scratch/d5" release.yml "doc['jobs']['deploy-copy'] = {'needs': 'publish', 'runs-on': 'ubuntu-latest', 'steps': [{'uses': 'actions/checkout@v4'}, {'run': 'sh tools/site/deploy-site.sh'}]}"
+contains "a copy of the deploy steps in release.yml is red" \
+    "release.yml job deploy-copy runs the deploy itself, so the site has two deploy paths" \
+    "$(deploys "$scratch/d5")"
+
+# d6. The called workflow gains a second trigger, so a third deploy path.
+copy_tree "$scratch/d6"
+if [ -f "$scratch/d6/.github/workflows/deploy-site.yml" ]; then
+    edit_wf "$scratch/d6" deploy-site.yml "k = 'on' if 'on' in doc else True; doc[k] = dict(doc[k] or {}); doc[k]['push'] = {'branches': ['main']}"
+fi
+contains "a deploy-site.yml with a trigger of its own is red" \
+    "deploy-site.yml is started by" "$(deploys "$scratch/d6")"
+
 echo
 echo "$passed passed, $failed failed"
 [ "$failed" -eq 0 ]
