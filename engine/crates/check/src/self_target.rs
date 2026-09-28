@@ -41,23 +41,26 @@
 //! and so does a `Withheld` target. Every instance stays in the denominator,
 //! whatever its verdict, for the reason [`crate::target`] gives.
 //!
-//! An anchor target passes too, and that includes an anchor onto the declaring
-//! document's own file. A target written as a path, under a relation whose
-//! endpoint admits a `code_path` anchor (in headwater/standard: `governs`,
-//! `traces_to` and `examines`), binds as an anchor and not as an unresolved
-//! identifier. Its pattern can match the file that declares it: a decision
-//! that writes `traces_to:` with its own path binds onto itself, and this
-//! rule does not report it. The reason is that an anchor is a pattern over
-//! the tree and not a document identity
-//! ([HW-DR-0074](../../../../docs/decisions/0074-a-code-path-anchor-is-a-pattern-over-the-tree-and-it-binds-when-the-pattern-matches-at-least-one-entry.md)).
-//! A pattern that covers its own file is often correct, as when a decision
-//! governs the directory it sits in. Only a literal single-path pattern equal
-//! to the declaring file is plainly a self-reference, and spec 2 rules on
-//! document targets and says nothing about anchors (#1335).
+//! # An anchor onto the declaring document's own file
 //!
-//! What reopens this: an owner ruling that a literal anchor onto the declaring
-//! file is a self-reference under spec 2's rule. That ruling comes first, and
-//! a finding for that one case follows from it.
+//! A target written as a path, under a relation whose endpoint admits a
+//! `code_path` anchor (in headwater/standard: `governs`, `traces_to` and
+//! `examines`), binds as an anchor and not as a document. This rule reports
+//! one such anchor: a `source-tree` anchor that holds exactly one pattern,
+//! where that pattern has no wildcard and is the declaring document's own
+//! path. A decision that writes `traces_to:` with its own path governs itself,
+//! and the owner ruled that this exact case is a self-reference under spec 2's
+//! rule (#1350, 2026-09-29: "Report it, exact own file").
+//!
+//! Every other anchor passes, because the ruling reaches the exact own file and
+//! nothing wider. An anchor is a pattern over the tree and not a document
+//! identity
+//! ([HW-DR-0074](../../../../docs/decisions/0074-a-code-path-anchor-is-a-pattern-over-the-tree-and-it-binds-when-the-pattern-matches-at-least-one-entry.md)).
+//! A pattern with a wildcard that matches the own file passes, as when a
+//! decision governs the directory it sits in, and that is often correct. A
+//! list that holds the own file among other paths passes. An anchor of another
+//! resolver passes, because its pattern can name a path in another repository
+//! that has the same spelling.
 
 use crate::finding::{at, Finding, Severity};
 use crate::instance::Outcome;
@@ -96,7 +99,7 @@ impl<'a> SelfTarget<'a> {
 impl EdgeCheck for SelfTarget<'_> {
     const RULE: &'static str = self::RULE;
     /// See [`crate::placement::Placement::VERSION`].
-    const VERSION: u32 = 1;
+    const VERSION: u32 = 2;
     /// See the module comment.
     const UNIT: EdgeUnit = EdgeUnit::Entry;
 
@@ -111,14 +114,31 @@ impl EdgeCheck for SelfTarget<'_> {
             return Outcome::Skipped(NO_HALF.to_string());
         };
 
-        // The path is the identity of a node, so two ends that share
-        // one path are one document.
-        let Target::Document { path, .. } = &edge.target else {
-            return Outcome::Passed;
+        let (message, remediation) = match &edge.target {
+            // The path is the identity of a node, so two ends that share
+            // one path are one document.
+            Target::Document { path, .. } if *path == edge.source.path => (
+                format!(
+                    "`{}` declares `{}: {}`, and that names the document that declares it",
+                    edge.source.id, edge.name, edge.raw_target
+                ),
+                format!(
+                    "name the document that `{}` actually means under `{}`, or delete the entry, because only an association relation may point at its own document",
+                    edge.source.id, edge.name
+                ),
+            ),
+            target if names_own_file(target, &edge.source.path) => (
+                format!(
+                    "`{}` declares `{}: {}`, and that names its own file `{}`",
+                    edge.source.id, edge.name, edge.raw_target, edge.source.path
+                ),
+                format!(
+                    "name the file that `{}` actually means under `{}`, or delete the entry, because only an association relation may point at its own document",
+                    edge.source.id, edge.name
+                ),
+            ),
+            _ => return Outcome::Passed,
         };
-        if *path != edge.source.path {
-            return Outcome::Passed;
-        }
 
         let (line, column) = at(Some(edge.span));
         Outcome::failed_with(Finding {
@@ -128,17 +148,79 @@ impl EdgeCheck for SelfTarget<'_> {
             path: edge.source.path.clone(),
             line,
             column,
-            message: format!(
-                "`{}` declares `{}: {}`, and that names the document that declares it",
-                edge.source.id, edge.name, edge.raw_target
-            ),
-            remediation: format!(
-                "name the document that `{}` actually means under `{}`, or delete the entry, because only an association relation may point at its own document",
-                edge.source.id, edge.name
-            ),
-            // No fix: the author alone knows which document the entry meant,
-            // or whether it meant none.
+            message,
+            remediation,
+            // No fix: the author alone knows which document or file the entry
+            // meant, or whether it meant none.
             patch: None,
         })
+    }
+}
+
+/// Whether an anchor target is exactly the declaring document's own file: a
+/// `source-tree` anchor with one pattern, that pattern literal, and equal to
+/// the source's path. Both sides are normalized repository-relative paths, so
+/// string equality is the comparison. A wildcard, a list, another resolver and
+/// every non-anchor target answer no. See the module comment.
+fn names_own_file(target: &Target, source_path: &str) -> bool {
+    let Target::Anchor {
+        resolver, patterns, ..
+    } = target
+    else {
+        return false;
+    };
+    let [only] = patterns.as_slice() else {
+        return false;
+    };
+    resolver == SOURCE_TREE
+        && headwater_meta::Pattern::new(&only.pattern).is_literal()
+        && only.pattern == source_path
+}
+
+/// The one resolver whose patterns are paths in the tree that holds the
+/// declaring document. Another resolver's pattern can name a path in another
+/// repository that happens to share the spelling.
+const SOURCE_TREE: &str = "source-tree";
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use headwater_graph::edges::PatternMember;
+
+    fn anchor(resolver: &str, patterns: &[&str]) -> Target {
+        Target::Anchor {
+            anchor_kind: "code_path".to_string(),
+            resolver: resolver.to_string(),
+            normalized: patterns.join(", "),
+            excluded_by: None,
+            revision: headwater_graph::anchors::Revision::known(None),
+            patterns: patterns
+                .iter()
+                .map(|pattern| PatternMember {
+                    pattern: pattern.to_string(),
+                    matched: vec![pattern.to_string()],
+                    revision: headwater_graph::anchors::Revision::known(None),
+                })
+                .collect(),
+        }
+    }
+
+    #[test]
+    fn a_single_literal_source_tree_pattern_equal_to_the_source_is_its_own_file() {
+        assert!(names_own_file(&anchor("source-tree", &["docs/a.md"]), "docs/a.md"));
+    }
+
+    #[test]
+    fn another_file_a_list_a_wildcard_and_another_resolver_are_not() {
+        assert!(!names_own_file(&anchor("source-tree", &["docs/b.md"]), "docs/a.md"));
+        assert!(!names_own_file(
+            &anchor("source-tree", &["docs/a.md", "docs/b.md"]),
+            "docs/a.md"
+        ));
+        assert!(!names_own_file(&anchor("snapshot", &["docs/a.md"]), "docs/a.md"));
+        // A file whose own name holds a wildcard character: the pattern that
+        // spells it is a glob over more than that file, so it is wider than
+        // the exact own file.
+        assert!(!names_own_file(&anchor("source-tree", &["docs/a?.md"]), "docs/a?.md"));
     }
 }
