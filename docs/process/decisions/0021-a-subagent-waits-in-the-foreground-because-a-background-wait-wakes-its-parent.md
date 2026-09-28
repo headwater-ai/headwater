@@ -18,7 +18,7 @@ relations:
     - to: tools/run/wait-for.sh
       verified_revision: sha256:74f6f5ffebcbe1f24811e128f68c4f925449123c0270573fb447fe51d1eec80f
     - to: .claude/skills/hw-run-policy/SKILL.md
-      verified_revision: sha256:744194b554b4a82a51c283f303e3d877bdf09c51b93da3fc547dbf1ef200ea5e
+      verified_revision: sha256:ec55dbc52de768c6a0327e46cf0ded11a75971576152fef8b872db101ca5a638
 ---
 
 # A subagent waits in the foreground, because a background wait wakes its parent
@@ -43,7 +43,9 @@ The four-minute cap of HW-PD-0007 does not change. Each foreground attempt retur
 
 `hw-run-policy`, `hw-build`, `hw-verify` and `hw-integrate` state the foreground form. These three stages are the agents that run `wait-for.sh`.
 
-`hw-iterate` ([HW-PD-0022](0022-the-verify-and-rework-loop-for-one-issue-runs-below-the-parent.md)) runs no `wait-for.sh`. It waits on a live child agent, the builder or a verifier, and it waits by ending its turn. This decision does not apply to that wait. A wait on a child agent is not a background shell wait, and the completion of the child wakes `hw-iterate` one time. The builder and the verifier below `hw-iterate` still wait in the foreground, so that they do not wake `hw-iterate` at each re-issue. The refusal text of `.claude/hooks/wait.sh` names the foreground form and this cost. The header of `tools/run/wait-for.sh` states the same.
+`hw-iterate` ([HW-PD-0022](0022-the-verify-and-rework-loop-for-one-issue-runs-below-the-parent.md)) runs no `wait-for.sh`. It waits on a live child agent, the builder or a verifier, and it waits by ending its turn. This decision does not apply to that wait. A wait on a child agent is not a background shell wait, and the completion of the child wakes `hw-iterate` one time. The builder and the verifier below `hw-iterate` still wait in the foreground, so that they do not wake `hw-iterate` at each re-issue. A fresh builder that `hw-iterate` dispatches from a handover file waits in the same way.
+
+A drain of [HW-PD-0023](0023-a-build-order-parent-restarts-every-few-merges-drains-to-zero-first-and-resumes-from-the-handover-files-on-disk.md) does not change this rule. A stage that waits in the foreground completes its wait and its stage. `hw-iterate` then reads `DRAIN` at the stage boundary that follows, and it returns `HANDOVER`. The integrator that is in flight completes its foreground wait on the merge queue before the parent exits. The refusal text of `.claude/hooks/wait.sh` names the foreground form and this cost. The header of `tools/run/wait-for.sh` states the same.
 
 In both forms, each re-issue costs one subagent turn. The saving is the parent turn that each re-issue caused. For run `20260927-0443`, that was about 310 parent turns at about 200k tokens each.
 

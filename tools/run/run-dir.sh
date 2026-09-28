@@ -38,12 +38,15 @@
 #                                               write the issue's checkpoint to handover/<issue>
 #     sh tools/run/run-dir.sh next <dir>             the next queue issue to dispatch, DRAIN or EMPTY
 #     sh tools/run/run-dir.sh session <dir>          append this resumed session to parent.session
+#     sh tools/run/run-dir.sh resume <dir>           what each open handover needs, one line per issue
+#     sh tools/run/run-dir.sh rule <dir> <issue> gated|deferred|refused|open <reason>
+#                                               record a ruling in decisions.md, in the form next reads
 #     sh tools/run/run-dir.sh intake <dir> <file>    append a file of intake lines to intake.md
 #     sh tools/run/run-dir.sh decide <dir> <text>    append one dated line to decisions.md
 #     sh tools/run/run-dir.sh withdraw <dir> <match> <line>
 #                                               replace the one intake line that holds <match>
 #
-# Every <dir> may be a bare run id, such as `20260927-0443`, which names that
+# Every <dir>, for every subcommand but `start`, may be a bare run id, such as `20260927-0443`, which names that
 # run under the git common dir. A worktree-isolated parent's shell refuses a
 # command whose text names `.git`, and `Edit` refuses a path there, so the id
 # and the three prose subcommands are its only way to write the ledger. Run
@@ -59,13 +62,20 @@
 #
 # A stage is one of `adjudicated`, `built`, `verified-fail`, `verified-pass`
 # and `ruled-merge`, and a field is one of `branch`, `pr`, `rounds`, `note`,
-# `build`, `verify` and `attacks`; anything else is refused with exit 2.
+# `build`, `verify`, `attacks` and `footprint` (comma-separated artifacts);
+# anything else is refused with exit 2.
 # While `drain` exists, `stage`, `claim` and `next` each print the line
 # `DRAIN`, which reaches the parent on calls it already makes. In drain,
 # `claim` writes nothing and `next` hands out nothing, so no new stage
 # starts, and `stage` still writes the checkpoint of the stage that ended.
 # `next` skips an issue that holds a claim, has a handover or is in the log,
-# which is what keeps a resumed parent from dispatching it a second time.
+# which is what keeps a resumed parent from dispatching it a second time. It
+# also skips an issue the run ruled out with `rule`, and a queue line marked
+# `ruling` that no `OWNER` line answers, because a resumed parent reads only
+# the last five ledger lines and would otherwise dispatch a gated issue.
+# A `RULED` line names the run that wrote it and binds that run alone, and an
+# `OWNER` line binds every later run too (see `ruled_issues`). A `stage` call
+# carries every field it does not name from the checkpoint before.
 # `parent.session` holds one line per parent session: `start` writes the
 # first and `session` appends each resumed one, and a usage sample takes the
 # last line, which is the live session.
@@ -495,7 +505,7 @@ end() {
 # stage of an issue at a time. Temp file, then `mv`, so a reader never sees
 # half a checkpoint.
 stages='adjudicated built verified-fail verified-pass ruled-merge'
-fields='branch pr rounds note build verify attacks'
+fields='branch pr rounds note build verify attacks footprint'
 
 stage() {
     dir=$1 issue=$2 reached=$3
@@ -508,7 +518,6 @@ stage() {
     case $issue in
         ''|*[!0-9]*) echo "run-dir: \`$issue\` is not an issue number." >&2; exit 2 ;;
     esac
-    body=$(printf 'stage %s' "$reached")
     for pair in "$@"; do
         key=${pair%%=*} value=${pair#*=}
         case $pair in
@@ -522,8 +531,29 @@ stage() {
         case $value in
             *[[:space:]]*) echo "run-dir: the value of \`$key\` holds whitespace, and a field is one line of one word." >&2; exit 2 ;;
         esac
-        body=$(printf '%s\n%s %s' "$body" "$key" "$value")
     done
+    # Every field this call does not name carries from the checkpoint before,
+    # so a parent that vetoes a PASS names only the stage and the veto file.
+    # The fields are written in the order `fields` declares.
+    body=$(printf 'stage %s' "$reached")
+    for key in $fields; do
+        value=''
+        for pair in "$@"; do
+            [ "${pair%%=*}" = "$key" ] && value=${pair#*=}
+        done
+        [ -n "$value" ] || value=$(sed -n "s/^$key //p" "$dir/handover/$issue" 2>/dev/null | tail -n 1)
+        [ -n "$value" ] && body=$(printf '%s\n%s %s' "$body" "$key" "$value")
+    done
+    # An adjudicated checkpoint is what the next session claims and iterates
+    # from, so it is refused without the note and the footprint. A bare one
+    # made `resume` print `claim ` with nothing to claim (verify-2 of #1281).
+    if [ "$reached" = adjudicated ]; then
+        for key in note footprint; do
+            printf '%s\n' "$body" | grep -q "^$key " && continue
+            echo "run-dir: an adjudicated checkpoint needs \`$key=\`, which the next session claims or iterates from." >&2
+            exit 2
+        done
+    fi
     mkdir -p "$dir/handover"
     tmp="$dir/handover/.$issue.$$"
     printf '%s\n' "$body" > "$tmp" && mv "$tmp" "$dir/handover/$issue" || { rm -f "$tmp"; exit 1; }
@@ -531,9 +561,43 @@ stage() {
     return 0
 }
 
+# The issues the log records, space-separated. A log line means the run is
+# done with the issue, whatever its verdict, so nothing hands it out again.
+logged_issues() {
+    [ -s "$1/log.jsonl" ] || return 0
+    need_jq
+    jq -r '.issue // empty' "$1/log.jsonl" 2>/dev/null | tr '\n' ' '
+}
+
+# The last ruling of each issue in decisions.md that this run wrote, one
+# `<issue> <kind>` per line. `start` seeds decisions.md from the previous run,
+# so a RULED line names the run that wrote it and binds that run alone: a
+# deferral is "for this run alone" (hw-run-policy), and a gate or a refusal is
+# ruled again by the run that meets the issue again.
+ruled_issues() {
+    [ -f "$1/decisions.md" ] || return 0
+    sed -n 's/^.* — RULED #\([0-9][0-9]*\) \(gated\|deferred\|refused\|open\) (run \([^)]*\)):.*/\1 \2 \3/p' "$1/decisions.md" \
+        | awk -v run="$(basename "$1")" '$3 == run { last[$1] = $2 } END { for (i in last) print i, last[i] }'
+}
+
+# The issues an OWNER line in decisions.md answers, space-separated. Unlike a
+# RULED line, an OWNER line from an earlier run still counts, on purpose: it
+# is the owner's own answer, the product owner posts it on the issue, and it
+# holds until the owner changes it. So it answers a `ruling` queue line in
+# every later run.
+answered_issues() {
+    [ -f "$1/decisions.md" ] || return 0
+    sed -n 's/^.*OWNER\( ([^)]*)\)\{0,1\} #\([0-9][0-9]*\).*/\2/p' "$1/decisions.md" | tr '\n' ' '
+}
+
 # The next issue to dispatch: the first queue line `N. #<issue> ...` whose
-# issue holds no claim, has no handover and is in no log line. `DRAIN` when
-# the run is draining, and `EMPTY` when nothing is left.
+# issue holds no claim, has no handover, is in no log line, and is not ruled
+# out. It is ruled out when its last `RULED` line says gated, deferred or
+# refused, or when its queue line is marked `ruling` and neither an `OWNER`
+# line nor a `RULED ... open` line answers it (hw-run-policy: an unanswered
+# ruling waits, and a deferral skips the issue for the run). A RULED line
+# binds only the run that wrote it, and an OWNER line binds every run. `DRAIN` when the
+# run is draining, and `EMPTY` when nothing is left.
 next() {
     dir=$1
     [ -d "$dir" ] || { echo "run-dir: $dir is not a run directory." >&2; exit 1; }
@@ -542,18 +606,86 @@ next() {
         return 0
     fi
     [ -f "$dir/queue.md" ] || { echo "run-dir: $dir holds no queue.md." >&2; exit 1; }
-    logged=''
-    if [ -s "$dir/log.jsonl" ] && command -v jq >/dev/null 2>&1; then
-        logged=$(jq -r '.issue // empty' "$dir/log.jsonl" 2>/dev/null | tr '\n' ' ')
-    fi
-    for issue in $(sed -n 's/^[0-9][0-9]*\. #\([0-9][0-9]*\).*/\1/p' "$dir/queue.md"); do
+    logged=$(logged_issues "$dir")
+    ruled=$(ruled_issues "$dir")
+    answered=$(answered_issues "$dir")
+    # `<issue> ruling` or `<issue> -`, from the last `|` field of the line.
+    sed -n 's/^[0-9][0-9]*\. #\([0-9][0-9]*\) .*|[[:space:]]*\(ruling\).*$/\1 \2/p; t; s/^[0-9][0-9]*\. #\([0-9][0-9]*\).*/\1 -/p' "$dir/queue.md" > "$dir/.next.$$"
+    while read -r issue mark; do
         [ -e "$dir/claims/issues/$issue" ] && continue
         [ -e "$dir/handover/$issue" ] && continue
         case " $logged " in *" $issue "*) continue ;; esac
+        kind=$(printf '%s\n' "$ruled" | awk -v i="$issue" '$1 == i { print $2 }')
+        case $kind in gated|deferred|refused) continue ;; esac
+        if [ "$mark" = ruling ] && [ "$kind" != open ]; then
+            case " $answered " in *" $issue "*) ;; *) continue ;; esac
+        fi
+        rm -f "$dir/.next.$$"
         echo "$issue"
         return 0
-    done
+    done < "$dir/.next.$$"
+    rm -f "$dir/.next.$$"
     echo EMPTY
+}
+
+# A ruling the parent makes on one issue, appended to decisions.md in the one
+# form `next` reads: `- <date> — RULED #<issue> <kind> (run <run-id>): <reason>`. The prose
+# around it stays prose, and the last ruling of an issue is the one that holds.
+rule() {
+    dir=${1%/} issue=$2 kind=$3
+    shift 3
+    [ -d "$dir" ] || { echo "run-dir: $dir is not a run directory." >&2; exit 1; }
+    case $issue in ''|*[!0-9]*) echo "run-dir: \`$issue\` is not an issue number." >&2; exit 2 ;; esac
+    case $kind in
+        gated|deferred|refused|open) ;;
+        *) echo "run-dir: \`$kind\` is not a ruling. A ruling is one of: gated deferred refused open." >&2; exit 2 ;;
+    esac
+    reason="$*"
+    [ -n "$reason" ] || { echo "run-dir: a ruling carries its reason." >&2; exit 2; }
+    printf -- '- %s — RULED #%s %s (run %s): %s\n' "$(date -u +%Y-%m-%d)" "$issue" "$kind" "${dir##*/}" "$reason" >> "$dir/decisions.md"
+    printf 'RULED: #%s %s\n' "$issue" "$kind"
+}
+
+# What a resumed parent does with each open handover, one line per issue:
+# `<issue> <stage> <action>`. An open handover is one the log does not record.
+#
+#     adjudicated, no claim   claim <artifacts>   claim the footprint, then dispatch hw-iterate
+#     adjudicated, claimed    iterate             dispatch hw-iterate with the note
+#     built, verified-fail    iterate             a fresh hw-iterate given the handover path
+#     verified-pass           rule                the parent rules, from the notes it names
+#     ruled-merge             integrate           append to the integrator queue
+#
+# An adjudicate that reports while the run drains is not claimed: `claim`
+# writes nothing in drain. Its checkpoint carries the footprint instead, and
+# the next session claims it here, so the issue is never adjudicated twice.
+resume() {
+    dir=$1
+    [ -d "$dir" ] || { echo "run-dir: $dir is not a run directory." >&2; exit 1; }
+    if [ -e "$dir/drain" ]; then
+        echo DRAIN
+        return 0
+    fi
+    [ -d "$dir/handover" ] || return 0
+    logged=$(logged_issues "$dir")
+    for h in "$dir"/handover/*; do
+        [ -f "$h" ] || continue
+        issue=${h##*/}
+        case " $logged " in *" $issue "*) continue ;; esac
+        reached=$(sed -n 's/^stage //p' "$h")
+        case $reached in
+            adjudicated)
+                if [ -e "$dir/claims/issues/$issue" ]; then
+                    action=iterate
+                else
+                    action="claim $(sed -n 's/^footprint //p' "$h" | tr ',' ' ')"
+                fi ;;
+            built|verified-fail) action=iterate ;;
+            verified-pass) action=rule ;;
+            ruled-merge) action=integrate ;;
+            *) action=unknown ;;
+        esac
+        printf '%s %s %s\n' "$issue" "$reached" "$action"
+    done
 }
 
 # A resumed parent session names itself, so the review hook exempts it and a
@@ -578,6 +710,8 @@ case ${1:-} in
     start) shift; start "$@" ;;
     stage) [ $# -ge 4 ] || usage; shift 2; stage "$run" "$@" ;;
     next) [ $# -eq 2 ] || usage; next "$run" ;;
+    resume) [ $# -eq 2 ] || usage; resume "$run" ;;
+    rule) [ $# -ge 5 ] || usage; shift 2; rule "$run" "$@" ;;
     session) [ $# -eq 2 ] || usage; session "$run" ;;
     claim) [ $# -ge 5 ] || usage; shift 2; claim "$run" "$@" ;;
     release) [ $# -eq 3 ] || usage; release "$run" "$3" ;;

@@ -326,7 +326,7 @@ sh "$tool" stage "$resume" 11 merged >/dev/null 2>&1; status=$?
 same 'a stage outside the five is refused with exit 2' 2 "$status"
 same '  and the checkpoint is unchanged' 'stage verified-fail' "$(head -n 1 "$resume/handover/11" 2>&1)"
 sh "$tool" stage "$resume" 11 built colour=red >/dev/null 2>&1; status=$?
-same 'a field outside the seven is refused with exit 2' 2 "$status"
+same 'a field outside the eight is refused with exit 2' 2 "$status"
 sh "$tool" stage "$resume" 11 built branch >/dev/null 2>&1; status=$?
 same 'a field with no value is refused with exit 2' 2 "$status"
 sh "$tool" stage "$resume" 11 verified-fail >"$scratch/out" 2>&1
@@ -370,6 +370,150 @@ same 'withdraw refuses a match that two lines hold, and writes nothing' "1 - #1 
 
 sh "$tool" decide no-such-run 'x' 2>"$scratch/err"; status=$?
 same 'a bare id that names no run is refused' 1 "$status"
+
+printf '\n# every subcommand that names a run takes a bare run id\n'
+# The dispatch of run-dir.sh resolves one <dir> for every subcommand. This
+# case holds that for the handover verbs #1281 added, with no path in any call,
+# as a worktree-isolated parent types them.
+bare=$(sh "$tool" start bare 2>/dev/null)
+printf '# Queue\n\n1. #70 A | none | x\n2. #71 B | none | x\n' > "$bare/queue.md"
+same 'next takes a bare run id' 70 "$(sh "$tool" next bare 2>&1)"
+sh "$tool" stage bare 70 adjudicated note=/s/a.md branch=issue-70 footprint=f70 >/dev/null 2>"$scratch/err"; status=$?
+same 'stage takes a bare run id and writes the handover' '0 stage adjudicated' "$status $(sed -n 1p "$bare/handover/70" 2>/dev/null)"
+same 'resume takes a bare run id' '70 adjudicated claim f70' "$(sh "$tool" resume bare 2>&1)"
+sh "$tool" rule bare 71 deferred 'not this run' >/dev/null 2>"$scratch/err"; status=$?
+same 'rule takes a bare run id and writes its RULED line' '0 1' "$status $(grep -c 'RULED #71 deferred' "$bare/decisions.md")"
+same 'session takes a bare run id' 'SESSION: cccc3333' "$(CLAUDE_JOB_DIR=/jobs/cccc3333 sh "$tool" session bare 2>&1)"
+same '  and appends to that run'"'"'s parent.session' cccc3333 "$(tail -n 1 "$bare/parent.session")"
+sh "$tool" resume no-such-run >/dev/null 2>&1; status=$?
+same 'a bare id that names no run is refused by resume' 1 "$status"
+printf '\n# next skips what the run ruled out, and a ruling line the owner has not answered\n'
+# Verify-1 of PR #1279 ran `next` on a copy of run 20260927-0443 and it
+# printed #927, which decisions.md:2055 says stays gated. Nothing in claims/,
+# handover/ or the log records a gate, a deferral or a refusal, and the queue
+# line was marked `ruling` with no OWNER line for it.
+ruled=$(sh "$tool" start ruled 2>/dev/null)
+printf '# Queue\n\n1. #20 Gated | none | x | wide | ruling (embedding path)\n2. #21 Answered | none | x | wide | ruling\n3. #22 Deferred | none | x | narrow\n4. #23 Refused | none | x | narrow\n5. #24 Open | none | x | narrow\n' > "$ruled/queue.md"
+printf -- '- 2026-09-27 — OWNER (2026-09-27) #21: build it.\n' >> "$ruled/decisions.md"
+same 'a ruling line with no OWNER line is skipped, and one the owner answered is not' 21 "$(sh "$tool" next "$ruled" 2>&1)"
+sh "$tool" claim "$ruled" 21 issue-21 f21 >/dev/null 2>&1
+sh "$tool" rule "$ruled" 22 deferred 'owner deferred it for this run' >/dev/null 2>"$scratch/err"; status=$?
+same 'rule exits 0' 0 "$status"
+same '  and appends one RULED line to decisions.md, naming its run' 1 "$(grep -c '^- [0-9-]* — RULED #22 deferred (run ruled): owner deferred it for this run$' "$ruled/decisions.md")"
+sh "$tool" rule "$ruled" 23 refused 'kind 2, better done another way' >/dev/null 2>&1
+same 'next skips a deferred and a refused issue' 24 "$(sh "$tool" next "$ruled" 2>&1)"
+sh "$tool" rule "$ruled" 22 open 'the owner lifted the deferral' >/dev/null 2>&1
+same '  and the last ruling of an issue wins, so open lifts a deferral' 22 "$(sh "$tool" next "$ruled" 2>&1)"
+sh "$tool" rule "$ruled" 20 open 'answered in the session' >/dev/null 2>&1
+same '  and open also answers a ruling line' 20 "$(sh "$tool" next "$ruled" 2>&1)"
+sh "$tool" rule "$ruled" 20 gated 'waits on HW-DR-0064' >/dev/null 2>&1
+same '  and gated takes it out again' 22 "$(sh "$tool" next "$ruled" 2>&1)"
+sh "$tool" rule "$ruled" 20 maybe 'x' >/dev/null 2>&1; status=$?
+same 'a ruling outside gated, deferred, refused and open is refused with exit 2' 2 "$status"
+sh "$tool" rule "$ruled" 20 gated >/dev/null 2>&1; status=$?
+same 'a ruling with no reason is refused with exit 2' 2 "$status"
+
+printf '\n# drain while an adjudicate is in flight: the claim waits for the next session\n'
+# Verify-1 of PR #1279: the parent claims on an adjudicate report, which can
+# arrive after drain has started. `claim` then writes nothing. The parent
+# writes `stage adjudicated` with the note and the footprint, so the next
+# session claims it and dispatches hw-iterate, and the issue is not
+# adjudicated twice. `resume` says which, for every open handover.
+inflight=$(sh "$tool" start inflight 2>/dev/null)
+printf '# Queue\n\n1. #30 A | none | x\n2. #31 B | none | x\n3. #32 C | none | x\n4. #33 D | none | x\n5. #34 E | none | x\n' > "$inflight/queue.md"
+touch "$inflight/drain"
+same 'in drain the claim on an adjudicate report writes nothing' 'DRAIN 1' \
+    "$(sh "$tool" claim "$inflight" 30 issue-30 f30 g30 2>&1) $([ -e "$inflight/claims/issues/30" ]; echo $?)"
+same '  and stage adjudicated keeps the note and the footprint' 'DRAIN' \
+    "$(sh "$tool" stage "$inflight" 30 adjudicated note=/s/adjudication.md branch=issue-30 footprint=f30,g30 2>&1)"
+sh "$tool" stage "$inflight" 31 built branch=issue-31 pr=31 >/dev/null 2>&1
+sh "$tool" stage "$inflight" 32 verified-pass branch=issue-32 pr=32 >/dev/null 2>&1
+sh "$tool" stage "$inflight" 33 ruled-merge branch=issue-33 pr=33 >/dev/null 2>&1
+sh "$tool" stage "$inflight" 34 verified-fail branch=issue-34 pr=34 verify=/s/v.md >/dev/null 2>&1
+rm -f "$inflight/drain"
+same 'the next session is not handed the adjudicated issue by next' EMPTY "$(sh "$tool" next "$inflight" 2>&1)"
+sh "$tool" resume "$inflight" > "$scratch/resume" 2>&1; status=$?
+same 'resume exits 0 and prints one line per open handover' '0 5' "$status $(wc -l < "$scratch/resume" | tr -d ' ')"
+same '  an unclaimed adjudicated issue is claimed with its footprint, then iterated' \
+    '30 adjudicated claim f30 g30' "$(grep '^30 ' "$scratch/resume")"
+same '  a built or failed issue goes to a fresh hw-iterate' '31 built iterate|34 verified-fail iterate' \
+    "$(grep -E '^3[14] ' "$scratch/resume" | paste -sd'|')"
+same '  a pass is the parent'"'"'s to rule, and a merge ruling goes to the integrator' '32 verified-pass rule|33 ruled-merge integrate' \
+    "$(grep -E '^3[23] ' "$scratch/resume" | paste -sd'|')"
+sh "$tool" claim "$inflight" 30 issue-30 f30 g30 >/dev/null 2>&1
+same '  and once claimed, the adjudicated issue goes to hw-iterate' '30 adjudicated iterate' \
+    "$(sh "$tool" resume "$inflight" 2>&1 | grep '^30 ')"
+printf '{"iter":1,"issue":33,"pr":33,"merge":"abc1234","verdict":"MERGE","proved":"p","opened":[],"closed":[33]}\n' >> "$inflight/log.jsonl"
+same '  and a handover the log already records is not resumed' 0 "$(sh "$tool" resume "$inflight" 2>&1 | grep -c '^33 ')"
+touch "$inflight/drain"
+same '  and in drain resume prints DRAIN and nothing else' DRAIN "$(sh "$tool" resume "$inflight" 2>&1)"
+rm -f "$inflight/drain"
+
+printf '\n# a ruling binds the run that wrote it, and an OWNER line binds every run\n'
+# Verify-1 of PR #1281: `start` seeds decisions.md from the previous run, so
+# a deferral written in run A skipped the issue again in run B, although
+# hw-run-policy defers "for this run alone". An OWNER line is different: the
+# owner's answer is posted on the issue and holds until the owner changes it.
+rm -rf "$HEADWATER_RUN_ROOT"
+mkdir -p "$HEADWATER_RUN_ROOT"
+runa=$(sh "$tool" start 2026-a 2>/dev/null)
+printf '# Queue\n\n1. #40 Deferred in A | none | x\n2. #41 Answered in A | none | x | ruling\n3. #42 Other | none | x\n' > "$runa/queue.md"
+sh "$tool" rule "$runa" 40 deferred 'not this run' >/dev/null 2>&1
+printf -- '- 2026-09-27 — OWNER (2026-09-27) #41: build it.\n' >> "$runa/decisions.md"
+same 'in the run that deferred it, next skips the issue' 41 "$(sh "$tool" next "$runa" 2>&1)"
+runb=$(sh "$tool" start 2026-b 2>/dev/null)
+cp "$runa/queue.md" "$runb/queue.md"
+same '  and the next run is seeded with the RULED line' 1 "$(grep -c 'RULED #40 deferred (run 2026-a)' "$runb/decisions.md")"
+same '  but the next run hands the issue out again' 40 "$(sh "$tool" next "$runb" 2>&1)"
+sh "$tool" claim "$runb" 40 issue-40 f40 >/dev/null 2>&1
+same '  and the OWNER line of the earlier run still answers the ruling line' 41 "$(sh "$tool" next "$runb" 2>&1)"
+
+printf '\n# the stage form next-run.md gives the parent leaves a handover resume can act on\n'
+# Verify-2 of PR #1281: next-run.md told the parent to run a bare
+# `stage <run> <issue> adjudicated`. Followed into a drain, that left a
+# handover `resume` read as `claim ` with no artifacts and no note. This case
+# takes the form from next-run.md itself, fills its placeholders, and follows
+# it into a drain and a resume, so a command file that drops a field goes red.
+cmd="$root/.claude/commands/next-run.md"
+form=$(grep -o 'run-dir\.sh stage <run> <issue> adjudicated[^`]*' "$cmd" | head -n 1)
+same 'next-run.md gives the parent a stage form for a BUILD report' 1 "$([ -n "$form" ] && echo 1 || echo 0)"
+own=$(sh "$tool" start own-form 2>/dev/null)
+printf '# Queue\n\n1. #60 A | none | x\n' > "$own/queue.md"
+touch "$own/drain"
+filled=$(printf '%s' "$form" | sed -e "s|^run-dir\.sh stage <run> <issue>|stage $own 60|" \
+    -e 's|<path>|/s/adjudication.md|g' -e 's|<name>|issue-60|g' -e 's|<a,b>|f60,g60|g')
+# shellcheck disable=SC2086
+sh "$tool" $filled >/dev/null 2>&1; status=$?
+same '  and in drain that form writes the checkpoint' '0 stage adjudicated' "$status $(head -n 1 "$own/handover/60" 2>/dev/null)"
+sh "$tool" claim "$own" 60 issue-60 f60 g60 >/dev/null 2>&1
+rm -f "$own/drain"
+same '  and the next session claims the footprint it names' '60 adjudicated claim f60 g60' "$(sh "$tool" resume "$own" 2>&1)"
+same '  and the note it names reaches hw-iterate' 'note /s/adjudication.md' "$(grep '^note ' "$own/handover/60" 2>/dev/null)"
+sh "$tool" stage "$own" 61 adjudicated >/dev/null 2>"$scratch/err"; status=$?
+same 'a bare stage adjudicated, with no note and no footprint, is refused with exit 2' '2 0' \
+    "$status $(ls "$own/handover" 2>/dev/null | grep -c '^61$')"
+
+printf '\n# a veto after a restart: verified-pass goes back to verified-fail, and the fields carry\n'
+# Verify-1 of PR #1281: after a restart, the parent rules a verified-pass
+# handover and may veto it, but no path took the veto back to a builder. The
+# veto writes the checkpoint back to verified-fail with the veto file as the
+# finding, and every field it does not name carries from the checkpoint before.
+veto=$(sh "$tool" start veto 2>/dev/null)
+sh "$tool" stage "$veto" 50 adjudicated note=/s/adj.md branch=issue-50 footprint=f50 >/dev/null 2>&1
+same 'resume, adjudicated and unclaimed: claim the footprint' '50 adjudicated claim f50' "$(sh "$tool" resume "$veto" 2>&1)"
+sh "$tool" stage "$veto" 50 built pr=500 build=/s/build.md >/dev/null 2>&1
+same 'a stage carries every field it does not name from the checkpoint before' \
+    'stage built|branch issue-50|pr 500|note /s/adj.md|build /s/build.md|footprint f50' \
+    "$(paste -sd'|' "$veto/handover/50")"
+same 'resume, built: iterate' '50 built iterate' "$(sh "$tool" resume "$veto" 2>&1)"
+sh "$tool" stage "$veto" 50 verified-pass verify=/s/verify.md rounds=1 >/dev/null 2>&1
+same 'resume, verified-pass: the parent rules' '50 verified-pass rule' "$(sh "$tool" resume "$veto" 2>&1)"
+sh "$tool" stage "$veto" 50 verified-fail verify=/s/veto-1.md >/dev/null 2>&1
+same 'a veto writes verified-fail with the veto as the finding, and resume sends it to hw-iterate' \
+    '50 verified-fail iterate|verify /s/veto-1.md|pr 500|note /s/adj.md' \
+    "$(sh "$tool" resume "$veto" 2>&1)|$(grep -E '^(verify|note|pr) ' "$veto/handover/50" | sort -r | paste -sd'|')"
+sh "$tool" stage "$veto" 50 ruled-merge >/dev/null 2>&1
+same 'resume, ruled-merge: integrate' '50 ruled-merge integrate' "$(sh "$tool" resume "$veto" 2>&1)"
 
 printf '\n%s passed, %s failed\n' "$passed" "$failed"
 [ "$failed" -eq 0 ]
