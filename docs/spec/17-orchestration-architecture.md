@@ -28,24 +28,25 @@ relations:
     - HW-PD-0022
   governs:
     - to: .claude/commands/next-run.md
-      verified_revision: sha256:597229563393b2e3e7c32b5c09dfbd644a0c793dcab0d55f27839fc30c3824aa
+      verified_revision: sha256:5b698582b8b07d0837db1f6f3e8e3507f5f02d7a32b4f0f04594b10a73118840
     - to: .claude/commands/next.md
-      verified_revision: sha256:2187df478cc9af688294a818636190d36e4fda10e8cc416e9581d419ec37b643
+      verified_revision: sha256:974d493829d7c81eacf06f5058e7e02f01f7fd409b82e0589d7bdd21a7783b09
     - to: .claude/agents/hw-queue.md
       verified_revision: sha256:3e7a6397fd22c80436ff488cb2be0c8059f28924c1698706be5e0d1b782c9c6a
     - to: .claude/agents/hw-adjudicate.md
       verified_revision: sha256:c957a511466d03fcf8d7d628b97ebc8e416ce61f85d1aab1a379342ff8a7c8d0
-    - .claude/agents/hw-iterate.md
+    - to: .claude/agents/hw-iterate.md
+      verified_revision: sha256:a41384eed6c0c8b326e07056507c259a148b663152038f63a7b1d988dccdf821
     - to: .claude/agents/hw-build.md
-      verified_revision: sha256:562d9f7d962f05931a9062f1d687de2fb4a6d019ad8ef83c59c3ef1589e84e8e
+      verified_revision: sha256:76b22e56cb1ec60b94efa588c40db19b23bbd80795bbba510c172e9de7a137e8
     - to: .claude/agents/hw-verify.md
-      verified_revision: sha256:fb4b14973d51715a6c8a6516eb918a1434bfa04c48f4574619d7601b31257b1b
+      verified_revision: sha256:037f1ffc1ed126bef4951f6a17ad67671f55e067fc27ec8548802a63eb620031
     - to: .claude/agents/hw-integrate.md
       verified_revision: sha256:6029c93103316f8fc40e7f06ce0cc772bcffa9ccb27ec931ecb3ed4dfef369b4
     - to: .claude/skills/hw-run-policy/SKILL.md
-      verified_revision: sha256:164c3c18eae39af9f10a5750d12be0c9b82dcd142bbba5d929d8d1112f999591
+      verified_revision: sha256:0e71e3e122d242913e1fe68d551c20e3733b3bc44bc019e65ec824063010011b
     - to: .claude/skills/hw-verification-bar/SKILL.md
-      verified_revision: sha256:90ea30fa0995ba977d6e5a83fa3418f567d90fff3363718113f9ea81cfc4fcf7
+      verified_revision: sha256:a68ce6b14b5a8d7068aeafd8c7443e0497a55b4e444e2b971daa1da738c2153b
 ---
 
 # 17 — Orchestration architecture
