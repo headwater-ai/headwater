@@ -50,7 +50,13 @@ fn root(label: &str, target: &str) -> Root {
 /// ended in 60 s, which is how a verb that opened a named pipe with no writer
 /// ends. The exit status is not asserted: the stub corpus can carry findings
 /// that have nothing to do with the pipe.
+///
+/// Standard output and standard error are drained on their own threads while
+/// the verb runs. `check` prints more than a pipe buffer holds, so a caller
+/// that reads only after the exit leaves the verb blocked on its own write,
+/// and that hang is the harness's rather than the one this file pins.
 fn under_deadline(root: &Root, args: &[&str], hung: &str) -> (String, String) {
+    use std::io::Read;
     use std::time::{Duration, Instant};
 
     let mut child = std::process::Command::new(env!("CARGO_BIN_EXE_headwater"))
@@ -61,6 +67,15 @@ fn under_deadline(root: &Root, args: &[&str], hung: &str) -> (String, String) {
         .stderr(std::process::Stdio::piped())
         .spawn()
         .expect("the binary runs");
+    let drain = |mut from: Box<dyn Read + Send>| {
+        std::thread::spawn(move || {
+            let mut bytes = Vec::new();
+            from.read_to_end(&mut bytes).expect("the stream reads");
+            String::from_utf8_lossy(&bytes).into_owned()
+        })
+    };
+    let out = drain(Box::new(child.stdout.take().expect("stdout is piped")));
+    let err = drain(Box::new(child.stderr.take().expect("stderr is piped")));
     let deadline = Instant::now() + Duration::from_secs(60);
     loop {
         if child.try_wait().expect("the child is there").is_some() {
@@ -73,10 +88,9 @@ fn under_deadline(root: &Root, args: &[&str], hung: &str) -> (String, String) {
         }
         std::thread::sleep(Duration::from_millis(50));
     }
-    let output = child.wait_with_output().expect("the output is read");
     (
-        String::from_utf8_lossy(&output.stdout).into_owned(),
-        String::from_utf8_lossy(&output.stderr).into_owned(),
+        out.join().expect("stdout drains"),
+        err.join().expect("stderr drains"),
     )
 }
 
