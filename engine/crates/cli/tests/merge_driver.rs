@@ -129,7 +129,7 @@ fn the_scratch_base_passes_over_a_candidate_inside_a_git_work_tree() {
     // A candidate that holds `.git` itself is the top of a work tree. Read
     // only the directories above a candidate, and this fails.
     assert!(
-        clean_base(&[outer.0.clone()]).is_err(),
+        clean_base(std::slice::from_ref(&outer.0)).is_err(),
         "a candidate that holds `.git` is no base"
     );
 

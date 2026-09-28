@@ -994,7 +994,7 @@ mod tests {
         // A candidate that holds `.git` itself is the top of a work tree. Read
         // only the directories above a candidate, and this fails.
         assert!(
-            clean_base(&[outer.to_path_buf()]).is_err(),
+            clean_base(std::slice::from_ref(&outer.0)).is_err(),
             "a candidate that holds `.git` is no base"
         );
 
