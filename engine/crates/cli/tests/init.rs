@@ -701,8 +701,8 @@ fn the_concrete_kinds_of(lock: &str) -> Vec<String> {
 ///
 /// [#1264]: https://github.com/headwater-ai/headwater/issues/1264
 #[test]
-fn every_kind_the_adopted_package_declares_scaffolds_or_its_refusal_prints_the_overlay_block_that_makes_it_scaffold()
- {
+fn every_kind_the_adopted_package_declares_scaffolds_or_its_refusal_prints_the_overlay_block_that_makes_it_scaffold(
+) {
     let root = a_root_the_vendor_route_reached("every-kind-scaffolds");
 
     // The tutorial's adoption: the one namespace the package leaves to the
@@ -718,11 +718,7 @@ fn every_kind_the_adopted_package_declares_scaffolds_or_its_refusal_prints_the_o
     );
     root.write(".headwater/overlay.yml", &adopted);
     let (code, stderr) = root.run(&["taxonomy", "resolve"], None);
-    assert_eq!(
-        code,
-        Some(0),
-        "the tutorial's adoption resolves:\n{stderr}"
-    );
+    assert_eq!(code, Some(0), "the tutorial's adoption resolves:\n{stderr}");
 
     let kinds = the_concrete_kinds_of(&root.read(".headwater/taxonomy.lock"));
     assert!(

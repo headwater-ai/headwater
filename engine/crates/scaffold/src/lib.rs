@@ -396,6 +396,42 @@ impl Plan {
     }
 }
 
+/// An identifier scheme a kind could mint under, proposed as the two overlay
+/// lines that declare it.
+///
+/// The pattern is `{namespace}-<KIND>-{slug}` with `minted-once` allocation: a
+/// kind that nothing names yet has no shelf layout that asks for a `{seq}`, and
+/// the slug is what the scaffolder already derives from the title.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct SchemeProposal {
+    pub kind: String,
+    pub scheme: String,
+    pub pattern: String,
+    pub namespace: String,
+    /// Whether `namespace` is a stand-in, because no scheme the lock resolves
+    /// carries one this proposal could reuse.
+    pub placeholder: bool,
+}
+
+impl SchemeProposal {
+    /// The namespace printed when no resolved scheme carries one.
+    pub const PLACEHOLDER: &'static str = "ACME";
+
+    /// The two lines, each indented to sit under the overlay's `add:`.
+    pub fn lines(&self) -> [String; 2] {
+        [
+            format!(
+                "  identifier_schemes.{}: {{pattern: \"{}\", namespace: {}, allocation: minted-once}}",
+                self.scheme, self.pattern, self.namespace
+            ),
+            format!(
+                "  kinds.{}.identifier: {{scheme: {}}}",
+                self.kind, self.scheme
+            ),
+        ]
+    }
+}
+
 /// Every way this crate declines to write, as a closed set.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Refusal {
@@ -524,9 +560,16 @@ pub enum Refusal {
     },
     /// A relation may name this kind and no scheme mints for it, so the
     /// document would be neither end of any edge.
+    ///
+    /// `proposal` is the overlay block that declares one, printed so that an
+    /// adopter can paste it rather than work out the key, the file and the
+    /// namespace (#1264). It is `None` only when every scheme this crate would
+    /// propose overlaps one the lock already resolves, and then the message says
+    /// so rather than printing a block that `taxonomy resolve` refuses.
     Unnameable {
         kind: String,
         relations: Vec<String>,
+        proposal: Option<SchemeProposal>,
     },
     IdentifierTaken {
         id: String,
@@ -752,13 +795,43 @@ impl std::fmt::Display for Refusal {
                 "the identifier this run built is one the scheme `{scheme}` does not admit: \
                  {why}. That is a defect in the scaffolder rather than in the declaration"
             ),
-            Refusal::Unnameable { kind, relations } => write!(
-                f,
-                "`{kind}` names no identifier scheme, and {} may name a document of it. Such a \
-                 document is neither end of any edge, which `identifier.unusable` reports on \
-                 every run. Declare `kinds.{kind}.identifier` first",
-                list(relations)
-            ),
+            Refusal::Unnameable {
+                kind,
+                relations,
+                proposal,
+            } => {
+                write!(
+                    f,
+                    "`{kind}` names no identifier scheme, and {} may name a document of it. Such \
+                     a document is neither end of any edge, which `identifier.unusable` reports \
+                     on every run. Declare `kinds.{kind}.identifier` first",
+                    list(relations)
+                )?;
+                let Some(proposal) = proposal else {
+                    return write!(
+                        f,
+                        ". Every scheme this verb would propose overlaps one the lock already \
+                         resolves, so declare one by hand under `add:` in .headwater/overlay.yml"
+                    );
+                };
+                write!(
+                    f,
+                    ". Add these two lines under `add:` in .headwater/overlay.yml, in place of \
+                     `{{}}` if the block is empty, then run `headwater taxonomy resolve` and this \
+                     verb again:\n\n"
+                )?;
+                let [scheme, identifier] = proposal.lines();
+                write!(f, "{scheme}\n{identifier}")?;
+                if proposal.placeholder {
+                    write!(
+                        f,
+                        "\n\nNo scheme the lock resolves carries a namespace, so `{}` stands in \
+                         for yours. Replace it before you resolve",
+                        SchemeProposal::PLACEHOLDER
+                    )?;
+                }
+                Ok(())
+            }
             Refusal::IdentifierTaken { id, path } => write!(
                 f,
                 "`{id}` is already declared on {path}, and an identifier is never reused"
@@ -1487,6 +1560,57 @@ fn prompt(facet: &str, role: Option<&str>) -> String {
     }
 }
 
+/// The scheme a kind with none could mint under, one that `taxonomy resolve`
+/// accepts beside every scheme the lock already resolves.
+///
+/// The namespace is the first one a resolved scheme carries, because resolve
+/// refuses a scheme without one and a package never ships one. The name and
+/// the pattern step through a numbered suffix until neither clashes: not the
+/// name of a resolved scheme, and not a pattern that shares a string with one
+/// ([`Template::disjoint`], the question identifier integrity asks). A scheme
+/// whose own pattern does not read is left out of that test, because resolve
+/// refuses it on its own terms.
+pub fn propose_scheme(shape: &Shape, kind: &str) -> Option<SchemeProposal> {
+    let resolved = shape
+        .identifier_schemes
+        .iter()
+        .map(|scheme| scheme.namespace.as_str())
+        .find(|namespace| !namespace.is_empty());
+    let namespace = resolved.unwrap_or(SchemeProposal::PLACEHOLDER).to_string();
+    let placeholder = resolved.is_none();
+    let templates: Vec<Template> = shape
+        .identifier_schemes
+        .iter()
+        .filter_map(|scheme| Template::parse(&scheme.pattern, &scheme.namespace).ok())
+        .collect();
+    let literal = kind.to_uppercase().replace('_', "-");
+    (1..=9).find_map(|attempt| {
+        let (scheme, pattern) = match attempt {
+            1 => (
+                format!("{kind}_id"),
+                format!("{{namespace}}-{literal}-{{slug}}"),
+            ),
+            n => (
+                format!("{kind}_id_{n}"),
+                format!("{{namespace}}-{literal}{n}-{{slug}}"),
+            ),
+        };
+        let named = shape
+            .identifier_schemes
+            .iter()
+            .any(|declared| declared.name == scheme);
+        let template = Template::parse(&pattern, &namespace).ok()?;
+        let overlaps = templates.iter().any(|other| !template.disjoint(other));
+        (!named && !overlaps).then(|| SchemeProposal {
+            kind: kind.to_string(),
+            scheme,
+            pattern,
+            namespace: namespace.clone(),
+            placeholder,
+        })
+    })
+}
+
 /// The identifier, minted under the scheme the kind names.
 fn mint(
     sources: &Sources<'_>,
@@ -1514,6 +1638,7 @@ fn mint(
             false => Err(Refusal::Unnameable {
                 kind: kind.to_string(),
                 relations: naming,
+                proposal: propose_scheme(sources.shape, kind),
             }),
         };
     };
@@ -1852,4 +1977,118 @@ pub fn slugify(title: &str) -> String {
         }
     }
     slug
+}
+
+#[cfg(test)]
+mod proposal {
+    //! The overlay block an `Unnameable` refusal prints (#1264). The CLI case
+    //! in `tests/init.rs` holds the block against a real `taxonomy resolve`;
+    //! these hold the branches an adopted package never reaches.
+
+    use super::{propose_scheme, Refusal, SchemeProposal};
+    use headwater_check::shape::{IdentifierScheme, Shape};
+
+    fn shape(schemes: &[(&str, &str, &str)]) -> Shape {
+        let mut shape = Shape::default();
+        for (name, pattern, namespace) in schemes {
+            shape.identifier_schemes.push(IdentifierScheme {
+                name: (*name).to_string(),
+                pattern: (*pattern).to_string(),
+                namespace: (*namespace).to_string(),
+                allocation: None,
+                span: Default::default(),
+            });
+        }
+        shape
+    }
+
+    /// A lock with no scheme has no namespace to reuse, so the block says
+    /// `ACME` and the message tells the reader to replace it.
+    #[test]
+    fn a_lock_with_no_namespace_gets_the_placeholder_and_is_told_to_replace_it() {
+        let proposal = propose_scheme(&shape(&[]), "design_note").expect("a proposal");
+        assert_eq!(proposal.namespace, SchemeProposal::PLACEHOLDER);
+        assert!(proposal.placeholder);
+        assert_eq!(proposal.pattern, "{namespace}-DESIGN-NOTE-{slug}");
+        let message = Refusal::Unnameable {
+            kind: "design_note".to_string(),
+            relations: vec!["governs".to_string()],
+            proposal: Some(proposal),
+        }
+        .to_string();
+        assert!(
+            message.contains("`ACME` stands in for yours"),
+            "the placeholder is named as one:\n{message}"
+        );
+    }
+
+    /// The namespace comes from a scheme the lock already resolves, and then
+    /// nothing asks the reader to replace it.
+    #[test]
+    fn the_namespace_is_one_a_resolved_scheme_carries() {
+        let proposal = propose_scheme(
+            &shape(&[("decision_id", "{namespace}-DR-{seq:04d}", "ACME2")]),
+            "specification",
+        )
+        .expect("a proposal");
+        assert_eq!(proposal.namespace, "ACME2");
+        assert!(!proposal.placeholder);
+        assert_eq!(
+            proposal.lines(),
+            [
+                "  identifier_schemes.specification_id: {pattern: \"{namespace}-SPECIFICATION-{slug}\", namespace: ACME2, allocation: minted-once}".to_string(),
+                "  kinds.specification.identifier: {scheme: specification_id}".to_string(),
+            ]
+        );
+        let message = Refusal::Unnameable {
+            kind: "specification".to_string(),
+            relations: vec!["governs".to_string()],
+            proposal: Some(proposal),
+        }
+        .to_string();
+        assert!(!message.contains("stands in for yours"), "{message}");
+    }
+
+    /// A scheme already named `<kind>_id` moves the proposal to the next name.
+    #[test]
+    fn a_taken_name_steps_to_the_next_suffix() {
+        let proposal = propose_scheme(
+            &shape(&[("note_id", "{namespace}-N-{seq:04d}", "HW")]),
+            "note",
+        )
+        .expect("a proposal");
+        assert_eq!(proposal.scheme, "note_id_2");
+        assert_eq!(proposal.pattern, "{namespace}-NOTE2-{slug}");
+    }
+
+    /// A pattern that shares a string with a resolved scheme is not proposed,
+    /// because identifier integrity refuses the pair at `resolve`.
+    #[test]
+    fn an_overlapping_pattern_steps_to_the_next_suffix() {
+        let proposal = propose_scheme(
+            &shape(&[("other_id", "{namespace}-NOTE-{slug}", "HW")]),
+            "note",
+        )
+        .expect("a proposal");
+        assert_eq!(proposal.scheme, "note_id_2");
+        assert_eq!(proposal.pattern, "{namespace}-NOTE2-{slug}");
+    }
+
+    /// A resolved scheme that admits every string past the namespace overlaps
+    /// every proposal, so none is printed and the message says why.
+    #[test]
+    fn a_scheme_that_overlaps_everything_leaves_no_proposal() {
+        assert_eq!(
+            propose_scheme(&shape(&[("all_id", "{namespace}-{slug}", "HW")]), "note"),
+            None
+        );
+        let message = Refusal::Unnameable {
+            kind: "note".to_string(),
+            relations: vec!["governs".to_string()],
+            proposal: None,
+        }
+        .to_string();
+        assert!(message.contains("declare one by hand"), "{message}");
+        assert!(!message.contains("identifier_schemes."), "{message}");
+    }
 }
