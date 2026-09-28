@@ -60,12 +60,28 @@ public final class Client {
     /** One document an answer points at. Any member but `path` may be null. */
     public record Pointer(String path, String kind, String id, String name, String purpose, String summary, String asserted) {}
 
-    /** The pointers of one answer, in order, and how many more the budget withheld. */
-    public record Answer(List<Pointer> pointers, int withheld) {
-        public static final Answer NONE = new Answer(List.of(), 0);
+    /**
+     * The pointers of one answer, in order, how many more the budget withheld,
+     * and whether the engine was heard at all. `heard` separates "the engine
+     * answered and nothing governs this" from "no answer came": no binary, a
+     * timeout, an error or output that cannot be trusted. The plugin says
+     * "no document governs this file" only for the first, and nothing for the
+     * second, because a file the plugin could not ask about is not ungoverned.
+     */
+    public record Answer(List<Pointer> pointers, int withheld, boolean heard) {
+        /** No answer came. Every failure gives this. */
+        public static final Answer NONE = new Answer(List.of(), 0, false);
 
         public Answer {
             pointers = List.copyOf(pointers);
+            if (!heard && (!pointers.isEmpty() || withheld != 0)) {
+                throw new IllegalArgumentException("an answer nobody heard carries nothing");
+            }
+        }
+
+        /** An answer the engine gave. */
+        public Answer(List<Pointer> pointers, int withheld) {
+            this(pointers, withheld, true);
         }
     }
 
@@ -112,7 +128,21 @@ public final class Client {
 
     /** The documents that govern a project-relative path. */
     public static List<Pointer> governing(String relativePath, Options options) {
-        return ask("governing_docs_for_path", Map.of("path", String.valueOf(relativePath)), options).pointers();
+        return governingAnswer(relativePath, options).pointers();
+    }
+
+    /** The same query as `governing`, with whether the engine was heard. */
+    public static Answer governingAnswer(String relativePath, Options options) {
+        return ask("governing_docs_for_path", Map.of("path", String.valueOf(relativePath)), options);
+    }
+
+    /**
+     * The empty text the read-time list shows: a sentence when the engine
+     * answered that nothing governs the file, and nothing when no answer came
+     * or there are pointers to show.
+     */
+    public static String emptyText(Answer answer) {
+        return answer.heard() && answer.pointers().isEmpty() ? "No document governs this file" : "";
     }
 
     /**

@@ -2,8 +2,8 @@
 
 This plugin shows a person who edits a Headwater repository in IntelliJ IDEA, PyCharm, GoLand, RustRover or another JetBrains IDE the documents that govern their work. It does this at three moments:
 
-- **Intent.** The action *Headwater: What Governs This Task?*, in the Tools menu and in Find Action, asks what you are about to do and lists the documents that govern it. Each row shows a path, a name and a one-line summary, and never the content of the document. When the engine's budget held more documents back, the foot of the list says how many, for example "210 more withheld by the budget". Choose a row to open the document.
-- **Read.** The *Headwater* tool window lists the documents that govern the file in the selected editor. It is empty when no document governs the file. Double-click a row, or press Enter on it, to open the document.
+- **Intent.** The action *Headwater: What Governs This Task?*, in the Tools menu and in Find Action, asks what you are about to do and lists the documents that govern it. Each row shows a path, a name and a one-line summary, and never the content of the document. When the engine's budget held more documents back, the foot of the list says how many, for example "210 more withheld by the budget". When the budget held back every document, a message says how many. Choose a row to open the document.
+- **Read.** The *Headwater* tool window lists the documents that govern the file in the selected editor. When the engine answers that no document governs the file, it says so. When no answer came, for any reason under *When it does nothing*, it is blank, so a file the plugin could not ask about never reads as ungoverned. Double-click a row, or press Enter on it, to open the document.
 - **Write.** When you save a file that a document governs, a balloon names the governing documents. The listener only queues the query and returns, so the save never waits for it, and the balloon comes after the save.
 
 When nothing governs the task or the file, the plugin shows nothing. It does not guess.

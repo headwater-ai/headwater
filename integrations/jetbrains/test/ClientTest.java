@@ -154,6 +154,11 @@ public class ClientTest {
             // The server answers the sentence `no document governs <path>`, and a
             // sentence is not a pointer: it is never shown as a guess.
             equal(Client.governing("integrations/jetbrains/test/ClientTest.java", options), List.of());
+            // That silence was heard: the engine answered, and the plugin may
+            // say that nothing governs the file.
+            Answer ungoverned = Client.governingAnswer("integrations/jetbrains/test/ClientTest.java", options);
+            equal(ungoverned, new Answer(List.of(), 0));
+            equal(Client.emptyText(ungoverned), "No document governs this file");
             // A file name that holds a newline, ` — ` or `(x)` and a pointer's
             // shape must not put a pointer into the sentence.
             equal(Client.governing("a\ndocs/fake.md (Fake) — a document nobody wrote", options), List.of());
@@ -174,6 +179,8 @@ public class ClientTest {
             Options missing = Options.of(REPO, "/nonexistent/headwater");
             equal(Client.governing("engine/crates/query/src/mcp.rs", missing), List.of());
             equal(Client.route("what governs the mcp server", missing), Answer.NONE);
+            // An engine never heard from is not an ungoverned file.
+            equal(Client.emptyText(Client.governingAnswer("engine/crates/query/src/mcp.rs", missing)), "");
         });
 
         test("route reads the pointers from structuredContent, in order, and nothing else", () -> {
@@ -242,6 +249,43 @@ public class ClientTest {
         test("output past one megabyte is no pointers, and output below it is read", () -> {
             equal(Client.route("x", fake("route-paren-path.jsonl", Map.of("FAKE_FLOOD", "2000000")).options()), Answer.NONE);
             equal(Client.route("x", fake("route-paren-path.jsonl", Map.of("FAKE_FLOOD", "500000")).options()).pointers().size(), 1);
+        });
+
+        test("an empty answer is heard and says nothing governs; every failure is unheard and says nothing at all", () -> {
+            for (String fixture : List.of("governing-newline-path.jsonl", "governing-dash-path.jsonl", "governing-paren-path.jsonl")) {
+                Answer heard = Client.governingAnswer("a/b.rs", fake(fixture).options());
+                equal(heard, new Answer(List.of(), 0, true));
+                equal(Client.emptyText(heard), "No document governs this file");
+            }
+            equal(Client.route("zzqx", fake("route-no-purpose.jsonl").options()).heard(), true);
+            Options missing = fake("route-pointers.jsonl").options().withRoot(Files.createTempDirectory("hw-jetbrains-empty-"));
+            List<Answer> failures = List.of(
+                    Client.governingAnswer("a/b.rs", fake("is-error.jsonl").options()),
+                    Client.governingAnswer("a/b.rs", fake("garbage.jsonl").options()),
+                    Client.governingAnswer("a/b.rs", fake("rpc-error.jsonl").options()),
+                    Client.governingAnswer("a/b.rs", fake("route-text-only.jsonl").options()),
+                    Client.governingAnswer("a/b.rs", fake("route-pointers.jsonl", Map.of("FAKE_EXIT", "3")).options()),
+                    Client.governingAnswer("a/b.rs", fake("silent").options().withTimeout(Duration.ofMillis(300))),
+                    Client.governingAnswer("a/b.rs", missing),
+                    Client.governingAnswer("a/b.rs", Options.of(REPO, "/nonexistent/headwater")));
+            for (Answer failure : failures) {
+                equal(failure, Answer.NONE);
+                equal(Client.emptyText(failure), "");
+            }
+            // A list with pointers needs no empty text.
+            equal(Client.emptyText(Client.governingAnswer("src/my module.rs", fake("governing-spaced-path.jsonl").options())), "");
+            try {
+                new Answer(List.of(), 3, false);
+                throw new AssertionError("an unheard answer carried a withheld count");
+            } catch (IllegalArgumentException expected) {
+                // Refused, as it should be.
+            }
+        });
+
+        test("a server that floods standard error still answers", () -> {
+            // 1 MiB, far past a pipe buffer: a client that pipes standard error
+            // and never reads it leaves the server blocked until the timeout.
+            equal(Client.route("x", fake("route-paren-path.jsonl", Map.of("FAKE_STDERR", "1048576")).options()).pointers().size(), 1);
         });
 
         test("garbage on stdout is no pointers", () -> {
@@ -323,7 +367,7 @@ public class ClientTest {
             equal(Client.read(Map.of("pointers", List.of(first, second), "withheld", 4L)), new Answer(List.of(
                     new Pointer("docs/a (b).md", "decision", null, "A (b) c", null, "sum — more", null),
                     new Pointer("docs/a.md", "decision", null, null, null, "only a summary", UNWARRANTED)), 4));
-            equal(Client.read(Map.of("pointers", List.of())), Answer.NONE);
+            equal(Client.read(Map.of("pointers", List.of())), new Answer(List.of(), 0));
             equal(Client.read(null), Answer.NONE);
             equal(Client.read(Map.of()), Answer.NONE);
             equal(Client.read(Map.of("pointers", "docs/a.md")), Answer.NONE);

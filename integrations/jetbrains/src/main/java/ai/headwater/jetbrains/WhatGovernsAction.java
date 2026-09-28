@@ -40,13 +40,18 @@ public final class WhatGovernsAction extends AnAction implements DumbAware {
         if (task == null || task.isBlank()) return;
         ApplicationManager.getApplication().executeOnPooledThread(() -> {
             Answer answer = Client.route(task, options);
-            if (answer.pointers().isEmpty()) return;
+            if (answer.pointers().isEmpty() && Client.withheldNote(answer) == null) return;
             ApplicationManager.getApplication().invokeLater(() -> show(project, answer), project.getDisposed());
         });
     }
 
     private static void show(Project project, Answer answer) {
         String note = Client.withheldNote(answer);
+        if (answer.pointers().isEmpty()) {
+            // The budget held every pointer back: say so rather than nothing.
+            Messages.showInfoMessage(project, note, "Headwater: What Governs This Task?");
+            return;
+        }
         JBPopupFactory.getInstance()
                 .createPopupChooserBuilder(answer.pointers())
                 .setTitle("Documents that govern this task")

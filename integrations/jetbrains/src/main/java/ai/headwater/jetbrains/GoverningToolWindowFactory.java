@@ -1,13 +1,15 @@
 // SPDX-License-Identifier: Apache-2.0
 //
 // Read time: the *Headwater* tool window lists the documents that govern the
-// file in the selected editor, and is empty when none do. Each change of
+// file in the selected editor. It says "No document governs this file" only
+// when the engine answered so, and shows nothing when no answer came. Each change of
 // selection runs `Client.governing` on a pooled thread, never on the event
 // dispatch thread, and an answer that arrives after a later selection is
 // dropped. Double-click or Enter on a row opens the document.
 
 package ai.headwater.jetbrains;
 
+import ai.headwater.jetbrains.Client.Answer;
 import ai.headwater.jetbrains.Client.Options;
 import ai.headwater.jetbrains.Client.Pointer;
 import com.intellij.openapi.application.ApplicationManager;
@@ -27,7 +29,6 @@ import com.intellij.ui.content.ContentFactory;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.swing.DefaultListModel;
 import org.jetbrains.annotations.NotNull;
@@ -38,7 +39,7 @@ public final class GoverningToolWindowFactory implements ToolWindowFactory, Dumb
         DefaultListModel<Pointer> model = new DefaultListModel<>();
         JBList<Pointer> list = new JBList<>(model);
         list.setCellRenderer(new PointerRenderer());
-        list.getEmptyText().setText("No document governs this file");
+        list.getEmptyText().setText("");
         new DoubleClickListener() {
             @Override
             protected boolean onDoubleClick(@NotNull MouseEvent event) {
@@ -63,13 +64,13 @@ public final class GoverningToolWindowFactory implements ToolWindowFactory, Dumb
             String relative = Headwater.relative(project, file);
             Options options = Headwater.options(project);
             if (relative == null || options == null) {
-                show(model, List.of());
+                show(list, model, Answer.NONE);
                 return;
             }
             ApplicationManager.getApplication().executeOnPooledThread(() -> {
-                List<Pointer> pointers = Client.governing(relative, options);
+                Answer answer = Client.governingAnswer(relative, options);
                 ApplicationManager.getApplication().invokeLater(() -> {
-                    if (mine == generation.get()) show(model, pointers);
+                    if (mine == generation.get()) show(list, model, answer);
                 }, project.getDisposed());
             });
         };
@@ -88,8 +89,11 @@ public final class GoverningToolWindowFactory implements ToolWindowFactory, Dumb
         void to(VirtualFile file);
     }
 
-    private static void show(DefaultListModel<Pointer> model, List<Pointer> pointers) {
+    // An answer nobody heard shows an empty list with no sentence, so a file
+    // the plugin could not ask about never reads as ungoverned.
+    private static void show(JBList<Pointer> list, DefaultListModel<Pointer> model, Answer answer) {
         model.clear();
-        model.addAll(pointers);
+        model.addAll(answer.pointers());
+        list.getEmptyText().setText(Client.emptyText(answer));
     }
 }

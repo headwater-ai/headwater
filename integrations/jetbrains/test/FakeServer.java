@@ -15,6 +15,9 @@
 //   FAKE_EXIT     the status to exit with once standard input closes (default 0).
 //   FAKE_FLOOD    a count of bytes: one line of that many `x` is written before
 //                 the first answer, which is how the output cap is reached.
+//   FAKE_STDERR   a count of bytes written to standard error before anything
+//                 is read. Past the pipe buffer, a client that pipes standard
+//                 error and never reads it leaves this server blocked.
 
 import ai.headwater.jetbrains.Client;
 import java.io.BufferedReader;
@@ -53,6 +56,11 @@ public class FakeServer {
             }
         }
 
+        String stderr = System.getenv("FAKE_STDERR");
+        if (stderr != null && !stderr.isEmpty()) {
+            System.err.print("e".repeat(Integer.parseInt(stderr)));
+            System.err.flush();
+        }
         PrintStream out = new PrintStream(System.out, true, StandardCharsets.UTF_8);
         BufferedReader in = new BufferedReader(new InputStreamReader(System.in, StandardCharsets.UTF_8));
         boolean answered = false;
