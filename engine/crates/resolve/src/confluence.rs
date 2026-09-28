@@ -230,6 +230,14 @@ mod tests {
         assert!(found.is_empty(), "{found:?}");
     }
 
+    /// The check reads pairs and not an order, so the permission holds when
+    /// the dependent is the earlier of the two sources as well.
+    #[test]
+    fn the_permission_holds_whichever_of_the_two_sources_is_first() {
+        let found = errors_requiring(&[DEPENDENT, DEPENDENCY], &[(0, 1)]);
+        assert!(found.is_empty(), "{found:?}");
+    }
+
     #[test]
     fn the_same_add_to_without_requires_is_refused() {
         let found = errors(&[DEPENDENCY, DEPENDENT]);
