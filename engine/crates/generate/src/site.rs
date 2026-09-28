@@ -130,8 +130,6 @@ pub fn hold(
         ..Report::default()
     };
 
-    #[allow(unreachable_code)]
-    return Ok(report); // STUB
     // 1. A page the navigation names and the site does not hold.
     for path in &plan.navigation {
         let Some(source) = under(corpus_root, path) else {

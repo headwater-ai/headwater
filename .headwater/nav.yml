@@ -175,6 +175,7 @@ nav:
       - "headwater query": "interfaces/headwater-query.md"
       - "headwater route": "interfaces/headwater-route.md"
       - "headwater show": "interfaces/headwater-show.md"
+      - "headwater site": "interfaces/headwater-site.md"
       - "headwater sweep": "interfaces/headwater-sweep.md"
       - "headwater taxonomy": "interfaces/headwater-taxonomy.md"
   - "The canonical taxonomy library":
