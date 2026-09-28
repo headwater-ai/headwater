@@ -840,3 +840,72 @@ imports:
         Vec::new()
     );
 }
+
+const CONSUMER: &str = ".headwater/taxonomy.yml";
+
+#[test]
+fn an_imports_block_that_is_not_a_mapping_is_refused_by_name() {
+    for (block, kind) in [
+        ("imports:\n  - ado\n", "a sequence"),
+        ("imports: ado\n", "a scalar"),
+    ] {
+        let scratch = Scratch::new("imports-block-shape");
+        scratch.write(CONSUMER, block);
+        let why = headwater_import::declared(scratch.path()).expect_err("it is refused");
+        assert!(why.contains("`imports`") && why.contains(kind), "{why}");
+    }
+    for block in ["imports:\n", "imports: ~\n"] {
+        let scratch = Scratch::new("imports-block-null");
+        scratch.write(CONSUMER, block);
+        assert_eq!(
+            headwater_import::declared(scratch.path()),
+            Ok(Vec::new()),
+            "{block}"
+        );
+    }
+}
+
+#[test]
+fn an_import_that_is_not_a_mapping_is_refused_by_name() {
+    let scratch = Scratch::new("imports-entry-shape");
+    scratch.write(CONSUMER, "imports:\n  ado: imports/ado\n");
+    let why = headwater_import::declared(scratch.path()).expect_err("it is refused");
+    assert!(
+        why.contains("`imports.ado`") && why.contains("a scalar"),
+        "{why}"
+    );
+}
+
+#[test]
+fn an_import_whose_path_leaves_the_repository_is_refused_by_name() {
+    for at in ["/etc/ado", "../other/ado", "imports/../../ado"] {
+        let scratch = Scratch::new("imports-outside");
+        scratch.write(
+            CONSUMER,
+            &format!("imports:\n  ado:\n    at: {at}\n    resolver: ado-snapshot\n"),
+        );
+        let why = headwater_import::declared(scratch.path()).expect_err("it is refused");
+        assert!(why.contains("imports.ado.at") && why.contains(at), "{why}");
+    }
+}
+
+/// `imports/ado` is a clean relative path, and a committed symlink at
+/// `imports` still takes the read outside the root.
+#[cfg(unix)]
+#[test]
+fn an_import_whose_path_leaves_the_repository_through_a_symlink_is_refused_by_name() {
+    let scratch = Scratch::new("imports-symlink-root");
+    let outside = Scratch::new("imports-symlink-outside");
+    outside.write("ado/items.json", "{}\n");
+    std::os::unix::fs::symlink(outside.path(), scratch.path().join("imports"))
+        .expect("the symlink is made");
+    scratch.write(
+        CONSUMER,
+        "imports:\n  ado:\n    at: imports/ado\n    resolver: ado-snapshot\n",
+    );
+    let why = headwater_import::declared(scratch.path()).expect_err("it is refused");
+    assert!(
+        why.contains("imports.ado.at") && why.contains("imports/ado"),
+        "{why}"
+    );
+}
