@@ -614,6 +614,20 @@
               }
             },
             {
+              "id": "taxonomy.pin.diverged",
+              "shortDescription": {
+                "text": "taxonomy scope, the resolved taxonomy, and no document"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "taxonomy",
+                  "version": 1,
+                  "obligations": [],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
               "id": "relation.target.verification.suspect",
               "shortDescription": {
                 "text": "edge scope, one relation instance and both endpoints, and the committed observation snapshot"

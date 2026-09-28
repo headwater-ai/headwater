@@ -112,6 +112,19 @@ impl Root {
             std::fs::copy(repository.join(".headwater").join(name), to)
                 .expect("the declaration copies");
         }
+        // The package here is the source, copied, and not the artifact this
+        // repository's pin names, so the pin would be drift that `validate`
+        // and `check` now refuse (#1186). A root that takes its package from
+        // source declares no pin, and this one does the same.
+        let declaration = at.join(".headwater/taxonomy.yml");
+        let text = std::fs::read_to_string(&declaration).expect("the declaration reads");
+        let unpinned: String = text
+            .lines()
+            .filter(|line| !line.trim_start().starts_with("digest: sha256:"))
+            .map(|line| format!("{line}\n"))
+            .collect();
+        assert_ne!(unpinned, text, "the copied declaration carried a pin");
+        std::fs::write(&declaration, unpinned).expect("the declaration writes");
 
         // The overlay declares a governed scope, and the copy carries `docs/`,
         // which is a tree. `taxonomy validate` refuses a scope pattern that

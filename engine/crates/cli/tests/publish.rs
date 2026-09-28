@@ -349,6 +349,14 @@ fn publish_plain_from(root: &Path, source: &Path, out: &Path) -> (Option<i32>, S
 }
 
 /// Run a consumer verb against the root that holds its authored pin.
+/// The rule `headwater check` reports a pin that no longer names the vendored
+/// bytes under.
+const PIN_RULE: &str = "taxonomy.pin.diverged";
+
+/// What its finding says, which the report prints only when the rule fires:
+/// the rule id alone is also in the list of rules every run prints.
+const PIN_FINDING: &str = "does not hash to it";
+
 fn consumer_run(root: &Path, arguments: &[&str]) -> (Option<i32>, String, String) {
     let output = Command::new(env!("CARGO_BIN_EXE_headwater"))
         .args(arguments)
@@ -835,7 +843,11 @@ fn the_shipped_starter_recipe_publishes_vendors_and_resolves() {
 /// surviving complaint. The recheck it asked for landed in `c09625a` on
 /// 2026-08-25, eleven days before the issue was filed, so what remains is the
 /// pairing: the recheck exists and the verb an adopter is most likely to put in
-/// a build does not perform it.
+/// a build does not perform it. `resolve` still reads no digest, and
+/// [#1186](https://github.com/headwater-ai/headwater/issues/1186) put the
+/// recheck in the two verbs an adopter's commit hook and CI do run:
+/// `check --strict` reports `taxonomy.pin.diverged` as an error, and
+/// `taxonomy validate` refuses with exit 1, in both arms below.
 ///
 /// The conformance crate holds the same pairing at the library level. This case
 /// is the CLI half of it, because an exit status is what a build reads, and a
@@ -861,7 +873,8 @@ fn the_shipped_starter_recipe_publishes_vendors_and_resolves() {
 /// the one `--level` decides, and a sentence that credited `--level` with both
 /// would be wrong about the second.
 #[test]
-fn a_pin_that_no_longer_names_the_installed_bytes_is_refused_by_conformance_and_not_by_resolve() {
+fn a_pin_that_no_longer_names_the_installed_bytes_fails_check_validate_and_conformance_and_not_resolve(
+) {
     let root = Root::scratch("pin-recheck-pairing");
     let source = repository().join("taxonomy-source/headwater-standard");
     let artifact = root.path().join("release");
@@ -910,6 +923,48 @@ fn a_pin_that_no_longer_names_the_installed_bytes_is_refused_by_conformance_and_
         Some(0),
         "the freshly vendored tree does not reach L0: {stderr}"
     );
+    // The two everyday verbs are clean over the same tree, so that a later 1
+    // from either is the drift and not the fixture.
+    let (code, stdout, stderr) = consumer_run(&consumer, &["check", "--strict"]);
+    assert_eq!(
+        code,
+        Some(0),
+        "the freshly vendored tree fails `check --strict`: {stdout}\n{stderr}"
+    );
+    assert!(!stdout.contains(PIN_FINDING), "{stdout}");
+    let (code, _stdout, stderr) = consumer_run(&consumer, &["taxonomy", "validate"]);
+    assert_eq!(
+        code,
+        Some(0),
+        "the freshly vendored tree fails `validate`: {stderr}"
+    );
+    // The read set of the clean run carries the pin and every vendored member,
+    // so a gate over a later tree sees either move. Over the same tree it
+    // carries.
+    let read_set = root.path().join("clean.readset");
+    let read_set = read_set.to_str().expect("the read set path is UTF-8");
+    let (code, _stdout, stderr) = consumer_run(&consumer, &["check", "--read-set", read_set]);
+    assert_eq!(code, Some(0), "{stderr}");
+    let recorded = std::fs::read_to_string(read_set).expect("the read set reads");
+    for needle in [
+        ".headwater/taxonomy.yml",
+        ".headwater/packages/headwater-starter/doctrine/starter/starter.md",
+    ] {
+        assert!(
+            recorded.contains(needle),
+            "the read set does not list `{needle}`: {recorded}"
+        );
+    }
+    // The gate never carries this verdict, because six corpus-grained rules
+    // are barriers, so what it names as moved is the assertion and its exit
+    // status is not.
+    let (_code, stdout, _stderr) = consumer_run(&consumer, &["gate", "--read-set", read_set]);
+    for moved in [".headwater/taxonomy.yml", "starter.md"] {
+        assert!(
+            !stdout.contains(moved),
+            "the gate names `{moved}` over the tree the read set was taken from: {stdout}"
+        );
+    }
 
     // ---- Arm one: the pin moved and the bytes did not. ------------------
     //
@@ -940,6 +995,33 @@ fn a_pin_that_no_longer_names_the_installed_bytes_is_refused_by_conformance_and_
         format!("{stdout}\n{stderr}").contains("pin.current"),
         "the refusal does not name the reading: {stdout}\n{stderr}"
     );
+    // The commit gate carries the recheck: the pin as written, and the digest
+    // of the bytes on disk, which is still the published one.
+    let (code, stdout, stderr) = consumer_run(&consumer, &["check", "--strict"]);
+    assert_eq!(
+        code,
+        Some(1),
+        "a stale pin passed `check --strict`: {stdout}\n{stderr}"
+    );
+    for needle in [PIN_RULE, PIN_FINDING, stale, release.digest.as_str()] {
+        assert!(
+            stdout.contains(needle),
+            "`check` does not say `{needle}`: {stdout}"
+        );
+    }
+    let (code, _stdout, stderr) = consumer_run(&consumer, &["taxonomy", "validate"]);
+    assert_eq!(code, Some(1), "a stale pin passed `validate`: {stderr}");
+    let (_code, stdout, _stderr) = consumer_run(&consumer, &["gate", "--read-set", read_set]);
+    assert!(
+        stdout.contains(".headwater/taxonomy.yml"),
+        "the gate does not name the moved pin: {stdout}"
+    );
+    for needle in [stale, release.digest.as_str()] {
+        assert!(
+            stderr.contains(needle),
+            "`validate` does not say `{needle}`: {stderr}"
+        );
+    }
 
     // ---- Arm two: the bytes moved and the pin did not. -------------------
     //
@@ -961,6 +1043,58 @@ fn a_pin_that_no_longer_names_the_installed_bytes_is_refused_by_conformance_and_
         Some(0),
         "the resolver refused the edited tree, so this pairing no longer holds: {stderr}"
     );
+
+    // The commit gate sees the edit: the pin, a computed digest that is not
+    // the pin, and the member that moved.
+    let (code, stdout, stderr) = consumer_run(&consumer, &["check", "--strict"]);
+    assert_eq!(
+        code,
+        Some(1),
+        "an edited member passed `check --strict`: {stdout}\n{stderr}"
+    );
+    for needle in [
+        PIN_RULE,
+        PIN_FINDING,
+        release.digest.as_str(),
+        "doctrine/starter/starter.md",
+    ] {
+        assert!(
+            stdout.contains(needle),
+            "`check` does not say `{needle}`: {stdout}"
+        );
+    }
+    let computed = headwater_resolve::release::digest_of(
+        &headwater_resolve::release::members(
+            &consumer.join(".headwater/packages/headwater-starter"),
+        )
+        .expect("the installed members read"),
+    );
+    assert_ne!(computed, release.digest, "the hand edit moved no byte");
+    assert!(
+        stdout.contains(&computed),
+        "`check` does not name the digest it computed, `{computed}`: {stdout}"
+    );
+    let (code, _stdout, stderr) = consumer_run(&consumer, &["taxonomy", "validate"]);
+    assert_eq!(
+        code,
+        Some(1),
+        "an edited member passed `validate`: {stderr}"
+    );
+    let (_code, stdout, _stderr) = consumer_run(&consumer, &["gate", "--read-set", read_set]);
+    assert!(
+        stdout.contains("doctrine/starter/starter.md"),
+        "the gate does not name the member that moved: {stdout}"
+    );
+    for needle in [
+        release.digest.as_str(),
+        computed.as_str(),
+        "doctrine/starter/starter.md",
+    ] {
+        assert!(
+            stderr.contains(needle),
+            "`validate` does not say `{needle}`: {stderr}"
+        );
+    }
 
     // Moved bytes are refused ahead of every reading and at every level: a rule
     // set read out of a package whose bytes no longer match its record is a rule

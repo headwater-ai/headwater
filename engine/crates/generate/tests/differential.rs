@@ -205,6 +205,7 @@ fn engine_run(built: &Built) -> Run {
             config: &config,
             register: &register,
             observations: &headwater_check::Observations::empty(),
+            pin: None,
             adoption: None,
             source: "engine/crates/generate/fixtures/differential.taxonomy.yml",
         },
