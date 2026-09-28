@@ -292,6 +292,11 @@ fn a_missing_export_is_a_finding_that_names_its_pin_and_never_a_lookup_elsewhere
     std::fs::remove_file(root.at.join(EXPORT_B)).expect("B's export is removed");
     let ran = root.run(&["check", "--strict"]);
     assert_ne!(ran.code, Some(0), "the strict gate fails: {ran:?}");
+    assert!(
+        !ran.err.starts_with("0 served from cache"),
+        "the second run reads a warm cache, so the verdict that moved is one a key moved: {}",
+        ran.err
+    );
     let unresolved = unresolved(&ran);
     assert_eq!(unresolved.len(), 1, "only the edge into B: {unresolved:?}");
     let finding = &unresolved[0];
@@ -359,4 +364,33 @@ fn an_identifier_only_the_other_export_holds_is_unresolved() {
             && finding.contains("SVC-2")),
         "{unresolved:?}"
     );
+}
+
+/// The hand-written exports above copy the shape `headwater export` writes.
+/// This case holds the copy to the original: it pins what the binary itself
+/// exports, and an anchor into a document of that export binds.
+#[test]
+fn an_export_this_binary_wrote_is_one_the_resolver_reads() {
+    let root = Root::new("real");
+    let exported = root.run(&["export", "--format", "json"]);
+    assert_eq!(exported.code, Some(0), "{exported:?}");
+    assert!(exported.out.contains("\"HW-SOL-checkout\""), "{exported:?}");
+    let pinned = std::fs::read_to_string(root.at.join(".headwater/taxonomy.yml"))
+        .expect("the declaration reads");
+    let before = root.digest(EXPORT_A);
+    root.write(EXPORT_A, &exported.out);
+    root.write(
+        ".headwater/taxonomy.yml",
+        &pinned.replace(&before, &root.digest(EXPORT_A)),
+    );
+    root.write(
+        "docs/solution/checkout.md",
+        &NOTE.replace(
+            "  uses_service_in_a:\n    - SVC-1",
+            "  uses_service_in_a:\n    - HW-SOL-checkout",
+        ),
+    );
+    let ran = root.run(&["check", "--strict"]);
+    assert_eq!(unresolved(&ran), Vec::<String>::new(), "{ran:?}");
+    assert_eq!(ran.code, Some(0), "{ran:?}");
 }

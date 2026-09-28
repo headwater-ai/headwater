@@ -689,6 +689,7 @@ dependencies = [
  "headwater-check",
  "headwater-doc",
  "headwater-graph",
+ "headwater-hash",
  "headwater-resolve",
  "headwater-scaffold",
  "headwater-yaml",

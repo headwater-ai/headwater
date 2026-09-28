@@ -37,6 +37,11 @@ headwater-scaffold = { workspace = true }
 # Front matter, to read a document back after a splice wrote into it.
 headwater-doc = { workspace = true }
 
+# The digest of a pinned corpus export. An export is one file with no release
+# record, so `harvest` pins the digest of its bytes in the form every artifact
+# of this engine writes.
+headwater-hash = { workspace = true }
+
 [dev-dependencies]
 # The fixture set builds a corpus and walks it, so that the index an import is
 # held against is the index a run would build rather than one written by hand.

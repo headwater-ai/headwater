@@ -29,7 +29,8 @@
 //! tree under the corpus base. The second resolver this specification names, a
 //! committed snapshot of an external system of record, reads committed files by
 //! the same rule and lives in `headwater_import::anchors`. The third, a pinned
-//! corpus export at the federation tier, does not exist yet.
+//! corpus export at the federation tier, reads the committed export that a
+//! `harvests.<name>` pin names, and lives in `headwater_import::harvest`.
 //!
 //! # Why the snapshot resolver is not in this file
 //!
