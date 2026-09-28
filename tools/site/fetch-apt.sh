@@ -6,10 +6,10 @@
 #
 #   The metadata is signed in `.github/workflows/release.yml`, because the
 #   signing subkey is a secret there, and the release carries it as four
-#   assets beside the package. The site reaches Cloudflare by one path only,
-#   the Cloudflare build (HW-DR-0047), so this step reads those assets at
-#   build time rather than a second job deploying them. HW-DR-0094 is the
-#   decision.
+#   assets beside the package. `tools/site/deploy-site.sh` calls this script
+#   after it assembles the served directory. The main-push job of `ci.yml` and
+#   the post-publish job of `release.yml` both use that script and the
+#   `deploy-site` concurrency group (HW-DR-0047). HW-DR-0094 is the decision.
 #
 # TWO KINDS OF "NOTHING TO SERVE", AND WHY THEY END DIFFERENTLY
 #

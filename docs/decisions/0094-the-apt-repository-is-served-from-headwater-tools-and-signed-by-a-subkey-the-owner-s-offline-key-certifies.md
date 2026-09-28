@@ -3,7 +3,7 @@ id: HW-DR-0094
 status: current
 status_since: 2026-09-27
 summary: "Headwater ships one amd64 Debian package, taxonomy-free, through an APT repository on headwater.tools whose metadata a CI-held signing subkey signs"
-last_verified: 2026-09-27
+last_verified: 2026-09-28
 title: "The APT repository is served from headwater.tools and signed by a subkey the owner's offline key certifies"
 provenance:
   warrant: asserted
@@ -14,9 +14,9 @@ provenance:
 relations:
   governs:
     - to: .github/workflows/release.yml
-      verified_revision: sha256:66aeccf8d5dd9a9a73f5a2e93de8062823828f404e2f46253368cbcc296cb15f
+      verified_revision: sha256:1f39541b866aafcb049d493b3d9f4904b552d6f6d5d5bb545264a8f3dd530c47
     - to: tools/site/fetch-apt.sh
-      verified_revision: sha256:267d4973aa89566e55b076462180979fa28e4ba50d23f56d79148f7c97add8cb
+      verified_revision: sha256:c90a48b65a9eadc95661a619a9d2254e4271df87c4b2e2b8d3a54fa0a287f3d3
 ---
 
 # The APT repository is served from headwater.tools and signed by a subkey the owner's offline key certifies
@@ -27,7 +27,7 @@ relations:
 
 The owner made two rulings on the issue. On 2026-09-22 the owner chose "CLI package taxonomy-free" ([comment](https://github.com/headwater-ai/headwater/issues/764#issuecomment-5770899696)). On 2026-09-27 the owner accepted the recommendation for the host and the key. The repository is on headwater.tools, and a signing subkey is an Actions secret. The owner holds the primary key offline ([comment](https://github.com/headwater-ai/headwater/issues/764#issuecomment-5852855283)).
 
-[HW-DR-0047](0047-how-the-two-halves-of-the-site-share-one-host.md) gives the site one deploy path, the Cloudflare build. A second deploy path in GitHub Actions would race the first.
+[HW-DR-0047](0047-how-the-two-halves-of-the-site-share-one-host.md) gives the site one deploy script and concurrency group. The main-push and post-publish jobs share both.
 
 ## Decision
 
@@ -39,7 +39,7 @@ The owner made two rulings on the issue. On 2026-09-22 the owner chose "CLI pack
 
 **The key.** A signing subkey signs the metadata. The secret `APT_SIGNING_KEY` holds the ASCII-armored private subkey, with no passphrase, because the secret store is its protection. The owner holds the primary key offline. The publish step imports the subkey into a directory that it makes and removes. The key does not go into a log, the tree or an artifact.
 
-**The route to the site.** When the secret is set, the release carries `Packages`, `Release`, `InRelease` and `Release.gpg` beside the package, in the one `gh release create` call of [HW-PD-0009](../process/decisions/0009-a-release-gets-all-its-assets-in-one-create-call-and-a-person-deletes-it-to-run-again.md). `tools/site/fetch-apt.sh` runs in the Cloudflare build and copies those assets of the newest release into `apt/` of the served directory. When the newest release has no `InRelease`, the script prints one line and the site has no `apt/` directory. When a download fails for another reason, the script stops the site build, so the deployed site keeps the repository that it serves. So no job in Actions deploys to Cloudflare.
+**The route to the site.** When the secret is set, the release carries `Packages`, `Release`, `InRelease` and `Release.gpg` beside the package, in the one `gh release create` call of [HW-PD-0009](../process/decisions/0009-a-release-gets-all-its-assets-in-one-create-call-and-a-person-deletes-it-to-run-again.md). `tools/site/fetch-apt.sh` copies those assets from the newest release into `apt/` of the served directory. The main-push deploy can run before a new release exists, so `release.yml` runs the same site deploy after `publish` succeeds. When the newest release has no `InRelease`, the script prints one line and the site has no `apt/` directory. When a download fails for another reason, the script stops the site build, so the deployed site keeps the repository that it serves.
 
 **The proof.** `smoke-apt` makes a local repository of the package, signed by a throwaway key, and installs from it through apt. It also makes a repository signed by a second key and one with no signature. It fails unless apt refuses both. Publishing waits on this job.
 

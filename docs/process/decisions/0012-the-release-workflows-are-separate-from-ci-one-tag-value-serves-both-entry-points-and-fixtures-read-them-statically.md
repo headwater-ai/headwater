@@ -3,7 +3,7 @@ id: HW-PD-0012
 status: current
 status_since: 2026-09-27
 summary: "Release workflows are files apart from ci.yml and read the tag from one step output. No pull request runs them, so fixtures read their text."
-last_verified: 2026-09-27
+last_verified: 2026-09-28
 title: "The release workflows are separate from CI, one tag value serves both entry points, and fixtures read them statically"
 provenance:
   warrant: asserted
@@ -14,11 +14,11 @@ provenance:
 relations:
   governs:
     - to: .github/workflows/release.yml
-      verified_revision: sha256:66aeccf8d5dd9a9a73f5a2e93de8062823828f404e2f46253368cbcc296cb15f
+      verified_revision: sha256:1f39541b866aafcb049d493b3d9f4904b552d6f6d5d5bb545264a8f3dd530c47
     - to: .github/workflows/release-taxonomy.yml
-      verified_revision: sha256:cc62f8db1425466922c618475983155ec51572a77c846a4634a730e18a804ae4
+      verified_revision: sha256:b87333971a35ef940bd14ac5c82a5d0a457b818c3c4fd1d42c37b7b9af9c2575
     - to: .github/workflows/publish-crates.yml
-      verified_revision: sha256:f77729188a8b0bffa908fa2b0166cf36a5379a130649855992e3f4844bc7174e
+      verified_revision: sha256:c95e1413e1db7b61722bfb256c0923c9cb78b767aebc7c4437f3af78febc8d92
 ---
 
 # The release workflows are separate from CI, one tag value serves both entry points, and fixtures read them statically
@@ -39,13 +39,13 @@ Before this record, the reasons lived in comments of the three release workflows
 
 **Two entry points, one value.** A pushed tag starts each release workflow. `workflow_dispatch` also starts each one, with a required `tag` input that has no default. The first step resolves the tag from the input, or from `github.ref_name` when there is no input, and writes it as a step output. Every later step reads that output, and no later step reads `github.ref_name`. So the two entry points cannot diverge.
 
-**A dry run.** A hand run of `release.yml` with `publish: false` builds every archive, runs both smoke jobs, and creates no release. It is the only run that a change to `release.yml` gets before a tag. The run can use a branch and a tag that already exists. The job that creates the release asks for `contents: write` itself. The workflow default is `contents: read`, so a job added later must ask for the permission.
+**A dry run.** A hand run of `release.yml` with `publish: false` builds every archive, runs both smoke jobs, and creates no release. That run skips `publish` and the post-publish `deploy-site` job. It is the only run that a change to `release.yml` gets before a tag. The run can use a branch and a tag that already exists. The `publish` job asks for `contents: write` because it creates the release. The workflow default is `contents: read`; another job that writes release contents must request permission.
 
 **Text that a fixture can read.** No pull request runs these files. So fixtures that run on every pull request read their text:
 
 - Each asset name is written in full, on its matrix row and again as an operand of `gh release create`. Those operands use variable names that no other step assigns. No name is assembled from `matrix.target` or by shell concatenation. Group 7 of `tools/repo/readme-fixtures.sh` compares these names with the names in `README.md`.
 - The step of `release.yml` that writes the release notes has a fixed name. `tools/repo/readme-fixtures.sh` finds the step by that name and runs it.
-- `tools/repo/release-guide-fixtures.sh` reads the `on:` block of each workflow against [Cut a release](../../how-to/cut-a-release.md). It also holds each workflow header against the records that govern the workflow.
+- `tools/repo/release-guide-fixtures.sh` reads the `on:` block of each workflow against [Cut a release](../../how-to/cut-a-release.md). It also holds the post-publish site deploy and each workflow header against the records that govern the workflow.
 
 ## Consequences
 
