@@ -25,7 +25,7 @@ Four workflows under `.github/workflows/` take part in a release. A pushed tag s
 
 | workflow | what starts it | what it does |
 |---|---|---|
-| `.github/workflows/release.yml` | `v*` | Builds three archives and a Debian package, runs three smoke jobs on hosts that did not build them, and creates the GitHub release. With the `APT_SIGNING_KEY` secret set, it also signs the APT metadata. |
+| `.github/workflows/release.yml` | `v*` | Builds three archives and a Debian package, runs three smoke jobs on hosts that did not build them, creates the GitHub release, then deploys the site from the tag. With the `APT_SIGNING_KEY` secret set, it also signs the APT metadata. |
 | `.github/workflows/publish-crates.yml` | `v*` | Publishes every workspace crate to crates.io, leaves first, in the order that its `order` variable states. |
 | `.github/workflows/release-taxonomy.yml` | `taxonomy/headwater-standard/v*` | Publishes `taxonomy-source/headwater-standard` at the tagged commit and attaches the zip to the release. |
 | `.github/workflows/yank-crates.yml` | `workflow_dispatch` | Yanks the crate versions that a person names. No push and no tag starts it. |
@@ -56,12 +56,12 @@ Before an engine release, make sure that these conditions are true:
         git push origin v<version>
 
     The tag starts `release.yml` and `publish-crates.yml`. Each one refuses a tag that does not agree with `[workspace.package] version`. `release.yml` compares the tag with what the binary prints. `publish-crates.yml` compares the tag with what `cargo metadata` reads. [HW-PD-0010](../process/decisions/0010-each-release-workflow-compares-the-tag-with-the-version-its-artifact-states-and-refuses-an-empty-reading.md) records the guard and why it refuses an empty reading.
-8. **Wait until both workflows are complete, and confirm what they shipped.** Do the first two checks under [How to know it worked](#how-to-know-it-worked): the release has every archive, and crates.io has every crate at the new version. If a check fails, go to [When a step fails](#when-a-step-fails) and do not continue. For v0.3.0 the first publish attempt stopped 15 minutes after the tag, and the crates were complete 6 minutes after that.
+8. **Wait until both workflows are complete, and confirm what they shipped.** Do the first two checks under [How to know it worked](#how-to-know-it-worked): the release has every archive, and crates.io has every crate at the new version. If a check fails, go to [When a step fails](#when-a-step-fails) and do not continue. For v0.3.0 the first publish attempt stopped 15 minutes after the tag, and the crates were complete 6 minutes after that. The release workflow finishes after its site deployment. The site job starts only after `publish` creates the release.
 9. **Move the install text last.** Change each install line from the previous tag to the new tag. Pull request #1194 is the model, and it changed seven files. Do not change a line that records history, such as an older entry in `site/changelog/index.html`. Group 4 of `tools/repo/readme-fixtures.sh` requires that the tag which `README.md` pins resolves on the remote, or that the page says the tag is not cut. [DEVELOPING.md](../../DEVELOPING.md) states that exclusive or. That group reads the tag only. It does not read the archives or the crates, so a green CI run on this change is not the confirmation of step 8. If you merge this change before step 8, the download line in `README.md` can give a 404, and `cargo install headwater-cli` can install an older version.
 
 The asset names follow the pattern `headwater-<tag>-<target>.tar.gz`, and each archive has a `.sha256` file beside it. The matrix in `release.yml` is the list of targets. Group 7 of `tools/repo/readme-fixtures.sh` holds that list against `README.md`, so this page does not copy it.
 
-The release also carries the Debian package `headwater_<version>_amd64.deb`, where a pre-release hyphen in the version becomes `~`. When the `APT_SIGNING_KEY` secret is set, the release also carries `Packages`, `Release`, `InRelease` and `Release.gpg`. The next build of the site copies these into `https://headwater.tools/apt/`. When the secret is not set, the `publish` job prints a warning that names it. [HW-DR-0094](../decisions/0094-the-apt-repository-is-served-from-headwater-tools-and-signed-by-a-subkey-the-owner-s-offline-key-certifies.md) is the decision, and [Rotate or revoke the APT signing subkey](rotate-or-revoke-the-apt-signing-subkey.md) is the procedure for the key.
+The release also carries the Debian package `headwater_<version>_amd64.deb`, where a pre-release hyphen in the version becomes `~`. When the `APT_SIGNING_KEY` secret is set, the release also carries `Packages`, `Release`, `InRelease` and `Release.gpg`. The site deploy after release publication copies these into `https://headwater.tools/apt/`. When the secret is not set, the `publish` job prints a warning that names it. [HW-DR-0094](../decisions/0094-the-apt-repository-is-served-from-headwater-tools-and-signed-by-a-subkey-the-owner-s-offline-key-certifies.md) is the decision, and [Rotate or revoke the APT signing subkey](rotate-or-revoke-the-apt-signing-subkey.md) is the procedure for the key.
 
 ### The taxonomy release
 
@@ -88,6 +88,7 @@ The workflows do not depend on each other, and a taxonomy release needs no engin
 ## How to know it worked
 
 - `gh release view v<version> --json url,assets` lists three archives and three `.sha256` files, one pair for each row of the matrix in `release.yml`. It also lists `headwater_<version>_amd64.deb`, and, when the `APT_SIGNING_KEY` secret is set, `Packages`, `Release`, `InRelease` and `Release.gpg`.
+- When signed metadata exists, `https://headwater.tools/apt/dists/stable/main/binary-amd64/Packages` lists the new package version.
 - For each crate in the `order` variable of `publish-crates.yml`, `https://crates.io/api/v1/crates/<name>` reports the new version as `max_version`. The crates.io API refuses a request that has no `User-Agent` header, so send one.
 - `site/changelog/index.html` has an entry for the new version.
 - CI is green on the pull request that moves the install text, which includes `tools/repo/readme-fixtures.sh`.

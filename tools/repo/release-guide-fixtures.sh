@@ -173,6 +173,79 @@ tree_pairs() {
     python3 -c "$tree_pairs_py" "$1" | LC_ALL=C sort -u
 }
 
+site_deploy_py='
+import os, sys
+try:
+    import yaml
+except ImportError:
+    print("PyYAML is not installed, so the site deploy cannot be checked")
+    sys.exit(0)
+
+root = sys.argv[1]
+workflows = {}
+out = []
+for name in ("release.yml", "ci.yml"):
+    path = os.path.join(root, ".github", "workflows", name)
+    try:
+        with open(path, encoding="utf-8") as f:
+            workflows[name] = yaml.safe_load(f)
+    except Exception as e:
+        out.append("%s cannot be read: %s" % (name, str(e).splitlines()[0]))
+        continue
+    if not isinstance(workflows[name], dict):
+        out.append("%s is not a workflow mapping" % name)
+
+release = workflows.get("release.yml", {})
+jobs = release.get("jobs", {}) if isinstance(release, dict) else {}
+deploy = jobs.get("deploy-site", {}) if isinstance(jobs, dict) else {}
+if not isinstance(deploy, dict):
+    out.append("release.yml has no deploy-site job")
+else:
+    needs = deploy.get("needs", [])
+    if isinstance(needs, str):
+        needs = [needs]
+    if not isinstance(needs, list) or not {"tag", "publish"}.issubset(set(needs)):
+        out.append("release.yml deploy-site does not need tag and publish")
+    condition = str(deploy.get("if", ""))
+    success_condition = "needs.publish.result == %ssuccess%s" % (chr(39), chr(39))
+    if success_condition not in condition:
+        out.append("release.yml deploy-site can run without publish success")
+    steps = deploy.get("steps", [])
+    checkout = next((s for s in steps if isinstance(s, dict) and str(s.get("uses", "")).startswith("actions/checkout@")), {})
+    ref = (checkout.get("with") or {}).get("ref") if isinstance(checkout, dict) else None
+    if ref != "${{ needs.tag.outputs.tag }}":
+        out.append("release.yml deploy-site does not check out the release tag")
+    if not any(isinstance(s, dict) and "sh tools/site/deploy-site.sh" in str(s.get("run", "")) for s in steps):
+        out.append("release.yml deploy-site does not run tools/site/deploy-site.sh")
+
+for name, job_name in (("release.yml", "deploy-site"), ("ci.yml", "deploy")):
+    workflow = workflows.get(name, {})
+    jobs = workflow.get("jobs", {}) if isinstance(workflow, dict) else {}
+    job = jobs.get(job_name, {}) if isinstance(jobs, dict) else {}
+    concurrency = job.get("concurrency", {}) if isinstance(job, dict) else {}
+    if not isinstance(concurrency, dict) or concurrency.get("group") != "deploy-site" or concurrency.get("cancel-in-progress") is not False:
+        out.append("%s does not share the deploy-site concurrency group" % name)
+
+for line in sorted(set(out)):
+    print(line)
+'
+
+site_deploy() {
+    python3 -c "$site_deploy_py" "$1" | tr -d '\r'
+}
+
+remove_publish_dependency_py='
+import sys, yaml
+path = sys.argv[1]
+with open(path, encoding="utf-8") as f:
+    doc = yaml.safe_load(f)
+job = doc["jobs"]["deploy-site"]
+needs = job["needs"] if isinstance(job["needs"], list) else [job["needs"]]
+job["needs"] = [name for name in needs if name != "publish"]
+with open(path, "w", encoding="utf-8", newline="\n") as f:
+    yaml.safe_dump(doc, f, sort_keys=False)
+'
+
 # guide_pairs GUIDE — every `(workflow, trigger)` row of the guide's tables.
 guide_pairs() {
     awk '
@@ -327,7 +400,7 @@ for wf in workflows:
             if rid not in cited and any(fnmatch.fnmatchcase(wf_path, t) for t in targets):
                 out.append("%s governs %s and its header does not cite %s" % (rel, wf, rid))
 for line in out:
-    print(line)
+    print(line.replace(os.sep, "/"))
 '
 
 cites() {
@@ -397,6 +470,12 @@ same "the guide in this tree holds against its workflows" "" \
     "$(judge "$root" | tr '\n' '|' | sed 's/|$//')"
 
 echo
+echo "the release site deploy follows publish"
+
+same "the release deploy waits for publish, checks out its tag, and shares the CI queue" "" \
+    "$(site_deploy "$root" | tr '\n' '|' | sed 's/|$//')"
+
+echo
 echo "the judge refuses what it claims to refuse"
 
 # a. A missing guide is red, never skipped.
@@ -452,6 +531,14 @@ if [ -f "$root/$guide_rel" ]; then
         "unreadable broken.yml: "*) pass "a workflow that does not parse is red and named" ;;
         *) fail "a workflow that does not parse is red and named" "got \`$out\`" ;;
     esac
+
+    # c9. Removing the publish dependency must stop the site deploy fixture.
+    copy_tree "$scratch/c9"
+    python3 -c "$remove_publish_dependency_py" \
+        "$scratch/c9/.github/workflows/release.yml"
+    same "a release site deploy without its publish dependency is red" \
+        "release.yml deploy-site does not need tag and publish" \
+        "$(site_deploy "$scratch/c9")"
 
     # d. A tag pattern changed in one workflow.
     copy_tree "$scratch/d"

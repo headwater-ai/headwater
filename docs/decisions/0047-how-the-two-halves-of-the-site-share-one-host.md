@@ -2,8 +2,8 @@
 id: HW-DR-0047
 status: current
 status_since: 2026-09-06
-summary: "One directory holds both halves of the site, composed by `tools/site/assemble-site.sh` with the hand-built half last. The Cloudflare Workers Builds build command runs that script, which puts a build on the deploy path for the first time."
-last_verified: 2026-09-06
+summary: "One directory holds both site halves. The main-push and post-publish jobs call `tools/site/deploy-site.sh` through one concurrency group."
+last_verified: 2026-09-28
 title: "How the two halves of the site share one host"
 provenance:
   warrant: asserted
@@ -17,10 +17,14 @@ relations:
     - HW-DR-0038
     - HW-DR-0039
   governs:
-    - tools/site/assemble-site.sh
-    - tools/site/cloudflare-build.sh
-    - wrangler.jsonc
-    - site/_headers
+    - to: tools/site/assemble-site.sh
+      verified_revision: sha256:116c82c1f64f2a6ea927b2cdf5fd2cac6ebee750ea41a5817660c41d577d6c67
+    - to: tools/site/cloudflare-build.sh
+      verified_revision: sha256:70bf39dcb148c247a3b13781895d82de81274483c6f407c443797cf96539aebb
+    - to: wrangler.jsonc
+      verified_revision: sha256:fa6cb3bb434a572351fe57349fd50b8fcb1409abd4c89da5824c1e0ccf4f6c6a
+    - to: site/_headers
+      verified_revision: sha256:e72783dd2d0b4988237dd02c1167df0c4d7d80cb51001d47b92cd2ae3149e598
 ---
 
 # How the two halves of the site share one host
@@ -39,11 +43,11 @@ Two halves make up `https://headwater.tools/`. `site/` holds the hand-built page
 
 **One directory holds both halves, and `tools/site/assemble-site.sh` composes it.** The script copies the generated half into `.headwater/site-deploy` first and the hand-built half second. A path that both halves carry is served with the committed bytes, and the script names every such path on each run. [HW-DR-0048](0048-the-served-sitemap-is-derived-from-the-served-directory.md) names the one exception to that sentence. `sitemap.xml` is composed by the script from the assembled directory, because neither half holds the list of every served page.
 
-**[HW-DR-0097](0097-a-figure-on-a-hand-built-page-is-measured-when-the-site-is-published-and-the-committed-page-carries-none.md) amends the deploy mechanism of this record.** Since #1273 a CI job on each push to `main` runs `tools/site/deploy-site.sh`, which measures the figures into the assembled directory and deploys it with `wrangler`. That job is now the one deploy path. The Workers Builds integration is to be disconnected, and until then `tools/site/cloudflare-build.sh` refuses each build that would serve a blank figure. The two paragraphs below record the mechanism as it stood before that change.
+**[HW-DR-0097](0097-a-figure-on-a-hand-built-page-is-measured-when-the-site-is-published-and-the-committed-page-carries-none.md) amends the deploy mechanism of this record.** Since #1273 a CI job on each push to `main` runs `tools/site/deploy-site.sh`, which measures the figures into the assembled directory and deploys it with `wrangler`. The release workflow runs the same script after `publish` succeeds. Both jobs share the `deploy-site` concurrency group. The Workers Builds integration is to be disconnected, and until then `tools/site/cloudflare-build.sh` refuses each build that would serve a blank figure. The two paragraphs below record the mechanism as it stood before that change.
 
 **Every Cloudflare Workers Builds configuration runs that script.** A build command names one file, `tools/site/cloudflare-build.sh`, which installs the pinned site toolchain, runs the build, and runs the assembly. This project holds two such configurations, one for the default branch and one for every other branch. Each carries a build command of its own. A dashboard field carries no commit and goes stale in silence, so every version this deploy installs moves in a reviewed change instead. `wrangler.jsonc` names `.headwater/site-deploy` as the asset directory and states what writes it.
 
-**The repository keeps one deploy path.** A second path in GitHub Actions would race the first, and the last writer would decide what a reader sees.
+**The repository keeps one deploy script and concurrency group.** The main-push job and the post-publish job both call `tools/site/deploy-site.sh` and use the `deploy-site` group. An additional writer outside that group can race either job.
 
 **The landing page is the root of both halves.** The generated half writes no root page, because `docs/` holds no index document. So `site/index.html` stands at the root with no collision to resolve.
 
