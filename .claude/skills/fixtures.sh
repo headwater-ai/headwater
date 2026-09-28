@@ -575,6 +575,21 @@ $out" ;;
         0 'no declared purpose answers this task' \
         "$engine" route zzzqqqwww --root "$root"
 
+    # The status of a settled decision in its pull request (#1294). A skill
+    # reaches a session through its description, which is always loaded, and
+    # the body loads only once a session invokes the skill. So the ruling is
+    # stated in the description, and the identifier it cites is the ruling.
+    name='the authoring description states the status ruling and does not open with Draft'
+    description=$(sed -n 's/^description: //p' "$skills/headwater-authoring/SKILL.md")
+    case $description in
+        Draft*) fail "$name" "the description opens with Draft: $description" ;;
+        *) claim "$name" \
+            headwater-authoring/SKILL.md \
+            'goes into its pull request at `status: current`, not `draft` (HW-DR-0052)' \
+            0 'docs/decisions/0052-a-document-is-proposed-at-the-state-it-will-hold-and-the-merge-activates-it.md' \
+            "$engine" explain "$(printf '%s' "$description" | grep -o 'HW-DR-[0-9]*' | head -n 1)" --root "$root" ;;
+    esac
+
     printf '\n# headwater-maintainer, against the hook it invokes\n'
 
     # The agent tells its reader to drive the write hook by hand, one path at a
