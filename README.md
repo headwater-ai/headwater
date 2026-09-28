@@ -35,7 +35,7 @@ sudo apt-get install -y headwater
 headwater --version
 ```
 
-The package holds the same static binary as the Linux archive above, at `/usr/bin/headwater`, with the license and the shell completions for bash, zsh and fish. It carries no taxonomy.
+The package installs the same static binary as the Linux archive above, at `/usr/bin/headwater`. It also holds the license and the shell completions for bash, zsh and fish, and it carries no taxonomy.
 
 **The alternative, if you already have a Rust toolchain.** Every workspace crate is on crates.io, published in dependency order by `.github/workflows/publish-crates.yml`.
 
