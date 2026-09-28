@@ -25,6 +25,8 @@ Without `--format`, it writes every declared profile to its taxonomy-declared pa
 
 The command refuses an ambiguous profile selection or an uncovered emitter loss.
 
+**This command is the one writer of an export that declares `committed: false`.** Such an export is built at publish time, and the tree does not hold it. Without `--check`, the command writes it like every other declared export. With `--check`, it does not require the file and does not compare a copy that it finds. The report names the path with a line that is not an error. [`headwater generate`](headwater-generate.md) does not write the file.
+
 **With `--check`, the command reads the producer identity before it compares the bytes of any declared export.** A declared export was written by an emitter set, in the way every other projection was. So this command and [`headwater generate --check`](headwater-generate.md) make the same read of the corpus descriptor at `.headwater/corpus.json`. When the emitter set it records is not this engine's, a byte difference has two possible causes. A corpus moved, or an emitter moved, and the command cannot tell which. It reports both numbers, it says nothing about a remedy, and it exits non-zero. It says this before the drift sentence, which asserts what a run in that state does not know.
 
 The read is of the descriptor and never of an export, so it holds whether or not the selected profile writes anything. A repository that commits no descriptor records no emitter set, and a descriptor that records none is one an earlier engine wrote. Absence is not disagreement in either case, and the command then behaves as it always did.
@@ -68,7 +70,7 @@ The command reads no environment variable.
 |---|---|
 | `.headwater/taxonomy.lock`, corpus and projections | Read to build the export. |
 | `.headwater/corpus.json` | Read under `--check` for the emitter set it records, before any declared export is compared. This verb never writes it. |
-| Declared export paths | Written without `--format` and `--check`. |
+| Declared export paths | Written without `--format` and `--check`, and an export that declares `committed: false` too. Under `--check`, an export that declares `committed: false` is not read. |
 | Standard output | Receives a stream artifact with `--format`. |
 | Standard error | Receives the stream projection census. |
 
