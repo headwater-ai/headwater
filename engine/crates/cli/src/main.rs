@@ -4332,12 +4332,20 @@ fn find_document(root: &Path, target: &str) -> Result<headwater_query::Explanati
                         return Ok(explanation);
                     }
                 }
-                let corpus = Corpus::declared(
-                    root,
-                    &loaded.consumer.corpus_root,
-                    &loaded.consumer.exclusions,
-                );
-                classification_text(target, &corpus.classify(Path::new(&relative)))
+                // A path that passes through a symlink out of the root is
+                // outside the repository, whatever its spelling reads as
+                // (#1249). It is asked only here, after every lookup missed,
+                // so a document row that is itself a symlink still answers.
+                let classification = match headwater_census::walk::within(root, target) {
+                    None => headwater_census::walk::Classification::Unclassifiable,
+                    Some(_) => Corpus::declared(
+                        root,
+                        &loaded.consumer.corpus_root,
+                        &loaded.consumer.exclusions,
+                    )
+                    .classify(Path::new(&relative)),
+                };
+                classification_text(target, &classification)
             }
         },
     };
@@ -4384,11 +4392,10 @@ fn classification_text(
             format!("`{target}` is outside every corpus root this repository declares")
         }
         // #1227: this state is reached by a path that leaves the repository,
-        // absolute or by `..`, and by a segment that is not UTF-8, so the
-        // sentence names both.
-        Classification::Unclassifiable => {
-            format!("`{target}` is outside this repository, or is not a path it can read")
-        }
+        // absolute, by `..` or through a symlink (#1249), and by a segment
+        // that is not UTF-8, so the sentence names both. It is the one
+        // sentence every path route prints, so it is not written here.
+        Classification::Unclassifiable => headwater_query::outside_text(target),
     }
 }
 

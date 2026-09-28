@@ -199,6 +199,46 @@ pub fn typed(root: &Path, target: &str) -> Option<String> {
     })
 }
 
+/// [`typed`], and `None` as well where the path passes through a symlink that
+/// leads out of the repository
+/// ([#1249](https://github.com/headwater-ai/headwater/issues/1249)).
+///
+/// [`typed`] is lexical, so `link/x.md` stays in the repository whatever
+/// `link` points at. This is the reading a refusal takes: a reader who asks
+/// about `link/x.md` is asking about a file somewhere else on the host, and
+/// "outside this repository" is the true answer. A lookup of a census row
+/// reads [`typed`] and not this, so a document row that is itself a symlink
+/// still answers as the row the walk recorded.
+///
+/// It reads the filesystem: the longest leading part of the path that exists
+/// is made canonical and compared with the canonical root. A path with no part
+/// on disk below the root, and a root that cannot be made canonical, keep the
+/// lexical answer.
+pub fn within(root: &Path, target: &str) -> Option<String> {
+    let relative = typed(root, target)?;
+    match escapes(root, &relative) {
+        true => None,
+        false => Some(relative),
+    }
+}
+
+/// Whether the longest leading part of `relative` that exists under `root`
+/// resolves, through a symlink, to a place outside `root`. `relative` is what
+/// [`typed`] returned, so it holds no `..`.
+fn escapes(root: &Path, relative: &str) -> bool {
+    let Ok(canonical_root) = root.canonicalize() else {
+        return false;
+    };
+    let mut at = Path::new(relative);
+    while !at.as_os_str().is_empty() {
+        if let Ok(canonical) = root.join(at).canonicalize() {
+            return !canonical.starts_with(&canonical_root);
+        }
+        at = at.parent().unwrap_or(Path::new(""));
+    }
+    false
+}
+
 /// Where a path falls in a corpus, decided by name alone — the closed set
 /// [#319](https://github.com/headwater-ai/headwater/issues/319) asks for: a
 /// path a caller has not written yet still lands in exactly one of these.
@@ -451,5 +491,48 @@ mod tests {
         // relative form does — a caller with either shape gets one verdict.
         let absolute = corpus.base.join("walk/never-written.md");
         assert_eq!(corpus.classify(&absolute), Classification::Corpus);
+    }
+
+    /// #1249: `within` is `typed`, less every path that passes through a
+    /// symlink out of the root. A link that stays inside, a path with nothing
+    /// on disk and the root itself keep the lexical answer, and `typed` still
+    /// reads the escaping path lexically, because a lookup of a census row
+    /// reads that and not this.
+    #[cfg(unix)]
+    #[test]
+    fn within_refuses_a_path_through_a_symlink_that_leads_out_of_the_root() {
+        let base = std::env::temp_dir().join(format!(
+            "headwater-census-within-{}",
+            std::process::id()
+        ));
+        let _ = std::fs::remove_dir_all(&base);
+        let root = base.join("root");
+        let elsewhere = base.join("elsewhere");
+        std::fs::create_dir_all(root.join("docs")).expect("the root is made");
+        std::fs::create_dir_all(&elsewhere).expect("the outside is made");
+        std::fs::write(elsewhere.join("x.md"), b"outside\n").expect("it writes");
+        std::os::unix::fs::symlink(&elsewhere, root.join("escape")).expect("a link out");
+        std::os::unix::fs::symlink(root.join("docs"), root.join("inside")).expect("a link in");
+
+        let cases: [(&str, Option<&str>); 8] = [
+            ("escape/x.md", None),
+            ("./escape/x.md", None),
+            ("escape/never-written.md", None),
+            ("escape", None),
+            ("inside/x.md", Some("inside/x.md")),
+            ("docs/never-written.md", Some("docs/never-written.md")),
+            ("./", Some("")),
+            ("../elsewhere/x.md", None),
+        ];
+        let answers: Vec<(&str, Option<String>)> = cases
+            .iter()
+            .map(|(target, _)| (*target, within(&root, target)))
+            .collect();
+        let lexical = typed(&root, "escape/x.md");
+        let _ = std::fs::remove_dir_all(&base);
+        for ((target, expected), (_, answer)) in cases.iter().zip(&answers) {
+            assert_eq!(answer.as_deref(), *expected, "`within` on `{target}`");
+        }
+        assert_eq!(lexical.as_deref(), Some("escape/x.md"), "`typed` stays lexical");
     }
 }
