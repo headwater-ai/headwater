@@ -326,7 +326,7 @@ sh "$tool" stage "$resume" 11 merged >/dev/null 2>&1; status=$?
 same 'a stage outside the five is refused with exit 2' 2 "$status"
 same '  and the checkpoint is unchanged' 'stage verified-fail' "$(head -n 1 "$resume/handover/11" 2>&1)"
 sh "$tool" stage "$resume" 11 built colour=red >/dev/null 2>&1; status=$?
-same 'a field outside the seven is refused with exit 2' 2 "$status"
+same 'a field outside the eight is refused with exit 2' 2 "$status"
 sh "$tool" stage "$resume" 11 built branch >/dev/null 2>&1; status=$?
 same 'a field with no value is refused with exit 2' 2 "$status"
 sh "$tool" stage "$resume" 11 verified-fail >"$scratch/out" 2>&1
@@ -346,6 +346,68 @@ same '  and stage still writes its checkpoint, then prints DRAIN' 'DRAIN stage v
     "$(sh "$tool" stage "$resume" 11 verified-pass 2>&1) $(head -n 1 "$resume/handover/11" 2>&1)"
 rm -f "$resume/drain"
 same 'once drain is gone, next hands out the issue again' 12 "$(sh "$tool" next "$resume" 2>&1)"
+
+printf '\n# next skips what the run ruled out, and a ruling line the owner has not answered\n'
+# Verify-1 of PR #1279 ran `next` on a copy of run 20260927-0443 and it
+# printed #927, which decisions.md:2055 says stays gated. Nothing in claims/,
+# handover/ or the log records a gate, a deferral or a refusal, and the queue
+# line was marked `ruling` with no OWNER line for it.
+ruled=$(sh "$tool" start ruled 2>/dev/null)
+printf '# Queue\n\n1. #20 Gated | none | x | wide | ruling (embedding path)\n2. #21 Answered | none | x | wide | ruling\n3. #22 Deferred | none | x | narrow\n4. #23 Refused | none | x | narrow\n5. #24 Open | none | x | narrow\n' > "$ruled/queue.md"
+printf -- '- 2026-09-27 — OWNER (2026-09-27) #21: build it.\n' >> "$ruled/decisions.md"
+same 'a ruling line with no OWNER line is skipped, and one the owner answered is not' 21 "$(sh "$tool" next "$ruled" 2>&1)"
+sh "$tool" claim "$ruled" 21 issue-21 f21 >/dev/null 2>&1
+sh "$tool" rule "$ruled" 22 deferred 'owner deferred it for this run' >/dev/null 2>"$scratch/err"; status=$?
+same 'rule exits 0' 0 "$status"
+same '  and appends one RULED line to decisions.md' 1 "$(grep -c '^- [0-9-]* — RULED #22 deferred: owner deferred it for this run$' "$ruled/decisions.md")"
+sh "$tool" rule "$ruled" 23 refused 'kind 2, better done another way' >/dev/null 2>&1
+same 'next skips a deferred and a refused issue' 24 "$(sh "$tool" next "$ruled" 2>&1)"
+sh "$tool" rule "$ruled" 22 open 'the owner lifted the deferral' >/dev/null 2>&1
+same '  and the last ruling of an issue wins, so open lifts a deferral' 22 "$(sh "$tool" next "$ruled" 2>&1)"
+sh "$tool" rule "$ruled" 20 open 'answered in the session' >/dev/null 2>&1
+same '  and open also answers a ruling line' 20 "$(sh "$tool" next "$ruled" 2>&1)"
+sh "$tool" rule "$ruled" 20 gated 'waits on HW-DR-0064' >/dev/null 2>&1
+same '  and gated takes it out again' 22 "$(sh "$tool" next "$ruled" 2>&1)"
+sh "$tool" rule "$ruled" 20 maybe 'x' >/dev/null 2>&1; status=$?
+same 'a ruling outside gated, deferred, refused and open is refused with exit 2' 2 "$status"
+sh "$tool" rule "$ruled" 20 gated >/dev/null 2>&1; status=$?
+same 'a ruling with no reason is refused with exit 2' 2 "$status"
+
+printf '\n# drain while an adjudicate is in flight: the claim waits for the next session\n'
+# Verify-1 of PR #1279: the parent claims on an adjudicate report, which can
+# arrive after drain has started. `claim` then writes nothing. The parent
+# writes `stage adjudicated` with the note and the footprint, so the next
+# session claims it and dispatches hw-iterate, and the issue is not
+# adjudicated twice. `resume` says which, for every open handover.
+inflight=$(sh "$tool" start inflight 2>/dev/null)
+printf '# Queue\n\n1. #30 A | none | x\n2. #31 B | none | x\n3. #32 C | none | x\n4. #33 D | none | x\n5. #34 E | none | x\n' > "$inflight/queue.md"
+touch "$inflight/drain"
+same 'in drain the claim on an adjudicate report writes nothing' 'DRAIN 1' \
+    "$(sh "$tool" claim "$inflight" 30 issue-30 f30 g30 2>&1) $([ -e "$inflight/claims/issues/30" ]; echo $?)"
+same '  and stage adjudicated keeps the note and the footprint' 'DRAIN' \
+    "$(sh "$tool" stage "$inflight" 30 adjudicated note=/s/adjudication.md branch=issue-30 footprint=f30,g30 2>&1)"
+sh "$tool" stage "$inflight" 31 built branch=issue-31 pr=31 >/dev/null 2>&1
+sh "$tool" stage "$inflight" 32 verified-pass branch=issue-32 pr=32 >/dev/null 2>&1
+sh "$tool" stage "$inflight" 33 ruled-merge branch=issue-33 pr=33 >/dev/null 2>&1
+sh "$tool" stage "$inflight" 34 verified-fail branch=issue-34 pr=34 verify=/s/v.md >/dev/null 2>&1
+rm -f "$inflight/drain"
+same 'the next session is not handed the adjudicated issue by next' EMPTY "$(sh "$tool" next "$inflight" 2>&1)"
+sh "$tool" resume "$inflight" > "$scratch/resume" 2>&1; status=$?
+same 'resume exits 0 and prints one line per open handover' '0 5' "$status $(wc -l < "$scratch/resume" | tr -d ' ')"
+same '  an unclaimed adjudicated issue is claimed with its footprint, then iterated' \
+    '30 adjudicated claim f30 g30' "$(grep '^30 ' "$scratch/resume")"
+same '  a built or failed issue goes to a fresh hw-iterate' '31 built iterate|34 verified-fail iterate' \
+    "$(grep -E '^3[14] ' "$scratch/resume" | paste -sd'|')"
+same '  a pass is the parent'"'"'s to rule, and a merge ruling goes to the integrator' '32 verified-pass rule|33 ruled-merge integrate' \
+    "$(grep -E '^3[23] ' "$scratch/resume" | paste -sd'|')"
+sh "$tool" claim "$inflight" 30 issue-30 f30 g30 >/dev/null 2>&1
+same '  and once claimed, the adjudicated issue goes to hw-iterate' '30 adjudicated iterate' \
+    "$(sh "$tool" resume "$inflight" 2>&1 | grep '^30 ')"
+printf '{"iter":1,"issue":33,"pr":33,"merge":"abc1234","verdict":"MERGE","proved":"p","opened":[],"closed":[33]}\n' >> "$inflight/log.jsonl"
+same '  and a handover the log already records is not resumed' 0 "$(sh "$tool" resume "$inflight" 2>&1 | grep -c '^33 ')"
+touch "$inflight/drain"
+same '  and in drain resume prints DRAIN and nothing else' DRAIN "$(sh "$tool" resume "$inflight" 2>&1)"
+rm -f "$inflight/drain"
 
 printf '\n%s passed, %s failed\n' "$passed" "$failed"
 [ "$failed" -eq 0 ]
