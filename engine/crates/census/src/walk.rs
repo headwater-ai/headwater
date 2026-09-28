@@ -565,6 +565,19 @@ mod tests {
             .iter()
             .map(|(target, _)| within(&via, "linked", target))
             .collect();
+        // #1334: each case again as an absolute path typed through the link,
+        // against the root reached the other way, as a shell in a macOS
+        // temporary directory types it. Most of these name no file, so the
+        // root has to be found among the leading parts of the path that exist.
+        let absolute: Vec<(String, Option<String>)> = cases
+            .iter()
+            .map(|(target, _)| {
+                let typed_through = via.join(target).display().to_string();
+                let answer = within(&root, "linked", &typed_through);
+                (typed_through, answer)
+            })
+            .collect();
+        let missing = typed(&root, &via.join("docs/never-written.md").display().to_string());
         let lexical = typed(&root, "escape/x.md");
         let _ = std::fs::remove_dir_all(&base);
         for ((target, expected), (_, answer)) in cases.iter().zip(&answers) {
@@ -577,6 +590,18 @@ mod tests {
                 "`within` on `{target}` under a root reached by a link"
             );
         }
+        for ((_, expected), (target, answer)) in cases.iter().zip(&absolute) {
+            assert_eq!(
+                answer.as_deref(),
+                *expected,
+                "`within` on the absolute `{target}` typed through a link to the root"
+            );
+        }
+        assert_eq!(
+            missing.as_deref(),
+            Some("docs/never-written.md"),
+            "`typed` finds the root under an absolute path with no file"
+        );
         assert_eq!(
             lexical.as_deref(),
             Some("escape/x.md"),

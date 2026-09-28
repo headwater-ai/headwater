@@ -576,3 +576,43 @@ fn an_absolute_target_finds_its_document_under_a_root_reached_through_a_symlink(
     );
     assert!(shown.stdout == document(), "the bytes on disk");
 }
+
+/// An absolute path with no file behind it, typed through a symlink to the
+/// root, from a shell whose working directory is that symlink, under
+/// `--root .` ([#1334](https://github.com/headwater-ai/headwater/issues/1334)).
+/// The process reads its working directory as the physical path, so the
+/// target as typed shares no prefix with the root, and no file exists to make
+/// canonical. Every macOS temporary directory is reached this way, through
+/// `/var -> /private/var`, so this test makes its own link and does not
+/// depend on the host's `TMPDIR`.
+#[cfg(unix)]
+#[test]
+fn an_absolute_path_with_no_file_typed_through_a_linked_root_is_a_path_of_this_corpus() {
+    let root = Root::new("linked-missing");
+    let link = root.at.with_file_name(format!(
+        "{}-link",
+        root.at
+            .file_name()
+            .expect("the root has a name")
+            .to_string_lossy()
+    ));
+    let _ = std::fs::remove_file(&link);
+    std::os::unix::fs::symlink(&root.at, &link).expect("the link is made");
+    let target = link
+        .join("docs/decisions/0002-not-written.md")
+        .display()
+        .to_string();
+    let refused = Command::new(env!("CARGO_BIN_EXE_headwater"))
+        .args(["explain", &target, "--root", "."])
+        .current_dir(&link)
+        .output()
+        .expect("the binary runs");
+    let _ = std::fs::remove_file(&link);
+    let stderr = String::from_utf8_lossy(&refused.stderr);
+    assert_eq!(refused.status.code(), Some(1), "{stderr}");
+    assert!(refused.stdout.is_empty(), "nothing on stdout: {stderr}");
+    assert!(
+        stderr.contains("is a path of this corpus, with no document written there yet"),
+        "`explain {target}` through a linked root reads as a corpus path: {stderr}"
+    );
+}
