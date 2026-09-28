@@ -442,7 +442,7 @@ $names"
 
     claim 'the committed lock is what the sources resolve to' \
         headwater-taxonomy/SKILL.md \
-        '`headwater check` reads the lock and never the sources.' \
+        '`headwater check` takes its declarations from the lock and never from the sources.' \
         0 'is what the sources resolve to' \
         "$engine" taxonomy resolve --check --root "$root"
 

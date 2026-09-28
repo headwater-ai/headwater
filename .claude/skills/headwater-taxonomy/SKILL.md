@@ -29,7 +29,7 @@ Each bundle carries a `doctrine.md` beside it that states why every declaration 
     headwater taxonomy validate     # reads the sources, reports every rule of spec 2's list
     headwater taxonomy resolve      # writes .headwater/taxonomy.lock
 
-**`headwater check` reads the lock and never the sources.** An edit that is not resolved changes nothing that any check sees, and `taxonomy resolve --check` is a blocking CI step that reports the stale lock. Resolve after every edit, and commit the lock in the same change as the source that produced it.
+**`headwater check` takes its declarations from the lock and never from the sources.** An edit that is not resolved changes no declaration that any check sees, and `taxonomy resolve --check` is a blocking CI step that reports the stale lock. Resolve after every edit, and commit the lock in the same change as the source that produced it.
 
 `taxonomy validate` writes nothing. It reports what each rule decided and, for a rule that decides only part of its question, what it did not decide. Read the `not decided` lines: they are the honest edge of the validator, not a passing grade.
 
