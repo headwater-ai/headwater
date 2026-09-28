@@ -6231,8 +6231,9 @@ struct Asked {
     read_set: Option<PathBuf>,
     register_out: Option<PathBuf>,
     format: Option<String>,
-    /// The manifest of the change this run is scoped to, where a caller named
-    /// one. See `headwater_check::change`.
+    /// The manifest of a change, where a caller named one. The rules that read
+    /// a transition use it, and it does not narrow the documents the run
+    /// checks. See `headwater_check::change`.
     change: Option<PathBuf>,
 }
 

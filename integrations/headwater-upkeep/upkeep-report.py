@@ -10,7 +10,7 @@
 #               and each path still on the tree that a document the change
 #               deleted governed at the base, whether or not the change
 #               names that path
-#   Stale      what the engine reports as suspect: `relation.target.suspect`
+#   Stale       what the engine reports as suspect: `relation.target.suspect`
 #               findings and the `evidence.suspect` edges of `route`
 #   Owed        the other findings of `headwater check --change`, by rule and
 #               document
