@@ -283,6 +283,69 @@ printf 'not json' > "$HEADWATER_USAGE_DIR/cccc3333-broken.json"
 sh "$tool" log "$loose" "$merged" >/dev/null 2>"$scratch/err"; status=$?
 same 'a broken snapshot never fails the ledger write, and prints nothing' "0 0 1" \
     "$status $(wc -c < "$scratch/err" | tr -d ' ') $(wc -l < "$loose/log.jsonl" | tr -d ' ')"
+rm -f "$HEADWATER_USAGE_DIR/cccc3333-broken.json"
+
+printf '\n# session: one line per parent session, and the sample takes the live one\n'
+# A parent restarted by `tools/run/supervise.sh` is a new session under the
+# same run. `start` wrote the first line, and each resumed session appends its
+# own, so the review hook exempts every one of them and `usage` samples the one
+# that is live. Before this, `sample` matched the whole file as one prefix and
+# fell back to the freshest session, which is a different session's figures.
+multi=$(CLAUDE_JOB_DIR=/jobs/aaaa1111 sh "$tool" start usage-resumed 2>/dev/null)
+CLAUDE_JOB_DIR=/jobs/bbbb2222 sh "$tool" session "$multi" >/dev/null 2>&1
+CLAUDE_JOB_DIR=/jobs/bbbb2222 sh "$tool" session "$multi" >/dev/null 2>&1
+same 'session appends the resumed session once, after the first' 'aaaa1111 bbbb2222' "$(paste -sd' ' "$multi/parent.session")"
+env -u CLAUDE_JOB_DIR sh "$tool" session "$multi" >/dev/null 2>&1; status=$?
+same '  and outside the harness it is refused with exit 2' 2 "$status"
+plant aaaa1111-parent 600 8 R2 52
+plant bbbb2222-other 500 20 R2 60
+: > "$multi/usage.jsonl"
+sh "$tool" log "$multi" "$merged" >/dev/null
+same '  and a sample under two sessions takes the last line, the live session, over a fresher first' 'parent bbbb2222' \
+    "$(jq -r '"\(.from) \(.session)"' "$multi/usage.jsonl")"
+
+printf '\n# resume: next skips what is held, and drain reaches every verb a parent already calls\n'
+# The decisive case for #1275. A resumed parent learns what to dispatch from
+# `next`. Before `next` existed it read queue.md by hand, where nothing said
+# that #10 was claimed or that #11 already had a built branch, and `claim` on
+# a held issue prints `(already held)` and exits 0, so nothing refused the
+# re-dispatch either.
+resume=$(sh "$tool" start resume 2>/dev/null)
+printf '# Queue, run resume\n\nOrder: a fixture.\n\n1. #10 First | none | x\n2. #11 Second | none | x\n3. #12 Third | none | x\n' > "$resume/queue.md"
+sh "$tool" claim "$resume" 10 issue-10 a-file >/dev/null 2>&1
+sh "$tool" stage "$resume" 11 built branch=issue-11 pr=911 rounds=0 build=/s/build.md >/dev/null 2>"$scratch/err"; status=$?
+same 'stage writes a checkpoint and exits 0' 0 "$status"
+same 'next skips a claimed issue and an issue with a handover' 12 "$(sh "$tool" next "$resume" 2>&1)"
+same '  and the handover holds the stage and each field, one per line' \
+    'stage built|branch issue-11|pr 911|rounds 0|build /s/build.md' \
+    "$(paste -sd'|' "$resume/handover/11" 2>&1)"
+sh "$tool" stage "$resume" 11 verified-fail branch=issue-11 pr=911 rounds=1 verify=/s/verify.md attacks=a1,a2 >/dev/null 2>&1
+same '  and the last write wins, since one actor owns the stage of an issue' 'stage verified-fail' "$(head -n 1 "$resume/handover/11" 2>&1)"
+same '  and no temp file is left beside it' 1 "$(ls -A "$resume/handover" 2>/dev/null | wc -l | tr -d ' ')"
+sh "$tool" stage "$resume" 11 merged >/dev/null 2>&1; status=$?
+same 'a stage outside the five is refused with exit 2' 2 "$status"
+same '  and the checkpoint is unchanged' 'stage verified-fail' "$(head -n 1 "$resume/handover/11" 2>&1)"
+sh "$tool" stage "$resume" 11 built colour=red >/dev/null 2>&1; status=$?
+same 'a field outside the seven is refused with exit 2' 2 "$status"
+sh "$tool" stage "$resume" 11 built branch >/dev/null 2>&1; status=$?
+same 'a field with no value is refused with exit 2' 2 "$status"
+sh "$tool" stage "$resume" 11 verified-fail >"$scratch/out" 2>&1
+sh "$tool" claim "$resume" 13 issue-13 b-file >>"$scratch/out" 2>&1
+same 'without a drain file, stage and claim print no DRAIN' 0 "$(grep -c '^DRAIN$' "$scratch/out")"
+sh "$tool" release "$resume" 13 >/dev/null 2>&1
+printf '{"iter":1,"issue":12,"pr":3,"merge":"m","verdict":"refused","proved":"p","opened":[],"closed":[]}\n' >> "$resume/log.jsonl"
+same 'next skips an issue the log records, and prints EMPTY when nothing is left' EMPTY "$(sh "$tool" next "$resume" 2>&1)"
+: > "$resume/log.jsonl"
+
+touch "$resume/drain"
+same 'in drain, next prints DRAIN instead of an issue' DRAIN "$(sh "$tool" next "$resume" 2>&1)"
+same '  and claim prints DRAIN and nothing else' DRAIN "$(sh "$tool" claim "$resume" 12 issue-12 c-file 2>&1)"
+same '  and claims nothing, so a later session can still dispatch the issue' 1 \
+    "$([ -e "$resume/claims/issues/12" ] || [ -e "$resume/claims/artifacts/c-file" ]; echo $?)"
+same '  and stage still writes its checkpoint, then prints DRAIN' 'DRAIN stage verified-pass' \
+    "$(sh "$tool" stage "$resume" 11 verified-pass 2>&1) $(head -n 1 "$resume/handover/11" 2>&1)"
+rm -f "$resume/drain"
+same 'once drain is gone, next hands out the issue again' 12 "$(sh "$tool" next "$resume" 2>&1)"
 
 printf '\n%s passed, %s failed\n' "$passed" "$failed"
 [ "$failed" -eq 0 ]
