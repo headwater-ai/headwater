@@ -852,7 +852,10 @@ fn the_two_absent_arms_measure_the_documents() {
         at.join("runs/probe-runs/documentation-absent.md"),
         CAMPAIGN_ABSENT_CLEAN
             .replace("tier: campaign", "tier: documentation")
-            .replace("RUN-FIX-campaign-absent-clean", "RUN-FIX-documentation-absent"),
+            .replace(
+                "RUN-FIX-campaign-absent-clean",
+                "RUN-FIX-documentation-absent",
+            ),
     )
     .expect("the documentation absent transcript lands");
 

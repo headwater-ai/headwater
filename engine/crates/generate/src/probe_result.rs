@@ -71,10 +71,10 @@ use headwater_census::census::{Census, Outcome};
 use headwater_check::lifecycle_state::{Standing, StateFacet, Stood};
 use headwater_graph::links::Binding;
 use headwater_probe::grade::{Interval, Results};
-use headwater_probe::plan::Selected;
-use headwater_probe::Tier;
 use headwater_probe::intake::{Record, Tree};
+use headwater_probe::plan::Selected;
 use headwater_probe::Arm;
+use headwater_probe::Tier;
 use headwater_query::Surface;
 
 use crate::RefusedTranscript;
@@ -801,7 +801,11 @@ fn body(graded: &Graded, comparisons: &[&Comparison]) -> String {
     out.push_str(&record.render(headwater_check::paint::ColorMode::Plain));
     if let Some(identity) = &record.identity {
         let _ = writeln!(out);
-        out.push_str(&provenance(&identity.selection, &graded.composed, graded.part));
+        out.push_str(&provenance(
+            &identity.selection,
+            &graded.composed,
+            graded.part,
+        ));
         let _ = writeln!(out);
         out.push_str(READ_SET);
     }

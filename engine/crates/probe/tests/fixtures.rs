@@ -1984,7 +1984,11 @@ fn an_excluded_probe_leaves_the_selection_and_its_digest() {
         .iter()
         .all(|selected| selected.id != "PROBE-FIX-cited"));
     assert_ne!(narrowed.selection, whole.selection);
-    assert_eq!(narrowed.sessions, 4 * 2, "four probes, two arms, one repetition");
+    assert_eq!(
+        narrowed.sessions,
+        4 * 2,
+        "four probes, two arms, one repetition"
+    );
 }
 
 /// An exclusion that removes nothing is refused, because a misspelled

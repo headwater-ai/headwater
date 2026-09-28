@@ -401,10 +401,10 @@ impl Interval {
     /// 5% level where it excludes zero.
     pub fn minus(&self, other: &Interval) -> Interval {
         let point = self.point - other.point;
-        let low = point
-            - ((self.point - self.low).powi(2) + (other.high - other.point).powi(2)).sqrt();
-        let high = point
-            + ((self.high - self.point).powi(2) + (other.point - other.low).powi(2)).sqrt();
+        let low =
+            point - ((self.point - self.low).powi(2) + (other.high - other.point).powi(2)).sqrt();
+        let high =
+            point + ((self.high - self.point).powi(2) + (other.point - other.low).powi(2)).sqrt();
         Interval {
             point,
             low: low.max(-1.0),
@@ -428,7 +428,10 @@ impl Interval {
 /// missing probe is reported rather than quietly dropped.
 pub fn narrowed(selection: &[Selected], record: &Record) -> Option<Vec<Selected>> {
     let recorded = &record.identity.as_ref()?.selection;
-    let whole: Vec<&str> = selection.iter().map(|selected| selected.id.as_str()).collect();
+    let whole: Vec<&str> = selection
+        .iter()
+        .map(|selected| selected.id.as_str())
+        .collect();
     if &crate::plan::selection_digest(&whole) == recorded {
         return None;
     }

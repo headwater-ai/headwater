@@ -501,10 +501,7 @@ impl std::fmt::Display for Refusal {
                  may only lower the count, because a higher one spends more than a person agreed \
                  to"
             ),
-            Refusal::RepetitionsZero => write!(
-                f,
-                "`--repetitions 0` plans a run of no session"
-            ),
+            Refusal::RepetitionsZero => write!(f, "`--repetitions 0` plans a run of no session"),
             Refusal::OverBudget {
                 sessions,
                 projected,
