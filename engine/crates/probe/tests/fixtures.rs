@@ -989,6 +989,89 @@ fn a_probe_whose_document_the_instrument_removes_is_refused_at_every_tier() {
     }
 }
 
+/// A plan refused before its sessions were counted prints no cost section.
+///
+/// Four refusals return after the envelope's budget is read and before the
+/// sessions are counted. Each one used to print `0 sessions` and `$0.00`
+/// against the ceiling, which reads as a run that costs nothing rather than as
+/// a run that was never priced. A plan over budget is priced, and its numbers
+/// are its reason, so it keeps the section.
+#[test]
+fn a_refused_plan_prints_no_cost_it_never_computed() {
+    let source =
+        std::fs::read_to_string(fixtures_dir().join("probe.yml")).expect("the budget declaration");
+    let instrumented = Budgets::read(&format!("instrument: [corpus/probes]\n{source}"))
+        .expect("the declaration reads");
+    let refused = [
+        (
+            "ablated",
+            plan_at(Tier::Documentation, &Narrowing::default()),
+        ),
+        (
+            "instrument",
+            plan_against(Tier::Regression, &instrumented),
+        ),
+        (
+            "campaign narrowed",
+            plan_at(
+                Tier::Campaign,
+                &Narrowing {
+                    arm: Some(Arm::Present),
+                    ..Narrowing::default()
+                },
+            ),
+        ),
+        (
+            "arm not declared",
+            plan_at(
+                Tier::Regression,
+                &Narrowing {
+                    arm: Some(Arm::Absent),
+                    ..Narrowing::default()
+                },
+            ),
+        ),
+    ];
+    let mut priced = Vec::new();
+    for (case, plan) in &refused {
+        let refusal = plan.refusal.as_ref().expect("the plan refuses");
+        let expected = match *case {
+            "ablated" => matches!(refusal, Refusal::AblatedExamined { .. }),
+            "instrument" => matches!(refusal, Refusal::InstrumentExamined { .. }),
+            "campaign narrowed" => matches!(refusal, Refusal::CampaignNarrowed),
+            _ => matches!(refusal, Refusal::ArmNotDeclared { .. }),
+        };
+        assert!(expected, "{case}: refused for another reason: {refusal:?}");
+        let report = plan.render(ColorMode::Plain);
+        assert!(report.contains("## This run does not start"), "{case}:\n{report}");
+        assert!(report.contains(&refusal.to_string()), "{case}:\n{report}");
+        if report.contains("## The cost") || report.contains(" sessions, at a declared ") {
+            priced.push(*case);
+        }
+    }
+    assert!(
+        priced.is_empty(),
+        "a refused plan prints a cost it never computed: {priced:?}"
+    );
+
+    // The campaign reaches the ceiling, so its numbers are the reason it
+    // refuses and the cost section stays.
+    let over = plan_at(Tier::Campaign, &Narrowing::default());
+    assert!(
+        matches!(over.refusal, Some(Refusal::OverBudget { .. })),
+        "{:?}",
+        over.refusal
+    );
+    assert!(over.sessions > 0);
+    let report = over.render(ColorMode::Plain);
+    assert!(report.contains("## The cost"), "{report}");
+    assert!(
+        report.contains(&format!("= {} sessions, at a declared ", over.sessions)),
+        "{report}"
+    );
+    assert!(report.contains("## This run does not start"), "{report}");
+}
+
 /// An arm the tier does not declare refuses, rather than silently planning the
 /// arm the tier does declare.
 ///
