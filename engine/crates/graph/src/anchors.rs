@@ -84,14 +84,15 @@ pub enum Binding {
         /// pinned corpus export answers with the digest of the export's bytes,
         /// so every edge into it moves when the harvest moves.
         /// [`SourceTree`] answers with [`tree_revision`]: a digest of the
-        /// bytes of every entry the anchor matched, keyed by path. That is
+        /// bytes of every regular file the anchor matched, keyed by path. That is
         /// not a commit, and it is not meant to be one. A working tree is at
         /// no commit this engine can name without a version-control call,
         /// which the check layer rules out, but its bytes are what a
         /// governing document was written against, and a digest of them is a
         /// value the tree itself states (#952). A literal that names a
-        /// directory answers `None`: see [`tree_revision`]. Every other
-        /// resolver answers `None`.
+        /// directory answers `None`, and so does a match that holds no
+        /// regular file, such as one named pipe (#1269): see
+        /// [`tree_revision`]. Every other resolver answers `None`.
         ///
         /// Two components read it. `headwater_check::suspect` compares it
         /// against the `verified_revision` recorded on the edge, which is the
@@ -114,7 +115,7 @@ pub enum Binding {
 /// before.
 ///
 /// [`SourceTree`] answers with [`tree_revision`], which reads and digests the
-/// bytes of every entry an anchor matched. Two readers want that value: the
+/// bytes of every regular file an anchor matched. Two readers want that value: the
 /// suspect rule and the cache key of `headwater check`, which read it for
 /// every edge, and `headwater route`, which reads it only for the governing
 /// edges of the anchors its task names. When every binding digested its bytes
@@ -125,7 +126,17 @@ pub enum Binding {
 ///
 /// Its `Debug` and its equality are those of the `Option<String>` it stands
 /// for, so [`crate::edges::Target::resolution`] writes the same cache key it
-/// wrote when the digest was computed at load.
+/// wrote when the digest was computed at load. The one exception is a tree
+/// revision with no value whose entries hold no directory, such as a named
+/// pipe, an unreadable file or an entry that went away. The suspect rule
+/// reports a directory literal and passes every such edge, so the key has to
+/// state which of the two it is. Its `Debug` is therefore `NoDigest` rather
+/// than `None`, and a verdict cached over a directory does not answer for
+/// something else that took its name (#1269). A directory keeps the key
+/// `None`. Before #1269 a check that met a named pipe never ended, so no key
+/// over a pipe moves. A key over a socket, a device, an unreadable file or a
+/// gone entry does move, and that is intended: the rule now decides
+/// differently about such an edge.
 #[derive(Clone)]
 pub struct Revision(std::sync::Arc<RevisionCell>);
 
@@ -161,6 +172,27 @@ impl Revision {
         self.value().as_deref()
     }
 
+    /// Whether this is a tree revision over entries of which at least one is
+    /// a directory, following a symlink. A directory is one shape
+    /// [`tree_revision`] gives no value. Others are a set of entries none of
+    /// which is a regular file, such as one named pipe, and an entry that is
+    /// gone or cannot be read (#1269). A rule that tells an author to write
+    /// `/**` after a path asks this first, because that remedy is wrong for
+    /// all of those. `false` for a revision the resolver already held.
+    pub fn names_a_directory(&self) -> bool {
+        match &self.0.tree {
+            Some((base, matched)) => matched.iter().any(|path| base.join(path).is_dir()),
+            None => false,
+        }
+    }
+
+    /// Whether this is a tree revision with no value and no directory among
+    /// its entries: the shape whose `Debug` is `NoDigest`. The key states
+    /// exactly the fact [`Self::names_a_directory`] gives a rule.
+    fn no_digest(&self) -> bool {
+        self.0.tree.is_some() && self.value().is_none() && !self.names_a_directory()
+    }
+
     fn value(&self) -> &Option<String> {
         self.0.value.get_or_init(|| match &self.0.tree {
             Some((base, matched)) => tree_revision(base, matched),
@@ -177,13 +209,16 @@ impl From<Option<String>> for Revision {
 
 impl std::fmt::Debug for Revision {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        std::fmt::Debug::fmt(self.value(), f)
+        match self.no_digest() {
+            true => f.write_str("NoDigest"),
+            false => std::fmt::Debug::fmt(self.value(), f),
+        }
     }
 }
 
 impl PartialEq for Revision {
     fn eq(&self, other: &Self) -> bool {
-        self.value() == other.value()
+        self.value() == other.value() && self.no_digest() == other.no_digest()
     }
 }
 
@@ -457,10 +492,19 @@ impl Resolver for SourceTree {
 /// governed pattern, or removed from it, changes the manifest, and so does one
 /// changed byte of any entry.
 ///
-/// `None` when any entry cannot be read as a file. That is a directory named
-/// by a literal, the one shape this corpus declares where it happens
-/// (`.headwater/packages`), and an entry that went away between the walk and
-/// the read. A directory gets no digest on purpose: which entries under it a
+/// Only a regular file reaches the manifest. A named pipe, a socket and a
+/// device are left out and never opened, because opening a named pipe that
+/// has no writer blocks the process forever, and a `check` that met one under
+/// a `governs` edge never ended (#1269). The walk reports such an entry as a
+/// file, so this reader is the one place that can refuse it. A symlink is
+/// followed, so a link to a pipe is left out too. When every entry was left
+/// out this way, the value is `None` rather than the digest of an empty
+/// manifest, which would be a revision that can never change.
+///
+/// `None` also when any entry is a directory, is gone, or is a regular file
+/// that cannot be read. A directory named by a literal is the one shape this
+/// corpus declares where it happens (`.headwater/packages`), and an entry that
+/// is gone went away between the walk and the read. A directory gets no digest on purpose: which entries under it a
 /// document governs is the pattern language's to state, and a literal with no
 /// wildcard names the directory and nothing under it
 /// ([HW-OBL-0104](../../../../docs/obligations/0104-a-governs-edge-reaches-the-path-it-names-and-nothing.md)).
@@ -473,16 +517,25 @@ pub fn tree_revision(base: &Path, matched: &[String]) -> Option<String> {
     sorted.sort();
     sorted.dedup();
     let mut manifest = String::new();
+    let mut skipped = false;
     for path in sorted {
         let at = base.join(path);
-        if at.is_dir() {
+        let kind = std::fs::metadata(&at).ok()?;
+        if kind.is_dir() {
             return None;
+        }
+        if !kind.is_file() {
+            skipped = true;
+            continue;
         }
         let bytes = std::fs::read(&at).ok()?;
         manifest.push_str(path);
         manifest.push('\0');
         manifest.push_str(&headwater_hash::digest(&bytes));
         manifest.push('\n');
+    }
+    if skipped && manifest.is_empty() {
+        return None;
     }
     Some(headwater_hash::digest(manifest.as_bytes()))
 }
@@ -1328,5 +1381,122 @@ mod tests {
 
         assert!(why.contains("HW-SPEC-x"), "{why}");
         assert!(why.contains("does not start `HW-VER-`"), "{why}");
+    }
+
+    /// A named pipe reaches no line of the manifest, so it is never opened
+    /// (#1269). Opening one that has no writer blocks forever, so a reader
+    /// that opens it hangs this test rather than failing it. A set of entries
+    /// that holds only a pipe has no revision.
+    #[cfg(unix)]
+    #[test]
+    fn a_named_pipe_is_left_out_of_the_tree_revision() {
+        let dir = scratch("named-pipe");
+        std::fs::write(dir.join("a.sh"), "echo a\n").expect("a fixture file");
+        let fifo = std::process::Command::new("mkfifo")
+            .arg(dir.join("pipe"))
+            .status()
+            .expect("mkfifo runs");
+        assert!(fifo.success(), "the named pipe is made");
+
+        let file_only = tree_revision(&dir, &["a.sh".to_owned()]);
+        assert!(file_only.is_some(), "a regular file has a revision");
+        assert_eq!(
+            tree_revision(&dir, &["a.sh".to_owned(), "pipe".to_owned()]),
+            file_only,
+            "the pipe changes nothing"
+        );
+        assert_eq!(tree_revision(&dir, &["pipe".to_owned()]), None);
+        assert!(
+            tree_revision(&dir, &[]).is_some(),
+            "an empty match keeps its revision, as before"
+        );
+        // An entry whose metadata cannot be read leaves the set with no
+        // revision, as before: it is not skipped like a pipe.
+        assert_eq!(
+            tree_revision(&dir, &["a.sh".to_owned(), "gone".to_owned()]),
+            None,
+            "a gone entry is not skipped"
+        );
+
+        // A symlink is followed: a link to a regular file is digested, and a
+        // link to the pipe is left out like the pipe.
+        std::os::unix::fs::symlink(dir.join("a.sh"), dir.join("to-a.sh"))
+            .expect("the link to the file is made");
+        std::os::unix::fs::symlink(dir.join("pipe"), dir.join("to-pipe"))
+            .expect("the link to the pipe is made");
+        assert!(
+            tree_revision(&dir, &["to-a.sh".to_owned()]).is_some(),
+            "a link to a regular file has a revision"
+        );
+        assert_eq!(tree_revision(&dir, &["to-pipe".to_owned()]), None);
+
+        // A pipe and a directory both have no value, and their keys differ,
+        // so a verdict cached over one does not answer for the other.
+        std::fs::create_dir(dir.join("sub")).expect("a directory");
+        let pipe = format!("{:?}", Revision::of_tree(&dir, &["pipe".to_owned()]));
+        let sub = format!("{:?}", Revision::of_tree(&dir, &["sub".to_owned()]));
+        assert_eq!(sub, "None", "a directory's key is unchanged");
+        assert_eq!(pipe, "NoDigest");
+        assert_ne!(
+            Revision::of_tree(&dir, &["pipe".to_owned()]),
+            Revision::of_tree(&dir, &["sub".to_owned()])
+        );
+        assert_eq!(
+            format!("{:?}", Revision::of_tree(&dir, &["gone".to_owned()])),
+            "NoDigest",
+            "an entry that went away is not a directory, and its key says so"
+        );
+        assert_eq!(
+            format!("{:?}", Revision::of_tree(&dir, &["a.sh".to_owned()])),
+            format!("{:?}", tree_revision(&dir, &["a.sh".to_owned()])),
+            "a regular file's key is its digest, as before"
+        );
+
+        // A socket and a device are left out like the pipe, not only a pipe.
+        // A reader that opened `/dev/zero` would read without end. A socket
+        // path must fit in 108 bytes, and a temporary directory on a CI
+        // runner does not, so the socket is bound under a short directory in
+        // `/tmp` and reached through a link, which the reader follows.
+        let short = Scratch(std::path::PathBuf::from(format!(
+            "/tmp/hw-sock-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .expect("a clock later than the epoch")
+                .subsec_nanos()
+        )));
+        std::fs::create_dir_all(&*short).expect("a short directory");
+        let _socket =
+            std::os::unix::net::UnixListener::bind(short.join("s")).expect("the socket is bound");
+        std::os::unix::fs::symlink(short.join("s"), dir.join("sock"))
+            .expect("the link to the socket is made");
+        assert_eq!(
+            tree_revision(&dir, &["a.sh".to_owned(), "sock".to_owned()]),
+            file_only,
+            "the socket changes nothing"
+        );
+        assert_eq!(tree_revision(&dir, &["sock".to_owned()]), None);
+        assert_eq!(
+            format!("{:?}", Revision::of_tree(&dir, &["sock".to_owned()])),
+            "NoDigest"
+        );
+        std::os::unix::fs::symlink("/dev/zero", dir.join("to-zero"))
+            .expect("the link to the device is made");
+        assert_eq!(
+            tree_revision(&dir, &["a.sh".to_owned(), "to-zero".to_owned()]),
+            file_only,
+            "the device changes nothing"
+        );
+        assert_eq!(tree_revision(&dir, &["to-zero".to_owned()]), None);
+
+        // A link to a directory is a directory: it keeps the key `None`, so
+        // the rule still reports it with the `/**` remedy.
+        std::os::unix::fs::symlink(dir.join("sub"), dir.join("to-sub"))
+            .expect("the link to the directory is made");
+        assert!(Revision::of_tree(&dir, &["to-sub".to_owned()]).names_a_directory());
+        assert_eq!(
+            format!("{:?}", Revision::of_tree(&dir, &["to-sub".to_owned()])),
+            "None"
+        );
     }
 }
