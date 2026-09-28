@@ -147,14 +147,15 @@ fn a_revision_that_moved_under_a_cached_run_is_not_served_from_the_entry_before_
 
     // And exactly the instances about that one edge were evaluated again.
     //
-    // There are two of them, and the number is derived rather than observed.
+    // There are three of them, and the number is derived rather than observed.
     // `EdgeUnit::Entry` is what makes an instance out of one entry of one
-    // `relations:` block whatever its target became, and two rules declare it:
-    // `relation.target.unresolved` and this one. Every other edge rule is
-    // `EdgeUnit::Pair`, and a pair needs a target document, which an anchor is
-    // not. Both keys name `Target::resolution`, so both divide when the
-    // revision moves, and the second of the two is #161's guarantee still
-    // holding over the field this change added.
+    // `relations:` block whatever its target became, and three rules declare
+    // it: `relation.target.unresolved`, `relation.target.is_source` (#1232) and
+    // this one. Every other edge rule is `EdgeUnit::Pair`, and a pair needs a
+    // target document, which an anchor is not. All three keys name
+    // `Target::resolution`, so all three divide when the revision moves, and
+    // this rule's miss is #161's guarantee still holding over the field this
+    // change added.
     //
     // The other shape this defect admits is to refuse the key of an anchor
     // edge, which satisfies every assertion above and leaves every such
@@ -162,7 +163,7 @@ fn a_revision_that_moved_under_a_cached_run_is_not_served_from_the_entry_before_
     // differential nor the finding count can see that difference, so it is
     // asserted here: the revision divides a key, and it withholds none.
     assert!(after.cache.hits > 0, "{:?}", after.cache);
-    assert_eq!(after.cache.misses, 2, "{:?}", after.cache);
+    assert_eq!(after.cache.misses, 3, "{:?}", after.cache);
     assert_eq!(
         after.cache.unkeyed, before.cache.unkeyed,
         "an instance lost its key rather than changing it: {:?}",

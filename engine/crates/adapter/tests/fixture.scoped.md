@@ -1,6 +1,6 @@
 ## `headwater check`
 
-65 findings, 38 of them errors across 29 of 31 documents, against `headwater/fixture` 1.0.0 at `9df1915ec6a29614e9cba30132a126a5cc7591315ce0e880fda4b551982640c0`, evaluated at 2026-08-12.
+65 findings, 38 of them errors across 29 of 31 documents, against `headwater/fixture` 1.0.0 at `d44c67f1b404fedc5598bdde71da21d0346596e41e04481d62552b22ec237ce6`, evaluated at 2026-08-12.
 
 **Scoped to a change.** This run was told what one change carries, so the checks that read the version a document stood at before it could run at all. 10 documents were named: 2 that the change adds, 1 with a prior version this run read, and 3 whose prior version did not read, so every check that needed one was skipped over it. The findings above are over the whole corpus, as they are in a run that names no change.
 
@@ -13,7 +13,7 @@
 - `check/spec/00-both-halves.markdown`
 - `engine/crates/check/src/change.rs`
 
-**Coverage.** This run saw 31 files and classified 29 of them, and left 1 to `headwater generate --check`, which holds a generated file to the bytes its emitter writes. It created 357 check instances, and 33 of them reached no verdict.
+**Coverage.** This run saw 31 files and classified 29 of them, and left 1 to `headwater generate --check`, which holds a generated file to the bytes its emitter writes. It created 367 check instances, and 33 of them reached no verdict.
 
 - 1 — no `id` facet, which is the key this engine reads an identifier from and which no declaration states
 - 1 — the `id` facet is a sequence, and an identifier is a word
@@ -107,4 +107,4 @@
 
 </details>
 
-33 documents in the read set, and 6 barriers that no gate carries across a merge. 27 obligations, 21 verified.
+33 documents in the read set, and 6 barriers that no gate carries across a merge. 28 obligations, 22 verified.

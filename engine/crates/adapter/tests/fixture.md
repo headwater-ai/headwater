@@ -1,8 +1,8 @@
 ## `headwater check`
 
-66 findings, 38 of them errors across 28 of 31 documents, against `headwater/fixture` 1.0.0 at `9df1915ec6a29614e9cba30132a126a5cc7591315ce0e880fda4b551982640c0`, evaluated at 2026-08-12.
+66 findings, 38 of them errors across 28 of 31 documents, against `headwater/fixture` 1.0.0 at `d44c67f1b404fedc5598bdde71da21d0346596e41e04481d62552b22ec237ce6`, evaluated at 2026-08-12.
 
-**Coverage.** This run saw 31 files and classified 29 of them, and left 1 to `headwater generate --check`, which holds a generated file to the bytes its emitter writes. It created 357 check instances, and 60 of them reached no verdict.
+**Coverage.** This run saw 31 files and classified 29 of them, and left 1 to `headwater generate --check`, which holds a generated file to the bytes its emitter writes. It created 367 check instances, and 60 of them reached no verdict.
 
 - 1 — no `id` facet, which is the key this engine reads an identifier from and which no declaration states
 - 1 — the `id` facet is a sequence, and an identifier is a word
@@ -92,4 +92,4 @@
 
 </details>
 
-31 documents in the read set, and 6 barriers that no gate carries across a merge. 27 obligations, 21 verified.
+31 documents in the read set, and 6 barriers that no gate carries across a merge. 28 obligations, 22 verified.
