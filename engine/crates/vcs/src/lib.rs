@@ -895,6 +895,90 @@ mod tests {
         fs::read_to_string(path).unwrap_or_else(|error| panic!("{}: {error}", path.display()))
     }
 
+    /// A directory for a case that holds a tree outside every git repository,
+    /// or `None`, with one line on standard error, when no candidate is one.
+    ///
+    /// `std::env::temp_dir()` follows `TMPDIR`, and a `TMPDIR` inside a git
+    /// work tree puts that work tree above every scratch tree, so git and
+    /// [`search_upward`] find it (#1192). A case does not set
+    /// `GIT_CEILING_DIRECTORIES` instead, because cargo shares the process
+    /// environment between the cases of one target (#1120).
+    fn outside_base() -> Option<PathBuf> {
+        let mut candidates = vec![std::env::temp_dir()];
+        if cfg!(unix) {
+            candidates.extend(["/tmp", "/var/tmp", "/dev/shm"].map(PathBuf::from));
+        }
+        clean_base(&candidates)
+            .map_err(|refused| eprintln!("skipped, no scratch base outside git: {refused}"))
+            .ok()
+    }
+
+    /// The first of `candidates` that is a directory with no `.git` entry in
+    /// it or in any directory above it, canonical, or every refusal in one
+    /// line.
+    fn clean_base(candidates: &[PathBuf]) -> Result<PathBuf, String> {
+        let mut refused = Vec::new();
+        for candidate in candidates {
+            let at = match candidate.canonicalize() {
+                Ok(at) if at.is_dir() => at,
+                Ok(_) => {
+                    refused.push(format!("{} is not a directory", candidate.display()));
+                    continue;
+                }
+                Err(error) => {
+                    refused.push(format!("{}: {error}", candidate.display()));
+                    continue;
+                }
+            };
+            match at
+                .ancestors()
+                .map(|dir| dir.join(".git"))
+                .find(|git| git.exists())
+            {
+                Some(git) => refused.push(format!(
+                    "{} is below {}",
+                    candidate.display(),
+                    git.display()
+                )),
+                None => return Ok(at),
+            }
+        }
+        Err(refused.join("; "))
+    }
+
+    /// The scratch base is the first candidate with no `.git` entry above it.
+    ///
+    /// A candidate below a directory that holds `.git` is passed over and
+    /// named, and the clean candidate after it is taken. Test only the
+    /// candidate itself, or take the first candidate unread, and this case
+    /// fails (#1192).
+    #[test]
+    fn the_scratch_base_passes_over_a_candidate_inside_a_git_work_tree() {
+        let Some(clean) = outside_base() else {
+            return;
+        };
+        let outer = Scratch(clean.join(format!(
+            "headwater-vcs-tests-base-selection-{}",
+            std::process::id()
+        )));
+        let _ = fs::remove_dir_all(&outer);
+        fs::create_dir_all(outer.join(".git")).expect("the directory is there");
+        fs::create_dir_all(outer.join("tmp")).expect("the directory is there");
+        let inside = outer.join("tmp");
+
+        let refused = clean_base(std::slice::from_ref(&inside))
+            .expect_err("a candidate inside a work tree is no base");
+        assert!(
+            refused.contains(&outer.join(".git").display().to_string()),
+            "the refusal names the `.git` entry above the candidate: {refused}"
+        );
+        assert_eq!(
+            clean_base(&[inside, clean.clone()]),
+            Ok(clean),
+            "the clean candidate after it is taken"
+        );
+    }
+
     /// An add and a modify, held against a hand-written manifest.
     ///
     /// This is the case Done-when item 2 of #929 asks for: a known change, and
@@ -1112,7 +1196,10 @@ mod tests {
     /// some other way.
     #[test]
     fn merge_attributes_outside_a_repository_is_none() {
-        let at = Scratch(std::env::temp_dir().join(format!(
+        let Some(base) = outside_base() else {
+            return;
+        };
+        let at = Scratch(base.join(format!(
             "headwater-vcs-tests-attributes-no-repository-{}",
             std::process::id()
         )));
@@ -1131,7 +1218,10 @@ mod tests {
     /// ceiling directory is not entered.
     #[test]
     fn the_search_upward_finds_a_repository_where_git_would() {
-        let at = Scratch(std::env::temp_dir().join(format!(
+        let Some(base) = outside_base() else {
+            return;
+        };
+        let at = Scratch(base.join(format!(
             "headwater-vcs-tests-git-entry-{}",
             std::process::id()
         )));
@@ -1374,7 +1464,10 @@ mod tests {
     /// takes for the same reason.
     #[test]
     fn a_tree_with_no_git_repository_reports_nothing_ignored() {
-        let at = Scratch(std::env::temp_dir().join(format!(
+        let Some(base) = outside_base() else {
+            return;
+        };
+        let at = Scratch(base.join(format!(
             "headwater-vcs-tests-no-repository-{}",
             std::process::id()
         )));

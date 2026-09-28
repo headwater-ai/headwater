@@ -1070,7 +1070,9 @@ fn the_report_uses_the_words_of_the_evaluation_table() {
 /// looks exactly like a declaration that agrees.
 #[test]
 fn a_merge_attribute_behind_a_glob_is_reported_rather_than_skipped() {
-    let root = TempTree::new("glob");
+    let Some(root) = TempTree::outside("glob") else {
+        return;
+    };
     root.write(
         ".gitattributes",
         "# a comment naming merge=union, which is not a declaration\n\
@@ -1279,7 +1281,9 @@ fn derived_agrees_with_git_check_attr_on_every_path() {
 fn outside_a_git_repository_the_root_gitattributes_alone_is_read() {
     use headwater_census::derived::Treatment;
 
-    let root = TempTree::new("no-repository");
+    let Some(root) = TempTree::outside("no-repository") else {
+        return;
+    };
     plant_attribute_layouts(&root, false);
 
     let population = headwater_census::derived::population(root.path());
@@ -1347,7 +1351,9 @@ fn outside_a_git_repository_the_root_gitattributes_alone_is_read() {
 /// for a file it did not read.
 #[test]
 fn outside_a_git_repository_a_nested_file_under_a_glob_character_is_named() {
-    let root = TempTree::new("glob-named-directories");
+    let Some(root) = TempTree::outside("glob-named-directories") else {
+        return;
+    };
     for path in [
         "br[1]/.gitattributes",
         "q?/x/.gitattributes",
@@ -1384,7 +1390,9 @@ fn outside_a_git_repository_a_nested_file_under_a_glob_character_is_named() {
 /// shows `gen.md` undeclared and `/gen.md` unproduced.
 #[test]
 fn outside_a_git_repository_a_leading_slash_of_a_root_line_is_not_part_of_the_path() {
-    let root = TempTree::new("leading-slash-no-repository");
+    let Some(root) = TempTree::outside("leading-slash-no-repository") else {
+        return;
+    };
     root.write(".gitattributes", "/gen.md merge=headwater-regenerate\n");
     root.write(
         "gen.md",
@@ -1827,6 +1835,20 @@ impl TempTree {
         TempTree(path)
     }
 
+    /// A tree as [`TempTree::new`] makes it, under a directory with no `.git`
+    /// entry above it, for a case that holds what the verb reads outside
+    /// every git repository. `None` when no such directory is found, and the
+    /// case then returns with the reason on standard error.
+    fn outside(label: &str) -> Option<TempTree> {
+        let path =
+            outside_base()?.join(format!("headwater-derived-{}-{label}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&path);
+        std::fs::create_dir_all(&path).expect("a temporary tree");
+        let tree = TempTree(path);
+        tree.write(ENGINE_MANIFEST, "[workspace]\n");
+        Some(tree)
+    }
+
     fn path(&self) -> &Path {
         &self.0
     }
@@ -1858,4 +1880,87 @@ impl Drop for TempTree {
     fn drop(&mut self) {
         let _ = std::fs::remove_dir_all(&self.0);
     }
+}
+
+/// A directory for a tree outside every git repository, or `None`, with one
+/// line on standard error, when no candidate is one.
+///
+/// `std::env::temp_dir()` follows `TMPDIR`, and a `TMPDIR` inside a git work
+/// tree puts that work tree above every scratch tree, so git finds it and
+/// `population` reads git's answer rather than the root file's (#1192).
+/// `population` runs in this process, so no per-command environment reaches
+/// it, and a case does not change the environment of a process that cargo
+/// shares between the cases of one target.
+fn outside_base() -> Option<PathBuf> {
+    let mut candidates = vec![std::env::temp_dir()];
+    if cfg!(unix) {
+        candidates.extend(["/tmp", "/var/tmp", "/dev/shm"].map(PathBuf::from));
+    }
+    clean_base(&candidates)
+        .map_err(|refused| eprintln!("skipped, no scratch base outside git: {refused}"))
+        .ok()
+}
+
+/// The first of `candidates` that is a directory with no `.git` entry in it
+/// or in any directory above it, canonical, or every refusal in one line.
+fn clean_base(candidates: &[PathBuf]) -> Result<PathBuf, String> {
+    let mut refused = Vec::new();
+    for candidate in candidates {
+        let at = match candidate.canonicalize() {
+            Ok(at) if at.is_dir() => at,
+            Ok(_) => {
+                refused.push(format!("{} is not a directory", candidate.display()));
+                continue;
+            }
+            Err(error) => {
+                refused.push(format!("{}: {error}", candidate.display()));
+                continue;
+            }
+        };
+        match at
+            .ancestors()
+            .map(|dir| dir.join(".git"))
+            .find(|git| git.exists())
+        {
+            Some(git) => refused.push(format!(
+                "{} is below {}",
+                candidate.display(),
+                git.display()
+            )),
+            None => return Ok(at),
+        }
+    }
+    Err(refused.join("; "))
+}
+
+/// The scratch base is the first candidate with no `.git` entry above it.
+///
+/// A candidate below a directory that holds `.git` is passed over and named,
+/// and the clean candidate after it is taken. Test only the candidate itself,
+/// or take the first candidate unread, and this case fails (#1192).
+#[test]
+fn the_scratch_base_passes_over_a_candidate_inside_a_git_work_tree() {
+    let Some(clean) = outside_base() else {
+        return;
+    };
+    let outer = TempTree(clean.join(format!(
+        "headwater-derived-{}-base-selection",
+        std::process::id()
+    )));
+    let _ = std::fs::remove_dir_all(outer.path());
+    std::fs::create_dir_all(outer.path().join(".git")).expect("a directory");
+    std::fs::create_dir_all(outer.path().join("tmp")).expect("a directory");
+    let inside = outer.path().join("tmp");
+
+    let refused = clean_base(std::slice::from_ref(&inside))
+        .expect_err("a candidate inside a work tree is no base");
+    assert!(
+        refused.contains(&outer.path().join(".git").display().to_string()),
+        "the refusal names the `.git` entry above the candidate: {refused}"
+    );
+    assert_eq!(
+        clean_base(&[inside, clean.clone()]),
+        Ok(clean),
+        "the clean candidate after it is taken"
+    );
 }
