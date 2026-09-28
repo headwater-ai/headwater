@@ -213,7 +213,7 @@ use headwater_graph::{Declarations, Graph};
 
 /// The rules this runner carries, in the order a report lists them.
 ///
-/// Twenty-six are generated from the taxonomy, three read no declaration, one
+/// Twenty-seven are generated from the taxonomy, three read no declaration, one
 /// is the coverage guarantee itself, and the last three are about the taxonomy
 /// rather than about the corpus. A rule that is generated has no entry of its
 /// own anywhere: the list is the *templates*, and the instance count is what a
@@ -222,13 +222,14 @@ use headwater_graph::{Declarations, Graph};
 /// The order is the five origins of
 /// [spec 12](../../../../docs/spec/12-check-layer.md#the-five-origins-of-a-check),
 /// which is Shape, then Graph, then the runner's own accounting.
-pub const RULES: [&str; 40] = [
+pub const RULES: [&str; 41] = [
     facet_required::RULE,
     facet_value::RULE,
     facet_blank::RULE,
     identifier::RULE,
     placement::RULE,
     target::RULE,
+    self_target::RULE,
     suspect::RULE,
     reciprocity::RULE,
     endpoint::RULE,
@@ -426,6 +427,12 @@ fn registry() -> [(&'static str, Scope, u32, scope::ExportTargets); RULES.len()]
             scope::edge_scope::<target::Targets<'_>>(),
             scope::edge_version::<target::Targets<'_>>(),
             scope::edge_exports::<target::Targets<'_>>(),
+        ),
+        (
+            self_target::RULE,
+            scope::edge_scope::<self_target::SelfTarget<'_>>(),
+            scope::edge_version::<self_target::SelfTarget<'_>>(),
+            scope::edge_exports::<self_target::SelfTarget<'_>>(),
         ),
         (
             suspect::RULE,
@@ -679,7 +686,7 @@ pub fn run(
     ctx: &Context,
     cache: &mut Cache,
 ) -> Run {
-    // Registration, in full: twenty-six checks, each named once. The scope trait each
+    // Registration, in full: twenty-seven checks, each named once. The scope trait each
     // one implements decides what it is handed, so this function cannot widen
     // a view by calling the wrong instantiation.
     let required = facet_required::Required::over(declared.shape);
@@ -691,6 +698,8 @@ pub fn run(
         identifier::Identifier::over(declared.shape, &declared.config.identifier_facet);
     let placement = placement::Placement::over(declared.taxonomy);
     let targets = target::Targets::over(declared.relations);
+    // An entry that names the document that declares it. See [`self_target`].
+    let self_targets = self_target::SelfTarget::over(declared.relations);
     // The drift rule, over the relations that can carry a revision: the ones
     // an importer may write, and the ones onto an anchor kind. See [`suspect`].
     let suspect = suspect::Suspect::over(declared.relations, declared.shape);
@@ -795,6 +804,15 @@ pub fn run(
     instances.extend(scope::over_documents(&placement, census, graph, ctx, cache));
     instances.extend(scope::over_edges(
         &targets,
+        census,
+        graph,
+        &digests,
+        declared.observations,
+        ctx,
+        cache,
+    ));
+    instances.extend(scope::over_edges(
+        &self_targets,
         census,
         graph,
         &digests,
