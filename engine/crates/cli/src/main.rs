@@ -3818,6 +3818,30 @@ fn load_against(root: &Path, bound: Bound) -> Result<Loaded, ExitCode> {
             }
         };
     }
+    // One resolver per pinned corpus export (#1233), in the same shape as the
+    // imports above. Each pin names its own resolver, so an anchor into one
+    // repository is looked up in that repository's export and in no other.
+    let harvests = match headwater_import::harvest::declared(root) {
+        Ok(harvests) => harvests,
+        Err(why) => {
+            eprintln!(
+                "headwater: {}",
+                err("the pinned export declarations did not read")
+            );
+            eprintln!("{}", indent(&err(&why)));
+            return Err(ExitCode::FAILURE);
+        }
+    };
+    for export in headwater_import::harvest::over(root, &harvests) {
+        resolvers = match resolvers.with(Box::new(export)) {
+            Ok(resolvers) => resolvers,
+            Err(why) => {
+                eprintln!("headwater: {}", err("the resolver set is ambiguous"));
+                eprintln!("{}", indent(&err(&why)));
+                return Err(ExitCode::FAILURE);
+            }
+        };
+    }
 
     // `comment-scan`: registered only where a declared anchor kind names it and
     // carries a pattern. HW-DR-0073 ruling 4 puts that pattern in the overlay
@@ -4332,12 +4356,24 @@ fn find_document(root: &Path, target: &str) -> Result<headwater_query::Explanati
                         return Ok(explanation);
                     }
                 }
-                let corpus = Corpus::declared(
+                // A path that passes through a symlink out of the root is
+                // outside the repository, whatever its spelling reads as
+                // (#1249). It is asked only here, after every lookup missed,
+                // so a document row that is itself a symlink still answers.
+                let classification = match headwater_census::walk::within(
                     root,
                     &loaded.consumer.corpus_root,
-                    &loaded.consumer.exclusions,
-                );
-                classification_text(target, &corpus.classify(Path::new(&relative)))
+                    target,
+                ) {
+                    None => headwater_census::walk::Classification::Unclassifiable,
+                    Some(_) => Corpus::declared(
+                        root,
+                        &loaded.consumer.corpus_root,
+                        &loaded.consumer.exclusions,
+                    )
+                    .classify(Path::new(&relative)),
+                };
+                classification_text(target, &classification)
             }
         },
     };
@@ -4384,11 +4420,10 @@ fn classification_text(
             format!("`{target}` is outside every corpus root this repository declares")
         }
         // #1227: this state is reached by a path that leaves the repository,
-        // absolute or by `..`, and by a segment that is not UTF-8, so the
-        // sentence names both.
-        Classification::Unclassifiable => {
-            format!("`{target}` is outside this repository, or is not a path it can read")
-        }
+        // absolute, by `..` or through a symlink (#1249), and by a segment
+        // that is not UTF-8, so the sentence names both. It is the one
+        // sentence every path route prints, so it is not written here.
+        Classification::Unclassifiable => headwater_query::outside_text(target),
     }
 }
 
@@ -5899,6 +5934,7 @@ fn mcp(root: &Path, now: Option<Date>, writing: bool) -> ExitCode {
         census: &loaded.census,
         graph: &loaded.graph,
         root,
+        corpus_root: &loaded.consumer.corpus_root,
         declared: loaded.declared(),
         claims: &loaded.claims,
         ignored: &ignoring,
@@ -6231,8 +6267,9 @@ struct Asked {
     read_set: Option<PathBuf>,
     register_out: Option<PathBuf>,
     format: Option<String>,
-    /// The manifest of the change this run is scoped to, where a caller named
-    /// one. See `headwater_check::change`.
+    /// The manifest of a change, where a caller named one. The rules that read
+    /// a transition use it, and it does not narrow the documents the run
+    /// checks. See `headwater_check::change`.
     change: Option<PathBuf>,
 }
 

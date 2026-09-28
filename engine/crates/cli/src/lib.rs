@@ -406,7 +406,8 @@ pub enum Verb {
         #[arg(
             long,
             value_name = "manifest",
-            help = "the manifest of the change this run is scoped to. The first line is \
+            help = "the manifest of a change, which the rules that read a transition use. It \
+                    does not narrow the documents that the run checks. The first line is \
                     `headwater change 1`, and a file that opens with anything else is refused \
                     rather than read. Each line after it names one document \
                     the change carries, as `added<tab><path>` or `prior<tab><path><tab><file>`, \
