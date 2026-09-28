@@ -248,6 +248,21 @@ mod tests {
     /// no order makes that a write into the dependency. The pair keeps the
     /// leaf predicate, so the refusal names both bundles rather than leaving
     /// the merge to report a collision that names one.
+    /// The two-`add` rule reads both kinds. A dependent `add` under a key its
+    /// dependency replaces with `override` is a write into the dependency, and
+    /// the declared order admits it. Without `requires` the same pair is
+    /// refused, because the `override` owns its subtree.
+    #[test]
+    fn a_dependent_add_under_a_key_its_dependency_overrides_is_ordered() {
+        let sources = [
+            "override:\n  kinds.specification: {purpose: behavior}\n",
+            "add:\n  kinds.specification.voice: declarative\n",
+        ];
+        let found = errors_requiring(&sources, &[(1, 0)]);
+        assert!(found.is_empty(), "{found:?}");
+        assert_eq!(errors(&sources).len(), 1);
+    }
+
     #[test]
     fn a_dependent_add_over_a_leaf_its_dependency_sets_is_refused() {
         let found = errors_requiring(
