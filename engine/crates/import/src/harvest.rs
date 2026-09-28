@@ -253,18 +253,6 @@ pub fn over(root: &Path, pins: &[Pin]) -> Vec<Export> {
     pins.iter().map(|pin| open(root, pin)).collect()
 }
 
-/// Whether a declared path stays under the repository root: relative, and no
-/// segment climbs.
-fn inside(at: &str) -> bool {
-    let path = Path::new(at);
-    path.components().all(|component| {
-        matches!(
-            component,
-            std::path::Component::Normal(_) | std::path::Component::CurDir
-        )
-    })
-}
-
 /// Every pinned export this repository declares, in declaration order.
 ///
 /// Read out of `harvests` in `.headwater/taxonomy.yml`, beside `imports`. A
@@ -286,7 +274,8 @@ pub fn declared(root: &Path) -> Result<Vec<Pin>, String> {
     let Some(map) = loaded.value.as_map() else {
         return Err(format!("{} is not a mapping", path.display()));
     };
-    let Some(harvests) = map.get("harvests").and_then(|node| node.value.as_map()) else {
+    let Some(harvests) = crate::block(map, "harvests", "a mapping of pinned exports by name")?
+    else {
         return Ok(Vec::new());
     };
 
@@ -313,10 +302,11 @@ pub fn declared(root: &Path) -> Result<Vec<Pin>, String> {
         })?;
         // A resolver reads repository content and nothing else (spec 2), so a
         // path that leaves the repository root is refused rather than read.
-        if !inside(&at) {
+        if !crate::contained(root, &at) {
             return Err(format!(
                 "`harvests.{name}.at` is `{at}`, and a pinned export is read from a path under \
-                 the repository root: write it relative, with no `..` segment"
+                 the repository root: write it relative, with no `..` segment and no symlink \
+                 that leads out of the root"
             ));
         }
         let resolver = text_of("resolver").ok_or_else(|| {
