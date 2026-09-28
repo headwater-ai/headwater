@@ -11,6 +11,7 @@
 # the numbers the evaluation records rather than to a memory of them.
 #
 #     sh tools/run/run-census.sh <session.jsonl> [top]
+#     sh tools/run/run-census.sh --context <a.jsonl> [<b.jsonl>...]
 #
 # Three tables. The first groups every tool call by tool name. The second
 # groups `Bash` calls by their leading verb, two words for `gh`, `git`,
@@ -39,7 +40,10 @@
 # them, and the cost of the first quarter of the turns against the last, with
 # the ratio (#984). It reads any transcript, a session's or one agent's, and
 # prices each turn by input, cache read, five-minute write, one-hour write
-# and output at its own model's rates, from the one table below.
+# and output at its own model's rates, from the one table below. A sixth,
+# `context`, follows it: the calls, the mean context per call and the
+# largest, which is the figure #1275 holds a parent to. `--context` prints
+# that line alone, over several transcripts, and nothing else.
 #
 # A fleet section follows the tables, read from the agent transcripts the
 # harness writes beside the session file: the share of the span with no agent
@@ -59,15 +63,49 @@
 
 set -u
 
+command -v jq >/dev/null 2>&1 || {
+    echo "run-census: \`jq\` is not on the path." >&2
+    exit 3
+}
+
+# The context line: over one transcript or several, the calls, the mean
+# context per call and the largest. A call is one `message.id` within its own
+# file, and its context is its input, cache read and cache write together,
+# the same sum `growth` reads. #1275 set the bar for a parent at a mean under
+# 120k per call, counted over every parent session of a run, which after a
+# restart is several transcripts; `--context` takes them all at once:
+#
+#     sh tools/run/run-census.sh --context <a.jsonl> [<b.jsonl>...]
+#
+# Run 20260927-0443 read 179k over 1,368 parent calls in one session.
+context_line() {
+    jq -R -r -n '
+        [inputs | try fromjson catch null
+         | select(type == "object" and .type == "assistant")
+         | {k: (input_filename + "\u0000" + (.message.id // "")),
+            c: ((.message.usage.input_tokens // 0) + (.message.usage.cache_read_input_tokens // 0)
+                + (.message.usage.cache_creation_input_tokens // 0))}]
+        | group_by(.k) | map(last.c) as $c
+        | ($c | length) as $n
+        | "context  transcripts \($ARGS.positional | length)  calls \($n)  mean \(if $n > 0 then ($c | add / $n | round) else 0 end)  max \($c | max // 0)"
+    ' "$@" --args "$@"
+}
+
+if [ "${1:-}" = "--context" ]; then
+    shift
+    [ $# -gt 0 ] || { echo "usage: sh tools/run/run-census.sh --context <a.jsonl> [<b.jsonl>...]" >&2; exit 2; }
+    for f in "$@"; do
+        [ -f "$f" ] || { echo "run-census: $f is not a file." >&2; exit 2; }
+    done
+    context_line "$@"
+    exit 0
+fi
+
 file=${1:-}
 top=${2:-20}
 [ -n "$file" ] && [ -f "$file" ] || {
     echo "usage: sh tools/run/run-census.sh <session.jsonl> [top]" >&2
     exit 2
-}
-command -v jq >/dev/null 2>&1 || {
-    echo "run-census: \`jq\` is not on the path." >&2
-    exit 3
 }
 
 # A heredoc body is data a command writes and not a command it runs, and the
@@ -275,6 +313,7 @@ growth=$(printf '%s' "$turns" | jq -r "$rates"'
 printf '%s\n' "$growth" | awk -F'\t' '
     NF == 1 { print; next }
     { printf "%s  first quarter $%.2f  last quarter $%.2f  %s\n", $1, $2, $3, ($4 == "" ? "no first-quarter cost" : sprintf("%.1fx", $4)) }'
+context_line "$file"
 
 # The fleet: what the agents this session dispatched were doing while its
 # turns were spent. The harness writes each agent's own transcript beside the

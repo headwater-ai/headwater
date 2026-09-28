@@ -15,7 +15,7 @@
 #         findings.jsonl   one object per finding handed forward
 #         lessons.md       prose, seeded from the previous run
 #         decisions.md     prose, seeded from the previous run
-#         parent.session   the parent's session id prefix, for the review hook
+#         parent.session   each parent session's id prefix, one per line, for the review hook
 #         usage.jsonl      one plan-usage sample per start, log and end
 #
 # Under the common dir rather than under a worktree, so every worktree of the
@@ -34,6 +34,31 @@
 #     sh tools/run/run-dir.sh end <dir>              drop every claim, once the run has closed,
 #                                                    then print what `usage` prints
 #     sh tools/run/run-dir.sh usage <dir>            plan usage per closed issue, derived
+#     sh tools/run/run-dir.sh stage <dir> <issue> <stage> [key=value]...
+#                                               write the issue's checkpoint to handover/<issue>
+#     sh tools/run/run-dir.sh next <dir>             the next queue issue to dispatch, DRAIN or EMPTY
+#     sh tools/run/run-dir.sh session <dir>          append this resumed session to parent.session
+#
+# Three more files serve a parent that `tools/run/supervise.sh` restarts every
+# few merges, so that its context stays small (#1275). A subagent dies with
+# its parent's process, so a restart keeps only what is on disk:
+#
+#         queue.md         written by hw-queue; `next` reads its `N. #<issue>` lines
+#         handover/<issue> the last stage the issue reached, and the paths to resume it
+#         drain            present while the run drains to zero before a restart
+#
+# A stage is one of `adjudicated`, `built`, `verified-fail`, `verified-pass`
+# and `ruled-merge`, and a field is one of `branch`, `pr`, `rounds`, `note`,
+# `build`, `verify` and `attacks`; anything else is refused with exit 2.
+# While `drain` exists, `stage`, `claim` and `next` each print the line
+# `DRAIN`, which reaches the parent on calls it already makes. In drain,
+# `claim` writes nothing and `next` hands out nothing, so no new stage
+# starts, and `stage` still writes the checkpoint of the stage that ended.
+# `next` skips an issue that holds a claim, has a handover or is in the log,
+# which is what keeps a resumed parent from dispatching it a second time.
+# `parent.session` holds one line per parent session: `start` writes the
+# first and `session` appends each resumed one, and a usage sample takes the
+# last line, which is the live session.
 #
 # `start`, `log` and `end` each append one sample of the plan's rate-limit
 # usage to `usage.jsonl`, so the parent and the integrator record it without
@@ -188,7 +213,8 @@ sample() {
     command -v jq >/dev/null 2>&1 || return 0
     src=$(usage_source)
     ls "$src"/*.json >/dev/null 2>&1 || return 0
-    parent=$(cat "$dir/parent.session" 2>/dev/null)
+    # One line per parent session, oldest first, so the live one is the last.
+    parent=$(tail -n 1 "$dir/parent.session" 2>/dev/null)
     jq -c -n --arg parent "$parent" --arg event "$event" --argjson now "$(date +%s)" '
         [inputs | select(type == "object" and .last_activity != null)] as $all
         | [$all[] | select($parent != "" and ((.session_id // "") | startswith($parent)))] as $own
@@ -311,6 +337,13 @@ claim() {
     shift 3
     [ -d "$dir" ] || { echo "run-dir: $dir is not a run directory." >&2; exit 1; }
     [ $# -gt 0 ] || { echo "run-dir: claim needs at least one artifact." >&2; exit 2; }
+    # In drain nothing starts a new stage, and a claim is how one starts. It
+    # writes nothing, because an issue claimed here and never dispatched would
+    # be skipped by `next` in every later session of the run.
+    if [ -e "$dir/drain" ]; then
+        echo DRAIN
+        return 0
+    fi
     # An artifact is one path or one glob, so whitespace means a footprint was
     # quoted as one argument. That stores one joined slug, which collides with
     # nothing, and in run 20260923-0733 it hid three real overlaps until a
@@ -403,8 +436,95 @@ end() {
     fi
 }
 
+# The checkpoint of one issue, written at the boundary of each stage by the
+# actor that ended it. A restarted parent reads `handover/` and nothing else
+# to learn what was in flight, because a subagent dies with its parent's
+# process and only the disk survives. Last write wins: one actor owns the
+# stage of an issue at a time. Temp file, then `mv`, so a reader never sees
+# half a checkpoint.
+stages='adjudicated built verified-fail verified-pass ruled-merge'
+fields='branch pr rounds note build verify attacks'
+
+stage() {
+    dir=$1 issue=$2 reached=$3
+    shift 3
+    [ -d "$dir" ] || { echo "run-dir: $dir is not a run directory." >&2; exit 1; }
+    case " $stages " in
+        *" $reached "*) ;;
+        *) echo "run-dir: \`$reached\` is not a stage. A stage is one of: $stages." >&2; exit 2 ;;
+    esac
+    case $issue in
+        ''|*[!0-9]*) echo "run-dir: \`$issue\` is not an issue number." >&2; exit 2 ;;
+    esac
+    body=$(printf 'stage %s' "$reached")
+    for pair in "$@"; do
+        key=${pair%%=*} value=${pair#*=}
+        case $pair in
+            *=?*) ;;
+            *) echo "run-dir: \`$pair\` is not key=value with a value." >&2; exit 2 ;;
+        esac
+        case " $fields " in
+            *" $key "*) ;;
+            *) echo "run-dir: \`$key\` is not a handover field. A field is one of: $fields." >&2; exit 2 ;;
+        esac
+        case $value in
+            *[[:space:]]*) echo "run-dir: the value of \`$key\` holds whitespace, and a field is one line of one word." >&2; exit 2 ;;
+        esac
+        body=$(printf '%s\n%s %s' "$body" "$key" "$value")
+    done
+    mkdir -p "$dir/handover"
+    tmp="$dir/handover/.$issue.$$"
+    printf '%s\n' "$body" > "$tmp" && mv "$tmp" "$dir/handover/$issue" || { rm -f "$tmp"; exit 1; }
+    [ -e "$dir/drain" ] && echo DRAIN
+    return 0
+}
+
+# The next issue to dispatch: the first queue line `N. #<issue> ...` whose
+# issue holds no claim, has no handover and is in no log line. `DRAIN` when
+# the run is draining, and `EMPTY` when nothing is left.
+next() {
+    dir=$1
+    [ -d "$dir" ] || { echo "run-dir: $dir is not a run directory." >&2; exit 1; }
+    if [ -e "$dir/drain" ]; then
+        echo DRAIN
+        return 0
+    fi
+    [ -f "$dir/queue.md" ] || { echo "run-dir: $dir holds no queue.md." >&2; exit 1; }
+    logged=''
+    if [ -s "$dir/log.jsonl" ] && command -v jq >/dev/null 2>&1; then
+        logged=$(jq -r '.issue // empty' "$dir/log.jsonl" 2>/dev/null | tr '\n' ' ')
+    fi
+    for issue in $(sed -n 's/^[0-9][0-9]*\. #\([0-9][0-9]*\).*/\1/p' "$dir/queue.md"); do
+        [ -e "$dir/claims/issues/$issue" ] && continue
+        [ -e "$dir/handover/$issue" ] && continue
+        case " $logged " in *" $issue "*) continue ;; esac
+        echo "$issue"
+        return 0
+    done
+    echo EMPTY
+}
+
+# A resumed parent session names itself, so the review hook exempts it and a
+# usage sample reads its figures. Appended, never rewritten, and once.
+session() {
+    dir=$1
+    [ -d "$dir" ] || { echo "run-dir: $dir is not a run directory." >&2; exit 1; }
+    if [ -z "${CLAUDE_JOB_DIR:-}" ]; then
+        echo "run-dir: no CLAUDE_JOB_DIR, so this is not a harness session and there is nothing to record." >&2
+        exit 2
+    fi
+    id=${CLAUDE_JOB_DIR##*/}
+    if [ "$(tail -n 1 "$dir/parent.session" 2>/dev/null)" != "$id" ]; then
+        printf '%s\n' "$id" >> "$dir/parent.session"
+    fi
+    printf 'SESSION: %s\n' "$id"
+}
+
 case ${1:-} in
     start) shift; start "$@" ;;
+    stage) [ $# -ge 4 ] || usage; shift; stage "$@" ;;
+    next) [ $# -eq 2 ] || usage; next "$2" ;;
+    session) [ $# -eq 2 ] || usage; session "$2" ;;
     claim) [ $# -ge 5 ] || usage; shift; claim "$@" ;;
     release) [ $# -eq 3 ] || usage; release "$2" "$3" ;;
     claims) [ $# -eq 2 ] || usage; claims "$2" ;;

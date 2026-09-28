@@ -258,6 +258,23 @@ same '  skips a truncated line, and reports too few turns for quarters' \
     'growth  turns 3  context at 10% 100100  at 90% 150100  too few turns for quarters' \
     "$(printf '%s\n' "$sout" | grep '^growth')"
 
+# The context line (#1275): the calls, the mean context per call and the
+# largest, one call per `message.id` within its own file. growth.jsonl holds
+# 100100, 120100, 150100, 200100, 300100, 400100, 600100 and 800100, which is
+# 2670800 over 8, a mean of 333850; g2's two lines are one call. short.jsonl
+# reuses the ids g1 to g3 for 370300 over 3, a mean of 123433. Over both
+# files that is 3041100 over 11, a mean of 276464: a tool that keyed a call on
+# its id alone would fold the three repeated ids together and read 8 calls.
+same 'the census prints the context line after growth' \
+    'context  transcripts 1  calls 8  mean 333850  max 800100' \
+    "$(printf '%s\n' "$gout" | grep '^context')"
+cout=$(sh "$tool" --context "$scratch/growth.jsonl" "$scratch/short.jsonl" 2>&1); status=$?
+same '--context over two transcripts exits 0 and prints that line alone' \
+    '0 context  transcripts 2  calls 11  mean 276464  max 800100' \
+    "$status $cout"
+sh "$tool" --context "$scratch/missing.jsonl" >/dev/null 2>&1; status=$?
+same '  and a missing transcript is refused with exit 2' 2 "$status"
+
 # A dated model id is priced at the rate of the model it dates. The harness
 # writes Haiku 4.5 as `claude-haiku-4-5-20251001`. Turns g1 to g4 on that id,
 # at $1.00 input, $0.10 read, $1.25 write and $5.00 output a million, give a

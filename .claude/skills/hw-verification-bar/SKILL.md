@@ -1,11 +1,11 @@
 ---
 name: hw-verification-bar
-description: The adversarial checks a branch of the Headwater build order must survive before it merges, and the review questions behind them, each with the ruling it rests on. Invoke before verifying any branch as hw-verify, and when a parent chooses which attacks to dispatch. It says what finds defects that a green suite cannot, and it decides nothing itself.
+description: The adversarial checks a branch of the Headwater build order must survive before it merges, and the review questions behind them, each with the ruling it rests on. Invoke before verifying any branch as hw-verify, and when hw-iterate chooses which attacks to dispatch. It says what finds defects that a green suite cannot, and it decides nothing itself.
 ---
 
 # The verification bar
 
-Resetting a worktree to the branch and running the suite, the linter and the CLI is necessary and nowhere near sufficient: it catches almost nothing the build agent has not already caught. What follows is what does. The parent chooses which of these to dispatch, by heading, and the verifier runs them and reports which fired, which held and what it could not check.
+Resetting a worktree to the branch and running the suite, the linter and the CLI is necessary and nowhere near sufficient: it catches almost nothing the build agent has not already caught. What follows is what does. `hw-iterate` chooses which of these to dispatch, by heading, and the verifier runs them and reports which fired, which held and what it could not check.
 
 Three of these run on every branch without being chosen: *Make the new thing fail*, *Re-derive one number by hand*, and *Suspect your own check first*.
 
