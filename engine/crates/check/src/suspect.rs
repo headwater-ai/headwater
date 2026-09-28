@@ -84,7 +84,10 @@
 //! reaches ([HW-OBL-0104](../../../../docs/obligations/0104-a-governs-edge-reaches-the-path-it-names-and-nothing.md)).
 //! A list member that names a directory is reported the same way, in one
 //! finding per entry that names each such member, because one directory
-//! member leaves the whole list without a digest (#1104).
+//! member leaves the whole list without a digest (#1104). A literal that
+//! names a named pipe, a socket or a device has no digest either, because the
+//! source tree never opens one (#1269), but it passes: `/**` after it names
+//! nothing, so the directory remedy would be false.
 //!
 //! A target that is not an anchor passes, and a document target is skipped
 //! with its reason. A document holds no revision, and an unbound target is
@@ -249,11 +252,12 @@ impl EdgeCheck for Suspect<'_> {
 
         let Some(current) = revision.get() else {
             // The source tree binds a literal that names a directory and gives
-            // it no digest (see `tree_revision`), so this edge could never go
+            // it no digest (see `tree_revision`), so such an edge could never go
             // suspect. That is reported rather than passed, with the wildcard
             // that does carry a digest as the remedy. No patch: the remedy
             // widens what the edge reaches, which is the author's to decide.
-            // Every other edge with no revision keeps its silence. A list with
+            // Every other edge with no revision keeps its silence, and that
+            // includes a literal that names a named pipe (#1269). A list with
             // one directory member has no digest either (#1104), and gets one
             // finding that names every such member.
             let members = directory_members(resolver, patterns);
@@ -355,10 +359,13 @@ impl EdgeCheck for Suspect<'_> {
 }
 
 /// Each member of a `source-tree` anchor that is one literal pattern, matched
-/// only itself, and got no digest from the resolver: a directory, which
+/// only itself, got no digest from the resolver, and is a directory, which
 /// [`headwater_graph::anchors::tree_revision`] refuses to digest. One such
-/// member leaves a list with no digest over its union too. Empty for every
-/// other resolver, and for an anchor with no such member.
+/// member leaves a list with no digest over its union too. A literal that
+/// names a named pipe, a socket or a device also gets no digest, because the
+/// resolver never opens one (#1269), but it is not a directory, and `/**`
+/// after it names nothing, so it is not a member here and the edge passes.
+/// Empty for every other resolver, and for an anchor with no such member.
 fn directory_members<'e>(
     resolver: &str,
     patterns: &'e [headwater_graph::edges::PatternMember],
@@ -372,6 +379,7 @@ fn directory_members<'e>(
             member.revision.get().is_none()
                 && member.matched.len() == 1
                 && member.matched[0] == member.pattern
+                && member.revision.names_a_directory()
         })
         .map(|member| member.pattern.as_str())
         .collect()

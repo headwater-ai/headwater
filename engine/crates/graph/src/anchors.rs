@@ -81,14 +81,15 @@ pub enum Binding {
         /// Two resolvers have one. A committed snapshot pins an identity and a
         /// revision for every item in it, so its answer carries both.
         /// [`SourceTree`] answers with [`tree_revision`]: a digest of the
-        /// bytes of every entry the anchor matched, keyed by path. That is
+        /// bytes of every regular file the anchor matched, keyed by path. That is
         /// not a commit, and it is not meant to be one. A working tree is at
         /// no commit this engine can name without a version-control call,
         /// which the check layer rules out, but its bytes are what a
         /// governing document was written against, and a digest of them is a
         /// value the tree itself states (#952). A literal that names a
-        /// directory answers `None`: see [`tree_revision`]. Every other
-        /// resolver answers `None`.
+        /// directory answers `None`, and so does a match that holds no
+        /// regular file, such as one named pipe (#1269): see
+        /// [`tree_revision`]. Every other resolver answers `None`.
         ///
         /// Two components read it. `headwater_check::suspect` compares it
         /// against the `verified_revision` recorded on the edge, which is the
@@ -156,6 +157,20 @@ impl Revision {
     /// The value, computed now if nothing has read it yet.
     pub fn get(&self) -> Option<&str> {
         self.value().as_deref()
+    }
+
+    /// Whether this is a tree revision over entries of which at least one is
+    /// a directory, following a symlink. A directory is one of two shapes
+    /// [`tree_revision`] gives no value; the other is a set of entries none
+    /// of which is a regular file, such as one named pipe (#1269). A rule that
+    /// tells an author to write `/**` after a path asks this first, because
+    /// that remedy is wrong for a pipe. `false` for a revision the resolver
+    /// already held.
+    pub fn names_a_directory(&self) -> bool {
+        match &self.0.tree {
+            Some((base, matched)) => matched.iter().any(|path| base.join(path).is_dir()),
+            None => false,
+        }
     }
 
     fn value(&self) -> &Option<String> {
