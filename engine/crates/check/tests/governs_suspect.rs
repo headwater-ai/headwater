@@ -17,6 +17,7 @@
 use headwater_census::census;
 use headwater_census::shelves::Taxonomy;
 use headwater_census::walk::Corpus;
+use headwater_check::change::{Change, Unbound};
 use headwater_check::{Cache, Context, Date, Declared, Observations, Patch, Register, Run, Shape};
 use headwater_graph::anchors::Resolvers;
 use headwater_graph::declarations::Declarations;
@@ -27,7 +28,10 @@ const RULE: &str = headwater_check::suspect::RULE;
 const LOCK: &str = "sha256:governs-suspect-fixture";
 const TODAY: &str = "2026-09-24";
 const YESTERDAY: &str = "2026-09-23";
+const TOMORROW: &str = "2026-09-25";
 const DOCUMENT: &str = "governs-suspect/hooks.md";
+/// A second governing document, which no change in this file re-verifies.
+const OTHER: &str = "governs-suspect/other.md";
 
 /// The four hook files #946 touched, with the bytes each one starts at.
 const HOOKS: [(&str, &str); 4] = [
@@ -120,8 +124,13 @@ fn expected(root: &Path, paths: &[&str]) -> String {
 
 /// A governing document, with `entries` written verbatim under `governs:`.
 fn document(root: &Path, last_verified: &str, entries: &[String]) {
+    write(root, DOCUMENT, &text_of("hooks", last_verified, entries));
+}
+
+/// The bytes of a governing document with the slug `slug`.
+fn text_of(slug: &str, last_verified: &str, entries: &[String]) -> String {
     let mut text = format!(
-        "---\nid: GS-FIX-hooks\nstatus: current\nstatus_since: 2026-01-05\nlast_verified: \
+        "---\nid: GS-FIX-{slug}\nstatus: current\nstatus_since: 2026-01-05\nlast_verified: \
          {last_verified}\nsummary: governs the hooks a commit runs\nrelations:\n  governs:\n"
     );
     for entry in entries {
@@ -129,7 +138,41 @@ fn document(root: &Path, last_verified: &str, entries: &[String]) {
         text.push('\n');
     }
     text.push_str("---\n\n# Governs the hooks\n\nThe hooks a commit runs.\n");
-    write(root, DOCUMENT, &text);
+    text
+}
+
+/// A change that carries each document at `path`, with the version that stood
+/// before it: the bytes given, or nothing where the change adds the document.
+/// The prior bytes are handed to the reader directly, so no file stands for
+/// them.
+fn change(entries: &[(&str, Option<String>)]) -> Change {
+    let mut manifest = String::from("headwater change 1\n");
+    for (path, prior) in entries {
+        match prior {
+            Some(_) => manifest.push_str(&format!("prior\t{path}\tprior/{path}\n")),
+            None => manifest.push_str(&format!("added\t{path}\n")),
+        }
+    }
+    let priors: Vec<(String, String)> = entries
+        .iter()
+        .filter_map(|(path, prior)| prior.clone().map(|bytes| (format!("prior/{path}"), bytes)))
+        .collect();
+    Unbound::read(&manifest, |source: &Path| {
+        priors
+            .iter()
+            .find(|(known, _)| Path::new(known) == source)
+            .map(|(_, bytes)| bytes.clone().into_bytes())
+            .ok_or_else(|| std::io::Error::from(std::io::ErrorKind::NotFound))
+    })
+    .expect("the manifest reads")
+    .bind(|_| true)
+}
+
+/// The same document as it stood yesterday: every entry as it is now, and the
+/// freshness facet one day earlier. A change that carries this as the prior
+/// version states that its author re-read the document.
+fn yesterday(slug: &str, entries: &[String]) -> String {
+    text_of(slug, YESTERDAY, entries)
 }
 
 /// Every hook, each entry carrying the digest of its bytes as they are now.
@@ -155,6 +198,15 @@ fn run(root: &Path, today: &str, cache: &mut Cache) -> Run {
 }
 
 fn run_under(root: &Path, today: &str, cache: &mut Cache, source: &str) -> Run {
+    run_in(root, &at(today), cache, source)
+}
+
+fn at(today: &str) -> Context {
+    Context::at(Date::parse(today).expect("the date parses"))
+}
+
+/// A run under a context the case states, so that a change can be passed.
+fn run_in(root: &Path, ctx: &Context, cache: &mut Cache, source: &str) -> Run {
     let corpus = Corpus::new(root, "governs-suspect");
     let value = headwater_yaml::load(source)
         .expect("the fixture taxonomy loads")
@@ -191,7 +243,7 @@ fn run_under(root: &Path, today: &str, cache: &mut Cache, source: &str) -> Run {
             source: "engine/crates/check/fixtures/governs-suspect.taxonomy.yml",
         },
         &headwater_check::claim::Claims::empty(),
-        &Context::at(Date::parse(today).expect("the date parses")),
+        ctx,
         cache,
     )
 }
@@ -333,70 +385,105 @@ fn the_digest_is_a_function_of_bytes_and_not_of_modification_time() {
     let _ = std::fs::remove_dir_all(&two);
 }
 
-/// An entry with no recorded revision, on a document nobody verified today,
-/// keeps the deliberate silence: no finding and no patch.
+/// An entry with no recorded revision keeps the deliberate silence in a run
+/// that carries no change, on any date, and in a run whose change carries the
+/// document with its freshness facet unmoved: no finding and no patch. The
+/// date of `last_verified` alone decides nothing (#1259).
 #[test]
-fn an_unrecorded_entry_verified_before_today_is_silent() {
-    let root = scratch("unrecorded-old");
-    document(
-        &root,
-        YESTERDAY,
-        &["    - .githooks/pre-commit".to_string()],
-    );
-    let ran = cold(&root, TODAY);
-    assert!(suspect(&ran).is_empty(), "{:?}", suspect(&ran));
-    assert!(ran
-        .findings
-        .iter()
-        .all(|finding| finding.patch.is_none() || finding.rule != RULE));
-    let _ = std::fs::remove_dir_all(&root);
-}
-
-/// An entry with no recorded revision, on a document verified today, is the
-/// one advisory the rule raises over an unrecorded edge, and its patch records
-/// the digest the edge reaches now.
-#[test]
-fn an_unrecorded_entry_verified_today_offers_the_digest() {
-    let root = scratch("unrecorded-today");
-    document(&root, TODAY, &["    - .githooks/pre-commit".to_string()]);
-    let ran = cold(&root, TODAY);
-    let reported = suspect(&ran);
-    assert_eq!(reported.len(), 1, "{reported:?}");
-    assert_eq!(
-        reported[0].severity,
-        headwater_check::finding::Severity::Info
-    );
-    let digest = expected(&root, &[".githooks/pre-commit"]);
-    match &reported[0].patch {
-        Some(Patch::Half {
-            path,
-            relation,
-            id,
-            attributes,
-        }) => {
-            assert_eq!(path, DOCUMENT);
-            assert_eq!(relation, "governs");
-            assert_eq!(id, ".githooks/pre-commit");
-            assert_eq!(attributes, &vec![("verified_revision".to_string(), digest)]);
-        }
-        other => panic!("a patch that records the digest: {other:?}"),
-    }
-    let _ = std::fs::remove_dir_all(&root);
-}
-
-/// A moved digest on a document verified today carries the patch that
-/// records the new one. On a document verified before today it carries none,
-/// because the patch would record a verification that nobody performed.
-#[test]
-fn a_moved_digest_is_fixable_only_on_a_document_verified_today() {
-    for (label, last_verified, fixable) in [
-        ("moved-today", TODAY, true),
-        ("moved-old", YESTERDAY, false),
+fn an_unrecorded_entry_the_change_did_not_re_verify_is_silent() {
+    let entries = ["    - .githooks/pre-commit".to_string()];
+    let root = scratch("unrecorded-unstated");
+    document(&root, TODAY, &entries);
+    for (label, ctx) in [
+        ("no change, same day", at(TODAY)),
+        ("no change, a later day", at(TOMORROW)),
+        (
+            "a change that left the facet",
+            at(TODAY).scoped_to(change(&[(DOCUMENT, Some(text_of("hooks", TODAY, &[])))])),
+        ),
+        (
+            "a change that names another document",
+            at(TODAY).scoped_to(change(&[(OTHER, None)])),
+        ),
     ] {
-        let root = scratch(label);
-        document(&root, last_verified, &recorded(&root));
-        write(&root, ".claude/hooks/lib.sh", "refuse() { :; }\n");
-        let ran = cold(&root, TODAY);
+        let ran = run_in(&root, &ctx, &mut Cache::disabled(), &taxonomy());
+        assert!(suspect(&ran).is_empty(), "{label}: {:?}", suspect(&ran));
+    }
+}
+
+/// An entry with no recorded revision, on a document the change re-verified,
+/// is the one advisory the rule raises over an unrecorded edge, and its patch
+/// records the digest the edge reaches now. A change that adds the document
+/// re-verified it too, because its author wrote every line of it.
+#[test]
+fn an_unrecorded_entry_the_change_re_verified_offers_the_digest() {
+    let entries = ["    - .githooks/pre-commit".to_string()];
+    let root = scratch("unrecorded-restated");
+    document(&root, TODAY, &entries);
+    for (label, ctx) in [
+        (
+            "a moved facet",
+            at(TODAY).scoped_to(change(&[(DOCUMENT, Some(yesterday("hooks", &entries)))])),
+        ),
+        (
+            "a moved facet, read a day later",
+            at(TOMORROW).scoped_to(change(&[(DOCUMENT, Some(yesterday("hooks", &entries)))])),
+        ),
+        (
+            "an added document",
+            at(TODAY).scoped_to(change(&[(DOCUMENT, None)])),
+        ),
+    ] {
+        let ran = run_in(&root, &ctx, &mut Cache::disabled(), &taxonomy());
+        let reported = suspect(&ran);
+        assert_eq!(reported.len(), 1, "{label}: {reported:?}");
+        assert_eq!(
+            reported[0].severity,
+            headwater_check::finding::Severity::Info
+        );
+        let digest = expected(&root, &[".githooks/pre-commit"]);
+        match &reported[0].patch {
+            Some(Patch::Half {
+                path,
+                relation,
+                id,
+                attributes,
+            }) => {
+                assert_eq!(path, DOCUMENT);
+                assert_eq!(relation, "governs");
+                assert_eq!(id, ".githooks/pre-commit");
+                assert_eq!(attributes, &vec![("verified_revision".to_string(), digest)]);
+            }
+            other => panic!("{label}: a patch that records the digest: {other:?}"),
+        }
+    }
+}
+
+/// A moved digest is a warning in every run. It carries the patch that
+/// records the new digest only where the change re-verified the document that
+/// declares the edge. Without a change, or where the change left the facet
+/// where it stood, it carries none, because the patch would record a
+/// verification that nobody stated.
+#[test]
+fn a_moved_digest_is_fixable_only_on_a_document_the_change_re_verified() {
+    let root = scratch("moved");
+    let entries = recorded(&root);
+    document(&root, TODAY, &entries);
+    write(&root, ".claude/hooks/lib.sh", "refuse() { :; }\n");
+    for (label, ctx, fixable) in [
+        (
+            "re-verified",
+            at(TODAY).scoped_to(change(&[(DOCUMENT, Some(yesterday("hooks", &entries)))])),
+            true,
+        ),
+        ("no change", at(TODAY), false),
+        (
+            "facet unmoved",
+            at(TODAY).scoped_to(change(&[(DOCUMENT, Some(text_of("hooks", TODAY, &entries)))])),
+            false,
+        ),
+    ] {
+        let ran = run_in(&root, &ctx, &mut Cache::disabled(), &taxonomy());
         let reported = suspect(&ran);
         assert_eq!(reported.len(), 1, "{label}: {reported:?}");
         assert_eq!(
@@ -418,7 +505,66 @@ fn a_moved_digest_is_fixable_only_on_a_document_verified_today() {
                 )]
             );
         }
-        let _ = std::fs::remove_dir_all(&root);
+    }
+}
+
+/// The decisive fixture for #1259. Two documents are both verified today and
+/// both govern a file that moved. The change re-verified one of them. Only
+/// that one is offered a stamp, on the day of the run and on the day after,
+/// and a run with no change offers neither. Before the fix the clock decided,
+/// so the document the change never touched was stamped too.
+#[test]
+fn a_stamp_is_offered_only_on_the_document_the_change_re_verified() {
+    let root = scratch("two-verified-today");
+    let entries = recorded(&root);
+    document(&root, TODAY, &entries);
+    write(&root, OTHER, &text_of("other", TODAY, &entries));
+    write(&root, ".claude/hooks/lib.sh", "refuse() { :; }\n");
+    let re_verified = || change(&[(DOCUMENT, Some(yesterday("hooks", &entries)))]);
+    for (label, ctx, stamped) in [
+        ("today", at(TODAY).scoped_to(re_verified()), vec![DOCUMENT]),
+        ("tomorrow", at(TOMORROW).scoped_to(re_verified()), vec![DOCUMENT]),
+        ("no change", at(TODAY), vec![]),
+    ] {
+        let ran = run_in(&root, &ctx, &mut Cache::disabled(), &taxonomy());
+        let reported = suspect(&ran);
+        assert_eq!(reported.len(), 2, "{label}: {reported:?}");
+        let patched: Vec<&str> = reported
+            .iter()
+            .filter(|finding| finding.patch.is_some())
+            .map(|finding| finding.path.as_str())
+            .collect();
+        assert_eq!(patched, stamped, "{label}");
+    }
+}
+
+/// The patch reads the change, so the change is in the cache key. A run whose
+/// change re-verified the document is not served the patchless verdict a run
+/// with no change stored, a second such run is served its own verdict from the
+/// cache, and a run with no change after it is not served the patch.
+#[test]
+fn a_warm_cache_keys_the_patch_on_the_change() {
+    let root = scratch("warm-change");
+    let entries = recorded(&root);
+    document(&root, TODAY, &entries);
+    write(&root, ".claude/hooks/lib.sh", "refuse() { :; }\n");
+    let re_verified =
+        || at(TODAY).scoped_to(change(&[(DOCUMENT, Some(yesterday("hooks", &entries)))]));
+    for (label, ctx, fixable, served) in [
+        ("no change, cold", at(TODAY), false, false),
+        ("re-verified, after a run with none", re_verified(), true, false),
+        ("re-verified, warm", re_verified(), true, true),
+        ("no change, after a re-verified run", at(TODAY), false, false),
+    ] {
+        let mut cache = Cache::at(&root, LOCK, "sha256:rules");
+        let ran = run_in(&root, &ctx, &mut cache, &taxonomy());
+        cache.write(&root).expect("the cache writes");
+        let reported = suspect(&ran);
+        assert_eq!(reported.len(), 1, "{label}: {reported:?}");
+        assert_eq!(reported[0].patch.is_some(), fixable, "{label}");
+        if served {
+            assert!(cache.report().hits > 0, "{label}: {:?}", cache.report());
+        }
     }
 }
 
