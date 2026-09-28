@@ -39,6 +39,7 @@ One report, the fixed block and nothing before it. Your narrative goes to `<scra
 ## What you never do
 
 - **You never merge, enqueue, or move a board card**, and you never file an issue. A finding outside the issue is one intake line, as the run policy says.
+- **You never write an `OWNER` line, and you never answer for the owner.** The parent asks the owner and writes the line in the run's `decisions.md`, as `hw-run-policy` says. A round that needs the owner's answer is a `STOP` that names the question.
 - **You never run `git show` or `git diff` against the build branch**, and you never edit it. A defect is the builder's to repair.
 - **You never replace the builder.** A dead builder is resumed by its id, never replaced.
 - **You never verify the branch yourself.** A PASS comes from `hw-verify` alone.

@@ -687,10 +687,32 @@ fn every_predicate_form_has_a_transcript_that_refutes_it() {
             Miss::NeverCited { .. } => "NeverCited",
             Miss::NoAnswerGiven => "NoAnswerGiven",
             Miss::Outside { .. } => "Outside",
+            Miss::Wrong { .. } => "Wrong",
             Miss::OracleReported { .. } => "OracleReported",
         };
         assert_eq!(named, expected, "{probe}");
     }
+}
+
+/// An answer inside the closed set and outside the expected value is wrong,
+/// and never satisfied. Before #1229 the grader tested membership in the set,
+/// so the one probe on the shelf passed every word its task offered.
+#[test]
+fn an_in_domain_answer_that_is_not_the_expected_one_is_not_satisfied() {
+    let source = transcript("transcript.md");
+    assert_eq!(source.matches("answer: \"no\"").count(), 1);
+    let results = results_over(&source.replace("answer: \"no\"", "answer: \"yes\""));
+    let row = row_of(&results, "PROBE-FIX-answered");
+    let verdict = &row.sessions[0].verdict;
+    assert!(
+        matches!(verdict, Verdict::NotSatisfied(Miss::Wrong { .. })),
+        "`yes` is in the set and is not the expected value: {verdict:?}"
+    );
+    let said = match verdict {
+        Verdict::NotSatisfied(miss) => miss.to_string(),
+        _ => String::new(),
+    };
+    assert!(said.contains("expects `no`"), "{said}");
 }
 
 /// The six refusals, which are the six places a grader that wanted a number
@@ -772,6 +794,7 @@ fn the_grader_refuses_a_selection_the_plan_would_not_have_produced() {
         }],
         oracle: oracle.map(str::to_string),
         answers,
+        expected: Vec::new(),
     };
     let record = record_of(&transcript("transcript.md"));
 
@@ -782,6 +805,13 @@ fn the_grader_refuses_a_selection_the_plan_would_not_have_produced() {
         ),
         (
             one(Expectation::Answered, None, Vec::new()),
+            NoVerdict::AnswersUndeclared,
+        ),
+        (
+            Selected {
+                expected: vec!["no".into(), "yes".into()],
+                ..one(Expectation::Answered, None, vec!["no".into(), "yes".into()])
+            },
             NoVerdict::AnswersUndeclared,
         ),
         (
@@ -1198,6 +1228,58 @@ fn an_answered_probe_that_declares_no_closed_set_stops_the_run() {
         matches!(plan.refusal, Some(Refusal::AnswersUndeclared { .. })),
         "a probe with no declared set is satisfied by every string a session returns: {:?}",
         plan.refusal
+    );
+}
+
+/// The closed set is the domain a recorder extracts a value from, and the
+/// expected value is the one that satisfies. A probe whose expected values are
+/// every value of its set is satisfied by every in-domain answer, which is the
+/// rate #1229 found for the tombstone probe: 1 of 1 answered probes on the
+/// shelf.
+#[test]
+fn an_answered_probe_that_expects_every_value_of_its_set_stops_the_run() {
+    let plan = plan_over_probe(&|source| source.replace("expected: [no]", "expected: [no, yes]"));
+    assert!(
+        matches!(plan.refusal, Some(Refusal::ExpectedEveryAnswer { .. })),
+        "an expected set that equals the domain passes every answer the task offers: {:?}",
+        plan.refusal
+    );
+}
+
+/// A set of one value is the same defect at its smallest: the one word the
+/// recorder can extract is the one that satisfies, so every recorded answer
+/// passes. #1010 added two shelf probes of that shape before #1229 landed.
+#[test]
+fn an_answered_probe_whose_set_is_its_one_expected_value_stops_the_run() {
+    let plan = plan_over_probe(&|source| source.replace("answers: [yes, no]", "answers: [no]"));
+    assert!(
+        matches!(plan.refusal, Some(Refusal::ExpectedEveryAnswer { .. })),
+        "a one-word set that is expected passes every answer a recorder can extract: {:?}",
+        plan.refusal
+    );
+}
+
+#[test]
+fn an_answered_probe_that_expects_nothing_stops_the_run() {
+    let plan = plan_over_probe(&|source| source.replace("expected: [no]\n", ""));
+    assert!(
+        matches!(plan.refusal, Some(Refusal::ExpectedUndeclared { .. })),
+        "a set with no expected value says nothing about which answer is right: {:?}",
+        plan.refusal
+    );
+}
+
+#[test]
+fn an_answered_probe_that_expects_a_value_outside_its_set_stops_the_run() {
+    let plan = plan_over_probe(&|source| source.replace("expected: [no]", "expected: [maybe]"));
+    let refusal = plan.refusal.as_ref().map(ToString::to_string);
+    assert!(
+        matches!(plan.refusal, Some(Refusal::ExpectedOutsideAnswers { .. }))
+            && refusal
+                .as_deref()
+                .is_some_and(|said| said.contains("`maybe`")),
+        "a recorder extracts only in-domain values, so an expected value outside the set is \
+         never met: {refusal:?}"
     );
 }
 

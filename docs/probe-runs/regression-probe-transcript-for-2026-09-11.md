@@ -34,6 +34,8 @@ cost_cents: 43
 
 The retirement is what keeps that staleness off the build. [HW-DR-0062](../decisions/0062-a-refused-recording-is-held-by-the-reliance-its-state-claims-and-not-by-promotion.md) is the ruling, and [spec 15](../spec/15-the-recorder-contract.md) states what a run does about a refusal. A refused recording at this state is reported by `headwater generate` and does not fail the run. A recording that claims reliance fails it, which is the toll this file paid at `current`.
 
+**This transcript predates the sealed workspace (#1229).** Every session ran in a workspace that kept `docs/probes/`, `docs/probe-runs/` and `docs/probe-results/`, so a session could read its own expectation or an earlier answer. In 1 call, the sessions of 1 of the 4 probes named a path on one of those shelves. No rate graded from this transcript is a clean with-guidance rate. [`tools/probe/seal.sh`](../../tools/probe/seal.sh) now removes those files before a session runs.
+
 ## Events
 
 ```yaml

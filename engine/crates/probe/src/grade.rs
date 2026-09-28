@@ -162,6 +162,12 @@ pub enum Miss {
     NoAnswerGiven,
     /// The answer is outside the closed set the probe declares.
     Outside { event: usize, value: String },
+    /// The answer is a value of the closed set and not one the probe expects.
+    Wrong {
+        event: usize,
+        value: String,
+        expected: Vec<String>,
+    },
     /// The oracle reported over every produced artifact.
     OracleReported { artifacts: usize, oracle: String },
 }
@@ -191,6 +197,19 @@ impl std::fmt::Display for Miss {
                 f,
                 "event {event} answered `{value}`, which the probe does not declare"
             ),
+            Miss::Wrong {
+                event,
+                value,
+                expected,
+            } => write!(
+                f,
+                "event {event} answered `{value}`, and the probe expects {}",
+                expected
+                    .iter()
+                    .map(|value| format!("`{value}`"))
+                    .collect::<Vec<_>>()
+                    .join(" or ")
+            ),
             Miss::OracleReported { artifacts, oracle } => write!(
                 f,
                 "`{oracle}` reported over each of the {}",
@@ -215,8 +234,9 @@ pub enum Refusal {
     /// so the sentinel reaches here as a declared absence and an absence is not
     /// a pass.
     OracleUndeclared,
-    /// An `answered` expectation whose probe declares no closed set. Every
-    /// string would be the expected one.
+    /// An `answered` expectation whose probe declares no closed set, or no
+    /// expected value that is a proper part of one. Every string, or every
+    /// in-domain string, would then be the expected one.
     AnswersUndeclared,
     /// A `cited` expectation whose examined targets carry no identifier. An
     /// external anchor is a path, and nothing cites a path.
@@ -249,8 +269,9 @@ impl std::fmt::Display for Refusal {
             ),
             Refusal::AnswersUndeclared => write!(
                 f,
-                "it expects `answered` and its probe declares no closed set, so every string the \
-                 session returned would be the expected one"
+                "it expects `answered` and its probe declares no closed set with a proper subset \
+                 of expected values in it, so every answer the session returned would be the \
+                 expected one"
             ),
             Refusal::NothingCitable { over } => write!(
                 f,
@@ -754,7 +775,15 @@ fn cited(selected: &Selected, session: &[&Event]) -> Verdict {
 }
 
 fn answered(selected: &Selected, session: &[&Event]) -> Verdict {
-    if selected.answers.is_empty() {
+    // The plan refuses each of these, and a selection assembled by hand is one
+    // the plan never saw.
+    let proper = !selected.expected.is_empty()
+        && selected
+            .expected
+            .iter()
+            .all(|value| selected.answers.contains(value))
+        && selected.expected.len() < selected.answers.len();
+    if selected.answers.is_empty() || !proper {
         return Verdict::Refused(Refusal::AnswersUndeclared);
     }
     // The last recorded answer of the session, because the expectation is over
@@ -769,10 +798,19 @@ fn answered(selected: &Selected, session: &[&Event]) -> Verdict {
     match last {
         None => Verdict::Refused(Refusal::Unrecorded { what: "answer" }),
         Some((_, Answer::Absent)) => Verdict::NotSatisfied(Miss::NoAnswerGiven),
-        Some((at, Answer::Value(value))) => match selected.answers.contains(&value) {
-            true => Verdict::Satisfied(Witness::Answered { event: at, value }),
-            false => Verdict::NotSatisfied(Miss::Outside { event: at, value }),
-        },
+        Some((at, Answer::Value(value))) if selected.expected.contains(&value) => {
+            Verdict::Satisfied(Witness::Answered { event: at, value })
+        }
+        Some((at, Answer::Value(value))) if selected.answers.contains(&value) => {
+            Verdict::NotSatisfied(Miss::Wrong {
+                event: at,
+                value,
+                expected: selected.expected.clone(),
+            })
+        }
+        Some((at, Answer::Value(value))) => {
+            Verdict::NotSatisfied(Miss::Outside { event: at, value })
+        }
         Some((_, Answer::Unrecorded)) => unreachable!("the loop skips it"),
     }
 }
@@ -851,6 +889,7 @@ mod tests {
             examines: vec![target(Some("PROBE-FIX-two"), "probes/two.md")],
             oracle: None,
             answers: Vec::new(),
+            expected: Vec::new(),
         }
     }
 

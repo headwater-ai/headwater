@@ -3,7 +3,7 @@ id: HW-PD-0001
 status: current
 status_since: 2026-09-07
 summary: "Every sentence of orchestration prose has exactly one home, decided by who must obey it and whether it changes per dispatch. So the command holds only what the parent decides and each agent loads only what it must obey."
-last_verified: 2026-09-07
+last_verified: 2026-09-28
 title: "Orchestration prose has one owner per sentence"
 provenance:
   warrant: asserted
@@ -13,7 +13,8 @@ provenance:
   evidence_basis: evidenced
 relations:
   governs:
-    - .claude/commands/next-run.md
+    - to: .claude/commands/next-run.md
+      verified_revision: sha256:5b698582b8b07d0837db1f6f3e8e3507f5f02d7a32b4f0f04594b10a73118840
 ---
 
 # Orchestration prose has one owner per sentence

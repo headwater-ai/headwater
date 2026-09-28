@@ -1,5 +1,5 @@
 A regression run in the present arm, on a-model at 2026-08-14.
-served version a-model-20260701, tree sha256:fixture-tree, selection sha256:fixture-selection, read set sha256:9cd0571c32a18081b2fd2f031a69d16f7260bd9a9c77e157884ec0d5ea6968fb, seed 0, harness 0.1.0.
+served version a-model-20260701, tree sha256:fixture-tree, selection sha256:fixture-selection, read set sha256:d7b774f43bd79e80eddc5ef245e810a57e399b39afb4e8016e158fdc2f0d3215, seed 0, harness 0.1.0.
 realized cost $0.41, which the adaptive layer reads as the cost of its own instrument.
 
 6 events over 5 of the 5 probes this corpus declares, in 5 sessions and 4 tool calls.

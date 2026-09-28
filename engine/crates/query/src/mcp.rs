@@ -777,6 +777,10 @@ fn call(server: &Server<'_>, message: &Mapping) -> Result<Answer, Failure> {
     }
     let argument = held(tool.only().name);
 
+    // The machine contract of `route` and `governing_docs_for_path` (#1248).
+    // The text block is for a person and is not a parse target: a path may hold
+    // ` (`, and a summary may hold any word an evidence line starts with.
+    let mut structured: Option<Json> = None;
     let text = match tool.name {
         "route" => {
             let mut route = surface.route(&argument, Budget::default());
@@ -785,7 +789,14 @@ fn call(server: &Server<'_>, message: &Mapping) -> Result<Answer, Failure> {
             if !route.ungoverned.is_empty() {
                 route.retain_unignored(&(server.ignored)());
             }
-            route.render(headwater_check::paint::ColorMode::Plain)
+            // Taken after the filter, so the structured answer and the text
+            // name the same paths. It is the `route --json` document without
+            // its `text` member, which is folded for a terminal: the text
+            // block below carries the report once, unfolded.
+            structured = Some(crate::json::route_structured(&route));
+            // Never folded: a fold hangs a continuation at the indent of an
+            // evidence line.
+            route.render_at(headwater_check::paint::ColorMode::Plain, None)
         }
         // A path argument is read the way `headwater explain` reads one, through
         // the same `typed`, so the tool and the verb find one document for one
@@ -833,6 +844,7 @@ fn call(server: &Server<'_>, message: &Mapping) -> Result<Answer, Failure> {
         },
         "governing_docs_for_path" => {
             let governing = surface.governing_docs_for_path(&argument);
+            structured = Some(crate::json::pointers_value(&governing));
             match governing.is_empty() {
                 true => format!("no document governs {argument}\n"),
                 false => {
@@ -852,9 +864,13 @@ fn call(server: &Server<'_>, message: &Mapping) -> Result<Answer, Failure> {
         other => format!("`{other}` is registered and not implemented\n"),
     };
 
+    let mut result = blocks(&[text], true);
+    if let (Some(structured), Json::Object(members)) = (structured, &mut result) {
+        members.push(("structuredContent".to_string(), structured));
+    }
     Ok(Answer {
         tool: tool.name,
-        result: blocks(&[text], true),
+        result,
         // A read moves no byte. That is the property `registered` carries for
         // the query class, and this is the line that spends nothing.
         landed: false,

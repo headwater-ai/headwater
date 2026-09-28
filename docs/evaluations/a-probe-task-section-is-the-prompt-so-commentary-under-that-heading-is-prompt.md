@@ -94,3 +94,5 @@ Three things a later reader checks against a fresh recording of this tier:
 - **The tombstone probe.** Check whether the recorded `answer` is a value rather than `null`. A `null` after this change means the output contract did not bind. That is a reading worth having, and a different finding from the one above.
 
 A fourth thing belongs to whoever next writes a probe. Read the `## Task` section aloud as the only text a session gets, because it is.
+
+**Every transcript that this evaluation reads predates the sealed workspace (#1229).** Each session ran in a workspace that kept every probe file. The 2026-09-17 tombstone session after the corrections read its own probe file before it answered. The finding about the task section stands, and no rate that it cites is a clean with-guidance rate.

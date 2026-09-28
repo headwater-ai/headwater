@@ -82,3 +82,5 @@ The #896 and #908 evaluations each state that the router was right for this prob
 [#915](https://github.com/headwater-ai/headwater/issues/915) owns the router change, with this task as its failing case. It asks for a ruling on two changes. The first stops one kind from filling the budget and shows why each pointer was offered. The second lets a route offer a section inside a document that covers many topics. [#819](https://github.com/headwater-ai/headwater/issues/819) does not reach either mechanism. Its shadow-mode log records what an alternative ranking would offer, and it changes nothing that a session is served.
 
 A reader who meets a failed `opened` verdict on any probe whose target came from the router checks one thing first. Does the examined document answer the task, by the judgment of a person who read it?
+
+**The session that this evaluation reads predates the sealed workspace (#1229).** It ran in a workspace that kept every probe file, so it could read its own expectation. The judgment about the router stands, because it reads the router and not the rate.

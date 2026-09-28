@@ -30,6 +30,8 @@ cost_cents: 28
 
 The recorder ran `tools/probe/probe-record.sh` from Headwater at `c18fa0df`. Claude Code 2.1.266 wrote its stream to the recorder's standard-output pipe. The harness, and not the model, wrote this log.
 
+**This transcript predates the sealed workspace (#1229).** Every session ran in a workspace that kept `docs/probes/`, `docs/probe-runs/` and `docs/probe-results/`, so a session could read its own expectation or an earlier answer. In 1 call, the sessions of 1 of the 4 probes named a path on one of those shelves. No rate graded from this transcript is a clean with-guidance rate. [`tools/probe/seal.sh`](../../tools/probe/seal.sh) now removes those files before a session runs.
+
 ## Events
 
 ```yaml

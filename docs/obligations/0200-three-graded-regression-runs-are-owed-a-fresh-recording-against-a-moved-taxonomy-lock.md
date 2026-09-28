@@ -36,3 +36,5 @@ This corpus owes a fresh regression recording, run with `tools/probe/probe-recor
 ## Discharge
 
 A new `docs/probe-runs/` transcript, `status: current`, planned against the lock this corpus carries once #935 merges, with a `docs/probe-results/` projection `headwater generate` writes from it. The two artifacts named above are read again by that recording's own grading, and this record is discharged when they are.
+
+**A fresh recording must now run in a sealed workspace (#1229).** [`tools/probe/seal.sh`](../../tools/probe/seal.sh) removes the probe shelves and every document under `docs/` that names a selected probe, and `tools/probe/probe-record.sh` refuses a workspace that still holds one. The three runs that this record names ran before the seal existed. So a recording that repeats them as they ran does not discharge this record.

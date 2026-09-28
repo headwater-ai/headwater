@@ -3,7 +3,7 @@ id: HW-SPEC-orchestration-architecture
 status: current
 status_since: 2026-09-22
 summary: "The six stages of a build-order run, what each one owns and never does, where the veto sits, and how claims order the merges."
-last_verified: 2026-09-27
+last_verified: 2026-09-28
 doc_type: design_spec
 sequence: 17
 title: "Orchestration architecture"
@@ -27,16 +27,23 @@ relations:
     - HW-PD-0007
     - HW-PD-0022
   governs:
-    - .claude/commands/next-run.md
-    - .claude/commands/next.md
+    - to: .claude/commands/next-run.md
+      verified_revision: sha256:5b698582b8b07d0837db1f6f3e8e3507f5f02d7a32b4f0f04594b10a73118840
+    - to: .claude/commands/next.md
+      verified_revision: sha256:974d493829d7c81eacf06f5058e7e02f01f7fd409b82e0589d7bdd21a7783b09
     - .claude/agents/hw-queue.md
     - .claude/agents/hw-adjudicate.md
-    - .claude/agents/hw-iterate.md
-    - .claude/agents/hw-build.md
-    - .claude/agents/hw-verify.md
+    - to: .claude/agents/hw-iterate.md
+      verified_revision: sha256:a41384eed6c0c8b326e07056507c259a148b663152038f63a7b1d988dccdf821
+    - to: .claude/agents/hw-build.md
+      verified_revision: sha256:76b22e56cb1ec60b94efa588c40db19b23bbd80795bbba510c172e9de7a137e8
+    - to: .claude/agents/hw-verify.md
+      verified_revision: sha256:037f1ffc1ed126bef4951f6a17ad67671f55e067fc27ec8548802a63eb620031
     - .claude/agents/hw-integrate.md
-    - .claude/skills/hw-run-policy/SKILL.md
-    - .claude/skills/hw-verification-bar/SKILL.md
+    - to: .claude/skills/hw-run-policy/SKILL.md
+      verified_revision: sha256:0e71e3e122d242913e1fe68d551c20e3733b3bc44bc019e65ec824063010011b
+    - to: .claude/skills/hw-verification-bar/SKILL.md
+      verified_revision: sha256:a68ce6b14b5a8d7068aeafd8c7443e0497a55b4e444e2b971daa1da738c2153b
 ---
 
 # 17 — Orchestration architecture
@@ -110,7 +117,7 @@ flowchart LR
 
 **The parent waits by ending its turn.** With agents in flight, an ended turn is the blocking wait, and each report wakes it. A check on a timer buys nothing and costs a turn at the parent's full context. Its prompt cache holds that context for an hour, so a report arrives warm whether or not the parent looked.
 
-**The parent escalates to a person on two conditions and rules on everything else.** A redirect that changes milestone order and a decision that needs an owner rather than an answer both go to the human. [`headwater-product-owner`](../../.claude/agents/headwater-product-owner.md) reads the whole board and writes one ruling block for each decision the owner owes, and [`headwater-maintainer`](../../.claude/agents/headwater-maintainer.md) reports what a change left stale. Both propose, and neither accepts.
+**The parent escalates to a person on two conditions and rules on everything else.** A redirect that changes milestone order and a decision that needs an owner rather than an answer both go to the human. [`headwater-product-owner`](../../.claude/agents/headwater-product-owner.md) reads the whole board and writes one ruling block for each decision the owner owes. The parent records the owner's answer in the run's decisions file, and the next pass of the product owner posts that answer on the issue. Until then, the adjudication stage reads the recorded answer as the ruling. [`headwater-maintainer`](../../.claude/agents/headwater-maintainer.md) reports what a change left stale. Both propose, and neither accepts.
 
 ### The queue stage
 
@@ -208,7 +215,7 @@ The front matter of this part declares a `governs` edge onto each `.claude/` fil
 | [`.claude/agents/hw-integrate.md`](../../.claude/agents/hw-integrate.md) | The integration stage: the merge, the rebuild, the regenerate, the write-back, the claim release and the ledger line |
 | [`.claude/skills/hw-run-policy/SKILL.md`](../../.claude/skills/hw-run-policy/SKILL.md) | The standing rulings, the environment of a run, and the same list read for cost |
 | [`.claude/skills/hw-verification-bar/SKILL.md`](../../.claude/skills/hw-verification-bar/SKILL.md) | The adversarial checks a branch survives before it merges, and the review questions behind them |
-| [`.claude/agents/headwater-product-owner.md`](../../.claude/agents/headwater-product-owner.md) | Board judgment: milestone order, what is finished and unclosed, and the rulings the owner owes |
+| [`.claude/agents/headwater-product-owner.md`](../../.claude/agents/headwater-product-owner.md) | Board judgment: milestone order, what is finished and unclosed, the rulings the owner owes, ruling write-back and epic closure |
 | [`.claude/agents/headwater-maintainer.md`](../../.claude/agents/headwater-maintainer.md) | What one change touched, what it left stale, and what the corpus is owed |
 | [The evaluation](../evaluations/the-build-order-as-a-multi-agent-system.md) | The measurements under every ruling above, and the numbers a later run answers to |
 | [`docs/process/decisions/`](../process/decisions/README.md) | The eight rulings this part states, each with the argument that settled it |

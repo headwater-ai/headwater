@@ -524,6 +524,24 @@ fn the_mcp_route_tool_and_the_route_verb_agree_on_an_ignored_path_and_a_tracked_
             "the MCP tool on {path}\n{}",
             served.out
         );
+        // The structured answer is taken after the filter, so an ignored path
+        // is absent from its `ungoverned` account as well as from the text
+        // (#1248).
+        let structured = served
+            .out
+            .split("\"structuredContent\":")
+            .nth(1)
+            .unwrap_or_else(|| {
+                panic!(
+                    "the MCP tool on {path} carries structuredContent\n{}",
+                    served.out
+                )
+            });
+        assert_eq!(
+            structured.contains(&format!("{{\"path\":\"{path}\"")),
+            named,
+            "structuredContent.ungoverned on {path}\n{structured}"
+        );
         let answer = headwater_yaml::json::Json::string(verb.out.as_str()).render();
         assert!(
             served.out.contains(&answer),
