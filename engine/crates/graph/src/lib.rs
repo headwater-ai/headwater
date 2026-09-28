@@ -331,6 +331,17 @@ impl Graph {
         ]
     }
 
+    /// How many prose links carry text that is exactly the identifier of a
+    /// document and reach a document that carries an identifier. That is every
+    /// link `link.identifier.mismatch` compares, whether it agrees or not.
+    pub fn identifier_link_count(&self) -> usize {
+        self.links
+            .iter()
+            .filter(|link| link.names.is_some())
+            .filter(|link| matches!(&link.binding, links::Binding::Corpus { id: Some(_), .. }))
+            .count()
+    }
+
     /// The graph as text.
     ///
     /// The totals come first and they account for every declared edge half,
@@ -386,6 +397,16 @@ impl Graph {
                 if count > 0 {
                     let _ = writeln!(out, "  {count:5} {class}");
                 }
+            }
+            // The population `link.identifier.mismatch` reads, for the same
+            // reason: it passes silently over a corpus whose identifier links
+            // all agree, and this is the denominator of that silence.
+            let named = self.identifier_link_count();
+            if named > 0 {
+                let _ = writeln!(
+                    out,
+                    "  {named:5} whose text is the identifier of a document, on a path that reaches a document with an identifier"
+                );
             }
         } else {
             let broken = self

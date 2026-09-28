@@ -1576,9 +1576,9 @@ add_to:
     # a reason rather than passing over it. Naming it now is what makes the
     # first guide on the shelf one change instead of two: the document lands and
     # the index appears, with no second edit to this list by somebody who would
-    # have to notice it was missing. `explanations` is named for the same
-    # reason: its shelf holds nothing yet (#1005, HW-DR-0093), and its index
-    # appears with its first account. `subsystems` is named for the same reason:
+    # have to notice it was missing. `explanations` was named for the same
+    # reason (#1005, HW-DR-0093), and its index appeared with its first
+    # account (#1231) with no edit to this list. `subsystems` is named for the same reason:
     # its shelf holds nothing yet (HW-DR-0098, #1288).
     - kind: shelf_index
       for: [spec_series, obligations, evaluations, requirements, acceptance_criteria, verifications, probes, probe_results, probe_runs, reviews, tutorials, how_to, process_decisions, explanations, process_explanations, subsystems]

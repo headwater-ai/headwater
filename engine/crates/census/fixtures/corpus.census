@@ -268,6 +268,10 @@ docs/evaluations/what-a-check-can-know.md
   typed: evaluation
 docs/evaluations/why-corpus-counts-are-derived-not-stored.md
   typed: evaluation
+docs/explanations/README.md
+  generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
+docs/explanations/how-a-headwater-release-reaches-an-adopter.md
+  typed: explanation
 docs/how-to/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/how-to/cut-a-release.md
