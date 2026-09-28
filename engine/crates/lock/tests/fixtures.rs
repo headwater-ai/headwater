@@ -125,7 +125,10 @@ fn every_order_of_a_selection_writes_one_lock_and_lists_each_dependency_first() 
             continue;
         }
         let mut trial = consumer.clone();
-        trial.bundles = order.iter().map(|index| consumer.bundles[*index].clone()).collect();
+        trial.bundles = order
+            .iter()
+            .map(|index| consumer.bundles[*index].clone())
+            .collect();
         let sources = headwater_resolve::package::sources(&root, &trial).expect("its sources");
         let resolution = resolve(&sources).expect("every order resolves");
         locks.push(
@@ -140,7 +143,10 @@ fn every_order_of_a_selection_writes_one_lock_and_lists_each_dependency_first() 
         );
     }
     assert_eq!(locks.len(), 3, "three places for the dependency");
-    assert!(locks.iter().all(|lock| *lock == locks[0]), "two orders wrote two locks");
+    assert!(
+        locks.iter().all(|lock| *lock == locks[0]),
+        "two orders wrote two locks"
+    );
     let at = |bundle: &str| {
         locks[0]
             .find(&format!("bundles/{bundle}/bundle.yml"))

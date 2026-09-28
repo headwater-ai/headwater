@@ -244,7 +244,11 @@ mod tests {
     #[test]
     fn a_transitive_dependency_grants_no_write() {
         let found = errors_requiring(
-            &[DEPENDENCY, "add:\n  kinds.other: {purpose: behavior}\n", DEPENDENT],
+            &[
+                DEPENDENCY,
+                "add:\n  kinds.other: {purpose: behavior}\n",
+                DEPENDENT,
+            ],
             &[(1, 0), (2, 1)],
         );
         assert_eq!(found.len(), 1, "{found:?}");

@@ -534,15 +534,19 @@ fn selected(
 /// value some selection can hold is a value this artifact can hold.
 /// [Spec 2](../../../../docs/spec/02-taxonomy-model.md#customization-by-composition)
 /// is what makes it a taxonomy at all — a bundle is add-only, so any subset of
-/// them commutes and resolves, and the maximal subset is the one that contains
-/// every declared closure. That last clause is the reason this is one set rather
-/// than a loop over the bundles one at a time: a bundle declares `requires:`, and
-/// `decision-record` requires `design-spec`, so base plus that one bundle is not
-/// a configuration any consumer can hold.
+/// them that is closed under `requires` resolves, and the maximal subset is
+/// closed under every declared dependency. That last clause is the reason this
+/// is one set rather than a loop over the bundles one at a time: a bundle may
+/// write into a bundle it names in `requires` ([Q67](../../../../docs/decisions/0095-q67-one-library-entry-may-address-the-keys-of-an-entry-it-names-in-requires-and-confluence-holds-over-the-dependency-order.md)),
+/// and `decision-record` requires `evidence-and-obligation`, so base plus that
+/// one bundle is not a configuration any consumer can hold.
 ///
-/// The order is the sorted directory name, and it is a formality: the confluence
-/// check certifies that every legal order yields one taxonomy, and the `founded`
-/// record that does depend on order is discarded by the one caller.
+/// Each bundle is named by its directory, which is the name a consumer would
+/// select it by. The order is the sorted directory name, with each bundle after
+/// every bundle it names in `requires`, and it is a formality: the confluence
+/// check certifies that every order that respects `requires` yields one
+/// taxonomy, and the `founded` record that does depend on order is discarded
+/// by the one caller.
 ///
 /// A directory under the bundle root that holds no `bundle.yml` is skipped
 /// rather than refused. It is a bundle no consumer can select, which is a

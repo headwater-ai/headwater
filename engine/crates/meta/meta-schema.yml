@@ -165,9 +165,10 @@ operations:
   # one of this repository's own shipped bundles carries today — goes
   # unreported. Q40.
   extends: {scalar: string}
-  # The engine reads nothing from this key today. The invariant it documents
-  # is already enforced by referential integrity at resolve time, on an
-  # unrelated path that predates this key. Q40.
+  # The engine reads this key for Q67 and for nothing else. A bundle applies
+  # after each bundle it names here, may add into their keys, and is refused
+  # where it writes into one the selection lacks. It never adds a bundle to a
+  # selection, and a source not selected as a bundle is not read. Q40, Q67.
   requires: {seq: {scalar: string}}
 
   # The key of an operation is an address rather than a segment, so it holds

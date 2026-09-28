@@ -1,11 +1,11 @@
 ---
 id: HW-OBL-0040
 title: "Composition between two library entries has no add-only form"
-status: current
-status_since: 2026-08-13
+status: discharged
+status_since: 2026-09-29
 waiting_on: build
-last_verified: 2026-09-27
-summary: "The first library entry to claim an address owns it, so a second entry cannot reuse the vocabulary that both traditions need."
+last_verified: 2026-09-29
+summary: "The resolver lets an entry add into an entry it names in requires, orders the pair, and refuses a selection that lacks the named entry."
 provenance:
   warrant: accepted
   agency: mixed
@@ -38,4 +38,8 @@ The two other cases are lists rather than addresses. An endpoint list of concret
 
 The root is one. Vocabulary that more than one tradition needs cannot live in an entry, because the first entry to claim an address owns it.
 
-**The owner ruled the form on 2026-09-22, and this record now waits on a build.** [HW-DR-0095](../decisions/0095-q67-one-library-entry-may-address-the-keys-of-an-entry-it-names-in-requires-and-confluence-holds-over-the-dependency-order.md) records the ruling. One entry may address keys of an entry that it names as a dependency in `requires`, with `add_to` and `add`. No general operation that extends or appends is added. [Spec 2](../spec/02-taxonomy-model.md#customization-by-composition) states the narrowed confluence claim. The resolver does not read `requires` for this yet, so a dependent entry that appends to a list of its dependency is still refused. The change that discharges this record is in the resolver. Its confluence check must order a pair by a declared dependency. It must admit a write from the dependent entry into a key of its dependency. It must still refuse the same write from an entry that names no dependency.
+**The owner ruled the form on 2026-09-22.** [HW-DR-0095](../decisions/0095-q67-one-library-entry-may-address-the-keys-of-an-entry-it-names-in-requires-and-confluence-holds-over-the-dependency-order.md) records the ruling. One entry may address keys of an entry that it names as a dependency in `requires`, with `add_to` and `add`. No general operation that extends or appends is added. [Spec 2](../spec/02-taxonomy-model.md#customization-by-composition) states the narrowed confluence claim.
+
+**The resolver change landed with [#1246](https://github.com/headwater-ai/headwater/issues/1246), and this record is discharged.** The resolver reads `requires` from each source that a selection chose as a bundle. It applies each bundle after every bundle that the bundle names, so the lock does not depend on the order of the `bundles:` list. Its confluence check admits an `add` or an `add_to` from the dependent entry into a key of an entry that it names directly. It still refuses the same write from an entry that names no dependency, or that reaches the other entry only through a third. A selection that lacks a named entry is refused before the merge where the dependent writes into it, and the refusal names both entries and the address. A cycle in `requires` is refused, and the refusal names each entry in it. The cases `dependent-add-to`, `dependent-add-to-without-requires`, `missing-dependency-add-to`, `missing-dependency-add`, `requires-cycle` and `transitive-requires-grants-no-write` under `engine/crates/resolve/fixtures/cases/` hold each of these.
+
+The library entries that met this wall have not used the form yet. The `diataxis` and `brd-prd` findings that cite this record can now build against it, and a release of the package carries that work.
