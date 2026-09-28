@@ -41,6 +41,17 @@
 #     sh tools/run/run-dir.sh resume <dir>           what each open handover needs, one line per issue
 #     sh tools/run/run-dir.sh rule <dir> <issue> gated|deferred|refused|open <reason>
 #                                               record a ruling in decisions.md, in the form next reads
+#     sh tools/run/run-dir.sh intake <dir> <file>    append a file of intake lines to intake.md
+#     sh tools/run/run-dir.sh decide <dir> <text>    append one dated line to decisions.md
+#     sh tools/run/run-dir.sh lesson <dir> <file>    append a file of prose to lessons.md
+#     sh tools/run/run-dir.sh withdraw <dir> <match> <line>
+#                                               replace the one intake line that holds <match>
+#
+# Every <dir>, for every subcommand but `start`, may be a bare run id, such as `20260927-0443`, which names that
+# run under the git common dir. A worktree-isolated parent's shell refuses a
+# command whose text names `.git`, and `Edit` refuses a path there, so the id
+# and the four prose subcommands are its only way to write the ledger. Run
+# `20260927-0443` wrote four scripts of its own for exactly this.
 #
 # Three more files serve a parent that `tools/run/supervise.sh` restarts every
 # few merges, so that its context stays small (#1275). A subagent dies with
@@ -120,7 +131,7 @@ root=$(cd "$(dirname "$0")/../.." && pwd)
 keys='iter issue pr merge verdict proved opened closed'
 
 usage() {
-    sed -n '/^#     sh tools\/run-dir.sh/p' "$0" | sed 's/^# *//' >&2
+    sed -n '/^#     sh tools\/run\/run-dir.sh/p' "$0" | sed 's/^# *//' >&2
     exit 2
 }
 
@@ -142,6 +153,58 @@ runs_root() {
         *) common="$root/$common" ;;
     esac
     printf '%s/headwater-run' "$common"
+}
+
+# A bare run id names that run under the runs root. A path, or a name that is
+# already a directory here, stays as it is.
+resolve() {
+    case $1 in
+        */*) printf '%s' "$1" ;;
+        *) if [ -d "$1" ]; then printf '%s' "$1"; else printf '%s/%s' "$(runs_root)" "$1"; fi ;;
+    esac
+}
+
+need_dir() {
+    [ -d "$1" ] || { echo "run-dir: $1 is not a run directory." >&2; exit 1; }
+}
+
+intake() {
+    dir=$1
+    need_dir "$dir"
+    [ -f "$2" ] || { echo "run-dir: $2 is not a file of intake lines." >&2; exit 1; }
+    cat "$2" >> "$dir/intake.md"
+    printf 'INTAKE: %s lines appended\n' "$(wc -l < "$2" | tr -d ' ')"
+}
+
+# Lessons are prose under a heading, several lines at a time, so the parent
+# composes them in a file with `Write` and this appends the file whole.
+lesson() {
+    dir=$1
+    need_dir "$dir"
+    [ -s "$2" ] || { echo "run-dir: $2 is not a file of lesson prose." >&2; exit 1; }
+    cat "$2" >> "$dir/lessons.md"
+    printf 'LESSON: %s lines appended\n' "$(wc -l < "$2" | tr -d ' ')"
+}
+
+decide() {
+    dir=$1
+    need_dir "$dir"
+    printf -- '- %s — %s\n' "$(date -u +%Y-%m-%d)" "$2" >> "$dir/decisions.md"
+}
+
+# Exactly one line may hold the match, so a withdrawal never rewrites the
+# wrong finding, or two of them.
+withdraw() {
+    dir=$1
+    need_dir "$dir"
+    file="$dir/intake.md"
+    hits=$(grep -cF -- "$2" "$file" 2>/dev/null)
+    if [ "${hits:-0}" -ne 1 ]; then
+        echo "run-dir: ${hits:-0} intake lines hold \`$2\`, and a withdrawal replaces exactly one." >&2
+        exit 1
+    fi
+    match=$2 line=$3 awk 'index($0, ENVIRON["match"]) { print ENVIRON["line"]; next } { print }' "$file" > "$file.tmp" &&
+        mv "$file.tmp" "$file"
 }
 
 start() {
@@ -652,21 +715,27 @@ session() {
     printf 'SESSION: %s\n' "$id"
 }
 
+run=${2:+$(resolve "$2")}
+
 case ${1:-} in
     start) shift; start "$@" ;;
-    stage) [ $# -ge 4 ] || usage; shift; stage "$@" ;;
-    next) [ $# -eq 2 ] || usage; next "$2" ;;
-    resume) [ $# -eq 2 ] || usage; resume "$2" ;;
-    rule) [ $# -ge 5 ] || usage; shift; rule "$@" ;;
-    session) [ $# -eq 2 ] || usage; session "$2" ;;
-    claim) [ $# -ge 5 ] || usage; shift; claim "$@" ;;
-    release) [ $# -eq 3 ] || usage; release "$2" "$3" ;;
-    claims) [ $# -eq 2 ] || usage; claims "$2" ;;
-    end) [ $# -eq 2 ] || usage; end "$2" ;;
-    log) [ $# -eq 3 ] || usage; log "$2" "$3" ;;
-    tail) [ $# -ge 2 ] || usage; tail_log "$2" "${3:-5}" ;;
-    net) [ $# -eq 2 ] || usage; net "$2" ;;
-    usage) [ $# -eq 2 ] || usage; plan_usage "$2" ;;
-    import) [ $# -eq 3 ] || usage; import "$2" "$3" ;;
+    stage) [ $# -ge 4 ] || usage; shift 2; stage "$run" "$@" ;;
+    next) [ $# -eq 2 ] || usage; next "$run" ;;
+    resume) [ $# -eq 2 ] || usage; resume "$run" ;;
+    rule) [ $# -ge 5 ] || usage; shift 2; rule "$run" "$@" ;;
+    session) [ $# -eq 2 ] || usage; session "$run" ;;
+    claim) [ $# -ge 5 ] || usage; shift 2; claim "$run" "$@" ;;
+    release) [ $# -eq 3 ] || usage; release "$run" "$3" ;;
+    claims) [ $# -eq 2 ] || usage; claims "$run" ;;
+    end) [ $# -eq 2 ] || usage; end "$run" ;;
+    log) [ $# -eq 3 ] || usage; log "$run" "$3" ;;
+    tail) [ $# -ge 2 ] || usage; tail_log "$run" "${3:-5}" ;;
+    net) [ $# -eq 2 ] || usage; net "$run" ;;
+    usage) [ $# -eq 2 ] || usage; plan_usage "$run" ;;
+    import) [ $# -eq 3 ] || usage; import "$2" "$(resolve "$3")" ;;
+    intake) [ $# -eq 3 ] || usage; intake "$run" "$3" ;;
+    decide) [ $# -eq 3 ] || usage; decide "$run" "$3" ;;
+    lesson) [ $# -eq 3 ] || usage; lesson "$run" "$3" ;;
+    withdraw) [ $# -eq 4 ] || usage; withdraw "$run" "$3" "$4" ;;
     *) usage ;;
 esac

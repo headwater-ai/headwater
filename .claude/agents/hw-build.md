@@ -50,7 +50,7 @@ Your tree and branch stay after the run, for the owner to clean up. Leave the tr
 
 **Then dispatch `headwater-maintainer` over your branch, before you open the pull request.** Run it after the rebase, the rebuild, `headwater generate` and the workspace suite, so that it reads the tree you will push, and dispatch it without `isolation`, so that it works in your tree. Name the absolute path of your tree and the base `origin/main`, and it diffs `origin/main...HEAD`. The engine is already built there, so it runs that binary and builds nothing. If it must build, it sets `HW_CARGO_SLOT=maintainer-<N>` for your issue, because builders run in parallel and one shared `maintainer` slot is the target-directory race the run policy records for `verify`. It then removes that target directory and its `.root` file under `~/.cache/headwater/cargo-pool/` when it reports, as a verifier does, because each one is 10-13 GB. Paste its **Stale** and **Owed** parts verbatim into `build.md` and into the pull request body, under the heading `## Upkeep (headwater-maintainer)` in both. You accept nothing from it: it proposes and the parent rules. Fix a Stale sentence that your own change made false, inside the issue's scope, and write every other line to intake, one line each, as the run policy says.
 
-**After you open it, wait for CI once**, on the commit you pushed, started with `run_in_background: true` and re-issued on a `RE-ISSUE` exit:
+**After you open it, wait for CI once**, on the commit you pushed, run in the foreground with a Bash `timeout` of `300000` and re-issued on a `RE-ISSUE` exit:
 
     sh tools/run/wait-for.sh "sh tools/run/ci-done.sh $(git rev-parse HEAD)"
 

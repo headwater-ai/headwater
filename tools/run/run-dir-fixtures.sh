@@ -347,6 +347,55 @@ same '  and stage still writes its checkpoint, then prints DRAIN' 'DRAIN stage v
 rm -f "$resume/drain"
 same 'once drain is gone, next hands out the issue again' 12 "$(sh "$tool" next "$resume" 2>&1)"
 
+printf '\n# a bare run id, and the prose a parent writes through it\n'
+prose=$(sh "$tool" start prose 2>/dev/null)
+: > "$prose/decisions.md"
+sh "$tool" decide prose 'ruled #1 MERGE' 2>"$scratch/err"; status=$?
+same 'decide takes a bare run id and appends one dated line' "0 - $(date -u +%Y-%m-%d) — ruled #1 MERGE" \
+    "$status $(cat "$prose/decisions.md")"
+
+printf -- '- #1 | build | a finding\n- #2 | verify | another\n' > "$scratch/lines"
+same 'intake appends a file of lines and says how many' 'INTAKE: 2 lines appended' \
+    "$(sh "$tool" intake prose "$scratch/lines")"
+same '  and both lines are in intake.md' 2 "$(wc -l < "$prose/intake.md" | tr -d ' ')"
+
+sh "$tool" withdraw prose '#2 |' '- #2 | verify | WITHDRAWN' 2>"$scratch/err"; status=$?
+same 'withdraw replaces the one line that holds the match' "0 - #2 | verify | WITHDRAWN" \
+    "$status $(sed -n 2p "$prose/intake.md")"
+same '  and leaves the other line as it was' '- #1 | build | a finding' "$(sed -n 1p "$prose/intake.md")"
+
+sh "$tool" withdraw prose '| ' 'x' 2>"$scratch/err"; status=$?
+same 'withdraw refuses a match that two lines hold, and writes nothing' "1 - #1 | build | a finding" \
+    "$status $(sed -n 1p "$prose/intake.md")"
+
+printf '## Parent\n\n- a lesson on two lines\n' > "$scratch/lesson"
+before=$(wc -l < "$prose/lessons.md" | tr -d ' ')
+same 'lesson takes a bare run id, appends a file of prose to lessons.md, and says how many lines' \
+    "LESSON: 3 lines appended $((before + 3))" \
+    "$(sh "$tool" lesson prose "$scratch/lesson") $(wc -l < "$prose/lessons.md" | tr -d ' ')"
+: > "$scratch/empty"
+sh "$tool" lesson prose "$scratch/empty" 2>"$scratch/err"; status=$?
+same 'lesson refuses an empty file' 1 "$status"
+
+sh "$tool" decide no-such-run 'x' 2>"$scratch/err"; status=$?
+same 'a bare id that names no run is refused' 1 "$status"
+
+printf '\n# every subcommand that names a run takes a bare run id\n'
+# The dispatch of run-dir.sh resolves one <dir> for every subcommand. This
+# case holds that for the handover verbs #1281 added, with no path in any call,
+# as a worktree-isolated parent types them.
+bare=$(sh "$tool" start bare 2>/dev/null)
+printf '# Queue\n\n1. #70 A | none | x\n2. #71 B | none | x\n' > "$bare/queue.md"
+same 'next takes a bare run id' 70 "$(sh "$tool" next bare 2>&1)"
+sh "$tool" stage bare 70 adjudicated note=/s/a.md branch=issue-70 footprint=f70 >/dev/null 2>"$scratch/err"; status=$?
+same 'stage takes a bare run id and writes the handover' '0 stage adjudicated' "$status $(sed -n 1p "$bare/handover/70" 2>/dev/null)"
+same 'resume takes a bare run id' '70 adjudicated claim f70' "$(sh "$tool" resume bare 2>&1)"
+sh "$tool" rule bare 71 deferred 'not this run' >/dev/null 2>"$scratch/err"; status=$?
+same 'rule takes a bare run id and writes its RULED line' '0 1' "$status $(grep -c 'RULED #71 deferred' "$bare/decisions.md")"
+same 'session takes a bare run id' 'SESSION: cccc3333' "$(CLAUDE_JOB_DIR=/jobs/cccc3333 sh "$tool" session bare 2>&1)"
+same '  and appends to that run'"'"'s parent.session' cccc3333 "$(tail -n 1 "$bare/parent.session")"
+sh "$tool" resume no-such-run >/dev/null 2>&1; status=$?
+same 'a bare id that names no run is refused by resume' 1 "$status"
 printf '\n# next skips what the run ruled out, and a ruling line the owner has not answered\n'
 # Verify-1 of PR #1279 ran `next` on a copy of run 20260927-0443 and it
 # printed #927, which decisions.md:2055 says stays gated. Nothing in claims/,

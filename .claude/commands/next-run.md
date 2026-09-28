@@ -34,7 +34,7 @@ Ten lines the parent of a build-order run obeys on every turn. A run copies them
 
 ## The loop
 
-`sh tools/run/run-dir.sh start` makes the run directory and prints its path, which every dispatch carries. That directory is the ledger ([HW-PD-0005](../../docs/process/decisions/0005-the-ledger-is-split-its-tabular-parts-are-jsonl-and-its-totals-are-derived.md)): its `log` takes one line per iteration, `tail` is what you read, `net` derives opened minus closed, and `lessons.md` and `decisions.md` are yours to append with `Edit`. Read `lessons.md` by heading, only the parent's sections, never whole. Append to the integrator queue; never rewrite it. Ask an agent one line by `SendMessage`, never `ListAgents`.
+`sh tools/run/run-dir.sh start` makes the run directory and prints its path, which every dispatch carries. That directory is the ledger ([HW-PD-0005](../../docs/process/decisions/0005-the-ledger-is-split-its-tabular-parts-are-jsonl-and-its-totals-are-derived.md)): its `log` takes one line per iteration, `tail` is what you read, `net` derives opened minus closed, and the prose ledger is yours to append through the verbs `hw-run-policy` names. Read `lessons.md` by heading, only the parent's sections, never whole. Append to the integrator queue; never rewrite it. Ask an agent one line by `SendMessage`, never `ListAgents`.
 
 1. **Top of the run.** Dispatch `headwater-product-owner` and `hw-queue` in one turn. Read the queue agent's report and nothing else.
 2. **Fill.** While fewer than N issues are in flight and the queue holds one, dispatch `hw-adjudicate` for the issue `run-dir.sh next` prints, with the template below.

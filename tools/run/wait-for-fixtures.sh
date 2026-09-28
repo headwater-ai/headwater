@@ -52,6 +52,21 @@ else
     echo "  FAIL  exits 2 and says RE-ISSUE (status $status, err: $(cat "$scratch/err"))"
 fi
 
+echo "a condition that outlasts the cap is killed at the cap, not waited on"
+# The verifier of #1274 made the condition outlast the Bash timeout, and the
+# harness moved the call to the background. The cap bounds the condition too.
+start=$(date +%s)
+sh "$tool" --cap 2 --poll 1 "sleep 20; false" > "$scratch/out" 2>"$scratch/err"
+status=$?
+end=$(date +%s)
+if [ "$status" -eq 2 ] && [ $((end - start)) -le 4 ] && grep -q 'RE-ISSUE' "$scratch/err"; then
+    passed=$((passed + 1))
+    echo "  ok    RE-ISSUE after $((end - start))s, exit 2"
+else
+    failed=$((failed + 1))
+    echo "  FAIL  the condition held the attempt for $((end - start))s (status $status)"
+fi
+
 echo "no condition is refused before any sleep"
 start=$(date +%s)
 sh "$tool" > "$scratch/out" 2>"$scratch/err"
