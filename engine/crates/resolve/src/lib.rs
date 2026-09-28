@@ -77,6 +77,7 @@ pub mod flatten;
 pub mod merge;
 pub mod migration;
 pub mod operation;
+pub mod order;
 pub mod package;
 pub mod references;
 pub mod release;
@@ -325,9 +326,11 @@ pub fn repository(root: &Path) -> Result<Repository, Vec<ResolveError>> {
 /// Resolve a base package and its overlays.
 ///
 /// The first source is the taxonomy, and every source after it is an overlay,
-/// in the order the consumer selected them. The order is fixed so that one
-/// resolution produces one lock, and the confluence check is what makes the
-/// choice of order a formality rather than a decision.
+/// in the order the consumer selected them. The resolver applies them in that
+/// order with one change: a bundle applies after every bundle it names in
+/// `requires` ([`order`]). The order is fixed so that one resolution produces
+/// one lock, and [`Resolution::sources`] records it. The confluence check is
+/// what makes the rest of the choice a formality rather than a decision.
 pub fn resolve(sources: &[Source]) -> Result<Resolution, Vec<ResolveError>> {
     let schema = MetaSchema::shipped().map_err(|error| {
         vec![ResolveError::new(
@@ -368,6 +371,14 @@ pub fn resolve(sources: &[Source]) -> Result<Resolution, Vec<ResolveError>> {
         return Err(errors);
     }
 
+    // The application order: each selected bundle after every bundle it names
+    // in `requires`, and the consumer's order everywhere else (HW-DR-0095).
+    let ordered = order::order(overlays)?;
+    let sources: Vec<Source> = std::iter::once(base.clone())
+        .chain(ordered.order.iter().map(|index| overlays[*index].clone()))
+        .collect();
+    let overlays = &sources[1..];
+
     let names: Vec<String> = sources.iter().map(|source| source.name.clone()).collect();
     let mut operations = Vec::new();
     for (index, overlay) in overlays.iter().enumerate() {
@@ -380,19 +391,36 @@ pub fn resolve(sources: &[Source]) -> Result<Resolution, Vec<ResolveError>> {
         return Err(errors);
     }
 
-    // 2. Confluence, before anything merges.
-    let errors = confluence::check(&operations, &names, &vec![Vec::new(); names.len()]);
-    if !errors.is_empty() {
-        return Err(errors);
-    }
-
-    // 3. Apply.
     let start = base
         .root
         .value
         .as_map()
         .cloned()
         .expect("a validated taxonomy source is a mapping");
+
+    // A dependent write whose dependency the selection lacks, before the merge
+    // turns it into "not a list" or a stub.
+    let errors = order::unmet(&start, &sources, &operations, &ordered.missing);
+    if !errors.is_empty() {
+        return Err(errors);
+    }
+
+    // 2. Confluence, before anything merges. Source 0 is the base, which
+    // requires nothing.
+    let requires: Vec<Vec<usize>> = std::iter::once(Vec::new())
+        .chain(
+            ordered
+                .requires
+                .iter()
+                .map(|named| named.iter().map(|at| at + 1).collect()),
+        )
+        .collect();
+    let errors = confluence::check(&operations, &names, &requires);
+    if !errors.is_empty() {
+        return Err(errors);
+    }
+
+    // 3. Apply.
     let (applied, founded) = apply(&start, &operations, &names)?;
     let merged = merge::canonical(Some(&start), &applied);
 
@@ -439,6 +467,7 @@ pub fn resolve(sources: &[Source]) -> Result<Resolution, Vec<ResolveError>> {
         role: Role::Taxonomy,
         root: headwater_yaml::Spanned::new(Value::Map(taxonomy.clone()), Span::default()),
         text: String::new(),
+        selected_as: None,
     };
     let errors = after.validate(&schema);
     if !errors.is_empty() {

@@ -514,7 +514,7 @@ fn selected(
         })?;
         for name in &consumer.bundles {
             let path = directory.join(&bundles).join(name).join("bundle.yml");
-            out.push(Source::read(&path, &display(root, &path), Role::Overlay)?);
+            out.push(Source::read(&path, &display(root, &path), Role::Overlay)?.selected_as(name));
         }
     }
 
@@ -562,8 +562,12 @@ fn shipped(
         return Ok(out);
     };
     for name in names {
-        let path = at.join(name).join("bundle.yml");
-        out.push(Source::read(&path, &display(root, &path), Role::Overlay)?);
+        let path = at.join(&name).join("bundle.yml");
+        let source = Source::read(&path, &display(root, &path), Role::Overlay)?;
+        out.push(match name.to_str() {
+            Some(bundle) => source.selected_as(bundle),
+            None => source,
+        });
     }
     Ok(out)
 }

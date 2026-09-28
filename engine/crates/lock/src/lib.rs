@@ -332,10 +332,22 @@ pub fn write(
         return Err(findings);
     }
     let canonical = resolution.render();
+    // The sources in the order the resolver applied them, which is not always
+    // the order the caller holds them in: a bundle applies after every bundle
+    // it names in `requires`. Listing them in application order is what makes
+    // `bundles: [a, b]` and `bundles: [b, a]` write one lock.
+    let mut ordered: Vec<&Source> = sources.iter().collect();
+    ordered.sort_by_key(|source| {
+        resolution
+            .sources
+            .iter()
+            .position(|name| *name == source.name)
+            .unwrap_or(usize::MAX)
+    });
     let lock = Lock {
         package: package.to_string(),
         version: version.to_string(),
-        sources: sources
+        sources: ordered
             .iter()
             .map(|source| SourceDigest {
                 path: source.name.clone(),

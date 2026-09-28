@@ -3,9 +3,15 @@ add-collides-behind-remove: 1 permutation, all refused
 address-into-a-list: 1 permutation, all refused
 an-add-that-founds-what-it-addresses: 1 permutation, all resolve to one taxonomy
 core-last-satisfier: 1 permutation, all refused
+dependent-add-to: 2 permutations, all resolve to one taxonomy
+dependent-add-to-without-requires: 2 permutations, all refused
 list-operations: 1 permutation, all resolve to one taxonomy
+missing-dependency-add: 1 permutation, all refused
+missing-dependency-add-to: 1 permutation, all refused
 not-confluent: 2 permutations, all refused
 remove-a-required-member: 1 permutation, all refused
 remove-breaks-a-reference: 1 permutation, all refused
+requires-cycle: 2 permutations, all refused
+transitive-requires-grants-no-write: 6 permutations, all refused
 two-adds-into-one-kind: 2 permutations, all resolve to one taxonomy
 worked-overlay: 1 permutation, all resolve to one taxonomy

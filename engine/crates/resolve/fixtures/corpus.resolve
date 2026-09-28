@@ -2,12 +2,17 @@ headwater/standard 4.9.2
 
 sources, in application order
   .headwater/packages/headwater-standard/taxonomy.yml
-  .headwater/packages/headwater-standard/bundles/design-spec/bundle.yml
   .headwater/packages/headwater-standard/bundles/evidence-and-obligation/bundle.yml
+  .headwater/packages/headwater-standard/bundles/design-spec/bundle.yml
   .headwater/packages/headwater-standard/bundles/decision-record/bundle.yml
   .headwater/overlay.yml
 
 operations
+  add.purposes.evidence (.headwater/packages/headwater-standard/bundles/evidence-and-obligation/bundle.yml)
+  add.purposes.obligation (.headwater/packages/headwater-standard/bundles/evidence-and-obligation/bundle.yml)
+  add.regimes.voice.narrative (.headwater/packages/headwater-standard/bundles/evidence-and-obligation/bundle.yml)
+  add.kinds.evaluation (.headwater/packages/headwater-standard/bundles/evidence-and-obligation/bundle.yml)
+  add.shelves.evaluations (.headwater/packages/headwater-standard/bundles/evidence-and-obligation/bundle.yml)
   add.facets.doc_type (.headwater/packages/headwater-standard/bundles/design-spec/bundle.yml)
   add.facets.sequence (.headwater/packages/headwater-standard/bundles/design-spec/bundle.yml)
   add.kinds.design_spec (.headwater/packages/headwater-standard/bundles/design-spec/bundle.yml)
@@ -20,11 +25,6 @@ operations
   add.relations.assesses (.headwater/packages/headwater-standard/bundles/design-spec/bundle.yml)
   add.shelves.spec_series (.headwater/packages/headwater-standard/bundles/design-spec/bundle.yml)
   add.shelves.reviews (.headwater/packages/headwater-standard/bundles/design-spec/bundle.yml)
-  add.purposes.evidence (.headwater/packages/headwater-standard/bundles/evidence-and-obligation/bundle.yml)
-  add.purposes.obligation (.headwater/packages/headwater-standard/bundles/evidence-and-obligation/bundle.yml)
-  add.regimes.voice.narrative (.headwater/packages/headwater-standard/bundles/evidence-and-obligation/bundle.yml)
-  add.kinds.evaluation (.headwater/packages/headwater-standard/bundles/evidence-and-obligation/bundle.yml)
-  add.shelves.evaluations (.headwater/packages/headwater-standard/bundles/evidence-and-obligation/bundle.yml)
   add.facets.waiting_on (.headwater/packages/headwater-standard/bundles/decision-record/bundle.yml)
   add.kinds.decision.facets (.headwater/packages/headwater-standard/bundles/decision-record/bundle.yml)
   add.kinds.obligation_record (.headwater/packages/headwater-standard/bundles/decision-record/bundle.yml)
