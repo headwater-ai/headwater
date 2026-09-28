@@ -3,7 +3,7 @@ description: Run N iterations of the Headwater build order as a resumable run ov
 argument-hint: "[iteration count, default 20] [--parallel N]"
 ---
 
-Run `$ARGUMENTS` iterations (default 20) of the Headwater build order. You are the parent, and your job is judgment: what to merge, what a stale premise means, which surprise is a lesson. Every stage is an agent definition under `.claude/agents/`, dispatched by `subagent_type`, each carrying its own instructions; paste nothing a definition already says.
+Run `$ARGUMENTS` iterations (default 20) of the Headwater build order. You are the parent, and your job is judgment: what to merge, what a stale premise means, which surprise is a lesson. Every stage is an agent definition under `.claude/agents/`, dispatched by `subagent_type`, each carrying its own instructions; paste nothing a definition already says. Load the `hw-run-policy` skill at the start of every session, the first included.
 
 **Width.** Without `--parallel N` one issue is in flight, merged before the next starts; with it N build at once and merges go through the slot below into the merge queue. Five to eight lost concurrency ([the evaluation](../../docs/evaluations/the-build-order-as-a-multi-agent-system.md)): raise it only on its numbers.
 
@@ -11,7 +11,7 @@ Run `$ARGUMENTS` iterations (default 20) of the Headwater build order. You are t
 
 Canonical here; every other file cites it rather than restating it.
 
-**Before any work starts, name the reader who is not this repository.** If the only party better off is Headwater's own corpus, the work is not eligible for an iteration or the tracker: it is scaffolded as an obligation record under [13 — Open obligations](../../docs/spec/13-open-obligations.md) and left there. Two labels are exceptions. `bug` marks a defect in what ships; it is eligible whatever it serves, and it sorts first (owner, 2026-09-22). `adopter-blocking` marks work an outside adopter cannot proceed without, and sorts next. A run files no issue: a finding goes to its `intake.md` (`hw-run-policy`).
+**Before any work starts, name the reader who is not this repository.** If the only party better off is Headwater's own corpus, the work is not eligible for an iteration or the tracker: it is scaffolded as an obligation record under [13 — Open obligations](../../docs/spec/13-open-obligations.md) and left there. Two labels are exceptions. `bug` marks a defect in what ships; it is eligible whatever it serves, and it sorts first (owner, 2026-09-22). `adopter-blocking` marks work an outside adopter cannot proceed without, and sorts next.
 
 ## The doctrine
 
@@ -36,9 +36,9 @@ Ten lines the parent of a build-order run obeys on every turn. A run copies them
 
 `sh tools/run/run-dir.sh start` makes the run directory and prints its path, which every dispatch carries. That directory is the ledger ([HW-PD-0005](../../docs/process/decisions/0005-the-ledger-is-split-its-tabular-parts-are-jsonl-and-its-totals-are-derived.md)): its `log` takes one line per iteration, `tail` is what you read, `net` derives opened minus closed, and `lessons.md` and `decisions.md` are yours to append with `Edit`. Read `lessons.md` by heading, only the parent's sections, never whole. Append to the integrator queue; never rewrite it. Ask an agent one line by `SendMessage`, never `ListAgents`.
 
-1. **Top of the run.** Dispatch `headwater-product-owner` and `hw-queue` in one turn. Read the queue agent's report and nothing else. Put the product owner's `RULING` blocks to the owner before you fill.
+1. **Top of the run.** Dispatch `headwater-product-owner` and `hw-queue` in one turn. Read the queue agent's report and nothing else.
 2. **Fill.** While fewer than N issues are in flight and the queue holds one, dispatch `hw-adjudicate` for the issue `run-dir.sh next` prints, with the template below.
-3. **On an adjudicate report.** `VERDICT: BUILD` runs `run-dir.sh stage <run> <issue> adjudicated`, claims the footprint with `run-dir.sh claim <run> <issue> <branch> <artifacts>`, and dispatches `hw-iterate` with the same template, the adjudication note's path, and any `WAITS-ON` the claim printed. It owns build, verify and rework, and reports once. `VERDICT: REFUSE` is ruled by the three kinds in `hw-run-policy`, recorded with `run-dir.sh rule`, and the next issue is taken in the same turn.
+3. **On an adjudicate report.** `VERDICT: BUILD` runs `run-dir.sh stage <run> <issue> adjudicated note=<path> footprint=<a,b>`, claims the footprint with `run-dir.sh claim <run> <issue> <branch> <artifacts>`, and dispatches `hw-iterate` with the same template, the adjudication note's path, and any `WAITS-ON` the claim printed. It owns build, verify and rework, and reports once. `VERDICT: REFUSE` is ruled by the three kinds in `hw-run-policy`, recorded with `run-dir.sh rule`, and the next issue is taken in the same turn.
 4. **On an iterate report.** `VERDICT: PASS` is your cue to rule, from the verdict and the notes it names, never from `git show` or `git diff` of the branch ([HW-PD-0022](../../docs/process/decisions/0022-the-verify-and-rework-loop-for-one-issue-runs-below-the-parent.md)). If you merge, append the ruling to the integrator queue and dispatch the next adjudicate in the same turn. `VERDICT: STOP` is ruled like a refusal.
 5. **The integrator slot.** Depth one. When nothing is integrating and the queue holds a ruling, dispatch a fresh `hw-integrate` with every pull request ruled MERGE, each with its ruling and declared footprint. It enqueues all, and an ejected one returns for a new ruling ([HW-PD-0020](../../docs/process/decisions/0020-merges-go-through-the-github-merge-queue-one-squash-commit-per-pull-request.md)). Never a long-lived one ([HW-PD-0003](../../docs/process/decisions/0003-a-dispatch-pays-when-it-retires-more-parent-turns-than-it-costs.md)).
 6. **Every fifth merge, and at the end**, dispatch `headwater-product-owner`.

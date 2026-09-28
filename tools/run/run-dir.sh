@@ -492,6 +492,16 @@ stage() {
         [ -n "$value" ] || value=$(sed -n "s/^$key //p" "$dir/handover/$issue" 2>/dev/null | tail -n 1)
         [ -n "$value" ] && body=$(printf '%s\n%s %s' "$body" "$key" "$value")
     done
+    # An adjudicated checkpoint is what the next session claims and iterates
+    # from, so it is refused without the note and the footprint. A bare one
+    # made `resume` print `claim ` with nothing to claim (verify-2 of #1281).
+    if [ "$reached" = adjudicated ]; then
+        for key in note footprint; do
+            printf '%s\n' "$body" | grep -q "^$key " && continue
+            echo "run-dir: an adjudicated checkpoint needs \`$key=\`, which the next session claims or iterates from." >&2
+            exit 2
+        done
+    fi
     mkdir -p "$dir/handover"
     tmp="$dir/handover/.$issue.$$"
     printf '%s\n' "$body" > "$tmp" && mv "$tmp" "$dir/handover/$issue" || { rm -f "$tmp"; exit 1; }

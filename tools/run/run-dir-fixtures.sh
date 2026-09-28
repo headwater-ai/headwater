@@ -451,7 +451,7 @@ same '  and the next session claims the footprint it names' '60 adjudicated clai
 same '  and the note it names reaches hw-iterate' 'note /s/adjudication.md' "$(grep '^note ' "$own/handover/60" 2>/dev/null)"
 sh "$tool" stage "$own" 61 adjudicated >/dev/null 2>"$scratch/err"; status=$?
 same 'a bare stage adjudicated, with no note and no footprint, is refused with exit 2' '2 0' \
-    "$status $(ls "$own/handover" | grep -c '^61$')"
+    "$status $(ls "$own/handover" 2>/dev/null | grep -c '^61$')"
 
 printf '\n# a veto after a restart: verified-pass goes back to verified-fail, and the fields carry\n'
 # Verify-1 of PR #1281: after a restart, the parent rules a verified-pass

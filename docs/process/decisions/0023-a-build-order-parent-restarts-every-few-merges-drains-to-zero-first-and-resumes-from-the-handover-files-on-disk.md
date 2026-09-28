@@ -38,7 +38,6 @@ The owner posted three rulings on #1275 on 2026-09-28, in the comment titled "De
 > 1. **Stop and drain.** A parent session drains to zero in flight before it exits. An overlapping handover, where the next session starts while the old one drains, is not built now.
 > 2. **Rework after a restart goes to a fresh `hw-build`.** Doctrine line 7 sends a FAIL back to the agent that built the branch. After a handover that agent no longer exists, so a fresh builder gets the verifier's finding and the `## Follow-up` of the old `build.md`. The token cost is about the same: verify takes 6.0 min at the median, which is past the subagent's five-minute cache lifetime ([HW-PD-0007](0007-a-background-wait-caps-below-the-cache-lifetime-and-re-issues-itself.md)), so a resumed builder already writes its whole context again. Line 7 is amended to say so.
 > 3. **The handover recovers the per-issue manager of #1276 as well as a bare stage.** The handover file has one shape whether the parent or a manager runs the stages.
-<!-- headwater allow=language.controlled.not_met scope=block until=2027-12-31 reason=accepted_deviation note=the owner's rulings quoted verbatim -->
 
 The manager of #1276 is `hw-iterate`. Ruling 2 narrows [HW-PD-0022](0022-the-verify-and-rework-loop-for-one-issue-runs-below-the-parent.md), which resumes a builder by its id, to one parent session. After a restart, a fresh `hw-iterate` reads the handover file and gives the rework to a fresh builder.
 
@@ -64,6 +63,6 @@ A session that starts near 60k and drains from about 130k reaches a peak near 14
 
 The bar is not measured yet. `run-census.sh --context` reads the mean over all parent sessions of a run. A run after this decision must meet the bar before #1275 closes.
 
-The byte ceilings of [HW-PD-0003](0003-a-dispatch-pays-when-it-retires-more-parent-turns-than-it-costs.md) do not change. The doctrine gains the drain exception and the rework rule after a restart. `next-run.md` gains the resume form in a short section. The detail of the resume form stays in the header of `supervise.sh` and in `hw-run-policy`, which a parent reads only when it resumes.
+The byte ceilings of [HW-PD-0003](0003-a-dispatch-pays-when-it-retires-more-parent-turns-than-it-costs.md) do not change. The doctrine gains the drain exception and the rework rule after a restart. `next-run.md` gains the resume form in a short section. The detail of the resume form stays in the header of `supervise.sh` and in `hw-run-policy`. `next-run.md` has the parent load that skill at the start of every session, the first included, so its full `stage` form and its intake rule bind from the first session. The ceiling of `next-run.md` stays at 8192 bytes: two clauses that `hw-run-policy` also states made the room.
 
 Three points stay open. `claude -p` may write the calls of subagents into its stream, and then the drain threshold would count them. The headless permissions of a parent session are not tested. A signal to the loop ends the session that it started, but no test showed that its subagents end with it.
