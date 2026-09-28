@@ -109,6 +109,7 @@ mod probe_result;
 pub mod profile;
 mod shelf_index;
 mod shelf_sections;
+pub mod site;
 mod site_nav;
 mod verb_index;
 
@@ -908,6 +909,11 @@ pub struct Plan {
     /// tell a file it does not write from a file nobody writes: see
     /// [`export_plan`].
     pub orphaned: Vec<Orphaned>,
+    /// Every path a `site_nav` output names, in the order it names them, as a
+    /// path from the repository root. `headwater site` reads this rather than
+    /// the YAML a nav writes, so the verb and the file hold one list. Empty for
+    /// a plan with no `site_nav` declaration.
+    pub navigation: Vec<String>,
 }
 
 /// What the engine writes with no declaration at all.
