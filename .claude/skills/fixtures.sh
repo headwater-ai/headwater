@@ -575,6 +575,8 @@ $out" ;;
         0 'no declared purpose answers this task' \
         "$engine" route zzzqqqwww --root "$root"
 
+    printf '\n# headwater-authoring, its description against the ruling it cites\n'
+
     # The status of a settled decision in its pull request (#1294). A skill
     # reaches a session through its description, which is always loaded, and
     # the body loads only once a session invokes the skill. So the ruling is
