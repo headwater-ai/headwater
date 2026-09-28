@@ -174,6 +174,8 @@ The fixture suites, which are shell and Python rather than cargo, and which you 
     sh tools/repo/diataxis-facet-fixtures.sh
     sh tools/repo/diataxis-fixtures.sh
     sh tools/repo/engine-resolver-fixtures.sh
+    sh tools/repo/fix-fixed-point-fixtures.sh
+    sh tools/repo/fix-fixed-point.sh ./engine/target/release/headwater --now "$HEADWATER_NOW"
     sh tools/engine/engine-readme-fixtures.sh
     sh tools/hw-cargo-fixtures.sh
     sh tools/hw-cargo-link-fixtures.sh
@@ -241,7 +243,7 @@ Every rule in `CLAUDE.md` is a check that `headwater check` runs, and the taxono
 
 `.gitattributes` commits `-merge` for each derived fold, so every clone conflicts on a merge of one with no configuration. The two merge-driver lines make that conflict name the producer, and the commit gate prints them when a clone has not set them. `.githooks/select-merge-driver` then writes the override lines in `info/attributes` that select the driver, from `post-checkout`, `post-merge` and `pre-commit`. The driver is also what writes the site-review marker `.githooks/pre-push` blocks on. Git reads a driver that no configuration defines as a text merge, so the driver line never goes in `.gitattributes` ([#1058](https://github.com/headwater-ai/headwater/issues/1058)). Read `.gitattributes` for which files that covers and why each is on the list, and read [what a check can know](docs/evaluations/what-a-check-can-know.md) under *The shapes a record takes* for the rule that decides which shape a record should have. One measured limitation belongs beside the command rather than only in the evaluation: **no attribute of any kind reaches two branches that write the same value**, because git compares blobs before it selects a merge strategy. That is the case the hook above exists for, and `.gitattributes` says which producer outputs are folds, measured over all of them rather than assumed.
 
-`headwater check --fix` writes a British spelling, a contraction whose expansion is one word, a retired term that names a replacement, and a missing reciprocal link. The CI job builds the engine and runs the same check on every pull request, so an unbuilt clone delays a finding rather than losing it. *A faster build* above carries the measurement and the reason the newer binary wins rather than the shipped one.
+`headwater check --fix` writes a British spelling, a contraction whose expansion is one word, a retired term that names a replacement, and a missing reciprocal link. On a document whose `last_verified` is today, it also records the `verified_revision` of each anchor edge. That stamp says that a person read the document against the file, so read the document before you commit the stamp. CI runs `--fix` through `tools/repo/fix-fixed-point.sh` and fails when it changes a byte of the tree, so `main` stays a fixed point of it. The CI job builds the engine and runs the same check on every pull request, so an unbuilt clone delays a finding rather than losing it. *A faster build* above carries the measurement and the reason the newer binary wins rather than the shipped one.
 
 ### What runs before commit time, in this harness
 

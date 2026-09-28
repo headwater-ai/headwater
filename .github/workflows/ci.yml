@@ -1816,6 +1816,19 @@ jobs:
         # summary is what the checks decided over this tree and never what a
         # disk remembered.
         run: ./engine/target/release/headwater check --no-cache --now "$HEADWATER_NOW" | tee headwater-check.txt
+      - name: headwater check --fix writes nothing here; if it does, run it locally and read each file it writes
+        # This tree is a fixed point of `--fix`, and this step holds it there.
+        # `tools/repo/fix-fixed-point.sh` carries why, what it compares and
+        # what a contributor does when it fails, and the suite on the line
+        # before it provokes each arm with a stub in place of the engine.
+        #
+        # The stamp patch is offered only on a document whose `last_verified`
+        # is on or after `--now`, so this step reads the same injected clock
+        # as the steps above. It blocks: a refused patch exits 1, and so does
+        # any byte the run wrote.
+        run: |
+          sh tools/repo/fix-fixed-point-fixtures.sh
+          sh tools/repo/fix-fixed-point.sh ./engine/target/release/headwater --now "$HEADWATER_NOW"
       - name: The job summary, from the adapter that writes one
         # `--format markdown` is the adapter. Until it existed this step pasted
         # the whole text report into a fenced block, which privileges no forge
