@@ -282,6 +282,7 @@ impl Tree {
 impl Drop for Tree {
     fn drop(&mut self) {
         remove_all(&self.at);
+        remove_all(&self.change_dir());
     }
 }
 
@@ -541,35 +542,68 @@ fn this_repository_s_graph_exports() -> String {
     graph_exports_in_lock(&repository())
 }
 
-/// Today in UTC, the date the check layer's clock reads, so that `check --fix`
-/// records a stamp on a document verified today.
-fn today() -> String {
-    let output = Command::new("date")
-        .args(["-u", "+%F"])
-        .output()
-        .expect("date runs");
-    String::from_utf8_lossy(&output.stdout).trim().to_string()
-}
-
 const GOVERNED: &str = "tools/run.sh";
 const GOVERNING: &str = "docs/decisions/0001-governs.md";
 
 impl Tree {
-    /// A decision that governs one code path and was verified today, with the
-    /// digest recorded by `check --fix`, the one way a stamp is written
-    /// without typing it.
+    /// The directory a case writes a change manifest into. It sits beside the
+    /// tree and never inside it, because `headwater change` names a file under
+    /// the tree that the index does not hold as a document the change adds.
+    fn change_dir(&self) -> PathBuf {
+        let mut name = self.at.as_os_str().to_owned();
+        name.push("-change");
+        PathBuf::from(name)
+    }
+
+    /// The governing decision, verified on `last_verified`, with one bare
+    /// `governs` entry.
+    fn governing(&self, last_verified: &str, entry: &str) {
+        self.write(
+            GOVERNING,
+            &format!(
+                "---\nid: ACME-DR-0001\ntitle: Governs\nstatus: draft\nstatus_since: 2026-01-01\nlast_verified: {last_verified}\nsummary: The decision that governs the run script.\nrelations:\n  governs:\n{entry}\n---\n\n# Governs\n\n## Context\n\nA script.\n\n## Decision\n\nIt runs.\n\n## Consequences\n\nIt ran.\n"
+            ),
+        );
+    }
+
+    /// A decision that governs one code path, with the digest recorded by
+    /// `check --fix --change`, the one way a stamp is written without typing
+    /// it. The change adds the decision, which states that its author read
+    /// what it governs (#1259). The tree has no commit yet, so the manifest is
+    /// written here rather than by `headwater change`.
     fn govern_and_stamp(&self) {
         std::fs::create_dir_all(self.at.join("docs/decisions")).expect("the shelf is made");
         std::fs::create_dir_all(self.at.join("tools")).expect("the directory is made");
         self.write(GOVERNED, "#!/bin/sh\necho one\n");
+        self.governing("2026-01-02", &format!("    - {GOVERNED}"));
+        let dir = self.change_dir();
+        remove_all(&dir);
+        std::fs::create_dir_all(&dir).expect("the change directory is made");
+        let manifest = dir.join("manifest");
+        std::fs::write(
+            &manifest,
+            format!("headwater change 1\nadded\t{GOVERNING}\n"),
+        )
+        .expect("the manifest writes");
+        self.headwater_ok(&["check", "--fix", "--change", &manifest.to_string_lossy()]);
+        remove_all(&dir);
+    }
+
+    /// Re-verify the governing decision and restamp its edge: move its
+    /// `last_verified`, write the change against `HEAD` with `headwater
+    /// change`, and run `check --fix` scoped to it, as an author does.
+    fn re_verify_and_restamp(&self) {
+        let body = self.read(GOVERNING);
         self.write(
             GOVERNING,
-            &format!(
-                "---\nid: ACME-DR-0001\ntitle: Governs\nstatus: draft\nstatus_since: 2026-01-01\nlast_verified: {}\nsummary: The decision that governs the run script.\nrelations:\n  governs:\n    - {GOVERNED}\n---\n\n# Governs\n\n## Context\n\nA script.\n\n## Decision\n\nIt runs.\n\n## Consequences\n\nIt ran.\n",
-                today()
-            ),
+            &body.replace("last_verified: 2026-01-02", "last_verified: 2026-01-03"),
         );
-        self.headwater_ok(&["check", "--fix"]);
+        let dir = self.change_dir();
+        remove_all(&dir);
+        self.headwater_ok(&["change", "HEAD", &dir.to_string_lossy()]);
+        let manifest = dir.join("manifest");
+        self.headwater_ok(&["check", "--fix", "--change", &manifest.to_string_lossy()]);
+        remove_all(&dir);
     }
 
     /// The recorded digest on the governing document's one `governs` entry.
@@ -592,7 +626,7 @@ impl Tree {
     fn restamp_here_and_add_there(&self) -> Output {
         self.git(&["checkout", "-q", "-b", "a"]);
         self.write(GOVERNED, "#!/bin/sh\necho two\n");
-        self.headwater_ok(&["check", "--fix"]);
+        self.re_verify_and_restamp();
         // `headwater new`, as an adopter adds a document: it also appends one
         // reading to `.headwater/capture-cost.jsonl`, which both branches do.
         self.headwater_ok(&["new", "decision", "--title", "Second"]);

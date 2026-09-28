@@ -479,7 +479,10 @@ fn a_moved_digest_is_fixable_only_on_a_document_the_change_re_verified() {
         ("no change", at(TODAY), false),
         (
             "facet unmoved",
-            at(TODAY).scoped_to(change(&[(DOCUMENT, Some(text_of("hooks", TODAY, &entries)))])),
+            at(TODAY).scoped_to(change(&[(
+                DOCUMENT,
+                Some(text_of("hooks", TODAY, &entries)),
+            )])),
             false,
         ),
     ] {
@@ -523,7 +526,11 @@ fn a_stamp_is_offered_only_on_the_document_the_change_re_verified() {
     let re_verified = || change(&[(DOCUMENT, Some(yesterday("hooks", &entries)))]);
     for (label, ctx, stamped) in [
         ("today", at(TODAY).scoped_to(re_verified()), vec![DOCUMENT]),
-        ("tomorrow", at(TOMORROW).scoped_to(re_verified()), vec![DOCUMENT]),
+        (
+            "tomorrow",
+            at(TOMORROW).scoped_to(re_verified()),
+            vec![DOCUMENT],
+        ),
         ("no change", at(TODAY), vec![]),
     ] {
         let ran = run_in(&root, &ctx, &mut Cache::disabled(), &taxonomy());
@@ -552,9 +559,19 @@ fn a_warm_cache_keys_the_patch_on_the_change() {
         || at(TODAY).scoped_to(change(&[(DOCUMENT, Some(yesterday("hooks", &entries)))]));
     for (label, ctx, fixable, served) in [
         ("no change, cold", at(TODAY), false, false),
-        ("re-verified, after a run with none", re_verified(), true, false),
+        (
+            "re-verified, after a run with none",
+            re_verified(),
+            true,
+            false,
+        ),
         ("re-verified, warm", re_verified(), true, true),
-        ("no change, after a re-verified run", at(TODAY), false, false),
+        (
+            "no change, after a re-verified run",
+            at(TODAY),
+            false,
+            false,
+        ),
     ] {
         let mut cache = Cache::at(&root, LOCK, "sha256:rules");
         let ran = run_in(&root, &ctx, &mut cache, &taxonomy());
@@ -609,7 +626,8 @@ fn a_moved_wildcard_names_its_pattern_and_its_match_count() {
 fn a_renamed_file_inside_a_governed_glob_goes_suspect_with_its_bytes_unchanged() {
     let root = scratch("rename");
     document(&root, TODAY, &["    - .claude/hooks/*.sh".to_string()]);
-    let first = cold(&root, TODAY);
+    let added = at(TODAY).scoped_to(change(&[(DOCUMENT, None)]));
+    let first = run_in(&root, &added, &mut Cache::disabled(), &taxonomy());
     let offered = suspect(&first);
     assert_eq!(offered.len(), 1, "{offered:?}");
     let Some(Patch::Half { attributes, .. }) = &offered[0].patch else {

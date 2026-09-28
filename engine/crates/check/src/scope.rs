@@ -221,6 +221,7 @@ pub struct Scope {
     needs_prior: bool,
     needs_claims: bool,
     needs_observations: bool,
+    needs_declarer_prior: bool,
 }
 
 impl Scope {
@@ -238,10 +239,15 @@ impl Scope {
             needs_prior,
             needs_claims: false,
             needs_observations: false,
+            needs_declarer_prior: false,
         }
     }
 
-    pub(crate) const fn edge(needs_clock: bool, needs_observations: bool) -> Self {
+    pub(crate) const fn edge(
+        needs_clock: bool,
+        needs_observations: bool,
+        needs_declarer_prior: bool,
+    ) -> Self {
         Scope {
             grain: Grain::Edge,
             needs_body: false,
@@ -250,6 +256,7 @@ impl Scope {
             needs_prior: false,
             needs_claims: false,
             needs_observations,
+            needs_declarer_prior,
         }
     }
 
@@ -262,6 +269,7 @@ impl Scope {
             needs_prior: false,
             needs_claims: false,
             needs_observations: false,
+            needs_declarer_prior: false,
         }
     }
 
@@ -274,6 +282,7 @@ impl Scope {
             needs_prior,
             needs_claims,
             needs_observations: false,
+            needs_declarer_prior: false,
         }
     }
 
@@ -286,6 +295,7 @@ impl Scope {
             needs_prior: false,
             needs_claims: false,
             needs_observations: false,
+            needs_declarer_prior: false,
         }
     }
 
@@ -320,6 +330,19 @@ impl Scope {
     /// run, because that is the run that has no change to take one from.
     pub fn needs_prior(&self) -> bool {
         self.needs_prior
+    }
+
+    /// Whether an instance of this edge scope receives the version of the
+    /// document that declared its entry as it stood before the change, and so
+    /// whether its cache key carries that version. One fact, both uses, as the
+    /// clock is.
+    ///
+    /// It differs from [`Scope::needs_prior`] in one way. An instance of this
+    /// scope does not skip in a run with no change. It runs, and it is handed
+    /// no prior version, and its key says so. A rule reads the input to decide
+    /// what it may offer, never whether it may decide at all (#1259).
+    pub fn needs_declarer_prior(&self) -> bool {
+        self.needs_declarer_prior
     }
 
     /// Whether an instance of this scope receives the identifier claim store,
@@ -415,6 +438,13 @@ impl Scope {
             true => ", and the committed observation snapshot",
             false => "",
         };
+        // The edge grain's own temporal input, named on the prior's terms. A
+        // reader who asks why one rule's verdict moved with a change manifest
+        // while every instance of it still ran reads the answer here.
+        let declarer_prior = match self.needs_declarer_prior {
+            true => ", and the version of the declaring document that stood before the change, where the run carries one",
+            false => "",
+        };
         // Spec 12 calls the corpus-scoped checks the barriers, and the word is
         // last so that it reads as a statement about the scope rather than
         // about the inputs listed before it.
@@ -423,7 +453,7 @@ impl Scope {
             _ => "",
         };
         format!(
-            "{} scope, {carries}{phase_a}{clock}{prior}{claims}{observations}{barrier}",
+            "{} scope, {carries}{phase_a}{clock}{prior}{claims}{observations}{declarer_prior}{barrier}",
             self.grain.name()
         )
     }
@@ -550,6 +580,10 @@ pub trait EdgeCheck {
     /// the snapshot without setting this is cached against a key that never
     /// moves when the file it read does.
     const NEEDS_OBSERVATIONS: bool = false;
+    /// Whether an instance receives the version of the document that declared
+    /// its entry as it stood before the change. See
+    /// [`Scope::needs_declarer_prior`] and [`EdgeView::declarer_prior`].
+    const NEEDS_DECLARER_PRIOR: bool = false;
     /// What one instance of this check covers. See [`EdgeUnit`].
     ///
     /// The trait declares it, and the runner does not pass it. The reason is
@@ -719,7 +753,11 @@ pub fn document_scope<C: DocumentCheck>() -> Scope {
 
 /// The scope of an edge-scoped check, derived from its trait.
 pub fn edge_scope<C: EdgeCheck>() -> Scope {
-    Scope::edge(C::NEEDS_CLOCK, C::NEEDS_OBSERVATIONS)
+    Scope::edge(
+        C::NEEDS_CLOCK,
+        C::NEEDS_OBSERVATIONS,
+        C::NEEDS_DECLARER_PRIOR,
+    )
 }
 
 /// The scope of a neighbourhood-scoped check, derived from its trait.
@@ -936,6 +974,9 @@ pub struct EdgeView<'a> {
     /// The front matter of the document that declared the half this instance
     /// is keyed on. See [`EdgeView::declarer_facets`].
     declarer: Option<&'a Mapping>,
+    /// The version of the declaring document that stood before the change.
+    /// See [`EdgeView::declarer_prior`].
+    declarer_prior: Option<Prior<'a>>,
     clock: Option<Date>,
     reads: Vec<Input>,
     resolution: String,
@@ -1017,6 +1058,7 @@ impl<'a> EdgeView<'a> {
         census: &'a Census,
         digests: &Digests,
         clock: Option<Date>,
+        prior_of: impl Fn(&str) -> Option<Prior<'a>>,
     ) -> Option<Self> {
         let declared = halves
             .iter()
@@ -1080,6 +1122,7 @@ impl<'a> EdgeView<'a> {
             inverse,
             ends,
             declarer: read_at(census, &anchor.source.path).0,
+            declarer_prior: prior_of(&anchor.source.path),
             clock,
             reads,
             resolution: anchor.target.resolution(),
@@ -1142,6 +1185,19 @@ impl<'a> EdgeView<'a> {
     /// The injected date, and only for a check that declared `NEEDS_CLOCK`.
     pub fn now(&self) -> Option<Date> {
         self.clock
+    }
+
+    /// The version of the document that declared this instance's half as it
+    /// stood before the change, and only for a check that declared
+    /// `NEEDS_DECLARER_PRIOR`.
+    ///
+    /// Nothing in a run that carries no change, and nothing where the caller
+    /// named a prior version this engine could not read. Both are a run in
+    /// which the change states nothing about the document, so a rule reads the
+    /// two alike. [`Prior::Unchanged`] is a change that does not carry the
+    /// document.
+    pub fn declarer_prior(&self) -> Option<Prior<'a>> {
+        self.declarer_prior
     }
 
     /// Both endpoints: spec 12 fixes an edge-scoped read set at "one relation
@@ -1737,7 +1793,13 @@ pub fn over_edges<C: EdgeCheck>(
 
     let mut instances = Vec::with_capacity(pairs.len());
     for (triple, halves) in &pairs {
-        let Some(view) = EdgeView::over(halves, census, digests, clock) else {
+        // One call per instance, and its result goes to the view and to the
+        // cache key, as the clock's does.
+        let declarer_prior = |path: &str| match (scope.needs_declarer_prior(), ctx.change()) {
+            (true, Some(change)) => change.prior_of(path).ok(),
+            _ => None,
+        };
+        let Some(view) = EdgeView::over(halves, census, digests, clock, declarer_prior) else {
             continue;
         };
         // The triple is the identity Q4 gives an edge, and it is what tells
@@ -1768,10 +1830,12 @@ pub fn over_edges<C: EdgeCheck>(
             triple,
             &reads,
             clock,
-            // No prior version. Only `DocumentCheck` declares the input, for
-            // the reason spec 12 gives it: a change names documents, and an
-            // edge is not one.
-            None,
+            // No prior version of the edge, for the reason spec 12 gives: a
+            // change names documents, and an edge is not one. What a change
+            // says about the document that declared the edge is the one prior
+            // an edge reads, and only where the check declared it. The key
+            // writes it on `Scope::needs_declarer_prior`'s terms.
+            view.declarer_prior(),
             Some(view.resolution()),
             || check.evaluate(&view),
         );

@@ -448,6 +448,14 @@ impl Cache {
         if scope.needs_prior() && scope.grain() != Grain::Corpus {
             text.push_str(&format!("prior {}\n", prior?.key()));
         }
+        // The edge grain's reading of the same input: the version of the
+        // document that declared the entry. Unlike the line above, a run with
+        // no change is keyed, because the instance ran and read that absence
+        // (#1259). So the absence writes its own word.
+        if scope.needs_declarer_prior() {
+            let prior = prior.map_or_else(|| "none".to_string(), |prior| prior.key());
+            text.push_str(&format!("declarer-prior {prior}\n"));
+        }
         // Escaped for the reason a record is: a target or a path is corpus
         // content, and a newline inside one would otherwise let a document
         // write a line of this text and claim another instance's key.
@@ -1030,7 +1038,7 @@ mod tests {
             cache().plain_key(
                 "r",
                 1,
-                Scope::edge(false, false),
+                Scope::edge(false, false, false),
                 "a.md",
                 &inputs(Some("sha256:one")),
                 None,
@@ -1301,7 +1309,7 @@ mod tests {
     /// [HW-OBL-0117]: ../../../../docs/obligations/0117-a-cached-verdict-about-an-anchor-survives-the-change-that-falsifies-it.md
     #[test]
     fn two_bindings_of_one_anchor_are_two_keys_and_neither_is_unkeyed() {
-        let scope = Scope::edge(false, false);
+        let scope = Scope::edge(false, false, false);
         let target = "HW-SPEC-ai-integration\u{1f}governs\u{1f}.claude/hooks/lib.sh";
         let key = |resolution: Option<&str>| {
             cache().key(
