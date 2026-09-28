@@ -3,7 +3,7 @@ id: HW-IFACE-headwater-show
 status: current
 status_since: 2026-09-27
 summary: "headwater show prints the bytes of one document as they are on disk, found by path or identifier through the resolver that explain uses."
-last_verified: 2026-09-28
+last_verified: 2026-09-29
 title: "headwater show"
 relations:
   governs:
@@ -11,7 +11,7 @@ relations:
     - to: engine/crates/query/src/explain.rs
       verified_revision: sha256:7295f5c240de3838c3e0bab52ff58e9b287b1768a879d2653bcf3b68bcc3fde9
     - to: engine/crates/census/src/walk.rs
-      verified_revision: sha256:00d183c63f5c6f0af071f444dee8308f1d22d3545fcf33238417fff5aab70446
+      verified_revision: sha256:e55b406230d9caec48e9a3a0ae140f637426b95af94310ccab728dbeaefe1fb8
 ---
 
 # headwater show
