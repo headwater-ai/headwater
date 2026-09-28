@@ -19,14 +19,46 @@
 mod common;
 use common::Root;
 
-/// The lifecycle rules that a control of the package names, one row each.
-const LIFECYCLE: [&str; 6] = [
-    "lifecycle.transition.not_permitted",
-    "lifecycle.state.not_admitted",
-    "lifecycle.dependency.on_terminal",
-    "lifecycle.deletion.not_permitted",
-    "lifecycle.dependency.on_initial",
-    "lifecycle.state.not_set_by_edge",
+/// The lifecycle rules that a control of the package names, one row each:
+/// the rule, the one obligation its control discharges, the posture, and the
+/// promotion record that states why the posture stands.
+const LIFECYCLE: [(&str, &str, &str, &str); 6] = [
+    (
+        "lifecycle.transition.not_permitted",
+        "OB-LIFE-1",
+        "blocking",
+        "final_posture",
+    ),
+    (
+        "lifecycle.state.not_admitted",
+        "OB-LIFE-2",
+        "blocking",
+        "final_posture",
+    ),
+    (
+        "lifecycle.dependency.on_terminal",
+        "OB-LIFE-3",
+        "advisory",
+        "permanently_advisory",
+    ),
+    (
+        "lifecycle.deletion.not_permitted",
+        "OB-LIFE-4",
+        "blocking",
+        "final_posture",
+    ),
+    (
+        "lifecycle.dependency.on_initial",
+        "OB-LIFE-5",
+        "advisory",
+        "permanently_advisory",
+    ),
+    (
+        "lifecycle.state.not_set_by_edge",
+        "OB-LIFE-6",
+        "blocking",
+        "final_posture",
+    ),
 ];
 
 #[test]
@@ -46,10 +78,52 @@ fn every_lifecycle_rule_reaches_one_obligation_of_the_standard_package() {
     // obligation or more than one, and each such line opens with the rule.
     let unbound: Vec<&str> = LIFECYCLE
         .into_iter()
+        .map(|(rule, ..)| rule)
         .filter(|rule| flat.contains(&format!(" {rule} reaches ")))
         .collect();
     assert!(
         unbound.is_empty(),
         "these lifecycle rules reach no single obligation of headwater/standard: {unbound:?}"
     );
+}
+
+/// The declaration of the one control of the maintained package whose
+/// mechanism is `check:<rule>`. Controls sit one to a block, a blank line
+/// separates two blocks, and each block opens with its identifier.
+fn control_of<'a>(taxonomy: &'a str, rule: &str) -> &'a str {
+    let at = taxonomy
+        .find("\ncontrols:\n")
+        .expect("the package declares controls");
+    let mechanism = format!("    mechanism: check:{rule}\n");
+    let blocks: Vec<&str> = taxonomy[at..]
+        .split("\n\n")
+        .filter(|block| block.contains(&mechanism))
+        .collect();
+    assert_eq!(blocks.len(), 1, "one control names `{rule}`: {blocks:?}");
+    blocks[0]
+}
+
+/// The posture a merge meets is part of what the package promises, and the
+/// register counts postures without naming the control, so a control moved
+/// from `blocking` to `advisory` changed no line the case above reads (the
+/// verifier's finding on #1212). This case reads each lifecycle control where
+/// the maintained package declares it.
+#[test]
+fn each_lifecycle_control_declares_its_obligation_posture_and_promotion() {
+    let source = common::repository().join("taxonomy-source/headwater-standard/taxonomy.yml");
+    let taxonomy = std::fs::read_to_string(&source).expect("the maintained package reads");
+    for (rule, obligation, posture, promotion) in LIFECYCLE {
+        let control = control_of(&taxonomy, rule);
+        for line in [
+            format!("    discharges: [{obligation}]\n"),
+            format!("    posture: {posture}\n"),
+            format!("      {promotion}:\n"),
+        ] {
+            assert!(
+                control.contains(&line),
+                "the control of `{rule}` does not declare `{}`:\n{control}",
+                line.trim()
+            );
+        }
+    }
 }
