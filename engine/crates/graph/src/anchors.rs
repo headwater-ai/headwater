@@ -1372,5 +1372,17 @@ mod tests {
             tree_revision(&dir, &[]).is_some(),
             "an empty match keeps its revision, as before"
         );
+
+        // A symlink is followed: a link to a regular file is digested, and a
+        // link to the pipe is left out like the pipe.
+        std::os::unix::fs::symlink(dir.join("a.sh"), dir.join("to-a.sh"))
+            .expect("the link to the file is made");
+        std::os::unix::fs::symlink(dir.join("pipe"), dir.join("to-pipe"))
+            .expect("the link to the pipe is made");
+        assert!(
+            tree_revision(&dir, &["to-a.sh".to_owned()]).is_some(),
+            "a link to a regular file has a revision"
+        );
+        assert_eq!(tree_revision(&dir, &["to-pipe".to_owned()]), None);
     }
 }
