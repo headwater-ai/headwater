@@ -33,6 +33,43 @@ fn a_source_selected_as_a_bundle_names_what_it_requires() {
     assert_eq!(ordered.missing, vec![vec!["provider".to_string()]]);
 }
 
+/// Bundles apply in `bundles:` order, except that a bundle waits until every
+/// bundle its `requires` names has applied, and bundles later in the list that
+/// are ready apply ahead of it. `c` names two bundles and is listed first, so
+/// it waits for both: one of them applied is not enough.
+#[test]
+fn a_bundle_that_names_two_waits_for_both() {
+    let bundle = |name: &str, requires: &str| {
+        overlay(&format!(
+            "requires: [{requires}]\nadd:\n  kinds.{name}: {{}}\n"
+        ))
+        .selected_as(name)
+    };
+    let ordered = order::order(&[bundle("c", "a, bb"), bundle("a", ""), bundle("bb", "")])
+        .expect("it orders");
+    assert_eq!(ordered.order, vec![1, 2, 0]);
+    assert_eq!(ordered.requires[2], vec![0, 1]);
+}
+
+/// A bundle that is ready keeps its place in the list, and one that waits is
+/// passed by every ready bundle listed after it.
+#[test]
+fn a_waiting_bundle_is_passed_by_a_later_bundle_that_is_ready() {
+    let bundle = |name: &str, requires: &str| {
+        overlay(&format!(
+            "requires: [{requires}]\nadd:\n  kinds.{name}: {{}}\n"
+        ))
+        .selected_as(name)
+    };
+    let ordered = order::order(&[
+        bundle("dep", "prov"),
+        bundle("lone", ""),
+        bundle("prov", ""),
+    ])
+    .expect("it orders");
+    assert_eq!(ordered.order, vec![1, 2, 0]);
+}
+
 /// A cycle of three is named whole, in the order `requires` walks it, and a
 /// bundle that only waits on the cycle is not named.
 #[test]

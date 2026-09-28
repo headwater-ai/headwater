@@ -244,10 +244,6 @@ mod tests {
         assert!(found.is_empty(), "{found:?}");
     }
 
-    /// Two `add` operations that write one leaf state two values for it, and
-    /// no order makes that a write into the dependency. The pair keeps the
-    /// leaf predicate, so the refusal names both bundles rather than leaving
-    /// the merge to report a collision that names one.
     /// The two-`add` rule reads both kinds. A dependent `add` under a key its
     /// dependency replaces with `override` is a write into the dependency, and
     /// the declared order admits it. Without `requires` the same pair is
@@ -263,6 +259,10 @@ mod tests {
         assert_eq!(errors(&sources).len(), 1);
     }
 
+    /// Two `add` operations that write one leaf state two values for it, and
+    /// no order makes that a write into the dependency. The pair keeps the
+    /// leaf predicate, so the refusal names both bundles rather than leaving
+    /// the merge to report a collision that names one.
     #[test]
     fn a_dependent_add_over_a_leaf_its_dependency_sets_is_refused() {
         let found = errors_requiring(

@@ -6,16 +6,16 @@
 //! names in `requires`. That write reaches a node the dependency wrote, so the
 //! pair does not commute, and the ruling orders it instead: "The declared
 //! dependency orders the pair, and the dependency applies first." This module
-//! is where that order is made. It puts every selected bundle after each bundle
-//! it names, keeps the consumer's order wherever `requires` says nothing, and
-//! leaves every source that was not selected as a bundle where it was. The
-//! adopter overlay is last in every selection and stays last.
+//! is where that order is made. Bundles apply in `bundles:` order, except that
+//! a bundle waits until every bundle its `requires` names has applied; bundles
+//! later in the list that are ready apply ahead of it. A source that was not
+//! selected as a bundle names nothing, so it is ready at once. The adopter
+//! overlay is last in every selection and stays last.
 //!
-//! The order makes a lock independent of where a consumer wrote a bundle
-//! relative to the bundles it requires. `bundles: [a, b]` and
-//! `bundles: [b, a]` where `b` requires `a` both apply `a` first, so both write
-//! one lock. Two bundles that name nothing of each other keep the consumer's
-//! order, so swapping those two still moves the lock's `sources:` list.
+//! So `bundles: [a, b]` and `bundles: [b, a]` where `b` requires `a` both apply
+//! `a` first and write one lock. The rule says nothing stronger than that about
+//! the lock: with a third bundle in the list, where the dependency sits can
+//! still move what applies ahead of the dependent.
 //!
 //! `requires` is read for this and for nothing else. [HW-DR-0040] rules that it
 //! never adds a bundle to a selection, and nothing here does. A bundle is known
@@ -118,8 +118,8 @@ pub fn order(overlays: &[Source]) -> Result<Ordered, Vec<ResolveError>> {
         missing_by_input.push(missing);
     }
 
-    // Kahn's algorithm, taking the lowest input index that is ready, so the
-    // consumer's order decides every tie.
+    // Kahn's algorithm, taking the lowest input index that is ready: the first
+    // bundle in `bundles:` order whose named bundles have all applied.
     let mut placed = vec![false; overlays.len()];
     let mut order = Vec::with_capacity(overlays.len());
     while order.len() < overlays.len() {

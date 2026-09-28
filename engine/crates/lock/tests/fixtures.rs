@@ -104,10 +104,10 @@ fn selected_as(file: &str) -> Option<String> {
 /// listed in application order.
 ///
 /// This repository's own selection is the case: `design-spec` and
-/// `decision-record` both require `evidence-and-obligation`. Those two name
-/// nothing of each other, so the consumer's order still decides between them,
-/// and that order is held fixed. The three orders that place
-/// `evidence-and-obligation` first, between, and last are written out.
+/// `decision-record` both require `evidence-and-obligation`. The order between
+/// those two is held fixed, `design-spec` first. The three orders that place
+/// `evidence-and-obligation` first, between, and last are written out, and
+/// each applies it first and then the other two in list order.
 #[test]
 fn every_order_of_a_selection_writes_one_lock_and_lists_each_dependency_first() {
     let root = repository_root();

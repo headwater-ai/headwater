@@ -371,8 +371,8 @@ pub fn resolve(sources: &[Source]) -> Result<Resolution, Vec<ResolveError>> {
         return Err(errors);
     }
 
-    // The application order: each selected bundle after every bundle it names
-    // in `requires`, and the consumer's order everywhere else (HW-DR-0095).
+    // The application order: `bundles:` order, except that a bundle waits until
+    // every bundle it names in `requires` has applied (HW-DR-0095, `order`).
     let ordered = order::order(overlays)?;
     let sources: Vec<Source> = std::iter::once(base.clone())
         .chain(ordered.order.iter().map(|index| overlays[*index].clone()))
