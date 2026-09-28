@@ -1028,6 +1028,17 @@ fn a_refused_plan_prints_no_cost_it_never_computed() {
                 },
             ),
         ),
+        // Refused before the envelope is read, and never priced either.
+        (
+            "zero repetitions",
+            plan_at(
+                Tier::Campaign,
+                &Narrowing {
+                    repetitions: Some(0),
+                    ..Narrowing::default()
+                },
+            ),
+        ),
     ];
     let mut priced = Vec::new();
     for (case, plan) in &refused {
@@ -1036,7 +1047,8 @@ fn a_refused_plan_prints_no_cost_it_never_computed() {
             "ablated" => matches!(refusal, Refusal::AblatedExamined { .. }),
             "instrument" => matches!(refusal, Refusal::InstrumentExamined { .. }),
             "campaign narrowed" => matches!(refusal, Refusal::CampaignNarrowed),
-            _ => matches!(refusal, Refusal::ArmNotDeclared { .. }),
+            "arm not declared" => matches!(refusal, Refusal::ArmNotDeclared { .. }),
+            _ => matches!(refusal, Refusal::RepetitionsZero),
         };
         assert!(expected, "{case}: refused for another reason: {refusal:?}");
         let report = plan.render(ColorMode::Plain);
