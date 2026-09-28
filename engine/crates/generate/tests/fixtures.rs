@@ -617,9 +617,9 @@ fn every_output_carries_its_own_marker() {
 /// produced a reason rather than a file, the same way `specifications` still
 /// does below. The fifteenth, `process_explanations`, is on the list from the
 /// change that declared it (#1005), because that change put its first document
-/// on the shelf. Its sibling `explanations` gave a reason rather than a file
-/// until #1231 put the account of how a release reaches an adopter on it,
-/// which made it the sixteenth.
+/// on the shelf. Its sibling `explanations`, the fourteenth, gave a reason
+/// rather than a file until #1231 put the account of how a release reaches
+/// an adopter on it.
 ///
 /// **Five of the other twenty-nine are one each, and twenty-four are one per
 /// committed transcript.** The count in the name of this test therefore moves when a
