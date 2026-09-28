@@ -283,6 +283,12 @@ obligations:
     prevents: content.inconsistent
     severity: medium
   OB-FIX-28:
+    statement: A link whose text is an identifier reaches the document that carries that identifier
+    rationale: A reader who follows the link reads the wrong document and has no signal that it is wrong
+    class: cohesion
+    prevents: content.inconsistent
+    severity: medium
+  OB-FIX-29:
     statement: No relation instance outside the association family names the document that declares it as its target
     rationale: An edge from a document to itself asserts nothing, or it asserts a contradiction, and spec 2 lets only an association relation point at its own document
     class: cohesion
@@ -471,6 +477,12 @@ controls:
     trigger: pull_request
     posture: advisory
     acts: detective
+  CT-FIX-25:
+    mechanism: check:link.identifier.mismatch
+    discharges: [OB-FIX-28]
+    trigger: pull_request
+    posture: advisory
+    acts: detective
   CT-FIX-21:
     mechanism: check:relation.target.unresolved
     discharges: [OB-FIX-24]
@@ -478,9 +490,9 @@ controls:
     posture: advisory
     acts: detective
 
-  CT-FIX-25:
+  CT-FIX-26:
     mechanism: check:relation.target.is_source
-    discharges: [OB-FIX-28]
+    discharges: [OB-FIX-29]
     trigger: pull_request
     posture: advisory
     acts: detective

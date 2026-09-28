@@ -21,8 +21,8 @@
       ],
       "taxonomy": {
         "package": "headwater/standard",
-        "version": "4.10.0",
-        "lock": "sha256:0f083574073c81108aeddd5023aae13d9fec3f5c281cc10533c2fbdbf8402d93"
+        "version": "4.12.0",
+        "lock": "sha256:ff9696e48f82d1e047ff2a6909490b2e08aed67da506d3d364d010b24219b1fd"
       },
       "entry_points": [
         {
@@ -39,6 +39,11 @@
           "shelf": "evaluations",
           "path": "docs/evaluations/a-probe-task-section-is-the-prompt-so-commentary-under-that-heading-is-prompt.md",
           "id": "HW-EVAL-a-probe-task-section-is-the-prompt-so-commentary-under-that-heading-is-prompt"
+        },
+        {
+          "shelf": "explanations",
+          "path": "docs/explanations/how-a-headwater-release-reaches-an-adopter.md",
+          "id": "HW-EXP-how-a-headwater-release-reaches-an-adopter"
         },
         {
           "shelf": "how_to",

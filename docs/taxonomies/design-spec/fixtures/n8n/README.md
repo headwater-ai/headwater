@@ -82,7 +82,7 @@ The third row is what this fixture commits. A one-kind heterogeneous shelf makes
 
 ## What a run reports
 
-`headwater taxonomy resolve` then `headwater check --no-cache --now 2026-09-01` over the assembled root, with the committed `.headwater/`: **4 files under the corpus root, 4 typed, 0 excluded, 4 checked, 46 check instances, 13 findings, all 13 of them errors.** The census reads 4 `design_spec`. The graph reads 0 nodes, 0 declared edge halves, and 1 prose link that did not resolve. `headwater check --strict` exits 1.
+`headwater taxonomy resolve` then `headwater check --no-cache --now 2026-09-01` over the assembled root, with the committed `.headwater/`: **4 files under the corpus root, 4 typed, 0 excluded, 4 checked, 47 check instances, 13 findings, all 13 of them errors.** The census reads 4 `design_spec`. The graph reads 0 nodes, 0 declared edge halves, and 1 prose link that did not resolve. `headwater check --strict` exits 1.
 
 **Nothing is excluded now, and the zero is this fixture's own finding closing.** The corpus root is `packages` and the vendored taxonomy package used to sit under `packages/` too, so this run had to be told that the package it resolves is not corpus content. The excluded count was the size of that package rather than anything about n8n: 101 files at `headwater/standard` 4.0.0, and 38 at 4.3.0. [HW-DR-0067](../../../../decisions/0067-the-vendored-package-root-moves-under-headwater-and-the-old-root-is-named-in-a-refusal.md) moved the package root to `.headwater/packages/`, which no corpus root an adopter can name reaches, so the exclusion is gone and the files under the corpus root are the four this page is about. The other counts move only when this corpus moves.
 

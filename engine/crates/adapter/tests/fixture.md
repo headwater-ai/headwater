@@ -1,8 +1,8 @@
 ## `headwater check`
 
-66 findings, 38 of them errors across 28 of 31 documents, against `headwater/fixture` 1.0.0 at `977174fa6836c059c7b09f19ccc6e2c822aecb8bca36872951b862d523d664ae`, evaluated at 2026-08-12.
+67 findings, 39 of them errors across 28 of 31 documents, against `headwater/fixture` 1.0.0 at `105e82f4b4435094f6bfd8ba5b3c3f3380341b35aeebc9aca2c3d508726d1601`, evaluated at 2026-08-12.
 
-**Coverage.** This run saw 31 files and classified 29 of them, and left 1 to `headwater generate --check`, which holds a generated file to the bytes its emitter writes. It created 367 check instances, and 60 of them reached no verdict.
+**Coverage.** This run saw 31 files and classified 29 of them, and left 1 to `headwater generate --check`, which holds a generated file to the bytes its emitter writes. It created 368 check instances, and 60 of them reached no verdict.
 
 - 1 — no `id` facet, which is the key this engine reads an identifier from and which no declaration states
 - 1 — the `id` facet is a sequence, and an identifier is a word
@@ -49,6 +49,7 @@
 | error | `check/spec/07-prose-defects.md:75` | `link.path.unresolved` | `../../../outside.md` does not name a path of this repository at all: `check/spec/../../../outside.md` climbs above the repository |
 | error | `check/spec/07-prose-defects.md:77` | `link.path.unresolved` | `19-renamed.md?v=2` names no file of this repository: nothing stands at `check/spec/19-renamed.md` |
 | error | `check/spec/07-prose-defects.md:79` | `link.path.unresolved` | `/spec/00-both-halves.md` names no file of this repository: nothing stands at `/spec/00-both-halves.md` |
+| error | `check/spec/07-prose-defects.md:81` | `link.identifier.mismatch` | the link text names `SPEC-FIX-cited-only`, but `20-fragment-target.md` reaches `check/spec/20-fragment-target.md`, which is `SPEC-FIX-fragment-target` |
 | error | `check/spec/08-contract-met.md:2` | `identifier.claim.missing` | `DR-FIX-0008` is spent by check/spec/08-contract-met.md and no file of `.headwater/ids` claims it, so this identifier is invisible to the allocator of every other branch and a second document can be minted onto it |
 | error | `check/spec/09-contract-missing.md` | `section.required.missing` | `decision_record` requires the section `Decision`, and no heading of this document says so |
 | error | `check/spec/09-contract-missing.md:2` | `identifier.claim.missing` | `DR-FIX-0009` is spent by check/spec/09-contract-missing.md and no file of `.headwater/ids` claims it, so this identifier is invisible to the allocator of every other branch and a second document can be minted onto it |
@@ -92,4 +93,4 @@
 
 </details>
 
-31 documents in the read set, and 6 barriers that no gate carries across a merge. 28 obligations, 22 verified.
+31 documents in the read set, and 7 barriers that no gate carries across a merge. 29 obligations, 23 verified.

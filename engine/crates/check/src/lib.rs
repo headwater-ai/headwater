@@ -158,6 +158,7 @@ pub mod initial_dependency;
 pub mod instance;
 pub mod language;
 pub mod lifecycle_state;
+pub mod link_identifier;
 pub mod link_path;
 pub mod observation;
 pub mod outside_root;
@@ -223,7 +224,7 @@ use headwater_graph::{Declarations, Graph};
 /// The order is the five origins of
 /// [spec 12](../../../../docs/spec/12-check-layer.md#the-five-origins-of-a-check),
 /// which is Shape, then Graph, then the runner's own accounting.
-pub const RULES: [&str; 42] = [
+pub const RULES: [&str; 43] = [
     facet_required::RULE,
     facet_value::RULE,
     facet_blank::RULE,
@@ -254,6 +255,7 @@ pub const RULES: [&str; 42] = [
     sections::RULE,
     fragment::RULE,
     link_path::RULE,
+    link_identifier::RULE,
     promotion::RULE,
     transition::RULE,
     lifecycle_state::RULE,
@@ -582,6 +584,12 @@ fn registry() -> [(&'static str, Scope, u32, scope::ExportTargets); RULES.len()]
             scope::corpus_exports::<link_path::Paths>(),
         ),
         (
+            link_identifier::RULE,
+            scope::corpus_scope::<link_identifier::Identifiers>(),
+            scope::corpus_version::<link_identifier::Identifiers>(),
+            scope::corpus_exports::<link_identifier::Identifiers>(),
+        ),
+        (
             promotion::RULE,
             scope::document_scope::<promotion::Promoted>(),
             scope::document_version::<promotion::Promoted>(),
@@ -782,6 +790,11 @@ pub fn run(
     // link is dead when no file stands at its path and that is not a fact about
     // the file that wrote it. See [`link_path`].
     let link_paths = link_path::Paths;
+    // A link whose text is an identifier and whose path reaches a document
+    // that carries another. It compares two facts the bind already recorded,
+    // and it is corpus-scoped for `link_path`'s reason: a renumbering of the
+    // target changes no byte of the citing file. See [`link_identifier`].
+    let link_identifiers = link_identifier::Identifiers;
     // The one rule that declares `NEEDS_PRIOR`, and it carries no declaration:
     // the transition it reads is spec 3's act rather than a member of any
     // taxonomy. See [`promotion`].
@@ -981,6 +994,14 @@ pub fn run(
     ));
     instances.extend(scope::over_corpus(
         &link_paths,
+        census,
+        graph,
+        claims,
+        ctx,
+        cache,
+    ));
+    instances.extend(scope::over_corpus(
+        &link_identifiers,
         census,
         graph,
         claims,

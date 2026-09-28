@@ -233,7 +233,7 @@ census
 ```
 
 ```
-  1 seen, 0 classified, 0 checked, 6 check instances
+  1 seen, 0 classified, 0 checked, 7 check instances
 ```
 
 ```
@@ -320,7 +320,7 @@ census
 ```
 
 ```
-  1 seen, 1 classified, 1 checked, 18 check instances
+  1 seen, 1 classified, 1 checked, 19 check instances
 ```
 
 **Check.** `headwater check 2>/dev/null | grep 'check instances'` prints the second block above.
@@ -421,7 +421,7 @@ Trimmed to the head of the register and to its last line. The same run printed b
 
 One rule is named there. `facet.value.blank` reports a facet a document declares and leaves empty, and no control in `headwater/standard` names it yet. [HW-OBL-0170](https://github.com/headwater-ai/headwater/blob/main/docs/obligations/0170-the-blank-facet-value-rule-reaches-no-obligation-so-the-report-names-none.md) records that debt. A finding it raises is a true finding, and the line above is how a report tells you which of its rules answers to nothing.
 
-**Your corpus will not show you a gap, and the reason is worth knowing.** A `gap` is a disposition that a package author writes, with an owner, for an obligation that no mechanism verifies. The base package declares none, so this row reads `0 gap` on every run of yours and no step here moves it. Headwater's own corpus takes a bundle that declares three obligations no mechanism verifies. The same block there reads `38 obligations: 35 verified, 2 gap, 1 unverifiable`, and it names the owner of each gap. The number worth watching is the one that is not `verified`.
+**Your corpus will not show you a gap, and the reason is worth knowing.** A `gap` is a disposition that a package author writes, with an owner, for an obligation that no mechanism verifies. The base package declares none, so this row reads `0 gap` on every run of yours and no step here moves it. Headwater's own corpus takes a bundle that declares three obligations no mechanism verifies. The same block there reads `40 obligations: 37 verified, 2 gap, 1 unverifiable`, and it names the owner of each gap. The number worth watching is the one that is not `verified`.
 
 The word `mechanical` on the fix line is the second thing to read. A rule is an error when the repair takes no judgment, and advisory when the repair is a rewrite. This one takes no judgment, so the next step is a command rather than an edit.
 

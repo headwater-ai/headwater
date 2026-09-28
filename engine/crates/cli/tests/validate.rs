@@ -27,6 +27,7 @@
 //! `fixtures/` is a schema that no gate holds current, and it would go stale in
 //! silence.
 
+mod common;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
@@ -57,7 +58,10 @@ impl Root {
     /// The taxonomy and `docs/taxonomies`, and no entry under any scope
     /// pattern.
     fn copy_only(label: &str) -> Root {
-        let at = std::env::temp_dir().join(format!(
+        // Outside every git repository where a directory is, and fenced off
+        // from one above it by `run` where none is, so what a repository
+        // above the root ignores does not reach a case (#1192).
+        let at = common::scratch_base().join(format!(
             "headwater-cli-validate-{}-{label}",
             std::process::id()
         ));
@@ -121,7 +125,9 @@ impl Root {
     }
 
     fn run(&self, arguments: &[&str]) -> Ran {
-        let output = Command::new(env!("CARGO_BIN_EXE_headwater"))
+        let mut command = Command::new(env!("CARGO_BIN_EXE_headwater"));
+        common::fence(&mut command, &self.at);
+        let output = command
             .args(arguments)
             .arg("--root")
             .arg(&self.at)

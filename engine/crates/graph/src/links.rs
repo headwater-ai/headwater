@@ -75,6 +75,16 @@ pub struct Link {
     pub destination: String,
     /// The part after `#`, kept for the check that reads it.
     pub fragment: Option<String>,
+    /// The link text with its markup removed, an inline code span included.
+    pub text: String,
+    /// The link text, trimmed, when it is exactly the identifier of a document
+    /// the index holds, and nothing otherwise. The index answers whether text
+    /// is an identifier, so no check carries a second pattern for the schemes.
+    pub names: Option<String>,
+    /// The identifier of the document that wrote the link, when it has one.
+    /// A link into the same document reaches this identifier, and the binding
+    /// carries none for that case.
+    pub source_id: Option<String>,
     pub form: LinkForm,
     pub span: Span,
     pub binding: Binding,
@@ -151,11 +161,17 @@ pub fn bind(
 ) -> (Vec<Link>, Skipped) {
     let mut links = Vec::new();
     let mut skipped = Skipped::default();
+    let identifiers: std::collections::HashSet<&str> = index
+        .paths
+        .iter()
+        .filter_map(|entry| entry.id.as_deref())
+        .collect();
 
     for row in &census.rows {
         let Some(document) = &row.document else {
             continue;
         };
+        let source_id = index.by_path(&row.path).and_then(|entry| entry.id.clone());
         for link in &document.body.links {
             if link.quoted {
                 skipped.quoted += 1;
@@ -166,10 +182,15 @@ pub fn bind(
                 continue;
             }
             let (path, fragment) = split_fragment(&link.destination);
+            let trimmed = link.text.trim();
+            let names = identifiers.contains(trimmed).then(|| trimmed.to_string());
             links.push(Link {
                 source_path: row.path.clone(),
                 destination: link.destination.clone(),
                 fragment,
+                text: link.text.clone(),
+                names,
+                source_id: source_id.clone(),
                 form: link.form,
                 span: link.span,
                 binding: binding_of(&row.path, path, index, base),

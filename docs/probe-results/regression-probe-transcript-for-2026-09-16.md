@@ -14,9 +14,9 @@ A probe result is a function of three committed inputs and of nothing else: the 
 
 ## The run this transcript recorded
 
-This transcript recorded nothing usable: it was planned against taxonomy sha256:2676416f710b8889bdb7599c5b0bb64f0383d249dc87c4eff6f6464e655c1d43 and this tree carries sha256:0f083574073c81108aeddd5023aae13d9fec3f5c281cc10533c2fbdbf8402d93, and the read set of its probes moved with it: this tree composes sha256:0c85b1dae4b5ebcc984d47c14d865b21111b57cdbf6e3d3e61d1fd3bca0672fa
+This transcript recorded nothing usable: it was planned against taxonomy sha256:2676416f710b8889bdb7599c5b0bb64f0383d249dc87c4eff6f6464e655c1d43 and this tree carries sha256:ff9696e48f82d1e047ff2a6909490b2e08aed67da506d3d364d010b24219b1fd, and the read set of its probes moved with it: this tree composes sha256:5a2303bfe2cee12901c87205d0dc4910dfb859a1fa66ac76e5041a63e33126a9
 
-This transcript reached no grader: it was planned against taxonomy sha256:2676416f710b8889bdb7599c5b0bb64f0383d249dc87c4eff6f6464e655c1d43 and this tree carries sha256:0f083574073c81108aeddd5023aae13d9fec3f5c281cc10533c2fbdbf8402d93, and the read set of its probes moved with it: this tree composes sha256:0c85b1dae4b5ebcc984d47c14d865b21111b57cdbf6e3d3e61d1fd3bca0672fa
+This transcript reached no grader: it was planned against taxonomy sha256:2676416f710b8889bdb7599c5b0bb64f0383d249dc87c4eff6f6464e655c1d43 and this tree carries sha256:ff9696e48f82d1e047ff2a6909490b2e08aed67da506d3d364d010b24219b1fd, and the read set of its probes moved with it: this tree composes sha256:5a2303bfe2cee12901c87205d0dc4910dfb859a1fa66ac76e5041a63e33126a9
 
 A transcript that fails any of the five confirmations is refused whole, so there are no verdicts to report and no rate over none.
 

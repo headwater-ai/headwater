@@ -137,6 +137,9 @@ nav:
       - "Warrant — what stands behind a document, and who vouched for it": "evaluations/warrant-and-adjudication.md"
       - "What a check can know — the Q5 and Q21 evaluation": "evaluations/what-a-check-can-know.md"
       - "Why corpus counts are derived, not stored": "evaluations/why-corpus-counts-are-derived-not-stored.md"
+  - "Explanations":
+      - "Explanations": "explanations/README.md"
+      - "How a Headwater release reaches an adopter": "explanations/how-a-headwater-release-reaches-an-adopter.md"
   - "How-to guides":
       - "How-to guides": "how-to/README.md"
       - "Cut a release": "how-to/cut-a-release.md"

@@ -26,3 +26,5 @@ A fragment on a resolving path, at [a heading of another document](20-fragment-t
 A query string is not part of a filename. [The fragment target with a version on the end](20-fragment-target.md?v=2) resolves to the file its path names.
 
 A destination that opens with a separator names the root of the corpus. [The fragment target under that other spelling](/check/spec/20-fragment-target.md) is the same file again.
+
+The text of [SPEC-FIX-fragment-target](20-fragment-target.md) is the identifier of the file its path reaches. That is the passing half the identifier rule needs.

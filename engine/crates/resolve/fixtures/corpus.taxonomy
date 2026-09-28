@@ -1,5 +1,5 @@
 taxonomy: headwater/standard
-version: 4.10.0
+version: 4.12.0
 purposes:
   rationale:
     intent: "explain why a choice was made and what it forecloses"
@@ -1209,6 +1209,12 @@ obligations:
     class: cohesion
     prevents: content.inconsistent
     severity: medium
+  OB-LINK-3:
+    statement: "A prose link whose text is the identifier of a document reaches the document that carries that identifier"
+    rationale: "A link whose text names one decision and whose path reaches another resolves, so no path or heading rule reads it. The reader follows it, reads the wrong document, and has no signal that it is wrong"
+    class: cohesion
+    prevents: content.inconsistent
+    severity: medium
   OB-REL-3:
     statement: "A participation expectation is met inside the window the taxonomy declares"
     rationale: "A document that nothing links to inside its window is work that reached nobody, and the corpus cannot tell that from work nobody needed"
@@ -1254,6 +1260,12 @@ obligations:
   OB-LIFE-5:
     statement: "A live document does not depend on a document standing at the initial state, through any relation that does not write a state onto its target"
     rationale: "A document at the initial state has not been promoted, and its declared guidance is that nothing may rely on it. A live document that points at one states a claim that rests on text an author is still arguing over, and the reader who follows the link cannot tell a settled source from a draft. Unlike a retired document, a draft leaves no record that a citation could be a citation of, so the obligation reads every relation and not the lifecycle-sensitive ones. The relation whose declaration writes a state onto its target is exempt, because that edge is a statement about the target and not a reliance on it"
+    class: cohesion
+    prevents: content.inconsistent
+    severity: medium
+  OB-LIFE-6:
+    statement: "An authored document stands at the state that an incoming relation declares with `on_target.set_state`"
+    rationale: "A relation that writes a state onto its target says what that target has become, and a supersession is the plain case. A superseded document that still reads `current` reads as current to every person and every rule, so a reader who meets it first follows guidance the corpus has already replaced. The successor edge already names the one correct state and the date it took effect, so the corpus carries the answer and only the target's own facet disagrees with it"
     class: cohesion
     prevents: content.inconsistent
     severity: medium
@@ -1571,6 +1583,16 @@ controls:
     promotion:
       permanently_advisory:
         reasoning: "The reading CT-LIFE-3 takes, at the other end of the lifecycle. A live document resting on a draft is repaired by promoting the target once it is settled, by pointing the source at a document that stands, or by moving the source back to draft until the target is settled. There is no fourth answer and the engine cannot pick among the three, so a posture that stopped a merge would stop it on a question only an author can settle"
+  CT-LIFE-6:
+    mechanism: "check:lifecycle.state.not_set_by_edge"
+    discharges:
+      - OB-LIFE-6
+    trigger: pull_request
+    posture: blocking
+    acts: detective
+    promotion:
+      final_posture:
+        reasoning: "The reading CT-LIFE-2 takes, over one declared edge instead of one declared state set. The rule reads the state the relation declares and the state the target stands at, and the corpus itself resolved both, so an advisory period would measure a false-positive rate that the construction fixes at zero. Where the target is live the remedy is mechanical and total, because the fix writes the declared state and the source's own state-entry date together, so there is no judgment for an author to make. The one case that needs a judgment is a target already terminal at another state, because which terminal state it ends at is the author's call. The rule reports that case as a warning with no patch, so it does not stop a strict run, and the posture blocks only what the fix can repair"
   CT-LANG-1:
     mechanism: "check:language.controlled.not_met"
     discharges:
@@ -1623,6 +1645,13 @@ controls:
     mechanism: "check:link.path.unresolved"
     discharges:
       - OB-LINK-2
+    trigger: pull_request
+    posture: advisory
+    acts: detective
+  CT-LINK-3:
+    mechanism: "check:link.identifier.mismatch"
+    discharges:
+      - OB-LINK-3
     trigger: pull_request
     posture: advisory
     acts: detective
