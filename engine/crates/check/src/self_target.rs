@@ -43,11 +43,12 @@
 //!
 //! An anchor target passes too, and that includes an anchor onto the declaring
 //! document's own file. A target written as a path, under a relation whose
-//! endpoint admits a `code_path` anchor (`traces_to`, `governs`), binds as an
-//! anchor and not as an unresolved identifier. Its pattern can match the file
-//! that declares it: a decision that writes `traces_to:` with its own path
-//! binds onto itself, and this rule does not report it. The reason is that an
-//! anchor is a pattern over the tree and not a document identity
+//! endpoint admits a `code_path` anchor (in headwater/standard: `governs`,
+//! `traces_to` and `examines`), binds as an anchor and not as an unresolved
+//! identifier. Its pattern can match the file that declares it: a decision
+//! that writes `traces_to:` with its own path binds onto itself, and this
+//! rule does not report it. The reason is that an anchor is a pattern over
+//! the tree and not a document identity
 //! ([HW-DR-0074](../../../../docs/decisions/0074-a-code-path-anchor-is-a-pattern-over-the-tree-and-it-binds-when-the-pattern-matches-at-least-one-entry.md)).
 //! A pattern that covers its own file is often correct, as when a decision
 //! governs the directory it sits in. Only a literal single-path pattern equal
