@@ -11,7 +11,7 @@ relations:
     - to: engine/crates/query/src/explain.rs
       verified_revision: sha256:7295f5c240de3838c3e0bab52ff58e9b287b1768a879d2653bcf3b68bcc3fde9
     - to: engine/crates/census/src/walk.rs
-      verified_revision: sha256:8f1968a5c4fe9e3337f6235213f611fcf360842f8afc00d04a235ff566e933cd
+      verified_revision: sha256:9c704da37d4f7424c8e704b5d52042b40cd69055e8bcfa8ed0810e39c98d877a
 ---
 
 # headwater show

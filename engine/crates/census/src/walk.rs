@@ -210,29 +210,45 @@ pub fn typed(root: &Path, target: &str) -> Option<String> {
 /// reads [`typed`] and not this, so a document row that is itself a symlink
 /// still answers as the row the walk recorded.
 ///
+/// The corpus root is the one symlink the walk follows: [`walk`] reads the
+/// directory `corpus_root` names, wherever it leads. So a path under
+/// `corpus_root` stays inside when it lands under where the corpus root leads,
+/// and a new document under a linked corpus root is a path of the corpus, as
+/// it will be once the walk reads it. A symlink below the corpus root is not
+/// followed, and one that leads out still makes the path outside.
+///
 /// It reads the filesystem: the longest leading part of the path that exists
 /// is made canonical and compared with the canonical root. A path with no part
 /// on disk below the root, and a root that cannot be made canonical, keep the
 /// lexical answer.
-pub fn within(root: &Path, target: &str) -> Option<String> {
+pub fn within(root: &Path, corpus_root: &str, target: &str) -> Option<String> {
     let relative = typed(root, target)?;
-    match escapes(root, &relative) {
+    match escapes(root, corpus_root, &relative) {
         true => None,
         false => Some(relative),
     }
 }
 
 /// Whether the longest leading part of `relative` that exists under `root`
-/// resolves, through a symlink, to a place outside `root`. `relative` is what
-/// [`typed`] returned, so it holds no `..`.
-fn escapes(root: &Path, relative: &str) -> bool {
+/// resolves, through a symlink, to a place that is neither under `root` nor,
+/// for a path under `corpus_root`, under where the corpus root leads.
+/// `relative` is what [`typed`] returned, so it holds no `..`.
+fn escapes(root: &Path, corpus_root: &str, relative: &str) -> bool {
     let Ok(canonical_root) = root.canonicalize() else {
         return false;
+    };
+    let linked_corpus = match Path::new(relative).starts_with(corpus_root) {
+        true => root.join(corpus_root).canonicalize().ok(),
+        false => None,
     };
     let mut at = Path::new(relative);
     while !at.as_os_str().is_empty() {
         if let Ok(canonical) = root.join(at).canonicalize() {
-            return !canonical.starts_with(&canonical_root);
+            let inside = canonical.starts_with(&canonical_root)
+                || linked_corpus
+                    .as_ref()
+                    .is_some_and(|corpus| canonical.starts_with(corpus));
+            return !inside;
         }
         at = at.parent().unwrap_or(Path::new(""));
     }
@@ -494,17 +510,16 @@ mod tests {
     }
 
     /// #1249: `within` is `typed`, less every path that passes through a
-    /// symlink out of the root. A link that stays inside, a path with nothing
-    /// on disk and the root itself keep the lexical answer, and `typed` still
+    /// symlink out of the root, other than the corpus root the walk follows. A
+    /// link that stays inside, a path with nothing on disk, a path under a
+    /// linked corpus root and the root itself keep the lexical answer. `typed` still
     /// reads the escaping path lexically, because a lookup of a census row
     /// reads that and not this.
     #[cfg(unix)]
     #[test]
     fn within_refuses_a_path_through_a_symlink_that_leads_out_of_the_root() {
-        let base = std::env::temp_dir().join(format!(
-            "headwater-census-within-{}",
-            std::process::id()
-        ));
+        let base =
+            std::env::temp_dir().join(format!("headwater-census-within-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&base);
         let root = base.join("root");
         let elsewhere = base.join("elsewhere");
@@ -513,8 +528,20 @@ mod tests {
         std::fs::write(elsewhere.join("x.md"), b"outside\n").expect("it writes");
         std::os::unix::fs::symlink(&elsewhere, root.join("escape")).expect("a link out");
         std::os::unix::fs::symlink(root.join("docs"), root.join("inside")).expect("a link in");
+        // A corpus root that is itself a link out, as a scratch root shares a
+        // corpus with a real tree: the walk follows it, so a path under it is
+        // inside, and a link below it that leads out again is not.
+        std::fs::create_dir_all(elsewhere.join("corpus/shelf")).expect("the linked corpus");
+        std::os::unix::fs::symlink(elsewhere.join("corpus"), root.join("linked"))
+            .expect("a linked corpus root");
+        std::os::unix::fs::symlink(&elsewhere, elsewhere.join("corpus/out"))
+            .expect("a link out below the corpus root");
 
-        let cases: [(&str, Option<&str>); 8] = [
+        let cases: [(&str, Option<&str>); 12] = [
+            ("linked/shelf/new.md", Some("linked/shelf/new.md")),
+            ("./linked/new.md", Some("linked/new.md")),
+            ("linked/out/x.md", None),
+            ("escape/corpus/shelf/new.md", None),
             ("escape/x.md", None),
             ("./escape/x.md", None),
             ("escape/never-written.md", None),
@@ -526,13 +553,17 @@ mod tests {
         ];
         let answers: Vec<(&str, Option<String>)> = cases
             .iter()
-            .map(|(target, _)| (*target, within(&root, target)))
+            .map(|(target, _)| (*target, within(&root, "linked", target)))
             .collect();
         let lexical = typed(&root, "escape/x.md");
         let _ = std::fs::remove_dir_all(&base);
         for ((target, expected), (_, answer)) in cases.iter().zip(&answers) {
             assert_eq!(answer.as_deref(), *expected, "`within` on `{target}`");
         }
-        assert_eq!(lexical.as_deref(), Some("escape/x.md"), "`typed` stays lexical");
+        assert_eq!(
+            lexical.as_deref(),
+            Some("escape/x.md"),
+            "`typed` stays lexical"
+        );
     }
 }

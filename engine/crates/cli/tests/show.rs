@@ -415,7 +415,12 @@ fn every_path_route_refuses_a_path_outside_the_repository_in_one_sentence() {
         .expect("the outside file writes");
     std::os::unix::fs::symlink(&elsewhere, root.at.join("escape")).expect("the link is made");
 
-    let targets = ["escape/x.md", "./escape/x.md", "/etc/passwd", "../outside.md"];
+    let targets = [
+        "escape/x.md",
+        "./escape/x.md",
+        "/etc/passwd",
+        "../outside.md",
+    ];
     let mut failures: Vec<String> = Vec::new();
     for target in targets {
         let sentence = headwater_query::outside_text(target);

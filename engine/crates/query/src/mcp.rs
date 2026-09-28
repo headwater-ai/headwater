@@ -213,6 +213,10 @@ pub struct Server<'a> {
     /// what `x` answers (#1227, #1249). It is the root the server was started
     /// over and never a tool argument.
     pub root: &'a std::path::Path,
+    /// The corpus root under `root`, as the consumer declaration names it. The
+    /// walk follows it when it is a symlink, so a path tool reads a path under
+    /// it as inside the repository wherever it leads (#1249).
+    pub corpus_root: &'a str,
     /// The declarations one run of the check layer reads, out of the committed
     /// lock.
     pub declared: Declared<'a>,
@@ -803,18 +807,24 @@ fn call(server: &Server<'_>, message: &Mapping) -> Result<Answer, Failure> {
         // the same `typed`, so each path tool and the verb find one document for
         // one spelling, and refuse a path that leaves the repository in the
         // verb's own sentence (#1227, #1249).
-        "explain" => match retried(server, &argument, |target| surface.explain(target), |found| {
-            found.path.as_str()
-        }) {
+        "explain" => match retried(
+            server,
+            &argument,
+            |target| surface.explain(target),
+            |found| found.path.as_str(),
+        ) {
             // Plain, unconditionally: an MCP server's own stdout is never a
             // terminal, so a real invocation piped the same way would sense
             // the same mode.
             Some(explanation) => explanation.render(headwater_check::paint::ColorMode::Plain),
             None => missing(server, &argument),
         },
-        "related" => match retried(server, &argument, |target| surface.find(target), |found| {
-            found.path
-        }) {
+        "related" => match retried(
+            server,
+            &argument,
+            |target| surface.find(target),
+            |found| found.path,
+        ) {
             Some(document) => {
                 let mut out = String::new();
                 for neighbour in surface.related(&document) {
@@ -842,7 +852,8 @@ fn call(server: &Server<'_>, message: &Mapping) -> Result<Answer, Failure> {
         // The refusal keeps `pointers`, empty, so the machine contract of
         // #1248 never loses its member.
         "governing_docs_for_path" => {
-            let reached = headwater_census::walk::within(server.root, &argument);
+            let reached =
+                headwater_census::walk::within(server.root, server.corpus_root, &argument);
             let governing = match &reached {
                 Some(relative) => surface.governing_docs_for_path(relative),
                 None => Vec::new(),
@@ -907,7 +918,7 @@ fn retried<T>(
 /// too ([`headwater_census::walk::within`]), and "not a document" where it
 /// stays inside.
 fn missing(server: &Server<'_>, argument: &str) -> String {
-    match headwater_census::walk::within(server.root, argument) {
+    match headwater_census::walk::within(server.root, server.corpus_root, argument) {
         None => format!("{}\n", crate::outside_text(argument)),
         Some(_) => format!("{argument} is not a document of this corpus\n"),
     }

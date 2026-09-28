@@ -4336,7 +4336,11 @@ fn find_document(root: &Path, target: &str) -> Result<headwater_query::Explanati
                 // outside the repository, whatever its spelling reads as
                 // (#1249). It is asked only here, after every lookup missed,
                 // so a document row that is itself a symlink still answers.
-                let classification = match headwater_census::walk::within(root, target) {
+                let classification = match headwater_census::walk::within(
+                    root,
+                    &loaded.consumer.corpus_root,
+                    target,
+                ) {
                     None => headwater_census::walk::Classification::Unclassifiable,
                     Some(_) => Corpus::declared(
                         root,
@@ -5906,6 +5910,7 @@ fn mcp(root: &Path, now: Option<Date>, writing: bool) -> ExitCode {
         census: &loaded.census,
         graph: &loaded.graph,
         root,
+        corpus_root: &loaded.consumer.corpus_root,
         declared: loaded.declared(),
         claims: &loaded.claims,
         ignored: &ignoring,

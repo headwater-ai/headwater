@@ -179,6 +179,7 @@ impl Built {
             census: &self.census,
             graph: &self.graph,
             root: &self.root,
+            corpus_root: "query",
             declared: self.declared(),
             claims: &self.claims,
             // The fixture tree is read as one git ignores nothing under, so
