@@ -4,6 +4,13 @@
 
 The documents on this shelf, in the reading order this corpus derives.
 
+- [Campaign pilot of 2026-09-28, campaign tier, absent arm, discovery](campaign-pilot-of-2026-09-28-campaign-tier-absent-arm-discovery.md) — The absent arm of the campaign tier over the discovery selection: 6 sessions, 318 cents, the intent hook live in 0.
+- [Campaign pilot of 2026-09-28, campaign tier, absent arm, navigability](campaign-pilot-of-2026-09-28-campaign-tier-absent-arm-navigability.md) — The absent arm of the campaign tier over the navigability selection: 9 sessions, 159 cents, the intent hook live in 0.
+- [Campaign pilot of 2026-09-28, campaign tier, absent arm, sufficiency](campaign-pilot-of-2026-09-28-campaign-tier-absent-arm-sufficiency.md) — The absent arm of the campaign tier over the sufficiency selection: 12 sessions, 219 cents, the intent hook live in 0.
+- [Campaign pilot of 2026-09-28, campaign tier, present arm, discovery](campaign-pilot-of-2026-09-28-campaign-tier-present-arm-discovery.md) — The present arm of the campaign tier over the discovery selection: 6 sessions, 242 cents, the intent hook live in 0.
+- [Campaign pilot of 2026-09-28, campaign tier, present arm, navigability](campaign-pilot-of-2026-09-28-campaign-tier-present-arm-navigability.md) — The present arm of the campaign tier over the navigability selection: 9 sessions, 278 cents, the intent hook live in 0.
+- [Campaign pilot of 2026-09-28, campaign tier, present arm, sufficiency](campaign-pilot-of-2026-09-28-campaign-tier-present-arm-sufficiency.md) — The present arm of the campaign tier over the sufficiency selection: 12 sessions, 252 cents, the intent hook live in 0.
+- [Campaign pilot of 2026-09-28, documentation tier, absent arm, sufficiency](campaign-pilot-of-2026-09-28-documentation-tier-absent-arm-sufficiency.md) — The absent arm of the documentation tier over the sufficiency selection: 12 sessions, 236 cents, the intent hook live in 0.
 - [Regression probe transcript for 2026-09-09](regression-probe-transcript-for-2026-09-09.md) — Four regression sessions recorded the calls that a Claude Haiku session made while it answered the corpus probes.
 - [Regression probe transcript for 2026-09-11](regression-probe-transcript-for-2026-09-11.md) (deprecated) — Four regression sessions ran against the lock of 2026-09-11, and the recorder observed every tool call each one made. The recording is retired, because a later change moved the lock it pins.
 - [Regression probe transcript for 2026-09-16](regression-probe-transcript-for-2026-09-16.md) (deprecated) — Eight regression sessions ran against the lock of this tree, and the recorder observed every tool call each one made. The recording is retired, because a later change moved the lock it pins.
