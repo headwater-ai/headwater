@@ -25,8 +25,8 @@ use headwater_census::walk::Corpus;
 use headwater_check::paint::ColorMode;
 use headwater_check::Shape;
 use headwater_generate::{
-    check, descriptor, plan, write, Emitter, Identity, Kind, Plan, Projections, Report, Runs,
-    Verdict,
+    check, descriptor, plan, publish, write, Emitter, Identity, Kind, Plan, Projections, Report,
+    Runs, Verdict,
 };
 use headwater_graph::anchors::Resolvers;
 use headwater_graph::declarations::Declarations;
@@ -1596,6 +1596,18 @@ projections:
         .find(|output| output.path == "exports/site.json")
         .expect("the declaration produced an output");
     assert_eq!(output.kind, Kind::GraphExport);
+    // A declaration that states no `committed` leaves the descriptor's export
+    // row as it was before the member existed.
+    let described = plan
+        .outputs
+        .iter()
+        .find(|output| output.path == descriptor::PATH)
+        .expect("the plan writes the descriptor");
+    assert!(
+        described.bytes.contains("\"exports\"") && !described.bytes.contains("\"committed\""),
+        "a committed export's row carries a `committed` member:\n{}",
+        described.bytes
+    );
 
     // (a) before the file exists, the plan's own check would write it.
     let tree = empty_tree("graph-export-missing");
@@ -1655,6 +1667,211 @@ projections:
         !restored.has_errors(),
         "check does not pass again after regeneration: {}",
         restored.render(ColorMode::Plain)
+    );
+}
+
+/// A `graph_export` declared `committed: false` is built at publish time by
+/// `headwater export`, and the tree does not hold it
+/// ([#1261](https://github.com/headwater-ai/headwater/issues/1261)).
+///
+/// The gate must neither require the file nor compare a copy that a local
+/// export left behind. `generate` must not write it, and `headwater export`
+/// must still write it, because that is the publish step. A marked copy at the
+/// declared path is claimed by the plan, so the orphan rule does not report
+/// it. The committed twin of this case is
+/// `a_declared_graph_export_is_held_to_regeneration` above, which fails on the
+/// same absent file and the same stale copy.
+#[test]
+fn a_graph_export_declared_uncommitted_is_neither_required_nor_compared() {
+    const AT: &str = "generate/exports/site.json";
+    let source = "\
+projections:
+  - kind: graph_export
+    profile: site
+    output: generate/exports/site.json
+    committed: false
+";
+    let declared = headwater_yaml::load(source)
+        .expect("it loads")
+        .value
+        .as_map()
+        .expect("a mapping")
+        .clone();
+    let projections = Projections::read(&declared).expect("the projections read");
+
+    // A copy of the fixture corpus, so that a file written at the declared
+    // path is inside the corpus root and the census walks it.
+    let tree = empty_tree("graph-export-uncommitted");
+    copy_tree(&fixtures_dir().join("generate"), &tree.join("generate"));
+    let root = load_map(&fixtures_dir().join("generate.taxonomy.yml"));
+    let planned = |built: &Built| {
+        plan(
+            &built.surface(),
+            &built.census,
+            &projections,
+            &fixture_identity(),
+            &Runs::default(),
+            headwater_verbs::VERBS,
+        )
+    };
+    let verdict = |report: &Report| {
+        report
+            .wrote
+            .iter()
+            .find(|wrote| wrote.path == AT)
+            .map(|wrote| wrote.verdict.clone())
+    };
+    let before = Built::over(&Corpus::new(&tree, "generate"), &root);
+    let first = planned(&before);
+    assert!(
+        first.outputs.iter().any(|output| output.path == AT),
+        "the plan does not claim the uncommitted path, so the orphan rule would report a \
+         local export"
+    );
+    // The descriptor tells a cold reader that the bytes are not in the tree.
+    let descriptor = |plan: &Plan| {
+        plan.outputs
+            .iter()
+            .find(|output| output.path == descriptor::PATH)
+            .map(|output| output.bytes.clone())
+            .expect("the plan writes the descriptor")
+    };
+    assert!(
+        descriptor(&first).contains("\"committed\": false"),
+        "the descriptor's export row does not say the export is built at publish time:\n{}",
+        descriptor(&first)
+    );
+
+    // (c) `generate` writes every other output and not this one.
+    let generated = write(&tree, &first);
+    assert!(
+        !generated.has_errors(),
+        "{}",
+        generated.render(ColorMode::Plain)
+    );
+    assert!(
+        !tree.join(AT).exists(),
+        "`generate` wrote a graph_export declared as built at publish time"
+    );
+    assert_eq!(verdict(&generated), Some(Verdict::Uncommitted));
+
+    // (a) The file is absent, and the gate does not require it.
+    let absent = check(&tree, &first);
+    assert!(
+        !absent.has_errors(),
+        "an uncommitted graph_export is required by the gate: {}",
+        absent.render(ColorMode::Plain)
+    );
+    assert_eq!(verdict(&absent), Some(Verdict::Uncommitted));
+    assert!(
+        absent.render(ColorMode::Plain).contains("headwater export"),
+        "the report does not say where the file is built: {}",
+        absent.render(ColorMode::Plain)
+    );
+
+    // (d) `headwater export` writes it, because that is the publish step.
+    let exported = headwater_generate::export_plan(&before.surface(), &projections, None)
+        .expect("the export plan");
+    let published = publish(&tree, &exported);
+    assert!(
+        !published.has_errors(),
+        "{}",
+        published.render(ColorMode::Plain)
+    );
+    assert_eq!(verdict(&published), Some(Verdict::Written));
+    let bytes = std::fs::read_to_string(tree.join(AT)).expect("`headwater export` wrote it");
+
+    // (b) A marked copy that no longer matches is not compared, and nothing
+    // reports it orphaned. The census reads a JSON file as no document, so the
+    // orphan rule cannot reach this path today. The plan claims it all the same
+    // (asserted above), so an emitter that writes a page would not change that.
+    std::fs::write(tree.join(AT), format!("{bytes}\n")).expect("the stale copy");
+    let after = Built::over(&Corpus::new(&tree, "generate"), &root);
+    let second = planned(&after);
+    assert!(
+        second.orphaned.iter().all(|orphaned| orphaned.path != AT),
+        "a local export is reported orphaned: {:?}",
+        second.orphaned
+    );
+    // The census moved, so the committed outputs are written again first, and
+    // `generate` leaves the stale copy as it found it.
+    let rewritten = write(&tree, &second);
+    assert!(
+        !rewritten.has_errors(),
+        "{}",
+        rewritten.render(ColorMode::Plain)
+    );
+    assert_eq!(
+        std::fs::read_to_string(tree.join(AT)).expect("the stale copy is there"),
+        format!("{bytes}\n"),
+        "`generate` touched a local copy of an uncommitted graph_export"
+    );
+    let stale = check(&tree, &second);
+    assert!(
+        !stale.has_errors(),
+        "a stale local copy of an uncommitted graph_export fails the gate: {}",
+        stale.render(ColorMode::Plain)
+    );
+    let exported = headwater_generate::export_plan(&after.surface(), &projections, None)
+        .expect("the export plan");
+    let export_check = check(&tree, &exported);
+    assert!(
+        !export_check.has_errors(),
+        "`headwater export --check` compares an uncommitted graph_export: {}",
+        export_check.render(ColorMode::Plain)
+    );
+}
+
+/// `committed: false` is read on a `graph_export` alone. Every other kind is
+/// read in the tree, so an absent file there breaks a reader.
+#[test]
+fn committed_false_on_a_shelf_index_is_refused() {
+    let source = "\
+projections:
+  - kind: shelf_index
+    for: [decisions]
+    output: generate/decisions/README.md
+    committed: false
+";
+    let root = headwater_yaml::load(source)
+        .expect("it loads")
+        .value
+        .as_map()
+        .expect("a mapping")
+        .clone();
+    let errors = Projections::read(&root).expect_err("an uncommitted shelf index is refused");
+    assert!(
+        errors
+            .iter()
+            .any(|error| error.message.contains("shelf_index")
+                && error.message.contains("graph_export")),
+        "the refusal does not name the kind and the one kind that takes the member: {errors:?}"
+    );
+}
+
+/// The meta-schema refuses a `committed` that is not a boolean over the
+/// sources, and the reader refuses it over a lock, so a word that reads as a
+/// no is never taken for the default.
+#[test]
+fn committed_that_is_not_a_boolean_is_refused() {
+    let source = "\
+projections:
+  - kind: graph_export
+    output: exports/site.json
+    committed: \"no\"
+";
+    let root = headwater_yaml::load(source)
+        .expect("it loads")
+        .value
+        .as_map()
+        .expect("a mapping")
+        .clone();
+    let errors = Projections::read(&root).expect_err("a word in place of a boolean is refused");
+    assert!(
+        errors
+            .iter()
+            .any(|error| error.message.contains("committed")),
+        "the refusal does not name the member: {errors:?}"
     );
 }
 

@@ -246,11 +246,13 @@ fn chain(root: &Path) -> Plan {
             Output {
                 path: LIST.to_string(),
                 kind: Kind::ShelfIndex,
+                committed: true,
                 bytes: list,
             },
             Output {
                 path: COPY.to_string(),
                 kind: Kind::ShelfIndex,
+                committed: true,
                 bytes: copy,
             },
         ],
@@ -375,6 +377,7 @@ fn a_run_that_never_settles_says_so_and_fails() {
             outputs: vec![Output {
                 path: "chained/flip.md".to_string(),
                 kind: Kind::ShelfIndex,
+                committed: true,
                 bytes: format!(
                     "{}\n\npass {turn}\n",
                     headwater_mark::marker(Kind::ShelfIndex.name(), "chained/flip.md")
