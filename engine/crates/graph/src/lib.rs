@@ -338,12 +338,7 @@ impl Graph {
         self.links
             .iter()
             .filter(|link| link.names.is_some())
-            .filter(|link| {
-                matches!(
-                    &link.binding,
-                    links::Binding::Corpus { id: Some(_), .. }
-                )
-            })
+            .filter(|link| matches!(&link.binding, links::Binding::Corpus { id: Some(_), .. }))
             .count()
     }
 

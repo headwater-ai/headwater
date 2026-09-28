@@ -245,7 +245,11 @@ fn a_link_whose_text_names_another_document_turns_a_green_strict_run_red() {
         raised[0]
     );
 
-    assert!(at(&after, RULE, matched).is_empty(), "{:#?}", after.findings);
+    assert!(
+        at(&after, RULE, matched).is_empty(),
+        "{:#?}",
+        after.findings
+    );
 
     for neighbor in [
         headwater_check::link_path::RULE,
@@ -266,6 +270,33 @@ fn a_link_whose_text_names_another_document_turns_a_green_strict_run_red() {
         .filter(|finding| finding.severity == Severity::Error && finding.path == CITER)
         .collect();
     assert_eq!(new_cells.len(), 1, "{new_cells:#?}");
+}
+
+/// Space inside the brackets is not part of the identifier, and a code span is
+/// how most of this repository writes one. Both are read as the identifier they
+/// hold, so neither hides a mismatch.
+#[test]
+fn padded_and_code_span_text_is_read_as_the_identifier_it_holds() {
+    let base = scratch("padded");
+
+    let payload = debt_of(&run_over(&base, None));
+    let landed = append(
+        &base,
+        &[
+            "Padded: [ SPEC-FIX-cited-only ](20-fragment-target.md) reaches the wrong file.",
+            "Code: [`SPEC-FIX-cited-only`](20-fragment-target.md) reaches the wrong file.",
+        ],
+    );
+
+    let after = run_over(&base, Some(&payload));
+    for line in landed {
+        assert_eq!(
+            at(&after, RULE, line).len(),
+            1,
+            "line {line}: {:#?}",
+            after.findings
+        );
+    }
 }
 
 /// The matched link alone leaves the run green: the rule reads a link whose

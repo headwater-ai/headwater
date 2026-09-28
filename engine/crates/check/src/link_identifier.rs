@@ -176,43 +176,37 @@ mod tests {
     /// A fragment on the destination does not change what the path reaches.
     #[test]
     fn a_fragment_on_a_mismatched_link_is_still_an_error() {
-        assert!(
-            finding(&link(
-                "../decisions/0090-other.md#decision",
-                "HW-DR-0089",
-                Some("HW-DR-0089"),
-                reaches(Some("HW-DR-0090")),
-            ))
-            .is_some()
-        );
+        assert!(finding(&link(
+            "../decisions/0090-other.md#decision",
+            "HW-DR-0089",
+            Some("HW-DR-0089"),
+            reaches(Some("HW-DR-0090")),
+        ))
+        .is_some());
     }
 
     /// Text and target agree.
     #[test]
     fn text_naming_the_identifier_it_reaches_is_nothing() {
-        assert!(
-            finding(&link(
-                "../decisions/0090-other.md",
-                "HW-DR-0090",
-                Some("HW-DR-0090"),
-                reaches(Some("HW-DR-0090")),
-            ))
-            .is_none()
-        );
+        assert!(finding(&link(
+            "../decisions/0090-other.md",
+            "HW-DR-0090",
+            Some("HW-DR-0090"),
+            reaches(Some("HW-DR-0090")),
+        ))
+        .is_none());
     }
 
     /// Text that is not an identifier is not read.
     #[test]
     fn text_that_names_no_identifier_is_nothing() {
-        assert!(
-            finding(&link(
-                "../decisions/0090-other.md",
-                "the decision",
-                None,
-                reaches(Some("HW-DR-0090")),
-            ))
-            .is_none()
-        );
+        assert!(finding(&link(
+            "../decisions/0090-other.md",
+            "the decision",
+            None,
+            reaches(Some("HW-DR-0090")),
+        ))
+        .is_none());
     }
 
     /// Every binding that carries no identifier is nothing to this rule: a
@@ -234,9 +228,7 @@ mod tests {
                 why: "climbs above the repository root".to_string(),
             },
         ] {
-            assert!(
-                finding(&link("x", "HW-DR-0089", Some("HW-DR-0089"), binding)).is_none()
-            );
+            assert!(finding(&link("x", "HW-DR-0089", Some("HW-DR-0089"), binding)).is_none());
         }
     }
 
@@ -263,7 +255,12 @@ mod tests {
                 Some("HW-DR-0090"),
                 reaches(Some("HW-DR-0090")),
             ),
-            link("c.md", "HW-DR-0001", Some("HW-DR-0001"), reaches(Some("HW-DR-0002"))),
+            link(
+                "c.md",
+                "HW-DR-0001",
+                Some("HW-DR-0001"),
+                reaches(Some("HW-DR-0002")),
+            ),
         ];
         let view = CorpusView::only_links(Some(&links));
         let Outcome::Failed(found) = Identifiers.evaluate(&view) else {

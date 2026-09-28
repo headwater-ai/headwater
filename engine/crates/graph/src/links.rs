@@ -178,9 +178,7 @@ pub fn bind(
             }
             let (path, fragment) = split_fragment(&link.destination);
             let trimmed = link.text.trim();
-            let names = identifiers
-                .contains(trimmed)
-                .then(|| trimmed.to_string());
+            let names = identifiers.contains(trimmed).then(|| trimmed.to_string());
             links.push(Link {
                 source_path: row.path.clone(),
                 destination: link.destination.clone(),
