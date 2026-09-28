@@ -47,6 +47,6 @@ The first document of the process shelf is [Where a CI job runs](../process/expl
 
 When one of those records is superseded, `headwater check` reports the account, and its author must change the account in the same change or after it. Before this record, a superseded CI record left the workflow comments and `DEVELOPING.md` stale and nothing reported them.
 
-The product shelf, `docs/explanations/`, has no document yet. A kind on an empty shelf is declared and not proven, and the process shelf is the proof.
+When this record was written, the product shelf, `docs/explanations/`, had no document. A kind on an empty shelf is declared and not proven, and the process shelf was the proof. [How a Headwater release reaches an adopter](../explanations/how-a-headwater-release-reaches-an-adopter.md) is the first account on the product shelf (#1231).
 
 An author who writes an account must not state a new rule in it. A rule goes into a decision record, and the account then draws on that record. No check reads this, so the section contract and this paragraph are the whole mechanism.
