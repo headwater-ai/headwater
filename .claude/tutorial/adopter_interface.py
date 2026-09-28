@@ -36,11 +36,14 @@ owner's ruling of 2026-09-29 amends HW-DR-0077 clause 1 to name `apt-get`,
 `sudo`, `install`, `tee` and a `curl` of the APT keyring. `check_apt` admits
 each one only in the shape the README's block runs: `apt-get update`,
 `apt-get install -y` of the packages that block names, `install -d` of the
-keyring directory, `tee` of one file under `/etc/apt/sources.list.d/`, a
-`curl -o` of `https://headwater.tools/apt/headwater-archive-keyring.asc` into
-`/etc/apt/keyrings/`, and an `echo` of a signed-by sources line for
-`https://headwater.tools/apt`. `sudo` passes only in front of one of those,
-so it is never a way to run a program the route does not name.
+keyring directory, a `curl -o` of
+`https://headwater.tools/apt/headwater-archive-keyring.asc` into
+`/etc/apt/keyrings/`, an `echo` of a signed-by sources line for
+`https://headwater.tools/apt`, and `tee` of one file under
+`/etc/apt/sources.list.d/` only when that `echo` is what the pipe hands it.
+`tee` writes whatever it is given, so a `printf` of an unsigned line piped
+into it is refused. `sudo` passes only in front of one of those, so it is
+never a way to run a program the route does not name.
 
 **`cargo` is never the lead route.**
 [HW-DR-0077](../../docs/decisions/0077-the-consumer-surface-is-what-an-adopter-receives-runs-and-must-have-installed-and-it-is-a-closed-and-declared-list.md)
@@ -382,15 +385,18 @@ def check_tar(tokens):
     return True
 
 
-def check_apt(tokens, piece):
+def check_apt(tokens, piece, upstream=()):
     """Whether a piece is one of the APT route's commands, in the shape the
     README runs it and in no other (#1230). `tokens` has no `sudo` in front.
 
     - `apt-get update`, alone; `apt-get install` with `-y` and packages
       from `APT_PACKAGES`. No `-o`, which sets any configuration option.
-    - `install -d -m <octal> /etc/apt/keyrings`: it makes that directory
-      and copies nothing.
-    - `tee <file>` with one operand under `/etc/apt/sources.list.d/`.
+    - `install -d -m 0755 /etc/apt/keyrings`: it makes that directory,
+      copies nothing, and leaves it writable by root alone.
+    - `tee <file>` with one operand under `/etc/apt/sources.list.d/`, and
+      only as the second of two pieces whose first is the sources `echo`
+      below. `tee` writes whatever it is handed, so the file it names is
+      half of what it does and its input is the other half.
     - `curl` with short options from `fsSL`, `-o` naming a path under
       `/etc/apt/keyrings/`, and `APT_KEYRING_URL` as the only URL.
     - `echo "deb [signed-by=<keyring>] https://headwater.tools/apt ..."`,
@@ -413,10 +419,12 @@ def check_apt(tokens, piece):
         return bool(packages) and set(packages) <= APT_PACKAGES
     if head == 'install':
         return (len(tokens) == 5 and tokens[1] == '-d' and tokens[2] == '-m'
-                and re.match(r'^0?[0-7]{3}$', tokens[3]) is not None
+                and tokens[3] in ('0755', '755')
                 and tokens[4] == APT_KEYRING_DIR)
     if head == 'tee':
-        return len(tokens) == 2 and APT_SOURCES_PATH.match(tokens[1]) is not None
+        return (len(tokens) == 2 and APT_SOURCES_PATH.match(tokens[1]) is not None
+                and len(upstream) == 1
+                and APT_SOURCES_ECHO.match(upstream[0].strip()) is not None)
     if head == 'curl':
         rest, url, out = tokens[1:], 0, 0
         i = 0
@@ -436,20 +444,21 @@ def check_apt(tokens, piece):
     return False
 
 
-def check_sudo(tokens, piece):
+def check_sudo(tokens, piece, upstream=()):
     """`sudo` passes only in front of an APT-route program in its APT
     shape, and with no option of its own."""
     if len(tokens) < 2 or tokens[1] not in SUDO_ALLOWED:
         return False
-    return check_apt(tokens[1:], piece.split(None, 1)[1])
+    return check_apt(tokens[1:], piece.split(None, 1)[1], upstream)
 
 
-def check_piece(piece, cargo_allowed=False):
+def check_piece(piece, cargo_allowed=False, upstream=()):
     """Whether one already-split piece is an allowed command.
 
     `cargo` passes only when `cargo_allowed` is set, which
     `undeclared_in_document` does only after the document has already
-    given the release download."""
+    given the release download. `upstream` is the pieces before this one in
+    its pipeline, which the APT arm's `tee` reads."""
     if piece.startswith(UNREADABLE) or SUBSTITUTION.search(piece):
         return False
     tokens = piece.split()
@@ -459,18 +468,19 @@ def check_piece(piece, cargo_allowed=False):
         return (cargo_allowed and len(tokens) > 1
                 and tokens[1] in CARGO_ALLOWED_SUBCOMMANDS)
     if tokens[0] == 'sudo':
-        return check_sudo(tokens, piece)
+        return check_sudo(tokens, piece, upstream)
     if tokens[0] == 'curl':
         return is_release_download(piece) or check_apt(tokens, piece)
     if tokens[0] == 'tar':
         return check_tar(tokens)
     if tokens[0] in ('apt-get', 'install', 'tee', 'echo'):
-        return check_apt(tokens, piece)
+        return check_apt(tokens, piece, upstream)
     return tokens[0] in ALLOWED_LEADING_WORDS
 
 
-def _pieces(block):
-    """Every piece of every line of a command block, one line at a time.
+def _piped_pieces(block):
+    """Every piece of every line of a command block, one line at a time,
+    each with the list of pieces that come before it in its own pipeline.
 
     A line that ends inside a quote, a pair of backticks, a `$(` or a `${` joins
     nothing (#1135). Its pieces are yielded, then one `UNREADABLE` piece that
@@ -484,15 +494,24 @@ def _pieces(block):
         if not stripped or stripped.startswith('#'):
             continue
         for segment in split_chain(stripped):
-            yield from split_pipe(segment)
+            pipeline = split_pipe(segment)
+            for i, piece in enumerate(pipeline):
+                yield piece, pipeline[:i]
         if _scan(stripped, lambda _t, _i: 0)[1]:
-            yield UNREADABLE + str(number)
+            yield UNREADABLE + str(number), []
             return
+
+
+def _pieces(block):
+    """Every piece of every line of a command block, as `_piped_pieces`
+    yields them, without what feeds each one."""
+    return (piece for piece, _ in _piped_pieces(block))
 
 
 def undeclared_pieces(block, cargo_allowed=False):
     """Every piece of every line of a command block that is not allowed."""
-    return [p for p in _pieces(block) if not check_piece(p, cargo_allowed)]
+    return [p for p, upstream in _piped_pieces(block)
+            if not check_piece(p, cargo_allowed, upstream)]
 
 
 def undeclared_in_document(blocks, cargo_may_follow_download):
@@ -881,6 +900,47 @@ REGRESSION_CASES = [
      '"https://headwater.tools/apt/headwater-archive-keyring.asc"',
      ['curl -fsSL -o /etc/apt/keyrings/x.asc '
       '"https://headwater.tools/apt/headwater-archive-keyring.asc"']),
+    # Verify round 1 on #1328. `tee` writes whatever it is handed, so it
+    # passes only when the signed sources echo is what it is handed.
+    ('tee handed a printf of an unsigned sources line is undeclared',
+     "printf 'deb [trusted=yes] http://evil.example/ x main\\n' | sudo tee /etc/apt/sources.list.d/evil.list",
+     ['sudo tee /etc/apt/sources.list.d/evil.list']),
+    ('tee handed nothing through a pipe is undeclared',
+     'sudo tee /etc/apt/sources.list.d/headwater.list',
+     ['sudo tee /etc/apt/sources.list.d/headwater.list']),
+    ('tee after the sources echo and a third piece is undeclared',
+     'echo "deb [signed-by=/etc/apt/keyrings/k.asc] https://headwater.tools/apt stable main" | cat | tee /etc/apt/sources.list.d/h.list',
+     ['cat', 'tee /etc/apt/sources.list.d/h.list']),
+    ('tee writing a second file is undeclared',
+     'echo "deb [signed-by=/etc/apt/keyrings/k.asc] https://headwater.tools/apt stable main" | tee /etc/apt/sources.list.d/h.list /etc/apt/sources.list.d/i.list',
+     ['tee /etc/apt/sources.list.d/h.list /etc/apt/sources.list.d/i.list']),
+    ('tee writing a file apt does not read as a source list is undeclared',
+     'echo "deb [signed-by=/etc/apt/keyrings/k.asc] https://headwater.tools/apt stable main" | tee /etc/apt/sources.list.d/h',
+     ['tee /etc/apt/sources.list.d/h']),
+    ('install making the keyring directory writable by anyone is undeclared',
+     'sudo install -d -m 0777 /etc/apt/keyrings',
+     ['sudo install -d -m 0777 /etc/apt/keyrings']),
+    ('curl naming the keyring URL twice is undeclared',
+     'curl -fsSL -o /etc/apt/keyrings/x.asc '
+     'https://headwater.tools/apt/headwater-archive-keyring.asc '
+     'https://headwater.tools/apt/headwater-archive-keyring.asc',
+     ['curl -fsSL -o /etc/apt/keyrings/x.asc '
+      'https://headwater.tools/apt/headwater-archive-keyring.asc '
+      'https://headwater.tools/apt/headwater-archive-keyring.asc']),
+    ('curl writing the keyring with no .asc suffix is undeclared',
+     'curl -fsSL -o /etc/apt/keyrings/x '
+     'https://headwater.tools/apt/headwater-archive-keyring.asc',
+     ['curl -fsSL -o /etc/apt/keyrings/x '
+      'https://headwater.tools/apt/headwater-archive-keyring.asc']),
+    ('apt-get update with an option that sets configuration is undeclared',
+     'apt-get update -o APT::Update::Pre-Invoke::=sh',
+     ['apt-get update -o APT::Update::Pre-Invoke::=sh']),
+    ('echo of a sources line for a host that differs by one character is undeclared',
+     'echo "deb [signed-by=/etc/apt/keyrings/k.asc] https://headwaterxtools/apt stable main"',
+     ['echo "deb [signed-by=/etc/apt/keyrings/k.asc] https://headwaterxtools/apt stable main"']),
+    ('echo of a sources line whose keyring has no .asc suffix is undeclared',
+     'echo "deb [signed-by=/etc/apt/keyrings/k] https://headwater.tools/apt stable main"',
+     ['echo "deb [signed-by=/etc/apt/keyrings/k] https://headwater.tools/apt stable main"']),
     ('sudo in front of the sources echo is undeclared',
      'sudo echo "deb [signed-by=/etc/apt/keyrings/k.asc] https://headwater.tools/apt stable main"',
      ['sudo echo "deb [signed-by=/etc/apt/keyrings/k.asc] https://headwater.tools/apt stable main"']),
