@@ -152,7 +152,8 @@ taxonomy: headwater/standard
 # 4.10.0 adds `OB-LINK-3` and `CT-LINK-3`: a prose link whose text is exactly
 # the identifier of a document reaches the document that carries it (#1213). It
 # is a minor because a new rule reports a defect that no earlier version read.
-# A consumer corpus with no such link sees no change. It follows 4.9.2.
+# A consumer corpus with no such link gains one obligation and one control in
+# its register, and no finding. It follows 4.9.2.
 #
 # 4.9.2 changes the starter doctrine and nothing else. Its *Your writing
 # profile* paragraph now names `outside_root` as the second route by which a
