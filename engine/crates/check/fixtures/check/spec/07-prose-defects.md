@@ -77,3 +77,5 @@ A path that will not normalize into a repository path at all: [a destination abo
 A query string on a path that lands nowhere: [the part that moved, with a version on it](19-renamed.md?v=2). The query string leaves the destination before the binder reads the path, so the report names the file and never the query.
 
 An address written from the site root, where the root of this corpus holds no such file: [an absolute address](/spec/00-both-halves.md). The binder reads a leading separator against the root of the corpus. Nothing stands there, so the report names the destination as the author wrote it.
+
+A link whose text names one document and whose path reaches another: [SPEC-FIX-cited-only](20-fragment-target.md). The path resolves and carries no fragment, so neither of the two rules above reads it, and the identifier rule does.

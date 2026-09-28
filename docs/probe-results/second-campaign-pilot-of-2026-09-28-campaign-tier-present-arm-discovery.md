@@ -14,41 +14,12 @@ A probe result is a function of three committed inputs and of nothing else: the 
 
 ## The run this transcript recorded
 
-A campaign run in the present arm, on claude-sonnet-5 at 2026-09-28.
-served version claude-sonnet-5, tree sha256:d9aad3464b048f92f47d8c5779bffee5b728699fc710d7e0af2c66363e9b51b0, selection sha256:8ec515cf6d769b34f8fc840d00f902606dc575c74a4105c7599670b563be6ad5, read set sha256:3099b30a529a8aaa647dd29d7678bf8f22ac68c76030388aff2044074069ab05, seed 0, harness 0.4.0.
-realized cost $0.88, which the adaptive layer reads as the cost of its own instrument.
-It was planned against taxonomy sha256:62144f6124525b73c49768d80ccdc41d7324fff0b39836367db4db85aa502cb8, and this tree carries another. The read set of its probes is the one this tree composes, so the move reaches no document a verdict reads, and the transcript is read over this tree.
+This transcript recorded nothing usable: it was planned against taxonomy sha256:62144f6124525b73c49768d80ccdc41d7324fff0b39836367db4db85aa502cb8 and this tree carries sha256:676eebe4c9ed60b15d390db33627b027db5e6f2a66be670f879b878799767ca1, and the read set of its probes moved with it: this tree composes sha256:d8263af930b0fdbfee7ba01ab86f52255ce056bcb5afa5c82ea884c183592c13
 
-2 events over 2 of the 10 probes this corpus declares, in 2 sessions and 29 tool calls.
+This transcript reached no grader: it was planned against taxonomy sha256:62144f6124525b73c49768d80ccdc41d7324fff0b39836367db4db85aa502cb8 and this tree carries sha256:676eebe4c9ed60b15d390db33627b027db5e6f2a66be670f879b878799767ca1, and the read set of its probes moved with it: this tree composes sha256:d8263af930b0fdbfee7ba01ab86f52255ce056bcb5afa5c82ea884c183592c13
 
-The engine confirmed the taxonomy, that every member of the run identity is present, the membership of every probe named, that no key outside the closed set appears, and that a realized cost was recorded. Present is not confirmed: of the six members a plan fixes before a run, the lock is the one compared here. A lock that differs refuses the file unless the read set of its probes is the one this tree composes. `headwater probe stale` compares the read set against the tree in front of it. It graded nothing: a verdict is a function of this transcript, the expectations these probes declare and a grader version, and `headwater probe grade` is the verb that holds all three.
+A transcript that fails any of the five confirmations is refused whole, so there are no verdicts to report and no rate over none.
 
-**The selection this transcript names is not the selection this corpus composes.** The transcript names `sha256:8ec515cf6d769b34f8fc840d00f902606dc575c74a4105c7599670b563be6ad5` and this corpus composes `sha256:50ed5ce43072d9f674a8dc52e1dcad84de4d649e39a77ce22179836188196b09`. The transcript's digest is the digest of 2 of the 10 probes this corpus composes, so the run was planned over that part of the selection, or the rest were added after it was recorded. Every verdict below is over that part, and a probe outside it is not a session this run owed. The tree, the seed and the harness above are provenance and nothing compares them.
+## What reads this result
 
-The `read_set` digest above covers every probe of the selection and every document one of them examines, by path and content. It is recorded here and compared nowhere in this file. A comparison against the tree in front of a reader would move these bytes on every edit to a document the selection points at, and `generate --check` holds this file to its bytes, so the staleness of a measurement would stop a merge. `headwater probe stale` takes the digest and reports which recorded results a change voided.
-
-Graded by grader 0.4.1.
-A campaign run in the present arm, on claude-sonnet-5 at served version claude-sonnet-5.
-
-## The verdicts
-
-- HW-PROBE-a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor (discovery, expects opened)
-    session L6-campaign-present-p1-r1: not satisfied — 17 recorded calls, and none named any of the 1 document
-- HW-PROBE-the-pointer-this-corpus-offers-for-a-task-is-the-document-a-session-opens (discovery, expects opened)
-    session L6-campaign-present-p2-r1: not satisfied — 12 recorded calls, and none named any of the 1 document
-
-## The rate, and the denominator it is over
-
-0 of 2 graded sessions satisfied their expectation: 0.0%, in a 95% interval of 0.0% to 65.8%.
-The denominator is the graded sessions and never the selected probes. 0 sessions reached no verdict, and a session with no verdict is outside both halves of that fraction.
-
-An interval that overlaps the previous run's is variance and one that does not is drift. This is one arm, so it estimates no effect: an efficacy claim is a comparison of two results, and the arm each one recorded is on it.
-
-## The comparisons this arm takes part in
-
-What the governance changes. The treated arm is the `campaign` present arm and the control is the `campaign` absent arm, which removed the paths the `campaign` tier's `ablation` names and kept `docs/`.
-
-- treated, `docs/probe-runs/second-campaign-pilot-of-2026-09-28-campaign-tier-present-arm-discovery.md`: 0 of 2 graded sessions satisfied their expectation, 0.0%, in a 95% interval of 0.0% to 65.8%. 0 sessions refused by the session itself.
-- control, `docs/probe-runs/second-campaign-pilot-of-2026-09-28-campaign-tier-absent-arm-discovery.md`: 0 of 2 graded sessions satisfied their expectation, 0.0%, in a 95% interval of 0.0% to 65.8%. 0 sessions refused by the session itself.
-
-The difference is +0.0 points, in a 95% Newcombe interval of -65.8 points to +65.8 points. The interval contains zero, so this run does not separate the two arms at the 5% level.
+This result carries no verdict, so a rate taken off it is a rate over none. No document of this corpus links this result or the transcript it graded, so no sentence of this corpus rests on it.
