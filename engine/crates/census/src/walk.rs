@@ -182,16 +182,18 @@ pub fn relative(base: &Path, path: &Path) -> Option<String> {
 /// [`relative`] does the reading, and this adds the root an absolute target is
 /// compared with. A root such as `.` is relative, so an absolute target is
 /// stripped against the root made absolute first. Where that misses, the
-/// leading parts of the target that exist on disk are made canonical, and the
-/// shortest one that is the canonical root stands for the root. So a target
-/// typed through a symlinked directory (a home directory, a temporary
-/// directory) still finds a root reached the other way, with or without a file
-/// at the target
-/// ([#1334](https://github.com/headwater-ai/headwater/issues/1334)). The part
-/// of the target below that point is read lexically, as the first read reads
-/// it, so a symlink below the root is not followed here, and [`within`] is the
-/// reading that refuses one that leads out. A root that cannot be made
-/// canonical, and a target with no leading part that is the root, keep the
+/// leading parts of the target that exist on disk are made canonical, and each
+/// one that is the canonical root can stand for the root. So a target typed
+/// through a symlinked directory (a home directory, a temporary directory)
+/// still finds a root reached the other way, with or without a file at the
+/// target ([#1334](https://github.com/headwater-ai/headwater/issues/1334)).
+/// The part of the target below that point is read lexically, as the first
+/// read reads it, so a symlink below the root is not followed here, and
+/// [`within`] is the reading that refuses one that leads out. The shortest
+/// such part whose remainder stays under it stands for the root: a path that
+/// leaves the root with `..` and comes back in (`root/../root/x`) names the
+/// root twice, and only the longer of the two keeps `x` inside. A root that
+/// cannot be made canonical, and a target with no such leading part, keep the
 /// first answer. A relative target is read against `root` and never against
 /// the working directory of the process.
 pub fn typed(root: &Path, target: &str) -> Option<String> {
@@ -202,11 +204,11 @@ pub fn typed(root: &Path, target: &str) -> Option<String> {
     let absolute_root = std::path::absolute(root).unwrap_or_else(|_| root.to_path_buf());
     relative(&absolute_root, path).or_else(|| {
         let canonical_root = root.canonicalize().ok()?;
-        let at = path
+        let roots: Vec<&Path> = path
             .ancestors()
             .filter(|at| at.canonicalize().is_ok_and(|at| at == canonical_root))
-            .last()?;
-        relative(at, path)
+            .collect();
+        roots.into_iter().rev().find_map(|at| relative(at, path))
     })
 }
 
