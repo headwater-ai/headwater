@@ -349,3 +349,37 @@ fn a_pin_whose_path_leaves_the_repository_through_a_symlink_is_refused_by_name()
     );
     assert_eq!(harvest::declared(inside.path()).expect("it reads").len(), 1);
 }
+
+/// A root reached through a symlink is still the root. The containment test
+/// compares the resolved path with the resolved root, never with the path the
+/// caller typed, so every pin under it reads.
+#[cfg(unix)]
+#[test]
+fn a_root_reached_through_a_symlink_holds_its_pins() {
+    let scratch = Scratch::new("linked-root");
+    scratch.write(AT, &export(&["svc-a"], false));
+    scratch.write(
+        CONSUMER,
+        &format!(
+            "harvests:\n  repo-a:\n    at: {AT}\n    digest: sha256:aa\n    resolver: export-a\n"
+        ),
+    );
+    let link = Scratch::new("linked-root-link");
+    let linked = link.path().join("root");
+    std::os::unix::fs::symlink(scratch.path(), &linked).expect("the symlink is made");
+    assert_eq!(harvest::declared(&linked).expect("it reads").len(), 1);
+}
+
+/// A `./` segment climbs nothing, so a path that opens with one stays under the
+/// root, as it did before the containment test resolved symlinks.
+#[test]
+fn a_pin_path_that_opens_with_a_current_directory_segment_reads() {
+    let scratch = Scratch::new("dot-slash");
+    scratch.write(
+        CONSUMER,
+        "harvests:\n  repo-a:\n    at: ./harvest/repo-a.json\n    digest: sha256:aa\n    \
+         resolver: export-a\n",
+    );
+    let pins = harvest::declared(scratch.path()).expect("it reads");
+    assert_eq!(pins[0].at, "./harvest/repo-a.json");
+}

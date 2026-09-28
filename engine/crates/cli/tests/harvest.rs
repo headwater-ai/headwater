@@ -593,6 +593,59 @@ fn an_absent_pinned_export_joins_the_read_set_and_a_gate_never_carries_across_it
     );
 }
 
+/// `--root .` from inside the repository is the invocation a hook and a
+/// person type. The containment test compares resolved paths, so a relative
+/// root must hold both pins as under it, and both edges must bind.
+#[test]
+fn a_relative_root_holds_every_pin_inside_it() {
+    let root = Root::new("relative");
+    let output = Command::new(env!("CARGO_BIN_EXE_headwater"))
+        .args(["check", "--strict", "--root", "."])
+        .current_dir(&root.at)
+        .output()
+        .expect("the binary runs");
+    let ran = Ran {
+        code: output.status.code(),
+        out: String::from_utf8_lossy(&output.stdout).into_owned(),
+        err: String::from_utf8_lossy(&output.stderr).into_owned(),
+    };
+    assert_eq!(ran.code, Some(0), "{ran:?}");
+    assert_eq!(Root::errors(&ran), Vec::<String>::new(), "{ran:?}");
+}
+
+/// Two pins that do not read are two findings, each naming its own pin.
+#[test]
+fn every_unread_pin_is_its_own_finding() {
+    let root = Root::new("two-unread");
+    std::fs::remove_file(root.at.join(EXPORT_A)).expect("A's export is removed");
+    std::fs::remove_file(root.at.join(EXPORT_B)).expect("B's export is removed");
+    let ran = root.run(&["check", "--strict"]);
+    let pins: Vec<String> = Root::errors_on(&ran, ".headwater/taxonomy.yml")
+        .into_iter()
+        .filter(|block| block.contains(PIN_RULE))
+        .collect();
+    assert_eq!(pins.len(), 2, "{ran:?}");
+    for (pin, at) in [("repo-a", EXPORT_A), ("repo-b", EXPORT_B)] {
+        let head = format!("`harvests.{pin}` pins an export at `{at}` that binds nothing");
+        assert!(
+            pins.iter().any(|block| block.contains(&head)),
+            "{head}: {pins:?}"
+        );
+    }
+}
+
+/// `infer` runs the checks over the same readings `check` does, so an unread
+/// pin is a finding it can record as debt. Handed no readings, it would never
+/// see the rule.
+#[test]
+fn infer_sees_an_unread_pin() {
+    let root = Root::new("infer");
+    std::fs::remove_file(root.at.join(EXPORT_B)).expect("B's export is removed");
+    let ran = root.run(&["infer", "--owner", "tier-team"]);
+    assert_eq!(ran.code, Some(0), "{ran:?}");
+    assert!(ran.out.contains(PIN_RULE), "{ran:?}");
+}
+
 /// A pin with no digest binds nothing either, and the finding says what to
 /// write, so it is reported on the same terms as a missing file.
 #[test]

@@ -122,4 +122,20 @@ mod tests {
     fn no_pin_is_no_finding() {
         assert!(findings(&[]).is_empty());
     }
+
+    #[test]
+    fn every_unread_pin_is_its_own_finding_in_declaration_order() {
+        let found = findings(&[
+            harvest("repo-a", Some("it did not read")),
+            harvest("repo-b", None),
+            harvest("repo-c", Some("it is not the pinned artifact")),
+        ]);
+        let heads: Vec<bool> = found
+            .iter()
+            .zip(["repo-a", "repo-c"])
+            .map(|(finding, name)| finding.message.starts_with(&format!("`harvests.{name}`")))
+            .collect();
+        assert_eq!(found.len(), 2);
+        assert_eq!(heads, vec![true, true]);
+    }
 }
