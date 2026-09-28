@@ -299,7 +299,7 @@ fi
 # --- 10. the parent dispatches the loop agent, and the loop agent dispatches build and verify
 
 # The verify-and-rework loop for one issue is below the parent (#1276,
-# HW-PD-0021). The parent names `hw-iterate` and never `hw-build` or
+# HW-PD-0022). The parent names `hw-iterate` and never `hw-build` or
 # `hw-verify`; `hw-iterate` names both, gives each its own worktree, and can
 # resume its builder by id, which needs `SendMessage` in its tools.
 printf '\n# the parent dispatches hw-iterate, and hw-iterate dispatches hw-build and hw-verify\n'
