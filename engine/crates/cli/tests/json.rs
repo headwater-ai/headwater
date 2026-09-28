@@ -1241,6 +1241,114 @@ fn explain_writes_the_paths_each_pattern_of_an_anchor_matched() {
     assert_eq!(lone.2, ["src/lone.rs"], "a literal names one entry, itself");
 }
 
+/// `paths` is unbounded: a glob over 5,000 files writes all 5,000 of them.
+///
+/// [#1260](https://github.com/headwater-ai/headwater/issues/1260). The
+/// interface page states that `matched` is the length of `paths` and that no
+/// bound applies, with the size measured by `tools/measure/large-governs.sh`.
+/// A silent truncation, or a count that stops agreeing with the list, goes red
+/// here at the scale the issue names, where the case above holds three files.
+#[test]
+fn explain_json_over_a_glob_of_5000_files_states_every_count() {
+    const FILES: usize = 5000;
+    let at = scratch().join("reach-large");
+    let _ = std::fs::remove_dir_all(&at);
+    std::fs::create_dir_all(at.join(".headwater")).expect("the declaration directory is there");
+    std::fs::create_dir_all(at.join("docs/interfaces")).expect("the shelf is there");
+    std::fs::create_dir_all(at.join("src/big")).expect("the source tree is there");
+    for name in ["taxonomy.lock", "taxonomy.yml", "overlay.yml"] {
+        std::fs::copy(
+            repository().join(".headwater").join(name),
+            at.join(".headwater").join(name),
+        )
+        .expect("the declaration copies");
+    }
+    for index in 0..FILES {
+        std::fs::write(at.join(format!("src/big/f{index:05}.rs")), "")
+            .expect("the source file is written");
+    }
+    std::fs::write(
+        at.join("docs/interfaces/headwater-large.md"),
+        "---\nid: HW-IFACE-headwater-large\nstatus: current\nstatus_since: 2026-09-29\nsummary: \"An anchor that holds one glob over five thousand files.\"\nlast_verified: 2026-09-29\ntitle: \"headwater large\"\nrelations:\n  governs:\n    - \"src/big/**\"\n---\n\n# headwater large\n\n## Synopsis\n\n    headwater large\n",
+    )
+    .expect("the document is written");
+    let output = Command::new(env!("CARGO_BIN_EXE_headwater"))
+        .args([
+            "explain",
+            "--json",
+            "docs/interfaces/headwater-large.md",
+            "--root",
+        ])
+        .arg(&at)
+        .output()
+        .expect("the binary runs");
+    let text = String::from_utf8_lossy(&output.stdout).into_owned();
+    assert_eq!(
+        output.status.code(),
+        Some(0),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let value = headwater_yaml::load(&text)
+        .unwrap_or_else(|errors| panic!("the explain document parses: {errors:?}"))
+        .value;
+    let governed: usize = member(&value, "governed_entries")
+        .expect("the document writes `governed_entries`")
+        .parse()
+        .expect("`governed_entries` is a number");
+    assert_eq!(governed, FILES, "`governed_entries` counts every file");
+    let reach = value
+        .as_map()
+        .and_then(|map| map.get("related"))
+        .and_then(|spanned| spanned.value.as_seq())
+        .and_then(|elements| {
+            elements.iter().find(|element| {
+                member(&element.value, "relation").as_deref() == Some("governs")
+                    && member(&element.value, "inbound").as_deref() == Some("false")
+            })
+        })
+        .and_then(|edge| edge.value.as_map())
+        .and_then(|map| map.get("reach"))
+        .map(|spanned| &spanned.value)
+        .expect("the governs edge carries `reach`");
+    let total: usize = member(reach, "total")
+        .expect("`reach.total`")
+        .parse()
+        .expect("`total` is a number");
+    assert_eq!(total, FILES, "`reach.total` counts every file");
+    let members = reach
+        .as_map()
+        .and_then(|map| map.get("members"))
+        .and_then(|spanned| spanned.value.as_seq())
+        .expect("`reach.members`");
+    assert_eq!(members.len(), 1, "one pattern, one member");
+    let only = &members[0].value;
+    let matched: usize = member(only, "matched")
+        .expect("`matched`")
+        .parse()
+        .expect("`matched` is a number");
+    assert_eq!(matched, FILES, "`matched` counts every file");
+    let paths = only
+        .as_map()
+        .and_then(|map| map.get("paths"))
+        .and_then(|spanned| spanned.value.as_seq())
+        .expect("the member carries `paths`");
+    assert_eq!(
+        paths.len(),
+        FILES,
+        "`paths` is unbounded, so it lists every file `matched` counts"
+    );
+    let last = paths
+        .last()
+        .and_then(|path| path.value.as_scalar())
+        .map(headwater_yaml::core_schema::as_str);
+    assert_eq!(
+        last,
+        Some("src/big/f04999.rs"),
+        "the last entry is the last file, sorted"
+    );
+}
+
 /// `governed_entries` counts an entry that two `governs` edges reach once.
 ///
 /// [#1093](https://github.com/headwater-ai/headwater/issues/1093). HW-DR-0037
