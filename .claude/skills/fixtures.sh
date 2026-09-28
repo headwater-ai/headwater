@@ -581,15 +581,30 @@ $out" ;;
     # reaches a session through its description, which is always loaded, and
     # the body loads only once a session invokes the skill. So the ruling is
     # stated in the description, and the identifier it cites is the ruling.
+    #
+    # Every read is of the description line alone: `claim` searches the whole
+    # file, and the body already states the ruling, so a sentence moved into
+    # the body would pass it. The identifier is the one inside the sentence,
+    # and the ruling is the first line `explain` prints, which is the path the
+    # identifier resolves to. A match anywhere in the output passes any
+    # decision whose edges reach 0052.
     name='the authoring description states the status ruling and does not open with Draft'
     description=$(sed -n 's/^description: //p' "$skills/headwater-authoring/SKILL.md")
+    sentence='goes into its pull request at `status: current`, not `draft` ('
+    ruling='docs/decisions/0052-a-document-is-proposed-at-the-state-it-will-hold-and-the-merge-activates-it.md'
     case $description in
-        Draft*) fail "$name" "the description opens with Draft: $description" ;;
-        *) claim "$name" \
-            headwater-authoring/SKILL.md \
-            'goes into its pull request at `status: current`, not `draft` (HW-DR-0052)' \
-            0 'docs/decisions/0052-a-document-is-proposed-at-the-state-it-will-hold-and-the-merge-activates-it.md' \
-            "$engine" explain "$(printf '%s' "$description" | grep -o 'HW-DR-[0-9]*' | head -n 1)" --root "$root" ;;
+        [Dd][Rr][Aa][Ff][Tt]*)
+            fail "$name" "the description opens with Draft: $description" ;;
+        *"$sentence"*)
+            cited=${description#*"$sentence"}
+            cited=${cited%%)*}
+            resolved=$("$engine" explain "$cited" --root "$root" 2>/dev/null | head -n 1)
+            if [ "$resolved" = "$ruling" ]; then
+                pass "$name"
+            else
+                fail "$name" "the description cites \`$cited\`, which resolves to \`$resolved\` and not to $ruling"
+            fi ;;
+        *) fail "$name" "the description no longer says: $sentence<the ruling>): $description" ;;
     esac
 
     printf '\n# headwater-maintainer, against the hook it invokes\n'
