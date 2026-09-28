@@ -48,8 +48,8 @@
 # governance prose without the tool it points at. The owner ruled on #980 on
 # 2026-09-28 that every workspace of both arms carries the binary. In an absent
 # arm it refuses, because `.headwater/` is gone, which is what that arm is
-# declared to remove. The driver refuses a binary older than the last commit
-# that touched `engine/`, because a stale build is not the pinned engine.
+# declared to remove. The driver runs the build before the batch, so the binary
+# it copies is the build of the pinned commit.
 #
 # ## The trees
 #
@@ -303,7 +303,7 @@ fi
     exit 2
 }
 [ -f "$spec" ] || { echo "campaign: no spec at $spec" >&2; exit 2; }
-for tool in git jq tar awk claude; do
+for tool in git jq tar awk cargo claude; do
     command -v "$tool" >/dev/null 2>&1 || { echo "campaign: \`$tool\` is not on the path." >&2; exit 3; }
 done
 [ -x "$engine" ] || { echo "campaign: no engine is built at $root/engine/target." >&2; exit 3; }
@@ -312,12 +312,16 @@ if [ -n "$(git -C "$root" status --porcelain --untracked-files=no)" ]; then
     exit 4
 fi
 head=$(git -C "$root" rev-parse HEAD)
-built=$(stat -c %Y "$engine")
-changed=$(git -C "$root" log -1 --format=%ct -- engine/)
-if [ "$built" -lt "$changed" ]; then
-    echo "campaign: $engine is older than the last commit that touched engine/. Build it again, so every workspace carries the pinned engine." >&2
+# Cargo decides whether the binary is the build of this tree, and the build is
+# a no-op when it is. A comparison of timestamps would refuse a binary built
+# before the commit that pinned its source.
+cargo build --profile dev-release -p headwater-cli --locked \
+    --manifest-path "$root/engine/Cargo.toml" >/dev/null 2>"$out/build.err" || {
+    echo "campaign: the engine did not build, so no workspace can carry the pinned engine:" >&2
+    tail -5 "$out/build.err" >&2
     exit 3
-fi
+}
+engine=$root/engine/target/dev-release/headwater
 if [ -f "$out/head" ] && [ "$(cat "$out/head")" != "$head" ]; then
     echo "campaign: $out holds a batch of $(cat "$out/head"), and HEAD is $head. Use another directory." >&2
     exit 4
