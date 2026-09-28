@@ -14,7 +14,7 @@ provenance:
 relations:
   governs:
     - to: .claude/hooks/wait.sh
-      verified_revision: sha256:354ec3c06eea4fc09c441ce278bd3f8df50dee14d5cd7194c3769b0ab52a0e28
+      verified_revision: sha256:e36e5d743d4167c4762a7a4730cf3164fbe23634a07bc7d8018236e517c7152e
     - to: tools/run/run-census.sh
       verified_revision: sha256:57954a4dfd1fff9fd92571099130aa42cd9dd186df50a2dabce2d4d12e64fe69
     - to: .claude/skills/hw-run-policy/SKILL.md

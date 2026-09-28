@@ -1679,28 +1679,48 @@ When the cap' \
     expect 'the heredoc silence is not vacuous: the same wait without the cat is refused' \
         wait.sh 0 '"permissionDecision":"deny"' \
         '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"while true; do sleep 30; done"}}'
-    expect 'a run watch in the background is refused, because a background wait wakes the parent' \
+    expect 'a run watch in the background of a subagent is refused, because a background wait wakes the parent' \
         wait.sh 0 'wakes its parent' \
-        '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"gh run watch 35480000000 --exit-status","run_in_background":true}}'
+        '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"gh run watch 35480000000 --exit-status","run_in_background":true},"agent_id":"a1b2c3"}'
     expect 'a bare sleep with no loop around it is not a wait and passes' \
         wait.sh 0 '' \
         '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"sleep 30; echo awake"}}'
     expect 'an empty command string is silent' \
         wait.sh 0 '' \
         '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":""}}'
-    expect 'the same wait in the background is refused, and the refusal names the foreground wait' \
+    expect 'the same wait in the background of a subagent is refused, and the refusal names the foreground wait' \
         wait.sh 0 'in the foreground, with a Bash `timeout` of `300000`' \
-        '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"until ! kill -0 1234 2>/dev/null; do sleep 30; done","run_in_background":true}}'
+        '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"until ! kill -0 1234 2>/dev/null; do sleep 30; done","run_in_background":true},"agent_id":"a1b2c3"}'
     # HW-PD-0021: the bounded wait runs in the foreground with a Bash timeout
     # past its cap. The verifier of #1274 rewrote the foreground sentences to
     # say the background and the suite stayed green, so these pin the wording
     # of each refusal and the three wait-for.sh shapes.
-    expect 'wait-for.sh started in the background is refused' \
+    expect 'wait-for.sh started in the background of a subagent is refused' \
         wait.sh 0 'wakes its parent' \
-        '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"sh tools/run/wait-for.sh \"sh tools/run/ci-done.sh abc\"","run_in_background":true}}'
+        '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"sh tools/run/wait-for.sh \"sh tools/run/ci-done.sh abc\"","run_in_background":true},"agent_id":"a1b2c3"}'
     expect '  and the refusal names the foreground form' \
         wait.sh 0 'in the foreground, with a Bash `timeout` of `300000`' \
-        '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"cd /x && sh tools/run/wait-for.sh \"[ -f /tmp/m ]\"","run_in_background":true}}'
+        '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"cd /x && sh tools/run/wait-for.sh \"[ -f /tmp/m ]\"","run_in_background":true},"agent_id":"a1b2c3"}'
+    # The parent ruled on 2026-09-28 that the background refusal binds a
+    # subagent alone. The harness sets agent_id only on a subagent's call.
+    expect 'the same backgrounded wait-for.sh with no agent_id, a top-level session, passes' \
+        wait.sh 0 '' \
+        '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"sh tools/run/wait-for.sh \"sh tools/run/ci-done.sh abc\"","run_in_background":true}}'
+    expect 'a backgrounded sleeping loop with no agent_id passes' \
+        wait.sh 0 '' \
+        '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"until ! kill -0 1234 2>/dev/null; do sleep 30; done","run_in_background":true}}'
+    expect 'a backgrounded run watch with no agent_id passes' \
+        wait.sh 0 '' \
+        '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"gh run watch 35480000000 --exit-status","run_in_background":true}}'
+    expect 'an empty agent_id is not a subagent, and passes' \
+        wait.sh 0 '' \
+        '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"sh tools/run/wait-for.sh \"true\"","run_in_background":true},"agent_id":""}'
+    expect 'agent_type without agent_id is not a subagent: the schema names agent_id as the test' \
+        wait.sh 0 '' \
+        '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"sh tools/run/wait-for.sh \"true\"","run_in_background":true},"agent_type":"hw-build"}'
+    expect 'a subagent that loops in the foreground is refused as before' \
+        wait.sh 0 'with no bound' \
+        '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"until [ -f /tmp/x.status ]; do sleep 30; done"},"agent_id":"a1b2c3"}'
     expect 'wait-for.sh in the foreground with no timeout is refused, because the default times out first' \
         wait.sh 0 '"permissionDecision":"deny"' \
         '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"sh tools/run/wait-for.sh \"sh tools/run/ci-done.sh abc\""}}'

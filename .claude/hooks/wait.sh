@@ -24,11 +24,20 @@
 # must run it again. The parent runs no wait at all: it ends its turn.
 #
 # So this refuses three shapes, and each refusal names that one wait. It
-# refuses an unbounded wait in the foreground. It refuses any wait started with
-# `run_in_background: true`, `wait-for.sh` included. It refuses `wait-for.sh`
-# in the foreground with a Bash `timeout` under 300000, which the harness
-# would move to the background before the attempt ends. It is the same posture
-# as `write.sh`: refuse the shape that cannot work, and say what does.
+# refuses an unbounded wait in the foreground. It refuses `wait-for.sh` in the
+# foreground with a Bash `timeout` under 300000, which the harness would move
+# to the background before the attempt ends. And in a subagent it refuses any
+# wait started with `run_in_background: true`, `wait-for.sh` included. It is
+# the same posture as `write.sh`: refuse the shape that cannot work, and say
+# what does.
+#
+# The background refusal is scoped to a subagent (the parent's ruling,
+# 2026-09-28). The payload carries `agent_id` only when a subagent makes the
+# call. The hook-input schema of Claude Code 2.1.283 says it is "Present only
+# when the hook fires from within a subagent" and "Absent for the main thread,
+# even in --agent sessions", and it names that field, not `agent_type`, as the
+# one to tell the two apart. A person's own session and the parent of a run
+# have no parent to wake, so a background wait there passes as it did before.
 #
 # It refuses a second shape for a different reason. A loop that waits on
 # `pgrep -f "<literal>"` matches the polling shell's own command line and can
@@ -40,7 +49,7 @@
 # minutes and a turn for the timeout it replaces.
 #
 # What it never refuses: a foreground `wait-for.sh` with a timeout of 300000 or
-# more, a heredoc that writes a wait into a script, a long job that is not a
+# more, a background wait in a call with no `agent_id`, a heredoc that writes a wait into a script, a long job that is not a
 # wait, and anything it cannot parse. It fails open on every one. A build or a
 # suite still goes in the background, and `wait-for.sh` waits in the
 # foreground on its exit marker.
@@ -119,6 +128,9 @@ printf '%s' "$command" | grep -qE '^[[:space:]]*cat[[:space:]]*>' && exit 0
 
 background=no
 case $(hw_field "$input" tool_input run_in_background) in true | True | TRUE) background=yes ;; esac
+subagent=no
+agent=$(hw_field "$input" agent_id) || agent=
+[ -n "$agent" ] && subagent=yes
 
 deny() {
     quoted=$(hw_quote "$1") || exit 0
@@ -143,7 +155,10 @@ A long job that is not a wait, such as a build or a suite, still goes in the bac
 # Only in command position, so a `grep` or an `echo` that names the script
 # is not a wait.
 if printf '%s' "$command" | grep -qE '(^|[;&|])[[:space:]]*((sh|bash|timeout[[:space:]]+[0-9]+[a-z]?)[[:space:]]+)?([^[:space:];&|]*/)?wait-for\.sh([[:space:]]|$)'; then
-    [ "$background" = yes ] && deny "$background_reason"
+    if [ "$background" = yes ]; then
+        [ "$subagent" = yes ] && deny "$background_reason"
+        exit 0
+    fi
     timeout=$(hw_field "$input" tool_input timeout)
     case $timeout in '' | *[!0-9]*) timeout=0 ;; esac
     [ "$timeout" -ge 300000 ] && exit 0
@@ -160,8 +175,8 @@ fi
 # slept fifteen still ran to the cap, and the interval turned out to say nothing
 # about how long the wait would be. What decides is the shape. A loop that waits
 # is refused whatever it sleeps for: in the foreground because nothing bounds
-# it, and in the background because it wakes the parent (HW-PD-0021). Either
-# way the remedy is the bounded wait above.
+# it, and in the background of a subagent because it wakes the parent
+# (HW-PD-0021). Either way the remedy is the bounded wait above.
 #
 # `gh run watch` blocks for as long as CI takes and is the same case without a
 # loop around it.
@@ -171,7 +186,10 @@ printf '%s' "$command" | grep -qE '(^|[;&|[:space:]])(until|while)([[:space:]]|$
     long=yes
 printf '%s' "$command" | grep -qE '(^|[;&|[:space:]])gh[[:space:]]+run[[:space:]]+watch' && long=yes
 [ "$long" = yes ] || exit 0
-[ "$background" = yes ] && deny "$background_reason"
+if [ "$background" = yes ]; then
+    [ "$subagent" = yes ] && deny "$background_reason"
+    exit 0
+fi
 
 reason="This loop waits in the foreground with no bound, and a foreground call is capped at ten minutes.
 
