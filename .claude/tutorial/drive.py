@@ -509,6 +509,14 @@ def main():
                     f'executed {sorted(executed | {0})}, declared '
                     f'{sorted(COMMAND_BLOCK_INDICES)}')
     finally:
+        # #977: `integrations/site-generator/fixtures/build-site.sh` builds a
+        # site from the corpus this run finished with. Opting in with
+        # `HEADWATER_TUTORIAL_KEEP=<dir>` copies that corpus to `<dir>` before
+        # the scratch directory goes, so the site fixture needs no second
+        # fetch of the package. `<dir>` must not exist yet.
+        keep = os.environ.get('HEADWATER_TUTORIAL_KEEP')
+        if keep:
+            shutil.copytree(os.path.join(scratch, 'headwater-tutorial'), keep, symlinks=True)
         shutil.rmtree(scratch, ignore_errors=True)
 
     print()
