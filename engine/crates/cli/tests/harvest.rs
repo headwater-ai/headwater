@@ -511,6 +511,39 @@ fn an_unread_pin_that_no_anchor_names_is_a_finding_that_names_the_pin() {
     assert_eq!(ran.code, Some(0), "{ran:?}");
 }
 
+/// Each pinned export joins the read set with the digest of its bytes, so a
+/// gate over a later tree names an export that moved, and names none over the
+/// tree the read set was taken from.
+#[test]
+fn a_pinned_export_joins_the_read_set_and_a_gate_sees_it_move() {
+    let root = Root::new("read-set");
+    let read_set = root.at.join("clean.readset");
+    let read_set = read_set.to_str().expect("the read set path is UTF-8");
+    let ran = root.run(&["check", "--read-set", read_set]);
+    assert_eq!(ran.code, Some(0), "{ran:?}");
+    let recorded = std::fs::read_to_string(read_set).expect("the read set reads");
+    for (export, digest) in [
+        (EXPORT_A, root.digest(EXPORT_A)),
+        (EXPORT_B, root.digest(EXPORT_B)),
+    ] {
+        assert!(
+            recorded
+                .lines()
+                .any(|line| line.contains(export) && line.contains(&digest)),
+            "the read set lists `{export}` at {digest}: {recorded}"
+        );
+    }
+    let still = root.run(&["gate", "--read-set", read_set]);
+    assert!(!still.out.contains(EXPORT_B), "{still:?}");
+
+    root.write(EXPORT_B, &export("silver"));
+    let moved = root.run(&["gate", "--read-set", read_set]);
+    assert!(
+        moved.out.contains(EXPORT_B),
+        "the gate names the export that moved: {moved:?}"
+    );
+}
+
 /// A pin with no digest binds nothing either, and the finding says what to
 /// write, so it is reported on the same terms as a missing file.
 #[test]
