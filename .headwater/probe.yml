@@ -79,7 +79,8 @@ tiers:
   # probe, on `claude-sonnet-5`, with $300.00 here and $130.00 at the
   # documentation tier. That is $430.00 in all, inside the amount agreed. The
   # number moved because a person decided to spend more, which is the only
-  # reason it may move.
+  # reason it may move. A plan above it still refuses, because a run that does
+  # not happen is the cheaper error.
   #
   # Spec 5 takes the session count from statistical power rather than from
   # taste: 0.50 against 0.75 at 80% power and a 5% two-sided level is about 58
