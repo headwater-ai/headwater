@@ -40,6 +40,8 @@ public class ClientTest {
     }
 
     static final class Skip extends RuntimeException {
+        private static final long serialVersionUID = 1L;
+
         Skip(String reason) {
             super(reason);
         }
@@ -257,13 +259,13 @@ public class ClientTest {
             Client.route("what governs this", f.options());
             Client.governing("engine/crates/query/src/mcp.rs", f.options());
             List<Map<?, ?>> records = f.asked();
-            List<Object> argvs = records.stream().filter(r -> r.containsKey("argv")).map(r -> r.get("argv")).toList();
+            List<Object> argvs = records.stream().filter(r -> r.containsKey("argv")).<Object>map(r -> r.get("argv")).toList();
             equal(argvs.size(), 2);
             for (Object argv : argvs) {
                 equal(argv, List.of("mcp", "--root", REPO.toString()));
                 check(!((List<?>) argv).contains("--write"), "a session was started with --write");
             }
-            List<Map<?, ?>> messages = records.stream().filter(r -> r.containsKey("message")).map(r -> (Map<?, ?>) r.get("message")).toList();
+            List<Map<?, ?>> messages = records.stream().filter(r -> r.containsKey("message")).<Map<?, ?>>map(r -> (Map<?, ?>) r.get("message")).toList();
             equal(messages.stream().map(m -> m.get("method")).toList(), List.of(
                     "initialize", "notifications/initialized", "tools/call",
                     "initialize", "notifications/initialized", "tools/call"));

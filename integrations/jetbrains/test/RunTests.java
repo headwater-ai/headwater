@@ -48,7 +48,7 @@ public class RunTests {
         }
         System.setProperty("hw.classes", classes.toString());
         System.setProperty("hw.test", here.toString());
-        try (URLClassLoader loader = new URLClassLoader(new URL[] {classes.toUri().toURL()}, RunTests.class.getClassLoader())) {
+        try (URLClassLoader loader = new URLClassLoader(new URL[] {classes.toUri().toURL()}, ClassLoader.getPlatformClassLoader())) {
             Class<?> suite = loader.loadClass("ClientTest");
             try {
                 suite.getMethod("main", String[].class).invoke(null, (Object) args);
