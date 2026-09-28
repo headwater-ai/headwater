@@ -147,8 +147,9 @@ checks
     relation.target.is_source
       edge scope, one relation instance and both endpoints
     relation.target.suspect
-      edge scope, one relation instance and both endpoints, and the injected
-        clock
+      edge scope, one relation instance and both endpoints, and the version of
+        the declaring document that stood before the change, where the run
+        carries one
     relation.reciprocity.missing
       edge scope, one relation instance and both endpoints
     relation.endpoint.not_permitted
@@ -690,7 +691,7 @@ read set
   version shelf.placement_is_primary 2
   version relation.target.unresolved 1
   version relation.target.is_source 1
-  version relation.target.suspect 5
+  version relation.target.suspect 6
   version relation.reciprocity.missing 3
   version relation.endpoint.not_permitted 1
   version lifecycle.dependency.on_terminal 1

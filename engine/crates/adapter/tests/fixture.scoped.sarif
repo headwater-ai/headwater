@@ -125,12 +125,12 @@
             {
               "id": "relation.target.suspect",
               "shortDescription": {
-                "text": "edge scope, one relation instance and both endpoints, and the injected clock"
+                "text": "edge scope, one relation instance and both endpoints, and the version of the declaring document that stood before the change, where the run carries one"
               },
               "properties": {
                 "headwater": {
                   "scope": "edge",
-                  "version": 5,
+                  "version": 6,
                   "obligations": [
                     "OB-FIX-27"
                   ],
