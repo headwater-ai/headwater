@@ -15,7 +15,7 @@ provenance:
 relations:
   governs:
     - to: .github/workflows/ci.yml
-      verified_revision: sha256:fa7e4036e843853f29e8363b64046cfda1c380348fbe4362b9036f4bec440086
+      verified_revision: sha256:3e4f7a9c1bdff4f552392b71c4a4d37ee8ef941d77371b8d5e9d8f51c66013fd
     - to: tools/run/queue-done.sh
       verified_revision: sha256:e1d5b097918a1f58af5cdd9610b321f7fe949b0e7f5f2a408643605f2b4e709d
     - to: tools/run/queue-done-fixtures.sh
