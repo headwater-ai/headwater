@@ -4,7 +4,7 @@
   "taxonomy": {
     "package": "headwater/fixture",
     "version": "1.0.0",
-    "lock": "9df1915ec6a29614e9cba30132a126a5cc7591315ce0e880fda4b551982640c0"
+    "lock": "8aa51e4e4c8b9c11ab56777dfd4a1cbac0e66c20104c17983182100dd52215d4"
   },
   "clock": "2026-08-12",
   "change": {
@@ -25,7 +25,7 @@
     "classified": 29,
     "checked": 29,
     "generated": 1,
-    "instances": 357,
+    "instances": 358,
     "skipped": 33,
     "skips": [
       {
@@ -539,6 +539,14 @@
       "obligations": []
     },
     {
+      "rule": "link.identifier.mismatch",
+      "scope": "corpus",
+      "version": 2,
+      "obligations": [
+        "OB-FIX-28"
+      ]
+    },
+    {
       "rule": "warrant.promoted",
       "scope": "document",
       "version": 1,
@@ -1020,6 +1028,18 @@
       "column": 90,
       "message": "`/spec/00-both-halves.md` names no file of this repository: nothing stands at `/spec/00-both-halves.md`",
       "remediation": "point it at a file that exists, or restore `/spec/00-both-halves.md`. A document that moved keeps its identifier, so `headwater explain` finds where it went",
+      "fixable": false,
+      "escape": "none"
+    },
+    {
+      "rule": "link.identifier.mismatch",
+      "severity": "warn",
+      "obligation": "OB-FIX-28",
+      "path": "check/spec/07-prose-defects.md",
+      "line": 81,
+      "column": 1,
+      "message": "link text names `DR-FIX-0009`, but `check/spec/08-contract-met.md` has identifier `DR-FIX-0008`",
+      "remediation": "write `DR-FIX-0008` as the link text, or point it at the document with identifier `DR-FIX-0009`",
       "fixable": false,
       "escape": "none"
     },
@@ -1511,7 +1531,7 @@
     },
     {
       "path": "check/spec/07-prose-defects.md",
-      "digest": "sha256:15d94e43a05082553a4abfc5753fa0d59393ab379b0a1a4f96c02705285a93eb"
+      "digest": "sha256:354ad6a0bb7a6e6fcfeb606cfcd523aaef14d11ec62479b365786f073efe7f9d"
     },
     {
       "path": "check/spec/08-contract-met.md",

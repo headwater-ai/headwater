@@ -282,6 +282,12 @@ obligations:
     class: cohesion
     prevents: content.inconsistent
     severity: medium
+  OB-FIX-28:
+    statement: A prose link whose text is an identifier names the document that carries that identifier
+    rationale: A reader follows the visible identifier as a citation, and a link to another record names the wrong decision
+    class: cohesion
+    prevents: content.inconsistent
+    severity: medium
   OB-FIX-23:
     statement: An identifier is a string the scheme its kind names admits
     rationale: An identifier travels into tickets and commit messages, and one outside its own namespace collides with a corpus that nobody here can rewrite
@@ -462,6 +468,12 @@ controls:
   CT-FIX-10:
     mechanism: check:link.fragment.unresolved
     discharges: [OB-FIX-10]
+    trigger: pull_request
+    posture: advisory
+    acts: detective
+  CT-FIX-25:
+    mechanism: check:link.identifier.mismatch
+    discharges: [OB-FIX-28]
     trigger: pull_request
     posture: advisory
     acts: detective

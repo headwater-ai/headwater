@@ -149,6 +149,10 @@ taxonomy: headwater/standard
 # on load where they differ, and it names both files and both numbers. A bump
 # moves both or neither. `package.yml` states why the value is declared twice.
 #
+# 4.10.0 adds `OB-LINK-3` and `CT-LINK-3` for a prose link whose text names one
+# record while its resolved target carries another identifier. It is additive:
+# an adopter gets one new finding and no existing declaration changes meaning.
+#
 # 4.9.2 changes the starter doctrine and nothing else. Its *Your writing
 # profile* paragraph now names `outside_root` as the second route by which a
 # language regime reaches prose, as HW-DR-0084 promised once the engine read
@@ -244,7 +248,7 @@ taxonomy: headwater/standard
 # each carries a recipe rather than a bare instruction. One package version
 # covers every content file it publishes, this one included, so the number
 # here moves with a change to either.
-version: 4.9.2
+version: 4.10.0
 
 purposes:
   rationale:
@@ -655,6 +659,13 @@ obligations:
   OB-LINK-2:
     statement: A prose link of a document resolves to a file of the repository
     rationale: A document that moves takes every citation of it with it, and the author who moved it reads nothing about the nine documents that now point at a path with no file. The break is silent in a way an author cannot notice, because each dead citation sits in a document that was not edited
+    class: cohesion
+    prevents: content.inconsistent
+    severity: medium
+
+  OB-LINK-3:
+    statement: A prose link whose text is an identifier names the document that carries that identifier
+    rationale: A reader follows the visible identifier as a citation. When it points to a different record, the link resolves cleanly but names the wrong decision
     class: cohesion
     prevents: content.inconsistent
     severity: medium
@@ -1076,6 +1087,16 @@ controls:
     trigger: pull_request
     posture: advisory
     acts: detective
+
+  CT-LINK-3:
+    mechanism: check:link.identifier.mismatch
+    discharges: [OB-LINK-3]
+    trigger: pull_request
+    posture: advisory
+    acts: detective
+    promotion:
+      permanently_advisory:
+        reasoning: The check can identify the disagreement, but it cannot choose whether the author meant to change the label or point the link at a different document
 
   CT-MIG-1:
     mechanism: check:adoption.task.expired

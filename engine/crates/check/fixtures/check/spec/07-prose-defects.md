@@ -77,3 +77,9 @@ A path that will not normalize into a repository path at all: [a destination abo
 A query string on a path that lands nowhere: [the part that moved, with a version on it](19-renamed.md?v=2). The query string leaves the destination before the binder reads the path, so the report names the file and never the query.
 
 An address written from the site root, where the root of this corpus holds no such file: [an absolute address](/spec/00-both-halves.md). The binder reads a leading separator against the root of the corpus. Nothing stands there, so the report names the destination as the author wrote it.
+
+[DR-FIX-0009](08-contract-met.md)
+
+[DR-FIX-0008](08-contract-met.md)
+
+[the decision](08-contract-met.md)
