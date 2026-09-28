@@ -589,6 +589,11 @@ mod tests {
             })
             .collect();
         let missing = typed(&root, &via.join("docs/never-written.md").display().to_string());
+        // A link below the root back to the root is read as its name, as the
+        // lexical read names it, so the shortest leading part that is the
+        // root stands for it and not the longest.
+        std::os::unix::fs::symlink(&root, root.join("again")).expect("a link back to the root");
+        let again = typed(&root, &via.join("again/never-written.md").display().to_string());
         let lexical = typed(&root, "escape/x.md");
         let _ = std::fs::remove_dir_all(&base);
         for ((target, expected), (_, answer)) in cases.iter().zip(&answers) {
@@ -612,6 +617,11 @@ mod tests {
             missing.as_deref(),
             Some("docs/never-written.md"),
             "`typed` finds the root under an absolute path with no file"
+        );
+        assert_eq!(
+            again.as_deref(),
+            Some("again/never-written.md"),
+            "`typed` reads a link back to the root by its name"
         );
         assert_eq!(
             lexical.as_deref(),
