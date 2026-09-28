@@ -71,11 +71,15 @@ hw_root=$(hw_resolve_root "$input")
 if [ -n "$session" ]; then
     common=$(hw_common_dir) || common=
     if [ -n "$common" ]; then
+        # One line per parent session: a parent that `tools/run/supervise.sh`
+        # restarts appends its own with `run-dir.sh session`, and each of them
+        # is exempt, not only the first.
         for marker in "$common"/headwater-run/*/parent.session; do
             [ -f "$marker" ] || continue
-            prefix=$(head -n 1 "$marker")
-            [ -n "$prefix" ] || continue
-            case $session in "$prefix"*) exit 0 ;; esac
+            while IFS= read -r prefix || [ -n "$prefix" ]; do
+                [ -n "$prefix" ] || continue
+                case $session in "$prefix"*) exit 0 ;; esac
+            done < "$marker"
         done
 
         # A session that never called a tool `.claude/hooks/touch.sh` marks
