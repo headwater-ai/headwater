@@ -222,12 +222,17 @@ fn an_uncommitted_graph_export_is_written_by_export_and_not_by_generate() {
 
     let (code, said) = status(&run(&root, &["export"]));
     assert_eq!(code, Some(0), "`export` failed\n{said}");
-    let bytes = std::fs::read_to_string(&at)
-        .unwrap_or_else(|error| panic!("`export` did not write the publish-time file: {error}\n{said}"));
+    let bytes = std::fs::read_to_string(&at).unwrap_or_else(|error| {
+        panic!("`export` did not write the publish-time file: {error}\n{said}")
+    });
 
     std::fs::write(&at, format!("{bytes}\n")).expect("the stale copy");
     for gate in [&["generate", "--check"][..], &["export", "--check"][..]] {
         let (code, said) = status(&run(&root, gate));
-        assert_eq!(code, Some(0), "{gate:?} compares a stale local copy\n{said}");
+        assert_eq!(
+            code,
+            Some(0),
+            "{gate:?} compares a stale local copy\n{said}"
+        );
     }
 }

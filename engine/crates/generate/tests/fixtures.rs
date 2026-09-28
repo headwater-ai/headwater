@@ -1836,9 +1836,37 @@ projections:
         .clone();
     let errors = Projections::read(&root).expect_err("an uncommitted shelf index is refused");
     assert!(
-        errors.iter().any(|error| error.message.contains("shelf_index")
-            && error.message.contains("graph_export")),
+        errors
+            .iter()
+            .any(|error| error.message.contains("shelf_index")
+                && error.message.contains("graph_export")),
         "the refusal does not name the kind and the one kind that takes the member: {errors:?}"
+    );
+}
+
+/// The meta-schema refuses a `committed` that is not a boolean over the
+/// sources, and the reader refuses it over a lock, so a word that reads as a
+/// no is never taken for the default.
+#[test]
+fn committed_that_is_not_a_boolean_is_refused() {
+    let source = "\
+projections:
+  - kind: graph_export
+    output: exports/site.json
+    committed: \"no\"
+";
+    let root = headwater_yaml::load(source)
+        .expect("it loads")
+        .value
+        .as_map()
+        .expect("a mapping")
+        .clone();
+    let errors = Projections::read(&root).expect_err("a word in place of a boolean is refused");
+    assert!(
+        errors
+            .iter()
+            .any(|error| error.message.contains("committed")),
+        "the refusal does not name the member: {errors:?}"
     );
 }
 
