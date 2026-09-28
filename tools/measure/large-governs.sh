@@ -120,6 +120,18 @@ EOF
 bytes=$(wc -c < "$scratch/explain.json" | tr -d ' ')
 documents=$(awk '$2 == "typed" && NF == 2 { print $1; exit }' "$scratch/warm-repo.out")
 
+# The batch loop discards each run's exit status, so a command that failed
+# fast would read as a fast result. One run of each, outside the loop, states
+# the status beside the figure. A scratch `check --strict` exits 1, because the
+# scratch corpus carries setup findings, and it still runs every check.
+status() {
+    "$@" > /dev/null 2>&1 && printf '0' || printf '%s' "$?"
+}
+check_status=$(status "$engine" check --strict --root "$tree")
+explain_status=$(status "$engine" explain --json "$document" --root "$tree")
+hook_status=$(status sh "$scratch/hook.sh")
+repo_status=$(status "$engine" check --strict --root "$repo")
+
 check_ms=$(median "$engine" check --strict --root "$tree")
 explain_ms=$(median "$engine" explain --json "$document" --root "$tree")
 hook_ms=$(median sh "$scratch/hook.sh")
@@ -128,10 +140,10 @@ repo_ms=$(median "$engine" check --strict --root "$repo")
 printf 'engine            %s\n' "$engine"
 printf 'files             %s under src/big/, one governs edge onto src/big/**\n' "$files"
 printf 'runs              median of %s warm samples, each the mean of %s runs, user+system CPU\n' "$runs" "$batch"
-printf 'check --strict    %s ms (generated tree)\n' "$check_ms"
-printf 'explain --json    %s ms, %s bytes\n' "$explain_ms" "$bytes"
-printf 'hook              %s ms (hw_governed_by_document)\n' "$hook_ms"
-printf 'check --strict    %s ms (this repository, %s typed documents)\n' "$repo_ms" "$documents"
+printf 'check --strict    %s ms (generated tree), exit %s\n' "$check_ms" "$check_status"
+printf 'explain --json    %s ms, %s bytes, exit %s\n' "$explain_ms" "$bytes" "$explain_status"
+printf 'hook              %s ms (hw_governed_by_document), exit %s\n' "$hook_ms" "$hook_status"
+printf 'check --strict    %s ms (this repository, %s typed documents), exit %s\n' "$repo_ms" "$documents" "$repo_status"
 printf 'hook output       %s\n' "$(head -n 2 "$scratch/hook.out" | tr '\n' ' ')"
 
 if [ -n "${HW_MEASURE_KEEP:-}" ]; then
