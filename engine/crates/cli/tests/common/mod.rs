@@ -27,6 +27,85 @@ pub(crate) fn repository() -> PathBuf {
         .expect("the repository root resolves")
 }
 
+/// A directory for a tree outside every git repository, or `None`, with one
+/// line on standard error, when no candidate is one.
+///
+/// `std::env::temp_dir()` follows `TMPDIR`, and a `TMPDIR` inside a git work
+/// tree puts that work tree above every scratch tree, so git finds it (#1192).
+/// A case does not set `GIT_CEILING_DIRECTORIES` for the process instead,
+/// because cargo shares the process environment between the cases of one
+/// target, and the census and `headwater-vcs` suites take the same base.
+pub(crate) fn outside_base() -> Option<PathBuf> {
+    clean_base(&base_candidates())
+        .map_err(|refused| eprintln!("skipped, no scratch base outside git: {refused}"))
+        .ok()
+}
+
+/// The first of `candidates` that is a directory with no `.git` entry in it
+/// or in any directory above it, canonical, or every refusal in one line.
+pub(crate) fn clean_base(candidates: &[PathBuf]) -> Result<PathBuf, String> {
+    let mut refused = Vec::new();
+    for candidate in candidates {
+        let at = match candidate.canonicalize() {
+            Ok(at) if at.is_dir() => at,
+            Ok(_) => {
+                refused.push(format!("{} is not a directory", candidate.display()));
+                continue;
+            }
+            Err(error) => {
+                refused.push(format!("{}: {error}", candidate.display()));
+                continue;
+            }
+        };
+        match at
+            .ancestors()
+            .map(|dir| dir.join(".git"))
+            .find(|git| git.exists())
+        {
+            Some(git) => refused.push(format!(
+                "{} is below {}",
+                candidate.display(),
+                git.display()
+            )),
+            None => return Ok(at),
+        }
+    }
+    Err(refused.join("; "))
+}
+
+/// The directory [`outside_base`] finds, or `std::env::temp_dir()` with
+/// nothing printed where there is none, for a scratch tree whose cases do
+/// not all need it outside git.
+pub(crate) fn scratch_base() -> PathBuf {
+    clean_base(&base_candidates()).unwrap_or_else(|_| std::env::temp_dir())
+}
+
+/// Name the parent of `root` as git's ceiling for one command, so neither git
+/// nor the engine's own search looks above it for a repository.
+///
+/// A root under `temp_dir()` has whatever repository `TMPDIR` sits in above
+/// it, with whatever that repository declares and ignores (#1192). The
+/// variable is set on the one command and never on this process, which cargo
+/// shares between the cases of one target. A `.git` in `root` itself is
+/// still found, because git reads a ceiling directory's children.
+pub(crate) fn fence(command: &mut Command, root: &Path) {
+    let parent = root.parent().expect("a scratch root has a parent");
+    let parent = parent
+        .canonicalize()
+        .unwrap_or_else(|_| parent.to_path_buf());
+    command.env("GIT_CEILING_DIRECTORIES", parent);
+}
+
+/// `std::env::temp_dir()`, then on unix the three directories a host keeps
+/// for scratch files, in the order [`outside_base`] tries them.
+fn base_candidates() -> Vec<PathBuf> {
+    let mut candidates = vec![std::env::temp_dir()];
+    if cfg!(unix) {
+        candidates.extend(["/tmp", "/var/tmp", "/dev/shm"].map(PathBuf::from));
+    }
+    candidates
+}
+
 /// A repository root that removes itself.
 ///
 /// `label` names the test and not the case. Cargo runs the cases of one target
@@ -79,8 +158,11 @@ impl Root {
     }
 
     pub(crate) fn shaped(label: &str, prepare: impl FnOnce(&Path)) -> Root {
-        let at =
-            std::env::temp_dir().join(format!("headwater-cli-root-{}-{label}", std::process::id()));
+        // Under a directory outside every git repository where one is found.
+        // Where none is, the root sits under `temp_dir()`, and every run of
+        // the binary through [`Root::command`] still sees no repository above
+        // the root, because it names the root's parent as a ceiling (#1192).
+        let at = scratch_base().join(format!("headwater-cli-root-{}-{label}", std::process::id()));
         let _ = std::fs::remove_dir_all(&at);
         std::fs::create_dir_all(&at).expect("the root is made");
 
@@ -174,11 +256,19 @@ impl Root {
         self.run_with(arguments, "")
     }
 
+    /// The binary, with the root fenced off from any repository above it.
+    pub(crate) fn command(&self) -> Command {
+        let mut command = Command::new(env!("CARGO_BIN_EXE_headwater"));
+        fence(&mut command, &self.at);
+        command
+    }
+
     /// Run the binary with `input` on its standard input, which is how a case
     /// talks to `headwater mcp` (#1161).
     pub(crate) fn run_with(&self, arguments: &[&str], input: &str) -> Ran {
         use std::io::Write;
-        let mut child = Command::new(env!("CARGO_BIN_EXE_headwater"))
+        let mut child = self
+            .command()
             .args(arguments)
             .arg("--root")
             .arg(&self.at)

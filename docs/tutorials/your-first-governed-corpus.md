@@ -233,7 +233,7 @@ census
 ```
 
 ```
-  1 seen, 0 classified, 0 checked, 6 check instances
+  1 seen, 0 classified, 0 checked, 7 check instances
 ```
 
 ```
@@ -320,7 +320,7 @@ census
 ```
 
 ```
-  1 seen, 1 classified, 1 checked, 18 check instances
+  1 seen, 1 classified, 1 checked, 19 check instances
 ```
 
 **Check.** `headwater check 2>/dev/null | grep 'check instances'` prints the second block above.

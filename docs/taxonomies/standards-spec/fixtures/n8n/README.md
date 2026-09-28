@@ -83,7 +83,7 @@ The entry sits outside the corpus root on purpose, the same reason the Beacon fi
 
 ## What a run reports
 
-`headwater taxonomy resolve` then `headwater check --no-cache --now 2026-09-01` over the assembled root, with the committed `.headwater/`: **7 files under the corpus root, 7 typed, 0 excluded, 7 checked, 97 check instances, 21 findings, all 21 of them errors.** The census reads 7 `standard`. The graph reads 7 nodes, 0 declared edge halves, and 0 prose links that did not resolve. `headwater check --strict` exits 1.
+`headwater taxonomy resolve` then `headwater check --no-cache --now 2026-09-01` over the assembled root, with the committed `.headwater/`: **7 files under the corpus root, 7 typed, 0 excluded, 7 checked, 98 check instances, 21 findings, all 21 of them errors.** The census reads 7 `standard`. The graph reads 7 nodes, 0 declared edge halves, and 0 prose links that did not resolve. `headwater check --strict` exits 1.
 
 Every count but one moves only when this corpus moves, and there is no excluded count to drift with the vendored package. The exception is the check instance count, which says how many rules the resolved taxonomy had to run rather than anything about these seven files: it read 93 at `headwater/standard` 4.0.0 and 97 at 4.3.0, and no finding moved with it.
 

@@ -155,6 +155,31 @@ fn this_repository_builds_to_the_recorded_graph() {
     compare(&fixtures_dir().join("corpus.graph"), &graph.render_rows());
 }
 
+/// The population `link.identifier.mismatch` compares is a real one in this
+/// repository, so that rule's zero over it is a verdict about links it read
+/// and not a count over an empty set. The number is printed, not recorded: a
+/// link count moves on nearly every commit, which is why `corpus.graph` holds
+/// none (see [`Graph::render`]).
+#[test]
+fn this_repository_carries_links_whose_text_is_an_identifier() {
+    let graph = corpus_graph();
+    let named = graph.identifier_link_count();
+    eprintln!(
+        "{named} of {} prose links carry an identifier as their text and reach a document with one",
+        graph.links.len()
+    );
+    assert!(named > 100, "only {named}");
+    // And the text the bind keeps is the text with markup removed, a code span
+    // included, which is how most of this corpus writes an identifier link.
+    assert!(
+        graph
+            .links
+            .iter()
+            .any(|link| link.names.is_some() && link.text.trim().starts_with("HW-")),
+        "no link whose text is an HW- identifier"
+    );
+}
+
 /// The recorded citations are ordered, and the order is what makes them merge.
 ///
 /// [`Graph::render_rows`] sorts on the anchor and then on the document that
