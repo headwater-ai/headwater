@@ -14,11 +14,11 @@ provenance:
 relations:
   governs:
     - to: .claude/hooks/wait.sh
-      verified_revision: sha256:f4db17bb02513282424adfa8fe12432a834a2329b94c097d0b4c002b873100e6
+      verified_revision: sha256:2ec8d919a2aa283671e531f652b45f8133f0eaaaaa4af2820bb6f90c300adcf5
     - to: tools/run/run-census.sh
       verified_revision: sha256:57954a4dfd1fff9fd92571099130aa42cd9dd186df50a2dabce2d4d12e64fe69
     - to: .claude/skills/hw-run-policy/SKILL.md
-      verified_revision: sha256:0e71e3e122d242913e1fe68d551c20e3733b3bc44bc019e65ec824063010011b
+      verified_revision: sha256:744194b554b4a82a51c283f303e3d877bdf09c51b93da3fc547dbf1ef200ea5e
 ---
 
 # A background wait caps below the cache lifetime and re-issues itself
@@ -35,7 +35,9 @@ The parent that dispatched them paid none of this cost, because its cache holds 
 
 A wait that might outlive the five-minute cache lifetime is wrapped in a timeout under it, `timeout 240 sh -c 'until ...; do sleep 30; done'`. So the wrapped loop always exits inside four minutes, on its own condition or on the timeout. On the timeout, the agent re-issues the same bounded call and ends its turn again. On the condition, the wait is over. Blocking and backgrounding stay as they are. Each bounded call is still one blocking loop, started with `run_in_background: true`, and ended before the agent that started it exits.
 
-Re-issuing this kind of call is not the case `hw-run-policy` already forbids. That case is a loop the harness itself moved to the background at the ten-minute cap, and that loop is still running. A bounded call that hit its own four-minute timeout has genuinely stopped. So a fresh one is a new wait rather than a duplicate of the old one. `.claude/hooks/wait.sh` states the five-minute bound and this remedy inside the text of its ten-minute-cap refusal. So an agent that meets that refusal for the first time learns both costs in one reading.
+Re-issuing this kind of call is not the case `hw-run-policy` already forbids. That case is a loop the harness itself moved to the background at the ten-minute cap, and that loop is still running. A bounded call that hit its own four-minute timeout has genuinely stopped. So a fresh one is a new wait rather than a duplicate of the old one.
+
+[HW-PD-0021](0021-a-subagent-waits-in-the-foreground-because-a-background-wait-wakes-its-parent.md) replaces the `run_in_background: true` start. A subagent now runs each bounded call in the foreground, because a background wait wakes its parent at each attempt. The four-minute cap and the re-issue stay as this decision states them. `.claude/hooks/wait.sh` states the five-minute bound and this remedy inside the text of its ten-minute-cap refusal. So an agent that meets that refusal for the first time learns both costs in one reading.
 
 ## Consequences
 

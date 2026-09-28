@@ -13,9 +13,12 @@ provenance:
   evidence_basis: evidenced
 relations:
   governs:
-    - .claude/hooks/wait.sh
-    - tools/run/wait-for.sh
-    - .claude/skills/hw-run-policy/SKILL.md
+    - to: .claude/hooks/wait.sh
+      verified_revision: sha256:2ec8d919a2aa283671e531f652b45f8133f0eaaaaa4af2820bb6f90c300adcf5
+    - to: tools/run/wait-for.sh
+      verified_revision: sha256:74f6f5ffebcbe1f24811e128f68c4f925449123c0270573fb447fe51d1eec80f
+    - to: .claude/skills/hw-run-policy/SKILL.md
+      verified_revision: sha256:744194b554b4a82a51c283f303e3d877bdf09c51b93da3fc547dbf1ef200ea5e
 ---
 
 # A subagent waits in the foreground, because a background wait wakes its parent

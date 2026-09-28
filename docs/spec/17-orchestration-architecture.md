@@ -28,7 +28,7 @@ relations:
     - HW-PD-0022
   governs:
     - to: .claude/commands/next-run.md
-      verified_revision: sha256:5b698582b8b07d0837db1f6f3e8e3507f5f02d7a32b4f0f04594b10a73118840
+      verified_revision: sha256:5cc6eec77c03d7c2a31f7d69814cfb10bfd01b8b5919dbae358fc14295d48502
     - to: .claude/commands/next.md
       verified_revision: sha256:974d493829d7c81eacf06f5058e7e02f01f7fd409b82e0589d7bdd21a7783b09
     - to: .claude/agents/hw-queue.md
@@ -36,15 +36,15 @@ relations:
     - to: .claude/agents/hw-adjudicate.md
       verified_revision: sha256:c957a511466d03fcf8d7d628b97ebc8e416ce61f85d1aab1a379342ff8a7c8d0
     - to: .claude/agents/hw-iterate.md
-      verified_revision: sha256:a41384eed6c0c8b326e07056507c259a148b663152038f63a7b1d988dccdf821
+      verified_revision: sha256:b232f02557d6ad7eac1d6d9651ffc25d305c27a032ffb511f6c224e54ccf48a5
     - to: .claude/agents/hw-build.md
-      verified_revision: sha256:76b22e56cb1ec60b94efa588c40db19b23bbd80795bbba510c172e9de7a137e8
+      verified_revision: sha256:d82de2b0b05e803f187fb8201e51d832f3caafd459eb15d6b756a484e367210c
     - to: .claude/agents/hw-verify.md
-      verified_revision: sha256:037f1ffc1ed126bef4951f6a17ad67671f55e067fc27ec8548802a63eb620031
+      verified_revision: sha256:43c950e51171c9e61d0cc801584703ec5ed6577316e0d014cdee706bc25e0783
     - to: .claude/agents/hw-integrate.md
-      verified_revision: sha256:6029c93103316f8fc40e7f06ce0cc772bcffa9ccb27ec931ecb3ed4dfef369b4
+      verified_revision: sha256:de99652546460adf3a7ce5ab652c2501973e56f8f65fcb6cc591d438043ecd65
     - to: .claude/skills/hw-run-policy/SKILL.md
-      verified_revision: sha256:0e71e3e122d242913e1fe68d551c20e3733b3bc44bc019e65ec824063010011b
+      verified_revision: sha256:744194b554b4a82a51c283f303e3d877bdf09c51b93da3fc547dbf1ef200ea5e
     - to: .claude/skills/hw-verification-bar/SKILL.md
       verified_revision: sha256:a68ce6b14b5a8d7068aeafd8c7443e0497a55b4e444e2b971daa1da738c2153b
 ---
@@ -198,7 +198,9 @@ Eight records under [`docs/process/decisions/`](../process/decisions/README.md) 
 
 **[HW-PD-0006](../process/decisions/0006-the-entrypoint-keeps-its-name-and-becomes-a-resumable-run.md) keeps the entrypoint's name and makes a run resumable.** The orchestrator is the one agent that cannot be reloaded. A subagent gets its definition fresh on every dispatch, and the parent runs in a person's own session. So a run writes its directory from the first iteration, and a compaction, a crash or a second invocation reads that directory and continues. The parent reads the doctrine on a turn it already pays for rather than on a re-read turn of its own. Each stage declares its model in its own front matter.
 
-**[HW-PD-0007](../process/decisions/0007-a-background-wait-caps-below-the-cache-lifetime-and-re-issues-itself.md) bounds a background wait under the prompt-cache lifetime.** A subagent's cache holds its context for about five minutes. A turn that wakes after that pays to write the whole context back rather than to read it. So a wait that might run longer is wrapped in a timeout under the lifetime and re-issued on return. Blocking and backgrounding stay as they are. Each bounded call is one blocking loop, started in the background, and ended before the agent that started it exits. The parent is exempt, because its own cache holds for an hour.
+**[HW-PD-0007](../process/decisions/0007-a-background-wait-caps-below-the-cache-lifetime-and-re-issues-itself.md) bounds a background wait under the prompt-cache lifetime.** A subagent's cache holds its context for about five minutes. A turn that wakes after that pays to write the whole context back rather than to read it. So a wait that might run longer is wrapped in a timeout under the lifetime and re-issued on return. Each bounded call is one blocking loop, ended before the agent that started it exits. The parent is exempt, because its own cache holds for an hour.
+
+**[HW-PD-0021](../process/decisions/0021-a-subagent-waits-in-the-foreground-because-a-background-wait-wakes-its-parent.md) runs that bounded wait in the foreground.** A subagent whose only work left is a background wait ends its turn. Each attempt then wakes its parent at the full context of the parent. So `hw-build`, `hw-verify` and `hw-integrate` run `wait-for.sh` in the foreground and keep their turn. `hw-iterate` and the parent wait on agents, not on a condition, so they end their turn and run no `wait-for.sh`.
 
 **[HW-PD-0022](../process/decisions/0022-the-verify-and-rework-loop-for-one-issue-runs-below-the-parent.md) moves the loop for one issue below the parent.** Each `FAIL` woke the parent at its full context, so one agent per issue now owns build, verify and rework. The parent wakes for its report and rules the final verdict. The builder does not dispatch its own verifier, because that verifier would then not be independent. The instruction to rework a `FAIL` now goes from `hw-iterate` to its own builder, down the tree that HW-PD-0004 keeps.
 
