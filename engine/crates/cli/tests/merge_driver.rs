@@ -126,6 +126,13 @@ fn the_scratch_base_passes_over_a_candidate_inside_a_git_work_tree() {
         );
     }
 
+    // A candidate that holds `.git` itself is the top of a work tree. Read
+    // only the directories above a candidate, and this fails.
+    assert!(
+        clean_base(&[outer.0.clone()]).is_err(),
+        "a candidate that holds `.git` is no base"
+    );
+
     // A gitfile names a repository as a `.git` directory does, and a
     // worktree of a repository has one. Read only a directory, and this fails.
     std::fs::remove_dir_all(outer.0.join(".git")).expect("the directory goes");
@@ -133,6 +140,54 @@ fn the_scratch_base_passes_over_a_candidate_inside_a_git_work_tree() {
     assert!(
         clean_base(&[outer.0.join("tmp")]).is_err(),
         "a candidate below a gitfile is no base"
+    );
+}
+
+/// A fenced command finds no repository in the directory above the root.
+///
+/// `common::fence` keeps a repository above a scratch root out of every run of
+/// the binary, which is what holds the cli roots when no clean base exists
+/// (#1192). The repository here is the root's parent, so a fence that sets
+/// nothing, or names the root's grandparent, lets git find it and this fails.
+#[test]
+fn a_fenced_command_finds_no_repository_above_the_root() {
+    let Some(clean) = outside_base() else {
+        return;
+    };
+    let outer = Scratch::made(clean.join(format!(
+        "headwater-cli-merge-driver-{}-fence",
+        std::process::id()
+    )));
+    let git = |dir: &Path, fenced: bool, args: &[&str]| {
+        let mut command = Command::new("git");
+        command
+            .args(args)
+            .current_dir(dir)
+            .env("GIT_CONFIG_GLOBAL", "/dev/null")
+            .env("GIT_CONFIG_NOSYSTEM", "1")
+            .env_remove("GIT_DIR")
+            .env_remove("GIT_WORK_TREE")
+            .env_remove("GIT_CEILING_DIRECTORIES");
+        if fenced {
+            common::fence(&mut command, dir);
+        }
+        command.output().expect("git runs")
+    };
+    assert!(git(&outer.0, false, &["init", "-q"]).status.success());
+    let root = outer.0.join("root");
+    std::fs::create_dir_all(&root).expect("the root is made");
+
+    assert!(
+        git(&root, false, &["rev-parse", "--show-toplevel"])
+            .status
+            .success(),
+        "unfenced, git finds the repository above the root, so the case can fail"
+    );
+    let fenced = git(&root, true, &["rev-parse", "--show-toplevel"]);
+    assert!(
+        !fenced.status.success(),
+        "a fenced command found a repository above the root: {}",
+        String::from_utf8_lossy(&fenced.stdout)
     );
 }
 

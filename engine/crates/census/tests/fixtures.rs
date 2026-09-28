@@ -2011,6 +2011,13 @@ fn the_scratch_base_passes_over_a_candidate_inside_a_git_work_tree() {
         );
     }
 
+    // A candidate that holds `.git` itself is the top of a work tree. Read
+    // only the directories above a candidate, and this fails.
+    assert!(
+        clean_base(&[outer.path().to_path_buf()]).is_err(),
+        "a candidate that holds `.git` is no base"
+    );
+
     // A gitfile names a repository as a `.git` directory does, and a
     // worktree of a repository has one. Read only a directory, and this fails.
     std::fs::remove_dir_all(outer.path().join(".git")).expect("the directory goes");

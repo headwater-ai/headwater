@@ -991,6 +991,13 @@ mod tests {
             );
         }
 
+        // A candidate that holds `.git` itself is the top of a work tree. Read
+        // only the directories above a candidate, and this fails.
+        assert!(
+            clean_base(&[outer.to_path_buf()]).is_err(),
+            "a candidate that holds `.git` is no base"
+        );
+
         // A gitfile names a repository as a `.git` directory does, and a
         // worktree of a repository has one. Read only a directory, and this fails.
         std::fs::remove_dir_all(outer.join(".git")).expect("the directory goes");
