@@ -10,6 +10,9 @@
 #
 # `relates_to` is in the association family, the one family spec 2 lets point
 # at its own document, so a self-edge on it is no instance of the rule.
+#
+# `leans_on` declares no family at all. Only a declared `association` is
+# exempt, so a self-edge on a relation with no family is still reported.
 
 facets:
   summary:
@@ -24,6 +27,10 @@ relations:
     from: [explanation]
     to:   [explanation]
     inverse: drawn_on_by
+    created_by: author
+  leans_on:
+    from: [explanation]
+    to:   [explanation]
     created_by: author
   relates_to:
     family: association

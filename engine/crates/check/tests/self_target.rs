@@ -25,9 +25,13 @@
 //! association"** reports `notes/e.md`, which relates to itself under an
 //! association relation.
 //!
-//! **A rule whose instances were its findings** reports a denominator of two.
+//! **A rule that exempted every relation outside a named family** misses
+//! `notes/f.md`, whose relation declares no family. Only a declared
+//! `association` is exempt.
+//!
+//! **A rule whose instances were its findings** reports a denominator of three.
 //! Every entry outside the association family is an instance, so the count is
-//! four.
+//! five.
 
 use headwater_census::census;
 use headwater_census::shelves::Taxonomy;
@@ -151,6 +155,17 @@ fn a_self_path_that_binds_to_nothing_is_the_unresolved_rules_finding_alone() {
     );
 }
 
+/// A relation that declares no family is not in the association family, so a
+/// self-edge on it is reported like any other.
+#[test]
+fn a_relation_with_no_declared_family_that_points_at_its_own_document_is_reported() {
+    let run = run();
+    let found = at(&run, RULE, "notes/f.md");
+    assert_eq!(found.len(), 1, "{found:?}");
+    assert!(found[0].contains("leans_on"), "{}", found[0]);
+    assert!(found[0].contains("NOTE-FIX-f"), "{}", found[0]);
+}
+
 /// Spec 2 lets an association relation point at its own document, so that
 /// entry is no instance and no finding.
 #[test]
@@ -174,11 +189,11 @@ fn every_entry_is_an_instance() {
         .iter()
         .filter(|instance| instance.rule == RULE)
         .count();
-    assert_eq!(instances, 4);
+    assert_eq!(instances, 5);
     let findings = run
         .findings
         .iter()
         .filter(|finding| finding.rule == RULE)
         .count();
-    assert_eq!(findings, 2);
+    assert_eq!(findings, 3);
 }
