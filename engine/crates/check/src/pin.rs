@@ -149,11 +149,29 @@ mod tests {
     use super::*;
     use std::path::PathBuf;
 
+    /// A scratch directory that removes itself when the guard is dropped, so
+    /// a case that fails an assertion leaves nothing behind (#1158).
+    struct Scratch(PathBuf);
+
+    impl Drop for Scratch {
+        fn drop(&mut self) {
+            let _ = std::fs::remove_dir_all(&self.0);
+        }
+    }
+
+    impl std::ops::Deref for Scratch {
+        type Target = Path;
+        fn deref(&self) -> &Path {
+            &self.0
+        }
+    }
+
     /// A scratch package directory, keyed on the test name as well as the
     /// pid: cargo runs the cases of one target as threads of one process.
-    fn package(name: &str) -> PathBuf {
+    fn package(name: &str) -> Scratch {
         let dir = std::env::temp_dir().join(format!("hw-pin-{}-{name}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
+        let dir = Scratch(dir);
         std::fs::create_dir_all(dir.join("doctrine")).expect("the scratch package is made");
         std::fs::write(dir.join("package.yml"), "name: acme/pkg\n").expect("manifest");
         std::fs::write(dir.join("doctrine/a.md"), "one\n").expect("member");
@@ -177,7 +195,7 @@ mod tests {
     #[test]
     fn a_pin_the_bytes_hash_to_is_silent() {
         let dir = package("agrees");
-        let reading = release::pinned(Some(&dir), &digest(&dir));
+        let reading = release::pinned(Some(&*dir), &digest(&dir));
         assert_eq!(reading.drift, None);
         assert_eq!(reading.members.len(), 2);
         assert!(findings(Some(&pin(Some(reading), Some("pkgs/p")))).is_empty());
@@ -217,7 +235,7 @@ mod tests {
         let pinned = digest(&dir);
         std::fs::write(dir.join("doctrine/a.md"), "two\n").expect("the hand edit");
         let computed = digest(&dir);
-        let reading = release::pinned(Some(&dir), &pinned);
+        let reading = release::pinned(Some(&*dir), &pinned);
         let found = findings(Some(&pin(Some(reading), Some("pkgs/p"))));
         assert_eq!(found.len(), 1);
         for needle in [pinned.as_str(), computed.as_str(), "pkgs/p/"] {
@@ -232,7 +250,7 @@ mod tests {
     #[test]
     fn the_inputs_are_the_declaration_and_every_member_under_the_directory() {
         let dir = package("inputs");
-        let reading = release::pinned(Some(&dir), "sha256:other");
+        let reading = release::pinned(Some(&*dir), "sha256:other");
         let inputs = pin(Some(reading), Some("pkgs/p")).inputs();
         let paths: Vec<&str> = inputs.iter().map(|input| input.path.as_str()).collect();
         assert_eq!(
