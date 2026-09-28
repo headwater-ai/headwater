@@ -31,7 +31,10 @@ fn every_lifecycle_rule_reaches_one_obligation_of_the_standard_package() {
     let root = Root::shaped("standard-controls", |_| {});
     let ran = root.run(&["check"]);
     assert!(
-        ran.out.contains("reaches no obligation") || ran.out.contains("every rule this engine carries reaches one obligation"),
+        ran.out.contains("reaches no obligation")
+            || ran
+                .out
+                .contains("every rule this engine carries reaches one obligation"),
         "the register block is not in the output, so this case reads nothing: {ran:?}"
     );
     let unbound: Vec<&str> = LIFECYCLE
