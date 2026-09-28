@@ -67,7 +67,7 @@ An identifier resolves through the graph index. A target that matches neither a 
 | Under the corpus root, with no document there | "is a path of this corpus, with no document written there yet" |
 | Under the corpus root, and an exclusion claims it | "is excluded by `<pattern>`" |
 | Outside every corpus root this repository declares | "is outside every corpus root this repository declares" |
-| Outside the repository, as an absolute path or through a `..` that goes above the root, or a segment that is not UTF-8 | "is outside this repository, or is not a path it can read" |
+| Outside the repository. The path is absolute, climbs above the root with `..`, goes through a symlink out of the root, or is not UTF-8 | "is outside this repository, or is not a path it can read" |
 
 The first row is checked before the other four, and it never runs `Corpus::classify`. `Shape::identifier_shaped` tests the target against the fixed prefix each declared `identifier_schemes` entry opens on. A pattern of `{namespace}-DR-{seq:04d}` opens on `HW-DR-`, for example. A target that opens that way is refused as an identifier, whatever the rest of it says. The last four states classify a path: one matcher decides them, `headwater_census::walk::Corpus::classify`, which the walk also uses for an existing file. In this repository, a harness hook reads the second row and refuses a raw write there.
 

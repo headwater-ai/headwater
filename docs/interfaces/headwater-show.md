@@ -3,7 +3,7 @@ id: HW-IFACE-headwater-show
 status: current
 status_since: 2026-09-27
 summary: "headwater show prints the bytes of one document as they are on disk, found by path or identifier through the resolver that explain uses."
-last_verified: 2026-09-27
+last_verified: 2026-09-28
 title: "headwater show"
 relations:
   governs:
@@ -11,7 +11,7 @@ relations:
     - to: engine/crates/query/src/explain.rs
       verified_revision: sha256:7295f5c240de3838c3e0bab52ff58e9b287b1768a879d2653bcf3b68bcc3fde9
     - to: engine/crates/census/src/walk.rs
-      verified_revision: sha256:bd4c368d26966fe22d9cb9ce3631dbcd70fbe1ceca48341d66cb8b921d5e1e9f
+      verified_revision: sha256:8f1968a5c4fe9e3337f6235213f611fcf360842f8afc00d04a235ff566e933cd
 ---
 
 # headwater show
@@ -55,7 +55,7 @@ An identifier resolves only to a typed document. An untyped document resolves on
 
 **A missing target states one of five things.** The five states and their sentences are the table in the Exit status section of [`headwater explain`](headwater-explain.md#exit-status). `show` writes the same sentence as `explain` for each target, because one function writes the refusal for both verbs.
 
-**A symlink is refused.** The census walk does not follow a symlink, and `show` does not follow one either. When the path from the root to the document passes through a symlink, `show` writes no byte to standard output. Standard error names the link in the sentence "is a symlink, which the walk does not follow, so `show` prints nothing". A link can name any file on the host, and this refusal keeps every read inside the root.
+**A symlink is refused.** The census walk does not follow a symlink, and `show` does not follow one either. When the path from the root to the document passes through a symlink, `show` writes no byte to standard output. Standard error names the link in the sentence "is a symlink, which the walk does not follow, so `show` prints nothing". A link can name any file on the host, and this refusal keeps every read inside the root. A path that holds no document and that passes through a symlink out of the root gets a different refusal. It is outside the repository, and `show` writes the sentence that [`headwater explain`](headwater-explain.md) writes for that state ([#1249](https://github.com/headwater-ai/headwater/issues/1249)).
 
 **1**, and never 101, when standard output or standard error cannot be written, and one sentence on standard error names a failed standard output.
 
