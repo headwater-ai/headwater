@@ -123,7 +123,13 @@ pub enum Binding {
 ///
 /// Its `Debug` and its equality are those of the `Option<String>` it stands
 /// for, so [`crate::edges::Target::resolution`] writes the same cache key it
-/// wrote when the digest was computed at load.
+/// wrote when the digest was computed at load. The one exception is a set of
+/// entries none of which is a directory or a regular file, such as one named
+/// pipe: it has no value, as a directory has none, but a rule reports the two
+/// differently, so its `Debug` is `NoRegularFile` rather than `None` and a
+/// verdict cached over a directory does not answer for a pipe that took its
+/// name (#1269). No key that `main` wrote before #1269 moves, because a check
+/// that met such an entry then never ended.
 #[derive(Clone)]
 pub struct Revision(std::sync::Arc<RevisionCell>);
 
@@ -173,6 +179,22 @@ impl Revision {
         }
     }
 
+    /// Whether this is a tree revision over at least one entry, and every
+    /// entry is there and is neither a directory nor a regular file: the set
+    /// [`tree_revision`] leaves out whole, and the one its `Debug` names apart.
+    fn holds_no_regular_file(&self) -> bool {
+        match &self.0.tree {
+            Some((base, matched)) => {
+                !matched.is_empty()
+                    && matched.iter().all(|path| {
+                        std::fs::metadata(base.join(path))
+                            .is_ok_and(|kind| !kind.is_dir() && !kind.is_file())
+                    })
+            }
+            None => false,
+        }
+    }
+
     fn value(&self) -> &Option<String> {
         self.0.value.get_or_init(|| match &self.0.tree {
             Some((base, matched)) => tree_revision(base, matched),
@@ -189,13 +211,18 @@ impl From<Option<String>> for Revision {
 
 impl std::fmt::Debug for Revision {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        std::fmt::Debug::fmt(self.value(), f)
+        match self.value() {
+            None if self.holds_no_regular_file() => f.write_str("NoRegularFile"),
+            value => std::fmt::Debug::fmt(value, f),
+        }
     }
 }
 
 impl PartialEq for Revision {
     fn eq(&self, other: &Self) -> bool {
         self.value() == other.value()
+            && (self.value().is_some()
+                || self.holds_no_regular_file() == other.holds_no_regular_file())
     }
 }
 
@@ -1399,5 +1426,22 @@ mod tests {
             "a link to a regular file has a revision"
         );
         assert_eq!(tree_revision(&dir, &["to-pipe".to_owned()]), None);
+
+        // A pipe and a directory both have no value, and their keys differ,
+        // so a verdict cached over one does not answer for the other.
+        std::fs::create_dir(dir.join("sub")).expect("a directory");
+        let pipe = format!("{:?}", Revision::of_tree(&dir, &["pipe".to_owned()]));
+        let sub = format!("{:?}", Revision::of_tree(&dir, &["sub".to_owned()]));
+        assert_eq!(sub, "None", "a directory's key is unchanged");
+        assert_eq!(pipe, "NoRegularFile");
+        assert_ne!(
+            Revision::of_tree(&dir, &["pipe".to_owned()]),
+            Revision::of_tree(&dir, &["sub".to_owned()])
+        );
+        assert_eq!(
+            format!("{:?}", Revision::of_tree(&dir, &["gone".to_owned()])),
+            "None",
+            "an entry that went away keeps its key"
+        );
     }
 }

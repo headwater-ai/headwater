@@ -122,3 +122,52 @@ fn check_no_cache_finishes_when_a_governs_wildcard_matches_a_named_pipe() {
     assert!(!out.contains("revision"), "no revision finding: {out}");
     assert!(!err.contains("revision"), "no revision error: {err}");
 }
+
+/// A cached verdict over a directory literal does not survive the directory
+/// being replaced by a named pipe of the same name. Both get no digest, so a
+/// cache key that states only the digest names the two states alike, and a
+/// warm check would repeat the directory finding and its `/**` remedy about
+/// a path that is now a pipe. The warm run must say what a cold run says.
+#[test]
+fn a_cached_directory_verdict_does_not_outlive_the_directory_becoming_a_pipe() {
+    let root = Root::shaped("check-governed-dir-to-pipe", |at| {
+        std::fs::create_dir_all(at.join("tools/thing")).expect("the directory is made");
+        std::fs::write(
+            at.join("docs/decisions/0002-the-decision-that-governs-a-pipe.md"),
+            decision("tools/thing"),
+        )
+        .expect("the decision writes");
+    });
+    let (before, _) = under_deadline(
+        &root,
+        &["check"],
+        "check waited on the directory, which it cannot open as a pipe",
+    );
+    assert!(
+        before.contains("`tools/thing` names a directory"),
+        "the directory literal is reported first: {before}"
+    );
+
+    std::fs::remove_dir(root.at.join("tools/thing")).expect("the directory goes");
+    let fifo = std::process::Command::new("mkfifo")
+        .arg(root.at.join("tools/thing"))
+        .status()
+        .expect("mkfifo runs");
+    assert!(fifo.success(), "the named pipe is made");
+
+    let (warm, _) = under_deadline(
+        &root,
+        &["check"],
+        "a warm check opened the named pipe that replaced the directory",
+    );
+    let (cold, _) = under_deadline(
+        &root,
+        &["check", "--no-cache"],
+        "a cold check opened the named pipe that replaced the directory",
+    );
+    assert!(!cold.contains("tools/thing/**"), "{cold}");
+    assert!(
+        !warm.contains("tools/thing/**"),
+        "the cached directory verdict outlived the directory: {warm}"
+    );
+}
