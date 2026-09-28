@@ -400,3 +400,57 @@ fn an_export_this_binary_wrote_is_one_the_resolver_reads() {
     assert_eq!(unresolved(&ran), Vec::<String>::new(), "{ran:?}");
     assert_eq!(ran.code, Some(0), "{ran:?}");
 }
+
+/// Rewrite the consumer declaration of a scratch root, and assert the one
+/// substitution landed.
+fn declare(root: &Root, from: &str, to: &str) {
+    let declared = std::fs::read_to_string(root.at.join(".headwater/taxonomy.yml"))
+        .expect("the declaration reads");
+    assert_eq!(declared.matches(from).count(), 1, "{declared}");
+    root.write(".headwater/taxonomy.yml", &declared.replacen(from, to, 1));
+}
+
+/// Two pins that name one resolver are refused before any graph is built. A
+/// run that kept the first and skipped the second would bind an anchor in
+/// whichever export registered first, which is the silent answer spec 7
+/// forbids. `docs/interfaces/headwater-check.md` promises exit 1 for it.
+#[test]
+fn two_pins_that_name_one_resolver_refuse_the_run() {
+    let root = Root::new("one-name");
+    declare(
+        &root,
+        "    resolver: export-repo-b\n",
+        "    resolver: export-repo-a\n",
+    );
+    let ran = root.run(&["check", "--strict"]);
+    assert_eq!(ran.code, Some(1), "{ran:?}");
+    assert!(
+        ran.err.contains("the resolver set is ambiguous") && ran.err.contains("export-repo-a"),
+        "the refusal names the resolver two pins share: {ran:?}"
+    );
+    assert!(
+        !ran.out.contains("docs/solution/checkout.md"),
+        "no report was written over a graph built from half the pins: {ran:?}"
+    );
+}
+
+/// A `harvests` entry that does not read refuses the run and names the entry.
+/// Read as "no pins", every anchor into it would report a missing resolver
+/// rather than the declaration a person has to repair.
+#[test]
+fn a_harvests_entry_that_does_not_read_refuses_the_run() {
+    let root = Root::new("unreadable");
+    declare(&root, "    resolver: export-repo-b\n", "");
+    let ran = root.run(&["check", "--strict"]);
+    assert_eq!(ran.code, Some(1), "{ran:?}");
+    assert!(
+        ran.err
+            .contains("the pinned export declarations did not read")
+            && ran.err.contains("harvests.repo-b"),
+        "the refusal names the entry: {ran:?}"
+    );
+    assert!(
+        !ran.out.contains("docs/solution/checkout.md"),
+        "no report was written: {ran:?}"
+    );
+}
