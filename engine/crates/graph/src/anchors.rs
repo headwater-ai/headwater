@@ -112,7 +112,7 @@ pub enum Binding {
 /// before.
 ///
 /// [`SourceTree`] answers with [`tree_revision`], which reads and digests the
-/// bytes of every entry an anchor matched. Two readers want that value: the
+/// bytes of every regular file an anchor matched. Two readers want that value: the
 /// suspect rule and the cache key of `headwater check`, which read it for
 /// every edge, and `headwater route`, which reads it only for the governing
 /// edges of the anchors its task names. When every binding digested its bytes
@@ -128,8 +128,10 @@ pub enum Binding {
 /// pipe: it has no value, as a directory has none, but a rule reports the two
 /// differently, so its `Debug` is `NoRegularFile` rather than `None` and a
 /// verdict cached over a directory does not answer for a pipe that took its
-/// name (#1269). No key that `main` wrote before #1269 moves, because a check
-/// that met such an entry then never ended.
+/// name (#1269). Before #1269 a check that met a named pipe never ended, so
+/// no key over a pipe moves. A key over a socket or a device does move, from
+/// `None` or from the digest of what a read returned, and that is intended:
+/// the rule now decides differently about such an edge.
 #[derive(Clone)]
 pub struct Revision(std::sync::Arc<RevisionCell>);
 
@@ -505,10 +507,10 @@ impl Resolver for SourceTree {
 /// out this way, the value is `None` rather than the digest of an empty
 /// manifest, which would be a revision that can never change.
 ///
-/// `None` when any entry cannot be read as a file. That is a directory named
-/// by a literal, the one shape this corpus declares where it happens
-/// (`.headwater/packages`), and an entry that went away between the walk and
-/// the read. A directory gets no digest on purpose: which entries under it a
+/// `None` also when any entry is a directory, is gone, or is a regular file
+/// that cannot be read. A directory named by a literal is the one shape this
+/// corpus declares where it happens (`.headwater/packages`), and an entry that
+/// is gone went away between the walk and the read. A directory gets no digest on purpose: which entries under it a
 /// document governs is the pattern language's to state, and a literal with no
 /// wildcard names the directory and nothing under it
 /// ([HW-OBL-0104](../../../../docs/obligations/0104-a-governs-edge-reaches-the-path-it-names-and-nothing.md)).

@@ -194,8 +194,12 @@ impl EdgeCheck for Suspect<'_> {
     /// clock (#952). 3: a literal that names a directory is reported rather
     /// than passed, so a verdict cached at 2 over such an edge is stale. 4: a
     /// list with a directory member is reported rather than passed, so a
-    /// verdict cached at 3 over such an edge is stale (#1104).
-    const VERSION: u32 = 4;
+    /// verdict cached at 3 over such an edge is stale (#1104). 5: a literal
+    /// whose entry is neither a directory nor a regular file passes rather
+    /// than being reported as a directory, so a verdict cached at 4 over such
+    /// an edge, which only a socket or a device could have reached, is stale
+    /// (#1269).
+    const VERSION: u32 = 5;
     /// The fix is offered only on a document verified on or after the clock,
     /// so the clock is an input and has to be in the key.
     const NEEDS_CLOCK: bool = true;
