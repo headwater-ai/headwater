@@ -1847,10 +1847,11 @@ jobs:
         # what a contributor does when it fails, and the suite on the line
         # before it provokes each arm with a stub in place of the engine.
         #
-        # The stamp patch is offered only on a document whose `last_verified`
-        # is on or after `--now`, so this step reads the same injected clock
-        # as the steps above. It blocks: a refused patch exits 1, and so does
-        # any byte the run wrote.
+        # The stamp patch is offered only in a run with `--change`, on a
+        # document the change re-verified (#1259). This step passes no change,
+        # so no stamp is ever offered here and its answer does not move with
+        # `--now`. It blocks: a refused patch exits 1, and so does any byte the
+        # run wrote.
         run: |
           sh tools/repo/fix-fixed-point-fixtures.sh
           sh tools/repo/fix-fixed-point.sh ./engine/target/release/headwater --now "$HEADWATER_NOW"
