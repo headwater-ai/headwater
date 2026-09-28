@@ -1948,9 +1948,20 @@ fn a_repository_beyond_a_ceiling_directory_is_no_repository() {
         return;
     };
     let ceiling = ceiling.to_string_lossy().into_owned();
+    // The repository's own attributes outrank every `.gitattributes`, so git
+    // would answer `union` for the lock if it entered it. Name any directory
+    // but the outer one as the ceiling, and the exit status is 1.
     no_repository_above(
         label,
-        Outer::git_init,
+        |outer| {
+            outer.git_init();
+            std::fs::create_dir_all(outer.0.join(".git/info")).expect("the directory is made");
+            std::fs::write(
+                outer.0.join(".git/info/attributes"),
+                format!("tree/{LOCK} merge=union\n"),
+            )
+            .expect("the attributes write");
+        },
         &[("GIT_CEILING_DIRECTORIES", &ceiling)],
     );
 }
