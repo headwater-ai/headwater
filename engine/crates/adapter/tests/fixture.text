@@ -1,6 +1,6 @@
 taxonomy
   headwater/fixture 1.0.0
-  d44c67f1b404fedc5598bdde71da21d0346596e41e04481d62552b22ec237ce6
+  977174fa6836c059c7b09f19ccc6e2c822aecb8bca36872951b862d523d664ae
 
 clock
   2026-08-12
@@ -660,7 +660,7 @@ not reported
       false_positive, until 2030-01-01 (the length is the fixture)
 
 read set
-  lock d44c67f1b404fedc5598bdde71da21d0346596e41e04481d62552b22ec237ce6
+  lock 977174fa6836c059c7b09f19ccc6e2c822aecb8bca36872951b862d523d664ae
   clock 2026-08-12
   barrier identifier.claimed_twice
   barrier identifier.claim.missing

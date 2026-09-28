@@ -1,5 +1,5 @@
 taxonomy: headwater/standard
-version: 4.9.3
+version: 4.10.0
 purposes:
   rationale:
     intent: "explain why a choice was made and what it forecloses"
@@ -1132,8 +1132,8 @@ obligations:
     prevents: content.inconsistent
     severity: medium
   OB-REL-7:
-    statement: "No relation instance names the document that declares it as its target"
-    rationale: "No declared relation admits a self-edge. An edge from a document to itself asserts nothing, as a document that draws on, governs, constrains or traces to itself does, or it asserts a contradiction, as a document that supersedes itself or conflicts with itself does. The target resolved and both kinds are admitted, so no other rule reports it, and the graph keeps an edge whose two ends are one node"
+    statement: "No relation instance outside the association family names the document that declares it as its target"
+    rationale: "Spec 2 keeps self-reference invalid in every family except association. An edge from a document to itself asserts nothing, as a document that draws on, governs, constrains or traces to itself does, or it asserts a contradiction, as a document that supersedes itself does. The target resolved and both kinds are admitted, so no other rule reports it, and the graph keeps an edge whose two ends are one node"
     class: cohesion
     prevents: content.inconsistent
     severity: medium

@@ -1,6 +1,6 @@
 ## `headwater check`
 
-66 findings, 38 of them errors across 28 of 31 documents, against `headwater/fixture` 1.0.0 at `d44c67f1b404fedc5598bdde71da21d0346596e41e04481d62552b22ec237ce6`, evaluated at 2026-08-12.
+66 findings, 38 of them errors across 28 of 31 documents, against `headwater/fixture` 1.0.0 at `977174fa6836c059c7b09f19ccc6e2c822aecb8bca36872951b862d523d664ae`, evaluated at 2026-08-12.
 
 **Coverage.** This run saw 31 files and classified 29 of them, and left 1 to `headwater generate --check`, which holds a generated file to the bytes its emitter writes. It created 367 check instances, and 60 of them reached no verdict.
 

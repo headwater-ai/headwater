@@ -9,16 +9,19 @@
 //! document's kind at both ends, so [`crate::endpoint`] passed it too. The
 //! graph kept an edge whose two ends are one node.
 //!
-//! # Which relations may point at their own document: none
+//! # Which relations may point at their own document: association alone
 //!
-//! No declared relation admits a self-edge. For each relation the standard
-//! package and this repository's overlay declare, an edge from a document to
-//! itself asserts nothing (a document that draws on, governs, constrains,
-//! traces to or examines itself) or asserts a contradiction (a document that
-//! supersedes itself, or conflicts with itself). So the rule is generated from
-//! every declared relation, as [`crate::target`] is, and it names none of them.
-//! A relation that one day needs a self-edge gets a declared exemption then.
-//! No exemption flag exists now, because no relation would set it.
+//! [Spec 2](../../../../docs/spec/02-taxonomy-model.md#behavior-at-the-limits)
+//! rules it: "Self-reference stays invalid in every family except
+//! association." So the rule is generated from every declared relation whose
+//! family is not `association`, as [`crate::target`] is generated from every
+//! relation, and it names no relation. A relation in any other family, or in
+//! no declared family, that points at its own document asserts nothing (a
+//! document that draws on, governs, constrains or traces to itself) or asserts
+//! a contradiction (a document that supersedes itself). An association edge is
+//! exempt because the family is the one spec 2 lets cycle, and a relation of
+//! it has no instance here, so it is outside the denominator rather than a
+//! pass inside it.
 //!
 //! OB-REL-7 in the standard package is the obligation this rule discharges, and
 //! it states the same thing.
@@ -54,16 +57,24 @@ pub const RULE: &str = "relation.target.is_source";
 /// Recorded rather than panicked on, as in [`crate::target`].
 const NO_HALF: &str = "the entry carries no declared half";
 
+/// The one family spec 2 lets point at its own document.
+const EXEMPT_FAMILY: &str = "association";
+
 /// The check, generated from the relation declarations.
 pub struct SelfTarget<'a> {
-    /// Every declared relation, because none of them admits a self-edge.
+    /// Every declared relation outside the association family, because none of
+    /// them admits a self-edge.
     declared: Vec<&'a Relation>,
 }
 
 impl<'a> SelfTarget<'a> {
     pub fn over(declarations: &'a Declarations) -> Self {
         SelfTarget {
-            declared: declarations.relations.iter().collect(),
+            declared: declarations
+                .relations
+                .iter()
+                .filter(|relation| relation.family.as_deref() != Some(EXEMPT_FAMILY))
+                .collect(),
         }
     }
 }
@@ -108,7 +119,7 @@ impl EdgeCheck for SelfTarget<'_> {
                 edge.source.id, edge.name, edge.raw_target
             ),
             remediation: format!(
-                "name the document that `{}` actually means under `{}`, or delete the entry, because no declared relation may point at its own document",
+                "name the document that `{}` actually means under `{}`, or delete the entry, because only an association relation may point at its own document",
                 edge.source.id, edge.name
             ),
             // No fix: the author alone knows which document the entry meant,

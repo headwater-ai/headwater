@@ -1,6 +1,6 @@
 ## `headwater check`
 
-65 findings, 38 of them errors across 29 of 31 documents, against `headwater/fixture` 1.0.0 at `d44c67f1b404fedc5598bdde71da21d0346596e41e04481d62552b22ec237ce6`, evaluated at 2026-08-12.
+65 findings, 38 of them errors across 29 of 31 documents, against `headwater/fixture` 1.0.0 at `977174fa6836c059c7b09f19ccc6e2c822aecb8bca36872951b862d523d664ae`, evaluated at 2026-08-12.
 
 **Scoped to a change.** This run was told what one change carries, so the checks that read the version a document stood at before it could run at all. 10 documents were named: 2 that the change adds, 1 with a prior version this run read, and 3 whose prior version did not read, so every check that needed one was skipped over it. The findings above are over the whole corpus, as they are in a run that names no change.
 

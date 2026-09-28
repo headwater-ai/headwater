@@ -7,6 +7,9 @@
 #
 # The relation declares an inverse, so that a document can also write the
 # inverse half onto itself, and the rule has to read either half.
+#
+# `relates_to` is in the association family, the one family spec 2 lets point
+# at its own document, so a self-edge on it is no instance of the rule.
 
 facets:
   summary:
@@ -21,6 +24,11 @@ relations:
     from: [explanation]
     to:   [explanation]
     inverse: drawn_on_by
+    created_by: author
+  relates_to:
+    family: association
+    from: [explanation]
+    to:   [explanation]
     created_by: author
 
 kinds:

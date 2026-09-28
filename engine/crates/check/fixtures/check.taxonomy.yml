@@ -283,8 +283,8 @@ obligations:
     prevents: content.inconsistent
     severity: medium
   OB-FIX-28:
-    statement: No relation instance names the document that declares it as its target
-    rationale: An edge from a document to itself asserts nothing, or it asserts a contradiction, and no declared relation admits one
+    statement: No relation instance outside the association family names the document that declares it as its target
+    rationale: An edge from a document to itself asserts nothing, or it asserts a contradiction, and spec 2 lets only an association relation point at its own document
     class: cohesion
     prevents: content.inconsistent
     severity: medium

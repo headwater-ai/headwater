@@ -21,8 +21,13 @@
 //! time. It names itself by path, and a target is an identifier and never a
 //! path, so the entry binds to nothing and `relation.target.unresolved` owns it.
 //!
+//! **A rule that read "no relation" where spec 2 reads "no family except
+//! association"** reports `notes/e.md`, which relates to itself under an
+//! association relation.
+//!
 //! **A rule whose instances were its findings** reports a denominator of two.
-//! Every entry is an instance, so the count is four.
+//! Every entry outside the association family is an instance, so the count is
+//! four.
 
 use headwater_census::census;
 use headwater_census::shelves::Taxonomy;
@@ -143,6 +148,19 @@ fn a_self_path_that_binds_to_nothing_is_the_unresolved_rules_finding_alone() {
         at(&run, headwater_check::target::RULE, "notes/c.md").len(),
         1
     );
+}
+
+/// Spec 2 lets an association relation point at its own document, so that
+/// entry is no instance and no finding.
+#[test]
+fn an_association_relation_that_points_at_its_own_document_is_not_reported() {
+    let run = run();
+    assert!(at(&run, RULE, "notes/e.md").is_empty());
+    assert!(!run.instances.iter().any(|instance| instance.rule == RULE
+        && instance
+            .reads
+            .iter()
+            .any(|input| input.path == "self-target/notes/e.md")));
 }
 
 /// Every entry is an instance, whatever its verdict, so the rule's count is its
