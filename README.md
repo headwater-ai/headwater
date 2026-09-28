@@ -22,7 +22,7 @@ tar -xzf headwater-v0.4.0-x86_64-unknown-linux-musl.tar.gz -C ~/.local/bin headw
 
 Each archive has a `.sha256` file beside it on the release, which `sha256sum -c` reads, and `shasum -a 256 -c` on macOS. The archive holds the `headwater` binary and the license, and nothing else. It does not get you `taxonomy-source`, and the taxonomy paragraphs below say how to fetch it.
 
-**Install it with apt on Debian or Ubuntu.** Every engine release publishes the `headwater` package to a signed APT repository at `https://headwater.tools/apt`. It is for `amd64` only, and it installs on Debian 11 or later and Ubuntu 20.04 or later. After that, `apt upgrade` brings each new release. The block installs `ca-certificates` and `curl` first, because a minimal image has neither. It runs each command with `sudo`, so where you are already root and have no `sudo`, as in a container, remove `sudo` from each line.
+**Install it with apt on Debian or Ubuntu.** From `v0.4.1`, every engine release publishes the `headwater` package to a signed APT repository at `https://headwater.tools/apt`. It is for `amd64` only, and it installs on Debian 11 or later and Ubuntu 20.04 or later. After that, `apt upgrade` brings each new release. The block installs `ca-certificates` and `curl` first, because a minimal image has neither. It runs each command with `sudo`, so where you are already root and have no `sudo`, as in a container, remove `sudo` from each line.
 
 ```
 sudo apt-get update
@@ -35,7 +35,7 @@ sudo apt-get install -y headwater
 headwater --version
 ```
 
-The package installs the same static binary as the Linux archive above, at `/usr/bin/headwater`. It also holds the license and the shell completions for bash, zsh and fish, and it carries no taxonomy.
+The package installs the static Linux binary of the newest release at `/usr/bin/headwater`. It also holds the license and the shell completions for bash, zsh and fish, and it carries no taxonomy.
 
 **The alternative, if you already have a Rust toolchain.** Every workspace crate is on crates.io, published in dependency order by `.github/workflows/publish-crates.yml`.
 
