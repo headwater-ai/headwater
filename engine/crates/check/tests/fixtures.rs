@@ -151,6 +151,7 @@ fn run_scanning(
             config: &config,
             register: &register,
             observations: &headwater_check::Observations::empty(),
+            pin: None,
             adoption,
             source,
         },

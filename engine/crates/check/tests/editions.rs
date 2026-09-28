@@ -280,6 +280,7 @@ fn run(recorded: &Recorded) -> Run {
             config: &config,
             register: &register,
             observations: &recorded.observations,
+            pin: None,
             adoption: None,
             source: &source,
         },

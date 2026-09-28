@@ -353,6 +353,10 @@ fn publish_plain_from(root: &Path, source: &Path, out: &Path) -> (Option<i32>, S
 /// bytes under.
 const PIN_RULE: &str = "taxonomy.pin.diverged";
 
+/// What its finding says, which the report prints only when the rule fires:
+/// the rule id alone is also in the list of rules every run prints.
+const PIN_FINDING: &str = "does not hash to it";
+
 fn consumer_run(root: &Path, arguments: &[&str]) -> (Option<i32>, String, String) {
     let output = Command::new(env!("CARGO_BIN_EXE_headwater"))
         .args(arguments)
@@ -911,13 +915,40 @@ fn a_pin_that_no_longer_names_the_installed_bytes_fails_check_validate_and_confo
         Some(0),
         "the freshly vendored tree fails `check --strict`: {stdout}\n{stderr}"
     );
-    assert!(!stdout.contains(PIN_RULE), "{stdout}");
+    assert!(!stdout.contains(PIN_FINDING), "{stdout}");
     let (code, _stdout, stderr) = consumer_run(&consumer, &["taxonomy", "validate"]);
     assert_eq!(
         code,
         Some(0),
         "the freshly vendored tree fails `validate`: {stderr}"
     );
+    // The read set of the clean run carries the pin and every vendored member,
+    // so a gate over a later tree sees either move. Over the same tree it
+    // carries.
+    let read_set = root.path().join("clean.readset");
+    let read_set = read_set.to_str().expect("the read set path is UTF-8");
+    let (code, _stdout, stderr) = consumer_run(&consumer, &["check", "--read-set", read_set]);
+    assert_eq!(code, Some(0), "{stderr}");
+    let recorded = std::fs::read_to_string(read_set).expect("the read set reads");
+    for needle in [
+        ".headwater/taxonomy.yml",
+        ".headwater/packages/headwater-starter/doctrine/starter/starter.md",
+    ] {
+        assert!(
+            recorded.contains(needle),
+            "the read set does not list `{needle}`: {recorded}"
+        );
+    }
+    // The gate never carries this verdict, because six corpus-grained rules
+    // are barriers, so what it names as moved is the assertion and its exit
+    // status is not.
+    let (_code, stdout, _stderr) = consumer_run(&consumer, &["gate", "--read-set", read_set]);
+    for moved in [".headwater/taxonomy.yml", "starter.md"] {
+        assert!(
+            !stdout.contains(moved),
+            "the gate names `{moved}` over the tree the read set was taken from: {stdout}"
+        );
+    }
 
     // ---- Arm one: the pin moved and the bytes did not. ------------------
     //
@@ -956,7 +987,7 @@ fn a_pin_that_no_longer_names_the_installed_bytes_fails_check_validate_and_confo
         Some(1),
         "a stale pin passed `check --strict`: {stdout}\n{stderr}"
     );
-    for needle in [PIN_RULE, stale, release.digest.as_str()] {
+    for needle in [PIN_RULE, PIN_FINDING, stale, release.digest.as_str()] {
         assert!(
             stdout.contains(needle),
             "`check` does not say `{needle}`: {stdout}"
@@ -964,6 +995,11 @@ fn a_pin_that_no_longer_names_the_installed_bytes_fails_check_validate_and_confo
     }
     let (code, _stdout, stderr) = consumer_run(&consumer, &["taxonomy", "validate"]);
     assert_eq!(code, Some(1), "a stale pin passed `validate`: {stderr}");
+    let (_code, stdout, _stderr) = consumer_run(&consumer, &["gate", "--read-set", read_set]);
+    assert!(
+        stdout.contains(".headwater/taxonomy.yml"),
+        "the gate does not name the moved pin: {stdout}"
+    );
     for needle in [stale, release.digest.as_str()] {
         assert!(
             stderr.contains(needle),
@@ -1002,6 +1038,7 @@ fn a_pin_that_no_longer_names_the_installed_bytes_fails_check_validate_and_confo
     );
     for needle in [
         PIN_RULE,
+        PIN_FINDING,
         release.digest.as_str(),
         "doctrine/starter/starter.md",
     ] {
@@ -1011,8 +1048,10 @@ fn a_pin_that_no_longer_names_the_installed_bytes_fails_check_validate_and_confo
         );
     }
     let computed = headwater_resolve::release::digest_of(
-        &headwater_resolve::release::members(&consumer.join(".headwater/packages/headwater-starter"))
-            .expect("the installed members read"),
+        &headwater_resolve::release::members(
+            &consumer.join(".headwater/packages/headwater-starter"),
+        )
+        .expect("the installed members read"),
     );
     assert_ne!(computed, release.digest, "the hand edit moved no byte");
     assert!(
@@ -1020,7 +1059,16 @@ fn a_pin_that_no_longer_names_the_installed_bytes_fails_check_validate_and_confo
         "`check` does not name the digest it computed, `{computed}`: {stdout}"
     );
     let (code, _stdout, stderr) = consumer_run(&consumer, &["taxonomy", "validate"]);
-    assert_eq!(code, Some(1), "an edited member passed `validate`: {stderr}");
+    assert_eq!(
+        code,
+        Some(1),
+        "an edited member passed `validate`: {stderr}"
+    );
+    let (_code, stdout, _stderr) = consumer_run(&consumer, &["gate", "--read-set", read_set]);
+    assert!(
+        stdout.contains("doctrine/starter/starter.md"),
+        "the gate does not name the member that moved: {stdout}"
+    );
     for needle in [
         release.digest.as_str(),
         computed.as_str(),

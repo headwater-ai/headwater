@@ -164,6 +164,7 @@ pub mod outside_root;
 pub mod paint;
 pub mod participation;
 pub mod patch;
+pub mod pin;
 pub mod placement;
 pub mod promotion;
 pub mod readset;
@@ -213,7 +214,7 @@ use headwater_graph::{Declarations, Graph};
 /// The rules this runner carries, in the order a report lists them.
 ///
 /// Twenty-six are generated from the taxonomy, three read no declaration, one
-/// is the coverage guarantee itself, and the last three are about the taxonomy
+/// is the coverage guarantee itself, and the last four are about the taxonomy
 /// rather than about the corpus. A rule that is generated has no entry of its
 /// own anywhere: the list is the *templates*, and the instance count is what a
 /// taxonomy decides.
@@ -221,7 +222,7 @@ use headwater_graph::{Declarations, Graph};
 /// The order is the five origins of
 /// [spec 12](../../../../docs/spec/12-check-layer.md#the-five-origins-of-a-check),
 /// which is Shape, then Graph, then the runner's own accounting.
-pub const RULES: [&str; 40] = [
+pub const RULES: [&str; 41] = [
     facet_required::RULE,
     facet_value::RULE,
     facet_blank::RULE,
@@ -261,6 +262,7 @@ pub const RULES: [&str; 40] = [
     register::OBSERVATION,
     adoption::RULE,
     outside_root::RULE,
+    pin::RULE,
     verification::RULE,
 ];
 
@@ -308,6 +310,13 @@ pub struct Declared<'a> {
     /// terms [`crate::claim::Claims`] already reads `.headwater/ids/` by: see
     /// [`observation`].
     pub observations: &'a Observations,
+    /// The digest pin `.headwater/taxonomy.yml` declares, held against the
+    /// vendored package's bytes, and `None` where the caller took no reading.
+    ///
+    /// Read off the tree beside the corpus on the terms [`Self::observations`]
+    /// is, and never out of the lock: the vendored bytes are hashed and no
+    /// declaration is taken from them. See [`pin`].
+    pub pin: Option<&'a pin::Pin>,
     /// The `adoption` block of the lock, where the lock declares one.
     ///
     /// It arrives as a mapping rather than as tasks because the lock does not
@@ -624,6 +633,7 @@ fn registry() -> [(&'static str, Scope, u32, scope::ExportTargets); RULES.len()]
             outside_root::VERSION,
             outside_root::EXPORTABLE_AS,
         ),
+        (pin::RULE, pin::SCOPE, pin::VERSION, pin::EXPORTABLE_AS),
         (
             verification::RULE,
             scope::edge_scope::<verification::Verified<'_>>(),
@@ -1004,6 +1014,9 @@ pub fn run(
     // nothing, as an error, for the reason adoption's enters here: it is about
     // the taxonomy read against the tree, and it creates no instance.
     findings.extend(outside_root::findings(census, declared.source));
+    // A digest pin the vendored bytes no longer hash to, as an error, for the
+    // same reason: it is about the taxonomy's pin read against the tree.
+    findings.extend(pin::findings(declared.pin));
 
     // The obligation is stamped here rather than written into each rule,
     // because the binding is data. A rule states its id, a control names that
@@ -1080,6 +1093,17 @@ pub fn run(
             read_set
                 .inputs
                 .insert(at, Input::new(observation::PATH, digest));
+        }
+    }
+    // The pin and every vendored member `pin::findings` hashed, on the same
+    // terms: they belong to no instance, and a gate over a later tree has to
+    // see a hand edit to either.
+    for input in declared.pin.map(pin::Pin::inputs).unwrap_or_default() {
+        if let Err(at) = read_set
+            .inputs
+            .binary_search_by(|known| known.path.as_str().cmp(input.path.as_str()))
+        {
+            read_set.inputs.insert(at, input);
         }
     }
 

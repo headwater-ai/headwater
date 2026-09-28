@@ -162,6 +162,7 @@ impl Built {
             config: &self.config,
             register: &self.register,
             observations: &self.observations,
+            pin: None,
             adoption: None,
             source: "query.taxonomy.yml",
         }

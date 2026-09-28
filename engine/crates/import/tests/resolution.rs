@@ -185,6 +185,7 @@ fn the_check_layer_reports_no_unresolved_target_over_an_imported_edge() {
             config: &read.config,
             register: &register,
             observations: &headwater_check::Observations::empty(),
+            pin: None,
             adoption: None,
             source: "taxonomy.yml",
         },
