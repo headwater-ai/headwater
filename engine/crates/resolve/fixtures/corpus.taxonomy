@@ -153,11 +153,13 @@ facets:
   tier:
     guidance:
       campaign: "both arms, powered, one batch and one model version, for one named claim"
+      documentation: "both arms like a campaign, and the absent arm also removes `docs/`, for the claim that the documents change what an agent does"
       regression: "a fixed scenario set in one arm against a recorded baseline, which establishes no effect"
     required: false
     values:
       - regression
       - campaign
+      - documentation
     volatility: stable
   verification_method:
     guidance:

@@ -140,13 +140,17 @@ add:
       answered: the final answer is one named value from the closed set this probe declares
       patched: a produced patch passes the check this probe names
 
+  # The tiers `.headwater/probe.yml` declares. `documentation` joined the engine
+  # and that file with #1010 and not this set, so no transcript of it could be
+  # written until #980's dry run met the refusal.
   facets.tier:
-    values: [regression, campaign]
+    values: [regression, campaign, documentation]
     required: false
     volatility: stable
     guidance:
       regression: a fixed scenario set in one arm against a recorded baseline, which establishes no effect
       campaign: both arms, powered, one batch and one model version, for one named claim
+      documentation: both arms like a campaign, and the absent arm also removes `docs/`, for the claim that the documents change what an agent does
 
   facets.arm:
     values: [present, absent]

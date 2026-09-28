@@ -22,7 +22,7 @@
 
 lock:
   format: 3
-  digest: sha256:2b6b6b6c2139e1b74109c02a56dad05d2ab2042d125048db909484ade3a847e4
+  digest: sha256:62144f6124525b73c49768d80ccdc41d7324fff0b39836367db4db85aa502cb8
   rules: 2
   package: headwater/standard
   version: 4.9.1
@@ -36,7 +36,7 @@ lock:
     - path: .headwater/packages/headwater-standard/bundles/decision-record/bundle.yml
       digest: sha256:d2e1dd60f5adf97dcefd3aa46b0f377ed5e7eca533f82fad8a3d90224f79673f
     - path: .headwater/overlay.yml
-      digest: sha256:141988aa1ac0c0e8da66278110eecedb172e76b8320163834aa604d29478d141
+      digest: sha256:6fc0e4a3fdba71378fc5b444e66d502452140e497154af5e9eac88514a81aba1
 
 # The adoption payload: the debt this corpus declared when the taxonomy first
 # reached it. Every other line of this file is generated and this block is not.
@@ -216,11 +216,13 @@ resolved:
     tier:
       guidance:
         campaign: "both arms, powered, one batch and one model version, for one named claim"
+        documentation: "both arms like a campaign, and the absent arm also removes `docs/`, for the claim that the documents change what an agent does"
         regression: "a fixed scenario set in one arm against a recorded baseline, which establishes no effect"
       required: false
       values:
         - regression
         - campaign
+        - documentation
       volatility: stable
     verification_method:
       guidance:
