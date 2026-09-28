@@ -378,7 +378,7 @@
     {
       "rule": "relation.target.is_source",
       "scope": "edge",
-      "version": 1,
+      "version": 2,
       "obligations": [
         "OB-FIX-29"
       ]
