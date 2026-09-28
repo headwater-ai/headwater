@@ -30,6 +30,8 @@
 //! tree level, and no driver is called. The census target measures that, and the
 //! contract of `headwater merge-driver` states the gap.
 
+mod common;
+use common::{clean_base, outside_base};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
 
@@ -79,56 +81,6 @@ impl Drop for Scratch {
     fn drop(&mut self) {
         remove_all(&self.0);
     }
-}
-
-/// A directory for a tree outside every git repository, or `None`, with one
-/// line on standard error, when no candidate is one.
-///
-/// `std::env::temp_dir()` follows `TMPDIR`, and a `TMPDIR` inside a git work
-/// tree puts that work tree above every scratch tree, so git finds it (#1192).
-/// A case does not set `GIT_CEILING_DIRECTORIES` for the process instead,
-/// because cargo shares the process environment between the cases of one
-/// target, and the census and `headwater-vcs` suites take the same base.
-fn outside_base() -> Option<PathBuf> {
-    let mut candidates = vec![std::env::temp_dir()];
-    if cfg!(unix) {
-        candidates.extend(["/tmp", "/var/tmp", "/dev/shm"].map(PathBuf::from));
-    }
-    clean_base(&candidates)
-        .map_err(|refused| eprintln!("skipped, no scratch base outside git: {refused}"))
-        .ok()
-}
-
-/// The first of `candidates` that is a directory with no `.git` entry in it
-/// or in any directory above it, canonical, or every refusal in one line.
-fn clean_base(candidates: &[PathBuf]) -> Result<PathBuf, String> {
-    let mut refused = Vec::new();
-    for candidate in candidates {
-        let at = match candidate.canonicalize() {
-            Ok(at) if at.is_dir() => at,
-            Ok(_) => {
-                refused.push(format!("{} is not a directory", candidate.display()));
-                continue;
-            }
-            Err(error) => {
-                refused.push(format!("{}: {error}", candidate.display()));
-                continue;
-            }
-        };
-        match at
-            .ancestors()
-            .map(|dir| dir.join(".git"))
-            .find(|git| git.exists())
-        {
-            Some(git) => refused.push(format!(
-                "{} is below {}",
-                candidate.display(),
-                git.display()
-            )),
-            None => return Ok(at),
-        }
-    }
-    Err(refused.join("; "))
 }
 
 /// The scratch base is the first candidate with no `.git` entry above it.

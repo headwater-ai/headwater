@@ -27,6 +27,62 @@ pub(crate) fn repository() -> PathBuf {
         .expect("the repository root resolves")
 }
 
+/// A directory for a tree outside every git repository, or `None`, with one
+/// line on standard error, when no candidate is one.
+///
+/// `std::env::temp_dir()` follows `TMPDIR`, and a `TMPDIR` inside a git work
+/// tree puts that work tree above every scratch tree, so git finds it (#1192).
+/// A case does not set `GIT_CEILING_DIRECTORIES` for the process instead,
+/// because cargo shares the process environment between the cases of one
+/// target, and the census and `headwater-vcs` suites take the same base.
+pub(crate) fn outside_base() -> Option<PathBuf> {
+    clean_base(&base_candidates())
+        .map_err(|refused| eprintln!("skipped, no scratch base outside git: {refused}"))
+        .ok()
+}
+
+/// The first of `candidates` that is a directory with no `.git` entry in it
+/// or in any directory above it, canonical, or every refusal in one line.
+pub(crate) fn clean_base(candidates: &[PathBuf]) -> Result<PathBuf, String> {
+    let mut refused = Vec::new();
+    for candidate in candidates {
+        let at = match candidate.canonicalize() {
+            Ok(at) if at.is_dir() => at,
+            Ok(_) => {
+                refused.push(format!("{} is not a directory", candidate.display()));
+                continue;
+            }
+            Err(error) => {
+                refused.push(format!("{}: {error}", candidate.display()));
+                continue;
+            }
+        };
+        match at
+            .ancestors()
+            .map(|dir| dir.join(".git"))
+            .find(|git| git.exists())
+        {
+            Some(git) => refused.push(format!(
+                "{} is below {}",
+                candidate.display(),
+                git.display()
+            )),
+            None => return Ok(at),
+        }
+    }
+    Err(refused.join("; "))
+}
+
+/// `std::env::temp_dir()`, then on unix the three directories a host keeps
+/// for scratch files, in the order [`outside_base`] tries them.
+fn base_candidates() -> Vec<PathBuf> {
+    let mut candidates = vec![std::env::temp_dir()];
+    if cfg!(unix) {
+        candidates.extend(["/tmp", "/var/tmp", "/dev/shm"].map(PathBuf::from));
+    }
+    candidates
+}
+
 /// A repository root that removes itself.
 ///
 /// `label` names the test and not the case. Cargo runs the cases of one target
@@ -79,8 +135,11 @@ impl Root {
     }
 
     pub(crate) fn shaped(label: &str, prepare: impl FnOnce(&Path)) -> Root {
-        let at =
-            std::env::temp_dir().join(format!("headwater-cli-root-{}-{label}", std::process::id()));
+        // Under a directory outside every git repository where one is found,
+        // so a case that reads the root before `git init` reads no repository
+        // above it. Where none is, such a case returns before it calls this.
+        let base = clean_base(&base_candidates()).unwrap_or_else(|_| std::env::temp_dir());
+        let at = base.join(format!("headwater-cli-root-{}-{label}", std::process::id()));
         let _ = std::fs::remove_dir_all(&at);
         std::fs::create_dir_all(&at).expect("the root is made");
 

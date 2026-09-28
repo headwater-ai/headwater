@@ -162,6 +162,10 @@ fn a_path_on_the_tree_as_written_is_never_read_as_a_shorter_one() {
 /// names it, so the case cannot pass on a path the scope never admitted.
 #[test]
 fn a_path_git_ignores_is_not_named_as_ungoverned() {
+    // The first run reads the root with no repository above it (#1192).
+    if common::outside_base().is_none() {
+        return;
+    }
     let root = root("route-ignored");
     let path = "tools/__pycache__/stub.cpython-312.pyc";
     let cache = root.at.join(path);
