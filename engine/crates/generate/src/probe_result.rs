@@ -418,7 +418,9 @@ impl Comparison {
         let arm = |path: &str, rate: &Option<Interval>, graded: usize, refused: usize| {
             let rate = match rate {
                 Some(rate) => format!(
-                    "{} of {graded} graded sessions, 95% interval {} to {}",
+                    "{} of {graded} graded sessions satisfied their expectation, {}, in a 95% \
+                     interval of {} to {}",
+                    (rate.point * graded as f64).round() as usize,
                     percent(rate.point),
                     percent(rate.low),
                     percent(rate.high)
