@@ -82,6 +82,7 @@ fn run_over(root: &Path) -> Run {
             config: &config,
             register: &register,
             observations: &observations,
+            pin: None,
             adoption: None,
             source: "engine/crates/check/tests/observation_read_set.rs",
         },

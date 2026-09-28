@@ -112,6 +112,7 @@ fn run() -> Run {
             config: &config,
             register: &register,
             observations: &headwater_check::Observations::empty(),
+            pin: None,
             adoption: None,
             source: "engine/crates/check/fixtures/evidence-basis.taxonomy.yml",
         },

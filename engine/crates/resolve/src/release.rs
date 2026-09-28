@@ -635,6 +635,123 @@ pub fn verify(dir: &Path, pinned: &str) -> Result<Release, ReleaseError> {
     Ok(release)
 }
 
+/// What the vendored bytes of a pinned package are, and how they differ from
+/// the pin where they do.
+///
+/// [`pinned`] returns it. `members` is what the walk read, so a caller that
+/// has to list the bytes it read (a check's read set) does not hash the
+/// directory a second time.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Pinned {
+    /// Every file under the package directory except the record, sorted by
+    /// path, and empty where no directory was found or the walk failed.
+    pub members: Vec<Member>,
+    /// `None` where the digest over [`Pinned::members`] is the pin.
+    pub drift: Option<PinDrift>,
+}
+
+/// A pinned digest that the bytes on disk no longer hash to.
+///
+/// The one comparison `headwater check` and `headwater taxonomy validate` make
+/// on every run, and the one `vendor` makes once at install time. It is over
+/// the members on disk and never over the digest a record declares, so a pin
+/// edited by hand and a vendored file edited by hand both arrive here.
+///
+/// It authenticates the pin and never the publisher
+/// ([HW-OBL-0115](../../../../docs/obligations/0115-a-pinned-digest-authenticates-the-pin-and-never-the-publisher.md)):
+/// it says the bytes are not the ones the pin names, and nothing about who
+/// wrote either.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PinDrift {
+    /// The digest the consumer pinned, as written.
+    pub pinned: String,
+    /// The digest over the members on disk, and `None` where none could be
+    /// computed.
+    pub computed: Option<String>,
+    /// Why no digest was computed, where none was.
+    pub why: Option<String>,
+    /// Each member that differs from the release record beside it, where a
+    /// record is there to compare with. Empty when the record is absent or
+    /// agrees, which is the shape of a pin that moved while the bytes did not.
+    pub moved: Vec<Divergence>,
+}
+
+impl std::fmt::Display for PinDrift {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match &self.computed {
+            Some(computed) => write!(
+                f,
+                "the pin is {} and the vendored bytes hash to {computed}",
+                self.pinned
+            )?,
+            None => write!(
+                f,
+                "the pin is {} and no digest of the vendored bytes was computed: {}",
+                self.pinned,
+                self.why.as_deref().unwrap_or("no reason was given")
+            )?,
+        }
+        if !self.moved.is_empty() {
+            write!(
+                f,
+                ". Against the release record beside them, {} member{} moved:",
+                self.moved.len(),
+                if self.moved.len() == 1 { "" } else { "s" }
+            )?;
+            for entry in &self.moved {
+                write!(f, "\n  {entry}")?;
+            }
+        }
+        Ok(())
+    }
+}
+
+/// Hold a package directory's bytes to the digest a consumer pinned.
+///
+/// `dir` is `None` where no package directory was found, and that is drift
+/// with no computed digest: a pin that names bytes nobody vendored is not met.
+/// The digest is [`digest_of`] over [`members`], which is the number
+/// `taxonomy publish` printed for the same bytes. The record, where there is
+/// one, only names the members that moved.
+pub fn pinned(dir: Option<&Path>, pinned: &str) -> Pinned {
+    let absent = |why: String| Pinned {
+        members: Vec::new(),
+        drift: Some(PinDrift {
+            pinned: pinned.to_string(),
+            computed: None,
+            why: Some(why),
+            moved: Vec::new(),
+        }),
+    };
+    let Some(dir) = dir else {
+        return absent("no package directory declares the pinned package".to_string());
+    };
+    let members = match members(dir) {
+        Ok(members) => members,
+        Err(error) => return absent(error.to_string()),
+    };
+    let computed = digest_of(&members);
+    if computed == pinned {
+        return Pinned {
+            members,
+            drift: None,
+        };
+    }
+    let moved = at(dir)
+        .ok()
+        .and_then(|record| diverged(dir, &record).ok())
+        .unwrap_or_default();
+    Pinned {
+        members,
+        drift: Some(PinDrift {
+            pinned: pinned.to_string(),
+            computed: Some(computed),
+            why: None,
+            moved,
+        }),
+    }
+}
+
 /// Whether this engine is inside the range a package declares.
 ///
 /// A package that declares no range is taken, and the absence is what

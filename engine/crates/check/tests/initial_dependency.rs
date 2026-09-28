@@ -81,6 +81,7 @@ fn run_over(tree: &str) -> Run {
             config: &config,
             register: &register,
             observations: &headwater_check::Observations::empty(),
+            pin: None,
             adoption: None,
             source: &source,
         },
