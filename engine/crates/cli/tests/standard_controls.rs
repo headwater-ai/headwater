@@ -1,22 +1,25 @@
 // SPDX-License-Identifier: Apache-2.0
-//! Each lifecycle rule reaches one obligation of `headwater/standard` (#1212).
+//! Six lifecycle rules each reach one obligation of `headwater/standard` (#1212).
 //!
 //! A rule reaches an obligation only through a control of the package that
 //! names it, and nothing tied a new rule to its control. So
 //! `lifecycle.state.not_set_by_edge` landed with #1198 and reached no
 //! obligation, and only a reader of the printed register saw it. This target
 //! copies the maintained package into a root, runs `headwater check` over it
-//! and reads the register block, so a lifecycle rule that loses its control,
-//! or arrives without one, fails here and names itself.
+//! and reads the register block, so a lifecycle rule that loses its control
+//! fails here and names itself. A new lifecycle rule is held here only once
+//! somebody adds its row.
 //!
-//! The table holds the lifecycle rules alone. Other rules the engine carries
-//! reach no obligation over this repository too (HW-OBL-0170), and a total
-//! assertion would be red on them for a reason that is not this one.
+//! The table holds six of the seven lifecycle rules the engine carries, and
+//! no rule of another family. `lifecycle.state.set_twice` came with #1198 as
+//! well and still reaches no obligation. Other rules reach none over this
+//! repository too (HW-OBL-0170). A row for any of them would be red for a
+//! reason that is not this issue's, so each gets its row with its control.
 
 mod common;
 use common::Root;
 
-/// Every rule of the lifecycle family the engine carries.
+/// The lifecycle rules that a control of the package names, one row each.
 const LIFECYCLE: [&str; 6] = [
     "lifecycle.transition.not_permitted",
     "lifecycle.state.not_admitted",
