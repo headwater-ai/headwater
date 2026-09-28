@@ -92,6 +92,19 @@ public final class Client {
         }
     }
 
+    /** How the plugin names one pointer: its path, and its name when it has one. */
+    public static String label(Pointer pointer) {
+        return pointer.name() == null ? pointer.path() : pointer.path() + " (" + pointer.name() + ")";
+    }
+
+    /**
+     * The line the plugin shows under a route answer when the budget held
+     * pointers back, or null when it held none back and there is nothing to say.
+     */
+    public static String withheldNote(Answer answer) {
+        return answer.withheld() > 0 ? answer.withheld() + " more withheld by the budget" : null;
+    }
+
     /** The documents that govern the task the user typed, and the count withheld. */
     public static Answer route(String task, Options options) {
         return ask("route", Map.of("task", String.valueOf(task)), options);

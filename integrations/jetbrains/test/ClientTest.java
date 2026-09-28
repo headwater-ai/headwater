@@ -197,6 +197,15 @@ public class ClientTest {
             equal(Client.route("x", fake("route-pointers.jsonl").options()).withheld(), 196);
             equal(Client.route("x", fake("route-paren-path.jsonl").options()).withheld(), 0);
             equal(Client.ask("governing_docs_for_path", Map.of("path", "src/my module.rs"), fake("governing-spaced-path.jsonl").options()).withheld(), 0);
+            // What the plugin prints under the list: a count above zero, and nothing at zero.
+            equal(Client.withheldNote(withheld), "210 more withheld by the budget");
+            equal(Client.withheldNote(new Answer(withheld.pointers(), 1)), "1 more withheld by the budget");
+            equal(Client.withheldNote(new Answer(withheld.pointers(), 0)), null);
+        });
+
+        test("a pointer is named by its path, and by its name when it has one", () -> {
+            equal(Client.label(new Pointer("docs/a (b).md", "decision", null, "A (b)", null, null, null)), "docs/a (b).md (A (b))");
+            equal(Client.label(new Pointer("docs/a.md", null, null, null, null, "s", null)), "docs/a.md");
         });
 
         test("a path that holds \" (\", a name with spaces and a summary past 80 columns read back exactly", () -> {
