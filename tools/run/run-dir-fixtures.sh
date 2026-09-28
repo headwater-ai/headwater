@@ -368,6 +368,15 @@ sh "$tool" withdraw prose '| ' 'x' 2>"$scratch/err"; status=$?
 same 'withdraw refuses a match that two lines hold, and writes nothing' "1 - #1 | build | a finding" \
     "$status $(sed -n 1p "$prose/intake.md")"
 
+printf '## Parent\n\n- a lesson on two lines\n' > "$scratch/lesson"
+before=$(wc -l < "$prose/lessons.md" | tr -d ' ')
+same 'lesson takes a bare run id, appends a file of prose to lessons.md, and says how many lines' \
+    "LESSON: 3 lines appended $((before + 3))" \
+    "$(sh "$tool" lesson prose "$scratch/lesson") $(wc -l < "$prose/lessons.md" | tr -d ' ')"
+: > "$scratch/empty"
+sh "$tool" lesson prose "$scratch/empty" 2>"$scratch/err"; status=$?
+same 'lesson refuses an empty file' 1 "$status"
+
 sh "$tool" decide no-such-run 'x' 2>"$scratch/err"; status=$?
 same 'a bare id that names no run is refused' 1 "$status"
 

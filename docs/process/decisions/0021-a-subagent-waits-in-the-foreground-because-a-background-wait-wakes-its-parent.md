@@ -14,11 +14,11 @@ provenance:
 relations:
   governs:
     - to: .claude/hooks/wait.sh
-      verified_revision: sha256:2ec8d919a2aa283671e531f652b45f8133f0eaaaaa4af2820bb6f90c300adcf5
+      verified_revision: sha256:354ec3c06eea4fc09c441ce278bd3f8df50dee14d5cd7194c3769b0ab52a0e28
     - to: tools/run/wait-for.sh
-      verified_revision: sha256:74f6f5ffebcbe1f24811e128f68c4f925449123c0270573fb447fe51d1eec80f
+      verified_revision: sha256:d1e99759d7f8c50c387018ac8837f7005aee28c999952a29be977e3392bf2e3e
     - to: .claude/skills/hw-run-policy/SKILL.md
-      verified_revision: sha256:ec55dbc52de768c6a0327e46cf0ded11a75971576152fef8b872db101ca5a638
+      verified_revision: sha256:3a0069970919d15b448ee5846ef83d05670d0d1507a3c69a7d9696b0534e1513
 ---
 
 # A subagent waits in the foreground, because a background wait wakes its parent
@@ -41,12 +41,12 @@ The four-minute cap of HW-PD-0007 does not change. Each foreground attempt retur
 
 ## Consequences
 
-`hw-run-policy`, `hw-build`, `hw-verify` and `hw-integrate` state the foreground form. These three stages are the agents that run `wait-for.sh`.
+`hw-run-policy`, `hw-build`, `hw-verify` and `hw-integrate` state the foreground form. These three stages are the agents that run `wait-for.sh`. `.claude/hooks/wait.sh` refuses a wait started with `run_in_background: true`, and it refuses a foreground `wait-for.sh` whose Bash `timeout` is under `300000`. Its refusal text and its header state this cost. The header of `tools/run/wait-for.sh` states the same, and the script bounds each run of the condition by the time left under its cap.
 
-`hw-iterate` ([HW-PD-0022](0022-the-verify-and-rework-loop-for-one-issue-runs-below-the-parent.md)) runs no `wait-for.sh`. It waits on a live child agent, the builder or a verifier, and it waits by ending its turn. This decision does not apply to that wait. A wait on a child agent is not a background shell wait, and the completion of the child wakes `hw-iterate` one time. The builder and the verifier below `hw-iterate` still wait in the foreground, so that they do not wake `hw-iterate` at each re-issue. A fresh builder that `hw-iterate` dispatches from a handover file waits in the same way.
+`hw-iterate` ([HW-PD-0022](0022-the-verify-and-rework-loop-for-one-issue-runs-below-the-parent.md)) runs no `wait-for.sh`. It waits on a live child agent, the builder or a verifier, and it waits by ending its turn. This decision does not rule on that wait. Nobody has measured whether `hw-iterate`, when it ends its turn with a live child, wakes the parent. [HW-PD-0022](0022-the-verify-and-rework-loop-for-one-issue-runs-below-the-parent.md) asserts that it does not. The measurement above points the other way for a background shell wait, and it is the only measurement of an ended turn below the parent. The builder and the verifier below `hw-iterate` still wait in the foreground, so that they do not wake `hw-iterate` at each re-issue. A fresh builder that `hw-iterate` dispatches from a handover file waits in the same way.
 
-A drain of [HW-PD-0023](0023-a-build-order-parent-restarts-every-few-merges-drains-to-zero-first-and-resumes-from-the-handover-files-on-disk.md) does not change this rule. A stage that waits in the foreground completes its wait and its stage. `hw-iterate` then reads `DRAIN` at the stage boundary that follows, and it returns `HANDOVER`. The integrator that is in flight completes its foreground wait on the merge queue before the parent exits. The refusal text of `.claude/hooks/wait.sh` names the foreground form and this cost. The header of `tools/run/wait-for.sh` states the same.
+A drain of [HW-PD-0023](0023-a-build-order-parent-restarts-every-few-merges-drains-to-zero-first-and-resumes-from-the-handover-files-on-disk.md) does not change this rule. A stage that waits in the foreground completes its wait and its stage. `hw-iterate` then reads `DRAIN` at the stage boundary that follows, and it returns `HANDOVER`. The integrator that is in flight completes its foreground wait on the merge queue before the parent exits.
 
 In both forms, each re-issue costs one subagent turn. The saving is the parent turn that each re-issue caused. For run `20260927-0443`, that was about 310 parent turns at about 200k tokens each.
 
-The next run measures this decision. If interim notifications from a waiting stage are still a large share of the parent's tokens, this decision is reopened.
+The next run measures this decision, from the parent transcript, as session `b5554ef1` was measured. If interim notifications from a waiting stage are still a large share of the parent's tokens, this decision is reopened. The parent can wake on an interim notification from `hw-iterate` while its child is live. In that case the claim of HW-PD-0022 is false, and `hw-iterate` waits some other way.

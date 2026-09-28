@@ -1595,8 +1595,8 @@ fi
 
 printf '\n# wait.sh, on PreToolUse: a foreground wait\n'
 if [ -x "$engine" ]; then
-    expect 'an until loop that sleeps is refused, and the refusal names the flag' \
-        wait.sh 0 'run_in_background' \
+    expect 'an until loop that sleeps is refused, and the refusal names the foreground wait and its timeout' \
+        wait.sh 0 'in the foreground, with a Bash `timeout` of `300000`' \
         '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"until ! kill -0 1234 2>/dev/null; do sleep 30; done"}}'
     expect 'the refusal is a deny decision the harness can act on' \
         wait.sh 0 '"permissionDecision":"deny"' \
@@ -1679,8 +1679,8 @@ When the cap' \
     expect 'the heredoc silence is not vacuous: the same wait without the cat is refused' \
         wait.sh 0 '"permissionDecision":"deny"' \
         '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"while true; do sleep 30; done"}}'
-    expect 'a run watch already in the background passes' \
-        wait.sh 0 '' \
+    expect 'a run watch in the background is refused, because a background wait wakes the parent' \
+        wait.sh 0 'wakes its parent' \
         '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"gh run watch 35480000000 --exit-status","run_in_background":true}}'
     expect 'a bare sleep with no loop around it is not a wait and passes' \
         wait.sh 0 '' \
@@ -1688,9 +1688,49 @@ When the cap' \
     expect 'an empty command string is silent' \
         wait.sh 0 '' \
         '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":""}}'
-    expect 'the same wait already in the background passes' \
-        wait.sh 0 '' \
+    expect 'the same wait in the background is refused, and the refusal names the foreground wait' \
+        wait.sh 0 'in the foreground, with a Bash `timeout` of `300000`' \
         '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"until ! kill -0 1234 2>/dev/null; do sleep 30; done","run_in_background":true}}'
+    # HW-PD-0021: the bounded wait runs in the foreground with a Bash timeout
+    # past its cap. The verifier of #1274 rewrote the foreground sentences to
+    # say the background and the suite stayed green, so these pin the wording
+    # of each refusal and the three wait-for.sh shapes.
+    expect 'wait-for.sh started in the background is refused' \
+        wait.sh 0 'wakes its parent' \
+        '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"sh tools/run/wait-for.sh \"sh tools/run/ci-done.sh abc\"","run_in_background":true}}'
+    expect '  and the refusal names the foreground form' \
+        wait.sh 0 'in the foreground, with a Bash `timeout` of `300000`' \
+        '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"cd /x && sh tools/run/wait-for.sh \"[ -f /tmp/m ]\"","run_in_background":true}}'
+    expect 'wait-for.sh in the foreground with no timeout is refused, because the default times out first' \
+        wait.sh 0 '"permissionDecision":"deny"' \
+        '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"sh tools/run/wait-for.sh \"sh tools/run/ci-done.sh abc\""}}'
+    expect 'wait-for.sh in the foreground with a timeout of 120000 is refused' \
+        wait.sh 0 'under `300000`' \
+        '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"sh /abs/tools/run/wait-for.sh \"true\"","timeout":120000}}'
+    expect 'wait-for.sh in the foreground with a timeout of 300000 passes' \
+        wait.sh 0 '' \
+        '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"cd /x && sh tools/run/wait-for.sh \"sh tools/run/ci-done.sh abc\"","timeout":300000}}'
+    expect 'a grep that names wait-for.sh is not a wait' \
+        wait.sh 0 '' \
+        '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"grep -n wait-for.sh .claude/agents/hw-build.md"}}'
+    expect 'the wait-for fixture suite is not a wait' \
+        wait.sh 0 '' \
+        '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"sh tools/run/wait-for-fixtures.sh"}}'
+    expect 'a build in the background is not a wait and passes' \
+        wait.sh 0 '' \
+        '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"sh tools/hw-cargo test --workspace > /tmp/o 2>&1; echo EXIT:$? >> /tmp/o","run_in_background":true}}'
+    expect 'the pgrep refusal names the foreground form of the bounded wait' \
+        wait.sh 0 'run it in the foreground with a Bash `timeout` of `300000`' \
+        '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"until ! pgrep -f \"cargo test\" >/dev/null; do sleep 30; done"}}'
+    for shape in \
+        'until [ -f /tmp/x.status ]; do sleep 30; done' \
+        'until ! pgrep -f \"cargo test\" >/dev/null; do sleep 30; done'; do
+        for old in 'start the wait with `run_in_background: true`, because' 'Re-issue this same command with' 'belongs in the background' 'start it in the background'; do
+            refute "no refusal gives the old background advice: $old" \
+                wait.sh "$old" \
+                "{\"hook_event_name\":\"PreToolUse\",\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"$shape\"}}"
+        done
+    done
     expect 'a heredoc that writes a wait into a script is not itself a wait' \
         wait.sh 0 '' \
         '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"cat > /tmp/wait-ci.sh <<SCRIPT\nwhile true; do sleep 30; done\nSCRIPT"}}'

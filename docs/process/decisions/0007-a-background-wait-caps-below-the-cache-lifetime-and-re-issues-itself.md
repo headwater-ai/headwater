@@ -14,11 +14,11 @@ provenance:
 relations:
   governs:
     - to: .claude/hooks/wait.sh
-      verified_revision: sha256:2ec8d919a2aa283671e531f652b45f8133f0eaaaaa4af2820bb6f90c300adcf5
+      verified_revision: sha256:354ec3c06eea4fc09c441ce278bd3f8df50dee14d5cd7194c3769b0ab52a0e28
     - to: tools/run/run-census.sh
       verified_revision: sha256:57954a4dfd1fff9fd92571099130aa42cd9dd186df50a2dabce2d4d12e64fe69
     - to: .claude/skills/hw-run-policy/SKILL.md
-      verified_revision: sha256:ec55dbc52de768c6a0327e46cf0ded11a75971576152fef8b872db101ca5a638
+      verified_revision: sha256:3a0069970919d15b448ee5846ef83d05670d0d1507a3c69a7d9696b0534e1513
 ---
 
 # A background wait caps below the cache lifetime and re-issues itself

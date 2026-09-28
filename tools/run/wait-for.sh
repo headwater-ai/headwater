@@ -29,6 +29,13 @@
 # again is a new wait and not the re-ask that cost run `cc7cc6c6` 7.8 hours
 # waiting on a call already finished. The caller decides whether to re-issue;
 # this script never loops itself past its own cap.
+#
+# The cap is wall-clock time, and it bounds the condition too. Each run of
+# the condition is killed when the time left under the cap runs out, and a
+# killed run counts as not met. Before this, a condition that hung, such as a
+# `gh` call on a stalled network, held the attempt past the Bash timeout, and
+# the harness moved the call to the background: the shape [HW-PD-0021]
+# forbids (measured by the verifier of #1274, 2026-09-28).
 
 set -u
 
@@ -61,14 +68,17 @@ if [ "$poll" -lt 10 ]; then
     echo "wait-for: --poll $poll is under the floor a run measured burning 29% of itself on; use 30 or more." >&2
 fi
 
-elapsed=0
-while [ "$elapsed" -lt "$cap" ]; do
-    if sh -c "$cond"; then
-        echo "wait-for: condition met after ${elapsed}s."
+start=$(date +%s)
+while :; do
+    left=$((start + cap - $(date +%s)))
+    [ "$left" -gt 0 ] || break
+    if timeout "$left" sh -c "$cond"; then
+        echo "wait-for: condition met after $(($(date +%s) - start))s."
         exit 0
     fi
-    sleep "$poll"
-    elapsed=$((elapsed + poll))
+    left=$((start + cap - $(date +%s)))
+    [ "$left" -gt 0 ] || break
+    [ "$left" -lt "$poll" ] && sleep "$left" || sleep "$poll"
 done
 
 echo "wait-for: RE-ISSUE - condition not met after ${cap}s. This attempt has ended; start a fresh one the same way." >&2

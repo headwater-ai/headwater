@@ -43,13 +43,14 @@
 #                                               record a ruling in decisions.md, in the form next reads
 #     sh tools/run/run-dir.sh intake <dir> <file>    append a file of intake lines to intake.md
 #     sh tools/run/run-dir.sh decide <dir> <text>    append one dated line to decisions.md
+#     sh tools/run/run-dir.sh lesson <dir> <file>    append a file of prose to lessons.md
 #     sh tools/run/run-dir.sh withdraw <dir> <match> <line>
 #                                               replace the one intake line that holds <match>
 #
 # Every <dir>, for every subcommand but `start`, may be a bare run id, such as `20260927-0443`, which names that
 # run under the git common dir. A worktree-isolated parent's shell refuses a
 # command whose text names `.git`, and `Edit` refuses a path there, so the id
-# and the three prose subcommands are its only way to write the ledger. Run
+# and the four prose subcommands are its only way to write the ledger. Run
 # `20260927-0443` wrote four scripts of its own for exactly this.
 #
 # Three more files serve a parent that `tools/run/supervise.sh` restarts every
@@ -173,6 +174,16 @@ intake() {
     [ -f "$2" ] || { echo "run-dir: $2 is not a file of intake lines." >&2; exit 1; }
     cat "$2" >> "$dir/intake.md"
     printf 'INTAKE: %s lines appended\n' "$(wc -l < "$2" | tr -d ' ')"
+}
+
+# Lessons are prose under a heading, several lines at a time, so the parent
+# composes them in a file with `Write` and this appends the file whole.
+lesson() {
+    dir=$1
+    need_dir "$dir"
+    [ -s "$2" ] || { echo "run-dir: $2 is not a file of lesson prose." >&2; exit 1; }
+    cat "$2" >> "$dir/lessons.md"
+    printf 'LESSON: %s lines appended\n' "$(wc -l < "$2" | tr -d ' ')"
 }
 
 decide() {
@@ -724,6 +735,7 @@ case ${1:-} in
     import) [ $# -eq 3 ] || usage; import "$2" "$(resolve "$3")" ;;
     intake) [ $# -eq 3 ] || usage; intake "$run" "$3" ;;
     decide) [ $# -eq 3 ] || usage; decide "$run" "$3" ;;
+    lesson) [ $# -eq 3 ] || usage; lesson "$run" "$3" ;;
     withdraw) [ $# -eq 4 ] || usage; withdraw "$run" "$3" "$4" ;;
     *) usage ;;
 esac
