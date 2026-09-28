@@ -6,8 +6,11 @@
 #
 #   Touched     the changed documents, each changed path that a document
 #               governs with that document, and each path the change deleted
-#               or renamed away with the document that governed it at the base
-#   Stale       what the engine reports as suspect: `relation.target.suspect`
+#               or renamed away with the document that governed it at the base,
+#               and each path still on the tree that a document the change
+#               deleted governed at the base, whether or not the change
+#               names that path
+#   Stale      what the engine reports as suspect: `relation.target.suspect`
 #               findings and the `evidence.suspect` edges of `route`
 #   Owed        the other findings of `headwater check --change`, by rule and
 #               document
@@ -34,9 +37,12 @@
 # finding that a gate reads.
 #
 # Usage: upkeep-report.py <work-dir> <report-path>
+#        upkeep-report.py --lost <work-dir> <root>
 # <work-dir> holds what `upkeep.sh` wrote: changed.txt, gone.tsv,
 # check.json, check.exit, base-check.json, diff.patch, routes.tsv, route/<n>.json,
-# routes-base.tsv and route-base/<n>.json.
+# routes-base.tsv, route-base/<n>.json, explains-base.tsv, explain-base/<n>.json,
+# lost.txt, routes-lost.tsv and route-lost/<n>.json. The `--lost` form prints
+# lost.txt: each path a deleted document governed that is still under <root>.
 import json
 import os
 import re
