@@ -8,7 +8,9 @@
 # the line it follows, and how far a rewrite with a different line count
 # moves the lines below it. It also holds the names git writes in a way the
 # parser must undo: a name with a space, which git ends with a TAB on the
-# `---` and `+++` lines, and a name that git quotes.
+# `---` and `+++` lines, a name that git quotes, and a name that git both
+# quotes and ends with a TAB. It also holds a pure rename, which git writes
+# with no `---` or `+++` line at all.
 #
 # It builds a temporary repository, one file per case, commits a base, makes
 # the edits, commits them, and runs `git diff` with the flags `upkeep.sh`
@@ -67,12 +69,21 @@ CASES = [
     ("with space", lines(20), (1, 0, ["t"]), [5], [6], {6: "old"}),
     # A name git quotes: `"docs/\303\274ber.md"`.
     ("über", lines(20), (1, 0, ["t"]), [5], [6], {6: "old"}),
+    # A name git both quotes and ends with a TAB, because it holds a space
+    # and a byte above 0x7f: `--- "a/docs/esp\303\251ce x.md"<TAB>`.
+    ("espéce x", lines(20), (1, 0, ["t"]), [5], [6], {6: "old"}),
 ]
 
 # A rename with an insertion at 3 and a rewrite of old line 10: 2 stays, 5
 # moves to 6, and 10 is rewritten, so a finding at its new place 11 is new.
 RENAME_FROM, RENAME_TO = "docs/ren_a.md", "docs/ren_b.md"
 RENAME = ([2, 5, 10], [2, 6, 11], {2: "old", 6: "old", 11: "new"})
+
+# A pure rename, with no edit. Git writes only `rename from` and `rename to`
+# for it, with no `---` or `+++` line and no hunk, so the parser must take
+# the new name from `rename to`. Every line stands where it stood.
+PURE_FROM, PURE_TO = "docs/pure_a.md", "docs/pure_b.md"
+PURE = ([4, 9], [4, 9], {4: "old", 9: "old"})
 
 
 def diff_flags():
@@ -117,6 +128,7 @@ def main():
         for name, base, _, _, _, _ in CASES:
             write(repo, f"docs/{name}.md", base)
         write(repo, RENAME_FROM, lines(30))
+        write(repo, PURE_FROM, lines(12, "P"))
         git(repo, "add", "-A")
         git(repo, "-c", "user.name=f", "-c", "user.email=f@x", "commit", "-q", "-m", "base")
         for name, base, edit, _, _, _ in CASES:
@@ -131,6 +143,7 @@ def main():
         moved.insert(2, "ins")
         os.remove(os.path.join(repo, RENAME_FROM))
         write(repo, RENAME_TO, moved)
+        git(repo, "mv", PURE_FROM, PURE_TO)
         git(repo, "add", "-A")
         git(repo, "-c", "user.name=f", "-c", "user.email=f@x", "commit", "-q", "-m", "edit")
         patch = subprocess.run(
@@ -153,13 +166,16 @@ def main():
         path = f"docs/{name}.md"
         hold(name, path, path, base_lines, cur_lines, want)
     hold("rename", RENAME_FROM, RENAME_TO, *RENAME)
+    if f"rename from {PURE_FROM}" not in patch or f"+++ b/{PURE_TO}" in patch:
+        failed.append(f"pure rename: git did not write {PURE_FROM} as a rename with no `+++` line")
+    hold("pure rename", PURE_FROM, PURE_TO, *PURE)
 
     for f in failed:
         print(f"FAIL {f}", file=sys.stderr)
     if failed:
         print("parsed paths: " + ", ".join(repr(k) for k in sorted(diff)), file=sys.stderr)
         return 1
-    print(f"line-map: {len(CASES) + 1} cases hold against diffs git wrote")
+    print(f"line-map: {len(CASES) + 2} cases hold against diffs git wrote")
     return 0
 
 

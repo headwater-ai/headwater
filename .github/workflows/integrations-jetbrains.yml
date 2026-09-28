@@ -1,0 +1,60 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# CI for `integrations/jetbrains`, #498's plugin. The client suite runs in the
+# `headwater` job of `ci.yml` against the engine that job builds. This workflow
+# does the one thing that suite cannot: it compiles the glue classes against
+# the IntelliJ Platform and packages the plugin, so a glue class that calls an
+# API the platform does not have fails here and not on an adopter's machine.
+#
+# It runs only on a change under `integrations/jetbrains/` or to this file,
+# because `gradle buildPlugin` downloads an IntelliJ IDEA distribution of about
+# a gigabyte, and the per-pull-request `headwater` job must not pay that.
+# It never touches `docs/` or `.headwater/`.
+name: integrations/jetbrains
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - integrations/jetbrains/**
+      - .github/workflows/integrations-jetbrains.yml
+  pull_request:
+    paths:
+      - integrations/jetbrains/**
+      - .github/workflows/integrations-jetbrains.yml
+
+permissions:
+  contents: read
+
+jobs:
+  build-plugin:
+    name: The plugin compiles against the IntelliJ Platform and packages
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: A JDK Gradle runs on
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - name: Gradle, pinned by version and digest, with no wrapper jar in the tree
+        # `integrations/jetbrains` commits no `gradle-wrapper.jar`, because
+        # that is a binary in the tree. The distribution is fetched and its
+        # digest checked here rather than through a third-party setup action,
+        # which HW-PD-0019 keeps out of `ci.yml` and this file follows too.
+        # Gradle 9.1 is the first that runs on JDK 25.
+        env:
+          GRADLE_VERSION: '9.8.0'
+          GRADLE_SHA256: bafd5ce9cfaea0fbccfdc8439a1ac42fbd4cd9c89dc9a988228d8a2639a58e6c
+        run: |
+          set -eu
+          curl -sSfL -o "$RUNNER_TEMP/gradle.zip" "https://services.gradle.org/distributions/gradle-$GRADLE_VERSION-bin.zip"
+          echo "$GRADLE_SHA256  $RUNNER_TEMP/gradle.zip" | sha256sum -c -
+          unzip -q "$RUNNER_TEMP/gradle.zip" -d "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/gradle-$GRADLE_VERSION/bin" >> "$GITHUB_PATH"
+
+      - name: gradle buildPlugin verifyPluginStructure
+        working-directory: integrations/jetbrains
+        run: gradle --no-daemon --console=plain buildPlugin verifyPluginStructure

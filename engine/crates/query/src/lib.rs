@@ -657,6 +657,23 @@ impl Pointer {
     }
 }
 
+/// The one sentence that refuses a path outside the repository, for every
+/// reader that finds a document by a typed path
+/// ([#1249](https://github.com/headwater-ai/headwater/issues/1249)).
+///
+/// `headwater explain` and `headwater show` print it on standard error after
+/// their own `headwater: ` prefix, and the MCP `explain`, `related` and
+/// `governing_docs_for_path` tools answer it with a newline. A path is outside
+/// when it is absolute and not under the root, when a `..` climbs above the
+/// root, when a segment is not UTF-8, or when it passes through a symlink that
+/// leads out of the root ([`headwater_census::walk::within`]). One function, so
+/// the five routes cannot drift into five wordings again. It is the row of
+/// `docs/interfaces/headwater-explain.md`'s refusal table. It carries no
+/// newline and no prefix, because both belong to the channel.
+pub fn outside_text(target: &str) -> String {
+    format!("`{target}` is outside this repository, or is not a path it can read")
+}
+
 /// The words of a string, lowercased, in the order they were written.
 ///
 /// A term is two characters or more. One character discriminates nothing at the
