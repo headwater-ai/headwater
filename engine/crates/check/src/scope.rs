@@ -1174,10 +1174,11 @@ impl<'a> EdgeView<'a> {
     /// [`EdgeView::ends`] is nothing for an anchor target, because there is
     /// no second document. The declaring document is still there, it is
     /// already the first member of [`EdgeView::reads`], and a rule about an
-    /// anchor edge can need what its author stated about it: whether it was
-    /// verified today is what [`crate::suspect`] reads before it offers a fix
-    /// that records a verification. Nothing where the census carries no parsed
-    /// document for the path.
+    /// anchor edge can need what its author stated about it: its freshness
+    /// facet, held against [`EdgeView::declarer_prior`], is what
+    /// [`crate::suspect`] reads before it offers a fix that records a
+    /// verification. Nothing where the census carries no parsed document for
+    /// the path.
     pub fn declarer_facets(&self) -> Option<&'a Mapping> {
         self.declarer
     }

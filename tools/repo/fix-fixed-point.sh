@@ -8,9 +8,13 @@
 # edits to documents their change never touched, and reverted them by hand.
 # Most of those edits were `verified_revision` stamps. A stamp says that a
 # person read the document against the file it governs. The engine can write
-# the digest, and it cannot do the reading. So the remedy this prints is not to
-# commit what `--fix` wrote: run it, read each stamped document against the
-# file it governs, and commit a stamp only where the document is still true.
+# the digest, and it cannot do the reading. Since #1259 `--fix` offers a stamp
+# only in a run with `--change`, on a document the change re-verified, and
+# this passes no change. So a stamp never moves this tree, and the answer is
+# the same on every date. What can still move it is a patch that needs no
+# reading, such as a spelling or a reciprocal half. The remedy this prints is
+# not to commit what `--fix` wrote blind: run it, read the diff, and commit
+# what is still true.
 #
 # # WHAT IS COMPARED, AND WHY NOT `git status`
 #
@@ -82,7 +86,7 @@ if [ "$before" != "$after" ]; then
     grep '^headwater: fixed ' "$scratch/fix.err"
     git diff --stat "$before" "$after"
     git diff "$before" "$after"
-    printf "Run 'headwater check --fix' locally, read each document it stamps against the file it governs, and commit only the stamps that are still true.\n"
+    printf "Run 'headwater check --fix' locally, read each file it writes, and commit only what is still true.\n"
     exit 1
 fi
 
