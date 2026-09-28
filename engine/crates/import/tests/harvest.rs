@@ -243,6 +243,26 @@ fn a_pin_with_no_path_is_refused_by_name() {
 }
 
 #[test]
+fn a_pin_whose_path_leaves_the_repository_is_refused_by_name() {
+    for at in [
+        "/etc/export.json",
+        "../other/export.json",
+        "harvest/../../x.json",
+    ] {
+        let scratch = Scratch::new("outside");
+        scratch.write(
+            CONSUMER,
+            &format!("harvests:\n  repo-a:\n    at: {at}\n    digest: sha256:aa\n    resolver: export-a\n"),
+        );
+        let why = harvest::declared(scratch.path()).expect_err("it is refused");
+        assert!(
+            why.contains("harvests.repo-a.at") && why.contains(at),
+            "{why}"
+        );
+    }
+}
+
+#[test]
 fn a_repository_that_declares_no_pin_has_none() {
     let scratch = Scratch::new("none");
     assert_eq!(harvest::declared(scratch.path()), Ok(Vec::new()));
