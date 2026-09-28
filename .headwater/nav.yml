@@ -100,6 +100,7 @@ nav:
       - "The APT repository is served from headwater.tools and signed by a subkey the owner's offline key certifies": "decisions/0094-the-apt-repository-is-served-from-headwater-tools-and-signed-by-a-subkey-the-owner-s-offline-key-certifies.md"
       - "Q67 — One library entry may address the keys of an entry it names in requires, and confluence holds over the dependency order": "decisions/0095-q67-one-library-entry-may-address-the-keys-of-an-entry-it-names-in-requires-and-confluence-holds-over-the-dependency-order.md"
       - "Harper does not become part of the engine now, and Q41 stands": "decisions/0096-harper-does-not-become-part-of-the-engine-now-and-q41-stands.md"
+      - "An engine subsystem is described by a technical design spec on a shelf of its own, and its behavior stays where it is already written": "decisions/0098-an-engine-subsystem-is-described-by-a-technical-design-spec-on-a-shelf-of-its-own-and-its-behavior-stays-where-it-is-already-written.md"
   - "Acceptance criteria":
       - "Acceptance criteria": "acceptance-criteria/README.md"
       - "No engine source outside the fetch crate names a network API and no crate of the checking loop reaches a network package": "acceptance-criteria/0001-no-engine-source-outside-the-fetch-crate-names-a-network-api-and-no-crate-of-the-checking-loop-reaches-a-network-package.md"

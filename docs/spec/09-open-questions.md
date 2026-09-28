@@ -404,3 +404,7 @@ The documents on this shelf, in the reading order this corpus derives. Each head
 ## Harper does not become part of the engine now, and Q41 stands
 
 [HW-DR-0096](../decisions/0096-harper-does-not-become-part-of-the-engine-now-and-q41-stands.md) — harper-core found 0 real errors in 187 hand-read findings on 25 documents of this corpus. So the engine does not link it now, Q41 stands, and a stated precision bar or an adopter request reopens it. (asserted, and no human has accepted it)
+
+## An engine subsystem is described by a technical design spec on a shelf of its own, and its behavior stays where it is already written
+
+[HW-DR-0098](../decisions/0098-an-engine-subsystem-is-described-by-a-technical-design-spec-on-a-shelf-of-its-own-and-its-behavior-stays-where-it-is-already-written.md) — Each engine subsystem gets one technical design spec on a new shelf, and it governs its crates by one pattern each. No crate gets a functional spec, because interface contracts, spec parts and requirements already state behavior. (asserted, and no human has accepted it)
