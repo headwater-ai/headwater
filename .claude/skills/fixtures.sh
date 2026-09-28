@@ -575,6 +575,25 @@ $out" ;;
         0 'no declared purpose answers this task' \
         "$engine" route zzzqqqwww --root "$root"
 
+    # The status of a settled decision in its pull request (#1294). The
+    # always-loaded description of the authoring skill states the ruling, and
+    # route on the probe's own task, in a tree without the probe shelves that
+    # every arm removes, names the decision that rules it at the default
+    # budget. The task is read out of the probe the way `tools/probe/campaign.sh`
+    # reads it, so a reworded task is the task this case routes.
+    status_probe="$root/docs/probes/a-session-names-the-status-a-settled-decision-carries-in-its-pull-request.md"
+    status_task=$(awk '/^## Task$/ { on = 1; next } on && /^## / { exit } on { print }' "$status_probe")
+    mkdir -p "$scratch/arm"
+    cp -r "$root/docs" "$scratch/arm/docs"
+    cp -r "$root/.headwater" "$scratch/arm/.headwater"
+    rm -rf "$scratch/arm/docs/probes" "$scratch/arm/docs/probe-runs" \
+        "$scratch/arm/docs/probe-results" "$scratch/arm/.headwater/export.json"
+    claim 'route on the status probe names the ruling, which the skill description states' \
+        headwater-authoring/SKILL.md \
+        'at `status: current`, not `draft` (HW-DR-0052)' \
+        0 'docs/decisions/0052-a-document-is-proposed-at-the-state-it-will-hold-and-the-merge-activates-it.md' \
+        "$engine" route --root "$scratch/arm" "$status_task"
+
     printf '\n# headwater-maintainer, against the hook it invokes\n'
 
     # The agent tells its reader to drive the write hook by hand, one path at a
