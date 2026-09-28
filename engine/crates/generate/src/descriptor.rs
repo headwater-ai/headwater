@@ -168,6 +168,7 @@ pub(crate) fn emit(
     plan.outputs.push(Output {
         path: PATH.to_string(),
         kind: Kind::CorpusDescriptor,
+        committed: true,
         bytes: value.render_pretty(),
     });
 }

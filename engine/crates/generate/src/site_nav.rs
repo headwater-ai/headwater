@@ -163,6 +163,7 @@ pub(crate) fn emit(
         bytes: render(&declaration.output, &groups, &identity.corpus_root),
         path: declaration.output.clone(),
         kind: Kind::SiteNav,
+        committed: true,
     });
 }
 

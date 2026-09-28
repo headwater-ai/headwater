@@ -378,6 +378,12 @@ pub struct Declaration {
     /// the corpus. `None` for a projection that writes a list beside the corpus,
     /// which is every declaration that shipped before this member existed.
     pub identity: Option<DeclaredIdentity>,
+    /// Whether the tree holds the written file. `false` says that
+    /// `headwater export` builds it at publish time, so `generate` does not
+    /// write it and `--check` does not compare it. Spec 6: "whether an export
+    /// is committed is a schema decision and not an engine default". Read on a
+    /// `graph_export` alone, and `true` for a declaration that states nothing.
+    pub committed: bool,
 }
 
 impl Declaration {
@@ -495,12 +501,23 @@ impl Projections {
             }
             let membership = profile::Membership::read(body, index, item.span, &mut errors);
             let identity = identity::read(body, kind, index, item.span, &mut errors);
+            let committed = match Ok::<bool, String>(true) {
+                Ok(committed) => committed,
+                Err(message) => {
+                    errors.push(DeclarationError {
+                        message,
+                        span: item.span,
+                    });
+                    continue;
+                }
+            };
             out.declared.push(Declaration {
                 kind,
                 shelves,
                 output: output.text.clone(),
                 membership,
                 identity,
+                committed,
             });
         }
         // The grouping runs over what read, so a taxonomy with one bad entry
@@ -523,6 +540,39 @@ impl Projections {
     }
 }
 
+/// The `committed` member of one projection, `true` where it is absent.
+///
+/// `false` is refused on every kind but `graph_export`. Every other kind is
+/// read in the tree: a `site_nav` links a shelf index by its path, a shelf
+/// index is a page, and a projection with an `identity` is a document of the
+/// corpus. An absent file there breaks a reader, and the reader that
+/// `committed: false` serves is the build step that runs `headwater export`.
+/// The meta-schema refuses a value that is not a boolean over the sources, and
+/// this refuses it over a lock for the reason [`Projections::read`] gives.
+fn committed(body: &Mapping, kind: Kind, index: usize) -> Result<bool, String> {
+    let Some(node) = body.get("committed") else {
+        return Ok(true);
+    };
+    let committed = match node.value.as_scalar().map(|scalar| scalar.text.as_str()) {
+        Some("true") => true,
+        Some("false") => false,
+        _ => {
+            return Err(format!(
+                "`projections.{index}.committed` is not `true` or `false`"
+            ))
+        }
+    };
+    match committed || kind == Kind::GraphExport {
+        true => Ok(committed),
+        false => Err(format!(
+            "`projections.{index}` is a `{}` and states `committed: false`, and only a \
+             `graph_export` takes that member. Every other kind is read in the tree, so its \
+             file is committed",
+            kind.name()
+        )),
+    }
+}
+
 fn names(kinds: &[Kind]) -> String {
     kinds
         .iter()
@@ -539,6 +589,11 @@ pub struct Output {
     pub kind: Kind,
     /// The whole file, marker included.
     pub bytes: String,
+    /// Whether the tree holds this file, from [`Declaration::committed`].
+    /// An uncommitted output stays in the plan, so the orphan rule still sees
+    /// its path as claimed. [`write`] and [`check`] skip it, and [`publish`]
+    /// writes it.
+    pub committed: bool,
 }
 
 /// A projection that produced no file, and why.
@@ -1120,6 +1175,7 @@ fn graph_export(
             path: declaration.output.clone(),
             kind: Kind::GraphExport,
             bytes: emission.bytes,
+            committed: declaration.committed,
         }),
         Err(refusal) => plan.unwritten.push(Unwritten {
             at: declaration.output.clone(),
@@ -1196,6 +1252,10 @@ pub enum Verdict {
     Differs,
     /// `--check` only: nothing is committed at the path.
     Missing,
+    /// Not written and not compared: the declaration states `committed:
+    /// false`, so `headwater export` builds the file at publish time and the
+    /// tree does not hold it. A copy a local export left there is not read.
+    Uncommitted,
     /// The write failed, and this is what the operating system said.
     Failed(String),
 }
@@ -1227,6 +1287,9 @@ impl Verdict {
                 "committed, and it is not what this corpus and this lock produce".to_string()
             }
             Verdict::Missing => "not committed, and this run would write it".to_string(),
+            Verdict::Uncommitted => "built at publish time by `headwater export`, and not \
+                 written or compared here"
+                .to_string(),
             Verdict::Failed(error) => format!("not written: {error}"),
         }
     }
@@ -1535,7 +1598,28 @@ impl Report {
 /// One plan, written once. `headwater generate` calls [`write_settled`]
 /// instead, because one plan is not always the tree the next plan reads.
 pub fn write(root: &Path, plan: &Plan) -> Report {
-    run(root, plan, false)
+    run(root, plan, Mode::Write)
+}
+
+/// Write the plan, the uncommitted outputs included.
+///
+/// This is `headwater export`, the publish step. An output declared
+/// `committed: false` is built here and nowhere else, so this is the one
+/// writer that does not skip it. [`write`] and [`check`] leave it alone,
+/// because the tree does not hold it.
+pub fn publish(root: &Path, plan: &Plan) -> Report {
+    run(root, plan, Mode::Publish)
+}
+
+/// What [`run`] does with each output.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Mode {
+    /// `generate`: write every committed output.
+    Write,
+    /// `export` with no `--check`: write every output.
+    Publish,
+    /// `--check`: compare every committed output, and write nothing.
+    Check,
 }
 
 /// The most passes [`write_settled`] runs before it says the run did not
@@ -1622,10 +1706,11 @@ pub fn write_settled<E>(
 /// it answers "is this artifact current". A corpus edit moves this one and never
 /// that one, which is why they are two flags and not one.
 pub fn check(root: &Path, plan: &Plan) -> Report {
-    run(root, plan, true)
+    run(root, plan, Mode::Check)
 }
 
-fn run(root: &Path, plan: &Plan, checking: bool) -> Report {
+fn run(root: &Path, plan: &Plan, mode: Mode) -> Report {
+    let checking = mode == Mode::Check;
     // Before any artifact's bytes are compared, and only under `--check`: a
     // write stamps the current emitter set, so the writing path can never
     // produce a tree it would then refuse to trust.
@@ -1652,6 +1737,17 @@ fn run(root: &Path, plan: &Plan, checking: bool) -> Report {
         ..Report::default()
     };
     for output in &plan.outputs {
+        // Neither written nor compared, and the file is not read: a copy that
+        // a local `headwater export` left there is the publish step's output,
+        // and neither `generate` nor its gate owns it.
+        if !output.committed && mode != Mode::Publish {
+            report.wrote.push(Wrote {
+                path: output.path.clone(),
+                kind: output.kind,
+                verdict: Verdict::Uncommitted,
+            });
+            continue;
+        }
         let path = root.join(&output.path);
         let committed = std::fs::read_to_string(&path).ok();
         let verdict = match (&committed, checking) {
