@@ -600,6 +600,26 @@ mod tests {
             &root,
             &via.join("again/never-written.md").display().to_string(),
         );
+        // A path that climbs out of the root with `..` and comes back in
+        // names the root at more than one leading part, and the shortest one
+        // leaves the rest of the path climbing above it. The first leading
+        // part, from the shortest up, that the rest stays under is the root.
+        let name = root.file_name().expect("the root has a name");
+        let back_in: Vec<(String, Option<String>)> = [
+            root.join("..").join(name).join("docs/never-written.md"),
+            root.join("docs/../..")
+                .join(name)
+                .join("docs/never-written.md"),
+            via.join("../via/docs/never-written.md"),
+            via.join("..").join(name).join("docs/never-written.md"),
+        ]
+        .iter()
+        .map(|target| {
+            let target = target.display().to_string();
+            let answer = typed(&root, &target);
+            (target, answer)
+        })
+        .collect();
         let lexical = typed(&root, "escape/x.md");
         let _ = std::fs::remove_dir_all(&base);
         for ((target, expected), (_, answer)) in cases.iter().zip(&answers) {
@@ -629,6 +649,13 @@ mod tests {
             Some("again/never-written.md"),
             "`typed` reads a link back to the root by its name"
         );
+        for (target, answer) in &back_in {
+            assert_eq!(
+                answer.as_deref(),
+                Some("docs/never-written.md"),
+                "`typed` on `{target}`, which leaves the root and comes back"
+            );
+        }
         assert_eq!(
             lexical.as_deref(),
             Some("escape/x.md"),

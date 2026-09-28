@@ -577,6 +577,31 @@ fn an_absolute_target_finds_its_document_under_a_root_reached_through_a_symlink(
     assert!(shown.stdout == document(), "the bytes on disk");
 }
 
+/// An absolute path that leaves the root with `..` and comes back in names
+/// the document under it, as `a/../x` names `x`. Its leading parts name the
+/// root twice, and only the longer of the two leaves the rest of the path
+/// inside the root.
+#[test]
+fn an_absolute_path_that_leaves_the_root_and_comes_back_finds_its_document() {
+    let root = Root::new("back-in");
+    let name = root.at.file_name().expect("the root has a name");
+    let target = root
+        .at
+        .join("..")
+        .join(name)
+        .join(DOCUMENT)
+        .display()
+        .to_string();
+    let shown = root.run(&["show", &target]);
+    assert_eq!(
+        shown.status.code(),
+        Some(0),
+        "`show {target}`: {}",
+        String::from_utf8_lossy(&shown.stderr)
+    );
+    assert!(shown.stdout == document(), "the bytes on disk");
+}
+
 /// An absolute path with no file behind it, typed through a symlink to the
 /// root, from a shell whose working directory is that symlink, under
 /// `--root .` ([#1334](https://github.com/headwater-ai/headwater/issues/1334)).
