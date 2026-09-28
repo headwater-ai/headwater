@@ -282,6 +282,12 @@ obligations:
     class: cohesion
     prevents: content.inconsistent
     severity: medium
+  OB-FIX-28:
+    statement: No relation instance names the document that declares it as its target
+    rationale: An edge from a document to itself asserts nothing, or it asserts a contradiction, and no declared relation admits one
+    class: cohesion
+    prevents: content.inconsistent
+    severity: medium
   OB-FIX-23:
     statement: An identifier is a string the scheme its kind names admits
     rationale: An identifier travels into tickets and commit messages, and one outside its own namespace collides with a corpus that nobody here can rewrite
@@ -468,6 +474,13 @@ controls:
   CT-FIX-21:
     mechanism: check:relation.target.unresolved
     discharges: [OB-FIX-24]
+    trigger: pull_request
+    posture: advisory
+    acts: detective
+
+  CT-FIX-25:
+    mechanism: check:relation.target.is_source
+    discharges: [OB-FIX-28]
     trigger: pull_request
     posture: advisory
     acts: detective
