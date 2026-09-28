@@ -1448,5 +1448,38 @@ mod tests {
             format!("{:?}", tree_revision(&dir, &["a.sh".to_owned()])),
             "a regular file's key is its digest, as before"
         );
+
+        // A socket and a device are left out like the pipe, not only a pipe.
+        // A reader that opened `/dev/zero` would read without end.
+        let _socket =
+            std::os::unix::net::UnixListener::bind(dir.join("sock")).expect("the socket is bound");
+        assert_eq!(
+            tree_revision(&dir, &["a.sh".to_owned(), "sock".to_owned()]),
+            file_only,
+            "the socket changes nothing"
+        );
+        assert_eq!(tree_revision(&dir, &["sock".to_owned()]), None);
+        assert_eq!(
+            format!("{:?}", Revision::of_tree(&dir, &["sock".to_owned()])),
+            "NoDigest"
+        );
+        std::os::unix::fs::symlink("/dev/zero", dir.join("to-zero"))
+            .expect("the link to the device is made");
+        assert_eq!(
+            tree_revision(&dir, &["a.sh".to_owned(), "to-zero".to_owned()]),
+            file_only,
+            "the device changes nothing"
+        );
+        assert_eq!(tree_revision(&dir, &["to-zero".to_owned()]), None);
+
+        // A link to a directory is a directory: it keeps the key `None`, so
+        // the rule still reports it with the `/**` remedy.
+        std::os::unix::fs::symlink(dir.join("sub"), dir.join("to-sub"))
+            .expect("the link to the directory is made");
+        assert!(Revision::of_tree(&dir, &["to-sub".to_owned()]).names_a_directory());
+        assert_eq!(
+            format!("{:?}", Revision::of_tree(&dir, &["to-sub".to_owned()])),
+            "None"
+        );
     }
 }
