@@ -3,7 +3,7 @@ id: HW-DR-0097
 status: current
 status_since: 2026-09-28
 summary: "The pages under site/ commit every data-figure element empty. A CI job on each push to main measures the figures into the assembled copy and deploys it with wrangler. Two pull requests that add documents merge without a conflict on the pages."
-last_verified: 2026-09-28
+last_verified: 2026-09-29
 title: "A figure on a hand-built page is measured when the site is published, and the committed page carries none"
 provenance:
   warrant: accepted
@@ -23,11 +23,13 @@ relations:
     - to: tools/site/refresh-figures.sh
       verified_revision: sha256:7408acc04eb80e92801ee2037319fd873f65522cb8b6d5a7c0f0a1a206a388c7
     - to: tools/site/deploy-site.sh
-      verified_revision: sha256:a79c1be5f5371afcedad9d9d666df24ed76e9e3aa367021aaa18d4d99c0de01c
+      verified_revision: sha256:18f7b6be6591074451fd39faa0c38346e59437285e3b0f930142da87ac33faa0
     - to: tools/site/check-site-figures.sh
       verified_revision: sha256:52ae77f1c1c66f68649935759cb305401f8608cf1b9320b4f69aac207ae88974
     - to: tools/site/figures-fixtures.sh
       verified_revision: sha256:8c46ae88e996fc9f5c1c64f01ffce2e51f98d192404aad8165b3ccfe6474cead
+    - to: .github/workflows/deploy-site.yml
+      verified_revision: sha256:7f7297d1663af5be42847dd0c619033a52e5d99d11531090258d278fe6a4042d
 ---
 
 # A figure on a hand-built page is measured when the site is published, and the committed page carries none
@@ -50,11 +52,11 @@ relations:
 
 **The committed pages carry every `data-figure` element empty.** `sh tools/site/refresh-figures.sh --blank` writes that form, and it is the one command that resolves a conflict on a page: take either side's prose, then blank. It measures nothing and needs no engine.
 
-**Shape A is the deploy path.** The `Deploy the site` job of `.github/workflows/ci.yml` runs `tools/site/deploy-site.sh` on a push to `main` and on no other event. The job waits for the two gating jobs of that push, `Engine tests` and `headwater check (advisory)`. It is not a required check. The script renders the generated half, assembles the directory, and fills the figures with `refresh-figures.sh --into .headwater/site-deploy`. Then it adds the APT repository with `tools/site/fetch-apt.sh` and deploys with `wrangler` at a pinned version. Shapes B and C are rejected for the reasons in the context above.
+**Shape A is the deploy path.** The one deploy job is in `.github/workflows/deploy-site.yml`, and it runs `tools/site/deploy-site.sh`. Two workflows call it and no event starts it alone. `ci.yml` calls it on a push to `main`, after the two gating jobs of that push, `Engine tests` and `headwater check (advisory)`. `release.yml` calls it with `ref: main` after its `publish` job creates the release, because `tools/site/fetch-apt.sh` reads the newest release ([#1316](https://github.com/headwater-ai/headwater/issues/1316)). It is not a required check. The script renders the generated half, assembles the directory, and fills the figures with `refresh-figures.sh --into .headwater/site-deploy`. Then it adds the APT repository with `tools/site/fetch-apt.sh` and deploys with `wrangler` at a pinned version. Shapes B and C are rejected for the reasons in the context above.
 
 **A deploy that cannot measure publishes nothing.** The script runs under `set -eu`. A failing measurement, an unknown key, a measured figure that reaches no page, or a marker the pattern cannot read stops it before `wrangler` runs. `tools/site/check-site-figures.sh` then refuses an assembled directory that still holds an empty element. `tools/site/figures-fixtures.sh` holds each of these with `wrangler` stubbed.
 
-**Every CI event measures, and only a push to `main` deploys.** `refresh-figures.sh --check` fails on a value in a committed marker. It also fails on each measurement failure above. The step after the assembly runs `--into` on the assembled directory. So a merge group finds a key with no measurement before the merge, not at the deploy.
+**Every CI event measures, and only a push to `main` or a published release deploys.** `refresh-figures.sh --check` fails on a value in a committed marker. It also fails on each measurement failure above. The step after the assembly runs `--into` on the assembled directory. So a merge group finds a key with no measurement before the merge, not at the deploy.
 
 **The clock partition is removed, not reduced.** The eight figures that read the clock were compared against a committed value. A second engine run at the page's own date excused a difference that the clock alone caused. Nothing committed is compared against a run now, so that comparison has no input.
 
