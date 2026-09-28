@@ -162,10 +162,6 @@ fn a_path_on_the_tree_as_written_is_never_read_as_a_shorter_one() {
 /// names it, so the case cannot pass on a path the scope never admitted.
 #[test]
 fn a_path_git_ignores_is_not_named_as_ungoverned() {
-    // The first run reads the root with no repository above it (#1192).
-    if common::outside_base().is_none() {
-        return;
-    }
     let root = root("route-ignored");
     let path = "tools/__pycache__/stub.cpython-312.pyc";
     let cache = root.at.join(path);
@@ -455,7 +451,8 @@ fn route_never_reads_the_bytes_of_a_file_whose_governing_edge_records_no_revisio
 fn route_under_deadline(root: &Root, path: &str, hung: &str) -> (String, String) {
     use std::time::{Duration, Instant};
 
-    let mut child = std::process::Command::new(env!("CARGO_BIN_EXE_headwater"))
+    let mut child = root
+        .command()
         .args(["route", "edit", path, "--json", "--root"])
         .arg(&root.at)
         .stdout(std::process::Stdio::piped())
@@ -575,7 +572,8 @@ fn the_mcp_route_tool_reads_an_ignore_rule_written_after_the_session_started() {
         .expect("git runs");
     assert!(init.success());
 
-    let mut child = std::process::Command::new(env!("CARGO_BIN_EXE_headwater"))
+    let mut child = root
+        .command()
         .args(["mcp", "--now", "2026-09-28", "--root"])
         .arg(&root.at)
         .stdin(std::process::Stdio::piped())

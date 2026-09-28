@@ -21,10 +21,6 @@ fn line_for<'a>(out: &'a str, pattern: &str) -> &'a str {
 
 #[test]
 fn the_audit_leaves_a_file_git_ignores_out_of_the_governed_scope() {
-    // The first run reads the root with no repository above it (#1192).
-    if common::outside_base().is_none() {
-        return;
-    }
     let root = Root::new("scope-audit-ignored");
     let cache = root.at.join("tools/__pycache__/stub.cpython-312.pyc");
     std::fs::create_dir_all(cache.parent().expect("a parent")).expect("the cache is made");

@@ -58,8 +58,9 @@ impl Root {
     /// The taxonomy and `docs/taxonomies`, and no entry under any scope
     /// pattern.
     fn copy_only(label: &str) -> Root {
-        // Outside every git repository where a directory is, so what a
-        // repository above the root ignores does not reach a case (#1192).
+        // Outside every git repository where a directory is, and fenced off
+        // from one above it by `run` where none is, so what a repository
+        // above the root ignores does not reach a case (#1192).
         let at = common::scratch_base().join(format!(
             "headwater-cli-validate-{}-{label}",
             std::process::id()
@@ -124,7 +125,9 @@ impl Root {
     }
 
     fn run(&self, arguments: &[&str]) -> Ran {
-        let output = Command::new(env!("CARGO_BIN_EXE_headwater"))
+        let mut command = Command::new(env!("CARGO_BIN_EXE_headwater"));
+        common::fence(&mut command, &self.at);
+        let output = command
             .args(arguments)
             .arg("--root")
             .arg(&self.at)
@@ -775,10 +778,6 @@ fn validate_gives_the_no_tree_notice_at_an_authored_package_source_beside_its_ve
 /// (#1103, Done-when 2). No list of names decides it, only the manifest.
 #[test]
 fn validate_counts_an_examples_directory_as_a_tree_unless_the_manifest_names_it() {
-    // A repository above the root that ignores `examples/` hides the tree.
-    if common::outside_base().is_none() {
-        return;
-    }
     let root = authored_source_root("scope-examples");
     let example = root.at.join("examples/x/a.md");
     std::fs::create_dir_all(example.parent().expect("it has a parent"))

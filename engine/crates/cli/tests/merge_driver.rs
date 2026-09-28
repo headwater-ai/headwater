@@ -113,6 +113,19 @@ fn the_scratch_base_passes_over_a_candidate_inside_a_git_work_tree() {
         "the clean candidate after it is taken"
     );
 
+    // A candidate that is a link into a work tree is inside it. Read the
+    // ancestors of the link rather than of its target, and this fails.
+    #[cfg(unix)]
+    {
+        let link = Scratch(outer.0.with_extension("link"));
+        let _ = std::fs::remove_file(&link.0);
+        std::os::unix::fs::symlink(outer.0.join("tmp"), &link.0).expect("the link is made");
+        assert!(
+            clean_base(std::slice::from_ref(&link.0)).is_err(),
+            "a link into a work tree is no base"
+        );
+    }
+
     // A gitfile names a repository as a `.git` directory does, and a
     // worktree of a repository has one. Read only a directory, and this fails.
     std::fs::remove_dir_all(outer.0.join(".git")).expect("the directory goes");

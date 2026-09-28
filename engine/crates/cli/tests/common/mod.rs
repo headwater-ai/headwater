@@ -80,6 +80,22 @@ pub(crate) fn scratch_base() -> PathBuf {
     clean_base(&base_candidates()).unwrap_or_else(|_| std::env::temp_dir())
 }
 
+/// Name the parent of `root` as git's ceiling for one command, so neither git
+/// nor the engine's own search looks above it for a repository.
+///
+/// A root under `temp_dir()` has whatever repository `TMPDIR` sits in above
+/// it, with whatever that repository declares and ignores (#1192). The
+/// variable is set on the one command and never on this process, which cargo
+/// shares between the cases of one target. A `.git` in `root` itself is
+/// still found, because git reads a ceiling directory's children.
+pub(crate) fn fence(command: &mut Command, root: &Path) {
+    let parent = root.parent().expect("a scratch root has a parent");
+    let parent = parent
+        .canonicalize()
+        .unwrap_or_else(|_| parent.to_path_buf());
+    command.env("GIT_CEILING_DIRECTORIES", parent);
+}
+
 /// `std::env::temp_dir()`, then on unix the three directories a host keeps
 /// for scratch files, in the order [`outside_base`] tries them.
 fn base_candidates() -> Vec<PathBuf> {
@@ -142,9 +158,10 @@ impl Root {
     }
 
     pub(crate) fn shaped(label: &str, prepare: impl FnOnce(&Path)) -> Root {
-        // Under a directory outside every git repository where one is found,
-        // so a case that reads the root before `git init` reads no repository
-        // above it. Where none is, such a case returns before it calls this.
+        // Under a directory outside every git repository where one is found.
+        // Where none is, the root sits under `temp_dir()`, and every run of
+        // the binary through [`Root::command`] still sees no repository above
+        // the root, because it names the root's parent as a ceiling (#1192).
         let at = scratch_base().join(format!("headwater-cli-root-{}-{label}", std::process::id()));
         let _ = std::fs::remove_dir_all(&at);
         std::fs::create_dir_all(&at).expect("the root is made");
@@ -226,11 +243,19 @@ impl Root {
         self.run_with(arguments, "")
     }
 
+    /// The binary, with the root fenced off from any repository above it.
+    pub(crate) fn command(&self) -> Command {
+        let mut command = Command::new(env!("CARGO_BIN_EXE_headwater"));
+        fence(&mut command, &self.at);
+        command
+    }
+
     /// Run the binary with `input` on its standard input, which is how a case
     /// talks to `headwater mcp` (#1161).
     pub(crate) fn run_with(&self, arguments: &[&str], input: &str) -> Ran {
         use std::io::Write;
-        let mut child = Command::new(env!("CARGO_BIN_EXE_headwater"))
+        let mut child = self
+            .command()
             .args(arguments)
             .arg("--root")
             .arg(&self.at)
