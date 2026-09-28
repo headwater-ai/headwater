@@ -174,3 +174,44 @@ fn a_cached_directory_verdict_does_not_outlive_the_directory_becoming_a_pipe() {
         "the cached directory verdict outlived the directory: {warm}"
     );
 }
+
+/// The same swap, with the directory replaced by a regular file that the
+/// process cannot read. That file has no digest either, and it is not a
+/// directory, so a warm check must not repeat the cached directory finding
+/// (#1269, verify round 1). The case needs a process that a mode-000 file
+/// stops, so it returns early when run as root.
+#[test]
+fn a_cached_directory_verdict_does_not_outlive_the_directory_becoming_an_unreadable_file() {
+    use std::os::unix::fs::PermissionsExt;
+
+    let root = Root::shaped("check-governed-dir-to-locked", |at| {
+        std::fs::create_dir_all(at.join("tools/thing")).expect("the directory is made");
+        std::fs::write(
+            at.join("docs/decisions/0002-the-decision-that-governs-a-pipe.md"),
+            decision("tools/thing"),
+        )
+        .expect("the decision writes");
+    });
+    let (before, _) = under_deadline(&root, &["check"], "check did not end over a directory");
+    assert!(
+        before.contains("`tools/thing` names a directory"),
+        "the directory literal is reported first: {before}"
+    );
+
+    let locked = root.at.join("tools/thing");
+    std::fs::remove_dir(&locked).expect("the directory goes");
+    std::fs::write(&locked, "echo locked\n").expect("the file writes");
+    std::fs::set_permissions(&locked, std::fs::Permissions::from_mode(0o000))
+        .expect("the mode is set");
+    if std::fs::read(&locked).is_ok() {
+        return;
+    }
+
+    let (warm, _) = under_deadline(&root, &["check"], "a warm check did not end");
+    let (cold, _) = under_deadline(&root, &["check", "--no-cache"], "a cold check did not end");
+    assert!(!cold.contains("tools/thing/**"), "{cold}");
+    assert!(
+        !warm.contains("tools/thing/**"),
+        "the cached directory verdict outlived the directory: {warm}"
+    );
+}

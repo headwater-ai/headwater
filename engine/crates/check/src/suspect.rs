@@ -195,10 +195,10 @@ impl EdgeCheck for Suspect<'_> {
     /// than passed, so a verdict cached at 2 over such an edge is stale. 4: a
     /// list with a directory member is reported rather than passed, so a
     /// verdict cached at 3 over such an edge is stale (#1104). 5: a literal
-    /// whose entry is neither a directory nor a regular file passes rather
-    /// than being reported as a directory, so a verdict cached at 4 over such
-    /// an edge, which only a socket or a device could have reached, is stale
-    /// (#1269).
+    /// with no digest whose entry is not a directory passes rather than being
+    /// reported as one, so a verdict cached at 4 over such an edge is stale.
+    /// That is a socket, a device, an unreadable file or a gone entry, since a
+    /// named pipe never finished at 4 (#1269).
     const VERSION: u32 = 5;
     /// The fix is offered only on a document verified on or after the clock,
     /// so the clock is an input and has to be in the key.
