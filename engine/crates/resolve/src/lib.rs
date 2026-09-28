@@ -381,7 +381,7 @@ pub fn resolve(sources: &[Source]) -> Result<Resolution, Vec<ResolveError>> {
     }
 
     // 2. Confluence, before anything merges.
-    let errors = confluence::check(&operations, &names);
+    let errors = confluence::check(&operations, &names, &vec![Vec::new(); names.len()]);
     if !errors.is_empty() {
         return Err(errors);
     }

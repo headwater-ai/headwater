@@ -40,7 +40,11 @@ use crate::error::{ResolveError, ResolveErrorKind};
 use crate::operation::{OpKind, Operation};
 
 /// Every pair that does not commute, each reported against the later operation.
-pub fn check(operations: &[Operation], sources: &[String]) -> Vec<ResolveError> {
+pub fn check(
+    operations: &[Operation],
+    sources: &[String],
+    _requires: &[Vec<usize>],
+) -> Vec<ResolveError> {
     let mut out = Vec::new();
     for (index, later) in operations.iter().enumerate() {
         for earlier in &operations[..index] {
@@ -145,7 +149,17 @@ mod tests {
     }
 
     fn errors(sources: &[&str]) -> Vec<ResolveError> {
-        check(&operations(sources), &names(sources.len()))
+        errors_requiring(sources, &[])
+    }
+
+    /// The same, where each `(dependent, dependency)` pair is a source that
+    /// names another in `requires`.
+    fn errors_requiring(sources: &[&str], pairs: &[(usize, usize)]) -> Vec<ResolveError> {
+        let mut requires = vec![Vec::new(); sources.len()];
+        for (dependent, dependency) in pairs {
+            requires[*dependent].push(*dependency);
+        }
+        check(&operations(sources), &names(sources.len()), &requires)
     }
 
     #[test]
@@ -169,6 +183,27 @@ mod tests {
             "{}",
             found[0]
         );
+    }
+
+    const DEPENDENCY: &str = "add:\n  kinds.design_spec: {facets: {require: [status]}}\n";
+    const DEPENDENT: &str = "add_to:\n  kinds.design_spec.facets.require: [mode]\n";
+
+    /// HW-DR-0095: an entry may write into an entry it names in `requires`,
+    /// and the declared dependency orders the pair.
+    #[test]
+    fn a_dependent_add_to_into_its_dependency_commutes_by_order() {
+        let found = errors_requiring(&[DEPENDENCY, DEPENDENT], &[(1, 0)]);
+        assert!(found.is_empty(), "{found:?}");
+    }
+
+    #[test]
+    fn the_same_add_to_without_requires_is_refused() {
+        let found = errors(&[DEPENDENCY, DEPENDENT]);
+        assert_eq!(found.len(), 1, "{found:?}");
+        let text = found[0].to_string();
+        assert!(text.contains("kinds.design_spec.facets.require"), "{text}");
+        assert!(found[0].source == "source-1", "{:?}", found[0]);
+        assert!(text.contains("source-0"), "{text}");
     }
 
     #[test]
