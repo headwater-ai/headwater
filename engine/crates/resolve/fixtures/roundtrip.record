@@ -8,6 +8,7 @@ dependent-add-to-without-requires: refused, so nothing to write out
 list-operations: 17 lines, identical after a round trip
 missing-dependency-add: refused, so nothing to write out
 missing-dependency-add-to: refused, so nothing to write out
+missing-dependency-no-dependent-write: 15 lines, identical after a round trip
 not-confluent: refused, so nothing to write out
 remove-a-required-member: refused, so nothing to write out
 remove-breaks-a-reference: refused, so nothing to write out

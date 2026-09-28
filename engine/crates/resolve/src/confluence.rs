@@ -98,7 +98,13 @@ fn ordered_by_requires(
     dependency: &Operation,
     requires: &[Vec<usize>],
 ) -> bool {
+    // Two `add` operations keep the leaf predicate. A dependent `add` of a new
+    // key already commutes with its dependency's `add` on disjoint leaves, and
+    // one that sets a leaf the dependency sets is two values for one leaf,
+    // which no order resolves.
+    let both_add = dependent.kind == OpKind::Add && dependency.kind == OpKind::Add;
     matches!(dependent.kind, OpKind::Add | OpKind::AddTo)
+        && !both_add
         && requires
             .get(dependent.source)
             .is_some_and(|named| named.contains(&dependency.source))

@@ -9,6 +9,7 @@ dependent-add-to-without-requires: refused, so nothing is made
 list-operations: 0 operations make what they address
 missing-dependency-add: refused, so nothing is made
 missing-dependency-add-to: refused, so nothing is made
+missing-dependency-no-dependent-write: 0 operations make what they address
 not-confluent: refused, so nothing is made
 remove-a-required-member: refused, so nothing is made
 remove-breaks-a-reference: refused, so nothing is made

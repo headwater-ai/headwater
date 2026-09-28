@@ -335,7 +335,9 @@ pub fn write(
     // The sources in the order the resolver applied them, which is not always
     // the order the caller holds them in: a bundle applies after every bundle
     // it names in `requires`. Listing them in application order is what makes
-    // `bundles: [a, b]` and `bundles: [b, a]` write one lock.
+    // `bundles: [a, b]` and `bundles: [b, a]` write one lock where `b` requires
+    // `a`. Two bundles that name nothing of each other keep the caller's order,
+    // so swapping those two does move the lock.
     let mut ordered: Vec<&Source> = sources.iter().collect();
     ordered.sort_by_key(|source| {
         resolution

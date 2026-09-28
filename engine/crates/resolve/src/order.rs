@@ -11,9 +11,11 @@
 //! leaves every source that was not selected as a bundle where it was. The
 //! adopter overlay is last in every selection and stays last.
 //!
-//! The order is what makes a lock independent of the order a consumer wrote.
-//! `bundles: [a, b]` and `bundles: [b, a]` where `b` requires `a` both apply
-//! `a` first, so both write one lock.
+//! The order makes a lock independent of where a consumer wrote a bundle
+//! relative to the bundles it requires. `bundles: [a, b]` and
+//! `bundles: [b, a]` where `b` requires `a` both apply `a` first, so both write
+//! one lock. Two bundles that name nothing of each other keep the consumer's
+//! order, so swapping those two still moves the lock's `sources:` list.
 //!
 //! `requires` is read for this and for nothing else. [HW-DR-0040] rules that it
 //! never adds a bundle to a selection, and nothing here does. A bundle is known

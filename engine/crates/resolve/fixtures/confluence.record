@@ -8,6 +8,7 @@ dependent-add-to-without-requires: 2 permutations, all refused
 list-operations: 1 permutation, all resolve to one taxonomy
 missing-dependency-add: 1 permutation, all refused
 missing-dependency-add-to: 1 permutation, all refused
+missing-dependency-no-dependent-write: 1 permutation, all resolve to one taxonomy
 not-confluent: 2 permutations, all refused
 remove-a-required-member: 1 permutation, all refused
 remove-breaks-a-reference: 1 permutation, all refused

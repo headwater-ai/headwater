@@ -8,6 +8,7 @@ dependent-add-to-without-requires: 2 orders, refused
 list-operations: 1 order, sha256:ce0c66f29c02c493cb45dfd2450c6b5fa6e7d970b10548591fcf2cf544f73b2c
 missing-dependency-add: 1 order, refused
 missing-dependency-add-to: 1 order, refused
+missing-dependency-no-dependent-write: 1 order, sha256:6889317d75c52926b40e72a00dc6c89f2535e90b3df64df3496a3521b9623198
 not-confluent: 2 orders, refused
 remove-a-required-member: 1 order, refused
 remove-breaks-a-reference: 1 order, refused
