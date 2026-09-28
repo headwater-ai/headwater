@@ -22,7 +22,7 @@
 
 lock:
   format: 3
-  digest: sha256:62144f6124525b73c49768d80ccdc41d7324fff0b39836367db4db85aa502cb8
+  digest: sha256:855406fbdc6d15574d11abde328bd66b371ee02db99d87ca9b35ae5fabaf5e09
   rules: 2
   package: headwater/standard
   version: 4.9.1
@@ -36,7 +36,7 @@ lock:
     - path: .headwater/packages/headwater-standard/bundles/decision-record/bundle.yml
       digest: sha256:d2e1dd60f5adf97dcefd3aa46b0f377ed5e7eca533f82fad8a3d90224f79673f
     - path: .headwater/overlay.yml
-      digest: sha256:6fc0e4a3fdba71378fc5b444e66d502452140e497154af5e9eac88514a81aba1
+      digest: sha256:dc607ea052162d6f2b5456988f7a41761ed23137a4ad4bc320f3c6293e28685e
 
 # The adoption payload: the debt this corpus declared when the taxonomy first
 # reached it. Every other line of this file is generated and this block is not.
@@ -674,6 +674,17 @@ resolved:
       lifecycle: standard
       purpose: evidence
       voice: narrative
+    subsystem_spec:
+      facets:
+        require:
+          - title
+      identifier:
+        scheme: spec_id
+      is_a: governed_document
+      language: ste_house
+      lifecycle: standard
+      purpose: behavior
+      voice: declarative
     tutorial:
       facets:
         require:
@@ -962,6 +973,11 @@ resolved:
       layout: "{sequence:02d}-{slug}.md"
       path: "docs/spec/**"
       title: "The specification series"
+    subsystems:
+      homogeneous: true
+      kind: subsystem_spec
+      path: "docs/subsystems/**"
+      title: "Engine subsystems"
     tutorials:
       homogeneous: true
       kind: tutorial
@@ -1082,6 +1098,7 @@ resolved:
         - process_decisions
         - explanations
         - process_explanations
+        - subsystems
       output: "{shelf}/README.md"
     - kind: shelf_sections
       for:

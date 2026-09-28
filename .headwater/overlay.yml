@@ -582,6 +582,45 @@ add:
     homogeneous: true
     kind: tutorial
 
+  # --- the inside of one engine subsystem -----------------------------------
+  # HW-DR-0098 rules that each engine subsystem gets one technical spec, which
+  # states how the subsystem works and why, and governs the source of each crate
+  # it owns by one pattern. Its behavior stays where it is already written: the
+  # spec parts, the interface contracts and the requirements.
+  #
+  # **Why a kind of its own rather than `design_spec`.** The design-spec bundle
+  # requires `sequence` on the kind, not on the `spec_series` shelf, because a
+  # design spec there is a numbered part of one series. A subsystem spec is not
+  # a part of that series and nothing reads an order among them. Dropping
+  # `sequence` from `design_spec` here would leave the series layout
+  # `{sequence:02d}-{slug}.md` with a hole for every new part. So this is a
+  # second kind that requires the title alone.
+  #
+  # **Why `behavior`, and why `spec_id`.** The purpose states what the system
+  # does as it is now, which a subsystem spec does at a smaller scale. The
+  # identifier reuses `spec_id`, the way `register_id` serves two kinds, so a
+  # subsystem spec reads as `HW-SPEC-<slug>` beside the parts it refines.
+  #
+  # This lives in the overlay because the subsystems are this engine's, and no
+  # adopter's corpus has them.
+  kinds.subsystem_spec:
+    is_a: governed_document
+    purpose: behavior
+    voice: declarative
+    lifecycle: standard
+    language: ste_house
+    identifier: {scheme: spec_id}
+    facets:
+      require: [title]
+
+  # Disjoint from every shelf above it. No `layout`, because nothing numbers a
+  # subsystem spec: the file is named from the title.
+  shelves.subsystems:
+    title: Engine subsystems
+    path: docs/subsystems/**
+    homogeneous: true
+    kind: subsystem_spec
+
   # --- the reader who already holds the model -------------------------------
   # A how-to guide answers one task for a reader who has the model already and
   # wants a result today: move the shelves somewhere else, adopt a bundle a
@@ -1518,9 +1557,10 @@ add_to:
     # the index appears, with no second edit to this list by somebody who would
     # have to notice it was missing. `explanations` is named for the same
     # reason: its shelf holds nothing yet (#1005, HW-DR-0093), and its index
-    # appears with its first account.
+    # appears with its first account. `subsystems` is named for the same reason:
+    # its shelf holds nothing yet (HW-DR-0098, #1288).
     - kind: shelf_index
-      for: [spec_series, obligations, evaluations, requirements, acceptance_criteria, verifications, probes, probe_results, probe_runs, reviews, tutorials, how_to, process_decisions, explanations, process_explanations]
+      for: [spec_series, obligations, evaluations, requirements, acceptance_criteria, verifications, probes, probe_results, probe_runs, reviews, tutorials, how_to, process_decisions, explanations, process_explanations, subsystems]
       output: "{shelf}/README.md"
 
     # The redirect map. `docs/spec/09-open-questions.md` is a tombstone: the

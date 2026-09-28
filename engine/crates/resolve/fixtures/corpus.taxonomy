@@ -611,6 +611,17 @@ kinds:
     lifecycle: standard
     purpose: evidence
     voice: narrative
+  subsystem_spec:
+    facets:
+      require:
+        - title
+    identifier:
+      scheme: spec_id
+    is_a: governed_document
+    language: ste_house
+    lifecycle: standard
+    purpose: behavior
+    voice: declarative
   tutorial:
     facets:
       require:
@@ -899,6 +910,11 @@ shelves:
     layout: "{sequence:02d}-{slug}.md"
     path: "docs/spec/**"
     title: "The specification series"
+  subsystems:
+    homogeneous: true
+    kind: subsystem_spec
+    path: "docs/subsystems/**"
+    title: "Engine subsystems"
   tutorials:
     homogeneous: true
     kind: tutorial
@@ -1019,6 +1035,7 @@ projections:
       - process_decisions
       - explanations
       - process_explanations
+      - subsystems
     output: "{shelf}/README.md"
   - kind: shelf_sections
     for:

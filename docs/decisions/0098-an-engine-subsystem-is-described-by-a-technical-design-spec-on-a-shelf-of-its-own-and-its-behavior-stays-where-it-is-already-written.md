@@ -2,14 +2,14 @@
 id: HW-DR-0098
 status: current
 status_since: 2026-09-28
-summary: "Each engine subsystem gets one technical design spec on a new shelf, and it governs its crates by one pattern each. No crate gets a functional spec, because interface contracts, spec parts and requirements already state behavior."
+summary: "Each engine subsystem gets one technical spec, a subsystem_spec on a new shelf, and it governs its crates by one pattern each. No crate gets a functional spec, because interface contracts, spec parts and requirements already state behavior."
 last_verified: 2026-09-28
 title: "An engine subsystem is described by a technical design spec on a shelf of its own, and its behavior stays where it is already written"
 provenance:
   warrant: asserted
   agency: agent
   drafted_by: claude-opus-5-5
-  activity: measure+draft
+  activity: measure+draft+revise
   evidence_basis: evidenced
 relations:
   traces_to:
@@ -39,7 +39,9 @@ The owner ruled on the three questions below in a session on 2026-09-28.
 
 **The unit is a subsystem, not a crate.** A subsystem is one stage, or a small set of stages, of the pipeline that spec 6 draws. The stages are resolve, parse, graph build, cache, checks, queries, projections, export and explain. The authoring verbs and the measurement layer are two more subsystems that the diagram does not draw. Every crate under `engine/crates/` belongs to exactly one subsystem. Six crates hold one source file each, so a spec for each crate would often be one paragraph long.
 
-**A technical spec is a `design_spec` on a new shelf, `docs/subsystems/`.** The numbered parts under `docs/spec/` stay at the level of the system. The `design_spec` kind comes from the design-spec bundle and already carries the `spec_id` scheme. So the only change to the taxonomy is the shelf.
+**A technical spec is a `subsystem_spec` on a new shelf, `docs/subsystems/`.** The numbered parts under `docs/spec/` stay at the level of the system. The kind is declared in the overlay beside the shelf, and it requires the title alone. It reuses the `spec_id` scheme, so a subsystem spec reads as `HW-SPEC-<slug>`.
+
+This paragraph first named `design_spec`, on the reading that `sequence` was a requirement of the `spec_series` shelf. The design-spec bundle requires `sequence` on the kind itself, and nothing reads an order among subsystem specs. The owner ruled on 2026-09-28 that a subsystem spec carries no sequence. So the overlay declares a second kind rather than weaken `design_spec` for every numbered part.
 
 **A technical spec governs each crate it owns by one pattern.** The anchor is `engine/crates/<crate>/src/**`, which [HW-DR-0074](0074-a-code-path-anchor-is-a-pattern-over-the-tree-and-it-binds-when-the-pattern-matches-at-least-one-entry.md) permits. A new file in the crate is then reached with no new edge. Exactly one technical spec governs the source of each crate. An interface contract can keep its edges onto the files that implement its verb.
 
@@ -47,7 +49,7 @@ The owner ruled on the three questions below in a session on 2026-09-28.
 
 ## Consequences
 
-A taxonomy change is owed before the first subsystem spec: a shelf declaration for `docs/subsystems/**` that admits `design_spec`. The `headwater-taxonomy` skill owns that change. It also answers one open point. `design_spec` requires the `sequence` facet on `spec_series`, and the new shelf declares whether it requires a sequence too.
+The overlay declares the `subsystem_spec` kind and the `docs/subsystems/**` shelf, and it names the shelf for a generated index. That change moved the taxonomy lock. So the fourteen transcripts of the two campaign pilots of 2026-09-28 stand at `deprecated`, because each one pins the earlier lock. [#1288](https://github.com/headwater-ai/headwater/issues/1288) carries the writing of the subsystem specs.
 
 The crate criterion of #1283 is met by the subsystem specs, not by spec 6. A `**` anchor on spec 6 would make one document the rule for every crate. The #956 recount of 2026-09-21 rejected that shape for a subtree that many documents share.
 
