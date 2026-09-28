@@ -328,6 +328,15 @@ else
         "$(grep '^FAIL' "$scratch/line-map.out" | tr '\n' ' ')"
 fi
 
+python3 "$root/integrations/headwater-upkeep/fixtures/lost-governor.py" >"$scratch/lost-governor.out" 2>&1
+code=$?
+if [ "$code" -eq 0 ]; then
+    pass 'a path whose governor the change deleted is named, and a pattern the engine did not expand is unmeasured'
+else
+    fail 'a path whose governor the change deleted is named, and a pattern the engine did not expand is unmeasured' \
+        "$(grep '^FAIL' "$scratch/lost-governor.out" | tr '\n' ' ')"
+fi
+
 # `integrations/dashboard` (#505): the page's own unit tests, which hold
 # HW-DR-0080's (corpus_identity, id) key and #505's decisive fixture, and
 # read this repository's graph export as the worked example. The export is not

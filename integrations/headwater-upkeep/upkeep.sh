@@ -23,7 +23,10 @@
 #     stood before it
 #   headwater route <path> <ancestors...> --json, once per path the change
 #     leaves on the tree, and once over the base tree per path it deleted or
-#     renamed away, because the edge that named such a path is on the base
+#     renamed away, because the edge that named such a path is on the base,
+#     and once per path still on the tree that a deleted document governed
+#   headwater explain <path> --json over the base tree, once per path the
+#     change deleted, so the report can name what a deleted document governed
 # `route` is given each ancestor directory of the path as a further word, so
 # a pointer that anchors on an ancestor and not on the path itself is a
 # literal directory edge, which the engine matches by equality and which
@@ -39,7 +42,7 @@ bin=${HEADWATER_BIN:-headwater}
 here=$(cd "$(dirname "$0")" && pwd)
 
 rm -rf "$work"
-mkdir -p "$work/change" "$work/route" "$work/route-base" "$work/base"
+mkdir -p "$work/change" "$work/route" "$work/route-base" "$work/route-lost" "$work/explain-base" "$work/base"
 
 # Paths relative to <root>, which is how every engine verb below names them.
 # `--name-status -M` names a rename as one line with both paths, so the old
@@ -107,5 +110,27 @@ route_all() {
 route_all "$work/changed.txt" "$root" "$work/route" "$work/routes.tsv"
 cut -f2 "$work/gone.tsv" >"$work/gone.txt"
 route_all "$work/gone.txt" "$work/base" "$work/route-base" "$work/routes-base.tsv"
+
+# A deleted document takes its governs edges with it, so a path it governed
+# can be left on the tree with no document behind it, and the change need
+# not name that path at all. `explain` over the base tree names what each
+# deleted document governed. A renamed document keeps its edges, because an
+# edge lives in the document, so only a deletion is explained. `explain`
+# exits non-zero on a path that is not a document, and that path is skipped;
+# its standard error stays in the work directory.
+: >"$work/explains-base.tsv"
+n=0
+while IFS="$(printf '\t')" read -r status first _; do
+    [ "$status" = D ] || continue
+    n=$((n + 1))
+    if "$bin" explain "$first" --json --root "$work/base" \
+        >"$work/explain-base/$n.json" 2>"$work/explain-base/$n.err"; then
+        printf '%s\t%s\n' "$n" "$first" >>"$work/explains-base.tsv"
+    fi
+done <"$work/gone.tsv"
+# Each such path that is still on the tree is routed against it, so the
+# report can say whether another document governs it now.
+python3 "$here/upkeep-report.py" --lost "$work" "$root" >"$work/lost.txt"
+route_all "$work/lost.txt" "$root" "$work/route-lost" "$work/routes-lost.tsv"
 
 python3 "$here/upkeep-report.py" "$work" "$report"
