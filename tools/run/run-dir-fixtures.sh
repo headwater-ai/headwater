@@ -359,7 +359,7 @@ same 'a ruling line with no OWNER line is skipped, and one the owner answered is
 sh "$tool" claim "$ruled" 21 issue-21 f21 >/dev/null 2>&1
 sh "$tool" rule "$ruled" 22 deferred 'owner deferred it for this run' >/dev/null 2>"$scratch/err"; status=$?
 same 'rule exits 0' 0 "$status"
-same '  and appends one RULED line to decisions.md' 1 "$(grep -c '^- [0-9-]* — RULED #22 deferred: owner deferred it for this run$' "$ruled/decisions.md")"
+same '  and appends one RULED line to decisions.md, naming its run' 1 "$(grep -c '^- [0-9-]* — RULED #22 deferred (run ruled): owner deferred it for this run$' "$ruled/decisions.md")"
 sh "$tool" rule "$ruled" 23 refused 'kind 2, better done another way' >/dev/null 2>&1
 same 'next skips a deferred and a refused issue' 24 "$(sh "$tool" next "$ruled" 2>&1)"
 sh "$tool" rule "$ruled" 22 open 'the owner lifted the deferral' >/dev/null 2>&1
@@ -408,6 +408,47 @@ same '  and a handover the log already records is not resumed' 0 "$(sh "$tool" r
 touch "$inflight/drain"
 same '  and in drain resume prints DRAIN and nothing else' DRAIN "$(sh "$tool" resume "$inflight" 2>&1)"
 rm -f "$inflight/drain"
+
+printf '\n# a ruling binds the run that wrote it, and an OWNER line binds every run\n'
+# Verify-1 of PR #1281: `start` seeds decisions.md from the previous run, so
+# a deferral written in run A skipped the issue again in run B, although
+# hw-run-policy defers "for this run alone". An OWNER line is different: the
+# owner's answer is posted on the issue and holds until the owner changes it.
+rm -rf "$HEADWATER_RUN_ROOT"
+mkdir -p "$HEADWATER_RUN_ROOT"
+runa=$(sh "$tool" start 2026-a 2>/dev/null)
+printf '# Queue\n\n1. #40 Deferred in A | none | x\n2. #41 Answered in A | none | x | ruling\n3. #42 Other | none | x\n' > "$runa/queue.md"
+sh "$tool" rule "$runa" 40 deferred 'not this run' >/dev/null 2>&1
+printf -- '- 2026-09-27 — OWNER (2026-09-27) #41: build it.\n' >> "$runa/decisions.md"
+same 'in the run that deferred it, next skips the issue' 41 "$(sh "$tool" next "$runa" 2>&1)"
+runb=$(sh "$tool" start 2026-b 2>/dev/null)
+cp "$runa/queue.md" "$runb/queue.md"
+same '  and the next run is seeded with the RULED line' 1 "$(grep -c 'RULED #40 deferred (run 2026-a)' "$runb/decisions.md")"
+same '  but the next run hands the issue out again' 40 "$(sh "$tool" next "$runb" 2>&1)"
+sh "$tool" claim "$runb" 40 issue-40 f40 >/dev/null 2>&1
+same '  and the OWNER line of the earlier run still answers the ruling line' 41 "$(sh "$tool" next "$runb" 2>&1)"
+
+printf '\n# a veto after a restart: verified-pass goes back to verified-fail, and the fields carry\n'
+# Verify-1 of PR #1281: after a restart, the parent rules a verified-pass
+# handover and may veto it, but no path took the veto back to a builder. The
+# veto writes the checkpoint back to verified-fail with the veto file as the
+# finding, and every field it does not name carries from the checkpoint before.
+veto=$(sh "$tool" start veto 2>/dev/null)
+sh "$tool" stage "$veto" 50 adjudicated note=/s/adj.md branch=issue-50 footprint=f50 >/dev/null 2>&1
+same 'resume, adjudicated and unclaimed: claim the footprint' '50 adjudicated claim f50' "$(sh "$tool" resume "$veto" 2>&1)"
+sh "$tool" stage "$veto" 50 built pr=500 build=/s/build.md >/dev/null 2>&1
+same 'a stage carries every field it does not name from the checkpoint before' \
+    'stage built|branch issue-50|pr 500|note /s/adj.md|build /s/build.md|footprint f50' \
+    "$(paste -sd'|' "$veto/handover/50")"
+same 'resume, built: iterate' '50 built iterate' "$(sh "$tool" resume "$veto" 2>&1)"
+sh "$tool" stage "$veto" 50 verified-pass verify=/s/verify.md rounds=1 >/dev/null 2>&1
+same 'resume, verified-pass: the parent rules' '50 verified-pass rule' "$(sh "$tool" resume "$veto" 2>&1)"
+sh "$tool" stage "$veto" 50 verified-fail verify=/s/veto-1.md >/dev/null 2>&1
+same 'a veto writes verified-fail with the veto as the finding, and resume sends it to hw-iterate' \
+    '50 verified-fail iterate|verify /s/veto-1.md|note /s/adj.md|pr 500' \
+    "$(sh "$tool" resume "$veto" 2>&1)|$(grep -E '^(verify|note|pr) ' "$veto/handover/50" | sort -r | paste -sd'|')"
+sh "$tool" stage "$veto" 50 ruled-merge >/dev/null 2>&1
+same 'resume, ruled-merge: integrate' '50 ruled-merge integrate' "$(sh "$tool" resume "$veto" 2>&1)"
 
 printf '\n%s passed, %s failed\n' "$passed" "$failed"
 [ "$failed" -eq 0 ]
