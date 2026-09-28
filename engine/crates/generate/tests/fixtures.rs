@@ -596,17 +596,17 @@ fn every_output_carries_its_own_marker() {
     }
 }
 
-/// This repository generates its thirty-nine artifacts, and it says why for
+/// This repository generates its forty-five artifacts, and it says why for
 /// everything else.
 ///
 /// A property and not a recording, for the reason the query crate states about
 /// its own repository run: the corpus is prose somebody edits. What is asserted
 /// is what a prose edit must not change.
 ///
-/// **Fifteen of the thirty-nine are shelf indexes, one per shelf that holds a
+/// **Sixteen of the forty-five are shelf indexes, one per shelf that holds a
 /// document.** The first is the decisions shelf, which the package has declared
 /// since the first-run walkthrough and which produced a reason rather than a
-/// file until #124 filled that shelf. The other fourteen are the overlay's own
+/// file until #124 filled that shelf. The other fifteen are the overlay's own
 /// entry, in the order its `for` list names them, and the specification index
 /// leads it because that is the list the root README used to carry by hand.
 /// #528 is why the seven after it are there: each of those shelf roots answered
@@ -617,10 +617,12 @@ fn every_output_carries_its_own_marker() {
 /// produced a reason rather than a file, the same way `specifications` still
 /// does below. The fifteenth, `process_explanations`, is on the list from the
 /// change that declared it (#1005), because that change put its first document
-/// on the shelf. Its sibling `explanations` holds none yet and gives a reason.
+/// on the shelf. Its sibling `explanations`, the fourteenth, gave a reason
+/// rather than a file until #1231 put the account of how a release reaches
+/// an adopter on it.
 ///
-/// **Five of the other twenty-four are one each, and nineteen are one per committed
-/// transcript.** The count in the name of this test therefore moves when a
+/// **Five of the other twenty-nine are one each, and twenty-four are one per
+/// committed transcript.** The count in the name of this test therefore moves when a
 /// transcript lands on `docs/probe-runs/`, and this paragraph is the only
 /// thing that says so. The redirect map that the open-questions
 /// tombstone carries. The verb index #257 asked for, which reads the binary
@@ -629,13 +631,14 @@ fn every_output_carries_its_own_marker() {
 /// the `surface` block of the taxonomy and no shelf. The site navigation
 /// HW-DR-0036 and #418 name: MkDocs's `nav:` over the reading order
 /// `by_precedence` derives. The descriptor, at the path Q14 fixes. And one
-/// probe result for each transcript the corpus holds, which is the nineteen:
-/// five regression recordings of 2026-09-09 to 2026-09-17, and the seven
-/// transcripts of each of the two #980 pilots of 2026-09-28.
+/// probe result for each transcript the corpus holds, which is the
+/// twenty-four: five regression recordings of 2026-09-09 to 2026-09-17, the
+/// seven transcripts of each of the two #980 pilots of 2026-09-28, and the
+/// five of the #980 campaign of the same day.
 ///
 /// Three declarations produce a reason rather than a file. The package declares
 /// an index for one shelf this tree holds no document on, the overlay declares
-/// one for `explanations`, which holds none either, and the register is a
+/// one for `subsystems`, which holds none either, and the register is a
 /// function of the clock.
 ///
 /// **The order is the plan's order, and it is asserted.** A declared projection
@@ -647,7 +650,7 @@ fn every_output_carries_its_own_marker() {
 /// compares bytes, so a contributor who edits a `summary` and does not
 /// regenerate fails this test before CI runs.
 #[test]
-fn this_repository_generates_its_thirty_nine_artifacts_and_accounts_for_the_rest() {
+fn this_repository_generates_its_forty_five_artifacts_and_accounts_for_the_rest() {
     let root = repository_root();
     let resolved = headwater_resolve::repository(&root)
         .unwrap_or_else(|errors| panic!("{}", headwater_resolve::render_errors(&errors)));
@@ -722,6 +725,7 @@ fn this_repository_generates_its_thirty_nine_artifacts_and_accounts_for_the_rest
             "docs/tutorials/README.md",
             "docs/how-to/README.md",
             "docs/process/decisions/README.md",
+            "docs/explanations/README.md",
             "docs/process/explanations/README.md",
             "docs/spec/09-open-questions.md",
             "docs/probe-results/campaign-of-2026-09-28-campaign-tier-absent-arm-navigability.md",
@@ -753,19 +757,20 @@ fn this_repository_generates_its_thirty_nine_artifacts_and_accounts_for_the_rest
             ".headwater/nav.yml",
             descriptor::PATH
         ],
-        "this repository writes an index for each of its fifteen shelves that hold a \
+        "this repository writes an index for each of its sixteen shelves that hold a \
          document, then the redirect map, the verb index, the consumer surface page, the \
          site navigation and the descriptor, in that order"
     );
-    // Three declared shelves hold no document: `specifications`,
-    // `explanations` (#1005, which put its first account on the process
-    // shelf and none on the product one) and `subsystems` (HW-DR-0098, whose
-    // first spec #1288 writes, and which moves this literal back to 7). The
+    // Two declared shelves hold no document: `specifications` and
+    // `subsystems` (HW-DR-0098, whose first spec #1288 writes, and which
+    // moves this literal to 6). `explanations` held none from #1005, which
+    // put its first account on the process shelf, until #1231 put the
+    // release account on it, which moved this literal from 8 to 7. The
     // `process_decisions` shelf held none for one commit, which put this
     // literal at 8 and left `docs/process/decisions/README.md` out of the
     // list above, and `how_to` held none from the taxonomy that declared it
     // until #885 put a document on it, which held this literal at 7 for one
-    // commit. The register is the second declaration that produces a reason
+    // commit. The register is the third declaration that produces a reason
     // rather than a file. Nothing is passed over: a projection that produced
     // no file states a reason. The other four are the declarable kinds this
     // engine does not emit and this corpus does not declare —
@@ -774,7 +779,7 @@ fn this_repository_generates_its_thirty_nine_artifacts_and_accounts_for_the_rest
     // reason is a property of this engine rather than of the corpus.
     assert_eq!(
         plan.unwritten.len(),
-        8,
+        7,
         "a projection produced neither a file nor a reason"
     );
     for unwritten in &plan.unwritten {

@@ -2,10 +2,10 @@ touched corpus/spec/04-a-scaffolded-fourth-part.md
 touched corpus/decisions/a-scaffolded-successor.md
 touched corpus/decisions/a-second-successor.md
 
-9 seen, 9 classified, 9 checked, 126 check instances
+9 seen, 9 classified, 9 checked, 127 check instances
       4 skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
      19 skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
-10 documents in the read set, and 6 barriers that no gate carries across a merge
+10 documents in the read set, and 7 barriers that no gate carries across a merge
       9 instances of facet.required.missing
       9 instances of facet.value.not_permitted
       9 instances of facet.value.blank
@@ -25,6 +25,7 @@ touched corpus/decisions/a-second-successor.md
       7 instances of section.required.missing
       1 instances of link.fragment.unresolved
       1 instances of link.path.unresolved
+      1 instances of link.identifier.mismatch
       9 instances of warrant.promoted
       9 instances of lifecycle.transition.not_permitted
       9 instances of lifecycle.state.not_admitted
@@ -90,6 +91,8 @@ rules, and for each the scope that binds it
     corpus scope, every row of the census, and it is a barrier
   link.path.unresolved
     corpus scope, every row of the census, and it is a barrier
+  link.identifier.mismatch
+    corpus scope, every row of the census, and it is a barrier
   warrant.promoted
     document scope, one document and its front matter, and the version of it that stood before the change
   lifecycle.transition.not_permitted
@@ -153,6 +156,7 @@ register
   section.required.missing reaches no obligation, so it names none
   link.fragment.unresolved reaches no obligation, so it names none
   link.path.unresolved reaches no obligation, so it names none
+  link.identifier.mismatch reaches no obligation, so it names none
   warrant.promoted reaches no obligation, so it names none
   lifecycle.transition.not_permitted reaches no obligation, so it names none
   lifecycle.state.not_admitted reaches no obligation, so it names none
@@ -365,6 +369,8 @@ instances
   link.fragment.unresolved corpus/decisions/a-scaffolded-successor.md + corpus/decisions/a-second-successor.md + corpus/decisions/an-earlier-decision.md + corpus/exhausted/the-last-one.md + corpus/spec/01-the-first-part.md + corpus/spec/02-the-second-part.md + corpus/spec/03-the-third-part.md + corpus/spec/04-a-scaffolded-fourth-part.md + corpus/standards/a-standard.md
     passed
   link.path.unresolved corpus/decisions/a-scaffolded-successor.md + corpus/decisions/a-second-successor.md + corpus/decisions/an-earlier-decision.md + corpus/exhausted/the-last-one.md + corpus/spec/01-the-first-part.md + corpus/spec/02-the-second-part.md + corpus/spec/03-the-third-part.md + corpus/spec/04-a-scaffolded-fourth-part.md + corpus/standards/a-standard.md
+    passed
+  link.identifier.mismatch corpus/decisions/a-scaffolded-successor.md + corpus/decisions/a-second-successor.md + corpus/decisions/an-earlier-decision.md + corpus/exhausted/the-last-one.md + corpus/spec/01-the-first-part.md + corpus/spec/02-the-second-part.md + corpus/spec/03-the-third-part.md + corpus/spec/04-a-scaffolded-fourth-part.md + corpus/standards/a-standard.md
     passed
   warrant.promoted corpus/decisions/a-scaffolded-successor.md
     skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change

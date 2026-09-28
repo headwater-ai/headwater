@@ -454,6 +454,22 @@
               }
             },
             {
+              "id": "link.identifier.mismatch",
+              "shortDescription": {
+                "text": "corpus scope, every row of the census, and it is a barrier"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "corpus",
+                  "version": 1,
+                  "obligations": [
+                    "OB-FIX-28"
+                  ],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
               "id": "warrant.promoted",
               "shortDescription": {
                 "text": "document scope, one document and its front matter, and the version of it that stood before the change"
@@ -745,7 +761,7 @@
             "analysisTarget"
           ],
           "hashes": {
-            "sha-256": "765e2163c2bbe8f9455a21519223192112ec14cae419e5cad3324a5c40638632"
+            "sha-256": "8cdc1e857f7d3693d206faddeec09ef622aa44fbe9d1e378744ae9e2ac49600b"
           }
         },
         {
@@ -822,7 +838,7 @@
             "analysisTarget"
           ],
           "hashes": {
-            "sha-256": "15d94e43a05082553a4abfc5753fa0d59393ab379b0a1a4f96c02705285a93eb"
+            "sha-256": "0374176cdaaae0476d0f195b7530f5a93646c00bd9c41fe16bcdaf480ec2410d"
           }
         },
         {
@@ -1235,7 +1251,7 @@
         },
         {
           "ruleId": "coverage.document_unchecked",
-          "ruleIndex": 33,
+          "ruleIndex": 34,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -2134,6 +2150,39 @@
               "fixable": false,
               "remediation": "point it at a file that exists, or restore `/spec/00-both-halves.md`. A document that moved keeps its identifier, so `headwater explain` finds where it went",
               "escape": "none"
+            }
+          }
+        },
+        {
+          "ruleId": "link.identifier.mismatch",
+          "ruleIndex": 29,
+          "level": "error",
+          "kind": "fail",
+          "message": {
+            "text": "the link text names `SPEC-FIX-cited-only`, but `20-fragment-target.md` reaches `check/spec/20-fragment-target.md`, which is `SPEC-FIX-fragment-target`",
+            "markdown": "the link text names `SPEC-FIX-cited-only`, but `20-fragment-target.md` reaches `check/spec/20-fragment-target.md`, which is `SPEC-FIX-fragment-target`\n\n**Fix:** point the link at the document that carries `SPEC-FIX-cited-only`, or change the text to `SPEC-FIX-fragment-target`. `headwater explain SPEC-FIX-cited-only` names where `SPEC-FIX-cited-only` lives"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/07-prose-defects.md"
+                },
+                "region": {
+                  "startLine": 81,
+                  "startColumn": 70
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "error",
+              "fixable": false,
+              "remediation": "point the link at the document that carries `SPEC-FIX-cited-only`, or change the text to `SPEC-FIX-fragment-target`. `headwater explain SPEC-FIX-cited-only` names where `SPEC-FIX-cited-only` lives",
+              "escape": "none",
+              "obligation": "OB-FIX-28",
+              "obligation_severity": "medium"
             }
           }
         },
@@ -3038,7 +3087,7 @@
         },
         {
           "ruleId": "control.mechanism.unimplemented",
-          "ruleIndex": 35,
+          "ruleIndex": 36,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -3067,7 +3116,7 @@
         },
         {
           "ruleId": "control.mechanism.unimplemented",
-          "ruleIndex": 35,
+          "ruleIndex": 36,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -3096,7 +3145,7 @@
         },
         {
           "ruleId": "obligation.disposition.not_one",
-          "ruleIndex": 34,
+          "ruleIndex": 35,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -3125,7 +3174,7 @@
         },
         {
           "ruleId": "obligation.disposition.not_one",
-          "ruleIndex": 34,
+          "ruleIndex": 35,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -3154,7 +3203,7 @@
         },
         {
           "ruleId": "obligation.disposition.not_one",
-          "ruleIndex": 34,
+          "ruleIndex": 35,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -3183,7 +3232,7 @@
         },
         {
           "ruleId": "obligation.disposition.not_one",
-          "ruleIndex": 34,
+          "ruleIndex": 35,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -3212,7 +3261,7 @@
         },
         {
           "ruleId": "obligation.disposition.not_one",
-          "ruleIndex": 34,
+          "ruleIndex": 35,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -3246,7 +3295,7 @@
           "taxonomy": {
             "package": "headwater/fixture",
             "version": "1.0.0",
-            "lock": "9df1915ec6a29614e9cba30132a126a5cc7591315ce0e880fda4b551982640c0"
+            "lock": "87e6df6eaf5a191d7c8a55956a8fb20fde7ef00970a921d840ae3d84698c54b6"
           },
           "clock": "2026-08-12",
           "coverage": {
@@ -3254,7 +3303,7 @@
             "classified": 29,
             "checked": 28,
             "generated": 1,
-            "instances": 357,
+            "instances": 358,
             "skipped": 60,
             "skips": [
               {
