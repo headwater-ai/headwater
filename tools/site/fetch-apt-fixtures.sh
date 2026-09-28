@@ -154,10 +154,16 @@ for _ in 1 2 3 4 5 6 7 8 9 10; do
 done
 
 # case NAME BASE WANT-STATUS WANT-FILES REQUIRED-TEXT
+# The script copies `site/apt/headwater-archive-keyring.asc` from the
+# directory it runs in, so each case runs in `$tree`, an empty checkout of
+# its own, never in `$root`. Run in `$root`, the case would count the keyring
+# this repository commits, and its answer would change with that commit.
+tree="$scratch/tree"
+mkdir -p "$tree"
 case_() {
     out="$scratch/out-$1"
     mkdir -p "$out"
-    (cd "$root" && HEADWATER_APT_BASE="$2" HEADWATER_APT_MAX_TIME=3 HEADWATER_APT_DEADLINE="${deadline:-600}" sh "$tool" "$out" >"$out.log" 2>&1)
+    (cd "$tree" && HEADWATER_APT_BASE="$2" HEADWATER_APT_MAX_TIME=3 HEADWATER_APT_DEADLINE="${deadline:-600}" sh "$tool" "$out" >"$out.log" 2>&1)
     got=$?
     files=none
     [ -d "$out/apt" ] && files=$(find "$out/apt" -type f | wc -l | tr -d ' ')
@@ -180,6 +186,13 @@ case_ "and apt finds each file where Packages and Release say" "$base/B" 0 5 "he
     cmp -s "$scratch/out-and apt finds each file where Packages and Release say/apt/dists/stable/InRelease" "$scratch/rel/B/InRelease" &&
     { passed=$((passed + 1)); echo "  ok      at the pool and dists paths, InRelease unchanged"; } ||
     { failed=$((failed + 1)); echo "  FAIL    at the pool and dists paths, InRelease unchanged"; }
+mkdir -p "$tree/site/apt"
+echo "a public keyring" >"$tree/site/apt/headwater-archive-keyring.asc"
+case_ "a committed keyring is served beside the release" "$base/B" 0 6 "serving the APT repository"
+cmp -s "$scratch/out-a committed keyring is served beside the release/apt/headwater-archive-keyring.asc" "$tree/site/apt/headwater-archive-keyring.asc" &&
+    { passed=$((passed + 1)); echo "  ok      at apt/headwater-archive-keyring.asc, unchanged"; } ||
+    { failed=$((failed + 1)); echo "  FAIL    at apt/headwater-archive-keyring.asc, unchanged"; }
+rm -rf "$tree/site"
 case_ "a release with no InRelease serves nothing and passes" "$base/unsigned" 0 none "carries no InRelease"
 case_ "InRelease of one release with the rest of another stops the build" "$base/inrelease-of-a" 1 none "the signed text of InRelease is not Release"
 case_ "Packages of one release with the rest of another stops the build" "$base/packages-of-a" 1 none "Release does not carry the SHA-256 of Packages"
