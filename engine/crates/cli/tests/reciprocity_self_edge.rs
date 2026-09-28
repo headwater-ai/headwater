@@ -149,7 +149,9 @@ fn into_front_matter(path: &Path, lines: &str) {
 /// with the whitespace taken out so the layout of the report does not matter.
 fn fixable_of_reciprocity_findings(json: &str) -> Vec<String> {
     let dense: String = json.split_whitespace().collect();
-    let opened = format!("\"rule\":\"{RULE}\"");
+    // A finding opens with its rule and its severity. The report's table of
+    // rules opens with the rule and its scope, so it does not match.
+    let opened = format!("\"rule\":\"{RULE}\",\"severity\":");
     dense
         .match_indices(&opened)
         .map(|(at, _)| {
@@ -175,7 +177,10 @@ fn check_fix_writes_nothing_for_a_half_that_names_its_own_document() {
     let (evaluation, id) = root.evaluation("An evaluation that cites itself");
     set_facet(&evaluation, "status", "current");
     set_facet(&evaluation, "status_since", "2026-09-01");
-    into_front_matter(&evaluation, &format!("relations:\n  cited_by:\n    - {id}\n"));
+    into_front_matter(
+        &evaluation,
+        &format!("relations:\n  cited_by:\n    - {id}\n"),
+    );
     let before = std::fs::read(&evaluation).expect("the evaluation reads");
 
     let fixed = root.run(&["check", "--fix", "--no-cache", "--now", NOW]);
@@ -187,8 +192,7 @@ fn check_fix_writes_nothing_for_a_half_that_names_its_own_document() {
         fixed.err
     );
     assert_eq!(
-        before,
-        after,
+        before, after,
         "the fix wrote into the document\n{text}\n{}",
         fixed.err
     );
@@ -201,5 +205,15 @@ fn check_fix_writes_nothing_for_a_half_that_names_its_own_document() {
         "the self-edge is still reported once, with no fix\n{}{}",
         checked.out,
         checked.err
+    );
+    // `cited_by` is an evidence relation, so the self-target rule reports the
+    // same entry, and the remediation says so rather than asking for a half.
+    assert!(
+        checked.out.contains("names its own document")
+            && checked
+                .out
+                .contains("(`relation.target.is_source` reports it too)"),
+        "the remediation says to retarget or delete, and names the self-target rule\n{}",
+        checked.out
     );
 }
