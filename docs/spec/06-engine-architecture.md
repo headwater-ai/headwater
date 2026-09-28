@@ -73,7 +73,7 @@ The graph is a function of the corpus and the lock, and every run rebuilds it. T
 |---|---|---|---|
 | The in-memory graph | one run | never | nothing |
 | The cache | until its inputs change | never, and version control ignores it | nothing |
-| An export | until a run regenerates it | when the taxonomy declares an output path | nothing |
+| An export | until a run regenerates it | when the taxonomy declares an output path and does not state `committed: false` | nothing |
 
 **The cache is disposable, and a test says so.** `headwater check --no-cache` produces output byte-identical to `headwater check`. A cache that can change a verdict is a store under another name. The engine carries that test beside the fixtures for its other correctness roots ([spec 12](12-check-layer.md#the-correctness-roots)).
 
@@ -208,7 +208,7 @@ A graph export is a projection like the others. The taxonomy declares its output
 
 **A committed export regenerates on every edit to a facet it carries, and that is the `Cargo.lock` regime.** The native export is lossless, so it carries every facet of every document, and `summary` is one of them. An edit to one summary changes the export, and `generate --check` then fails until somebody regenerates it. A committed copy that survived a source edit would be a committed copy that had drifted, which is what the gate exists to catch. This corpus already pays the same cost on its shelf index, which carries the summary of every document on the shelf.
 
-**An adopter who wants a committed artifact that a summary edit leaves alone has two controls, and neither one drops a facet.** The first is which corpus the profile carries. The second is whether the taxonomy declares an output path at all, because an export with no declared path is never committed. `headwater export --format` writes such an artifact to standard output on demand. A filter over facet values is not a third control, and [the filter section](#an-export-profile-carries-a-filter) below states why.
+**An adopter who wants a committed artifact that a summary edit leaves alone has two controls, and neither one drops a facet.** The first is which corpus the profile carries. The second is whether the taxonomy declares an output path at all, because an export with no declared path is never committed. A declared export that states `committed: false` is not committed either, and `headwater export` writes it to its declared path at publish time. `headwater export --format` writes such an artifact to standard output on demand. A filter over facet values is not a third control, and [the filter section](#an-export-profile-carries-a-filter) below states why.
 
 Exports fall into two classes, and only one class preserves fidelity.
 
