@@ -419,12 +419,16 @@ fn dispatch(root: &Path, verb: Verb) -> ExitCode {
                 arm,
                 category,
                 seed,
+                exclude,
+                repetitions,
             }) => probe_plan(
                 root,
                 tier.as_deref(),
                 arm.as_deref(),
                 category.as_deref(),
                 seed,
+                exclude,
+                repetitions,
             ),
             Some(ProbeWord::Record { path }) => match path {
                 None => fail(
@@ -5158,6 +5162,8 @@ fn probe_plan(
     arm: Option<&str>,
     category: Option<&str>,
     seed: u64,
+    exclude: Vec<String>,
+    repetitions: Option<u32>,
 ) -> ExitCode {
     let tier = match tier {
         None => headwater_probe::Tier::Regression,
@@ -5200,6 +5206,8 @@ fn probe_plan(
             },
         },
         seed,
+        exclude,
+        repetitions,
     };
 
     let path = root.join(headwater_probe::budget::PATH);
@@ -5309,6 +5317,10 @@ fn probe_grade(root: &Path, path: &Path) -> ExitCode {
         lock: &loaded.bound.digest,
     };
     let record = headwater_probe::Record::read(&source, &tree);
+    // A run planned over part of the selection is graded against that part,
+    // the same way `generate` grades it (#980).
+    let narrowed = headwater_probe::grade::narrowed(selected, &record);
+    let selected = narrowed.as_deref().unwrap_or(selected);
     let results = headwater_probe::Results::over(&record, selected);
     print!("{}", results.render(headwater_cli::paint::stdout_color()));
     ExitCode::SUCCESS

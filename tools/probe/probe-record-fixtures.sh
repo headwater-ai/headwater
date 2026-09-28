@@ -635,6 +635,26 @@ else
     fail "a stream recorded from the channel is on disk" "no file at $live"
 fi
 
+# The final line is the answer (#980). The pilot of 2026-09-28 found sessions
+# that wrote one sentence of reasoning and then the word on its own line, and
+# the whole-message rule recorded each as no answer. A word inside a sentence
+# is still no answer, and so is a word in Markdown emphasis.
+printf '%s\n' '{"type":"result","result":"Found it: HW-DR-0034 rules on this.\n\nmerge\n"}' \
+    > "$scratch/last-line.jsonl"
+same "a word alone on the final line after a sentence is the answer" \
+    "merge" \
+    "$(sh "$driver" --answer-only "$scratch/last-line.jsonl" --answers "merge, stamp" 2>/dev/null)"
+printf '%s\n' '{"type":"result","result":"The answer is merge, because HW-DR-0034 says so."}' \
+    > "$scratch/in-sentence.jsonl"
+same "a word inside a sentence on the final line is no answer" \
+    "" \
+    "$(sh "$driver" --answer-only "$scratch/in-sentence.jsonl" --answers "merge, stamp" 2>/dev/null)"
+printf '%s\n' '{"type":"result","result":"Reasoning first.\n**merge**"}' \
+    > "$scratch/emphasis.jsonl"
+same "a word in Markdown emphasis on the final line is no answer" \
+    "" \
+    "$(sh "$driver" --answer-only "$scratch/emphasis.jsonl" --answers "merge, stamp" 2>/dev/null)"
+
 # ---------------------------------------------------------------------------
 # The negative direction. The raw harness log is refused by the intake on a key
 # outside the closed sets, which is the property the filter exists to restore.
@@ -803,6 +823,44 @@ same "and the driver passes both guards over the sealed tree" "3" "$?"
 sh "$root/tools/probe/seal.sh" "$root/docs" "HW-PROBE-$tombstone" >/dev/null 2>&1
 same "seal.sh refuses a path inside this checkout" "6" "$?"
 
+# Answer keys (#980). The `patched` probe's task was answered by HW-OBL-0198,
+# which names neither the probe nor its slug, so the seal above kept it and
+# every present-arm session of the pilot found its task already done. The
+# workspace below holds the key, a register line that names it, and a line
+# that does not. The PATH has no `jq` and no harness, so a driver that clears
+# every guard stops at exit 3 and spends nothing.
+patched=HW-PROBE-a-session-records-an-unmeasured-claim-in-the-shape-this-corpus-checks
+key_path=$(sh "$root/tools/probe/seal.sh" --keys "$patched" | awk 'NR == 1 { print $2 }')
+same "seal.sh --keys names the declared answer key" \
+    "HW-OBL-0198" "$(sh "$root/tools/probe/seal.sh" --keys "$patched" | awk 'NR == 1 { print $1 }')"
+mkdir -p "$scratch/answered/docs/obligations" "$scratch/answered/docs/spec" \
+    "$scratch/answered/.headwater/ids/obligation_record_id" "$scratch/no-harness"
+cp "$root/$key_path" "$scratch/answered/$key_path"
+printf '%s\n' "$key_path" > "$scratch/answered/.headwater/ids/obligation_record_id/HW-OBL-0198"
+printf '%s\n' '- [HW-OBL-0198](../obligations/x.md) — the gap, already recorded' \
+    '- [HW-OBL-0199](../obligations/y.md) — another entry' > "$scratch/answered/docs/spec/13.md"
+for tool in grep sh awk sed head; do
+    ln -s "$(command -v "$tool")" "$scratch/no-harness/$tool"
+done
+PATH="$scratch/no-harness" "$shell" "$driver" --probe "$patched" --session x \
+    --task-file "$scratch/task.md" --workspace "$scratch/answered" \
+    >/dev/null 2>"$scratch/answered.err"
+same "the driver refuses a workspace that still holds an answer key" "9" "$?"
+present "and it names the key" "HW-OBL-0198" "$scratch/answered.err"
+sh "$root/tools/probe/seal.sh" "$scratch/answered" "$patched" >/dev/null 2>&1
+same "seal.sh seals an answer key" "0" "$?"
+if [ -e "$scratch/answered/$key_path" ] || [ -e "$scratch/answered/.headwater/ids/obligation_record_id/HW-OBL-0198" ]; then
+    fail "and it removes the key and its identifier claim" "$(ls -aR "$scratch/answered")"
+else
+    pass "and it removes the key and its identifier claim"
+fi
+same "and it removes the line that names the key and keeps the line that does not" \
+    "- [HW-OBL-0199](../obligations/y.md) — another entry" "$(cat "$scratch/answered/docs/spec/13.md")"
+PATH="$scratch/no-harness" "$shell" "$driver" --probe "$patched" --session x \
+    --task-file "$scratch/task.md" --workspace "$scratch/answered" \
+    >/dev/null 2>"$scratch/answered2.err"
+same "and the driver passes the guard over the sealed tree" "3" "$?"
+
 # ---------------------------------------------------------------------------
 # Step 3 of #819: the recorder names its session, and says whether the hook ran.
 #
@@ -835,7 +893,7 @@ STUB
     chmod +x "$scratch/bin/claude"
 
     HEADWATER_PROBE_LOG_DIR="$scratch/probe-log" HEADWATER_MODEL_DIR="$scratch/nomodel" \
-        PATH="$scratch/bin:$PATH" sh "$driver" --probe PROBE-FIX-opened \
+        PATH="$scratch/bin:$PATH" sh "$driver" --probe "HW-PROBE-$tombstone" \
         --session fixture-live --task-file "$scratch/task.md" \
         --workspace "$scratch/ws" > "$scratch/live-run.md" 2>"$scratch/live-run.err"
     same "the driver runs a session through the stub harness" "0" "$?"
@@ -857,7 +915,7 @@ STUB
     mkdir -p "$scratch/probe-log"
 
     HEADWATER_PROBE_LOG_DIR="$scratch/probe-log" PATH="$scratch/bin:$PATH" \
-        sh "$driver" --probe PROBE-FIX-opened --session fixture-dead \
+        sh "$driver" --probe "HW-PROBE-$tombstone" --session fixture-dead \
         --task-file "$scratch/task.md" --workspace "$scratch/ws" \
         > "$scratch/dead-run.md" 2>"$scratch/dead-run.err"
     same "the driver runs a session whose harness reaches no hook" "0" "$?"
@@ -874,12 +932,30 @@ STUB
 exit 7
 STUB
     chmod +x "$scratch/bin/claude"
-    PATH="$scratch/bin:$PATH" sh "$driver" --probe PROBE-FIX-opened --session fixture-fails \
+    PATH="$scratch/bin:$PATH" sh "$driver" --probe "HW-PROBE-$tombstone" --session fixture-fails \
         --task-file "$scratch/task.md" --workspace "$scratch/ws" \
         >/dev/null 2>"$scratch/failed-run.err"
     same "a harness that exits 7 makes the driver exit 10, never 7" "10" "$?"
     present "and the driver names the harness's own status" \
         "the harness exited 7" "$scratch/failed-run.err"
+
+    # The plan's refusal is the driver's refusal (#980). The harness here is
+    # the stub that exits 7, so a driver that reached it would exit 10: an 11
+    # proves the refusal came before any harness call, which is before any
+    # spend. The unnarrowed campaign refuses on a probe its absent arm cannot
+    # measure, and a probe the plan does not select is not a session it owes.
+    PATH="$scratch/bin:$PATH" sh "$driver" --probe "HW-PROBE-$tombstone" --session fixture-refused \
+        --tier campaign --task-file "$scratch/task.md" --workspace "$scratch/ws" \
+        >/dev/null 2>"$scratch/refused-plan.err"
+    same "a run the plan refuses exits 11 before the harness is called" "11" "$?"
+    present "and the driver prints the plan's refusal" \
+        "refuses this run" "$scratch/refused-plan.err"
+    PATH="$scratch/bin:$PATH" sh "$driver" --probe PROBE-FIX-opened --session fixture-unselected \
+        --task-file "$scratch/task.md" --workspace "$scratch/ws" \
+        >/dev/null 2>"$scratch/unselected.err"
+    same "a probe the plan does not select exits 11 before the harness is called" "11" "$?"
+    present "and the driver names the probe" \
+        "the plan does not select PROBE-FIX-opened" "$scratch/unselected.err"
     rm -f "$scratch/bin/claude"
 else
     printf 'note no engine or no lock, so the liveness cases did not run.\n'
