@@ -167,14 +167,14 @@ An interval that overlaps the previous run's is variance and one that does not i
 
 What the documents change. The treated arm is the `campaign` absent arm and the control is the `documentation` absent arm. Both removed the governance, and only the control removed `docs/`, so this is the effect of the documents alone (spec 5).
 
-- treated, `docs/probe-runs/campaign-of-2026-09-28-campaign-tier-absent-arm-sufficiency.md`: 105 of 119 graded sessions satisfied their expectation, 88.2%, in a 95% interval of 81.2% to 92.9%. 0 sessions refused by the session itself.
+- treated, `docs/probe-runs/campaign-of-2026-09-28-campaign-tier-absent-arm-sufficiency.md`: 106 of 120 graded sessions satisfied their expectation, 88.3%, in a 95% interval of 81.4% to 92.9%. 0 sessions refused by the session itself.
 - control, `docs/probe-runs/campaign-of-2026-09-28-documentation-tier-absent-arm-sufficiency.md`: 50 of 120 graded sessions satisfied their expectation, 41.7%, in a 95% interval of 33.2% to 50.6%. 0 sessions refused by the session itself.
 
-The difference is +46.6 points, in a 95% Newcombe interval of +35.2 points to +56.2 points. The interval is above zero, so the treated arm satisfied more often at the 5% level.
+The difference is +46.7 points, in a 95% Newcombe interval of +35.3 points to +56.3 points. The interval is above zero, so the treated arm satisfied more often at the 5% level.
 
 What the documents and the governance change together. The treated arm is a present arm and the control is the `documentation` absent arm.
 
-- treated, `docs/probe-runs/campaign-of-2026-09-28-campaign-tier-present-arm-sufficiency.md`: 90 of 117 graded sessions satisfied their expectation, 76.9%, in a 95% interval of 68.5% to 83.6%. 0 sessions refused by the session itself.
+- treated, `docs/probe-runs/campaign-of-2026-09-28-campaign-tier-present-arm-sufficiency.md`: 92 of 120 graded sessions satisfied their expectation, 76.7%, in a 95% interval of 68.3% to 83.3%. 0 sessions refused by the session itself.
 - control, `docs/probe-runs/campaign-of-2026-09-28-documentation-tier-absent-arm-sufficiency.md`: 50 of 120 graded sessions satisfied their expectation, 41.7%, in a 95% interval of 33.2% to 50.6%. 0 sessions refused by the session itself.
 
-The difference is +35.3 points, in a 95% Newcombe interval of +23.0 points to +46.0 points. The interval is above zero, so the treated arm satisfied more often at the 5% level.
+The difference is +35.0 points, in a 95% Newcombe interval of +22.8 points to +45.7 points. The interval is above zero, so the treated arm satisfied more often at the 5% level.

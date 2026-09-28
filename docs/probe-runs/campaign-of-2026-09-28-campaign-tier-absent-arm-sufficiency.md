@@ -2,7 +2,7 @@
 id: HW-RUN-campaign-of-2026-09-28-campaign-tier-absent-arm-sufficiency
 status: current
 status_since: 2026-09-28
-summary: "The absent arm of the campaign tier over the sufficiency selection, in the full #980 campaign batch: 119 sessions, 4652 cents, the intent hook live in 0."
+summary: "The absent arm of the campaign tier over the sufficiency selection, in the full #980 campaign batch: 120 sessions, 4747 cents, the intent hook live in 0."
 last_verified: 2026-09-28
 tier: campaign
 arm: absent
@@ -25,7 +25,7 @@ harness: 0.4.0
 tier: campaign
 arm: absent
 at: 2026-09-28
-cost_cents: 4652
+cost_cents: 4747
 ```
 
 **This is the full batch of the #980 campaign.** `tools/probe/campaign.sh` recorded it on 2026-09-28 at the 30 repetitions per probe that the tier declares. The owner scheduled it on [#980](https://github.com/headwater-ai/headwater/issues/980). It covers sufficiency and navigability. Discovery is left out, because the second pilot found that discovery measures the instrument (option (a) on #980).
@@ -34,7 +34,7 @@ cost_cents: 4652
 
 **The oracle.** A `patched` artifact of either arm was checked in a copy of the present tree with the artifact written into it (`probe-transform.sh --oracle-tree`), so one oracle graded both arms.
 
-**1 of the planned sessions of this line are missing.** Each reached the cap of 60 turns on the fourth probe of the selection, and the harness exited nonzero, so the recorder wrote no events for it. The batch holds three such sessions in the present arm and one in the absent arm. They were not recorded again, because a second draw of only the longest sessions would bias the comparison. The owner rules on them on [#980](https://github.com/headwater-ai/headwater/issues/980).
+**1 session of this line were recorded twice.** On the first pass, each reached the cap of 60 turns on the fourth probe of the selection. The harness exited nonzero, so the recorder wrote no events for it. The batch held three such sessions in the present arm and one in the absent arm. The owner ruled on [#980](https://github.com/headwater-ai/headwater/issues/980) that the four are recorded again with a cap of 80 turns, and the events below are from that second pass. Every other session of the batch ended in fewer than 60 turns, so the higher cap would not have changed it.
 
 ## Events
 
@@ -3667,6 +3667,108 @@ cost_cents: 4652
       result: "sha256:592e29d6ae60a526a9d55a6620574fbed3519a1585a2498c0dd63ba72a3b7ace"
       cites:
         - "HW-OBL-0223"
+      findings:
+        - "identifier.claim.stale"
+        - "language.controlled.not_met"
+  answer: null
+- probe: "HW-PROBE-a-session-records-an-unmeasured-claim-in-the-shape-this-corpus-checks"
+  session: "L2-campaign-absent-p4-r22"
+  calls:
+    - tool: "Bash"
+      argument: "{\"command\":\"pwd && ls -la /home/james/probe-batches/980-full-2026-09-28/ws/L2-campaign-absent-p4-r22\",\"description\":\"List contents of current working directory\"}"
+      result: ""
+    - tool: "Bash"
+      argument: "{\"command\":\"wc -l CLAUDE.md 2>/dev/null; echo \\\"---\\\"; find . -iname \\\"*debt*\\\" -o -iname \\\"*todo*\\\" -o -iname \\\"*owe*\\\" -o -iname \\\"*backlog*\\\" -o -iname \\\"*ledger*\\\" 2>/dev/null | grep -v '/site/' | grep -v '/.git'\",\"description\":\"Check for CLAUDE.md and search for debt/todo/ledger style files\"}"
+      result: ""
+    - tool: "Bash"
+      argument: "{\"command\":\"ls docs/obligations/ | sort\",\"description\":\"List all files in docs/obligations directory\"}"
+      result: ""
+    - tool: "Bash"
+      argument: "{\"command\":\"cd /home/james/probe-batches/980-full-2026-09-28/ws/L2-campaign-absent-p4-r22/docs/obligations && cat README.md\",\"description\":\"Read the obligations README\"}"
+      result: ""
+    - tool: "Bash"
+      argument: "{\"command\":\"cat 0222-ten-rules-of-the-editions-ledger-have-one-recorded-corpus-so-a-rule-change-blessed-with-an-edit-to-that-corpus-passes.md\",\"description\":\"Read a recent obligation entry as a template example\"}"
+      result: ""
+    - tool: "Bash"
+      argument: "{\"command\":\"cd /home/james/probe-batches/980-full-2026-09-28/ws/L2-campaign-absent-p4-r22 && wc -l -c -w CLAUDE.md && echo \\\"---\\\" && head -50 CLAUDE.md\",\"description\":\"Check size and start of repo's CLAUDE.md\"}"
+      result: ""
+    - tool: "Bash"
+      argument: "{\"command\":\"cd /home/james/probe-batches/980-full-2026-09-28/ws/L2-campaign-absent-p4-r22 && ls -la AGENTS.md CLAUDE.md 2>&1; readlink AGENTS.md; find . -maxdepth 2 -iname \\\"*claude*\\\" -o -iname \\\"*agents*\\\" 2>/dev/null | grep -v '/.git'\",\"description\":\"Check AGENTS.md symlink target and any related files\"}"
+      result: ""
+    - tool: "Bash"
+      argument: "{\"command\":\"find . -iname \\\"*copilot*\\\" -o -iname \\\"*instructions*\\\" 2>/dev/null | grep -v '/.git' | grep -v /site/; echo \\\"---.github---\\\"; find .github -maxdepth 3 -type f | head -50; echo \\\"---.codex---\\\"; ls -la .codex\",\"description\":\"Search for agent instruction files and inspect .github/.codex dirs\"}"
+      result: ""
+    - tool: "Bash"
+      argument: "{\"command\":\"grep -ril \\\"token budget\\\\|session budget\\\\|context budget\\\\|context window\\\\|token cost\\\" --include=\\\"*.md\\\" . | grep -v /site/ | grep -v /.git; echo \\\"---sizes---\\\"; wc -lwc .github/agents/*.agent.md DEVELOPING.md AGENTS.md 2>/dev/null\",\"description\":\"Search repo for existing budget/token mentions and measure agent instruction file sizes\"}"
+      result: ""
+    - tool: "Bash"
+      argument: "{\"command\":\"echo \\\"=== headwater-maintainer ===\\\"; cat .github/agents/headwater-maintainer.agent.md; echo; echo \\\"=== hw-build ===\\\"; cat .github/agents/hw-build.agent.md; echo; echo \\\"=== next.prompt.md ===\\\"; cat .github/prompts/next.prompt.md\",\"description\":\"Read sample agent definition files and a prompt file\"}"
+      result: ""
+    - tool: "Bash"
+      argument: "{\"command\":\"find . -maxdepth 1 -iname \\\".claude\\\"; ls -la .claude 2>&1 | head -30\",\"description\":\"Check for a .claude directory with canonical agent/command definitions\"}"
+      result: ""
+    - tool: "Bash"
+      argument: "{\"command\":\"grep -n \\\"claude\\\\|CLAUDE\\\" .gitignore\",\"description\":\"Check gitignore for claude-related entries\"}"
+      result: ""
+    - tool: "Bash"
+      argument: "{\"command\":\"cd /home/james/probe-batches/980-full-2026-09-28/ws/L2-campaign-absent-p4-r22/docs/obligations && cat 0109-the-capture-cost-denominator-is-set-by-declaration-and-not-by-work.md\",\"description\":\"Read obligation 0109 for domain vocabulary around capture cost\"}"
+      result: ""
+    - tool: "Bash"
+      argument: "{\"command\":\"for f in 0221-subagents-read-skills-from-the-shared-checkout-and-a-worktree-isolated-integrator-cannot-fast-forward-it-after-a-merge.md 0220-no-disk-floor-is-stated-for-a-build-order-run-and-nothing-prunes-the-cargo-pool.md 0203-three-small-run-tooling-gaps-from-run-20260922-1121-filed-together.md; do echo \\\"=== $f ===\\\"; sed -n '1,20p' \\\"$f\\\"; echo; done\",\"description\":\"Inspect frontmatter of recent obligation entries\"}"
+      result: ""
+    - tool: "Bash"
+      argument: "{\"command\":\"cd /home/james/probe-batches/980-full-2026-09-28/ws/L2-campaign-absent-p4-r22 && grep -ril \\\"budget\\\\|context window\\\\|system prompt\\\\|standing instruction\\\" docs/obligations/ 2>/dev/null; echo \\\"---none above means no hits---\\\"; echo \\\"checking DEVELOPING.md for agent-loading / token references\\\"; grep -n -i \\\"token\\\\|context window\\\\|standing instruction\\\\|AGENTS.md\\\\|CLAUDE.md\\\" DEVELOPING.md | head -40\",\"description\":\"Check obligations and DEVELOPING.md for existing coverage of this gap\"}"
+      result: ""
+    - tool: "Bash"
+      argument: "{\"command\":\"grep -n -i \\\"byte ceiling\\\\|byte budget\\\\|byte cap\\\\|ceiling\\\" DEVELOPING.md engine -r 2>/dev/null | grep -v '\\\\.rs:' ; echo \\\"---\\\"; grep -rn \\\"byte ceiling\\\\|byte_ceiling\\\\|BYTE_CEILING\\\" --include=\\\"*.md\\\" --include=\\\"*.rs\\\" --include=\\\"*.sh\\\" . 2>/dev/null | grep -v /site/\",\"description\":\"Search for byte ceiling declarations across docs and scripts\"}"
+      result: ""
+    - tool: "Bash"
+      argument: "{\"command\":\"find docs/process/decisions -iname \\\"*0003*\\\"; echo \\\"---\\\"; cat docs/process/decisions/0003-*.md 2>/dev/null\",\"description\":\"Read process decision 0003 about dispatch cost and byte ceilings\"}"
+      result: ""
+    - tool: "Bash"
+      argument: "{\"command\":\"grep -rn \\\"waiting_on\\\" docs/spec docs/obligations/README.md 2>/dev/null | grep -v \\\"^docs/obligations/0\\\" | head -30; echo \\\"---values used---\\\"; grep -h \\\"^waiting_on:\\\" docs/obligations/*.md | sort | uniq -c; echo \\\"---status values---\\\"; grep -h \\\"^status:\\\" docs/obligations/*.md | sort | uniq -c\",\"description\":\"Find waiting_on field semantics and value distribution\"}"
+      result: ""
+    - tool: "Bash"
+      argument: "{\"command\":\"cd /home/james/probe-batches/980-full-2026-09-28/ws/L2-campaign-absent-p4-r22/docs/obligations && grep -A6 \\\"^---$\\\" 0006-route-latency-at-a-harvesting-tier-is-unmeasured.md | head -10; echo \\\"---0142---\\\"; sed -n '1,12p' 0142-the-obligation-register-states-its-own-size-by-hand-and-it-went-stale-three-times-in-two-days.md\",\"description\":\"Check waiting_on value for unmeasured-style obligations\"}"
+      result: ""
+    - tool: "Bash"
+      argument: "{\"command\":\"cd /home/james/probe-batches/980-full-2026-09-28/ws/L2-campaign-absent-p4-r22 && grep -rn \\\"byte\\\\|8192\\\\|ceiling\\\" docs/process/decisions/*.md 2>/dev/null | grep -iv \\\"^Binary\\\" | head -60\",\"description\":\"Find all byte-ceiling related mentions across process decision records\"}"
+      result: ""
+    - tool: "Bash"
+      argument: "{\"command\":\"cd /home/james/probe-batches/980-full-2026-09-28/ws/L2-campaign-absent-p4-r22/docs/obligations && cat 0220-no-disk-floor-is-stated-for-a-build-order-run-and-nothing-prunes-the-cargo-pool.md\",\"description\":\"Read full 0220 obligation record for structure and discharge style\"}"
+      result: ""
+    - tool: "Bash"
+      argument: "{\"command\":\"grep -l \\\"^waiting_on: measurement\\\" *.md | head -5\",\"description\":\"Find a few obligation entries that use waiting_on: measurement\"}"
+      result: ""
+    - tool: "Bash"
+      argument: "{\"command\":\"sed -n '1,15p' 0112-a-surface-cannot-move-the-assisted-fraction-of-a-run.md\",\"description\":\"Check frontmatter shape of 0112 for the measurement waiting_on precedent\"}"
+      result: ""
+    - tool: "Bash"
+      argument: "{\"command\":\"cd /home/james/probe-batches/980-full-2026-09-28/ws/L2-campaign-absent-p4-r22/docs/process/decisions && sed -n '1,15p' 0006-the-entrypoint-keeps-its-name-and-becomes-a-resumable-run.md; echo \\\"---0023 head---\\\"; sed -n '1,15p' 0023-a-build-order-parent-restarts-every-few-merges-drains-to-zero-first-and-resumes-from-the-handover-files-on-disk.md\",\"description\":\"Confirm ids/titles of decision records 0006 and 0023\"}"
+      result: ""
+    - tool: "Write"
+      argument: "/home/james/probe-batches/980-full-2026-09-28/ws/L2-campaign-absent-p4-r22/docs/obligations/0223-each-standing-instruction-file-declares-its-own-ceiling-and-nothing-sums-what-a-session-pays-before-it-does-any-work.md"
+      result: "sha256:b34d4ca4326af381f927ea3539830d3ff66c239d87227fc0fa16cb4e93e119cb"
+    - tool: "Bash"
+      argument: "{\"command\":\"cd /home/james/probe-batches/980-full-2026-09-28/ws/L2-campaign-absent-p4-r22/docs/obligations && grep -n \\\"process/decisions\\\" *.md | grep -v \\\"^0223\\\" | head -5\",\"description\":\"Check how other obligation entries link to process decision records\"}"
+      result: ""
+    - tool: "Edit"
+      argument: "/home/james/probe-batches/980-full-2026-09-28/ws/L2-campaign-absent-p4-r22/docs/obligations/0223-each-standing-instruction-file-declares-its-own-ceiling-and-nothing-sums-what-a-session-pays-before-it-does-any-work.md"
+      result: "sha256:b34d4ca4326af381f927ea3539830d3ff66c239d87227fc0fa16cb4e93e119cb"
+    - tool: "Read"
+      argument: "/home/james/probe-batches/980-full-2026-09-28/ws/L2-campaign-absent-p4-r22/docs/obligations/0223-each-standing-instruction-file-declares-its-own-ceiling-and-nothing-sums-what-a-session-pays-before-it-does-any-work.md"
+      result: "sha256:b34d4ca4326af381f927ea3539830d3ff66c239d87227fc0fa16cb4e93e119cb"
+    - tool: "Bash"
+      argument: "{\"command\":\"grep -l \\\"—\\\" *.md | wc -l; echo \\\"total files:\\\"; ls *.md | wc -l\",\"description\":\"Check how common em dashes are across existing obligation records\"}"
+      result: ""
+  produced:
+    - path: "docs/obligations/0223-each-standing-instruction-file-declares-its-own-ceiling-and-nothing-sums-what-a-session-pays-before-it-does-any-work.md"
+      result: "sha256:b34d4ca4326af381f927ea3539830d3ff66c239d87227fc0fa16cb4e93e119cb"
+      cites:
+        - "HW-OBL-0223"
+        - "HW-PD-0003"
+        - "HW-PD-0006"
+        - "HW-PD-0023"
       findings:
         - "identifier.claim.stale"
         - "language.controlled.not_met"
