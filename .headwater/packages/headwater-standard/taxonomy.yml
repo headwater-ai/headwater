@@ -149,6 +149,13 @@ taxonomy: headwater/standard
 # on load where they differ, and it names both files and both numbers. A bump
 # moves both or neither. `package.yml` states why the value is declared twice.
 #
+# 4.12.0 adds `OB-REL-7` and `CT-REL-7`, which are the obligation and the
+# control behind `relation.target.is_source`. Nothing is removed and nothing
+# already declared changes meaning, so it is a minor. What a consumer meets is
+# a new finding: a relation entry that names the document that declares it,
+# in any family except `association`, which spec 2 lets point at its own
+# document (#1232). It follows 4.11.0.
+#
 # 4.11.0 adds `OB-LINK-3` and `CT-LINK-3`: a prose link whose text is exactly
 # the identifier of a document reaches the document that carries it (#1213). It
 # is a minor because a new rule reports a defect that no earlier version read.
@@ -261,7 +268,7 @@ taxonomy: headwater/standard
 # each carries a recipe rather than a bare instruction. One package version
 # covers every content file it publishes, this one included, so the number
 # here moves with a change to either.
-version: 4.11.0
+version: 4.12.0
 
 purposes:
   rationale:
@@ -592,6 +599,13 @@ obligations:
     prevents: content.inconsistent
     severity: medium
 
+  OB-REL-7:
+    statement: No relation instance outside the association family names the document that declares it as its target
+    rationale: Spec 2 keeps self-reference invalid in every family except association. An edge from a document to itself asserts nothing, as a document that draws on, governs, constrains or traces to itself does, or it asserts a contradiction, as a document that supersedes itself does. The target resolved and both kinds are admitted, so no other rule reports it, and the graph keeps an edge whose two ends are one node
+    class: cohesion
+    prevents: content.inconsistent
+    severity: medium
+
   OB-ID-2:
     statement: A document that a relation may name declares one identifier that names it
     rationale: A document with no identifier is neither end of any edge, so every relation it declares and every relation that names it is lost while the document itself is reported as classified and checked
@@ -909,6 +923,18 @@ controls:
       criteria:
         window: one release of the taxonomy over an adopting corpus
         threshold: no false positive, because the rule compares two values the corpus already holds and reports nothing where either one is absent
+        sample: every finding of one run over the adopting corpus, adjudicated once
+
+  CT-REL-7:
+    mechanism: check:relation.target.is_source
+    discharges: [OB-REL-7]
+    trigger: pull_request
+    posture: advisory
+    acts: detective
+    promotion:
+      criteria:
+        window: one release of the taxonomy over an adopting corpus
+        threshold: no false positive, because the rule compares two paths the graph build already resolved rather than deriving a second answer of its own
         sample: every finding of one run over the adopting corpus, adjudicated once
 
   CT-ID-2:
