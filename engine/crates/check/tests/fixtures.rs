@@ -1933,6 +1933,9 @@ fn the_scope_of_every_rule_comes_from_the_trait_that_binds_it() {
             // `language.outside_root.refused`, the same grain: a list the
             // taxonomy declares, read against the tree, and no document.
             Grain::Taxonomy,
+            // `taxonomy.pin.diverged`, the same grain: the digest pin the
+            // consumer declares, read against the vendored bytes.
+            Grain::Taxonomy,
             // `relation.target.verification.suspect`, edge grained like
             // `basis::RULE`: the criterion is at one end and the
             // verification's snapshot entry is read against the digest of the
