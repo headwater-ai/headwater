@@ -14,7 +14,7 @@ provenance:
 relations:
   governs:
     - to: .claude/commands/next-run.md
-      verified_revision: sha256:5b698582b8b07d0837db1f6f3e8e3507f5f02d7a32b4f0f04594b10a73118840
+      verified_revision: sha256:b2cc97eb654d7881a8e8ab521e882e88c59f30a22d28e85d9cab3367aa7e0470
 ---
 
 # Orchestration prose has one owner per sentence

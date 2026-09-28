@@ -553,6 +553,10 @@ anchors
     cited by HW-PD-0007
   code_path `tools/run/run-dir.sh` via source-tree
     cited by HW-EVAL-one-clone-many-agents-how-this-repository-isolates-the-sessions-that-build-it
+  code_path `tools/run/supervise-fixtures.sh` via source-tree
+    cited by HW-PD-0023
+  code_path `tools/run/supervise.sh` via source-tree
+    cited by HW-PD-0023
   code_path `tools/site/assemble-site.sh` via source-tree
     cited by HW-DR-0047
   code_path `tools/site/check-site-figures.sh` via source-tree
