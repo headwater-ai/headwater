@@ -8,9 +8,10 @@
 # writes `taxonomy.lock` beside this file. Everything downstream reads that lock
 # and never these sources.
 #
-# `headwater check` reads the `corpus:` block here and nothing else in this
-# file, because the lock says what the schema is and `corpus:` says what to
-# walk.
+# `headwater check` reads the `corpus:` block here because the lock says what
+# the schema is and `corpus:` says what to walk. It also reads
+# `taxonomy.digest`, and holds the vendored package's bytes to it on every
+# run (`taxonomy.pin.diverged`). It takes no declaration from those bytes.
 #
 # Two fields are assumptions, and `.headwater/README.md` records both.
 

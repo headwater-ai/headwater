@@ -1074,10 +1074,22 @@ fn validate(root: &Path) -> ExitCode {
         }))
         .collect();
 
+    // The vendored bytes held to the digest pin, through the comparison and
+    // the wording `headwater check` reports as `taxonomy.pin.diverged`, so the
+    // two verbs cannot disagree about one tree (#1186). Silent where nothing
+    // is pinned.
+    let pin_refusals: Vec<String> = headwater_check::pin::findings(Some(
+        &headwater_check::pin::Pin::read(root, &repository.consumer),
+    ))
+    .into_iter()
+    .map(|finding| format!("{}: {}", finding.rule, finding.message).replace('\n', "\n    "))
+    .collect();
+
     if findings.is_empty()
         && unmatched.is_empty()
         && unread.is_none()
         && outside_refusals.is_empty()
+        && pin_refusals.is_empty()
     {
         println!("\n{} is valid", repository.consumer.package);
         return ExitCode::SUCCESS;
@@ -1105,6 +1117,9 @@ fn validate(root: &Path) -> ExitCode {
         );
     }
     for refusal in &outside_refusals {
+        eprintln!("  {}", err(refusal));
+    }
+    for refusal in &pin_refusals {
         eprintln!("  {}", err(refusal));
     }
     advise(root, &repository.consumer);
@@ -3724,6 +3739,10 @@ struct Loaded {
     /// run, and not a declaration the taxonomy carries. See
     /// [`headwater_check::observation`].
     observations: headwater_check::Observations,
+    /// The digest pin, held against the vendored package's bytes. Taken once
+    /// per load and never cached, for the reason `observations` is read here:
+    /// a fact about the tree beside the corpus. See [`headwater_check::pin`].
+    pin: headwater_check::pin::Pin,
     /// The front-matter keys the graph phase reads by name. Held here, and
     /// built once, so the index and the identifier rule read an identifier from
     /// the same key. Two `Config::default()` calls would be two guesses that a
@@ -3874,8 +3893,10 @@ fn load_against(root: &Path, bound: Bound) -> Result<Loaded, ExitCode> {
     census.outside = headwater_census::outside::take(&corpus, &shape.outside_root());
     let config = Config::default();
     let graph = Graph::build(&census, &relations, &resolvers, &corpus, &config);
+    let pin = headwater_check::pin::Pin::read(root, &consumer);
     Ok(Loaded {
         bound,
+        pin,
         consumer,
         census,
         graph,
@@ -3902,6 +3923,7 @@ impl Loaded {
             config: &self.config,
             register: &self.register,
             observations: &self.observations,
+            pin: Some(&self.pin),
             adoption: self.bound.adoption.as_ref(),
             source: &self.bound.source,
         }
@@ -6625,6 +6647,7 @@ fn infer(
             config: &loaded.config,
             register: &loaded.register,
             observations: &loaded.observations,
+            pin: Some(&loaded.pin),
             adoption: declared.as_ref(),
             source: headwater_lock::LOCK,
         },

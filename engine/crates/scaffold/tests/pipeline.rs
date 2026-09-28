@@ -133,6 +133,7 @@ fn check_over(root: &Path) -> Run {
             config: &config,
             register: &register,
             observations: &headwater_check::Observations::empty(),
+            pin: None,
             adoption: None,
             source: TAXONOMY,
         },
