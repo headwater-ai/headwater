@@ -1902,6 +1902,10 @@ fn the_scope_of_every_rule_comes_from_the_trait_that_binds_it() {
             // read only the near half; this is the widening that moved it.
             Grain::Corpus,
             Grain::Corpus,
+            // Whether a link whose text is an identifier reaches the document
+            // that carries it. A renumbering of the target changes no byte of
+            // the citing document, so the corpus again (#1213).
+            Grain::Corpus,
             // The two rules that declare the prior version. Both are document
             // grained like every rule above them, and what separates them is
             // the input rather than the unit: a change names documents.
