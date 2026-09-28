@@ -456,6 +456,7 @@ nav:
       - "CI runs actions from the actions organization only, and carries no build state between self-hosted jobs": "process/decisions/0019-ci-runs-actions-from-the-actions-organization-only-and-carries-no-build-state-between-self-hosted-jobs.md"
       - "Merges go through the GitHub merge queue, one squash commit per pull request": "process/decisions/0020-merges-go-through-the-github-merge-queue-one-squash-commit-per-pull-request.md"
       - "The verify and rework loop for one issue runs below the parent": "process/decisions/0022-the-verify-and-rework-loop-for-one-issue-runs-below-the-parent.md"
+      - "A build-order parent restarts every few merges, drains to zero first, and resumes from the handover files on disk": "process/decisions/0023-a-build-order-parent-restarts-every-few-merges-drains-to-zero-first-and-resumes-from-the-handover-files-on-disk.md"
   - "Process explanations":
       - "Process explanations": "process/explanations/README.md"
       - "Where a CI job runs": "process/explanations/where-a-ci-job-runs.md"

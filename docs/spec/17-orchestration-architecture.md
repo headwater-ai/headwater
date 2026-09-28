@@ -26,9 +26,10 @@ relations:
     - HW-PD-0006
     - HW-PD-0007
     - HW-PD-0022
+    - HW-PD-0023
   governs:
     - to: .claude/commands/next-run.md
-      verified_revision: sha256:5b698582b8b07d0837db1f6f3e8e3507f5f02d7a32b4f0f04594b10a73118840
+      verified_revision: sha256:278227f28df2ccb57394e209d1bc317edc3c0dc76890a1cb79d9f9eacbd1f0f1
     - to: .claude/commands/next.md
       verified_revision: sha256:974d493829d7c81eacf06f5058e7e02f01f7fd409b82e0589d7bdd21a7783b09
     - to: .claude/agents/hw-queue.md
@@ -36,7 +37,7 @@ relations:
     - to: .claude/agents/hw-adjudicate.md
       verified_revision: sha256:c957a511466d03fcf8d7d628b97ebc8e416ce61f85d1aab1a379342ff8a7c8d0
     - to: .claude/agents/hw-iterate.md
-      verified_revision: sha256:a41384eed6c0c8b326e07056507c259a148b663152038f63a7b1d988dccdf821
+      verified_revision: sha256:05a062674bb48edf1481cb4818752861cd614d25f1e28da8305976ba528c5ec9
     - to: .claude/agents/hw-build.md
       verified_revision: sha256:76b22e56cb1ec60b94efa588c40db19b23bbd80795bbba510c172e9de7a137e8
     - to: .claude/agents/hw-verify.md
@@ -44,7 +45,7 @@ relations:
     - to: .claude/agents/hw-integrate.md
       verified_revision: sha256:6029c93103316f8fc40e7f06ce0cc772bcffa9ccb27ec931ecb3ed4dfef369b4
     - to: .claude/skills/hw-run-policy/SKILL.md
-      verified_revision: sha256:0e71e3e122d242913e1fe68d551c20e3733b3bc44bc019e65ec824063010011b
+      verified_revision: sha256:045eeaf3d299128802f7d3096b6df2f65bbd079b92cacb3cb7abb12af90a3217
     - to: .claude/skills/hw-verification-bar/SKILL.md
       verified_revision: sha256:a68ce6b14b5a8d7068aeafd8c7443e0497a55b4e444e2b971daa1da738c2153b
 ---
@@ -120,6 +121,8 @@ flowchart LR
 
 **The parent waits by ending its turn.** With agents in flight, an ended turn is the blocking wait, and each report wakes it. A check on a timer buys nothing and costs a turn at the parent's full context. Its prompt cache holds that context for an hour, so a report arrives warm whether or not the parent looked.
 
+**A parent session ends every few merges, and the run outlives it.** The parent reads its whole context again on every call, so a long session pays more for each call than the call before it. `tools/run/supervise.sh` starts each session after the first. It creates a drain file when a call passes a context threshold or when the session reaches a count of merges. In drain the parent starts no new stage, and it exits when nothing is in flight, because every subagent ends with its process. The next session reads the handover file of each issue and dispatches the stage that each one needs. [HW-PD-0023](../process/decisions/0023-a-build-order-parent-restarts-every-few-merges-drains-to-zero-first-and-resumes-from-the-handover-files-on-disk.md) records the three rulings and the measurement.
+
 **The parent escalates to a person on two conditions and rules on everything else.** A redirect that changes milestone order and a decision that needs an owner rather than an answer both go to the human. [`headwater-product-owner`](../../.claude/agents/headwater-product-owner.md) reads the whole board and writes one ruling block for each decision the owner owes. The parent records the owner's answer in the run's decisions file, and the next pass of the product owner posts that answer on the issue. Until then, the adjudication stage reads the recorded answer as the ruling. [`headwater-maintainer`](../../.claude/agents/headwater-maintainer.md) reports what a change left stale. Both propose, and neither accepts.
 
 ### The queue stage
@@ -182,9 +185,9 @@ flowchart LR
 
 **It never rules and never edits a file by hand.** The definition grants no `Edit` and no `Write`, and that is the boundary. A pull request the parent did not rule on is not this stage's to enqueue, whatever the verdict says. A derived artifact left stale by a merge is a small pull request of its own rather than a hand edit of `main`.
 
-## What the eight rulings settle
+## What the nine rulings settle
 
-Eight records under [`docs/process/decisions/`](../process/decisions/README.md) settle this architecture. Each one owns a different part of it, and this part cites each rather than restating the argument.
+Nine records under [`docs/process/decisions/`](../process/decisions/README.md) settle this architecture. Each one owns a different part of it, and this part cites each rather than restating the argument.
 
 **[HW-PD-0001](../process/decisions/0001-orchestration-prose-has-one-owner-per-sentence.md) decides where any sentence of orchestration prose lives.** Eight ordered tests answer it, and the first test that matches wins. A rule a check reads goes to the taxonomy. A rule the parent obeys on every turn goes to the doctrine block. A rule one stage obeys goes to that stage's definition. A rule two or more stages obey goes to a skill. A rule every agent obeys goes to `CLAUDE.md`. A sentence that changes per dispatch goes to the dispatch template. Measurement and rationale go under `docs/`. One further test applies to every sentence: ask who performs the action the sentence constrains. A sentence whose performer is not its reader needs a check rather than a reader.
 
@@ -196,11 +199,13 @@ Eight records under [`docs/process/decisions/`](../process/decisions/README.md) 
 
 **[HW-PD-0005](../process/decisions/0005-the-ledger-is-split-its-tabular-parts-are-jsonl-and-its-totals-are-derived.md) splits the ledger so that each part reads alone.** `doctrine.md` holds the parent's ten lines and reads without any other part. `log.jsonl` holds one object per iteration and `findings.jsonl` one object per open finding, each read by the line. `lessons.md` and `decisions.md` stay prose, because the owner reads them. Every total across iterations is derived when it is wanted and is never stored. The integrator writes the log line at the end of each merge.
 
-**[HW-PD-0006](../process/decisions/0006-the-entrypoint-keeps-its-name-and-becomes-a-resumable-run.md) keeps the entrypoint's name and makes a run resumable.** The orchestrator is the one agent that cannot be reloaded. A subagent gets its definition fresh on every dispatch, and the parent runs in a person's own session. So a run writes its directory from the first iteration, and a compaction, a crash or a second invocation reads that directory and continues. The parent reads the doctrine on a turn it already pays for rather than on a re-read turn of its own. Each stage declares its model in its own front matter.
+**[HW-PD-0006](../process/decisions/0006-the-entrypoint-keeps-its-name-and-becomes-a-resumable-run.md) keeps the entrypoint's name and makes a run resumable.** The orchestrator is the one agent that cannot be reloaded. A subagent gets its definition fresh on every dispatch, and the parent runs in a person's own session. So a run writes its directory from the first iteration, and a compaction, a crash or a second invocation reads that directory and continues. Since HW-PD-0023, the directory also holds a handover file for each issue in flight, so a restarted parent continues without the context of the old one. The parent reads the doctrine on a turn it already pays for rather than on a re-read turn of its own. Each stage declares its model in its own front matter.
 
 **[HW-PD-0007](../process/decisions/0007-a-background-wait-caps-below-the-cache-lifetime-and-re-issues-itself.md) bounds a background wait under the prompt-cache lifetime.** A subagent's cache holds its context for about five minutes. A turn that wakes after that pays to write the whole context back rather than to read it. So a wait that might run longer is wrapped in a timeout under the lifetime and re-issued on return. Blocking and backgrounding stay as they are. Each bounded call is one blocking loop, started in the background, and ended before the agent that started it exits. The parent is exempt, because its own cache holds for an hour.
 
 **[HW-PD-0022](../process/decisions/0022-the-verify-and-rework-loop-for-one-issue-runs-below-the-parent.md) moves the loop for one issue below the parent.** Each `FAIL` woke the parent at its full context, so one agent per issue now owns build, verify and rework. The parent wakes for its report and rules the final verdict. The builder does not dispatch its own verifier, because that verifier would then not be independent. The instruction to rework a `FAIL` now goes from `hw-iterate` to its own builder, down the tree that HW-PD-0004 keeps.
+
+**[HW-PD-0023](../process/decisions/0023-a-build-order-parent-restarts-every-few-merges-drains-to-zero-first-and-resumes-from-the-handover-files-on-disk.md) restarts the parent every few merges.** Run `20260927-0443` read a mean of 179k tokens of context for each parent call, over 1,368 calls. A loop script now starts a fresh parent session when a call passes 130k tokens or the session reaches four merges. The old session drains to zero first, because a subagent ends with its parent. The actor that ends a stage writes a handover file, and the next session resumes from it. Rework after a restart goes to a fresh builder, because the old one ended with the old parent.
 
 ## Where each part of this architecture lives
 
@@ -208,11 +213,11 @@ The front matter of this part declares a `governs` edge onto each `.claude/` fil
 
 | File | What it holds |
 |---|---|
-| [`.claude/commands/next-run.md`](../../.claude/commands/next-run.md) | The entrypoint: the value rule, the doctrine block, the loop, the veto and the dispatch template |
+| [`.claude/commands/next-run.md`](../../.claude/commands/next-run.md) | The entrypoint: the value rule, the doctrine block, the loop, the veto, the resume form and the dispatch template |
 | [`.claude/commands/next.md`](../../.claude/commands/next.md) | The single-iteration form over the same definitions and skills, with the merge left to a person |
 | [`.claude/agents/hw-queue.md`](../../.claude/agents/hw-queue.md) | The queue stage: the eligible population, the selection order and the collision marks |
 | [`.claude/agents/hw-adjudicate.md`](../../.claude/agents/hw-adjudicate.md) | The adjudication stage: the premise, the footprint, the decisive fixture and the three kinds of refusal |
-| [`.claude/agents/hw-iterate.md`](../../.claude/agents/hw-iterate.md) | The loop stage: the dispatch of the builder and each verifier, the rework by resume, the stop at the third FAIL and the report |
+| [`.claude/agents/hw-iterate.md`](../../.claude/agents/hw-iterate.md) | The loop stage: the dispatch of the builder and each verifier, the rework by resume, the checkpoint at each stage boundary, the stop at the third FAIL and the report |
 | [`.claude/agents/hw-build.md`](../../.claude/agents/hw-build.md) | The construction stage: the worktree, the contract-first order, the pull request and the write boundary |
 | [`.claude/agents/hw-verify.md`](../../.claude/agents/hw-verify.md) | The verification stage: its own worktree, the suite, the chosen attacks and the verdict block |
 | [`.claude/agents/hw-integrate.md`](../../.claude/agents/hw-integrate.md) | The integration stage: the merge, the rebuild, the regenerate, the write-back, the claim release and the ledger line |
@@ -221,4 +226,4 @@ The front matter of this part declares a `governs` edge onto each `.claude/` fil
 | [`.claude/agents/headwater-product-owner.md`](../../.claude/agents/headwater-product-owner.md) | Board judgment: milestone order, what is finished and unclosed, the rulings the owner owes, ruling write-back and epic closure |
 | [`.claude/agents/headwater-maintainer.md`](../../.claude/agents/headwater-maintainer.md) | What one change touched, what it left stale, and what the corpus is owed |
 | [The evaluation](../evaluations/the-build-order-as-a-multi-agent-system.md) | The measurements under every ruling above, and the numbers a later run answers to |
-| [`docs/process/decisions/`](../process/decisions/README.md) | The eight rulings this part states, each with the argument that settled it |
+| [`docs/process/decisions/`](../process/decisions/README.md) | The nine rulings this part states, each with the argument that settled it |
