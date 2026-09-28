@@ -555,10 +555,27 @@ mod tests {
             .iter()
             .map(|(target, _)| (*target, within(&root, "linked", target)))
             .collect();
+        // The same root reached through a symlink, as `/tmp` is on macOS or a
+        // linked home directory is: `--root` is never made canonical before
+        // it arrives, so every comparison has to be, and each case answers
+        // what it answers over the root itself.
+        let via = base.join("via");
+        std::os::unix::fs::symlink(&root, &via).expect("a root reached by a link");
+        let answers_via: Vec<Option<String>> = cases
+            .iter()
+            .map(|(target, _)| within(&via, "linked", target))
+            .collect();
         let lexical = typed(&root, "escape/x.md");
         let _ = std::fs::remove_dir_all(&base);
         for ((target, expected), (_, answer)) in cases.iter().zip(&answers) {
             assert_eq!(answer.as_deref(), *expected, "`within` on `{target}`");
+        }
+        for ((target, expected), answer) in cases.iter().zip(&answers_via) {
+            assert_eq!(
+                answer.as_deref(),
+                *expected,
+                "`within` on `{target}` under a root reached by a link"
+            );
         }
         assert_eq!(
             lexical.as_deref(),
