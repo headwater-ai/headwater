@@ -1591,6 +1591,18 @@ projections:
         .find(|output| output.path == "exports/site.json")
         .expect("the declaration produced an output");
     assert_eq!(output.kind, Kind::GraphExport);
+    // A declaration that states no `committed` leaves the descriptor's export
+    // row as it was before the member existed.
+    let described = plan
+        .outputs
+        .iter()
+        .find(|output| output.path == descriptor::PATH)
+        .expect("the plan writes the descriptor");
+    assert!(
+        described.bytes.contains("\"exports\"") && !described.bytes.contains("\"committed\""),
+        "a committed export's row carries a `committed` member:\n{}",
+        described.bytes
+    );
 
     // (a) before the file exists, the plan's own check would write it.
     let tree = empty_tree("graph-export-missing");
@@ -1711,6 +1723,32 @@ projections:
         "the plan does not claim the uncommitted path, so the orphan rule would report a \
          local export"
     );
+    // The descriptor tells a cold reader that the bytes are not in the tree.
+    let descriptor = |plan: &Plan| {
+        plan.outputs
+            .iter()
+            .find(|output| output.path == descriptor::PATH)
+            .map(|output| output.bytes.clone())
+            .expect("the plan writes the descriptor")
+    };
+    assert!(
+        descriptor(&first).contains("\"committed\": false"),
+        "the descriptor's export row does not say the export is built at publish time:\n{}",
+        descriptor(&first)
+    );
+
+    // (c) `generate` writes every other output and not this one.
+    let generated = write(&tree, &first);
+    assert!(
+        !generated.has_errors(),
+        "{}",
+        generated.render(ColorMode::Plain)
+    );
+    assert!(
+        !tree.join(AT).exists(),
+        "`generate` wrote a graph_export declared as built at publish time"
+    );
+    assert_eq!(verdict(&generated), Some(Verdict::Uncommitted));
 
     // (a) The file is absent, and the gate does not require it.
     let absent = check(&tree, &first);
@@ -1726,19 +1764,6 @@ projections:
         absent.render(ColorMode::Plain)
     );
 
-    // (c) `generate` does not write it.
-    let generated = write(&tree, &first);
-    assert!(
-        !generated.has_errors(),
-        "{}",
-        generated.render(ColorMode::Plain)
-    );
-    assert!(
-        !tree.join(AT).exists(),
-        "`generate` wrote a graph_export declared as built at publish time"
-    );
-    assert_eq!(verdict(&generated), Some(Verdict::Uncommitted));
-
     // (d) `headwater export` writes it, because that is the publish step.
     let exported = headwater_generate::export_plan(&before.surface(), &projections, None)
         .expect("the export plan");
@@ -1751,25 +1776,30 @@ projections:
     assert_eq!(verdict(&published), Some(Verdict::Written));
     let bytes = std::fs::read_to_string(tree.join(AT)).expect("`headwater export` wrote it");
 
-    // (b) A marked copy that no longer matches is not compared, and the plan
-    // still claims it, so nothing reports it orphaned.
+    // (b) A marked copy that no longer matches is not compared, and nothing
+    // reports it orphaned. The census reads a JSON file as no document, so the
+    // orphan rule cannot reach this path today. The plan claims it all the same
+    // (asserted above), so an emitter that writes a page would not change that.
     std::fs::write(tree.join(AT), format!("{bytes}\n")).expect("the stale copy");
     let after = Built::over(&Corpus::new(&tree, "generate"), &root);
-    assert_eq!(
-        after
-            .census
-            .rows
-            .iter()
-            .find(|row| row.path == AT)
-            .map(|row| row.outcome.class()),
-        Some("generated"),
-        "the census does not see the stale copy, so the orphan half proves nothing"
-    );
     let second = planned(&after);
     assert!(
         second.orphaned.iter().all(|orphaned| orphaned.path != AT),
         "a local export is reported orphaned: {:?}",
         second.orphaned
+    );
+    // The census moved, so the committed outputs are written again first, and
+    // `generate` leaves the stale copy as it found it.
+    let rewritten = write(&tree, &second);
+    assert!(
+        !rewritten.has_errors(),
+        "{}",
+        rewritten.render(ColorMode::Plain)
+    );
+    assert_eq!(
+        std::fs::read_to_string(tree.join(AT)).expect("the stale copy is there"),
+        format!("{bytes}\n"),
+        "`generate` touched a local copy of an uncommitted graph_export"
     );
     let stale = check(&tree, &second);
     assert!(

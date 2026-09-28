@@ -140,3 +140,94 @@ fn stock_export_exposes_the_control_answer_and_the_filtered_tombstone() {
         assert_eq!(expected, actual, "the export differential moved");
     }
 }
+
+/// Copy a directory tree.
+fn copy_tree(from: &Path, to: &Path) {
+    std::fs::create_dir_all(to).expect("the destination");
+    for entry in std::fs::read_dir(from).expect("the source tree") {
+        let entry = entry.expect("an entry");
+        let target = to.join(entry.file_name());
+        match entry.file_type().expect("a file type").is_dir() {
+            true => copy_tree(&entry.path(), &target),
+            false => {
+                std::fs::copy(entry.path(), &target).expect("the copy");
+            }
+        }
+    }
+}
+
+fn run(root: &Path, args: &[&str]) -> std::process::Output {
+    Command::new(env!("CARGO_BIN_EXE_headwater"))
+        .args(args)
+        .arg("--root")
+        .arg(root)
+        .output()
+        .expect("the binary runs")
+}
+
+fn status(output: &std::process::Output) -> (Option<i32>, String) {
+    (
+        output.status.code(),
+        format!(
+            "stdout:\n{}\nstderr:\n{}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        ),
+    )
+}
+
+/// A `graph_export` declared `committed: false` is written by `headwater
+/// export` and by nothing else, and neither gate requires or compares it
+/// ([#1261](https://github.com/headwater-ai/headwater/issues/1261)).
+///
+/// The generate crate holds the same table over its library functions. This
+/// case holds the binary to it, because the verb picks which of those
+/// functions runs: an `export` that called `write` in place of `publish`
+/// would pass every library case and never produce the artifact.
+#[test]
+fn an_uncommitted_graph_export_is_written_by_export_and_not_by_generate() {
+    let root = scratch();
+    copy_tree(&fixtures(), &root);
+    // The fixture keeps its package where engines before 0.2.0 read it, and
+    // the member has to reach the lock, so the package moves and resolves.
+    std::fs::rename(root.join("packages"), root.join(".headwater/packages"))
+        .expect("the package moves");
+    let package = root.join(".headwater/packages/acme-answered-export/taxonomy.yml");
+    let source = std::fs::read_to_string(&package).expect("the package reads");
+    let declared = "    output: exports/control.json\n";
+    assert!(source.contains(declared), "the fixture moved: {source}");
+    std::fs::write(
+        &package,
+        source.replace(declared, &format!("{declared}    committed: false\n")),
+    )
+    .expect("the package writes");
+    let (code, said) = status(&run(&root, &["taxonomy", "resolve"]));
+    assert_eq!(code, Some(0), "the taxonomy does not resolve\n{said}");
+    let at = root.join("exports/control.json");
+
+    let (code, said) = status(&run(&root, &["generate"]));
+    assert_eq!(code, Some(0), "`generate` failed\n{said}");
+    assert!(
+        !at.exists(),
+        "`generate` wrote an export declared as built at publish time\n{said}"
+    );
+    assert!(
+        root.join("exports/filtered.json").exists(),
+        "`generate` did not write the committed export beside it\n{said}"
+    );
+    for gate in [&["generate", "--check"][..], &["export", "--check"][..]] {
+        let (code, said) = status(&run(&root, gate));
+        assert_eq!(code, Some(0), "{gate:?} requires the absent file\n{said}");
+    }
+
+    let (code, said) = status(&run(&root, &["export"]));
+    assert_eq!(code, Some(0), "`export` failed\n{said}");
+    let bytes = std::fs::read_to_string(&at)
+        .unwrap_or_else(|error| panic!("`export` did not write the publish-time file: {error}\n{said}"));
+
+    std::fs::write(&at, format!("{bytes}\n")).expect("the stale copy");
+    for gate in [&["generate", "--check"][..], &["export", "--check"][..]] {
+        let (code, said) = status(&run(&root, gate));
+        assert_eq!(code, Some(0), "{gate:?} compares a stale local copy\n{said}");
+    }
+}
