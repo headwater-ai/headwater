@@ -626,6 +626,11 @@ pub trait CorpusCheck {
     /// dormant in exactly the run that reads this corpus end to end.
     const NEEDS_CLAIMS: bool = false;
 
+    /// Whether the view carries the corpus identifier index, including typed
+    /// and untyped documents. It is derived from the same census rows already
+    /// in the read set, so it joins no cache key.
+    const NEEDS_IDENTIFIER_INDEX: bool = false;
+
     /// Whether the view carries every prose link the build bound, with what
     /// each one resolved to.
     ///
@@ -642,6 +647,11 @@ pub trait CorpusCheck {
     /// where that reasoning does not reach, which is a link whose target is
     /// not a document of this corpus.
     const NEEDS_LINKS: bool = false;
+
+    /// Whether the view carries labels for the links admitted by
+    /// `NEEDS_LINKS`. They are read from the same census documents and join no
+    /// cache key.
+    const NEEDS_LINK_LABELS: bool = false;
 
     /// Whether the view carries the heading anchors of every document of this
     /// corpus, by path.
@@ -1241,11 +1251,15 @@ impl<'a> NeighbourhoodView<'a> {
 /// A new file arrives as a new input. An exclusion pattern is in the lock, and
 /// the lock digest is a component of every key. So there is no edit to this
 /// corpus that changes what this rule decides and leaves its key where it was.
+type LinkLabelIndex<'a> = std::collections::HashMap<(&'a str, usize), &'a str>;
+
 pub struct CorpusView<'a> {
     identity: Option<&'a [headwater_graph::index::Reported]>,
     departed: &'a [Departed<'a>],
     claims: Option<&'a crate::claim::Claims>,
     links: Option<&'a [headwater_graph::links::Link]>,
+    link_labels: Option<LinkLabelIndex<'a>>,
+    identifier_index: Option<&'a headwater_graph::index::Index>,
     anchors: Option<&'a crate::fragment::Anchors>,
     edges: Option<&'a [Edge]>,
     generated: Option<Vec<Generated<'a>>>,
@@ -1336,6 +1350,21 @@ impl<'a> CorpusView<'a> {
         self.links
     }
 
+    /// The visible label of a bound prose link, and only for a check that
+    /// declared `NEEDS_LINK_LABELS`.
+    pub fn link_text(&self, link: &headwater_graph::links::Link) -> Option<&str> {
+        self.link_labels
+            .as_ref()?
+            .get(&(link.source_path.as_str(), link.span.start.offset))
+            .copied()
+    }
+
+    /// The index of every declared identifier, and only for a check that
+    /// declared `NEEDS_IDENTIFIER_INDEX`.
+    pub fn identifier_index(&self) -> Option<&'a headwater_graph::index::Index> {
+        self.identifier_index
+    }
+
     /// The heading anchors of every document of this corpus, and only for a
     /// check that declared `NEEDS_ANCHORS`.
     ///
@@ -1362,6 +1391,8 @@ impl<'a> CorpusView<'a> {
             departed: &[],
             claims: None,
             links,
+            link_labels: None,
+            identifier_index: None,
             anchors: None,
             edges: None,
             generated: None,
@@ -1379,6 +1410,8 @@ impl<'a> CorpusView<'a> {
             departed: &[],
             claims,
             links: None,
+            link_labels: None,
+            identifier_index: None,
             anchors: None,
             edges: None,
             generated: None,
@@ -1399,6 +1432,8 @@ impl<'a> CorpusView<'a> {
             departed: &[],
             claims: None,
             links,
+            link_labels: None,
+            identifier_index: None,
             anchors,
             edges: None,
             generated: None,
@@ -1878,6 +1913,25 @@ const CORPUS: &str = "the corpus";
 /// barrier count, and it is the tell that separates this grain from a
 /// document-scoped rule with a wide read set: the instance count moves by one
 /// and the read set moves by the size of the corpus.
+fn link_label_index<'a>(census: &'a Census) -> LinkLabelIndex<'a> {
+    let mut labels = LinkLabelIndex::new();
+    for row in &census.rows {
+        let Some(document) = &row.document else {
+            continue;
+        };
+        for link in &document.body.links {
+            if link.quoted || link.image {
+                continue;
+            }
+            labels.insert(
+                (row.path.as_str(), link.span.start.offset),
+                link.text.as_str(),
+            );
+        }
+    }
+    labels
+}
+
 pub fn over_corpus<C: CorpusCheck>(
     check: &C,
     census: &Census,
@@ -1942,6 +1996,10 @@ pub fn over_corpus<C: CorpusCheck>(
         true => Some(crate::fragment::Anchors::of(census)),
         false => None,
     };
+    let link_labels = match C::NEEDS_LINK_LABELS {
+        true => Some(link_label_index(census)),
+        false => None,
+    };
     let view = CorpusView {
         identity: match C::NEEDS_PHASE_A {
             true => Some(&graph.index.defects),
@@ -1957,6 +2015,11 @@ pub fn over_corpus<C: CorpusCheck>(
         // documents already listed above rather than injected beside them.
         links: match C::NEEDS_LINKS {
             true => Some(&graph.links),
+            false => None,
+        },
+        link_labels,
+        identifier_index: match C::NEEDS_IDENTIFIER_INDEX {
+            true => Some(&graph.index),
             false => None,
         },
         anchors: anchors.as_ref(),

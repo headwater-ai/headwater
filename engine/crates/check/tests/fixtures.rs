@@ -462,6 +462,35 @@ fn the_fixture_tree_runs_to_the_recorded_report() {
     );
 }
 
+#[test]
+fn a_record_identifier_link_mismatch_is_reported_and_a_match_passes() {
+    const PATH: &str = "check/spec/07-prose-defects.md";
+    const RULE: &str = "link.identifier.mismatch";
+    let source = std::fs::read_to_string(fixtures_dir().join(PATH)).expect("the fixture");
+    let mismatch_line = source
+        .lines()
+        .position(|line| line == "[DR-FIX-0009](08-contract-met.md)")
+        .expect("the mismatched link")
+        + 1;
+
+    let run = fixture_run();
+    let findings: Vec<&headwater_check::Finding> = run
+        .findings
+        .iter()
+        .filter(|finding| finding.rule == RULE && finding.path == PATH)
+        .collect();
+
+    assert_eq!(findings.len(), 1, "the match and prose links stay clean");
+    assert_eq!(findings[0].line, mismatch_line);
+    assert_eq!(
+        findings[0].severity,
+        headwater_check::finding::Severity::Warn
+    );
+    assert!(findings[0].message.contains("DR-FIX-0009"), "{findings:#?}");
+    assert!(findings[0].message.contains("DR-FIX-0008"), "{findings:#?}");
+    assert_eq!(findings[0].obligation.as_deref(), Some("OB-FIX-28"));
+}
+
 /// The two lexical rules read the facet in the `scent` role, and no other.
 ///
 /// A stable corpus count is no evidence that a widened population runs, because
@@ -1893,14 +1922,17 @@ fn the_scope_of_every_rule_comes_from_the_trait_that_binds_it() {
             Grain::Document,
             Grain::Document,
             Grain::Document,
-            // The two halves of the link question, and both are the corpus. A
+            // The corpus-scoped link checks. A
             // fragment names a heading of the document it points at, which is
             // another document as often as it is the citing one, and whether a
             // file stands at the path a link names is decided by the corpus
-            // too. Either verdict rests on bytes the citing document does not
-            // hold, so the citing document is the wrong unit and the wrong
-            // cache key. `fragment` was document grained for two editions and
-            // read only the near half; this is the widening that moved it.
+            // too. Whether a link label names its target also reads the corpus
+            // identifier index. Each verdict rests on bytes the citing
+            // document does not hold, so the citing document is the wrong unit
+            // and the wrong cache key. `fragment` was document grained for two
+            // editions and read only the near half; this is the widening that
+            // moved it.
+            Grain::Corpus,
             Grain::Corpus,
             Grain::Corpus,
             // The two rules that declare the prior version. Both are document

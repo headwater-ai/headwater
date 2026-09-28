@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-//! The runner: seventeen checks, coverage against the census, a published read
+//! The runner: eighteen checks, coverage against the census, a published read
 //! set, a suppression inventory, and text findings in one order.
 //!
 //! [Spec 12](../../../../docs/spec/12-check-layer.md#two-phases-and-why-the-order-matters)
@@ -10,17 +10,18 @@
 //!
 //! # Where the rules come from
 //!
-//! Fifteen of the seventeen are **generated**. None of them names a facet, a
+//! Fifteen of the eighteen are **generated**. None of them names a facet, a
 //! kind, a relation, an identifier scheme or a number of days: each reads a
 //! declaration out of the resolved taxonomy and instantiates itself over
 //! whatever that declaration produced.
 //! That is what [spec 12](../../../../docs/spec/12-check-layer.md#the-five-origins-of-a-check)
 //! means by "a new facet or relation in the taxonomy produces its checks with
 //! no code", and it is why the rule list is short while the instance count is
-//! not. [`coverage`] is the runner's own accounting. [`fragment`] and
-//! [`duplicate`] read no declaration, because the language has no member that
-//! turns prose-link resolution or identifier uniqueness on or off: spec 3
-//! states the second of them of every corpus.
+//! not. [`coverage`] is the runner's own accounting. [`fragment`],
+//! [`duplicate`] and [`identifier_link`] read no declaration, because the
+//! language has no member that turns prose-link resolution, identifier
+//! uniqueness or identifier-link agreement on or off. Spec 3 states the
+//! second of them of every corpus.
 //!
 //! Four of the five origins are represented. Shape, Graph and Document are
 //! here, and Plugin is not. `Corpus` in that table is an *origin* — a rule
@@ -79,7 +80,7 @@
 //! rules that a check receives a scoped view and cannot ask for a wider one,
 //! and that the enforcement is the feature. Each rule below implements one
 //! scope trait, and that trait is the only way to receive the matching view.
-//! [`run`] names the seventeen checks it runs, which is the whole of
+//! [`run`] names the eighteen checks it runs, which is the whole of
 //! registration.
 //! The scope a trait fixes is now read twice: once for the report, and once as
 //! a component of the cache key that spec 12 derives from the same fact. The
@@ -153,6 +154,7 @@ pub mod fragment;
 pub mod frontmatter;
 pub mod gate;
 pub mod identifier;
+pub mod identifier_link;
 pub mod identity;
 pub mod initial_dependency;
 pub mod instance;
@@ -222,7 +224,7 @@ use headwater_graph::{Declarations, Graph};
 /// The order is the five origins of
 /// [spec 12](../../../../docs/spec/12-check-layer.md#the-five-origins-of-a-check),
 /// which is Shape, then Graph, then the runner's own accounting.
-pub const RULES: [&str; 41] = [
+pub const RULES: [&str; 42] = [
     facet_required::RULE,
     facet_value::RULE,
     facet_blank::RULE,
@@ -252,6 +254,7 @@ pub const RULES: [&str; 41] = [
     sections::RULE,
     fragment::RULE,
     link_path::RULE,
+    identifier_link::RULE,
     promotion::RULE,
     transition::RULE,
     lifecycle_state::RULE,
@@ -574,6 +577,12 @@ fn registry() -> [(&'static str, Scope, u32, scope::ExportTargets); RULES.len()]
             scope::corpus_exports::<link_path::Paths>(),
         ),
         (
+            identifier_link::RULE,
+            scope::corpus_scope::<identifier_link::IdentifierLinks>(),
+            scope::corpus_version::<identifier_link::IdentifierLinks>(),
+            scope::corpus_exports::<identifier_link::IdentifierLinks>(),
+        ),
+        (
             promotion::RULE,
             scope::document_scope::<promotion::Promoted>(),
             scope::document_version::<promotion::Promoted>(),
@@ -772,6 +781,7 @@ pub fn run(
     // link is dead when no file stands at its path and that is not a fact about
     // the file that wrote it. See [`link_path`].
     let link_paths = link_path::Paths;
+    let identifier_links = identifier_link::IdentifierLinks;
     // The one rule that declares `NEEDS_PRIOR`, and it carries no declaration:
     // the transition it reads is spec 3's act rather than a member of any
     // taxonomy. See [`promotion`].
@@ -968,6 +978,14 @@ pub fn run(
         ctx,
         cache,
     ));
+    instances.extend(scope::over_corpus(
+        &identifier_links,
+        census,
+        graph,
+        claims,
+        ctx,
+        cache,
+    ));
     instances.extend(scope::over_documents(&promoted, census, graph, ctx, cache));
     instances.extend(scope::over_documents(
         &transitions,
@@ -1023,8 +1041,8 @@ pub fn run(
     // id and the obligations it discharges, and one place reads the two
     // together. See [`register`] for why that place is not the check.
     let served: Vec<Serves> = registry()
-        .into_iter()
-        .map(|(rule, scope, version, exportable_as)| Serves {
+        .iter()
+        .map(|&(rule, scope, version, exportable_as)| Serves {
             rule,
             scope,
             version,

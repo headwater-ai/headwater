@@ -454,6 +454,22 @@
               }
             },
             {
+              "id": "link.identifier.mismatch",
+              "shortDescription": {
+                "text": "corpus scope, every row of the census, and it is a barrier"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "corpus",
+                  "version": 2,
+                  "obligations": [
+                    "OB-FIX-28"
+                  ],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
               "id": "warrant.promoted",
               "shortDescription": {
                 "text": "document scope, one document and its front matter, and the version of it that stood before the change"
@@ -808,7 +824,7 @@
             "analysisTarget"
           ],
           "hashes": {
-            "sha-256": "15d94e43a05082553a4abfc5753fa0d59393ab379b0a1a4f96c02705285a93eb"
+            "sha-256": "354ad6a0bb7a6e6fcfeb606cfcd523aaef14d11ec62479b365786f073efe7f9d"
           }
         },
         {
@@ -1221,7 +1237,7 @@
         },
         {
           "ruleId": "coverage.document_unchecked",
-          "ruleIndex": 33,
+          "ruleIndex": 34,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -2120,6 +2136,39 @@
               "fixable": false,
               "remediation": "point it at a file that exists, or restore `/spec/00-both-halves.md`. A document that moved keeps its identifier, so `headwater explain` finds where it went",
               "escape": "none"
+            }
+          }
+        },
+        {
+          "ruleId": "link.identifier.mismatch",
+          "ruleIndex": 29,
+          "level": "warning",
+          "kind": "fail",
+          "message": {
+            "text": "link text names `DR-FIX-0009`, but `check/spec/08-contract-met.md` has identifier `DR-FIX-0008`",
+            "markdown": "link text names `DR-FIX-0009`, but `check/spec/08-contract-met.md` has identifier `DR-FIX-0008`\n\n**Fix:** write `DR-FIX-0008` as the link text, or point it at the document with identifier `DR-FIX-0009`"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/07-prose-defects.md"
+                },
+                "region": {
+                  "startLine": 81,
+                  "startColumn": 1
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "warn",
+              "fixable": false,
+              "remediation": "write `DR-FIX-0008` as the link text, or point it at the document with identifier `DR-FIX-0009`",
+              "escape": "none",
+              "obligation": "OB-FIX-28",
+              "obligation_severity": "medium"
             }
           }
         },
@@ -3024,7 +3073,7 @@
         },
         {
           "ruleId": "control.mechanism.unimplemented",
-          "ruleIndex": 35,
+          "ruleIndex": 36,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -3053,7 +3102,7 @@
         },
         {
           "ruleId": "control.mechanism.unimplemented",
-          "ruleIndex": 35,
+          "ruleIndex": 36,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -3082,7 +3131,7 @@
         },
         {
           "ruleId": "obligation.disposition.not_one",
-          "ruleIndex": 34,
+          "ruleIndex": 35,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -3111,7 +3160,7 @@
         },
         {
           "ruleId": "obligation.disposition.not_one",
-          "ruleIndex": 34,
+          "ruleIndex": 35,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -3140,7 +3189,7 @@
         },
         {
           "ruleId": "obligation.disposition.not_one",
-          "ruleIndex": 34,
+          "ruleIndex": 35,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -3169,7 +3218,7 @@
         },
         {
           "ruleId": "obligation.disposition.not_one",
-          "ruleIndex": 34,
+          "ruleIndex": 35,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -3198,7 +3247,7 @@
         },
         {
           "ruleId": "obligation.disposition.not_one",
-          "ruleIndex": 34,
+          "ruleIndex": 35,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -3232,7 +3281,7 @@
           "taxonomy": {
             "package": "headwater/fixture",
             "version": "1.0.0",
-            "lock": "9df1915ec6a29614e9cba30132a126a5cc7591315ce0e880fda4b551982640c0"
+            "lock": "8aa51e4e4c8b9c11ab56777dfd4a1cbac0e66c20104c17983182100dd52215d4"
           },
           "clock": "2026-08-12",
           "coverage": {
@@ -3240,7 +3289,7 @@
             "classified": 29,
             "checked": 28,
             "generated": 1,
-            "instances": 357,
+            "instances": 358,
             "skipped": 60,
             "skips": [
               {
