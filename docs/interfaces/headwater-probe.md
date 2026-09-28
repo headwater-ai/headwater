@@ -17,7 +17,7 @@ relations:
 ## Synopsis
 
     headwater probe plan [--tier regression|campaign|documentation] [--arm present|absent]
-                          [--category name] [--seed n]
+                          [--category name] [--exclude probe]... [--repetitions n] [--seed n]
     headwater probe record <path>
     headwater probe grade <path>
     headwater probe stale
@@ -43,9 +43,11 @@ All subcommands require a readable `.headwater/probe.yml`, a readable taxonomy l
 | `plan` | `--tier <regression\|campaign\|documentation>` | Select the tier. The default is `regression`. A paired tier refuses a probe whose predicate names a document that its own ablation removes. Every tier refuses one whose document sits under the `instrument`, which every arm removes. |
 | `plan` | `--arm <present\|absent>` | Narrow the declared arms. An arm the tier does not declare refuses the run and names the arms it does declare. |
 | `plan` | `--category <name>` | Narrow the selection to one declared category. |
+| `plan` | `--exclude <probe>` | Remove one probe from the selection, by its identifier. Repeat the option for more than one probe. The selection digest excludes the probe. An identifier that is not in the selection refuses the run. |
+| `plan` | `--repetitions <n>` | Plan fewer repetitions than the tier declares, for a pilot. A number above the declared count refuses the run, and so does `0`. |
 | `plan` | `--seed <n>` | Record the caller's rotation seed. It does not select a subset. The default is `0`. |
 | `record` | `<path>` | Read and report the transcript at the path. |
-| `grade` | `<path>` | Grade the transcript at the path against the current regression selection. |
+| `grade` | `<path>` | Grade the transcript at the path against the current regression selection. When the transcript names part of the selection, the grade uses that part. |
 | `stale` | none | Report which committed transcript read sets changed. |
 | every | `--no-color` | Force plain text on both streams: bold and dim weight plus glyphs, no escape sequence. The default already senses whether each stream is a terminal, and renders color only there. All four subcommands, `plan`, `record`, `grade` and `stale`, color their own report under a terminal. A refusal on standard error colors under a terminal for all four. |
 

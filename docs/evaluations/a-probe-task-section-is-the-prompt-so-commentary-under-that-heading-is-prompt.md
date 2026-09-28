@@ -25,7 +25,7 @@ relations:
 
 Each of the three is a defect in the probe document. None of the three is a reading of a model, and none is a routing-precision question. The evidence is the two committed transcripts of 2026-09-16 and 2026-09-17, and the raw harness logs behind them. It is also a replay of `headwater route` over the tree in front of this evaluation.
 
-**A recorder sends the body of a probe's `## Task` section as the whole of the session's first turn, and it sends nothing else.** That was true of `tools/probe/probe-record.sh` before this evaluation and no document said so. [Spec 15](../spec/15-the-recorder-contract.md#the-prompt-is-the-task-section-and-the-answer-is-the-whole-final-message) now states it, with the rule by which the same recorder derives an answer. Both rules bound every probe already written, and two probes did not meet them.
+**A recorder sends the body of a probe's `## Task` section as the whole of the session's first turn, and it sends nothing else.** That was true of `tools/probe/probe-record.sh` before this evaluation and no document said so. [Spec 15](../spec/15-the-recorder-contract.md#the-prompt-is-the-task-section-and-the-answer-is-the-final-line) now states it, with the rule by which the same recorder derives an answer. Both rules bound every probe already written, and two probes did not meet them.
 
 ## The pointer probe: the evaluation of #896 read the right router and the wrong text
 

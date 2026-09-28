@@ -22,7 +22,7 @@
       "taxonomy": {
         "package": "headwater/standard",
         "version": "4.9.1",
-        "lock": "sha256:2b6b6b6c2139e1b74109c02a56dad05d2ab2042d125048db909484ade3a847e4"
+        "lock": "sha256:62144f6124525b73c49768d80ccdc41d7324fff0b39836367db4db85aa502cb8"
       },
       "entry_points": [
         {
@@ -67,13 +67,13 @@
         },
         {
           "shelf": "probe_results",
-          "path": "docs/probe-results/regression-probe-transcript-for-2026-09-09.md",
-          "id": "HW-RESULT-regression-probe-transcript-for-2026-09-09"
+          "path": "docs/probe-results/campaign-pilot-of-2026-09-28-campaign-tier-absent-arm-discovery.md",
+          "id": "HW-RESULT-campaign-pilot-of-2026-09-28-campaign-tier-absent-arm-discovery"
         },
         {
           "shelf": "probe_runs",
-          "path": "docs/probe-runs/regression-probe-transcript-for-2026-09-09.md",
-          "id": "HW-RUN-regression-probe-transcript-for-2026-09-09"
+          "path": "docs/probe-runs/campaign-pilot-of-2026-09-28-campaign-tier-absent-arm-discovery.md",
+          "id": "HW-RUN-campaign-pilot-of-2026-09-28-campaign-tier-absent-arm-discovery"
         },
         {
           "shelf": "probes",

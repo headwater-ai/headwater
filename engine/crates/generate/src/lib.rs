@@ -711,58 +711,63 @@ impl RefusedTranscript {
     }
 }
 
-/// Two campaign transcripts of one selection, model and served version, one
-/// per arm, whose refused-session counts disagree.
+/// Two compared arms of one run, where either arm holds a refused session that
+/// the recorder or the probe declaration caused.
 ///
 /// # A campaign is a comparison of two results
 ///
-/// The issue that asked for this type states the rule for one transcript
-/// against itself: "A difference in refused sessions between arms is a defect
-/// of the run and not a finding." Four of the six intake refusals are
-/// conditions of the recorder and not of the session, so an arm whose recorder
-/// wrote fewer keys reports a rate over fewer sessions, and pooling the two
-/// arms as though their denominators agreed would read a difference in the
-/// recorder as a difference in the corpus. Nothing read two transcripts
-/// together before this type existed, so nothing enforced that rule between
-/// two arms; this is the enforcement, taken over
-/// [`headwater_probe::grade::Results::refused`] on each side of the pair.
+/// Four of the six intake refusals are conditions of the recorder and not of
+/// the session, so an arm whose recorder wrote fewer keys reports a rate over
+/// fewer sessions, and comparing it with the other arm reads a difference in
+/// the recorder as a difference in the corpus.
+///
+/// The first version of this type failed the run wherever the two arms'
+/// refused counts differed at all, on the rule "A difference in refused
+/// sessions between arms is a defect of the run and not a finding." That rule
+/// counted a session that did nothing as a defect too, and across hundreds of
+/// sessions per arm one such session would discard a paid batch. The owner
+/// ruled on #980 (2026-09-28) that the two classes are different facts: a
+/// refusal the recorder or the declaration caused is a defect, whose remedy is
+/// to record the session again, and a refusal the session caused is data,
+/// printed per arm in each result. See
+/// [`headwater_probe::grade::Refusal::is_session`].
 ///
 /// # This always fails the run
 ///
 /// Unlike [`RefusedTranscript`], no state a transcript declares releases it. A
 /// state names whether a reader may rely on one recording, and this is not a
 /// claim about one recording: it is a claim that two recordings compare, and
-/// the remedy is a fresh pair rather than an edit to either document's
-/// `status`.
+/// the remedy is to record the defective sessions again rather than an edit to
+/// either document's `status`.
 #[derive(Clone, Debug)]
-pub struct MismatchedArms {
+pub struct DefectiveArms {
     /// The selection digest both transcripts share.
     pub selection: String,
     pub model: String,
     pub served_version: String,
-    /// The present-arm transcript, relative to the corpus root.
+    /// The treated arm of the comparison, relative to the corpus root.
     pub present: String,
-    /// The absent-arm transcript, relative to the corpus root.
+    /// The control arm of the comparison, relative to the corpus root.
     pub absent: String,
-    pub present_refused: usize,
-    pub absent_refused: usize,
+    pub present_defects: usize,
+    pub absent_defects: usize,
 }
 
-impl MismatchedArms {
+impl DefectiveArms {
     /// The line a run prints under the pair.
     pub fn line(&self) -> String {
         format!(
-            "`{}` (present) and `{}` (absent) share selection `{}` on `{}` at `{}`, and their \
-             refused-session counts disagree: {} against {}. A difference in refused sessions \
-             between arms is a defect of the run and not a finding, so this run fails rather \
-             than pooling two results over denominators nobody declared equal",
+            "`{}` (treated) and `{}` (control) share selection `{}` on `{}` at `{}`, and they \
+             hold {} and {} that the recorder or the probe declaration caused. A defect of the \
+             recorder is not a finding, so this run fails rather than comparing two results \
+             over sessions nobody graded",
             self.present,
             self.absent,
             self.selection,
             self.model,
             self.served_version,
-            self.present_refused,
-            self.absent_refused,
+            count(self.present_defects, "refused session"),
+            count(self.absent_defects, "refused session"),
         )
     }
 }
@@ -778,15 +783,15 @@ impl MismatchedArms {
 /// one, and once it landed the extra transcript zipped against whichever
 /// transcript of the other arm happened to sort next to it. The genuine
 /// pair — the two transcripts a reader actually means to compare — then
-/// never reached [`MismatchedArms`] at all, and a run with a real
-/// refused-count disagreement between them could report none.
+/// never reached [`DefectiveArms`] at all, and a run with a real
+/// defect in one of them could report none.
 ///
 /// Nothing in the run identity spec 5 fixes before a run names which present
 /// transcript pairs with which absent one beyond the selection, the model
 /// and the served version. So once either side of one key holds more than
 /// one transcript, there is no key left to pair by, and guessing is what
 /// this type exists to refuse: it is reported and it always fails the run,
-/// the same posture [`MismatchedArms`] takes and for the same reason — no
+/// the same posture [`DefectiveArms`] takes and for the same reason — no
 /// state either transcript declares is the remedy for it, and the remedy is
 /// retiring the stale transcript rather than an edit to either document.
 #[derive(Clone, Debug)]
@@ -836,9 +841,9 @@ pub struct Plan {
     /// because the refusal is what the file says; this is the run saying it
     /// too.
     pub refused: Vec<RefusedTranscript>,
-    /// Paired campaign transcripts whose refused-session counts disagree
-    /// between arms. See [`MismatchedArms`].
-    pub mismatched_arms: Vec<MismatchedArms>,
+    /// Compared arms that hold a refused session the recorder or the probe
+    /// declaration caused. See [`DefectiveArms`].
+    pub defective_arms: Vec<DefectiveArms>,
     /// Campaign keys whose present or absent side could not be paired at all,
     /// because one of them holds more than one transcript. See
     /// [`AmbiguousArms`].
@@ -1278,8 +1283,8 @@ pub struct Report {
     /// never a plan.
     pub refused: Vec<RefusedTranscript>,
     /// Carried from the plan, for the reason `refused` is. See
-    /// [`MismatchedArms`].
-    pub mismatched_arms: Vec<MismatchedArms>,
+    /// [`DefectiveArms`].
+    pub defective_arms: Vec<DefectiveArms>,
     /// Carried from the plan, for the reason `refused` is. See
     /// [`AmbiguousArms`].
     pub ambiguous_arms: Vec<AmbiguousArms>,
@@ -1307,7 +1312,7 @@ impl Report {
             || self.wrote.iter().any(|wrote| wrote.verdict.is_error())
             || !self.orphaned.is_empty()
             || self.refused.iter().any(|refused| refused.held)
-            || !self.mismatched_arms.is_empty()
+            || !self.defective_arms.is_empty()
             || !self.ambiguous_arms.is_empty()
     }
 
@@ -1353,11 +1358,11 @@ impl Report {
         // mismatch between two arms is a failure of the corpus and not of the
         // regeneration, and no state either transcript declares is the remedy
         // for it.
-        if let Some(mismatched) = self.mismatched_arms.first() {
+        if let Some(defective) = self.defective_arms.first() {
             return Some(format!(
-                "{}. Record a fresh pair whose refused sessions agree, or find why the recorder \
-                 wrote fewer keys for one arm",
-                mismatched.line()
+                "{}. Record the defective sessions again, or find why the recorder wrote fewer \
+                 keys for one arm",
+                defective.line()
             ));
         }
         // Before the two below, because a refused transcript is a failure of
@@ -1462,17 +1467,17 @@ impl Report {
                 out.push('\n');
             }
         }
-        if !self.mismatched_arms.is_empty() {
+        if !self.defective_arms.is_empty() {
             out.push('\n');
-            out.push_str(&paint(Role::Heading, "mismatched arms", mode));
+            out.push_str(&paint(Role::Heading, "defective arms", mode));
             out.push('\n');
-            for mismatched in &self.mismatched_arms {
+            for defective in &self.defective_arms {
                 out.push_str(&format!(
                     "  {} / {}\n",
-                    paint(Role::Path, &mismatched.present, mode),
-                    paint(Role::Path, &mismatched.absent, mode)
+                    paint(Role::Path, &defective.present, mode),
+                    paint(Role::Path, &defective.absent, mode)
                 ));
-                out.push_str(&dim(&format!("    {}", mismatched.line()), mode));
+                out.push_str(&dim(&format!("    {}", defective.line()), mode));
                 out.push('\n');
             }
         }
@@ -1641,7 +1646,7 @@ fn run(root: &Path, plan: &Plan, checking: bool) -> Report {
         unwritten: plan.unwritten.clone(),
         orphaned: plan.orphaned.clone(),
         refused: plan.refused.clone(),
-        mismatched_arms: plan.mismatched_arms.clone(),
+        defective_arms: plan.defective_arms.clone(),
         ambiguous_arms: plan.ambiguous_arms.clone(),
         producer,
         ..Report::default()
@@ -1932,14 +1937,14 @@ mod paint_tests {
                 // the cases below would then paint a line nobody writes.
                 readers: vec!["docs/obligations/0010-a-record.md".to_string()],
             }],
-            mismatched_arms: vec![MismatchedArms {
+            defective_arms: vec![DefectiveArms {
                 selection: "sha256:selection".to_string(),
                 model: "a-model".to_string(),
                 served_version: "a-model-20260701".to_string(),
                 present: "docs/probe-runs/campaign-present.md".to_string(),
                 absent: "docs/probe-runs/campaign-absent.md".to_string(),
-                present_refused: 0,
-                absent_refused: 1,
+                present_defects: 0,
+                absent_defects: 1,
             }],
             ambiguous_arms: vec![AmbiguousArms {
                 selection: "sha256:another-selection".to_string(),
@@ -1993,8 +1998,8 @@ mod paint_tests {
                 opens_with: "\u{1b}[2m    ",
             },
             Case {
-                what: "the mismatched-arms block is a heading",
-                opens_with: "\u{1b}[1mmismatched arms\u{1b}[0m\n",
+                what: "the defective-arms block is a heading",
+                opens_with: "\u{1b}[1mdefective arms\u{1b}[0m\n",
             },
             Case {
                 what: "the ambiguous-arms block is a heading",

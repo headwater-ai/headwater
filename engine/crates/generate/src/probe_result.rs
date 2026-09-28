@@ -64,15 +64,17 @@
 //! instrument as a change in the corpus.
 
 use crate::{
-    AmbiguousArms, Declaration, DeclaredIdentity, Identity, Kind, MismatchedArms, Output, Plan,
+    AmbiguousArms, Declaration, DeclaredIdentity, DefectiveArms, Identity, Kind, Output, Plan,
     Runs, Unwritten,
 };
 use headwater_census::census::{Census, Outcome};
 use headwater_check::lifecycle_state::{Standing, StateFacet, Stood};
 use headwater_graph::links::Binding;
-use headwater_probe::grade::Results;
+use headwater_probe::grade::{Interval, Results};
 use headwater_probe::intake::{Record, Tree};
+use headwater_probe::plan::Selected;
 use headwater_probe::Arm;
+use headwater_probe::Tier;
 use headwater_query::Surface;
 
 use crate::RefusedTranscript;
@@ -193,13 +195,12 @@ pub(crate) fn emit(
         config: surface.config(),
         lock: &identity.lock,
     };
-    // Every campaign transcript this run graded cleanly, carried past the loop
-    // below so that [`pair_arms`] can compare an arm against the other arm of
-    // its own pair once every transcript has a grade. A transcript the intake
-    // refused whole contributes nothing here: `RefusedTranscript` already
-    // fails the run over it, and a refused transcript's `Results::refused()`
-    // is zero by construction rather than a count of anything graded.
-    let mut campaign: Vec<(String, headwater_probe::intake::Identity, usize)> = Vec::new();
+    // Every transcript is graded before any body is written, because a body
+    // of a paired run carries the comparisons its transcript takes part in,
+    // and a comparison reads the other arm's grade. A transcript the intake
+    // refused whole takes part in no comparison: `RefusedTranscript` already
+    // fails the run over it.
+    let mut graded: Vec<Graded> = Vec::new();
     for (path, promoted) in committed {
         let stem = stem(path);
         let output = declaration.output.replace(RUN, &stem);
@@ -262,12 +263,14 @@ pub(crate) fn emit(
         };
 
         let record = Record::read(&transcript.source, &tree);
-        let results = Results::over(&record, &runs.selected);
-        if let (Some(identity), None) = (&record.identity, &record.refusal) {
-            if identity.tier.pairs_arms() {
-                campaign.push((path.to_string(), identity.clone(), results.refused()));
-            }
-        }
+        // A run planned by category, or with a probe named out of it, is
+        // graded against the part of the selection it was planned over (#980).
+        let narrowed = headwater_probe::grade::narrowed(&runs.selected, &record);
+        let selected: &[Selected] = narrowed.as_deref().unwrap_or(&runs.selected);
+        let results = Results::over(&record, selected);
+        let part = narrowed
+            .as_ref()
+            .map(|part| (part.len(), runs.selected.len()));
         // Who reads a refusal, which the state of the recording does not
         // answer. Taken for a refused transcript alone: a result that carries
         // verdicts costs a reader nothing, and a list of readers on every
@@ -291,11 +294,29 @@ pub(crate) fn emit(
                 readers: read_by.clone(),
             });
         }
-        let bytes = body(&front, path, &record, &results, &runs.selection, &read_by);
+        graded.push(Graded {
+            path: path.to_string(),
+            output,
+            front,
+            record,
+            results,
+            composed: runs.selection.clone(),
+            part,
+            read_by,
+        });
+    }
+
+    let comparisons = pair_arms(&graded, plan);
+    for one in &graded {
+        let mine: Vec<&Comparison> = comparisons
+            .iter()
+            .filter(|comparison| comparison.treated == one.path || comparison.control == one.path)
+            .collect();
+        let bytes = body(one, &mine);
         if let Some(declared) = &declaration.identity {
             if let Err(reason) = crate::identity::unheld(surface, &declared.kind, &bytes) {
                 plan.unwritten.push(Unwritten {
-                    at: output,
+                    at: one.output.clone(),
                     kind: Kind::ProbeResult,
                     reason,
                 });
@@ -303,110 +324,315 @@ pub(crate) fn emit(
             }
         }
         plan.outputs.push(Output {
-            path: output,
+            path: one.output.clone(),
             kind: Kind::ProbeResult,
             bytes,
         });
     }
-    pair_arms(&campaign, plan);
 }
 
-/// Every campaign transcript this run graded, paired present against absent
-/// within the selection, model and served version the two arms share, and
-/// reported where the refused-session counts of the pair disagree — or where
-/// no pair could be chosen at all.
+/// One transcript, graded, before its body is written.
+struct Graded {
+    path: String,
+    output: String,
+    front: String,
+    record: Record,
+    results: Results,
+    /// The selection digest this corpus composes.
+    composed: String,
+    /// Where the transcript was graded against part of the selection: how
+    /// many probes the part holds, and how many the whole selection holds.
+    part: Option<(usize, usize)>,
+    read_by: Vec<String>,
+}
+
+/// Which claim a comparison measures, named by what the two arms differ by.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Claim {
+    /// `campaign` present against `campaign` absent.
+    Governance,
+    /// `campaign` absent against `documentation` absent. Both removed the
+    /// governance, and only the second removed `docs/`.
+    Documents,
+    /// A present arm against `documentation` absent.
+    Both,
+}
+
+impl Claim {
+    fn sentence(self) -> &'static str {
+        match self {
+            Claim::Governance => {
+                "What the governance changes. The treated arm is the `campaign` present arm and \
+                 the control is the `campaign` absent arm, which removed the paths the \
+                 `campaign` tier's `ablation` names and kept `docs/`."
+            }
+            Claim::Documents => {
+                "What the documents change. The treated arm is the `campaign` absent arm and the \
+                 control is the `documentation` absent arm. Both removed the governance, and \
+                 only the control removed `docs/`, so this is the effect of the documents alone \
+                 (spec 5)."
+            }
+            Claim::Both => {
+                "What the documents and the governance change together. The treated arm is a \
+                 present arm and the control is the `documentation` absent arm."
+            }
+        }
+    }
+}
+
+/// Two graded arms of one run, compared.
+#[derive(Clone, Debug)]
+struct Comparison {
+    claim: Claim,
+    treated: String,
+    control: String,
+    treated_rate: Option<Interval>,
+    control_rate: Option<Interval>,
+    treated_graded: usize,
+    control_graded: usize,
+    treated_session_refused: usize,
+    control_session_refused: usize,
+}
+
+impl Comparison {
+    fn of(claim: Claim, treated: &Graded, control: &Graded) -> Comparison {
+        Comparison {
+            claim,
+            treated: treated.path.clone(),
+            control: control.path.clone(),
+            treated_rate: treated.results.rate(),
+            control_rate: control.results.rate(),
+            treated_graded: treated.results.graded(),
+            control_graded: control.results.graded(),
+            treated_session_refused: treated.results.session_refusals(),
+            control_session_refused: control.results.session_refusals(),
+        }
+    }
+
+    fn render(&self) -> String {
+        use headwater_probe::grade::{percent, points};
+        use std::fmt::Write;
+        let mut out = String::new();
+        let _ = writeln!(out, "{}", self.claim.sentence());
+        let _ = writeln!(out);
+        let arm = |path: &str, rate: &Option<Interval>, graded: usize, refused: usize| {
+            let rate = match rate {
+                Some(rate) => format!(
+                    "{} of {graded} graded sessions satisfied their expectation, {}, in a 95% \
+                     interval of {} to {}",
+                    (rate.point * graded as f64).round() as usize,
+                    percent(rate.point),
+                    percent(rate.low),
+                    percent(rate.high)
+                ),
+                None => "no graded session".to_string(),
+            };
+            format!(
+                "`{path}`: {rate}. {} refused by the session itself.",
+                count(refused, "session")
+            )
+        };
+        let _ = writeln!(
+            out,
+            "- treated, {}",
+            arm(
+                &self.treated,
+                &self.treated_rate,
+                self.treated_graded,
+                self.treated_session_refused
+            )
+        );
+        let _ = writeln!(
+            out,
+            "- control, {}",
+            arm(
+                &self.control,
+                &self.control_rate,
+                self.control_graded,
+                self.control_session_refused
+            )
+        );
+        let _ = writeln!(out);
+        match (&self.treated_rate, &self.control_rate) {
+            (Some(treated), Some(control)) => {
+                let difference = treated.minus(control);
+                let reading = match (difference.low > 0.0, difference.high < 0.0) {
+                    (true, _) => {
+                        "The interval is above zero, so the treated arm satisfied more often at \
+                         the 5% level."
+                    }
+                    (_, true) => {
+                        "The interval is below zero, so the treated arm satisfied less often at \
+                         the 5% level."
+                    }
+                    _ => {
+                        "The interval contains zero, so this run does not separate the two arms \
+                         at the 5% level."
+                    }
+                };
+                let _ = writeln!(
+                    out,
+                    "The difference is {}, in a 95% Newcombe interval of {} to {}. {reading}",
+                    points(difference.point),
+                    points(difference.low),
+                    points(difference.high)
+                );
+            }
+            _ => {
+                let _ = writeln!(
+                    out,
+                    "One arm has no graded session, so this run states no difference."
+                );
+            }
+        }
+        out
+    }
+}
+
+/// Every paired-tier transcript this run graded, grouped into runs and
+/// compared, and reported where a compared arm carries a defect or where no
+/// arm could be chosen at all.
 ///
-/// # Why the key is the tier and three more, and not the tier alone
+/// # The key is the run, and the tier is a role inside it
 ///
-/// Two tiers pair arms, `campaign` and `documentation`, and their absent arms
-/// remove different trees. A campaign's present arm against a documentation
-/// run's absent arm would compare two ablations as though they were one, so
-/// the tier is the first member of the key.
+/// Two transcripts belong to one run when they share the selection, the model,
+/// the served version and the tree. The first three are the members spec 5 pins
+/// before a run starts. The tree joined them for #980: a campaign is recorded
+/// from workspaces built from one pinned commit, so a pair recorded over two
+/// commits compares two corpora, and the key must say so rather than pair them.
 ///
-/// `tier: campaign` alone says two transcripts belong to one kind of run,
-/// never that they belong to *one* run of it: a second campaign, recorded
-/// later against a different pinned model, is a different comparison and
-/// pooling it with the first would compare four results as though they were
-/// two. The selection, the model and the served version are the three members
-/// of the run identity spec 5 pins before a run starts, and this is the same
-/// key [`provenance`] already reads the first of for one transcript.
+/// Inside a run each transcript has a role, its tier and its arm, and a role
+/// holds at most one transcript. Three comparisons read the roles:
 ///
-/// # A pair is chosen only where one is unambiguous
+/// - `campaign` present against `campaign` absent, the governance.
+/// - `campaign` absent against `documentation` absent, the documents alone,
+///   which spec 5 names as the only reading of that claim.
+/// - a present arm against `documentation` absent, both together.
 ///
-/// A corpus may hold more than one present or more than one absent transcript
-/// under one key, once an earlier pair is retired and a fresh one recorded
-/// beside it. Nothing in the run identity says which present transcript
-/// belongs with which absent one beyond the three members above, so once
-/// either side holds more than one transcript there is no key left to pair
-/// by. Sorting each side by path and pairing by position used to stand in
-/// for that missing key, and it is wrong: a stale transcript left beside its
-/// replacement zips against whichever transcript of the other arm happens to
-/// sort next to it, and the genuine pair — the two a reader actually means
-/// to compare — never reaches the comparison below at all. So this reports
-/// the ambiguity instead, as [`AmbiguousArms`], and chooses no pair. Zero or
-/// one transcript on a side is not ambiguous: zero means nothing to compare
-/// yet, and exactly one on each side is the only case with a pair to choose.
-fn pair_arms(campaign: &[(String, headwater_probe::intake::Identity, usize)], plan: &mut Plan) {
-    let mut keys: Vec<(&str, &str, &str, &str)> = campaign
+/// # One present arm serves both tiers
+///
+/// A present arm removes the instrument and the seal and nothing else, at every
+/// tier, so the `campaign` present tree and the `documentation` present tree
+/// are one tree. The owner ruled on #980 (2026-09-28) that a run records it
+/// once. The third comparison reads the `documentation` present arm where one
+/// was recorded and the `campaign` present arm otherwise. The comparisons share
+/// that arm, so their estimates are correlated. Each one is still unbiased,
+/// which is the condition the ruling set.
+///
+/// # A compared arm with a defect fails the run
+///
+/// A refusal the recorder or the probe declaration caused is a defect, and its
+/// remedy is to record the session again. A refusal the session caused is data
+/// and is printed per arm. See [`headwater_probe::grade::Refusal::is_session`].
+///
+/// # A role is chosen only where it is unambiguous
+///
+/// A corpus may hold a stale transcript beside its replacement under one key.
+/// Nothing in the run identity says which one a reader means, so a key where
+/// any role holds more than one transcript is reported as [`AmbiguousArms`]
+/// and compares nothing.
+fn pair_arms(graded: &[Graded], plan: &mut Plan) -> Vec<Comparison> {
+    type Key<'a> = (&'a str, &'a str, &'a str, &'a str);
+    let paired: Vec<(&Graded, &headwater_probe::intake::Identity)> = graded
         .iter()
-        .map(|(_, identity, _)| {
+        .filter(|one| one.record.refusal.is_none())
+        .filter_map(|one| Some((one, one.record.identity.as_ref()?)))
+        .filter(|(_, identity)| identity.tier.pairs_arms())
+        .collect();
+    let mut keys: Vec<Key> = paired
+        .iter()
+        .map(|(_, identity)| {
             (
-                identity.tier.name(),
                 identity.selection.as_str(),
                 identity.model.as_str(),
                 identity.served_version.as_str(),
+                identity.tree.as_str(),
             )
         })
         .collect();
     keys.sort_unstable();
     keys.dedup();
 
-    for (tier, selection, model, served_version) in keys {
-        let of_arm = |arm: Arm| {
-            let mut found: Vec<&(String, headwater_probe::intake::Identity, usize)> = campaign
+    let mut comparisons = Vec::new();
+    for (selection, model, served_version, tree) in keys {
+        let under: Vec<&(&Graded, &headwater_probe::intake::Identity)> = paired
+            .iter()
+            .filter(|(_, identity)| {
+                identity.selection == selection
+                    && identity.model == model
+                    && identity.served_version == served_version
+                    && identity.tree == tree
+            })
+            .collect();
+        let role = |tier: Tier, arm: Arm| -> Vec<&Graded> {
+            let mut found: Vec<&Graded> = under
                 .iter()
-                .filter(|(_, identity, _)| {
-                    identity.tier.name() == tier
-                        && identity.selection == selection
-                        && identity.model == model
-                        && identity.served_version == served_version
-                        && identity.arm == arm
-                })
+                .filter(|(_, identity)| identity.tier == tier && identity.arm == arm)
+                .map(|(one, _)| *one)
                 .collect();
-            found.sort_by(|a, b| a.0.cmp(&b.0));
+            found.sort_by(|a, b| a.path.cmp(&b.path));
             found
         };
-        let present = of_arm(Arm::Present);
-        let absent = of_arm(Arm::Absent);
-        match (present.as_slice(), absent.as_slice()) {
-            // Nothing to compare on one side yet. Not ambiguous: a corpus
-            // with only a present-arm transcript recorded is every corpus
-            // this engine has seen today.
-            ([], _) | (_, []) => {}
-            ([present], [absent]) => {
-                if present.2 != absent.2 {
-                    plan.mismatched_arms.push(MismatchedArms {
-                        selection: selection.to_string(),
-                        model: model.to_string(),
-                        served_version: served_version.to_string(),
-                        present: present.0.clone(),
-                        absent: absent.0.clone(),
-                        present_refused: present.2,
-                        absent_refused: absent.2,
-                    });
-                }
-            }
-            (present, absent) => {
-                plan.ambiguous_arms.push(AmbiguousArms {
+        let roles = [
+            role(Tier::Campaign, Arm::Present),
+            role(Tier::Campaign, Arm::Absent),
+            role(Tier::Documentation, Arm::Present),
+            role(Tier::Documentation, Arm::Absent),
+        ];
+        if roles.iter().any(|holders| holders.len() > 1) {
+            let of_arm = |arm: Arm| {
+                let mut paths: Vec<String> = under
+                    .iter()
+                    .filter(|(_, identity)| identity.arm == arm)
+                    .map(|(one, _)| one.path.clone())
+                    .collect();
+                paths.sort();
+                paths
+            };
+            plan.ambiguous_arms.push(AmbiguousArms {
+                selection: selection.to_string(),
+                model: model.to_string(),
+                served_version: served_version.to_string(),
+                present: of_arm(Arm::Present),
+                absent: of_arm(Arm::Absent),
+            });
+            continue;
+        }
+        let one = |index: usize| roles[index].first().copied();
+        let (campaign_present, campaign_absent, documentation_present, documentation_absent) =
+            (one(0), one(1), one(2), one(3));
+
+        let mut chosen: Vec<(Claim, &Graded, &Graded)> = Vec::new();
+        if let (Some(treated), Some(control)) = (campaign_present, campaign_absent) {
+            chosen.push((Claim::Governance, treated, control));
+        }
+        if let (Some(treated), Some(control)) = (campaign_absent, documentation_absent) {
+            chosen.push((Claim::Documents, treated, control));
+        }
+        if let (Some(treated), Some(control)) = (
+            documentation_present.or(campaign_present),
+            documentation_absent,
+        ) {
+            chosen.push((Claim::Both, treated, control));
+        }
+        for (claim, treated, control) in chosen {
+            let (treated_defects, control_defects) =
+                (treated.results.defects(), control.results.defects());
+            if treated_defects > 0 || control_defects > 0 {
+                plan.defective_arms.push(DefectiveArms {
                     selection: selection.to_string(),
                     model: model.to_string(),
                     served_version: served_version.to_string(),
-                    present: present.iter().map(|entry| entry.0.clone()).collect(),
-                    absent: absent.iter().map(|entry| entry.0.clone()).collect(),
+                    present: treated.path.clone(),
+                    absent: control.path.clone(),
+                    present_defects: treated_defects,
+                    absent_defects: control_defects,
                 });
             }
+            comparisons.push(Comparison::of(claim, treated, control));
         }
     }
+    comparisons
 }
 
 /// Every document of this corpus that links a refused recording or the result
@@ -536,15 +762,15 @@ fn holds_a_refusal(state: &StateFacet, row: &headwater_census::census::Row) -> b
 
 /// The whole file: the front matter, the marker where there is no front matter,
 /// and the report.
-fn body(
-    front: &str,
-    transcript: &str,
-    record: &Record,
-    results: &Results,
-    selection: &str,
-    read_by: &[String],
-) -> String {
+fn body(graded: &Graded, comparisons: &[&Comparison]) -> String {
     use std::fmt::Write;
+    let (front, transcript, record, results, read_by) = (
+        graded.front.as_str(),
+        graded.path.as_str(),
+        &graded.record,
+        &graded.results,
+        graded.read_by.as_slice(),
+    );
     let mut out = String::new();
     match front.is_empty() {
         // A declaration that states no identity writes a file that is no node.
@@ -575,13 +801,28 @@ fn body(
     out.push_str(&record.render(headwater_check::paint::ColorMode::Plain));
     if let Some(identity) = &record.identity {
         let _ = writeln!(out);
-        out.push_str(&provenance(&identity.selection, selection));
+        out.push_str(&provenance(
+            &identity.selection,
+            &graded.composed,
+            graded.part,
+        ));
         let _ = writeln!(out);
         out.push_str(READ_SET);
     }
     let _ = writeln!(out);
 
     out.push_str(&results.render(headwater_check::paint::ColorMode::Plain));
+    if !comparisons.is_empty() {
+        let _ = writeln!(out);
+        let _ = writeln!(out, "## The comparisons this arm takes part in");
+        let _ = writeln!(out);
+        for (index, comparison) in comparisons.iter().enumerate() {
+            if index > 0 {
+                let _ = writeln!(out);
+            }
+            out.push_str(&comparison.render());
+        }
+    }
     if record.refusal.is_some() {
         let _ = writeln!(out);
         out.push_str(&read_set_of_this_result(read_by));
@@ -719,7 +960,22 @@ const READ_SET: &str = "The `read_set` digest above covers every probe of the se
 /// A harness version is the version of the engine that planned the run, and
 /// holding a recorded run to the version reading it would refuse every
 /// transcript on the first release.
-fn provenance(recorded: &str, composed: &str) -> String {
+fn provenance(recorded: &str, composed: &str, part: Option<(usize, usize)>) -> String {
+    // The probes a transcript names do not say why they are fewer than the
+    // selection. A run planned by category, or with a probe named out of it,
+    // and a run recorded before a probe was added, leave the same trace, so the
+    // sentence names both and claims neither (#980).
+    if let Some((graded, whole)) = part {
+        return format!(
+            "**The selection this transcript names is not the selection this corpus composes.** \
+             The transcript names `{recorded}` and this corpus composes `{composed}`. The \
+             transcript's digest is the digest of {graded} of the {whole} probes this corpus \
+             composes, so the run was planned over that part of the selection, or the rest were \
+             added after it was recorded. Every verdict below is over that part, and a probe \
+             outside it is not a session this run owed. The tree, the seed and the harness \
+             above are provenance and nothing compares them.\n"
+        );
+    }
     match recorded == composed {
         true => "The selection this transcript names is the selection this corpus composes, so \
                  the probes graded below are the probes this run was planned over. The tree, the \

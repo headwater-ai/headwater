@@ -784,6 +784,20 @@ docs/obligations/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/probe-results/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
+docs/probe-results/campaign-pilot-of-2026-09-28-campaign-tier-absent-arm-discovery.md
+  generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
+docs/probe-results/campaign-pilot-of-2026-09-28-campaign-tier-absent-arm-navigability.md
+  generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
+docs/probe-results/campaign-pilot-of-2026-09-28-campaign-tier-absent-arm-sufficiency.md
+  generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
+docs/probe-results/campaign-pilot-of-2026-09-28-campaign-tier-present-arm-discovery.md
+  generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
+docs/probe-results/campaign-pilot-of-2026-09-28-campaign-tier-present-arm-navigability.md
+  generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
+docs/probe-results/campaign-pilot-of-2026-09-28-campaign-tier-present-arm-sufficiency.md
+  generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
+docs/probe-results/campaign-pilot-of-2026-09-28-documentation-tier-absent-arm-sufficiency.md
+  generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
 docs/probe-results/regression-probe-transcript-for-2026-09-09.md
   generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
 docs/probe-results/regression-probe-transcript-for-2026-09-11.md
@@ -794,8 +808,36 @@ docs/probe-results/regression-probe-transcript-for-2026-09-17-after-the-probe-co
   generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
 docs/probe-results/regression-probe-transcript-for-2026-09-17.md
   generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
+docs/probe-results/second-campaign-pilot-of-2026-09-28-campaign-tier-absent-arm-discovery.md
+  generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
+docs/probe-results/second-campaign-pilot-of-2026-09-28-campaign-tier-absent-arm-navigability.md
+  generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
+docs/probe-results/second-campaign-pilot-of-2026-09-28-campaign-tier-absent-arm-sufficiency.md
+  generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
+docs/probe-results/second-campaign-pilot-of-2026-09-28-campaign-tier-present-arm-discovery.md
+  generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
+docs/probe-results/second-campaign-pilot-of-2026-09-28-campaign-tier-present-arm-navigability.md
+  generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
+docs/probe-results/second-campaign-pilot-of-2026-09-28-campaign-tier-present-arm-sufficiency.md
+  generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
+docs/probe-results/second-campaign-pilot-of-2026-09-28-documentation-tier-absent-arm-sufficiency.md
+  generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
 docs/probe-runs/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
+docs/probe-runs/campaign-pilot-of-2026-09-28-campaign-tier-absent-arm-discovery.md
+  typed: probe_transcript
+docs/probe-runs/campaign-pilot-of-2026-09-28-campaign-tier-absent-arm-navigability.md
+  typed: probe_transcript
+docs/probe-runs/campaign-pilot-of-2026-09-28-campaign-tier-absent-arm-sufficiency.md
+  typed: probe_transcript
+docs/probe-runs/campaign-pilot-of-2026-09-28-campaign-tier-present-arm-discovery.md
+  typed: probe_transcript
+docs/probe-runs/campaign-pilot-of-2026-09-28-campaign-tier-present-arm-navigability.md
+  typed: probe_transcript
+docs/probe-runs/campaign-pilot-of-2026-09-28-campaign-tier-present-arm-sufficiency.md
+  typed: probe_transcript
+docs/probe-runs/campaign-pilot-of-2026-09-28-documentation-tier-absent-arm-sufficiency.md
+  typed: probe_transcript
 docs/probe-runs/regression-probe-transcript-for-2026-09-09.md
   typed: probe_transcript
 docs/probe-runs/regression-probe-transcript-for-2026-09-11.md
@@ -805,6 +847,20 @@ docs/probe-runs/regression-probe-transcript-for-2026-09-16.md
 docs/probe-runs/regression-probe-transcript-for-2026-09-17-after-the-probe-corrections.md
   typed: probe_transcript
 docs/probe-runs/regression-probe-transcript-for-2026-09-17.md
+  typed: probe_transcript
+docs/probe-runs/second-campaign-pilot-of-2026-09-28-campaign-tier-absent-arm-discovery.md
+  typed: probe_transcript
+docs/probe-runs/second-campaign-pilot-of-2026-09-28-campaign-tier-absent-arm-navigability.md
+  typed: probe_transcript
+docs/probe-runs/second-campaign-pilot-of-2026-09-28-campaign-tier-absent-arm-sufficiency.md
+  typed: probe_transcript
+docs/probe-runs/second-campaign-pilot-of-2026-09-28-campaign-tier-present-arm-discovery.md
+  typed: probe_transcript
+docs/probe-runs/second-campaign-pilot-of-2026-09-28-campaign-tier-present-arm-navigability.md
+  typed: probe_transcript
+docs/probe-runs/second-campaign-pilot-of-2026-09-28-campaign-tier-present-arm-sufficiency.md
+  typed: probe_transcript
+docs/probe-runs/second-campaign-pilot-of-2026-09-28-documentation-tier-absent-arm-sufficiency.md
   typed: probe_transcript
 docs/probes/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
