@@ -1007,10 +1007,7 @@ fn a_refused_plan_prints_no_cost_it_never_computed() {
             "ablated",
             plan_at(Tier::Documentation, &Narrowing::default()),
         ),
-        (
-            "instrument",
-            plan_against(Tier::Regression, &instrumented),
-        ),
+        ("instrument", plan_against(Tier::Regression, &instrumented)),
         (
             "campaign narrowed",
             plan_at(
@@ -1043,7 +1040,10 @@ fn a_refused_plan_prints_no_cost_it_never_computed() {
         };
         assert!(expected, "{case}: refused for another reason: {refusal:?}");
         let report = plan.render(ColorMode::Plain);
-        assert!(report.contains("## This run does not start"), "{case}:\n{report}");
+        assert!(
+            report.contains("## This run does not start"),
+            "{case}:\n{report}"
+        );
         assert!(report.contains(&refusal.to_string()), "{case}:\n{report}");
         if report.contains("## The cost") || report.contains(" sessions, at a declared ") {
             priced.push(*case);
@@ -1897,7 +1897,7 @@ fn opening(role: Role) -> String {
 /// returns.
 fn headings_of(plan: &Plan) -> Vec<&'static str> {
     let mut headings = vec!["## The run identity this plan fixes"];
-    if plan.budget > 0 {
+    if plan.priced() {
         headings.push("## The cost");
     }
     match plan.refusal.is_some() {

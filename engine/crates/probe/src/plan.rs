@@ -952,6 +952,19 @@ impl Plan {
         self.refusal.is_none()
     }
 
+    /// Whether this plan counted its sessions and priced them.
+    ///
+    /// [`Plan::over`] reads the envelope's budget before four refusals that
+    /// return without counting a session: a campaign narrowed to one arm, an
+    /// arm the tier does not declare, and a probe whose document the
+    /// instrument or the absent arm removes. Every plan that reaches the count
+    /// has at least one probe, one arm and one repetition, because each of
+    /// those is refused earlier, so a count of zero means the plan was never
+    /// priced. A plan over budget is priced, and its numbers are its reason.
+    pub fn priced(&self) -> bool {
+        self.sessions > 0
+    }
+
     /// The selection anything may grade a recorded run against, or the refusal
     /// that stops one.
     ///
@@ -1037,11 +1050,12 @@ impl Plan {
         );
         let _ = writeln!(out);
 
-        // The cost section is printed only where a cost was computed. A run
-        // refused before the envelope was read has no projection, and a table
-        // of zeros beside a refusal reads as a run that costs nothing rather
-        // than as a run that was never priced.
-        if self.budget > 0 {
+        // The cost section is printed only where a cost was computed, which is
+        // `Plan::priced`. A run refused before its sessions were counted has
+        // no projection, even where the envelope's budget was already read,
+        // and a table of zeros beside a refusal reads as a run that costs
+        // nothing rather than as a run that was never priced.
+        if self.priced() {
             let _ = writeln!(out, "{}", paint(Role::Heading, "## The cost", mode));
             let _ = writeln!(out);
             let _ = writeln!(
