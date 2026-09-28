@@ -30,6 +30,8 @@
 //! tree level, and no driver is called. The census target measures that, and the
 //! contract of `headwater merge-driver` states the gap.
 
+mod common;
+use common::{clean_base, outside_base};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
 
@@ -81,6 +83,114 @@ impl Drop for Scratch {
     }
 }
 
+/// The scratch base is the first candidate with no `.git` entry above it.
+///
+/// A candidate below a directory that holds `.git` is passed over and named,
+/// and the clean candidate after it is taken. Test only the candidate itself,
+/// or take the first candidate unread, and this case fails (#1192).
+#[test]
+fn the_scratch_base_passes_over_a_candidate_inside_a_git_work_tree() {
+    let Some(clean) = outside_base() else {
+        return;
+    };
+    let outer = Scratch::made(clean.join(format!(
+        "headwater-cli-merge-driver-{}-base-selection",
+        std::process::id()
+    )));
+    std::fs::create_dir_all(outer.0.join(".git")).expect("the directory is made");
+    std::fs::create_dir_all(outer.0.join("tmp")).expect("the directory is made");
+    let inside = outer.0.join("tmp");
+
+    let refused = clean_base(std::slice::from_ref(&inside))
+        .expect_err("a candidate inside a work tree is no base");
+    assert!(
+        refused.contains(&outer.0.join(".git").display().to_string()),
+        "the refusal names the `.git` entry above the candidate: {refused}"
+    );
+    assert_eq!(
+        clean_base(&[inside, clean.clone()]),
+        Ok(clean),
+        "the clean candidate after it is taken"
+    );
+
+    // A candidate that is a link into a work tree is inside it. Read the
+    // ancestors of the link rather than of its target, and this fails.
+    #[cfg(unix)]
+    {
+        let link = Scratch(outer.0.with_extension("link"));
+        let _ = std::fs::remove_file(&link.0);
+        std::os::unix::fs::symlink(outer.0.join("tmp"), &link.0).expect("the link is made");
+        assert!(
+            clean_base(std::slice::from_ref(&link.0)).is_err(),
+            "a link into a work tree is no base"
+        );
+    }
+
+    // A candidate that holds `.git` itself is the top of a work tree. Read
+    // only the directories above a candidate, and this fails.
+    assert!(
+        clean_base(std::slice::from_ref(&outer.0)).is_err(),
+        "a candidate that holds `.git` is no base"
+    );
+
+    // A gitfile names a repository as a `.git` directory does, and a
+    // worktree of a repository has one. Read only a directory, and this fails.
+    std::fs::remove_dir_all(outer.0.join(".git")).expect("the directory goes");
+    std::fs::write(outer.0.join(".git"), "gitdir: /elsewhere\n").expect("the gitfile writes");
+    assert!(
+        clean_base(&[outer.0.join("tmp")]).is_err(),
+        "a candidate below a gitfile is no base"
+    );
+}
+
+/// A fenced command finds no repository in the directory above the root.
+///
+/// `common::fence` keeps a repository above a scratch root out of every run of
+/// the binary, which is what holds the cli roots when no clean base exists
+/// (#1192). The repository here is the root's parent, so a fence that sets
+/// nothing, or names the root's grandparent, lets git find it and this fails.
+#[test]
+fn a_fenced_command_finds_no_repository_above_the_root() {
+    let Some(clean) = outside_base() else {
+        return;
+    };
+    let outer = Scratch::made(clean.join(format!(
+        "headwater-cli-merge-driver-{}-fence",
+        std::process::id()
+    )));
+    let git = |dir: &Path, fenced: bool, args: &[&str]| {
+        let mut command = Command::new("git");
+        command
+            .args(args)
+            .current_dir(dir)
+            .env("GIT_CONFIG_GLOBAL", "/dev/null")
+            .env("GIT_CONFIG_NOSYSTEM", "1")
+            .env_remove("GIT_DIR")
+            .env_remove("GIT_WORK_TREE")
+            .env_remove("GIT_CEILING_DIRECTORIES");
+        if fenced {
+            common::fence(&mut command, dir);
+        }
+        command.output().expect("git runs")
+    };
+    assert!(git(&outer.0, false, &["init", "-q"]).status.success());
+    let root = outer.0.join("root");
+    std::fs::create_dir_all(&root).expect("the root is made");
+
+    assert!(
+        git(&root, false, &["rev-parse", "--show-toplevel"])
+            .status
+            .success(),
+        "unfenced, git finds the repository above the root, so the case can fail"
+    );
+    let fenced = git(&root, true, &["rev-parse", "--show-toplevel"]);
+    assert!(
+        !fenced.status.success(),
+        "a fenced command found a repository above the root: {}",
+        String::from_utf8_lossy(&fenced.stdout)
+    );
+}
+
 const LOCK: &str = ".headwater/taxonomy.lock";
 const DESCRIPTOR: &str = ".headwater/corpus.json";
 
@@ -98,6 +208,17 @@ impl Tree {
             "headwater-cli-merge-driver-{}-{label}",
             std::process::id()
         )))
+    }
+
+    /// An adopted tree as [`Tree::adopted`] makes it, under a directory with no
+    /// `.git` entry above it, for a case that holds what the verb does outside
+    /// every git repository. `None` when no such directory is found, and the
+    /// case then returns with the reason on standard error.
+    fn adopted_outside(label: &str) -> Option<Tree> {
+        Some(Tree::adopted_at(outside_base()?.join(format!(
+            "headwater-cli-merge-driver-{}-{label}",
+            std::process::id()
+        ))))
     }
 
     /// An adopted tree at `at`, which a case places inside a directory of its own.
@@ -1768,7 +1889,9 @@ fn inside_a_worktree_whose_git_directory_is_gone_derived_says_so() {
 /// not. Read every failed spawn as a refusal, and this case fails.
 #[test]
 fn outside_a_repository_with_no_git_derived_reads_the_root_file_and_refuses_nothing() {
-    let tree = Tree::adopted("no-git-no-repository");
+    let Some(tree) = Tree::adopted_outside("no-git-no-repository") else {
+        return;
+    };
     tree.headwater_ok(&["init", "--git"]);
     std::fs::remove_dir_all(tree.at.join(".git")).expect("the git directory is removed");
     assert!(
@@ -1801,17 +1924,26 @@ impl Drop for Outer {
 impl Outer {
     /// An adopted tree at `<outer>/tree` that holds no `.git` of its own, so
     /// what git finds above it is what the case puts in `<outer>`.
-    fn with_tree(label: &str) -> (Outer, Tree) {
-        let outer = Outer(std::env::temp_dir().join(format!(
-            "headwater-cli-merge-driver-{}-{label}",
-            std::process::id()
-        )));
+    ///
+    /// `None` when no directory outside every git repository is found, and the
+    /// case then returns with the reason on standard error.
+    fn with_tree(label: &str) -> Option<(Outer, Tree)> {
+        let outer = Outer(Outer::at(label)?);
         let _ = std::fs::remove_dir_all(&outer.0);
         std::fs::create_dir_all(&outer.0).expect("the outer directory is made");
         let tree = Tree::adopted_at(outer.0.join("tree"));
         tree.headwater_ok(&["init", "--git"]);
         std::fs::remove_dir_all(tree.at.join(".git")).expect("the git directory is removed");
-        (outer, tree)
+        Some((outer, tree))
+    }
+
+    /// The path [`Outer::with_tree`] makes for `label`, which a case that
+    /// names the outer directory to git computes the same way.
+    fn at(label: &str) -> Option<PathBuf> {
+        Some(outside_base()?.join(format!(
+            "headwater-cli-merge-driver-{}-{label}",
+            std::process::id()
+        )))
     }
 
     /// A real repository in the outer directory, made by git itself.
@@ -1838,7 +1970,9 @@ impl Outer {
 /// a tree with no `.git` entry at all. Count every `.git` entry above the tree
 /// as a repository, and these cases fail.
 fn no_repository_above(label: &str, shape: impl Fn(&Outer), extra: &[(&str, &str)]) {
-    let (outer, tree) = Outer::with_tree(label);
+    let Some((outer, tree)) = Outer::with_tree(label) else {
+        return;
+    };
     shape(&outer);
     let (code, said) = derived_with(&tree, None, extra);
     assert!(
@@ -1873,14 +2007,24 @@ fn an_empty_directory_named_git_above_the_tree_is_no_repository() {
 #[test]
 fn a_repository_beyond_a_ceiling_directory_is_no_repository() {
     let label = "ceiling";
-    let ceiling = std::env::temp_dir().join(format!(
-        "headwater-cli-merge-driver-{}-{label}",
-        std::process::id()
-    ));
+    let Some(ceiling) = Outer::at(label) else {
+        return;
+    };
     let ceiling = ceiling.to_string_lossy().into_owned();
+    // The repository's own attributes outrank every `.gitattributes`, so git
+    // would answer `union` for the lock if it entered it. Name any directory
+    // but the outer one as the ceiling, and the exit status is 1.
     no_repository_above(
         label,
-        Outer::git_init,
+        |outer| {
+            outer.git_init();
+            std::fs::create_dir_all(outer.0.join(".git/info")).expect("the directory is made");
+            std::fs::write(
+                outer.0.join(".git/info/attributes"),
+                format!("tree/{LOCK} merge=union\n"),
+            )
+            .expect("the attributes write");
+        },
         &[("GIT_CEILING_DIRECTORIES", &ceiling)],
     );
 }
@@ -1892,7 +2036,9 @@ fn a_repository_beyond_a_ceiling_directory_is_no_repository() {
 /// case fails on the exit status.
 #[test]
 fn below_a_repository_that_git_refuses_for_its_owner_derived_says_so() {
-    let (outer, tree) = Outer::with_tree("dubious-owner-above");
+    let Some((outer, tree)) = Outer::with_tree("dubious-owner-above") else {
+        return;
+    };
     outer.git_init();
     let (code, said) = derived_with(&tree, None, &[("GIT_TEST_ASSUME_DIFFERENT_OWNER", "1")]);
     assert_eq!(

@@ -451,7 +451,8 @@ fn route_never_reads_the_bytes_of_a_file_whose_governing_edge_records_no_revisio
 fn route_under_deadline(root: &Root, path: &str, hung: &str) -> (String, String) {
     use std::time::{Duration, Instant};
 
-    let mut child = std::process::Command::new(env!("CARGO_BIN_EXE_headwater"))
+    let mut child = root
+        .command()
         .args(["route", "edit", path, "--json", "--root"])
         .arg(&root.at)
         .stdout(std::process::Stdio::piped())
@@ -571,7 +572,8 @@ fn the_mcp_route_tool_reads_an_ignore_rule_written_after_the_session_started() {
         .expect("git runs");
     assert!(init.success());
 
-    let mut child = std::process::Command::new(env!("CARGO_BIN_EXE_headwater"))
+    let mut child = root
+        .command()
         .args(["mcp", "--now", "2026-09-28", "--root"])
         .arg(&root.at)
         .stdin(std::process::Stdio::piped())
