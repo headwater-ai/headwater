@@ -501,7 +501,7 @@ impl Projections {
             }
             let membership = profile::Membership::read(body, index, item.span, &mut errors);
             let identity = identity::read(body, kind, index, item.span, &mut errors);
-            let committed = match Ok::<bool, String>(true) {
+            let committed = match committed(body, kind, index) {
                 Ok(committed) => committed,
                 Err(message) => {
                     errors.push(DeclarationError {

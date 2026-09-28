@@ -253,6 +253,13 @@ fn exports(projections: &Projections) -> Vec<Json> {
                 ),
             ));
         }
+        // A cold reader who opens `output` in the tree finds nothing there for
+        // an export built at publish time, so the row says so. Stated only
+        // when false, so a descriptor of a corpus that declares none keeps its
+        // bytes.
+        if !declaration.committed {
+            members.push(("committed".to_string(), Json::Bool(false)));
+        }
         out.push(Json::Object(members));
     }
     out

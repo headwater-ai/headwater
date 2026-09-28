@@ -1,4 +1,4 @@
-headwater/taxonomy 0.7.0
+headwater/taxonomy 0.8.0
 
 declarations
   taxonomy (required) scalar:string
@@ -133,6 +133,7 @@ declarations
         id (required) scalar:string
         kind (required) scalar:string
         name scalar:string
+      committed scalar:boolean
   obligations map of members
       statement (required) scalar:string
       rationale (required) scalar:string
