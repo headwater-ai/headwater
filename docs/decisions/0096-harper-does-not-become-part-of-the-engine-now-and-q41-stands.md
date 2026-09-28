@@ -3,7 +3,7 @@ id: HW-DR-0096
 status: current
 status_since: 2026-09-27
 summary: "harper-core found 0 real errors in 187 hand-read findings on 25 documents of this corpus. So the engine does not link it now, Q41 stands, and a stated precision bar or an adopter request reopens it."
-last_verified: 2026-09-27
+last_verified: 2026-09-28
 title: "Harper does not become part of the engine now, and Q41 stands"
 provenance:
   warrant: asserted
@@ -49,7 +49,7 @@ So this record weighs Harper on what it measured, and not on what [spec 00](../s
 
 1. **Plugin shape: answered.** Harper is a library. A pure `DocumentCheck` over the parsed body is possible, and the spike is one.
 2. **Closed control registry: open.** Harper compiles its rule set in, so the set is closed at a pinned version. But the engine would have to name each Harper rule it does not own, or map a Harper category to a control. The spike did not need to choose, and this record does not.
-3. **Scoping: answered, with a correction.** The spike feeds Harper one sentence, masks what the author did not write, and maps each finding to file bytes. The decisive fixture holds. But `Sentence::authored` is the wrong input for grammar: it removes code spans, and the removal wrote 602 false findings on the sample. A grammar rule needs the words a reader sees, with the foreign runs masked.
+3. **Scoping: answered, with a correction.** The spike feeds Harper one sentence, masks what the author did not write, and maps each finding to file bytes. The decisive fixture holds. But `Sentence::authored` is the wrong input for grammar: it removes code spans, and the removal added a net 602 findings on the sample. Under 17 rules it added 607, and under 2 rules it took away 5. A grammar rule needs the words a reader sees, with the foreign runs masked.
 4. **Determinism: answered.** Two runs were byte-identical. The crate version pins the dictionary, and the dialect and rule set are code. So the four inputs of spec 12 hold if the Harper version counts as part of the check version.
 
 **The answer that fails is yield, which Q41 did not ask about.** Harper's shape fits this engine better than Vale's. Its output on this corpus does not.

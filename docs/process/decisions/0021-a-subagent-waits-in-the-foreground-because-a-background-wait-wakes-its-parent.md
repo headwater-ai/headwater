@@ -38,7 +38,9 @@ The four-minute cap of HW-PD-0007 does not change. Each foreground attempt retur
 
 ## Consequences
 
-`hw-run-policy`, `hw-build`, `hw-verify` and `hw-integrate` state the foreground form. The refusal text of `.claude/hooks/wait.sh` names the foreground form and this cost. The header of `tools/run/wait-for.sh` states the same.
+`hw-run-policy`, `hw-build`, `hw-verify` and `hw-integrate` state the foreground form. These three stages are the agents that run `wait-for.sh`.
+
+`hw-iterate` ([HW-PD-0022](0022-the-verify-and-rework-loop-for-one-issue-runs-below-the-parent.md)) runs no `wait-for.sh`. It waits on a live child agent, the builder or a verifier, and it waits by ending its turn. This decision does not apply to that wait. A wait on a child agent is not a background shell wait, and the completion of the child wakes `hw-iterate` one time. The builder and the verifier below `hw-iterate` still wait in the foreground, so that they do not wake `hw-iterate` at each re-issue. The refusal text of `.claude/hooks/wait.sh` names the foreground form and this cost. The header of `tools/run/wait-for.sh` states the same.
 
 In both forms, each re-issue costs one subagent turn. The saving is the parent turn that each re-issue caused. For run `20260927-0443`, that was about 310 parent turns at about 200k tokens each.
 

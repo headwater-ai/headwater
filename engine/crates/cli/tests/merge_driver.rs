@@ -103,6 +103,12 @@ impl Tree {
     /// An adopted tree at `at`, which a case places inside a directory of its own.
     fn adopted_at(at: PathBuf) -> Tree {
         remove_all(&at);
+        Tree::adopted_in(at.clone(), &at)
+    }
+
+    /// An adopted tree at `at`, inside the git repository whose top is `top`,
+    /// which is `at` itself or a directory above it.
+    fn adopted_in(at: PathBuf, top: &Path) -> Tree {
         // The guard exists before the first byte is written, so a panic while
         // the tree is built removes what was built.
         let tree = Tree { at };
@@ -112,7 +118,8 @@ impl Tree {
             &repository().join(".headwater/packages/headwater-standard"),
             &tree.at.join(".headwater/packages/headwater-standard"),
         );
-        tree.git(&["init", "-q", "-b", "main"]);
+        let init = tree.git_output(&["init", "-q", "-b", "main", &top.to_string_lossy()]);
+        assert!(init.status.success(), "`git init` succeeds");
         tree.git(&["config", "user.email", "adopter@example.com"]);
         tree.git(&["config", "user.name", "An adopter"]);
         // No git process outlives the command that started it, so nothing
@@ -379,8 +386,8 @@ fn the_same_merge_without_the_git_step_writes_markers_into_the_folds() {
 /// line moves on every change, so two branches that move it always conflict,
 /// and what `-merge` changes is the file left behind: the current side, which
 /// `headwater taxonomy resolve` reads, rather than a file with markers in it.
-/// The quiet case, a fold that a text merge takes to exit 0, is a page under
-/// `site/`, and `engine/crates/census/tests/merge_driver.rs` holds it.
+/// The quiet case, a fold that a text merge takes to exit 0, is held by
+/// `engine/crates/census/tests/merge_driver.rs`.
 #[test]
 fn a_clone_with_the_committed_attributes_and_no_driver_config_conflicts_on_a_fold() {
     let tree = Tree::adopted("unconfigured");
@@ -604,9 +611,10 @@ impl Tree {
     }
 }
 
-/// The line the how-to tells an adopter to add, because `init --git` does not
-/// write it: every `headwater new` appends one reading to the end of the
-/// capture-cost store, so two branches that each run it conflict there.
+/// The line `init --git` writes for the capture-cost store (#1263), and the
+/// how-to tells an adopter initialized before that to add by hand: every
+/// `headwater new` appends one reading to the end of the store, so two branches
+/// that each run it conflict there without it.
 const UNION: &str = ".headwater/capture-cost.jsonl merge=union\n";
 
 /// A specification needs an identifier before `headwater new` writes one, and
@@ -615,7 +623,9 @@ const SPEC_ID: &str = "  identifier_schemes.spec_id: {pattern: \"{namespace}-SPE
 
 /// An adopted tree with a governed code path, committed with `init --git` and
 /// no driver config, which is every clone that has not run `git config`.
-/// `union` adds the capture-cost line the how-to names.
+/// `init --git` writes the capture-cost union line, and the tree is checked
+/// for it. Without `union` the line is taken out again, which is a tree
+/// initialized before #1263 that never followed the how-to.
 fn governed_tree(label: &str, projections: &str, union: bool) -> Tree {
     let tree = Tree::adopted(label);
     let overlay = tree.read(".headwater/overlay.yml");
@@ -631,9 +641,13 @@ fn governed_tree(label: &str, projections: &str, union: bool) -> Tree {
     tree.govern_and_stamp();
     tree.headwater_ok(&["generate"]);
     tree.headwater_ok(&["init", "--git"]);
-    if union {
-        let attributes = tree.read(".gitattributes");
-        tree.write(".gitattributes", &format!("{attributes}{UNION}"));
+    let attributes = tree.read(".gitattributes");
+    assert!(
+        attributes.contains(UNION),
+        "`init --git` writes the capture-cost union line:\n{attributes}"
+    );
+    if !union {
+        tree.write(".gitattributes", &attributes.replace(UNION, ""));
     }
     tree.git(&["add", "-A"]);
     tree.git(&["commit", "-q", "-m", "adopt headwater"]);
@@ -690,9 +704,11 @@ fn the_same_merge_in_a_tree_that_commits_its_graph_export_conflicts_on_the_expor
     );
 }
 
-/// The arm that differs in one thing: the tree lacks the capture-cost line the
-/// how-to names. Both branches ran `headwater new`, each appended a reading at
-/// the end of the store, and the merge conflicts there and nowhere else.
+/// The arm that differs in one thing: the tree lacks the capture-cost line that
+/// `init --git` writes, as a tree initialized before #1263 does. Both branches
+/// ran `headwater new`, each appended a reading at the end of the store, and
+/// the merge conflicts there and nowhere else. `governed_tree` holds that
+/// `init --git` wrote the line before the case took it out.
 #[test]
 fn the_same_merge_without_the_union_line_conflicts_on_the_capture_cost_store() {
     let tree = governed_tree("no-union", &this_repository_s_graph_exports(), false);
@@ -944,9 +960,14 @@ fn the_git_step_writes_attributes_for_the_two_verb_producers_and_prints_the_conf
         .collect();
     assert_eq!(
         declared,
-        vec![".headwater/taxonomy.lock -merge"],
+        vec![
+            ".headwater/taxonomy.lock -merge",
+            ".headwater/capture-cost.jsonl merge=union",
+            ".headwater/adoption.jsonl merge=union",
+        ],
         "the attribute lines unset the merge of each fold of the two verb producers, \
-         and the descriptor is one record per entity:\n{attributes}"
+         the descriptor is one record per entity, and each append-only store takes \
+         the union:\n{attributes}"
     );
     assert!(
         !tree.info_attributes().exists(),
@@ -974,6 +995,11 @@ fn the_git_step_writes_attributes_for_the_two_verb_producers_and_prints_the_conf
     assert!(
         stdout.contains(&format!("{LOCK} merge=headwater-regenerate")),
         "the step prints the override line for the lock:\n{stdout}"
+    );
+    assert!(
+        !stdout.contains(".jsonl merge=headwater-regenerate"),
+        "the step prints no override line for an append-only store, which no producer \
+         rebuilds:\n{stdout}"
     );
     assert!(
         stdout.contains("git rev-parse --git-path info/attributes"),
@@ -1076,6 +1102,458 @@ fn the_description_of_init_says_git_commits_unset_merge_and_selects_the_driver_p
                 && !sentence.contains("`-merge`"),
             "the sentence that names `info/attributes` gives it the lines that select \
              the driver and no `-merge` line:\n{sentence}"
+        );
+    }
+}
+
+/// The store `headwater new` appends a capture-cost reading to, and the one
+/// `headwater taxonomy audit` appends an adoption reading to. Each line depends
+/// on no other line, so a union of two branches is what either writer would
+/// have written (`docs/interfaces/headwater-derived.md`).
+const CAPTURE_COST: &str = ".headwater/capture-cost.jsonl";
+const ADOPTION: &str = ".headwater/adoption.jsonl";
+
+/// An adopter who ran `init --git` and then `headwater new` on two branches
+/// merges them without a conflict on a file neither of them edited by hand.
+///
+/// Both branches create the capture-cost store from nothing, which is an
+/// add/add conflict under a text merge. Branch `b` holds a decision the other
+/// does not, so the two runs mint two identifiers, neither the claim store
+/// (HW-DR-0054) nor a path collides, and the store is the only file in
+/// question. Take the union line out of
+/// `init --git` and the store is unmerged here.
+#[test]
+fn two_branches_that_each_run_new_merge_the_capture_cost_store_without_a_conflict() {
+    let tree = Tree::adopted("two-news");
+    tree.headwater_ok(&["init", "--git"]);
+    tree.git(&["add", "-A"]);
+    tree.git(&["commit", "-q", "-m", "adopted"]);
+
+    tree.git(&["checkout", "-q", "-b", "a"]);
+    tree.headwater_ok(&["new", "decision", "--title", "A ruling on branch a"]);
+    tree.git(&["add", "-A"]);
+    tree.git(&["commit", "-q", "-m", "a ruling"]);
+
+    tree.git(&["checkout", "-q", "main"]);
+    tree.git(&["checkout", "-q", "-b", "b"]);
+    // A decision already on `b` moves its allocator past `a`'s, so the two
+    // runs mint two identifiers and the claim store does not collide.
+    tree.decide("0005");
+    tree.git(&["add", "-A"]);
+    tree.git(&["commit", "-q", "-m", "a decision by hand"]);
+    tree.headwater_ok(&["new", "decision", "--title", "A ruling on branch b"]);
+    tree.git(&["add", "-A"]);
+    tree.git(&["commit", "-q", "-m", "a ruling"]);
+
+    let merged = tree.git_output(&["merge", "--no-edit", "a"]);
+    assert_eq!(
+        (merged.status.code(), tree.unmerged()),
+        (Some(0), Vec::<String>::new()),
+        "the merge of two branches that each ran `new` exits 0 with nothing unmerged:\n{}{}",
+        String::from_utf8_lossy(&merged.stdout),
+        String::from_utf8_lossy(&merged.stderr)
+    );
+    let store = tree.read(CAPTURE_COST);
+    let readings: Vec<&str> = store.lines().collect();
+    assert_eq!(
+        readings.len(),
+        2,
+        "the store holds one reading from each branch:\n{store}"
+    );
+    assert!(
+        readings
+            .iter()
+            .any(|line| line.contains("a-ruling-on-branch-a"))
+            && readings
+                .iter()
+                .any(|line| line.contains("a-ruling-on-branch-b")),
+        "one reading names each document:\n{store}"
+    );
+}
+
+/// The union lines are appended only where `.gitattributes` says nothing of the
+/// store, and they never reach the override that selects the driver.
+///
+/// An adopter who already declared one store `-merge` and the other
+/// `merge=union` keeps both lines byte for byte, and gets no line after either
+/// that would win or repeat it. The step reads any treatment as a declaration,
+/// not only `-merge`. Under `--git-config` the override names the lock alone,
+/// because a driver line on a store would hand a file no producer writes to the
+/// regenerate driver.
+#[test]
+fn the_git_step_leaves_a_declared_store_alone_and_writes_no_override_for_a_store() {
+    let tree = Tree::adopted("declared-store");
+    let own = format!("# the adopter's own lines\n{CAPTURE_COST} -merge\n{ADOPTION} merge=union\n");
+    tree.write(".gitattributes", &own);
+    tree.headwater_ok(&["init", "--git", "--git-config"]);
+
+    let attributes = tree.read(".gitattributes");
+    assert!(
+        attributes.starts_with(&own),
+        "the adopter's lines are kept byte for byte:\n{attributes}"
+    );
+    for (store, line) in [
+        (CAPTURE_COST, format!("{CAPTURE_COST} -merge")),
+        (ADOPTION, format!("{ADOPTION} merge=union")),
+    ] {
+        let naming: Vec<&str> = attributes
+            .lines()
+            .filter(|seen| seen.starts_with(store))
+            .collect();
+        assert_eq!(
+            naming,
+            vec![line.as_str()],
+            "the adopter's line is the one line that names {store}:\n{attributes}"
+        );
+    }
+
+    let over = std::fs::read_to_string(tree.info_attributes()).expect("the override is written");
+    for store in [CAPTURE_COST, ADOPTION] {
+        assert!(
+            !over.contains(store),
+            "the override names no store:\n{over}"
+        );
+    }
+    assert!(
+        over.contains(&format!("{LOCK} merge=headwater-regenerate")),
+        "the override still names the lock:\n{over}"
+    );
+}
+
+/// Every form of a hand-written merge line for a store, in any file and by any
+/// pattern, keeps its effect through `init --git`, with the store absent and
+/// with it present.
+///
+/// Git obeys the later of two lines for a path, so a union line appended after
+/// an adopter's `merge=ours` overrides it with exit 0 and no message. The step
+/// asks git whether anything names the store's merge attribute, which reads a
+/// glob, a nested file, `!merge` and a store that does not exist yet as the
+/// merge itself does. Read the root file's literal `-merge` lines alone, and
+/// the rows other than those go red.
+#[test]
+fn the_git_step_leaves_every_form_of_a_merge_line_for_a_store_in_effect() {
+    let rows: [(&str, &str, &str); 9] = [
+        (
+            "ours",
+            ".gitattributes",
+            ".headwater/capture-cost.jsonl merge=ours\n",
+        ),
+        (
+            "text",
+            ".gitattributes",
+            ".headwater/capture-cost.jsonl merge=text\n",
+        ),
+        (
+            "bang",
+            ".gitattributes",
+            ".headwater/capture-cost.jsonl !merge\n",
+        ),
+        (
+            "set",
+            ".gitattributes",
+            ".headwater/capture-cost.jsonl merge\n",
+        ),
+        ("glob", ".gitattributes", ".headwater/*.jsonl -merge\n"),
+        (
+            "anchored",
+            ".gitattributes",
+            "/.headwater/capture-cost.jsonl -merge\n",
+        ),
+        (
+            "binary",
+            ".gitattributes",
+            ".headwater/capture-cost.jsonl binary\n",
+        ),
+        (
+            "nested",
+            ".headwater/.gitattributes",
+            "capture-cost.jsonl merge=ours\n",
+        ),
+        (
+            "nested-bang",
+            ".headwater/.gitattributes",
+            "capture-cost.jsonl !merge\n",
+        ),
+    ];
+    let mut wrong: Vec<String> = Vec::new();
+    for (label, file, line) in rows {
+        for present in [false, true] {
+            let tree = Tree::adopted(&format!("form-{label}-{present}"));
+            if present {
+                tree.write(CAPTURE_COST, "{\"a\":1}\n");
+            }
+            tree.write(file, line);
+            let before = tree.git(&["check-attr", "merge", "--", CAPTURE_COST]);
+            tree.headwater_ok(&["init", "--git"]);
+            let after = tree.git(&["check-attr", "merge", "--", CAPTURE_COST]);
+            let root = tree.read(".gitattributes");
+            let appended = root.contains(&format!("{CAPTURE_COST} merge=union"));
+            let second = tree.headwater_ok(&["init", "--git"]);
+            let settled = String::from_utf8_lossy(&second.stdout).contains("already declares all");
+            if after != before || appended || !settled {
+                wrong.push(format!(
+                    "{label} (`{}` in {file}, store present: {present}): before `{}`, after \
+                     `{}`, union line appended: {appended}, second run wrote nothing: {settled}",
+                    line.trim_end(),
+                    before.trim_end(),
+                    after.trim_end()
+                ));
+            }
+        }
+    }
+    assert!(
+        wrong.is_empty(),
+        "the adopter's line keeps its effect, the step writes no union line for the store, \
+         and a second run writes nothing:\n{}",
+        wrong.join("\n")
+    );
+}
+
+/// Two branches that each record an adoption reading merge without a conflict
+/// on the adoption store, and it holds both readings.
+///
+/// `headwater taxonomy audit --record` appends one line to
+/// `.headwater/adoption.jsonl`. Both branches create it from nothing, which is
+/// an add/add conflict under a text merge. Drop the adoption store from the
+/// union lines, and this case goes red.
+#[test]
+fn two_branches_that_each_record_an_audit_merge_the_adoption_store_without_a_conflict() {
+    let tree = Tree::adopted("two-audits");
+    tree.headwater_ok(&["init", "--git"]);
+    tree.git(&["add", "-A"]);
+    tree.git(&["commit", "-q", "-m", "adopted"]);
+
+    tree.git(&["checkout", "-q", "-b", "a"]);
+    tree.headwater_ok(&["taxonomy", "audit", "--record", "--now", "2026-01-01"]);
+    tree.git(&["add", "-A"]);
+    tree.git(&["commit", "-q", "-m", "a reading"]);
+
+    tree.git(&["checkout", "-q", "main"]);
+    tree.git(&["checkout", "-q", "-b", "b"]);
+    tree.headwater_ok(&["taxonomy", "audit", "--record", "--now", "2026-02-02"]);
+    tree.git(&["add", "-A"]);
+    tree.git(&["commit", "-q", "-m", "b reading"]);
+
+    let merged = tree.git_output(&["merge", "--no-edit", "a"]);
+    assert_eq!(
+        (merged.status.code(), tree.unmerged()),
+        (Some(0), Vec::<String>::new()),
+        "the merge of two branches that each recorded an audit exits 0 with nothing unmerged:\n{}{}",
+        String::from_utf8_lossy(&merged.stdout),
+        String::from_utf8_lossy(&merged.stderr)
+    );
+    let store = tree.read(ADOPTION);
+    let readings: Vec<&str> = store.lines().collect();
+    assert_eq!(
+        readings.len(),
+        2,
+        "the store holds one reading from each branch:\n{store}"
+    );
+    assert!(
+        readings.iter().any(|line| line.contains("2026-01-01"))
+            && readings.iter().any(|line| line.contains("2026-02-02")),
+        "one reading carries each date:\n{store}"
+    );
+}
+
+/// With `--root` a subdirectory of the repository, each store gets its union
+/// line unless a line there already names it, with the store absent and present.
+///
+/// Git reads the paths of an attributes file that no directory holds from the
+/// top of the work tree, so a check that spelled the store from `--root` would
+/// never match it in this tree. The step must then not read "no answer" as "a
+/// line names the store" and write nothing in silence.
+#[test]
+fn below_the_top_of_the_repository_the_git_step_writes_each_store_line_it_owes() {
+    let mut wrong: Vec<String> = Vec::new();
+    for owned in [None, Some(CAPTURE_COST), Some(ADOPTION)] {
+        for present in [false, true] {
+            let label = format!(
+                "below-{}-{present}",
+                owned.map_or("none", |store| if store == ADOPTION {
+                    "adoption"
+                } else {
+                    "cost"
+                })
+            );
+            let top = std::env::temp_dir().join(format!(
+                "headwater-cli-merge-driver-{}-{label}",
+                std::process::id()
+            ));
+            let _ = std::fs::remove_dir_all(&top);
+            let _top = Tree { at: top.clone() };
+            let tree = Tree::adopted_in(top.join("handbook"), &top);
+            for store in [CAPTURE_COST, ADOPTION] {
+                if present {
+                    tree.write(store, "{\"a\":1}\n");
+                }
+            }
+            if let Some(store) = owned {
+                tree.write(".gitattributes", &format!("{store} merge=ours\n"));
+            }
+            let output = tree.headwater(&["init", "--git"]);
+            let attributes =
+                std::fs::read_to_string(tree.at.join(".gitattributes")).unwrap_or_default();
+            for store in [CAPTURE_COST, ADOPTION] {
+                let answer = tree.git(&["check-attr", "merge", "--", store]);
+                let expected = if owned == Some(store) {
+                    "ours"
+                } else {
+                    "union"
+                };
+                let lines = attributes
+                    .lines()
+                    .filter(|line| line.starts_with(store))
+                    .count();
+                if !answer.trim_end().ends_with(&format!(": {expected}")) || lines != 1 {
+                    wrong.push(format!(
+                        "{label}, {store}: git answers `{}`, {lines} lines name it, exit {:?}",
+                        answer.trim_end(),
+                        output.status.code()
+                    ));
+                }
+            }
+            if output.status.code() != Some(0) {
+                wrong.push(format!(
+                    "{label}: exit {:?}:\n{}",
+                    output.status.code(),
+                    String::from_utf8_lossy(&output.stderr)
+                ));
+            }
+        }
+    }
+    assert!(
+        wrong.is_empty(),
+        "below the top of the repository, each store the file does not name gets its union \
+         line, and a named store keeps its line:\n{}",
+        wrong.join("\n")
+    );
+}
+
+/// A corpus below a directory whose name holds a character that means
+/// something in an attributes file gets both union lines, and a line of its own
+/// for a store is left alone, with exit 0.
+///
+/// The probe line is C-quoted with its glob characters escaped, so it names the
+/// store as it is spelled. Spell it unquoted, and a space ends the pattern, a
+/// `[1]` matches `1`, and the probe matches nothing: the step fails closed and
+/// exits 1 on every run in such a tree.
+#[test]
+fn below_a_directory_with_a_special_name_the_git_step_probes_the_store_as_spelled() {
+    let names = [
+        ("space", "my corpus"),
+        ("hash", "#notes"),
+        ("bang", "!bang"),
+        ("bracket", "br[1]"),
+        ("star", "st*r"),
+        ("quote", "quo\"te"),
+        ("backslash", "back\\slash"),
+        ("newline", "new\nline"),
+    ];
+    let mut wrong: Vec<String> = Vec::new();
+    for (label, name) in names {
+        for owned in [false, true] {
+            let top = std::env::temp_dir().join(format!(
+                "headwater-cli-merge-driver-{}-named-{label}-{owned}",
+                std::process::id()
+            ));
+            remove_all(&top);
+            let _top = Tree { at: top.clone() };
+            let tree = Tree::adopted_in(top.join(name), &top);
+            if owned {
+                tree.write(".gitattributes", &format!("{CAPTURE_COST} merge=ours\n"));
+            }
+            let output = tree.headwater(&["init", "--git"]);
+            let attributes =
+                std::fs::read_to_string(tree.at.join(".gitattributes")).unwrap_or_default();
+            for store in [CAPTURE_COST, ADOPTION] {
+                let expected = if owned && store == CAPTURE_COST {
+                    "ours"
+                } else {
+                    "union"
+                };
+                let answer = tree.git(&["check-attr", "merge", "--", store]);
+                let lines = attributes
+                    .lines()
+                    .filter(|line| line.starts_with(store))
+                    .count();
+                if !answer.trim_end().ends_with(&format!(": {expected}")) || lines != 1 {
+                    wrong.push(format!(
+                        "{label}, owned {owned}, {store}: git answers `{}`, {lines} lines name it",
+                        answer.trim_end()
+                    ));
+                }
+            }
+            if output.status.code() != Some(0) {
+                wrong.push(format!(
+                    "{label}, owned {owned}: exit {:?}: {}",
+                    output.status.code(),
+                    String::from_utf8_lossy(&output.stderr).trim_end()
+                ));
+            }
+        }
+    }
+    assert!(
+        wrong.is_empty(),
+        "below each directory name, the step writes the union line each store is owed, leaves \
+         the adopter's line alone and exits 0:\n{}",
+        wrong.join("\n")
+    );
+}
+
+/// Where git is there and the probe gets no answer, the step exits 1, names
+/// why, writes no store line, and says truthfully on a second run that it
+/// wrote none.
+///
+/// The probe file goes in the temporary directory, so a `TMPDIR` that does not
+/// exist is a probe with no answer. Fall back to the root file in silence
+/// there, and the union lines appear and the exit is 0. Count an unanswered
+/// store as declared, and the second run says `.gitattributes` declares it.
+#[test]
+fn a_probe_with_no_answer_exits_1_writes_no_store_line_and_says_so_again() {
+    let tree = Tree::adopted("no-answer");
+    let missing = tree.at.join("no-such-temporary-directory");
+    let run = || {
+        Command::new(binary())
+            .args(["init", "--git", "--root"])
+            .arg(&tree.at)
+            .env("TMPDIR", &missing)
+            .env("GIT_CONFIG_GLOBAL", "/dev/null")
+            .env("GIT_CONFIG_NOSYSTEM", "1")
+            .env_remove("GIT_DIR")
+            .env_remove("GIT_INDEX_FILE")
+            .env_remove("GIT_WORK_TREE")
+            .output()
+            .expect("the binary runs")
+    };
+    for attempt in ["first", "second"] {
+        let output = run();
+        let stdout = String::from_utf8_lossy(&output.stdout).into_owned();
+        let stderr = String::from_utf8_lossy(&output.stderr).into_owned();
+        assert_eq!(
+            output.status.code(),
+            Some(1),
+            "the {attempt} run exits 1:\n{stdout}{stderr}"
+        );
+        assert!(
+            stderr.contains("wrote no line for the append-only stores")
+                && stderr.contains("cannot write the probe file"),
+            "the {attempt} run names why on standard error:\n{stderr}"
+        );
+        let attributes = tree.read(".gitattributes");
+        for store in [CAPTURE_COST, ADOPTION] {
+            assert!(
+                !attributes.contains(store),
+                "the {attempt} run writes no line for {store}:\n{attributes}"
+            );
+        }
+        assert!(
+            !stdout.contains("append-only stores\n") && !stdout.contains("and append-only stores"),
+            "the {attempt} run does not count the stores as declared:\n{stdout}"
+        );
+        assert!(
+            stdout.contains("no line for the 2 append-only stores"),
+            "the {attempt} run says on standard output that it wrote no store line:\n{stdout}"
         );
     }
 }
@@ -1406,10 +1884,19 @@ fn the_git_step_writes_no_line_for_a_fold_a_nested_file_declares() {
     for run in ["first", "second"] {
         let output = tree.headwater_ok(&["init", "--git"]);
         let stdout = String::from_utf8_lossy(&output.stdout).into_owned();
+        // The first run writes the union lines of the two append-only stores,
+        // which the nested file does not name. The second finds everything
+        // declared.
         assert!(
-            stdout.contains("already declares all"),
-            "the {run} run finds every derived artifact declared:\n{stdout}"
+            !stdout.contains(&format!("{LOCK} -merge")),
+            "the {run} run reports no root line for the lock:\n{stdout}"
         );
+        if run == "second" {
+            assert!(
+                stdout.contains("already declares all"),
+                "the {run} run finds every derived artifact declared:\n{stdout}"
+            );
+        }
         let root = std::fs::read_to_string(tree.at.join(".gitattributes")).unwrap_or_default();
         assert!(
             !root.contains("taxonomy.lock"),
@@ -1470,32 +1957,24 @@ fn the_git_step_without_git_names_the_refusal_and_writes_no_line_a_nested_file_c
 /// A producer that only this repository holds is neither named by
 /// `headwater derived` nor written by `init --git` in an adopter's tree.
 ///
-/// `derived` knows four producers, and two of them are a script and a blessing
-/// run that only the repository maintaining this engine holds. Each row below
-/// plants a file that producer would claim here, and the file whose presence
-/// makes a tree hold it. In the adopter's tree the file is claimed by nobody,
+/// `derived` knows three producers, and one of them is a blessing run that only
+/// the repository maintaining this engine holds. The row below plants a file
+/// that producer would claim here, and the file whose presence makes a tree
+/// hold it. Until #1273 a second row planted a page under `site/` for the
+/// figure refresh, which is no longer a producer. In the adopter's tree the file is claimed by nobody,
 /// so the report names neither the file nor the command, and `init --git`
 /// writes no line. Once the tree holds the producer, the same file is claimed
 /// and written, which is what makes the first half a measurement of the
 /// predicate rather than of a filter that admits nothing.
 #[test]
 fn the_git_step_writes_no_line_for_a_producer_the_adopter_does_not_hold() {
-    let rows: [(&str, &str, &str, &str, &str); 2] = [
-        (
-            "script-producer",
-            "site/index.html",
-            "<p>The corpus holds <span data-figure=\"census.seen\">1</span> files.</p>\n",
-            "sh tools/site/refresh-figures.sh",
-            "tools/site/refresh-figures.sh",
-        ),
-        (
-            "blessing-producer",
-            "engine/crates/a/fixtures/corpus.a",
-            "426 files\nsha256:0a1b\n",
-            "HEADWATER_BLESS=1 cargo test",
-            "engine/Cargo.toml",
-        ),
-    ];
+    let rows: [(&str, &str, &str, &str, &str); 1] = [(
+        "blessing-producer",
+        "engine/crates/a/fixtures/corpus.a",
+        "426 files\nsha256:0a1b\n",
+        "HEADWATER_BLESS=1 cargo test",
+        "engine/Cargo.toml",
+    )];
     for (label, path, body, command, holder) in rows {
         let tree = Tree::adopted(label);
         let plant = |relative: &str, text: &str| {

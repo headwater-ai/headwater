@@ -847,7 +847,8 @@ pub enum Verb {
         #[arg(
             long,
             help = "append a `-merge` line to `.gitattributes` for each fold \
-                    `headwater taxonomy resolve` and `headwater generate` write in this tree, and \
+                    `headwater taxonomy resolve` and `headwater generate` write in this tree and a \
+                    `merge=union` line for each append-only store the engine writes, and \
                     print the two `git config` lines that name `headwater merge-driver` and the \
                     `info/attributes` lines that select it. A clone that already names the driver \
                     gets those lines written. It runs after the first `headwater generate`, and on \

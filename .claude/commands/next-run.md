@@ -1,5 +1,5 @@
 ---
-description: Run N iterations of the Headwater build order as a resumable run over five agent definitions, merging through an integrator slot
+description: Run N iterations of the Headwater build order as a resumable run over six agent definitions, merging through an integrator slot
 argument-hint: "[iteration count, default 20] [--parallel N]"
 ---
 
@@ -26,7 +26,7 @@ Ten lines the parent of a build-order run obeys on every turn. A run copies them
 4. **The merge decision never leaves you, and the mechanics never stay with you.** Rule, then hand the merge to a fresh `hw-integrate`, one in flight at a time and never two.
 5. **Read a verdict, never a build output.** Ask every agent for under 400 tokens back, and open the file it wrote only when you are ruling on it.
 6. **Compose nothing long in your own turn.** Write a prompt or a note with `Write` and pass a path. A heredoc in a shell argument is context twice.
-7. **A verdict of PASS is what the verifier ran, not proof that the branch is sound.** The veto is a resume, never a bin: send the branch back to the agent that built it, with the finding.
+7. **A verdict of PASS is what the verifier ran, not proof that the branch is sound.** The veto is a resume, never a bin: send the branch back to the agent that owns its loop, with the finding.
 8. **Read the doctrine and the last five ledger lines on a turn you already pay for, never the whole ledger.** The ledger lives on disk; nothing of it lives in your context by default.
 9. **Escalate to the human only when a redirect changes milestone order, or a decision needs an owner rather than an answer.** Everything else you rule, and you write the ruling down where the next reader meets it.
 10. **Correct an environment claim the moment you disprove it, in the place it was written.** Left standing, it teaches every later agent the wrong lesson.
@@ -38,15 +38,14 @@ Ten lines the parent of a build-order run obeys on every turn. A run copies them
 
 1. **Top of the run.** Dispatch `headwater-product-owner` and `hw-queue` in one turn. Read the queue agent's report and nothing else. Put the product owner's `RULING` blocks to the owner before you fill.
 2. **Fill.** While fewer than N issues are in flight and the queue holds one, dispatch `hw-adjudicate` for the next issue with the template below.
-3. **On an adjudicate report.** `VERDICT: BUILD` claims the footprint with `sh tools/run/run-dir.sh claim <run> <issue> <branch> <artifacts>` and dispatches `hw-build` with the same template, the adjudication note's path, and any `WAITS-ON` the claim printed. `VERDICT: REFUSE` is ruled by the three kinds in the `hw-run-policy` skill, written into the run's decisions file, and the next issue is taken in the same turn.
-4. **On a build report.** Dispatch `hw-verify` with the branch, the pull request number, the adjudication note, and the attacks you chose from the `hw-verification-bar` skill. Choosing the attacks is the judgment you keep; running them is not.
-5. **On a verify report.** `VERDICT: PASS` is your cue to rule. If you merge, append the ruling to the integrator queue and dispatch the next adjudicate in the same turn. `VERDICT: FAIL` is the veto below.
-6. **The integrator slot.** Depth one. When nothing is integrating and the queue holds a ruling, dispatch a fresh `hw-integrate` with every pull request ruled MERGE, each with its ruling and declared footprint. It enqueues all, and an ejected one returns for a new ruling ([HW-PD-0020](../../docs/process/decisions/0020-merges-go-through-the-github-merge-queue-one-squash-commit-per-pull-request.md)). Never two at once, and never a long-lived one ([HW-PD-0003](../../docs/process/decisions/0003-a-dispatch-pays-when-it-retires-more-parent-turns-than-it-costs.md)).
-7. **Every fifth merge, and at the end**, dispatch `headwater-product-owner`: it rules on intake, so a question for it is an intake line, never a decisions note.
+3. **On an adjudicate report.** `VERDICT: BUILD` claims the footprint with `sh tools/run/run-dir.sh claim <run> <issue> <branch> <artifacts>` and dispatches `hw-iterate` with the same template, the adjudication note's path, and any `WAITS-ON` the claim printed. It owns build, verify and rework, and reports once. `VERDICT: REFUSE` is ruled by the three kinds in the `hw-run-policy` skill, written into the run's decisions file, and the next issue is taken in the same turn.
+4. **On an iterate report.** `VERDICT: PASS` is your cue to rule, from the verdict and the notes it names, never from `git show` or `git diff` of the branch ([HW-PD-0022](../../docs/process/decisions/0022-the-verify-and-rework-loop-for-one-issue-runs-below-the-parent.md)). If you merge, append the ruling to the integrator queue and dispatch the next adjudicate in the same turn. `VERDICT: STOP` is ruled like a refusal.
+5. **The integrator slot.** Depth one. When nothing is integrating and the queue holds a ruling, dispatch a fresh `hw-integrate` with every pull request ruled MERGE, each with its ruling and declared footprint. It enqueues all, and an ejected one returns for a new ruling ([HW-PD-0020](../../docs/process/decisions/0020-merges-go-through-the-github-merge-queue-one-squash-commit-per-pull-request.md)). Never two at once, and never a long-lived one ([HW-PD-0003](../../docs/process/decisions/0003-a-dispatch-pays-when-it-retires-more-parent-turns-than-it-costs.md)).
+6. **Every fifth merge, and at the end**, dispatch `headwater-product-owner`: it rules on intake, so a question for it is an intake line, never a decisions note.
 
 ## The veto
 
-A `FAIL` goes back to the `hw-build` agent that wrote the branch, by `SendMessage` to its id, with the verifier's finding and nothing you added. A resumed agent keeps its settled design; a fresh one throws it away. When it returns, read `## Follow-up` in its `build.md`, then dispatch `hw-verify` again. Two consecutive iterations failing their own bar is the stop condition: something upstream is wrong and a third will not find it.
+`hw-iterate` sends each `FAIL` back to its builder itself. Your veto of its `PASS` goes to the `hw-iterate` agent, by `SendMessage` to its id, with your finding; it resumes the builder and reports again. It stops at the third `FAIL` of one issue: something upstream is wrong and a fourth will not find it.
 
 ## The dispatch
 
@@ -55,12 +54,12 @@ Composed with `Write` into the issue's scratch directory and passed as a path. N
     issue:        #<N> <title>
     run:          <run directory>
     scratch:      $CLAUDE_JOB_DIR/tmp/issue-<N>/
-    branch:       <name>            (build, verify, integrate)
+    branch:       <name>            (iterate, build, verify, integrate)
     pull request: #<PR>             (verify, integrate)
     footprint:    <artifacts>       (from the adjudication; integrate)
-    waits-on:     #<N> or none      (from the claim; build, integrate)
+    waits-on:     #<N> or none      (from the claim; iterate, build, integrate)
     ruling:       <your ruling>     (integrate)
-    attacks:      <headings from hw-verification-bar, nothing more>  (verify)
+    attacks:      <headings from hw-verification-bar, nothing more>  (verify; iterate chooses them)
     deadline:     <minutes>
     report:       the fixed block your definition names and nothing before it
 

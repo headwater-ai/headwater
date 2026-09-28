@@ -2,8 +2,8 @@
 id: HW-SPEC-orchestration-architecture
 status: current
 status_since: 2026-09-22
-summary: "The five stages of a build-order run, what each one owns and never does, where the veto sits, and how claims order the merges."
-last_verified: 2026-09-27
+summary: "The six stages of a build-order run, what each one owns and never does, where the veto sits, and how claims order the merges."
+last_verified: 2026-09-28
 doc_type: design_spec
 sequence: 17
 title: "Orchestration architecture"
@@ -25,21 +25,33 @@ relations:
     - HW-PD-0005
     - HW-PD-0006
     - HW-PD-0007
+    - HW-PD-0022
   governs:
-    - .claude/commands/next-run.md
-    - .claude/commands/next.md
-    - .claude/agents/hw-queue.md
-    - .claude/agents/hw-adjudicate.md
-    - .claude/agents/hw-build.md
-    - .claude/agents/hw-verify.md
-    - .claude/agents/hw-integrate.md
-    - .claude/skills/hw-run-policy/SKILL.md
-    - .claude/skills/hw-verification-bar/SKILL.md
+    - to: .claude/commands/next-run.md
+      verified_revision: sha256:5b698582b8b07d0837db1f6f3e8e3507f5f02d7a32b4f0f04594b10a73118840
+    - to: .claude/commands/next.md
+      verified_revision: sha256:974d493829d7c81eacf06f5058e7e02f01f7fd409b82e0589d7bdd21a7783b09
+    - to: .claude/agents/hw-queue.md
+      verified_revision: sha256:3e7a6397fd22c80436ff488cb2be0c8059f28924c1698706be5e0d1b782c9c6a
+    - to: .claude/agents/hw-adjudicate.md
+      verified_revision: sha256:c957a511466d03fcf8d7d628b97ebc8e416ce61f85d1aab1a379342ff8a7c8d0
+    - to: .claude/agents/hw-iterate.md
+      verified_revision: sha256:a41384eed6c0c8b326e07056507c259a148b663152038f63a7b1d988dccdf821
+    - to: .claude/agents/hw-build.md
+      verified_revision: sha256:76b22e56cb1ec60b94efa588c40db19b23bbd80795bbba510c172e9de7a137e8
+    - to: .claude/agents/hw-verify.md
+      verified_revision: sha256:037f1ffc1ed126bef4951f6a17ad67671f55e067fc27ec8548802a63eb620031
+    - to: .claude/agents/hw-integrate.md
+      verified_revision: sha256:6029c93103316f8fc40e7f06ce0cc772bcffa9ccb27ec931ecb3ed4dfef369b4
+    - to: .claude/skills/hw-run-policy/SKILL.md
+      verified_revision: sha256:0e71e3e122d242913e1fe68d551c20e3733b3bc44bc019e65ec824063010011b
+    - to: .claude/skills/hw-verification-bar/SKILL.md
+      verified_revision: sha256:a68ce6b14b5a8d7068aeafd8c7443e0497a55b4e444e2b971daa1da738c2153b
 ---
 
 # 17 — Orchestration architecture
 
-One parent, five stages, and a veto that never leaves the parent.
+One parent, six stages, and a merge decision that never leaves the parent.
 
 ## What this part states, and what the evaluation holds
 
@@ -47,7 +59,7 @@ This part states the architecture of the build order as it stands. [The build or
 
 This part carries no run number, no session identifier and no measurement. It states what each participant owns, what each one may never do, and where each decision is taken. An edit to an agent definition is an edit to this part, because a definition is the implementation and this is the statement of it.
 
-The reader outside this repository is an adopter who runs an agentic loop over a corpus of their own. What transfers is the shape rather than the issue list. One parent rules and never builds. Five stages each own one act. A unit of cost decides where a stage boundary goes. A coordination channel carries no authority at all.
+The reader outside this repository is an adopter who runs an agentic loop over a corpus of their own. What transfers is the shape rather than the issue list. One parent rules and never builds. Six stages each own one act. A unit of cost decides where a stage boundary goes. A coordination channel carries no authority at all.
 
 ## The topology
 
@@ -57,17 +69,20 @@ flowchart LR
 
     parent -->|"top of the run"| queue["hw-queue"]
     parent -->|"one issue"| adjudicate["hw-adjudicate"]
-    parent -->|"the note, any waits-on"| build["hw-build"]
-    parent -->|"the branch, the attacks"| verify["hw-verify"]
+    parent -->|"the note, any waits-on"| iterate["hw-iterate"]
+    iterate -->|"the note, any waits-on"| build["hw-build"]
+    iterate -->|"the branch, the attacks"| verify["hw-verify"]
     parent -->|"every ruling so far"| integrate["hw-integrate"]
 
     queue -->|"queue.md, ordered"| parent
     adjudicate -->|"BUILD or REFUSE<br/>FOOTPRINT, FIXTURE"| parent
-    build -->|"BRANCH, PR<br/>FIXTURE, CI"| parent
-    verify -->|"PASS or FAIL<br/>RAN, FIRED, UNCHECKED"| parent
+    build -->|"BRANCH, PR<br/>FIXTURE, CI"| iterate
+    verify -->|"PASS or FAIL<br/>RAN, FIRED, UNCHECKED"| iterate
+    iterate -->|"PASS or STOP<br/>ROUNDS, UNCHECKED"| parent
     integrate -->|"MERGED<br/>REGENERATED, LEFT"| parent
 
-    parent -.->|"the veto, by SendMessage"| build
+    parent -.->|"the veto of a PASS, by SendMessage"| iterate
+    iterate -.->|"each FAIL, by SendMessage"| build
 
     subgraph rundir["the run directory, under the git common dir"]
         direction LR
@@ -85,27 +100,27 @@ flowchart LR
     integrate ==>|"merge queue, rebuild<br/>headwater generate"| checkout[("the shared checkout<br/>and origin/main")]
 ```
 
-**A run is a tree and never a mesh.** Authority flows down from the parent, and a report flows back up. No stage instructs another stage. [HW-PD-0004](../process/decisions/0004-coordination-is-a-create-only-claim-and-authority-stays-on-the-tree.md) settles this on a live case. One session declined to edit a governed file on a peer session's reasoning, and that refusal was correct. A peer's message carries no owner authority. In a mesh, every agent adjudicates provenance on every message. On a tree, provenance is never in question.
+**A run is a tree and never a mesh.** Authority flows down from the parent, and a report flows back up. No stage instructs another stage. [HW-PD-0004](../process/decisions/0004-coordination-is-a-create-only-claim-and-authority-stays-on-the-tree.md) settles this on a live case. One session declined to edit a governed file on a peer session's reasoning, and that refusal was correct. A peer's message carries no owner authority. In a mesh, every agent adjudicates provenance on every message. On a tree, provenance is never in question. `hw-iterate` is a node of the tree, so its message to its builder flows down.
 
 **Two channels cross the tree sideways, and neither one carries a decision.** The first is the claim store. The adjudicator declares the artifact footprint of a change. The parent claims each artifact on a turn it already pays for. A second claimant records what it waits on rather than failing. The second channel is the merge order that follows from those claims. The integrator enqueues the widest footprint first, and it enqueues a branch only after every branch that branch waits on.
 
 **Every stage is an agent definition, and each one loads fresh on every dispatch.** The parent dispatches by name and pastes nothing a definition already states. Each definition declares its own model in its own front matter, so a per-stage model choice is one line rather than a paragraph of prose. Each stage returns a fixed report block, so a parent that has compacted acts by matching a block rather than by recalling a rule.
 
-**Two skills carry what more than one stage obeys.** [`hw-run-policy`](../../.claude/skills/hw-run-policy/SKILL.md) holds the standing rulings and the environment of a run, and every stage invokes it before it begins. [`hw-verification-bar`](../../.claude/skills/hw-verification-bar/SKILL.md) holds the adversarial checks and the review questions behind them. The parent chooses attacks from the bar, and the verifier runs them.
+**Two skills carry what more than one stage obeys.** [`hw-run-policy`](../../.claude/skills/hw-run-policy/SKILL.md) holds the standing rulings and the environment of a run, and every stage invokes it before it begins. [`hw-verification-bar`](../../.claude/skills/hw-verification-bar/SKILL.md) holds the adversarial checks and the review questions behind them. `hw-iterate` chooses attacks from the bar, and the verifier runs them.
 
 ## Roles and responsibilities
 
 ### The parent
 
-[`.claude/commands/next-run.md`](../../.claude/commands/next-run.md) is the entrypoint and the parent's whole doctrine. [`.claude/commands/next.md`](../../.claude/commands/next.md) runs one iteration over the same five definitions and the same two skills, at width one. There the merge belongs to the person in the session.
+[`.claude/commands/next-run.md`](../../.claude/commands/next-run.md) is the entrypoint and the parent's whole doctrine. [`.claude/commands/next.md`](../../.claude/commands/next.md) runs one iteration over the same definitions and the same two skills, at width one. There the merge belongs to the person in the session.
 
-**The parent owns three things: the doctrine, the loop and the veto.** The doctrine is at most ten numbered lines and at most six hundred tokens. A run copies it into the run directory, so that a compacted parent acts from it alone. The loop dispatches the queue, fills the slots, and advances on each report. The veto is the merge decision, and it is the one judgment that never leaves the parent.
+**The parent owns three things: the doctrine, the loop and the veto.** The doctrine is at most ten numbered lines and at most six hundred tokens. A run copies it into the run directory, so that a compacted parent acts from it alone. The loop dispatches the queue, fills the slots, and advances on each report. The veto is the merge decision on a final `PASS`, and it is the one judgment that never leaves the parent.
 
-**The parent never builds, never merges by hand and never reads the board.** It runs no `gh` call and no `cargo build`. Pull request state arrives inside the verifier's report, and board state arrives as a queue file. Every build belongs to the integrator or to a worker's own worktree. [HW-PD-0003](../process/decisions/0003-a-dispatch-pays-when-it-retires-more-parent-turns-than-it-costs.md) is the rule under each of those refusals.
+**The parent never builds, never merges by hand and never reads the board.** It runs no `gh` call and no `cargo build`. Pull request state arrives inside the report of `hw-iterate`, and board state arrives as a queue file. The parent never runs `git show` or `git diff` against a build branch. Every build belongs to the integrator or to a worker's own worktree. [HW-PD-0003](../process/decisions/0003-a-dispatch-pays-when-it-retires-more-parent-turns-than-it-costs.md) is the rule under each of those refusals.
 
 **The parent waits by ending its turn.** With agents in flight, an ended turn is the blocking wait, and each report wakes it. A check on a timer buys nothing and costs a turn at the parent's full context. Its prompt cache holds that context for an hour, so a report arrives warm whether or not the parent looked.
 
-**The parent escalates to a person on two conditions and rules on everything else.** A redirect that changes milestone order and a decision that needs an owner rather than an answer both go to the human. [`headwater-product-owner`](../../.claude/agents/headwater-product-owner.md) reads the whole board and writes one ruling block for each decision the owner owes, and [`headwater-maintainer`](../../.claude/agents/headwater-maintainer.md) reports what a change left stale. Both propose, and neither accepts.
+**The parent escalates to a person on two conditions and rules on everything else.** A redirect that changes milestone order and a decision that needs an owner rather than an answer both go to the human. [`headwater-product-owner`](../../.claude/agents/headwater-product-owner.md) reads the whole board and writes one ruling block for each decision the owner owes. The parent records the owner's answer in the run's decisions file, and the next pass of the product owner posts that answer on the issue. Until then, the adjudication stage reads the recorded answer as the ruling. [`headwater-maintainer`](../../.claude/agents/headwater-maintainer.md) reports what a change left stale. Both propose, and neither accepts.
 
 ### The queue stage
 
@@ -125,11 +140,19 @@ flowchart LR
 
 **It never builds and never edits the board.** Not a fixture and not a scaffold. The note says what to build, and the construction stage builds it.
 
+### The loop stage
+
+[`.claude/agents/hw-iterate.md`](../../.claude/agents/hw-iterate.md) owns the build, verify and rework loop for one adjudicated issue, and reports to the parent once ([HW-PD-0022](../process/decisions/0022-the-verify-and-rework-loop-for-one-issue-runs-below-the-parent.md)).
+
+**It owns the intermediate verdicts and never the final one.** It dispatches the construction stage and a fresh verification stage, each in its own worktree. It chooses each verifier's attacks from [`hw-verification-bar`](../../.claude/skills/hw-verification-bar/SKILL.md). It sends each `FAIL` to the same builder by `SendMessage`, with the finding verbatim, and it never replaces the builder. It stops at the third `FAIL` of one issue. The parent rules its `PASS` or its `STOP`, and a veto of a `PASS` comes back to it.
+
+**It never merges, never enqueues, never writes to the board and never reads the branch.** It reads verdicts and notes. The verifier reads the code, and that is why the verifier is a separate agent.
+
 ### The construction stage
 
-[`.claude/agents/hw-build.md`](../../.claude/agents/hw-build.md) builds one adjudicated issue in a worktree of its own and opens the pull request.
+[`.claude/agents/hw-build.md`](../../.claude/agents/hw-build.md) builds one adjudicated issue in a worktree of its own and opens the pull request. `hw-iterate` dispatches it.
 
-**It owns the branch, the commits and the pull request.** It claims the issue on the board before its first commit, because a board claim is atomic and needs no coordinator. It extends the contract, the decision clause or the case table the note names before it writes any implementation. It repairs its own red continuous-integration run before it reports.
+**It owns the branch, the commits and the pull request.** It claims the issue on the board before its first commit, because a board claim is atomic and needs no coordinator. It extends the contract, the decision clause or the case table the note names before it writes any implementation. It repairs a format, lint or unblessed-fixture failure in its own continuous-integration run before it reports. A red run that it cannot repair is the first line of its report.
 
 **It never merges, never force-pushes and never touches the shared checkout.** The integrator alone writes `main`. A generating verb run in the shared checkout while a merge lands is the silent bad merge from the other direction.
 
@@ -137,11 +160,11 @@ flowchart LR
 
 ### The verification stage
 
-[`.claude/agents/hw-verify.md`](../../.claude/agents/hw-verify.md) attacks one branch adversarially and returns a verdict that the parent rules on.
+[`.claude/agents/hw-verify.md`](../../.claude/agents/hw-verify.md) attacks one branch adversarially and returns a verdict to `hw-iterate`, which dispatched it.
 
-**It owns the attacks and the evidence, and never the ruling.** It resets a scratch worktree to the branch, runs the suite and the gates, and runs the attacks the parent chose from [`hw-verification-bar`](../../.claude/skills/hw-verification-bar/SKILL.md). Its block reports what fired, what held, and every claim in the build note it could not test.
+**It owns the attacks and the evidence, and never the ruling.** It detaches its own worktree at the branch, runs the suite and the gates, and runs the attacks `hw-iterate` chose from [`hw-verification-bar`](../../.claude/skills/hw-verification-bar/SKILL.md). Its block reports what fired, what held, and every claim in the build note it could not test.
 
-**A verdict of `PASS` says what the verifier ran, and never that the branch is sound.** The line of unchecked claims is what makes a verdict readable, and a verdict that omits it is a verdict nobody can calibrate. The parent knows this when it rules.
+**A verdict of `PASS` says what the verifier ran, and never that the branch is sound.** The line of unchecked claims is what makes a verdict readable, and a verdict that omits it is a verdict nobody can calibrate. `hw-iterate` and the parent both know this when they rule.
 
 **It edits nothing, and the tool list is the boundary.** The definition grants no `Edit` and no `Write`, because a verifier able to repair a branch verifies its own repair.
 
@@ -153,15 +176,15 @@ flowchart LR
 
 **A fresh integrator runs each dispatch and exits with it.** A long-lived integrator accumulates every merge it ran and then compacts, which is the parent's own failure one level down.
 
-**The queue tests the composition, so a branch that is only behind `main` is not brought current by hand.** The queue runs CI on the tip of a group built from `main` and the queued heads. It lands one squash commit for each pull request. The integrator merges `main` into a branch only when the queue reports a conflict. It reports an ejected pull request with the failing check, and the parent rules on it again.
+**The queue tests the composition, so a branch that is only behind `main` is not brought current by hand.** The queue runs CI on the tip of a group built from `main` and the queued heads. It lands one squash commit for each pull request. The integrator merges `main` into a branch on two conditions only. The queue ejects the branch for a conflict, or GitHub reports a conflict before the integrator enqueues it. It reports an ejected pull request with the failing check, and the parent rules on it again.
 
 **It fuses six mechanical acts that all touch the one checkout.** The merge, the rebuild, the regenerate, the write-back, the claim release and the ledger line are one dispatch rather than six parent turns. It rebuilds the engine before it regenerates, once after the last merge of the dispatch. A binary built before the merges writes what the previous engine produced, and then passes its own output.
 
 **It never rules and never edits a file by hand.** The definition grants no `Edit` and no `Write`, and that is the boundary. A pull request the parent did not rule on is not this stage's to enqueue, whatever the verdict says. A derived artifact left stale by a merge is a small pull request of its own rather than a hand edit of `main`.
 
-## What the seven rulings settle
+## What the eight rulings settle
 
-Seven records under [`docs/process/decisions/`](../process/decisions/README.md) settle this architecture. Each one owns a different part of it, and this part cites each rather than restating the argument.
+Eight records under [`docs/process/decisions/`](../process/decisions/README.md) settle this architecture. Each one owns a different part of it, and this part cites each rather than restating the argument.
 
 **[HW-PD-0001](../process/decisions/0001-orchestration-prose-has-one-owner-per-sentence.md) decides where any sentence of orchestration prose lives.** Eight ordered tests answer it, and the first test that matches wins. A rule a check reads goes to the taxonomy. A rule the parent obeys on every turn goes to the doctrine block. A rule one stage obeys goes to that stage's definition. A rule two or more stages obey goes to a skill. A rule every agent obeys goes to `CLAUDE.md`. A sentence that changes per dispatch goes to the dispatch template. Measurement and rationale go under `docs/`. One further test applies to every sentence: ask who performs the action the sentence constrains. A sentence whose performer is not its reader needs a check rather than a reader.
 
@@ -177,6 +200,8 @@ Seven records under [`docs/process/decisions/`](../process/decisions/README.md) 
 
 **[HW-PD-0007](../process/decisions/0007-a-background-wait-caps-below-the-cache-lifetime-and-re-issues-itself.md) bounds a background wait under the prompt-cache lifetime.** A subagent's cache holds its context for about five minutes. A turn that wakes after that pays to write the whole context back rather than to read it. So a wait that might run longer is wrapped in a timeout under the lifetime and re-issued on return. Blocking and backgrounding stay as they are. Each bounded call is one blocking loop, started in the background, and ended before the agent that started it exits. The parent is exempt, because its own cache holds for an hour.
 
+**[HW-PD-0022](../process/decisions/0022-the-verify-and-rework-loop-for-one-issue-runs-below-the-parent.md) moves the loop for one issue below the parent.** Each `FAIL` woke the parent at its full context, so one agent per issue now owns build, verify and rework. The parent wakes for its report and rules the final verdict. The builder does not dispatch its own verifier, because that verifier would then not be independent. The instruction to rework a `FAIL` now goes from `hw-iterate` to its own builder, down the tree that HW-PD-0004 keeps.
+
 ## Where each part of this architecture lives
 
 The front matter of this part declares a `governs` edge onto each `.claude/` file below. That relation is `created_by: agent`, and no verb writes it ([HW-DR-0083](../decisions/0083-governs-and-traces-to-are-created-by-an-agent-because-a-session-proposes-the-line-and-a-person-types-it.md)). So a person keeps both the edge and the row true, and no check reports a definition that neither one reaches.
@@ -187,12 +212,13 @@ The front matter of this part declares a `governs` edge onto each `.claude/` fil
 | [`.claude/commands/next.md`](../../.claude/commands/next.md) | The single-iteration form over the same definitions and skills, with the merge left to a person |
 | [`.claude/agents/hw-queue.md`](../../.claude/agents/hw-queue.md) | The queue stage: the eligible population, the selection order and the collision marks |
 | [`.claude/agents/hw-adjudicate.md`](../../.claude/agents/hw-adjudicate.md) | The adjudication stage: the premise, the footprint, the decisive fixture and the three kinds of refusal |
+| [`.claude/agents/hw-iterate.md`](../../.claude/agents/hw-iterate.md) | The loop stage: the dispatch of the builder and each verifier, the rework by resume, the stop at the third FAIL and the report |
 | [`.claude/agents/hw-build.md`](../../.claude/agents/hw-build.md) | The construction stage: the worktree, the contract-first order, the pull request and the write boundary |
-| [`.claude/agents/hw-verify.md`](../../.claude/agents/hw-verify.md) | The verification stage: the scratch worktree, the suite, the chosen attacks and the verdict block |
+| [`.claude/agents/hw-verify.md`](../../.claude/agents/hw-verify.md) | The verification stage: its own worktree, the suite, the chosen attacks and the verdict block |
 | [`.claude/agents/hw-integrate.md`](../../.claude/agents/hw-integrate.md) | The integration stage: the merge, the rebuild, the regenerate, the write-back, the claim release and the ledger line |
 | [`.claude/skills/hw-run-policy/SKILL.md`](../../.claude/skills/hw-run-policy/SKILL.md) | The standing rulings, the environment of a run, and the same list read for cost |
 | [`.claude/skills/hw-verification-bar/SKILL.md`](../../.claude/skills/hw-verification-bar/SKILL.md) | The adversarial checks a branch survives before it merges, and the review questions behind them |
-| [`.claude/agents/headwater-product-owner.md`](../../.claude/agents/headwater-product-owner.md) | Board judgment: milestone order, what is finished and unclosed, and the rulings the owner owes |
+| [`.claude/agents/headwater-product-owner.md`](../../.claude/agents/headwater-product-owner.md) | Board judgment: milestone order, what is finished and unclosed, the rulings the owner owes, ruling write-back and epic closure |
 | [`.claude/agents/headwater-maintainer.md`](../../.claude/agents/headwater-maintainer.md) | What one change touched, what it left stale, and what the corpus is owed |
 | [The evaluation](../evaluations/the-build-order-as-a-multi-agent-system.md) | The measurements under every ruling above, and the numbers a later run answers to |
-| [`docs/process/decisions/`](../process/decisions/README.md) | The seven rulings this part states, each with the argument that settled it |
+| [`docs/process/decisions/`](../process/decisions/README.md) | The eight rulings this part states, each with the argument that settled it |

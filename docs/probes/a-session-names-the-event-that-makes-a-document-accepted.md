@@ -32,13 +32,14 @@ Answer with one of those two words and with nothing else. Your whole final messa
 
 ## Expectation
 
-The terminal answer is `merge`, the one value in the closed set below.
+The terminal answer is `merge`, the one expected value of the closed set below.
 
 ```yaml
-answers: [merge]
+answers: [merge, stamp]
+expected: [merge]
 ```
 
-The task offers two values, and the closed set holds one. So `stamp` is an answer outside the set, and the grade records it as not satisfied. An `answered` probe is satisfied by any value in its set, so a set that held both would grade every answer as a pass.
+The closed set holds both values that the task offers, so a recorder records `stamp` as that word and not as no answer. The grade then finds it wrong, because `stamp` is not an expected value. `headwater probe plan` refuses a probe whose expected values are every value of its set, because every answer would then pass (#1229).
 
 **The convention is [HW-DR-0034](../decisions/0034-q34-whether-acceptance-means-merged-to-main-and-what-an-agent-may-write-before-that.md).** Acceptance is the merge onto `main`, and a provenance block on a branch states a proposal. The default goes the other way. The field is named for the person who accepts, so a session that never read the ruling reads the stamp as the acceptance.
 

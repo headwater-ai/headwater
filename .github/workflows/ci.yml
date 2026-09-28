@@ -826,30 +826,20 @@ jobs:
         # deliberate: a ninth page opting out of the shared register would do it
         # by carrying no marker, and a silent skip is what would let it.
         run: sh tools/site/refresh-site-tokens.sh --check
-      - name: The figures on the hand-built pages came from a run
-        # HW-DR-0039 rules that a number on a hand-built page is interpolated
-        # from a run of this engine rather than typed by a person, and
-        # `tools/site/refresh-figures.sh` is that build. It writes 34 measured
-        # figures into `data-figure` elements, and it holds the 44 verbatim
-        # blocks of `site/tutorial/index.html` against the tutorial document
-        # that `.claude/tutorial/fixtures.sh` runs.
+      - name: The committed pages carry no figure, and every figure is measured
+        # HW-DR-0039's successor (#1273) rules that a figure on a hand-built
+        # page is measured when the site is published, into an assembled
+        # copy, and never committed. `--check` measures this tree and fails on
+        # a value in a committed `data-figure` element, a key nothing
+        # measures, a measured figure that reaches no page, and a marker the
+        # pattern cannot read. It also holds the verbatim blocks of
+        # `site/tutorial/index.html` against the tutorial document that
+        # `.claude/tutorial/fixtures.sh` runs, and the landing page's
+        # quotation of HW-DR-0037.
         #
-        # This is the third step that reads `site/`, and it belongs beside the
-        # other two and before the assembly, so the composed directory carries
-        # figures that already agree with this tree.
-        #
-        # Measured rather than supposed: HW-DR-0039 recorded that no hook and
-        # no job ran this script. Nothing ran it between 2026-08-26 and
-        # 2026-09-06, and by then 59 figure occurrences on three pages and 11
-        # of the 43 verbatim blocks had gone stale, on a site the deploy was
-        # already serving.
-        #
-        # The pre-commit clause of the same name carries an escape hatch and a
-        # `python3` guard that let a commit through. This step carries neither,
-        # which is what makes it the half that holds. A figure measured but
-        # reaching no page fails it too, for the same reason a page with no
-        # marker pair fails the step above: an empty `site/`, a renamed marker
-        # or a moved page otherwise passes over a check that ran on nothing.
+        # This step carries no escape hatch. The step after the assembly
+        # fills the figures into the assembled directory, which is what the
+        # deploy serves.
         run: sh tools/site/refresh-figures.sh --check
       - name: The tutorial page came from the document
         # `site/tutorial/index.html` used to be a second copy of the tutorial,
@@ -988,6 +978,25 @@ jobs:
 
           print("%d shelf roots each serve an index page: %s" % (len(roots), ", ".join(sorted(roots))))
           PY
+      - name: The figures are measured into the assembled pages
+        # Since #1273 the pages under `site/` carry every `data-figure` element
+        # blank, and a figure is measured when the site is published. This is
+        # the same fill `tools/site/deploy-site.sh` runs before `wrangler`, on
+        # every event this job runs for, so a key nothing measures, a figure
+        # on no page or a marker the pattern cannot read fails a pull request
+        # and a merge group rather than the deploy after the merge. The second
+        # line is the deploy's last look: no figure in the served directory is
+        # left blank.
+        run: |
+          sh tools/site/refresh-figures.sh --into .headwater/site-deploy
+          sh tools/site/check-site-figures.sh .headwater/site-deploy
+      - name: A figure is measured at publish, and a deploy that cannot measure publishes nothing
+        # `tools/site/figures-fixtures.sh` adds a document to a scratch copy
+        # of this tree and holds that no byte under `site/` moves, then runs
+        # the deploy script with `wrangler` stubbed and holds that an unknown
+        # key, a figure on no page, a committed value and a stale engine each
+        # stop it before `wrangler` is called.
+        run: sh tools/site/figures-fixtures.sh
       - name: No served page carries MkDocs's stock footer
         # The footer override removed this string from the rendered pages, but
         # MkDocs accepts a dropped override and the build stays green. This
@@ -1170,6 +1179,19 @@ jobs:
           sh tools/run/run-dir-fixtures.sh || status=$?
           if [ "$status" = 3 ]; then
             echo "::warning title=Run directory fixtures skipped::No jq on this runner, so none of these cases ran."
+            exit 0
+          fi
+          exit "$status"
+      - name: The parent restart loop drains on context or merges, and stops on each of its conditions
+        # `tools/run/supervise.sh` restarts the build-order parent every few
+        # merges, so its context stays small (#1275). A stub `claude` prints
+        # canned stream-json, so no case calls a model. It needs `jq`, and a
+        # runner without it skips with a warning.
+        run: |
+          status=0
+          sh tools/run/supervise-fixtures.sh || status=$?
+          if [ "$status" = 3 ]; then
+            echo "::warning title=Supervise fixtures skipped::No jq on this runner, so none of these cases ran."
             exit 0
           fi
           exit "$status"
@@ -1794,6 +1816,19 @@ jobs:
         # summary is what the checks decided over this tree and never what a
         # disk remembered.
         run: ./engine/target/release/headwater check --no-cache --now "$HEADWATER_NOW" | tee headwater-check.txt
+      - name: headwater check --fix writes nothing here; if it does, run it locally and read each file it writes
+        # This tree is a fixed point of `--fix`, and this step holds it there.
+        # `tools/repo/fix-fixed-point.sh` carries why, what it compares and
+        # what a contributor does when it fails, and the suite on the line
+        # before it provokes each arm with a stub in place of the engine.
+        #
+        # The stamp patch is offered only on a document whose `last_verified`
+        # is on or after `--now`, so this step reads the same injected clock
+        # as the steps above. It blocks: a refused patch exits 1, and so does
+        # any byte the run wrote.
+        run: |
+          sh tools/repo/fix-fixed-point-fixtures.sh
+          sh tools/repo/fix-fixed-point.sh ./engine/target/release/headwater --now "$HEADWATER_NOW"
       - name: The job summary, from the adapter that writes one
         # `--format markdown` is the adapter. Until it existed this step pasted
         # the whole text report into a fenced block, which privileges no forge
@@ -1986,3 +2021,70 @@ jobs:
         # `sha256sum`, opens no socket, and writes only under a temporary
         # directory.
         run: sh tools/repo/decision-record-fixtures.sh
+
+  deploy:
+    # The one deploy path of https://headwater.tools/ since #1273. It is not a
+    # required check (the `Protect main` ruleset requires `Engine tests` and
+    # `headwater check (advisory)`), it runs on a push to `main` and on no
+    # other event, and it waits for both gating jobs of that push. So a pull
+    # request and a merge group never run it, and a failure here turns this
+    # job red and nothing else.
+    #
+    # `tools/site/deploy-site.sh` renders, assembles, measures the figures
+    # into the assembled pages, adds the APT repository and calls `wrangler
+    # deploy`, under `set -eu`, so a step that fails publishes nothing and
+    # the live site goes on serving the last good deploy. Cloudflare Workers
+    # Builds deployed the site before; it cannot wait for CI and has no engine
+    # to measure with, which the decision that supersedes HW-DR-0039 records.
+    name: Deploy the site
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    needs: [engine, headwater]
+    runs-on: ubuntu-latest
+    # Two pushes deploy in the order they landed, and neither cancels the
+    # other, so the last deploy is always the newest `main`.
+    concurrency:
+      group: deploy-site
+      cancel-in-progress: false
+    steps:
+      - name: The two Cloudflare secrets are set
+        # Until the owner sets both secrets this job fails here, alone, with one
+        # line that names what is missing.
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "::error::The site is not deployed: set both repository secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID (gh secret set CLOUDFLARE_API_TOKEN; gh secret set CLOUDFLARE_ACCOUNT_ID)."
+            exit 1
+          fi
+      - uses: actions/checkout@v4
+      - name: The cargo cache
+        # The `headwater` job's key, because this job builds the same release
+        # binary and a warm cache from that job saves the whole compile.
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
+            engine/target
+          key: cargo-${{ runner.os }}-headwater-${{ hashFiles('engine/Cargo.lock') }}
+          restore-keys: cargo-${{ runner.os }}-headwater-
+      - name: The toolchain this build needs
+        run: |
+          rustup update --no-self-update stable
+          rustup default stable
+      - name: Build the engine
+        run: cargo build --release -p headwater-cli --locked
+        working-directory: engine
+      - name: The site toolchain
+        # The pins of the `headwater` job's site step, for the reasons written
+        # there.
+        run: |
+          python3 -m pip install --user --break-system-packages \
+            mkdocs==1.6.1 pymdown-extensions==10.11.2 PyYAML
+      - name: Deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: sh tools/site/deploy-site.sh

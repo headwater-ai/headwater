@@ -75,3 +75,5 @@ Only the third probe turns on session behavior in a way a second sample could co
 ## Consequences
 
 No engine, hook or spec change follows from this evaluation on its own. It gives [#819](https://github.com/headwater-ai/headwater/issues/819) one more concrete, reproducible instance to fold into its own precision measurement: a target ranked well past the hundredth candidate. Read that as a standing fact, not the exact rank quoted above, which the router will keep moving. It also removes two of the three candidate causes #896 named from that issue's scope: the authoring skill's reach and the discovery probes' task phrasing. Neither is a routing-precision question the shadow-mode log #819 builds could ever answer. #896 closes on this reasoning, rather than on a second recording.
+
+**The recording that this evaluation reads predates the sealed workspace (#1229).** Each session ran in a workspace that kept every probe file. None of the three sessions named a probe file in its calls, so the three mechanisms stand. A second recording, if one is commissioned, runs in a workspace that [`tools/probe/seal.sh`](../../tools/probe/seal.sh) sealed.

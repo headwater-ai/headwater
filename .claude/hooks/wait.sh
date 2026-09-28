@@ -88,7 +88,7 @@ or have the job write its own exit marker and wait for that:
   <command...> > \"\$LOG\" 2>&1; echo \"EXIT:\$?\" >> \"\$LOG\"
   until tail -1 \"\$LOG\" | grep -q '^EXIT:'; do sleep 30; done
 
-Either way, start the wait with \`run_in_background: true\`, because a foreground call is capped at ten minutes.
+Either way, put the condition in \`sh tools/run/wait-for.sh '<condition>'\` and run it in the foreground with a Bash \`timeout\` of \`300000\`. It ends inside four minutes, so it stays under the ten-minute cap of a foreground call. On \`RE-ISSUE\`, run the identical call again. In a subagent, a background wait ends the turn and wakes the parent at each attempt (HW-PD-0021).
 
 And end the wait when you exit. A marker wait can exit and still run forever: of 40 abandoned loops swept from this machine, 9 were exactly the marker shape above, still polling between 7 and 18 hours after the agent that started them had gone, because the job they watched had been killed and the marker was never written. Waiting on a pid or a marker fixes a loop that cannot exit. It does not fix a loop that nobody is left to end."
     quoted=$(hw_quote "$reason") || exit 0

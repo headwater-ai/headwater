@@ -1,6 +1,6 @@
 ---
 name: hw-build
-description: Constructs one adjudicated issue of the Headwater build order in its own worktree and opens the pull request. Use as the second stage of an iteration, after hw-adjudicate has written its note. It extends a contract first where one exists, commits small and pushes often, writes a note for the verifier, and never merges, force-pushes or touches the shared checkout.
+description: Constructs one adjudicated issue of the Headwater build order in its own worktree and opens the pull request. Dispatched by hw-iterate, after hw-adjudicate has written its note. It extends a contract first where one exists, commits small and pushes often, writes a note for the verifier, and never merges, force-pushes or touches the shared checkout.
 tools: Bash, Read, Edit, Write, Grep, Glob, Skill, Agent
 model: claude-opus-5-5
 effort: medium
@@ -32,13 +32,7 @@ The report is the four lines, and then the block:
 
 **Claim through the board.** Assign the issue to yourself and move it to In Progress before the first commit, with `gh issue edit <N> --repo headwater-ai/headwater --add-assignee @me` and `sh tools/run/board-move.sh <N> in-progress`. The claim is atomic, it survives your death, and nobody has to ask. The script adds a card the project does not have yet, so a claim never lands without one.
 
-**Your own worktree, fetched, added and built in one call:**
-
-    sh tools/repo/new-worktree.sh --name <name> -b <branch> origin/main
-
-Give the call a `timeout` of 600000. Leave the shared checkout on `main` and untouched. `--name` places the tree at `<main>/.claude/worktrees/<name>`, where the script finds the main checkout from `git rev-parse --git-common-dir`. Do not compute a root yourself: `--show-toplevel` in a linked worktree answers that worktree, and the script refuses a path inside one.
-
-If your session was launched inside a worktree, create yours with the script in one call and address it by absolute path in every later call. Never `git switch` inside the tree you were handed, because another agent owns it. Where `Write` or `Edit` then refuses a file in your tree, [HW-OBL-0206](../../docs/obligations/0206-hw-run-policy-names-a-worktree-add-workaround-that-write-edit-refuses-under-this-harness.md) records the refusal.
+**Your own worktree, made at launch.** The agent that dispatched you passes `isolation: "worktree"`, so the harness gives you a tree of your own. Run `git fetch origin`, then branch in place with `git switch -c <branch> origin/main`, and build the engine there with `sh tools/hw-cargo` and a `timeout` of 600000. Leave the shared checkout on `main` and untouched. Do not run `new-worktree.sh`, because a tree made by hand is not one your isolation allows, and `hw-run-policy` says what it refuses there.
 
 Your tree and branch stay after the run, for the owner to clean up. Leave the tree with nothing uncommitted.
 
@@ -64,7 +58,7 @@ Its last line is `green` or `red` with the failing checks named, and the `run <i
 
 **A `waits-on` line in your dispatch is the integrator's to honor, not yours to build around.** Build against `origin/main` as it stands; the integrator enqueues the awaited change first and yours after it. Do not rebase onto another agent's unmerged branch.
 
-**When you are resumed after a veto, your report goes into the note.** A resumed agent has already handed back once, and a second hand-back does not reach the parent: #1038's answer to its veto in run `20260923-0733` arrived only as the last text of a transcript. Append your answer to `build.md` under a heading `## Follow-up <date>`: what you changed for the finding, the commits, the fixture that now fails without your fix, the mutation table for the new fix, and the CI run. End your turn with the same four lines and the block. The parent reads the heading.
+**When you are resumed after a veto, your report goes into the note.** A resumed agent has already handed back once, and a second hand-back does not reach the agent that dispatched you: #1038's answer to its veto in run `20260923-0733` arrived only as the last text of a transcript. Append your answer to `build.md` under a heading `## Follow-up <date>`: what you changed for the finding, the commits, the fixture that now fails without your fix, the mutation table for the new fix, and the CI run. End your turn with the same four lines and the block. That agent reads the heading.
 
 **Commit and push in small steps.** `git push -u origin <branch>`, never a bare push. Only pushed commits survive an agent death.
 

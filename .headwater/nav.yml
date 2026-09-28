@@ -21,6 +21,7 @@ nav:
       - "Q15 — A synthesized content tier": "decisions/0015-a-synthesized-content-tier.md"
       - "A recorded terminal demonstration may show a frozen number behind a recorded-on-date marker": "decisions/0078-a-recorded-terminal-demonstration-may-show-a-frozen-number-behind-a-recorded-on-date-marker.md"
       - "Q61 — How a recorded terminal demonstration is held against a run": "decisions/0061-q61-how-a-recorded-terminal-demonstration-is-held-against-a-run.md"
+      - "A figure on a hand-built page is measured when the site is published, and the committed page carries none": "decisions/0097-a-figure-on-a-hand-built-page-is-measured-when-the-site-is-published-and-the-committed-page-carries-none.md"
       - "Q39 — How a figure reaches a hand-built page": "decisions/0039-q39-how-a-figure-reaches-a-hand-built-page.md"
       - "Q50 — Where the visual register of the hand-built pages lives": "decisions/0050-q50-where-the-visual-register-of-the-hand-built-pages-lives.md"
       - "Q37 — Which parts of the site are hand-built and which are a projection of this corpus": "decisions/0037-q37-which-parts-of-the-site-are-hand-built-and-which-are-a-projection-of-this-corpus.md"
@@ -455,6 +456,7 @@ nav:
       - "CI runs actions from the actions organization only, and carries no build state between self-hosted jobs": "process/decisions/0019-ci-runs-actions-from-the-actions-organization-only-and-carries-no-build-state-between-self-hosted-jobs.md"
       - "Merges go through the GitHub merge queue, one squash commit per pull request": "process/decisions/0020-merges-go-through-the-github-merge-queue-one-squash-commit-per-pull-request.md"
       - "A subagent waits in the foreground, because a background wait wakes its parent": "process/decisions/0021-a-subagent-waits-in-the-foreground-because-a-background-wait-wakes-its-parent.md"
+      - "The verify and rework loop for one issue runs below the parent": "process/decisions/0022-the-verify-and-rework-loop-for-one-issue-runs-below-the-parent.md"
   - "Process explanations":
       - "Process explanations": "process/explanations/README.md"
       - "Where a CI job runs": "process/explanations/where-a-ci-job-runs.md"

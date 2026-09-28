@@ -1490,6 +1490,24 @@ if [ -x "$engine" ]; then
         review.sh 2 '9999-a-fixture-that-this-runner-removes.md' \
         "{\"hook_event_name\":\"Stop\",\"stop_hook_active\":false,\"session_id\":\"$fixture_session\"}"
 
+    # The parent exemption, over the same touched session and the same failing
+    # tree. A parent that `tools/run/supervise.sh` restarts appends its own line
+    # to `parent.session`, so the file names every parent session of the run,
+    # and every one of them ends its turn without the gate. Until #1275 the hook
+    # read the first line alone, and a resumed parent was gated on every Stop.
+    parent_run="$common/headwater-run/fixture-review-$$"
+    trap 'rm -f "$planted"; rm -rf "$session_dir" "$parent_run"' EXIT INT TERM
+    mkdir -p "$parent_run"
+    printf '%s\n' "fixture-session-first-$$" > "$parent_run/parent.session"
+    expect 'a session the run does not name as a parent is still gated' \
+        review.sh 2 '9999-a-fixture-that-this-runner-removes.md' \
+        "{\"hook_event_name\":\"Stop\",\"stop_hook_active\":false,\"session_id\":\"$fixture_session\"}"
+    printf '%s\n' "$fixture_session" >> "$parent_run/parent.session"
+    expect 'a resumed parent, named on the second line of parent.session, ends its turn without the gate' \
+        review.sh 0 '' \
+        "{\"hook_event_name\":\"Stop\",\"stop_hook_active\":false,\"session_id\":\"$fixture_session\"}"
+    rm -rf "$parent_run"
+
     rm -rf "$session_dir"
     trap 'rm -f "$planted"' EXIT INT TERM
 
