@@ -29,9 +29,21 @@
 //! `notes/f.md`, whose relation declares no family. Only a declared
 //! `association` is exempt.
 //!
-//! **A rule whose instances were its findings** reports a denominator of three.
+//! **A rule that compared only documents** misses `notes/g.md`, which governs
+//! its own file through a `code_path` anchor whose one literal pattern is that
+//! file. The owner ruled on #1350 that this exact case is a self-reference.
+//!
+//! **A rule that reported any anchor** reports `notes/h.md`, whose one literal
+//! pattern names another file.
+//!
+//! **A rule that compared the matched set with the own file** reports
+//! `notes/i.md`, whose wildcard matches its own file among others, and
+//! `notes/j.md`, whose list holds its own file and another. The ruling reaches
+//! the exact own file and nothing wider.
+//!
+//! **A rule whose instances were its findings** reports a denominator of four.
 //! Every entry outside the association family is an instance, so the count is
-//! five.
+//! nine.
 
 use headwater_census::census;
 use headwater_census::shelves::Taxonomy;
@@ -189,11 +201,57 @@ fn every_entry_is_an_instance() {
         .iter()
         .filter(|instance| instance.rule == RULE)
         .count();
-    assert_eq!(instances, 5);
+    assert_eq!(instances, 9);
     let findings = run
         .findings
         .iter()
         .filter(|finding| finding.rule == RULE)
         .count();
-    assert_eq!(findings, 3);
+    assert_eq!(findings, 4);
+}
+
+/// The decisive case of #1350: a `code_path` anchor whose one literal pattern
+/// is the declaring document's own file is reported, once, with the relation
+/// and the file named. A wildcard that matches the same file is not.
+#[test]
+fn an_anchor_onto_the_declaring_file_is_reported_and_a_wildcard_over_it_is_not() {
+    let run = run();
+
+    let found = at(&run, RULE, "notes/g.md");
+    assert_eq!(found.len(), 1, "{found:?}");
+    assert!(found[0].contains("governs"), "{}", found[0]);
+    assert!(found[0].contains("self-target/notes/g.md"), "{}", found[0]);
+    assert!(found[0].contains("its own file"), "{}", found[0]);
+
+    let finding = run
+        .findings
+        .iter()
+        .find(|finding| finding.rule == RULE && finding.path == "self-target/notes/g.md")
+        .expect("the finding");
+    assert!(finding.patch.is_none(), "only the author knows the file meant");
+    assert!(
+        finding.remediation.contains("file"),
+        "{}",
+        finding.remediation
+    );
+
+    assert!(at(&run, RULE, "notes/i.md").is_empty());
+}
+
+/// A literal anchor onto another file, and a list that holds the own file among
+/// other paths, pass: the ruling reaches the exact own file and nothing wider.
+#[test]
+fn an_anchor_onto_another_file_or_a_list_that_holds_the_own_file_is_not_reported() {
+    let run = run();
+    assert!(at(&run, RULE, "notes/h.md").is_empty());
+    assert!(at(&run, RULE, "notes/j.md").is_empty());
+    // Each of them still binds, so the pass is this rule's and not a target
+    // that never resolved.
+    for file in ["notes/g.md", "notes/h.md", "notes/i.md", "notes/j.md"] {
+        assert!(
+            at(&run, headwater_check::target::RULE, file).is_empty(),
+            "{file}: {:?}",
+            at(&run, headwater_check::target::RULE, file)
+        );
+    }
 }
