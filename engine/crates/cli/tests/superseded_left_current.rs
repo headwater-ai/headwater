@@ -13,8 +13,19 @@ use std::process::Command;
 
 const RULE: &str = "lifecycle.state.not_set_by_edge";
 
+/// The obligation `CT-LIFE-6` of headwater/standard binds the rule to (#1212).
+/// A finding names it beside the rule, so a control that stopped naming the
+/// rule changes the line both cases read.
+const OBLIGATION: &str = "OB-LIFE-6";
+
 /// The pinned date every run here takes, so the fix cannot read a clock.
 const NOW: &str = "2026-09-27";
+
+/// The output with each run of whitespace folded to one space, so a finding
+/// reads as one sentence wherever the report wrapped it.
+fn flat(out: &str) -> String {
+    out.split_whitespace().collect::<Vec<_>>().join(" ")
+}
 
 fn repository() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -187,10 +198,11 @@ fn check_fix_writes_the_state_and_the_successor_s_date_onto_the_target() {
     );
 
     let checked = root.run(&["check", "--strict", "--no-cache", "--now", NOW]);
-    // The report wraps a finding across lines, and its first line names the
-    // rule and the document it stands against.
-    let named = format!("{RULE}: `{target_id}` stands at `current`");
-    let reported = checked.out.contains(&named);
+    // The report wraps a finding across lines, and where the break falls
+    // moves with the obligation the rule names, so the match reads the
+    // output with each run of whitespace folded to one space.
+    let named = format!("{RULE} ({OBLIGATION}): `{target_id}` stands at `current`");
+    let reported = flat(&checked.out).contains(&named);
     assert!(
         reported,
         "the target is reported\n{}{}",
@@ -208,7 +220,7 @@ fn check_fix_writes_the_state_and_the_successor_s_date_onto_the_target() {
         fixed.err
     );
     assert_eq!(facet(&text, "status_since"), Some("2026-08-05"), "{text}");
-    let still = fixed.out.contains(&named);
+    let still = flat(&fixed.out).contains(&named);
     assert!(!still, "the fixed run no longer reports it\n{}", fixed.out);
 }
 
@@ -250,9 +262,9 @@ fn a_target_deprecated_before_its_successor_is_advisory_and_strict_passes() {
     );
 
     let checked = root.run(&["check", "--strict", "--no-cache", "--now", NOW]);
-    let named = format!("{RULE}: `{target_id}` stands at `deprecated`");
+    let named = format!("{RULE} ({OBLIGATION}): `{target_id}` stands at `deprecated`");
     assert!(
-        checked.out.contains(&named),
+        flat(&checked.out).contains(&named),
         "the target is still reported\n{}{}",
         checked.out,
         checked.err

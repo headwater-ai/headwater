@@ -155,8 +155,8 @@ pub enum Target {
         /// matched ([`crate::anchors::tree_revision`]). An anchor that holds
         /// more than one pattern carries one value over the union of every
         /// member's matched entries, from [`crate::anchors::Resolver::revision_of`].
-        /// `None` for every other resolver, and for a literal that names a
-        /// directory.
+        /// `None` for every other resolver, for a literal that names a
+        /// directory, and for a match that holds no regular file (#1269).
         revision: Revision,
         /// One entry per pattern the anchor holds, in the identity order
         /// above. A value with no wildcard is one anchor with one member here.
