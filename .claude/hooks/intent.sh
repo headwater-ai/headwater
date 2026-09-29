@@ -62,7 +62,9 @@
 # file nobody reads back here, and never a line of output or a changed exit
 # status. It fails open the same way every read in this file already does,
 # and silently, because a write error surfacing on either stream would corrupt
-# what the harness injects, and a non-zero exit would block the prompt.
+# what the harness injects, and exit 2 would block the prompt. Exit 2 is the
+# one status that blocks a `UserPromptSubmit` hook in Claude Code, and any
+# other non-zero status is shown as an error (HW-OBL-0203).
 #
 # The file lives at `<git common dir>/headwater-shadow-log/<session>.jsonl`,
 # beside the marks `touch.sh` and `review.sh` already keep under the common
