@@ -871,8 +871,9 @@ enum Token {
 /// The words of a command that it reads.
 ///
 /// An operator with `>` in it makes the next word a written file, and that
-/// word is not read. An operator with `<` in it makes the next word a read
-/// file, whatever the command. Every other operator (`|`, `;`, `&&`, `(`, a
+/// word is not read. A heredoc operator, `<<`, makes the next word a
+/// delimiter, and that word is not read either. Any other operator with `<` in
+/// it makes the next word a read file, whatever the command. Every other operator (`|`, `;`, `&&`, `(`, a
 /// backtick, a newline) starts a new command. A command whose first word is
 /// `tee` writes its other words, so they are not read. A `tee` behind `sudo`
 /// or `xargs` is not seen.
@@ -883,7 +884,7 @@ fn read_words(tokens: &[Token]) -> Vec<&str> {
     let mut redirect: Option<bool> = None;
     for token in tokens {
         match token {
-            Token::Operator(op) if op.contains('>') => redirect = Some(true),
+            Token::Operator(op) if op.contains('>') || heredoc(op) => redirect = Some(true),
             Token::Operator(op) if op.contains('<') => redirect = Some(false),
             Token::Operator(_) => {
                 first = true;
@@ -919,73 +920,116 @@ fn read_words(tokens: &[Token]) -> Vec<&str> {
 /// `#` at the start of a word opens a comment that runs to the end of the
 /// line.
 ///
+/// The body of a heredoc is text and not a command, so it gives no token. The
+/// word after `<<` is its delimiter, with quotes taken off, and after
+/// `<<-` the delimiter line may start with tabs. At the end of the line that
+/// holds the operator, every line up to the delimiter line is skipped. Where
+/// one line opens two heredocs, their bodies follow in order.
+///
 /// This is not a shell. It expands nothing and runs nothing. So it cannot see
 /// a path built from a variable or a glob, or a command substitution inside
 /// double quotes, such as `"$(cat x.md)"`.
 fn shell_tokens(command: &str) -> Vec<Token> {
-    const OPERATORS: &str = "|&;<>()`\n";
-    let mut tokens = Vec::new();
-    let mut word = String::new();
-    let mut open = false;
+    const OPERATORS: &str = "|&;<>()`";
+    let mut lexed = Lexed::default();
     let mut chars = command.chars().peekable();
     while let Some(c) = chars.next() {
         match c {
             '\'' => {
-                open = true;
-                word.extend(chars.by_ref().take_while(|&q| q != '\''));
+                lexed.open = true;
+                lexed.word.extend(chars.by_ref().take_while(|&q| q != '\''));
             }
             '"' => {
-                open = true;
+                lexed.open = true;
                 while let Some(q) = chars.next() {
                     match q {
                         '"' => break,
                         '\\' => match chars.next() {
-                            Some(e) if "$`\"\\\n".contains(e) => word.push(e),
-                            other => word.extend(std::iter::once('\\').chain(other)),
+                            Some(e) if "$`\"\\\n".contains(e) => lexed.word.push(e),
+                            other => lexed.word.extend(std::iter::once('\\').chain(other)),
                         },
-                        _ => word.push(q),
+                        _ => lexed.word.push(q),
                     }
                 }
             }
             '\\' => {
-                open = true;
-                word.extend(chars.next());
+                lexed.open = true;
+                lexed.word.extend(chars.next());
             }
-            '#' if !open => {
-                chars.by_ref().find(|&q| q == '\n');
-                tokens.push(Token::Operator("\n".to_string()));
+            '#' if !lexed.open => while chars.next_if(|&q| q != '\n').is_some() {},
+            '\n' => {
+                lexed.end_word();
+                lexed.tokens.push(Token::Operator("\n".to_string()));
+                for (delimiter, tabs) in std::mem::take(&mut lexed.delimiters) {
+                    loop {
+                        let line: String = chars.by_ref().take_while(|&q| q != '\n').collect();
+                        let line = match tabs {
+                            true => line.trim_start_matches('\t'),
+                            false => line.as_str(),
+                        };
+                        if line == delimiter || chars.peek().is_none() {
+                            break;
+                        }
+                    }
+                }
             }
             c if OPERATORS.contains(c) => {
-                if open {
-                    tokens.push(Token::Word(std::mem::take(&mut word)));
-                    open = false;
-                }
+                lexed.end_word();
                 let mut operator = String::from(c);
-                while let Some(&next) = chars.peek() {
-                    if !OPERATORS.contains(next) {
-                        break;
-                    }
+                while let Some(next) = chars.next_if(|&next| OPERATORS.contains(next)) {
                     operator.push(next);
-                    chars.next();
                 }
-                tokens.push(Token::Operator(operator));
+                lexed.wanted = heredoc(&operator);
+                lexed.tokens.push(Token::Operator(operator));
             }
-            c if c.is_whitespace() => {
-                if open {
-                    tokens.push(Token::Word(std::mem::take(&mut word)));
-                    open = false;
-                }
-            }
+            c if c.is_whitespace() => lexed.end_word(),
             c => {
-                open = true;
-                word.push(c);
+                lexed.open = true;
+                lexed.word.push(c);
             }
         }
     }
-    if open {
-        tokens.push(Token::Word(word));
+    lexed.end_word();
+    lexed.tokens
+}
+
+/// Whether an operator opens a heredoc: `<<` and `<<-`, and not the
+/// here-string `<<<`, whose next word is the text itself.
+fn heredoc(operator: &str) -> bool {
+    operator.contains("<<") && !operator.contains("<<<")
+}
+
+/// The state of [`shell_tokens`] between two characters.
+#[derive(Default)]
+struct Lexed {
+    tokens: Vec<Token>,
+    word: String,
+    /// A word is in hand, which may be empty, as `''` is.
+    open: bool,
+    /// The delimiter each heredoc of this line waits for, and whether `<<-`
+    /// opened it.
+    delimiters: Vec<(String, bool)>,
+    /// The next word is a heredoc delimiter.
+    wanted: bool,
+}
+
+impl Lexed {
+    /// Ends the word in hand, and takes it as a delimiter where a heredoc
+    /// asked for one.
+    fn end_word(&mut self) {
+        if !std::mem::take(&mut self.open) {
+            return;
+        }
+        let text = std::mem::take(&mut self.word);
+        if std::mem::take(&mut self.wanted) {
+            // `<<-EOF` lexes as the operator `<<` and the word `-EOF`.
+            self.delimiters.push(match text.strip_prefix('-') {
+                Some(rest) => (rest.to_string(), true),
+                None => (text.clone(), false),
+            });
+        }
+        self.tokens.push(Token::Word(text));
     }
-    tokens
 }
 
 /// Every recorded call of the session, and `None` where no event recorded any.
@@ -1384,6 +1428,7 @@ mod tests {
             r#"{"command":"cat > notes.txt <<'EOF'\nsee docs/probes/one.md\nEOF"}"#,
             r#"{"command":"cat > notes.txt <<-EOF\n\tsee docs/probes/one.md\n\tEOF\n"}"#,
             r#"{"command":"cat <<A <<B > n\ndocs/probes/one.md\nA\ndocs/probes/one.md\nB"}"#,
+            r#"{"command":"cat <<docs/probes/one.md >n\nx\ndocs/probes/one.md"}"#,
         ] {
             assert!(!bash_names(command, &want), "{command}");
         }
@@ -1391,6 +1436,8 @@ mod tests {
             r#"{"command":"cat > notes.txt <<'EOF'\nit's fine\nEOF\ncat docs/probes/one.md"}"#,
             r#"{"command":"cat <<EOF > out\nx\nEOF\ncat docs/probes/one.md"}"#,
             r#"{"command":"cat <<EOF docs/probes/one.md\nbody\nEOF"}"#,
+            r#"{"command":"grep x <<< hi\ncat docs/probes/one.md"}"#,
+            r#"{"command":"cat > n <<-EOF\n\tx\n\tEOF\ncat docs/probes/one.md"}"#,
             r#"{"command":"cat <<\"END\" # c\nEOF\nEND\ncat docs/probes/one.md"}"#,
         ] {
             assert!(bash_names(command, &want), "{command}");
