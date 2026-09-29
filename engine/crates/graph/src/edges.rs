@@ -37,8 +37,16 @@
 //! code_path]` — the index is consulted first and the resolvers after it. That
 //! order is an engine decision and no document states it, so
 //! [13 — Open obligations](../../../../docs/spec/13-open-obligations.md)
-//! carries it. Two anchor kinds that both claim one string are reported as a
-//! tie and bound to neither, on the precedent that
+//! carries it. The index matches an identifier and never a path, so a path
+//! reaches the resolvers. Where the `source-tree` resolver binds it as one
+//! literal pattern, and that pattern is the path of a typed document with an
+//! identifier, the target binds to nothing and names the identifier to write
+//! instead ([`Unbound::DocumentByPath`], #1410). A target is an identifier
+//! ([Q4](../../../../docs/decisions/0004-relation-storage.md)), and an anchor
+//! onto that file would give the document a second name. A wildcard, a list,
+//! a file with no identifier or no kind, and a relation that admits only
+//! anchors keep the anchor. Two anchor kinds that both claim one string are
+//! reported as a tie and bound to neither, on the precedent that
 //! [`headwater_census::resolve`] set for two shelves of equal specificity.
 
 use crate::anchors::{Binding, Resolvers, Revision};
@@ -752,6 +760,10 @@ fn encode_list_identity(patterns: &[&str]) -> String {
         .collect()
 }
 
+/// The one resolver whose patterns are paths in the tree that holds the
+/// corpus, and so the one whose literal pattern can be a document's own path.
+const SOURCE_TREE: &str = "source-tree";
+
 /// Bind one target: a single string, or the several patterns of a list anchor
 /// admitted where the endpoint is anchor-only
 /// ([HW-DR-0074](../../../../docs/decisions/0074-a-code-path-anchor-is-a-pattern-over-the-tree-and-it-binds-when-the-pattern-matches-at-least-one-entry.md)).
@@ -915,6 +927,32 @@ fn bind(
                 (None, revision)
             }
         };
+        let resolver = declarations
+            .anchor(anchor_kind)
+            .map(|anchor| anchor.resolver.clone())
+            .unwrap_or_default();
+
+        // The path of a typed document with an identifier, where a document is
+        // admitted, names that document by a second name. A target is an
+        // identifier (Q4), so it is a finding that names the identifier, and
+        // never an anchor onto the document's file (#1410). The pattern the
+        // resolver returns is normalized, so `./` and `..` spellings compare
+        // equal. A wildcard, a list, and a file with no identifier or no kind
+        // stay anchors, and so does every path under a relation that admits
+        // only anchors.
+        if admits_a_document && resolver == SOURCE_TREE {
+            if let [only] = resolved.as_slice() {
+                if Pattern::new(&only.normalized).is_literal() {
+                    if let Some(node) = index.typed_at(&only.normalized) {
+                        return Target::Unbound(Unbound::DocumentByPath {
+                            id: node.id.clone(),
+                            path: node.path.clone(),
+                        });
+                    }
+                }
+            }
+        }
+
         let patterns = resolved
             .into_iter()
             .map(|member| PatternMember {
@@ -926,10 +964,7 @@ fn bind(
 
         return Target::Anchor {
             anchor_kind: anchor_kind.to_string(),
-            resolver: declarations
-                .anchor(anchor_kind)
-                .map(|anchor| anchor.resolver.clone())
-                .unwrap_or_default(),
+            resolver,
             normalized,
             excluded_by,
             revision,

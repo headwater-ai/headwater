@@ -17,7 +17,7 @@ relations:
   constrains:
     - HW-DR-0039
   traces_to:
-    - docs/tutorials/your-first-governed-corpus.md
+    - HW-TUT-your-first-governed-corpus
   superseded_by:
     - HW-DR-0078
 ---

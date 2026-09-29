@@ -95,7 +95,9 @@ impl<'a> Targets<'a> {
 impl EdgeCheck for Targets<'_> {
     const RULE: &'static str = self::RULE;
     /// See [`crate::placement::Placement::VERSION`].
-    const VERSION: u32 = 1;
+    /// 2: the path of a typed document with an identifier, under a relation
+    /// that admits a document, binds to nothing (#1410).
+    const VERSION: u32 = 2;
     /// See the module comment: a pair cannot carry an edge that bound to
     /// nothing, and those are the edges this rule exists for.
     const UNIT: EdgeUnit = EdgeUnit::Entry;

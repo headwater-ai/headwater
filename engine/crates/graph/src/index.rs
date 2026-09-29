@@ -193,6 +193,13 @@ impl Index {
         self.untyped.iter().find(|node| node.id == id)
     }
 
+    /// The node of the graph at this path: a typed document with an
+    /// identifier. A path is never how a relation names one (#1410), and this
+    /// is what lets a binder say which identifier was meant.
+    pub fn typed_at(&self, path: &str) -> Option<&Node> {
+        self.typed.iter().find(|node| node.path == path)
+    }
+
     pub fn by_path(&self, path: &str) -> Option<&PathEntry> {
         self.paths.iter().find(|entry| entry.path == path)
     }
