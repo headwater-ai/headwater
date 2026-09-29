@@ -126,6 +126,26 @@ fn check_no_cache_finishes_when_a_governs_edge_reaches_a_named_pipe() {
     );
 }
 
+/// A wildcard that matches the named pipe and nothing else binds, as a
+/// literal does, and gets the same report. The walk reports the pipe as an
+/// entry of its own kind, and the resolver keeps that kind among what a
+/// pattern matches, so the edge is not refused as matching nothing (#1333).
+#[test]
+fn a_wildcard_that_matches_only_a_named_pipe_is_reported_like_the_literal() {
+    let root = root("check-governed-pipe-only-wildcard", "tools/pip*");
+    let (out, _) = under_deadline(
+        &root,
+        &["check", "--no-cache"],
+        "check opened the named pipe a governs wildcard matches, and waited on it",
+    );
+    let out = flat(&out);
+    assert!(
+        out.contains("`tools/pip*` names no regular file"),
+        "the wildcard over only a pipe is reported: {out}"
+    );
+    assert!(!out.contains("no entry in the source tree matches"), "{out}");
+}
+
 /// A wildcard over a regular file and a named pipe digests the file alone,
 /// so the moved-digest finding counts the one entry the digest covers and
 /// not the two the pattern matched (#1333).
