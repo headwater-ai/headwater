@@ -1111,6 +1111,7 @@ mod tests {
         for refused in [
             vec!["a\tb.md".to_string()],
             vec![String::new()],
+            vec!["a\nb.md".to_string()],
             vec!["a.md".to_string(), "a.md".to_string()],
         ] {
             let out = repo.out("verified-refused");

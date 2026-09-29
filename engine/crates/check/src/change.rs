@@ -212,7 +212,9 @@ pub struct Change {
 /// What a run injected, for the report that states its own inputs.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct Named {
-    /// Documents the manifest named, whatever became of each one.
+    /// Documents the manifest named, whatever became of each one, each
+    /// counted once. A path that only a `verified` line names is one of them,
+    /// so every count below is "of those" (#1376).
     pub documents: usize,
     /// Of those, the ones the change adds.
     pub added: usize,
@@ -234,13 +236,14 @@ pub struct Named {
     ///
     /// It is the length of [`Change::unmatched`], and it is computed from that
     /// list, so the count and the list a report writes cannot disagree. A path
-    /// that only a `verified` line names is counted here and not in
-    /// `documents`, because it names no version of a document (#1376).
+    /// that only a `verified` line names is counted here and in `documents`
+    /// (#1376).
     pub unmatched: usize,
-    /// The documents a `verified` line names that a row of this corpus holds.
-    /// A `verified` path is counted here and not in `documents`, because it
-    /// names no version of the document. One that no row holds is reported
-    /// with the unmatched paths.
+    /// Of those, the ones a `verified` line names that a row of this corpus
+    /// holds. One that no row holds is counted in `unmatched` instead. A
+    /// document can be counted here and in one of the counts above, because
+    /// a `verified` line names no version of it and may sit beside a line that
+    /// does.
     pub verified: usize,
 }
 
@@ -375,8 +378,20 @@ impl Unbound {
 impl Change {
     /// What this change named, for the report that states its own inputs.
     pub fn named(&self) -> Named {
+        // Every path any line names, once: a `verified` path that also has an
+        // `added` or `prior` line is one document, and one with neither is a
+        // document too, so that `unmatched` never counts past `documents`.
+        let mut paths: Vec<&str> = self
+            .entries
+            .iter()
+            .map(|(path, _)| path.as_str())
+            .chain(self.verified.iter().map(String::as_str))
+            .chain(self.unverifiable.iter().map(String::as_str))
+            .collect();
+        paths.sort_unstable();
+        paths.dedup();
         let mut named = Named {
-            documents: self.entries.len(),
+            documents: paths.len(),
             verified: self.verified.len(),
             ..Named::default()
         };
@@ -676,7 +691,7 @@ mod tests {
         assert_eq!(
             change.named(),
             Named {
-                documents: 2,
+                documents: 4,
                 added: 0,
                 carried: 1,
                 unreadable: 0,
@@ -684,6 +699,11 @@ mod tests {
                 verified: 2,
             }
         );
+        // Every count is "of those" documents, as each report words it. A
+        // path named only in a `verified` line that binds to no row is one
+        // of the documents, so the report never says more paths named no row
+        // than documents were named.
+        assert!(change.named().unmatched <= change.named().documents);
         // The count and the list are two readings of one set, and a report
         // writes both. `docs/typo.md` is named only in a `verified` line, and
         // `docs/gone.md` in both kinds, so it counts once.

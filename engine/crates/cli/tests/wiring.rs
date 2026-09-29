@@ -459,7 +459,13 @@ fn a_stated_re_verification_records_the_digest_through_the_verbs() {
     );
 
     // The same change, stated, records the new digest.
-    fixed(&second, "stated-second", &[GOVERNING]);
+    // Two statements, and the governing document second, so a verb that
+    // passed only the first `--verified` would record nothing here.
+    fixed(
+        &second,
+        "stated-second",
+        &["docs/decisions/0001-the-warrant-a-person-set.md", GOVERNING],
+    );
     let restamped = recorded(&root).expect("the second stamp records a digest");
     assert_ne!(restamped, stamped, "the digest did not move");
 
