@@ -1,0 +1,103 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Which kinds mint under a scheme, read through `is_a`, and a scheme that
+# overlaps two others (#1357, written by the second verify round).
+#
+# `grandchild` names no scheme and inherits `a_id` two steps up, through the
+# abstract `sub` and `mid`. So a rule that walked only one step of `is_a`
+# would leave it out of the refusal.
+#
+# `leaf3` is under `bmid`, which names `b_id`, and `bmid` is under `mid`,
+# which names `a_id`. The nearest ancestor wins, so `leaf3` mints under
+# `b_id`. A rule that took the farthest ancestor would move it to `a_id`.
+#
+# `d_id` overlaps both `a_id` and `b_id`, so the record carries three pairs.
+# A rule that stopped at the first partner of each scheme would lose one.
+#
+# `c_id` under `W` overlaps nothing and appears in no finding. No abstract
+# kind (`root`, `mid`, `sub`, `bmid`) is named anywhere.
+
+taxonomy: acme/fixture
+version: 1.0.0
+
+purposes:
+  rationale: {intent: explain why a choice was made and what it forecloses}
+
+vocabularies:
+  lifecycle_state:
+    - {value: draft,      role: initial}
+    - {value: current,    role: live}
+    - {value: superseded, role: terminal-retained}
+
+facets:
+  status:
+    role: state
+    values: $vocabularies.lifecycle_state
+    required: true
+    volatility: mutable
+    guidance:
+      draft: it is being argued over, and nothing may rely on it
+      current: it states what holds now
+      superseded: a later decision replaced it
+
+regimes:
+  lifecycle:
+    standard:
+      initial: draft
+      transitions: {draft: [current], current: [superseded]}
+      retain_terminal: true
+
+identifier_schemes:
+  a_id: {pattern: "{namespace}-{slug}",   namespace: Q-R, allocation: minted-once}
+  c_id: {pattern: "{namespace}-{seq:04d}", namespace: W,   allocation: reconcile-first}
+  b_id: {pattern: "{namespace}-R-{slug}", namespace: Q,   allocation: minted-once}
+  d_id: {pattern: "{namespace}-{slug}",   namespace: Q,   allocation: minted-once}
+
+kinds:
+  root:
+    abstract: true
+    facets: {require: [status]}
+  mid:
+    abstract: true
+    is_a: root
+    identifier: {scheme: a_id}
+  sub:
+    abstract: true
+    is_a: mid
+  bmid:
+    abstract: true
+    is_a: mid
+    identifier: {scheme: b_id}
+  leaf1:
+    is_a: mid
+    purpose: rationale
+    lifecycle: standard
+  leaf2:
+    is_a: mid
+    purpose: rationale
+    lifecycle: standard
+    identifier: {scheme: b_id}
+  leaf3:
+    is_a: bmid
+    purpose: rationale
+    lifecycle: standard
+  grandchild:
+    is_a: sub
+    purpose: rationale
+    lifecycle: standard
+  note:
+    is_a: root
+    purpose: rationale
+    lifecycle: standard
+    identifier: {scheme: c_id}
+
+shelves:
+  l1: {path: docs/l1/**, homogeneous: true, kind: leaf1}
+  l2: {path: docs/l2/**, homogeneous: true, kind: leaf2}
+  l3: {path: docs/l3/**, homogeneous: true, kind: leaf3}
+  gc: {path: docs/gc/**, homogeneous: true, kind: grandchild}
+  nt: {path: docs/nt/**, homogeneous: true, kind: note}
+
+core:
+  requires:
+    - facet_role: state

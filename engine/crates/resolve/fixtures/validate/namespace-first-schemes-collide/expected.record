@@ -1,1 +1,1 @@
-the resolved taxonomy `identifier_schemes.decision_id.pattern`: identifier integrity: and `identifier_schemes.draft_id.pattern` are both in namespace `HW` and one string satisfies both
+the resolved taxonomy `identifier_schemes.decision_id.pattern`: identifier integrity: and `identifier_schemes.draft_id.pattern` admit one string, so two records could carry one identifier. `decision_id` is in namespace `HW`, and kind `decision` mints under it. `draft_id` is in namespace `HW`, and no kind mints under it

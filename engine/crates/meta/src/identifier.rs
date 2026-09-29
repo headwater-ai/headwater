@@ -586,14 +586,24 @@ mod tests {
     }
 
     /// A namespace is compared character by character like any literal, so two
-    /// schemes in two namespaces are disjoint whenever the namespaces are.
-    /// The caller groups by namespace before it asks, and this is what makes
-    /// that grouping a shortcut rather than a rule of its own.
+    /// schemes whose expanded runs differ at some character are disjoint.
     #[test]
-    fn two_namespaces_that_differ_make_two_schemes_disjoint() {
+    fn two_namespaces_that_differ_in_one_position_make_two_schemes_disjoint() {
         assert!(disjoint(
             ("{namespace}-SPEC-{slug}", "HW"),
             ("{namespace}-SPEC-{slug}", "XX")
+        ));
+    }
+
+    /// Two namespaces that differ do not make two schemes disjoint when one
+    /// namespace plus a literal spells the other. Both of these admit
+    /// `ZED-SPECIFICATION-scope`, and the identifier-integrity rule in the
+    /// resolver compares every pair across namespaces because of this (#1357).
+    #[test]
+    fn a_namespace_that_spells_another_with_its_literal_is_not_disjoint() {
+        assert!(!disjoint(
+            ("{namespace}-{slug}", "ZED-SPECIFICATION"),
+            ("{namespace}-SPECIFICATION-{slug}", "ZED")
         ));
     }
 
