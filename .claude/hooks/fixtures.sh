@@ -1216,6 +1216,94 @@ if [ -x "$engine" ]; then
         failed=$((failed + 1))
     fi
 
+    # #927: two writers can append to one session's file at the same time.
+    # Session 17deb7c5 in the real log holds three pairs of lines for one
+    # prompt each, written in the same second, so one file per session does
+    # not mean one writer per file. The hook wrote a line in two `write()`
+    # calls, the line and then its newline, and a writer that lands between
+    # them merges two lines into one. The window between the two calls is a
+    # few microseconds, so this case makes it wide in two ways. A second
+    # writer appends a short line to the same file in a tight loop for as long
+    # as the hooks run, and each hook writes a line of about 40KB, which is the
+    # size of a line with neighbors and holds the file long enough for the
+    # second writer to queue behind it. With the two-write form, 0 of 12 such
+    # lines came out whole in two runs, and with 2KB lines 12 of 12 did
+    # (measured 2026-09-29). The stub engine answers `route` with a long
+    # document that has no pointers, and hands every other verb to the real
+    # engine.
+    race_root=$(mktemp -d "${TMPDIR:-/tmp}/headwater-shadow-race.XXXXXX")
+    mkdir -p "$race_root/engine/target/dev-release" "$race_root/.headwater"
+    cp "$root/.headwater/taxonomy.lock" "$race_root/.headwater/taxonomy.lock"
+    head -c 40000 /dev/zero | tr '\0' x > "$race_root/pad"
+    printf '#!/bin/sh\nif [ "$1" = route ]; then printf %s "$(cat %s)"; exit 0; fi\nexec "%s" "$@"\n' "'{\"pointers\":[],\"text\":\"%s\"}'" "'$race_root/pad'" "$engine" > "$race_root/engine/target/dev-release/headwater"
+    chmod +x "$race_root/engine/target/dev-release/headwater"
+    race_session="fixture-session-shadow-race-$$"
+    race_file="$shadow_dir/$race_session.jsonl"
+    race_payload="{\"hook_event_name\":\"UserPromptSubmit\",\"session_id\":\"$race_session\",\"user_input\":\"what does a check know about the front matter of a document\"}"
+    race_writers=12
+    : > "$race_root/running"
+    : > "$race_file"
+    ( while [ -e "$race_root/running" ]; do printf 'noise\n'; done >> "$race_file" ) &
+    race_noise=$!
+    race_pids=
+    n=0
+    while [ "$n" -lt "$race_writers" ]; do
+        printf '%s' "$race_payload" | env -u HEADWATER_HOOK_ROOT CLAUDE_PROJECT_DIR="$race_root" sh "$hooks/intent.sh" > "$race_root/out.$n" 2>&1 &
+        race_pids="$race_pids $!"
+        n=$((n + 1))
+    done
+    # shellcheck disable=SC2086
+    wait $race_pids
+    rm -f "$race_root/running"
+    wait "$race_noise"
+    # Every line is either the second writer's `noise` or one whole JSON
+    # object for this session. Anything else is a torn or merged line.
+    race_whole=0
+    race_other=0
+    while IFS= read -r race_line; do
+        if [ "$race_line" = noise ]; then
+            continue
+        elif [ "$(printf '%s' "$race_line" | "$engine" json field session 2>/dev/null)" = "$race_session" ]; then
+            race_whole=$((race_whole + 1))
+        else
+            race_other=$((race_other + 1))
+        fi
+    done < "$race_file"
+    race_out=$(cat "$race_root"/out.* 2>/dev/null)
+    if [ "$race_whole" -eq "$race_writers" ] && [ "$race_other" -eq 0 ] && [ -z "$race_out" ]; then
+        printf 'ok   %s\n' "$race_writers hooks and a second writer appending to one session file at once leave $race_writers whole lines, each one JSON object"
+        passed=$((passed + 1))
+    else
+        printf 'FAIL %s\n  %s whole lines of %s writers, %s torn or merged lines; hook output:\n%s\n' 'hooks and a second writer appending to one session file at once left a torn or merged line' "$race_whole" "$race_writers" "$race_other" "$race_out"
+        failed=$((failed + 1))
+    fi
+    rm -rf "$race_root"
+
+    # #927: a writer that dies inside its write leaves a line with no
+    # newline. Session de9c8ddd in the real log holds one: its line 72 stops
+    # after 1465 bytes, at a 4 KiB boundary of the file, and the next prompt's
+    # line starts on the same line seven minutes later. A signal that ends a
+    # process inside a `write()` to a file stops the copy at a page boundary,
+    # so one write cannot prevent that. The hook starts its line with a
+    # newline when the file does not end in one, so the torn line stays one
+    # bad line and the next line is whole. The torn line itself is kept,
+    # because the hook never rewrites what is already in the file.
+    torn_session="fixture-session-shadow-torn-$$"
+    torn_file="$shadow_dir/$torn_session.jsonl"
+    printf '{"at":"2026-09-24T12:38:19Z","session":"%s","task":"cut off' "$torn_session" > "$torn_file"
+    expect 'a prompt after a torn line is routed as before' \
+        intent.sh 0 'docs/spec/' \
+        "{\"hook_event_name\":\"UserPromptSubmit\",\"session_id\":\"$torn_session\",\"user_input\":\"what does a check know about the front matter of a document\"}"
+    if [ "$(wc -l < "$torn_file")" -eq 2 ] \
+        && [ "$(tail -n 1 "$torn_file" | "$engine" json field session 2>/dev/null)" = "$torn_session" ] \
+        && [ "$(head -n 1 "$torn_file")" = "{\"at\":\"2026-09-24T12:38:19Z\",\"session\":\"$torn_session\",\"task\":\"cut off" ]; then
+        printf 'ok   %s\n' 'a line after a torn line starts on a line of its own, and the torn line is kept as it was'
+        passed=$((passed + 1))
+    else
+        printf 'FAIL %s\n  file:\n%s\n' 'a line after a torn line was merged into it' "$(cut -c1-200 "$torn_file")"
+        failed=$((failed + 1))
+    fi
+
     # Step 3 of #819: the recorder's name for its session, which
     # `tools/probe/probe-record.sh` exports before it starts the harness. A
     # person's prompt carries none, and a count subtracts the lines that do.
