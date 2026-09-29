@@ -79,6 +79,7 @@ set -u
 
 root=$(cd "$(dirname "$0")/../.." && pwd)
 obligations="$root/docs/obligations"
+process_obligations="$root/docs/process/obligations"
 register="$root/docs/spec/13-open-obligations.md"
 
 for required in "$obligations" "$register"; do
@@ -178,15 +179,24 @@ bulleted_ids() {
     grep -oE '^- \[HW-OBL-[0-9]+\]' "$1" | sed -E 's/^- \[(HW-OBL-[0-9]+)\]/\1/'
 }
 
-# membership_judge CURRENT-FILE BULLETED-FILE — one line per member of the
-# symmetric difference between the two populations, naming which side it is
-# missing from. Empty output is set equality in both directions. `LC_ALL=C`
-# on both `comm` calls, matching the `LC_ALL=C sort` that built each input:
-# `comm` collates bytewise regardless of locale, and a mismatch is a silent
-# wrong answer (#828).
+# membership_judge CURRENT-FILE BULLETED-FILE [PROCESS-FILE] — one line per
+# member of the symmetric difference between the two populations, naming
+# which side it is missing from. Empty output is set equality in both
+# directions. A bulleted identifier that PROCESS-FILE names, which is a
+# record on the process register, is reported as a process obligation
+# listed in spec 13 rather than as a generic stray bullet (#1286). A current
+# process record is never owed a bullet, because it is never in CURRENT-FILE.
+# `LC_ALL=C` on every `comm` call, matching the `LC_ALL=C sort` that built
+# each input: `comm` collates bytewise regardless of locale, and a mismatch
+# is a silent wrong answer (#828).
 membership_judge() {
+    mj_process=${3:-/dev/null}
     LC_ALL=C comm -23 "$1" "$2" | sed 's/^/a current record with no bullet line: /'
-    LC_ALL=C comm -13 "$1" "$2" | sed 's/^/a bulleted line naming no current record: /'
+    LC_ALL=C comm -13 "$1" "$2" >"$scratch/mj-extra"
+    LC_ALL=C comm -12 "$scratch/mj-extra" "$mj_process" |
+        sed 's/^/spec 13 lists a process obligation: /'
+    LC_ALL=C comm -23 "$scratch/mj-extra" "$mj_process" |
+        sed 's/^/a bulleted line naming no current record: /'
 }
 
 # hand_count_judge FILE — one line, `line N: <its first 60 characters>`, for
@@ -219,6 +229,10 @@ hand_count_judge() {
 exec 3>&2 2>"$scratch/stderr"
 
 current_ids "$obligations" >"$scratch/current"
+# Every record on the process register, current or discharged. Spec 13 bullets
+# none of them, so the set is read whole rather than split by status.
+{ current_ids "$process_obligations"; discharged_ids "$process_obligations"; } |
+    LC_ALL=C sort -u >"$scratch/process"
 discharged_ids "$obligations" >"$scratch/discharged"
 bulleted_ids "$register" | LC_ALL=C sort >"$scratch/bulleted-sorted"
 bulleted_ids "$register" | LC_ALL=C sort -u >"$scratch/bulleted"
@@ -245,7 +259,7 @@ same "no identifier carries more than one bullet line" \
 #     every current record has exactly one bullet line, and no bullet line
 #     names a record that is not current.
 same "every current record has a bullet line, and every bulleted line names a current record" \
-    "" "$(membership_judge "$scratch/current" "$scratch/bulleted" | tr '\n' '|')"
+    "" "$(membership_judge "$scratch/current" "$scratch/bulleted" "$scratch/process" | tr '\n' '|')"
 
 # 1d. No discharged record is bulleted. This restates 1c's second half over
 #     the discharged population directly, rather than through set complement,
@@ -255,6 +269,15 @@ same "every current record has a bullet line, and every bulleted line names a cu
 same "no discharged record has a bullet line" \
     "" "$(LC_ALL=C comm -12 "$scratch/discharged" "$scratch/bulleted" |
           sed 's/^/a discharged record still bulleted: /' | tr '\n' '|')"
+
+# 1e. The process register exists and spec 13 bullets none of its records.
+#     The floor keeps this case from passing because the directory moved or
+#     stopped parsing; the equality restates 1c's process arm directly.
+more_than "the process register holds records" 0 \
+    "$(wc -l <"$scratch/process" | tr -d ' ')"
+same "no process obligation has a bullet line in spec 13" \
+    "" "$(LC_ALL=C comm -12 "$scratch/process" "$scratch/bulleted" |
+          sed 's/^/spec 13 lists a process obligation: /' | tr '\n' '|')"
 
 echo
 echo "the judges, provoked over scratch trees"
