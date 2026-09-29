@@ -14,6 +14,7 @@ an unstated warrant as `asserted`. Both defects fail here.
 
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -29,6 +30,18 @@ TREE = os.path.join(HERE, "fixtures", "tree")
 REPO = os.path.join(HERE, "..", "..")
 
 
+def built_engine():
+    """The newer of the two built engines, or a skip when neither is built."""
+    engines = [
+        os.path.join(REPO, "engine", "target", profile, "headwater")
+        for profile in ("release", "dev-release")
+    ]
+    engines = [path for path in engines if os.access(path, os.X_OK)]
+    if not engines:
+        raise unittest.SkipTest("no built engine")
+    return max(engines, key=os.path.getmtime)
+
+
 def repo_export():
     """This repository's graph export, which is computed and never committed (#1251).
 
@@ -41,14 +54,10 @@ def repo_export():
     if named:
         with open(named, encoding="utf-8") as handle:
             return json.load(handle)
-    engines = [
-        os.path.join(REPO, "engine", "target", profile, "headwater")
-        for profile in ("release", "dev-release")
-    ]
-    engines = [path for path in engines if os.access(path, os.X_OK)]
-    if not engines:
+    try:
+        engine = built_engine()
+    except unittest.SkipTest:
         raise unittest.SkipTest("no built engine to compute the export, and HEADWATER_EXPORT is unset")
-    engine = max(engines, key=os.path.getmtime)
     written = subprocess.run(
         [engine, "export", "--format", "json", "--root", REPO],
         check=True,
@@ -228,6 +237,24 @@ class AListAnchorIsCountedByItsMembers(unittest.TestCase):
 
 DEAD_MEMBER_REASON = "`code_path`: `src/gone.rs` no `src/gone.rs` in the source tree"
 
+# The smallest governed document whose governs list has one live member and one dead one.
+DEAD_MEMBER_DOCUMENT = """---
+id: HW-DR-0074
+status: current
+status_since: 2026-09-20
+summary: "A probe decision whose governs list names one file that exists and one that does not."
+last_verified: 2026-09-20
+title: "A probe decision for a governs list with a dead member"
+relations:
+  governs:
+    - [README.txt, src/gone.rs]
+---
+
+# A probe decision for a governs list with a dead member
+
+The list names README.txt, which exists, and src/gone.rs, which does not.
+"""
+
 
 def with_dead_member_list(export):
     """The fixture export plus `governs: [[README.txt, src/gone.rs]]` from FX-DR-0002.
@@ -285,6 +312,25 @@ class AListWithADeadMemberIsShownRefused(unittest.TestCase):
         export["graph"]["edges"][-1]["relation"] = "cites"
         model = dashboard.load(export, corpus_identity="fixture")
         self.assertEqual(model.refused, [])
+
+    def test_the_engine_exports_the_shape_this_case_reads(self):
+        engine = built_engine()
+        with tempfile.TemporaryDirectory() as root:
+            shutil.copytree(os.path.join(REPO, ".headwater"), os.path.join(root, ".headwater"),
+                            ignore=shutil.ignore_patterns("ids", "corpus.json"))
+            with open(os.path.join(root, "README.txt"), "w", encoding="utf-8") as handle:
+                handle.write("present\n")
+            os.makedirs(os.path.join(root, "docs", "decisions"))
+            with open(os.path.join(root, "docs", "decisions", "0074-probe.md"), "w", encoding="utf-8") as handle:
+                handle.write(DEAD_MEMBER_DOCUMENT)
+            written = subprocess.run([engine, "export", "--format", "json", "--root", root],
+                                     check=True, capture_output=True)
+        export = json.loads(written.stdout)
+        governs = [edge for edge in export["graph"]["edges"] if edge["relation"] == "governs"]
+        self.assertEqual([edge["target"] for edge in governs], [{"bound": "nothing", "reason": DEAD_MEMBER_REASON}])
+        model = dashboard.load(export, corpus_identity="probe")
+        self.assertEqual([(row["governed_by"], row["reason"]) for row in model.refused],
+                         [("HW-DR-0074", DEAD_MEMBER_REASON)])
 
     def test_a_refused_edge_with_no_reason_is_refused_as_input(self):
         export = with_dead_member_list(load_fixture())
