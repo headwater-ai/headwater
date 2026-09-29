@@ -683,6 +683,11 @@ same "one word of a two-word answer is no answer" \
     "$(sh "$driver" --answer-only "$scratch/two-short.jsonl" --answers "$two" 2>/dev/null)"
 printf '%s\n' '{"type":"result","result":"current current"}' \
     > "$scratch/two-repeated.jsonl"
+printf '%s\n' '{"type":"result","result":"merge merge"}' \
+    > "$scratch/one-repeated.jsonl"
+same "a one-word answer said twice is no answer" \
+    "" \
+    "$(sh "$driver" --answer-only "$scratch/one-repeated.jsonl" --answers "merge, stamp" 2>/dev/null)"
 same "a repeated word does not stand in for the other word of an answer" \
     "" \
     "$(sh "$driver" --answer-only "$scratch/two-repeated.jsonl" --answers "$two" 2>/dev/null)"
@@ -1318,6 +1323,10 @@ STUB
     printf 'old\n' > "$scratch/bw-base/docs/changed.md"
     printf 'same\n' > "$scratch/bw-base/docs/same.md"
     printf '<!-- headwater:generated shelf_index -->\n\nold\n' > "$scratch/bw-base/docs/index.md"
+    printf -- '---\n"headwater:generated": "shelf_sections."\nid: HW-REG-x\n---\n\nold\n' > "$scratch/bw-base/docs/register.md"
+    printf '{\n  "headwater:generated": "corpus_descriptor.",\n  "a": "old"\n}\n' > "$scratch/bw-base/docs/data.json"
+    printf -- '---\nid: HW-DR-x\n---\n\nA generated page carries "headwater:generated": in its block.\n' > "$scratch/bw-base/docs/quotes.md"
+    printf 'keep\n' > "$scratch/bw-base/docs/keep.md"
     cp -a "$scratch/bw-base" "$scratch/bw"
     cat > "$scratch/bin/claude" <<'STUB'
 #!/bin/sh
@@ -1330,6 +1339,11 @@ mkdir -p .headwater/cache && printf 'x\n' > .headwater/cache/entry
 printf '{"cites":"HW-DR-0049"}\n' >> .headwater/capture-cost.jsonl
 mkdir -p .claude/worktrees/w/.headwater && printf 'nav: HW-DR-0049\n' > .claude/worktrees/w/.headwater/nav.yml
 printf '<!-- headwater:generated shelf_index -->\n\nHW-DR-0049\n' > docs/index.md
+printf -- '---\n"headwater:generated": "shelf_sections."\nid: HW-REG-x\n---\n\nHW-DR-0049\n' > docs/register.md
+printf '{\n  "headwater:generated": "corpus_descriptor.",\n  "a": "HW-DR-0049"\n}\n' > docs/data.json
+printf 'HW-DR-0049\n' >> docs/quotes.md
+printf 'kept\n' > .claude/worktrees/w/docs/keep.md
+touch -r docs/keep.md .claude/worktrees/w/docs/keep.md
 mkdir -p .probe-log && printf 'HW-DR-0049\n' > .probe-log/other.txt
 printf '%s\n' '{"type":"system","subtype":"init","model":"claude-haiku-4-5","session_id":"s14"}'
 printf '%s\n' '{"type":"assistant","message":{"content":[{"type":"tool_use","id":"t1","name":"Bash","input":{"command":"printf new > docs/written-by-bash.md"}}]}}'
@@ -1355,6 +1369,14 @@ STUB
         ".claude/worktrees/w/.headwater/nav.yml" "$scratch/bash-write.md"
     absent "a file that carries the generated marker is not produced" \
         'path: "docs/index.md"' "$scratch/bash-write.md"
+    absent "a Markdown page that carries the marker in its front matter is not produced" \
+        'path: "docs/register.md"' "$scratch/bash-write.md"
+    absent "a JSON file that carries the marker as a member is not produced" \
+        'path: "docs/data.json"' "$scratch/bash-write.md"
+    present "a document that quotes the marker in its prose is produced" \
+        'path: "docs/quotes.md"' "$scratch/bash-write.md"
+    present "a worktree file with the baseline's size and time but other bytes is produced" \
+        'path: ".claude/worktrees/w/docs/keep.md"' "$scratch/bash-write.md"
     absent "the probe log directory inside the workspace is not produced" \
         ".probe-log/" "$scratch/bash-write.md"
 

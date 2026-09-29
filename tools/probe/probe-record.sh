@@ -726,12 +726,34 @@ step_diff_baseline() {
     fi
     sort -u "$diffdir/produced" | while IFS= read -r path; do
         [ -n "$path" ] || continue
-        first=$(sed -n 1p "$here/$path" 2>/dev/null) || first=""
-        case $first in
-            *headwater:generated*) ;;
-            *) printf '%s\n' "$path" ;;
-        esac
+        generated "$here/$path" || printf '%s\n' "$path"
     done
+}
+
+# Whether a file carries the generated-file marker where the engine puts it
+# (`engine/crates/mark/src/lib.rs`, verify round 2 of #1384). A commented
+# format carries it on the first line. A Markdown file with front matter
+# carries it as the member `"headwater:generated":` inside the block, because
+# its first line is `---`: `docs/spec/09-open-questions.md` is one, and a
+# first-line rule recorded it as produced. JSON carries it as a top-level
+# member. Only those places are read, so a document that quotes the marker in
+# its prose is not taken for a generated file.
+generated() {
+    case $1 in
+        *.json) json=1 ;;
+        *) json=0 ;;
+    esac
+    awk -v json="$json" '
+        FNR == 1 {
+            if (index($0, "headwater:generated")) { found = 1; exit }
+            if ($0 == "---") { block = 1; next }
+        }
+        block && $0 == "---" { exit }
+        block && index($0, "\"headwater:generated\":") == 1 { found = 1; exit }
+        json && /^[ \t]*"headwater:generated"[ \t]*:/ { found = 1; exit }
+        !block && !json { exit }
+        END { exit !found }
+    ' "$1" 2>/dev/null
 }
 
 set --
