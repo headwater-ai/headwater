@@ -401,8 +401,9 @@
           <!-- #1348. These lines are the README's APT block less its first
                two lines, which install ca-certificates and curl on a
                minimal image. Group 11 of tools/repo/readme-fixtures.sh
-               holds the panel's release tag, sources line, keyring URL and
-               package against the README, so a release that moves one
+               holds the panel's download lines, line for line, and its
+               sources line, keyring URL, keyring path and package against
+               the README, so a release that moves one
                and not the other is refused. Nobody has run these apt lines
                from this page. The README says which images they install on. -->
           <div class="note">On Apple silicon macOS, use <code>aarch64-apple-darwin</code> in the download lines. The <a href="/tutorial/">tutorial</a> then fetches the taxonomy package.</div>
