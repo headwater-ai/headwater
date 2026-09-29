@@ -615,9 +615,9 @@ fn every_output_carries_its_own_marker() {
 /// twelfth, `how_to`, is the same story as the decisions shelf's own #124: the
 /// `for` list named it before #885 put a document on it, and until then it
 /// produced a reason rather than a file, the same way `specifications` still
-/// does below. The fifteenth, `process_explanations`, is on the list from the
+/// does below. The eighteenth, `process_explanations`, is on the list from the
 /// change that declared it (#1005), because that change put its first document
-/// on the shelf. Its sibling `explanations`, the fourteenth, gave a reason
+/// on the shelf. Its sibling `explanations`, the seventeenth, gave a reason
 /// rather than a file until #1231 put the account of how a release reaches
 /// an adopter on it. The three after `process_decisions`, which are
 /// `process_specs`, `process_evaluations` and `process_obligations`, are on the

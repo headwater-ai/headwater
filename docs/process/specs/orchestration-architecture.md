@@ -26,7 +26,7 @@ relations:
     - HW-PD-0023
   governs:
     - to: .claude/commands/next-run.md
-      verified_revision: sha256:d89b1aa8fc7fa36df155a5d44514542e0e971aae463434421c7435a4dc60224c
+      verified_revision: sha256:f6101592f2441ee4ab872a5856bfc58bb09b207be569a7ab3e34547d55adb135
     - to: .claude/commands/next.md
       verified_revision: sha256:974d493829d7c81eacf06f5058e7e02f01f7fd409b82e0589d7bdd21a7783b09
     - to: .claude/agents/hw-queue.md
@@ -42,7 +42,7 @@ relations:
     - to: .claude/agents/hw-integrate.md
       verified_revision: sha256:de99652546460adf3a7ce5ab652c2501973e56f8f65fcb6cc591d438043ecd65
     - to: .claude/skills/hw-run-policy/SKILL.md
-      verified_revision: sha256:669c975518f73b6dbccf7716124bcf3b816d9fee358f4195b9f2fb9a9ecedafc
+      verified_revision: sha256:c3f38c8456e5a3a2074c66adec6b77fdc42750fa27c9e8af1a250feccdddce1d
     - to: .claude/skills/hw-verification-bar/SKILL.md
       verified_revision: sha256:a68ce6b14b5a8d7068aeafd8c7443e0497a55b4e444e2b971daa1da738c2153b
 ---

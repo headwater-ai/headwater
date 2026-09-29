@@ -11,7 +11,7 @@ Run `$ARGUMENTS` iterations (default 20) of the Headwater build order. You are t
 
 Canonical here; every other file cites it rather than restating it.
 
-**Before any work starts, name the reader who is not this repository.** If the only party better off is Headwater's own corpus, the work is not eligible for an iteration or the tracker: it is scaffolded as an obligation record under [13 — Open obligations](../../docs/spec/13-open-obligations.md) and left there. Two labels are exceptions. `bug` marks a defect in what ships; it is eligible whatever it serves, and it sorts first (owner, 2026-09-22). `adopter-blocking` marks work an outside adopter cannot proceed without, and sorts next.
+**Before any work starts, name the reader who is not this repository.** If the only party better off is Headwater's own corpus, the work is not eligible for an iteration or the tracker: it is scaffolded as an obligation record under [13 — Open obligations](../../docs/spec/13-open-obligations.md) and left there. A finding about how this repository builds itself, such as the build order or its CI, is scaffolded as a `process_obligation` on `docs/process/obligations/`, which spec 13 does not list. Two labels are exceptions. `bug` marks a defect in what ships; it is eligible whatever it serves, and it sorts first (owner, 2026-09-22). `adopter-blocking` marks work an outside adopter cannot proceed without, and sorts next.
 
 ## The doctrine
 

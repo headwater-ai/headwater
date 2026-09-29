@@ -1235,8 +1235,9 @@ add:
   # release cut between them, and the five CI suites that run the hooks, the
   # skills and the tutorial against the engine built from this tree would pin
   # a commit instead. A shelf separates the two subjects in the census, the
-  # site and every check, and a later move out is one directory move of one
-  # shelf rather than a triage of the whole register.
+  # site and every check, and a later move out is one move of the
+  # `docs/process/` directory, which holds every process shelf, rather than a
+  # triage of the whole register.
   #
   # **The same shape as `decision`, under its own scheme.** The kind mirrors
   # the base `decision` kind clause for clause, so a record here answers to the
