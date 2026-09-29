@@ -2737,7 +2737,14 @@ standard_pin_judge() {
                 if (v != want && v != "0.0.0") print FILENAME ":" FNR ": " m
             }
         }
-    ' "$@" >"$scratch/standard-pin.out"
+    ' "$@" >"$scratch/standard-pin.out" 2>"$scratch/standard-pin.err"
+    spj_status=$?
+    # A file awk cannot open is a judge that read nothing, and an empty output
+    # from it would read as `ok`. So a non-zero exit is the finding.
+    if [ "$spj_status" -ne 0 ]; then
+        echo "awk exited $spj_status reading the files, so the judge could not read them: $(head -n 1 "$scratch/standard-pin.err")"
+        return 0
+    fi
     if [ -s "$scratch/standard-pin.out" ]; then
         sed "s|^$root/||" "$scratch/standard-pin.out"
     else
@@ -2819,6 +2826,23 @@ same "  a current tag path beside a stale zip name on one line fails on the zip"
 same "  a \`headwater/standard v<version>\` in prose naming another version fails" \
     "$scratch/standard/vprose.md:1: headwater/standard v4.9.1" \
     "$(standard_pin_judge 99.0.0 "$scratch/standard/vprose.md")"
+
+# 8m, continued. The judge reads EVERY file it is handed. 8k hands it five, and
+# a judge that read only the first, or that was handed one path that does not
+# exist, reported `ok` over pages it never opened. So: three files with the
+# stale one last, and three files with a missing one among them.
+printf '%s\n' 'against headwater/standard 99.0.0' >"$scratch/standard/clean1.md"
+printf '%s\n' 'taxonomy/headwater-standard/v99.0.0' >"$scratch/standard/clean2.md"
+same "  of several files, a stale version in the last one fails" \
+    "$scratch/standard/prose.md:1: headwater/standard 4.9.1" \
+    "$(standard_pin_judge 99.0.0 "$scratch/standard/clean1.md" "$scratch/standard/clean2.md" "$scratch/standard/prose.md")"
+got=$(standard_pin_judge 99.0.0 "$scratch/standard/clean1.md" "$scratch/standard/absent.md" "$scratch/standard/clean2.md")
+case $got in
+    "awk exited "*)
+        pass "  a file the judge cannot open fails, and is not read as ok" ;;
+    *)
+        fail "  a file the judge cannot open fails, and is not read as ok" "got \`$got\`" ;;
+esac
 
 # 8o. The newest tag is the newest by VERSION. These four tags are chosen so
 #     that each wrong reading picks a different one: git's default order is
