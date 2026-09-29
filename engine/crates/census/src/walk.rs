@@ -305,36 +305,30 @@ const LINK_HOPS: usize = 40;
 /// target is missing is followed to that target, and a relative target is
 /// read against the directory that holds the link. `None` for a link that
 /// cannot be read and for more than [`LINK_HOPS`] links, which a loop is.
-/// The longest leading part of the answer that exists is made canonical, so
-/// the answer compares with a canonical root on every platform.
+/// A `..` climbs the directory the path has reached, which is on disk, until
+/// a part is missing, and then it takes that part back off by name.
 fn physical(path: &Path) -> Option<PathBuf> {
     use std::path::Component;
 
     let mut pending: Vec<std::ffi::OsString> = Vec::new();
     let mut at = PathBuf::new();
     let mut hops = 0;
-    let mut missing = false;
     let mut queue: std::collections::VecDeque<PathBuf> = path
         .components()
         .map(|part| PathBuf::from(part.as_os_str()))
         .collect();
     while let Some(part) = queue.pop_front() {
         match part.components().next() {
-            Some(Component::Prefix(_)) => at = part,
-            Some(Component::RootDir) => {
-                pending.clear();
-                missing = false;
-                at.push(part);
-            }
+            Some(Component::Prefix(_) | Component::RootDir) => at.push(part),
             Some(Component::CurDir) | None => {}
             Some(Component::ParentDir) => match pending.pop() {
-                Some(_) => missing = !pending.is_empty(),
+                Some(_) => {}
                 None => {
                     at.pop();
                 }
             },
             Some(Component::Normal(name)) => {
-                if missing {
+                if !pending.is_empty() {
                     pending.push(name.to_os_string());
                     continue;
                 }
@@ -351,15 +345,11 @@ fn physical(path: &Path) -> Option<PathBuf> {
                         }
                     }
                     Ok(_) => at = next,
-                    Err(_) => {
-                        missing = true;
-                        pending.push(name.to_os_string());
-                    }
+                    Err(_) => pending.push(name.to_os_string()),
                 }
             }
         }
     }
-    let at = at.canonicalize().ok()?;
     Some(pending.into_iter().fold(at, |at, name| at.join(name)))
 }
 
@@ -658,8 +648,12 @@ mod tests {
         std::os::unix::fs::symlink("dang/deeper", root.join("docs/chain"))
             .expect("a dangling link through a dangling link out");
         std::os::unix::fs::symlink("loop", root.join("docs/loop")).expect("a link loop");
+        std::os::unix::fs::symlink("../../nowhere/dir", root.join("docs/up"))
+            .expect("a relative dangling link that climbs out");
+        std::os::unix::fs::symlink("missing/../dang", root.join("docs/hop"))
+            .expect("a link through a missing part back to a dangling link out");
 
-        let cases: [(&str, Option<&str>); 20] = [
+        let cases: [(&str, Option<&str>); 22] = [
             ("linked/shelf/new.md", Some("linked/shelf/new.md")),
             ("./linked/new.md", Some("linked/new.md")),
             ("linked/out/x.md", None),
@@ -677,6 +671,8 @@ mod tests {
             ("./docs/dang/new.md", None),
             ("docs/chain/new.md", None),
             ("docs/loop/new.md", None),
+            ("docs/up/new.md", None),
+            ("docs/hop/new.md", None),
             ("docs/stub/new.md", Some("docs/stub/new.md")),
             ("docs/stub", Some("docs/stub")),
             ("docs/near/new.md", Some("docs/near/new.md")),
