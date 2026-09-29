@@ -526,9 +526,9 @@ fn check_and_new_finish_when_a_claim_file_is_a_named_pipe() {
 
 /// `sweep plan` reads the text of every document it briefs, and a named pipe
 /// at a document path is a row of the census that it must not open. It ends
-/// under the deadline and writes its briefing (#1366). `neighbors` is not run
-/// here: a stub root holds no embedding model, and the verb refuses on the
-/// missing `.headwater/embedding.yml` before it reads a document.
+/// under the deadline and writes its briefing (#1366). `neighbors` over the
+/// same root needs the pinned model, so its case below runs only where
+/// `HEADWATER_MODEL_DIR` names the fetched files.
 #[test]
 fn sweep_plan_finishes_when_a_named_pipe_takes_a_document_path() {
     let root = document_pipe("neighbors-sweep-document-pipe");
@@ -541,6 +541,92 @@ fn sweep_plan_finishes_when_a_named_pipe_takes_a_document_path() {
         plan.contains("## The slice"),
         "sweep plan wrote its briefing: {plan}"
     );
+}
+
+/// The committed embedding pin, copied into a stub root so that `neighbors`
+/// reads past `.headwater/embedding.yml` to the model files it names.
+fn pin_into(at: &std::path::Path) {
+    let pin = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../.headwater/embedding.yml");
+    std::fs::create_dir_all(at.join(".headwater")).expect("the directory is made");
+    std::fs::copy(pin, at.join(".headwater/embedding.yml")).expect("the pin copies");
+}
+
+/// Make a named pipe at `at`.
+fn fifo(at: &std::path::Path) {
+    let made = std::process::Command::new("mkfifo")
+        .arg(at)
+        .status()
+        .expect("mkfifo runs");
+    assert!(made.success(), "the named pipe is made");
+}
+
+/// `neighbors` reads the model file itself, and a named pipe there is a model
+/// file that is missing, as `docs/interfaces/headwater-neighbors.md` says. The
+/// verb refuses before it opens the pipe, so it needs no model bytes, and it
+/// is the case `.claude/hooks/intent.sh` would hit on every prompt (#1366).
+#[test]
+fn neighbors_refuses_a_named_pipe_at_the_model_file() {
+    let root = Root::shaped("neighbors-model-pipe", |at| {
+        pin_into(at);
+        std::fs::create_dir_all(at.join("model")).expect("the model directory is made");
+        std::fs::write(at.join("model/vocab.txt"), "[PAD]\n").expect("the vocabulary writes");
+        fifo(&at.join("model/model.onnx"));
+    });
+    let model = root.at.join("model");
+    let model = model.to_str().expect("the path is UTF-8");
+    let (status, out, err) = ended(
+        &root,
+        &["neighbors", "--model", model, "a", "task"],
+        "neighbors opened the named pipe at model.onnx, and waited on it",
+    );
+    assert_eq!(status.code(), Some(1), "neighbors refuses: {err}");
+    assert!(out.is_empty(), "neighbors prints nothing: {out}");
+    assert!(flat(&err).contains("model.onnx"), "{err}");
+    assert!(flat(&err).contains("is not a regular file"), "{err}");
+}
+
+/// A named pipe at `.headwater/embedding.yml` is a pin that could not be read,
+/// and `neighbors` refuses in one sentence that names it (#1366).
+#[test]
+fn neighbors_refuses_a_named_pipe_at_the_pin() {
+    let root = Root::shaped("neighbors-pin-pipe", |at| {
+        std::fs::create_dir_all(at.join(".headwater")).expect("the directory is made");
+        fifo(&at.join(".headwater/embedding.yml"));
+    });
+    let (status, out, err) = ended(
+        &root,
+        &["neighbors", "a", "task"],
+        "neighbors opened the named pipe at .headwater/embedding.yml, and waited on it",
+    );
+    assert_eq!(status.code(), Some(1), "neighbors refuses: {err}");
+    assert!(out.is_empty(), "neighbors prints nothing: {out}");
+    assert!(flat(&err).contains(".headwater/embedding.yml"), "{err}");
+    assert!(flat(&err).contains("is not a regular file"), "{err}");
+}
+
+/// `neighbors` ranks the summaries the census parsed, and a named pipe at a
+/// document path is a row that holds none, so the verb ends and never ranks
+/// it (#1366). The model files are 90MB and fetched, so a run with no
+/// `HEADWATER_MODEL_DIR` says it skipped rather than passing.
+#[test]
+fn neighbors_finishes_when_a_named_pipe_takes_a_document_path() {
+    let Some(model) = std::env::var_os("HEADWATER_MODEL_DIR") else {
+        eprintln!("skipped: set HEADWATER_MODEL_DIR to the fetched model files");
+        return;
+    };
+    let root = Root::shaped("neighbors-document-pipe", |at| {
+        pin_into(at);
+        fifo(&at.join("docs/x.md"));
+    });
+    let model = model.to_str().expect("the path is UTF-8");
+    let (status, out, err) = ended(
+        &root,
+        &["neighbors", "--model", model, "a", "task"],
+        "neighbors opened the named pipe at docs/x.md, and waited on it",
+    );
+    assert_eq!(status.code(), Some(0), "neighbors ends: {err}");
+    assert!(out.contains("summarized documents"), "neighbors ranked: {out}");
+    assert!(!out.contains("docs/x.md"), "the pipe is never ranked: {out}");
 }
 
 /// The walk makes no row under a directory that is a symlink, so a path
