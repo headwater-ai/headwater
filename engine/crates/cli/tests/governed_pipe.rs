@@ -94,6 +94,11 @@ fn under_deadline(root: &Root, args: &[&str], hung: &str) -> (String, String) {
     )
 }
 
+/// The words the suspect rule reports a literal that names no regular file
+/// with. A named pipe gets no digest, as a directory gets none, so the edge
+/// never goes suspect, and a silence would not tell its author (#1333).
+const NO_REGULAR_FILE: &str = "names no regular file";
+
 #[test]
 fn check_no_cache_finishes_when_a_governs_edge_reaches_a_named_pipe() {
     let root = root("check-governed-pipe", "tools/pipe");
@@ -112,6 +117,74 @@ fn check_no_cache_finishes_when_a_governs_edge_reaches_a_named_pipe() {
         !out.contains("names a directory"),
         "no directory finding: {out}"
     );
+    // It reports the edge rather than passing it, because the edge can
+    // never age (#1333).
+    assert!(
+        out.contains("`tools/pipe` names no regular file"),
+        "the edge that can never age is reported: {out}"
+    );
+}
+
+/// A wildcard over a regular file and a named pipe digests the file alone,
+/// so the moved-digest finding counts the one entry the digest covers and
+/// not the two the pattern matched (#1333).
+#[test]
+fn a_moved_wildcard_over_a_named_pipe_counts_only_what_its_digest_covers() {
+    let root = root(
+        "check-governed-pipe-count",
+        "to: tools/**\n      verified_revision: sha256:0000",
+    );
+    let (out, _) = under_deadline(
+        &root,
+        &["check", "--no-cache"],
+        "check opened the named pipe a governs wildcard matches, and waited on it",
+    );
+    assert!(
+        out.contains("the 1 entry it matches now read"),
+        "the count is the entries the digest covers: {out}"
+    );
+    assert!(!out.contains("2 entries"), "the pipe is not counted: {out}");
+    assert!(!out.contains(NO_REGULAR_FILE), "{out}");
+}
+
+/// A named pipe at a path the census reads as a document. The census opens
+/// no named pipe, so `check` and `census` end, and the row says what the
+/// entry is rather than calling it untyped or unreadable text (#1333).
+fn document_pipe(label: &str) -> Root {
+    Root::shaped(label, |at| {
+        let fifo = std::process::Command::new("mkfifo")
+            .arg(at.join("docs/x.md"))
+            .status()
+            .expect("mkfifo runs");
+        assert!(fifo.success(), "the named pipe is made");
+    })
+}
+
+#[test]
+fn check_no_cache_finishes_when_a_named_pipe_takes_a_document_path() {
+    let root = document_pipe("check-document-pipe");
+    let (out, _) = under_deadline(
+        &root,
+        &["check", "--no-cache"],
+        "check opened the named pipe at docs/x.md, and waited on it",
+    );
+    assert!(!out.contains("docs/x.md` is not text"), "{out}");
+}
+
+#[test]
+fn census_finishes_and_names_a_named_pipe_at_a_document_path() {
+    let root = document_pipe("census-document-pipe");
+    let (out, _) = under_deadline(
+        &root,
+        &["census"],
+        "census opened the named pipe at docs/x.md, and waited on it",
+    );
+    let row = out
+        .lines()
+        .find(|line| line.contains("docs/x.md"))
+        .unwrap_or_else(|| panic!("the census has a row for the pipe: {out}"));
+    assert!(row.contains("unwalkable"), "{row}");
+    assert!(row.contains("never opens"), "{row}");
 }
 
 #[test]
@@ -172,6 +245,40 @@ fn a_cached_directory_verdict_does_not_outlive_the_directory_becoming_a_pipe() {
     assert!(
         !warm.contains("tools/thing/**"),
         "the cached directory verdict outlived the directory: {warm}"
+    );
+    assert!(cold.contains(NO_REGULAR_FILE), "{cold}");
+    assert!(warm.contains(NO_REGULAR_FILE), "{warm}");
+}
+
+/// A cached verdict over a named pipe does not survive the pipe being
+/// replaced by a regular file the process cannot read. Neither gets a
+/// digest, and neither is a directory, but the rule reports the pipe and
+/// passes the unreadable file, so the cache key has to tell them apart
+/// (#1333). The case needs a process that a mode-000 file stops, so it
+/// returns early when run as root.
+#[test]
+fn a_cached_pipe_verdict_does_not_outlive_the_pipe_becoming_an_unreadable_file() {
+    use std::os::unix::fs::PermissionsExt;
+
+    let root = root("check-governed-pipe-to-locked", "tools/pipe");
+    let (before, _) = under_deadline(&root, &["check"], "check opened the named pipe");
+    assert!(before.contains(NO_REGULAR_FILE), "{before}");
+
+    let locked = root.at.join("tools/pipe");
+    std::fs::remove_file(&locked).expect("the pipe goes");
+    std::fs::write(&locked, "echo locked\n").expect("the file writes");
+    std::fs::set_permissions(&locked, std::fs::Permissions::from_mode(0o000))
+        .expect("the mode is set");
+    if std::fs::read(&locked).is_ok() {
+        return;
+    }
+
+    let (warm, _) = under_deadline(&root, &["check"], "a warm check did not end");
+    let (cold, _) = under_deadline(&root, &["check", "--no-cache"], "a cold check did not end");
+    assert!(!cold.contains(NO_REGULAR_FILE), "{cold}");
+    assert!(
+        !warm.contains(NO_REGULAR_FILE),
+        "the cached pipe verdict outlived the pipe: {warm}"
     );
 }
 
