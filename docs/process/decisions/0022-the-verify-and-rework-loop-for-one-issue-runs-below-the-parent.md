@@ -55,7 +55,7 @@ Two shapes were considered. In the first shape, the builder dispatches its own v
 
 ## Consequences
 
-The parent wakes for the adjudicate report, for the `hw-iterate` report, and for its share of an integrator report. The target is 3 parent wakes or fewer for each merged issue. Run `20260928-1109` was the first run after this change, and it measured 2.61 wakes for each of 23 merged issues. It measured 2.87 when each issue adjudicated in an earlier session counts one more wake. [The evaluation of the build order](../../evaluations/the-build-order-as-a-multi-agent-system.md#what-the-first-run-with-the-loop-below-the-parent-measured) states the method and the baseline. If a later run measures more than 3, this decision is reopened.
+The parent wakes for the adjudicate report, for the `hw-iterate` report, and for its share of an integrator report. The target is 3 parent wakes or fewer for each merged issue. Run `20260928-1109` was the first run after this change, and it measured 2.61 wakes for each of 23 merged issues. It measured 2.87 when each issue adjudicated in an earlier session counts one more wake. [The evaluation of the build order](../evaluations/the-build-order-as-a-multi-agent-system.md#what-the-first-run-with-the-loop-below-the-parent-measured) states the method and the baseline. If a later run measures more than 3, this decision is reopened.
 
 The veto of [HW-PD-0004](0004-coordination-is-a-create-only-claim-and-authority-stays-on-the-tree.md) stays on the tree. `hw-iterate` is the parent of its builder and its verifiers, so its `SendMessage` flows down the tree and is not a message from a peer.
 
