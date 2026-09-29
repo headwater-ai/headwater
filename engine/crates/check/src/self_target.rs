@@ -235,4 +235,24 @@ mod tests {
             "docs/a?.md"
         ));
     }
+
+    /// The comparison is equality of whole paths. A literal that is the end
+    /// of the own path names another file (a `docs/README.md` that governs
+    /// the root `README.md`), and a literal that is its start names the
+    /// directory it sits in, which is wider than the exact own file.
+    #[test]
+    fn a_literal_that_is_only_the_end_or_the_start_of_the_own_path_is_not() {
+        assert!(!names_own_file(
+            &anchor("source-tree", &["a.md"]),
+            "docs/a.md"
+        ));
+        assert!(!names_own_file(
+            &anchor("source-tree", &["docs"]),
+            "docs/a.md"
+        ));
+        assert!(!names_own_file(
+            &anchor("source-tree", &["docs/a.md"]),
+            "other/docs/a.md"
+        ));
+    }
 }
