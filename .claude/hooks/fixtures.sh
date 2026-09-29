@@ -1304,6 +1304,41 @@ if [ -x "$engine" ]; then
         failed=$((failed + 1))
     fi
 
+    # #927: the check for a torn line must not see another writer's line
+    # while that writer is still inside its `write()`. Without a lock, the
+    # check read a last byte that was not yet a newline and added one, so the
+    # file got an empty line: the verify of PR #1390 saw it in 2 of 40 rounds
+    # of 12 writers, and it made the concurrent case above fail at random. A
+    # real `write()` is too short to hold open on purpose, so this case holds
+    # the same lock the hook takes and writes one line in two halves, with a
+    # second between them. The hook's line must wait for the lock, then find a
+    # complete line and write its own after it, with no empty line and no
+    # newline inside the first line.
+    if command -v flock >/dev/null 2>&1; then
+        held_file="$shadow_dir/fixture-session-shadow-held-$$.jsonl"
+        : > "$held_file"
+        ( flock -x 9; printf '{"held":"first half' >&9; sleep 1; printf ', second half"}\n' >&9 ) 9>>"$held_file" &
+        held_pid=$!
+        n=0
+        while [ ! -s "$held_file" ] && [ "$n" -lt 100 ]; do
+            sleep 0.05
+            n=$((n + 1))
+        done
+        hw_append_line "$held_file" '{"after":"the held write"}'
+        wait "$held_pid"
+        printf '{"held":"first half, second half"}\n{"after":"the held write"}\n' > "$held_file.expected"
+        if cmp -s "$held_file" "$held_file.expected"; then
+            printf 'ok   %s\n' 'a line appended while another writer holds the log waits for it, and adds no empty line'
+            passed=$((passed + 1))
+        else
+            printf 'FAIL %s\n  file:\n%s\n' 'a line appended while another writer holds the log did not wait for it' "$(cut -c1-200 "$held_file")"
+            failed=$((failed + 1))
+        fi
+        rm -f "$held_file.expected"
+    else
+        printf 'skip %s\n' 'a line appended while another writer holds the log: this host has no flock'
+    fi
+
     # Step 3 of #819: the recorder's name for its session, which
     # `tools/probe/probe-record.sh` exports before it starts the harness. A
     # person's prompt carries none, and a count subtracts the lines that do.
