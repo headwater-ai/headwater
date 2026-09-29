@@ -317,6 +317,27 @@ pub fn emit(
     emitter: Emitter,
     generated_at: Option<&str>,
 ) -> Result<Emission, Refusal> {
+    emit_marked(surface, profile, emitter, generated_at, Built::ByGenerate)
+}
+
+/// Which verb builds the artifact, and so which sentence its marker states.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Built {
+    /// `headwater generate` writes it and `generate --check` holds it.
+    ByGenerate,
+    /// A declaration states `committed: false`, so `headwater export` builds
+    /// it at publish time and no gate compares it (#1343).
+    AtPublish,
+}
+
+/// [`emit`], with the marker that states which verb builds the artifact.
+pub(crate) fn emit_marked(
+    surface: &Surface<'_>,
+    profile: &Profile,
+    emitter: Emitter,
+    generated_at: Option<&str>,
+    built: Built,
+) -> Result<Emission, Refusal> {
     if !emitter.is_built() {
         return Err(Refusal::NotBuilt(emitter));
     }
@@ -336,7 +357,15 @@ pub fn emit(
         &body.carried_edges,
         &body.losses,
     );
-    let value = envelope(profile, emitter, generated_at, &withheld, &census, body);
+    let value = envelope(
+        profile,
+        emitter,
+        generated_at,
+        built,
+        &withheld,
+        &census,
+        body,
+    );
     Ok(Emission {
         bytes: value.render_pretty(),
         census,
@@ -1042,6 +1071,7 @@ fn envelope(
     profile: &Profile,
     emitter: Emitter,
     generated_at: Option<&str>,
+    built: Built,
     withheld: &[(String, String)],
     census: &Census,
     body: Body,
@@ -1076,7 +1106,10 @@ fn envelope(
     let mut members = vec![
         (
             headwater_mark::MARKER.to_string(),
-            Json::string(headwater_mark::marker_text(Kind::GraphExport.name())),
+            Json::string(match built {
+                Built::ByGenerate => headwater_mark::marker_text(Kind::GraphExport.name()),
+                Built::AtPublish => headwater_mark::published_marker_text(Kind::GraphExport.name()),
+            }),
         ),
         ("version".to_string(), Json::string(VERSION)),
         ("export_version".to_string(), Json::string(VERSION)),
