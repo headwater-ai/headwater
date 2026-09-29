@@ -42,6 +42,12 @@ Set `HW_CARGO_SLOT=verify-<N>` for your issue on every `tools/hw-cargo` call. Wh
 
 A `RE-ISSUE` exit is not a finding; run the identical call again. Report `mergeable` and `mergeStateStatus` in `RAN`.
 
+**Wait on CI last, after every attack has run.** The build agent reports when its pull request is open and does not wait for CI, so the wait runs under your verify. Take the head commit of the branch you detached at, and wait in the foreground with the same timeout, re-issued on `RE-ISSUE`:
+
+    sh tools/run/wait-for.sh 'sh tools/run/ci-done.sh <sha>'
+
+Its last line is `green` or `red` with the failing checks named. Put the run id and the result in `RAN`. A `red` is a `FAIL`, whatever the attacks found, and the failing checks are the first line of `FIRED`: the build agent repairs a Format, Lint or unblessed-fixture failure as it repairs any other finding.
+
 ## What you never do
 
 - **You never edit the branch.** A defect is a `FAIL` with the finding; the build agent repairs it with its design intact.
