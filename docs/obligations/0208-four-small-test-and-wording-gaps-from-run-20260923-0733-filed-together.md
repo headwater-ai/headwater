@@ -22,7 +22,7 @@ The intake of run `20260923-0733` held four findings that name no reader outside
 
 **The cache module states the wrong component's job.** The module comment of `engine/crates/check/src/cache.rs` says that the rules component catches a rule that "changed". The per-rule `VERSION` does that job. The rules component catches a rule that was added or removed.
 
-**The board-card gap of HW-OBL-0203 recurred.** In this run, `board-move.sh` found no project-board card for #1030, #974, #975, #1038 and #976, and remainder issue #1051 was filed without one. [HW-OBL-0203](0203-three-small-run-tooling-gaps-from-run-20260922-1121-filed-together.md) asks whether the gap is systemic. Six issues in one run is evidence that it is.
+**The board-card gap of HW-OBL-0203 recurred.** In this run, `board-move.sh` found no project-board card for #1030, #974, #975, #1038 and #976, and remainder issue #1051 was filed without one. [HW-OBL-0203](../process/obligations/0203-three-small-run-tooling-gaps-from-run-20260922-1121-filed-together.md) asks whether the gap is systemic. Six issues in one run is evidence that it is.
 
 ## Discharge
 

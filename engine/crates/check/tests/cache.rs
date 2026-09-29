@@ -123,6 +123,7 @@ fn run_at(root: &Path, ctx: &Context, cache: &mut Cache) -> Run {
             register: &register,
             observations: &headwater_check::Observations::empty(),
             pin: None,
+            harvests: &[],
             adoption: None,
             source: "engine/crates/check/tests/cache.rs",
         },
@@ -429,11 +430,13 @@ fn a_moved_anchor_target_is_not_served_from_the_entry_before_it() {
     // differential nor the instance count can see that difference, so it is
     // asserted here: the resolution divides a key, and it withholds none.
     //
-    // Two instances are about the anchor: `relation.target.unresolved`, and
+    // Three instances are about the anchor: `relation.target.unresolved`,
     // `relation.target.suspect`, which instantiates over every relation onto
-    // an anchor kind since #952. Both key on the one resolution, so both miss.
+    // an anchor kind since #952, and `relation.target.is_source`, which
+    // instantiates over every declared relation since #1232. All three key on
+    // the one resolution, so all three miss.
     assert!(gone.cache.hits > 0, "{:?}", gone.cache);
-    assert_eq!(gone.cache.misses, 2, "{:?}", gone.cache);
+    assert_eq!(gone.cache.misses, 3, "{:?}", gone.cache);
     assert_eq!(
         gone.cache.unkeyed, bound.cache.unkeyed,
         "an instance lost its key rather than changing it: {:?}",

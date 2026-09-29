@@ -335,6 +335,10 @@ fn dispatch(root: &Path, verb: Verb) -> ExitCode {
             json,
         } => gate(root, read_set, now, json),
         Verb::Derived {} => derived(root),
+        Verb::Site { dir } => match dir {
+            Some(dir) => site(root, &dir),
+            None => fail("`headwater site` takes the directory a site generator wrote, as `headwater site <site-dir>`"),
+        },
         Verb::MergeDriver {
             ancestor,
             current,
@@ -3743,6 +3747,11 @@ struct Loaded {
     /// per load and never cached, for the reason `observations` is read here:
     /// a fact about the tree beside the corpus. See [`headwater_check::pin`].
     pin: headwater_check::pin::Pin,
+    /// Each pinned corpus export, as the resolver built for it read it: whether
+    /// it binds, and why not. Read once per load beside the resolver set and
+    /// never cached, for the reason `pin` is. See
+    /// [`headwater_check::harvest`].
+    harvests: Vec<headwater_check::harvest::Harvest>,
     /// The front-matter keys the graph phase reads by name. Held here, and
     /// built once, so the index and the identifier rule read an identifier from
     /// the same key. Two `Config::default()` calls would be two guesses that a
@@ -3851,7 +3860,11 @@ fn load_against(root: &Path, bound: Bound) -> Result<Loaded, ExitCode> {
             return Err(ExitCode::FAILURE);
         }
     };
-    for export in headwater_import::harvest::over(root, &harvests) {
+    // What each pin read, kept beside the resolvers so the check layer can
+    // name a pin that did not read whether or not an anchor reaches it.
+    let exports = headwater_import::harvest::over(root, &harvests);
+    let harvested = headwater_import::harvest::readings(root, &harvests, &exports);
+    for export in exports {
         resolvers = match resolvers.with(Box::new(export)) {
             Ok(resolvers) => resolvers,
             Err(why) => {
@@ -3897,6 +3910,7 @@ fn load_against(root: &Path, bound: Bound) -> Result<Loaded, ExitCode> {
     Ok(Loaded {
         bound,
         pin,
+        harvests: harvested,
         consumer,
         census,
         graph,
@@ -3924,6 +3938,7 @@ impl Loaded {
             register: &self.register,
             observations: &self.observations,
             pin: Some(&self.pin),
+            harvests: &self.harvests,
             adoption: self.bound.adoption.as_ref(),
             source: &self.bound.source,
         }
@@ -4251,6 +4266,14 @@ fn explain(root: &Path, target: &str, json: bool) -> ExitCode {
         Ok(explanation) => explanation,
         Err(code) => return code,
     };
+    // A row the walk could not read is not a document: the census never
+    // opened it, so it has no kind and nothing is required of it that the
+    // census could know. It is refused in `show`'s shape, and `--json` writes
+    // nothing (#1366).
+    if let Some(refusal) = explanation.refusal() {
+        eprintln!("headwater: {}", err(&refusal));
+        return ExitCode::FAILURE;
+    }
     // A target that names no document was refused in [`find_document`], on standard
     // error and with the same exit status either way. `--json` selects the
     // artifact and never the status: a refusal is not a document with a member
@@ -4293,6 +4316,20 @@ fn show(root: &Path, target: &str) -> ExitCode {
         return ExitCode::FAILURE;
     }
     let path = root.join(&explanation.path);
+    // A census row can be a named pipe, a socket or a device, and opening a
+    // named pipe that has no writer blocks forever (#1333). The walk never
+    // opens one, and neither does this read.
+    if std::fs::metadata(&path).is_ok_and(|kind| !kind.is_file() && !kind.is_dir()) {
+        eprintln!(
+            "headwater: {}",
+            err(&format!(
+                "`{}` is a named pipe, a socket or a device, which the census never opens, so \
+                 `show` prints nothing",
+                explanation.path
+            ))
+        );
+        return ExitCode::FAILURE;
+    }
     match std::fs::read(&path) {
         Ok(bytes) => {
             emit_bytes(Stream::Out, &bytes);
@@ -4381,7 +4418,8 @@ fn find_document(root: &Path, target: &str) -> Result<headwater_query::Explanati
                 // A path that passes through a symlink out of the root is
                 // outside the repository, whatever its spelling reads as
                 // (#1249). It is asked only here, after every lookup missed,
-                // so a document row that is itself a symlink still answers.
+                // so a census row that is itself a symlink is found, and the
+                // verb refuses it in its own sentence (#1366).
                 let classification = match headwater_census::walk::within(
                     root,
                     &loaded.consumer.corpus_root,
@@ -6103,6 +6141,45 @@ fn derived(root: &Path) -> ExitCode {
     }
 }
 
+/// `headwater site`: hold a built site against the corpus at `root`.
+///
+/// The navigation comes from the plan this run builds, not from the committed
+/// `site_nav` file, because a stale committed file is `generate --check`'s
+/// finding. `headwater_generate::site` carries the four finding classes, and
+/// `docs/interfaces/headwater-site.md` is the contract. A relative `dir` is
+/// read from the current directory, as every path operand is.
+fn site(root: &Path, dir: &Path) -> ExitCode {
+    let loaded = match load(root) {
+        Ok(loaded) => loaded,
+        Err(code) => return code,
+    };
+    let projections = match headwater_generate::Projections::read(&loaded.bound.taxonomy) {
+        Ok(projections) => projections,
+        Err(errors) => return refused("the projections", &errors),
+    };
+    let identity = loaded.identity();
+    let surface = loaded.surface();
+    let plan = headwater_generate::plan(
+        &surface,
+        &loaded.census,
+        &projections,
+        &identity,
+        &loaded.runs(root),
+        headwater_verbs::VERBS,
+    );
+    match headwater_generate::site::hold(dir, &surface, &projections, &plan, &identity.corpus_root)
+    {
+        Err(refusal) => fail(&refusal),
+        Ok(report) => {
+            print!("{}", report.render());
+            match report.findings.is_empty() {
+                true => ExitCode::SUCCESS,
+                false => ExitCode::FAILURE,
+            }
+        }
+    }
+}
+
 /// `headwater check --fix`: write the patches, then run the checks again.
 ///
 /// [Spec 12](../../../../docs/spec/12-check-layer.md#fixability) fixes what may
@@ -6667,6 +6744,7 @@ fn infer(
             register: &loaded.register,
             observations: &loaded.observations,
             pin: Some(&loaded.pin),
+            harvests: &loaded.harvests,
             adoption: declared.as_ref(),
             source: headwater_lock::LOCK,
         },

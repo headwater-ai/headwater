@@ -253,6 +253,7 @@ fn run_in(root: &Path, ctx: &Context, cache: &mut Cache, source: &str) -> Run {
             adoption: None,
             observations: &Observations::empty(),
             pin: None,
+            harvests: &[],
             source: "engine/crates/check/fixtures/governs-suspect.taxonomy.yml",
         },
         &headwater_check::claim::Claims::empty(),
@@ -602,7 +603,8 @@ fn a_warm_cache_keys_the_patch_on_the_change() {
     }
 }
 
-/// A wildcard entry names the pattern and how many entries it matches now,
+/// A wildcard entry names the pattern and how many regular files its digest
+/// covers now,
 /// and says the per-entry count is not recorded, because one digest over a
 /// set says that the set moved and not how many members did.
 #[test]
@@ -624,7 +626,7 @@ fn a_moved_wildcard_names_its_pattern_and_its_match_count() {
     assert_eq!(reported.len(), 1, "{reported:?}");
     let message = &reported[0].message;
     assert!(message.contains(".claude/hooks/*.sh"), "{message}");
-    assert!(message.contains("2 entries"), "{message}");
+    assert!(message.contains("2 regular files"), "{message}");
     assert!(message.contains("not recorded"), "{message}");
     let _ = std::fs::remove_dir_all(&root);
 }

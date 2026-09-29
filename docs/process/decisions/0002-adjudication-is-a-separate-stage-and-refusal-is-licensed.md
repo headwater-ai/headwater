@@ -19,7 +19,7 @@ provenance:
 
 A design for the build order fused adjudication into construction as one agent, to retire one parent turn per issue. Under [HW-PD-0003](0003-a-dispatch-pays-when-it-retires-more-parent-turns-than-it-costs.md), a parent turn is the unit of cost, so a stage boundary that can go should go. The fused shape took three turns per issue against four.
 
-Run 24 measured what the boundary is for. Six of eight slots returned something other than "build as specified". Three rejected part of their own Done-when. One found a pre-existing defect that permanently bricks an output path, reproducible at one run in three with its own change stashed. The owner of that run reads this as a property of the boundary and not of the agents. An agent handed a prescribed remedy implements it and cannot find the error in it. An agent that first settles whether the premise holds can. [The evaluation](../../evaluations/the-build-order-as-a-multi-agent-system.md) carries the figures.
+Run 24 measured what the boundary is for. Six of eight slots returned something other than "build as specified". Three rejected part of their own Done-when. One found a pre-existing defect that permanently bricks an output path, reproducible at one run in three with its own change stashed. The owner of that run reads this as a property of the boundary and not of the agents. An agent handed a prescribed remedy implements it and cannot find the error in it. An agent that first settles whether the premise holds can. [The evaluation](../evaluations/the-build-order-as-a-multi-agent-system.md) carries the figures.
 
 The choice is a measured trade. One turn per issue, about 45 per run, against the highest-value output the run produced.
 

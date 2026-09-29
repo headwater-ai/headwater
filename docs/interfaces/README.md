@@ -17,6 +17,7 @@ The headings and the second column are the groups and the summaries that `headwa
 | `gate` | hold an earlier run's read set against the tree in front of it | `headwater gate` | [headwater gate](headwater-gate.md) |
 | `conformance` | evaluate this repository against a package's conformance rules | `headwater conformance` | [headwater conformance](headwater-conformance.md) |
 | `derived` | which files a producer writes, computed rather than listed | `headwater derived` | [headwater derived](headwater-derived.md) |
+| `site` | hold a built site against the corpus it was built from | `headwater site` | [headwater site](headwater-site.md) |
 | `merge-driver` | the merge driver git calls for a derived fold | `headwater merge-driver` | [headwater merge-driver](headwater-merge-driver.md) |
 
 ## Reading a corpus

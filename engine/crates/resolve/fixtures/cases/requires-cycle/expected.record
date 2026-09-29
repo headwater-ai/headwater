@@ -1,0 +1,3 @@
+refused
+
+overlay-1-first.yml `requires` (8:11): the bundles `first` and `second` name each other in `requires` in a cycle, so none of them can apply first. Remove one name from one `requires` list

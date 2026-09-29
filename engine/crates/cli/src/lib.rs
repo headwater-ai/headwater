@@ -530,6 +530,15 @@ pub enum Verb {
     // No flag at all. The verb computes one answer about the tree in front of
     // it, and every input it has is the tree.
     Derived {},
+    // One operand, the directory a site generator wrote. An `Option`, so that
+    // a missing one reaches the verb's own sentence rather than `clap`'s.
+    Site {
+        #[arg(
+            value_name = "site-dir",
+            help = "the directory a site generator wrote, such as MkDocs' `site/`"
+        )]
+        dir: Option<PathBuf>,
+    },
     // The four operands git hands a merge driver, in git's order. Each is an
     // `Option` so that a missing one reaches the verb's own sentence rather
     // than `clap`'s, which is the posture every positional of this parse takes.

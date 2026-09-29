@@ -291,6 +291,7 @@ headwater check       [--strict] [--fix] [--no-cache] [--now <date>] [--change <
 headwater change      <base-rev> <out-dir>
 headwater gate        --read-set <path> [--now <date>] [--json]
 headwater derived
+headwater site        <site-dir>
 headwater merge-driver <ancestor> <current> <other> <path>
 headwater generate    [--check]
 headwater new         <kind> --title <text> [--summary <text>]

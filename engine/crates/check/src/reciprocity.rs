@@ -53,6 +53,12 @@
 //! [spec 12](../../../../docs/spec/12-check-layer.md#fixability) sets: the
 //! missing half is derivable from the half that exists, with no judgment.
 //!
+//! A half that names its own document gets no fix. The far end is then the
+//! same file, and writing the other half there makes a second entry that names
+//! the document itself, which is a second defect and not a remedy. The finding
+//! stays, with the same message and location, and its remediation tells the
+//! author to retarget the entry or delete it (#1335).
+//!
 //! # The scope
 //!
 //! [`EdgeCheck`] is the declaration, and it is the whole of it: one relation
@@ -106,7 +112,8 @@ impl EdgeCheck for Reciprocity<'_> {
     const RULE: &'static str = self::RULE;
     /// See [`crate::placement::Placement::VERSION`].
     /// 2: a lone half written by a document at an initial state passes.
-    const VERSION: u32 = 2;
+    /// 3: a half that names its own document carries no patch.
+    const VERSION: u32 = 3;
 
     fn instantiates(&self, relation: &str) -> bool {
         self.required.iter().any(|known| known.name == relation)
@@ -161,6 +168,30 @@ impl EdgeCheck for Reciprocity<'_> {
             Missing::TheDeclaredHalf => (relation.name.clone(), written.source.id.clone()),
         };
 
+        // A half that names its own document owes its other half to that same
+        // file. Writing it there makes a second self-edge and not a remedy, so
+        // the finding carries no patch and says what the author does instead.
+        // See the module comment.
+        let names_itself = owed_by == written.source.path;
+        let remediation = if names_itself {
+            let also = match relation.family.as_deref() {
+                Some(crate::self_target::EXEMPT_FAMILY) => String::new(),
+                _ => format!(" (`{}` reports it too)", crate::self_target::RULE),
+            };
+            format!(
+                "the entry `{}: {}` names its own document, so retarget it at another document or delete it{also}",
+                written.name, written.raw_target,
+            )
+        } else {
+            format!("add `{name}: {target}` under `relations:` in {owed_by}")
+        };
+        let patch = (!names_itself).then(|| crate::Patch::Half {
+            path: owed_by.clone(),
+            relation: name.clone(),
+            id: target.clone(),
+            attributes: Vec::new(),
+        });
+
         let (line, column) = at(Some(written.span));
         Outcome::failed_with(Finding {
             rule: self::RULE,
@@ -173,17 +204,12 @@ impl EdgeCheck for Reciprocity<'_> {
                 "`{}` declares `{}: {}`, and `{}` requires both ends, so {owed_by} owes `{name}`",
                 written.source.id, written.name, written.raw_target, relation.name,
             ),
-            remediation: format!("add `{name}: {target}` under `relations:` in {owed_by}"),
+            remediation,
             // The patch names the far document, the relation and the target,
             // and no offset. Where the half goes inside that document is the
             // splice's answer, and `headwater_scaffold::write::splice` is the
             // one thing in this engine that gives it.
-            patch: Some(crate::Patch::Half {
-                path: owed_by.clone(),
-                relation: name.clone(),
-                id: target.clone(),
-                attributes: Vec::new(),
-            }),
+            patch,
         })
     }
 }

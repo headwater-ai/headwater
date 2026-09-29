@@ -56,9 +56,9 @@ use headwater_census::census;
 use headwater_census::shelves::Taxonomy;
 use headwater_census::walk::Corpus;
 use headwater_check::{
-    adoption, basis, command, coverage, dependency, endpoint, initial_dependency, outside_root,
-    pin, reciprocity, register, surface, suspect, target, verification, Cache, Context, Date,
-    Declared, Observation, Observations, Outcome, Register, Run, Shape, RULES,
+    adoption, basis, command, coverage, dependency, endpoint, harvest, initial_dependency,
+    outside_root, pin, reciprocity, register, surface, suspect, target, verification, Cache,
+    Context, Date, Declared, Observation, Observations, Outcome, Register, Run, Shape, RULES,
 };
 use headwater_graph::anchors::Resolvers;
 use headwater_graph::declarations::Declarations;
@@ -109,6 +109,12 @@ const UNCOVERED: &[(&str, &str)] = &[
         "the runner reaches it from the vendored package outside any instance, so no cache \
          entry holds its verdict; its cases are unit tests in src/pin.rs and the CLI case in \
          cli/tests/publish.rs",
+    ),
+    (
+        harvest::RULE,
+        "the runner reaches it from the pinned exports the caller read, outside any instance, \
+         so no cache entry holds its verdict; its cases are unit tests in src/harvest.rs and the \
+         CLI cases in cli/tests/harvest.rs",
     ),
     (
         register::DISPOSITION,
@@ -221,6 +227,24 @@ fn recorded() -> Vec<Recorded> {
             full: false,
             inputs: fixtures_dir().join("state-not-set-by-edge"),
         },
+        // The corpus of `relation.target.is_source`: an entry that names its
+        // own document through either half, a control that names another
+        // document, and a self-path that binds to nothing (#1232). Five
+        // `code_path` anchors: two literals onto the declaring file, one of
+        // them spelled in a non-canonical form, which are reported, and a
+        // literal onto another file, a wildcard over the own file and a list
+        // that holds it, which pass (#1350).
+        Recorded {
+            label: "self-target",
+            base: fixtures_dir(),
+            name: "self-target",
+            taxonomy: "self-target.taxonomy.yml",
+            lock: "sha256:self-target-fixture".to_string(),
+            clock: "2026-08-12",
+            observations: Observations::empty(),
+            full: false,
+            inputs: fixtures_dir().join("self-target"),
+        },
         Recorded {
             label: "acceptance-criterion-proven",
             base: fixtures_dir(),
@@ -287,6 +311,7 @@ fn run(recorded: &Recorded) -> Run {
             register: &register,
             observations: &recorded.observations,
             pin: None,
+            harvests: &[],
             adoption: None,
             source: &source,
         },

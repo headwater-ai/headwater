@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-//! The twenty interface contracts that hand-state `--no-color`'s meaning,
+//! The twenty-one interface contracts that hand-state `--no-color`'s meaning,
 //! held against the one sentence `headwater-help.md` and `NO_COLOR_TEXT`
 //! already carry.
 //!
@@ -71,7 +71,8 @@ use std::path::{Path, PathBuf};
 /// document change to join: its row already restated the sentence and nothing
 /// read it. `headwater-show` joined at birth, at #740: its standard output is
 /// a document's own bytes and never painted, and its refusal on standard
-/// error is painted the way `explain`'s is.
+/// error is painted the way `explain`'s is. `headwater-site` joined at birth,
+/// at #978: its report paints nothing, and its row says so.
 ///
 /// Two documents that carry a `--no-color` row are absent on purpose.
 /// `headwater-help.md` is the one this file reads the expectation out of, so
@@ -81,7 +82,7 @@ use std::path::{Path, PathBuf};
 /// senses a terminal would be a promise the binary must not keep. An absence
 /// here is a claim about a document rather than an oversight, which is why both
 /// are named.
-const REMAINING: [&str; 20] = [
+const REMAINING: [&str; 21] = [
     "headwater-capture",
     "headwater-check",
     "headwater-completions",
@@ -100,11 +101,12 @@ const REMAINING: [&str; 20] = [
     "headwater-query",
     "headwater-route",
     "headwater-show",
+    "headwater-site",
     "headwater-sweep",
     "headwater-taxonomy",
 ];
 
-/// Two of the twenty, `headwater-probe` and `headwater-query`, name the
+/// Two of the twenty-one, `headwater-probe` and `headwater-query`, name the
 /// global flags in one prose sentence rather than in an Options table row —
 /// see each document's own Options section. A row-shaped assertion over them
 /// would fail on a document that was never wrong about the flag, so this file
@@ -193,7 +195,7 @@ fn no_document_still_claims_no_run_of_this_binary_ever_writes_color() {
     );
 }
 
-/// Every one of the twenty gains a `--no-banner` mention: a row beside
+/// Every one of the twenty-one gains a `--no-banner` mention: a row beside
 /// `--no-color`'s for the eighteen documents that carry an Options table row,
 /// and a place in the prose list of global flags for the two that do not.
 #[test]

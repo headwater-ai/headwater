@@ -544,6 +544,64 @@ is not what reaches the corpus"
         fi
     fi
 
+    printf '\n# the status probe, against the route and the recorder it meets\n'
+
+    # The status of a settled decision in its pull request (#1294). Route on
+    # the probe's own task, in a tree without the probe shelves that every arm
+    # removes, offers the decision that rules it at the default budget. The
+    # task is read out of the probe the way `tools/probe/campaign.sh` reads it,
+    # so a reworded task is the task this case routes. The path is matched as
+    # an offered pointer, at the start of a line, and not as a word in the
+    # summary of some other document.
+    name='route on the status probe offers the ruling at the default budget'
+    status_probe="$root/docs/probes/a-session-names-the-status-a-settled-decision-carries-in-its-pull-request.md"
+    status_task=$(awk '/^## Task$/ { on = 1; next } on && /^## / { exit } on { print }' "$status_probe")
+    mkdir -p "$scratch/arm"
+    cp -r "$root/docs" "$scratch/arm/docs"
+    cp -r "$root/.headwater" "$scratch/arm/.headwater"
+    rm -rf "$scratch/arm/docs/probes" "$scratch/arm/docs/probe-runs" \
+        "$scratch/arm/docs/probe-results" "$scratch/arm/.headwater/export.json"
+    routed=$("$engine" route --root "$scratch/arm" "$status_task" 2>/dev/null)
+    got=$?
+    if [ "$got" -ne 0 ]; then
+        fail "$name" "route exited $got"
+    elif printf '%s\n' "$routed" | grep -q '^  docs/decisions/0052-a-document-is-proposed-at-the-state-it-will-hold-and-the-merge-activates-it\.md '; then
+        pass "$name"
+    else
+        fail "$name" "route offered no pointer to HW-DR-0052:
+$routed"
+    fi
+
+    # The same probe, answered from a prior alone. On 2026-09-28 the two absent
+    # arms answered the value `current` in 30 of 30 and 28 of 30 sessions,
+    # none of them with a tool call, so a closed set
+    # that the value alone satisfies measured the model and not the documents.
+    # The set the plan prints must record the bare value as no answer, and the
+    # value with the ruling's identifier as that line.
+    name='the status probe records the value alone as no answer, and the value with the ruling as itself'
+    status_answers=$("$engine" probe plan --root "$root" --tier documentation \
+        --category sufficiency --repetitions 1 2>/dev/null \
+        | awk '/^- HW-PROBE-a-session-names-the-status-a-settled-decision/ { on = 1; next }
+               /^- / { on = 0 }
+               on && /^    answers: / { sub(/^    answers: /, ""); print; exit }')
+    printf '%s\n' '{"type":"result","result":"current"}' > "$scratch/bare.jsonl"
+    printf '%s\n' '{"type":"result","result":"current HW-DR-0052"}' > "$scratch/ruled.jsonl"
+    bare=$(sh "$root/tools/probe/probe-record.sh" --answer-only "$scratch/bare.jsonl" --answers "$status_answers")
+    ruled=$(sh "$root/tools/probe/probe-record.sh" --answer-only "$scratch/ruled.jsonl" --answers "$status_answers")
+    if [ -z "$status_answers" ]; then
+        fail "$name" 'the plan printed no answers for the status probe'
+    elif ! printf '%s' "$status_task" | grep -qF 'the identifier in its `id` field'; then
+        # A set that wants the identifier, under a task that never asks for
+        # one, fails every session whatever the documents say.
+        fail "$name" 'the task no longer asks for the identifier that the answer set requires'
+    elif [ -n "$bare" ]; then
+        fail "$name" "the bare value is recorded as \`$bare\` against the set \`$status_answers\`"
+    elif [ "$ruled" != 'current HW-DR-0052' ]; then
+        fail "$name" "the value with the ruling is recorded as \`$ruled\` against the set \`$status_answers\`"
+    else
+        pass "$name"
+    fi
+
     printf '\n# headwater-orient, against the two verbs it sends an agent to\n'
 
     # `explain` is offered as the thing that answers without reading the
@@ -574,6 +632,48 @@ $out" ;;
         'It reports honestly when nothing matched.' \
         0 'no declared purpose answers this task' \
         "$engine" route zzzqqqwww --root "$root"
+
+    printf '\n# headwater-authoring, its description against the ruling it cites\n'
+
+    # The status of a settled decision in its pull request (#1294). A skill
+    # reaches a session through its description, which is always loaded, and
+    # the body loads only once a session invokes the skill. So the ruling is
+    # stated in the description, and the identifier it cites is the ruling.
+    #
+    # Every read is of the `description` key of the front matter alone:
+    # `claim` searches the whole file, and the body already states the ruling,
+    # so a sentence moved into the body would pass it. The front matter is the
+    # block between the first two `---` lines, and its first `description:`
+    # key is the one a harness loads. Leading blanks and a YAML quote are
+    # stripped, as YAML strips them, before the test for Draft.
+    #
+    # The sentence is matched whole, from its subject to the identifier, and
+    # after a sentence boundary, so a changed subject or an inserted `never`
+    # fails it. The identifier is the one inside the sentence, and the ruling
+    # is the first line `explain` prints, which is the path the identifier
+    # resolves to. A match anywhere in the output passes any decision whose
+    # edges reach 0052.
+    name='the authoring description states the status ruling and does not open with Draft'
+    description=$(awk 'NR == 1 && $0 == "---" { on = 1; next }
+                       on && $0 == "---" { exit }
+                       on && /^description:/ { sub(/^description:[ \t]*/, ""); sub(/^["'\'']/, ""); print; exit }' \
+        "$skills/headwater-authoring/SKILL.md")
+    sentence='. A settled document goes into its pull request at `status: current`, not `draft` ('
+    ruling='docs/decisions/0052-a-document-is-proposed-at-the-state-it-will-hold-and-the-merge-activates-it.md'
+    case $description in
+        [Dd][Rr][Aa][Ff][Tt]*)
+            fail "$name" "the description opens with Draft: $description" ;;
+        *"$sentence"*)
+            cited=${description#*"$sentence"}
+            cited=${cited%%)*}
+            resolved=$("$engine" explain "$cited" --root "$root" 2>/dev/null | head -n 1)
+            if [ "$resolved" = "$ruling" ]; then
+                pass "$name"
+            else
+                fail "$name" "the description cites \`$cited\`, which resolves to \`$resolved\` and not to $ruling"
+            fi ;;
+        *) fail "$name" "the description no longer says: $sentence<the ruling>): $description" ;;
+    esac
 
     printf '\n# headwater-maintainer, against the hook it invokes\n'
 

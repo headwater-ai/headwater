@@ -62,11 +62,9 @@ Then `HW_CARGO_SLOT=integrate HEADWATER_BLESS=1 sh tools/hw-cargo test --workspa
 
 **Write one ledger line for each pull request you handed the queue.** `sh tools/run/run-dir.sh log <run> '<json>'` with `iter`, `issue`, `pr`, `merge`, `verdict`, `proved` (what verification proved, never what the build claimed), `opened` and `closed`. `opened` and `closed` are arrays of issue numbers, `[]` when there are none, and never counts. The tool refuses a missing key and a stored total, because totals are derived by whoever reads the log and never stored ([HW-PD-0005](../../docs/process/decisions/0005-the-ledger-is-split-its-tabular-parts-are-jsonl-and-its-totals-are-derived.md)).
 
-**Wait by blocking.** CI on the tip of `main` after the last merge is one blocking wait, never a check per turn, through `tools/run/wait-for.sh`, run in the foreground with a Bash `timeout` of `300000` and re-issued on a `RE-ISSUE` exit rather than left running past the cache lifetime ([HW-PD-0007](../../docs/process/decisions/0007-a-background-wait-caps-below-the-cache-lifetime-and-re-issues-itself.md)):
+**Do not wait for CI on `main` after your merges.** The queue already ran CI on the tree each squash commit lands, and in run `20260928-1109` the wait on the tip of `main` held the integrator slot for about half of each 40-minute batch. Report when the write-back is done.
 
-    sh tools/run/wait-for.sh 'sh tools/run/ci-done.sh <sha>'
-
-It ends on `green` or on `red` with the failing checks named. A red `main` is the first line of `LEFT`, for the next iteration's branch to fix before its own work.
+**Read CI on `main` once, before your first enqueue.** Run `sh tools/run/ci-done.sh <sha>` once on the tip of `origin/main`, with no `wait-for.sh`. It reads the commit the previous integrator left. A `red` line is the first line of `LEFT`, for the next iteration's branch to fix before its own work. An exit 1 means CI there has not finished: say so in `LEFT` with the sha, and go on, because the next integrator reads it again.
 
 ## What you never do
 

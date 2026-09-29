@@ -264,6 +264,61 @@ fn show_refuses_a_symlink_and_prints_nothing_of_its_target() {
     );
 }
 
+/// The same row, asked of `explain`. The census never read the link, so it
+/// knows no kind and nothing required of it, and `explain` refuses the row
+/// rather than answering as for a document (#1366). `--json` writes nothing.
+#[cfg(unix)]
+#[test]
+fn explain_refuses_a_symlink_row_and_prints_nothing() {
+    let root = Root::new("explain-symlink");
+    let outside = root.at.with_extension("outside");
+    std::fs::write(&outside, b"a secret outside the root\n").expect("the target writes");
+    let path = "docs/decisions/9998-link.md";
+    std::os::unix::fs::symlink(&outside, root.at.join(path)).expect("the link is made");
+
+    for args in [&["explain", path][..], &["explain", path, "--json"]] {
+        let explained = root.run(args);
+        let stderr = String::from_utf8_lossy(&explained.stderr)
+            .split_whitespace()
+            .collect::<Vec<_>>()
+            .join(" ");
+        assert_eq!(
+            explained.status.code(),
+            Some(1),
+            "{args:?} refuses a symlink row: {stderr}"
+        );
+        assert!(
+            explained.stdout.is_empty(),
+            "{args:?} prints nothing of a symlink row: {:?}",
+            String::from_utf8_lossy(&explained.stdout)
+        );
+        assert!(
+            stderr.contains("is a symlink to") && stderr.contains("so `explain` prints nothing"),
+            "{args:?} names the row and why: {stderr}"
+        );
+    }
+    let _ = std::fs::remove_file(&outside);
+
+    // The control: an untyped document the walk did read still answers, as
+    // `docs/interfaces/headwater-explain.md` promises it an explanation.
+    let untyped = "docs/decisions/9997-untyped.md";
+    std::fs::write(root.at.join(untyped), "# No front matter\n").expect("the file writes");
+    for args in [&["explain", untyped][..], &["explain", untyped, "--json"]] {
+        let explained = root.run(args);
+        assert_eq!(
+            explained.status.code(),
+            Some(0),
+            "{args:?} explains an untyped document: {}",
+            String::from_utf8_lossy(&explained.stderr)
+        );
+        assert!(
+            String::from_utf8_lossy(&explained.stdout).contains(untyped),
+            "{args:?} names the untyped document: {:?}",
+            String::from_utf8_lossy(&explained.stdout)
+        );
+    }
+}
+
 /// A bare `show` names what it takes, in the shape a bare `explain` does.
 #[test]
 fn a_bare_show_names_what_it_takes() {
@@ -414,12 +469,26 @@ fn every_path_route_refuses_a_path_outside_the_repository_in_one_sentence() {
     std::fs::write(elsewhere.join("x.md"), b"a file outside the root\n")
         .expect("the outside file writes");
     std::os::unix::fs::symlink(&elsewhere, root.at.join("escape")).expect("the link is made");
+    // #1367: a link that dangles out of the root leads out of it as well,
+    // typed under the root and typed through a link outside it into `docs`.
+    let nowhere = root.at.with_extension("nowhere");
+    let links = root.at.with_extension("o");
+    let _ = std::fs::remove_dir_all(&nowhere);
+    let _ = std::fs::remove_dir_all(&links);
+    std::fs::create_dir_all(&links).expect("the links directory is made");
+    std::os::unix::fs::symlink(nowhere.join("dir"), root.at.join("docs/dang"))
+        .expect("the dangling link is made");
+    std::os::unix::fs::symlink(root.at.join("docs"), links.join("Docs"))
+        .expect("the link into the root is made");
+    let through = links.join("Docs/dang/new.md").display().to_string();
 
     let targets = [
         "escape/x.md",
         "./escape/x.md",
         "/etc/passwd",
         "../outside.md",
+        "docs/dang/new.md",
+        through.as_str(),
     ];
     let mut failures: Vec<String> = Vec::new();
     for target in targets {
@@ -490,6 +559,7 @@ fn every_path_route_refuses_a_path_outside_the_repository_in_one_sentence() {
         }
     }
     let _ = std::fs::remove_dir_all(&elsewhere);
+    let _ = std::fs::remove_dir_all(&links);
     assert!(
         failures.is_empty(),
         "each route refuses in the one sentence:\n{}",
@@ -575,4 +645,177 @@ fn an_absolute_target_finds_its_document_under_a_root_reached_through_a_symlink(
         String::from_utf8_lossy(&shown.stderr)
     );
     assert!(shown.stdout == document(), "the bytes on disk");
+}
+
+/// An absolute path through a link that sits outside the root and leads into
+/// a directory under it names the document there, with the file on disk and
+/// without one. No leading part of the path is the root, so the part that
+/// exists is made canonical and the rest is joined back on.
+#[cfg(unix)]
+#[test]
+fn an_absolute_path_through_a_link_into_the_root_finds_its_document() {
+    let root = Root::new("link-into");
+    let link = root.at.with_file_name(format!(
+        "{}-decisions",
+        root.at
+            .file_name()
+            .expect("the root has a name")
+            .to_string_lossy()
+    ));
+    let _ = std::fs::remove_file(&link);
+    std::os::unix::fs::symlink(root.at.join("docs/decisions"), &link).expect("the link is made");
+    let present = Path::new(DOCUMENT)
+        .file_name()
+        .expect("the document has a name");
+    let target = link.join(present).display().to_string();
+    let shown = root.run(&["show", &target]);
+    let missing = link.join("0002-not-written.md").display().to_string();
+    let refused = root.run(&["explain", &missing]);
+    let _ = std::fs::remove_file(&link);
+    assert_eq!(
+        shown.status.code(),
+        Some(0),
+        "`show {target}`: {}",
+        String::from_utf8_lossy(&shown.stderr)
+    );
+    assert!(shown.stdout == document(), "the bytes on disk");
+    let stderr = String::from_utf8_lossy(&refused.stderr);
+    assert_eq!(refused.status.code(), Some(1), "{stderr}");
+    assert!(
+        stderr.contains("is a path of this corpus, with no document written there yet"),
+        "`explain {missing}` through a link into the root: {stderr}"
+    );
+}
+
+/// The same link into the root, under a `--root` given through a symlink and
+/// under `--root ..` from a directory below the root. Neither spelling of the
+/// root is its canonical path, and only the canonical path is a prefix of the
+/// target once the link in it is followed.
+#[cfg(unix)]
+#[test]
+fn a_link_into_the_root_finds_its_document_under_a_linked_or_relative_root() {
+    let root = Root::new("link-into-roots");
+    let name = root
+        .at
+        .file_name()
+        .expect("the root has a name")
+        .to_string_lossy()
+        .to_string();
+    let into = root.at.with_file_name(format!("{name}-decisions"));
+    let via = root.at.with_file_name(format!("{name}-via"));
+    let _ = std::fs::remove_file(&into);
+    let _ = std::fs::remove_file(&via);
+    std::os::unix::fs::symlink(root.at.join("docs/decisions"), &into).expect("the link in");
+    std::os::unix::fs::symlink(&root.at, &via).expect("the linked root");
+    let present = Path::new(DOCUMENT)
+        .file_name()
+        .expect("the document has a name");
+    let target = into.join(present).display().to_string();
+    let missing = into.join("0002-not-written.md").display().to_string();
+    let under_link = |verb: &str, path: &str| {
+        Command::new(env!("CARGO_BIN_EXE_headwater"))
+            .args([verb, path, "--root"])
+            .arg(&via)
+            .output()
+            .expect("the binary runs")
+    };
+    let under_parent = |verb: &str, path: &str| {
+        Command::new(env!("CARGO_BIN_EXE_headwater"))
+            .args([verb, path, "--root", ".."])
+            .current_dir(root.at.join("docs"))
+            .output()
+            .expect("the binary runs")
+    };
+    let shown = [
+        ("--root <link>", under_link("show", &target)),
+        ("--root ..", under_parent("show", &target)),
+    ];
+    let refused = [
+        ("--root <link>", under_link("explain", &missing)),
+        ("--root ..", under_parent("explain", &missing)),
+    ];
+    let _ = std::fs::remove_file(&into);
+    let _ = std::fs::remove_file(&via);
+    for (how, shown) in &shown {
+        assert_eq!(
+            shown.status.code(),
+            Some(0),
+            "`show {target}` with {how}: {}",
+            String::from_utf8_lossy(&shown.stderr)
+        );
+        assert!(shown.stdout == document(), "the bytes on disk, with {how}");
+    }
+    for (how, refused) in &refused {
+        let stderr = String::from_utf8_lossy(&refused.stderr);
+        assert_eq!(refused.status.code(), Some(1), "with {how}: {stderr}");
+        assert!(
+            stderr.contains("is a path of this corpus, with no document written there yet"),
+            "`explain {missing}` with {how}: {stderr}"
+        );
+    }
+}
+
+/// An absolute path that leaves the root with `..` and comes back in names
+/// the document under it, as `a/../x` names `x`. Its leading parts name the
+/// root twice, and only the longer of the two leaves the rest of the path
+/// inside the root.
+#[test]
+fn an_absolute_path_that_leaves_the_root_and_comes_back_finds_its_document() {
+    let root = Root::new("back-in");
+    let name = root.at.file_name().expect("the root has a name");
+    let target = root
+        .at
+        .join("..")
+        .join(name)
+        .join(DOCUMENT)
+        .display()
+        .to_string();
+    let shown = root.run(&["show", &target]);
+    assert_eq!(
+        shown.status.code(),
+        Some(0),
+        "`show {target}`: {}",
+        String::from_utf8_lossy(&shown.stderr)
+    );
+    assert!(shown.stdout == document(), "the bytes on disk");
+}
+
+/// An absolute path with no file behind it, typed through a symlink to the
+/// root, from a shell whose working directory is that symlink, under
+/// `--root .` ([#1334](https://github.com/headwater-ai/headwater/issues/1334)).
+/// The process reads its working directory as the physical path, so the
+/// target as typed shares no prefix with the root, and no file exists to make
+/// canonical. Every macOS temporary directory is reached this way, through
+/// `/var -> /private/var`, so this test makes its own link and does not
+/// depend on the host's `TMPDIR`.
+#[cfg(unix)]
+#[test]
+fn an_absolute_path_with_no_file_typed_through_a_linked_root_is_a_path_of_this_corpus() {
+    let root = Root::new("linked-missing");
+    let link = root.at.with_file_name(format!(
+        "{}-link",
+        root.at
+            .file_name()
+            .expect("the root has a name")
+            .to_string_lossy()
+    ));
+    let _ = std::fs::remove_file(&link);
+    std::os::unix::fs::symlink(&root.at, &link).expect("the link is made");
+    let target = link
+        .join("docs/decisions/0002-not-written.md")
+        .display()
+        .to_string();
+    let refused = Command::new(env!("CARGO_BIN_EXE_headwater"))
+        .args(["explain", &target, "--root", "."])
+        .current_dir(&link)
+        .output()
+        .expect("the binary runs");
+    let _ = std::fs::remove_file(&link);
+    let stderr = String::from_utf8_lossy(&refused.stderr);
+    assert_eq!(refused.status.code(), Some(1), "{stderr}");
+    assert!(refused.stdout.is_empty(), "nothing on stdout: {stderr}");
+    assert!(
+        stderr.contains("is a path of this corpus, with no document written there yet"),
+        "`explain {target}` through a linked root reads as a corpus path: {stderr}"
+    );
 }

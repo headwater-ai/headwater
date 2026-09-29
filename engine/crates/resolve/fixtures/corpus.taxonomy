@@ -1,5 +1,5 @@
 taxonomy: headwater/standard
-version: 4.11.0
+version: 4.12.0
 purposes:
   rationale:
     intent: "explain why a choice was made and what it forecloses"
@@ -536,6 +536,17 @@ kinds:
         - Decision
         - Consequences
     voice: declarative
+  process_evaluation:
+    facets:
+      require:
+        - title
+    identifier:
+      scheme: evaluation_id
+    is_a: governed_document
+    language: ste_house
+    lifecycle: standard
+    purpose: evidence
+    voice: narrative
   process_explanation:
     facets:
       require:
@@ -551,6 +562,34 @@ kinds:
         - Scope
         - "How it works"
         - "Why it is this way"
+    voice: declarative
+  process_obligation:
+    facets:
+      require:
+        - title
+        - waiting_on
+    identifier:
+      scheme: obligation_record_id
+    is_a: governed_document
+    language: ste_house
+    lifecycle: obligation
+    purpose: obligation
+    sections:
+      require:
+        - Context
+        - Obligation
+        - Discharge
+    voice: declarative
+  process_spec:
+    facets:
+      require:
+        - title
+    identifier:
+      scheme: spec_id
+    is_a: governed_document
+    language: ste_house
+    lifecycle: standard
+    purpose: behavior
     voice: declarative
   requirement:
     facets:
@@ -886,11 +925,27 @@ shelves:
     layout: "{seq:04d}-{slug}.md"
     path: "docs/process/decisions/**"
     title: "Process decisions"
+  process_evaluations:
+    homogeneous: true
+    kind: process_evaluation
+    path: "docs/process/evaluations/**"
+    title: "Process evaluations"
   process_explanations:
     homogeneous: true
     kind: process_explanation
     path: "docs/process/explanations/**"
     title: "Process explanations"
+  process_obligations:
+    homogeneous: true
+    kind: process_obligation
+    layout: "{seq:04d}-{slug}.md"
+    path: "docs/process/obligations/**"
+    title: "Process obligation records"
+  process_specs:
+    homogeneous: true
+    kind: process_spec
+    path: "docs/process/specs/**"
+    title: "Process specifications"
   requirements:
     homogeneous: true
     kind: requirement
@@ -1038,6 +1093,9 @@ projections:
       - tutorials
       - how_to
       - process_decisions
+      - process_specs
+      - process_evaluations
+      - process_obligations
       - explanations
       - process_explanations
       - subsystems
@@ -1128,6 +1186,12 @@ obligations:
   OB-REL-6:
     statement: "An edge whose target a resolver states a revision for names that target at the revision the edge was verified against"
     rationale: "An upstream item moves under an edge that nobody touched, so the corpus keeps asserting a claim that was checked against a state the far end has left. The pin says the snapshot advanced and says nothing about which document now carries a stale claim, and the author who could re-verify the edge is the one person the advance never reaches"
+    class: cohesion
+    prevents: content.inconsistent
+    severity: medium
+  OB-REL-7:
+    statement: "No relation instance outside the association family names the document that declares it as its target"
+    rationale: "Spec 2 keeps self-reference invalid in every family except association. An edge from a document to itself asserts nothing, as a document that draws on, governs, constrains or traces to itself does, or it asserts a contradiction, as a document that supersedes itself does. The target resolved and both kinds are admitted, so no other rule reports it, and the graph keeps an edge whose two ends are one node"
     class: cohesion
     prevents: content.inconsistent
     severity: medium
@@ -1423,6 +1487,18 @@ controls:
         window: "one release of the taxonomy over an adopting corpus"
         threshold: "no false positive, because the rule compares two values the corpus already holds and reports nothing where either one is absent"
         sample: "every finding of one run over the adopting corpus, adjudicated once"
+  CT-REL-7:
+    mechanism: "check:relation.target.is_source"
+    discharges:
+      - OB-REL-7
+    trigger: pull_request
+    posture: advisory
+    acts: detective
+    promotion:
+      criteria:
+        window: "one release of the taxonomy over an adopting corpus"
+        threshold: "no false positive, because the rule compares two paths the graph build already resolved rather than deriving a second answer of its own"
+        sample: "every finding of one run over the adopting corpus, adjudicated once"
   CT-ID-2:
     mechanism: "check:identifier.unusable"
     discharges:
@@ -1655,6 +1731,7 @@ surface:
     - "docs/tutorials/*.md"
     - docs/how-to/relocate-a-shelf.md
     - docs/how-to/wire-headwater-check-into-your-own-workflow.md
+    - docs/how-to/publish-your-corpus-as-a-site.md
   archive:
     - headwater
     - LICENSE
@@ -1672,6 +1749,12 @@ surface:
     - rm
     - wc
     - xargs
+    - python3
+    - mkdocs
+    - apt-get
+    - sudo
+    - install
+    - tee
   companions:
     - "headwater probe"
     - "headwater neighbors"

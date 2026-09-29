@@ -26,7 +26,8 @@ The report is the four lines, and then the block:
     BRANCH: <name>
     PR: #<number>
     FIXTURE: failed at <commit>, passes at <commit>
-    CI: <run id> green at <sha>
+    PUSHED: <sha>
+    EXPLORE: <number of hw-explore dispatches> for <number of code searches outside the map>
 
 ## How you work
 
@@ -36,7 +37,7 @@ The report is the four lines, and then the block:
 
 Your tree and branch stay after the run, for the owner to clean up. Leave the tree with nothing uncommitted.
 
-**Start from the code map, and send a search to `hw-explore`.** The adjudication note maps the files and line ranges the change touches; open those ranges. When finding anything the map does not name would take more than two searches, dispatch `hw-explore` with the question and open only the ranges its map returns. Its search stays in its own context, on a cheaper model, and in the runs to 2026-09-25 searching and reading code was three quarters of what a build carried from turn to turn.
+**Start from the code map, and send a search to `hw-explore`.** The adjudication note maps the files and line ranges the change touches; open those ranges. A search is a `grep`, `rg`, `find`, `ls`, `Glob` or `Grep` call, or a read of a range the map does not name. Count them. Your third search for one question is not a search: it is a dispatch of `hw-explore` with that question, and you open only the ranges its map returns. Its search stays in its own context, on a cheaper model, and in the runs to 2026-09-25 searching and reading code was three quarters of what a build carried from turn to turn. The rule was advice until 2026-09-29, and in run `2ecbf66e` 32 builders dispatched `hw-explore` zero times, made about 1,450 such calls themselves, and carried a median peak context of 181k tokens. The `EXPLORE:` line of your block states the count, so a builder that skips the dispatch is visible to the agent that reads the report.
 
 **Extend the contract first.** Where the note names a contract, a decision clause or a case table, add the new case as the contract states it, run the suite, and confirm it fails for the change's own reason before you write the implementation. Where nothing like that exists, build normally and add fixtures beside the code.
 
@@ -50,15 +51,13 @@ Your tree and branch stay after the run, for the owner to clean up. Leave the tr
 
 **Then dispatch `headwater-maintainer` over your branch, before you open the pull request.** Run it after the rebase, the rebuild, `headwater generate` and the workspace suite, so that it reads the tree you will push, and dispatch it without `isolation`, so that it works in your tree. Name the absolute path of your tree and the base `origin/main`, and it diffs `origin/main...HEAD`. The engine is already built there, so it runs that binary and builds nothing. If it must build, it sets `HW_CARGO_SLOT=maintainer-<N>` for your issue, because builders run in parallel and one shared `maintainer` slot is the target-directory race the run policy records for `verify`. It then removes that target directory and its `.root` file under `~/.cache/headwater/cargo-pool/` when it reports, as a verifier does, because each one is 10-13 GB. Paste its **Stale** and **Owed** parts verbatim into `build.md` and into the pull request body, under the heading `## Upkeep (headwater-maintainer)` in both. You accept nothing from it: it proposes and the parent rules. Fix a Stale sentence that your own change made false, inside the issue's scope, and write every other line to intake, one line each, as the run policy says.
 
-**After you open it, wait for CI once**, on the commit you pushed, run in the foreground with a Bash `timeout` of `300000` and re-issued on a `RE-ISSUE` exit:
+**Before you push, run the format gate yourself**: `sh tools/hw-cargo fmt --manifest-path engine/Cargo.toml --all -- --check`, and re-bless every recorded fixture the change moved. Seven of ten vetoes in one run were a Format, Lint or unblessed-fixture failure. Clippy stays CI's gate, as the run policy says.
 
-    sh tools/run/wait-for.sh "sh tools/run/ci-done.sh $(git rev-parse HEAD)"
-
-Its last line is `green` or `red` with the failing checks named, and the `run <id>` lines above it are the id your report's `CI:` line wants. Then repair a Format, Lint or unblessed-fixture failure yourself before you report. Seven of ten vetoes in one run were exactly those. A red CI you cannot repair is the first line of your report, not a pull request handed on.
+**Report when the pull request is open, and do not wait for CI.** The verifier waits for CI on the commit you pushed, as its last step, and a red CI comes back to you as a `FAIL` with the failing checks named. In run `20260928-1109` the builder's wait for CI took a median 12 minutes on each of 99 pushes, and a verify takes longer than CI, so the wait now runs under the verify.
 
 **A `waits-on` line in your dispatch is the integrator's to honor, not yours to build around.** Build against `origin/main` as it stands; the integrator enqueues the awaited change first and yours after it. Do not rebase onto another agent's unmerged branch.
 
-**When you are resumed after a veto, your report goes into the note.** A resumed agent has already handed back once, and a second hand-back does not reach the agent that dispatched you: #1038's answer to its veto in run `20260923-0733` arrived only as the last text of a transcript. Append your answer to `build.md` under a heading `## Follow-up <date>`: what you changed for the finding, the commits, the fixture that now fails without your fix, the mutation table for the new fix, and the CI run. End your turn with the same four lines and the block. That agent reads the heading.
+**When you are resumed after a veto, your report goes into the note.** A resumed agent has already handed back once, and a second hand-back does not reach the agent that dispatched you: #1038's answer to its veto in run `20260923-0733` arrived only as the last text of a transcript. Append your answer to `build.md` under a heading `## Follow-up <date>`: what you changed for the finding, the commits, the fixture that now fails without your fix, the mutation table for the new fix, and the commit you pushed. End your turn with the same four lines and the block. That agent reads the heading.
 
 **Commit and push in small steps.** `git push -u origin <branch>`, never a bare push. Only pushed commits survive an agent death.
 

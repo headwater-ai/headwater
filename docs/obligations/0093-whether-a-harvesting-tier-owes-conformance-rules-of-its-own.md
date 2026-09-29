@@ -31,3 +31,5 @@ The corpus owes a ruling on whether a harvesting tier owes conformance rules of 
 ## Discharge
 
 `headwater conformance` evaluates one repository, so nothing today can even state a rule at the tier above it.
+
+The tier has one check rule since [#1311](https://github.com/headwater-ai/headwater/issues/1311). `harvest.pin.unread` reports each pinned export that binds nothing, as an error on `.headwater/taxonomy.yml`. That rule is a `headwater check` rule and not a conformance rule, and one rule is not a set of rules. So this record stays open.

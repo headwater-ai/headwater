@@ -181,12 +181,27 @@ pub fn relative(base: &Path, path: &Path) -> Option<String> {
 ///
 /// [`relative`] does the reading, and this adds the root an absolute target is
 /// compared with. A root such as `.` is relative, so an absolute target is
-/// stripped against the root made absolute first. Where that misses, both
-/// sides are made canonical and compared again, so a target typed through a
-/// symlinked directory (a home directory, a temporary directory) still finds a
-/// root reached the other way. That second read needs a file on disk, and a
-/// target with none keeps the first answer. A relative target is read against
-/// `root` and never against the working directory of the process.
+/// stripped against the root made absolute first. Where that misses, the
+/// leading parts of the target that exist on disk are made canonical, and each
+/// one that is the canonical root can stand for the root. So a target typed
+/// through a symlinked directory (a home directory, a temporary directory)
+/// still finds a root reached the other way, with or without a file at the
+/// target ([#1334](https://github.com/headwater-ai/headwater/issues/1334)).
+/// The part of the target below that point is read lexically, as the first
+/// read reads it, so a symlink below the root is not followed here, and
+/// [`within`] is the reading that refuses one that leads out. The shortest
+/// such part whose remainder stays under it stands for the root: a path that
+/// leaves the root with `..` and comes back in (`root/../root/x`) names the
+/// root twice, and only the longer of the two keeps `x` inside. Where no
+/// leading part is the root, as for a link outside the root that leads into a
+/// directory under it, the longest leading part that exists is made
+/// canonical, the rest is joined back on, and the result is compared with the
+/// canonical root. That last read answers with or without a file at the
+/// target, and it is the only one that follows a link to a place below the
+/// root. A root that cannot be made canonical, and a target none of these
+/// reads place under the root, keep the first answer. A relative target is
+/// read against `root` and never against the working directory of the
+/// process.
 pub fn typed(root: &Path, target: &str) -> Option<String> {
     let path = Path::new(target);
     if !path.is_absolute() {
@@ -195,7 +210,21 @@ pub fn typed(root: &Path, target: &str) -> Option<String> {
     let absolute_root = std::path::absolute(root).unwrap_or_else(|_| root.to_path_buf());
     relative(&absolute_root, path).or_else(|| {
         let canonical_root = root.canonicalize().ok()?;
-        relative(&canonical_root, &path.canonicalize().ok()?)
+        let roots: Vec<&Path> = path
+            .ancestors()
+            .filter(|at| at.canonicalize().is_ok_and(|at| at == canonical_root))
+            .collect();
+        roots
+            .into_iter()
+            .rev()
+            .find_map(|at| relative(at, path))
+            .or_else(|| {
+                let (at, canonical) = path
+                    .ancestors()
+                    .find_map(|at| at.canonicalize().ok().map(|canonical| (at, canonical)))?;
+                let rest = path.strip_prefix(at).ok()?;
+                relative(&canonical_root, &canonical.join(rest))
+            })
     })
 }
 
@@ -217,10 +246,15 @@ pub fn typed(root: &Path, target: &str) -> Option<String> {
 /// it will be once the walk reads it. A symlink below the corpus root is not
 /// followed, and one that leads out still makes the path outside.
 ///
-/// It reads the filesystem: the longest leading part of the path that exists
-/// is made canonical and compared with the canonical root. A path with no part
-/// on disk below the root, and a root that cannot be made canonical, keep the
-/// lexical answer.
+/// It reads the filesystem: every symlink along the path is followed, one
+/// that dangles as well, and where the path leads is compared with the
+/// canonical root. A link out of the root to a place that does not exist yet
+/// makes the path outside, and a link to a place under the root that does not
+/// exist yet does not
+/// ([#1367](https://github.com/headwater-ai/headwater/issues/1367)). A loop of
+/// links is outside, because it is not a path a reader can read. A path with
+/// no link along it keeps the lexical answer, and so does a root that cannot
+/// be made canonical.
 pub fn within(root: &Path, corpus_root: &str, target: &str) -> Option<String> {
     let relative = typed(root, target)?;
     match escapes(root, corpus_root, &relative) {
@@ -229,10 +263,17 @@ pub fn within(root: &Path, corpus_root: &str, target: &str) -> Option<String> {
     }
 }
 
-/// Whether the longest leading part of `relative` that exists under `root`
-/// resolves, through a symlink, to a place that is neither under `root` nor,
-/// for a path under `corpus_root`, under where the corpus root leads.
-/// `relative` is what [`typed`] returned, so it holds no `..`.
+/// Whether `relative` under `root` resolves, through a symlink, to a place
+/// that is neither under `root` nor, for a path under `corpus_root`, under
+/// where the corpus root leads. `relative` is what [`typed`] returned, so it
+/// holds no `..`.
+///
+/// A symlink that dangles is followed to where it leads, as [`physical`]
+/// follows every link, so a link out of the root to a place not written yet
+/// makes the path outside, and a link to a place under the root not written
+/// yet does not ([#1367](https://github.com/headwater-ai/headwater/issues/1367)).
+/// A path that [`physical`] cannot resolve, a loop of links or a chain longer
+/// than [`LINK_HOPS`], is outside, because it is not a path a reader can read.
 fn escapes(root: &Path, corpus_root: &str, relative: &str) -> bool {
     let Ok(canonical_root) = root.canonicalize() else {
         return false;
@@ -241,18 +282,75 @@ fn escapes(root: &Path, corpus_root: &str, relative: &str) -> bool {
         true => root.join(corpus_root).canonicalize().ok(),
         false => None,
     };
-    let mut at = Path::new(relative);
-    while !at.as_os_str().is_empty() {
-        if let Ok(canonical) = root.join(at).canonicalize() {
-            let inside = canonical.starts_with(&canonical_root)
-                || linked_corpus
-                    .as_ref()
-                    .is_some_and(|corpus| canonical.starts_with(corpus));
-            return !inside;
+    let Ok(start) = std::path::absolute(root.join(relative)) else {
+        return false;
+    };
+    let Some(resolved) = physical(&start) else {
+        return true;
+    };
+    let inside = resolved.starts_with(&canonical_root)
+        || linked_corpus
+            .as_ref()
+            .is_some_and(|corpus| resolved.starts_with(corpus));
+    !inside
+}
+
+/// The most symlinks [`physical`] follows in one path, as `SYMLOOP_MAX` is
+/// on Linux.
+const LINK_HOPS: usize = 40;
+
+/// Where the absolute `path` leads on disk, with every symlink followed,
+/// whether or not anything is at its target. The part that exists is read as
+/// the filesystem reads it, and the rest is joined on by name. A symlink whose
+/// target is missing is followed to that target, and a relative target is
+/// read against the directory that holds the link. `None` for a link that
+/// cannot be read and for more than [`LINK_HOPS`] links, which a loop is.
+/// A `..` climbs the directory the path has reached, which is on disk, until
+/// a part is missing, and then it takes that part back off by name.
+fn physical(path: &Path) -> Option<PathBuf> {
+    use std::path::Component;
+
+    let mut pending: Vec<std::ffi::OsString> = Vec::new();
+    let mut at = PathBuf::new();
+    let mut hops = 0;
+    let mut queue: std::collections::VecDeque<PathBuf> = path
+        .components()
+        .map(|part| PathBuf::from(part.as_os_str()))
+        .collect();
+    while let Some(part) = queue.pop_front() {
+        match part.components().next() {
+            Some(Component::Prefix(_) | Component::RootDir) => at.push(part),
+            Some(Component::CurDir) | None => {}
+            Some(Component::ParentDir) => match pending.pop() {
+                Some(_) => {}
+                None => {
+                    at.pop();
+                }
+            },
+            Some(Component::Normal(name)) => {
+                if !pending.is_empty() {
+                    pending.push(name.to_os_string());
+                    continue;
+                }
+                let next = at.join(name);
+                match std::fs::symlink_metadata(&next) {
+                    Ok(meta) if meta.file_type().is_symlink() => {
+                        hops += 1;
+                        if hops > LINK_HOPS {
+                            return None;
+                        }
+                        let target = std::fs::read_link(&next).ok()?;
+                        for part in target.components().rev() {
+                            queue.push_front(PathBuf::from(part.as_os_str()));
+                        }
+                    }
+                    Ok(_) => at = next,
+                    Err(_) => pending.push(name.to_os_string()),
+                }
+            }
         }
-        at = at.parent().unwrap_or(Path::new(""));
     }
-    false
+    Some(pending.into_iter().fold(at, |at, name| at.join(name)))
 }
 
 /// Where a path falls in a corpus, decided by name alone — the closed set
@@ -285,16 +383,18 @@ pub struct Entry {
 /// What the walk found, as a closed set.
 #[derive(Clone, Debug)]
 pub enum EntryKind {
+    /// A regular file.
     File,
+    /// A named pipe, a socket or a device: an entry that is not a regular
+    /// file, a directory or a symlink. Nothing opens one. Opening a named pipe
+    /// that has no writer blocks the process forever, so a census that read a
+    /// pipe at a document path never ended (#1333).
+    Special,
     /// A symlink, and where it pointed, as written.
-    Symlink {
-        target: String,
-    },
+    Symlink { target: String },
     /// A directory the walk could not read, so the files under it are missing
     /// from the count and this entry is the only record of that.
-    UnreadableDirectory {
-        error: String,
-    },
+    UnreadableDirectory { error: String },
     /// A name that is not UTF-8. It cannot be matched against a pattern that is
     /// UTF-8, so it can be neither shelved nor excluded, and the path below is
     /// the lossy form for a person to read.
@@ -394,7 +494,10 @@ fn descend(corpus: &Corpus, directory: &Path, prefix: &str, found: &mut Vec<Entr
             found.push(Entry {
                 path,
                 on_disk,
-                kind: EntryKind::File,
+                kind: match metadata.is_file() {
+                    true => EntryKind::File,
+                    false => EntryKind::Special,
+                },
                 excluded_by,
             });
         }
@@ -443,6 +546,46 @@ mod tests {
                 .any(|e| e.path.contains("link-to-directory/")),
             "the walk descended through a symlink"
         );
+    }
+
+    /// A named pipe and a socket are each an entry of their own kind and not
+    /// a file, so no reader of the walk opens one by mistake (#1333). Opening
+    /// a named pipe that has no writer blocks forever. A socket path must fit
+    /// in 108 bytes, and a temporary directory on a CI runner does not, so
+    /// the root is a short directory under `/tmp`.
+    #[cfg(unix)]
+    #[test]
+    fn a_named_pipe_and_a_socket_are_special_entries_and_not_files() {
+        let at = std::path::PathBuf::from("/tmp").join(format!(
+            "hw-walk-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .expect("a clock later than the epoch")
+                .subsec_nanos()
+        ));
+        std::fs::create_dir_all(at.join("docs")).expect("the root is made");
+        std::fs::write(at.join("docs/a.md"), "# A\n").expect("the file writes");
+        let fifo = std::process::Command::new("mkfifo")
+            .arg(at.join("docs/x.md"))
+            .status()
+            .expect("mkfifo runs");
+        assert!(fifo.success(), "the named pipe is made");
+        let socket = std::os::unix::net::UnixListener::bind(at.join("docs/s.md"))
+            .expect("the socket is bound");
+
+        let entries = walk(&Corpus::new(at.clone(), "docs"));
+        drop(socket);
+        std::fs::remove_dir_all(&at).ok();
+        let kind = |path: &str| {
+            entries
+                .iter()
+                .find(|entry| entry.path == path)
+                .map(|entry| entry.kind.clone())
+        };
+        assert!(matches!(kind("docs/x.md"), Some(EntryKind::Special)));
+        assert!(matches!(kind("docs/s.md"), Some(EntryKind::Special)));
+        assert!(matches!(kind("docs/a.md"), Some(EntryKind::File)));
     }
 
     #[test]
@@ -536,8 +679,26 @@ mod tests {
             .expect("a linked corpus root");
         std::os::unix::fs::symlink(&elsewhere, elsewhere.join("corpus/out"))
             .expect("a link out below the corpus root");
+        // #1367: a link that dangles still leads somewhere. One that leads out
+        // of the root makes the path outside, although nothing is at its
+        // target, and one that leads to a place under the root that is not
+        // written yet keeps the path inside. A loop of links leads nowhere a
+        // reader can read, so it is outside too.
+        std::os::unix::fs::symlink(base.join("nowhere/dir"), root.join("docs/dang"))
+            .expect("a dangling link out");
+        std::os::unix::fs::symlink(root.join("docs/missing-dir"), root.join("docs/stub"))
+            .expect("a dangling link in");
+        std::os::unix::fs::symlink("missing-dir", root.join("docs/near"))
+            .expect("a relative dangling link in");
+        std::os::unix::fs::symlink("dang/deeper", root.join("docs/chain"))
+            .expect("a dangling link through a dangling link out");
+        std::os::unix::fs::symlink("loop", root.join("docs/loop")).expect("a link loop");
+        std::os::unix::fs::symlink("../../nowhere/dir", root.join("docs/up"))
+            .expect("a relative dangling link that climbs out");
+        std::os::unix::fs::symlink("missing/../dang", root.join("docs/hop"))
+            .expect("a link through a missing part back to a dangling link out");
 
-        let cases: [(&str, Option<&str>); 12] = [
+        let cases: [(&str, Option<&str>); 23] = [
             ("linked/shelf/new.md", Some("linked/shelf/new.md")),
             ("./linked/new.md", Some("linked/new.md")),
             ("linked/out/x.md", None),
@@ -550,6 +711,17 @@ mod tests {
             ("docs/never-written.md", Some("docs/never-written.md")),
             ("./", Some("")),
             ("../elsewhere/x.md", None),
+            ("docs/dang/new.md", None),
+            ("docs/dang", None),
+            ("./docs/dang/new.md", None),
+            ("docs/chain/new.md", None),
+            ("docs/loop/new.md", None),
+            ("docs/up/new.md", None),
+            ("docs/hop/new.md", None),
+            ("docs/stub/new.md", Some("docs/stub/new.md")),
+            ("docs/stub", Some("docs/stub")),
+            ("docs/near/new.md", Some("docs/near/new.md")),
+            ("docs/near/dang/new.md", Some("docs/near/dang/new.md")),
         ];
         let answers: Vec<(&str, Option<String>)> = cases
             .iter()
@@ -565,6 +737,133 @@ mod tests {
             .iter()
             .map(|(target, _)| within(&via, "linked", target))
             .collect();
+        // #1334: each case again as an absolute path typed through the link,
+        // against the root reached the other way, as a shell in a macOS
+        // temporary directory types it. Most of these name no file, so the
+        // root has to be found among the leading parts of the path that exist.
+        let absolute: Vec<(String, Option<String>)> = cases
+            .iter()
+            .map(|(target, _)| {
+                let typed_through = via.join(target).display().to_string();
+                let answer = within(&root, "linked", &typed_through);
+                (typed_through, answer)
+            })
+            .collect();
+        // And each case typed through the root itself, against the root
+        // reached by the link. Under the linked corpus root, only the leading
+        // part that is the root reads the path lexically below it, as
+        // `linked` is the one link the walk follows.
+        let physical: Vec<(String, Option<String>)> = cases
+            .iter()
+            .map(|(target, _)| {
+                let typed_through = root.join(target).display().to_string();
+                let answer = within(&via, "linked", &typed_through);
+                (typed_through, answer)
+            })
+            .collect();
+        let back_to_corpus = within(
+            &root,
+            "linked",
+            &root
+                .join("..")
+                .join(root.file_name().expect("the root has a name"))
+                .join("linked/shelf/new.md")
+                .display()
+                .to_string(),
+        );
+        let missing = typed(
+            &root,
+            &via.join("docs/never-written.md").display().to_string(),
+        );
+        // A link below the root back to the root is read as its name, as the
+        // lexical read names it, so the shortest leading part that is the
+        // root stands for it and not the longest.
+        std::os::unix::fs::symlink(&root, root.join("again")).expect("a link back to the root");
+        let again = typed(
+            &root,
+            &via.join("again/never-written.md").display().to_string(),
+        );
+        // A path that climbs out of the root with `..` and comes back in
+        // names the root at more than one leading part, and the shortest one
+        // leaves the rest of the path climbing above it. The first leading
+        // part, from the shortest up, that the rest stays under is the root.
+        // A link outside the root that leads into a directory under it names
+        // no leading part that is the root, so the longest leading part that
+        // exists is made canonical and the rest is joined back on, with a
+        // file at the target or without one.
+        let links = base.join("links");
+        std::fs::create_dir_all(&links).expect("the links directory");
+        std::os::unix::fs::symlink(root.join("docs"), links.join("into")).expect("a link in");
+        std::fs::write(root.join("docs/present.md"), b"present\n").expect("it writes");
+        let into: Vec<(String, Option<String>, &str)> = [
+            ("into/never-written.md", "docs/never-written.md"),
+            ("into/present.md", "docs/present.md"),
+            ("into/new/../never-written.md", "docs/never-written.md"),
+            ("into/stub/new.md", "docs/stub/new.md"),
+        ]
+        .iter()
+        .flat_map(|(target, expected)| {
+            let target = links.join(target).display().to_string();
+            // The root as given, the root reached by a link, and the root
+            // spelled with a `..` in it, as `--root ..` is once it is made
+            // absolute: only the canonical root is the same for all three,
+            // so the third read compares with it.
+            [root.clone(), via.clone(), root.join("docs/..")]
+                .into_iter()
+                .flat_map(move |at| {
+                    let target = target.clone();
+                    let typed_answer = typed(&at, &target);
+                    let within_answer = within(&at, "linked", &target);
+                    [
+                        (
+                            format!("typed {target} under {}", at.display()),
+                            typed_answer,
+                            *expected,
+                        ),
+                        (
+                            format!("within {target} under {}", at.display()),
+                            within_answer,
+                            *expected,
+                        ),
+                    ]
+                })
+                .collect::<Vec<_>>()
+        })
+        .collect();
+        // #1367: a link outside the root into it, and then a dangling link
+        // under the root that leads out again. `typed` stays lexical and
+        // names the path under the root; `within` follows the dangling link
+        // and refuses it.
+        let into_dangling: Vec<(String, Option<String>, Option<String>)> =
+            [root.clone(), via.clone(), root.join("docs/..")]
+                .into_iter()
+                .map(|at| {
+                    let target = links.join("into/dang/new.md").display().to_string();
+                    let typed_answer = typed(&at, &target);
+                    let within_answer = within(&at, "linked", &target);
+                    (
+                        format!("{target} under {}", at.display()),
+                        typed_answer,
+                        within_answer,
+                    )
+                })
+                .collect();
+        let name = root.file_name().expect("the root has a name");
+        let back_in: Vec<(String, Option<String>)> = [
+            root.join("..").join(name).join("docs/never-written.md"),
+            root.join("docs/../..")
+                .join(name)
+                .join("docs/never-written.md"),
+            via.join("../via/docs/never-written.md"),
+            via.join("..").join(name).join("docs/never-written.md"),
+        ]
+        .iter()
+        .map(|target| {
+            let target = target.display().to_string();
+            let answer = typed(&root, &target);
+            (target, answer)
+        })
+        .collect();
         let lexical = typed(&root, "escape/x.md");
         let _ = std::fs::remove_dir_all(&base);
         for ((target, expected), (_, answer)) in cases.iter().zip(&answers) {
@@ -575,6 +874,61 @@ mod tests {
                 answer.as_deref(),
                 *expected,
                 "`within` on `{target}` under a root reached by a link"
+            );
+        }
+        for ((_, expected), (target, answer)) in cases.iter().zip(&absolute) {
+            assert_eq!(
+                answer.as_deref(),
+                *expected,
+                "`within` on the absolute `{target}` typed through a link to the root"
+            );
+        }
+        assert_eq!(
+            missing.as_deref(),
+            Some("docs/never-written.md"),
+            "`typed` finds the root under an absolute path with no file"
+        );
+        assert_eq!(
+            again.as_deref(),
+            Some("again/never-written.md"),
+            "`typed` reads a link back to the root by its name"
+        );
+        for ((_, expected), (target, answer)) in cases.iter().zip(&physical) {
+            assert_eq!(
+                answer.as_deref(),
+                *expected,
+                "`within` on the absolute `{target}` against a root reached by a link"
+            );
+        }
+        assert_eq!(
+            back_to_corpus.as_deref(),
+            Some("linked/shelf/new.md"),
+            "`within` on a path that leaves the root and comes back under the linked corpus root"
+        );
+        for (target, answer, expected) in &into {
+            assert_eq!(
+                answer.as_deref(),
+                Some(*expected),
+                "`typed` on `{target}`, through a link outside the root into it"
+            );
+        }
+        for (target, typed_answer, within_answer) in &into_dangling {
+            assert_eq!(
+                typed_answer.as_deref(),
+                Some("docs/dang/new.md"),
+                "`typed` on `{target}` stays lexical"
+            );
+            assert_eq!(
+                within_answer.as_deref(),
+                None,
+                "`within` on `{target}`, through a link into the root and a dangling link out of it"
+            );
+        }
+        for (target, answer) in &back_in {
+            assert_eq!(
+                answer.as_deref(),
+                Some("docs/never-written.md"),
+                "`typed` on `{target}`, which leaves the root and comes back"
             );
         }
         assert_eq!(

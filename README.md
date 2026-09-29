@@ -12,15 +12,30 @@
 
 ## Obtaining a named version
 
-**Download the binary. You need no Rust toolchain.** Every engine release carries a static Linux x86_64 archive and a macOS arm64 archive. The block below installs `v0.4.0` on Linux into `~/.local/bin`. On macOS on Apple silicon, put `aarch64-apple-darwin` where the block says `x86_64-unknown-linux-musl`.
+**Download the binary. You need no Rust toolchain.** Every engine release carries a static Linux x86_64 archive and a macOS arm64 archive. The block below installs `v0.4.1` on Linux into `~/.local/bin`. On macOS on Apple silicon, put `aarch64-apple-darwin` where the block says `x86_64-unknown-linux-musl`.
 
 ```
 mkdir -p ~/.local/bin
-curl -fsSLO https://github.com/headwater-ai/headwater/releases/download/v0.4.0/headwater-v0.4.0-x86_64-unknown-linux-musl.tar.gz
-tar -xzf headwater-v0.4.0-x86_64-unknown-linux-musl.tar.gz -C ~/.local/bin headwater
+curl -fsSLO https://github.com/headwater-ai/headwater/releases/download/v0.4.1/headwater-v0.4.1-x86_64-unknown-linux-musl.tar.gz
+tar -xzf headwater-v0.4.1-x86_64-unknown-linux-musl.tar.gz -C ~/.local/bin headwater
 ```
 
 Each archive has a `.sha256` file beside it on the release, which `sha256sum -c` reads, and `shasum -a 256 -c` on macOS. The archive holds the `headwater` binary and the license, and nothing else. It does not get you `taxonomy-source`, and the taxonomy paragraphs below say how to fetch it.
+
+**Install it with apt on Debian or Ubuntu.** From `v0.4.1`, every engine release publishes the `headwater` package to a signed APT repository at `https://headwater.tools/apt`. It is for `amd64` only, and it installs on Debian 11 or later and Ubuntu 20.04 or later. After that, `apt upgrade` brings each new release. The block installs `ca-certificates` and `curl` first, because a minimal image has neither. It runs each command with `sudo`, so where you are already root and have no `sudo`, as in a container, remove `sudo` from each line.
+
+```
+sudo apt-get update
+sudo apt-get install -y ca-certificates curl
+sudo install -d -m 0755 /etc/apt/keyrings
+sudo curl -fsSL -o /etc/apt/keyrings/headwater-archive-keyring.asc https://headwater.tools/apt/headwater-archive-keyring.asc
+echo "deb [signed-by=/etc/apt/keyrings/headwater-archive-keyring.asc] https://headwater.tools/apt stable main" | sudo tee /etc/apt/sources.list.d/headwater.list
+sudo apt-get update
+sudo apt-get install -y headwater
+headwater --version
+```
+
+The package installs the static Linux binary of the newest release at `/usr/bin/headwater`. It also holds the license and the shell completions for bash, zsh and fish, and it carries no taxonomy.
 
 **The alternative, if you already have a Rust toolchain.** Every workspace crate is on crates.io, published in dependency order by `.github/workflows/publish-crates.yml`.
 
@@ -30,12 +45,12 @@ cargo install headwater-cli
 
 The command needs nothing this repository ships: no clone, no toolchain floor beyond what `cargo` itself resolves from the crate's declared `rust-version`. It gets you the `headwater` binary alone, at whatever the newest published version is.
 
-**A fixed version built from source, with the taxonomy package beside it.** `v0.4.0` is the newest tagged release, and the block below builds it from source. It needs a Rust toolchain at **1.91 or later**, a floor `engine/README.md` explains and `engine/Cargo.toml` declares.
+**A fixed version built from source, with the taxonomy package beside it.** `v0.4.1` is the newest tagged release, and the block below builds it from source. It needs a Rust toolchain at **1.91 or later**, a floor `engine/README.md` explains and `engine/Cargo.toml` declares.
 
 ```
 git clone https://github.com/headwater-ai/headwater.git
 cd headwater
-git checkout v0.4.0
+git checkout v0.4.1
 cargo build --release -p headwater-cli --manifest-path engine/Cargo.toml --locked
 ```
 

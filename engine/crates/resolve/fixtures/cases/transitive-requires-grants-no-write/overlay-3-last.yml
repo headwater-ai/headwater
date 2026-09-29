@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# HW-DR-0095 lets a bundle write into "an entry it names". This one names
+# `middle`, which names `provider`, and it appends to a list `provider`
+# declares. It has not named `provider`, so the pair keeps the ordinary
+# predicate and the resolver refuses it.
+
+bundle: last
+extends: headwater/standard@1.0.0
+requires: [middle]
+
+add_to:
+  kinds.design_spec.sections.require: [Rationale]

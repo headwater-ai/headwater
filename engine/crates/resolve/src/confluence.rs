@@ -27,6 +27,15 @@
 //! the result to the order of application. That is the conflict spec 2 names,
 //! and it is decided with [`headwater_ref::Address::is_disjoint_from`].
 //!
+//! One pair is ordered rather than tested. [HW-DR-0095] (Q67) lets a library
+//! entry write into an entry it names directly in `requires`, with `add` or
+//! `add_to`. The declared dependency applies first, so the pair has one order
+//! and nothing is left for the order of application to decide. The resolver
+//! puts the dependency first before it merges ([`crate::order`]). Every other
+//! pair, a transitive dependency included, keeps the predicate above.
+//!
+//! [HW-DR-0095]: ../../../../docs/decisions/0095-q67-one-library-entry-may-address-the-keys-of-an-entry-it-names-in-requires-and-confluence-holds-over-the-dependency-order.md
+//!
 //! # It runs between sources and not inside one
 //!
 //! Spec 2 asks for a message that "names both overlays". Two operations in one
@@ -40,11 +49,20 @@ use crate::error::{ResolveError, ResolveErrorKind};
 use crate::operation::{OpKind, Operation};
 
 /// Every pair that does not commute, each reported against the later operation.
-pub fn check(operations: &[Operation], sources: &[String]) -> Vec<ResolveError> {
+pub fn check(
+    operations: &[Operation],
+    sources: &[String],
+    requires: &[Vec<usize>],
+) -> Vec<ResolveError> {
     let mut out = Vec::new();
     for (index, later) in operations.iter().enumerate() {
         for earlier in &operations[..index] {
             if earlier.source == later.source {
+                continue;
+            }
+            if ordered_by_requires(earlier, later, requires)
+                || ordered_by_requires(later, earlier, requires)
+            {
                 continue;
             }
             let Some((path, why)) = contested(earlier, later) else {
@@ -64,6 +82,32 @@ pub fn check(operations: &[Operation], sources: &[String]) -> Vec<ResolveError> 
         }
     }
     out
+}
+
+/// Whether `dependent` writes into `dependency` under the one permission
+/// [HW-DR-0095] grants: its source names the other's source directly in
+/// `requires`, and it adds rather than replaces or deletes.
+///
+/// A transitive dependency grants nothing. The ruling says "an entry it
+/// names", and an entry that reaches another only through a third has not
+/// named it.
+///
+/// [HW-DR-0095]: ../../../../docs/decisions/0095-q67-one-library-entry-may-address-the-keys-of-an-entry-it-names-in-requires-and-confluence-holds-over-the-dependency-order.md
+fn ordered_by_requires(
+    dependent: &Operation,
+    dependency: &Operation,
+    requires: &[Vec<usize>],
+) -> bool {
+    // Two `add` operations keep the leaf predicate. A dependent `add` of a new
+    // key already commutes with its dependency's `add` on disjoint leaves, and
+    // one that sets a leaf the dependency sets is two values for one leaf,
+    // which no order resolves.
+    let both_add = dependent.kind == OpKind::Add && dependency.kind == OpKind::Add;
+    matches!(dependent.kind, OpKind::Add | OpKind::AddTo)
+        && !both_add
+        && requires
+            .get(dependent.source)
+            .is_some_and(|named| named.contains(&dependency.source))
 }
 
 /// The contested path and the reason, or `None` when the two commute.
@@ -145,7 +189,17 @@ mod tests {
     }
 
     fn errors(sources: &[&str]) -> Vec<ResolveError> {
-        check(&operations(sources), &names(sources.len()))
+        errors_requiring(sources, &[])
+    }
+
+    /// The same, where each `(dependent, dependency)` pair is a source that
+    /// names another in `requires`.
+    fn errors_requiring(sources: &[&str], pairs: &[(usize, usize)]) -> Vec<ResolveError> {
+        let mut requires = vec![Vec::new(); sources.len()];
+        for (dependent, dependency) in pairs {
+            requires[*dependent].push(*dependency);
+        }
+        check(&operations(sources), &names(sources.len()), &requires)
     }
 
     #[test]
@@ -169,6 +223,98 @@ mod tests {
             "{}",
             found[0]
         );
+    }
+
+    const DEPENDENCY: &str = "add:\n  kinds.design_spec: {facets: {require: [status]}}\n";
+    const DEPENDENT: &str = "add_to:\n  kinds.design_spec.facets.require: [mode]\n";
+
+    /// HW-DR-0095: an entry may write into an entry it names in `requires`,
+    /// and the declared dependency orders the pair.
+    #[test]
+    fn a_dependent_add_to_into_its_dependency_commutes_by_order() {
+        let found = errors_requiring(&[DEPENDENCY, DEPENDENT], &[(1, 0)]);
+        assert!(found.is_empty(), "{found:?}");
+    }
+
+    /// The check reads pairs and not an order, so the permission holds when
+    /// the dependent is the earlier of the two sources as well.
+    #[test]
+    fn the_permission_holds_whichever_of_the_two_sources_is_first() {
+        let found = errors_requiring(&[DEPENDENT, DEPENDENCY], &[(0, 1)]);
+        assert!(found.is_empty(), "{found:?}");
+    }
+
+    /// The two-`add` rule reads both kinds. A dependent `add` under a key its
+    /// dependency replaces with `override` is a write into the dependency, and
+    /// the declared order admits it. Without `requires` the same pair is
+    /// refused, because the `override` owns its subtree.
+    #[test]
+    fn a_dependent_add_under_a_key_its_dependency_overrides_is_ordered() {
+        let sources = [
+            "override:\n  kinds.specification: {purpose: behavior}\n",
+            "add:\n  kinds.specification.voice: declarative\n",
+        ];
+        let found = errors_requiring(&sources, &[(1, 0)]);
+        assert!(found.is_empty(), "{found:?}");
+        assert_eq!(errors(&sources).len(), 1);
+    }
+
+    /// Two `add` operations that write one leaf state two values for it, and
+    /// no order makes that a write into the dependency. The pair keeps the
+    /// leaf predicate, so the refusal names both bundles rather than leaving
+    /// the merge to report a collision that names one.
+    #[test]
+    fn a_dependent_add_over_a_leaf_its_dependency_sets_is_refused() {
+        let found = errors_requiring(
+            &[
+                "add:\n  kinds.design_spec: {purpose: behavior}\n",
+                "add:\n  kinds.design_spec.purpose: rationale\n",
+            ],
+            &[(1, 0)],
+        );
+        assert_eq!(found.len(), 1, "{found:?}");
+        let text = found[0].to_string();
+        assert!(text.contains("kinds.design_spec.purpose"), "{text}");
+        assert!(text.contains("source-0"), "{text}");
+    }
+
+    #[test]
+    fn the_same_add_to_without_requires_is_refused() {
+        let found = errors(&[DEPENDENCY, DEPENDENT]);
+        assert_eq!(found.len(), 1, "{found:?}");
+        let text = found[0].to_string();
+        assert!(text.contains("kinds.design_spec.facets.require"), "{text}");
+        assert!(found[0].source == "source-1", "{:?}", found[0]);
+        assert!(text.contains("source-0"), "{text}");
+    }
+
+    /// "An entry it names": C requires B and B requires A, so C has not named A.
+    #[test]
+    fn a_transitive_dependency_grants_no_write() {
+        let found = errors_requiring(
+            &[
+                DEPENDENCY,
+                "add:\n  kinds.other: {purpose: behavior}\n",
+                DEPENDENT,
+            ],
+            &[(1, 0), (2, 1)],
+        );
+        assert_eq!(found.len(), 1, "{found:?}");
+        assert_eq!(found[0].source, "source-2");
+    }
+
+    /// The permission is for `add` and `add_to`. An `override` from the
+    /// dependent still owns its subtree and still meets the dependency.
+    #[test]
+    fn a_dependent_override_into_its_dependency_is_refused() {
+        let found = errors_requiring(
+            &[
+                DEPENDENCY,
+                "override:\n  kinds.design_spec.facets: {require: [mode]}\n",
+            ],
+            &[(1, 0)],
+        );
+        assert_eq!(found.len(), 1, "{found:?}");
     }
 
     #[test]

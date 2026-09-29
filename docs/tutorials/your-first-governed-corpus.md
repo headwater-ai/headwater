@@ -42,19 +42,19 @@ Install the engine once. The block below downloads the release archive for Linux
 
 ```sh
 mkdir -p ~/.local/bin
-curl -fsSLO https://github.com/headwater-ai/headwater/releases/download/v0.4.0/headwater-v0.4.0-x86_64-unknown-linux-musl.tar.gz
-tar -xzf headwater-v0.4.0-x86_64-unknown-linux-musl.tar.gz -C ~/.local/bin headwater
+curl -fsSLO https://github.com/headwater-ai/headwater/releases/download/v0.4.1/headwater-v0.4.1-x86_64-unknown-linux-musl.tar.gz
+tar -xzf headwater-v0.4.1-x86_64-unknown-linux-musl.tar.gz -C ~/.local/bin headwater
 ```
 
-On macOS on Apple silicon, the archive is `headwater-v0.4.0-aarch64-apple-darwin.tar.gz`. Use that name in the `curl` line and in the `tar` line.
+On macOS on Apple silicon, the archive is `headwater-v0.4.1-aarch64-apple-darwin.tar.gz`. Use that name in the `curl` line and in the `tar` line.
 
-Each archive has a checksum file beside it on [the release page](https://github.com/headwater-ai/headwater/releases/tag/v0.4.0). The name of the checksum file is the name of the archive with `.sha256` added. To verify the archive, download that file too and give it to `sha256sum -c`, or to `shasum -a 256 -c` on macOS.
+Each archive has a checksum file beside it on [the release page](https://github.com/headwater-ai/headwater/releases/tag/v0.4.1). The name of the checksum file is the name of the archive with `.sha256` added. To verify the archive, download that file too and give it to `sha256sum -c`, or to `shasum -a 256 -c` on macOS.
 
 **Check.** `headwater --version` prints a number.
 
 Many Linux distributions put `~/.local/bin` on your `PATH` when the directory exists at login. macOS does not. If your shell cannot find `headwater`, add `~/.local/bin` to your `PATH` in the startup file of your shell. Then open a new shell. You can also run the binary as `~/.local/bin/headwater`.
 
-This installs version 0.4.0 of the engine. It does not install `taxonomy-source`, and step 3 fetches that. If you have a Rust toolchain, `cargo install headwater-cli` is an alternative route, and the README's *Obtaining a named version* section describes it.
+This installs version 0.4.1 of the engine. It does not install `taxonomy-source`, and step 3 fetches that. If you have a Rust toolchain, `cargo install headwater-cli` is an alternative route, and the README's *Obtaining a named version* section describes it.
 
 ## Steps
 
@@ -421,7 +421,7 @@ Trimmed to the head of the register and to its last line. The same run printed b
 
 One rule is named there. `facet.value.blank` reports a facet a document declares and leaves empty, and no control in `headwater/standard` names it yet. [HW-OBL-0170](https://github.com/headwater-ai/headwater/blob/main/docs/obligations/0170-the-blank-facet-value-rule-reaches-no-obligation-so-the-report-names-none.md) records that debt. A finding it raises is a true finding, and the line above is how a report tells you which of its rules answers to nothing.
 
-**Your corpus will not show you a gap, and the reason is worth knowing.** A `gap` is a disposition that a package author writes, with an owner, for an obligation that no mechanism verifies. The base package declares none, so this row reads `0 gap` on every run of yours and no step here moves it. Headwater's own corpus takes a bundle that declares three obligations no mechanism verifies. The same block there reads `38 obligations: 35 verified, 2 gap, 1 unverifiable`, and it names the owner of each gap. The number worth watching is the one that is not `verified`.
+**Your corpus will not show you a gap, and the reason is worth knowing.** A `gap` is a disposition that a package author writes, with an owner, for an obligation that no mechanism verifies. The base package declares none, so this row reads `0 gap` on every run of yours and no step here moves it. Headwater's own corpus takes a bundle that declares three obligations no mechanism verifies. The same block there reads `40 obligations: 37 verified, 2 gap, 1 unverifiable`, and it names the owner of each gap. The number worth watching is the one that is not `verified`.
 
 The word `mechanical` on the fix line is the second thing to read. A rule is an error when the repair takes no judgment, and advisory when the repair is a rewrite. This one takes no judgment, so the next step is a command rather than an edit.
 

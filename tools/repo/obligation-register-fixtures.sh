@@ -79,6 +79,7 @@ set -u
 
 root=$(cd "$(dirname "$0")/../.." && pwd)
 obligations="$root/docs/obligations"
+process_obligations="$root/docs/process/obligations"
 register="$root/docs/spec/13-open-obligations.md"
 
 for required in "$obligations" "$register"; do
@@ -168,6 +169,14 @@ discharged_ids() {
     done | LC_ALL=C sort -u
 }
 
+# process_ids DIR — the `id` of every record under DIR whatever its status:
+# `current_ids` keeps every status but `discharged`, and `discharged_ids`
+# keeps that one, so a draft, superseded or deprecated process record is in
+# the set too. Spec 13 bullets none of them (#1286).
+process_ids() {
+    { current_ids "$1"; discharged_ids "$1"; } | LC_ALL=C sort -u
+}
+
 # bulleted_ids FILE — the identifier named by every line of FILE that opens
 # with `- [HW-OBL-`, one per line, sorted under `LC_ALL=C` by the caller
 # (never here: case group 1b reads the raw, unsorted count too). A duplicate
@@ -178,15 +187,24 @@ bulleted_ids() {
     grep -oE '^- \[HW-OBL-[0-9]+\]' "$1" | sed -E 's/^- \[(HW-OBL-[0-9]+)\]/\1/'
 }
 
-# membership_judge CURRENT-FILE BULLETED-FILE — one line per member of the
-# symmetric difference between the two populations, naming which side it is
-# missing from. Empty output is set equality in both directions. `LC_ALL=C`
-# on both `comm` calls, matching the `LC_ALL=C sort` that built each input:
-# `comm` collates bytewise regardless of locale, and a mismatch is a silent
-# wrong answer (#828).
+# membership_judge CURRENT-FILE BULLETED-FILE [PROCESS-FILE] — one line per
+# member of the symmetric difference between the two populations, naming
+# which side it is missing from. Empty output is set equality in both
+# directions. A bulleted identifier that PROCESS-FILE names, which is a
+# record on the process register, is reported as a process obligation
+# listed in spec 13 rather than as a generic stray bullet (#1286). A current
+# process record is never owed a bullet, because it is never in CURRENT-FILE.
+# `LC_ALL=C` on every `comm` call, matching the `LC_ALL=C sort` that built
+# each input: `comm` collates bytewise regardless of locale, and a mismatch
+# is a silent wrong answer (#828).
 membership_judge() {
+    mj_process=${3:-/dev/null}
     LC_ALL=C comm -23 "$1" "$2" | sed 's/^/a current record with no bullet line: /'
-    LC_ALL=C comm -13 "$1" "$2" | sed 's/^/a bulleted line naming no current record: /'
+    LC_ALL=C comm -13 "$1" "$2" >"$scratch/mj-extra"
+    LC_ALL=C comm -12 "$scratch/mj-extra" "$mj_process" |
+        sed 's/^/spec 13 lists a process obligation: /'
+    LC_ALL=C comm -23 "$scratch/mj-extra" "$mj_process" |
+        sed 's/^/a bulleted line naming no current record: /'
 }
 
 # hand_count_judge FILE — one line, `line N: <its first 60 characters>`, for
@@ -219,6 +237,9 @@ hand_count_judge() {
 exec 3>&2 2>"$scratch/stderr"
 
 current_ids "$obligations" >"$scratch/current"
+# Every record on the process register, current or discharged. Spec 13 bullets
+# none of them, so the set is read whole rather than split by status.
+process_ids "$process_obligations" >"$scratch/process"
 discharged_ids "$obligations" >"$scratch/discharged"
 bulleted_ids "$register" | LC_ALL=C sort >"$scratch/bulleted-sorted"
 bulleted_ids "$register" | LC_ALL=C sort -u >"$scratch/bulleted"
@@ -245,7 +266,7 @@ same "no identifier carries more than one bullet line" \
 #     every current record has exactly one bullet line, and no bullet line
 #     names a record that is not current.
 same "every current record has a bullet line, and every bulleted line names a current record" \
-    "" "$(membership_judge "$scratch/current" "$scratch/bulleted" | tr '\n' '|')"
+    "" "$(membership_judge "$scratch/current" "$scratch/bulleted" "$scratch/process" | tr '\n' '|')"
 
 # 1d. No discharged record is bulleted. This restates 1c's second half over
 #     the discharged population directly, rather than through set complement,
@@ -255,6 +276,15 @@ same "every current record has a bullet line, and every bulleted line names a cu
 same "no discharged record has a bullet line" \
     "" "$(LC_ALL=C comm -12 "$scratch/discharged" "$scratch/bulleted" |
           sed 's/^/a discharged record still bulleted: /' | tr '\n' '|')"
+
+# 1e. The process register exists and spec 13 bullets none of its records.
+#     The floor keeps this case from passing because the directory moved or
+#     stopped parsing; the equality restates 1c's process arm directly.
+more_than "the process register holds records" 0 \
+    "$(wc -l <"$scratch/process" | tr -d ' ')"
+same "no process obligation has a bullet line in spec 13" \
+    "" "$(LC_ALL=C comm -12 "$scratch/process" "$scratch/bulleted" |
+          sed 's/^/spec 13 lists a process obligation: /' | tr '\n' '|')"
 
 echo
 echo "the judges, provoked over scratch trees"
@@ -324,6 +354,39 @@ printf '# 13 — Open obligations\n\n## A heading\n\n- [HW-OBL-0003](../obligati
     >"$scratch/reg-annotated.md"
 same "an annotated bullet for a discharged record still counts as bulleted" \
     "HW-OBL-0003" "$(bulleted_ids "$scratch/reg-annotated.md")"
+
+# 2e. A process obligation is not the product's open obligation. The process
+#     register at `docs/process/obligations/` holds records about this
+#     repository's own tooling (#1286), and they keep their `HW-OBL-`
+#     identifiers, so a bullet for one looks like any other. When spec 13
+#     bullets one, the judge names it as a process record rather than as a
+#     generic stray bullet, because the remedy differs: the bullet leaves spec
+#     13, and the record stays where it is.
+mkdir -p "$scratch/proc"
+printf -- '---\nid: HW-OBL-0004\nstatus: current\n---\n\n# Four\n' >"$scratch/proc/0004-four.md"
+printf -- '---\nid: HW-OBL-0005\nstatus: draft\n---\n\n# Five\n' >"$scratch/proc/0005-five.md"
+process_ids "$scratch/proc" >"$scratch/s-process"
+printf '# 13 — Open obligations\n\n## A heading\n\n- [HW-OBL-0001](../obligations/0001-one.md) — One\n- [HW-OBL-0002](../obligations/0002-two.md) — Two\n- [HW-OBL-0004](../process/obligations/0004-four.md) — Four\n' \
+    >"$scratch/reg-process.md"
+bulleted_ids "$scratch/reg-process.md" | LC_ALL=C sort -u >"$scratch/s-bulleted-process"
+same "bulleting a process obligation reddens the judge, naming it as a process record" \
+    "spec 13 lists a process obligation: HW-OBL-0004|" \
+    "$(membership_judge "$scratch/s-current" "$scratch/s-bulleted-process" "$scratch/s-process" | tr '\n' '|')"
+
+# 2g. A process record at a status other than `current`, here `draft`, is
+#     still a process record, so a bullet for it is named the same way.
+printf '# 13 — Open obligations\n\n## A heading\n\n- [HW-OBL-0001](../obligations/0001-one.md) — One\n- [HW-OBL-0002](../obligations/0002-two.md) — Two\n- [HW-OBL-0005](../process/obligations/0005-five.md) — Five\n' \
+    >"$scratch/reg-process-draft.md"
+bulleted_ids "$scratch/reg-process-draft.md" | LC_ALL=C sort -u >"$scratch/s-bulleted-process-draft"
+same "bulleting a draft process obligation names it as a process record" \
+    "spec 13 lists a process obligation: HW-OBL-0005|" \
+    "$(membership_judge "$scratch/s-current" "$scratch/s-bulleted-process-draft" "$scratch/s-process" | tr '\n' '|')"
+
+# 2f. The reverse direction: a current process record that spec 13 does not
+#     bullet is owed nothing, so the clean register stays green with the
+#     process shelf in view.
+same "a current process obligation is not owed a bullet in spec 13" \
+    "" "$(membership_judge "$scratch/s-current" "$scratch/s-bulleted-clean" "$scratch/s-process" | tr '\n' '|')"
 
 echo
 echo "the file's prose states no count that a person keeps aligned by hand"

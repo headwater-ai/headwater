@@ -301,6 +301,9 @@ fn of_explanation(explanation: &Explanation) -> Json {
         sections,
         permitted,
         related,
+        // A caller refuses an unwalkable row before it asks for JSON, and a
+        // refusal under `--json` writes nothing (HW-DR-0043, #1366).
+        unwalkable: _,
     } = explanation;
     let mut members: Vec<(&'static str, Json)> = vec![
         ("version", Json::string(VERSION)),

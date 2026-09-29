@@ -54,6 +54,25 @@
 # that workflow passed for every tag on a binary that refused to run. Both
 # defects are in what the file DOES, and no reader of what it SAYS can see them.
 #
+# Group 10 reads the page's APT block against three files and fetches nothing:
+# the `Sign the APT metadata` step of `release.yml` for the suite and the
+# component it publishes and the `Package:` it builds, `tools/site/fetch-apt.sh`
+# for the keyring it copies into `apt/`, and `site/apt/` for that keyring. apt
+# accepts a sources line naming a suite nobody publishes, and only
+# `apt-get update` on the reader's machine refuses it. What the group cannot
+# hold is that `https://headwater.tools/apt` serves anything. The `smoke-apt`
+# job in `release.yml` installs the package from a repository it signs itself,
+# so it holds the package and not the site. Only a run of the block in a clean
+# container holds the site.
+#
+# Group 11 reads the install panel on the front page of the site,
+# `site/index.html`, against the page. The panel opens with the page's download
+# block, line for line, it downloads the release the page checks out, and its
+# APT sources line, keyring URL, keyring path and package are the page's. Step 9 of `docs/how-to/cut-a-release.md` moves both
+# files, and v0.4.1 was cut with both still on v0.4.0 (#1348). The group does
+# not ask the remote whether the tag is the newest one, because that case would
+# turn `main` red from the push of a tag until the install text moves.
+#
 # Run it from anywhere:
 #     sh tools/repo/readme-fixtures.sh
 #
@@ -2716,6 +2735,530 @@ got=$(recording_judge "$scratch/recording-html.md" | sed '$d' | tr '\n' '|')
 same "  and an HTML img embed with no marker fails" \
     "1: demo.gif  no \`recorded on YYYY-MM-DD\` marker within two lines|" \
     "$got"
+
+echo
+echo "the APT route the page offers, and the repository the release publishes"
+
+# The fourth kind of claim group 7 opened: the page against the files that
+# publish what it names. `release.yml` signs APT metadata for one suite and
+# the components it names, `tools/site/fetch-apt.sh` serves that metadata and
+# the keyring under `apt/` on the site, and the page tells a stranger which
+# line to add to their sources. apt accepts a sources line that names a suite
+# or a component nobody publishes, and only `apt-get update` refuses it, with
+# "does not have a Release file", on the reader's machine. The metadata is
+# signed on a tag and served on a deploy, so no pull request runs either side.
+# Every value below is read out of those two files, and none is written here.
+#
+# What this group cannot hold is that `https://headwater.tools/apt` serves
+# anything. That needs a socket, which no case here opens. The `smoke-apt` job
+# in `release.yml` signs a local repository, so it does not hold it either, and
+# only a run of the block in a clean container does.
+
+apt_fetch="$root/tools/site/fetch-apt.sh"
+apt_sign_step="Sign the APT metadata"
+
+# apt_fence_lines FILE — every line inside a fence, in page order.
+apt_fence_lines() {
+    awk '/^[ \t]*```/ { fence = 1 - fence; next } fence { print }' "$1"
+}
+
+# apt_sources_of FILE — the first APT sources line a fence carries, as
+# `signed-by|uri|suite|components`, or nothing. The line is cut at the quote
+# or the pipe that ends it, so `echo "deb [...] ..." | tee` reads the same as
+# a bare `deb [...] ...`.
+apt_sources_of() {
+    apt_fence_lines "$1" | awk '
+        {
+            i = index($0, "deb [")
+            if (i == 0) next
+            s = substr($0, i + 5)
+            j = index(s, "]")
+            if (j == 0) next
+            opts = substr(s, 1, j - 1)
+            rest = substr(s, j + 1)
+            sub(/["\047|>].*$/, "", rest)
+            sb = ""
+            n = split(opts, o, /[ \t]+/)
+            for (k = 1; k <= n; k++)
+                if (o[k] ~ /^signed-by=/) sb = substr(o[k], 11)
+            n = split(rest, w, /[ \t]+/)
+            uri = ""; suite = ""; comps = ""
+            for (k = 1; k <= n; k++) {
+                if (w[k] == "") continue
+                if (uri == "") uri = w[k]
+                else if (suite == "") suite = w[k]
+                else comps = (comps == "" ? w[k] : comps " " w[k])
+            }
+            print sb "|" uri "|" suite "|" comps
+            exit
+        }
+    '
+}
+
+# apt_field N FILE — one field of `apt_sources_of`.
+apt_field() {
+    apt_sources_of "$2" | cut -d'|' -f"$1"
+}
+
+# apt_published OPTION WORKFLOW — the value the signing step hands
+# `apt-ftparchive` for `APT::FTPArchive::Release::OPTION`, read from the step
+# the release runs rather than from a copy of it.
+apt_published() {
+    workflow_step_run "$2" "$apt_sign_step" |
+        sed -n "s/.*APT::FTPArchive::Release::$1=\([^[:space:]\\\\]*\).*/\1/p" |
+        head -1 | tr -d '\42\47'
+}
+
+# apt_population_judge PAGE WORKFLOW — a release that signs APT metadata is a
+# repository the page must offer, and a page that offers one needs a release
+# that signs it.
+apt_population_judge() {
+    apj_flow=$(workflow_step_run "$2" "$apt_sign_step")
+    apj_page=$(apt_sources_of "$1")
+    if [ -n "$apj_flow" ] && [ -n "$apj_page" ]; then
+        echo ok
+    elif [ -n "$apj_flow" ]; then
+        echo "release.yml signs APT metadata and the page offers no APT sources line"
+    elif [ -n "$apj_page" ]; then
+        echo "the page offers an APT sources line and release.yml signs no APT metadata"
+    else
+        echo "neither the page nor release.yml names an APT repository"
+    fi
+}
+
+# apt_suite_judge PAGE WORKFLOW — THE DECISIVE CASE. The suite and every
+# component on the page are the ones the signing step publishes.
+apt_suite_judge() {
+    asj_suite=$(apt_published Suite "$2")
+    asj_comps=$(apt_published Components "$2")
+    asj_psuite=$(apt_field 3 "$1")
+    asj_pcomps=$(apt_field 4 "$1")
+    if [ -z "$asj_suite" ] || [ -z "$asj_comps" ]; then
+        echo "the signing step names no Suite= or no Components=, so nothing says where the page may point"
+        return
+    fi
+    if [ -z "$asj_psuite" ] || [ -z "$asj_pcomps" ]; then
+        echo "the page's sources line names no suite or no component"
+        return
+    fi
+    for asj_c in $asj_pcomps; do
+        case " $asj_comps " in
+            *" $asj_c "*) ;;
+            *) asj_bad=1 ;;
+        esac
+    done
+    if [ "$asj_psuite" != "$asj_suite" ] || [ -n "${asj_bad:-}" ]; then
+        unset asj_bad
+        echo "the page names suite \`$asj_psuite\` and component \`$asj_pcomps\`, and release.yml publishes suite \`$asj_suite\` with component \`$asj_comps\`"
+    else
+        echo ok
+    fi
+}
+
+# apt_keyring_judge PAGE FETCH ROOT — the page downloads the keyring from the
+# repository it adds, under the name `fetch-apt.sh` copies out of `site/apt/`,
+# and that file is in the tree ROOT.
+apt_keyring_judge() {
+    akj_name=$(sed -n 's|^[[:space:]]*cp site/apt/\([^[:space:]]*\)[[:space:]].*|\1|p' "$2" | head -1)
+    if [ -z "$akj_name" ]; then
+        echo "fetch-apt.sh copies no keyring out of site/apt/"
+        return
+    fi
+    if [ ! -f "$3/site/apt/$akj_name" ]; then
+        echo "fetch-apt.sh copies site/apt/$akj_name, and the tree has no such file"
+        return
+    fi
+    akj_url=$(apt_fence_lines "$1" | grep -o 'https\?://[^[:space:]"'\'']*\.\(asc\|gpg\)' | head -1)
+    akj_want="$(apt_field 2 "$1")/$akj_name"
+    if [ "$akj_url" = "$akj_want" ]; then
+        echo ok
+    else
+        echo "the page downloads \`${akj_url:-nothing}\`, and the site serves the keyring at \`$akj_want\`"
+    fi
+}
+
+# apt_signedby_judge PAGE — the path the block writes the keyring to is the
+# path `signed-by` names. A mismatch is `NO_PUBKEY` on the reader's machine.
+apt_signedby_judge() {
+    asb_sb=$(apt_field 1 "$1")
+    asb_to=$(apt_fence_lines "$1" | grep 'https\?://[^[:space:]]*\.\(asc\|gpg\)' | head -1 | tr -d '\42\47' | awk '
+        {
+            for (k = 1; k < NF; k++)
+                if ($k == "-o" || $k == "--output" || $k == "tee" || $k == ">") to = $(k + 1)
+        }
+        END { print to }
+    ')
+    if [ -z "$asb_sb" ]; then
+        echo "the sources line names no signed-by keyring"
+    elif [ -z "$asb_to" ]; then
+        echo "the block downloads the keyring to no path this suite can read"
+    elif [ "$asb_sb" = "$asb_to" ]; then
+        echo ok
+    else
+        echo "the block writes the keyring to \`$asb_to\`, and signed-by names \`$asb_sb\`"
+    fi
+}
+
+# apt_package_judge PAGE WORKFLOW — the package the block installs after it
+# adds the repository is the `Package:` the release builds.
+apt_package_judge() {
+    apk_flow=$(release_yaml_text "$2" | sed -n "s/.*printf 'Package: \([a-z0-9.+-]*\)\\\\n.*/\1/p" | head -1)
+    apk_page=$(apt_fence_lines "$1" | awk '
+        index($0, "deb [") { after = 1; next }
+        after && /apt(-get)? +install/ {
+            s = $0
+            sub(/^.*apt(-get)? +install/, "", s)
+            n = split(s, w, /[ \t]+/)
+            for (k = 1; k <= n; k++) if (w[k] != "" && w[k] !~ /^-/) print w[k]
+        }
+    ')
+    if [ -z "$apk_flow" ]; then
+        echo "release.yml builds no package with a Package: field"
+    elif [ -z "$apk_page" ]; then
+        echo "the block installs no package after it adds the repository"
+    elif printf '%s\n' "$apk_page" | grep -qx "$apk_flow"; then
+        echo ok
+    else
+        echo "the page installs \`$(oneline "$apk_page")\`, and the package release.yml builds is \`$apk_flow\`"
+    fi
+}
+
+# 10a. The population, over the real page and the real workflow. On the day
+#      this group landed, the page offered no APT line and this case was red.
+same "the page offers the APT repository release.yml signs" ok \
+    "$(apt_population_judge "$readme" "$release_wf")"
+
+# 10b-10e. The real page against the real files.
+same "  and its suite and component are the ones the release publishes" ok \
+    "$(apt_suite_judge "$readme" "$release_wf")"
+same "  and it fetches the keyring the site serves" ok \
+    "$(apt_keyring_judge "$readme" "$apt_fetch" "$root")"
+same "  and signed-by names the path the keyring is written to" ok \
+    "$(apt_signedby_judge "$readme")"
+same "  and it installs the package the release builds" ok \
+    "$(apt_package_judge "$readme" "$release_wf")"
+
+# Every judge provoked in a scratch copy. Each arm compares its planted copy
+# with the original first, because an edit that changed nothing measures
+# nothing.
+mkdir -p "$scratch/apt"
+
+# apt_planted NAME ORIGINAL PLANTED EXPECTED ACTUAL — `same`, after `cmp`.
+apt_planted() {
+    if cmp -s "$2" "$3"; then
+        fail "$1" "the planted edit changed nothing, so this case measured nothing"
+    else
+        same "$1" "$4" "$5"
+    fi
+}
+
+# 10a, provoked. The page with its sources line removed.
+grep -v 'deb \[' "$readme" >"$scratch/apt/no-line.md"
+apt_planted "  a page with no APT sources line is refused" "$readme" "$scratch/apt/no-line.md" \
+    "release.yml signs APT metadata and the page offers no APT sources line" \
+    "$(apt_population_judge "$scratch/apt/no-line.md" "$release_wf")"
+
+# 10b, provoked. A suite and a component that apt accepts and that no release
+# publishes. Every other case stays green on both.
+sed 's| stable main"| bookworm main"|' "$readme" >"$scratch/apt/suite.md"
+apt_planted "  a page naming a suite the release does not publish is refused" "$readme" "$scratch/apt/suite.md" \
+    "the page names suite \`bookworm\` and component \`main\`, and release.yml publishes suite \`stable\` with component \`main\`" \
+    "$(apt_suite_judge "$scratch/apt/suite.md" "$release_wf")"
+sed 's| stable main"| stable contrib"|' "$readme" >"$scratch/apt/component.md"
+apt_planted "  a page naming a component the release does not publish is refused" "$readme" "$scratch/apt/component.md" \
+    "the page names suite \`stable\` and component \`contrib\`, and release.yml publishes suite \`stable\` with component \`main\`" \
+    "$(apt_suite_judge "$scratch/apt/component.md" "$release_wf")"
+# The other side moves. The suite is read out of the step, so a release that
+# publishes another suite refuses the page that did not follow it.
+sed 's|Release::Suite=stable|Release::Suite=unstable|' "$release_wf" >"$scratch/apt/unstable.yml"
+apt_planted "  a release that publishes another suite refuses the page" "$release_wf" "$scratch/apt/unstable.yml" \
+    "the page names suite \`stable\` and component \`main\`, and release.yml publishes suite \`unstable\` with component \`main\`" \
+    "$(apt_suite_judge "$readme" "$scratch/apt/unstable.yml")"
+
+# 10c, provoked. The keyring renamed in the tree and in fetch-apt.sh, with the
+# page left as it was, and then the file removed from the tree alone.
+mkdir -p "$scratch/apt/tree/site/apt"
+sed 's|headwater-archive-keyring\.asc|headwater-keyring.asc|g' "$apt_fetch" >"$scratch/apt/fetch-renamed.sh"
+: >"$scratch/apt/tree/site/apt/headwater-keyring.asc"
+apt_planted "  a keyring the site serves under another name is refused" "$apt_fetch" "$scratch/apt/fetch-renamed.sh" \
+    "the page downloads \`https://headwater.tools/apt/headwater-archive-keyring.asc\`, and the site serves the keyring at \`https://headwater.tools/apt/headwater-keyring.asc\`" \
+    "$(apt_keyring_judge "$readme" "$scratch/apt/fetch-renamed.sh" "$scratch/apt/tree")"
+same "  and a keyring the tree does not carry is refused" \
+    "fetch-apt.sh copies site/apt/headwater-archive-keyring.asc, and the tree has no such file" \
+    "$(apt_keyring_judge "$readme" "$apt_fetch" "$scratch/apt/tree")"
+
+# 10d, provoked. The keyring written to one path and named at another.
+sed 's|-o /etc/apt/keyrings/|-o /usr/share/keyrings/|' "$readme" >"$scratch/apt/signed-by.md"
+apt_planted "  a keyring written where signed-by does not look is refused" "$readme" "$scratch/apt/signed-by.md" \
+    "the block writes the keyring to \`/usr/share/keyrings/headwater-archive-keyring.asc\`, and signed-by names \`/etc/apt/keyrings/headwater-archive-keyring.asc\`" \
+    "$(apt_signedby_judge "$scratch/apt/signed-by.md")"
+
+# 10e, provoked. A package name the release does not build.
+sed 's|apt-get install -y headwater$|apt-get install -y headwater-cli|' "$readme" >"$scratch/apt/package.md"
+apt_planted "  a package the release does not build is refused" "$readme" "$scratch/apt/package.md" \
+    "the page installs \`headwater-cli\`, and the package release.yml builds is \`headwater\`" \
+    "$(apt_package_judge "$scratch/apt/package.md" "$release_wf")"
+
+echo
+echo "the site's install panel, against the page"
+
+# The front page of the site carries its own copy of the install block, and a
+# stranger meets it before the README. A release moves the README's tag and
+# the site's tag in one step of `docs/how-to/cut-a-release.md`, and nothing
+# compared the two, so v0.4.1 was cut and both still said v0.4.0 (#1348). A
+# half move is worse: the README says one release and the site another, and
+# each is a working download on its own. So every value below is read out of
+# the panel and out of the README, and none is written here. What this group
+# cannot hold is that the tag is the newest release. That needs the remote,
+# and a case that asked it would turn `main` red from the moment a tag is
+# pushed until the install text moves, which the release procedure forbids
+# doing earlier.
+site_index="$root/site/index.html"
+
+# site_panel_of HTML — the commands of the `<div class="install">` panel, one
+# per line inside a fence, as a README fence would carry them. A command is a
+# line that carries the `$` prompt span. The tags, the prompt and the cursor
+# are stripped and the entities a command can need are decoded, so the APT
+# readers of group 10 read the panel as they read the page.
+site_panel_of() {
+    echo '```'
+    awk '
+        /<div class="install">/ { on = 1; next }
+        on && /^[ \t]*<\/div>[ \t]*$/ { exit }
+        on {
+            s = $0
+            if (incom) {
+                i = index(s, "-->")
+                if (i == 0) next
+                s = substr(s, i + 3)
+                incom = 0
+            }
+            while ((i = index(s, "<!--")) > 0) {
+                r = substr(s, i + 4)
+                j = index(r, "-->")
+                if (j == 0) { s = substr(s, 1, i - 1); incom = 1; break }
+                s = substr(s, 1, i - 1) substr(r, j + 3)
+            }
+            if (s !~ /<span class="dim">\$<\/span>/) next
+            gsub(/<span class="cursor"[^>]*>[^<]*<\/span>/, "", s)
+            gsub(/<[^>]*>/, "", s)
+            gsub(/&quot;/, "\"", s)
+            gsub(/&lt;/, "<", s)
+            gsub(/&gt;/, ">", s)
+            gsub(/&amp;/, "\\&", s)
+            sub(/^[ \t]*\$[ \t]*/, "", s)
+            sub(/[ \t]+$/, "", s)
+            if (s != "") print s
+        }
+    ' "$1"
+    echo '```'
+}
+
+# download_tag_of FILE — the tag of the first `releases/download/<tag>/` URL
+# inside a fence, or nothing.
+download_tag_of() {
+    apt_fence_lines "$1" | grep -o 'releases/download/[^/[:space:]]*/' | head -1 |
+        sed 's|^releases/download/||; s|/$||'
+}
+
+# site_tag_judge PANEL PAGE — THE DECISIVE CASE. The release the panel
+# downloads is the release the page downloads and the tag the page checks out.
+site_tag_judge() {
+    stj_panel=$(download_tag_of "$1")
+    stj_page=$(download_tag_of "$2")
+    stj_pin=$(pinned_tag_of "$2")
+    if [ -z "$stj_panel" ]; then
+        echo "the panel downloads no release"
+    elif [ -z "$stj_page" ] || [ -z "$stj_pin" ]; then
+        echo "the page downloads \`${stj_page:-nothing}\` and checks out \`${stj_pin:-nothing}\`, so nothing names the release the panel must follow"
+    elif [ "$stj_panel" = "$stj_page" ] && [ "$stj_page" = "$stj_pin" ]; then
+        echo ok
+    else
+        echo "the panel downloads \`$stj_panel\`, and the page downloads \`$stj_page\` and checks out \`$stj_pin\`"
+    fi
+}
+
+# site_apt_judge PANEL PAGE — the panel's APT sources line is the page's,
+# field for field.
+site_apt_judge() {
+    saj_panel=$(apt_sources_of "$1")
+    saj_page=$(apt_sources_of "$2")
+    if [ -z "$saj_page" ]; then
+        echo "the page offers no APT sources line, so nothing says what the panel must offer"
+    elif [ -z "$saj_panel" ]; then
+        echo "the page offers an APT sources line and the panel offers none"
+    elif [ "$saj_panel" = "$saj_page" ]; then
+        echo ok
+    else
+        echo "the panel's sources line reads \`$saj_panel\`, and the page's reads \`$saj_page\`"
+    fi
+}
+
+# site_keyring_judge PANEL PAGE — the panel downloads the keyring from the URL
+# the page downloads it from.
+site_keyring_judge() {
+    skj_panel=$(apt_fence_lines "$1" | grep -o 'https\?://[^[:space:]"'\'']*\.\(asc\|gpg\)' | head -1)
+    skj_page=$(apt_fence_lines "$2" | grep -o 'https\?://[^[:space:]"'\'']*\.\(asc\|gpg\)' | head -1)
+    if [ -n "$skj_page" ] && [ "$skj_panel" = "$skj_page" ]; then
+        echo ok
+    else
+        echo "the panel downloads the keyring from \`${skj_panel:-nothing}\`, and the page from \`${skj_page:-nothing}\`"
+    fi
+}
+
+# download_fence_of FILE — the lines of the first fence that downloads a
+# release, in page order: the block a stranger pastes to install the binary.
+download_fence_of() {
+    awk '
+        /^[ \t]*```/ {
+            if (fence && hit) { printf "%s", buf; exit }
+            fence = 1 - fence; buf = ""; hit = 0; next
+        }
+        fence { buf = buf $0 "\n"; if (index($0, "releases/download/")) hit = 1 }
+    ' "$1"
+}
+
+# site_download_judge PANEL PAGE — the panel opens with the page's download
+# block, line for line. The tag judge reads one URL, so a panel that downloads
+# one archive and unpacks another, or downloads from another repository,
+# passes it. This judge reads every line (#1348, verify round 1).
+site_download_judge() {
+    download_fence_of "$2" >"$scratch/site/want"
+    sdj_n=$(wc -l <"$scratch/site/want" | tr -d ' ')
+    if [ "$sdj_n" -eq 0 ]; then
+        echo "the page has no download block, so nothing says what the panel must open with"
+        return
+    fi
+    apt_fence_lines "$1" | head -n "$sdj_n" >"$scratch/site/got"
+    sdj_diff=$(awk 'NR == FNR { w[FNR] = $0; n = FNR; next }
+        FNR <= n && $0 != w[FNR] { print FNR ": `" $0 "` where the page has `" w[FNR] "`"; done = 1; exit }
+        END { g = NR - n; if (!done && g < n) print g + 1 ": nothing where the page has `" w[g + 1] "`" }' \
+        "$scratch/site/want" "$scratch/site/got")
+    if [ -z "$sdj_diff" ]; then
+        echo ok
+    else
+        echo "the panel's download line $sdj_diff"
+    fi
+}
+
+mkdir -p "$scratch/site"
+site_panel_of "$site_index" >"$scratch/site/panel.md"
+
+# 11a. The population. A panel the extraction reads nothing out of agrees with
+#      every judge below and holds nothing.
+more_than "the site's install panel yields its commands" 0 \
+    "$(apt_fence_lines "$scratch/site/panel.md" | wc -l | tr -d ' ')"
+
+# 11b-11e. The real panel against the real page. On the day this group landed,
+#      11b was red with v0.4.1 on the page and v0.4.0 on the panel, and 11c was
+#      red because the panel offered no APT line.
+same "  and it downloads the release the page downloads and checks out" ok \
+    "$(site_tag_judge "$scratch/site/panel.md" "$readme")"
+same "  and its download lines are the page's download block, line for line" ok \
+    "$(site_download_judge "$scratch/site/panel.md" "$readme")"
+same "  and its APT sources line is the page's" ok \
+    "$(site_apt_judge "$scratch/site/panel.md" "$readme")"
+same "  and it fetches the keyring from where the page does" ok \
+    "$(site_keyring_judge "$scratch/site/panel.md" "$readme")"
+same "  and signed-by names the path it writes the keyring to" ok \
+    "$(apt_signedby_judge "$scratch/site/panel.md")"
+same "  and it installs the package the release builds" ok \
+    "$(apt_package_judge "$scratch/site/panel.md" "$release_wf")"
+
+# Every judge provoked in a scratch copy, with `apt_planted` from group 10.
+# The tag is the page's own, read from the page, so the arms do not go stale
+# when the next release moves it.
+site_tag=$(pinned_tag_of "$readme")
+
+# 11b, provoked. The panel left on the release before, with the page moved.
+sed "s|releases/download/$site_tag/headwater-$site_tag-|releases/download/v0.0.0/headwater-v0.0.0-|" "$site_index" >"$scratch/site/old.html"
+site_panel_of "$scratch/site/old.html" >"$scratch/site/old.md"
+apt_planted "  a panel on another release than the page is refused" "$scratch/site/panel.md" "$scratch/site/old.md" \
+    "the panel downloads \`v0.0.0\`, and the page downloads \`$site_tag\` and checks out \`$site_tag\`" \
+    "$(site_tag_judge "$scratch/site/old.md" "$readme")"
+# The other half moved alone: the page's checkout tag, with both downloads left.
+sed "s|^git checkout $site_tag\$|git checkout v0.0.0|" "$readme" >"$scratch/site/pin.md"
+apt_planted "  a page that checks out another tag than it downloads is refused" "$readme" "$scratch/site/pin.md" \
+    "the panel downloads \`$site_tag\`, and the page downloads \`$site_tag\` and checks out \`v0.0.0\`" \
+    "$(site_tag_judge "$scratch/site/panel.md" "$scratch/site/pin.md")"
+
+# The download block, provoked. Each edit leaves the first URL's tag as it
+# was, so the tag judge above passes all three and only this judge refuses.
+sed "s|^\(.*tar -xzf headwater-\)$site_tag-|\1v0.0.0-|" "$site_index" >"$scratch/site/tar.html"
+site_panel_of "$scratch/site/tar.html" >"$scratch/site/tar.md"
+apt_planted "  a panel that unpacks another archive than it downloads is refused" "$scratch/site/panel.md" "$scratch/site/tar.md" \
+    "the panel's download line 3: \`tar -xzf headwater-v0.0.0-x86_64-unknown-linux-musl.tar.gz -C ~/.local/bin headwater\` where the page has \`tar -xzf headwater-$site_tag-x86_64-unknown-linux-musl.tar.gz -C ~/.local/bin headwater\`" \
+    "$(site_download_judge "$scratch/site/tar.md" "$readme")"
+sed "s|releases/download/$site_tag/headwater-$site_tag-|releases/download/$site_tag/headwater-v0.0.0-|" "$site_index" >"$scratch/site/name.html"
+site_panel_of "$scratch/site/name.html" >"$scratch/site/name.md"
+apt_planted "  a panel downloading another archive name under the right tag is refused" "$scratch/site/panel.md" "$scratch/site/name.md" \
+    "the panel's download line 2: \`curl -fsSLO https://github.com/headwater-ai/headwater/releases/download/$site_tag/headwater-v0.0.0-x86_64-unknown-linux-musl.tar.gz\` where the page has \`curl -fsSLO https://github.com/headwater-ai/headwater/releases/download/$site_tag/headwater-$site_tag-x86_64-unknown-linux-musl.tar.gz\`" \
+    "$(site_download_judge "$scratch/site/name.md" "$readme")"
+same "  and the tag judge alone passes that panel, which is why this judge exists" ok \
+    "$(site_tag_judge "$scratch/site/name.md" "$readme")"
+sed "s|github.com/headwater-ai/headwater/releases/download/|github.com/someone-else/headwater/releases/download/|" "$site_index" >"$scratch/site/owner.html"
+site_panel_of "$scratch/site/owner.html" >"$scratch/site/owner.md"
+apt_planted "  a panel downloading from another repository is refused" "$scratch/site/panel.md" "$scratch/site/owner.md" \
+    "the panel's download line 2: \`curl -fsSLO https://github.com/someone-else/headwater/releases/download/$site_tag/headwater-$site_tag-x86_64-unknown-linux-musl.tar.gz\` where the page has \`curl -fsSLO https://github.com/headwater-ai/headwater/releases/download/$site_tag/headwater-$site_tag-x86_64-unknown-linux-musl.tar.gz\`" \
+    "$(site_download_judge "$scratch/site/owner.md" "$readme")"
+grep -v 'mkdir -p ~/.local/bin' "$site_index" >"$scratch/site/short.html"
+site_panel_of "$scratch/site/short.html" >"$scratch/site/short.md"
+apt_planted "  a panel that drops a line of the download block is refused" "$scratch/site/panel.md" "$scratch/site/short.md" \
+    "the panel's download line 1: \`curl -fsSLO https://github.com/headwater-ai/headwater/releases/download/$site_tag/headwater-$site_tag-x86_64-unknown-linux-musl.tar.gz\` where the page has \`mkdir -p ~/.local/bin\`" \
+    "$(site_download_judge "$scratch/site/short.md" "$readme")"
+
+# A panel shorter than the block, and one with no command at all, are refused
+# rather than read as agreeing with the lines they lack.
+head -n 3 "$scratch/site/panel.md" >"$scratch/site/two.md"
+echo '```' >>"$scratch/site/two.md"
+apt_planted "  a panel that ends before the download block does is refused" "$scratch/site/panel.md" "$scratch/site/two.md" \
+    "the panel's download line 3: nothing where the page has \`tar -xzf headwater-$site_tag-x86_64-unknown-linux-musl.tar.gz -C ~/.local/bin headwater\`" \
+    "$(site_download_judge "$scratch/site/two.md" "$readme")"
+printf '%s\n' '```' '```' >"$scratch/site/none.md"
+same "  and a panel with no command is refused" \
+    "the panel's download line 1: nothing where the page has \`mkdir -p ~/.local/bin\`" \
+    "$(site_download_judge "$scratch/site/none.md" "$readme")"
+
+# 11c, provoked. The panel with its sources line removed, and then with a
+# suite the page does not name.
+grep -v 'deb \[' "$site_index" >"$scratch/site/no-line.html"
+site_panel_of "$scratch/site/no-line.html" >"$scratch/site/no-line.md"
+apt_planted "  a panel with no APT sources line is refused" "$scratch/site/panel.md" "$scratch/site/no-line.md" \
+    "the page offers an APT sources line and the panel offers none" \
+    "$(site_apt_judge "$scratch/site/no-line.md" "$readme")"
+sed 's| stable main| bookworm main|' "$site_index" >"$scratch/site/suite.html"
+site_panel_of "$scratch/site/suite.html" >"$scratch/site/suite.md"
+apt_planted "  a panel naming another suite than the page is refused" "$scratch/site/panel.md" "$scratch/site/suite.md" \
+    "the panel's sources line reads \`$(apt_field 1 "$readme")|$(apt_field 2 "$readme")|bookworm|main\`, and the page's reads \`$(apt_sources_of "$readme")\`" \
+    "$(site_apt_judge "$scratch/site/suite.md" "$readme")"
+
+# 11d, provoked. The keyring fetched from another host.
+sed 's|https://headwater.tools/apt/headwater-archive-keyring.asc|https://example.org/headwater-archive-keyring.asc|' "$site_index" >"$scratch/site/keyring.html"
+site_panel_of "$scratch/site/keyring.html" >"$scratch/site/keyring.md"
+apt_planted "  a panel fetching the keyring from elsewhere is refused" "$scratch/site/panel.md" "$scratch/site/keyring.md" \
+    "the panel downloads the keyring from \`https://example.org/headwater-archive-keyring.asc\`, and the page from \`https://headwater.tools/apt/headwater-archive-keyring.asc\`" \
+    "$(site_keyring_judge "$scratch/site/keyring.md" "$readme")"
+
+# 11e, provoked. A package name the release does not build.
+sed 's|apt-get install -y headwater\([ <]\)|apt-get install -y headwater-cli\1|' "$site_index" >"$scratch/site/package.html"
+site_panel_of "$scratch/site/package.html" >"$scratch/site/package.md"
+apt_planted "  a panel installing a package the release does not build is refused" "$scratch/site/panel.md" "$scratch/site/package.md" \
+    "the page installs \`headwater-cli\`, and the package release.yml builds is \`headwater\`" \
+    "$(apt_package_judge "$scratch/site/package.md" "$release_wf")"
+
+# The extraction itself. A comment inside the panel that quotes a command is
+# not a command, and an entity is read as the character it stands for.
+printf '%s\n' '<div class="install">' \
+    '  <div><span class="dim">$</span> echo &quot;a &amp; b&quot; <span class="cursor" aria-hidden="true">X</span></div>' \
+    '  <!-- the old line was <span class="dim">$</span> ... -->' \
+    '  <!-- a comment that opens here' \
+    '       <span class="dim">$</span> and quotes a prompt on its second line -->' \
+    '  <div class="note">not a command</div>' \
+    '</div>' \
+    '<div><span class="dim">$</span> outside the panel</div>' >"$scratch/site/shape.html"
+same "  the extraction reads the prompt lines of the panel alone, decoded" \
+    '```|echo "a & b"|```' \
+    "$(site_panel_of "$scratch/site/shape.html" | tr '\n' '|' | sed 's/|$//')"
 
 echo
 echo "$passed passed, $failed failed"

@@ -269,3 +269,117 @@ fn a_repository_that_declares_no_pin_has_none() {
     scratch.write(CONSUMER, "imports: {}\n");
     assert_eq!(harvest::declared(scratch.path()), Ok(Vec::new()));
 }
+
+#[test]
+fn a_harvests_block_that_is_not_a_mapping_is_refused_by_name() {
+    for (block, kind) in [
+        ("harvests:\n  - repo-a\n", "a sequence"),
+        ("harvests: repo-a\n", "a scalar"),
+    ] {
+        let scratch = Scratch::new("block-shape");
+        scratch.write(CONSUMER, block);
+        let why = harvest::declared(scratch.path()).expect_err("it is refused");
+        assert!(why.contains("`harvests`") && why.contains(kind), "{why}");
+    }
+}
+
+#[test]
+fn an_empty_harvests_block_declares_no_pin() {
+    for block in ["harvests:\n", "harvests: ~\n", "harvests: null\n"] {
+        let scratch = Scratch::new("block-null");
+        scratch.write(CONSUMER, block);
+        assert_eq!(harvest::declared(scratch.path()), Ok(Vec::new()), "{block}");
+    }
+}
+
+#[test]
+fn a_pin_that_is_not_a_mapping_is_refused_by_name() {
+    let scratch = Scratch::new("entry-shape");
+    scratch.write(CONSUMER, "harvests:\n  repo-a: a.json\n");
+    let why = harvest::declared(scratch.path()).expect_err("it is refused");
+    assert!(
+        why.contains("`harvests.repo-a`") && why.contains("a scalar"),
+        "{why}"
+    );
+}
+
+/// A lexical test passes `harvest/repo-b.json`, and a committed symlink at
+/// `harvest` still takes the read outside the root. The reader resolves the
+/// part of the path that exists and refuses it by name.
+#[cfg(unix)]
+#[test]
+fn a_pin_whose_path_leaves_the_repository_through_a_symlink_is_refused_by_name() {
+    let scratch = Scratch::new("symlink-root");
+    let outside = Scratch::new("symlink-outside");
+    outside.write("repo-b.json", &export(&["svc-a"], false));
+    std::os::unix::fs::symlink(outside.path(), scratch.path().join("harvest"))
+        .expect("the symlink is made");
+    scratch.write(
+        CONSUMER,
+        &format!(
+            "harvests:\n  repo-a:\n    at: {AT}\n    digest: sha256:aa\n    resolver: export-a\n"
+        ),
+    );
+    let why = harvest::declared(scratch.path()).expect_err("it is refused");
+    assert!(
+        why.contains("harvests.repo-a.at") && why.contains(AT),
+        "{why}"
+    );
+
+    // The file behind the symlink need not exist: the leading part that does
+    // exist is what resolves out of the root, so the pin is still refused
+    // rather than read as a missing export.
+    std::fs::remove_file(outside.path().join("repo-b.json")).expect("the export is removed");
+    let why = harvest::declared(scratch.path()).expect_err("it is refused");
+    assert!(
+        why.contains("harvests.repo-a.at") && why.contains(AT),
+        "{why}"
+    );
+
+    // A symlink that stays under the root is a path under the root.
+    let inside = Scratch::new("symlink-inside");
+    inside.write("exports/repo-b.json", &export(&["svc-a"], false));
+    std::os::unix::fs::symlink(inside.path().join("exports"), inside.path().join("harvest"))
+        .expect("the symlink is made");
+    inside.write(
+        CONSUMER,
+        &format!(
+            "harvests:\n  repo-a:\n    at: {AT}\n    digest: sha256:aa\n    resolver: export-a\n"
+        ),
+    );
+    assert_eq!(harvest::declared(inside.path()).expect("it reads").len(), 1);
+}
+
+/// A root reached through a symlink is still the root. The containment test
+/// compares the resolved path with the resolved root, never with the path the
+/// caller typed, so every pin under it reads.
+#[cfg(unix)]
+#[test]
+fn a_root_reached_through_a_symlink_holds_its_pins() {
+    let scratch = Scratch::new("linked-root");
+    scratch.write(AT, &export(&["svc-a"], false));
+    scratch.write(
+        CONSUMER,
+        &format!(
+            "harvests:\n  repo-a:\n    at: {AT}\n    digest: sha256:aa\n    resolver: export-a\n"
+        ),
+    );
+    let link = Scratch::new("linked-root-link");
+    let linked = link.path().join("root");
+    std::os::unix::fs::symlink(scratch.path(), &linked).expect("the symlink is made");
+    assert_eq!(harvest::declared(&linked).expect("it reads").len(), 1);
+}
+
+/// A `./` segment climbs nothing, so a path that opens with one stays under the
+/// root, as it did before the containment test resolved symlinks.
+#[test]
+fn a_pin_path_that_opens_with_a_current_directory_segment_reads() {
+    let scratch = Scratch::new("dot-slash");
+    scratch.write(
+        CONSUMER,
+        "harvests:\n  repo-a:\n    at: ./harvest/repo-a.json\n    digest: sha256:aa\n    \
+         resolver: export-a\n",
+    );
+    let pins = harvest::declared(scratch.path()).expect("it reads");
+    assert_eq!(pins[0].at, "./harvest/repo-a.json");
+}

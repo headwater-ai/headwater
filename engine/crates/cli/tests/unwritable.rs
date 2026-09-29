@@ -70,6 +70,7 @@ const ROWS: &[Row] = &[
     row("gate", At::Repository, &["gate"]),
     row("conformance", At::Scratch, &["conformance"]),
     row("derived", At::Scratch, &["derived"]),
+    row("site", At::Repository, &["site"]),
     row("merge-driver", At::Repository, &["merge-driver"]),
     row(
         "route",
