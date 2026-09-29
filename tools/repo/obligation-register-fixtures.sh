@@ -325,6 +325,29 @@ printf '# 13 — Open obligations\n\n## A heading\n\n- [HW-OBL-0003](../obligati
 same "an annotated bullet for a discharged record still counts as bulleted" \
     "HW-OBL-0003" "$(bulleted_ids "$scratch/reg-annotated.md")"
 
+# 2e. A process obligation is not the product's open obligation. The process
+#     register at `docs/process/obligations/` holds records about this
+#     repository's own tooling (#1286), and they keep their `HW-OBL-`
+#     identifiers, so a bullet for one looks like any other. When spec 13
+#     bullets one, the judge names it as a process record rather than as a
+#     generic stray bullet, because the remedy differs: the bullet leaves spec
+#     13, and the record stays where it is.
+mkdir -p "$scratch/proc"
+printf -- '---\nid: HW-OBL-0004\nstatus: current\n---\n\n# Four\n' >"$scratch/proc/0004-four.md"
+current_ids "$scratch/proc" >"$scratch/s-process"
+printf '# 13 — Open obligations\n\n## A heading\n\n- [HW-OBL-0001](../obligations/0001-one.md) — One\n- [HW-OBL-0002](../obligations/0002-two.md) — Two\n- [HW-OBL-0004](../process/obligations/0004-four.md) — Four\n' \
+    >"$scratch/reg-process.md"
+bulleted_ids "$scratch/reg-process.md" | LC_ALL=C sort -u >"$scratch/s-bulleted-process"
+same "bulleting a process obligation reddens the judge, naming it as a process record" \
+    "spec 13 lists a process obligation: HW-OBL-0004|" \
+    "$(membership_judge "$scratch/s-current" "$scratch/s-bulleted-process" "$scratch/s-process" | tr '\n' '|')"
+
+# 2f. The reverse direction: a current process record that spec 13 does not
+#     bullet is owed nothing, so the clean register stays green with the
+#     process shelf in view.
+same "a current process obligation is not owed a bullet in spec 13" \
+    "" "$(membership_judge "$scratch/s-current" "$scratch/s-bulleted-clean" "$scratch/s-process" | tr '\n' '|')"
+
 echo
 echo "the file's prose states no count that a person keeps aligned by hand"
 
