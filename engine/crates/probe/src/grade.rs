@@ -1362,10 +1362,36 @@ mod tests {
             r#"{"command":"echo x >log\ncat docs/probes/one.md"}"#,
             r#"{"command":"echo a#b docs/probes/one.md"}"#,
             r##"{"command":"# note\ncat docs/probes/one.md"}"##,
-            r##"{"command":"echo x | tee log # note\ncat docs/probes/one.md"}"##,
+            r#"{"command":"echo x | tee log # note\ncat docs/probes/one.md"}"#,
             r#"{"command":"echo x | tee log\ncat docs/probes/one.md"}"#,
             r#"{"command":"echo `cat docs/probes/one.md`"}"#,
             r#"{"command":"grep --file=docs/probes/one.md x"}"#,
+            r#"{"command":"sort -o=docs/probes/one.md x"}"#,
+            r#"{"command":"echo hi > out.txt docs/probes/one.md"}"#,
+            r#"{"command":">/dev/null cat docs/probes/one.md"}"#,
+        ] {
+            assert!(bash_names(command, &want), "{command}");
+        }
+    }
+
+    /// The body of a heredoc is text handed to a command, and not a command.
+    /// A path written into a note is not a read of it, and an apostrophe in
+    /// the body opens no quote (#1384 verify, round 2).
+    #[test]
+    fn a_heredoc_body_is_not_a_command() {
+        let want = target(None, "docs/probes/one.md");
+        for command in [
+            r#"{"command":"cat > notes.txt <<'EOF'\nsee docs/probes/one.md\nEOF"}"#,
+            r#"{"command":"cat > notes.txt <<-EOF\n\tsee docs/probes/one.md\n\tEOF\n"}"#,
+            r#"{"command":"cat <<A <<B > n\ndocs/probes/one.md\nA\ndocs/probes/one.md\nB"}"#,
+        ] {
+            assert!(!bash_names(command, &want), "{command}");
+        }
+        for command in [
+            r#"{"command":"cat > notes.txt <<'EOF'\nit's fine\nEOF\ncat docs/probes/one.md"}"#,
+            r#"{"command":"cat <<EOF > out\nx\nEOF\ncat docs/probes/one.md"}"#,
+            r#"{"command":"cat <<EOF docs/probes/one.md\nbody\nEOF"}"#,
+            r#"{"command":"cat <<\"END\" # c\nEOF\nEND\ncat docs/probes/one.md"}"#,
         ] {
             assert!(bash_names(command, &want), "{command}");
         }
