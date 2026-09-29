@@ -582,15 +582,25 @@ $out" ;;
     # the body loads only once a session invokes the skill. So the ruling is
     # stated in the description, and the identifier it cites is the ruling.
     #
-    # Every read is of the description line alone: `claim` searches the whole
-    # file, and the body already states the ruling, so a sentence moved into
-    # the body would pass it. The identifier is the one inside the sentence,
-    # and the ruling is the first line `explain` prints, which is the path the
-    # identifier resolves to. A match anywhere in the output passes any
-    # decision whose edges reach 0052.
+    # Every read is of the `description` key of the front matter alone:
+    # `claim` searches the whole file, and the body already states the ruling,
+    # so a sentence moved into the body would pass it. The front matter is the
+    # block between the first two `---` lines, and its first `description:`
+    # key is the one a harness loads. Leading blanks and a YAML quote are
+    # stripped, as YAML strips them, before the test for Draft.
+    #
+    # The sentence is matched whole, from its subject to the identifier, and
+    # after a sentence boundary, so a changed subject or an inserted `never`
+    # fails it. The identifier is the one inside the sentence, and the ruling
+    # is the first line `explain` prints, which is the path the identifier
+    # resolves to. A match anywhere in the output passes any decision whose
+    # edges reach 0052.
     name='the authoring description states the status ruling and does not open with Draft'
-    description=$(sed -n 's/^description: //p' "$skills/headwater-authoring/SKILL.md")
-    sentence='goes into its pull request at `status: current`, not `draft` ('
+    description=$(awk 'NR == 1 && $0 == "---" { on = 1; next }
+                       on && $0 == "---" { exit }
+                       on && /^description:/ { sub(/^description:[ \t]*/, ""); sub(/^["'\'']/, ""); print; exit }' \
+        "$skills/headwater-authoring/SKILL.md")
+    sentence='. A settled document goes into its pull request at `status: current`, not `draft` ('
     ruling='docs/decisions/0052-a-document-is-proposed-at-the-state-it-will-hold-and-the-merge-activates-it.md'
     case $description in
         [Dd][Rr][Aa][Ff][Tt]*)
