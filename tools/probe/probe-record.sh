@@ -595,10 +595,10 @@ fi
 # that `--max-turns` stopped ends its stream with a `result` line of subtype
 # `error_max_turns`, and the harness exits 1. Until #1384 this script exited
 # 10 for it, so the campaign of 2026-09-28 dropped 4 of 540 sessions, all on
-# the `patched` probe, and a resumed batch drew each one again. A draw that
+# the `patched` probe, and a resumed batch would draw each one again. A draw that
 # can be repeated until it finishes under the cap is not a draw. So a capped
 # session records what the log holds: its calls, what it wrote, and no answer,
-# because its `result` line carries no text. The transcript says it was capped.
+# because the session did not finish. The transcript says it was capped.
 capped=0
 if [ "$status" != 0 ]; then
     stopped=$(jq -s -r '([.[] | select(.type == "result")] | last | .subtype // "")' < "$raw" 2>/dev/null) || stopped=""

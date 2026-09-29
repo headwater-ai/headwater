@@ -1235,8 +1235,9 @@ STUB
     # with a `result` line of subtype `error_max_turns` and exits 1. Until
     # #1384 the driver read that as a failure and exited 10, so the campaign
     # of 2026-09-28 dropped 4 of 540 sessions, all on the `patched` probe, and
-    # a resume drew them again. A capped session is an observation: the driver
-    # records its calls and `answer: null`, and says in prose that it was
+    # a resume would have drawn them again. A capped session is an observation: the driver
+    # records its calls and `answer: null`, even where the result carries a
+    # word, because the session did not finish, and it says in prose that it was
     # capped. The stub also records the arguments it was given, so the case
     # holds that the cap reaches the harness.
     cat > "$scratch/bin/claude" <<STUB
@@ -1244,7 +1245,7 @@ STUB
 printf '%s\n' "\$@" > "$scratch/claude-args"
 printf '%s\n' '{"type":"system","subtype":"init","model":"claude-haiku-4-5","session_id":"s11"}'
 printf '%s\n' '{"type":"assistant","message":{"content":[{"type":"tool_use","id":"t1","name":"Read","input":{"file_path":"docs/x.md"}}]}}'
-printf '%s\n' '{"type":"result","subtype":"error_max_turns","is_error":true,"num_turns":81,"total_cost_usd":0.02,"modelUsage":{"claude-haiku-4-5-20251001":{"inputTokens":10}}}'
+printf '%s\n' '{"type":"result","subtype":"error_max_turns","is_error":true,"num_turns":81,"result":"withheld","total_cost_usd":0.02,"modelUsage":{"claude-haiku-4-5-20251001":{"inputTokens":10}}}'
 exit 1
 STUB
     chmod +x "$scratch/bin/claude"
@@ -1311,6 +1312,8 @@ STUB
     cat > "$scratch/bin/claude" <<'STUB'
 #!/bin/sh
 printf 'new\n' > docs/changed.md
+touch docs/same.md
+cp docs/same.md .claude/worktrees/w/docs/same.md
 printf 'new\n' > docs/written-by-bash.md
 printf 'new\n' > .claude/worktrees/w/docs/in-a-worktree.md
 mkdir -p .headwater/cache && printf 'x\n' > .headwater/cache/entry
@@ -1327,7 +1330,9 @@ STUB
     present "a file a Bash call changed is produced" 'path: "docs/changed.md"' "$scratch/bash-write.md"
     present "a file written in a worktree of the workspace is produced" \
         'path: ".claude/worktrees/w/docs/in-a-worktree.md"' "$scratch/bash-write.md"
-    absent "a file the session left alone is not produced" 'path: "docs/same.md"' "$scratch/bash-write.md"
+    absent "a file the session touched and did not change is not produced" 'path: "docs/same.md"' "$scratch/bash-write.md"
+    absent "a worktree's unchanged copy of a file is not produced" \
+        'path: ".claude/worktrees/w/docs/same.md"' "$scratch/bash-write.md"
     absent "an engine cache is not produced" ".headwater/cache" "$scratch/bash-write.md"
 
     # `campaign.sh` runs one job with the tier's cap and its tree as the
