@@ -979,6 +979,20 @@ if [ "$(git -C "$root" rev-parse --show-toplevel 2>/dev/null)" = "$root" ]; then
     git -C "$root" archive HEAD | tar -x -C "$scratch/corpus"
     ( cd "$scratch/corpus" && find docs -type f -name '*.md' | grep -v -e '^docs/probes/' -e '^docs/probe-runs/' -e '^docs/probe-results/' | sort ) \
         > "$scratch/corpus-before.txt"
+    # Outside `docs/`, every probe of the shelf is named by a declared fold or
+    # by one of the two files that state an answer, and by nothing else
+    # (#1384). A fold dropped from the list, or a new file that names a probe,
+    # moves this set, so each entry of the list is held here.
+    : > "$scratch/outside-naming.txt"
+    for shelf_probe in "$root"/docs/probes/*.md; do
+        shelf_id=$(awk '/^id: */ { sub(/^id: */, ""); print; exit }' "$shelf_probe")
+        [ -n "$shelf_id" ] || continue
+        sh "$root/tools/probe/seal.sh" --naming "$scratch/corpus" "$shelf_id" \
+            | awk -v here="$scratch/corpus/" 'index($0, here) == 1 { $0 = substr($0, length(here) + 1) } $0 !~ /^docs\//' >> "$scratch/outside-naming.txt"
+    done
+    same "outside docs/, only the two files that state an answer name a probe and are not folds" \
+        ".claude/skills/fixtures.sh tools/probe/probe-record-fixtures.sh" \
+        "$(sort -u "$scratch/outside-naming.txt" | tr '\n' ' ' | sed 's/ $//')"
     sh "$root/tools/probe/seal.sh" "$scratch/corpus" \
         HW-PROBE-a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer \
         HW-PROBE-a-session-answers-from-the-register-without-opening-the-question-it-replaced \
