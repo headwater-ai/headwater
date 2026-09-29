@@ -878,6 +878,61 @@ same "and it keeps every line elsewhere that holds the word README" \
     "$(cat "$scratch/readme/docs/obligations/README.md")"
 present "and it says that the generic slug removed no lines" "seal: kept every line naming README" "$scratch/readme.out"
 
+# The #980 selection over this corpus. The synthetic trees above state the
+# rule; this case holds it over the documents the batch of 2026-09-28 sealed,
+# which left 42 files naming one of the 6 named documents it deleted. Every
+# committed file of this checkout is copied out, sealed with the seven probes
+# of that batch, and nothing left may name the identifier or the slug of a
+# document the seal deleted outside the instrument shelves.
+if git -C "$root" rev-parse --verify -q HEAD >/dev/null 2>&1; then
+    mkdir -p "$scratch/corpus"
+    git -C "$root" archive HEAD | tar -x -C "$scratch/corpus"
+    ( cd "$scratch/corpus" && find docs -type f -name '*.md' | grep -v -e '^docs/probes/' -e '^docs/probe-runs/' -e '^docs/probe-results/' | sort ) \
+        > "$scratch/corpus-before.txt"
+    sh "$root/tools/probe/seal.sh" "$scratch/corpus" \
+        HW-PROBE-a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer \
+        HW-PROBE-a-session-answers-from-the-register-without-opening-the-question-it-replaced \
+        HW-PROBE-a-session-names-the-event-that-makes-a-document-accepted \
+        HW-PROBE-a-session-names-the-status-a-settled-decision-carries-in-its-pull-request \
+        HW-PROBE-a-session-records-an-unmeasured-claim-in-the-shape-this-corpus-checks \
+        HW-PROBE-an-agent-reaches-the-adjudication-from-the-document-that-lost-it \
+        HW-PROBE-what-a-session-writes-points-back-at-the-ruling-it-rests-on \
+        >"$scratch/corpus-seal.out" 2>&1
+    same "seal.sh seals a copy of this corpus with the #980 selection" "0" "$?"
+    deleted=0
+    left=""
+    while IFS= read -r doc; do
+        [ -e "$scratch/corpus/$doc" ] && continue
+        deleted=$((deleted + 1))
+        doc_slug=${doc##*/}
+        doc_slug=${doc_slug%.md}
+        doc_id=$(sed -n 's/^id: *//p' "$root/$doc" 2>/dev/null | head -1)
+        case $doc_slug in
+            README|readme|Readme|index|INDEX|_index) doc_slug="" ;;
+        esac
+        [ -n "$doc_id" ] || doc_id=$doc_slug
+        [ -n "$doc_id" ] || continue
+        if [ -n "$doc_slug" ]; then
+            hits=$(grep -rlIF -e "$doc_id" -e "$doc_slug" -- "$scratch/corpus" 2>/dev/null)
+        else
+            hits=$(grep -rlIF -e "$doc_id" -- "$scratch/corpus" 2>/dev/null)
+        fi
+        [ -n "$hits" ] && left="$left $doc_id:$(printf '%s' "$hits" | sed "s|$scratch/corpus/||" | tr '\n' ',')"
+    done < "$scratch/corpus-before.txt"
+    if [ "$deleted" -gt 0 ]; then
+        pass "and it deletes $deleted documents outside the instrument shelves"
+    else
+        fail "and it deletes documents outside the instrument shelves" "none deleted; the selection no longer names a record"
+    fi
+    if [ -z "$left" ]; then
+        pass "and no file of the sealed corpus names a document it deleted"
+    else
+        fail "and no file of the sealed corpus names a document it deleted" "$left"
+    fi
+else
+    echo "skip the #980 corpus seal: $root is not a git checkout"
+fi
+
 # Answer keys (#980). The `patched` probe's task was answered by HW-OBL-0198,
 # which names neither the probe nor its slug, so the seal above kept it and
 # every present-arm session of the pilot found its task already done. The

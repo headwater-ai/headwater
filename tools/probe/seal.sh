@@ -16,14 +16,22 @@
 #   --instrument` prints: the three probe shelves and `.headwater/export.json`,
 #   which restates each probe's expectation and target;
 # - every document under the workspace's `docs/` whose bytes contain a named
-#   probe's identifier or its slug, the file name the probe has on the shelf.
+#   probe's identifier or its slug, the file name the probe has on the shelf;
+# - every answer key `.headwater/probe.yml` declares for a named probe;
+# - for each document it deletes, named or key, the identifier claim under
+#   `.headwater/ids/` and every line anywhere in the workspace that names the
+#   document's identifier or slug (#1293). A shelf index, a register, a fold
+#   or a paragraph that cites the document loses that line and keeps the rest.
+#   A document with no `id:` is matched by its slug. A generic slug such as
+#   `README` removes no line, and the seal prints that it kept them.
 #
-# It removes nothing outside `docs/` and the instrument. A file there names a
-# probe by path or title and states no answer: the derived folds
+# It deletes no other file outside `docs/` and the instrument. A file there
+# names a probe by path or title and states no answer: the derived folds
 # `.headwater/nav.yml`, `.headwater/corpus.json` and
 # `.headwater/capture-cost.jsonl`, the census and graph fixtures under
 # `engine/`, and a comment in the hand-written `.headwater/overlay.yml`. The
-# present arm is meant to test `.headwater/`, so it keeps every one of them.
+# present arm is meant to test `.headwater/`, so each one stays as a file,
+# less the lines that name a deleted document.
 #
 # No probe's `examines` target names a probe, so the documents a probe tests
 # survive the seal. `.headwater/probe.yml` records what the seal removes and
@@ -120,6 +128,51 @@ for path in $instrument; do
 done
 echo "seal: removed $removed of $declared instrument paths from $here"
 
+# Remove a deleted document's identifier claim, and every line in the
+# workspace that names it, from the files that hold such a line. The files
+# that cite a record are shelf indexes, registers, folds and paragraphs, each
+# one line per item, so each file keeps every other line and stays a file.
+#
+#     strip_document <identifier> <slug>
+#
+# An empty slug matches by the identifier alone. It sets `stripped` to the
+# number of lines removed.
+strip_document() {
+    strip_id=$1
+    strip_slug=$2
+    for strip_claim in "$here"/.headwater/ids/*/"$strip_id"; do
+        if [ -e "$strip_claim" ]; then
+            rm -f -- "$strip_claim"
+        fi
+    done
+    set -- -e "$strip_id"
+    if [ -n "$strip_slug" ]; then
+        set -- "$@" -e "$strip_slug"
+    fi
+    stripped=0
+    strip_naming=$(grep -rlIF "$@" -- "$here" 2>/dev/null) || strip_naming=""
+    strip_ifs=$IFS
+    IFS='
+'
+    for strip_file in $strip_naming; do
+        grep -vF "$@" -- "$strip_file" > "$strip_file.seal" || true
+        stripped=$((stripped + $(grep -cF "$@" -- "$strip_file")))
+        cat -- "$strip_file.seal" > "$strip_file"
+        rm -f -- "$strip_file.seal"
+    done
+    IFS=$strip_ifs
+}
+
+# A slug that names a role rather than a record. Every shelf has a README, so
+# a line that holds the word names no answer, and the slug of such a file
+# never drives line removal.
+generic_slug() {
+    case $1 in
+        README|readme|Readme|index|INDEX|_index) return 0 ;;
+    esac
+    return 1
+}
+
 for probe in "$@"; do
     slug=""
     shelf_file=$(grep -rlx -- "id: $probe" "$root/docs/probes" 2>/dev/null) || shelf_file=""
@@ -140,23 +193,45 @@ for probe in "$@"; do
     count=0
     if [ -n "$named" ]; then
         # One path per line. A path holding a newline is split here and the
-        # parts are not files, so `rm -f` passes over them and the guard in
+        # parts are not files, so they are passed over and the guard in
         # `probe-record.sh` still finds the file.
+        #
+        # Each document is sealed as an answer key is (#1293): its identifier
+        # is read from the workspace copy before it goes, then its claim and
+        # every line that names it go too. A document with no `id:` is matched
+        # by its slug, and a generic slug matches nothing.
         old_ifs=$IFS
         IFS='
 '
         for file in $named; do
-            rm -f -- "$file"
-            count=$((count + 1))
+            IFS=$old_ifs
+            if [ -f "$file" ]; then
+                doc_slug=${file##*/}
+                doc_slug=${doc_slug%.md}
+                doc_id=$(sed -n 's/^id: *//p' "$file" 2>/dev/null | head -1)
+                rm -f -- "$file"
+                count=$((count + 1))
+                if generic_slug "$doc_slug"; then
+                    if [ -n "$doc_id" ]; then
+                        strip_document "$doc_id" ""
+                        echo "seal: removed the named document $doc_id of $probe, and $stripped lines naming it"
+                    fi
+                    echo "seal: kept every line naming $doc_slug, a name every shelf uses, after removing ${file#"$here"/}"
+                else
+                    [ -n "$doc_id" ] || doc_id=$doc_slug
+                    strip_document "$doc_id" "$doc_slug"
+                    echo "seal: removed the named document $doc_id of $probe, and $stripped lines naming it"
+                fi
+            fi
+            IFS='
+'
         done
         IFS=$old_ifs
     fi
     echo "seal: removed $count documents under docs/ naming $probe${slug:+ or $slug}"
 
-    # The answer keys of the probe (#980). The key is removed whole, with its
-    # identifier claim. Every other file loses the lines that name the key and
-    # keeps the rest, because the files that cite a key are shelf indexes,
-    # registers and paragraphs, and each one is one line per item.
+    # The answer keys of the probe (#980). The key is removed whole, and
+    # `strip_document` removes its claim and the lines that name it.
     keys=$(answer_keys "$probe")
     old_ifs=$IFS
     IFS='
@@ -168,23 +243,8 @@ for probe in "$@"; do
         key_slug=${key_path##*/}
         key_slug=${key_slug%.md}
         rm -f -- "$here/$key_path"
-        for claim in "$here"/.headwater/ids/*/"$key_id"; do
-            if [ -e "$claim" ]; then
-                rm -f -- "$claim"
-            fi
-        done
-        lines=0
-        naming=$(grep -rlIF -e "$key_id" -e "$key_slug" -- "$here" 2>/dev/null) || naming=""
-        IFS='
-'
-        for file in $naming; do
-            grep -vF -e "$key_id" -e "$key_slug" -- "$file" > "$file.seal" || true
-            lines=$((lines + $(grep -cF -e "$key_id" -e "$key_slug" -- "$file")))
-            cat -- "$file.seal" > "$file"
-            rm -f -- "$file.seal"
-        done
-        IFS=$old_ifs
-        echo "seal: removed the answer key $key_id of $probe, and $lines lines naming it"
+        strip_document "$key_id" "$key_slug"
+        echo "seal: removed the answer key $key_id of $probe, and $stripped lines naming it"
         IFS='
 '
     done
