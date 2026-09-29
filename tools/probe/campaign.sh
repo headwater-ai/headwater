@@ -72,20 +72,32 @@
 # The check is not atomic across workers, so the ceiling can be passed by at
 # most one declared session cost per worker.
 #
+# ## The turn cap, and what the recorder sees
+#
+# Each session runs under the turn cap its tier declares as `max_turns` in
+# `.headwater/probe.yml`, which the plan prints (#1384). `--max-turns` overrides
+# it for every tier of the batch, and a line whose tier declares none, with no
+# override, refuses with exit 2 before anything is built. A session the cap
+# stops is recorded with status 0 and is never drawn again. Assembly counts
+# those sessions per line.
+#
+# The recorder is given the arm's tree as `--baseline`, so a file the session
+# wrote through `Bash` is in `produced` as well as one it wrote with `Edit`.
+#
 # ## Resume
 #
 # A job whose session directory holds `status` 0 is done and is not run again.
 # Run the same command again to finish a batch that stopped, or to record again
-# a session whose recorder failed.
+# a session whose recorder failed. A capped session did not fail.
 #
 # ## Assembly
 #
 # `--assemble` checks that every recorded session of a line carries one
 # identity, and writes one identity block and one events block per line under
-# `<out>/assembled/`, with a count of sessions, the summed cost, and how many
-# sessions the intent hook reached. A person wraps them in a transcript with
-# `headwater new`, because a transcript is an authored document of this corpus
-# and this script writes nothing inside it.
+# `<out>/assembled/`, with a count of sessions, the summed cost, how many
+# sessions the intent hook reached, and how many the turn cap stopped. A person
+# wraps them in a transcript with `headwater new`, because a transcript is an
+# authored document of this corpus and this script writes nothing inside it.
 #
 # It needs `git`, `jq`, `tar`, `awk` and the `claude` harness, and it spends
 # real money.
@@ -93,7 +105,8 @@
 # ## Exit status
 #
 #   0   the batch finished, or the assembly was written
-#   2   a usage error
+#   2   a usage error, or a line whose tier declares no turn cap and no
+#       `--max-turns` was given
 #   3   a tool is missing, or no engine is built
 #   4   the checkout is dirty, or `HEAD` moved during the batch
 #   5   the plan refuses a line of the spec
@@ -216,6 +229,7 @@ run_job() {
         --tier "$tier" --arm "$arm" --category "$category" $excludes \
         ${repetitions:+--repetitions "$repetitions"} \
         ${max_turns:+--max-turns "$max_turns"} \
+        --baseline "$out/trees/$tier-$arm" \
         --oracle-tree "$out/trees/oracle" --raw "$dir/raw.jsonl" \
         > "$dir/record.md" 2> "$dir/record.err"
     status=$?
@@ -256,6 +270,7 @@ if [ "$assemble" = 1 ]; then
         cost=0
         count=0
         live=0
+        capped=0
         first_at=
         : > "$out/assembled/$stem.events.yaml"
         for dir in "$out"/sessions/L$index-*; do
@@ -280,13 +295,15 @@ if [ "$assemble" = 1 ]; then
             cost=$((cost + $(cat "$dir/cost")))
             count=$((count + 1))
             grep -q '^The intent hook was live' "$dir/record.md" && live=$((live + 1))
+            grep -q '^The session stopped at the turn cap' "$dir/record.md" && capped=$((capped + 1))
             sed -n '/^- probe: /,$p' "$dir/record.md" >> "$out/assembled/$stem.events.yaml"
         done
         {
             printf '%s\n' "$identity" | grep -v -e '^tier: ' -e '^arm: '
             printf 'tier: %s\narm: %s\nat: %s\ncost_cents: %s\n' "$tier" "$arm" "$first_at" "$cost"
         } > "$out/assembled/$stem.identity.yaml"
-        printf '%s sessions, %s cents, the intent hook live in %s\n' "$count" "$cost" "$live" \
+        printf '%s sessions, %s cents, the intent hook live in %s, %s stopped at the turn cap\n' \
+            "$count" "$cost" "$live" "$capped" \
             > "$out/assembled/$stem.summary"
         printf 'campaign: %s: %s' "$stem" "$(cat "$out/assembled/$stem.summary")" >&2
         printf '\n' >&2
@@ -357,6 +374,16 @@ while IFS= read -r line; do
     unit=$(sed -n 's/.*at a declared \$\([0-9.]*\) each.*/\1/p' "$out/plans/L$index" | head -1)
     awk -v d="$ceiling" 'BEGIN { printf "%d\n", d * 100 + 0.5 }' > "$out/ceiling.$tier"
     awk -v d="$unit" 'BEGIN { printf "%d\n", d * 100 + 0.5 }' > "$out/unit.$tier"
+    # The turn cap the tier declares (#1384). `probe-record.sh` reads it from
+    # the same plan for each session, and `--max-turns` overrides it for every
+    # tier of the batch. A tier that declares none, run with no override,
+    # refuses before anything is built, because a batch with no cap lets one
+    # session spend without a bound.
+    turns=$(sed -n 's/.*stops at a turn cap of \([0-9][0-9]*\).*/\1/p' "$out/plans/L$index" | head -1)
+    if [ -z "$turns" ] && [ -z "$max_turns" ]; then
+        echo "campaign: line $index ($tier $arm $category) runs a tier that declares no \`max_turns\` in .headwater/probe.yml, and no --max-turns was given." >&2
+        exit 2
+    fi
     for probe in $(sed -n 's/^- \(HW-PROBE-[^ ]*\) (.*/\1/p' "$out/plans/L$index"); do
         case " $probes " in *" $probe "*) ;; *) probes="$probes $probe" ;; esac
         printf '%s %s\n' "$index" "$probe" >> "$out/pairs.tmp"

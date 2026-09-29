@@ -8,12 +8,16 @@
 # directory, so every probe whose predicate names a document examines a path
 # its own absent arm removes. The campaign tier's ablation does not, so one
 # file holds both arms of the ablation rule.
+#
+# The regression tier declares a turn cap and the other two do not, so the
+# recorded regression plan holds the line that prints it (#1384).
 
 tiers:
   regression:
     budget_cents: 2000
     session_cost_cents: 25
     repetitions: 1
+    max_turns: 12
     arms: [present]
 
   campaign:

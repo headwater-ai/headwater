@@ -9,7 +9,8 @@
 #
 #     sh tools/probe/probe-record.sh --probe PROBE-X --session one \
 #         --task-file task.md --model claude-haiku-4-5 \
-#         --workspace /tmp/scratch-copy [--raw raw.jsonl] [--produced docs/x.md]…
+#         --workspace /tmp/scratch-copy [--raw raw.jsonl] [--produced docs/x.md]… \
+#         [--baseline /tmp/tree-it-was-copied-from] [--max-turns 80]
 #
 # Three modes read nothing from the network. `--identity-only` prints the six
 # members `headwater probe plan` fixes, `--provider-only <log>` prints the
@@ -83,7 +84,8 @@
 # session is prose. It writes a value only where the final non-empty line of
 # the final message, trimmed, is one answer the probe declares, and it writes
 # that word and nothing else. A session whose last line is a sentence gave no
-# answer in the closed set, and `null` is the true record of it.
+# answer in the closed set, and `null` is the true record of it. An answer of
+# two words is compared as a set of words, so their order is not read (#1384).
 #
 # Until #980 the rule read the whole final message. The pilot of 2026-09-28
 # found 7 of 27 sessions that wrote one sentence of justification and then the
@@ -104,13 +106,17 @@
 # Every code below is returned by one kind of path and no other, so a caller
 # and a fixture can branch on it. The harness's own status never leaves this
 # script: any nonzero one is 10, and the status it had is printed on stderr.
+# The one exception is a session the turn cap stopped, which is recorded and
+# exits 0 (#1384).
 # The refusals 2, 4, 6, 8 and 9 run before any check of this host and before
 # any harness call, so they spend nothing. When both 8 and 9 apply, 8 answers,
 # because the instrument guard runs first.
 #
 #   0   the transcript was written, or a read-only mode printed its members
 #   1   no temporary file for the plan
-#   2   a usage error: a missing or unknown argument, task file, workspace or log
+#   2   a usage error: a missing or unknown argument, task file, workspace,
+#       baseline or log, or a workspace that could not be compared with its
+#       baseline
 #   3   a tool is missing: `jq`, the engine, or the `claude` harness
 #   4   the workspace carries a `.git` file or directory
 #   5   `headwater probe plan` failed
@@ -120,9 +126,11 @@
 #       names, or that list could not be read
 #   9   a document under the workspace's `docs/` names the probe by its
 #       identifier or its slug, a file of the workspace names one of the
-#       probe's answer keys, or no `grep` can confirm that none does
+#       probe's answer keys or a document of this checkout that names the
+#       probe, or no `grep` can confirm that none does
 #       (`tools/probe/seal.sh` is the remedy)
-#   10  the harness exited nonzero, and its status is on stderr
+#   10  the harness exited nonzero for a reason other than the turn cap, and
+#       its status is on stderr
 #   11  the plan refuses the run, or it does not select the probe. It runs
 #       before any harness call, so it spends nothing
 #
@@ -141,7 +149,11 @@
 # `--category`, `--exclude` and `--repetitions` reach the plan unchanged, so the
 # selection digest a narrowed run records is the digest of the run it planned.
 # `--max-turns` reaches the harness, so a batch can hold every session of both
-# arms to one cap. `--oracle-tree` reaches the transform (see there).
+# arms to one cap. With no `--max-turns`, the cap is the one the tier declares
+# and the plan prints, and a tier that declares none runs with no cap.
+# `--oracle-tree` reaches the transform (see there). `--baseline` names the tree
+# the workspace was copied from, and every file the session wrote or changed is
+# passed to the transform as produced (see `step_diff_baseline`).
 
 set -u
 
@@ -162,6 +174,7 @@ provider_only=0
 answer_only=0
 answers=
 transform_args=
+baseline=
 
 while [ $# -gt 0 ]; do
     case $1 in
@@ -183,6 +196,7 @@ while [ $# -gt 0 ]; do
         --answer-only) answer_only=1; raw=${2:-}; shift 2 ;;
         --answers) answers=${2:-}; shift 2 ;;
         --produced) transform_args="$transform_args --produced ${2:-}"; shift 2 ;;
+        --baseline) baseline=${2:-}; shift 2 ;;
         *) echo "probe-record: unknown argument \`$1\`" >&2; exit 2 ;;
     esac
 done
@@ -213,6 +227,10 @@ if [ "$identity_only" = 0 ] && [ "$provider_only" = 0 ] && [ "$answer_only" = 0 
         exit 2
     }
     [ -f "$task_file" ] || { echo "probe-record: no task file at $task_file" >&2; exit 2; }
+    if [ -n "$baseline" ] && [ ! -d "$baseline" ]; then
+        echo "probe-record: no baseline directory at $baseline" >&2
+        exit 2
+    fi
     here=$(cd "$workspace" 2>/dev/null && pwd) || {
         echo "probe-record: no workspace directory at $workspace" >&2
         exit 2
@@ -304,6 +322,43 @@ if [ "$identity_only" = 0 ] && [ "$provider_only" = 0 ] && [ "$answer_only" = 0 
             exit 9
         fi
     done
+    # The named documents (#1384). The seal deletes each document under
+    # `docs/` that names the probe, and every line that names that document
+    # by its identifier or its `<slug>.md` (#1293). A workspace whose record is
+    # gone but whose register still links it passed the two checks above,
+    # because the line names the record and not the probe. `seal.sh --named`
+    # prints the names the seal strips, read from this checkout, and this
+    # guard matches them with the seal's own edge, so an identifier inside a
+    # longer one does not refuse a sealed tree.
+    named=$(sh "$root/tools/probe/seal.sh" --named "$probe") || {
+        echo "probe-record: the documents that name $probe could not be read, so this workspace cannot be cleared of them." >&2
+        exit 9
+    }
+    if [ -n "$named" ]; then
+        edge='[^A-Za-z0-9_-]'
+        # `awk` and `grep` alone, like the checks above, so the guard runs on
+        # the smallest `PATH` the fixtures give it. Every character that is
+        # not a letter, a digit, `-` or `_` is escaped as a bracket.
+        pattern=$(printf '%s\n' "$named" | awk -v e="$edge" 'BEGIN { ORS = "" } {
+                name = $1
+                md = (name ~ /\.md$/)
+                out = ""
+                for (i = 1; i <= length(name); i++) {
+                    c = substr(name, i, 1)
+                    if (c ~ /[A-Za-z0-9_-]/) out = out c
+                    else out = out "[" c "]"
+                }
+                if (NR > 1) print "|"
+                if (md) print "(^|" e ")" out
+                else print "(^|" e ")" out "(" e "|$)"
+            }')
+        left=$(grep -rlIE -e "$pattern" -- "$here" 2>/dev/null | awk 'NR == 1') || left=""
+        if [ -n "$left" ]; then
+            echo "probe-record: the workspace still names a document that names $probe: $left" >&2
+            echo "probe-record: run \`sh tools/probe/seal.sh $here $probe\` first." >&2
+            exit 9
+        fi
+    fi
 fi
 
 command -v jq >/dev/null 2>&1 || {
@@ -367,6 +422,19 @@ fi
 # trailing period or match a substring: `the answer is present` is prose that
 # contains an answer, and a recorder that took the word out of it would be
 # reading the session rather than observing it.
+#
+# An answer of more than one word is compared as a set of words (#1384): the
+# line and the declared answer are split on space, folded, and sorted, and the
+# two lists must be equal. The status pilot of 2026-09-29 ended an absent-arm
+# session with `HW-DR-0052 current` for the declared `current HW-DR-0052`, and
+# the whole-line rule recorded it as no answer. The words are the same two
+# facts, so the order is format and not content. The rule still takes no
+# substring and no extra word: `0052 current HW-DR-0052` is three words and is
+# no answer. The value written is the declared form.
+words() {
+    printf '%s\n' "$1" | tr '[:upper:]' '[:lower:]' | tr -s ' \t' '\n\n' | awk 'NF' | sort | tr '\n' ' '
+}
+
 step_derive_answer() {
     [ -n "$answers" ] || return 0
     # The final non-empty line of the final message (#980). A message that is
@@ -376,7 +444,7 @@ step_derive_answer() {
         | tr -d '\r' | awk 'NF { last = $0 } END { print last }' \
         | sed 's/^[[:space:]]*//; s/[[:space:]]*$//; s/\.$//')
     [ -n "$said" ] || return 0
-    folded=$(printf '%s' "$said" | tr '[:upper:]' '[:lower:]')
+    folded=$(words "$said")
     # `printf '%s\n'` and never `printf '%s'`: a set of one answer carries no
     # comma, so the unterminated form gives `read` a line with no newline, and
     # `while read` stops before the body on that. The fixture below caught it
@@ -385,7 +453,7 @@ step_derive_answer() {
     printf '%s\n' "$answers" | tr ',' '\n' | while read -r one; do
         one=$(printf '%s' "$one" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
         [ -n "$one" ] || continue
-        if [ "$folded" = "$(printf '%s' "$one" | tr '[:upper:]' '[:lower:]')" ]; then
+        if [ "$folded" = "$(words "$one")" ]; then
             printf '%s' "$one"
             return 0
         fi
@@ -435,6 +503,13 @@ if [ "$identity_only" = 0 ] && [ -n "$probe" ] && ! grep -q "^- $probe (" "$plan
 fi
 
 member() { sed -n "s/^${1}: *//p" "$plan" | head -1; }
+
+# The turn cap (#1384). A tier declares one in `.headwater/probe.yml` and the
+# plan prints it in its cost section. `--max-turns` overrides it, and a tier
+# that declares none runs a session with no cap, as before.
+if [ -z "$max_turns" ]; then
+    max_turns=$(sed -n 's/.*stops at a turn cap of \([0-9][0-9]*\).*/\1/p' "$plan" | head -1)
+fi
 
 # The plan prints one indented block per selected probe, and the `answers` line
 # is present only for a probe whose expectation is `answered`. Reading the set
@@ -515,10 +590,25 @@ if [ -e "$raw.nocd" ]; then
 fi
 # A harness status is the harness's own choice and may equal any code above,
 # so every nonzero one leaves as 10, with the status it had on stderr.
+#
+# One nonzero status is an observation and not a failure (#1384). A session
+# that `--max-turns` stopped ends its stream with a `result` line of subtype
+# `error_max_turns`, and the harness exits 1. Until #1384 this script exited
+# 10 for it, so the campaign of 2026-09-28 dropped 4 of 540 sessions, all on
+# the `patched` probe, and a resumed batch would draw each one again. A draw that
+# can be repeated until it finishes under the cap is not a draw. So a capped
+# session records what the log holds: its calls, what it wrote, and no answer,
+# because the session did not finish. The transcript says it was capped.
+capped=0
 if [ "$status" != 0 ]; then
-    echo "probe-record: the harness exited $status." >&2
-    tail -5 "$raw.err" >&2
-    exit 10
+    stopped=$(jq -s -r '([.[] | select(.type == "result")] | last | .subtype // "")' < "$raw" 2>/dev/null) || stopped=""
+    if [ "$stopped" = error_max_turns ]; then
+        capped=1
+    else
+        echo "probe-record: the harness exited $status." >&2
+        tail -5 "$raw.err" >&2
+        exit 10
+    fi
 fi
 
 
@@ -562,13 +652,127 @@ else
         "$session"
 fi
 printf '\n'
+if [ "$capped" = 1 ]; then
+    printf 'The session stopped at the turn cap of %s.\n\n' "${max_turns:-the harness}"
+fi
 
 answers=$(declared_answers "$probe")
-answer=$(step_derive_answer)
+answer=
+[ "$capped" = 1 ] || answer=$(step_derive_answer)
+
+# step_diff_baseline (#1384). A write made through `Bash` names no path in the
+# log, so the transform cannot seed `produced` from it. On 2026-09-28, 22 of 30
+# present-arm sessions of the `cited` probe and 26 of 30 absent-arm sessions
+# recorded `produced: []`, and the grader reads only `produced`. With
+# `--baseline <dir>`, the tree the workspace was copied from, every regular
+# file that is new or changed after the session is passed to the transform as
+# `--produced`. A file under `.claude/worktrees/<name>/` is compared with the
+# file at the same path under the baseline's root, so a worktree the session
+# made counts the files it changed and not the checkout it copied.
+#
+# **A file an engine verb writes is not produced** (verify round 1 of #1384). A
+# session that ran only `headwater new` changed `.headwater/capture-cost.jsonl`,
+# whose history names HW-DR-0049, and the grader passed the `cited` probe on
+# that file. A session that ran `headwater generate` rewrote `.headwater/nav.yml`
+# the same way. Only the present arm holds `.headwater/` and an engine that
+# runs, so counting those files tilts a rate toward that arm. So the diff passes
+# over `.headwater/` whole, at the root and in a worktree, and every file whose
+# first line carries the `headwater:generated` marker, such as a shelf index
+# under `docs/`. A session that edits a generated file by hand loses that edit
+# here, and `headwater generate` would have overwritten it too. The engine's
+# build directory and the probe log directory are passed over as well.
+#
+# A file is unchanged when its size and its time match the baseline's, since a
+# `cp -a` keeps both, and otherwise when its content digest matches. It needs
+# GNU `find` for `-printf`. A path that holds a tab or a newline is passed over.
+step_diff_baseline() {
+    list() {
+        (cd "$1" && find . \( -path ./engine/target -o -path ./.headwater \
+            -o -path './.claude/worktrees/*/engine/target' -o -path './.claude/worktrees/*/.headwater' \) \
+            -prune -o -type f -printf '%P\t%s\t%T@\n')
+    }
+    list "$baseline" > "$diffdir/base.tsv" || return 1
+    list "$here" > "$diffdir/here.tsv" || return 1
+    log_rel=
+    case "$probe_log" in
+        "$here"/*) log_rel=${probe_log#"$here"/}/ ;;
+    esac
+    awk -F '\t' -v log_rel="$log_rel" '
+        NR == FNR { size[$1] = $2; time[$1] = $3; next }
+        NF != 3 { next }
+        log_rel != "" && index($1, log_rel) == 1 { next }
+        {
+            key = $1
+            sub(/^\.claude\/worktrees\/[^\/]+\//, "", key)
+            if (!(key in size) || size[key] != $2) { print "new\t" $1; next }
+            if (key == $1 && time[key] == $3) next
+            print "check\t" $1 "\t" key
+        }
+    ' "$diffdir/base.tsv" "$diffdir/here.tsv" > "$diffdir/candidates.tsv"
+    awk -F '\t' '$1 == "new" { print $2 }' "$diffdir/candidates.tsv" > "$diffdir/produced"
+    awk -F '\t' '$1 == "check" { print $2 }' "$diffdir/candidates.tsv" > "$diffdir/here.list"
+    awk -F '\t' '$1 == "check" { print $3 }' "$diffdir/candidates.tsv" > "$diffdir/base.list"
+    if [ -s "$diffdir/here.list" ]; then
+        (cd "$here" && tr '\n' '\0' < "$diffdir/here.list" | xargs -0 sha256sum) > "$diffdir/here.sum" || return 1
+        (cd "$baseline" && tr '\n' '\0' < "$diffdir/base.list" | xargs -0 sha256sum) > "$diffdir/base.sum" || return 1
+        # `sha256sum` prints in the order it was given, so line N of each sum
+        # is the pair on line N of the lists. A digest is the first 64
+        # characters of its line, and the path is taken from the list.
+        awk 'NR == FNR { h[FNR] = substr($0, 1, 64); next }
+             substr($0, 1, 64) != h[FNR] { print FNR }' "$diffdir/here.sum" "$diffdir/base.sum" \
+            > "$diffdir/differ"
+        awk 'NR == FNR { want[$1]; next } FNR in want' "$diffdir/differ" "$diffdir/here.list" \
+            >> "$diffdir/produced"
+    fi
+    sort -u "$diffdir/produced" | while IFS= read -r path; do
+        [ -n "$path" ] || continue
+        generated "$here/$path" || printf '%s\n' "$path"
+    done
+}
+
+# Whether a file carries the generated-file marker where the engine puts it
+# (`engine/crates/mark/src/lib.rs`, verify round 2 of #1384). A commented
+# format carries it on the first line. A Markdown file with front matter
+# carries it as the member `"headwater:generated":` inside the block, because
+# its first line is `---`: `docs/spec/09-open-questions.md` is one, and a
+# first-line rule recorded it as produced. JSON carries it as a top-level
+# member. Only those places are read, so a document that quotes the marker in
+# its prose is not taken for a generated file.
+generated() {
+    case $1 in
+        *.json) json=1 ;;
+        *) json=0 ;;
+    esac
+    awk -v json="$json" '
+        FNR == 1 {
+            if (index($0, "headwater:generated")) { found = 1; exit }
+            if ($0 == "---") { block = 1; next }
+        }
+        block && $0 == "---" { exit }
+        block && index($0, "\"headwater:generated\":") == 1 { found = 1; exit }
+        json && /^[ \t]*"headwater:generated"[ \t]*:/ { found = 1; exit }
+        !block && !json { exit }
+        END { exit !found }
+    ' "$1" 2>/dev/null
+}
+
+set --
+if [ -n "$baseline" ]; then
+    baseline=$(cd "$baseline" && pwd)
+    diffdir=$(mktemp -d) || exit 1
+    trap 'rm -f "$plan" "$plan.err"; rm -rf "$diffdir"' EXIT HUP INT TERM
+    step_diff_baseline > "$diffdir/produced.sorted" || {
+        echo "probe-record: the workspace could not be compared with the baseline at $baseline." >&2
+        exit 2
+    }
+    while IFS= read -r path; do
+        [ -n "$path" ] && set -- "$@" --produced "$path"
+    done < "$diffdir/produced.sorted"
+fi
 
 # The transform reads the same stream this script wrote, on its standard input.
 # It is told the workspace because every artifact the session wrote is in that
 # copy and not in the corpus, and `produced` is read from there (#911).
 # shellcheck disable=SC2086
 sh "$root/tools/probe/probe-transform.sh" --probe "$probe" --session "$session" \
-    --root "$root" --workspace "$here" $transform_args ${answer:+--answer "$answer"} < "$raw"
+    --root "$root" --workspace "$here" $transform_args "$@" ${answer:+--answer "$answer"} < "$raw"
