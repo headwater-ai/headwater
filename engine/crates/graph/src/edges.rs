@@ -220,6 +220,12 @@ pub enum Unbound {
     AnchorUnresolved { anchor_kind: String, why: String },
     /// Two anchor kinds claim one string, so the target has two identities.
     AmbiguousAnchor { anchor_kinds: Vec<String> },
+    /// The string is the path of a typed document with an identifier, under a
+    /// relation that admits a document. Fix this link: a target is an
+    /// identifier ([Q4](../../../../docs/decisions/0004-relation-storage.md)),
+    /// and binding the path as an anchor would give one document a second name
+    /// at the target end (#1410). `path` is the normalized path.
+    DocumentByPath { id: String, path: String },
 }
 
 impl std::fmt::Display for Unbound {
@@ -250,6 +256,10 @@ impl std::fmt::Display for Unbound {
                 f,
                 "{} both claim this string, so it has two identities",
                 anchor_kinds.join(" and ")
+            ),
+            Unbound::DocumentByPath { id, path } => write!(
+                f,
+                "is the path of `{id}` ({path}), and a relation names a document by its identifier"
             ),
         }
     }

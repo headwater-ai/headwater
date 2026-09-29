@@ -1,0 +1,45 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The taxonomy the document-path-target tree is checked against (#1410).
+#
+# `traces_to` admits a document and a `code_path` anchor, so a string written
+# under it is looked up as an identifier first and resolved as a path after.
+# The path of a typed document with an identifier is the one string the
+# resolver would bind as an anchor onto a document, which gives a document a
+# second name at the target end. A target is an identifier (Q4), so that entry
+# is a finding and names the identifier to write.
+#
+# `governs` admits only a `code_path` anchor. A path to a typed document under
+# it is an anchor, as it was before, because the relation admits no document.
+
+facets:
+  summary:
+    role: scent
+
+identifier_schemes:
+  note_id: {pattern: "NOTE-{namespace}-{slug}", namespace: FIX, allocation: minted-once}
+
+anchors:
+  code_path: {resolver: source-tree}
+
+relations:
+  traces_to:
+    family: evidence
+    from: [explanation]
+    to:   [explanation, code_path]
+    created_by: author
+  governs:
+    family: governance
+    from: [explanation]
+    to:   [code_path]
+    created_by: author
+
+kinds:
+  explanation:
+    identifier: {scheme: note_id}
+
+shelves:
+  notes:
+    path: document-path-target/notes/**
+    homogeneous: true
+    kind: explanation
