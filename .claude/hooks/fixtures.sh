@@ -1226,9 +1226,10 @@ if [ -x "$engine" ]; then
     # writer appends a short line to the same file in a tight loop for as long
     # as the hooks run, and each hook writes a line of about 40KB, which is the
     # size of a line with neighbors and holds the file long enough for the
-    # second writer to queue behind it. With the two-write form, 0 of 12 such
-    # lines came out whole in two runs, and with 2KB lines 12 of 12 did
-    # (measured 2026-09-29). The stub engine answers `route` with a long
+    # second writer to queue behind it. With the two-write form this case
+    # found 1 of 12 lines whole and 22 torn or merged lines, and a loop of 12
+    # such lines beside the same second writer kept 0 of 12 whole in two runs
+    # but 12 of 12 when each line was 2KB (measured 2026-09-29). The stub engine answers `route` with a long
     # document that has no pointers, and hands every other verb to the real
     # engine.
     race_root=$(mktemp -d "${TMPDIR:-/tmp}/headwater-shadow-race.XXXXXX")
@@ -1252,7 +1253,6 @@ if [ -x "$engine" ]; then
         race_pids="$race_pids $!"
         n=$((n + 1))
     done
-    # shellcheck disable=SC2086
     wait $race_pids
     rm -f "$race_root/running"
     wait "$race_noise"
