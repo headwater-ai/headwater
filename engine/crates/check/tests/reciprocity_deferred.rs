@@ -16,6 +16,10 @@
 //!
 //! **A rule that read the target's state** passes `notes/current-onto-draft.md`,
 //! a live writer onto a draft. The deferral follows the writer.
+//!
+//! **A rule that fixed a half onto its own document** patches
+//! `notes/current-self.md`, whose one half names the note itself. The far end
+//! is then the same file, so the fix would write a second self-edge (#1335).
 
 use headwater_census::census;
 use headwater_census::shelves::Taxonomy;
@@ -222,9 +226,41 @@ fn a_draft_with_both_halves_passes() {
     deferred(&run(), "notes/draft-both.md");
 }
 
+/// A live writer whose one half names its own document is reported, and the
+/// finding carries no patch: the far end is the same file, and writing the
+/// other half there makes a second self-edge. The relation is an association,
+/// which the self-target rule leaves alone, so the remediation does not name
+/// that rule.
+#[test]
+fn a_half_that_names_its_own_document_is_reported_with_no_patch() {
+    let run = run();
+    let file = "notes/current-self.md";
+    let findings = findings_on(&run, file);
+    assert_eq!(findings.len(), 1, "{file} is still reported: {findings:?}");
+    let finding = findings[0];
+    assert_eq!(finding.patch, None, "no fix onto its own file: {finding:?}");
+    assert!(
+        finding.remediation.contains("names its own document")
+            && !finding.remediation.contains("under `relations:` in"),
+        "the remediation says to retarget or delete, not to add: {}",
+        finding.remediation
+    );
+    assert!(
+        !finding.remediation.contains("relation.target.is_source"),
+        "an association self-edge is not the self-target rule's: {}",
+        finding.remediation
+    );
+    let outcomes = outcomes_reading(&run, file);
+    assert_eq!(outcomes.len(), 1, "{file} is one pair: {outcomes:?}");
+    assert!(
+        matches!(outcomes[0], Outcome::Failed(_)),
+        "the instance stays in the denominator as a failure: {outcomes:?}"
+    );
+}
+
 /// The whole tree, counted, so that a row nobody asserted cannot move.
 #[test]
-fn the_tree_has_eight_pairs_and_five_findings() {
+fn the_tree_has_nine_pairs_and_six_findings() {
     let run = run();
     let instances = run
         .instances
@@ -236,5 +272,5 @@ fn the_tree_has_eight_pairs_and_five_findings() {
         .iter()
         .filter(|finding| finding.rule == RULE)
         .count();
-    assert_eq!((instances, findings), (8, 5));
+    assert_eq!((instances, findings), (9, 6));
 }

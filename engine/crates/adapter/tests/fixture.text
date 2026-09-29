@@ -692,7 +692,7 @@ read set
   version relation.target.unresolved 1
   version relation.target.is_source 1
   version relation.target.suspect 6
-  version relation.reciprocity.missing 2
+  version relation.reciprocity.missing 3
   version relation.endpoint.not_permitted 1
   version lifecycle.dependency.on_terminal 1
   version lifecycle.dependency.on_initial 1
