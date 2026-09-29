@@ -214,11 +214,17 @@ impl Root {
     /// Every error a check reports on the solution note, one block each: the
     /// header line that names the file and the lines indented under it.
     fn errors(ran: &Ran) -> Vec<String> {
+        Root::errors_on(ran, "docs/solution/checkout.md")
+    }
+
+    /// Every error a check reports on one file, one block each.
+    fn errors_on(ran: &Ran, path: &str) -> Vec<String> {
+        let header = format!("  {path}");
         let mut out: Vec<String> = Vec::new();
         let mut open = false;
         for line in ran.out.lines() {
             if line.starts_with("  ") && !line.starts_with("   ") {
-                open = line.starts_with("  docs/solution/checkout.md") && line.contains("error");
+                open = line.starts_with(&header) && line.contains("error");
                 if open {
                     out.push(line.to_string());
                 }
@@ -452,5 +458,265 @@ fn a_harvests_entry_that_does_not_read_refuses_the_run() {
     assert!(
         !ran.out.contains("docs/solution/checkout.md"),
         "no report was written: {ran:?}"
+    );
+}
+
+const PIN_RULE: &str = "harvest.pin.unread";
+const EXPORT_C: &str = "harvest/repo-c.json";
+
+/// The decisive case of #1311. A third pin names an export that is not there,
+/// and no anchor kind names its resolver, so no edge reaches it and the
+/// per-anchor finding never fires. Spec 7 says a pinned export the tier cannot
+/// read is a finding that names the pin, so the pin itself is reported, once,
+/// on the declaration, and the edges into A and B still bind.
+#[test]
+fn an_unread_pin_that_no_anchor_names_is_a_finding_that_names_the_pin() {
+    let root = Root::new("unread");
+    declare(
+        &root,
+        "    resolver: export-repo-b\n",
+        &format!(
+            "    resolver: export-repo-b\n  repo-c:\n    at: {EXPORT_C}\n    digest: sha256:0000\n    \
+             resolver: export-repo-c\n"
+        ),
+    );
+    let ran = root.run(&["check", "--strict"]);
+    assert_ne!(ran.code, Some(0), "the strict gate fails: {ran:?}");
+    let pins: Vec<String> = Root::errors_on(&ran, ".headwater/taxonomy.yml")
+        .into_iter()
+        .filter(|block| block.contains(PIN_RULE))
+        .collect();
+    assert_eq!(pins.len(), 1, "one finding, for C alone: {ran:?}");
+    // The head of the message is the rule's own naming of the pin. The
+    // resolver's reason also names `repo-c`, so a bare `contains("repo-c")`
+    // passes a finding headed by another pin's name.
+    assert!(
+        pins[0].contains(&format!(
+            "`harvests.repo-c` pins an export at `{EXPORT_C}` that binds nothing"
+        )),
+        "the finding names the pin and where it is: {}",
+        pins[0]
+    );
+    assert!(
+        !pins[0].contains("`harvests.repo-a`") && !pins[0].contains("`harvests.repo-b`"),
+        "{}",
+        pins[0]
+    );
+    assert!(pins[0].contains("did not read"), "{}", pins[0]);
+    assert_eq!(
+        unresolved(&ran),
+        Vec::<String>::new(),
+        "A and B bind: {ran:?}"
+    );
+
+    // Both pins that read are silent, and so is a run where C is repaired.
+    root.write(EXPORT_C, &export("tin"));
+    declare(&root, "sha256:0000", &root.digest(EXPORT_C));
+    let ran = root.run(&["check", "--strict"]);
+    assert_eq!(
+        Root::errors_on(&ran, ".headwater/taxonomy.yml"),
+        Vec::<String>::new(),
+        "{ran:?}"
+    );
+    assert_eq!(ran.code, Some(0), "{ran:?}");
+}
+
+/// Each pinned export joins the read set with the digest of its bytes, so a
+/// gate over a later tree names an export that moved, and names none over the
+/// tree the read set was taken from.
+#[test]
+fn a_pinned_export_joins_the_read_set_and_a_gate_sees_it_move() {
+    let root = Root::new("read-set");
+    let read_set = root.at.join("clean.readset");
+    let read_set = read_set.to_str().expect("the read set path is UTF-8");
+    let ran = root.run(&["check", "--read-set", read_set]);
+    assert_eq!(ran.code, Some(0), "{ran:?}");
+    let recorded = std::fs::read_to_string(read_set).expect("the read set reads");
+    for (export, digest) in [
+        (EXPORT_A, root.digest(EXPORT_A)),
+        (EXPORT_B, root.digest(EXPORT_B)),
+    ] {
+        assert!(
+            recorded
+                .lines()
+                .any(|line| line.contains(export) && line.contains(&digest)),
+            "the read set lists `{export}` at {digest}: {recorded}"
+        );
+    }
+    let still = root.run(&["gate", "--read-set", read_set]);
+    assert!(!still.out.contains(EXPORT_B), "{still:?}");
+
+    root.write(EXPORT_B, &export("silver"));
+    let moved = root.run(&["gate", "--read-set", read_set]);
+    assert!(
+        moved.out.contains(EXPORT_B),
+        "the gate names the export that moved: {moved:?}"
+    );
+}
+
+/// A pinned export that is absent joins the read set too, with no digest. The
+/// gate then carries no verdict across it, over the same tree or once the file
+/// appears, because nothing compares. An absent export is the case the rule
+/// reports, so it is the case a read set must not drop: dropped, the gate would
+/// say nothing about the export at all.
+#[test]
+fn an_absent_pinned_export_joins_the_read_set_and_a_gate_never_carries_across_it() {
+    let root = Root::new("read-set-absent");
+    let pinned = export("tin");
+    declare(
+        &root,
+        "    resolver: export-repo-b\n",
+        &format!(
+            "    resolver: export-repo-b\n  repo-c:\n    at: {EXPORT_C}\n    digest: {}\n    \
+             resolver: export-repo-c\n",
+            headwater_hash::digest(pinned.as_bytes())
+        ),
+    );
+    let read_set = root.at.join("absent.readset");
+    let read_set = read_set.to_str().expect("the read set path is UTF-8");
+    let ran = root.run(&["check", "--read-set", read_set]);
+    let recorded = std::fs::read_to_string(read_set)
+        .unwrap_or_else(|error| panic!("the read set is written: {error}: {ran:?}"));
+    assert!(
+        recorded.lines().any(|line| line.contains(EXPORT_C)),
+        "the read set lists the absent export: {recorded}"
+    );
+    let unhashed = format!("{EXPORT_C} carried no hash when it was read");
+    let still = root.run(&["gate", "--read-set", read_set]);
+    assert!(still.out.contains(&unhashed), "{still:?}");
+
+    root.write(EXPORT_C, &pinned);
+    let appeared = root.run(&["gate", "--read-set", read_set]);
+    assert!(
+        appeared.out.contains(&unhashed),
+        "the gate names the export that appeared: {appeared:?}"
+    );
+}
+
+/// `--root .` from inside the repository is the invocation a hook and a
+/// person type. The containment test compares resolved paths, so a relative
+/// root must hold both pins as under it, and both edges must bind.
+#[test]
+fn a_relative_root_holds_every_pin_inside_it() {
+    let root = Root::new("relative");
+    let output = Command::new(env!("CARGO_BIN_EXE_headwater"))
+        .args(["check", "--strict", "--root", "."])
+        .current_dir(&root.at)
+        .output()
+        .expect("the binary runs");
+    let ran = Ran {
+        code: output.status.code(),
+        out: String::from_utf8_lossy(&output.stdout).into_owned(),
+        err: String::from_utf8_lossy(&output.stderr).into_owned(),
+    };
+    assert_eq!(ran.code, Some(0), "{ran:?}");
+    assert_eq!(Root::errors(&ran), Vec::<String>::new(), "{ran:?}");
+}
+
+/// Two pins that do not read are two findings, each naming its own pin.
+#[test]
+fn every_unread_pin_is_its_own_finding() {
+    let root = Root::new("two-unread");
+    std::fs::remove_file(root.at.join(EXPORT_A)).expect("A's export is removed");
+    std::fs::remove_file(root.at.join(EXPORT_B)).expect("B's export is removed");
+    let ran = root.run(&["check", "--strict"]);
+    let pins: Vec<String> = Root::errors_on(&ran, ".headwater/taxonomy.yml")
+        .into_iter()
+        .filter(|block| block.contains(PIN_RULE))
+        .collect();
+    assert_eq!(pins.len(), 2, "{ran:?}");
+    for (pin, at) in [("repo-a", EXPORT_A), ("repo-b", EXPORT_B)] {
+        let head = format!("`harvests.{pin}` pins an export at `{at}` that binds nothing");
+        assert!(
+            pins.iter().any(|block| block.contains(&head)),
+            "{head}: {pins:?}"
+        );
+    }
+}
+
+/// `infer` runs the checks over the same readings `check` does, so an unread
+/// pin is a finding it can record as debt. Handed no readings, it would never
+/// see the rule.
+#[test]
+fn infer_sees_an_unread_pin() {
+    let root = Root::new("infer");
+    std::fs::remove_file(root.at.join(EXPORT_B)).expect("B's export is removed");
+    let ran = root.run(&["infer", "--owner", "tier-team"]);
+    assert_eq!(ran.code, Some(0), "{ran:?}");
+    assert!(ran.out.contains(PIN_RULE), "{ran:?}");
+}
+
+/// A pin with no digest binds nothing either, and the finding says what to
+/// write, so it is reported on the same terms as a missing file.
+#[test]
+fn a_pin_with_no_digest_is_a_finding_that_says_what_to_write() {
+    let root = Root::new("undigested");
+    let digest = root.digest(EXPORT_B);
+    declare(&root, &format!("    digest: {digest}\n"), "");
+    let ran = root.run(&["check", "--strict"]);
+    assert_ne!(ran.code, Some(0), "{ran:?}");
+    let pins: Vec<String> = Root::errors_on(&ran, ".headwater/taxonomy.yml")
+        .into_iter()
+        .filter(|block| block.contains(PIN_RULE))
+        .collect();
+    assert_eq!(pins.len(), 1, "{ran:?}");
+    assert!(
+        pins[0].contains("repo-b") && pins[0].contains("harvests.repo-b.digest"),
+        "{}",
+        pins[0]
+    );
+}
+
+/// `harvests` written as a list reads as no pins on a lenient reader, and every
+/// anchor into it would then report a missing resolver. The run refuses and
+/// names the block instead.
+#[test]
+fn a_harvests_block_that_is_not_a_mapping_refuses_the_run() {
+    let root = Root::new("list");
+    let declared = std::fs::read_to_string(root.at.join(".headwater/taxonomy.yml"))
+        .expect("the declaration reads");
+    let (head, _) = declared
+        .split_once("\nharvests:\n")
+        .expect("the fixture declares harvests");
+    root.write(
+        ".headwater/taxonomy.yml",
+        &format!("{head}\nharvests:\n  - repo-a\n  - repo-b\n"),
+    );
+    let ran = root.run(&["check", "--strict"]);
+    assert_eq!(ran.code, Some(1), "{ran:?}");
+    assert!(
+        ran.err
+            .contains("the pinned export declarations did not read")
+            && ran.err.contains("`harvests`")
+            && ran.err.contains("a sequence"),
+        "{ran:?}"
+    );
+}
+
+/// `harvest/repo-b.json` is a clean relative path, and a committed symlink at
+/// `harvest` takes the read out of the repository. The run refuses and names
+/// the entry rather than binding an anchor to a file outside the root.
+#[cfg(unix)]
+#[test]
+fn a_pin_that_a_symlink_takes_out_of_the_root_refuses_the_run() {
+    let root = Root::new("symlink");
+    let outside = std::env::temp_dir().join(format!(
+        "headwater-cli-harvest-{}-symlink-outside",
+        std::process::id()
+    ));
+    let _ = std::fs::remove_dir_all(&outside);
+    std::fs::create_dir_all(&outside).expect("the outside directory is made");
+    for export in [EXPORT_A, EXPORT_B] {
+        let name = Path::new(export).file_name().expect("it has a name");
+        std::fs::copy(root.at.join(export), outside.join(name)).expect("the export copies");
+    }
+    std::fs::remove_dir_all(root.at.join("harvest")).expect("the directory is removed");
+    std::os::unix::fs::symlink(&outside, root.at.join("harvest")).expect("the symlink is made");
+    let ran = root.run(&["check", "--strict"]);
+    let _ = std::fs::remove_dir_all(&outside);
+    assert_eq!(ran.code, Some(1), "{ran:?}");
+    assert!(
+        ran.err.contains("harvests.repo-a.at") && ran.err.contains(EXPORT_A),
+        "{ran:?}"
     );
 }
