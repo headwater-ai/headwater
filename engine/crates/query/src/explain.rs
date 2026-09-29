@@ -160,12 +160,9 @@ impl Explanation {
     /// and the `explain` tool of `headwater mcp` answers with it, so the two
     /// refuse in one sentence (#1366).
     pub fn refusal(&self) -> Option<String> {
-        self.unwalkable.as_ref().map(|reason| {
-            format!(
-                "`{}` is {reason}, so `explain` prints nothing",
-                self.path
-            )
-        })
+        self.unwalkable
+            .as_ref()
+            .map(|reason| format!("`{}` is {reason}, so `explain` prints nothing", self.path))
     }
 
     /// The explanation as text, in spec 2's own order.

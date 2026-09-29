@@ -295,17 +295,26 @@ fn show_finishes_and_refuses_a_named_pipe_at_a_document_path() {
 #[test]
 fn explain_refuses_a_named_pipe_at_a_document_path() {
     let root = document_pipe("explain-document-pipe");
-    for args in [&["explain", "docs/x.md"][..], &["explain", "docs/x.md", "--json"]] {
+    for args in [
+        &["explain", "docs/x.md"][..],
+        &["explain", "docs/x.md", "--json"],
+    ] {
         let (status, out, err) = ended(
             &root,
             args,
             "explain opened the named pipe at docs/x.md, and waited on it",
         );
         assert_eq!(status.code(), Some(1), "{args:?} refuses: {out}{err}");
-        assert!(out.is_empty(), "{args:?} prints nothing of a named pipe: {out}");
+        assert!(
+            out.is_empty(),
+            "{args:?} prints nothing of a named pipe: {out}"
+        );
         let err = flat(&err);
         assert!(err.contains("the census never opens"), "{args:?}: {err}");
-        assert!(err.contains("so `explain` prints nothing"), "{args:?}: {err}");
+        assert!(
+            err.contains("so `explain` prints nothing"),
+            "{args:?}: {err}"
+        );
     }
 }
 
