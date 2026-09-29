@@ -545,7 +545,9 @@ fn a_transcript_planned_over_one_probe_is_held_against_that_probe_alone() {
         "the report calls this result stale:\n{report}"
     );
     assert!(
-        report.contains("The read set of the 1 probe of 5 this run was planned over covers 2 documents"),
+        report.contains(
+            "The read set of the 1 probe of 5 this run was planned over covers 2 documents"
+        ),
         "the report does not say the read set is the part's:\n{report}"
     );
     assert!(
@@ -564,7 +566,10 @@ fn a_transcript_planned_over_one_probe_is_held_against_that_probe_alone() {
         &headwater_probe::plan::selection_digest(&[CITED]),
         "sha256:a-selection-this-tree-does-not-compose",
     );
-    assert_ne!(elsewhere, source, "the transcript records the part's digest");
+    assert_ne!(
+        elsewhere, source,
+        "the transcript records the part's digest"
+    );
     let staleness = staleness_of(&at, &elsewhere);
     assert_eq!(
         staleness.part, None,
