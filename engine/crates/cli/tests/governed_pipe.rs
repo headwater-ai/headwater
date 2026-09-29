@@ -605,6 +605,30 @@ fn neighbors_refuses_a_named_pipe_at_the_pin() {
     assert!(flat(&err).contains("is not a regular file"), "{err}");
 }
 
+/// The file-type test follows a link, so a pin that is a link to a regular
+/// file is read, and the run goes on to refuse the missing model file rather
+/// than the pin (#1366, verify round 1).
+#[test]
+fn neighbors_reads_a_pin_that_is_a_link_to_a_regular_file() {
+    let root = Root::shaped("neighbors-linked-pin", |at| {
+        let pin = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../../.headwater/embedding.yml");
+        std::fs::copy(pin, at.join("pin.yml")).expect("the pin copies");
+        std::fs::create_dir_all(at.join(".headwater")).expect("the directory is made");
+        std::os::unix::fs::symlink("../pin.yml", at.join(".headwater/embedding.yml"))
+            .expect("the link is made");
+    });
+    let (status, out, err) = ended(
+        &root,
+        &["neighbors", "a", "task"],
+        "neighbors did not end on a linked pin",
+    );
+    assert_eq!(status.code(), Some(1), "neighbors refuses: {err}");
+    assert!(out.is_empty(), "neighbors prints nothing: {out}");
+    assert!(flat(&err).contains("model.onnx"), "{err}");
+    assert!(!flat(&err).contains("embedding.yml"), "{err}");
+}
+
 /// `neighbors` ranks the summaries the census parsed, and a named pipe at a
 /// document path is a row that holds none, so the verb ends and never ranks
 /// it (#1366). The model files are 90MB and fetched, so a run with no

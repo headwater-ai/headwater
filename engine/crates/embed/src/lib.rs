@@ -623,6 +623,28 @@ mod tests {
         );
     }
 
+    /// A file whose bytes are the pinned ones leaves a regular stamp where
+    /// none was, so the next run does not hash it again (#1366, verify round 1).
+    #[test]
+    fn a_verified_file_leaves_a_stamp_where_none_was() {
+        let dir = Scratch(
+            std::env::temp_dir().join(format!("headwater-embed-stamp-new-{}", std::process::id())),
+        );
+        std::fs::create_dir_all(&dir).expect("a scratch directory");
+        std::fs::write(dir.join(GRAPH), b"not a model").expect("a planted file");
+        let stamp = dir.join(format!(".{GRAPH}.verified"));
+        let pinned = PINNED.replace(
+            "sha256:6fd5d72fe4589f189f8ebc006442dbb529bb7ce38f8082112682524616046452",
+            &headwater_hash::digest(b"not a model"),
+        );
+        let pin = Pin::parse(&pinned).expect("the fixture pin parses");
+        verified(&pin, &dir, GRAPH).expect("the planted bytes are the pinned ones");
+        assert!(
+            std::fs::metadata(&stamp).is_ok_and(|meta| meta.is_file()),
+            "the stamp is written"
+        );
+    }
+
     /// A named pipe at the cache file is an empty cache, and a write renames
     /// a regular file over it without opening it (#1366).
     #[cfg(unix)]
@@ -645,7 +667,7 @@ mod tests {
         cache.used.insert(key);
         cache.computed = 1;
         within("the cache write opened the named pipe", move || {
-            cache.write("sha256:aa")
+            cache.write("sha256:aa");
         });
         assert!(
             std::fs::metadata(&path)
