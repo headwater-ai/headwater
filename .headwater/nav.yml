@@ -401,6 +401,7 @@ nav:
       - "The opening sentence of the self-found list in spec 13 counts forty-nine items in ranges that do not match the list": "obligations/0218-the-opening-sentence-of-the-self-found-list-in-spec-13-counts-forty-nine-items-in-ranges-that-do-not-match-the-list.md"
       - "Ten rules of the editions ledger have one recorded corpus, so a rule change blessed with an edit to that corpus passes": "obligations/0222-ten-rules-of-the-editions-ledger-have-one-recorded-corpus-so-a-rule-change-blessed-with-an-edit-to-that-corpus-passes.md"
       - "No run measures whether the documents under docs change what an agent builds": "obligations/0223-no-run-measures-whether-the-documents-under-docs-change-what-an-agent-builds.md"
+      - "Six corpus gaps from run 20260929-1205, filed together": "obligations/0226-six-corpus-gaps-from-run-20260929-1205-filed-together.md"
   - "Probe results":
       - "Probe results": "probe-results/README.md"
       - "Probe result for campaign-of-2026-09-28-campaign-tier-absent-arm-navigability": "probe-results/campaign-of-2026-09-28-campaign-tier-absent-arm-navigability.md"
@@ -517,6 +518,7 @@ nav:
       - "No disk floor is stated for a build-order run, and nothing prunes the cargo pool": "process/obligations/0220-no-disk-floor-is-stated-for-a-build-order-run-and-nothing-prunes-the-cargo-pool.md"
       - "Subagents read skills from the shared checkout, and a worktree-isolated integrator cannot fast-forward it after a merge": "process/obligations/0221-subagents-read-skills-from-the-shared-checkout-and-a-worktree-isolated-integrator-cannot-fast-forward-it-after-a-merge.md"
       - "Thirteen run-tooling gaps from run 20260928-1109, filed together": "process/obligations/0224-thirteen-run-tooling-gaps-from-run-20260928-1109-filed-together.md"
+      - "Eight run-tooling gaps from run 20260929-1205, filed together": "process/obligations/0225-eight-run-tooling-gaps-from-run-20260929-1205-filed-together.md"
   - "Process specifications":
       - "Process specifications": "process/specs/README.md"
       - "Orchestration architecture": "process/specs/orchestration-architecture.md"
