@@ -849,7 +849,8 @@ fn bash_names(argument: &str, target: &Examined) -> bool {
 /// The words of a shell command, with quotes and operators taken off.
 ///
 /// Single quotes keep everything to the next single quote. Double quotes keep
-/// everything except a backslash escape. A backslash outside quotes keeps the
+/// everything, and a backslash in them escapes only `$`, `` ` ``, `"`, `\`
+/// and a newline, as in a POSIX shell. A backslash outside quotes keeps the
 /// next character. Whitespace and the operator characters `| & ; < > ( )`
 /// outside quotes end a word, so `<x.md` and `a;cat x.md` give `x.md` as a
 /// word. This is not a shell: it expands nothing and runs nothing, and a path
@@ -870,7 +871,10 @@ fn shell_words(command: &str) -> Vec<String> {
                 while let Some(q) = chars.next() {
                     match q {
                         '"' => break,
-                        '\\' => word.extend(chars.next()),
+                        '\\' => match chars.next() {
+                            Some(e) if "$`\"\\\n".contains(e) => word.push(e),
+                            other => word.extend(std::iter::once('\\').chain(other)),
+                        },
                         _ => word.push(q),
                     }
                 }
@@ -1213,6 +1217,7 @@ mod tests {
             r#"{"command":"grep -c x docs/a.md;cat docs/probes/one.md|head"}"#,
             r#"{"command":"cd /repo && sed -n 1,9p /repo/docs/probes/one.md 2>/dev/null"}"#,
             r#"{"command":"cat docs/probes/one\\.md"}"#,
+            r#"{"command":"cat \"a\\\"b\" docs/probes/one.md"}"#,
         ] {
             assert!(bash_names(command, &want), "{command}");
         }
@@ -1220,6 +1225,7 @@ mod tests {
             r#"{"command":"cat docs/probes/one.md.bak"}"#,
             r#"{"command":"cat otherdocs/probes/one.md"}"#,
             r#"{"command":"echo 'docs/probes/one.md is here'"}"#,
+            r#"{"command":"cat \"docs/probes/one\\.md\""}"#,
             r#"{"description":"docs/probes/one.md"}"#,
             "docs/probes/one.md is not JSON",
         ] {
