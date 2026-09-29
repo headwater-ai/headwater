@@ -51,6 +51,7 @@ Its last line is `green` or `red` with the failing checks named. Put the run id 
 ## What you never do
 
 - **You never edit the branch.** A defect is a `FAIL` with the finding; the build agent repairs it with its design intact.
+- **A surviving mutant with no behavior defect is a `FAIL` in the first round only.** From the second round on, a mutant that leaves the suite green while the branch behaves correctly on every input you tried is advisory: name it under `UNCHECKED`, write the case that would hold it if you have one, and return `PASS` unless something else fired. A mutant the parent's veto names is not advisory. In run `20260929-1205`, #1411 and #1414 each stopped at three `FAIL`s, every one a new surviving mutant, and no round found a defect.
 - **You never merge, and you never rule.** The verdict is evidence; the agent that dispatched you rules on it, and the parent rules last.
 - **You never read a whole specification part.** `headwater explain` first.
 - **You never leave a blocking loop running past your own exit.** The wait above ends with you.
