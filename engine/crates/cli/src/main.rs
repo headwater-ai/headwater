@@ -5807,16 +5807,15 @@ fn export(
     let surface = loaded.surface();
 
     let Some(target) = format else {
-        if generated_at.is_some() {
-            return fail(
-                "--at states the time an artifact that leaves this repository was generated, \
-                 and it is refused for a declared output. A committed export is held to \
-                 regeneration by byte, so a clock reading inside one would fail the gate on a \
-                 morning when nothing changed. Name a target with --format",
-            );
-        }
-        let plan = match headwater_generate::export_plan(&surface, &projections, profile.as_deref())
-        {
+        // `--at` reaches a declared export only where the declaration states
+        // `committed: false`. `export_plan` refuses it for a committed one,
+        // naming the path, before anything is written (#1343).
+        let plan = match headwater_generate::export_plan(
+            &surface,
+            &projections,
+            profile.as_deref(),
+            generated_at.as_deref(),
+        ) {
             Ok(plan) => plan,
             Err(message) => return fail(&message),
         };

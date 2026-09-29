@@ -3,7 +3,7 @@ id: HW-HOW-rotate-or-revoke-the-apt-signing-subkey
 status: current
 status_since: 2026-09-27
 summary: "How a maintainer replaces or withdraws the subkey that signs the Headwater APT metadata, and what each adopter must download again"
-last_verified: 2026-09-27
+last_verified: 2026-09-30
 title: "Rotate or revoke the APT signing subkey"
 provenance:
   warrant: asserted
@@ -29,11 +29,11 @@ apt does not fetch keys. It checks a signature only against the keyring file tha
 
 1. On the offline machine, add a new signing subkey to the primary key: `gpg --quick-add-key <primary-fingerprint> ed25519 sign 2y`.
 2. To revoke, also revoke the old subkey now: `gpg --edit-key <primary-fingerprint>`, then `key <n>`, `revkey` and `save`. To rotate, keep the old subkey. It continues to sign until step 6.
-3. Export the public keyring, which now holds both subkeys: `gpg --armor --export <primary-fingerprint> > site/apt/headwater-archive-keyring.asc`. Commit it in a pull request and merge it. The Cloudflare build serves it at `https://headwater.tools/apt/headwater-archive-keyring.asc`.
+3. Export the public keyring, which now holds both subkeys: `gpg --armor --export <primary-fingerprint> > site/apt/headwater-archive-keyring.asc`. Commit it in a pull request and merge it. The merge starts the `deploy-site.yml` job, and that job serves the keyring at `https://headwater.tools/apt/headwater-archive-keyring.asc`.
 4. Tell adopters to download the keyring again to the path that their `signed-by` names. Put the line in the notes of the next release and on the tracker. To rotate, cut at least one release that the old subkey signs after this step. Adopters then have one release cycle to fetch the keyring. To revoke, there is no such cycle, because the old subkey must not sign again. An adopter who has not fetched the new keyring gets `NO_PUBKEY` at the next release.
 5. Export the new subkey alone, with no passphrase: `gpg --armor --export-secret-subkeys <new-subkey-fingerprint>! > subkey.asc`. The `!` exports that one subkey and no other.
 6. Put the contents of `subkey.asc` into the `APT_SIGNING_KEY` Actions secret, then delete `subkey.asc` with `shred -u subkey.asc`.
-7. Sign again. A release is immutable, so cut the next release per [Cut a release](cut-a-release.md). Its metadata carries the new signature, and the Cloudflare build serves it. An adopter whose keyring is older than step 3 gets `NO_PUBKEY` from this release until they do step 4.
+7. Sign again. A release is immutable, so cut the next release per [Cut a release](cut-a-release.md). Its metadata carries the new signature. The `deploy-site` job of the release runs after `publish` and serves it. An adopter whose keyring is older than step 3 gets `NO_PUBKEY` from this release until they do step 4.
 8. To rotate, let the old subkey expire after step 7. It signs nothing after step 6.
 
 ## How to know it worked

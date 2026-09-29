@@ -88,7 +88,9 @@
 //! injects the clock into a check rather than let one call a syscall. A
 //! committed export is held to regeneration and gets no time, so `plan` passes
 //! none. An export that leaves the repository is the artifact spec 6 is talking
-//! about, and `headwater export --at <date>` supplies its time. Same corpus,
+//! about, and `headwater export --at <date>` supplies its time: to the output of
+//! `--format`, and to a declared export that states `committed: false`, which
+//! `headwater export` builds at publish time and no gate compares. Same corpus,
 //! same lock, same injected clock, byte-identical output, in both cases.
 
 use headwater_census::census::Census;
@@ -997,7 +999,7 @@ pub fn plan(
         match declaration.kind {
             Kind::ShelfIndex => shelf_index::emit(surface, census, declaration, &mut plan),
             Kind::ShelfSections => shelf_sections::emit(surface, census, declaration, &mut plan),
-            Kind::GraphExport => graph_export(surface, projections, declaration, &mut plan),
+            Kind::GraphExport => graph_export(surface, projections, declaration, None, &mut plan),
             Kind::ProbeResult => {
                 probe_result::emit(surface, census, declaration, runs, identity, &mut plan);
             }
@@ -1100,10 +1102,19 @@ fn orphaned(census: &Census, outputs: &[Output], unwritten: &[Unwritten]) -> Vec
 /// A profile the taxonomy does not declare is an error rather than an empty
 /// plan. An empty plan reports success over nothing, and a caller who mistyped
 /// a profile name would read that as an export.
+///
+/// `generated_at` is what `--at` supplies. It dates an export that its
+/// declaration states `committed: false`, because `headwater export` builds
+/// that file at publish time and no gate compares it (#1343). A committed
+/// export in the selection refuses the whole plan before anything is emitted:
+/// `generate --check` holds that file by byte, so a date inside it fails the
+/// gate on a day when nothing changed, and dating only the others would leave
+/// the caller believing every export carries the date.
 pub fn export_plan(
     surface: &Surface<'_>,
     projections: &Projections,
     selected: Option<&str>,
+    generated_at: Option<&str>,
 ) -> Result<Plan, String> {
     if let Some(name) = selected {
         if projections.profile(name).is_none() {
@@ -1121,15 +1132,34 @@ pub fn export_plan(
             });
         }
     }
+    let chosen = projections.declared.iter().filter(|declaration| {
+        declaration.kind == Kind::GraphExport
+            && selected.is_none_or(|name| name == declaration.membership.name)
+    });
+    if generated_at.is_some() {
+        let committed = chosen
+            .clone()
+            .filter(|declaration| declaration.committed)
+            .map(|declaration| format!("`{}`", declaration.output))
+            .collect::<Vec<_>>();
+        if !committed.is_empty() {
+            return Err(format!(
+                "--at dates an export that is built at publish time, and {} {} committed. \
+                 `generate --check` holds a committed export by byte, so a date inside it \
+                 would fail the gate on a day when nothing changed. Name a target with \
+                 --format, or name with --profile a profile whose declared exports all state \
+                 `committed: false`",
+                committed.join(", "),
+                match committed.len() {
+                    1 => "is",
+                    _ => "are",
+                },
+            ));
+        }
+    }
     let mut plan = Plan::default();
-    for declaration in &projections.declared {
-        if declaration.kind != Kind::GraphExport {
-            continue;
-        }
-        if selected.is_some_and(|name| name != declaration.membership.name) {
-            continue;
-        }
-        graph_export(surface, projections, declaration, &mut plan);
+    for declaration in chosen {
+        graph_export(surface, projections, declaration, generated_at, &mut plan);
     }
     Ok(plan)
 }
@@ -1148,13 +1178,17 @@ pub fn export_plan(
 /// anyway would commit the artifact whose trustworthiness the census exists to
 /// establish.
 ///
-/// No generation time is injected here. An artifact that `--check` compares by
-/// byte cannot carry a clock reading, and `headwater export --at` is where the
-/// artifact that leaves the repository gets one.
+/// A generation time reaches only an export declared `committed: false`. An
+/// artifact that `--check` compares by byte cannot carry a clock reading, so
+/// `plan` passes none, and [`export_plan`] refuses `--at` before it reaches a
+/// committed declaration. The marker follows the same flag: a committed export
+/// says `generate --check` holds it, and an uncommitted one says that
+/// `headwater export` builds it and that no gate compares it (#1343).
 fn graph_export(
     surface: &Surface<'_>,
     projections: &Projections,
     declaration: &Declaration,
+    generated_at: Option<&str>,
     plan: &mut Plan,
 ) {
     let name = declaration.membership.name.clone();
@@ -1166,7 +1200,11 @@ fn graph_export(
         });
         return;
     };
-    match export::emit(surface, profile, declaration.emitter(), None) {
+    let (generated_at, built) = match declaration.committed {
+        true => (None, export::Built::ByGenerate),
+        false => (generated_at, export::Built::AtPublish),
+    };
+    match export::emit_marked(surface, profile, declaration.emitter(), generated_at, built) {
         Ok(emission) if emission.census.is_defective() => plan.unwritten.push(Unwritten {
             at: declaration.output.clone(),
             kind: Kind::GraphExport,

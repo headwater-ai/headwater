@@ -27,6 +27,8 @@ The command refuses an ambiguous profile selection or an uncovered emitter loss.
 
 **This command is the one writer of an export that declares `committed: false`.** Such an export is built at publish time, and the tree does not hold it. Without `--check`, the command writes it like every other declared export. With `--check`, it does not require the file and does not compare a copy that it finds. The report names the path with a line that is not an error. [`headwater generate`](headwater-generate.md) does not write the file.
 
+**`--at` dates an export that declares `committed: false`, and only that declared export.** No gate compares such a file, so a date inside it fails nothing. Its marker states that `headwater export` builds it at publish time and that no gate compares it. A committed export carries no date, because `generate --check` compares it by byte. So when the selected profiles include a committed export, the command refuses `--at` before it writes anything. The refusal names each committed path. Name a target with `--format`, or name with `--profile` a profile whose declared exports all state `committed: false`.
+
 **With `--check`, the command reads the producer identity before it compares the bytes of any declared export.** A declared export was written by an emitter set, in the way every other projection was. So this command and [`headwater generate --check`](headwater-generate.md) make the same read of the corpus descriptor at `.headwater/corpus.json`. When the emitter set it records is not this engine's, a byte difference has two possible causes. A corpus moved, or an emitter moved, and the command cannot tell which. It reports both numbers, it says nothing about a remedy, and it exits non-zero. It says this before the drift sentence, which asserts what a run in that state does not know.
 
 The read is of the descriptor and never of an export, so it holds whether or not the selected profile writes anything. A repository that commits no descriptor records no emitter set, and a descriptor that records none is one an earlier engine wrote. Absence is not disagreement in either case, and the command then behaves as it always did.
@@ -41,7 +43,7 @@ The repository must load its taxonomy, corpus and projection declarations. A str
 |---|---|
 | `--profile <name>` | Selects one declared export profile. |
 | `--format <target>` | Emits one artifact to standard output using the target. |
-| `--at <date>` | Adds a generation date to a stream artifact. |
+| `--at <date>` | Adds a generation date to a stream artifact, and to a declared export that states `committed: false`. The command refuses it with `--check`, and it refuses a run that selects a committed export. |
 | `--check` | Checks declared output files without writing, and first checks the emitter set that the committed corpus descriptor records against this engine's. |
 | `--json` | Selects JSON output where the command supports a format choice. |
 | `--root <path>` | Selects the repository to load. |
@@ -52,7 +54,7 @@ The repository must load its taxonomy, corpus and projection declarations. A str
 
 **0** means that declared outputs match, or that the stream artifact was emitted without an uncovered loss.
 
-**1** means that loading, profile selection, emission or writing failed, that `--check` found drift, or that `--check` found a producer difference. The two `--check` failures print different sentences, because only one of them has a remedy this command can name.
+**1** means that loading, profile selection, emission or writing failed. It also means that `--at` selected a committed export, that `--check` found drift, or that `--check` found a producer difference. The two `--check` failures print different sentences, because only one of them has a remedy this command can name.
 
 **A refusal writes nothing to standard output, and a run that reported and then failed still wrote its report.** Drift found by `export --check` is the second case, where the regeneration report prints and the run then exits 1. A refusal of the command line, of a profile name or of an emitter target prints nothing there at all. The account of a refusal is one English sentence on standard error, under `--json` and `--format json` alike, which is what [HW-DR-0043](../decisions/0043-q43-whether-a-refusal-under-json-is-a-json-document.md) rules.
 
@@ -70,7 +72,7 @@ The command reads no environment variable.
 |---|---|
 | `.headwater/taxonomy.lock`, corpus and projections | Read to build the export. |
 | `.headwater/corpus.json` | Read under `--check` for the emitter set it records, before any declared export is compared. This verb never writes it. |
-| Declared export paths | Written without `--format` and `--check`, and an export that declares `committed: false` too. Under `--check`, an export that declares `committed: false` is not read. |
+| Declared export paths | Written without `--format` and `--check`, and an export that declares `committed: false` too. Under `--at`, only an export that declares `committed: false` is written, and it states the date. Under `--check`, an export that declares `committed: false` is not read. |
 | Standard output | Receives a stream artifact with `--format`. |
 | Standard error | Receives the stream projection census. |
 
