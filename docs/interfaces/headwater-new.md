@@ -36,6 +36,8 @@ Where the kind binds a language regime that holds prose to something, the report
 
 It never overwrites a document, and it never overwrites a claim. A kind whose scheme allocates `reconcile-first` gets one file of the identifier claim store, written before the document and holding the path of the document. That file records what the run minted, so an allocator on another branch reads a value this tree does not yet hold. The command writes the document and appends one capture-cost reading. If the document lands but the reading does not, the command reports the line to append and exits non-zero.
 
+A relation can name a kind that has no identifier scheme. For such a kind, the command refuses and prints two lines to add under `add:` in `.headwater/overlay.yml`. The first line declares a `minted-once` scheme with the pattern `{namespace}-<KIND>-{slug}`. The second line is `kinds.<kind>.identifier`. The scheme takes the namespace of the first scheme in the lock that has one. When no scheme has one, the lines show `ACME`, and the message tells you to replace it. The command changes the name and the pattern until they do not clash with a scheme in the lock. When every candidate clashes, the command prints no lines and tells you to declare a scheme yourself. It never writes the overlay.
+
 ## Preconditions
 
 The repository must have a readable consumer declaration, resolved taxonomy lock, corpus and configuration. The requested kind must exist in the resolved taxonomy.
@@ -81,6 +83,7 @@ The command reads the system date when `--now` is absent. It reads no other envi
 | The target document of a scaffold-created relation | Written with the far half of a symmetric relation, or of a required relation when the new document does not open at an initial state. Not written while the far half is owed. |
 | `.headwater/ids/<scheme>/<identifier>` | Written before the document, for a scheme that allocates `reconcile-first`. It holds the path of the document, it is never written twice, and it is never modified. |
 | `.headwater/capture-cost.jsonl` | Appended with one reading after the document write. |
+| `.headwater/overlay.yml` | Never read or written. A refusal for a kind with no identifier scheme names it as the file to edit. |
 
 ## See also
 

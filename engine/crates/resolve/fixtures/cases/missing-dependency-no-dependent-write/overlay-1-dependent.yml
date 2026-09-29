@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# A bundle that names `provider` in `requires`, in a selection that lacks
+# `provider`, and that writes nothing `provider` would have declared. Its one
+# `add` puts a key under `kinds.specification`, which the base declares. So no
+# write here depends on the missing bundle, and the resolver leaves the
+# selection alone: HW-DR-0040 rules that `requires` never adds a bundle to a
+# selection, and what a bundle reads and cannot find is referential
+# integrity's to report.
+
+bundle: dependent
+extends: headwater/standard@1.0.0
+requires: [provider]
+
+add:
+  kinds.specification.voice: declarative

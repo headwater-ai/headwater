@@ -3,9 +3,16 @@ add-collides-behind-remove: refused, so nothing to write out
 address-into-a-list: refused, so nothing to write out
 an-add-that-founds-what-it-addresses: 16 lines, identical after a round trip
 core-last-satisfier: refused, so nothing to write out
+dependent-add-to: 22 lines, identical after a round trip
+dependent-add-to-without-requires: refused, so nothing to write out
 list-operations: 17 lines, identical after a round trip
+missing-dependency-add: refused, so nothing to write out
+missing-dependency-add-to: refused, so nothing to write out
+missing-dependency-no-dependent-write: 15 lines, identical after a round trip
 not-confluent: refused, so nothing to write out
 remove-a-required-member: refused, so nothing to write out
 remove-breaks-a-reference: refused, so nothing to write out
+requires-cycle: refused, so nothing to write out
+transitive-requires-grants-no-write: refused, so nothing to write out
 two-adds-into-one-kind: 23 lines, identical after a round trip
 worked-overlay: 63 lines, identical after a round trip

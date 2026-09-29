@@ -641,6 +641,128 @@ fn the_overlay_example_the_interview_prints_reaches_a_lock() {
     );
 }
 
+/// Every kind a resolved lock declares that is not `abstract`, read from the
+/// lock rather than typed here.
+///
+/// A typed list passes forever, whatever kinds the package goes on to declare.
+/// This reads the `kinds` block of the lock line by line: a kind is a key at
+/// four spaces of indent, and it is abstract when `abstract: true` sits at six
+/// spaces under it.
+fn the_concrete_kinds_of(lock: &str) -> Vec<String> {
+    let mut kinds: Vec<(String, bool)> = Vec::new();
+    let mut inside = false;
+    for line in lock.lines() {
+        if line == "  kinds:" {
+            inside = true;
+            continue;
+        }
+        if !inside {
+            continue;
+        }
+        let indent = line.len() - line.trim_start().len();
+        if !line.trim().is_empty() && indent <= 2 {
+            break;
+        }
+        if indent == 4 {
+            if let Some(name) = line.trim().strip_suffix(':') {
+                kinds.push((name.to_string(), false));
+            }
+        } else if indent == 6 && line.trim() == "abstract: true" {
+            if let Some(last) = kinds.last_mut() {
+                last.1 = true;
+            }
+        }
+    }
+    kinds
+        .into_iter()
+        .filter(|(_, is_abstract)| !is_abstract)
+        .map(|(name, _)| name)
+        .collect()
+}
+
+/// Every kind the adopted package declares scaffolds, or its refusal prints the
+/// overlay block that makes it scaffold.
+///
+/// # The defect this case exists for
+///
+/// [#1264]. An adopter who vendored `headwater/standard` and added the one
+/// namespace line the tutorial asks for could write a decision, and
+/// `headwater new specification` refused. The refusal named a key and nothing
+/// else: not the file, not the section, not the scheme the key must name, and
+/// not that the scheme needs a namespace for `resolve` to accept it.
+///
+/// # What it holds
+///
+/// For each concrete kind read from the lock, `new` succeeds, or its standard
+/// error carries lines that open with `identifier_schemes.` or `kinds.`. Those
+/// lines are appended verbatim under `add:`, and then `resolve` and the same
+/// `new` both have to succeed. A block that omits the namespace, or proposes a
+/// pattern that overlaps a scheme already resolved, fails at `resolve`.
+///
+/// [#1264]: https://github.com/headwater-ai/headwater/issues/1264
+#[test]
+fn every_kind_the_adopted_package_declares_scaffolds_or_its_refusal_prints_the_overlay_block_that_makes_it_scaffold(
+) {
+    let root = a_root_the_vendor_route_reached("every-kind-scaffolds");
+
+    // The tutorial's adoption: the one namespace the package leaves to the
+    // corpus, and nothing else.
+    let overlay = root.read(".headwater/overlay.yml");
+    assert!(
+        overlay.trim_end_matches('\n').ends_with("add: {}"),
+        "the overlay ends with the line the tutorial replaces:\n{overlay}"
+    );
+    let adopted = format!(
+        "{}add:\n  identifier_schemes.decision_id.namespace: ACME\n",
+        overlay.trim_end_matches('\n').trim_end_matches("add: {}")
+    );
+    root.write(".headwater/overlay.yml", &adopted);
+    let (code, stderr) = root.run(&["taxonomy", "resolve"], None);
+    assert_eq!(code, Some(0), "the tutorial's adoption resolves:\n{stderr}");
+
+    let kinds = the_concrete_kinds_of(&root.read(".headwater/taxonomy.lock"));
+    assert!(
+        kinds.iter().any(|kind| kind == "specification"),
+        "the lock declares the kind this case was written for, among {kinds:?}"
+    );
+
+    for kind in &kinds {
+        let new = ["new", kind.as_str(), "--title", "A first one"];
+        let (code, stderr) = root.run(&new, None);
+        if code == Some(0) {
+            continue;
+        }
+        let block: Vec<&str> = stderr
+            .lines()
+            .filter(|line| {
+                let line = line.trim_start();
+                line.starts_with("identifier_schemes.") || line.starts_with("kinds.")
+            })
+            .collect();
+        assert!(
+            !block.is_empty(),
+            "`new {kind}` refuses and prints no overlay block to add:\n{stderr}"
+        );
+
+        let overlay = root.read(".headwater/overlay.yml");
+        let patched = format!("{}{}\n", overlay, block.join("\n"));
+        root.write(".headwater/overlay.yml", &patched);
+        let (code, resolve_stderr) = root.run(&["taxonomy", "resolve"], None);
+        assert_eq!(
+            code,
+            Some(0),
+            "the block `new {kind}` printed resolves:\n{resolve_stderr}\nthe refusal:\n{stderr}\n\
+             the overlay:\n{patched}"
+        );
+        let (code, again) = root.run(&new, None);
+        assert_eq!(
+            code,
+            Some(0),
+            "`new {kind}` succeeds once its printed block resolves:\n{again}"
+        );
+    }
+}
+
 /// The argument `taxonomy vendor` takes, as the interface contract states it.
 ///
 /// `docs/interfaces/headwater-taxonomy.md` is the contract for the verb, so the
