@@ -523,8 +523,9 @@ fn recording(edge: &Edge, current: &str) -> Option<Patch> {
 enum Reach {
     /// A literal path: one entry, so the one that changed.
     One,
-    /// A pattern or a list: this many entries now, and the digest does not say
-    /// how many of them changed.
+    /// A pattern or a list: this many regular files under the digest now, and
+    /// the digest does not say how many of them changed. A named pipe, a
+    /// socket or a device the pattern matched is not counted (#1333).
     Set(usize),
 }
 
@@ -537,11 +538,11 @@ fn moved(id: &str, name: &str, raw: &str, verified: &str, current: &str, reach: 
         ),
         Reach::Set(count) => format!(
             "`{id}` declares `{name}: {raw}`, which was verified against content `{verified}`, \
-             and the {count} {entries} it matches now read `{current}`; the digest covers the \
-             set, so how many of them changed is not recorded",
-            entries = match count {
-                1 => "entry",
-                _ => "entries",
+             and the {count} regular {files} it covers now read `{current}`; the digest covers \
+             the set, so how many of them changed is not recorded",
+            files = match count {
+                1 => "file",
+                _ => "files",
             }
         ),
     }

@@ -120,9 +120,14 @@ fn check_no_cache_finishes_when_a_governs_edge_reaches_a_named_pipe() {
     );
     // It reports the edge rather than passing it, because the edge can
     // never age (#1333).
+    // At `Info`, the level a directory literal gets: the report says the
+    // edge can never age, and nothing about the edge is wrong yet.
     assert!(
-        flat(&out).contains("`tools/pipe` names no regular file"),
-        "the edge that can never age is reported: {out}"
+        flat(&out).contains(
+            "· info relation.target.suspect (OB-REL-6): `HW-DR-0002` declares `governs: \
+             tools/pipe`, and `tools/pipe` names no regular file"
+        ),
+        "the edge that can never age is reported at info: {out}"
     );
 }
 
@@ -168,11 +173,11 @@ fn a_moved_wildcard_over_a_named_pipe_counts_only_what_its_digest_covers() {
     // is read off the tree: every entry under it but the pipe.
     let regular = regular_files(&root.at.join("tools"));
     assert!(
-        out.contains(&format!("the {regular} entries it matches now read")),
+        out.contains(&format!("the {regular} regular files it covers now read")),
         "the count is the {regular} entries the digest covers: {out}"
     );
     assert!(
-        !out.contains(&format!("the {} entries", regular + 1)),
+        !out.contains(&format!("the {} regular files", regular + 1)),
         "the pipe is not counted: {out}"
     );
     assert!(!flat(&out).contains(NO_REGULAR_FILE), "{out}");
@@ -236,6 +241,27 @@ fn derived_finishes_when_a_named_pipe_takes_a_document_path() {
         &root,
         &["derived"],
         "derived opened the named pipe at docs/x.md, and waited on it",
+    );
+}
+
+/// The same, with the named pipe reached through a symlink at the document
+/// path. `derived` follows a link, so it must ask what the link names, not
+/// what the link is (#1333, verify round 2).
+#[test]
+fn derived_finishes_when_a_symlink_at_a_document_path_names_a_named_pipe() {
+    let root = Root::shaped("derived-document-link-to-pipe", |at| {
+        let fifo = std::process::Command::new("mkfifo")
+            .arg(at.join("tools/pipe"))
+            .status()
+            .expect("mkfifo runs");
+        assert!(fifo.success(), "the named pipe is made");
+        std::os::unix::fs::symlink("../tools/pipe", at.join("docs/x.md"))
+            .expect("the link is made");
+    });
+    under_deadline(
+        &root,
+        &["derived"],
+        "derived followed the link at docs/x.md to the named pipe, and waited on it",
     );
 }
 
