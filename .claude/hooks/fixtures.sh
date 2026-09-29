@@ -1232,7 +1232,44 @@ if [ -x "$engine" ]; then
     # but 12 of 12 when each line was 2KB (measured 2026-09-29). The stub engine answers `route` with a long
     # document that has no pointers, and hands every other verb to the real
     # engine.
+    race_classify() {
+        race_whole=0
+        race_empty=0
+        race_other=0
+        race_bad=
+        race_n=0
+        while IFS= read -r race_line || [ -n "$race_line" ]; do
+            race_n=$((race_n + 1))
+            if [ "$race_line" = noise ]; then
+                continue
+            elif [ "$(printf '%s' "$race_line" | "$engine" json field session 2>/dev/null)" = "$2" ]; then
+                race_whole=$((race_whole + 1))
+            else
+                race_other=$((race_other + 1))
+                race_bad="$race_bad  $race_n:$(printf '%s' "$race_line" | cut -c1-60)
+"
+            fi
+        done < "$1"
+    }
     race_root=$(mktemp -d "${TMPDIR:-/tmp}/headwater-shadow-race.XXXXXX")
+    printf 'noise\n{"session":"fixture-classify","task":"one"}\n\nnoise\n{"session":"fixture-classify","task":"two"}\n' > "$race_root/classify-empty"
+    race_classify "$race_root/classify-empty" fixture-classify
+    if [ "$race_whole" -eq 2 ] && [ "$race_other" -eq 0 ]; then
+        printf 'ok   %s\n' 'the concurrent-writer classifier tolerates an empty line, the stated cost of a writer outside the lock'
+        passed=$((passed + 1))
+    else
+        printf 'FAIL %s\n  %s whole, %s empty, %s torn or merged:\n%s' 'the concurrent-writer classifier counted an empty line as torn or merged' "$race_whole" "$race_empty" "$race_other" "$race_bad"
+        failed=$((failed + 1))
+    fi
+    printf 'noise\n{"session":"fixture-classify","task":"one"}\n{"session":"fixture-classify","tanoise\nsk":"two"}\n' > "$race_root/classify-torn"
+    race_classify "$race_root/classify-torn" fixture-classify
+    if [ "$race_whole" -eq 1 ] && [ "$race_other" -eq 2 ] && [ "$race_empty" -eq 0 ]; then
+        printf 'ok   %s\n' 'the concurrent-writer classifier counts a torn line as torn and not as empty'
+        passed=$((passed + 1))
+    else
+        printf 'FAIL %s\n  %s whole, %s empty, %s torn or merged:\n%s' 'the concurrent-writer classifier missed a torn line' "$race_whole" "$race_empty" "$race_other" "$race_bad"
+        failed=$((failed + 1))
+    fi
     mkdir -p "$race_root/engine/target/dev-release" "$race_root/.headwater"
     cp "$root/.headwater/taxonomy.lock" "$race_root/.headwater/taxonomy.lock"
     head -c 40000 /dev/zero | tr '\0' x > "$race_root/pad"
