@@ -273,33 +273,28 @@ if [ "$identity_only" = 0 ] && [ "$provider_only" = 0 ] && [ "$answer_only" = 0 
     # The answer key outside the instrument. A document under `docs/` that
     # names the probe is a record about it, and each such record on this shelf
     # states the probe's expected value, a recorded answer or its target
-    # (#1229). `tools/probe/seal.sh` removes those records, and this guard
-    # refuses a workspace that was not sealed. It reads `docs/` alone: a file
-    # outside it names a probe by path or title, as a derived fold or the
-    # overlay does, and states no answer. It runs before any harness call, so
-    # the case that asserts it spends nothing, and it exits 9.
+    # (#1229). A file outside `docs/` that names the probe states an answer
+    # too, as `.claude/skills/fixtures.sh` does, unless `.headwater/probe.yml`
+    # declares it a fold that names the probe by path or title alone (#1384).
+    # `tools/probe/seal.sh` removes every such file, and this guard refuses a
+    # workspace that was not sealed. `seal.sh --naming` prints the list, so
+    # the seal and the guard read one search. It runs before any harness call,
+    # so the case that asserts it spends nothing, and it exits 9.
     #
-    # The slug is the file name the probe has on this checkout's shelf. A
-    # record links the probe by that path and not by the identifier, so both
-    # are searched for. A host with no `grep` cannot confirm the tree is
-    # clean, and that is a refusal rather than a pass.
+    # The search is by the probe's identifier and its slug, the file name the
+    # probe has on this checkout's shelf, because a record links the probe by
+    # that path. A file that states an answer and names neither is found by no
+    # search; `.headwater/probe.yml` states that limit beside `folds:`. A host
+    # with no `grep` cannot confirm the tree is clean, and that is a refusal
+    # rather than a pass.
     command -v grep >/dev/null 2>&1 || {
         echo "probe-record: \`grep\` is not on the path, so nothing can confirm the workspace holds no answer key." >&2
         exit 9
     }
-    slug=""
-    shelf_file=$(grep -rlx -- "id: $probe" "$root/docs/probes" 2>/dev/null) || shelf_file=""
-    case "$shelf_file" in
-        *.md)
-            slug=${shelf_file##*/}
-            slug=${slug%.md}
-            ;;
-    esac
-    if [ -n "$slug" ]; then
-        key=$(grep -rlF -e "$probe" -e "$slug" -- "$here/docs" 2>/dev/null) || key=""
-    else
-        key=$(grep -rlF -e "$probe" -- "$here/docs" 2>/dev/null) || key=""
-    fi
+    key=$(sh "$root/tools/probe/seal.sh" --naming "$here" "$probe") || {
+        echo "probe-record: the files that name $probe could not be read, so this workspace cannot be cleared of them." >&2
+        exit 9
+    }
     if [ -n "$key" ]; then
         first=${key%%
 *}

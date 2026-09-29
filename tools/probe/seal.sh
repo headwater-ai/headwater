@@ -27,18 +27,24 @@
 #   or a file name that another file shares such as `README`, removes no
 #   line, and the seal prints that it kept them.
 #
-# It deletes no other file outside `docs/` and the instrument. A file there
-# names a probe by path or title and states no answer: the derived folds
-# `.headwater/nav.yml`, `.headwater/corpus.json` and
-# `.headwater/capture-cost.jsonl`, the census and graph fixtures under
-# `engine/`, and a comment in the hand-written `.headwater/overlay.yml`. The
-# present arm is meant to test `.headwater/`, so each one stays as a file,
-# less the lines that name a deleted document.
+# - every file outside `docs/` and the instrument that names a probe by its
+#   identifier or slug, unless `folds:` in `.headwater/probe.yml` declares it
+#   (#1384). A fold names a probe by path or title and states no answer: the
+#   derived `.headwater/nav.yml`, `.headwater/corpus.json` and
+#   `.headwater/capture-cost.jsonl`, the census and graph fixtures under
+#   `engine/`, the hand-written overlay and probe declaration, and the route
+#   fixtures of the IDE clients. The present arm is meant to test
+#   `.headwater/`, so each fold stays as a file, less the lines that name a
+#   deleted document. A file that is not a fold states an answer, as
+#   `.claude/skills/fixtures.sh` does, and it goes whole.
 #
 # No probe's `examines` target names a probe, so the documents a probe tests
 # survive the seal. `.headwater/probe.yml` records what the seal removes and
 # why, and `probe-record.sh` refuses a workspace that still holds the
-# instrument (exit 8) or a record under `docs/` that names the probe (exit 9).
+# instrument (exit 8) or a file that names the probe and is not a fold
+# (exit 9). A file that states an answer and names neither the probe, nor a
+# declared answer key, nor a document that names the probe, is found by no
+# search: `.headwater/probe.yml` states that limit beside `folds:`.
 #
 # It refuses a workspace inside this checkout (exit 6), the guard `ablate.sh`
 # applies for the same reason, and an instrument it cannot read (exit 8). It
@@ -87,6 +93,82 @@ answer_keys() {
         printf '%s %s\n' "$id" "$path"
     done
 }
+
+# The folds `.headwater/probe.yml` declares, one path per line: the files
+# outside `docs/` that name a probe and state no answer, which the seal keeps
+# and the guard passes (#1384). A declaration with no `folds:` block lists
+# none, so every file outside `docs/` that names a sealed probe goes. `awk`
+# alone, because the guard runs it on the smallest `PATH` the fixtures give.
+folds() {
+    declaration=${HW_PROBE_YML:-$root/.headwater/probe.yml}
+    awk '
+        /^folds:/ { on = 1; next }
+        on && /^[^ #]/ { on = 0 }
+        on && /^  - / {
+            entry = substr($0, 5)
+            sub(/[ ]+#.*$/, "", entry)
+            gsub(/^[ "'\'']+|[ "'\'']+$/, "", entry)
+            if (entry != "") print entry
+        }
+    ' "$declaration"
+}
+
+# Every file of a workspace that names a probe by its identifier or its slug,
+# less the declared folds, one absolute path per line (#1384). The seal
+# removes each one and the guard refuses a workspace that holds one, so the
+# two read one list. The slug is the file name the probe has on this
+# checkout's shelf. A file under `docs/` is a record about the probe, and a
+# file outside it states an answer unless it is a fold. It reads binary files
+# too, so a file that `grep -I` would pass over is removed and not kept.
+#
+#     naming <workspace> <probe-id>
+naming() {
+    naming_here=$1
+    naming_probe=$2
+    naming_slug=""
+    naming_shelf=$(grep -rlx -- "id: $naming_probe" "$root/docs/probes" 2>/dev/null) || naming_shelf=""
+    case "$naming_shelf" in
+        *.md)
+            naming_slug=${naming_shelf##*/}
+            naming_slug=${naming_slug%.md}
+            ;;
+    esac
+    if [ -n "$naming_slug" ]; then
+        naming_files=$(grep -rlF -e "$naming_probe" -e "$naming_slug" -- "$naming_here" 2>/dev/null) || naming_files=""
+    else
+        naming_files=$(grep -rlF -e "$naming_probe" -- "$naming_here" 2>/dev/null) || naming_files=""
+    fi
+    [ -n "$naming_files" ] || return 0
+    naming_folds=$(folds) || return 8
+    printf '%s\n' "$naming_files" | HW_SEAL_FOLDS="$naming_folds" HW_SEAL_HERE="$naming_here/" awk '
+        BEGIN {
+            n = split(ENVIRON["HW_SEAL_FOLDS"], f, "\n")
+            for (i = 1; i <= n; i++) if (f[i] != "") fold[f[i]] = 1
+            here = ENVIRON["HW_SEAL_HERE"]
+        }
+        $0 != "" {
+            rel = $0
+            if (index(rel, here) == 1) rel = substr(rel, length(here) + 1)
+            if (rel in fold) next
+            print
+        }'
+}
+
+# `--folds` prints the declared folds and touches nothing.
+if [ "${1:-}" = --folds ]; then
+    folds
+    exit $?
+fi
+
+# `--naming <workspace> <probe>` prints each file of the workspace that the
+# seal would remove for naming the probe, and touches nothing.
+# `probe-record.sh` reads it to refuse a workspace that was not sealed.
+if [ "${1:-}" = --naming ]; then
+    [ -n "${2:-}" ] && [ -n "${3:-}" ] || { echo "usage: sh tools/probe/seal.sh --naming <workspace> <probe-id>" >&2; exit 2; }
+    naming_dir=$(cd "$2" 2>/dev/null && pwd -P) || { echo "seal: no workspace directory at $2" >&2; exit 2; }
+    naming "$naming_dir" "$3"
+    exit $?
+fi
 
 # `--keys <probe>` prints the answer keys of one probe and touches nothing.
 # `probe-record.sh` reads it to refuse a workspace that still names one.
@@ -296,14 +378,14 @@ for probe in "$@"; do
             slug=${slug%.md}
             ;;
     esac
-    named=""
-    if [ -d "$here/docs" ]; then
-        if [ -n "$slug" ]; then
-            named=$(grep -rlF -e "$probe" -e "$slug" -- "$here/docs" 2>/dev/null) || named=""
-        else
-            named=$(grep -rlF -e "$probe" -- "$here/docs" 2>/dev/null) || named=""
-        fi
-    fi
+    # One search over the workspace, less the folds, split by where each file
+    # is: a record under `docs/`, or a file outside it that states an answer.
+    naming_all=$(naming "$here" "$probe") || {
+        echo "seal: the folds of the probe declaration could not be read." >&2
+        exit 8
+    }
+    named=$(printf '%s\n' "$naming_all" | awk -v docs="$here/docs/" 'index($0, docs) == 1')
+    outside=$(printf '%s\n' "$naming_all" | awk -v docs="$here/docs/" '$0 != "" && index($0, docs) != 1')
     count=0
     if [ -n "$named" ]; then
         # One path per line. A path holding a newline is split here and the
@@ -342,6 +424,28 @@ for probe in "$@"; do
         IFS=$old_ifs
     fi
     echo "seal: removed $count documents under docs/ naming $probe${slug:+ or $slug}"
+
+    # The files outside `docs/` that name the probe and are not folds
+    # (#1384). Each states an answer, so each goes whole. It is not a record,
+    # so no line elsewhere is stripped for it. The list was read before the
+    # line removal above, so a file that the removal cleared of the probe
+    # still goes.
+    count=0
+    old_ifs=$IFS
+    IFS='
+'
+    for file in $outside; do
+        IFS=$old_ifs
+        if [ -f "$file" ]; then
+            rm -f -- "$file"
+            count=$((count + 1))
+            echo "seal: removed ${file#"$here"/}, which names $probe outside docs/ and is not a declared fold"
+        fi
+        IFS='
+'
+    done
+    IFS=$old_ifs
+    echo "seal: removed $count files outside docs/ naming $probe${slug:+ or $slug}"
 
     # The answer keys of the probe (#980). The key is removed whole, and
     # `strip_document` removes its claim and the lines that name it.
