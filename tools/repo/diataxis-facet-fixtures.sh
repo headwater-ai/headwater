@@ -663,6 +663,10 @@ judge "both bundle orders resolve to one lock digest" \
     "$(sed -n 's/^  digest: //p' "$lock_rev" | head -n 1)"
 sed '/^    - path: /,/^      digest: /d' "$lock_req" > "$scratch/lock-req.body"
 sed '/^    - path: /,/^      digest: /d' "$lock_rev" > "$scratch/lock-rev.body"
+# Two empty bodies compare equal, so each body must still hold the resolved
+# taxonomy after the strip.
+judge "each lock keeps its resolved taxonomy after the sources list is removed" "1 1" \
+    "$(grep -c '^resolved:' "$scratch/lock-req.body") $(grep -c '^resolved:' "$scratch/lock-rev.body")"
 if cmp -s "$scratch/lock-req.body" "$scratch/lock-rev.body"; then
     pass "both bundle orders write the same lock outside its sources list"
 else
