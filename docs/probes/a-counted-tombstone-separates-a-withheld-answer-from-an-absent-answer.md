@@ -23,9 +23,7 @@ relations:
 
 ## Task
 
-Inspect the corpus under the top-level `docs/` directory of this repository for the recovery word. That is the directory that `headwater export` serves.
-
-Do not read a `docs/` directory at a lower level, such as one under `engine/`.
+Inspect the corpus under `docs/` in this repository for the recovery word.
 
 Answer only `present` if the corpus states `amber`.
 
