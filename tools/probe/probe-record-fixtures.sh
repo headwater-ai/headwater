@@ -979,6 +979,20 @@ if [ "$(git -C "$root" rev-parse --show-toplevel 2>/dev/null)" = "$root" ]; then
     git -C "$root" archive HEAD | tar -x -C "$scratch/corpus"
     ( cd "$scratch/corpus" && find docs -type f -name '*.md' | grep -v -e '^docs/probes/' -e '^docs/probe-runs/' -e '^docs/probe-results/' | sort ) \
         > "$scratch/corpus-before.txt"
+    # Outside `docs/`, every probe of the shelf is named by a declared fold or
+    # by one of the two files that state an answer, and by nothing else
+    # (#1384). A fold dropped from the list, or a new file that names a probe,
+    # moves this set, so each entry of the list is held here.
+    : > "$scratch/outside-naming.txt"
+    for shelf_probe in "$root"/docs/probes/*.md; do
+        shelf_id=$(awk '/^id: */ { sub(/^id: */, ""); print; exit }' "$shelf_probe")
+        [ -n "$shelf_id" ] || continue
+        sh "$root/tools/probe/seal.sh" --naming "$scratch/corpus" "$shelf_id" \
+            | awk -v here="$scratch/corpus/" 'index($0, here) == 1 { $0 = substr($0, length(here) + 1) } $0 !~ /^docs\//' >> "$scratch/outside-naming.txt"
+    done
+    same "outside docs/, only the two files that state an answer name a probe and are not folds" \
+        ".claude/skills/fixtures.sh tools/probe/probe-record-fixtures.sh" \
+        "$(sort -u "$scratch/outside-naming.txt" | tr '\n' ' ' | sed 's/ $//')"
     sh "$root/tools/probe/seal.sh" "$scratch/corpus" \
         HW-PROBE-a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer \
         HW-PROBE-a-session-answers-from-the-register-without-opening-the-question-it-replaced \
@@ -1162,6 +1176,172 @@ PATH="$scratch/no-harness" "$shell" "$driver" --probe "HW-PROBE-$tombstone" --se
     --task-file "$scratch/task.md" --workspace "$scratch/named" \
     >/dev/null 2>"$scratch/named3.err"
 same "and so does one that holds it after a letter" "3" "$?"
+
+# A file outside `docs/` that names the probe (#1384). Two committed files do
+# that and state an answer: `.claude/skills/fixtures.sh` asserts the status
+# probe's answer, and `probe-record-fixtures.sh`, this file, names the
+# tombstone probe beside its record. Before, the seal and the guard read
+# `docs/` alone, so a session could read either one. Now each reads the whole
+# workspace, less the files `folds:` in `.headwater/probe.yml` declares, which
+# name a probe by path or title and state no answer.
+mkdir -p "$scratch/outside/.claude/skills" "$scratch/outside/.headwater" "$scratch/outside/docs/spec"
+printf '# docs/probes/%s.md answers `absent`\n' "$tombstone" > "$scratch/outside/.claude/skills/x.sh"
+printf -- '- docs/probes/%s.md\n' "$tombstone" > "$scratch/outside/.headwater/nav.yml"
+printf 'a spec that names no probe\n' > "$scratch/outside/docs/spec/01.md"
+PATH="$scratch/no-harness" "$shell" "$driver" --probe "HW-PROBE-$tombstone" --session x \
+    --task-file "$scratch/task.md" --workspace "$scratch/outside" \
+    >/dev/null 2>"$scratch/outside.err"
+same "the driver refuses a workspace whose file outside docs/ names the probe" "9" "$?"
+present "and it names that file" ".claude/skills/x.sh" "$scratch/outside.err"
+sh "$root/tools/probe/seal.sh" "$scratch/outside" "HW-PROBE-$tombstone" >"$scratch/outside.out" 2>&1
+same "seal.sh seals a workspace with a file outside docs/ that names the probe" "0" "$?"
+if [ -e "$scratch/outside/.claude/skills/x.sh" ]; then
+    fail "and it removes that file" "$(cat "$scratch/outside.out")"
+else
+    pass "and it removes that file"
+fi
+if [ -f "$scratch/outside/.headwater/nav.yml" ] && [ -f "$scratch/outside/docs/spec/01.md" ]; then
+    pass "and it keeps a declared fold that names the probe, and a file that names none"
+else
+    fail "and it keeps a declared fold that names the probe, and a file that names none" "$(ls -aR "$scratch/outside")"
+fi
+PATH="$scratch/no-harness" "$shell" "$driver" --probe "HW-PROBE-$tombstone" --session x \
+    --task-file "$scratch/task.md" --workspace "$scratch/outside" \
+    >/dev/null 2>"$scratch/outside2.err"
+same "and the driver passes the guard over the sealed tree" "3" "$?"
+# A fold is declared by its path, and the same bytes at an undeclared path
+# are refused: the list names files, not a kind of file.
+mkdir -p "$scratch/outside/engine"
+cp "$scratch/outside/.headwater/nav.yml" "$scratch/outside/engine/nav.yml"
+PATH="$scratch/no-harness" "$shell" "$driver" --probe "HW-PROBE-$tombstone" --session x \
+    --task-file "$scratch/task.md" --workspace "$scratch/outside" \
+    >/dev/null 2>"$scratch/outside3.err"
+same "the driver refuses a copy of a declared fold at a path the list does not name" "9" "$?"
+present "and it names the copy" "engine/nav.yml" "$scratch/outside3.err"
+
+# An undeclared file under `.headwater/`, the directory most folds live in,
+# is not a fold by where it is (verify round 1: a filter that passed every
+# path under `.headwater/` kept every case green).
+mkdir -p "$scratch/dotdir/.headwater"
+printf 'HW-PROBE-%s: absent\n' "$tombstone" > "$scratch/dotdir/.headwater/answers.yml"
+PATH="$scratch/no-harness" "$shell" "$driver" --probe "HW-PROBE-$tombstone" --session x \
+    --task-file "$scratch/task.md" --workspace "$scratch/dotdir" \
+    >/dev/null 2>"$scratch/dotdir.err"
+same "the driver refuses an undeclared file under .headwater/ that names the probe" "9" "$?"
+sh "$root/tools/probe/seal.sh" "$scratch/dotdir" "HW-PROBE-$tombstone" >/dev/null 2>&1
+if [ -e "$scratch/dotdir/.headwater/answers.yml" ]; then
+    fail "and seal.sh removes it" "$(ls -a "$scratch/dotdir/.headwater")"
+else
+    pass "and seal.sh removes it"
+fi
+
+# A fold is its whole path from the workspace root, not a suffix of one: a
+# nested `.headwater/nav.yml` is not the fold (verify round 2).
+mkdir -p "$scratch/nested/engine/.headwater"
+printf -- '- docs/probes/%s.md\n' "$tombstone" > "$scratch/nested/engine/.headwater/nav.yml"
+PATH="$scratch/no-harness" "$shell" "$driver" --probe "HW-PROBE-$tombstone" --session x \
+    --task-file "$scratch/task.md" --workspace "$scratch/nested" \
+    >/dev/null 2>"$scratch/nested.err"
+same "the driver refuses a nested copy whose path ends with a declared fold" "9" "$?"
+
+# The search reads a binary file, so a file that `grep -I` would pass over
+# is refused and removed rather than kept (verify round 2).
+mkdir -p "$scratch/binary/assets"
+printf 'a\000HW-PROBE-%s absent\n' "$tombstone" > "$scratch/binary/assets/answer.bin"
+PATH="$scratch/no-harness" "$shell" "$driver" --probe "HW-PROBE-$tombstone" --session x \
+    --task-file "$scratch/task.md" --workspace "$scratch/binary" \
+    >/dev/null 2>"$scratch/binary.err"
+same "the driver refuses a binary file that names the probe" "9" "$?"
+sh "$root/tools/probe/seal.sh" "$scratch/binary" "HW-PROBE-$tombstone" >/dev/null 2>&1
+if [ -e "$scratch/binary/assets/answer.bin" ]; then
+    fail "and seal.sh removes it" "the binary file survived the seal"
+else
+    pass "and seal.sh removes it"
+fi
+
+# A file the search cannot read fails the search closed (verify round 2).
+# `grep` exits 2 on it, and before, that status threw every match away: the
+# guard passed a workspace whose `.claude/skills/x.sh` states the answer, and
+# the seal removed nothing. A root user reads a file of mode 000, so the case
+# is skipped there.
+mkdir -p "$scratch/unreadable/.claude/skills" "$scratch/unreadable/notes"
+printf '# docs/probes/%s.md answers `absent`\n' "$tombstone" > "$scratch/unreadable/.claude/skills/x.sh"
+printf 'names no probe\n' > "$scratch/unreadable/notes/locked.txt"
+chmod 000 "$scratch/unreadable/notes/locked.txt"
+if [ -r "$scratch/unreadable/notes/locked.txt" ]; then
+    echo "skip the unreadable-file cases: this user reads a file of mode 000"
+else
+    PATH="$scratch/no-harness" "$shell" "$driver" --probe "HW-PROBE-$tombstone" --session x \
+        --task-file "$scratch/task.md" --workspace "$scratch/unreadable" \
+        >/dev/null 2>"$scratch/unreadable.err"
+    same "the driver refuses a workspace holding a file the search cannot read" "9" "$?"
+    present "and it says the files that name the probe could not be read" "could not be read" "$scratch/unreadable.err"
+    sh "$root/tools/probe/seal.sh" "$scratch/unreadable" "HW-PROBE-$tombstone" >/dev/null 2>"$scratch/unreadable-seal.err"
+    same "seal.sh stops at 8 on a file its search cannot read" "8" "$?"
+fi
+chmod 644 "$scratch/unreadable/notes/locked.txt"
+
+# A path is one name, whatever it holds: a space is not a separator, and a
+# `*` is not a pattern (verify round 1: a file named `*` made the seal remove
+# every file of its directory, and a split on spaces kept the file).
+mkdir -p "$scratch/odd/tools/probe" "$scratch/odd/.claude"
+printf 'see HW-PROBE-%s\n' "$tombstone" > "$scratch/odd/tools/probe/*"
+printf 'names no probe\n' > "$scratch/odd/tools/probe/kept.sh"
+printf 'see HW-PROBE-%s\n' "$tombstone" > "$scratch/odd/.claude/my notes.sh"
+sh "$root/tools/probe/seal.sh" "$scratch/odd" "HW-PROBE-$tombstone" >"$scratch/odd.out" 2>&1
+same "seal.sh seals a workspace whose paths hold a space and a star" "0" "$?"
+if [ -e "$scratch/odd/tools/probe/*" ] || [ -e "$scratch/odd/.claude/my notes.sh" ]; then
+    fail "and it removes each file that names the probe" "$(ls -aR "$scratch/odd")"
+else
+    pass "and it removes each file that names the probe"
+fi
+if [ -f "$scratch/odd/tools/probe/kept.sh" ]; then
+    pass "and it keeps the file beside the star, which names no probe"
+else
+    fail "and it keeps the file beside the star, which names no probe" "$(cat "$scratch/odd.out")"
+fi
+# The same under `docs/`, and in the line removal: a record named `*`, and a
+# file named `*` that links a deleted record, beside a binary file that the
+# removal must not rewrite.
+mkdir -p "$scratch/odddocs/docs/notes" "$scratch/odddocs/docs/spec" "$scratch/odddocs/assets"
+printf -- '---\nid: HW-OBL-0013\n---\nsee docs/probes/%s.md\n' "$tombstone" > "$scratch/odddocs/docs/notes/*"
+printf 'names no probe\n' > "$scratch/odddocs/docs/notes/kept.md"
+printf -- '- HW-OBL-0013 the tombstone gap\n' > "$scratch/odddocs/assets/*"
+printf 'a\000b\n' > "$scratch/odddocs/assets/blob.bin"
+cp "$scratch/odddocs/assets/blob.bin" "$scratch/blob.expected"
+sh "$root/tools/probe/seal.sh" "$scratch/odddocs" "HW-PROBE-$tombstone" >"$scratch/odddocs.out" 2>&1
+same "seal.sh seals a workspace whose docs/ holds a record named with a star" "0" "$?"
+if [ -f "$scratch/odddocs/docs/notes/kept.md" ] && [ ! -e "$scratch/odddocs/docs/notes/*" ]; then
+    pass "and it removes that record and keeps the document beside it"
+else
+    fail "and it removes that record and keeps the document beside it" "$(ls -aR "$scratch/odddocs/docs")"
+fi
+if cmp -s "$scratch/blob.expected" "$scratch/odddocs/assets/blob.bin"; then
+    pass "and the line removal leaves the binary file beside a file named with a star"
+else
+    fail "and the line removal leaves the binary file beside a file named with a star" "$(od -c "$scratch/odddocs/assets/blob.bin" | head -2 | tr '\n' ' ')"
+fi
+
+# The list itself. Each path it declares is a committed file of this checkout,
+# so a fold that moved is found here and not in a refused campaign. The two
+# files that state an answer are not on it.
+folds=$(sh "$root/tools/probe/seal.sh" --folds)
+same "seal.sh --folds reads the declared folds" "0" "$?"
+missing=""
+for fold in $folds; do
+    [ -e "$root/$fold" ] || missing="$missing $fold"
+done
+same "and every declared fold is a file of this checkout" "" "$missing"
+answering=""
+for answer in .claude/skills/fixtures.sh tools/probe/probe-record-fixtures.sh; do
+    if printf '%s\n' "$folds" | grep -qxF -e "$answer"; then
+        answering="$answering $answer"
+    fi
+done
+same "and no file that states a probe's answer is on it" "" "$answering"
+printf '%s\n' 'instrument:' '  - docs/probes' '' 'tiers: {}' > "$scratch/no-folds.yml"
+same "a declaration with no folds lists none, so the guard refuses every file outside docs/ that names the probe" \
+    "" "$(HW_PROBE_YML="$scratch/no-folds.yml" sh "$root/tools/probe/seal.sh" --folds)"
 
 # ---------------------------------------------------------------------------
 # Step 3 of #819: the recorder names its session, and says whether the hook ran.

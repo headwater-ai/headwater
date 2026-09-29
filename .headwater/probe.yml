@@ -29,18 +29,50 @@
 # again in an arm writes a copy with no probe in it, because the shelves are
 # gone.
 #
-# Other derived files name a probe by its path or title and state neither its
-# expectation nor its answer: `.headwater/nav.yml`, `.headwater/corpus.json`,
-# `.headwater/capture-cost.jsonl` and the census and graph fixtures under
-# `engine/`. They stay in every arm, the seal of #1229 included, less each line
-# that names a document the seal deletes (#1293), and a title can hint at a
-# target. So a present-arm rate over an `opened` probe is an
-# upper bound on what the documents alone achieve.
 instrument:
   - docs/probes
   - docs/probe-runs
   - docs/probe-results
   - .headwater/export.json
+
+# Folds: the files outside `docs/` that name a probe by its identifier or its
+# slug and state neither its expectation nor its answer. Each is a derived
+# file, a hand-written declaration, or a route fixture of an IDE client that
+# names a probe as a path. `tools/probe/seal.sh` removes every other file
+# outside `docs/` and the instrument that names a sealed probe, and
+# `probe-record.sh` refuses a workspace that still holds one (exit 9). Two
+# committed files are not folds and are removed, because each states an
+# answer: `.claude/skills/fixtures.sh` asserts the answer of the status probe,
+# and `tools/probe/probe-record-fixtures.sh` names the tombstone probe with
+# its record (#1384). An entry is a path relative to the root, one per line.
+# A new file that names a probe is refused until it is declared here, so the
+# list fails closed.
+#
+# The folds stay in every arm, the seal of #1229 included, less each line
+# that names a document the seal deletes (#1293), and a title can hint at a
+# target. So a present-arm rate over an `opened` probe is an upper bound on
+# what the documents alone achieve.
+#
+# **Limit.** The seal and the guard find an answer by a name: the probe's
+# identifier or slug, a declared answer key, or a document that names the
+# probe. A file that states an answer and names none of them, in `docs/` or
+# outside it, is not found by any search, and no mechanical check can find
+# it. The campaign report of #1384 cites this paragraph for that limit.
+folds:
+  - .headwater/capture-cost.jsonl
+  - .headwater/corpus.json
+  - .headwater/nav.yml
+  - .headwater/overlay.yml
+  - .headwater/probe.yml
+  - engine/crates/census/fixtures/corpus.census
+  - engine/crates/graph/fixtures/corpus.graph
+  - integrations/jetbrains/test/ClientTest.java
+  - integrations/jetbrains/test/fixtures/route-pointers.jsonl
+  - integrations/jetbrains/test/fixtures/route-text-only.jsonl
+  - integrations/jetbrains/test/fixtures/route-withheld.jsonl
+  - integrations/vscode/test/client.test.js
+  - integrations/vscode/test/fixtures/route-pointers.jsonl
+  - integrations/vscode/test/fixtures/route-text-only.jsonl
 
 # Answer keys: documents that an earlier session wrote in answer to a probe's
 # task, and that name neither the probe nor its slug, so the seal below would
