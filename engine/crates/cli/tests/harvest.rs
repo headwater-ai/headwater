@@ -490,11 +490,13 @@ fn a_withheld_identifier_binds_withheld_and_a_typo_stays_unresolved() {
         "a finding named the withheld identifier: {ran:?}"
     );
 
-    let graph = root.run(&["graph"]);
-    assert_eq!(graph.code, Some(0), "{graph:?}");
+    // The graph summary of the run counts the edge in the withheld class.
     assert!(
-        graph.out.lines().any(|line| line.trim() == "1 withheld"),
-        "the run counts one withheld edge: {graph:?}"
+        ran.out
+            .lines()
+            .chain(ran.err.lines())
+            .any(|line| line.trim() == "1 withheld"),
+        "the run counts one withheld edge: {ran:?}"
     );
 }
 
