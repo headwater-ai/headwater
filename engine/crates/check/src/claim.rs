@@ -200,7 +200,16 @@ impl Claims {
                 let Some(id) = claim.file_name().to_str().map(str::to_string) else {
                     continue;
                 };
-                let claimant = std::fs::read_to_string(claim.path())
+                // Only a regular file is opened. `metadata` follows a link, so
+                // a claim reached through one is still read. A named pipe, a
+                // socket or a device is never opened, because a pipe with no
+                // writer blocks its reader for ever (#1366). Such an entry
+                // reads as a claim that names nobody, as an unreadable claim
+                // does, so `claim.stale` reports it at its own path.
+                let regular = std::fs::metadata(claim.path()).is_ok_and(|meta| meta.is_file());
+                let claimant = regular
+                    .then(|| std::fs::read_to_string(claim.path()).ok())
+                    .flatten()
                     .unwrap_or_default()
                     .lines()
                     .next()
