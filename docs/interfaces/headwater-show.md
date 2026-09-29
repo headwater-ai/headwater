@@ -32,7 +32,7 @@ Use `explain` to learn what a document is. Use `show` to read what it says, by i
 
 ## Preconditions
 
-The repository must carry a readable `.headwater/taxonomy.lock`, consumer declaration and corpus. The target must resolve to a typed or untyped census row. `show` refuses a symlink and a named pipe, a socket or a device, as the two paragraphs under Exit status say. For a directory that the walk could not read, `show` writes the sentence for a file that could not be read ([#1366](https://github.com/headwater-ai/headwater/issues/1366)).
+The repository must carry a readable `.headwater/taxonomy.lock`, consumer declaration and corpus. The target must resolve to a typed or untyped census row. `show` refuses every row that the walk could not read, as the paragraphs under Exit status say. Such a row is a symlink, a named pipe, a socket or a device, an unreadable directory, or a name that is not UTF-8 ([#1366](https://github.com/headwater-ai/headwater/issues/1366)).
 
 An identifier resolves only to a typed document. An untyped document resolves only by its path.
 
@@ -51,13 +51,15 @@ An identifier resolves only to a typed document. An untyped document resolves on
 
 **0** means that the target resolved and the bytes of its file were written to standard output. Standard error is empty.
 
-**1** means that the target was missing or is a symlink, or that the file could not be read. It also means that the target is a named pipe, a socket or a device. It also means that the command line was invalid or the repository could not load. A missing target writes its refusal to standard error and no byte to standard output. A bare `headwater show` writes "`show` takes a path or an identifier".
+**1** means that the target was missing or is a row that the walk could not read, or that the file could not be read. It also means that the command line was invalid or the repository could not load. A missing target writes its refusal to standard error and no byte to standard output. A bare `headwater show` writes "`show` takes a path or an identifier".
 
 **A missing target states one of five things.** The five states and their sentences are the table in the Exit status section of [`headwater explain`](headwater-explain.md#exit-status). `show` writes the same sentence as `explain` for each target, because one function writes the refusal for both verbs.
 
-**A symlink is refused.** The census walk does not follow a symlink, and `show` does not follow one either. When the path from the root to the document passes through a symlink, `show` writes no byte to standard output. Standard error names the link in the sentence "is a symlink, which the walk does not follow, so `show` prints nothing". A link can name any file on the host, and this refusal keeps every read inside the root. A path that holds no document and that passes through a symlink out of the root gets a different refusal. It is outside the repository, and `show` writes the sentence that [`headwater explain`](headwater-explain.md) writes for that state ([#1249](https://github.com/headwater-ai/headwater/issues/1249)).
+**A row that the walk could not read is refused in the sentence of `explain`.** `explain` refuses such a row, and `show` writes the same sentence with its own name as the verb. The sentence names the path and the reason, and it ends "so `show` prints nothing". For a symlink, the reason names the target of the link. `show` writes no byte to standard output ([#1366](https://github.com/headwater-ai/headwater/issues/1366)).
 
-**A named pipe, a socket or a device is refused.** The census walk never opens such an entry, because a read of a named pipe that has no writer does not end. `show` does not open one either, and it writes no byte to standard output. Standard error names the path, and says that the census never opens such an entry, so `show` prints nothing ([#1333](https://github.com/headwater-ai/headwater/issues/1333)).
+**A symlink is refused.** The census walk does not follow a symlink, and `show` does not follow one either. A symlink can also be a directory above the row. When the path to the document passes through one, `show` writes no byte to standard output. Standard error names the link in the sentence "is a symlink, which the walk does not follow, so `show` prints nothing". A link can name any file on the host, and this refusal keeps every read inside the root. A path that holds no document and that passes through a symlink out of the root gets a different refusal. It is outside the repository, and `show` writes the sentence that [`headwater explain`](headwater-explain.md) writes for that state ([#1249](https://github.com/headwater-ai/headwater/issues/1249)).
+
+**A named pipe, a socket or a device is refused.** The census walk never opens such an entry, because a read of a named pipe that has no writer does not end. `show` does not open one either, and it writes no byte to standard output. Standard error names the path, and the sentence ends "which the census never opens, so `show` prints nothing" ([#1333](https://github.com/headwater-ai/headwater/issues/1333)).
 
 **1**, and never 101, when standard output or standard error cannot be written, and one sentence on standard error names a failed standard output.
 
