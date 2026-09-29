@@ -9,7 +9,7 @@ relations:
   governs:
     - [engine/crates/cli/src/lib.rs, engine/crates/cli/src/main.rs]
     - to: engine/crates/query/src/explain.rs
-      verified_revision: sha256:7295f5c240de3838c3e0bab52ff58e9b287b1768a879d2653bcf3b68bcc3fde9
+      verified_revision: sha256:6bdbcb46cc64f83052e6e4b79d0977ae78347fbd5eab29f878b3b9a9cffca27b
     - to: engine/crates/census/src/walk.rs
       verified_revision: sha256:53f2d2e75fddb3e371def25bb2c9d142bb5d7840170a7826d3f3293597f96761
 ---
@@ -32,7 +32,7 @@ Use `explain` to learn what a document is. Use `show` to read what it says, by i
 
 ## Preconditions
 
-The repository must carry a readable `.headwater/taxonomy.lock`, consumer declaration and corpus. The target must resolve to a typed or untyped census row.
+The repository must carry a readable `.headwater/taxonomy.lock`, consumer declaration and corpus. The target must resolve to a typed or untyped census row that the walk could read. `show` refuses a row that the walk could not read, as the two paragraphs under Exit status say ([#1366](https://github.com/headwater-ai/headwater/issues/1366)).
 
 An identifier resolves only to a typed document. An untyped document resolves only by its path.
 
