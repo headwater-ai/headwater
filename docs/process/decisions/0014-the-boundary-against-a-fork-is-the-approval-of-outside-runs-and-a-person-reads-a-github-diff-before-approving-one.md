@@ -21,7 +21,7 @@ relations:
 
 ## Context
 
-Before this record, the reasons lived in comments of `.github/workflows/ci.yml` on 2026-09-27. The comments were header rule 2 (lines 39 to 42). [Two triggers, one verdict](../../evaluations/two-triggers-one-verdict-how-this-repository-s-ci-decides-where-a-job-runs-and-what-it-trusts.md#the-only-boundary-is-the-event-and-it-is-the-only-one-that-can-be) holds the argument and the measurements.
+Before this record, the reasons lived in comments of `.github/workflows/ci.yml` on 2026-09-27. The comments were header rule 2 (lines 39 to 42). [Two triggers, one verdict](../evaluations/two-triggers-one-verdict-how-this-repository-s-ci-decides-where-a-job-runs-and-what-it-trusts.md#the-only-boundary-is-the-event-and-it-is-the-only-one-that-can-be) holds the argument and the measurements.
 
 A fork runs its own copy of `ci.yml` ([HW-PD-0013](0013-self-hosted-eligibility-in-ci-is-decided-by-the-event-alone-and-a-push-to-any-branch-is-eligible.md)). So the boundary against a hostile fork cannot be an expression in that file.
 
