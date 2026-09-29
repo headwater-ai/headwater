@@ -1,0 +1,92 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Two namespaces that do not keep two schemes apart (#1357).
+#
+# `spec_id` renders `{namespace}-{slug}` under `ZED-SPECIFICATION`, and
+# `section_id` renders `{namespace}-SPECIFICATION-{slug}` under `ZED`. Both
+# expand to the run `ZED-SPECIFICATION-` followed by a free slug, so
+# `ZED-SPECIFICATION-scope` satisfies both patterns and two records could carry
+# one identifier. A rule that compared schemes only inside one namespace made
+# this case valid.
+#
+# `decision_id` is the third arm. Its namespace `YAK` is a literal run that no
+# other scheme spells, so it overlaps nothing and appears in no finding.
+
+taxonomy: acme/fixture
+version: 1.0.0
+
+purposes:
+  rationale: {intent: explain why a choice was made and what it forecloses}
+
+vocabularies:
+  lifecycle_state:
+    - {value: draft,      role: initial}
+    - {value: current,    role: live}
+    - {value: superseded, role: terminal-retained}
+
+facets:
+  status:
+    role: state
+    values: $vocabularies.lifecycle_state
+    required: true
+    volatility: mutable
+    guidance:
+      draft: it is being argued over, and nothing may rely on it
+      current: it states what holds now
+      superseded: a later decision replaced it
+  sequence:
+    type: integer
+    required: true
+    volatility: stable
+
+regimes:
+  lifecycle:
+    standard:
+      initial: draft
+      transitions: {draft: [current], current: [superseded]}
+      retain_terminal: true
+
+identifier_schemes:
+  spec_id:     {pattern: "{namespace}-{slug}",               namespace: ZED-SPECIFICATION, allocation: minted-once}
+  section_id:  {pattern: "{namespace}-SPECIFICATION-{slug}", namespace: ZED,               allocation: minted-once}
+  decision_id: {pattern: "{namespace}-DR-{seq:04d}",         namespace: YAK,               allocation: reconcile-first}
+
+kinds:
+  governed_document:
+    abstract: true
+    facets: {require: [status]}
+  specification:
+    is_a: governed_document
+    purpose: rationale
+    lifecycle: standard
+    identifier: {scheme: spec_id}
+  section:
+    is_a: governed_document
+    purpose: rationale
+    lifecycle: standard
+    identifier: {scheme: section_id}
+  decision:
+    is_a: governed_document
+    purpose: rationale
+    lifecycle: standard
+    identifier: {scheme: decision_id}
+    facets: {require: [sequence]}
+
+shelves:
+  specifications:
+    path: docs/spec/**
+    homogeneous: true
+    kind: specification
+  sections:
+    path: docs/sections/**
+    homogeneous: true
+    kind: section
+  decisions:
+    path: docs/decisions/**
+    homogeneous: true
+    kind: decision
+    layout: "{sequence:02d}-{slug}.md"
+
+core:
+  requires:
+    - facet_role: state

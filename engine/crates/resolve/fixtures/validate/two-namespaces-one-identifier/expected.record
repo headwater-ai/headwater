@@ -1,0 +1,1 @@
+the resolved taxonomy `identifier_schemes.spec_id.pattern`: identifier integrity: and `identifier_schemes.section_id.pattern` admit one string, so two records could carry one identifier. `spec_id` is in namespace `ZED-SPECIFICATION`, and kind `specification` mints under it. `section_id` is in namespace `ZED`, and kind `section` mints under it
