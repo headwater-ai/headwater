@@ -328,7 +328,12 @@ strip_document() {
     strip_ifs=$IFS
     IFS='
 '
+    # A path is one name: `set -f` keeps a `*`, `?` or `[` in it from
+    # expanding to other files. The body and the code after the loop turn
+    # globbing back on, because the claim store is read through a glob.
+    set -f
     for strip_file in $strip_naming; do
+        set +f
         case $strip_file in
             *.json)
                 command -v jq >/dev/null 2>&1 || {
@@ -352,6 +357,7 @@ strip_document() {
         rm -f -- "$strip_file.seal"
     done
     IFS=$strip_ifs
+    set +f
 }
 
 # A slug that names a role or a topic rather than one record, so it never
@@ -399,7 +405,12 @@ for probe in "$@"; do
         old_ifs=$IFS
         IFS='
 '
+        # A path is one name: `set -f` keeps a `*`, `?` or `[` in it from
+        # expanding to other files. The body and the code after the loop turn
+        # globbing back on, because the claim store is read through a glob.
+        set -f
         for file in $named; do
+            set +f
             IFS=$old_ifs
             if [ -f "$file" ]; then
                 doc_slug=${file##*/}
@@ -422,6 +433,7 @@ for probe in "$@"; do
 '
         done
         IFS=$old_ifs
+        set +f
     fi
     echo "seal: removed $count documents under docs/ naming $probe${slug:+ or $slug}"
 
@@ -434,7 +446,12 @@ for probe in "$@"; do
     old_ifs=$IFS
     IFS='
 '
+    # A path is one name: `set -f` keeps a `*`, `?` or `[` in it from
+    # expanding to other files. The body and the code after the loop turn
+    # globbing back on, because the claim store is read through a glob.
+    set -f
     for file in $outside; do
+        set +f
         IFS=$old_ifs
         if [ -f "$file" ]; then
             rm -f -- "$file"
@@ -445,6 +462,7 @@ for probe in "$@"; do
 '
     done
     IFS=$old_ifs
+    set +f
     echo "seal: removed $count files outside docs/ naming $probe${slug:+ or $slug}"
 
     # The answer keys of the probe (#980). The key is removed whole, and
@@ -453,7 +471,12 @@ for probe in "$@"; do
     old_ifs=$IFS
     IFS='
 '
+    # A path is one name: `set -f` keeps a `*`, `?` or `[` in it from
+    # expanding to other files. The body and the code after the loop turn
+    # globbing back on, because the claim store is read through a glob.
+    set -f
     for pair in $keys; do
+        set +f
         IFS=$old_ifs
         key_id=${pair%% *}
         key_path=${pair#* }
@@ -466,4 +489,5 @@ for probe in "$@"; do
 '
     done
     IFS=$old_ifs
+    set +f
 done
