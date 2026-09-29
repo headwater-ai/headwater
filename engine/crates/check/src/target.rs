@@ -95,7 +95,9 @@ impl<'a> Targets<'a> {
 impl EdgeCheck for Targets<'_> {
     const RULE: &'static str = self::RULE;
     /// See [`crate::placement::Placement::VERSION`].
-    const VERSION: u32 = 1;
+    /// 2: the path of a typed document with an identifier, under a relation
+    /// that admits a document, binds to nothing (#1410).
+    const VERSION: u32 = 2;
     /// See the module comment: a pair cannot carry an edge that bound to
     /// nothing, and those are the edges this rule exists for.
     const UNIT: EdgeUnit = EdgeUnit::Entry;
@@ -165,6 +167,9 @@ fn remediation(unbound: &Unbound, name: &str, raw: &str) -> String {
             "narrow the anchor kinds that claim `{raw}`, because {} both admit it and the target has two identities",
             anchor_kinds.join(" and ")
         ),
+        Unbound::DocumentByPath { id, .. } => {
+            format!("write `{id}` in place of `{raw}` under `{name}`")
+        }
     }
 }
 
@@ -215,6 +220,13 @@ mod tests {
                     anchor_kinds: vec!["code_path".to_string(), "work_item".to_string()],
                 },
                 "code_path and work_item",
+            ),
+            (
+                Unbound::DocumentByPath {
+                    id: "DR-FIX-0002".to_string(),
+                    path: "docs/decisions/0002-fix.md".to_string(),
+                },
+                "write `DR-FIX-0002` in place of `DR-FIX-0001`",
             ),
         ];
 

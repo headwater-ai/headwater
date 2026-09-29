@@ -1,0 +1,295 @@
+// SPDX-License-Identifier: Apache-2.0
+//! A relation entry that names a governed document by its path (#1410).
+//!
+//! [Q4](../../../../docs/decisions/0004-relation-storage.md) rules that a
+//! target is an identifier. Where a relation admits a document and a
+//! `code_path` anchor, the index is asked first, and it matches an identifier
+//! only. A path fell through to the `source-tree` resolver, which binds any
+//! file that exists, so the entry became an anchor onto a Markdown file. It
+//! passed `check --strict`, and the document it meant never showed the edge.
+//!
+//! The tree under `fixtures/document-path-target/` holds the one case that is
+//! now a finding and each case beside it that stays as it was:
+//!
+//! **The decisive case.** `notes/a.md` writes the path of `NOTE-FIX-b`.
+//! `relation.target.unresolved` reports it once, names `NOTE-FIX-b`, and the
+//! graph holds no anchor for it.
+//!
+//! **A rule that compared the spelling.** `notes/a2.md` writes the same path
+//! with `./` and a `..` segment. The resolver normalizes it, and the
+//! comparison reads the normalized path.
+//!
+//! **A rule that lost the target's identity.** `notes/k.md` writes the path of
+//! `NOTE-FIX-b` in two spellings. It is one finding and one repeated target,
+//! as the repeat was when both bound as one anchor.
+//!
+//! **The identifier form.** `notes/c.md` writes `NOTE-FIX-b`, which binds to
+//! the document, so `NOTE-FIX-b` has the reverse edge.
+//!
+//! **A rule that reported every path.** `notes/d.md` traces to a source file,
+//! `notes/e.md` to a wildcard over the documents, `notes/g.md` to a Markdown
+//! file with no identifier, and `notes/j.md` to a file with an identifier and
+//! no kind. Each is an anchor and no finding.
+//!
+//! **A rule that compared any resolver's pattern.** `notes/h.md` writes the
+//! path of `NOTE-FIX-b` under `cites`, whose anchor kind's resolver is not
+//! `source-tree`. The string names an item in another system, so it is an
+//! anchor and no finding.
+//!
+//! **A rule that ignored the declaration.** `notes/f.md` writes the path of
+//! `NOTE-FIX-b` under `governs`, which admits only a `code_path` anchor. It is
+//! an anchor and no finding.
+
+use headwater_census::census;
+use headwater_census::shelves::Taxonomy;
+use headwater_census::walk::Corpus;
+use headwater_check::{Cache, Context, Date, Declared, Register, Run, Shape};
+use headwater_graph::anchors::{Binding, Resolver, Resolvers, Revision};
+use headwater_graph::declarations::Declarations;
+use headwater_graph::edges::{Target, Unbound};
+use headwater_graph::{Config, Graph};
+use std::path::{Path, PathBuf};
+
+/// As every other recorded run: a verdict is a function of the injected clock.
+const PINNED: &str = "2026-08-12";
+
+const RULE: &str = "relation.target.unresolved";
+
+fn fixtures_dir() -> PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("fixtures")
+}
+
+/// A resolver for an anchor kind outside the tree, which binds any string as
+/// itself: a snapshot of another system whose item names happen to spell paths.
+struct Snapshot;
+
+impl Resolver for Snapshot {
+    fn name(&self) -> &str {
+        "fixture-snapshot"
+    }
+
+    fn resolve(&self, raw: &str) -> Binding {
+        Binding::Resolved {
+            normalized: raw.to_string(),
+            matched: vec![raw.to_string()],
+            excluded_by: None,
+            revision: Revision::known(None),
+        }
+    }
+}
+
+fn build() -> (Graph, Run) {
+    let corpus = Corpus::new(fixtures_dir(), "document-path-target");
+    let source = std::fs::read_to_string(fixtures_dir().join("document-path-target.taxonomy.yml"))
+        .expect("the fixture taxonomy");
+    let root = headwater_yaml::load(&source)
+        .expect("the fixture taxonomy loads")
+        .value
+        .as_map()
+        .expect("a mapping")
+        .clone();
+
+    let taxonomy = Taxonomy::read(&root).expect("the taxonomy reads");
+    let declarations = Declarations::read(&root).expect("the declarations read");
+    let register = Register::read(&root).expect("the register reads");
+    let shape = Shape::read(&root).expect("the shape reads");
+    let taken = census::take(&corpus, &taxonomy);
+    let config = Config::default();
+    let graph = Graph::build(
+        &taken,
+        &declarations,
+        &Resolvers::over(&corpus)
+            .with(Box::new(Snapshot))
+            .expect("no other resolver is named fixture-snapshot"),
+        &corpus,
+        &config,
+    );
+    let run = headwater_check::run(
+        &taken,
+        &graph,
+        &Declared {
+            lock: "sha256:document-path-target-fixture",
+            taxonomy: &taxonomy,
+            shape: &shape,
+            relations: &declarations,
+            config: &config,
+            register: &register,
+            observations: &headwater_check::Observations::empty(),
+            pin: None,
+            harvests: &[],
+            adoption: None,
+            source: "engine/crates/check/fixtures/document-path-target.taxonomy.yml",
+        },
+        &headwater_check::claim::Claims::empty(),
+        &Context::at(Date::parse(PINNED).expect("the pinned date")),
+        &mut Cache::disabled(),
+    );
+    (graph, run)
+}
+
+/// The messages of one rule at one file of the tree.
+fn at<'a>(run: &'a Run, file: &str) -> Vec<&'a str> {
+    let path = format!("document-path-target/{file}");
+    run.findings
+        .iter()
+        .filter(|finding| finding.rule == RULE && finding.path == path)
+        .map(|finding| finding.message.as_str())
+        .collect()
+}
+
+/// The one target the document with this identifier declares.
+fn target_of<'a>(graph: &'a Graph, id: &str) -> &'a Target {
+    let edges: Vec<&Target> = graph
+        .edges
+        .iter()
+        .filter(|edge| edge.source.id == id)
+        .map(|edge| &edge.target)
+        .collect();
+    let [only] = edges.as_slice() else {
+        panic!("{id} declares one edge, and the graph holds {edges:?}");
+    };
+    only
+}
+
+/// The decisive case: the path of a typed document with an identifier is a
+/// finding that names the identifier, and it is no anchor.
+#[test]
+fn a_path_to_an_identified_document_is_reported_with_the_identifier_to_write() {
+    let (graph, run) = build();
+
+    let found = at(&run, "notes/a.md");
+    assert_eq!(found.len(), 1, "{found:?}");
+    assert!(found[0].contains("NOTE-FIX-b"), "{found:?}");
+
+    assert!(
+        matches!(
+            target_of(&graph, "NOTE-FIX-a"),
+            Target::Unbound(Unbound::DocumentByPath { id, path })
+                if id == "NOTE-FIX-b" && path == "document-path-target/notes/b.md"
+        ),
+        "{:?}",
+        target_of(&graph, "NOTE-FIX-a")
+    );
+}
+
+/// The same path, spelled with `./` and a `..` segment, is the same finding.
+#[test]
+fn a_path_that_is_not_in_canonical_form_is_compared_after_normalization() {
+    let (graph, run) = build();
+
+    let found = at(&run, "notes/a2.md");
+    assert_eq!(found.len(), 1, "{found:?}");
+    assert!(found[0].contains("NOTE-FIX-b"), "{found:?}");
+    // The message names the document's own path, not the spelling written.
+    assert!(
+        found[0].contains("(document-path-target/notes/b.md)"),
+        "{found:?}"
+    );
+    assert!(
+        matches!(
+            target_of(&graph, "NOTE-FIX-a2"),
+            Target::Unbound(Unbound::DocumentByPath { path, .. })
+                if path == "document-path-target/notes/b.md"
+        ),
+        "{:?}",
+        target_of(&graph, "NOTE-FIX-a2")
+    );
+}
+
+/// One document's path in two spellings is one target written twice. Before
+/// #1410 both bound as one anchor and `relation.declaration.unusable` reported
+/// the repeat. The finding keeps that identity, so the repeat still fires and
+/// a verdict cached by the earlier engine is still the right one.
+#[test]
+fn one_document_path_in_two_spellings_is_still_one_target_written_twice() {
+    let (graph, run) = build();
+
+    assert_eq!(
+        at(&run, "notes/k.md").len(),
+        1,
+        "{:?}",
+        at(&run, "notes/k.md")
+    );
+    let repeated: Vec<&str> = run
+        .findings
+        .iter()
+        .filter(|finding| {
+            finding.rule == "relation.declaration.unusable"
+                && finding.path == "document-path-target/notes/k.md"
+        })
+        .map(|finding| finding.message.as_str())
+        .collect();
+    assert_eq!(repeated.len(), 1, "{repeated:?}");
+    assert!(
+        repeated[0].contains("names document-path-target/notes/b.md twice"),
+        "{repeated:?}"
+    );
+    // The repeat declares no second edge.
+    assert!(matches!(
+        target_of(&graph, "NOTE-FIX-k"),
+        Target::Unbound(Unbound::DocumentByPath { .. })
+    ));
+}
+
+/// The identifier form binds to the document, and the document is the target
+/// end of the edge, which is the reverse line `explain` prints.
+#[test]
+fn the_identifier_form_binds_to_the_document_and_makes_the_reverse_edge() {
+    let (graph, run) = build();
+
+    assert!(at(&run, "notes/c.md").is_empty());
+    assert!(matches!(
+        target_of(&graph, "NOTE-FIX-c"),
+        Target::Document { id, .. } if id == "NOTE-FIX-b"
+    ));
+    let incoming: Vec<&str> = graph
+        .edges
+        .iter()
+        .filter(|edge| matches!(&edge.target, Target::Document { id, .. } if id == "NOTE-FIX-b"))
+        .map(|edge| edge.source.id.as_str())
+        .collect();
+    assert_eq!(incoming, ["NOTE-FIX-c"]);
+}
+
+/// A source file, a wildcard, a path under a relation that admits no
+/// document, a Markdown file with no identifier, a file with an identifier and
+/// no kind, and a string that another resolver binds all stay anchors.
+#[test]
+fn every_other_path_stays_an_anchor_and_is_not_reported() {
+    let (graph, run) = build();
+
+    for (file, id, kind) in [
+        ("notes/d.md", "NOTE-FIX-d", "code_path"),
+        ("notes/e.md", "NOTE-FIX-e", "code_path"),
+        ("notes/f.md", "NOTE-FIX-f", "code_path"),
+        ("notes/g.md", "NOTE-FIX-g", "code_path"),
+        ("notes/h.md", "NOTE-FIX-h", "snapshot_item"),
+        ("notes/j.md", "NOTE-FIX-j", "code_path"),
+    ] {
+        assert!(at(&run, file).is_empty(), "{file}: {:?}", at(&run, file));
+        assert!(
+            matches!(
+                target_of(&graph, id),
+                Target::Anchor { anchor_kind, .. } if anchor_kind == kind
+            ),
+            "{file}: {:?}",
+            target_of(&graph, id)
+        );
+    }
+
+    // The whole tree: three findings, each the decisive case.
+    let all: Vec<&str> = run
+        .findings
+        .iter()
+        .filter(|finding| finding.rule == RULE)
+        .map(|finding| finding.path.as_str())
+        .collect();
+    assert_eq!(
+        all,
+        [
+            "document-path-target/notes/a.md",
+            "document-path-target/notes/a2.md",
+            "document-path-target/notes/k.md"
+        ]
+    );
+}
