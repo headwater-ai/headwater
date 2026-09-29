@@ -25,8 +25,10 @@
 //! is taken over every probe of the selection and every document one of them
 //! examines, by path and content. The recorder copies it into the run identity
 //! the way it copies `tree` and `selection`, so a committed transcript names
-//! the digest the run was planned over. Recompose it now and the comparison is
-//! exact: it moved, or it did not.
+//! the digest the run was planned over. Recompose it now, over every probe of
+//! the selection the transcript recorded, and the comparison is exact: it
+//! moved, or it did not. A run planned with `--exclude` recorded fewer probes
+//! than the tree selects, and [`crate::grade::planned_over`] recovers which.
 //!
 //! A digest names no offender. That is what the second half is for.
 //!
@@ -239,6 +241,10 @@ pub struct Staleness {
     pub anchors: Vec<String>,
     /// Why there is nothing to compare, where the intake refused the file.
     pub unusable: Option<String>,
+    /// Where the transcript was planned over a part of the selection, as
+    /// `(probes of the part, probes of the selection)`. The read set above is
+    /// then the part's, and `None` is a run planned over the whole selection.
+    pub part: Option<(usize, usize)>,
 }
 
 impl Staleness {
@@ -256,6 +262,7 @@ impl Staleness {
             outside: Vec::new(),
             anchors: plan.anchors.clone(),
             unusable: None,
+            part: None,
         };
         // An empty composed digest is a plan that stopped before it composed
         // one, and never a corpus over which the read set is empty. A
@@ -279,7 +286,24 @@ impl Staleness {
         };
         staleness.recorded = identity.read_set.clone();
 
-        for read in &plan.reads {
+        // The declared half is the read set of the selection the transcript
+        // was planned over. A run planned with `--exclude` records the digest
+        // of the probes it kept, so held against the whole selection it reads
+        // as voided by an edit to a document it never read (#1387). Where the
+        // recorded digest is neither the whole nor the part its events name,
+        // the whole stands, and the comparison reports the set as moved.
+        let narrowed = crate::grade::narrowed(&plan.selected, record)
+            .map(|part| (part.len(), crate::plan::read_set_over(&part, census)));
+        let reads = match &narrowed {
+            Some((probes, read_set)) => {
+                staleness.composed = read_set.digest.clone();
+                staleness.anchors = read_set.anchors.clone();
+                staleness.part = Some((*probes, plan.selected.len()));
+                &read_set.reads
+            }
+            None => &plan.reads,
+        };
+        for read in reads {
             staleness.members.push(Member {
                 path: read.path.clone(),
                 because: match read.because {
@@ -403,20 +427,20 @@ impl Staleness {
             Verdict::Stands => {
                 let _ = writeln!(
                     out,
-                    "{} The read set covers {}, and the digest the transcript recorded is the \
+                    "{} {}, and the digest the transcript recorded is the \
                      digest this corpus composes.",
                     paint(Role::Info, "Nothing this run read has moved.", mode),
-                    crate::plural(self.declared(), "document")
+                    self.covers()
                 );
             }
             Verdict::SetMoved => {
                 let _ = writeln!(
                     out,
-                    "{} The read set covers {}, and the digest the transcript recorded is not \
+                    "{} {}, and the digest the transcript recorded is not \
                      the digest this corpus composes, so a document this run was planned over \
                      has moved.",
                     stale,
-                    crate::plural(self.declared(), "document")
+                    self.covers()
                 );
             }
             Verdict::OpenedFileMoved => {
@@ -429,11 +453,11 @@ impl Staleness {
             Verdict::Both => {
                 let _ = writeln!(
                     out,
-                    "{} The read set covers {}, the digest the transcript recorded is not the \
+                    "{} {}, the digest the transcript recorded is not the \
                      digest this corpus composes, and a document a session opened is not what \
                      the recorder observed either.",
                     stale,
-                    crate::plural(self.declared(), "document")
+                    self.covers()
                 );
             }
         }
@@ -543,6 +567,20 @@ impl Staleness {
             );
         }
         out
+    }
+
+    /// The clause that says what the declared digest covers. A run planned over
+    /// a part of the selection says so, because its count is smaller than the
+    /// plan's and a reader would otherwise ask where the rest went.
+    fn covers(&self) -> String {
+        let documents = crate::plural(self.declared(), "document");
+        match self.part {
+            None => format!("The read set covers {documents}"),
+            Some((probes, of)) => format!(
+                "The read set of the {} of {of} this run was planned over covers {documents}",
+                crate::plural(probes, "probe")
+            ),
+        }
     }
 
     /// How many members the declared digest covers.
