@@ -22,7 +22,7 @@
 
 lock:
   format: 3
-  digest: sha256:caaff9a5bdb8b2ab9cd67cd8a8d32efeb3f8037c48246a31e8a5d679608f9203
+  digest: sha256:89c76e45eb0ed0c19d406e7179f574a19ae1daf72b10153bf47f00a042007c8f
   rules: 2
   package: headwater/standard
   version: 4.12.0
@@ -36,7 +36,7 @@ lock:
     - path: .headwater/packages/headwater-standard/bundles/decision-record/bundle.yml
       digest: sha256:d2e1dd60f5adf97dcefd3aa46b0f377ed5e7eca533f82fad8a3d90224f79673f
     - path: .headwater/overlay.yml
-      digest: sha256:b848068ef14e114f0b16e163e7741b19e3329c196df88667477df14603f5607a
+      digest: sha256:8a063666e74b9b51ded083a0914da7be2cf201359ca71f4b3366b79c319c3ebe
 
 # The adoption payload: the debt this corpus declared when the taxonomy first
 # reached it. Every other line of this file is generated and this block is not.
@@ -1736,6 +1736,7 @@ resolved:
       - "docs/tutorials/*.md"
       - docs/how-to/relocate-a-shelf.md
       - docs/how-to/wire-headwater-check-into-your-own-workflow.md
+      - docs/how-to/publish-your-corpus-as-a-site.md
     archive:
       - headwater
       - LICENSE
@@ -1753,6 +1754,8 @@ resolved:
       - rm
       - wc
       - xargs
+      - python3
+      - mkdocs
       - apt-get
       - sudo
       - install

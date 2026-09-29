@@ -67,6 +67,8 @@ The first word of every command that a page for an adopter may tell a reader to 
 - `rm`
 - `wc`
 - `xargs`
+- `python3`
+- `mkdocs`
 - `apt-get`
 - `sudo`
 - `install`
