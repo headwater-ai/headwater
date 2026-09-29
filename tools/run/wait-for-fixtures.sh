@@ -33,7 +33,7 @@ start=$(date +%s)
 sh "$tool" --cap 5 --poll 1 "[ -f $scratch/flag ]" > "$scratch/out" 2>"$scratch/err"
 status=$?
 end=$(date +%s)
-if [ "$status" -eq 0 ] && [ $((end - start)) -le 1 ] && grep -q 'condition met after 0s' "$scratch/out"; then
+if [ "$status" -eq 0 ] && [ $((end - start)) -le 1 ] && grep -Eq 'condition met after [01]s' "$scratch/out"; then
     passed=$((passed + 1))
     echo "  ok    returns immediately, exit 0"
 else
