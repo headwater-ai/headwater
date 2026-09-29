@@ -878,13 +878,55 @@ same "and it keeps every line elsewhere that holds the word README" \
     "$(cat "$scratch/readme/docs/obligations/README.md")"
 present "and it says that the generic slug removed no lines" "seal: kept every line naming README" "$scratch/readme.out"
 
+# A one-word slug is generic too. A named `docs/spec/glossary.md` must not
+# strip every line that holds the word, or that links the glossary, from the
+# rest of the tree (verify round 1 of #1293: 163 lines in 78 files).
+mkdir -p "$scratch/glossary/docs/probes" "$scratch/glossary/docs/spec" "$scratch/glossary/engine"
+cp "$root/docs/probes/$tombstone.md" "$scratch/glossary/docs/probes/"
+printf 'Terms. See docs/probes/%s.md\n' "$tombstone" > "$scratch/glossary/docs/spec/glossary.md"
+printf '%s\n' 'See the [glossary](glossary.md).' 'let glossary = load();' > "$scratch/glossary/docs/spec/01.md"
+sh "$root/tools/probe/seal.sh" "$scratch/glossary" "HW-PROBE-$tombstone" >"$scratch/glossary.out" 2>&1
+same "seal.sh keeps every line that holds a one-word slug of a named document" \
+    "$(printf '%s\n' 'See the [glossary](glossary.md).' 'let glossary = load();')" \
+    "$(cat "$scratch/glossary/docs/spec/01.md")"
+
+# An identifier or slug matches only as a whole name. A document whose slug or
+# identifier is a prefix or a suffix of another's must not take the other's
+# lines with it. 43 slug pairs of this corpus are substrings of each other.
+mkdir -p "$scratch/prefix/docs/probes" "$scratch/prefix/docs/obligations" "$scratch/prefix/docs/spec"
+cp "$root/docs/probes/$tombstone.md" "$scratch/prefix/docs/probes/"
+printf -- '---\nid: HW-EVAL-short-name\n---\nsee docs/probes/%s.md\n' "$tombstone" \
+    > "$scratch/prefix/docs/obligations/short-name.md"
+printf '%s\n' '- [HW-EVAL-short-name](../obligations/short-name.md)' \
+    '- [HW-EVAL-short-name-longer](../obligations/short-name-longer.md)' \
+    '- [HW-EVAL-a-short-name](../obligations/a-short-name.md)' > "$scratch/prefix/docs/spec/13.md"
+sh "$root/tools/probe/seal.sh" "$scratch/prefix" "HW-PROBE-$tombstone" >"$scratch/prefix.out" 2>&1
+same "seal.sh removes the line of the named document and not a line of a document whose name contains it" \
+    "$(printf '%s\n' '- [HW-EVAL-short-name-longer](../obligations/short-name-longer.md)' '- [HW-EVAL-a-short-name](../obligations/a-short-name.md)')" \
+    "$(cat "$scratch/prefix/docs/spec/13.md")"
+
+# A JSON fold loses the array element that names the document, and never a
+# line inside it, so it still parses (verify round 1 of #1293: the seal left
+# `{"shelf": "evaluations",}` in `.headwater/corpus.json`).
+mkdir -p "$scratch/folds/docs/probes" "$scratch/folds/docs/obligations" "$scratch/folds/.headwater"
+cp "$root/docs/probes/$tombstone.md" "$scratch/folds/docs/probes/"
+printf -- '---\nid: HW-OBL-0013\n---\nsee docs/probes/%s.md\n' "$tombstone" > "$scratch/folds/docs/obligations/0013-x.md"
+printf '%s\n' '{' '  "shelves": [' '    {' '      "shelf": "obligations",' \
+    '      "path": "docs/obligations/0013-x.md",' '      "id": "HW-OBL-0013"' '    },' '    {' \
+    '      "shelf": "obligations",' '      "path": "docs/obligations/0014-y.md",' '      "id": "HW-OBL-0014"' \
+    '    }' '  ],' '  "count": 2' '}' > "$scratch/folds/.headwater/corpus.json"
+sh "$root/tools/probe/seal.sh" "$scratch/folds" "HW-PROBE-$tombstone" >"$scratch/folds.out" 2>&1
+same "seal.sh seals a workspace with a JSON fold" "0" "$?"
+same "and the fold keeps the element that names no deleted document, and still parses" \
+    'HW-OBL-0014' "$(jq -r '[.shelves[].id] | join(",")' "$scratch/folds/.headwater/corpus.json" 2>&1)"
+
 # The #980 selection over this corpus. The synthetic trees above state the
 # rule; this case holds it over the documents the batch of 2026-09-28 sealed,
 # which left 42 files naming one of the 6 named documents it deleted. Every
 # committed file of this checkout is copied out, sealed with the seven probes
 # of that batch, and nothing left may name the identifier or the slug of a
 # document the seal deleted outside the instrument shelves.
-if git -C "$root" rev-parse --verify -q HEAD >/dev/null 2>&1; then
+if [ "$(git -C "$root" rev-parse --show-toplevel 2>/dev/null)" = "$root" ]; then
     mkdir -p "$scratch/corpus"
     git -C "$root" archive HEAD | tar -x -C "$scratch/corpus"
     ( cd "$scratch/corpus" && find docs -type f -name '*.md' | grep -v -e '^docs/probes/' -e '^docs/probe-runs/' -e '^docs/probe-results/' | sort ) \
@@ -929,6 +971,11 @@ if git -C "$root" rev-parse --verify -q HEAD >/dev/null 2>&1; then
     else
         fail "and no file of the sealed corpus names a document it deleted" "$left"
     fi
+    broken=""
+    for fold in $(cd "$scratch/corpus" && find . -name '*.json' | sort); do
+        jq empty "$scratch/corpus/$fold" >/dev/null 2>&1 || broken="$broken $fold"
+    done
+    same "and every JSON file of the sealed corpus still parses" "" "$broken"
 else
     echo "skip the #980 corpus seal: $root is not a git checkout"
 fi
