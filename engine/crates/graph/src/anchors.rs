@@ -1457,6 +1457,18 @@ mod tests {
         assert_eq!(resolver.real_path("far.md"), None);
         assert_eq!(resolver.real_path("broken.md"), None);
         assert_eq!(resolver.real_path("notes/none.md"), None);
+
+        // A root reached through a link of its own, as `/tmp` is on some
+        // hosts, still holds its entries: the base is followed too.
+        let via = scratch("real-path-via");
+        std::fs::remove_dir(&*via).expect("the name is free for a link");
+        std::os::unix::fs::symlink(&*dir, &*via).expect("a link onto the root");
+        let through = SourceTree {
+            base: via.to_path_buf(),
+            exclusions: Vec::new(),
+            walked: RefCell::new(HashMap::new()),
+        };
+        assert_eq!(through.real_path("alias.md").as_deref(), Some("notes/b.md"));
     }
 
     #[test]
