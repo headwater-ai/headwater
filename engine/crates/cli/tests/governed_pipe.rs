@@ -441,3 +441,35 @@ fn a_cached_directory_verdict_does_not_outlive_the_directory_becoming_an_unreada
         "the cached directory verdict outlived the directory: {warm}"
     );
 }
+
+/// A named pipe in the identifier claim store, where a claim file belongs.
+/// `check` and `new` both read the store, and a reader that opened the pipe
+/// would wait on it for ever. The store reads the entry as a claim that names
+/// nobody, and `check` reports it at the claim's path, so the entry is not
+/// dropped in silence (#1366).
+#[test]
+fn check_and_new_finish_when_a_claim_file_is_a_named_pipe() {
+    let root = Root::shaped("claim-pipe", |at| {
+        let scheme = at.join(".headwater/ids/decision_id");
+        std::fs::create_dir_all(&scheme).expect("the scheme directory is made");
+        let fifo = std::process::Command::new("mkfifo")
+            .arg(scheme.join("HW-DR-9990"))
+            .status()
+            .expect("mkfifo runs");
+        assert!(fifo.success(), "the named pipe is made");
+    });
+    let (out, _) = under_deadline(
+        &root,
+        &["check", "--no-cache"],
+        "check opened the named pipe in the claim store, and waited on it",
+    );
+    assert!(
+        flat(&out).contains(".headwater/ids/decision_id/HW-DR-9990"),
+        "check names the pipe in the claim store: {out}"
+    );
+    under_deadline(
+        &root,
+        &["new", "decision", "--title", "After the pipe"],
+        "new opened the named pipe in the claim store, and waited on it",
+    );
+}
