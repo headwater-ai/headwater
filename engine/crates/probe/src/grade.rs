@@ -1560,9 +1560,14 @@ mod tests {
         ] {
             assert!(bash_names(command, &want), "{command}");
         }
-        // Arithmetic: the limit, pinned as stated.
+        // Arithmetic: the limit, pinned as stated. The lines up to the line
+        // `2` are skipped, and the line after it is a command again.
         assert!(!bash_names(
-            r#"{"command":"echo $((1<<2))\ncat docs/probes/one.md"}"#,
+            r#"{"command":"echo $((1<<2))\ncat docs/probes/one.md\n2\nls"}"#,
+            &want
+        ));
+        assert!(bash_names(
+            r#"{"command":"echo $((1<<2))\nls\n2\ncat docs/probes/one.md"}"#,
             &want
         ));
         // A here-string word is a word the command is given.
