@@ -407,6 +407,116 @@ fn an_export_this_binary_wrote_is_one_the_resolver_reads() {
     assert_eq!(ran.code, Some(0), "{ran:?}");
 }
 
+/// The identifier of the document a filtered profile withholds.
+const WITHHELD: &str = "HW-SOL-refund";
+
+/// An identifier that no document of either corpus ever held.
+const TYPO: &str = "HW-SOL-chekout";
+
+/// A scratch root that pins, as repository A, a filtered export that this
+/// binary wrote of the root itself, under the grain named. The filter
+/// withholds the one `draft` note, [`WITHHELD`]. The checkout note then names
+/// two documents in A: the withheld one and [`TYPO`].
+///
+/// The export is one the binary wrote and not a hand-written copy, so the case
+/// holds the shape the writer emits against the shape the resolver reads.
+fn filtered(label: &str, grain: &str) -> Root {
+    let root = Root::new(label);
+    let overlay = std::fs::read_to_string(root.at.join(".headwater/overlay.yml"))
+        .expect("the overlay reads");
+    let anchor = "\nadd_to:\n\n  projections:\n";
+    assert_eq!(overlay.matches(anchor).count(), 1, "the overlay appends to its projections");
+    root.write(
+        ".headwater/overlay.yml",
+        &overlay.replacen(
+            anchor,
+            &format!(
+                "{anchor}    - kind: graph_export\n      profile: partner\n      format: json\n      output: exports/partner.json\n      filter: {{exclude: {{status: [draft]}}}}\n      tombstone: {grain}\n\n"
+            ),
+            1,
+        ),
+    );
+    let resolved = root.run(&["taxonomy", "resolve"]);
+    assert_eq!(resolved.code, Some(0), "{resolved:?}");
+    root.write(
+        "docs/solution/refund.md",
+        &format!(
+            "---\nid: {WITHHELD}\ntitle: The refund path\nsummary: The refund path is not settled yet.\nstatus: draft\nstatus_since: 2026-09-01\nlast_verified: 2026-09-01\n---\n\n# The refund path\n\nThe refund path is not settled yet.\n"
+        ),
+    );
+
+    let exported = root.run(&["export", "--profile", "partner", "--format", "json"]);
+    assert_eq!(exported.code, Some(0), "{exported:?}");
+    assert!(exported.out.contains("\"filtered\": true"), "{exported:?}");
+    assert!(
+        !exported.out.contains(WITHHELD),
+        "the withheld identifier reached the export: {exported:?}"
+    );
+    let pinned = std::fs::read_to_string(root.at.join(".headwater/taxonomy.yml"))
+        .expect("the declaration reads");
+    let before = root.digest(EXPORT_A);
+    root.write(EXPORT_A, &exported.out);
+    root.write(
+        ".headwater/taxonomy.yml",
+        &pinned.replace(&before, &root.digest(EXPORT_A)),
+    );
+    root.write(
+        "docs/solution/checkout.md",
+        &NOTE.replace(
+            "  uses_service_in_a:\n    - SVC-1",
+            &format!("  uses_service_in_a:\n    - {WITHHELD}\n    - {TYPO}"),
+        ),
+    );
+    root
+}
+
+/// The decisive case of #1309. Under `counted`, the export lists a digest of
+/// each withheld identifier, so an anchor to the withheld document binds as
+/// withheld and a typo beside it stays unresolved. Before #1309 both were
+/// unresolved, and nothing could tell the two apart.
+#[test]
+fn a_withheld_identifier_binds_withheld_and_a_typo_stays_unresolved() {
+    let root = filtered("counted", "counted");
+    let ran = root.run(&["check", "--strict"]);
+    let unresolved = unresolved(&ran);
+    assert_eq!(unresolved.len(), 1, "{unresolved:?}\n{ran:?}");
+    assert!(unresolved[0].contains(TYPO), "{unresolved:?}");
+    assert!(
+        unresolved[0].contains("not one of the identifiers it withheld"),
+        "the reason says the typo is not withheld: {unresolved:?}"
+    );
+    assert!(
+        !ran.out.contains(WITHHELD),
+        "a finding named the withheld identifier: {ran:?}"
+    );
+
+    let graph = root.run(&["graph"]);
+    assert_eq!(graph.code, Some(0), "{graph:?}");
+    assert!(
+        graph.out.lines().any(|line| line.trim() == "1 withheld"),
+        "the run counts one withheld edge: {graph:?}"
+    );
+}
+
+/// Under `sealed` the publisher chose that existence is the secret. The export
+/// lists nothing, so this tier cannot tell a withheld document from a typo, and
+/// both anchors stay unresolved with a reason that names the grain.
+#[test]
+fn under_a_sealed_grain_a_withheld_identifier_and_a_typo_both_stay_unresolved() {
+    let root = filtered("sealed", "sealed");
+    let ran = root.run(&["check", "--strict"]);
+    let unresolved = unresolved(&ran);
+    assert_eq!(unresolved.len(), 2, "{unresolved:?}\n{ran:?}");
+    for id in [WITHHELD, TYPO] {
+        assert!(
+            unresolved
+                .iter()
+                .any(|finding| finding.contains(id) && finding.contains("`sealed`")),
+            "{id} is unresolved and the reason names the sealed grain: {unresolved:?}"
+        );
+    }
+}
+
 /// Rewrite the consumer declaration of a scratch root, and assert the one
 /// substitution landed.
 fn declare(root: &Root, from: &str, to: &str) {

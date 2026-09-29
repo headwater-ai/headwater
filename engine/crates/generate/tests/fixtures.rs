@@ -1279,6 +1279,16 @@ fn a_filtered_profile_withholds_a_document_and_its_edges() {
         emission.bytes.contains("\"filtered\": true"),
         "a filtered view presented itself as total"
     );
+    // Under `counted`, the tombstone also carries the digest of each withheld
+    // identifier, so a tier that already holds the identifier can tell a
+    // withheld document from a typo. The identifier itself stays out.
+    assert!(
+        emission
+            .bytes
+            .contains(&headwater_hash::digest(b"GD-FIX-recovery")),
+        "the counted tombstone does not carry the digest of the withheld identifier\n{}",
+        emission.bytes
+    );
 }
 
 /// Under `sealed`, the view states that it is filtered and nothing else.
@@ -1307,6 +1317,13 @@ fn a_sealed_grain_states_the_filtering_and_no_count() {
     assert!(
         !emission.bytes.contains("GD-FIX-recovery"),
         "the withheld document reached the artifact"
+    );
+    assert!(
+        !emission
+            .bytes
+            .contains(&headwater_hash::digest(b"GD-FIX-recovery")),
+        "a sealed view carried the digest of a withheld identifier, and under \
+         `sealed` existence is the secret"
     );
 }
 
