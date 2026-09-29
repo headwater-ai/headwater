@@ -833,33 +833,101 @@ pub(crate) fn names_path(argument: &str, path: &str) -> bool {
 ///
 /// The recorder writes a Bash call's argument as the JSON of its input, so the
 /// whole argument never equals a path (#1384). This reads the `command` member,
-/// splits it into the words a shell would pass, and tests each word with
-/// [`names_path`]. The boundary rule therefore holds per word: `cat x.md.bak`
-/// does not read `x.md`. An argument that is not JSON, or has no `command`
-/// string, names nothing.
+/// splits it into the words a shell would pass, and tests each word it reads
+/// with [`names_path`]. The boundary rule therefore holds per word: `cat
+/// x.md.bak` does not read `x.md`. The value of an option such as
+/// `--file=x.md` is tested as a word too. An argument that is not JSON, or has
+/// no `command` string, names nothing.
+///
+/// A word counts whatever command it is given to, so `ls x.md`, `rm x.md` and
+/// `test -f x.md` count as reads of `x.md`. The grader cannot tell a command
+/// that opens a file from one that only names it, and it takes the name as
+/// the read. What it does not count is a write that the shell makes plain: the
+/// target of an output redirect and an argument of `tee` ([`read_words`]).
 fn bash_names(argument: &str, target: &Examined) -> bool {
     let Some(command) = headwater_yaml::json::field(argument, &["command".to_string()]) else {
         return false;
     };
-    shell_words(&command)
-        .iter()
-        .any(|word| names_path(word, &target.path))
+    read_words(&shell_tokens(&command)).into_iter().any(|word| {
+        names_path(word, &target.path)
+            || option_value(word).is_some_and(|value| names_path(value, &target.path))
+    })
 }
 
-/// The words of a shell command, with quotes and operators taken off.
+/// The value of a `-o=value` or `--option=value` word.
+fn option_value(word: &str) -> Option<&str> {
+    word.strip_prefix('-')?
+        .split_once('=')
+        .map(|(_, value)| value)
+}
+
+/// One token of a shell command: a word, or a run of operator characters.
+#[derive(Debug, PartialEq, Eq)]
+enum Token {
+    Word(String),
+    Operator(String),
+}
+
+/// The words of a command that it reads.
+///
+/// An operator with `>` in it makes the next word a written file, and that
+/// word is not read. An operator with `<` in it makes the next word a read
+/// file, whatever the command. Every other operator (`|`, `;`, `&&`, `(`, a
+/// backtick, a newline) starts a new command. A command whose first word is
+/// `tee` writes its other words, so they are not read. A `tee` behind `sudo`
+/// or `xargs` is not seen.
+fn read_words(tokens: &[Token]) -> Vec<&str> {
+    let mut read = Vec::new();
+    let mut first = true;
+    let mut tee = false;
+    let mut redirect: Option<bool> = None;
+    for token in tokens {
+        match token {
+            Token::Operator(op) if op.contains('>') => redirect = Some(true),
+            Token::Operator(op) if op.contains('<') => redirect = Some(false),
+            Token::Operator(_) => {
+                first = true;
+                redirect = None;
+            }
+            Token::Word(word) => match redirect.take() {
+                Some(true) => {}
+                Some(false) => read.push(word.as_str()),
+                None => {
+                    if first {
+                        tee = word == "tee";
+                        first = false;
+                    }
+                    if !tee {
+                        read.push(word.as_str());
+                    }
+                }
+            },
+        }
+    }
+    read
+}
+
+/// The tokens of a shell command, with quotes taken off.
 ///
 /// Single quotes keep everything to the next single quote. Double quotes keep
 /// everything, and a backslash in them escapes only `$`, `` ` ``, `"`, `\`
 /// and a newline, as in a POSIX shell. A backslash outside quotes keeps the
-/// next character. Whitespace and the operator characters `| & ; < > ( )`
-/// outside quotes end a word, so `<x.md` and `a;cat x.md` give `x.md` as a
-/// word. This is not a shell: it expands nothing and runs nothing, and a path
-/// built from a variable or a glob is not a path it can see.
-fn shell_words(command: &str) -> Vec<String> {
-    let mut words = Vec::new();
+/// next character. Spaces and tabs outside quotes end a word. The operator
+/// characters `` | & ; < > ( ) ` `` and a newline end a word too, and a run of
+/// them is one operator token, so `<x.md` and `a;cat x.md` give `x.md` as a
+/// word. The descriptor of `2>x` stays a word, `2`, which names no path. A
+/// `#` at the start of a word opens a comment that runs to the end of the
+/// line.
+///
+/// This is not a shell. It expands nothing and runs nothing. So it cannot see
+/// a path built from a variable or a glob, or a command substitution inside
+/// double quotes, such as `"$(cat x.md)"`.
+fn shell_tokens(command: &str) -> Vec<Token> {
+    const OPERATORS: &str = "|&;<>()`\n";
+    let mut tokens = Vec::new();
     let mut word = String::new();
     let mut open = false;
-    let mut chars = command.chars();
+    let mut chars = command.chars().peekable();
     while let Some(c) = chars.next() {
         match c {
             '\'' => {
@@ -883,9 +951,28 @@ fn shell_words(command: &str) -> Vec<String> {
                 open = true;
                 word.extend(chars.next());
             }
-            c if c.is_whitespace() || "|&;<>()".contains(c) => {
+            '#' if !open => {
+                chars.by_ref().find(|&q| q == '\n');
+                tokens.push(Token::Operator("\n".to_string()));
+            }
+            c if OPERATORS.contains(c) => {
                 if open {
-                    words.push(std::mem::take(&mut word));
+                    tokens.push(Token::Word(std::mem::take(&mut word)));
+                    open = false;
+                }
+                let mut operator = String::from(c);
+                while let Some(&next) = chars.peek() {
+                    if !OPERATORS.contains(next) {
+                        break;
+                    }
+                    operator.push(next);
+                    chars.next();
+                }
+                tokens.push(Token::Operator(operator));
+            }
+            c if c.is_whitespace() => {
+                if open {
+                    tokens.push(Token::Word(std::mem::take(&mut word)));
                     open = false;
                 }
             }
@@ -896,9 +983,9 @@ fn shell_words(command: &str) -> Vec<String> {
         }
     }
     if open {
-        words.push(word);
+        tokens.push(Token::Word(word));
     }
-    words
+    tokens
 }
 
 /// Every recorded call of the session, and `None` where no event recorded any.
@@ -1275,6 +1362,8 @@ mod tests {
             r#"{"command":"echo x >log\ncat docs/probes/one.md"}"#,
             r#"{"command":"echo a#b docs/probes/one.md"}"#,
             r##"{"command":"# note\ncat docs/probes/one.md"}"##,
+            r##"{"command":"echo x | tee log # note\ncat docs/probes/one.md"}"##,
+            r#"{"command":"echo x | tee log\ncat docs/probes/one.md"}"#,
             r#"{"command":"echo `cat docs/probes/one.md`"}"#,
             r#"{"command":"grep --file=docs/probes/one.md x"}"#,
         ] {
