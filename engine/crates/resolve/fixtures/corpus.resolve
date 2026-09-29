@@ -102,6 +102,12 @@ operations
   add.identifier_schemes.process_decision_id (.headwater/overlay.yml)
   add.kinds.process_decision (.headwater/overlay.yml)
   add.shelves.process_decisions (.headwater/overlay.yml)
+  add.kinds.process_spec (.headwater/overlay.yml)
+  add.kinds.process_evaluation (.headwater/overlay.yml)
+  add.kinds.process_obligation (.headwater/overlay.yml)
+  add.shelves.process_specs (.headwater/overlay.yml)
+  add.shelves.process_evaluations (.headwater/overlay.yml)
+  add.shelves.process_obligations (.headwater/overlay.yml)
   add.identifier_schemes.explanation_id (.headwater/overlay.yml)
   add.identifier_schemes.process_explanation_id (.headwater/overlay.yml)
   add.kinds.explanation (.headwater/overlay.yml)
@@ -124,9 +130,9 @@ declarations, by member count
   facets: 14 members
   regimes: 3 members
   anchors: 3 members
-  kinds: 24 members
+  kinds: 27 members
   relations: 15 members
-  shelves: 21 members
+  shelves: 24 members
   identifier_schemes: 19 members
   core: 1 member
   projections: 7 items

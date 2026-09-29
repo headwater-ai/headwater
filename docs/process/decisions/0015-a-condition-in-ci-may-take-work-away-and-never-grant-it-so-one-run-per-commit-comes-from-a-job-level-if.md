@@ -21,7 +21,7 @@ relations:
 
 ## Context
 
-Before this record, the reasons lived in comments of `.github/workflows/ci.yml` on 2026-09-27. The comments were header rules 3 and 4 (lines 44 to 50) and the comments on the `if:` of the `engine` job (lines 196 to 207). [Two triggers, one verdict](../../evaluations/two-triggers-one-verdict-how-this-repository-s-ci-decides-where-a-job-runs-and-what-it-trusts.md#a-condition-that-only-takes-work-away-is-safe-and-that-is-why-one-run-per-commit-is-safe) holds the argument, and [Two triggers, one verdict](../../evaluations/two-triggers-one-verdict-how-this-repository-s-ci-decides-where-a-job-runs-and-what-it-trusts.md#two-check-runs-of-one-name-and-what-settles-between-them) holds the measurement of two check runs on one commit.
+Before this record, the reasons lived in comments of `.github/workflows/ci.yml` on 2026-09-27. The comments were header rules 3 and 4 (lines 44 to 50) and the comments on the `if:` of the `engine` job (lines 196 to 207). [Two triggers, one verdict](../evaluations/two-triggers-one-verdict-how-this-repository-s-ci-decides-where-a-job-runs-and-what-it-trusts.md#a-condition-that-only-takes-work-away-is-safe-and-that-is-why-one-run-per-commit-is-safe) holds the argument, and [Two triggers, one verdict](../evaluations/two-triggers-one-verdict-how-this-repository-s-ci-decides-where-a-job-runs-and-what-it-trusts.md#two-check-runs-of-one-name-and-what-settles-between-them) holds the measurement of two check runs on one commit.
 
 A push to a branch of this repository that has an open pull request starts two runs on one commit. One is the `push` run and one is the `pull_request` run.
 

@@ -21,7 +21,7 @@ relations:
 
 ## Context
 
-Before this record, the reasons lived in comments of `.github/workflows/ci.yml` on 2026-09-27. The comments were header rule 1 (lines 32 to 37) and the comment on `on:` (lines 81 to 84). [Two triggers, one verdict](../../evaluations/two-triggers-one-verdict-how-this-repository-s-ci-decides-where-a-job-runs-and-what-it-trusts.md#the-only-boundary-is-the-event-and-it-is-the-only-one-that-can-be) states the design as a whole and holds the measurements. This record holds the decision and cites that evaluation for the evidence.
+Before this record, the reasons lived in comments of `.github/workflows/ci.yml` on 2026-09-27. The comments were header rule 1 (lines 32 to 37) and the comment on `on:` (lines 81 to 84). [Two triggers, one verdict](../evaluations/two-triggers-one-verdict-how-this-repository-s-ci-decides-where-a-job-runs-and-what-it-trusts.md#the-only-boundary-is-the-event-and-it-is-the-only-one-that-can-be) states the design as a whole and holds the measurements. This record holds the decision and cites that evaluation for the evidence.
 
 A pull request from a fork runs the fork's own copy of `ci.yml`. The fork can delete, invert or replace any condition in that copy. So no condition in this file can keep a fork off the self-hosted runner.
 

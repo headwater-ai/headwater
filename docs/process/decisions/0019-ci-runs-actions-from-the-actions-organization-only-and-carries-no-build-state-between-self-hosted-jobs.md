@@ -21,7 +21,7 @@ relations:
 
 ## Context
 
-Before this record, the reasons lived in comments of `.github/workflows/ci.yml` on 2026-09-27. The comments were the paragraph on actions (lines 21 to 24), header rule 5 (lines 52 to 54), and the paragraph on the two runners (lines 68 to 71). [Two triggers, one verdict](../../evaluations/two-triggers-one-verdict-how-this-repository-s-ci-decides-where-a-job-runs-and-what-it-trusts.md#the-two-runners-cache-different-things-because-they-are-different-shapes) holds the account of what each runner caches.
+Before this record, the reasons lived in comments of `.github/workflows/ci.yml` on 2026-09-27. The comments were the paragraph on actions (lines 21 to 24), header rule 5 (lines 52 to 54), and the paragraph on the two runners (lines 68 to 71). [Two triggers, one verdict](../evaluations/two-triggers-one-verdict-how-this-repository-s-ci-decides-where-a-job-runs-and-what-it-trusts.md#the-two-runners-cache-different-things-because-they-are-different-shapes) holds the account of what each runner caches.
 
 ## Decision
 

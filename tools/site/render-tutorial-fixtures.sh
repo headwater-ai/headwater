@@ -22,6 +22,14 @@ for f in "$tool" "$root/$doc_rel" "$root/$page_rel"; do
     fi
 done
 
+# The release the document pins, read from its download link, so that the
+# plants below follow each release rather than naming one (#1348).
+pin=$(sed -n 's|.*releases/download/v\([0-9][0-9.]*\)/.*|\1|p' "$root/$doc_rel" | head -1)
+if [ -z "$pin" ]; then
+    echo "render-tutorial-fixtures: \`$doc_rel\` has no release download link to read the pin from." >&2
+    exit 1
+fi
+
 scratch=$(mktemp -d) || exit 1
 trap 'rm -rf "$scratch"' EXIT HUP INT TERM
 
@@ -78,7 +86,7 @@ report "an unchanged copy matches" 0 "$(run "$d" --check)" "matches the document
 
 echo "page drift"
 d=$(copy page-prose)
-if plant "$d/$page_rel" "This installs version 0.4.0" "This installs version 0.2.1"; then
+if plant "$d/$page_rel" "This installs version $pin" "This installs version 0.2.1"; then
     report "a changed version on the page is stale" 1 "$(run "$d" --check)" "stale"
 else
     report "a changed version on the page is stale" planted unplanted ""
@@ -102,9 +110,9 @@ else
 fi
 
 d=$(copy doc-version)
-if plant "$d/$doc_rel" "This installs version 0.4.0" "This installs version 0.2.1"; then
+if plant "$d/$doc_rel" "This installs version $pin" "This installs version 0.2.1"; then
     report "prose naming another version stops --check" 1 "$(run "$d" --check)" "0.2.1"
-    report "prose naming another version stops a write, naming the pin" 1 "$(run "$d")" "0.4.0"
+    report "prose naming another version stops a write, naming the pin" 1 "$(run "$d")" "$pin"
 else
     report "prose naming another version stops the renderer" planted unplanted ""
 fi
@@ -127,25 +135,25 @@ refuse() {
 
 echo "every version mention answers to the one pin"
 refuse "the macOS archive name at another version stops the renderer" mac-archive \
-    "headwater-v0.4.0-aarch64-apple-darwin" "headwater-v0.3.0-aarch64-apple-darwin" \
-    "names version 0.3.0, and its download link pins v0.4.0"
+    "headwater-v$pin-aarch64-apple-darwin" "headwater-v0.3.0-aarch64-apple-darwin" \
+    "names version 0.3.0, and its download link pins v$pin"
 refuse "the release page link at another version stops the renderer" release-tag \
-    "releases/tag/v0.4.0" "releases/tag/v0.3.0" \
-    "names version 0.3.0, and its download link pins v0.4.0"
+    "releases/tag/v$pin" "releases/tag/v0.3.0" \
+    "names version 0.3.0, and its download link pins v$pin"
 refuse "a second download link at another version stops the renderer" two-pins \
     "mkdir -p ~/.local/bin
 curl" "mkdir -p ~/.local/bin
 curl -fsSLO https://github.com/headwater-ai/headwater/releases/download/v0.3.0/headwater-v0.3.0-x86_64-unknown-linux-musl.tar.gz
 curl" \
-    "pins 2 (0.3.0, 0.4.0)"
+    "pins 2 (0.3.0, $pin)"
 refuse "a tag in a code span at another version stops the renderer" code-span \
-    "This installs version 0.4.0" 'This installs `v0.3.0`' \
+    "This installs version $pin" 'This installs `v0.3.0`' \
     "names version 0.3.0"
 refuse "a version number in a code span stops the renderer" version-span \
-    "This installs version 0.4.0" 'This installs version `0.3.0`' \
+    "This installs version $pin" 'This installs version `0.3.0`' \
     "names version 0.3.0"
 refuse "a capitalized Version stops the renderer" version-capital \
-    "This installs version 0.4.0" "This installs Version 0.3.0" \
+    "This installs version $pin" "This installs Version 0.3.0" \
     "names version 0.3.0"
 
 echo "a block shape the renderer cannot write is refused, by line"

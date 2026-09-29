@@ -953,6 +953,33 @@ fn the_explain_tool_reads_every_spelling_of_a_path_and_refuses_one_outside_the_r
     );
 }
 
+/// A row the walk could not read is not a document, and the `explain` tool
+/// answers it with the sentence `headwater explain` refuses it in, never with
+/// an explanation that says nothing is required of it (#1366). A symlink is
+/// the row here, because it is the unwalkable kind a copy can make portably.
+#[cfg(unix)]
+#[test]
+fn the_explain_tool_refuses_a_row_the_walk_could_not_read() {
+    let scratch = Scratch::of(&fixtures_dir(), "explain-unwalkable");
+    let link = "query/specs/link.md";
+    std::os::unix::fs::symlink("api-design.md", scratch.0.join(link)).expect("the link is made");
+    let built = fixture_tree_at(&scratch.0);
+    let server = built.server(RECORDED_AT);
+    let answer = content(&once(
+        &server,
+        &calling("explain", &format!(r#"{{"target":"{link}"}}"#)),
+    ))
+    .concat();
+    assert_eq!(
+        answer,
+        format!(
+            "`{link}` is a symlink to `api-design.md`, which the walk does not follow, so \
+             `explain` prints nothing\n"
+        ),
+        "the tool refuses the row in the verb's sentence"
+    );
+}
+
 /// The one sentence every path route prints for a target outside the
 /// repository (#1249), as `docs/interfaces/headwater-explain.md` writes it.
 /// Stated here as a literal so the contract is read off the page, and checked

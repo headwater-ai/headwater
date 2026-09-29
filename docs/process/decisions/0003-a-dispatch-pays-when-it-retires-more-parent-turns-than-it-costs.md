@@ -24,7 +24,7 @@ Pull request #685 measured the orchestrator's polling. Seventy-six `gh pr view` 
 
 The obvious remedy fails the same measurement. A fresh agent dispatched to make one poll is a parent turn at the same context, plus a prompt. It also returns a report that enters the context too. Delegating a cheap call does not save the turn that delegates it.
 
-An earlier design argued that decomposing the command into agent definitions reduced parent turns. It does not. It reduces the size of the context each turn re-reads, which is a different quantity. [The evaluation](../../evaluations/the-build-order-as-a-multi-agent-system.md) records both.
+An earlier design argued that decomposing the command into agent definitions reduced parent turns. It does not. It reduces the size of the context each turn re-reads, which is a different quantity. [The evaluation](../evaluations/the-build-order-as-a-multi-agent-system.md) records both.
 
 ## Decision
 
@@ -32,7 +32,7 @@ The unit of cost for the orchestrator is one parent turn at the parent's full co
 
 Under that rule the integrator is one agent per merge, dispatched on the verification-completion turn the parent already pays. It replaces about six parent turns per merge: the view, the checkout, the build, the regenerate, the merge and the cleanup. It is a depth-one slot. That is because every merge touches the one main checkout, the one `engine/target` and `origin/main`. It is also because two of them running at once would check out `main` in one directory together. It is a fresh agent each time and never one long-lived agent. That is because a long-lived integrator accumulates every merge it ran and compacts. That is the parent's own failure one level down.
 
-The parent runs no `gh` and no `cargo build`. Pull request state arrives inside the verifier's report, and board state arrives as a queue file. Every build belongs to the integrator or to a worker's own worktree.
+The parent runs no `gh` and no `cargo build`. The pull request number arrives inside the report of `hw-iterate`, and merge state arrives inside the integrator's report. Board state arrives as a queue file. Every build belongs to the integrator or to a worker's own worktree.
 
 ## Consequences
 

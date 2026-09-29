@@ -22,7 +22,7 @@
       "taxonomy": {
         "package": "headwater/standard",
         "version": "4.12.0",
-        "lock": "sha256:89c76e45eb0ed0c19d406e7179f574a19ae1daf72b10153bf47f00a042007c8f"
+        "lock": "sha256:badb09836f1099bd2d72472dc6370ac7fa0d14e93001264d38a69b5e59210e44"
       },
       "entry_points": [
         {
@@ -91,9 +91,24 @@
           "id": "HW-PD-0001"
         },
         {
+          "shelf": "process_evaluations",
+          "path": "docs/process/evaluations/one-clone-many-agents-how-this-repository-isolates-the-sessions-that-build-it.md",
+          "id": "HW-EVAL-one-clone-many-agents-how-this-repository-isolates-the-sessions-that-build-it"
+        },
+        {
           "shelf": "process_explanations",
           "path": "docs/process/explanations/where-a-ci-job-runs.md",
           "id": "HW-PEXP-where-a-ci-job-runs"
+        },
+        {
+          "shelf": "process_obligations",
+          "path": "docs/process/obligations/0145-the-ci-job-named-advisory-carries-every-blocking-shell-suite-in-the-repository.md",
+          "id": "HW-OBL-0145"
+        },
+        {
+          "shelf": "process_specs",
+          "path": "docs/process/specs/orchestration-architecture.md",
+          "id": "HW-SPEC-orchestration-architecture"
         },
         {
           "shelf": "requirements",

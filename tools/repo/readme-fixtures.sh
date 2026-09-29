@@ -65,6 +65,14 @@
 # so it holds the package and not the site. Only a run of the block in a clean
 # container holds the site.
 #
+# Group 11 reads the install panel on the front page of the site,
+# `site/index.html`, against the page. The panel opens with the page's download
+# block, line for line, it downloads the release the page checks out, and its
+# APT sources line, keyring URL, keyring path and package are the page's. Step 9 of `docs/how-to/cut-a-release.md` moves both
+# files, and v0.4.1 was cut with both still on v0.4.0 (#1348). The group does
+# not ask the remote whether the tag is the newest one, because that case would
+# turn `main` red from the push of a tag until the install text moves.
+#
 # Run it from anywhere:
 #     sh tools/repo/readme-fixtures.sh
 #
@@ -2990,6 +2998,267 @@ sed 's|apt-get install -y headwater$|apt-get install -y headwater-cli|' "$readme
 apt_planted "  a package the release does not build is refused" "$readme" "$scratch/apt/package.md" \
     "the page installs \`headwater-cli\`, and the package release.yml builds is \`headwater\`" \
     "$(apt_package_judge "$scratch/apt/package.md" "$release_wf")"
+
+echo
+echo "the site's install panel, against the page"
+
+# The front page of the site carries its own copy of the install block, and a
+# stranger meets it before the README. A release moves the README's tag and
+# the site's tag in one step of `docs/how-to/cut-a-release.md`, and nothing
+# compared the two, so v0.4.1 was cut and both still said v0.4.0 (#1348). A
+# half move is worse: the README says one release and the site another, and
+# each is a working download on its own. So every value below is read out of
+# the panel and out of the README, and none is written here. What this group
+# cannot hold is that the tag is the newest release. That needs the remote,
+# and a case that asked it would turn `main` red from the moment a tag is
+# pushed until the install text moves, which the release procedure forbids
+# doing earlier.
+site_index="$root/site/index.html"
+
+# site_panel_of HTML — the commands of the `<div class="install">` panel, one
+# per line inside a fence, as a README fence would carry them. A command is a
+# line that carries the `$` prompt span. The tags, the prompt and the cursor
+# are stripped and the entities a command can need are decoded, so the APT
+# readers of group 10 read the panel as they read the page.
+site_panel_of() {
+    echo '```'
+    awk '
+        /<div class="install">/ { on = 1; next }
+        on && /^[ \t]*<\/div>[ \t]*$/ { exit }
+        on {
+            s = $0
+            if (incom) {
+                i = index(s, "-->")
+                if (i == 0) next
+                s = substr(s, i + 3)
+                incom = 0
+            }
+            while ((i = index(s, "<!--")) > 0) {
+                r = substr(s, i + 4)
+                j = index(r, "-->")
+                if (j == 0) { s = substr(s, 1, i - 1); incom = 1; break }
+                s = substr(s, 1, i - 1) substr(r, j + 3)
+            }
+            if (s !~ /<span class="dim">\$<\/span>/) next
+            gsub(/<span class="cursor"[^>]*>[^<]*<\/span>/, "", s)
+            gsub(/<[^>]*>/, "", s)
+            gsub(/&quot;/, "\"", s)
+            gsub(/&lt;/, "<", s)
+            gsub(/&gt;/, ">", s)
+            gsub(/&amp;/, "\\&", s)
+            sub(/^[ \t]*\$[ \t]*/, "", s)
+            sub(/[ \t]+$/, "", s)
+            if (s != "") print s
+        }
+    ' "$1"
+    echo '```'
+}
+
+# download_tag_of FILE — the tag of the first `releases/download/<tag>/` URL
+# inside a fence, or nothing.
+download_tag_of() {
+    apt_fence_lines "$1" | grep -o 'releases/download/[^/[:space:]]*/' | head -1 |
+        sed 's|^releases/download/||; s|/$||'
+}
+
+# site_tag_judge PANEL PAGE — THE DECISIVE CASE. The release the panel
+# downloads is the release the page downloads and the tag the page checks out.
+site_tag_judge() {
+    stj_panel=$(download_tag_of "$1")
+    stj_page=$(download_tag_of "$2")
+    stj_pin=$(pinned_tag_of "$2")
+    if [ -z "$stj_panel" ]; then
+        echo "the panel downloads no release"
+    elif [ -z "$stj_page" ] || [ -z "$stj_pin" ]; then
+        echo "the page downloads \`${stj_page:-nothing}\` and checks out \`${stj_pin:-nothing}\`, so nothing names the release the panel must follow"
+    elif [ "$stj_panel" = "$stj_page" ] && [ "$stj_page" = "$stj_pin" ]; then
+        echo ok
+    else
+        echo "the panel downloads \`$stj_panel\`, and the page downloads \`$stj_page\` and checks out \`$stj_pin\`"
+    fi
+}
+
+# site_apt_judge PANEL PAGE — the panel's APT sources line is the page's,
+# field for field.
+site_apt_judge() {
+    saj_panel=$(apt_sources_of "$1")
+    saj_page=$(apt_sources_of "$2")
+    if [ -z "$saj_page" ]; then
+        echo "the page offers no APT sources line, so nothing says what the panel must offer"
+    elif [ -z "$saj_panel" ]; then
+        echo "the page offers an APT sources line and the panel offers none"
+    elif [ "$saj_panel" = "$saj_page" ]; then
+        echo ok
+    else
+        echo "the panel's sources line reads \`$saj_panel\`, and the page's reads \`$saj_page\`"
+    fi
+}
+
+# site_keyring_judge PANEL PAGE — the panel downloads the keyring from the URL
+# the page downloads it from.
+site_keyring_judge() {
+    skj_panel=$(apt_fence_lines "$1" | grep -o 'https\?://[^[:space:]"'\'']*\.\(asc\|gpg\)' | head -1)
+    skj_page=$(apt_fence_lines "$2" | grep -o 'https\?://[^[:space:]"'\'']*\.\(asc\|gpg\)' | head -1)
+    if [ -n "$skj_page" ] && [ "$skj_panel" = "$skj_page" ]; then
+        echo ok
+    else
+        echo "the panel downloads the keyring from \`${skj_panel:-nothing}\`, and the page from \`${skj_page:-nothing}\`"
+    fi
+}
+
+# download_fence_of FILE — the lines of the first fence that downloads a
+# release, in page order: the block a stranger pastes to install the binary.
+download_fence_of() {
+    awk '
+        /^[ \t]*```/ {
+            if (fence && hit) { printf "%s", buf; exit }
+            fence = 1 - fence; buf = ""; hit = 0; next
+        }
+        fence { buf = buf $0 "\n"; if (index($0, "releases/download/")) hit = 1 }
+    ' "$1"
+}
+
+# site_download_judge PANEL PAGE — the panel opens with the page's download
+# block, line for line. The tag judge reads one URL, so a panel that downloads
+# one archive and unpacks another, or downloads from another repository,
+# passes it. This judge reads every line (#1348, verify round 1).
+site_download_judge() {
+    download_fence_of "$2" >"$scratch/site/want"
+    sdj_n=$(wc -l <"$scratch/site/want" | tr -d ' ')
+    if [ "$sdj_n" -eq 0 ]; then
+        echo "the page has no download block, so nothing says what the panel must open with"
+        return
+    fi
+    apt_fence_lines "$1" | head -n "$sdj_n" >"$scratch/site/got"
+    sdj_diff=$(awk 'NR == FNR { w[FNR] = $0; n = FNR; next }
+        FNR <= n && $0 != w[FNR] { print FNR ": `" $0 "` where the page has `" w[FNR] "`"; done = 1; exit }
+        END { g = NR - n; if (!done && g < n) print g + 1 ": nothing where the page has `" w[g + 1] "`" }' \
+        "$scratch/site/want" "$scratch/site/got")
+    if [ -z "$sdj_diff" ]; then
+        echo ok
+    else
+        echo "the panel's download line $sdj_diff"
+    fi
+}
+
+mkdir -p "$scratch/site"
+site_panel_of "$site_index" >"$scratch/site/panel.md"
+
+# 11a. The population. A panel the extraction reads nothing out of agrees with
+#      every judge below and holds nothing.
+more_than "the site's install panel yields its commands" 0 \
+    "$(apt_fence_lines "$scratch/site/panel.md" | wc -l | tr -d ' ')"
+
+# 11b-11e. The real panel against the real page. On the day this group landed,
+#      11b was red with v0.4.1 on the page and v0.4.0 on the panel, and 11c was
+#      red because the panel offered no APT line.
+same "  and it downloads the release the page downloads and checks out" ok \
+    "$(site_tag_judge "$scratch/site/panel.md" "$readme")"
+same "  and its download lines are the page's download block, line for line" ok \
+    "$(site_download_judge "$scratch/site/panel.md" "$readme")"
+same "  and its APT sources line is the page's" ok \
+    "$(site_apt_judge "$scratch/site/panel.md" "$readme")"
+same "  and it fetches the keyring from where the page does" ok \
+    "$(site_keyring_judge "$scratch/site/panel.md" "$readme")"
+same "  and signed-by names the path it writes the keyring to" ok \
+    "$(apt_signedby_judge "$scratch/site/panel.md")"
+same "  and it installs the package the release builds" ok \
+    "$(apt_package_judge "$scratch/site/panel.md" "$release_wf")"
+
+# Every judge provoked in a scratch copy, with `apt_planted` from group 10.
+# The tag is the page's own, read from the page, so the arms do not go stale
+# when the next release moves it.
+site_tag=$(pinned_tag_of "$readme")
+
+# 11b, provoked. The panel left on the release before, with the page moved.
+sed "s|releases/download/$site_tag/headwater-$site_tag-|releases/download/v0.0.0/headwater-v0.0.0-|" "$site_index" >"$scratch/site/old.html"
+site_panel_of "$scratch/site/old.html" >"$scratch/site/old.md"
+apt_planted "  a panel on another release than the page is refused" "$scratch/site/panel.md" "$scratch/site/old.md" \
+    "the panel downloads \`v0.0.0\`, and the page downloads \`$site_tag\` and checks out \`$site_tag\`" \
+    "$(site_tag_judge "$scratch/site/old.md" "$readme")"
+# The other half moved alone: the page's checkout tag, with both downloads left.
+sed "s|^git checkout $site_tag\$|git checkout v0.0.0|" "$readme" >"$scratch/site/pin.md"
+apt_planted "  a page that checks out another tag than it downloads is refused" "$readme" "$scratch/site/pin.md" \
+    "the panel downloads \`$site_tag\`, and the page downloads \`$site_tag\` and checks out \`v0.0.0\`" \
+    "$(site_tag_judge "$scratch/site/panel.md" "$scratch/site/pin.md")"
+
+# The download block, provoked. Each edit leaves the first URL's tag as it
+# was, so the tag judge above passes all three and only this judge refuses.
+sed "s|^\(.*tar -xzf headwater-\)$site_tag-|\1v0.0.0-|" "$site_index" >"$scratch/site/tar.html"
+site_panel_of "$scratch/site/tar.html" >"$scratch/site/tar.md"
+apt_planted "  a panel that unpacks another archive than it downloads is refused" "$scratch/site/panel.md" "$scratch/site/tar.md" \
+    "the panel's download line 3: \`tar -xzf headwater-v0.0.0-x86_64-unknown-linux-musl.tar.gz -C ~/.local/bin headwater\` where the page has \`tar -xzf headwater-$site_tag-x86_64-unknown-linux-musl.tar.gz -C ~/.local/bin headwater\`" \
+    "$(site_download_judge "$scratch/site/tar.md" "$readme")"
+sed "s|releases/download/$site_tag/headwater-$site_tag-|releases/download/$site_tag/headwater-v0.0.0-|" "$site_index" >"$scratch/site/name.html"
+site_panel_of "$scratch/site/name.html" >"$scratch/site/name.md"
+apt_planted "  a panel downloading another archive name under the right tag is refused" "$scratch/site/panel.md" "$scratch/site/name.md" \
+    "the panel's download line 2: \`curl -fsSLO https://github.com/headwater-ai/headwater/releases/download/$site_tag/headwater-v0.0.0-x86_64-unknown-linux-musl.tar.gz\` where the page has \`curl -fsSLO https://github.com/headwater-ai/headwater/releases/download/$site_tag/headwater-$site_tag-x86_64-unknown-linux-musl.tar.gz\`" \
+    "$(site_download_judge "$scratch/site/name.md" "$readme")"
+same "  and the tag judge alone passes that panel, which is why this judge exists" ok \
+    "$(site_tag_judge "$scratch/site/name.md" "$readme")"
+sed "s|github.com/headwater-ai/headwater/releases/download/|github.com/someone-else/headwater/releases/download/|" "$site_index" >"$scratch/site/owner.html"
+site_panel_of "$scratch/site/owner.html" >"$scratch/site/owner.md"
+apt_planted "  a panel downloading from another repository is refused" "$scratch/site/panel.md" "$scratch/site/owner.md" \
+    "the panel's download line 2: \`curl -fsSLO https://github.com/someone-else/headwater/releases/download/$site_tag/headwater-$site_tag-x86_64-unknown-linux-musl.tar.gz\` where the page has \`curl -fsSLO https://github.com/headwater-ai/headwater/releases/download/$site_tag/headwater-$site_tag-x86_64-unknown-linux-musl.tar.gz\`" \
+    "$(site_download_judge "$scratch/site/owner.md" "$readme")"
+grep -v 'mkdir -p ~/.local/bin' "$site_index" >"$scratch/site/short.html"
+site_panel_of "$scratch/site/short.html" >"$scratch/site/short.md"
+apt_planted "  a panel that drops a line of the download block is refused" "$scratch/site/panel.md" "$scratch/site/short.md" \
+    "the panel's download line 1: \`curl -fsSLO https://github.com/headwater-ai/headwater/releases/download/$site_tag/headwater-$site_tag-x86_64-unknown-linux-musl.tar.gz\` where the page has \`mkdir -p ~/.local/bin\`" \
+    "$(site_download_judge "$scratch/site/short.md" "$readme")"
+
+# A panel shorter than the block, and one with no command at all, are refused
+# rather than read as agreeing with the lines they lack.
+head -n 3 "$scratch/site/panel.md" >"$scratch/site/two.md"
+echo '```' >>"$scratch/site/two.md"
+apt_planted "  a panel that ends before the download block does is refused" "$scratch/site/panel.md" "$scratch/site/two.md" \
+    "the panel's download line 3: nothing where the page has \`tar -xzf headwater-$site_tag-x86_64-unknown-linux-musl.tar.gz -C ~/.local/bin headwater\`" \
+    "$(site_download_judge "$scratch/site/two.md" "$readme")"
+printf '%s\n' '```' '```' >"$scratch/site/none.md"
+same "  and a panel with no command is refused" \
+    "the panel's download line 1: nothing where the page has \`mkdir -p ~/.local/bin\`" \
+    "$(site_download_judge "$scratch/site/none.md" "$readme")"
+
+# 11c, provoked. The panel with its sources line removed, and then with a
+# suite the page does not name.
+grep -v 'deb \[' "$site_index" >"$scratch/site/no-line.html"
+site_panel_of "$scratch/site/no-line.html" >"$scratch/site/no-line.md"
+apt_planted "  a panel with no APT sources line is refused" "$scratch/site/panel.md" "$scratch/site/no-line.md" \
+    "the page offers an APT sources line and the panel offers none" \
+    "$(site_apt_judge "$scratch/site/no-line.md" "$readme")"
+sed 's| stable main| bookworm main|' "$site_index" >"$scratch/site/suite.html"
+site_panel_of "$scratch/site/suite.html" >"$scratch/site/suite.md"
+apt_planted "  a panel naming another suite than the page is refused" "$scratch/site/panel.md" "$scratch/site/suite.md" \
+    "the panel's sources line reads \`$(apt_field 1 "$readme")|$(apt_field 2 "$readme")|bookworm|main\`, and the page's reads \`$(apt_sources_of "$readme")\`" \
+    "$(site_apt_judge "$scratch/site/suite.md" "$readme")"
+
+# 11d, provoked. The keyring fetched from another host.
+sed 's|https://headwater.tools/apt/headwater-archive-keyring.asc|https://example.org/headwater-archive-keyring.asc|' "$site_index" >"$scratch/site/keyring.html"
+site_panel_of "$scratch/site/keyring.html" >"$scratch/site/keyring.md"
+apt_planted "  a panel fetching the keyring from elsewhere is refused" "$scratch/site/panel.md" "$scratch/site/keyring.md" \
+    "the panel downloads the keyring from \`https://example.org/headwater-archive-keyring.asc\`, and the page from \`https://headwater.tools/apt/headwater-archive-keyring.asc\`" \
+    "$(site_keyring_judge "$scratch/site/keyring.md" "$readme")"
+
+# 11e, provoked. A package name the release does not build.
+sed 's|apt-get install -y headwater\([ <]\)|apt-get install -y headwater-cli\1|' "$site_index" >"$scratch/site/package.html"
+site_panel_of "$scratch/site/package.html" >"$scratch/site/package.md"
+apt_planted "  a panel installing a package the release does not build is refused" "$scratch/site/panel.md" "$scratch/site/package.md" \
+    "the page installs \`headwater-cli\`, and the package release.yml builds is \`headwater\`" \
+    "$(apt_package_judge "$scratch/site/package.md" "$release_wf")"
+
+# The extraction itself. A comment inside the panel that quotes a command is
+# not a command, and an entity is read as the character it stands for.
+printf '%s\n' '<div class="install">' \
+    '  <div><span class="dim">$</span> echo &quot;a &amp; b&quot; <span class="cursor" aria-hidden="true">X</span></div>' \
+    '  <!-- the old line was <span class="dim">$</span> ... -->' \
+    '  <!-- a comment that opens here' \
+    '       <span class="dim">$</span> and quotes a prompt on its second line -->' \
+    '  <div class="note">not a command</div>' \
+    '</div>' \
+    '<div><span class="dim">$</span> outside the panel</div>' >"$scratch/site/shape.html"
+same "  the extraction reads the prompt lines of the panel alone, decoded" \
+    '```|echo "a & b"|```' \
+    "$(site_panel_of "$scratch/site/shape.html" | tr '\n' '|' | sed 's/|$//')"
 
 echo
 echo "$passed passed, $failed failed"

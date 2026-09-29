@@ -3,7 +3,7 @@ id: HW-IFACE-headwater-explain
 status: current
 status_since: 2026-09-06
 summary: "How a path or identifier yields the taxonomy derivation, requirements, relations, and graph edges."
-last_verified: 2026-09-23
+last_verified: 2026-09-29
 title: "headwater explain"
 relations:
   governs:
@@ -39,6 +39,8 @@ The text report follows the order above. JSON carries the same fields in a docum
 
 The repository must carry a readable `.headwater/taxonomy.lock`, consumer declaration and corpus. The target must resolve to a typed or untyped census row.
 
+A census row that the walk could not read is not a document, and `explain` refuses it ([#1366](https://github.com/headwater-ai/headwater/issues/1366)). Such a row is a symlink, an unreadable directory, a name that is not UTF-8, or a named pipe, a socket or a device. The census never opened the entry, so it knows no kind and no requirement. The refusal names the path and the reason on standard error, in the shape "`<path>` is <reason>, so `explain` prints nothing". Standard output stays empty, with or without `--json`. The `explain` tool of [`headwater mcp`](headwater-mcp.md) answers such a row with the same sentence.
+
 An identifier resolves through the graph index. A target that matches neither a corpus path nor an identifier is refused. Exit status states which of five things it named instead.
 
 ## Options
@@ -57,7 +59,7 @@ An identifier resolves through the graph index. A target that matches neither a 
 
 **0** means that the target resolved and its explanation was printed.
 
-**1** means that the target was missing, the command line was invalid, or the repository could not load. A missing target writes its refusal to standard error and no explanation to standard output.
+**1** means that the target was missing or was a census row that the walk could not read. It also means that the command line was invalid or the repository could not load. A missing target writes its refusal to standard error and no explanation to standard output.
 
 **A missing target still classifies.** The refusal names one of five states.
 

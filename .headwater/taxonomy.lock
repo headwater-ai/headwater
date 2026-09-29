@@ -22,7 +22,7 @@
 
 lock:
   format: 3
-  digest: sha256:89c76e45eb0ed0c19d406e7179f574a19ae1daf72b10153bf47f00a042007c8f
+  digest: sha256:badb09836f1099bd2d72472dc6370ac7fa0d14e93001264d38a69b5e59210e44
   rules: 2
   package: headwater/standard
   version: 4.12.0
@@ -36,7 +36,7 @@ lock:
     - path: .headwater/packages/headwater-standard/bundles/decision-record/bundle.yml
       digest: sha256:d2e1dd60f5adf97dcefd3aa46b0f377ed5e7eca533f82fad8a3d90224f79673f
     - path: .headwater/overlay.yml
-      digest: sha256:8a063666e74b9b51ded083a0914da7be2cf201359ca71f4b3366b79c319c3ebe
+      digest: sha256:0c8c442a2752cc96be7e60b7c2243837742868ad4ecb6b8b603fdec0440f6b91
 
 # The adoption payload: the debt this corpus declared when the taxonomy first
 # reached it. Every other line of this file is generated and this block is not.
@@ -599,6 +599,17 @@ resolved:
           - Decision
           - Consequences
       voice: declarative
+    process_evaluation:
+      facets:
+        require:
+          - title
+      identifier:
+        scheme: evaluation_id
+      is_a: governed_document
+      language: ste_house
+      lifecycle: standard
+      purpose: evidence
+      voice: narrative
     process_explanation:
       facets:
         require:
@@ -614,6 +625,34 @@ resolved:
           - Scope
           - "How it works"
           - "Why it is this way"
+      voice: declarative
+    process_obligation:
+      facets:
+        require:
+          - title
+          - waiting_on
+      identifier:
+        scheme: obligation_record_id
+      is_a: governed_document
+      language: ste_house
+      lifecycle: obligation
+      purpose: obligation
+      sections:
+        require:
+          - Context
+          - Obligation
+          - Discharge
+      voice: declarative
+    process_spec:
+      facets:
+        require:
+          - title
+      identifier:
+        scheme: spec_id
+      is_a: governed_document
+      language: ste_house
+      lifecycle: standard
+      purpose: behavior
       voice: declarative
     requirement:
       facets:
@@ -949,11 +988,27 @@ resolved:
       layout: "{seq:04d}-{slug}.md"
       path: "docs/process/decisions/**"
       title: "Process decisions"
+    process_evaluations:
+      homogeneous: true
+      kind: process_evaluation
+      path: "docs/process/evaluations/**"
+      title: "Process evaluations"
     process_explanations:
       homogeneous: true
       kind: process_explanation
       path: "docs/process/explanations/**"
       title: "Process explanations"
+    process_obligations:
+      homogeneous: true
+      kind: process_obligation
+      layout: "{seq:04d}-{slug}.md"
+      path: "docs/process/obligations/**"
+      title: "Process obligation records"
+    process_specs:
+      homogeneous: true
+      kind: process_spec
+      path: "docs/process/specs/**"
+      title: "Process specifications"
     requirements:
       homogeneous: true
       kind: requirement
@@ -1101,6 +1156,9 @@ resolved:
         - tutorials
         - how_to
         - process_decisions
+        - process_specs
+        - process_evaluations
+        - process_obligations
         - explanations
         - process_explanations
         - subsystems

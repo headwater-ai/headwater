@@ -180,6 +180,13 @@ pub const VERBS: &[Verb] = &[
         description: "Compute which files of this repository a producer writes, by asking each producer for its own output set, and report both directions of its disagreement with `.gitattributes`. A fold that a producer writes and that carries neither `-merge` nor `merge=headwater-regenerate` merges silently when two branches move it to one value; a path that declares either and no producer writes refuses a merge of hand-written text. It holds no list of the population, so a producer output added to a tree changes its answer with no edit to the engine. It exits non-zero on a disagreement in either direction.",
         words: &[],
     },
+    Verb {
+        name: "site",
+        group: "Checking a corpus",
+        summary: "hold a built site against the corpus it was built from",
+        description: "Hold the directory a site generator wrote against the corpus it was built from, and report four kinds of finding: a page the navigation names and the site does not hold, a page under a shelf's directory that answers to no document, a link inside the site to a file the site does not hold, and a link whose fragment names no `id` on its page. It reads the site directory, the corpus and the lock, writes nothing and opens no socket. It exits non-zero on any finding.",
+        words: &[],
+    },
     // The one verb git calls rather than a person. HW-DR-0077 rules that merge
     // safety ships as a verb of the binary and gives the reason spec 5's "no
     // hook introduces a verb" does not forbid it: that rule forbids a second

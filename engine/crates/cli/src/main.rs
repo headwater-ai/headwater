@@ -335,6 +335,10 @@ fn dispatch(root: &Path, verb: Verb) -> ExitCode {
             json,
         } => gate(root, read_set, now, json),
         Verb::Derived {} => derived(root),
+        Verb::Site { dir } => match dir {
+            Some(dir) => site(root, &dir),
+            None => fail("`headwater site` takes the directory a site generator wrote, as `headwater site <site-dir>`"),
+        },
         Verb::MergeDriver {
             ancestor,
             current,
@@ -4262,6 +4266,14 @@ fn explain(root: &Path, target: &str, json: bool) -> ExitCode {
         Ok(explanation) => explanation,
         Err(code) => return code,
     };
+    // A row the walk could not read is not a document: the census never
+    // opened it, so it has no kind and nothing is required of it that the
+    // census could know. It is refused in `show`'s shape, and `--json` writes
+    // nothing (#1366).
+    if let Some(refusal) = explanation.refusal() {
+        eprintln!("headwater: {}", err(&refusal));
+        return ExitCode::FAILURE;
+    }
     // A target that names no document was refused in [`find_document`], on standard
     // error and with the same exit status either way. `--json` selects the
     // artifact and never the status: a refusal is not a document with a member
@@ -4406,7 +4418,8 @@ fn find_document(root: &Path, target: &str) -> Result<headwater_query::Explanati
                 // A path that passes through a symlink out of the root is
                 // outside the repository, whatever its spelling reads as
                 // (#1249). It is asked only here, after every lookup missed,
-                // so a document row that is itself a symlink still answers.
+                // so a census row that is itself a symlink is found, and the
+                // verb refuses it in its own sentence (#1366).
                 let classification = match headwater_census::walk::within(
                     root,
                     &loaded.consumer.corpus_root,
@@ -6125,6 +6138,45 @@ fn derived(root: &Path) -> ExitCode {
     match population.agrees() {
         true => ExitCode::SUCCESS,
         false => ExitCode::FAILURE,
+    }
+}
+
+/// `headwater site`: hold a built site against the corpus at `root`.
+///
+/// The navigation comes from the plan this run builds, not from the committed
+/// `site_nav` file, because a stale committed file is `generate --check`'s
+/// finding. `headwater_generate::site` carries the four finding classes, and
+/// `docs/interfaces/headwater-site.md` is the contract. A relative `dir` is
+/// read from the current directory, as every path operand is.
+fn site(root: &Path, dir: &Path) -> ExitCode {
+    let loaded = match load(root) {
+        Ok(loaded) => loaded,
+        Err(code) => return code,
+    };
+    let projections = match headwater_generate::Projections::read(&loaded.bound.taxonomy) {
+        Ok(projections) => projections,
+        Err(errors) => return refused("the projections", &errors),
+    };
+    let identity = loaded.identity();
+    let surface = loaded.surface();
+    let plan = headwater_generate::plan(
+        &surface,
+        &loaded.census,
+        &projections,
+        &identity,
+        &loaded.runs(root),
+        headwater_verbs::VERBS,
+    );
+    match headwater_generate::site::hold(dir, &surface, &projections, &plan, &identity.corpus_root)
+    {
+        Err(refusal) => fail(&refusal),
+        Ok(report) => {
+            print!("{}", report.render());
+            match report.findings.is_empty() {
+                true => ExitCode::SUCCESS,
+                false => ExitCode::FAILURE,
+            }
+        }
     }
 }
 

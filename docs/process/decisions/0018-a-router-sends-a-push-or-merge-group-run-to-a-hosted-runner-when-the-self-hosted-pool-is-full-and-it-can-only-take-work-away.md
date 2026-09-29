@@ -21,7 +21,7 @@ relations:
 
 ## Context
 
-Before this record, the reasons lived in comments of `.github/workflows/ci.yml` on 2026-09-27. The comments were header rule 6 (lines 55 to 66), the comments on the `route` job (lines 116 to 194), and the `CI_SELF_HOSTED_SLOTS` commands (lines 76 and 77). [Two triggers, one verdict](../../evaluations/two-triggers-one-verdict-how-this-repository-s-ci-decides-where-a-job-runs-and-what-it-trusts.md#a-full-pool-sends-a-push-run-to-a-hosted-runner-and-the-router-can-only-take-work-away) holds the measurements.
+Before this record, the reasons lived in comments of `.github/workflows/ci.yml` on 2026-09-27. The comments were header rule 6 (lines 55 to 66), the comments on the `route` job (lines 116 to 194), and the `CI_SELF_HOSTED_SLOTS` commands (lines 76 and 77). [Two triggers, one verdict](../evaluations/two-triggers-one-verdict-how-this-repository-s-ci-decides-where-a-job-runs-and-what-it-trusts.md#a-full-pool-sends-a-push-run-to-a-hosted-runner-and-the-router-can-only-take-work-away) holds the measurements.
 
 The comment on the router recorded them in short. A self-hosted job is faster than a hosted job by about 2.5 minutes for each of the two jobs. A queued job waits 3 to 7 minutes for a slot to free. So a run that cannot start both jobs at once finishes sooner on a hosted runner.
 

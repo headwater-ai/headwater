@@ -316,6 +316,8 @@ anchors
   code_path `engine/crates/cli/src/lib.rs, engine/crates/cli/src/main.rs` via source-tree
     cited by HW-IFACE-headwater-show
   code_path `engine/crates/cli/src/lib.rs, engine/crates/cli/src/main.rs` via source-tree
+    cited by HW-IFACE-headwater-site
+  code_path `engine/crates/cli/src/lib.rs, engine/crates/cli/src/main.rs` via source-tree
     cited by HW-IFACE-headwater-sweep
   code_path `engine/crates/cli/src/lib.rs, engine/crates/cli/src/main.rs` via source-tree
     cited by HW-IFACE-headwater-taxonomy
@@ -391,6 +393,8 @@ anchors
     cited by HW-IFACE-headwater-generate
   code_path `engine/crates/generate/src/lib.rs` via source-tree
     cited by HW-OBL-0172
+  code_path `engine/crates/generate/src/site.rs` via source-tree
+    cited by HW-IFACE-headwater-site
   code_path `engine/crates/graph/src/anchors.rs` via source-tree
     cited by HW-DR-0074
   code_path `engine/crates/graph/src/anchors.rs` via source-tree

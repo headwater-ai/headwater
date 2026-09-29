@@ -57,6 +57,13 @@ fn root(label: &str, target: &str) -> Root {
 /// that reads only after the exit leaves the verb blocked on its own write,
 /// and that hang is the harness's rather than the one this file pins.
 fn under_deadline(root: &Root, args: &[&str], hung: &str) -> (String, String) {
+    let (_, out, err) = ended(root, args, hung);
+    (out, err)
+}
+
+/// [`under_deadline`], with the exit status the verb ended on, for a case
+/// that pins a refusal (#1366).
+fn ended(root: &Root, args: &[&str], hung: &str) -> (std::process::ExitStatus, String, String) {
     use std::io::Read;
     use std::time::{Duration, Instant};
 
@@ -78,9 +85,9 @@ fn under_deadline(root: &Root, args: &[&str], hung: &str) -> (String, String) {
     let out = drain(Box::new(child.stdout.take().expect("stdout is piped")));
     let err = drain(Box::new(child.stderr.take().expect("stderr is piped")));
     let deadline = Instant::now() + Duration::from_secs(60);
-    loop {
-        if child.try_wait().expect("the child is there").is_some() {
-            break;
+    let status = loop {
+        if let Some(status) = child.try_wait().expect("the child is there") {
+            break status;
         }
         if Instant::now() > deadline {
             child.kill().expect("the child stops");
@@ -88,8 +95,9 @@ fn under_deadline(root: &Root, args: &[&str], hung: &str) -> (String, String) {
             panic!("{hung}");
         }
         std::thread::sleep(Duration::from_millis(50));
-    }
+    };
     (
+        status,
         out.join().expect("stdout drains"),
         err.join().expect("stderr drains"),
     )
@@ -278,6 +286,36 @@ fn show_finishes_and_refuses_a_named_pipe_at_a_document_path() {
     );
     assert!(out.is_empty(), "show prints nothing of a named pipe: {out}");
     assert!(flat(&err).contains("the census never opens"), "{err}");
+}
+
+/// `explain` finds the row `show` refuses, and the row is not a document: the
+/// census never opened the entry, so it knows no kind and no requirement to
+/// state. `explain` refuses it in `show`'s shape, and `--json` writes nothing,
+/// as a refusal under `--json` does (HW-DR-0043, #1366).
+#[test]
+fn explain_refuses_a_named_pipe_at_a_document_path() {
+    let root = document_pipe("explain-document-pipe");
+    for args in [
+        &["explain", "docs/x.md"][..],
+        &["explain", "docs/x.md", "--json"],
+    ] {
+        let (status, out, err) = ended(
+            &root,
+            args,
+            "explain opened the named pipe at docs/x.md, and waited on it",
+        );
+        assert_eq!(status.code(), Some(1), "{args:?} refuses: {out}{err}");
+        assert!(
+            out.is_empty(),
+            "{args:?} prints nothing of a named pipe: {out}"
+        );
+        let err = flat(&err);
+        assert!(err.contains("the census never opens"), "{args:?}: {err}");
+        assert!(
+            err.contains("so `explain` prints nothing"),
+            "{args:?}: {err}"
+        );
+    }
 }
 
 /// A cached verdict over a directory literal does not survive the directory

@@ -477,7 +477,7 @@ if [ -x "$engine" ]; then
     expect 'an edit to a governing decision names the third path it governs' \
         write.sh 0 '.claude/skills/hw-run-policy/SKILL.md' "$pd7"
     expect 'an edit to a governing decision names the document that traces to it' \
-        write.sh 0 'docs/spec/17-orchestration-architecture.md (traces_to of)' "$pd7"
+        write.sh 0 'docs/process/specs/orchestration-architecture.md (traces_to of)' "$pd7"
     expect 'the reverse advisory is worded for an edit that has not happened yet' \
         write.sh 0 'which you are about to change, is a document that other files depend on' "$pd7"
     expect 'the reverse advisory says it blocks nothing' \
