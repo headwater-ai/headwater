@@ -2844,6 +2844,21 @@ case $got in
         fail "  a file the judge cannot open fails, and is not read as ok" "got \`$got\`" ;;
 esac
 
+# 8m, continued. A file that names NO version is not a file that names the
+# newest one. The stale rule reads matches, so an empty tape, or one cut off
+# before its vendor line, gave it nothing to object to and read as `ok`, and
+# the count above holds only that the file exists (#1385). So each file the
+# judge is handed must name at least one version, unless it is named in
+# `standard_pin_unversioned`.
+: >"$scratch/standard/empty.tape"
+sed -n '1,20p' "$root/.github/assets/headwater-demo.tape" >"$scratch/standard/truncated.tape"
+same "  an empty file fails, and names the file" \
+    "$scratch/standard/empty.tape: names no headwater/standard version" \
+    "$(standard_pin_judge 99.0.0 "$scratch/standard/empty.tape")"
+same "  a tape cut off before its vendor line fails, and names the file" \
+    "$scratch/standard/truncated.tape: names no headwater/standard version" \
+    "$(standard_pin_judge 99.0.0 "$scratch/standard/clean1.md" "$scratch/standard/truncated.tape")"
+
 # 8o. The newest tag is the newest by VERSION. These four tags are chosen so
 #     that each wrong reading picks a different one: git's default order is
 #     lexical and ascending, and it lists v4.10.0 first; lexical descending
@@ -2858,6 +2873,15 @@ for v in 4.2.0 4.9.1 4.10.0 4.12.0; do
     git -C "$order" tag "taxonomy/headwater-standard/v$v" >/dev/null 2>&1
 done
 same "  the newest tag is read by version, not by name" 4.12.0 \
+    "$(newest_standard_version "$order")"
+
+# 8o, continued. The newest tag is the newest RELEASE. A pre-release tag sorts
+#     above the release it precedes, so `v4.13.0-rc.1` read as newest would
+#     send every page to a version no newcomer can install and turn this gate
+#     red on the day the candidate is pushed (#1385). Only a tag whose version
+#     is three dotted numbers and nothing else is read.
+git -C "$order" tag "taxonomy/headwater-standard/v4.13.0-rc.1" >/dev/null 2>&1
+same "  a pre-release tag newer than the release is not the newest" 4.12.0 \
     "$(newest_standard_version "$order")"
 
 # 8n. Provoked: a clone with no tags is red, never green. It is cloned from
