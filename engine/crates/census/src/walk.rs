@@ -606,6 +606,28 @@ mod tests {
                 (typed_through, answer)
             })
             .collect();
+        // And each case typed through the root itself, against the root
+        // reached by the link. Under the linked corpus root, only the leading
+        // part that is the root reads the path lexically below it, as
+        // `linked` is the one link the walk follows.
+        let physical: Vec<(String, Option<String>)> = cases
+            .iter()
+            .map(|(target, _)| {
+                let typed_through = root.join(target).display().to_string();
+                let answer = within(&via, "linked", &typed_through);
+                (typed_through, answer)
+            })
+            .collect();
+        let back_to_corpus = within(
+            &root,
+            "linked",
+            &root
+                .join("..")
+                .join(root.file_name().expect("the root has a name"))
+                .join("linked/shelf/new.md")
+                .display()
+                .to_string(),
+        );
         let missing = typed(
             &root,
             &via.join("docs/never-written.md").display().to_string(),
@@ -686,6 +708,18 @@ mod tests {
             again.as_deref(),
             Some("again/never-written.md"),
             "`typed` reads a link back to the root by its name"
+        );
+        for ((_, expected), (target, answer)) in cases.iter().zip(&physical) {
+            assert_eq!(
+                answer.as_deref(),
+                *expected,
+                "`within` on the absolute `{target}` against a root reached by a link"
+            );
+        }
+        assert_eq!(
+            back_to_corpus.as_deref(),
+            Some("linked/shelf/new.md"),
+            "`within` on a path that leaves the root and comes back under the linked corpus root"
         );
         for (target, answer, expected) in &into {
             assert_eq!(
