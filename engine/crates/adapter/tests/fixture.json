@@ -536,7 +536,7 @@
     {
       "rule": "relation.target.unresolved",
       "scope": "edge",
-      "version": 1,
+      "version": 2,
       "obligations": [
         "OB-FIX-24"
       ]
