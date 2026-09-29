@@ -1286,7 +1286,9 @@ if [ -x "$engine" ]; then
         printf 'FAIL %s\n  %s whole, %s empty, %s torn or merged:\n%s' 'the concurrent-writer classifier counted an empty line as torn or merged' "$race_whole" "$race_empty" "$race_other" "$race_bad"
         failed=$((failed + 1))
     fi
-    printf 'noise\n{"session":"fixture-classify","task":"one"}\n{"session":"fixture-classify","tanoise\nsk":"two"}\n' > "$race_root/classify-torn"
+    # The last line has no newline, as a writer killed inside its write
+    # leaves it, and it is still counted.
+    printf 'noise\n{"session":"fixture-classify","task":"one"}\n{"session":"fixture-classify","tanoise\nsk":"two"}' > "$race_root/classify-torn"
     race_classify "$race_root/classify-torn" fixture-classify
     if [ "$race_whole" -eq 1 ] && [ "$race_other" -eq 2 ] && [ "$race_empty" -eq 0 ]; then
         printf 'ok   %s\n' 'the concurrent-writer classifier counts a torn line as torn and not as empty'
