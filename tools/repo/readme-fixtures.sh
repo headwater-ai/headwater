@@ -1274,6 +1274,52 @@ release_notes_judge() {
     esac
 }
 
+# engine_digest_claim_judge README WORKFLOW — `ok`, or the sentence that quotes
+# the README's claim that an engine release states no digest, when the engine
+# release WORKFLOW does state one.
+#
+# The property comes from the workflow through `release_notes_judge`, never
+# from a literal: where the workflow passes a notes file (the step "The digest
+# the package in this tree publishes" writes `release.digest: <value>` into
+# it), the README may not tell a reader that an engine release states no
+# digest. Where the workflow states none, the README's claim is true and the
+# judge has nothing to refuse. #1336 found the claim on the README after
+# HW-DR-0090 made it false.
+engine_digest_claim_judge() {
+    [ "$(release_notes_judge "$2")" = ok ] || { echo ok; return 0; }
+    edc_claim=$(awk '/^```/{f=!f; next} !f' "$1" \
+        | grep -oiE '[^.]*engine release[^.]*(states|carries|has) no (`release\.digest`|digest)[^.]*\.' \
+        | head -1 | sed 's/^ *//')
+    if [ -z "$edc_claim" ]; then
+        echo ok
+    else
+        echo "the README says \"$edc_claim\", but \`gh release create\` in the engine workflow passes a notes file that the step \"The digest the package in this tree publishes\" opens with \`release.digest\`"
+    fi
+}
+
+# apt_condition_judge PAGE WORKFLOW — `ok`, or the sentence that says the
+# explanation page's apt row states the APT signature with no condition while
+# the workflow signs only under one.
+#
+# The step "Sign the APT metadata" exits 0 with a warning when the
+# `APT_SIGNING_KEY` secret is empty, so the release then carries no signed
+# metadata and the site serves no repository. Where the step has that early
+# exit, the apt row of the route table must name the secret (#1336). Where the
+# step signs unconditionally, the row may state the signature alone.
+apt_condition_judge() {
+    workflow_step_run "$2" "Sign the APT metadata" >"$scratch/apt-step.sh"
+    if ! grep -q -- '-z "$APT_SIGNING_KEY"' "$scratch/apt-step.sh"; then
+        echo ok
+        return 0
+    fi
+    acj_row=$(grep '^| the `headwater` binary in a Debian package |' "$1" | head -1)
+    case $acj_row in
+        '') echo "the page has no apt row in its route table, so it states nothing an adopter can check the condition against" ;;
+        *APT_SIGNING_KEY*) echo ok ;;
+        *) echo "the apt row of the route table states the signature and not the \`APT_SIGNING_KEY\` secret, but the step \"Sign the APT metadata\" exits 0 and signs nothing when that secret is empty" ;;
+    esac
+}
+
 # release_pipe_steps FILE MODE — the steps of a workflow whose shell reads a
 # command through a pipe inside a substitution. MODE `offenders` names the ones
 # that do not set `pipefail`; MODE `guarded` names the ones that do.
@@ -2587,6 +2633,49 @@ if [ -f "$release_wf" ]; then
     else
         fail "  and the step that builds those notes can be read out by name" \
             "no step named \`$notes_step\` with a \`run: |\` block, so the notes this workflow states cannot be run here and a grep for the flag is all that is left"
+    fi
+
+    # 7l'. What the README says about those notes. The engine release states
+    #      the `release.digest` of the package in its tree, so the README may
+    #      not tell a reader that it states none (#1336).
+    same "  and the README does not say an engine release states no digest" ok \
+        "$(engine_digest_claim_judge "$readme" "$release_wf")"
+
+    # The same judge, provoked: a README that carries the clause #1336 removed
+    # is refused with the clause quoted.
+    edc_old="The taxonomy package is verified through its own tag namespace rather than through this engine release, because an engine release states no digest for the package its tree happens to carry."
+    { cat "$readme"; printf '\n%s\n' "$edc_old"; } >"$scratch/release/stale-claim.md"
+    same "  a README that says an engine release states no digest is refused" \
+        "the README says \"$edc_old\", but \`gh release create\` in the engine workflow passes a notes file that the step \"The digest the package in this tree publishes\" opens with \`release.digest\`" \
+        "$(engine_digest_claim_judge "$scratch/release/stale-claim.md" "$release_wf")"
+    same "  and the same README is not refused where the workflow states no digest" ok \
+        "$(engine_digest_claim_judge "$scratch/release/stale-claim.md" "$scratch/release/no-upload.yml")"
+
+    # 7l''. What the explanation page says about the APT route. The workflow
+    #       signs the metadata only when `APT_SIGNING_KEY` is set, so the apt
+    #       row of the route table names that secret (#1336).
+    apt_page="$root/docs/explanations/how-a-headwater-release-reaches-an-adopter.md"
+    same "  and the explanation page's apt row names the condition the APT signature has" ok \
+        "$(apt_condition_judge "$apt_page" "$release_wf")"
+    # The README's apt paragraph states the same condition in words, because
+    # its reader has no route table: the paragraph that opens the apt route
+    # names the signing key, and says what a release cut without it carries.
+    readme_apt=$(grep '^\*\*Install it with apt' "$readme" | head -1)
+    case $readme_apt in
+        *"APT signing key set"*"without that key"*)
+            pass "  and the README's apt paragraph names the signing key the APT repository needs" ;;
+        *) fail "  and the README's apt paragraph names the signing key the APT repository needs" \
+            "the paragraph that opens the apt route states a signed APT repository for every engine release, but the step \"Sign the APT metadata\" signs nothing when \`APT_SIGNING_KEY\` is empty" ;;
+    esac
+    sed '/^| the `headwater` binary in a Debian package |/s/|[^|]*|$/| apt checks the signature of the repository metadata |/' \
+        "$apt_page" >"$scratch/release/apt-unconditional.md"
+    if cmp -s "$apt_page" "$scratch/release/apt-unconditional.md"; then
+        fail "  an apt row that states the signature with no condition is refused" \
+            "the planted edit changed nothing, so this case measured nothing"
+    else
+        same "  an apt row that states the signature with no condition is refused" \
+            "the apt row of the route table states the signature and not the \`APT_SIGNING_KEY\` secret, but the step \"Sign the APT metadata\" exits 0 and signs nothing when that secret is empty" \
+            "$(apt_condition_judge "$scratch/release/apt-unconditional.md" "$release_wf")"
     fi
 
     # 7m. The judge, provoked. Stripping the second flag leaves the call legal,
