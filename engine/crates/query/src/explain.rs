@@ -160,9 +160,17 @@ impl Explanation {
     /// and the `explain` tool of `headwater mcp` answers with it, so the two
     /// refuse in one sentence (#1366).
     pub fn refusal(&self) -> Option<String> {
+        self.refusal_for("explain")
+    }
+
+    /// [`Explanation::refusal`], with the verb that refuses named in it.
+    /// `show` and the `related` tool of `headwater mcp` refuse the rows
+    /// `explain` refuses, and this one function writes each sentence, so the
+    /// sentences differ only in the verb (#1366).
+    pub fn refusal_for(&self, verb: &str) -> Option<String> {
         self.unwalkable
             .as_ref()
-            .map(|reason| format!("`{}` is {reason}, so `explain` prints nothing", self.path))
+            .map(|reason| format!("`{}` is {reason}, so `{verb}` prints nothing", self.path))
     }
 
     /// The explanation as text, in spec 2's own order.

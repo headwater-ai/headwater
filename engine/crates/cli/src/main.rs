@@ -321,8 +321,12 @@ fn dispatch(root: &Path, verb: Verb) -> ExitCode {
                 change,
             },
         ),
-        Verb::Change { base, out } => match (base, out) {
-            (Some(base), Some(out)) => change(root, &base, &out),
+        Verb::Change {
+            base,
+            out,
+            verified,
+        } => match (base, out) {
+            (Some(base), Some(out)) => change(root, &base, &out, &verified),
             _ => fail(
                 "`change` takes a base revision and a directory to write into. Try `headwater \
                  change HEAD .headwater/change` before `headwater check --change \
@@ -4302,6 +4306,16 @@ fn show(root: &Path, target: &str) -> ExitCode {
         Ok(explanation) => explanation,
         Err(code) => return code,
     };
+    // A row the walk could not read is refused in `explain`'s sentence, with
+    // the verb changed: a symlink, a named pipe, a socket or a device, a
+    // directory the walk could not read, and a name that is not UTF-8
+    // (#1366). The checks below stay as a second guard on the read itself:
+    // the walk makes no row under a linked directory, so no row found above
+    // reaches them today, and they keep the read inside the root if one does.
+    if let Some(refusal) = explanation.refusal_for("show") {
+        eprintln!("headwater: {}", err(&refusal));
+        return ExitCode::FAILURE;
+    }
     // A census path is relative to the repository root, which is `root`.
     // The walk does not follow a symlink, and neither does this read: a link
     // anywhere between the root and the file could name any file on the host,
@@ -6029,8 +6043,8 @@ fn mcp(root: &Path, now: Option<Date>, writing: bool) -> ExitCode {
 /// [HW-DR-0072](../../../../docs/decisions/0072-the-binary-is-the-only-interface-an-adopter-must-run-and-every-integration-point-outside-it-is-declared.md)
 /// draws the boundary: this verb is the git plumbing, and `check --change` is
 /// the reader that stays inside the check-evaluation path spec 12 describes.
-fn change(root: &Path, base: &str, out: &Path) -> ExitCode {
-    match headwater_vcs::produce(root, base, out) {
+fn change(root: &Path, base: &str, out: &Path, verified: &[String]) -> ExitCode {
+    match headwater_vcs::produce(root, base, out, verified) {
         Ok(manifest) => {
             println!("{}", manifest.display());
             ExitCode::SUCCESS

@@ -841,7 +841,20 @@ fn call(server: &Server<'_>, message: &Mapping) -> Result<Answer, Failure> {
                     false => out,
                 }
             }
-            None => missing(server, &argument),
+            // A row the walk could not read is not a document, and it is
+            // refused in the sentence `explain` refuses it in, with this
+            // tool's name as the verb (#1366).
+            None => match retried(
+                server,
+                &argument,
+                |target| surface.explain(target),
+                |found| found.path.as_str(),
+            )
+            .and_then(|explanation| explanation.refusal_for("related"))
+            {
+                Some(refusal) => format!("{refusal}\n"),
+                None => missing(server, &argument),
+            },
         },
         "resolve_identifier" => match surface.resolve_identifier(&argument) {
             Resolved::Document(pointer) => format!("{}\n", pointer.render()),

@@ -200,7 +200,15 @@ impl Claims {
                 let Some(id) = claim.file_name().to_str().map(str::to_string) else {
                     continue;
                 };
-                let claimant = std::fs::read_to_string(claim.path())
+                // Only a regular file is opened. `metadata` follows a link, so
+                // a claim reached through one is still read. A named pipe, a
+                // socket or a device is never opened, because a pipe with no
+                // writer blocks its reader for ever (#1366). Such an entry
+                // reads as a claim that names nobody, as an unreadable claim
+                // does, so `claim.stale` reports it at its own path.
+                let claimant = opens(&claim.path())
+                    .then(|| std::fs::read_to_string(claim.path()).ok())
+                    .flatten()
                     .unwrap_or_default()
                     .lines()
                     .next()
@@ -217,7 +225,17 @@ impl Claims {
         entries.sort_by(|a, b| (&a.scheme, &a.id).cmp(&(&b.scheme, &b.id)));
         Claims { entries }
     }
+}
 
+/// Whether [`Claims::at`] opens the entry at `path`: a regular file, reached
+/// directly or through a link, and nothing else. A named pipe, a socket and a
+/// device are never opened, because a pipe with no writer and a device such as
+/// `/dev/zero` never end a read (#1366).
+fn opens(path: &Path) -> bool {
+    std::fs::metadata(path).is_ok_and(|meta| meta.is_file())
+}
+
+impl Claims {
     /// A store built from claims, for a caller that has them already. The
     /// order is imposed here rather than assumed of the caller.
     pub fn of(mut entries: Vec<Claim>) -> Self {
@@ -756,6 +774,105 @@ mod tests {
                 .message
                 .contains("which follows a rename or a claim edited by hand"),
             "{finding:#?}"
+        );
+    }
+
+    /// The store reads a claim reached through a symlink, because the guard
+    /// against a named pipe asks what the link names and not what the link
+    /// is. A named pipe beside it reads as a claim that names nobody, and the
+    /// read ends (#1366, verify round 1).
+    #[cfg(unix)]
+    #[test]
+    fn a_claim_through_a_symlink_counts_and_a_named_pipe_names_nobody() {
+        let nanos = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .expect("a clock later than the epoch")
+            .as_nanos();
+        let root = std::env::temp_dir().join(format!(
+            "headwater-claim-link-{}-{nanos}",
+            std::process::id()
+        ));
+        let scheme = root.join(STORE).join("decision_id");
+        std::fs::create_dir_all(&scheme).expect("the scheme directory is made");
+        std::fs::write(root.join("held"), contents_for("docs/decisions/0001-a.md"))
+            .expect("the claim body writes");
+        std::os::unix::fs::symlink(root.join("held"), scheme.join("HW-DR-0001"))
+            .expect("the link is made");
+        let made = std::process::Command::new("mkfifo")
+            .arg(scheme.join("HW-DR-0002"))
+            .status()
+            .expect("mkfifo runs");
+        assert!(made.success(), "the named pipe is made");
+
+        let at = root.clone();
+        let (send, receive) = std::sync::mpsc::channel();
+        std::thread::spawn(move || {
+            let claims = Claims::at(&at);
+            send.send((
+                claims
+                    .claimant("decision_id", "HW-DR-0001")
+                    .map(str::to_string),
+                claims
+                    .claimant("decision_id", "HW-DR-0002")
+                    .map(str::to_string),
+            ))
+            .expect("the answer is sent");
+        });
+        let (linked, piped) = receive
+            .recv_timeout(std::time::Duration::from_secs(30))
+            .expect("Claims::at opened the named pipe, and waited on it");
+        std::fs::remove_dir_all(&root).ok();
+
+        assert_eq!(linked.as_deref(), Some("docs/decisions/0001-a.md"));
+        assert_eq!(piped.as_deref(), Some(""));
+    }
+
+    /// The store opens a regular file, directly or through a link, and no
+    /// named pipe, socket or device. A device is asked about and never read:
+    /// a read of `/dev/zero` does not end, so a store that read one would not
+    /// fail this case, it would never finish it. `/dev/null` stands in, and
+    /// this asks the guard itself (#1366, verify round 2).
+    #[cfg(unix)]
+    #[test]
+    fn the_store_opens_a_regular_file_and_no_pipe_socket_or_device() {
+        let nanos = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .expect("a clock later than the epoch")
+            .as_nanos();
+        let dir = std::env::temp_dir().join(format!(
+            "headwater-claim-opens-{}-{nanos}",
+            std::process::id()
+        ));
+        std::fs::create_dir_all(&dir).expect("the directory is made");
+        std::fs::write(dir.join("file"), "docs/a.md\n").expect("the file writes");
+        std::os::unix::fs::symlink(dir.join("file"), dir.join("link")).expect("the link is made");
+        std::os::unix::fs::symlink("/dev/null", dir.join("device")).expect("the link is made");
+        std::os::unix::fs::symlink("/dev/zero", dir.join("endless")).expect("the link is made");
+        let made = std::process::Command::new("mkfifo")
+            .arg(dir.join("pipe"))
+            .status()
+            .expect("mkfifo runs");
+        assert!(made.success(), "the named pipe is made");
+        let socket = std::os::unix::net::UnixListener::bind(dir.join("socket"))
+            .expect("the socket is bound");
+
+        let answers: Vec<(&str, bool)> = ["file", "link", "device", "endless", "pipe", "socket"]
+            .into_iter()
+            .map(|name| (name, opens(&dir.join(name))))
+            .collect();
+        drop(socket);
+        std::fs::remove_dir_all(&dir).ok();
+
+        assert_eq!(
+            answers,
+            vec![
+                ("file", true),
+                ("link", true),
+                ("device", false),
+                ("endless", false),
+                ("pipe", false),
+                ("socket", false),
+            ]
         );
     }
 }
