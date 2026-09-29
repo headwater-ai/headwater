@@ -319,8 +319,7 @@ fn show_and_explain_refuse_an_unwalkable_row_in_one_sentence() {
         rows.push("docs/locked");
     }
     for row in rows {
-        let (explain_status, _, explain) =
-            ended(&root, &["explain", row], "explain did not end");
+        let (explain_status, _, explain) = ended(&root, &["explain", row], "explain did not end");
         let (show_status, out, show) = ended(&root, &["show", row], "show did not end");
         assert_eq!(explain_status.code(), Some(1), "explain refuses {row}");
         assert_eq!(show_status.code(), Some(1), "show refuses {row}");
@@ -536,5 +535,8 @@ fn sweep_plan_finishes_when_a_named_pipe_takes_a_document_path() {
         &["sweep", "plan"],
         "sweep plan opened the named pipe at docs/x.md, and waited on it",
     );
-    assert!(plan.contains("## The slice"), "sweep plan wrote its briefing: {plan}");
+    assert!(
+        plan.contains("## The slice"),
+        "sweep plan wrote its briefing: {plan}"
+    );
 }
