@@ -653,7 +653,7 @@ mod tests {
         std::os::unix::fs::symlink("missing/../dang", root.join("docs/hop"))
             .expect("a link through a missing part back to a dangling link out");
 
-        let cases: [(&str, Option<&str>); 22] = [
+        let cases: [(&str, Option<&str>); 23] = [
             ("linked/shelf/new.md", Some("linked/shelf/new.md")),
             ("./linked/new.md", Some("linked/new.md")),
             ("linked/out/x.md", None),
@@ -676,6 +676,7 @@ mod tests {
             ("docs/stub/new.md", Some("docs/stub/new.md")),
             ("docs/stub", Some("docs/stub")),
             ("docs/near/new.md", Some("docs/near/new.md")),
+            ("docs/near/dang/new.md", Some("docs/near/dang/new.md")),
         ];
         let answers: Vec<(&str, Option<String>)> = cases
             .iter()
