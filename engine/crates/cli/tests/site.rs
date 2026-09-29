@@ -102,7 +102,9 @@ impl Root {
             "index.html",
             "<a href=\"decisions/\">Decisions</a><a href=\"https://example.org/\">out</a>",
         );
-        self.page("404.html", "<a href=\"/\">home</a>");
+        // A link that opens with `/` depends on where the site is served, so
+        // it is not read. This one would resolve to nothing in the directory.
+        self.page("404.html", "<a href=\"/headwater/\">home</a>");
         self.page(
             "decisions/index.html",
             "<h1 id=\"decision-records\">Decision records</h1><a href=\"0001-alpha-choice/\">1</a><a href=\"0002-beta-choice/\">2</a>",

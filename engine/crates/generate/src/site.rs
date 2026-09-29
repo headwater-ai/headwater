@@ -543,6 +543,8 @@ mod tests {
         assert_eq!(resolve("a/b/index.html", "../../x.css", &files).as_deref(), Some("x.css"));
         assert_eq!(resolve("a/index.html", "b", &files).as_deref(), Some("a/b/index.html"));
         assert_eq!(resolve("a/index.html", "c/", &files), None);
+        // A path with no final `/` that names neither a file nor a directory.
+        assert_eq!(resolve("a/index.html", "c.html", &files), None);
         assert_eq!(resolve("a/index.html", "../../x.css", &files), None);
     }
 
