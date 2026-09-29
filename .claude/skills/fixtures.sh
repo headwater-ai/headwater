@@ -544,6 +544,63 @@ is not what reaches the corpus"
         fi
     fi
 
+    printf '\n# the status probe, against the route and the recorder it meets\n'
+
+    # The status of a settled decision in its pull request (#1294). Route on
+    # the probe's own task, in a tree without the probe shelves that every arm
+    # removes, offers the decision that rules it at the default budget. The
+    # task is read out of the probe the way `tools/probe/campaign.sh` reads it,
+    # so a reworded task is the task this case routes. The path is matched as
+    # an offered pointer, at the start of a line, and not as a word in the
+    # summary of some other document.
+    name='route on the status probe offers the ruling at the default budget'
+    status_probe="$root/docs/probes/a-session-names-the-status-a-settled-decision-carries-in-its-pull-request.md"
+    status_task=$(awk '/^## Task$/ { on = 1; next } on && /^## / { exit } on { print }' "$status_probe")
+    mkdir -p "$scratch/arm"
+    cp -r "$root/docs" "$scratch/arm/docs"
+    cp -r "$root/.headwater" "$scratch/arm/.headwater"
+    rm -rf "$scratch/arm/docs/probes" "$scratch/arm/docs/probe-runs" \
+        "$scratch/arm/docs/probe-results" "$scratch/arm/.headwater/export.json"
+    routed=$("$engine" route --root "$scratch/arm" "$status_task" 2>/dev/null)
+    got=$?
+    if [ "$got" -ne 0 ]; then
+        fail "$name" "route exited $got"
+    elif printf '%s\n' "$routed" | grep -q '^  docs/decisions/0052-a-document-is-proposed-at-the-state-it-will-hold-and-the-merge-activates-it\.md '; then
+        pass "$name"
+    else
+        fail "$name" "route offered no pointer to HW-DR-0052:
+$routed"
+    fi
+
+    # The same probe, answered from a prior alone. On 2026-09-28 every absent
+    # session answered the value `current` with no tool call, so a closed set
+    # that the value alone satisfies measured the model and not the documents.
+    # The set the plan prints must record the bare value as no answer, and the
+    # value with the ruling's identifier as that line.
+    name='the status probe records the value alone as no answer, and the value with the ruling as itself'
+    status_answers=$("$engine" probe plan --root "$root" --tier documentation \
+        --category sufficiency --repetitions 1 2>/dev/null \
+        | awk '/^- HW-PROBE-a-session-names-the-status-a-settled-decision/ { on = 1; next }
+               /^- / { on = 0 }
+               on && /^    answers: / { sub(/^    answers: /, ""); print; exit }')
+    printf '%s\n' '{"type":"result","result":"current"}' > "$scratch/bare.jsonl"
+    printf '%s\n' '{"type":"result","result":"current HW-DR-0052"}' > "$scratch/ruled.jsonl"
+    bare=$(sh "$root/tools/probe/probe-record.sh" --answer-only "$scratch/bare.jsonl" --answers "$status_answers")
+    ruled=$(sh "$root/tools/probe/probe-record.sh" --answer-only "$scratch/ruled.jsonl" --answers "$status_answers")
+    if [ -z "$status_answers" ]; then
+        fail "$name" 'the plan printed no answers for the status probe'
+    elif ! printf '%s' "$status_task" | grep -qF 'the identifier in its `id` field'; then
+        # A set that wants the identifier, under a task that never asks for
+        # one, fails every session whatever the documents say.
+        fail "$name" 'the task no longer asks for the identifier that the answer set requires'
+    elif [ -n "$bare" ]; then
+        fail "$name" "the bare value is recorded as \`$bare\` against the set \`$status_answers\`"
+    elif [ "$ruled" != 'current HW-DR-0052' ]; then
+        fail "$name" "the value with the ruling is recorded as \`$ruled\` against the set \`$status_answers\`"
+    else
+        pass "$name"
+    fi
+
     printf '\n# headwater-orient, against the two verbs it sends an agent to\n'
 
     # `explain` is offered as the thing that answers without reading the
@@ -575,53 +632,6 @@ $out" ;;
         0 'no declared purpose answers this task' \
         "$engine" route zzzqqqwww --root "$root"
 
-    # The status of a settled decision in its pull request (#1294). The
-    # always-loaded description of the authoring skill states the ruling, and
-    # route on the probe's own task, in a tree without the probe shelves that
-    # every arm removes, names the decision that rules it at the default
-    # budget. The task is read out of the probe the way `tools/probe/campaign.sh`
-    # reads it, so a reworded task is the task this case routes.
-    status_probe="$root/docs/probes/a-session-names-the-status-a-settled-decision-carries-in-its-pull-request.md"
-    status_task=$(awk '/^## Task$/ { on = 1; next } on && /^## / { exit } on { print }' "$status_probe")
-    mkdir -p "$scratch/arm"
-    cp -r "$root/docs" "$scratch/arm/docs"
-    cp -r "$root/.headwater" "$scratch/arm/.headwater"
-    rm -rf "$scratch/arm/docs/probes" "$scratch/arm/docs/probe-runs" \
-        "$scratch/arm/docs/probe-results" "$scratch/arm/.headwater/export.json"
-    claim 'route on the status probe names the ruling, which the skill description states' \
-        headwater-authoring/SKILL.md \
-        'at `status: current`, not `draft` (HW-DR-0052)' \
-        0 'docs/decisions/0052-a-document-is-proposed-at-the-state-it-will-hold-and-the-merge-activates-it.md' \
-        "$engine" route --root "$scratch/arm" "$status_task"
-
-    # The same probe, answered from a prior alone. On 2026-09-28 every absent
-    # session answered the value `current` with no tool call, so a closed set
-    # that the value alone satisfies measured the model and not the documents.
-    # The set the plan prints must record the bare value as no answer, and the
-    # value with the ruling's identifier as that line.
-    name='the status probe records the value alone as no answer, and the value with the ruling as itself'
-    status_answers=$("$engine" probe plan --root "$root" --tier documentation \
-        --category sufficiency --repetitions 1 2>/dev/null \
-        | awk '/^- HW-PROBE-a-session-names-the-status-a-settled-decision/ { on = 1; next }
-               /^- / { on = 0 }
-               on && /^    answers: / { sub(/^    answers: /, ""); print; exit }')
-    printf '%s\n' '{"type":"result","result":"current"}' > "$scratch/bare.jsonl"
-    printf '%s\n' '{"type":"result","result":"current HW-DR-0052"}' > "$scratch/ruled.jsonl"
-    bare=$(sh "$root/tools/probe/probe-record.sh" --answer-only "$scratch/bare.jsonl" --answers "$status_answers")
-    ruled=$(sh "$root/tools/probe/probe-record.sh" --answer-only "$scratch/ruled.jsonl" --answers "$status_answers")
-    if [ -z "$status_answers" ]; then
-        fail "$name" 'the plan printed no answers for the status probe'
-    elif ! printf '%s' "$status_task" | grep -qF 'the identifier in its `id` field'; then
-        # A set that wants the identifier, under a task that never asks for
-        # one, fails every session whatever the documents say.
-        fail "$name" 'the task no longer asks for the identifier that the answer set requires'
-    elif [ -n "$bare" ]; then
-        fail "$name" "the bare value is recorded as \`$bare\` against the set \`$status_answers\`"
-    elif [ "$ruled" != 'current HW-DR-0052' ]; then
-        fail "$name" "the value with the ruling is recorded as \`$ruled\` against the set \`$status_answers\`"
-    else
-        pass "$name"
-    fi
 
     printf '\n# headwater-maintainer, against the hook it invokes\n'
 

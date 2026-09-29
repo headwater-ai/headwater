@@ -1,8 +1,8 @@
 ---
 id: HW-RUN-campaign-of-2026-09-28-documentation-tier-absent-arm-sufficiency
-status: current
-status_since: 2026-09-28
-summary: "The absent arm of the documentation tier over the sufficiency selection, in the full #980 campaign batch: 120 sessions, 2094 cents, the intent hook live in 0."
+status: deprecated
+status_since: 2026-09-29
+summary: "The absent arm of the documentation tier over the sufficiency selection, in the full #980 campaign batch: 120 sessions, 2094 cents, the intent hook live in 0. The recording is retired, because a later change moved the read set of its probes."
 last_verified: 2026-09-28
 tier: documentation
 arm: absent
@@ -33,6 +33,8 @@ cost_cents: 2094
 **One batch, one tree.** Every session ran in a fresh copy of one `git archive` of commit `d0daebc4`, with the engine that commit builds, in one order that seed 980 shuffled, four at a time, on `claude-sonnet-5` with a cap of 60 turns. Each workspace lost the instrument, every record under `docs/` that names a probe of the batch, and the answer keys of those probes. Each absent workspace also lost its tier's ablation.
 
 **The oracle.** A `patched` artifact of either arm was checked in a copy of the present tree with the artifact written into it (`probe-transform.sh --oracle-tree`), so one oracle graded both arms.
+
+**This transcript stands at `deprecated`, and the reason is the read set of its probes.** The lock above is not the lock of this tree, and the engine reads such a recording only while the read set of its probes is the one this tree composes. On 2026-09-29, #1294 rewrote the task and the closed answer set of the probe on the status of a settled decision. In each arm of this batch, the sessions answered that probe from what the model already knew, with no tool call. The change moved the read set of this selection, so the first of the five confirmations now refuses this recording. The owner ruled on 2026-09-29 to retire the five full-batch transcripts rather than record them again. The result derived from this transcript carries no verdict on a later tree, and its verdicts stand only in the history of that result. A reader may take no rate from it as a measurement of the corpus as it now stands.
 
 ## Events
 
