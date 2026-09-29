@@ -69,6 +69,8 @@ No environment variable reaches this verb. The hook reads `HEADWATER_MODEL_DIR` 
 | `.headwater/cache/embeddings/<model digest>` | Read, and written through a rename. It keeps only the entries of the current run. |
 | `.headwater/taxonomy.lock`, `.headwater/taxonomy.yml`, the corpus | Read for the typed documents and their summaries. |
 
+The verb opens no path in this table that is not a regular file, such as a named pipe. It refuses a pin or a model file of that type. It does not read or write a stamp of that type, and it reads a cache of that type as empty.
+
 Standard error carries one line that counts the summary vectors that the run calculated.
 
 ## See also
