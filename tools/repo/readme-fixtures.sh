@@ -1274,6 +1274,29 @@ release_notes_judge() {
     esac
 }
 
+# engine_digest_claim_judge README WORKFLOW — `ok`, or the sentence that quotes
+# the README's claim that an engine release states no digest, when the engine
+# release WORKFLOW does state one.
+#
+# The property comes from the workflow through `release_notes_judge`, never
+# from a literal: where the workflow passes a notes file (the step "The digest
+# the package in this tree publishes" writes `release.digest: <value>` into
+# it), the README may not tell a reader that an engine release states no
+# digest. Where the workflow states none, the README's claim is true and the
+# judge has nothing to refuse. #1336 found the claim on the README after
+# HW-DR-0090 made it false.
+engine_digest_claim_judge() {
+    [ "$(release_notes_judge "$2")" = ok ] || { echo ok; return 0; }
+    edc_claim=$(awk '/^```/{f=!f; next} !f' "$1" \
+        | grep -oiE '[^.]*engine release[^.]*(states|carries|has) no (`release\.digest`|digest)[^.]*\.' \
+        | head -1 | sed 's/^ *//')
+    if [ -z "$edc_claim" ]; then
+        echo ok
+    else
+        echo "the README says \"$edc_claim\", but \`gh release create\` in the engine workflow passes a notes file that the step \"The digest the package in this tree publishes\" opens with \`release.digest\`"
+    fi
+}
+
 # release_pipe_steps FILE MODE — the steps of a workflow whose shell reads a
 # command through a pipe inside a substitution. MODE `offenders` names the ones
 # that do not set `pipefail`; MODE `guarded` names the ones that do.
@@ -2588,6 +2611,22 @@ if [ -f "$release_wf" ]; then
         fail "  and the step that builds those notes can be read out by name" \
             "no step named \`$notes_step\` with a \`run: |\` block, so the notes this workflow states cannot be run here and a grep for the flag is all that is left"
     fi
+
+    # 7l'. What the README says about those notes. The engine release states
+    #      the `release.digest` of the package in its tree, so the README may
+    #      not tell a reader that it states none (#1336).
+    same "  and the README does not say an engine release states no digest" ok \
+        "$(engine_digest_claim_judge "$readme" "$release_wf")"
+
+    # The same judge, provoked: a README that carries the clause #1336 removed
+    # is refused with the clause quoted.
+    edc_old="The taxonomy package is verified through its own tag namespace rather than through this engine release, because an engine release states no digest for the package its tree happens to carry."
+    { cat "$readme"; printf '\n%s\n' "$edc_old"; } >"$scratch/release/stale-claim.md"
+    same "  a README that says an engine release states no digest is refused" \
+        "the README says \"$edc_old\", but \`gh release create\` in the engine workflow passes a notes file that the step \"The digest the package in this tree publishes\" opens with \`release.digest\`" \
+        "$(engine_digest_claim_judge "$scratch/release/stale-claim.md" "$release_wf")"
+    same "  and the same README is not refused where the workflow states no digest" ok \
+        "$(engine_digest_claim_judge "$scratch/release/stale-claim.md" "$scratch/release/no-upload.yml")"
 
     # 7m. The judge, provoked. Stripping the second flag leaves the call legal,
     #     leaves every name in place, and leaves the release stating no digest —
