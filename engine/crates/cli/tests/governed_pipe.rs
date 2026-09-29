@@ -143,7 +143,10 @@ fn a_wildcard_that_matches_only_a_named_pipe_is_reported_like_the_literal() {
         out.contains("`tools/pip*` names no regular file"),
         "the wildcard over only a pipe is reported: {out}"
     );
-    assert!(!out.contains("no entry in the source tree matches"), "{out}");
+    assert!(
+        !out.contains("no entry in the source tree matches"),
+        "{out}"
+    );
 }
 
 /// A wildcard over a regular file and a named pipe digests the file alone,

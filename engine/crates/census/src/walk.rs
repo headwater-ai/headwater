@@ -293,14 +293,10 @@ pub enum EntryKind {
     /// pipe at a document path never ended (#1333).
     Special,
     /// A symlink, and where it pointed, as written.
-    Symlink {
-        target: String,
-    },
+    Symlink { target: String },
     /// A directory the walk could not read, so the files under it are missing
     /// from the count and this entry is the only record of that.
-    UnreadableDirectory {
-        error: String,
-    },
+    UnreadableDirectory { error: String },
     /// A name that is not UTF-8. It cannot be matched against a pattern that is
     /// UTF-8, so it can be neither shelved nor excluded, and the path below is
     /// the lossy form for a person to read.

@@ -1508,10 +1508,14 @@ mod tests {
         // Only a set that is all pipes, sockets or devices names no regular
         // file. A gone entry beside the pipe is not such an entry.
         assert!(Revision::of_tree(&dir, &["pipe".to_owned()]).names_no_regular_file());
-        assert!(!Revision::of_tree(&dir, &["a.sh".to_owned(), "pipe".to_owned()])
-            .names_no_regular_file());
-        assert!(!Revision::of_tree(&dir, &["gone".to_owned(), "pipe".to_owned()])
-            .names_no_regular_file());
+        assert!(
+            !Revision::of_tree(&dir, &["a.sh".to_owned(), "pipe".to_owned()])
+                .names_no_regular_file()
+        );
+        assert!(
+            !Revision::of_tree(&dir, &["gone".to_owned(), "pipe".to_owned()])
+                .names_no_regular_file()
+        );
         assert!(!Revision::of_tree(&dir, &["sub".to_owned()]).names_no_regular_file());
         assert!(!Revision::of_tree(&dir, &[]).names_no_regular_file());
         assert!(!Revision::known(None).names_no_regular_file());
