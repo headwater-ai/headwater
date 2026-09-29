@@ -72,20 +72,32 @@
 # The check is not atomic across workers, so the ceiling can be passed by at
 # most one declared session cost per worker.
 #
+# ## The turn cap, and what the recorder sees
+#
+# Each session runs under the turn cap its tier declares as `max_turns` in
+# `.headwater/probe.yml`, which the plan prints (#1384). `--max-turns` overrides
+# it for every tier of the batch, and a line whose tier declares none, with no
+# override, refuses with exit 2 before anything is built. A session the cap
+# stops is recorded with status 0 and is never drawn again. Assembly counts
+# those sessions per line.
+#
+# The recorder is given the arm's tree as `--baseline`, so a file the session
+# wrote through `Bash` is in `produced` as well as one it wrote with `Edit`.
+#
 # ## Resume
 #
 # A job whose session directory holds `status` 0 is done and is not run again.
 # Run the same command again to finish a batch that stopped, or to record again
-# a session whose recorder failed.
+# a session whose recorder failed. A capped session did not fail.
 #
 # ## Assembly
 #
 # `--assemble` checks that every recorded session of a line carries one
 # identity, and writes one identity block and one events block per line under
-# `<out>/assembled/`, with a count of sessions, the summed cost, and how many
-# sessions the intent hook reached. A person wraps them in a transcript with
-# `headwater new`, because a transcript is an authored document of this corpus
-# and this script writes nothing inside it.
+# `<out>/assembled/`, with a count of sessions, the summed cost, how many
+# sessions the intent hook reached, and how many the turn cap stopped. A person
+# wraps them in a transcript with `headwater new`, because a transcript is an
+# authored document of this corpus and this script writes nothing inside it.
 #
 # It needs `git`, `jq`, `tar`, `awk` and the `claude` harness, and it spends
 # real money.
@@ -93,7 +105,8 @@
 # ## Exit status
 #
 #   0   the batch finished, or the assembly was written
-#   2   a usage error
+#   2   a usage error, or a line whose tier declares no turn cap and no
+#       `--max-turns` was given
 #   3   a tool is missing, or no engine is built
 #   4   the checkout is dirty, or `HEAD` moved during the batch
 #   5   the plan refuses a line of the spec

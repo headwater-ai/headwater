@@ -9,7 +9,8 @@
 #
 #     sh tools/probe/probe-record.sh --probe PROBE-X --session one \
 #         --task-file task.md --model claude-haiku-4-5 \
-#         --workspace /tmp/scratch-copy [--raw raw.jsonl] [--produced docs/x.md]…
+#         --workspace /tmp/scratch-copy [--raw raw.jsonl] [--produced docs/x.md]… \
+#         [--baseline /tmp/tree-it-was-copied-from] [--max-turns 80]
 #
 # Three modes read nothing from the network. `--identity-only` prints the six
 # members `headwater probe plan` fixes, `--provider-only <log>` prints the
@@ -83,7 +84,8 @@
 # session is prose. It writes a value only where the final non-empty line of
 # the final message, trimmed, is one answer the probe declares, and it writes
 # that word and nothing else. A session whose last line is a sentence gave no
-# answer in the closed set, and `null` is the true record of it.
+# answer in the closed set, and `null` is the true record of it. An answer of
+# two words is compared as a set of words, so their order is not read (#1384).
 #
 # Until #980 the rule read the whole final message. The pilot of 2026-09-28
 # found 7 of 27 sessions that wrote one sentence of justification and then the
@@ -104,13 +106,17 @@
 # Every code below is returned by one kind of path and no other, so a caller
 # and a fixture can branch on it. The harness's own status never leaves this
 # script: any nonzero one is 10, and the status it had is printed on stderr.
+# The one exception is a session the turn cap stopped, which is recorded and
+# exits 0 (#1384).
 # The refusals 2, 4, 6, 8 and 9 run before any check of this host and before
 # any harness call, so they spend nothing. When both 8 and 9 apply, 8 answers,
 # because the instrument guard runs first.
 #
 #   0   the transcript was written, or a read-only mode printed its members
 #   1   no temporary file for the plan
-#   2   a usage error: a missing or unknown argument, task file, workspace or log
+#   2   a usage error: a missing or unknown argument, task file, workspace,
+#       baseline or log, or a workspace that could not be compared with its
+#       baseline
 #   3   a tool is missing: `jq`, the engine, or the `claude` harness
 #   4   the workspace carries a `.git` file or directory
 #   5   `headwater probe plan` failed
@@ -120,9 +126,11 @@
 #       names, or that list could not be read
 #   9   a document under the workspace's `docs/` names the probe by its
 #       identifier or its slug, a file of the workspace names one of the
-#       probe's answer keys, or no `grep` can confirm that none does
+#       probe's answer keys or a document of this checkout that names the
+#       probe, or no `grep` can confirm that none does
 #       (`tools/probe/seal.sh` is the remedy)
-#   10  the harness exited nonzero, and its status is on stderr
+#   10  the harness exited nonzero for a reason other than the turn cap, and
+#       its status is on stderr
 #   11  the plan refuses the run, or it does not select the probe. It runs
 #       before any harness call, so it spends nothing
 #
@@ -141,7 +149,11 @@
 # `--category`, `--exclude` and `--repetitions` reach the plan unchanged, so the
 # selection digest a narrowed run records is the digest of the run it planned.
 # `--max-turns` reaches the harness, so a batch can hold every session of both
-# arms to one cap. `--oracle-tree` reaches the transform (see there).
+# arms to one cap. With no `--max-turns`, the cap is the one the tier declares
+# and the plan prints, and a tier that declares none runs with no cap.
+# `--oracle-tree` reaches the transform (see there). `--baseline` names the tree
+# the workspace was copied from, and every file the session wrote or changed is
+# passed to the transform as produced (see `step_diff_baseline`).
 
 set -u
 
