@@ -764,6 +764,8 @@ docs/obligations/0222-ten-rules-of-the-editions-ledger-have-one-recorded-corpus-
   typed: obligation_record
 docs/obligations/0223-no-run-measures-whether-the-documents-under-docs-change-what-an-agent-builds.md
   typed: obligation_record
+docs/obligations/0226-six-corpus-gaps-from-run-20260929-1205-filed-together.md
+  typed: obligation_record
 docs/obligations/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/probe-results/README.md
@@ -989,6 +991,8 @@ docs/process/obligations/0220-no-disk-floor-is-stated-for-a-build-order-run-and-
 docs/process/obligations/0221-subagents-read-skills-from-the-shared-checkout-and-a-worktree-isolated-integrator-cannot-fast-forward-it-after-a-merge.md
   typed: process_obligation
 docs/process/obligations/0224-thirteen-run-tooling-gaps-from-run-20260928-1109-filed-together.md
+  typed: process_obligation
+docs/process/obligations/0225-eight-run-tooling-gaps-from-run-20260929-1205-filed-together.md
   typed: process_obligation
 docs/process/obligations/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
