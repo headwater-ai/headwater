@@ -1655,6 +1655,7 @@ surface:
     - "docs/tutorials/*.md"
     - docs/how-to/relocate-a-shelf.md
     - docs/how-to/wire-headwater-check-into-your-own-workflow.md
+    - docs/how-to/publish-your-corpus-as-a-site.md
   archive:
     - headwater
     - LICENSE
@@ -1672,6 +1673,8 @@ surface:
     - rm
     - wc
     - xargs
+    - python3
+    - mkdocs
   companions:
     - "headwater probe"
     - "headwater neighbors"
