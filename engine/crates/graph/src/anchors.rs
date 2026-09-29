@@ -751,7 +751,19 @@ impl Resolver for CommentScan {
             Err(why) => return Binding::Unresolved(why),
         };
 
-        let Ok(source) = std::fs::read_to_string(self.base.join(&normalized)) else {
+        // Only a regular file is opened, and `metadata` follows a link, so a
+        // link to a source file still resolves. A named pipe with no writer
+        // blocks its reader for ever, so a pipe, a socket or a device is
+        // refused by what it is and never read (#1366). The words are the
+        // census's for the same entry, with the tree this resolver reads.
+        let path = self.base.join(&normalized);
+        if std::fs::metadata(&path).is_ok_and(|meta| !meta.is_file() && !meta.is_dir()) {
+            return Binding::Unresolved(format!(
+                "`{normalized}` names a named pipe, a socket or a device, which the source tree \
+                 never opens"
+            ));
+        }
+        let Ok(source) = std::fs::read_to_string(path) else {
             return Binding::Unresolved(format!("no `{normalized}` in the source tree"));
         };
 
@@ -1255,6 +1267,81 @@ mod tests {
         assert!(why.contains("no document mints it"), "{why}");
     }
 
+    /// A `cited_in` target that is a named pipe is never opened: a pipe with
+    /// no writer blocks its reader for ever, and `check` would never end
+    /// (#1366). The resolver runs on its own thread under a deadline, so a
+    /// resolver that opened the pipe fails this case rather than hanging it.
+    #[cfg(unix)]
+    #[test]
+    fn a_citation_target_that_is_a_named_pipe_is_refused_and_never_opened() {
+        let dir = scratch("pipe");
+        let made = std::process::Command::new("mkfifo")
+            .arg(dir.join("pipe.rs"))
+            .status()
+            .expect("mkfifo runs");
+        assert!(made.success(), "the named pipe is made");
+
+        let base = dir.to_path_buf();
+        let (send, receive) = std::sync::mpsc::channel();
+        std::thread::spawn(move || {
+            let resolver = CommentScan::new(
+                &base,
+                "HW-VER-",
+                std::collections::BTreeSet::from(["HW-VER-0001".to_string()]),
+            );
+            send.send(resolver.resolve_for("pipe.rs", "HW-VER-0001"))
+                .expect("the answer is sent");
+        });
+        let binding = receive
+            .recv_timeout(std::time::Duration::from_secs(30))
+            .expect("resolve_for opened the named pipe, and waited on it");
+        let Binding::Unresolved(why) = binding else {
+            panic!("a named pipe resolved as a source file");
+        };
+        assert_eq!(
+            why,
+            "`pipe.rs` names a named pipe, a socket or a device, which the source tree never \
+             opens"
+        );
+    }
+
+    /// A socket and a device get the pipe's sentence, and a directory keeps
+    /// its own, so the guard is neither narrower than "not a file and not a
+    /// directory" nor wider (#1366, verify round 2). The device is a link to
+    /// `/dev/null`, which a read would answer with nothing rather than block,
+    /// so a resolver that opened it would say something else, and not hang.
+    #[cfg(unix)]
+    #[test]
+    fn a_citation_target_that_is_a_socket_or_a_device_is_refused_and_a_directory_is_not_one() {
+        let dir = scratch("socket-device-dir");
+        let _socket = std::os::unix::net::UnixListener::bind(dir.join("socket.rs"))
+            .expect("the socket is bound");
+        std::os::unix::fs::symlink("/dev/null", dir.join("device.rs")).expect("the link is made");
+        std::fs::create_dir_all(dir.join("tree.rs")).expect("the directory is made");
+
+        let resolver = CommentScan::new(
+            &dir,
+            "HW-VER-",
+            std::collections::BTreeSet::from(["HW-VER-0001".to_string()]),
+        );
+        for special in ["socket.rs", "device.rs"] {
+            let Binding::Unresolved(why) = resolver.resolve_for(special, "HW-VER-0001") else {
+                panic!("`{special}` resolved as a source file");
+            };
+            assert_eq!(
+                why,
+                format!(
+                    "`{special}` names a named pipe, a socket or a device, which the source tree \
+                     never opens"
+                )
+            );
+        }
+        let Binding::Unresolved(why) = resolver.resolve_for("tree.rs", "HW-VER-0001") else {
+            panic!("a directory resolved as a source file");
+        };
+        assert_eq!(why, "no `tree.rs` in the source tree");
+    }
+
     #[test]
     fn a_citation_of_a_minted_identifier_resolves() {
         let dir = scratch("minted");
@@ -1268,6 +1355,27 @@ mod tests {
         );
         let outcome = resolver.resolve_for("sample.rs", "HW-VER-0001");
         std::fs::remove_dir_all(&dir).ok();
+
+        assert!(matches!(outcome, Binding::Resolved { .. }), "{outcome:?}");
+    }
+
+    /// The guard against a named pipe asks what a link names, not what the
+    /// link is, so a `cited_in` link to a source file that cites the
+    /// asserter still resolves (#1366, verify round 1).
+    #[cfg(unix)]
+    #[test]
+    fn a_citation_reached_through_a_symlink_to_a_source_file_resolves() {
+        let dir = scratch("link-to-source");
+        std::fs::write(dir.join("sample.rs"), "//! proves HW-VER-0001\nfn f() {}\n")
+            .expect("a fixture file");
+        std::os::unix::fs::symlink("sample.rs", dir.join("link.rs")).expect("the link is made");
+
+        let resolver = CommentScan::new(
+            &dir,
+            "HW-VER-",
+            std::collections::BTreeSet::from(["HW-VER-0001".to_string()]),
+        );
+        let outcome = resolver.resolve_for("link.rs", "HW-VER-0001");
 
         assert!(matches!(outcome, Binding::Resolved { .. }), "{outcome:?}");
     }

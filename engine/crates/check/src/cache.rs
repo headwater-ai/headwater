@@ -353,6 +353,7 @@ impl Cache {
         reads: &[Input],
         clock: Option<Date>,
         prior: Option<Prior<'_>>,
+        stated: bool,
         resolution: Option<&str>,
         evaluate: F,
     ) -> Outcome
@@ -360,7 +361,7 @@ impl Cache {
         F: FnOnce() -> Outcome,
     {
         let Some(key) = self.key(
-            rule, version, scope, target, reads, clock, prior, resolution,
+            rule, version, scope, target, reads, clock, prior, stated, resolution,
         ) else {
             self.report.unkeyed += 1;
             return evaluate();
@@ -402,6 +403,7 @@ impl Cache {
         reads: &[Input],
         clock: Option<Date>,
         prior: Option<Prior<'_>>,
+        stated: bool,
         resolution: Option<&str>,
     ) -> Option<String> {
         let lock = self.lock.as_ref()?;
@@ -455,6 +457,11 @@ impl Cache {
         if scope.needs_declarer_prior() {
             let prior = prior.map_or_else(|| "none".to_string(), |prior| prior.key());
             text.push_str(&format!("declarer-prior {prior}\n"));
+            // Whether the change states that the declaring document was
+            // re-verified. It is not a state of the prior version, so it has
+            // a line of its own, and a run that states it is not served the
+            // verdict of one that does not over the same prior (#1376).
+            text.push_str(&format!("declarer-verified {stated}\n"));
         }
         // Escaped for the reason a record is: a target or a path is corpus
         // content, and a newline inside one would otherwise let a document
@@ -493,7 +500,9 @@ impl Cache {
         reads: &[Input],
         clock: Option<Date>,
     ) -> Option<String> {
-        self.key(rule, version, scope, target, reads, clock, None, None)
+        self.key(
+            rule, version, scope, target, reads, clock, None, false, None,
+        )
     }
 }
 
@@ -1192,6 +1201,7 @@ mod tests {
                 &inputs(Some("sha256:one")),
                 None,
                 Some(prior),
+                false,
                 None,
             )
         };
@@ -1233,6 +1243,7 @@ mod tests {
                 &inputs(Some("sha256:one")),
                 None,
                 prior,
+                false,
                 Some("resolved"),
             )
         };
@@ -1258,6 +1269,32 @@ mod tests {
         }
     }
 
+    /// A stated re-verification keys apart from none over one prior version
+    /// at edge grain, so a run that states it is not served the verdict of
+    /// one that did not (#1376). A scope that does not read the declarer
+    /// writes no line for it, so its key does not move with the argument.
+    #[test]
+    fn a_stated_re_verification_keys_apart_at_edge_grain_and_nowhere_else() {
+        let key = |scope: Scope, stated: bool| {
+            cache().key(
+                "relation.target.suspect",
+                1,
+                scope,
+                "a.md\u{1f}governs\u{1f}tools/run.sh",
+                &inputs(Some("sha256:one")),
+                None,
+                Some(Prior::Unchanged),
+                stated,
+                Some("resolved"),
+            )
+        };
+        let reads = Scope::edge(false, false, true);
+        assert!(key(reads, false).is_some());
+        assert_ne!(key(reads, false), key(reads, true));
+        let ignores = Scope::edge(false, false, false);
+        assert_eq!(key(ignores, false), key(ignores, true));
+    }
+
     /// A scope that declares the prior version and was handed none is not
     /// keyed, and one that declares nothing keys as it did before the input
     /// existed.
@@ -1272,6 +1309,7 @@ mod tests {
                 &inputs(Some("sha256:one")),
                 None,
                 None,
+                false,
                 None,
             ),
             None
@@ -1362,6 +1400,7 @@ mod tests {
                 &inputs(Some("sha256:one")),
                 None,
                 None,
+                false,
                 resolution,
             )
         };

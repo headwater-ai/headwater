@@ -977,6 +977,8 @@ pub struct EdgeView<'a> {
     /// The version of the declaring document that stood before the change.
     /// See [`EdgeView::declarer_prior`].
     declarer_prior: Option<Prior<'a>>,
+    /// See [`EdgeView::declarer_verified`].
+    declarer_verified: bool,
     clock: Option<Date>,
     reads: Vec<Input>,
     resolution: String,
@@ -1059,6 +1061,7 @@ impl<'a> EdgeView<'a> {
         digests: &Digests,
         clock: Option<Date>,
         prior_of: impl Fn(&str) -> Option<Prior<'a>>,
+        verified_of: impl Fn(&str) -> bool,
     ) -> Option<Self> {
         let declared = halves
             .iter()
@@ -1123,6 +1126,7 @@ impl<'a> EdgeView<'a> {
             ends,
             declarer: read_at(census, &anchor.source.path).0,
             declarer_prior: prior_of(&anchor.source.path),
+            declarer_verified: verified_of(&anchor.source.path),
             clock,
             reads,
             resolution: anchor.target.resolution(),
@@ -1199,6 +1203,17 @@ impl<'a> EdgeView<'a> {
     /// document.
     pub fn declarer_prior(&self) -> Option<Prior<'a>> {
         self.declarer_prior
+    }
+
+    /// Whether the change states that the author re-read the document that
+    /// declared this instance's half, with a `verified` line, and only for a
+    /// check that declared `NEEDS_DECLARER_PRIOR`.
+    ///
+    /// It is held apart from [`EdgeView::declarer_prior`] because it is not a
+    /// version of the document: a rule that reads the prior version must not
+    /// see it as one (#1376). False in a run that carries no change.
+    pub fn declarer_verified(&self) -> bool {
+        self.declarer_verified
     }
 
     /// Both endpoints: spec 12 fixes an edge-scoped read set at "one relation
@@ -1631,6 +1646,7 @@ pub fn over_documents<C: DocumentCheck>(
             &reads,
             clock,
             prior,
+            false,
             None,
             || check.evaluate(&view),
         );
@@ -1720,6 +1736,7 @@ pub fn over_outside_root<C: OutsideCheck>(
             &reads,
             None,
             None,
+            false,
             None,
             || check.evaluate(&view),
         );
@@ -1800,7 +1817,18 @@ pub fn over_edges<C: EdgeCheck>(
             (true, Some(change)) => change.prior_of(path).ok(),
             _ => None,
         };
-        let Some(view) = EdgeView::over(halves, census, digests, clock, declarer_prior) else {
+        let declarer_verified = |path: &str| match (scope.needs_declarer_prior(), ctx.change()) {
+            (true, Some(change)) => change.verified(path),
+            _ => false,
+        };
+        let Some(view) = EdgeView::over(
+            halves,
+            census,
+            digests,
+            clock,
+            declarer_prior,
+            declarer_verified,
+        ) else {
             continue;
         };
         // The triple is the identity Q4 gives an edge, and it is what tells
@@ -1837,6 +1865,7 @@ pub fn over_edges<C: EdgeCheck>(
             // an edge reads, and only where the check declared it. The key
             // writes it on `Scope::needs_declarer_prior`'s terms.
             view.declarer_prior(),
+            view.declarer_verified(),
             Some(view.resolution()),
             || check.evaluate(&view),
         );
@@ -1916,6 +1945,7 @@ pub fn over_neighbourhoods<C: NeighbourhoodCheck>(
             &reads,
             clock,
             None,
+            false,
             adjacency.anchor_resolution_of_path(&row.path),
             || check.evaluate(&view),
         );
@@ -2094,6 +2124,7 @@ pub fn over_corpus<C: CorpusCheck>(
         &reads,
         None,
         None,
+        false,
         orphaned.as_deref(),
         || check.evaluate(&view),
     );

@@ -133,9 +133,11 @@ fn check_no_cache_finishes_when_a_governs_edge_reaches_a_named_pipe() {
     assert!(
         flat(&out).contains(
             "· info relation.target.suspect (OB-REL-6): `HW-DR-0002` declares `governs: \
-             tools/pipe`, and `tools/pipe` names no regular file"
+             tools/pipe`, and `tools/pipe` names no regular file, only a named pipe, a socket \
+             or a device, which the source tree never opens, so this edge never goes suspect \
+             when what it governs changes"
         ),
-        "the edge that can never age is reported at info: {out}"
+        "the edge that can never age is reported at info, in the full sentence (#1366): {out}"
     );
 }
 
@@ -279,13 +281,61 @@ fn derived_finishes_when_a_symlink_at_a_document_path_names_a_named_pipe() {
 #[test]
 fn show_finishes_and_refuses_a_named_pipe_at_a_document_path() {
     let root = document_pipe("show-document-pipe");
-    let (out, err) = under_deadline(
+    let (status, out, err) = ended(
         &root,
         &["show", "docs/x.md"],
         "show opened the named pipe at docs/x.md, and waited on it",
     );
+    assert_eq!(status.code(), Some(1), "show refuses: {out}{err}");
     assert!(out.is_empty(), "show prints nothing of a named pipe: {out}");
-    assert!(flat(&err).contains("the census never opens"), "{err}");
+    assert_eq!(
+        flat(&err),
+        "headwater: `docs/x.md` is a named pipe, a socket or a device, which the census never \
+         opens, so `show` prints nothing",
+    );
+}
+
+/// `show` refuses every row `explain` refuses, in `explain`'s sentence with
+/// the verb changed (`docs/interfaces/headwater-show.md`, #1366). A symlink
+/// row, whose link target the sentence names, and a directory the walk could
+/// not read, which `show` once called a document that could not be read.
+#[test]
+fn show_and_explain_refuse_an_unwalkable_row_in_one_sentence() {
+    use std::os::unix::fs::PermissionsExt;
+
+    let root = Root::shaped("show-explain-unwalkable", |at| {
+        std::fs::write(at.join("docs/real.md"), "# Real\n").expect("the file writes");
+        std::os::unix::fs::symlink("real.md", at.join("docs/link.md")).expect("the link is made");
+        std::fs::create_dir_all(at.join("docs/locked")).expect("the directory is made");
+        std::fs::write(at.join("docs/locked/y.md"), "# Y\n").expect("the file writes");
+    });
+    let locked = root.at.join("docs/locked");
+    std::fs::set_permissions(&locked, std::fs::Permissions::from_mode(0o000))
+        .expect("the mode is set");
+    let unreadable = std::fs::read_dir(&locked).is_err();
+
+    let mut rows = vec!["docs/link.md"];
+    // A process that a mode-000 directory does not stop, such as root, walks
+    // it, so the directory is no row of its own there.
+    if unreadable {
+        rows.push("docs/locked");
+    }
+    for row in rows {
+        let (explain_status, _, explain) = ended(&root, &["explain", row], "explain did not end");
+        let (show_status, out, show) = ended(&root, &["show", row], "show did not end");
+        assert_eq!(explain_status.code(), Some(1), "explain refuses {row}");
+        assert_eq!(show_status.code(), Some(1), "show refuses {row}");
+        assert!(out.is_empty(), "show prints nothing of {row}: {out}");
+        let explain = flat(&explain);
+        assert!(explain.contains("so `explain` prints nothing"), "{explain}");
+        assert_eq!(
+            flat(&show),
+            explain.replace("so `explain` prints nothing", "so `show` prints nothing"),
+            "show refuses {row} in explain's sentence"
+        );
+    }
+    std::fs::set_permissions(&locked, std::fs::Permissions::from_mode(0o755))
+        .expect("the mode is restored");
 }
 
 /// `explain` finds the row `show` refuses, and the row is not a document: the
@@ -440,4 +490,81 @@ fn a_cached_directory_verdict_does_not_outlive_the_directory_becoming_an_unreada
         !warm.contains("tools/thing/**"),
         "the cached directory verdict outlived the directory: {warm}"
     );
+}
+
+/// A named pipe in the identifier claim store, where a claim file belongs.
+/// `check` and `new` both read the store, and a reader that opened the pipe
+/// would wait on it for ever. The store reads the entry as a claim that names
+/// nobody, and `check` reports it at the claim's path, so the entry is not
+/// dropped in silence (#1366).
+#[test]
+fn check_and_new_finish_when_a_claim_file_is_a_named_pipe() {
+    let root = Root::shaped("claim-pipe", |at| {
+        let scheme = at.join(".headwater/ids/decision_id");
+        std::fs::create_dir_all(&scheme).expect("the scheme directory is made");
+        let fifo = std::process::Command::new("mkfifo")
+            .arg(scheme.join("HW-DR-9990"))
+            .status()
+            .expect("mkfifo runs");
+        assert!(fifo.success(), "the named pipe is made");
+    });
+    let (out, _) = under_deadline(
+        &root,
+        &["check", "--no-cache"],
+        "check opened the named pipe in the claim store, and waited on it",
+    );
+    assert!(
+        flat(&out).contains(".headwater/ids/decision_id/HW-DR-9990"),
+        "check names the pipe in the claim store: {out}"
+    );
+    under_deadline(
+        &root,
+        &["new", "decision", "--title", "After the pipe"],
+        "new opened the named pipe in the claim store, and waited on it",
+    );
+}
+
+/// `sweep plan` reads the text of every document it briefs, and a named pipe
+/// at a document path is a row of the census that it must not open. It ends
+/// under the deadline and writes its briefing (#1366). `neighbors` is not run
+/// here: a stub root holds no embedding model, and the verb refuses on the
+/// missing `.headwater/embedding.yml` before it reads a document.
+#[test]
+fn sweep_plan_finishes_when_a_named_pipe_takes_a_document_path() {
+    let root = document_pipe("neighbors-sweep-document-pipe");
+    let (plan, _) = under_deadline(
+        &root,
+        &["sweep", "plan"],
+        "sweep plan opened the named pipe at docs/x.md, and waited on it",
+    );
+    assert!(
+        plan.contains("## The slice"),
+        "sweep plan wrote its briefing: {plan}"
+    );
+}
+
+/// The walk makes no row under a directory that is a symlink, so a path
+/// through one holds no document, and `show` refuses it in the sentence
+/// `explain` writes for such a path, as `docs/interfaces/headwater-show.md`
+/// says (#1366, verify round 1).
+#[test]
+fn show_refuses_a_path_through_a_linked_directory_as_a_path_with_no_document() {
+    let root = Root::shaped("show-linked-directory", |at| {
+        std::os::unix::fs::symlink("decisions", at.join("docs/linkdir")).expect("the link is made");
+    });
+    let target = "docs/linkdir/0001-the-warrant-a-person-set.md";
+    assert!(
+        root.at.join(target).is_file(),
+        "the link reaches a real document"
+    );
+    let (explain_status, _, explain) = ended(&root, &["explain", target], "explain did not end");
+    let (show_status, out, show) = ended(&root, &["show", target], "show did not end");
+    assert_eq!(explain_status.code(), Some(1), "explain refuses: {explain}");
+    assert_eq!(show_status.code(), Some(1), "show refuses: {show}");
+    assert!(out.is_empty(), "show prints nothing: {out}");
+    assert!(
+        flat(&show).contains("with no document written there yet"),
+        "{show}"
+    );
+    assert_eq!(flat(&show), flat(&explain), "one sentence for both verbs");
 }

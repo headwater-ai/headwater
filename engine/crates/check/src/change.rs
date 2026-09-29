@@ -73,6 +73,21 @@
 //! silently accepted and an invitation to the next one, and the duplicate guard
 //! below would then have two spellings of one path to reconcile.
 //!
+//! # A re-verification the author states
+//!
+//! A `verified\t<path>` line states that the author re-read the document at
+//! `<path>` in this change. It is a statement about the change and not a
+//! version of the document, so it is held apart from the lines above and it
+//! is never a [`Prior`]: a rule that reads the prior version does not see it,
+//! and [`crate::suspect`] is the one rule that reads it. The path may also
+//! carry an `added` or a `prior` line, or none, because an author can re-read
+//! a document and change nothing in it (#1376).
+//!
+//! It exists for the second change of one day. A change states a
+//! re-verification by moving the document's freshness facet, and a facet that
+//! already reads today cannot move. The date does not decide instead, for the
+//! reason [`crate::suspect`] gives.
+//!
 //! # What a caller may state, and what this engine cannot check
 //!
 //! A manifest that names `added` for a document that already stood, or that
@@ -174,6 +189,9 @@ impl Prior<'_> {
 #[derive(Clone, Debug)]
 pub struct Unbound {
     entries: Vec<(String, Held)>,
+    /// The paths a `verified` line names, in path order. See the module
+    /// comment.
+    verified: Vec<String>,
 }
 
 /// The documents one change carries, each held against the corpus this run
@@ -183,12 +201,20 @@ pub struct Change {
     /// In path order, so a lookup is a binary search and a report is a function
     /// of the change rather than of the order a caller wrote it in.
     entries: Vec<(String, Held)>,
+    /// The paths a `verified` line names and a census row holds, in path
+    /// order. One that no row holds is in `unverifiable` instead.
+    verified: Vec<String>,
+    /// The paths a `verified` line names and no census row holds, in path
+    /// order. They are reported with the unmatched entries.
+    unverifiable: Vec<String>,
 }
 
 /// What a run injected, for the report that states its own inputs.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct Named {
-    /// Documents the manifest named, whatever became of each one.
+    /// Documents the manifest named, whatever became of each one, each
+    /// counted once. A path that only a `verified` line names is one of them,
+    /// so every count below is "of those" (#1376).
     pub documents: usize,
     /// Of those, the ones the change adds.
     pub added: usize,
@@ -203,10 +229,22 @@ pub struct Named {
     /// Of those, the ones whose prior version this run could not read. Each one
     /// is a skipped instance with a reason rather than a pass.
     pub unreadable: usize,
-    /// Of those, the ones whose path no row of this corpus holds. Nothing is
-    /// checked over one, so none of them is a skipped instance either, and this
-    /// count is the only place one is reported.
+    /// The paths this manifest named that no row of this corpus holds, each
+    /// counted once. Nothing is checked over one, so none of them is a
+    /// skipped instance either, and this count is the only place one is
+    /// reported.
+    ///
+    /// It is the length of [`Change::unmatched`], and it is computed from that
+    /// list, so the count and the list a report writes cannot disagree. A path
+    /// that only a `verified` line names is counted here and in `documents`
+    /// (#1376).
     pub unmatched: usize,
+    /// Of those, the ones a `verified` line names that a row of this corpus
+    /// holds. One that no row holds is counted in `unmatched` instead. A
+    /// document can be counted here and in one of the counts above, because
+    /// a `verified` line names no version of it and may sit beside a line that
+    /// does.
+    pub verified: usize,
 }
 
 impl Unbound {
@@ -234,6 +272,7 @@ impl Unbound {
         }
 
         let mut entries: Vec<(String, Held)> = Vec::new();
+        let mut verified: Vec<String> = Vec::new();
         for (number, line) in lines.enumerate() {
             let number = number + 2;
             if line.trim().is_empty() {
@@ -245,10 +284,19 @@ impl Unbound {
                 (Some("prior"), Some(path), Some(source), None) => {
                     (path, read_prior(source, &open))
                 }
+                (Some("verified"), Some(path), None, _) => {
+                    if verified.iter().any(|known| known == path) {
+                        return Err(format!(
+                            "the change manifest states `{path}` verified twice"
+                        ));
+                    }
+                    verified.push(path.to_string());
+                    continue;
+                }
                 _ => {
                     return Err(format!(
-                        "line {number} of the change manifest is neither `added\\t<path>` nor \
-                         `prior\\t<path>\\t<file>`: `{line}`"
+                        "line {number} of the change manifest is none of `added\\t<path>`, \
+                         `prior\\t<path>\\t<file>` and `verified\\t<path>`: `{line}`"
                     ))
                 }
             };
@@ -261,7 +309,8 @@ impl Unbound {
         }
 
         entries.sort_by(|(a, _), (b, _)| a.cmp(b));
-        Ok(Unbound { entries })
+        verified.sort();
+        Ok(Unbound { entries, verified })
     }
 
     /// Read a manifest from a file, which is what `headwater check --change`
@@ -285,7 +334,10 @@ impl Unbound {
     /// disagree, and the pair that would disagree here is the set a run checks
     /// and the set a manifest is measured against.
     pub fn bind(self, holds: impl Fn(&str) -> bool) -> Change {
+        let (verified, unverifiable) = self.verified.into_iter().partition(|path| holds(path));
         Change {
+            verified,
+            unverifiable,
             entries: self
                 .entries
                 .into_iter()
@@ -316,13 +368,31 @@ impl Unbound {
     pub fn paths(&self) -> Vec<&str> {
         self.entries.iter().map(|(path, _)| path.as_str()).collect()
     }
+
+    /// The paths a `verified` line names, in path order.
+    pub fn verified(&self) -> Vec<&str> {
+        self.verified.iter().map(String::as_str).collect()
+    }
 }
 
 impl Change {
     /// What this change named, for the report that states its own inputs.
     pub fn named(&self) -> Named {
+        // Every path any line names, once: a `verified` path that also has an
+        // `added` or `prior` line is one document, and one with neither is a
+        // document too, so that `unmatched` never counts past `documents`.
+        let mut paths: Vec<&str> = self
+            .entries
+            .iter()
+            .map(|(path, _)| path.as_str())
+            .chain(self.verified.iter().map(String::as_str))
+            .chain(self.unverifiable.iter().map(String::as_str))
+            .collect();
+        paths.sort_unstable();
+        paths.dedup();
         let mut named = Named {
-            documents: self.entries.len(),
+            documents: paths.len(),
+            verified: self.verified.len(),
             ..Named::default()
         };
         for (_, held) in &self.entries {
@@ -330,9 +400,12 @@ impl Change {
                 Held::Added => named.added += 1,
                 Held::Committed { .. } => named.carried += 1,
                 Held::Unreadable { .. } => named.unreadable += 1,
-                Held::Unmatched { .. } => named.unmatched += 1,
+                // Counted below, from the list, with the `verified` paths
+                // that bind to no row.
+                Held::Unmatched { .. } => {}
             }
         }
+        named.unmatched = self.unmatched().len();
         named
     }
 
@@ -342,12 +415,28 @@ impl Change {
     /// Named rather than counted alone, because a caller who mistyped one
     /// character needs to see which path, and a count sends them to read their
     /// own manifest against a census by hand.
+    ///
+    /// A `verified` line that names such a path is listed too, once, because
+    /// it is the same mistyped path and it states nothing about a document.
     pub fn unmatched(&self) -> Vec<&str> {
-        self.entries
+        let mut paths: Vec<&str> = self
+            .entries
             .iter()
             .filter(|(_, held)| matches!(held, Held::Unmatched { .. }))
             .map(|(path, _)| path.as_str())
-            .collect()
+            .chain(self.unverifiable.iter().map(String::as_str))
+            .collect();
+        paths.sort_unstable();
+        paths.dedup();
+        paths
+    }
+
+    /// Whether the change states that its author re-read the document at
+    /// `path`. See the module comment.
+    pub(crate) fn verified(&self, path: &str) -> bool {
+        self.verified
+            .binary_search_by(|known| known.as_str().cmp(path))
+            .is_ok()
     }
 
     /// Every path this change named that no row of this corpus holds, and
@@ -560,12 +649,65 @@ mod tests {
             &format!("{FORMAT}\nprior\tdocs/a.md\n"),
             &format!("{FORMAT}\nprior\tdocs/a.md\tprior/a.md\textra\n"),
             &format!("{FORMAT}\nadded\tdocs/a.md\nadded\tdocs/a.md\n"),
+            &format!("{FORMAT}\nverified\n"),
+            &format!("{FORMAT}\nverified\tdocs/a.md\textra\n"),
+            &format!("{FORMAT}\nverified\tdocs/a.md\nverified\tdocs/a.md\n"),
         ] {
             assert!(
                 Unbound::read(manifest, tree(&[("prior/a.md", ASSERTED)])).is_err(),
                 "read as a change: {manifest:?}"
             );
         }
+    }
+
+    /// A `verified` line states a re-verification and names no version of the
+    /// document, so the path it names may carry a `prior` line, an `added`
+    /// line or neither, and its prior version is what those lines say
+    /// (#1376). A path no row holds is reported with the unmatched paths, once.
+    #[test]
+    fn a_verified_line_states_a_re_verification_and_no_version() {
+        let manifest = format!(
+            "{FORMAT}\nverified\tdocs/c.md\nprior\tdocs/a.md\tprior/a.md\nverified\tdocs/a.md\n\
+             verified\tdocs/gone.md\nprior\tdocs/gone.md\tprior/a.md\nverified\tdocs/typo.md\n"
+        );
+        let unbound =
+            Unbound::read(&manifest, tree(&[("prior/a.md", ASSERTED)])).expect("a change");
+        assert_eq!(
+            unbound.verified(),
+            vec!["docs/a.md", "docs/c.md", "docs/gone.md", "docs/typo.md"]
+        );
+        let change = unbound.bind(|path| path == "docs/a.md" || path == "docs/c.md");
+
+        assert!(change.verified("docs/a.md"));
+        assert!(change.verified("docs/c.md"));
+        assert!(!change.verified("docs/b.md"));
+        assert!(!change.verified("docs/typo.md"), "no row holds it");
+        assert!(matches!(
+            change.prior_of("docs/a.md"),
+            Ok(Prior::Committed { .. })
+        ));
+        assert_eq!(change.prior_of("docs/c.md"), Ok(Prior::Unchanged));
+        assert_eq!(change.unmatched(), vec!["docs/gone.md", "docs/typo.md"]);
+        assert_eq!(
+            change.named(),
+            Named {
+                documents: 4,
+                added: 0,
+                carried: 1,
+                unreadable: 0,
+                unmatched: 2,
+                verified: 2,
+            }
+        );
+        // Every count is "of those" documents, as each report words it. A
+        // path named only in a `verified` line that binds to no row is one
+        // of the documents, so the report never says more paths named no row
+        // than documents were named.
+        assert!(change.named().unmatched <= change.named().documents);
+        // The count and the list are two readings of one set, and a report
+        // writes both. `docs/typo.md` is named only in a `verified` line, and
+        // `docs/gone.md` in both kinds, so it counts once.
+        assert_eq!(change.named().unmatched, change.unmatched().len());
     }
 
     /// What the run reports about its own input.
@@ -585,6 +727,7 @@ mod tests {
                 carried: 1,
                 unreadable: 1,
                 unmatched: 0,
+                verified: 0,
             }
         );
     }
@@ -611,6 +754,7 @@ mod tests {
                 carried: 0,
                 unreadable: 0,
                 unmatched: 1,
+                verified: 0,
             }
         );
         assert_eq!(bound.unmatched(), vec!["docs/a.md"]);
