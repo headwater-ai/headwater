@@ -514,6 +514,7 @@ nav:
       - "CI builds no MkDocs site, so a generated page under docs/ is never checked against a strict build before merge": "process/obligations/0213-ci-builds-no-mkdocs-site-so-a-generated-page-under-docs-is-never-checked-against-a-strict-build-before-merge.md"
       - "No disk floor is stated for a build-order run, and nothing prunes the cargo pool": "process/obligations/0220-no-disk-floor-is-stated-for-a-build-order-run-and-nothing-prunes-the-cargo-pool.md"
       - "Subagents read skills from the shared checkout, and a worktree-isolated integrator cannot fast-forward it after a merge": "process/obligations/0221-subagents-read-skills-from-the-shared-checkout-and-a-worktree-isolated-integrator-cannot-fast-forward-it-after-a-merge.md"
+      - "Thirteen run-tooling gaps from run 20260928-1109, filed together": "process/obligations/0224-thirteen-run-tooling-gaps-from-run-20260928-1109-filed-together.md"
   - "Process specifications":
       - "Process specifications": "process/specs/README.md"
       - "Orchestration architecture": "process/specs/orchestration-architecture.md"

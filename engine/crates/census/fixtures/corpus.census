@@ -978,6 +978,8 @@ docs/process/obligations/0220-no-disk-floor-is-stated-for-a-build-order-run-and-
   typed: process_obligation
 docs/process/obligations/0221-subagents-read-skills-from-the-shared-checkout-and-a-worktree-isolated-integrator-cannot-fast-forward-it-after-a-merge.md
   typed: process_obligation
+docs/process/obligations/0224-thirteen-run-tooling-gaps-from-run-20260928-1109-filed-together.md
+  typed: process_obligation
 docs/process/obligations/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/process/specs/README.md

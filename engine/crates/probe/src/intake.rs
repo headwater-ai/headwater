@@ -717,32 +717,18 @@ impl Record {
 /// The read set this tree composes over the probes a transcript was planned
 /// over, or `None` where it composes none.
 ///
-/// The part is found the way [`crate::grade::narrowed`] finds it: the whole
+/// The part is found by [`crate::grade::planned_over`]: the whole
 /// selection where the recorded digest is the digest of the whole, and the
 /// probes the events name where it is the digest of those. A recorded
 /// selection that is neither is not a part of this tree's selection, so no
 /// read set of this tree is the one the run was planned over.
 fn composed_read_set(identity: &Identity, probes: &[String], tree: &Tree<'_>) -> Option<String> {
     let selection = tree.selected?;
-    let whole: Vec<&str> = selection
-        .iter()
-        .map(|selected| selected.id.as_str())
-        .collect();
-    let part: Vec<Selected> = if crate::plan::selection_digest(&whole) == identity.selection {
-        selection.to_vec()
-    } else {
-        let part: Vec<Selected> = selection
-            .iter()
-            .filter(|selected| probes.contains(&selected.id))
-            .cloned()
-            .collect();
-        let ids: Vec<&str> = part.iter().map(|selected| selected.id.as_str()).collect();
-        if part.is_empty() || crate::plan::selection_digest(&ids) != identity.selection {
-            return None;
-        }
-        part
+    let read_set = match crate::grade::planned_over(selection, &identity.selection, probes)? {
+        crate::grade::Planned::Whole => crate::plan::read_set_over(selection, tree.census),
+        crate::grade::Planned::Part(part) => crate::plan::read_set_over(&part, tree.census),
     };
-    Some(crate::plan::read_set_over(&part, tree.census).digest)
+    Some(read_set.digest)
 }
 
 /// The run identity block, read and tested.
