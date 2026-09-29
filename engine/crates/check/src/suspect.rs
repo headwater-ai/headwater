@@ -114,9 +114,10 @@
 //!
 //! A patch that writes `verified_revision` records a verification. So it is
 //! offered only where the run's change states that one happened: the run
-//! carries a change, and the change adds the document that declares the
-//! edge, or moves that document's freshness facet (`last_verified` in the
-//! standard package) off the value it held before. On any other document the
+//! carries a change, and the change names the document that declares the
+//! edge in a `verified` line, adds that document, or moves its freshness facet
+//! (`last_verified` in the standard package) off the value it held before. On
+//! any other document the
 //! finding carries its remedy as prose and no patch, because
 //! `headwater check --fix` would then record a verification nobody performed.
 //!
@@ -129,6 +130,13 @@
 //! rule exists to refuse. The declarer's re-verification also covers the one
 //! honest case the target misses: an author who re-reads a document whose
 //! edge went suspect in an earlier change.
+//!
+//! The `verified` line is the route for a second change on one day (#1376).
+//! The first change of the day set the facet to today, so the second cannot
+//! move it, and before this line the author had no way to state the
+//! re-reading. Any edit to the declaring document does not count as one,
+//! because a typo fixed a month later would then stamp edges that nobody
+//! re-read.
 //!
 //! The patch is a [`crate::Patch::Half`] with
 //! the edge's attributes, which [`headwater_scaffold::write::splice`] writes
@@ -193,11 +201,18 @@ impl<'a> Suspect<'a> {
     }
 
     /// Whether the run's change states that the document that declared this
-    /// edge was re-verified: the change adds it, or moves its freshness facet
-    /// off the value the prior version held. No change, a change that does not
+    /// edge was re-verified: the change names it in a `verified` line, adds
+    /// it, or moves its freshness facet off the value the prior version held.
+    /// No change, a change that does not
     /// carry the document, and a prior version this engine could not read all
     /// state nothing. See the module comment.
     fn re_verified(&self, view: &EdgeView<'_>) -> bool {
+        // The change states it with a `verified` line, whatever the prior
+        // version says. This is the route for a second change on one day,
+        // whose facet already reads today and so cannot move (#1376).
+        if view.declarer_verified() {
+            return true;
+        }
         let Some(facet) = self.freshness else {
             return false;
         };
@@ -236,7 +251,12 @@ impl EdgeCheck for Suspect<'_> {
     /// cached at 6 over a set that holds a named pipe, a socket or a device
     /// states the wrong count. An edge whose entries are all such files is
     /// reported rather than passed (#1333).
-    const VERSION: u32 = 7;
+    ///
+    /// 8: a change can state a re-verification with a `verified` line, and a
+    /// document it names is offered the fix whatever its freshness facet
+    /// reads. The key holds the statement, and a verdict cached at 7 was
+    /// keyed without it (#1376).
+    const VERSION: u32 = 8;
     /// The change decides the fix, and the clock decides nothing (#1259).
     const NEEDS_CLOCK: bool = false;
     /// The fix is offered only on a document the change re-verified, so the
@@ -554,7 +574,8 @@ fn reread(current: &str) -> String {
         "re-read what the entry reaches and correct this document where it no longer holds; then \
          set its `last_verified` to today, write the change with `headwater change <base> <dir>`, \
          and run `headwater check --fix --change <dir>/manifest`, which records \
-         `{VERIFIED_REVISION}: {current}` on this entry"
+         `{VERIFIED_REVISION}: {current}` on this entry; where `last_verified` already reads \
+         today, pass `--verified <this document>` to `headwater change` instead"
     )
 }
 
@@ -639,5 +660,23 @@ mod tests {
         let verified = text.find("verified at revision").expect("it is there");
         let pinned = text.find("now pins revision").expect("it is there");
         assert!(verified < pinned, "{text}");
+    }
+
+    /// The remedy for a moved digest names both routes to a stated
+    /// re-verification. An author whose `last_verified` already reads today
+    /// cannot take the first, and before #1376 the remedy named no other.
+    #[test]
+    fn the_remedy_names_the_verified_line_for_a_facet_that_reads_today() {
+        let remedy = reread("sha256:new");
+        assert!(
+            remedy.contains("set its `last_verified` to today"),
+            "{remedy}"
+        );
+        assert!(remedy.contains("already reads today"), "{remedy}");
+        assert!(
+            remedy.contains("pass `--verified <this document>` to `headwater change`"),
+            "{remedy}"
+        );
+        assert!(remedy.contains("verified_revision: sha256:new"), "{remedy}");
     }
 }

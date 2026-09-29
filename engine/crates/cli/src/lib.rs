@@ -484,6 +484,17 @@ pub enum Verb {
                     which is the file `headwater check --change` takes"
         )]
         out: Option<PathBuf>,
+        #[arg(
+            long = "verified",
+            value_name = "path",
+            help = "state that you re-read the document at <path> in this change, repeatable. \
+                    Each one is a `verified` line in the manifest, and `headwater check --fix \
+                    --change` then records `verified_revision` on the suspect entries that \
+                    document declares. It is the route for a second change on the day the \
+                    document's `last_verified` already reads. The path is relative to the \
+                    repository root and need not be in the diff"
+        )]
+        verified: Vec<String>,
     },
     Gate {
         // Optional here and required by the verb, so that the refusal a caller
