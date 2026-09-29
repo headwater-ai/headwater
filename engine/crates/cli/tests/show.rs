@@ -414,12 +414,26 @@ fn every_path_route_refuses_a_path_outside_the_repository_in_one_sentence() {
     std::fs::write(elsewhere.join("x.md"), b"a file outside the root\n")
         .expect("the outside file writes");
     std::os::unix::fs::symlink(&elsewhere, root.at.join("escape")).expect("the link is made");
+    // #1367: a link that dangles out of the root leads out of it as well,
+    // typed under the root and typed through a link outside it into `docs`.
+    let nowhere = root.at.with_extension("nowhere");
+    let links = root.at.with_extension("o");
+    let _ = std::fs::remove_dir_all(&nowhere);
+    let _ = std::fs::remove_dir_all(&links);
+    std::fs::create_dir_all(&links).expect("the links directory is made");
+    std::os::unix::fs::symlink(nowhere.join("dir"), root.at.join("docs/dang"))
+        .expect("the dangling link is made");
+    std::os::unix::fs::symlink(root.at.join("docs"), links.join("Docs"))
+        .expect("the link into the root is made");
+    let through = links.join("Docs/dang/new.md").display().to_string();
 
     let targets = [
         "escape/x.md",
         "./escape/x.md",
         "/etc/passwd",
         "../outside.md",
+        "docs/dang/new.md",
+        through.as_str(),
     ];
     let mut failures: Vec<String> = Vec::new();
     for target in targets {
@@ -490,6 +504,7 @@ fn every_path_route_refuses_a_path_outside_the_repository_in_one_sentence() {
         }
     }
     let _ = std::fs::remove_dir_all(&elsewhere);
+    let _ = std::fs::remove_dir_all(&links);
     assert!(
         failures.is_empty(),
         "each route refuses in the one sentence:\n{}",
