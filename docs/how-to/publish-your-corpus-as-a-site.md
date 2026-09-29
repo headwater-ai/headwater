@@ -36,7 +36,7 @@ You need Python 3 and MkDocs 1.6.1. MkDocs installs PyYAML, Jinja2 and Markdown 
 
 ## Steps
 
-1. Declare the navigation in your overlay. The base package declares no `site_nav` projection, so `headwater generate` writes no navigation until your overlay adds one. Add these lines at the end of `.headwater/overlay.yml`. If your overlay already has an `add_to:` block with a `projections:` list, add the two lines of the list item to that list instead.
+1. Declare the navigation in your overlay. The base package declares no `site_nav` projection, so `headwater generate` writes no navigation until your overlay adds one. Add these lines at the end of `.headwater/overlay.yml`. If your overlay already has an `add_to:` key, do not add a second one, because the resolve refuses a duplicate key. Put `projections:` under the key you have, or add the list item to its `projections:` list.
 
 ```yaml
 add_to:
@@ -52,7 +52,7 @@ headwater taxonomy resolve
 headwater generate
 ```
 
-3. Copy the configuration [`integrations/site-generator/mkdocs.yml`](https://github.com/headwater-ai/headwater/blob/main/integrations/site-generator/mkdocs.yml) from `headwater-ai/headwater` to the root of your repository, next to `.headwater/`. Set `site_name` to the name of your site. Set `docs_dir` to the `corpus.root` value in `.headwater/taxonomy.yml`. The file has no `nav:` of its own, because `INHERIT` reads it from `.headwater/nav.yml`.
+3. Copy the configuration [`integrations/site-generator/mkdocs.yml`](https://github.com/headwater-ai/headwater/blob/main/integrations/site-generator/mkdocs.yml) from `headwater-ai/headwater` to the root of your repository, next to `.headwater/`. Set `site_name` to the name of your site. Set `docs_dir` to the `corpus.root` value in `.headwater/taxonomy.yml`. MkDocs refuses a `docs_dir` that is the directory of `mkdocs.yml`, so this recipe needs a corpus root below the repository root, for example `docs`. The file has no `nav:` of its own, because `INHERIT` reads it from `.headwater/nav.yml`.
 
 4. Install MkDocs. When your Python refuses to install a package outside a virtual environment, create and activate one first.
 
