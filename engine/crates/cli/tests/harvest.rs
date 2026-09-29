@@ -523,6 +523,43 @@ fn under_a_sealed_grain_a_withheld_identifier_and_a_typo_both_stay_unresolved() 
     }
 }
 
+/// A `counted` export older than version 1.3 carries a tombstone with no
+/// `identifiers` list. The resolver cannot tell a withheld document from a
+/// typo there, so a miss stays unresolved, and the reason says that the export
+/// predates the list rather than that the string is not withheld.
+#[test]
+fn a_counted_export_older_than_the_identifier_list_leaves_a_miss_unresolved_and_says_why() {
+    let root = Root::new("older");
+    let pinned = std::fs::read_to_string(root.at.join(".headwater/taxonomy.yml"))
+        .expect("the declaration reads");
+    let before = root.digest(EXPORT_A);
+    let older = export("gold").replace(
+        "\"filtered\":false}",
+        "\"filtered\":true,\"tombstone\":\"counted\"},\
+             \"tombstones\":[{\"rule\":\"full.exclude.status\",\"documents\":1}]",
+    );
+    assert!(older.contains("\"tombstones\""), "{older}");
+    root.write(EXPORT_A, &older);
+    root.write(
+        ".headwater/taxonomy.yml",
+        &pinned.replace(&before, &root.digest(EXPORT_A)),
+    );
+    root.write(
+        "docs/solution/checkout.md",
+        &NOTE.replace(
+            "  uses_service_in_a:\n    - SVC-1",
+            "  uses_service_in_a:\n    - SVC-2",
+        ),
+    );
+    let ran = root.run(&["check", "--strict"]);
+    let unresolved = unresolved(&ran);
+    assert_eq!(unresolved.len(), 1, "{unresolved:?}\n{ran:?}");
+    assert!(
+        unresolved[0].contains("SVC-2") && unresolved[0].contains("predates"),
+        "the reason says the export predates the identifier list: {unresolved:?}"
+    );
+}
+
 /// Rewrite the consumer declaration of a scratch root, and assert the one
 /// substitution landed.
 fn declare(root: &Root, from: &str, to: &str) {
