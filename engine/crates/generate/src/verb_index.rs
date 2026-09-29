@@ -160,6 +160,7 @@ pub(crate) fn emit(
         bytes: render(&path, verbs, &described),
         path,
         kind: Kind::VerbIndex,
+        committed: true,
     });
 }
 

@@ -221,6 +221,20 @@ fn recorded() -> Vec<Recorded> {
             full: false,
             inputs: fixtures_dir().join("state-not-set-by-edge"),
         },
+        // The corpus of `relation.target.is_source`: an entry that names its
+        // own document through either half, a control that names another
+        // document, and a self-path that binds to nothing (#1232).
+        Recorded {
+            label: "self-target",
+            base: fixtures_dir(),
+            name: "self-target",
+            taxonomy: "self-target.taxonomy.yml",
+            lock: "sha256:self-target-fixture".to_string(),
+            clock: "2026-08-12",
+            observations: Observations::empty(),
+            full: false,
+            inputs: fixtures_dir().join("self-target"),
+        },
         Recorded {
             label: "acceptance-criterion-proven",
             base: fixtures_dir(),

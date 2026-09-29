@@ -26,6 +26,8 @@ Without `--check`, it computes projections and writes marked generated files. Wi
 
 It refuses to overwrite a file that lacks the generated-file marker. A stale projection or a marked file that the plan does not write is an error.
 
+**A `graph_export` that declares `committed: false` is not written and not compared.** The tree does not hold that file, because `headwater export` builds it at publish time. The run names the path with the line `built at publish time by headwater export, and not written or compared here`, and that line is not an error. The command does not read a copy that a local export left at the path, and it does not report that copy as orphaned.
+
 **The command also refuses a declaration whose kind requires what the generated file cannot carry, and it writes no file for that declaration.** Two refusals have this shape. The first reads the `facets.require` list of the declared kind. The front-matter block states the identifier, the discriminator of a heterogeneous shelf, and the facet in the `name` role. The command derives the state, the two dates and the summary. A required facet outside that set is one that no author can add, because the only writer of a generated document is this engine.
 
 The second reads the `sections.require` list of the same kind against the body that the emitter composes. No emitter of this engine reads a section contract. The headings of a generated body are the name of a shelf and the names of the documents on it. So a required section that no heading answers is also one that no author can add. Each refusal names the kind and the requirement, and the run prints it under *what this verb does not write, and why*.
@@ -71,7 +73,7 @@ The command reads no environment variable.
 |---|---|
 | `.headwater/taxonomy.lock`, corpus and configuration | Read to build the projection plan. |
 | `.headwater/corpus.json` | Read under `--check` for the emitter set it records, before any projection is compared. Written like any other projection. |
-| Generated projection files | Written without `--check` when their marker permits it. |
+| Generated projection files | Written without `--check` when their marker permits it. A `graph_export` output that declares `committed: false` is not written and not read. |
 
 ## See also
 

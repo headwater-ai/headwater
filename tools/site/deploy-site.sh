@@ -4,10 +4,12 @@
 #
 # WHO RUNS THIS
 #
-#   The `Deploy the site` job of `.github/workflows/ci.yml`, on a push to
-#   `main` and on nothing else, after every gating job of that push is green.
-#   Nobody runs it by hand. It reads `CLOUDFLARE_API_TOKEN` and
-#   `CLOUDFLARE_ACCOUNT_ID` from the environment, which only that job holds.
+#   The `Deploy the site` job of `.github/workflows/deploy-site.yml`, which
+#   two workflows call: `ci.yml` on a push to `main`, after every gating job
+#   of that push is green, and `release.yml` with `ref: main` after it
+#   creates a release, so `apt/` serves that release (#1316). Nobody runs it
+#   by hand. It reads `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` from
+#   the environment, which only that job holds.
 #
 #   Until #1273 Cloudflare Workers Builds deployed the site from the committed
 #   pages, and the committed pages carried the figures. Workers Builds starts

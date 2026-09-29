@@ -4,7 +4,7 @@
   "taxonomy": {
     "package": "headwater/fixture",
     "version": "1.0.0",
-    "lock": "87e6df6eaf5a191d7c8a55956a8fb20fde7ef00970a921d840ae3d84698c54b6"
+    "lock": "105e82f4b4435094f6bfd8ba5b3c3f3380341b35aeebc9aca2c3d508726d1601"
   },
   "clock": "2026-08-12",
   "coverage": {
@@ -12,7 +12,7 @@
     "classified": 29,
     "checked": 28,
     "generated": 1,
-    "instances": 358,
+    "instances": 368,
     "skipped": 60,
     "skips": [
       {
@@ -542,9 +542,17 @@
       ]
     },
     {
+      "rule": "relation.target.is_source",
+      "scope": "edge",
+      "version": 1,
+      "obligations": [
+        "OB-FIX-29"
+      ]
+    },
+    {
       "rule": "relation.target.suspect",
       "scope": "edge",
-      "version": 5,
+      "version": 6,
       "obligations": [
         "OB-FIX-27"
       ]
