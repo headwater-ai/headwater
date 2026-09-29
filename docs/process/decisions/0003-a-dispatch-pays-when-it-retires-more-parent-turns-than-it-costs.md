@@ -24,7 +24,7 @@ Pull request #685 measured the orchestrator's polling. Seventy-six `gh pr view` 
 
 The obvious remedy fails the same measurement. A fresh agent dispatched to make one poll is a parent turn at the same context, plus a prompt. It also returns a report that enters the context too. Delegating a cheap call does not save the turn that delegates it.
 
-An earlier design argued that decomposing the command into agent definitions reduced parent turns. It does not. It reduces the size of the context each turn re-reads, which is a different quantity. [The evaluation](../../evaluations/the-build-order-as-a-multi-agent-system.md) records both.
+An earlier design argued that decomposing the command into agent definitions reduced parent turns. It does not. It reduces the size of the context each turn re-reads, which is a different quantity. [The evaluation](../evaluations/the-build-order-as-a-multi-agent-system.md) records both.
 
 ## Decision
 

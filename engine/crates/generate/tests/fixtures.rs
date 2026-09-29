@@ -596,17 +596,17 @@ fn every_output_carries_its_own_marker() {
     }
 }
 
-/// This repository generates its forty-five artifacts, and it says why for
+/// This repository generates its forty-eight artifacts, and it says why for
 /// everything else.
 ///
 /// A property and not a recording, for the reason the query crate states about
 /// its own repository run: the corpus is prose somebody edits. What is asserted
 /// is what a prose edit must not change.
 ///
-/// **Sixteen of the forty-five are shelf indexes, one per shelf that holds a
+/// **Nineteen of the forty-eight are shelf indexes, one per shelf that holds a
 /// document.** The first is the decisions shelf, which the package has declared
 /// since the first-run walkthrough and which produced a reason rather than a
-/// file until #124 filled that shelf. The other fifteen are the overlay's own
+/// file until #124 filled that shelf. The other eighteen are the overlay's own
 /// entry, in the order its `for` list names them, and the specification index
 /// leads it because that is the list the root README used to carry by hand.
 /// #528 is why the seven after it are there: each of those shelf roots answered
@@ -615,11 +615,14 @@ fn every_output_carries_its_own_marker() {
 /// twelfth, `how_to`, is the same story as the decisions shelf's own #124: the
 /// `for` list named it before #885 put a document on it, and until then it
 /// produced a reason rather than a file, the same way `specifications` still
-/// does below. The fifteenth, `process_explanations`, is on the list from the
+/// does below. The eighteenth, `process_explanations`, is on the list from the
 /// change that declared it (#1005), because that change put its first document
-/// on the shelf. Its sibling `explanations`, the fourteenth, gave a reason
+/// on the shelf. Its sibling `explanations`, the seventeenth, gave a reason
 /// rather than a file until #1231 put the account of how a release reaches
-/// an adopter on it.
+/// an adopter on it. The three after `process_decisions`, which are
+/// `process_specs`, `process_evaluations` and `process_obligations`, are on the
+/// list from the change that declared them (#1286), because that change moved
+/// documents onto each of them.
 ///
 /// **Five of the other twenty-nine are one each, and twenty-four are one per
 /// committed transcript.** The count in the name of this test therefore moves when a
@@ -650,7 +653,7 @@ fn every_output_carries_its_own_marker() {
 /// compares bytes, so a contributor who edits a `summary` and does not
 /// regenerate fails this test before CI runs.
 #[test]
-fn this_repository_generates_its_forty_five_artifacts_and_accounts_for_the_rest() {
+fn this_repository_generates_its_forty_eight_artifacts_and_accounts_for_the_rest() {
     let root = repository_root();
     let resolved = headwater_resolve::repository(&root)
         .unwrap_or_else(|errors| panic!("{}", headwater_resolve::render_errors(&errors)));
@@ -725,6 +728,9 @@ fn this_repository_generates_its_forty_five_artifacts_and_accounts_for_the_rest(
             "docs/tutorials/README.md",
             "docs/how-to/README.md",
             "docs/process/decisions/README.md",
+            "docs/process/specs/README.md",
+            "docs/process/evaluations/README.md",
+            "docs/process/obligations/README.md",
             "docs/explanations/README.md",
             "docs/process/explanations/README.md",
             "docs/spec/09-open-questions.md",
@@ -757,7 +763,7 @@ fn this_repository_generates_its_forty_five_artifacts_and_accounts_for_the_rest(
             ".headwater/nav.yml",
             descriptor::PATH
         ],
-        "this repository writes an index for each of its sixteen shelves that hold a \
+        "this repository writes an index for each of its nineteen shelves that hold a \
          document, then the redirect map, the verb index, the consumer surface page, the \
          site navigation and the descriptor, in that order"
     );

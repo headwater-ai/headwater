@@ -3,7 +3,7 @@ id: HW-PD-0007
 status: current
 status_since: 2026-09-20
 summary: "A wait that might outlive the five-minute prompt-cache lifetime is wrapped in a timeout under it and re-issued on return. So a background wait still ends the turn without paying to rewrite a context the cache would otherwise have kept warm."
-last_verified: 2026-09-28
+last_verified: 2026-09-29
 title: "A background wait caps below the cache lifetime and re-issues itself"
 provenance:
   warrant: asserted
@@ -18,7 +18,7 @@ relations:
     - to: tools/run/run-census.sh
       verified_revision: sha256:57954a4dfd1fff9fd92571099130aa42cd9dd186df50a2dabce2d4d12e64fe69
     - to: .claude/skills/hw-run-policy/SKILL.md
-      verified_revision: sha256:df76282e5808feed1a95e9a0afc356400effd8c863437f91f9e6f7a8dbef11d6
+      verified_revision: sha256:c3f38c8456e5a3a2074c66adec6b77fdc42750fa27c9e8af1a250feccdddce1d
 ---
 
 # A background wait caps below the cache lifetime and re-issues itself
@@ -41,6 +41,6 @@ Re-issuing this kind of call is not the case `hw-run-policy` already forbids. Th
 
 ## Consequences
 
-`hw-run-policy` carries one rule for both ends of the cost, in place of the two that covered one apiece. `tools/run/run-census.sh` reports the expiry class directly. It reports the turns whose cache write outweighed their cache read after a gap past the lifetime, and the tokens they rewrote. It also reports what that cost at Sonnet 5's cache-write rate. A fixture pins that reading against a recorded transcript, so the next run answers to a number rather than to this record. [The evaluation](../../evaluations/the-build-order-as-a-multi-agent-system.md) carries the $14.85 figure beside the polling finding it already holds. That is because both spend the same unit of cost, a turn at full context, on carrying something the agent already had.
+`hw-run-policy` carries one rule for both ends of the cost, in place of the two that covered one apiece. `tools/run/run-census.sh` reports the expiry class directly. It reports the turns whose cache write outweighed their cache read after a gap past the lifetime, and the tokens they rewrote. It also reports what that cost at Sonnet 5's cache-write rate. A fixture pins that reading against a recorded transcript, so the next run answers to a number rather than to this record. [The evaluation](../evaluations/the-build-order-as-a-multi-agent-system.md) carries the $14.85 figure beside the polling finding it already holds. That is because both spend the same unit of cost, a turn at full context, on carrying something the agent already had.
 
 This decision does not move the wait off the agent that holds the large context, and it does not ask for a longer cache lifetime. Both stay open. The measured saving from bounding and re-entering, about $3.84 against the $14.85 paid, does not depend on either change. A future measurement that finds the chained re-entry itself costing more than the four-minute bound saves would reopen this decision rather than confirm it.

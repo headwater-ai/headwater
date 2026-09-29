@@ -536,6 +536,17 @@ kinds:
         - Decision
         - Consequences
     voice: declarative
+  process_evaluation:
+    facets:
+      require:
+        - title
+    identifier:
+      scheme: evaluation_id
+    is_a: governed_document
+    language: ste_house
+    lifecycle: standard
+    purpose: evidence
+    voice: narrative
   process_explanation:
     facets:
       require:
@@ -551,6 +562,34 @@ kinds:
         - Scope
         - "How it works"
         - "Why it is this way"
+    voice: declarative
+  process_obligation:
+    facets:
+      require:
+        - title
+        - waiting_on
+    identifier:
+      scheme: obligation_record_id
+    is_a: governed_document
+    language: ste_house
+    lifecycle: obligation
+    purpose: obligation
+    sections:
+      require:
+        - Context
+        - Obligation
+        - Discharge
+    voice: declarative
+  process_spec:
+    facets:
+      require:
+        - title
+    identifier:
+      scheme: spec_id
+    is_a: governed_document
+    language: ste_house
+    lifecycle: standard
+    purpose: behavior
     voice: declarative
   requirement:
     facets:
@@ -886,11 +925,27 @@ shelves:
     layout: "{seq:04d}-{slug}.md"
     path: "docs/process/decisions/**"
     title: "Process decisions"
+  process_evaluations:
+    homogeneous: true
+    kind: process_evaluation
+    path: "docs/process/evaluations/**"
+    title: "Process evaluations"
   process_explanations:
     homogeneous: true
     kind: process_explanation
     path: "docs/process/explanations/**"
     title: "Process explanations"
+  process_obligations:
+    homogeneous: true
+    kind: process_obligation
+    layout: "{seq:04d}-{slug}.md"
+    path: "docs/process/obligations/**"
+    title: "Process obligation records"
+  process_specs:
+    homogeneous: true
+    kind: process_spec
+    path: "docs/process/specs/**"
+    title: "Process specifications"
   requirements:
     homogeneous: true
     kind: requirement
@@ -1038,6 +1093,9 @@ projections:
       - tutorials
       - how_to
       - process_decisions
+      - process_specs
+      - process_evaluations
+      - process_obligations
       - explanations
       - process_explanations
       - subsystems

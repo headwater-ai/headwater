@@ -1235,8 +1235,9 @@ add:
   # release cut between them, and the five CI suites that run the hooks, the
   # skills and the tutorial against the engine built from this tree would pin
   # a commit instead. A shelf separates the two subjects in the census, the
-  # site and every check, and a later move out is one directory move of one
-  # shelf rather than a triage of the whole register.
+  # site and every check, and a later move out is one move of the
+  # `docs/process/` directory, which holds every process shelf, rather than a
+  # triage of the whole register.
   #
   # **The same shape as `decision`, under its own scheme.** The kind mirrors
   # the base `decision` kind clause for clause, so a record here answers to the
@@ -1249,11 +1250,10 @@ add:
   # is written on the first mint.
   #
   # **The path leaves room beside it.** `docs/process/decisions/**` rather than
-  # `docs/process/**`, so that an evaluation of the process can take
-  # `docs/process/evaluations/**` later without two shelves claiming one path.
-  # Today the one evaluation of the build order stays on the evaluations shelf,
-  # because a homogeneous shelf holds one kind and nothing here declares a
-  # second.
+  # `docs/process/**`, so that each other kind of process document takes its
+  # own directory beside it without two shelves claiming one path. The
+  # evaluations, the obligation records and the specification of the build
+  # order took that room in #1286, in the block after this one.
   #
   # **When this block should stop being an overlay.** The day the process has
   # a reader who is not this repository, the shape for it is a library entry
@@ -1281,6 +1281,86 @@ add:
     path: docs/process/decisions/**
     homogeneous: true
     kind: process_decision
+    layout: "{seq:04d}-{slug}.md"
+
+  # --- the rest of the process ----------------------------------------------
+  # Three kinds of document about how this repository is built still stood on
+  # product shelves: the specification of the build order as part 17 of the
+  # numbered series, three evaluations of the build order and of CI, and eleven
+  # obligation records about run tooling that spec 13 listed as the product's
+  # open work. A reader who judged Headwater from the specification, the
+  # evaluations or spec 13 read them as product commitments (#1286).
+  #
+  # **A moved record keeps its identifier.** HW-PD-0024 rules it. Each kind
+  # below binds the scheme its product kind already binds, as
+  # `review_prompt` and `review_record` share `review_id` above, so every
+  # citation of `HW-OBL-0221` or `HW-SPEC-orchestration-architecture` in a
+  # commit, an issue or another document still resolves. The reconcile-first
+  # allocator reads the whole corpus and the claim store, so the next
+  # `HW-OBL-` minted on either shelf counts past a number the other holds.
+  #
+  # **Each kind mirrors its product kind clause for clause**, which is the
+  # shape `process_decision` and `process_explanation` have. An `is_a` of the
+  # product kind would admit every relation for free, and every rule scoped to
+  # the product kind would then read the process records too, which undoes
+  # the split. What a mirror costs is each relation that names the product
+  # kind as an endpoint, and `cites_evidence` is the one this corpus used: the
+  # specification of the build order cited the evaluation of it. An overlay
+  # cannot add an endpoint to a relation that a package declares
+  # (HW-OBL-0031), so that edge is now the base `traces_to`, which reaches any
+  # governed document and is in the same evidence family.
+  #
+  # **`process_spec` drops `doc_type` and `sequence`.** Both place a document
+  # in the numbered series, and a process specification is not a part of it.
+
+  kinds.process_spec:
+    is_a: governed_document
+    purpose: behavior
+    voice: declarative
+    lifecycle: standard
+    language: ste_house
+    identifier: {scheme: spec_id}
+    facets:
+      require: [title]
+
+  kinds.process_evaluation:
+    is_a: governed_document
+    purpose: evidence
+    voice: narrative
+    lifecycle: standard
+    language: ste_house
+    identifier: {scheme: evaluation_id}
+    facets:
+      require: [title]
+
+  kinds.process_obligation:
+    is_a: governed_document
+    purpose: obligation
+    voice: declarative
+    lifecycle: obligation
+    language: ste_house
+    identifier: {scheme: obligation_record_id}
+    facets:
+      require: [title, waiting_on]
+    sections: {require: [Context, Obligation, Discharge]}
+
+  shelves.process_specs:
+    title: Process specifications
+    path: docs/process/specs/**
+    homogeneous: true
+    kind: process_spec
+
+  shelves.process_evaluations:
+    title: Process evaluations
+    path: docs/process/evaluations/**
+    homogeneous: true
+    kind: process_evaluation
+
+  shelves.process_obligations:
+    title: Process obligation records
+    path: docs/process/obligations/**
+    homogeneous: true
+    kind: process_obligation
     layout: "{seq:04d}-{slug}.md"
 
   # --- the live account of a domain -----------------------------------------
@@ -1588,7 +1668,7 @@ add_to:
     # account (#1231) with no edit to this list. `subsystems` is named for the same reason:
     # its shelf holds nothing yet (HW-DR-0098, #1288).
     - kind: shelf_index
-      for: [spec_series, obligations, evaluations, requirements, acceptance_criteria, verifications, probes, probe_results, probe_runs, reviews, tutorials, how_to, process_decisions, explanations, process_explanations, subsystems]
+      for: [spec_series, obligations, evaluations, requirements, acceptance_criteria, verifications, probes, probe_results, probe_runs, reviews, tutorials, how_to, process_decisions, process_specs, process_evaluations, process_obligations, explanations, process_explanations, subsystems]
       output: "{shelf}/README.md"
 
     # The redirect map. `docs/spec/09-open-questions.md` is a tombstone: the
