@@ -1527,7 +1527,13 @@ add:
     # page for that point, `docs/how-to/publish-your-corpus-as-a-site.md`, may
     # instruct them. They are not prerequisites: no other page runs them, and
     # no conformance level asks for them (#977).
-    commands: [headwater, git, sh, curl, tar, cd, echo, grep, mkdir, printf, rm, wc, xargs, python3, mkdocs]
+    # `apt-get`, `sudo`, `install` and `tee` are the APT route's programs, and
+    # the README's apt block runs each one (#1230). HW-DR-0077 clause 1 names
+    # them by the owner's ruling of 2026-09-29, as the operating system's
+    # package manager and the tools that add a repository to it.
+    # `.claude/tutorial/adopter_interface.py` holds each one to the shape
+    # that block runs.
+    commands: [headwater, git, sh, curl, tar, cd, echo, grep, mkdir, printf, rm, wc, xargs, python3, mkdocs, apt-get, sudo, install, tee]
 
 # --- projections ------------------------------------------------------------
 # `projections` is a list in the base, so an `add` cannot reach it, and this is
