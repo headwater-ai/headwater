@@ -1,0 +1,19 @@
+# The smallest MkDocs configuration that publishes a Headwater corpus as a
+# site. Copy it to the root of your repository, beside `.headwater/`, and set
+# `docs_dir` to the `corpus.root` that `.headwater/taxonomy.yml` declares.
+# `docs/how-to/publish-your-corpus-as-a-site.md` in headwater-ai/headwater is
+# the guide.
+#
+# Leave out a `validation:` block. MkDocs's default reports a navigation entry
+# that names a missing page as a warning, and `mkdocs build --strict` turns
+# that warning into a failed build. That is the check that stops the site
+# from going stale in silence, and the fixture of this file depends on it.
+
+site_name: My corpus
+
+# `headwater generate` writes the navigation. MkDocs folds that file in as the
+# parent of this one, so this file declares no `nav:` of its own.
+INHERIT: .headwater/nav.yml
+
+# The corpus root. Every path in the generated navigation is relative to it.
+docs_dir: docs

@@ -30,4 +30,4 @@ waiting_on: build
 
 **A weaker discharge names each raised severity in one list that a case reads.** That catches a deletion and not a downgrade, so it is worth less than the pair above.
 
-**What does not discharge this.** CI running `mkdocs build --strict` on a tree whose population is empty. A comment stating why the severity is raised, which is what both keys carry today.
+**What does not discharge this.** CI running `mkdocs build --strict` on a tree whose population is empty. A comment stating why the severity is raised, which is what both keys carry today. `integrations/site-generator/fixtures/build-site.sh` ([#977](https://github.com/headwater-ai/headwater/issues/977)) does not discharge it either. That case builds the adopter configuration, which has no `validation:` block, and it drives the MkDocs default for `nav.not_found`. It reads neither raised severity of this repository's `mkdocs.yml`.
