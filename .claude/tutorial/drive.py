@@ -513,10 +513,16 @@ def main():
         # site from the corpus this run finished with. Opting in with
         # `HEADWATER_TUTORIAL_KEEP=<dir>` copies that corpus to `<dir>` before
         # the scratch directory goes, so the site fixture needs no second
-        # fetch of the package. `<dir>` must not exist yet.
+        # fetch of the package. `<dir>` must not exist yet. A copy that fails
+        # is reported and does not replace the tutorial's own verdict, and the
+        # site fixture then refuses the missing corpus by name.
         keep = os.environ.get('HEADWATER_TUTORIAL_KEEP')
         if keep:
-            shutil.copytree(os.path.join(scratch, 'headwater-tutorial'), keep, symlinks=True)
+            try:
+                shutil.copytree(os.path.join(scratch, 'headwater-tutorial'), keep, symlinks=True)
+            except OSError as error:
+                print(f'tutorial: HEADWATER_TUTORIAL_KEEP: could not copy the corpus to {keep}: {error}',
+                      file=sys.stderr)
         shutil.rmtree(scratch, ignore_errors=True)
 
     print()

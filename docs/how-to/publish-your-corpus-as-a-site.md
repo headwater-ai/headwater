@@ -14,6 +14,8 @@ provenance:
 relations:
   traces_to:
     - HW-SPEC-vision-and-scope
+    - HW-DR-0036
+    - HW-DR-0077
   governs:
     - integrations/site-generator/**
 ---
@@ -30,7 +32,7 @@ You need a corpus that `headwater check --strict` passes. The tutorial [Your fir
 
 You need Python 3 and MkDocs 1.6.1. MkDocs installs PyYAML, Jinja2 and Markdown as its own dependencies. These programs belong to the site generator and not to Headwater. The `headwater` binary does not need them, and no conformance level asks for them.
 
-**Other generators.** Headwater writes navigation for MkDocs alone. It writes nothing for Docusaurus or Astro. Neither of them reads its navigation from a plain data file, and [HW-DR-0036](../decisions/0036-q36-which-of-mkdocs-docusaurus-or-astro-this-corpus-emits-navigation-for-and-why.md) records why that decides the choice. For another generator, read the reading order from `.headwater/nav.yml` and convert it yourself.
+**Other generators.** Headwater writes navigation for MkDocs alone. It writes nothing for Docusaurus or Astro. Docusaurus reads its sidebar from a code module, and Astro has no native navigation format. [HW-DR-0036](../decisions/0036-q36-which-of-mkdocs-docusaurus-or-astro-this-corpus-emits-navigation-for-and-why.md) records why that decides the choice. For another generator, read the reading order from `.headwater/nav.yml` and convert it yourself.
 
 ## Steps
 
