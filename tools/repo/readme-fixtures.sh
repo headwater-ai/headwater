@@ -2704,20 +2704,31 @@ README.md
 docs/tutorials/your-first-governed-corpus.md
 site/tutorial/index.html"
 
-# newest_standard_version ROOT — the version of the newest
-# `taxonomy/headwater-standard/v*` tag in the clone at ROOT, or nothing.
+# `.claude/tutorial/drive.py` reads the version off the page it drives, so it
+# names none of its own. It is held by the stale-version rule alone, and the
+# names-no-version floor in `standard_pin_judge` skips it by this name.
+standard_pin_unversioned=.claude/tutorial/drive.py
+
+# newest_standard_version ROOT — the version of the newest release tag
+# `taxonomy/headwater-standard/v<major>.<minor>.<patch>` in the clone at ROOT,
+# or nothing. A pre-release such as `v4.13.0-rc.1` is not a release, and it
+# sorts above the release it precedes, so the filter comes before the pick.
 newest_standard_version() {
     git -C "$1" tag -l 'taxonomy/headwater-standard/v*' --sort=-v:refname \
         >"$scratch/standard-tags.txt" 2>/dev/null
-    sed -n '1s|^taxonomy/headwater-standard/v||p' "$scratch/standard-tags.txt"
+    sed -n '/^taxonomy\/headwater-standard\/v[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*$/{
+        s|^taxonomy/headwater-standard/v||p
+        q
+    }' "$scratch/standard-tags.txt"
 }
 
 # standard_pin_judge NEWEST FILE... — `ok`, or one line per mention of a
 # `headwater-standard/v<x>`, a `headwater-standard-<x>.zip` or a
 # `headwater/standard <x>` or `headwater/standard v<x>` whose version is not
-# NEWEST. Every match on a line is read, not the first alone, because a
-# vendor URL carries the tag path and the zip name on one line and either can
-# be the stale half.
+# NEWEST, and one line per file that names no version at all. Every match on
+# a line is read, not the first alone, because a vendor URL carries the tag
+# path and the zip name on one line and either can be the stale half. A file
+# whose path ends in `/$standard_pin_unversioned` is exempt from the floor.
 standard_pin_judge() {
     spj_newest=$1
     shift
@@ -2725,7 +2736,7 @@ standard_pin_judge() {
         echo "no \`taxonomy/headwater-standard/v*\` tag in this clone, so nothing says which version is newest. Fetch the tags, or set \`fetch-tags: true\` on the checkout"
         return 0
     fi
-    awk -v want="$spj_newest" '
+    awk -v want="$spj_newest" -v unversioned="/$standard_pin_unversioned" '
         {
             s = $0
             while (match(s, /headwater-standard\/v[0-9]+(\.[0-9]+)*|headwater-standard-[0-9]+(\.[0-9]+)*\.zip|headwater\/standard v?[0-9]+(\.[0-9]+)*/)) {
@@ -2735,6 +2746,17 @@ standard_pin_judge() {
                 sub(/^headwater-standard\/v|^headwater-standard-|^headwater\/standard v?/, "", v)
                 sub(/\.zip$/, "", v)
                 if (v != want && v != "0.0.0") print FILENAME ":" FNR ": " m
+                named[FILENAME] = 1
+            }
+        }
+        # An empty file yields no record, so the floor walks ARGV rather
+        # than the files a record came from.
+        END {
+            for (i = 1; i < ARGC; i++) {
+                f = ARGV[i]
+                if (f in named) continue
+                if (substr(f, length(f) - length(unversioned) + 1) == unversioned) continue
+                print f ": names no headwater/standard version"
             }
         }
     ' "$@" >"$scratch/standard-pin.out" 2>"$scratch/standard-pin.err"
