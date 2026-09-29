@@ -1314,23 +1314,8 @@ mod tests {
     #[test]
     fn a_citation_target_that_is_a_socket_or_a_device_is_refused_and_a_directory_is_not_one() {
         let dir = scratch("socket-device-dir");
-        // A socket path must fit in 108 bytes, and a temporary directory on a
-        // CI runner does not, so the socket is bound under a short directory
-        // in `/tmp` and reached through a link, which the resolver follows as
-        // it follows the link to `/dev/null` below.
-        let short = Scratch(std::path::PathBuf::from(format!(
-            "/tmp/hw-sock-{}-{}",
-            std::process::id(),
-            std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .expect("a clock later than the epoch")
-                .subsec_nanos()
-        )));
-        std::fs::create_dir_all(&*short).expect("a short directory");
-        let _socket =
-            std::os::unix::net::UnixListener::bind(short.join("s")).expect("the socket is bound");
-        std::os::unix::fs::symlink(short.join("s"), dir.join("socket.rs"))
-            .expect("the link to the socket is made");
+        let _socket = std::os::unix::net::UnixListener::bind(dir.join("socket.rs"))
+            .expect("the socket is bound");
         std::os::unix::fs::symlink("/dev/null", dir.join("device.rs")).expect("the link is made");
         std::fs::create_dir_all(dir.join("tree.rs")).expect("the directory is made");
 
