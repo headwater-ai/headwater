@@ -565,6 +565,9 @@ mod tests {
     fn a_link_out_of_the_site_is_not_read() {
         for href in [
             "https://example.org/",
+            // RFC 3986 section 3.1: a scheme is case-insensitive.
+            "HTTPS://example.org/",
+            "Http://example.org/",
             "mailto:a@b",
             "//cdn/x.js",
             "/abs/",

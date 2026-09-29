@@ -32,7 +32,10 @@ fn repository() -> PathBuf {
         .expect("the repository root resolves")
 }
 
-const OVERLAY_WITH_NAV: &str = "add:\n  identifier_schemes.decision_id.namespace: ACME\nadd_to:\n  projections:\n    - {kind: site_nav, output: .headwater/nav.yml}\n";
+/// The navigation, and a generated page on the shelf that is no document of
+/// the graph: the consumer surface. `site_nav` names such a page, and a site
+/// that does not serve it is #528 again (#1051).
+const OVERLAY_WITH_NAV: &str = "add:\n  identifier_schemes.decision_id.namespace: ACME\n  surface:\n    prerequisites: [git]\nadd_to:\n  projections:\n    - {kind: site_nav, output: .headwater/nav.yml}\n    - {kind: consumer_surface, output: docs/decisions/consumer-surface.md}\n";
 const OVERLAY_WITHOUT_NAV: &str = "add:\n  identifier_schemes.decision_id.namespace: ACME\n";
 
 struct Outcome {
@@ -123,6 +126,13 @@ impl Root {
             "<h1 id=\"decision-records\">Decision records</h1><a href=\"0001-alpha-choice/\">1</a><a href=\"0002-beta-choice/\">2</a>",
         );
         self.page(
+            "decisions/consumer-surface/index.html",
+            "<h1 id=\"the-consumer-surface\">The consumer surface</h1>",
+        );
+        // A sibling of the shelf's directory whose name the shelf's name
+        // starts. It is outside the shelf, so it is not stale.
+        self.page("decisions-old/x.html", "<p>old</p>");
+        self.page(
             "decisions/0001-alpha-choice/index.html",
             // `#caf%C3%A9` names the `id` `café`: a generator writes an `id`
             // decoded and a link percent-encoded, and the two must meet.
@@ -209,7 +219,7 @@ fn the_clean_site_exits_0_with_no_finding() {
     assert!(
         outcome
             .stdout
-            .contains("0 findings over 3 navigation entries, 5 pages"),
+            .contains("0 findings over 4 navigation entries, 7 pages and 10 in-site links"),
         "the summary counts what was read\n{outcome:?}"
     );
 }
@@ -259,6 +269,19 @@ fn a_shelf_index_the_site_lacks_is_missing() {
             .iter()
             .all(|line| line.starts_with("site.page.missing") || line.starts_with("site.link.dead")),
         "the deletion gives a missing page and dead links, nothing else\n{outcome:?}"
+    );
+}
+
+/// A generated page the navigation names, and no document of the graph.
+#[test]
+fn a_generated_page_the_site_lacks_is_missing() {
+    let root = Root::new("missing-generated", OVERLAY_WITH_NAV);
+    std::fs::remove_file(root.at.join("site/decisions/consumer-surface/index.html"))
+        .expect("the page goes");
+    one(
+        &root.site(),
+        "site.page.missing",
+        "decisions/consumer-surface.md",
     );
 }
 
