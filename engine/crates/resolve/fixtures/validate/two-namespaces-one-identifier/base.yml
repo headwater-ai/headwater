@@ -9,11 +9,21 @@
 # one identifier. A rule that compared schemes only inside one namespace made
 # this case valid.
 #
-# Two kinds mint under `spec_id` and one under `section_id`, so that the
-# refusal is seen to name every kind on each side of the pair.
+# `spec_id` is named by the abstract kind `specified_document`, and the two
+# concrete kinds under it inherit the scheme. So the refusal names
+# `specification` and `appendix`, which mint under it, and never the abstract
+# kind, which no document is.
 #
-# `decision_id` is the third arm. Its namespace `YAK` is a literal run that no
-# other scheme spells, so it overlaps nothing and appears in no finding.
+# `wrapped_id` renders `X-{namespace}` under `Y` and `plain_id` renders
+# `{namespace}-{slug}` under `X`. `X-Y` satisfies both, and neither namespace
+# is a prefix of the other, so a rule that compared a pair only when one
+# namespace opens the other would miss it.
+#
+# The overlapping pairs are not adjacent in source order, so a rule that
+# compared only neighbors would miss both.
+#
+# `decision_id` is the arm that overlaps nothing. Its namespace `YAK` is a
+# literal run that no other scheme spells, so it appears in no finding.
 
 taxonomy: acme/fixture
 version: 1.0.0
@@ -51,23 +61,27 @@ regimes:
 
 identifier_schemes:
   spec_id:     {pattern: "{namespace}-{slug}",               namespace: ZED-SPECIFICATION, allocation: minted-once}
-  section_id:  {pattern: "{namespace}-SPECIFICATION-{slug}", namespace: ZED,               allocation: minted-once}
+  wrapped_id:  {pattern: "X-{namespace}",                    namespace: Y,                 allocation: minted-once}
   decision_id: {pattern: "{namespace}-DR-{seq:04d}",         namespace: YAK,               allocation: reconcile-first}
+  section_id:  {pattern: "{namespace}-SPECIFICATION-{slug}", namespace: ZED,               allocation: minted-once}
+  plain_id:    {pattern: "{namespace}-{slug}",               namespace: X,                 allocation: minted-once}
 
 kinds:
   governed_document:
     abstract: true
     facets: {require: [status]}
+  specified_document:
+    abstract: true
+    is_a: governed_document
+    identifier: {scheme: spec_id}
   specification:
-    is_a: governed_document
+    is_a: specified_document
     purpose: rationale
     lifecycle: standard
-    identifier: {scheme: spec_id}
   appendix:
-    is_a: governed_document
+    is_a: specified_document
     purpose: rationale
     lifecycle: standard
-    identifier: {scheme: spec_id}
   section:
     is_a: governed_document
     purpose: rationale
