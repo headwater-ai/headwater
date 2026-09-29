@@ -64,7 +64,7 @@ Everything in this specification follows from that premise.
 
 | Not building | Why | What to use instead |
 |---|---|---|
-| A documentation renderer | Static-site generators already solve this | Emit navigation config for MkDocs / Docusaurus / Astro |
+| A documentation renderer | Static-site generators already solve this | Emit navigation config for MkDocs, whose `nav:` is data and not code ([HW-DR-0036](../decisions/0036-q36-which-of-mkdocs-docusaurus-or-astro-this-corpus-emits-navigation-for-and-why.md)) |
 | A wiki or an editor | Documents are files in the repository, next to the code they describe | Any editor; the corpus is Markdown |
 | A code-analysis tool | We check documents and their declared links to code, never the code's meaning | Language-specific tooling |
 | A prose style checker | Voice and structure are in scope. Grammar and readability are not | Vale, textlint — composable alongside |
