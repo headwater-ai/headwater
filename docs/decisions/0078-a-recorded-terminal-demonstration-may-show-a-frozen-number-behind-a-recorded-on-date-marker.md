@@ -10,6 +10,10 @@ relations:
     - HW-DR-0061
   traces_to:
     - HW-OBL-0183
+  governs:
+    - .github/assets/headwater-demo.tape
+    - .github/assets/headwater-demo.gif
+    - .claude/tutorial/drive.py
 provenance:
   warrant: asserted
   agency: agent
