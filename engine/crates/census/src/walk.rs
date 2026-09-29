@@ -285,7 +285,13 @@ pub struct Entry {
 /// What the walk found, as a closed set.
 #[derive(Clone, Debug)]
 pub enum EntryKind {
+    /// A regular file.
     File,
+    /// A named pipe, a socket or a device: an entry that is not a regular
+    /// file, a directory or a symlink. Nothing opens one. Opening a named pipe
+    /// that has no writer blocks the process forever, so a census that read a
+    /// pipe at a document path never ended (#1333).
+    Special,
     /// A symlink, and where it pointed, as written.
     Symlink {
         target: String,
@@ -394,7 +400,10 @@ fn descend(corpus: &Corpus, directory: &Path, prefix: &str, found: &mut Vec<Entr
             found.push(Entry {
                 path,
                 on_disk,
-                kind: EntryKind::File,
+                kind: match metadata.is_file() {
+                    true => EntryKind::File,
+                    false => EntryKind::Special,
+                },
                 excluded_by,
             });
         }
@@ -443,6 +452,40 @@ mod tests {
                 .any(|e| e.path.contains("link-to-directory/")),
             "the walk descended through a symlink"
         );
+    }
+
+    /// A named pipe is an entry of its own kind and not a file, so no reader
+    /// of the walk opens it by mistake (#1333). Opening one that has no
+    /// writer blocks forever.
+    #[cfg(unix)]
+    #[test]
+    fn a_named_pipe_is_a_special_entry_and_not_a_file() {
+        let at = std::env::temp_dir().join(format!(
+            "headwater-walk-pipe-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .expect("a clock later than the epoch")
+                .subsec_nanos()
+        ));
+        std::fs::create_dir_all(at.join("docs")).expect("the root is made");
+        std::fs::write(at.join("docs/a.md"), "# A\n").expect("the file writes");
+        let fifo = std::process::Command::new("mkfifo")
+            .arg(at.join("docs/x.md"))
+            .status()
+            .expect("mkfifo runs");
+        assert!(fifo.success(), "the named pipe is made");
+
+        let entries = walk(&Corpus::new(at.clone(), "docs"));
+        std::fs::remove_dir_all(&at).ok();
+        let kind = |path: &str| {
+            entries
+                .iter()
+                .find(|entry| entry.path == path)
+                .map(|entry| entry.kind.clone())
+        };
+        assert!(matches!(kind("docs/x.md"), Some(EntryKind::Special)));
+        assert!(matches!(kind("docs/a.md"), Some(EntryKind::File)));
     }
 
     #[test]

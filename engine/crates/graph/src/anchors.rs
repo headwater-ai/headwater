@@ -186,11 +186,55 @@ impl Revision {
         }
     }
 
-    /// Whether this is a tree revision with no value and no directory among
-    /// its entries: the shape whose `Debug` is `NoDigest`. The key states
-    /// exactly the fact [`Self::names_a_directory`] gives a rule.
+    /// Whether this is a tree revision over at least one entry, every one of
+    /// which is there and is neither a regular file nor a directory, following
+    /// a symlink: a named pipe, a socket or a device. [`tree_revision`] opens
+    /// none of them, so it gives such a set no value, and an edge over it can
+    /// never go suspect. The suspect rule reports that edge rather than
+    /// passing it (#1333). An entry that is gone or cannot be read is not
+    /// such an entry, so a set that holds one answers `false`. `false` for a
+    /// revision the resolver already held.
+    pub fn names_no_regular_file(&self) -> bool {
+        match &self.0.tree {
+            Some((base, matched)) => {
+                !matched.is_empty()
+                    && matched.iter().all(|path| {
+                        std::fs::metadata(base.join(path))
+                            .is_ok_and(|kind| !kind.is_dir() && !kind.is_file())
+                    })
+            }
+            None => false,
+        }
+    }
+
+    /// How many distinct entries of a tree revision are regular files,
+    /// following a symlink: the entries [`tree_revision`] digests. A pattern
+    /// that matched a named pipe beside a file counts the file alone, so a
+    /// report of what the digest covers states the set it covers (#1333).
+    /// `None` for a revision the resolver already held.
+    pub fn covered(&self) -> Option<usize> {
+        let (base, matched) = self.0.tree.as_ref()?;
+        let mut sorted: Vec<&String> = matched.iter().collect();
+        sorted.sort();
+        sorted.dedup();
+        Some(
+            sorted
+                .into_iter()
+                .filter(|path| std::fs::metadata(base.join(path)).is_ok_and(|kind| kind.is_file()))
+                .count(),
+        )
+    }
+
+    /// Whether this is a tree revision with no value, no directory among its
+    /// entries, and not every entry a named pipe, a socket or a device: the
+    /// shape whose `Debug` is `NoDigest`. With [`Self::names_no_regular_file`]
+    /// the key states exactly the facts [`Self::names_a_directory`] and that
+    /// method give a rule.
     fn no_digest(&self) -> bool {
-        self.0.tree.is_some() && self.value().is_none() && !self.names_a_directory()
+        self.0.tree.is_some()
+            && self.value().is_none()
+            && !self.names_a_directory()
+            && !self.names_no_regular_file()
     }
 
     fn value(&self) -> &Option<String> {
@@ -209,16 +253,21 @@ impl From<Option<String>> for Revision {
 
 impl std::fmt::Debug for Revision {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self.no_digest() {
-            true => f.write_str("NoDigest"),
-            false => std::fmt::Debug::fmt(self.value(), f),
+        if self.no_digest() {
+            return f.write_str("NoDigest");
         }
+        if self.names_no_regular_file() {
+            return f.write_str("NoRegularFile");
+        }
+        std::fmt::Debug::fmt(self.value(), f)
     }
 }
 
 impl PartialEq for Revision {
     fn eq(&self, other: &Self) -> bool {
-        self.value() == other.value() && self.no_digest() == other.no_digest()
+        self.value() == other.value()
+            && self.no_digest() == other.no_digest()
+            && self.names_no_regular_file() == other.names_no_regular_file()
     }
 }
 
@@ -455,7 +504,12 @@ impl Resolver for SourceTree {
         let mut matched: Vec<String> = entries
             .iter()
             .filter(|entry: &&Entry| entry.excluded_by.is_none())
-            .filter(|entry| matches!(entry.kind, EntryKind::File | EntryKind::Symlink { .. }))
+            .filter(|entry| {
+                matches!(
+                    entry.kind,
+                    EntryKind::File | EntryKind::Special | EntryKind::Symlink { .. }
+                )
+            })
             .map(|entry| entry.path.clone())
             .filter(|path| pattern.matches(path))
             .collect();
@@ -1430,22 +1484,50 @@ mod tests {
         );
         assert_eq!(tree_revision(&dir, &["to-pipe".to_owned()]), None);
 
-        // A pipe and a directory both have no value, and their keys differ,
-        // so a verdict cached over one does not answer for the other.
+        // A pipe, a directory and a gone entry all have no value, and their
+        // keys differ, so a verdict cached over one does not answer for
+        // another: the suspect rule reports the first two and passes the
+        // third (#1333).
         std::fs::create_dir(dir.join("sub")).expect("a directory");
         let pipe = format!("{:?}", Revision::of_tree(&dir, &["pipe".to_owned()]));
         let sub = format!("{:?}", Revision::of_tree(&dir, &["sub".to_owned()]));
         assert_eq!(sub, "None", "a directory's key is unchanged");
-        assert_eq!(pipe, "NoDigest");
+        assert_eq!(pipe, "NoRegularFile");
         assert_ne!(
             Revision::of_tree(&dir, &["pipe".to_owned()]),
             Revision::of_tree(&dir, &["sub".to_owned()])
+        );
+        assert_ne!(
+            Revision::of_tree(&dir, &["pipe".to_owned()]),
+            Revision::of_tree(&dir, &["gone".to_owned()])
         );
         assert_eq!(
             format!("{:?}", Revision::of_tree(&dir, &["gone".to_owned()])),
             "NoDigest",
             "an entry that went away is not a directory, and its key says so"
         );
+
+        // Only a set that is all pipes, sockets or devices names no regular
+        // file. A gone entry beside the pipe is not such an entry.
+        assert!(Revision::of_tree(&dir, &["pipe".to_owned()]).names_no_regular_file());
+        assert!(!Revision::of_tree(&dir, &["a.sh".to_owned(), "pipe".to_owned()])
+            .names_no_regular_file());
+        assert!(!Revision::of_tree(&dir, &["gone".to_owned(), "pipe".to_owned()])
+            .names_no_regular_file());
+        assert!(!Revision::of_tree(&dir, &["sub".to_owned()]).names_no_regular_file());
+        assert!(!Revision::of_tree(&dir, &[]).names_no_regular_file());
+        assert!(!Revision::known(None).names_no_regular_file());
+
+        // The count of what the digest covers leaves the pipe out, and counts
+        // a path named twice once.
+        let covered = |paths: &[&str]| {
+            let paths: Vec<String> = paths.iter().map(|path| (*path).to_owned()).collect();
+            Revision::of_tree(&dir, &paths).covered()
+        };
+        assert_eq!(covered(&["a.sh", "pipe"]), Some(1));
+        assert_eq!(covered(&["a.sh", "a.sh", "to-a.sh"]), Some(2));
+        assert_eq!(covered(&["pipe", "gone", "sub"]), Some(0));
+        assert_eq!(Revision::known(None).covered(), None);
         assert_eq!(
             format!("{:?}", Revision::of_tree(&dir, &["a.sh".to_owned()])),
             format!("{:?}", tree_revision(&dir, &["a.sh".to_owned()])),
@@ -1478,7 +1560,7 @@ mod tests {
         assert_eq!(tree_revision(&dir, &["sock".to_owned()]), None);
         assert_eq!(
             format!("{:?}", Revision::of_tree(&dir, &["sock".to_owned()])),
-            "NoDigest"
+            "NoRegularFile"
         );
         std::os::unix::fs::symlink("/dev/zero", dir.join("to-zero"))
             .expect("the link to the device is made");

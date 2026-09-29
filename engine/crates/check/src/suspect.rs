@@ -288,12 +288,25 @@ impl EdgeCheck for Suspect<'_> {
             // suspect. That is reported rather than passed, with the wildcard
             // that does carry a digest as the remedy. No patch: the remedy
             // widens what the edge reaches, which is the author's to decide.
-            // Every other edge with no revision keeps its silence, and that
-            // includes a literal that names a named pipe (#1269). A list with
-            // one directory member has no digest either (#1104), and gets one
+            // An edge whose entries are all named pipes, sockets or devices
+            // has no digest either, because the source tree opens none of
+            // them (#1269), so it is reported too, with no `/**` remedy,
+            // because `/**` after such a path names nothing (#1333). Every
+            // other edge with no revision keeps its silence. A list with one
+            // directory member has no digest either (#1104), and gets one
             // finding that names every such member.
             let members = directory_members(resolver, patterns);
             return match (patterns.as_slice(), members.as_slice()) {
+                (_, []) if resolver == SOURCE_TREE && revision.names_no_regular_file() => {
+                    Outcome::failed_with(finding(
+                        Severity::Info,
+                        no_regular_file(&edge.source.id, &edge.name, &edge.raw_target),
+                        "name the regular files the document governs, or remove this entry if it \
+                         governs none"
+                            .to_string(),
+                        None,
+                    ))
+                }
                 (_, []) => Outcome::Passed,
                 ([_], [literal]) => Outcome::failed_with(finding(
                     Severity::Info,
@@ -364,7 +377,9 @@ impl EdgeCheck for Suspect<'_> {
                     current,
                     match literal {
                         true => Reach::One,
-                        false => Reach::Set(reached),
+                        // The entries the digest covers, which leaves out a
+                        // named pipe, a socket or a device it matched (#1333).
+                        false => Reach::Set(revision.covered().unwrap_or(reached)),
                     },
                 ),
                 reread(current),
@@ -422,6 +437,16 @@ fn directory(id: &str, name: &str, literal: &str) -> String {
     format!(
         "`{id}` declares `{name}: {literal}`, and `{literal}` names a directory, which the source \
          tree takes no digest of, so this edge never goes suspect when what it governs changes"
+    )
+}
+
+/// An edge over entries none of which is a regular file, in the terms of the
+/// document that declares it.
+fn no_regular_file(id: &str, name: &str, raw: &str) -> String {
+    format!(
+        "`{id}` declares `{name}: {raw}`, and `{raw}` names no regular file, only a named pipe, a \
+         socket or a device, which the source tree never opens, so this edge never goes suspect \
+         when what it governs changes"
     )
 }
 

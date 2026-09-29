@@ -4293,6 +4293,20 @@ fn show(root: &Path, target: &str) -> ExitCode {
         return ExitCode::FAILURE;
     }
     let path = root.join(&explanation.path);
+    // A census row can be a named pipe, a socket or a device, and opening a
+    // named pipe that has no writer blocks forever (#1333). The walk never
+    // opens one, and neither does this read.
+    if std::fs::metadata(&path).is_ok_and(|kind| !kind.is_file() && !kind.is_dir()) {
+        eprintln!(
+            "headwater: {}",
+            err(&format!(
+                "`{}` is a named pipe, a socket or a device, which the census never opens, so \
+                 `show` prints nothing",
+                explanation.path
+            ))
+        );
+        return ExitCode::FAILURE;
+    }
     match std::fs::read(&path) {
         Ok(bytes) => {
             emit_bytes(Stream::Out, &bytes);

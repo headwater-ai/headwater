@@ -120,7 +120,7 @@ fn check_no_cache_finishes_when_a_governs_edge_reaches_a_named_pipe() {
     // It reports the edge rather than passing it, because the edge can
     // never age (#1333).
     assert!(
-        out.contains("`tools/pipe` names no regular file"),
+        flat(&out).contains("`tools/pipe` names no regular file"),
         "the edge that can never age is reported: {out}"
     );
 }
@@ -139,12 +139,32 @@ fn a_moved_wildcard_over_a_named_pipe_counts_only_what_its_digest_covers() {
         &["check", "--no-cache"],
         "check opened the named pipe a governs wildcard matches, and waited on it",
     );
+    let out = flat(&out);
+    // The stub root holds other regular files under `tools/`, so the count
+    // is read off the tree: every entry under it but the pipe.
+    let regular = regular_files(&root.at.join("tools"));
     assert!(
-        out.contains("the 1 entry it matches now read"),
-        "the count is the entries the digest covers: {out}"
+        out.contains(&format!("the {regular} entries it matches now read")),
+        "the count is the {regular} entries the digest covers: {out}"
     );
-    assert!(!out.contains("2 entries"), "the pipe is not counted: {out}");
-    assert!(!out.contains(NO_REGULAR_FILE), "{out}");
+    assert!(
+        !out.contains(&format!("the {} entries", regular + 1)),
+        "the pipe is not counted: {out}"
+    );
+    assert!(!flat(&out).contains(NO_REGULAR_FILE), "{out}");
+}
+
+/// How many regular files are under `dir`, at any depth.
+fn regular_files(dir: &std::path::Path) -> usize {
+    std::fs::read_dir(dir)
+        .expect("the directory reads")
+        .map(|entry| entry.expect("the entry reads").path())
+        .map(|path| match std::fs::symlink_metadata(&path) {
+            Ok(meta) if meta.is_dir() => regular_files(&path),
+            Ok(meta) if meta.is_file() => 1,
+            _ => 0,
+        })
+        .sum()
 }
 
 /// A named pipe at a path the census reads as a document. The census opens
@@ -160,6 +180,12 @@ fn document_pipe(label: &str) -> Root {
     })
 }
 
+/// `text` with every run of white space made one space, because the report
+/// wraps a finding across lines wherever its width falls.
+fn flat(text: &str) -> String {
+    text.split_whitespace().collect::<Vec<_>>().join(" ")
+}
+
 #[test]
 fn check_no_cache_finishes_when_a_named_pipe_takes_a_document_path() {
     let root = document_pipe("check-document-pipe");
@@ -168,35 +194,28 @@ fn check_no_cache_finishes_when_a_named_pipe_takes_a_document_path() {
         &["check", "--no-cache"],
         "check opened the named pipe at docs/x.md, and waited on it",
     );
-    assert!(!out.contains("docs/x.md` is not text"), "{out}");
-}
-
-#[test]
-fn census_finishes_and_names_a_named_pipe_at_a_document_path() {
-    let root = document_pipe("census-document-pipe");
-    let (out, _) = under_deadline(
-        &root,
-        &["census"],
-        "census opened the named pipe at docs/x.md, and waited on it",
+    let out = flat(&out);
+    assert!(
+        out.contains(
+            "docs/x.md unwalkable: a named pipe, a socket or a device, which the census never opens"
+        ),
+        "the census row says what the entry is: {out}"
     );
-    let row = out
-        .lines()
-        .find(|line| line.contains("docs/x.md"))
-        .unwrap_or_else(|| panic!("the census has a row for the pipe: {out}"));
-    assert!(row.contains("unwalkable"), "{row}");
-    assert!(row.contains("never opens"), "{row}");
 }
 
+/// `show` reads the bytes of a document, and the census it finds the
+/// document in is the walk that met the pipe. The row is not a document, so
+/// `show` refuses it rather than opening it.
 #[test]
-fn check_no_cache_finishes_when_a_governs_wildcard_matches_a_named_pipe() {
-    let root = root("check-governed-pipe-wildcard", "tools/**");
+fn show_finishes_and_refuses_a_named_pipe_at_a_document_path() {
+    let root = document_pipe("show-document-pipe");
     let (out, err) = under_deadline(
         &root,
-        &["check", "--no-cache"],
-        "check opened the named pipe a governs wildcard matches, and waited on it",
+        &["show", "docs/x.md"],
+        "show opened the named pipe at docs/x.md, and waited on it",
     );
-    assert!(!out.contains("revision"), "no revision finding: {out}");
-    assert!(!err.contains("revision"), "no revision error: {err}");
+    assert!(out.is_empty(), "show prints nothing of a named pipe: {out}");
+    assert!(flat(&err).contains("the census never opens"), "{err}");
 }
 
 /// A cached verdict over a directory literal does not survive the directory
@@ -246,8 +265,8 @@ fn a_cached_directory_verdict_does_not_outlive_the_directory_becoming_a_pipe() {
         !warm.contains("tools/thing/**"),
         "the cached directory verdict outlived the directory: {warm}"
     );
-    assert!(cold.contains(NO_REGULAR_FILE), "{cold}");
-    assert!(warm.contains(NO_REGULAR_FILE), "{warm}");
+    assert!(flat(&cold).contains(NO_REGULAR_FILE), "{cold}");
+    assert!(flat(&warm).contains(NO_REGULAR_FILE), "{warm}");
 }
 
 /// A cached verdict over a named pipe does not survive the pipe being
@@ -262,7 +281,7 @@ fn a_cached_pipe_verdict_does_not_outlive_the_pipe_becoming_an_unreadable_file()
 
     let root = root("check-governed-pipe-to-locked", "tools/pipe");
     let (before, _) = under_deadline(&root, &["check"], "check opened the named pipe");
-    assert!(before.contains(NO_REGULAR_FILE), "{before}");
+    assert!(flat(&before).contains(NO_REGULAR_FILE), "{before}");
 
     let locked = root.at.join("tools/pipe");
     std::fs::remove_file(&locked).expect("the pipe goes");
@@ -275,9 +294,9 @@ fn a_cached_pipe_verdict_does_not_outlive_the_pipe_becoming_an_unreadable_file()
 
     let (warm, _) = under_deadline(&root, &["check"], "a warm check did not end");
     let (cold, _) = under_deadline(&root, &["check", "--no-cache"], "a cold check did not end");
-    assert!(!cold.contains(NO_REGULAR_FILE), "{cold}");
+    assert!(!flat(&cold).contains(NO_REGULAR_FILE), "{cold}");
     assert!(
-        !warm.contains(NO_REGULAR_FILE),
+        !flat(&warm).contains(NO_REGULAR_FILE),
         "the cached pipe verdict outlived the pipe: {warm}"
     );
 }
