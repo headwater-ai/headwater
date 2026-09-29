@@ -40,10 +40,11 @@ This repository does not publish the page. It gives you the tool only. Where a t
 | staleness | `graph.documents[].facets.last_verified`. The export has no top-level `last_verified`. |
 | warrant | `graph.documents[].warrant`. When the key is absent, the page shows "none stated". |
 | coverage | `graph.edges[]` whose `relation` is `governs` and whose target is a `code_path` anchor. The paths are `target.patterns` when the export writes it, and `target.id` when it does not. |
+| refused governs edges | `graph.edges[]` whose `relation` is `governs` and whose `target.bound` is `nothing`. The page shows the governing document and `target.reason` as the export writes it. |
 
-A document can govern a list of paths as one entry, such as `[src/a.rs, src/b.rs]`. The export writes that entry as one anchor. Its `id` is a key and not a path, and its `patterns` holds the paths (export version 1.2 or later). The page shows one row for the list, names every path in it, and counts the files that any of the paths match.
+A document can govern a list of paths as one entry, such as `[src/a.rs, src/b.rs]`. The export writes that entry as one anchor. Its `id` is a key and not a path, and its `patterns` holds the paths (export version 1.2 or later). The page shows one row for the list, names every path in it, and counts the files that any of the paths match. When one path in a list matches no file, the edge binds nothing, and this includes the paths in the list that do match ([HW-DR-0074](../../docs/decisions/0074-a-code-path-anchor-is-a-pattern-over-the-tree-and-it-binds-when-the-pattern-matches-at-least-one-entry.md)). The page shows such an edge in the table of refused governs edges, with the reason, and it counts no file for it.
 
-A code path is an exact file, a directory, or a glob, where `*` stays inside one path segment and `**` crosses segments. A path that matches no file in the tree shows 0 files matched. This is often a sign that the path in the document is wrong.
+A code path is an exact file, a directory, or a glob, where `*` stays inside one path segment and `**` crosses segments. A path that matched no file when the export was generated is a refused edge, and it is not a coverage row. A coverage row that shows 0 files matched can mean that the tree given with `--tree` is not the checkout the export was generated from.
 
 ## It is read-only
 
