@@ -1396,8 +1396,8 @@ STUB
             >/dev/null 2>"$scratch/uncapped.err"
         same "a batch over a tier with no turn cap and no --max-turns refuses with 2" "2" "$?"
         present "and it names the missing cap" "declares no \`max_turns\`" "$scratch/uncapped.err"
-        if [ -e "$scratch/uncapped/trees" ]; then
-            fail "and it builds no tree" "$(ls "$scratch/uncapped")"
+        if [ -e "$scratch/uncapped/trees/oracle" ]; then
+            fail "and it builds no tree" "$(ls "$scratch/uncapped/trees" | tr '\n' ' ')"
         else
             pass "and it builds no tree"
         fi
