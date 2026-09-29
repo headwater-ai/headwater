@@ -830,6 +830,67 @@ fn a_later_call_with_an_identity_is_the_witness_and_a_bash_call_naming_nothing_i
     assert_eq!(outside, vec![r#"{"command":"ls -la /tmp"}"#], "{report}");
 }
 
+/// The first Bash call that named a document is the one the report cites, as
+/// the first call with an identity is the witness (#1384 verify, D2). Two Bash
+/// calls name the committed transcript here, and the report names the first.
+#[test]
+fn the_first_bash_call_that_named_a_document_is_the_one_cited() {
+    let calls = format!(
+        "{}{}",
+        bash_call(&format!("sed -n 1,40p {COMMITTED}")),
+        bash_call(&format!("wc -l {COMMITTED}")),
+    );
+    let source = with_calls(&fixtures_dir(), &calls);
+    let staleness = staleness_of(&fixtures_dir(), &source);
+    let report = staleness.render(ColorMode::Plain);
+    let member = staleness
+        .members
+        .iter()
+        .find(|member| member.path == COMMITTED)
+        .unwrap_or_else(|| panic!("the document the Bash calls read is not a member:\n{report}"));
+    assert_eq!(member.bash, Some((1, 1)), "{report}");
+    assert!(
+        report.contains("event 1 call 1 named it through Bash"),
+        "the report does not cite the first Bash call:\n{report}"
+    );
+    assert!(
+        !report.contains("event 1 call 2 named it through Bash"),
+        "the report cites a later Bash call:\n{report}"
+    );
+}
+
+/// A member with a witness is reported by its witness, even where a Bash call
+/// named it first (#1384 verify, D5). The Bash line is for a member that
+/// nothing witnessed, and printing it here would say that no witness decides a
+/// document one call did decide.
+#[test]
+fn a_member_with_a_witness_is_reported_by_it_even_where_bash_named_it_first() {
+    let calls = format!(
+        "{}{THE_READ_CALL}",
+        bash_call("cat corpus/probes/0002-answered.md"),
+    );
+    let source = with_calls(&fixtures_dir(), &calls);
+    let staleness = staleness_of(&fixtures_dir(), &source);
+    let report = staleness.render(ColorMode::Plain);
+    let member = staleness
+        .members
+        .iter()
+        .find(|member| member.path == "corpus/probes/0002-answered.md")
+        .expect("the examined probe is a member");
+    assert_eq!(member.bash, Some((1, 1)), "{report}");
+    assert!(member.witness.is_some(), "{report}");
+    assert!(
+        report.contains(
+            "- corpus/probes/0002-answered.md (probe) sha256:fc8ef4987672f249a06adb2faaa8f0fcf583aca537858a50ef561cea0d3f65c8\n    event 1 call 2 observed the same identity, so this document stands\n"
+        ),
+        "the witnessed member is not reported by its witness:\n{report}"
+    );
+    assert!(
+        !report.contains("named it through Bash"),
+        "a member with a witness is reported as one no witness decides:\n{report}"
+    );
+}
+
 /// A transcript whose events name every probe of the selection, and whose
 /// recorded digest is the digest of the whole selection, was planned over the
 /// whole (#1384, item 2).
