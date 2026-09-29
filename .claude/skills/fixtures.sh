@@ -117,11 +117,18 @@ for file in $instruction_files; do
         path=${span%\*\*}
         path=${path%/}
         counted=$((counted + 1))
-        [ -e "$root/$path" ] || missing="$missing $(basename "$file"):$span"
+        [ -e "$root/$path" ] && continue
+        # A path the tree ignores, such as `.claude/worktrees/`, is made at
+        # run time and is on no clean checkout, CI's included. A skill may
+        # cite it, and nothing here can check it. The trailing slash lets a
+        # directory pattern match a directory that is not there.
+        git -C "$root" check-ignore -q --no-index "$path" 2>/dev/null && continue
+        git -C "$root" check-ignore -q --no-index "$path/" 2>/dev/null && continue
+        missing="$missing $(basename "$file"):$span"
     done
 done
 if [ -z "$missing" ]; then
-    pass "$counted cited paths, and every one of them is on this tree"
+    pass "$counted cited paths, and every one of them is on this tree or ignored by it"
 else
     fail 'every cited path is on this tree' "these are not:$missing"
 fi
