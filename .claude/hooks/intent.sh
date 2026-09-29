@@ -69,10 +69,12 @@
 # dir rather than under the tree: every worktree of one clone answers the same
 # path for it, `repo-cleanup` removing one worktree never touches it, and
 # `headwater generate` and `headwater check` never read it because it sits
-# outside the corpus entirely. One file per harness session is what keeps a
-# POSIX append atomic: a session submits its prompts in order, so a file per
-# session has exactly one writer, and the ten worktrees this host may run at
-# once never interleave a line because each one holds a session of its own.
+# outside the corpus entirely. One file per harness session keeps the ten
+# worktrees this host may run at once out of each other's files. It does not
+# give a file one writer: session 17deb7c5 wrote two lines for each of its
+# prompts within one second, from two runs of this hook (#927). So each line
+# goes to the file in one `write()`, which a second writer cannot split, and
+# `hw_append_line` in `lib.sh` is where that is done and why `printf` is not.
 #
 # A session with no `session_id` on its payload logs nothing at all, the same
 # posture `touch.sh` already takes: nobody has yet named a file to hold a line
@@ -190,14 +192,13 @@ hw_shadow_log() {
     _line=$(printf '{"at":"%s","session":%s,"prompt_id":%s,"probe_session":%s,"corpus_root":%s,"engine_version":%s,"lock_digest":%s,"task":%s,"injected":%s,"skip":%s,"route":%s%s}' \
         "$_at" "$_session_q" "$_prompt_id_q" "$_probe_session_q" "$_root_q" "$_version_q" "$_lock_q" "$_task_q" "$injected" "$_skip_q" "$_route_q" "$_embedding") || return 0
 
-    # The brace group is what keeps this silent, and not a stylistic choice: a
-    # bare `printf ... >> "$_file" 2>/dev/null` still leaks "cannot create" to
-    # the real standard error when the `>>` itself is what fails, because a
-    # shell sets redirections up in the order written and the first one had
-    # already reported before the second took effect. Putting the redirect on
-    # the group instead silences the open failure along with everything it
-    # wraps.
-    { printf '%s\n' "$_line" >> "$_file"; } 2>/dev/null
+    # One `write()` for the line and its newline, through `hw_append_line` in
+    # `lib.sh`, which says why `printf` is not one (#927). Its redirects sit
+    # on brace groups for the reason the header above gives: a bare
+    # `... >> "$_file" 2>/dev/null` still leaks "cannot create" to the real
+    # standard error when the `>>` itself is what fails, because a shell sets
+    # redirections up in the order written.
+    hw_append_line "$_file" "$_line"
     return 0
 }
 

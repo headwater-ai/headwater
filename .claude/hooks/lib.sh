@@ -174,6 +174,55 @@ hw_quote() {
     printf '%s' "$1" | "$_engine" json quote 2>/dev/null
 }
 
+# Append one line to a log file in one `write()`, so a second writer of the
+# same file can land before the line or after it and never inside it (#927).
+# A `write()` to a file opened for appending moves to the end and writes in
+# one step, and Linux holds the file for the whole call. `printf '%s\n'` is
+# two calls in dash, the line and then the newline, and bash writes in 4 KiB
+# pieces, so neither shell's `printf` is used for the append. `dd` with one
+# block the size of the whole record reads it in one `read()` and writes it
+# in one `write()`, in every shell, because POSIX requires `dd` to write each
+# input block as one output block when `bs=` is given.
+#
+# `conv=notrunc` is required, and not a default spelled out. The `dd` of
+# uutils coreutils 0.8.0, which is `/usr/bin/dd` on this repository's host,
+# calls `ftruncate` on its standard output after the write, at the offset it
+# wrote to. A line another writer appended in between is cut off, and the
+# file can then hold zero bytes where that line was (measured 2026-09-29: 12
+# hooks at once left 3 lines). With `conv=notrunc` it makes the one `write()`
+# and nothing else.
+#
+# A file that does not end in a newline holds a line whose writer died inside
+# its write. The record then starts with a newline, so the torn line stays one
+# bad line and this line stays whole. The torn line is kept as it is, because
+# nothing here rewrites what a file already holds.
+#
+# The record is staged in a file beside the log, named `.<pid>.part`, so a
+# reader that counts `*.jsonl` files never counts it. Any failure returns 1
+# and writes nothing on either stream: the brace groups carry the redirect
+# for the reason `intent.sh`'s header gives.
+hw_append_line() {
+    _hal_file=$1
+    _hal_record=$2
+    if [ -s "$_hal_file" ] && [ -n "$({ tail -c 1 "$_hal_file"; } 2>/dev/null)" ]; then
+        _hal_record="
+$_hal_record"
+    fi
+    _hal_part="$_hal_file.$$.part"
+    if ! { printf '%s\n' "$_hal_record" > "$_hal_part"; } 2>/dev/null; then
+        rm -f "$_hal_part" 2>/dev/null
+        return 1
+    fi
+    _hal_size=$(wc -c < "$_hal_part" 2>/dev/null) || _hal_size=0
+    _hal_size=$((_hal_size))
+    _hal_status=1
+    if [ "$_hal_size" -gt 0 ] && { dd if="$_hal_part" bs="$_hal_size" count=1 conv=notrunc >> "$_hal_file"; } 2>/dev/null; then
+        _hal_status=0
+    fi
+    rm -f "$_hal_part" 2>/dev/null
+    return "$_hal_status"
+}
+
 # The one path an `apply_patch` tool call names, for a harness that hands this
 # hook a unified-diff-style command instead of the `file_path` field the other
 # two harnesses pass. Codex's own edit tool is `apply_patch`, and its
