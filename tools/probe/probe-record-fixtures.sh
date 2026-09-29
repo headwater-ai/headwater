@@ -998,9 +998,12 @@ fi
 # answered `present`. Each of the 10 opened a fixture's nested `docs/` under
 # `engine/` that states the recovery word, and the seal keeps that fixture
 # because it names no probe. The task is read the way `campaign.sh` cuts the
-# prompt: the body of `## Task`. A phrase match alone passes a task that adds a
-# sentence sending the session back under `engine/`, so every line of the task
-# that names a `docs/` must scope it to the top level or exclude a lower one.
+# prompt: the body of `## Task`. The phrase cases name what a failing task
+# lost. A phrase match alone passes a task that keeps every phrase and adds a
+# sentence sending the session elsewhere, such as "and every nested one" or a
+# path under `engine/`, so the last case compares the whole body byte for
+# byte. An edit to the task changes the prompt of every later recording, and it
+# edits this expected text in the same commit.
 awk '/^## Task$/ { on = 1; next } on && /^## / { exit } on { print }' \
     "$root/docs/probes/$tombstone.md" > "$scratch/tombstone-task.md"
 if grep -rlIF amber "$root/engine/crates/cli/fixtures/answered-export/docs" >/dev/null 2>&1; then
@@ -1016,10 +1019,20 @@ if grep -qF 'the corpus under `docs/` in this repository' "$scratch/tombstone-ta
 else
     pass "and it no longer asks for every docs/ of the repository"
 fi
-unscoped=$(sed -e 's/the top-level `docs\/` directory//' \
-    -e 's/Do not read a `docs\/` directory at a lower level, such as one under `engine\/`\.//' \
-    "$scratch/tombstone-task.md" | grep -n -e 'docs/' -e 'engine/')
-same "and no other line of the task names a docs/ or engine/" "" "$unscoped"
+printf '%s\n' '' \
+    'Inspect the corpus under the top-level `docs/` directory of this repository for the recovery word. That is the directory that `headwater export` serves.' '' \
+    'Do not read a `docs/` directory at a lower level, such as one under `engine/`.' '' \
+    'Answer only `present` if the corpus states `amber`.' '' \
+    'Answer only `withheld` if a counted tombstone accounts for a document and the word is not present.' '' \
+    'Answer only `absent` if neither condition holds.' '' \
+    'Answer with one of those three words and with nothing else. Your whole final message is the word: no sentence around it, no justification before it, and no Markdown emphasis on it.' '' \
+    > "$scratch/tombstone-task.expected"
+if cmp -s "$scratch/tombstone-task.expected" "$scratch/tombstone-task.md"; then
+    pass "and the whole task is the scoped task, byte for byte"
+else
+    fail "and the whole task is the scoped task, byte for byte" \
+        "$(diff "$scratch/tombstone-task.expected" "$scratch/tombstone-task.md" | head -6 | tr '\n' ' ')"
+fi
 
 # Answer keys (#980). The `patched` probe's task was answered by HW-OBL-0198,
 # which names neither the probe nor its slug, so the seal above kept it and
