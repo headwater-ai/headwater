@@ -16,6 +16,7 @@ relations:
     - HW-SPEC-vision-and-scope
     - HW-DR-0036
     - HW-DR-0077
+    - HW-IFACE-headwater-site
   governs:
     - integrations/site-generator/**
 ---
