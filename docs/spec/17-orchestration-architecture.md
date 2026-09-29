@@ -77,7 +77,7 @@ flowchart LR
 
     queue -->|"queue.md, ordered"| parent
     adjudicate -->|"BUILD or REFUSE<br/>FOOTPRINT, FIXTURE"| parent
-    build -->|"BRANCH, PR<br/>FIXTURE, CI"| iterate
+    build -->|"BRANCH, PR<br/>FIXTURE, PUSHED, EXPLORE"| iterate
     verify -->|"PASS or FAIL<br/>RAN, FIRED, UNCHECKED"| iterate
     iterate -->|"PASS or STOP<br/>ROUNDS, UNCHECKED"| parent
     integrate -->|"MERGED<br/>REGENERATED, LEFT"| parent
