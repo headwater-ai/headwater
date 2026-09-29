@@ -789,7 +789,10 @@ fn read<'a>(examines: &[Examined], session: &[&'a Event]) -> Option<Found<'a>> {
     for event in session {
         let Some(calls) = &event.calls else { continue };
         for (index, call) in calls.iter().enumerate() {
-            if examines.iter().any(|target| names(&call.argument, target)) {
+            let bash = call.tool == "Bash";
+            if examines.iter().any(|target| {
+                names(&call.argument, target) || (bash && bash_names(&call.argument, target))
+            }) {
                 return Some(Found {
                     event: event.at,
                     call: index + 1,
@@ -824,6 +827,209 @@ pub(crate) fn names_path(argument: &str, path: &str) -> bool {
         || (argument.len() > path.len()
             && argument.ends_with(path)
             && argument[..argument.len() - path.len()].ends_with('/'))
+}
+
+/// Whether a Bash call's argument runs a command that names an examined target.
+///
+/// The recorder writes a Bash call's argument as the JSON of its input, so the
+/// whole argument never equals a path (#1384). This reads the `command` member,
+/// splits it into the words a shell would pass, and tests each word it reads
+/// with [`names_path`]. The boundary rule therefore holds per word: `cat
+/// x.md.bak` does not read `x.md`. The value of an option such as
+/// `--file=x.md` is tested as a word too. An argument that is not JSON, or has
+/// no `command` string, names nothing.
+///
+/// A word counts whatever command it is given to, so `ls x.md`, `rm x.md` and
+/// `test -f x.md` count as reads of `x.md`. The grader cannot tell a command
+/// that opens a file from one that only names it, and it takes the name as
+/// the read. What it does not count is a write that the shell makes plain: the
+/// target of an output redirect and an argument of `tee` ([`read_words`]).
+fn bash_names(argument: &str, target: &Examined) -> bool {
+    let Some(command) = headwater_yaml::json::field(argument, &["command".to_string()]) else {
+        return false;
+    };
+    read_words(&shell_tokens(&command)).into_iter().any(|word| {
+        names_path(word, &target.path)
+            || option_value(word).is_some_and(|value| names_path(value, &target.path))
+    })
+}
+
+/// The value of a `-o=value` or `--option=value` word.
+fn option_value(word: &str) -> Option<&str> {
+    word.strip_prefix('-')?
+        .split_once('=')
+        .map(|(_, value)| value)
+}
+
+/// One token of a shell command: a word, or a run of operator characters.
+#[derive(Debug, PartialEq, Eq)]
+enum Token {
+    Word(String),
+    Operator(String),
+}
+
+/// The words of a command that it reads.
+///
+/// An operator with `>` in it makes the next word a written file, and that
+/// word is not read. A heredoc operator, `<<`, makes the next word a
+/// delimiter, and that word is not read either. Any other operator with `<` in
+/// it makes the next word a read file, whatever the command. Every other operator (`|`, `;`, `&&`, `(`, a
+/// backtick, a newline) starts a new command. A command whose first word is
+/// `tee` writes its other words, so they are not read. A `tee` behind `sudo`
+/// or `xargs` is not seen.
+fn read_words(tokens: &[Token]) -> Vec<&str> {
+    let mut read = Vec::new();
+    let mut first = true;
+    let mut tee = false;
+    let mut redirect: Option<bool> = None;
+    for token in tokens {
+        match token {
+            Token::Operator(op) if op.contains('>') || heredoc(op) => redirect = Some(true),
+            Token::Operator(op) if op.contains('<') => redirect = Some(false),
+            Token::Operator(_) => {
+                first = true;
+                redirect = None;
+            }
+            Token::Word(word) => match redirect.take() {
+                Some(true) => {}
+                Some(false) => read.push(word.as_str()),
+                None => {
+                    if first {
+                        tee = word == "tee";
+                        first = false;
+                    }
+                    if !tee {
+                        read.push(word.as_str());
+                    }
+                }
+            },
+        }
+    }
+    read
+}
+
+/// The tokens of a shell command, with quotes taken off.
+///
+/// Single quotes keep everything to the next single quote. Double quotes keep
+/// everything, and a backslash in them escapes only `$`, `` ` ``, `"`, `\`
+/// and a newline, as in a POSIX shell. A backslash outside quotes keeps the
+/// next character. Spaces and tabs outside quotes end a word. The operator
+/// characters `` | & ; < > ( ) ` `` and a newline end a word too, and a run of
+/// them is one operator token, so `<x.md` and `a;cat x.md` give `x.md` as a
+/// word. The descriptor of `2>x` stays a word, `2`, which names no path. A
+/// `#` at the start of a word opens a comment that runs to the end of the
+/// line.
+///
+/// The body of a heredoc is text and not a command, so it gives no token. The
+/// word after `<<` is its delimiter, with quotes taken off, and after
+/// `<<-` the delimiter line may start with tabs. At the end of the line that
+/// holds the operator, every line up to the delimiter line is skipped. Where
+/// one line opens two heredocs, their bodies follow in order.
+///
+/// This is not a shell. It expands nothing and runs nothing. So it cannot see
+/// a path built from a variable or a glob, or a command substitution inside
+/// double quotes, such as `"$(cat x.md)"`.
+fn shell_tokens(command: &str) -> Vec<Token> {
+    const OPERATORS: &str = "|&;<>()`";
+    let mut lexed = Lexed::default();
+    let mut chars = command.chars().peekable();
+    while let Some(c) = chars.next() {
+        match c {
+            '\'' => {
+                lexed.open = true;
+                lexed.word.extend(chars.by_ref().take_while(|&q| q != '\''));
+            }
+            '"' => {
+                lexed.open = true;
+                while let Some(q) = chars.next() {
+                    match q {
+                        '"' => break,
+                        '\\' => match chars.next() {
+                            Some(e) if "$`\"\\\n".contains(e) => lexed.word.push(e),
+                            other => lexed.word.extend(std::iter::once('\\').chain(other)),
+                        },
+                        _ => lexed.word.push(q),
+                    }
+                }
+            }
+            '\\' => {
+                lexed.open = true;
+                lexed.word.extend(chars.next());
+            }
+            '#' if !lexed.open => while chars.next_if(|&q| q != '\n').is_some() {},
+            '\n' => {
+                lexed.end_word();
+                lexed.tokens.push(Token::Operator("\n".to_string()));
+                for (delimiter, tabs) in std::mem::take(&mut lexed.delimiters) {
+                    loop {
+                        let line: String = chars.by_ref().take_while(|&q| q != '\n').collect();
+                        let line = match tabs {
+                            true => line.trim_start_matches('\t'),
+                            false => line.as_str(),
+                        };
+                        if line == delimiter || chars.peek().is_none() {
+                            break;
+                        }
+                    }
+                }
+            }
+            c if OPERATORS.contains(c) => {
+                lexed.end_word();
+                let mut operator = String::from(c);
+                while let Some(next) = chars.next_if(|&next| OPERATORS.contains(next)) {
+                    operator.push(next);
+                }
+                lexed.wanted = heredoc(&operator);
+                lexed.tokens.push(Token::Operator(operator));
+            }
+            c if c.is_whitespace() => lexed.end_word(),
+            c => {
+                lexed.open = true;
+                lexed.word.push(c);
+            }
+        }
+    }
+    lexed.end_word();
+    lexed.tokens
+}
+
+/// Whether an operator opens a heredoc: `<<` and `<<-`, and not the
+/// here-string `<<<`, whose next word is the text itself.
+fn heredoc(operator: &str) -> bool {
+    operator.contains("<<") && !operator.contains("<<<")
+}
+
+/// The state of [`shell_tokens`] between two characters.
+#[derive(Default)]
+struct Lexed {
+    tokens: Vec<Token>,
+    word: String,
+    /// A word is in hand, which may be empty, as `''` is.
+    open: bool,
+    /// The delimiter each heredoc of this line waits for, and whether `<<-`
+    /// opened it.
+    delimiters: Vec<(String, bool)>,
+    /// The next word is a heredoc delimiter.
+    wanted: bool,
+}
+
+impl Lexed {
+    /// Ends the word in hand, and takes it as a delimiter where a heredoc
+    /// asked for one.
+    fn end_word(&mut self) {
+        if !std::mem::take(&mut self.open) {
+            return;
+        }
+        let text = std::mem::take(&mut self.word);
+        if std::mem::take(&mut self.wanted) {
+            // `<<-EOF` lexes as the operator `<<` and the word `-EOF`.
+            self.delimiters.push(match text.strip_prefix('-') {
+                Some(rest) => (rest.to_string(), true),
+                None => (text.clone(), false),
+            });
+        }
+        self.tokens.push(Token::Word(text));
+    }
 }
 
 /// Every recorded call of the session, and `None` where no event recorded any.
@@ -1065,6 +1271,194 @@ mod tests {
         assert!(
             !names("otherdocs/spec/05-ai-integration.md", &want),
             "the boundary is what stops a suffix from matching a different tree"
+        );
+    }
+
+    fn call(tool: &str, argument: &str) -> crate::intake::Call {
+        crate::intake::Call {
+            tool: tool.into(),
+            argument: argument.into(),
+            result: "sha256:0".into(),
+        }
+    }
+
+    fn over_the_probe_document(expectation: Expectation) -> Selected {
+        Selected {
+            expectation,
+            examines: vec![target(Some("PROBE-FIX-one"), "docs/probes/one.md")],
+            ..opened_over_one_document()
+        }
+    }
+
+    /// A Bash read is a read (#1384). The recorder writes a Bash call's
+    /// argument as the JSON of its input, so the whole argument never equals a
+    /// path. The present arm reads through Bash about twice as often as the
+    /// absent arm, so a grader blind to Bash misses on one arm more than the
+    /// other.
+    #[test]
+    fn a_bash_command_that_names_the_document_is_a_read_of_it() {
+        let sed = event(
+            1,
+            "sed",
+            Some(vec![call(
+                "Bash",
+                r#"{"command":"sed -n 1,80p docs/probes/one.md","description":"x"}"#,
+            )]),
+        );
+        assert!(
+            matches!(
+                verdict(&over_the_probe_document(Expectation::Opened), &[&sed]),
+                Verdict::Satisfied(Witness::Read { call: 1, .. })
+            ),
+            "a Bash `sed` of the document opened it"
+        );
+        assert!(
+            matches!(
+                verdict(&over_the_probe_document(Expectation::NotOpened), &[&sed]),
+                Verdict::NotSatisfied(Miss::Read { call: 1, .. })
+            ),
+            "a Bash `sed` of the document is the read `not_opened` forbids"
+        );
+
+        let copy = event(
+            2,
+            "copy",
+            Some(vec![call(
+                "Bash",
+                r#"{"command":"cat docs/probes/one.md.bak","description":"x"}"#,
+            )]),
+        );
+        assert_eq!(
+            verdict(&over_the_probe_document(Expectation::Opened), &[&copy]),
+            Verdict::NotSatisfied(Miss::NeverRead { calls: 1, over: 1 }),
+            "the boundary rule holds per word, so a copy is not the document"
+        );
+    }
+
+    /// The words of a command are the words a shell would pass: quotes are
+    /// taken off, and an operator ends a word whether or not a space follows
+    /// it.
+    #[test]
+    fn a_command_is_split_into_the_words_a_shell_would_pass() {
+        let want = target(None, "docs/probes/one.md");
+        for command in [
+            r#"{"command":"cat 'docs/probes/one.md'"}"#,
+            r#"{"command":"head -n 5 \"docs/probes/one.md\""}"#,
+            r#"{"command":"wc -l <docs/probes/one.md"}"#,
+            r#"{"command":"grep -c x docs/a.md;cat docs/probes/one.md|head"}"#,
+            r#"{"command":"cd /repo && sed -n 1,9p /repo/docs/probes/one.md 2>/dev/null"}"#,
+            r#"{"command":"cat docs/probes/one\\.md"}"#,
+            r#"{"command":"cat \"a\\\"b\" docs/probes/one.md"}"#,
+        ] {
+            assert!(bash_names(command, &want), "{command}");
+        }
+        for command in [
+            r#"{"command":"cat docs/probes/one.md.bak"}"#,
+            r#"{"command":"cat otherdocs/probes/one.md"}"#,
+            r#"{"command":"echo 'docs/probes/one.md is here'"}"#,
+            r#"{"command":"cat \"docs/probes/one\\.md\""}"#,
+            r#"{"description":"docs/probes/one.md"}"#,
+            "docs/probes/one.md is not JSON",
+        ] {
+            assert!(!bash_names(command, &want), "{command}");
+        }
+    }
+
+    /// A tab or a newline ends a word as a space does. A session often sends
+    /// a Bash command of several lines.
+    #[test]
+    fn a_tab_or_a_newline_ends_a_word() {
+        let want = target(None, "docs/probes/one.md");
+        for command in [
+            r#"{"command":"cat\tdocs/probes/one.md"}"#,
+            r#"{"command":"cd /repo\ncat docs/probes/one.md"}"#,
+            r#"{"command":"cat docs/probes/one.md\n"}"#,
+        ] {
+            assert!(bash_names(command, &want), "{command}");
+        }
+    }
+
+    /// A redirect target and an argument of `tee` are writes, and a write is
+    /// not a read (#1384 verify). A `<` redirect is a read. A comment runs no
+    /// command, so a path in it is not read.
+    #[test]
+    fn a_write_or_a_comment_is_not_a_read() {
+        let want = target(None, "docs/probes/one.md");
+        for command in [
+            r#"{"command":"echo new > docs/probes/one.md"}"#,
+            r#"{"command":"echo new >>docs/probes/one.md"}"#,
+            r#"{"command":"make 2>docs/probes/one.md"}"#,
+            r#"{"command":"make &>docs/probes/one.md"}"#,
+            r#"{"command":"echo x >| docs/probes/one.md"}"#,
+            r#"{"command":"echo x | tee docs/probes/one.md"}"#,
+            r#"{"command":"echo x | tee -a docs/probes/one.md >/dev/null"}"#,
+            r##"{"command":"# cat docs/probes/one.md"}"##,
+            r#"{"command":"ls # then docs/probes/one.md"}"#,
+        ] {
+            assert!(!bash_names(command, &want), "{command}");
+        }
+        for command in [
+            r#"{"command":"wc -l < docs/probes/one.md"}"#,
+            r#"{"command":"cat docs/probes/one.md > out.txt"}"#,
+            r#"{"command":"cat docs/probes/one.md 2>&1"}"#,
+            r#"{"command":"tee out.txt < docs/probes/one.md"}"#,
+            r#"{"command":"echo x | tee log; cat docs/probes/one.md"}"#,
+            r#"{"command":"echo x >log\ncat docs/probes/one.md"}"#,
+            r#"{"command":"echo a#b docs/probes/one.md"}"#,
+            r##"{"command":"# note\ncat docs/probes/one.md"}"##,
+            r#"{"command":"echo x | tee log # note\ncat docs/probes/one.md"}"#,
+            r#"{"command":"echo x | tee log\ncat docs/probes/one.md"}"#,
+            r#"{"command":"echo `cat docs/probes/one.md`"}"#,
+            r#"{"command":"grep --file=docs/probes/one.md x"}"#,
+            r#"{"command":"sort -o=docs/probes/one.md x"}"#,
+            r#"{"command":"echo hi > out.txt docs/probes/one.md"}"#,
+            r#"{"command":">/dev/null cat docs/probes/one.md"}"#,
+        ] {
+            assert!(bash_names(command, &want), "{command}");
+        }
+    }
+
+    /// The body of a heredoc is text handed to a command, and not a command.
+    /// A path written into a note is not a read of it, and an apostrophe in
+    /// the body opens no quote (#1384 verify, round 2).
+    #[test]
+    fn a_heredoc_body_is_not_a_command() {
+        let want = target(None, "docs/probes/one.md");
+        for command in [
+            r#"{"command":"cat > notes.txt <<'EOF'\nsee docs/probes/one.md\nEOF"}"#,
+            r#"{"command":"cat > notes.txt <<-EOF\n\tsee docs/probes/one.md\n\tEOF\n"}"#,
+            r#"{"command":"cat <<A <<B > n\ndocs/probes/one.md\nA\ndocs/probes/one.md\nB"}"#,
+            r#"{"command":"cat <<docs/probes/one.md >n\nx\ndocs/probes/one.md"}"#,
+        ] {
+            assert!(!bash_names(command, &want), "{command}");
+        }
+        for command in [
+            r#"{"command":"cat > notes.txt <<'EOF'\nit's fine\nEOF\ncat docs/probes/one.md"}"#,
+            r#"{"command":"cat <<EOF > out\nx\nEOF\ncat docs/probes/one.md"}"#,
+            r#"{"command":"cat <<EOF docs/probes/one.md\nbody\nEOF"}"#,
+            r#"{"command":"grep x <<< hi\ncat docs/probes/one.md"}"#,
+            r#"{"command":"cat > n <<-EOF\n\tx\n\tEOF\ncat docs/probes/one.md"}"#,
+            r#"{"command":"cat <<\"END\" # c\nEOF\nEND\ncat docs/probes/one.md"}"#,
+        ] {
+            assert!(bash_names(command, &want), "{command}");
+        }
+    }
+
+    /// Only a Bash call's argument is read as a command. Another tool whose
+    /// input happens to carry a `command` key has not run it.
+    #[test]
+    fn only_a_bash_call_is_read_as_a_command() {
+        let other = event(
+            1,
+            "other",
+            Some(vec![call(
+                "Monitor",
+                r#"{"command":"cat docs/probes/one.md"}"#,
+            )]),
+        );
+        assert_eq!(
+            verdict(&over_the_probe_document(Expectation::Opened), &[&other]),
+            Verdict::NotSatisfied(Miss::NeverRead { calls: 1, over: 1 }),
         );
     }
 

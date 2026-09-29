@@ -835,12 +835,20 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn the_store_opens_a_regular_file_and_no_pipe_socket_or_device() {
+        // A socket path must be shorter than 108 bytes, and a runner's
+        // temporary directory can be longer than that by itself, so the
+        // directory is in `/tmp` whatever `TMPDIR` says. Cargo runs a target's
+        // cases as threads of one process, so the pid alone is not a key.
+        let thread: String = format!("{:?}", std::thread::current().id())
+            .chars()
+            .filter(char::is_ascii_digit)
+            .collect();
         let nanos = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .expect("a clock later than the epoch")
-            .as_nanos();
-        let dir = std::env::temp_dir().join(format!(
-            "headwater-claim-opens-{}-{nanos}",
+            .subsec_nanos();
+        let dir = std::path::PathBuf::from(format!(
+            "/tmp/hw-claim-{}-{thread}-{nanos}",
             std::process::id()
         ));
         std::fs::create_dir_all(&dir).expect("the directory is made");

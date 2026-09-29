@@ -79,6 +79,8 @@ anchors
     cited by HW-SPEC-orchestration-architecture
   code_path `.claude/skills/hw-verification-bar/SKILL.md` via source-tree
     cited by HW-SPEC-orchestration-architecture
+  code_path `.claude/tutorial/drive.py` via source-tree
+    cited by HW-DR-0078
   code_path `.claude/tutorial/fixtures.sh` via source-tree
     cited by HW-DR-0061
   code_path `.gitattributes` via source-tree
@@ -99,6 +101,10 @@ anchors
     cited by HW-OBL-0179
   code_path `.githooks/pre-push` via source-tree
     cited by HW-EVAL-one-clone-many-agents-how-this-repository-isolates-the-sessions-that-build-it
+  code_path `.github/assets/headwater-demo.gif` via source-tree
+    cited by HW-DR-0078
+  code_path `.github/assets/headwater-demo.tape` via source-tree
+    cited by HW-DR-0078
   code_path `.github/workflows/ci.yml` via source-tree
     cited by HW-EVAL-two-triggers-one-verdict-how-this-repository-s-ci-decides-where-a-job-runs-and-what-it-trusts
   code_path `.github/workflows/ci.yml` via source-tree

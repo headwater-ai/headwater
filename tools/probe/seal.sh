@@ -96,6 +96,82 @@ if [ "${1:-}" = --keys ]; then
     exit 0
 fi
 
+# `--named <probe>` prints each name by which the seal strips a document that
+# names the probe, one per line as `<name> <path>`, and touches nothing. The
+# seal deletes such a document and every line that names it (#1293), so a
+# workspace that still holds one of those lines was not sealed. `probe-record.sh`
+# reads this list to refuse that workspace with exit 9 (#1384). Before, the
+# guard checked the probe itself and the answer keys, and a register line that
+# still linked a deleted document passed it.
+#
+# It reads this checkout's `docs/`, never the workspace, because the workspace
+# is the tree the seal already cut. It passes over the instrument, which the
+# seal removes whole. The name is the identifier when the document carries an
+# `id:`, and `<slug>.md` when its slug is not generic. That is the two names
+# `strip_document` matches. A generic slug gives no name, as in the seal: it is
+# one word, or another tracked file outside the instrument has the same name.
+if [ "${1:-}" = --named ]; then
+    [ -n "${2:-}" ] || { echo "usage: sh tools/probe/seal.sh --named <probe-id>" >&2; exit 2; }
+    named_probe=$2
+    named_instrument=$(sh "$root/tools/probe/ablate.sh" --instrument) || {
+        echo "seal: the instrument of the probe declaration could not be read." >&2
+        exit 8
+    }
+    named_slug=""
+    named_shelf=$(grep -rlx -- "id: $named_probe" "$root/docs/probes" 2>/dev/null) || named_shelf=""
+    case "$named_shelf" in
+        *.md)
+            named_slug=${named_shelf##*/}
+            named_slug=${named_slug%.md}
+            ;;
+    esac
+    if [ -n "$named_slug" ]; then
+        named_files=$(grep -rlF -e "$named_probe" -e "$named_slug" -- "$root/docs" 2>/dev/null) || named_files=""
+    else
+        named_files=$(grep -rlF -e "$named_probe" -- "$root/docs" 2>/dev/null) || named_files=""
+    fi
+    named_ifs=$IFS
+    IFS='
+'
+    for named_file in $named_files; do
+        IFS=$named_ifs
+        named_rel=${named_file#"$root"/}
+        named_skip=0
+        for named_path in $named_instrument; do
+            case "$named_rel" in
+                "$named_path"|"$named_path"/*) named_skip=1 ;;
+            esac
+        done
+        if [ "$named_skip" = 0 ] && [ -f "$named_file" ]; then
+            named_id=$(awk '/^id: */ { sub(/^id: */, ""); print; exit }' "$named_file" 2>/dev/null) || named_id=""
+            [ -z "$named_id" ] || printf '%s %s\n' "$named_id" "$named_rel"
+            doc_slug=${named_rel##*/}
+            doc_slug=${doc_slug%.md}
+            case $doc_slug in
+                *-*|*_*)
+                    # Another tracked file of this name, outside the
+                    # instrument, makes the slug generic in the sealed tree.
+                    others=0
+                    for other in $(git -C "$root" ls-files -- "$doc_slug.md" "*/$doc_slug.md" 2>/dev/null); do
+                        [ "$other" != "$named_rel" ] || continue
+                        for named_path in $named_instrument; do
+                            case "$other" in
+                                "$named_path"|"$named_path"/*) other="" ;;
+                            esac
+                        done
+                        [ -z "$other" ] || others=$((others + 1))
+                    done
+                    [ "$others" -gt 0 ] || printf '%s.md %s\n' "$doc_slug" "$named_rel"
+                    ;;
+            esac
+        fi
+        IFS='
+'
+    done
+    IFS=$named_ifs
+    exit 0
+fi
+
 workspace=${1:-}
 [ -n "$workspace" ] && [ "$#" -ge 2 ] || {
     echo "usage: sh tools/probe/seal.sh <workspace> <probe-id>..." >&2

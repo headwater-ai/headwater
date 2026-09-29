@@ -19,6 +19,7 @@ The model, its served version, the wall-clock time and the realized cost belong 
 
 5 probes x 1 arms x 1 repetitions = 5 sessions, at a declared $0.25 each: $1.25 against a ceiling of $20.00.
 The unit cost is a number a person declared in `.headwater/probe.yml`. No run has happened, so no realized cost has been recorded against it and this is arithmetic rather than a forecast.
+Each session stops at a turn cap of 12, which the tier declares. A session the cap stops is recorded as observed and is not drawn again.
 
 ## The selection
 

@@ -567,6 +567,11 @@ pub struct Plan {
     pub projected: Cents,
     pub budget: Cents,
     pub session_cost: Cents,
+    /// The turn cap the tier declares for each session, printed in the cost
+    /// section so that `tools/probe/campaign.sh` and `probe-record.sh` read it
+    /// from the plan they already read (#1384). It is not a member of the run
+    /// identity.
+    pub max_turns: Option<u32>,
     pub refusal: Option<Refusal>,
 }
 
@@ -656,6 +661,7 @@ impl Plan {
             projected: 0,
             budget: 0,
             session_cost: 0,
+            max_turns: None,
             refusal: None,
         };
 
@@ -893,6 +899,7 @@ impl Plan {
         }
         plan.budget = envelope.budget;
         plan.session_cost = envelope.session_cost;
+        plan.max_turns = envelope.max_turns;
         plan.arms = arms(envelope, narrowing.arm);
         if plan.arms.len() < envelope.arms.len() && tier.pairs_arms() {
             plan.refusal = Some(Refusal::CampaignNarrowed);
@@ -1077,6 +1084,13 @@ impl Plan {
                  forecast.",
                 crate::budget::PATH
             );
+            if let Some(turns) = self.max_turns {
+                let _ = writeln!(
+                    out,
+                    "Each session stops at a turn cap of {turns}, which the tier declares. A \
+                     session the cap stops is recorded as observed and is not drawn again."
+                );
+            }
             if self.repetitions < self.declared_repetitions {
                 let _ = writeln!(
                     out,

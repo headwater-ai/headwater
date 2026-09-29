@@ -199,8 +199,12 @@ base_abs=$(cd "$base" 2>/dev/null && pwd) || base_abs=$base
 #
 # A write made through `Bash` — a redirect, `sed -i`, a heredoc — names no path
 # in its input, so `path_of` returns null for it and this step cannot see it.
-# That write still needs `--produced`, which is the same blind spot `opened`
-# has for a read made through `Bash`.
+# The driver closes that gap (#1384): given `--baseline`, `probe-record.sh`
+# compares the workspace after the session with the tree it was copied from,
+# and passes every new or changed file here as `--produced`. A caller that
+# passes no baseline still has the blind spot. A read made through `Bash` is
+# the grader's to see and not this step's. `opened` and `not_opened` read the
+# shell words of the command (`bash_names` in engine/crates/probe/src/grade.rs).
 #
 # A path inside the base is written relative to it, so the path an `Edit`
 # names and the path a driver passes with `--produced` are one entry and not
