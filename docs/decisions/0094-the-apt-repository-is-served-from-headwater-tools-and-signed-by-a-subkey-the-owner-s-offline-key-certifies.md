@@ -27,7 +27,7 @@ relations:
 
 The owner made two rulings on the issue. On 2026-09-22 the owner chose "CLI package taxonomy-free" ([comment](https://github.com/headwater-ai/headwater/issues/764#issuecomment-5770899696)). On 2026-09-27 the owner accepted the recommendation for the host and the key. The repository is on headwater.tools, and a signing subkey is an Actions secret. The owner holds the primary key offline ([comment](https://github.com/headwater-ai/headwater/issues/764#issuecomment-5852855283)).
 
-[HW-DR-0097](0097-a-figure-on-a-hand-built-page-is-measured-when-the-site-is-published-and-the-committed-page-carries-none.md) gives the site one deploy job, `.github/workflows/deploy-site.yml`. It supersedes [HW-DR-0047](0047-how-the-two-halves-of-the-site-share-one-host.md). Two workflows call that job: `ci.yml` on a push to `main`, and `release.yml` after its `publish` job. A second deploy path would race the first.
+[HW-DR-0097](0097-a-figure-on-a-hand-built-page-is-measured-when-the-site-is-published-and-the-committed-page-carries-none.md) gives the site one deploy job, `.github/workflows/deploy-site.yml`. It constrains [HW-DR-0047](0047-how-the-two-halves-of-the-site-share-one-host.md), which ran the deploy in the build service of Cloudflare before that record. Two workflows call that job: `ci.yml` on a push to `main`, and `release.yml` after its `publish` job. A second deploy path would race the first.
 
 ## Decision
 
