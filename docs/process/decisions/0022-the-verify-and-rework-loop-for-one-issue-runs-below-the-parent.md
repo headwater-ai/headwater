@@ -2,7 +2,7 @@
 id: HW-PD-0022
 status: current
 status_since: 2026-09-27
-summary: "One agent per issue, hw-iterate, dispatches the builder and each verifier and sends every FAIL back to the same builder. The parent wakes once per issue, rules the final PASS, and never reads the branch with git show or git diff."
+summary: "One agent per issue, hw-iterate, dispatches the builder and each verifier and sends every FAIL back to the same builder. It reports to the parent once per issue, and again only after the parent sends it a message. The parent rules the final PASS and never reads the branch with git show or git diff."
 last_verified: 2026-09-27
 title: "The verify and rework loop for one issue runs below the parent"
 provenance:
