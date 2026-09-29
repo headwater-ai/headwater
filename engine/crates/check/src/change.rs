@@ -227,9 +227,15 @@ pub struct Named {
     /// Of those, the ones whose prior version this run could not read. Each one
     /// is a skipped instance with a reason rather than a pass.
     pub unreadable: usize,
-    /// Of those, the ones whose path no row of this corpus holds. Nothing is
-    /// checked over one, so none of them is a skipped instance either, and this
-    /// count is the only place one is reported.
+    /// The paths this manifest named that no row of this corpus holds, each
+    /// counted once. Nothing is checked over one, so none of them is a
+    /// skipped instance either, and this count is the only place one is
+    /// reported.
+    ///
+    /// It is the length of [`Change::unmatched`], and it is computed from that
+    /// list, so the count and the list a report writes cannot disagree. A path
+    /// that only a `verified` line names is counted here and not in
+    /// `documents`, because it names no version of a document (#1376).
     pub unmatched: usize,
     /// The documents a `verified` line names that a row of this corpus holds.
     /// A `verified` path is counted here and not in `documents`, because it
@@ -379,9 +385,12 @@ impl Change {
                 Held::Added => named.added += 1,
                 Held::Committed { .. } => named.carried += 1,
                 Held::Unreadable { .. } => named.unreadable += 1,
-                Held::Unmatched { .. } => named.unmatched += 1,
+                // Counted below, from the list, with the `verified` paths
+                // that bind to no row.
+                Held::Unmatched { .. } => {}
             }
         }
+        named.unmatched = self.unmatched().len();
         named
     }
 
@@ -671,10 +680,14 @@ mod tests {
                 added: 0,
                 carried: 1,
                 unreadable: 0,
-                unmatched: 1,
+                unmatched: 2,
                 verified: 2,
             }
         );
+        // The count and the list are two readings of one set, and a report
+        // writes both. `docs/typo.md` is named only in a `verified` line, and
+        // `docs/gone.md` in both kinds, so it counts once.
+        assert_eq!(change.named().unmatched, change.unmatched().len());
     }
 
     /// What the run reports about its own input.

@@ -867,6 +867,43 @@ fn the_wildcard_remedy_carries_a_digest() {
     let _ = std::fs::remove_dir_all(&root);
 }
 
+/// A `verified` line decides the fix on its own, before the rule looks for a
+/// freshness facet. A taxonomy that gives no facet the freshness role has no
+/// facet to move, so the statement is the one way a change can state a
+/// re-verification there. A change that moves `last_verified` states nothing
+/// under it, and a run with no change stamps nothing (#1376).
+#[test]
+fn a_stated_re_verification_needs_no_freshness_facet() {
+    let root = scratch("no-freshness");
+    let entries = recorded(&root);
+    document(&root, TODAY, &entries);
+    write(&root, ".claude/hooks/lib.sh", "refuse() { :; }\n");
+    let unroled = taxonomy().replace(
+        "  last_verified:\n    role: freshness\n",
+        "  last_verified:\n",
+    );
+    assert_ne!(unroled, taxonomy(), "the role was removed");
+    for (label, ctx, fixable) in [
+        (
+            "stated",
+            at(TODAY).scoped_to(stated(&[], &[DOCUMENT])),
+            true,
+        ),
+        (
+            "facet moved",
+            at(TODAY).scoped_to(change(&[(DOCUMENT, Some(yesterday("hooks", &entries)))])),
+            false,
+        ),
+        ("no change", at(TODAY), false),
+    ] {
+        let ran = run_in(&root, &ctx, &mut Cache::disabled(), &unroled);
+        let reported = suspect(&ran);
+        assert_eq!(reported.len(), 1, "{label}: {reported:?}");
+        assert_eq!(reported[0].patch.is_some(), fixable, "{label}");
+    }
+    let _ = std::fs::remove_dir_all(&root);
+}
+
 /// A relation that does not declare `verified_revision` is offered no fix and
 /// no advisory on an unrecorded edge, because spec 2 makes an attribute the
 /// relation does not declare a finding, and a fix must not write one.
