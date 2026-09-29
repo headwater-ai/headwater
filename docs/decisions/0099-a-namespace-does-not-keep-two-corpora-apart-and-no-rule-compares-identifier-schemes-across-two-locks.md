@@ -40,10 +40,10 @@ A cross-lock rule would therefore need a new model of how the engine finds corpo
 
 **Until a rule exists, the adopter keeps two corpora apart.** Two steps do this:
 
-1. Choose namespaces so that no namespace, followed by a hyphen, begins another. `ACME` and `BETA` are safe. `ZED` and `ZED-SPECIFICATION` are not.
+1. Give the two corpora different namespaces, where neither namespace is a prefix of the other, and start every pattern with `{namespace}`. `ACME` and `BETA` are safe, and so are `HW` and `HX`. `ZED` and `ZED-SPECIFICATION` are not safe, and neither are `H` and `HW`, because a pattern can put a literal directly after the namespace. Two corpora that share one namespace are not safe either.
 2. To test a pair, copy the `.headwater/` directory of one corpus to a scratch directory. Add each scheme of the other corpus to the copy's overlay, under a scheme name the copy does not use, and run `headwater taxonomy resolve --root <scratch>`. The verb exits 1 and names the pair when two schemes admit one string. It exits 0 when every pair is disjoint.
 
-The second step was measured against the same commit. The probe added a scheme `{namespace}-{seq:04d}` under the namespace `HW-DR` to a copy of the overlay of this repository. The verb exited 1 and named `decision_id` as the other half of the pair. The same scheme under `ACME` let the verb exit 0.
+The second step was measured against the same commit. The probe added a scheme `{namespace}-{seq:04d}` under the namespace `HW-DR` to a copy of the overlay of this repository. The verb exited 1 and named `decision_id` as the other half of the pair. The same scheme under `ACME` let the verb exit 0. The scheme `{namespace}W-DR-{seq:04d}` under `H` made the verb exit 1, and `{namespace}-DR-{seq:04d}` under `HX` let it exit 0.
 
 **This record constrains HW-DR-0009 and does not rewrite it.** The sentence in its Context that says namespaced identifiers stop two corpora from colliding is superseded by this record. The same sentence in [HW-EVAL-graph-export-and-federation](../evaluations/graph-export-and-federation.md) is superseded too. The evaluation stays as written, because it is evidence of what its authors believed at the time.
 
