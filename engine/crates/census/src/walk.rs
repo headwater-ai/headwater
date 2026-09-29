@@ -658,10 +658,32 @@ mod tests {
             ("into/new/../never-written.md", "docs/never-written.md"),
         ]
         .iter()
-        .map(|(target, expected)| {
+        .flat_map(|(target, expected)| {
             let target = links.join(target).display().to_string();
-            let answer = typed(&root, &target);
-            (target, answer, *expected)
+            // The root as given, the root reached by a link, and the root
+            // spelled with a `..` in it, as `--root ..` is once it is made
+            // absolute: only the canonical root is the same for all three,
+            // so the third read compares with it.
+            [root.clone(), via.clone(), root.join("docs/..")]
+                .into_iter()
+                .flat_map(move |at| {
+                    let target = target.clone();
+                    let typed_answer = typed(&at, &target);
+                    let within_answer = within(&at, "linked", &target);
+                    [
+                        (
+                            format!("typed {target} under {}", at.display()),
+                            typed_answer,
+                            *expected,
+                        ),
+                        (
+                            format!("within {target} under {}", at.display()),
+                            within_answer,
+                            *expected,
+                        ),
+                    ]
+                })
+                .collect::<Vec<_>>()
         })
         .collect();
         let name = root.file_name().expect("the root has a name");

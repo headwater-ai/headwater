@@ -617,6 +617,74 @@ fn an_absolute_path_through_a_link_into_the_root_finds_its_document() {
     );
 }
 
+/// The same link into the root, under a `--root` given through a symlink and
+/// under `--root ..` from a directory below the root. Neither spelling of the
+/// root is its canonical path, and only the canonical path is a prefix of the
+/// target once the link in it is followed.
+#[cfg(unix)]
+#[test]
+fn a_link_into_the_root_finds_its_document_under_a_linked_or_relative_root() {
+    let root = Root::new("link-into-roots");
+    let name = root
+        .at
+        .file_name()
+        .expect("the root has a name")
+        .to_string_lossy()
+        .to_string();
+    let into = root.at.with_file_name(format!("{name}-decisions"));
+    let via = root.at.with_file_name(format!("{name}-via"));
+    let _ = std::fs::remove_file(&into);
+    let _ = std::fs::remove_file(&via);
+    std::os::unix::fs::symlink(root.at.join("docs/decisions"), &into).expect("the link in");
+    std::os::unix::fs::symlink(&root.at, &via).expect("the linked root");
+    let present = Path::new(DOCUMENT)
+        .file_name()
+        .expect("the document has a name");
+    let target = into.join(present).display().to_string();
+    let missing = into.join("0002-not-written.md").display().to_string();
+    let under_link = |verb: &str, path: &str| {
+        Command::new(env!("CARGO_BIN_EXE_headwater"))
+            .args([verb, path, "--root"])
+            .arg(&via)
+            .output()
+            .expect("the binary runs")
+    };
+    let under_parent = |verb: &str, path: &str| {
+        Command::new(env!("CARGO_BIN_EXE_headwater"))
+            .args([verb, path, "--root", ".."])
+            .current_dir(root.at.join("docs"))
+            .output()
+            .expect("the binary runs")
+    };
+    let shown = [
+        ("--root <link>", under_link("show", &target)),
+        ("--root ..", under_parent("show", &target)),
+    ];
+    let refused = [
+        ("--root <link>", under_link("explain", &missing)),
+        ("--root ..", under_parent("explain", &missing)),
+    ];
+    let _ = std::fs::remove_file(&into);
+    let _ = std::fs::remove_file(&via);
+    for (how, shown) in &shown {
+        assert_eq!(
+            shown.status.code(),
+            Some(0),
+            "`show {target}` with {how}: {}",
+            String::from_utf8_lossy(&shown.stderr)
+        );
+        assert!(shown.stdout == document(), "the bytes on disk, with {how}");
+    }
+    for (how, refused) in &refused {
+        let stderr = String::from_utf8_lossy(&refused.stderr);
+        assert_eq!(refused.status.code(), Some(1), "with {how}: {stderr}");
+        assert!(
+            stderr.contains("is a path of this corpus, with no document written there yet"),
+            "`explain {missing}` with {how}: {stderr}"
+        );
+    }
+}
+
 /// An absolute path that leaves the root with `..` and comes back in names
 /// the document under it, as `a/../x` names `x`. Its leading parts name the
 /// root twice, and only the longer of the two leaves the rest of the path
