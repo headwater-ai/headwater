@@ -1297,6 +1297,29 @@ engine_digest_claim_judge() {
     fi
 }
 
+# apt_condition_judge PAGE WORKFLOW — `ok`, or the sentence that says the
+# explanation page's apt row states the APT signature with no condition while
+# the workflow signs only under one.
+#
+# The step "Sign the APT metadata" exits 0 with a warning when the
+# `APT_SIGNING_KEY` secret is empty, so the release then carries no signed
+# metadata and the site serves no repository. Where the step has that early
+# exit, the apt row of the route table must name the secret (#1336). Where the
+# step signs unconditionally, the row may state the signature alone.
+apt_condition_judge() {
+    workflow_step_run "$2" "Sign the APT metadata" >"$scratch/apt-step.sh"
+    if ! grep -q -- '-z "$APT_SIGNING_KEY"' "$scratch/apt-step.sh"; then
+        echo ok
+        return 0
+    fi
+    acj_row=$(grep '^| the `headwater` binary in a Debian package |' "$1" | head -1)
+    case $acj_row in
+        '') echo "the page has no apt row in its route table, so it states nothing an adopter can check the condition against" ;;
+        *APT_SIGNING_KEY*) echo ok ;;
+        *) echo "the apt row of the route table states the signature and not the \`APT_SIGNING_KEY\` secret, but the step \"Sign the APT metadata\" exits 0 and signs nothing when that secret is empty" ;;
+    esac
+}
+
 # release_pipe_steps FILE MODE — the steps of a workflow whose shell reads a
 # command through a pipe inside a substitution. MODE `offenders` names the ones
 # that do not set `pipefail`; MODE `guarded` names the ones that do.
@@ -2627,6 +2650,23 @@ if [ -f "$release_wf" ]; then
         "$(engine_digest_claim_judge "$scratch/release/stale-claim.md" "$release_wf")"
     same "  and the same README is not refused where the workflow states no digest" ok \
         "$(engine_digest_claim_judge "$scratch/release/stale-claim.md" "$scratch/release/no-upload.yml")"
+
+    # 7l''. What the explanation page says about the APT route. The workflow
+    #       signs the metadata only when `APT_SIGNING_KEY` is set, so the apt
+    #       row of the route table names that secret (#1336).
+    apt_page="$root/docs/explanations/how-a-headwater-release-reaches-an-adopter.md"
+    same "  and the explanation page's apt row names the condition the APT signature has" ok \
+        "$(apt_condition_judge "$apt_page" "$release_wf")"
+    sed '/^| the `headwater` binary in a Debian package |/s/|[^|]*|$/| apt checks the signature of the repository metadata |/' \
+        "$apt_page" >"$scratch/release/apt-unconditional.md"
+    if cmp -s "$apt_page" "$scratch/release/apt-unconditional.md"; then
+        fail "  an apt row that states the signature with no condition is refused" \
+            "the planted edit changed nothing, so this case measured nothing"
+    else
+        same "  an apt row that states the signature with no condition is refused" \
+            "the apt row of the route table states the signature and not the \`APT_SIGNING_KEY\` secret, but the step \"Sign the APT metadata\" exits 0 and signs nothing when that secret is empty" \
+            "$(apt_condition_judge "$scratch/release/apt-unconditional.md" "$release_wf")"
+    fi
 
     # 7m. The judge, provoked. Stripping the second flag leaves the call legal,
     #     leaves every name in place, and leaves the release stating no digest —
