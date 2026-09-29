@@ -70,14 +70,20 @@ sentences() {
 # The build-order stages a file dispatches in plain prose, which
 # `agent_names_in` cannot see. Each dispatch verb of a sentence is read on its
 # own: the verb's object runs to the next dispatch verb or to a relative clause
-# (`, which`), and it names `hw-build`, `hw-verify`, the builder or the verifier.
-# A verb whose word before it is never, not, no or without is a refusal, and a
-# verb whose word before it is which, that, who, it or hw-iterate is somebody
-# else's dispatch. A negation earlier in the sentence ("If it does not answer,
-# dispatch the verifier") does not count.
+# (`, which` or `, who`), and it names `hw-build`, `hw-verify`, the builder or
+# the verifier. A verb inside a word counts too, so `redispatch` is a dispatch.
+# The word just before the verb decides two things, and only when no comma,
+# colon, semicolon or bracket stands between it and the verb. Never, not, no or
+# without make the verb a refusal. Which, that, who, it or hw-iterate make it
+# somebody else's dispatch. So "If the answer is no, dispatch the builder" and
+# "If it does not answer, dispatch the verifier" are both the parent's dispatch.
+# A refusal the reader cannot parse ("Do not ever dispatch the verifier") is
+# reported, which is the safe direction.
 prose_dispatches_in() {
     sentences "$1" | awk '
         function lastword(s,    n, w, i) {
+            sub(/[ `]+$/, "", s)
+            if (s !~ /[a-z-]$/) return ""
             n = split(s, w, /[^a-z-]+/)
             for (i = n; i >= 1; i--) if (w[i] != "") return w[i]
             return ""
@@ -89,32 +95,31 @@ prose_dispatches_in() {
                 s = pos + RSTART - 1
                 e = s + RLENGTH
                 pos = e
-                if (s > 1 && substr(t, s - 1, 1) ~ /[a-z]/) continue
                 if (lastword(substr(t, 1, s - 1)) ~ /^(never|not|no|without|which|that|who|it|hw-iterate)$/) continue
                 obj = substr(t, e)
                 if (match(obj, /(dispatch|launch|spawn)/)) obj = substr(obj, 1, RSTART - 1)
-                if (match(obj, /, (which|who|that) /)) obj = substr(obj, 1, RSTART - 1)
+                if (match(obj, /, (which|who) /)) obj = substr(obj, 1, RSTART - 1)
                 if (obj ~ /(^|[^a-z-])(hw-build|builder)([^a-z-]|$)/) print "hw-build"
                 if (obj ~ /(^|[^a-z-])(hw-verify|verifier)([^a-z-]|$)/) print "hw-verify"
             }
         }' | sort -u
 }
 
-# Whether a file dispatches a stage with `isolation: "worktree"`: one sentence
-# in which a dispatch verb, then the stage, then the phrase come in that order,
-# with no never, not, no, without, skip or omit between the stage and the
-# phrase.
+# Whether a file dispatches a stage with `isolation: "worktree"`. This is a
+# template and not a parse, because this repository writes the file it reads:
+# one sentence, after an optional bold heading, opens with
+#     Dispatch [a fresh | a new | the] `<stage>` with `isolation: "worktree"`
+# (or Launch, or Spawn), and holds no never, not, no, nor, without, skip, omit,
+# cannot or unlike anywhere. A dispatch sentence that needs a negation is
+# reported, and is rewritten as two sentences.
 dispatches_isolated() {
     sentences "$1" | awk -v stage="$2" '
         {
-            p = index($0, "isolation: \"worktree\"")
-            if (!p) next
-            pre = substr($0, 1, p - 1)
-            sp = 0
-            while ((i = index(substr(pre, sp + 1), stage)) > 0) sp += i
-            # With no stage, sp is 0, the prefix below is empty and holds no verb.
-            if (tolower(substr(pre, 1, sp - 1)) !~ /(^|[^a-z])(dispatch|launch|spawn)/) next
-            if (tolower(substr(pre, sp)) ~ /(^|[^a-z])(never|not|no|without|skip|omit)([^a-z]|$)/) next
+            t = tolower($0)
+            sub(/^[ \t]*(\*\*[^*]*\*\*)?[ \t]*/, "", t)
+            head = "^(dispatch|launch|spawn) (a fresh |a new |the )?`" stage "` with `isolation: \"worktree\"`"
+            if (t !~ head) next
+            if (t ~ /(^|[^a-z])(never|not|no|nor|without|skip|omit|cannot|unlike)([^a-z]|$)/) next
             found = 1
         }
         END { exit !found }'
@@ -360,9 +365,9 @@ fi
 # The verify-and-rework loop for one issue is below the parent (#1276,
 # HW-PD-0022). The parent names `hw-iterate`, and it names neither `hw-build`
 # nor `hw-verify` and dispatches neither the builder nor the verifier in plain
-# prose. `hw-iterate` names both, passes `isolation: "worktree"` in the sentence
-# that dispatches each, with no never, not, no or without before it there, and
-# can resume its builder by id, which needs `SendMessage` in its tools.
+# prose. `hw-iterate` names both, dispatches each in a sentence of the shape
+# `dispatches_isolated` states, with no negation in it, and can resume its
+# builder by id, which needs `SendMessage` in its tools.
 printf '\n# the parent dispatches hw-iterate, and hw-iterate dispatches hw-build and hw-verify\n'
 # Prints why the pair fails, or nothing when it holds.
 loop_below_parent() {
@@ -464,6 +469,7 @@ prose_arm 'Redispatch the verifier on the same branch.' hw-verify
 prose_arm 'Name the agent that launches the verifier.' ''
 prose_arm 'Name the agent who launches the builder.' ''
 prose_arm 'Let hw-iterate dispatch the verifier.' ''
+prose_arm 'Let `hw-iterate` launch the builder.' ''
 prose_arm 'Dispatch hw-iterate, who owns the builder.' ''
 if [ -f "$agents/hw-iterate.md" ]; then
     # The phrase survives in the file, but only in a sentence that forbids it:
@@ -512,6 +518,7 @@ if [ -f "$agents/hw-iterate.md" ]; then
     isolation_arm 's/Dispatch `hw-build` with `isolation: "worktree"`/Dispatch `hw-build` in its own worktree/' hw-build
     isolation_arm 's/Dispatch `hw-build` with `isolation: "worktree"`/Dispatch `hw-build` with `isolation: "worktree"`, as `hw-build.md` says, not in the shared checkout/' hw-build
     isolation_arm 's/Dispatch `hw-build` with `isolation/Never dispatch `hw-build` with `isolation/' hw-build
+    isolation_arm 's/Dispatch `hw-build` with `isolation/The parent may dispatch `hw-build` with `isolation/' hw-build
     isolation_arm 's/Dispatch a fresh `hw-verify` with `isolation/Do not dispatch a fresh `hw-verify` with `isolation/' hw-verify
     isolation_arm 's/Dispatch `hw-build` with `isolation: "worktree"`/Dispatch `hw-build` in the shared checkout, and `isolation: "worktree"` is not needed/' hw-build
     isolation_arm 's/Dispatch a fresh `hw-verify` with `isolation: "worktree"`/Dispatch a fresh `hw-verify` in the shared checkout, unlike `hw-build`, which gets `isolation: "worktree"`/' hw-verify
