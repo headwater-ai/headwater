@@ -1235,6 +1235,52 @@ else
     pass "and seal.sh removes it"
 fi
 
+# A fold is its whole path from the workspace root, not a suffix of one: a
+# nested `.headwater/nav.yml` is not the fold (verify round 2).
+mkdir -p "$scratch/nested/engine/.headwater"
+printf -- '- docs/probes/%s.md\n' "$tombstone" > "$scratch/nested/engine/.headwater/nav.yml"
+PATH="$scratch/no-harness" "$shell" "$driver" --probe "HW-PROBE-$tombstone" --session x \
+    --task-file "$scratch/task.md" --workspace "$scratch/nested" \
+    >/dev/null 2>"$scratch/nested.err"
+same "the driver refuses a nested copy whose path ends with a declared fold" "9" "$?"
+
+# The search reads a binary file, so a file that `grep -I` would pass over
+# is refused and removed rather than kept (verify round 2).
+mkdir -p "$scratch/binary/assets"
+printf 'a\000HW-PROBE-%s absent\n' "$tombstone" > "$scratch/binary/assets/answer.bin"
+PATH="$scratch/no-harness" "$shell" "$driver" --probe "HW-PROBE-$tombstone" --session x \
+    --task-file "$scratch/task.md" --workspace "$scratch/binary" \
+    >/dev/null 2>"$scratch/binary.err"
+same "the driver refuses a binary file that names the probe" "9" "$?"
+sh "$root/tools/probe/seal.sh" "$scratch/binary" "HW-PROBE-$tombstone" >/dev/null 2>&1
+if [ -e "$scratch/binary/assets/answer.bin" ]; then
+    fail "and seal.sh removes it" "the binary file survived the seal"
+else
+    pass "and seal.sh removes it"
+fi
+
+# A file the search cannot read fails the search closed (verify round 2).
+# `grep` exits 2 on it, and before, that status threw every match away: the
+# guard passed a workspace whose `.claude/skills/x.sh` states the answer, and
+# the seal removed nothing. A root user reads a file of mode 000, so the case
+# is skipped there.
+mkdir -p "$scratch/unreadable/.claude/skills" "$scratch/unreadable/notes"
+printf '# docs/probes/%s.md answers `absent`\n' "$tombstone" > "$scratch/unreadable/.claude/skills/x.sh"
+printf 'names no probe\n' > "$scratch/unreadable/notes/locked.txt"
+chmod 000 "$scratch/unreadable/notes/locked.txt"
+if [ -r "$scratch/unreadable/notes/locked.txt" ]; then
+    echo "skip the unreadable-file cases: this user reads a file of mode 000"
+else
+    PATH="$scratch/no-harness" "$shell" "$driver" --probe "HW-PROBE-$tombstone" --session x \
+        --task-file "$scratch/task.md" --workspace "$scratch/unreadable" \
+        >/dev/null 2>"$scratch/unreadable.err"
+    same "the driver refuses a workspace holding a file the search cannot read" "9" "$?"
+    present "and it says the files that name the probe could not be read" "could not be read" "$scratch/unreadable.err"
+    sh "$root/tools/probe/seal.sh" "$scratch/unreadable" "HW-PROBE-$tombstone" >/dev/null 2>"$scratch/unreadable-seal.err"
+    same "seal.sh stops at 8 on a file its search cannot read" "8" "$?"
+fi
+chmod 644 "$scratch/unreadable/notes/locked.txt"
+
 # A path is one name, whatever it holds: a space is not a separator, and a
 # `*` is not a pattern (verify round 1: a file named `*` made the seal remove
 # every file of its directory, and a split on spaces kept the file).
