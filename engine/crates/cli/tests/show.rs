@@ -298,6 +298,25 @@ fn explain_refuses_a_symlink_row_and_prints_nothing() {
         );
     }
     let _ = std::fs::remove_file(&outside);
+
+    // The control: an untyped document the walk did read still answers, as
+    // `docs/interfaces/headwater-explain.md` promises it an explanation.
+    let untyped = "docs/decisions/9997-untyped.md";
+    std::fs::write(root.at.join(untyped), "# No front matter\n").expect("the file writes");
+    for args in [&["explain", untyped][..], &["explain", untyped, "--json"]] {
+        let explained = root.run(args);
+        assert_eq!(
+            explained.status.code(),
+            Some(0),
+            "{args:?} explains an untyped document: {}",
+            String::from_utf8_lossy(&explained.stderr)
+        );
+        assert!(
+            String::from_utf8_lossy(&explained.stdout).contains(untyped),
+            "{args:?} names the untyped document: {:?}",
+            String::from_utf8_lossy(&explained.stdout)
+        );
+    }
 }
 
 /// A bare `show` names what it takes, in the shape a bare `explain` does.
