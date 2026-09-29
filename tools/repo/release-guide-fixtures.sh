@@ -610,7 +610,8 @@ contains "a record that governs ./.github/workflows/ci.yml and is not cited ther
 #   - No file that describes the APT route says that "the Cloudflare build"
 #     deploys it (#1339). HW-DR-0097 moved the deploy into `deploy-site.yml`,
 #     and a maintainer who reads the old route looks for a build that does
-#     not exist. `apt_route` below reads the four files that describe it.
+#     not exist. `apt_route` below reads the five files that describe it,
+#     the README among them, because an adopter reads the route there.
 # ---------------------------------------------------------------------------
 deploys_py='
 import glob, os, re, sys
@@ -712,7 +713,8 @@ deploys() {
 apt_route_files="docs/decisions/0094-the-apt-repository-is-served-from-headwater-tools-and-signed-by-a-subkey-the-owner-s-offline-key-certifies.md
 tools/site/fetch-apt.sh
 .github/workflows/ci.yml
-docs/how-to/rotate-or-revoke-the-apt-signing-subkey.md"
+docs/how-to/rotate-or-revoke-the-apt-signing-subkey.md
+README.md"
 
 apt_route() {
     printf '%s\n' "$apt_route_files" | while IFS= read -r f; do
