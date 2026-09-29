@@ -2657,6 +2657,16 @@ if [ -f "$release_wf" ]; then
     apt_page="$root/docs/explanations/how-a-headwater-release-reaches-an-adopter.md"
     same "  and the explanation page's apt row names the condition the APT signature has" ok \
         "$(apt_condition_judge "$apt_page" "$release_wf")"
+    # The README's apt paragraph states the same condition in words, because
+    # its reader has no route table: the paragraph that opens the apt route
+    # names the signing key, and says what a release cut without it carries.
+    readme_apt=$(grep '^\*\*Install it with apt' "$readme" | head -1)
+    case $readme_apt in
+        *"APT signing key set"*"without that key"*)
+            pass "  and the README's apt paragraph names the signing key the APT repository needs" ;;
+        *) fail "  and the README's apt paragraph names the signing key the APT repository needs" \
+            "the paragraph that opens the apt route states a signed APT repository for every engine release, but the step \"Sign the APT metadata\" signs nothing when \`APT_SIGNING_KEY\` is empty" ;;
+    esac
     sed '/^| the `headwater` binary in a Debian package |/s/|[^|]*|$/| apt checks the signature of the repository metadata |/' \
         "$apt_page" >"$scratch/release/apt-unconditional.md"
     if cmp -s "$apt_page" "$scratch/release/apt-unconditional.md"; then
