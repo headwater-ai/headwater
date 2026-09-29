@@ -226,6 +226,73 @@ class AListAnchorIsCountedByItsMembers(unittest.TestCase):
         self.assertIn("target.patterns", str(raised.exception))
 
 
+DEAD_MEMBER_REASON = "`code_path`: `src/gone.rs` no `src/gone.rs` in the source tree"
+
+
+def with_dead_member_list(export):
+    """The fixture export plus `governs: [[README.txt, src/gone.rs]]` from FX-DR-0002.
+
+    `README.txt` is in the tree and `src/gone.rs` is not. The engine binds
+    nothing for such a list (HW-DR-0074), and exports the edge with the shape
+    `Target::Unbound` writes: `bound` and `reason`, and no members.
+    """
+    export["graph"]["edges"].append(
+        {
+            "source": "docs/decisions/0002-recent.md",
+            "relation": "governs",
+            "written_as": "governs",
+            "target": {"bound": "nothing", "reason": DEAD_MEMBER_REASON},
+        }
+    )
+    return export
+
+
+class AListWithADeadMemberIsShownRefused(unittest.TestCase):
+    """#1307: a governs edge that binds nothing is reported on the page, and covers no file."""
+
+    def test_the_page_names_the_refused_edge_and_its_reason(self):
+        model = dashboard.load(with_dead_member_list(load_fixture()), corpus_identity="fixture")
+        self.assertEqual(
+            [(row["key"], row["governed_by"], row["reason"]) for row in model.refused],
+            [(("fixture", "FX-DR-0002"), "FX-DR-0002", DEAD_MEMBER_REASON)],
+        )
+        page = dashboard.render(model, dashboard.coverage_view(model, tree=TREE))
+        self.assertIn("Governs edges that bind nothing", page)
+        self.assertIn("<tr><td>FX-DR-0002</td><td>%s</td></tr>" % dashboard.html.escape(DEAD_MEMBER_REASON), page)
+        self.assertIn("including the paths in it that do match", page)
+
+    def test_the_matching_member_is_not_counted_as_covered(self):
+        before = dashboard.coverage_view(dashboard.load(load_fixture(), corpus_identity="fixture"), tree=TREE)
+        model = dashboard.load(with_dead_member_list(load_fixture()), corpus_identity="fixture")
+        after = dashboard.coverage_view(model, tree=TREE)
+        self.assertEqual((after.covered, after.total), (before.covered, before.total))
+        self.assertEqual([row["id"] for row, _ in after.rows], [row["id"] for row, _ in before.rows])
+
+    def test_governed_paths_is_unchanged(self):
+        before = dashboard.governed_paths(dashboard.load(load_fixture(), corpus_identity="fixture"))
+        model = dashboard.load(with_dead_member_list(load_fixture()), corpus_identity="fixture")
+        self.assertEqual(dashboard.governed_paths(model), before)
+        self.assertNotIn("README.txt", dashboard.governed_paths(model))
+
+    def test_a_page_with_no_refused_edge_says_there_is_none(self):
+        model = dashboard.load(load_fixture(), corpus_identity="fixture")
+        self.assertEqual(model.refused, [])
+        self.assertIn("No governs edge binds nothing", dashboard.render(model))
+
+    def test_a_refused_edge_of_another_relation_is_not_listed(self):
+        export = with_dead_member_list(load_fixture())
+        export["graph"]["edges"][-1]["relation"] = "cites"
+        model = dashboard.load(export, corpus_identity="fixture")
+        self.assertEqual(model.refused, [])
+
+    def test_a_refused_edge_with_no_reason_is_refused_as_input(self):
+        export = with_dead_member_list(load_fixture())
+        del export["graph"]["edges"][-1]["target"]["reason"]
+        with self.assertRaises(dashboard.ExportRefused) as raised:
+            dashboard.load(export, corpus_identity="fixture")
+        self.assertIn("target.reason", str(raised.exception))
+
+
 class TheCommandLine(unittest.TestCase):
     def test_writes_one_page_and_nothing_else(self):
         with tempfile.TemporaryDirectory() as scratch:
