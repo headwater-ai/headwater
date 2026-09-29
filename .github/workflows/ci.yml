@@ -1996,8 +1996,26 @@ jobs:
         #
         # It writes nothing inside the checkout: the scratch repository is a
         # temporary directory, `HOME` is redirected into it, and it is removed
-        # at the end.
+        # at the end. `HEADWATER_TUTORIAL_KEEP` copies the finished corpus out
+        # first, for the next step (#977).
+        env:
+          HEADWATER_TUTORIAL_KEEP: ${{ runner.temp }}/tutorial-corpus
         run: sh .claude/tutorial/fixtures.sh
+      - name: The site guide builds the tutorial corpus, and a missing page fails it
+        # `docs/how-to/publish-your-corpus-as-a-site.md` tells an adopter how
+        # to build a site from their corpus with MkDocs. This follows it over
+        # the corpus the tutorial step kept: it reads the overlay block out of
+        # the guide, copies `integrations/site-generator/mkdocs.yml`, and runs
+        # `mkdocs build --strict`. Then it appends a navigation entry for a
+        # page that does not exist, and the strict build must fail and name
+        # it. The script's header says what each half holds.
+        #
+        # It blocks. A guide that stops building is found here and not by an
+        # adopter. MkDocs 1.6.1 is the pin the step "The site this corpus's
+        # navigation builds" already installed in this job.
+        env:
+          MKDOCS: python3 -m mkdocs
+        run: sh integrations/site-generator/fixtures/build-site.sh "$RUNNER_TEMP/tutorial-corpus"
       - name: The n8n fixture READMEs print a recipe and state its figures, and this runs it
         # `docs/taxonomies/*/fixtures/n8n/README.md`, three of them, each type a
         # real corpus of the n8n monorepo at one pin, print the commands that

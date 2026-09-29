@@ -22,7 +22,7 @@
 
 lock:
   format: 3
-  digest: sha256:7ab82f462309a5de1b2758be2b51d21d8f6d587e7749b3d4c29d605c81172d25
+  digest: sha256:a80805ab65569f509eb9187b6ca94fba16fb63552c2b1d6ff4cf1061103e3c1e
   rules: 2
   package: headwater/standard
   version: 4.12.0
@@ -36,7 +36,7 @@ lock:
     - path: .headwater/packages/headwater-standard/bundles/decision-record/bundle.yml
       digest: sha256:d2e1dd60f5adf97dcefd3aa46b0f377ed5e7eca533f82fad8a3d90224f79673f
     - path: .headwater/overlay.yml
-      digest: sha256:4c9c90736c0c560a3b965ebaca6f4a0b8fb66f48c287056ad6c5ffd44353a7a2
+      digest: sha256:7ca2648dbec03740affe7878641a550ee93cdd2e6d5e51218f2a8e96b38e298e
 
 # The adoption payload: the debt this corpus declared when the taxonomy first
 # reached it. Every other line of this file is generated and this block is not.
@@ -1794,6 +1794,7 @@ resolved:
       - "docs/tutorials/*.md"
       - docs/how-to/relocate-a-shelf.md
       - docs/how-to/wire-headwater-check-into-your-own-workflow.md
+      - docs/how-to/publish-your-corpus-as-a-site.md
     archive:
       - headwater
       - LICENSE
@@ -1811,6 +1812,8 @@ resolved:
       - rm
       - wc
       - xargs
+      - python3
+      - mkdocs
     companions:
       - "headwater probe"
       - "headwater neighbors"

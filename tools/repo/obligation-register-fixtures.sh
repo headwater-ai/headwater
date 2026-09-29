@@ -169,6 +169,14 @@ discharged_ids() {
     done | LC_ALL=C sort -u
 }
 
+# process_ids DIR — the `id` of every record under DIR whatever its status:
+# `current_ids` keeps every status but `discharged`, and `discharged_ids`
+# keeps that one, so a draft, superseded or deprecated process record is in
+# the set too. Spec 13 bullets none of them (#1286).
+process_ids() {
+    { current_ids "$1"; discharged_ids "$1"; } | LC_ALL=C sort -u
+}
+
 # bulleted_ids FILE — the identifier named by every line of FILE that opens
 # with `- [HW-OBL-`, one per line, sorted under `LC_ALL=C` by the caller
 # (never here: case group 1b reads the raw, unsorted count too). A duplicate
@@ -231,8 +239,7 @@ exec 3>&2 2>"$scratch/stderr"
 current_ids "$obligations" >"$scratch/current"
 # Every record on the process register, current or discharged. Spec 13 bullets
 # none of them, so the set is read whole rather than split by status.
-{ current_ids "$process_obligations"; discharged_ids "$process_obligations"; } |
-    LC_ALL=C sort -u >"$scratch/process"
+process_ids "$process_obligations" >"$scratch/process"
 discharged_ids "$obligations" >"$scratch/discharged"
 bulleted_ids "$register" | LC_ALL=C sort >"$scratch/bulleted-sorted"
 bulleted_ids "$register" | LC_ALL=C sort -u >"$scratch/bulleted"
@@ -357,13 +364,23 @@ same "an annotated bullet for a discharged record still counts as bulleted" \
 #     13, and the record stays where it is.
 mkdir -p "$scratch/proc"
 printf -- '---\nid: HW-OBL-0004\nstatus: current\n---\n\n# Four\n' >"$scratch/proc/0004-four.md"
-current_ids "$scratch/proc" >"$scratch/s-process"
+printf -- '---\nid: HW-OBL-0005\nstatus: draft\n---\n\n# Five\n' >"$scratch/proc/0005-five.md"
+process_ids "$scratch/proc" >"$scratch/s-process"
 printf '# 13 — Open obligations\n\n## A heading\n\n- [HW-OBL-0001](../obligations/0001-one.md) — One\n- [HW-OBL-0002](../obligations/0002-two.md) — Two\n- [HW-OBL-0004](../process/obligations/0004-four.md) — Four\n' \
     >"$scratch/reg-process.md"
 bulleted_ids "$scratch/reg-process.md" | LC_ALL=C sort -u >"$scratch/s-bulleted-process"
 same "bulleting a process obligation reddens the judge, naming it as a process record" \
     "spec 13 lists a process obligation: HW-OBL-0004|" \
     "$(membership_judge "$scratch/s-current" "$scratch/s-bulleted-process" "$scratch/s-process" | tr '\n' '|')"
+
+# 2g. A process record at a status other than `current`, here `draft`, is
+#     still a process record, so a bullet for it is named the same way.
+printf '# 13 — Open obligations\n\n## A heading\n\n- [HW-OBL-0001](../obligations/0001-one.md) — One\n- [HW-OBL-0002](../obligations/0002-two.md) — Two\n- [HW-OBL-0005](../process/obligations/0005-five.md) — Five\n' \
+    >"$scratch/reg-process-draft.md"
+bulleted_ids "$scratch/reg-process-draft.md" | LC_ALL=C sort -u >"$scratch/s-bulleted-process-draft"
+same "bulleting a draft process obligation names it as a process record" \
+    "spec 13 lists a process obligation: HW-OBL-0005|" \
+    "$(membership_judge "$scratch/s-current" "$scratch/s-bulleted-process-draft" "$scratch/s-process" | tr '\n' '|')"
 
 # 2f. The reverse direction: a current process record that spec 13 does not
 #     bullet is owed nothing, so the clean register stays green with the
