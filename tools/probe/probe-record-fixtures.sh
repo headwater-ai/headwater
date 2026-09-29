@@ -1254,6 +1254,27 @@ if [ -f "$scratch/odd/tools/probe/kept.sh" ]; then
 else
     fail "and it keeps the file beside the star, which names no probe" "$(cat "$scratch/odd.out")"
 fi
+# The same under `docs/`, and in the line removal: a record named `*`, and a
+# file named `*` that links a deleted record, beside a binary file that the
+# removal must not rewrite.
+mkdir -p "$scratch/odddocs/docs/notes" "$scratch/odddocs/docs/spec" "$scratch/odddocs/assets"
+printf -- '---\nid: HW-OBL-0013\n---\nsee docs/probes/%s.md\n' "$tombstone" > "$scratch/odddocs/docs/notes/*"
+printf 'names no probe\n' > "$scratch/odddocs/docs/notes/kept.md"
+printf -- '- HW-OBL-0013 the tombstone gap\n' > "$scratch/odddocs/assets/*"
+printf 'a\000b\n' > "$scratch/odddocs/assets/blob.bin"
+cp "$scratch/odddocs/assets/blob.bin" "$scratch/blob.expected"
+sh "$root/tools/probe/seal.sh" "$scratch/odddocs" "HW-PROBE-$tombstone" >"$scratch/odddocs.out" 2>&1
+same "seal.sh seals a workspace whose docs/ holds a record named with a star" "0" "$?"
+if [ -f "$scratch/odddocs/docs/notes/kept.md" ] && [ ! -e "$scratch/odddocs/docs/notes/*" ]; then
+    pass "and it removes that record and keeps the document beside it"
+else
+    fail "and it removes that record and keeps the document beside it" "$(ls -aR "$scratch/odddocs/docs")"
+fi
+if cmp -s "$scratch/blob.expected" "$scratch/odddocs/assets/blob.bin"; then
+    pass "and the line removal leaves the binary file beside a file named with a star"
+else
+    fail "and the line removal leaves the binary file beside a file named with a star" "$(od -c "$scratch/odddocs/assets/blob.bin" | head -2 | tr '\n' ' ')"
+fi
 
 # The list itself. Each path it declares is a committed file of this checkout,
 # so a fold that moved is found here and not in a refused campaign. The two
