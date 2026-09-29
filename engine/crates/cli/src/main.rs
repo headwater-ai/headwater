@@ -321,8 +321,12 @@ fn dispatch(root: &Path, verb: Verb) -> ExitCode {
                 change,
             },
         ),
-        Verb::Change { base, out } => match (base, out) {
-            (Some(base), Some(out)) => change(root, &base, &out),
+        Verb::Change {
+            base,
+            out,
+            verified,
+        } => match (base, out) {
+            (Some(base), Some(out)) => change(root, &base, &out, &verified),
             _ => fail(
                 "`change` takes a base revision and a directory to write into. Try `headwater \
                  change HEAD .headwater/change` before `headwater check --change \
@@ -6029,8 +6033,8 @@ fn mcp(root: &Path, now: Option<Date>, writing: bool) -> ExitCode {
 /// [HW-DR-0072](../../../../docs/decisions/0072-the-binary-is-the-only-interface-an-adopter-must-run-and-every-integration-point-outside-it-is-declared.md)
 /// draws the boundary: this verb is the git plumbing, and `check --change` is
 /// the reader that stays inside the check-evaluation path spec 12 describes.
-fn change(root: &Path, base: &str, out: &Path) -> ExitCode {
-    match headwater_vcs::produce(root, base, out) {
+fn change(root: &Path, base: &str, out: &Path, verified: &[String]) -> ExitCode {
+    match headwater_vcs::produce(root, base, out, verified) {
         Ok(manifest) => {
             println!("{}", manifest.display());
             ExitCode::SUCCESS

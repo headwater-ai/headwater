@@ -365,6 +365,108 @@ fn a_change_the_flag_named_reaches_the_verdict_and_not_only_the_parser() {
     );
 }
 
+/// The front matter of the governing document the #1376 case writes, with
+/// `entry` as its one `governs` entry. `last_verified` is fixed, so every
+/// change after the first reads it as unmoved.
+fn governing(entry: &str) -> String {
+    format!(
+        "---\nid: HW-IFACE-run-tool\ntitle: \"The run tool\"\nstatus: current\n\
+         status_since: 2026-09-29\nlast_verified: 2026-09-29\nsummary: \"What the run tool \
+         does.\"\nprovenance:\n  warrant: asserted\n  agency: agent\n  evidence_basis: \
+         unevidenced\nrelations:\n  governs:\n{entry}\n---\n\n# The run tool\n\n\
+         It runs.\n"
+    )
+}
+
+/// The recorded `verified_revision` of the one entry in the governing
+/// document, or nothing.
+fn recorded(root: &Root) -> Option<String> {
+    let text = std::fs::read_to_string(root.path(GOVERNING)).expect("the document reads");
+    text.lines()
+        .find_map(|line| line.trim().strip_prefix("verified_revision:"))
+        .map(|value| value.trim().trim_matches('"').to_string())
+}
+
+const GOVERNING: &str = "docs/interfaces/run-tool.md";
+
+/// Whether a report carries a `relation.target.suspect` finding. The rule's
+/// name alone is not enough: the report also lists it with its instance count
+/// and its scope, so a finding is a line that opens with the name and goes on.
+fn reports_suspect(ran: &Ran) -> bool {
+    ran.out.lines().any(|line| {
+        let line = line.trim_start();
+        line.starts_with("relation.target.suspect ") || line.starts_with("relation.target.suspect:")
+    })
+}
+
+/// Done-when item 2 of #1376, through the binary: a document whose
+/// `last_verified` already stands at its value is re-read in a second change
+/// to the file it governs. `headwater change --verified` states the re-reading,
+/// and `headwater check --fix --change` records the new digest, where a change
+/// that states nothing records none. A second `check` then reports no suspect
+/// entry.
+#[test]
+fn a_stated_re_verification_records_the_digest_through_the_verbs() {
+    let root = Root::over("change", "stated-re-verification");
+    std::fs::create_dir_all(root.path("docs/interfaces")).expect("the shelf is there");
+    std::fs::create_dir_all(root.path("tools")).expect("the directory is there");
+    std::fs::write(root.path("tools/run.sh"), "#!/bin/sh\necho one\n").expect("it writes");
+    std::fs::write(root.path(GOVERNING), governing("    - tools/run.sh")).expect("it writes");
+    git(&root.at, &["init", "-q"]);
+    git(&root.at, &["config", "user.email", "fixtures@invalid"]);
+    git(&root.at, &["config", "user.name", "fixtures"]);
+    git(&root.at, &["add", "-A"]);
+    git(&root.at, &["commit", "-q", "-m", "base"]);
+
+    // The first stamp of the day. The entry records no digest yet, and the
+    // change states the re-reading, so the fix records the digest.
+    let first = git(&root.at, &["rev-parse", "HEAD"]);
+    let fixed = |base: &str, label: &str, verified: &[&str]| {
+        let out = out_dir(label);
+        let mut arguments = vec!["change", base, out.to_str().expect("a UTF-8 path")];
+        for path in verified {
+            arguments.push("--verified");
+            arguments.push(path);
+        }
+        let produced = root.run(&arguments);
+        assert_eq!(produced.code, Some(0), "{}{}", produced.out, produced.err);
+        let manifest = out.join("manifest").display().to_string();
+        let ran = root.run(&["check", "--no-cache", "--fix", "--change", &manifest]);
+        assert_eq!(ran.code, Some(0), "{label}: {}{}", ran.out, ran.err);
+        ran
+    };
+    fixed(&first, "stated-first", &[GOVERNING]);
+    let stamped = recorded(&root).expect("the first stamp records a digest");
+    git(&root.at, &["commit", "-q", "-am", "the first stamp"]);
+
+    // The second governed change of the day. The facet already reads its
+    // value, so the change cannot move it.
+    std::fs::write(root.path("tools/run.sh"), "#!/bin/sh\necho two\n").expect("it writes");
+    let second = git(&root.at, &["rev-parse", "HEAD"]);
+    let suspect = root.run(&["check", "--no-cache"]);
+    assert!(
+        reports_suspect(&suspect),
+        "the moved file is a suspect entry:\n{}",
+        suspect.out
+    );
+
+    // A change that states nothing records nothing: the decision #1259 made.
+    fixed(&second, "unstated", &[]);
+    assert_eq!(recorded(&root), Some(stamped.clone()), "an unstated change stamped");
+
+    // The same change, stated, records the new digest.
+    fixed(&second, "stated-second", &[GOVERNING]);
+    let restamped = recorded(&root).expect("the second stamp records a digest");
+    assert_ne!(restamped, stamped, "the digest did not move");
+
+    let clean = root.run(&["check", "--no-cache"]);
+    assert!(
+        !reports_suspect(&clean),
+        "the stamped entry is no longer suspect:\n{}",
+        clean.out
+    );
+}
+
 /// The decisive fixture of #929: a corpus that carries no `.githooks/` at
 /// all still reaches `warrant.promoted` in the same run that would otherwise
 /// report it skipped, because the verb alone — not a script this repository
