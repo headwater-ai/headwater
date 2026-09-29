@@ -2881,6 +2881,20 @@ same "  a tape cut off before its vendor line fails, and names the file" \
     "$scratch/standard/truncated.tape: names no headwater/standard version" \
     "$(standard_pin_judge 99.0.0 "$scratch/standard/clean1.md" "$scratch/standard/truncated.tape")"
 
+# 8m, continued. The exemption is one path and no wider. A driver at exactly
+# `.claude/tutorial/drive.py` that names no version passes. A sibling beside
+# it, and the tutorial's site page, fail when they name none, so an exemption
+# widened to a directory or to any path that holds `/tutorial` goes red here.
+mkdir -p "$scratch/standard/x/.claude/tutorial" "$scratch/standard/x/site/tutorial"
+: >"$scratch/standard/x/.claude/tutorial/drive.py"
+: >"$scratch/standard/x/.claude/tutorial/other.py"
+: >"$scratch/standard/x/site/tutorial/index.html"
+same "  the tutorial driver, which reads the version off the page, is exempt from the floor" ok \
+    "$(standard_pin_judge 99.0.0 "$scratch/standard/x/.claude/tutorial/drive.py")"
+same "  and the exemption is that one path: a sibling and the site page still fail" \
+    "$scratch/standard/x/.claude/tutorial/other.py: names no headwater/standard version|$scratch/standard/x/site/tutorial/index.html: names no headwater/standard version" \
+    "$(standard_pin_judge 99.0.0 "$scratch/standard/x/.claude/tutorial/other.py" "$scratch/standard/x/site/tutorial/index.html" | tr '\n' '|' | sed 's/|$//')"
+
 # 8o. The newest tag is the newest by VERSION. These four tags are chosen so
 #     that each wrong reading picks a different one: git's default order is
 #     lexical and ascending, and it lists v4.10.0 first; lexical descending
