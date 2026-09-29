@@ -152,6 +152,7 @@ pub mod finding;
 pub mod fragment;
 pub mod frontmatter;
 pub mod gate;
+pub mod harvest;
 pub mod identifier;
 pub mod identity;
 pub mod initial_dependency;
@@ -224,7 +225,7 @@ use headwater_graph::{Declarations, Graph};
 /// The order is the five origins of
 /// [spec 12](../../../../docs/spec/12-check-layer.md#the-five-origins-of-a-check),
 /// which is Shape, then Graph, then the runner's own accounting.
-pub const RULES: [&str; 43] = [
+pub const RULES: [&str; 44] = [
     facet_required::RULE,
     facet_value::RULE,
     facet_blank::RULE,
@@ -267,6 +268,7 @@ pub const RULES: [&str; 43] = [
     adoption::RULE,
     outside_root::RULE,
     pin::RULE,
+    harvest::RULE,
     verification::RULE,
 ];
 
@@ -321,6 +323,13 @@ pub struct Declared<'a> {
     /// is, and never out of the lock: the vendored bytes are hashed and no
     /// declaration is taken from them. See [`pin`].
     pub pin: Option<&'a pin::Pin>,
+    /// Every pinned corpus export `.headwater/taxonomy.yml` declares under
+    /// `harvests`, as the caller read it, and empty where it took no reading.
+    ///
+    /// Read off the tree on the terms [`Self::pin`] is. The caller reads it,
+    /// because the crate that reads a pin depends on this one. See
+    /// [`harvest`].
+    pub harvests: &'a [harvest::Harvest],
     /// The `adoption` block of the lock, where the lock declares one.
     ///
     /// It arrives as a mapping rather than as tasks because the lock does not
@@ -650,6 +659,12 @@ fn registry() -> [(&'static str, Scope, u32, scope::ExportTargets); RULES.len()]
             outside_root::EXPORTABLE_AS,
         ),
         (pin::RULE, pin::SCOPE, pin::VERSION, pin::EXPORTABLE_AS),
+        (
+            harvest::RULE,
+            harvest::SCOPE,
+            harvest::VERSION,
+            harvest::EXPORTABLE_AS,
+        ),
         (
             verification::RULE,
             scope::edge_scope::<verification::Verified<'_>>(),
@@ -1057,6 +1072,10 @@ pub fn run(
     // A digest pin the vendored bytes no longer hash to, as an error, for the
     // same reason: it is about the taxonomy's pin read against the tree.
     findings.extend(pin::findings(declared.pin));
+    // A pinned corpus export that did not read, as an error that names the
+    // pin, for the same reason: spec 7 owes the finding whether or not an
+    // anchor reaches the export.
+    findings.extend(harvest::findings(declared.harvests));
 
     // The obligation is stamped here rather than written into each rule,
     // because the binding is data. A rule states its id, a control names that
@@ -1138,7 +1157,15 @@ pub fn run(
     // The pin and every vendored member `pin::findings` hashed, on the same
     // terms: they belong to no instance, and a gate over a later tree has to
     // see a hand edit to either.
-    for input in declared.pin.map(pin::Pin::inputs).unwrap_or_default() {
+    // Each pinned export, on the same terms, so a gate sees one move.
+    let harvested = declared.harvests.iter().map(harvest::Harvest::input);
+    for input in declared
+        .pin
+        .map(pin::Pin::inputs)
+        .unwrap_or_default()
+        .into_iter()
+        .chain(harvested)
+    {
         if let Err(at) = read_set
             .inputs
             .binary_search_by(|known| known.path.as_str().cmp(input.path.as_str()))

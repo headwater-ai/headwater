@@ -166,6 +166,7 @@ fn run_over_with(root: &Path, observations: &Observations, cache: &mut Cache) ->
             adoption: None,
             observations,
             pin: None,
+            harvests: &[],
             source: "engine/crates/check/fixtures/acceptance-criterion-proven.taxonomy.yml",
         },
         &headwater_check::claim::Claims::empty(),

@@ -353,13 +353,13 @@ pub fn declared(root: &Path) -> Result<Vec<Declaration>, String> {
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(Vec::new()),
         Err(error) => return Err(format!("{}: {error}", path.display())),
     };
-    let root = headwater_yaml::load(&text)
+    let loaded = headwater_yaml::load(&text)
         .map_err(|errors| headwater_yaml::error::render(&errors))
         .map_err(|why| format!("{}: {why}", path.display()))?;
-    let Some(map) = root.value.as_map() else {
+    let Some(map) = loaded.value.as_map() else {
         return Err(format!("{} is not a mapping", path.display()));
     };
-    let Some(imports) = map.get("imports").and_then(|node| node.value.as_map()) else {
+    let Some(imports) = block(map, "imports", "a mapping of imports by name")? else {
         return Ok(Vec::new());
     };
 
@@ -384,6 +384,17 @@ pub fn declared(root: &Path) -> Result<Vec<Declaration>, String> {
                 entry.key.value
             )
         })?;
+        // The snapshot is repository content (spec 2), and both the importer
+        // and the resolver read `root.join(at)`, so a path that leaves the
+        // root is refused here, before either reads it.
+        if !contained(root, &at) {
+            return Err(format!(
+                "`imports.{}.at` is `{at}`, and a committed snapshot is read from a path under \
+                 the repository root: write it relative, with no `..` segment and no symlink \
+                 that leads out of the root",
+                entry.key.value
+            ));
+        }
         out.push(Declaration {
             name: entry.key.value.clone(),
             at,
@@ -393,6 +404,70 @@ pub fn declared(root: &Path) -> Result<Vec<Declaration>, String> {
         });
     }
     Ok(out)
+}
+
+/// The block `key` of `.headwater/taxonomy.yml`, when it declares anything.
+///
+/// Absent, or written with nothing after it, is no block. Any other value that
+/// is not a mapping is refused by name, because reading it as "nothing
+/// declared" would drop every declaration under it without a word
+/// ([#1311](https://github.com/headwater-ai/headwater/issues/1311)).
+pub(crate) fn block<'a>(
+    map: &'a headwater_yaml::value::Mapping,
+    key: &str,
+    what: &str,
+) -> Result<Option<&'a headwater_yaml::value::Mapping>, String> {
+    let Some(node) = map.get(key) else {
+        return Ok(None);
+    };
+    if let Some(block) = node.value.as_map() {
+        return Ok(Some(block));
+    }
+    if node
+        .value
+        .as_scalar()
+        .is_some_and(headwater_yaml::core_schema::as_null)
+    {
+        return Ok(None);
+    }
+    Err(format!(
+        "`{key}` in `{}` is {}, and it is {what}",
+        headwater_resolve::package::CONSUMER,
+        node.value.kind_name()
+    ))
+}
+
+/// Whether a declared path stays under the repository root.
+///
+/// Two tests, and a path passes both. The lexical one: relative, and no
+/// segment climbs. The second resolves the longest leading part of
+/// `root.join(at)` that exists, through every symlink, and requires it under
+/// the resolved root, because a committed symlink at a clean relative path
+/// otherwise takes the read out of the repository. The algorithm is
+/// `headwater_census::walk::escapes`, copied: census is a dev-dependency of
+/// this crate and not a dependency, and the corpus walk and a declared path
+/// are two callers that share no type.
+pub(crate) fn contained(root: &Path, at: &str) -> bool {
+    let lexical = Path::new(at).components().all(|component| {
+        matches!(
+            component,
+            std::path::Component::Normal(_) | std::path::Component::CurDir
+        )
+    });
+    if !lexical {
+        return false;
+    }
+    let Ok(canonical_root) = root.canonicalize() else {
+        return true;
+    };
+    let mut leading = Path::new(at);
+    while !leading.as_os_str().is_empty() {
+        if let Ok(canonical) = root.join(leading).canonicalize() {
+            return canonical.starts_with(&canonical_root);
+        }
+        leading = leading.parent().unwrap_or(Path::new(""));
+    }
+    true
 }
 
 /// What the corpus declares, as the importer reads it.

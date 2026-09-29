@@ -63,7 +63,7 @@ These are the behaviors that pressure to be helpful breaks first, and spec 5 sta
 
 `headwater new` decides everything before it writes anything, and it carries twenty-three refusals: nineteen from the decision, and four from the write, which puts every file on the tree or none of them. Two of the nineteen are the taxonomy telling you that a declaration is missing.
 
-`Unnameable` means the kind names no identifier scheme and a relation may name a document of it, so the document would be neither end of any edge. `FacetUndeterminable` means a required facet declares a closed value set, an integer or a date that no role determines, and a prompt in that field is a value the checks refuse.
+`Unnameable` means the kind names no identifier scheme and a relation may name a document of it, so the document would be neither end of any edge. Its message prints the two overlay lines that declare a scheme for the kind. `FacetUndeterminable` means a required facet declares a closed value set, an integer or a date that no role determines, and a prompt in that field is a value the checks refuse.
 
 Neither is worked around. Hand both to the `headwater-taxonomy` skill, which owns the declaration.
 
