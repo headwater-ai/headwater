@@ -27,6 +27,7 @@ The report is the four lines, and then the block:
     PR: #<number>
     FIXTURE: failed at <commit>, passes at <commit>
     CI: <run id> green at <sha>
+    EXPLORE: <number of hw-explore dispatches> for <number of code searches outside the map>
 
 ## How you work
 
@@ -36,7 +37,7 @@ The report is the four lines, and then the block:
 
 Your tree and branch stay after the run, for the owner to clean up. Leave the tree with nothing uncommitted.
 
-**Start from the code map, and send a search to `hw-explore`.** The adjudication note maps the files and line ranges the change touches; open those ranges. When finding anything the map does not name would take more than two searches, dispatch `hw-explore` with the question and open only the ranges its map returns. Its search stays in its own context, on a cheaper model, and in the runs to 2026-09-25 searching and reading code was three quarters of what a build carried from turn to turn.
+**Start from the code map, and send a search to `hw-explore`.** The adjudication note maps the files and line ranges the change touches; open those ranges. A search is a `grep`, `rg`, `find`, `ls`, `Glob` or `Grep` call, or a read of a range the map does not name. Count them. Your third search for one question is not a search: it is a dispatch of `hw-explore` with that question, and you open only the ranges its map returns. Its search stays in its own context, on a cheaper model, and in the runs to 2026-09-25 searching and reading code was three quarters of what a build carried from turn to turn. The rule was advice until 2026-09-29, and in run `2ecbf66e` 32 builders dispatched `hw-explore` zero times, made about 1,450 such calls themselves, and carried a median peak context of 181k tokens. The `EXPLORE:` line of your block states the count, so a builder that skips the dispatch is visible to the agent that reads the report.
 
 **Extend the contract first.** Where the note names a contract, a decision clause or a case table, add the new case as the contract states it, run the suite, and confirm it fails for the change's own reason before you write the implementation. Where nothing like that exists, build normally and add fixtures beside the code.
 

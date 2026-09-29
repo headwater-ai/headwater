@@ -1,6 +1,6 @@
 ---
 name: headwater-authoring
-description: Draft or revise a governed document in this repository — a decision, an obligation record, an evaluation, a review record, a numbered specification part. Use when asked to record a finding, file a decision, write up an evaluation, or add a document under docs/, and when `headwater new` refuses. It calls the engine for everything the taxonomy decides and carries only the judgment the engine reports as hand entry.
+description: Write or revise a governed document in this repository — a decision, an obligation record, an evaluation, a review record, a specification part. Use when asked to record a finding, file a decision, or add a document under docs/, and when `headwater new` refuses. A settled document goes into its pull request at `status: current`, not `draft` (HW-DR-0052). It calls the engine for what the taxonomy decides and carries the judgment it leaves as hand entry.
 ---
 
 # Headwater authoring

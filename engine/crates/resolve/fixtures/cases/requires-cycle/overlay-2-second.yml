@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The other half of the cycle.
+
+bundle: second
+extends: headwater/standard@1.0.0
+requires: [first]
+
+add:
+  kinds.memo: {is_a: governed_document, purpose: behavior}
