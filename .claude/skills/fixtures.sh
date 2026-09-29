@@ -572,8 +572,9 @@ is not what reaches the corpus"
 $routed"
     fi
 
-    # The same probe, answered from a prior alone. On 2026-09-28 every absent
-    # session answered the value `current` with no tool call, so a closed set
+    # The same probe, answered from a prior alone. On 2026-09-28 the two absent
+    # arms answered the value `current` in 30 of 30 and 28 of 30 sessions,
+    # none of them with a tool call, so a closed set
     # that the value alone satisfies measured the model and not the documents.
     # The set the plan prints must record the bare value as no answer, and the
     # value with the ruling's identifier as that line.
