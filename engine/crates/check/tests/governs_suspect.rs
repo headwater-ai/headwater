@@ -146,12 +146,22 @@ fn text_of(slug: &str, last_verified: &str, entries: &[String]) -> String {
 /// The prior bytes are handed to the reader directly, so no file stands for
 /// them.
 fn change(entries: &[(&str, Option<String>)]) -> Change {
+    stated(entries, &[])
+}
+
+/// [`change`], and a `verified` line for each path in `verified`: the change
+/// states that its author re-read that document, whether or not it carries it
+/// (#1376).
+fn stated(entries: &[(&str, Option<String>)], verified: &[&str]) -> Change {
     let mut manifest = String::from("headwater change 1\n");
     for (path, prior) in entries {
         match prior {
             Some(_) => manifest.push_str(&format!("prior\t{path}\tprior/{path}\n")),
             None => manifest.push_str(&format!("added\t{path}\n")),
         }
+    }
+    for path in verified {
+        manifest.push_str(&format!("verified\t{path}\n"));
     }
     let priors: Vec<(String, String)> = entries
         .iter()
@@ -503,6 +513,32 @@ fn a_moved_digest_is_fixable_only_on_a_document_the_change_re_verified() {
             )])),
             false,
         ),
+        // A second change on the day the document was last stamped: its
+        // freshness facet already reads today, so the author cannot move it,
+        // and the change states the re-verification instead (#1376).
+        (
+            "same day, stated",
+            at(TODAY).scoped_to(stated(
+                &[(DOCUMENT, Some(text_of("hooks", TODAY, &entries)))],
+                &[DOCUMENT],
+            )),
+            true,
+        ),
+        // An author who re-read the document and changed nothing in it.
+        (
+            "stated, not carried",
+            at(TODAY).scoped_to(stated(&[], &[DOCUMENT])),
+            true,
+        ),
+        // A statement about another document says nothing about this one.
+        (
+            "stated elsewhere",
+            at(TODAY).scoped_to(stated(
+                &[(DOCUMENT, Some(text_of("hooks", TODAY, &entries)))],
+                &[OTHER],
+            )),
+            false,
+        ),
     ] {
         let ran = run_in(&root, &ctx, &mut Cache::disabled(), &taxonomy());
         let reported = suspect(&ran);
@@ -575,6 +611,12 @@ fn a_warm_cache_keys_the_patch_on_the_change() {
     write(&root, ".claude/hooks/lib.sh", "refuse() { :; }\n");
     let re_verified =
         || at(TODAY).scoped_to(change(&[(DOCUMENT, Some(yesterday("hooks", &entries)))]));
+    let unmoved = |verified: &[&str]| {
+        at(TODAY).scoped_to(stated(
+            &[(DOCUMENT, Some(text_of("hooks", TODAY, &entries)))],
+            verified,
+        ))
+    };
     for (label, ctx, fixable, served) in [
         ("no change, cold", at(TODAY), false, false),
         (
@@ -590,6 +632,17 @@ fn a_warm_cache_keys_the_patch_on_the_change() {
             false,
             false,
         ),
+        // One prior version with and without the statement: the key holds
+        // the statement, so neither run is served the other's verdict, and
+        // a repeat of the unstated run is served its own (#1376).
+        ("facet unmoved, cold", unmoved(&[]), false, false),
+        (
+            "same day, stated, after an unstated run",
+            unmoved(&[DOCUMENT]),
+            true,
+            false,
+        ),
+        ("facet unmoved, warm", unmoved(&[]), false, true),
     ] {
         let mut cache = Cache::at(&root, LOCK, "sha256:rules");
         let ran = run_in(&root, &ctx, &mut cache, &taxonomy());
