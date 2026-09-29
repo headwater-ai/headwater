@@ -1134,7 +1134,8 @@ named_line=$(sh "$root/tools/probe/seal.sh" --named "HW-PROBE-$tombstone" | awk 
 same "seal.sh --named lists a record that names the probe, by its identifier" \
     "docs/obligations/0013-no-probe-tests-whether-a-counted-tombstone-stops-a-confident.md" "$named_line"
 same "and by its file name, the other name the seal strips" \
-    "1" "$(sh "$root/tools/probe/seal.sh" --named "HW-PROBE-$tombstone" | grep -c '^0013-no-probe-tests-whether-a-counted-tombstone-stops-a-confident\.md ')"
+    "1" "$(sh "$root/tools/probe/seal.sh" --named "HW-PROBE-$tombstone" \
+        | awk -v want="0013-no-probe-tests-whether-a-counted-tombstone-stops-a-confident.md" '$1 == want' | wc -l | tr -d ' ')"
 mkdir -p "$scratch/named/docs/spec"
 printf '%s\n' '- [HW-OBL-0013](../obligations/0013-no-probe-tests-whether-a-counted-tombstone-stops-a-confident.md) — the tombstone gap' \
     > "$scratch/named/docs/spec/13.md"
