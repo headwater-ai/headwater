@@ -1015,6 +1015,25 @@ if [ "$(git -C "$root" rev-parse --show-toplevel 2>/dev/null)" = "$root" ]; then
     else
         fail "and no file of the sealed corpus names a document it deleted" "$left"
     fi
+    # Every guard passes the sealed corpus (#1384), the named-document guard
+    # included. A guard that refused a tree the seal produced would stop every
+    # session of a campaign. The `PATH` has no `jq`, so a driver past the
+    # guards stops at 3 and spends nothing.
+    mkdir -p "$scratch/guard-path"
+    for tool in grep sh awk sed head; do
+        ln -sf "$(command -v "$tool")" "$scratch/guard-path/$tool"
+    done
+    unguarded=""
+    for sealed_probe in \
+        HW-PROBE-a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer \
+        HW-PROBE-an-agent-reaches-the-adjudication-from-the-document-that-lost-it \
+        HW-PROBE-what-a-session-writes-points-back-at-the-ruling-it-rests-on; do
+        PATH="$scratch/guard-path" "$shell" "$driver" --probe "$sealed_probe" --session x \
+            --task-file "$scratch/task.md" --workspace "$scratch/corpus" >/dev/null 2>"$scratch/sealed-guard.err"
+        guard_status=$?
+        [ "$guard_status" = 3 ] || unguarded="$unguarded $sealed_probe:$guard_status:$(head -1 "$scratch/sealed-guard.err")"
+    done
+    same "and every guard passes the sealed corpus" "" "$unguarded"
     broken=""
     for fold in $(cd "$scratch/corpus" && find . -name '*.json' | sort); do
         jq empty "$scratch/corpus/$fold" >/dev/null 2>&1 || broken="$broken $fold"
@@ -1124,7 +1143,10 @@ PATH="$scratch/no-harness" "$shell" "$driver" --probe "HW-PROBE-$tombstone" --se
     >/dev/null 2>"$scratch/named.err"
 same "the driver refuses a workspace that still links a record naming the probe" "9" "$?"
 present "and it names the file that holds the link" "docs/spec/13.md" "$scratch/named.err"
-printf '%s\n' '- HW-OBL-00130 is another record' > "$scratch/named/docs/spec/13.md"
+# The longer identifier is built at run time. Written out here, this file would
+# hold the record's identifier with no edge after it, which the seal keeps and
+# the sealed-corpus case above reads as a leak.
+printf -- '- %s30 is another record\n' "HW-OBL-001" > "$scratch/named/docs/spec/13.md"
 PATH="$scratch/no-harness" "$shell" "$driver" --probe "HW-PROBE-$tombstone" --session x \
     --task-file "$scratch/task.md" --workspace "$scratch/named" \
     >/dev/null 2>"$scratch/named2.err"
