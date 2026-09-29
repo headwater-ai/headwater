@@ -13,6 +13,13 @@
 #   guide's order. A guide that loses `headwater generate` leaves no
 #   `.headwater/nav.yml`, and the build that `INHERIT`s it fails here.
 #
+# - The guide's last command must be `headwater site site`, after its last
+#   `mkdocs build` (#978). It runs with the other commands, so it must exit 0
+#   over the site the guide built. Then a page is removed from a copy of that
+#   site, and the guide's own `headwater site` line runs again over the copy.
+#   It must exit non-zero and report `site.page.missing` for that document. A
+#   guide that drops the step, or moves it before the build, fails here.
+#
 # Then the negative case: a navigation entry for `decisions/0999-missing.md`
 # is appended to the generated `.headwater/nav.yml`, and the guide's own
 # `mkdocs build` line runs again. It must exit non-zero and name that path.
@@ -22,7 +29,9 @@
 # Two things the script does not take from the guide. The `pip install` line
 # is skipped, because the caller supplies MkDocs 1.6.1 (`MKDOCS`). A
 # `mkdocs` line gets `--site-dir <temporary directory>` appended, so that
-# nothing is written into the corpus; the guide's own flags are kept.
+# nothing is written into the corpus; the guide's own flags are kept. The
+# guide's `headwater site site` reads that same temporary directory in place of
+# `site`, the MkDocs default output directory that the guide names.
 #
 # No adopter runs this. It is a fixture of this repository, as
 # `integrations/headwater-check/fixtures/` is.
@@ -94,13 +103,28 @@ awk '
 grep -q '^mkdocs build' "$work/commands.sh" || fail "the guide runs no mkdocs build"
 grep '^mkdocs build' "$work/commands.sh" >"$work/build-commands.sh"
 
-# `mkdocs` runs the caller's MkDocs and writes the site outside the corpus.
+# The last step of a publish is `headwater site` over the directory MkDocs
+# wrote, and nothing the guide runs comes after it.
+last=$(awk 'NF { line = $0 } END { print line }' "$work/commands.sh")
+case $last in
+  'headwater site site' | 'headwater site site '*) ;;
+  *) fail "the guide's last command is not \`headwater site site\`: $last" ;;
+esac
+last_build=$(grep -n '^mkdocs build' "$work/commands.sh" | tail -n 1 | cut -d: -f1)
+first_site=$(grep -n '^headwater site' "$work/commands.sh" | head -n 1 | cut -d: -f1)
+[ "$first_site" -gt "$last_build" ] || fail "the guide runs \`headwater site\` before its last mkdocs build"
+printf '%s\n' "$last" >"$work/site-commands.sh"
+
+# `mkdocs` runs the caller's MkDocs and writes the site outside the corpus, and
+# `headwater site site` reads that directory.
 {
   printf 'set -e\n'
   printf 'mkdocs() { command %s "$@" --site-dir "$SITE_DIR"; }\n' "${MKDOCS:-mkdocs}"
+  printf 'headwater() { if [ "${1:-}" = site ] && [ "${2:-}" = site ]; then shift 2; command headwater site "$SITE_DIR" "$@"; else command headwater "$@"; fi; }\n'
 } >"$work/prelude.sh"
 cat "$work/prelude.sh" "$work/commands.sh" >"$work/run-guide.sh"
 cat "$work/prelude.sh" "$work/build-commands.sh" >"$work/run-build.sh"
+cat "$work/prelude.sh" "$work/site-commands.sh" >"$work/run-site.sh"
 
 SITE_DIR=$work/site sh "$work/run-guide.sh" >"$work/guide.out" 2>"$work/guide.err" \
   || fail "the guide's commands failed; see $work/guide.err"
@@ -109,7 +133,18 @@ SITE_DIR=$work/site sh "$work/run-guide.sh" >"$work/guide.out" 2>"$work/guide.er
   || fail "the site holds no page for decisions/0002-deliver-at-least-once.md"
 headwater check --strict >"$work/check.out" 2>&1 || fail "check --strict failed after the guide; see $work/check.out"
 headwater generate --check >"$work/gencheck.out" 2>&1 || fail "generate --check failed after the guide; see $work/gencheck.out"
-echo "site fixture: the guide's commands build the site"
+echo "site fixture: the guide's commands build the site, and its last step holds it"
+
+# The last step catches a page the build lost: the guide's own `headwater site`
+# line over a copy of the site with one page removed.
+cp -R "$work/site" "$work/site-gap"
+rm -f "$work/site-gap/decisions/0002-deliver-at-least-once/index.html"
+if SITE_DIR=$work/site-gap sh "$work/run-site.sh" >"$work/gap.out" 2>"$work/gap.err"; then
+  fail "the guide's headwater site exited 0 on a site that lacks a page; see $work/gap.out"
+fi
+grep 'site\.page\.missing' "$work/gap.out" | grep -q 'decisions/0002-deliver-at-least-once' \
+  || fail "the guide's headwater site failed, but reported no site.page.missing for decisions/0002-deliver-at-least-once; see $work/gap.out and $work/gap.err"
+echo "site fixture: a page the build lost fails the guide's last step and is named"
 
 # The negative case: a navigation entry that names a page that does not exist,
 # built with the guide's own `mkdocs build` line.
