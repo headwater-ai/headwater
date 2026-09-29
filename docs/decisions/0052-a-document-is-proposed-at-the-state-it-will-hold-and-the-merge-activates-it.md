@@ -2,7 +2,7 @@
 id: HW-DR-0052
 status: current
 status_since: 2026-09-06
-summary: "An author writes the state a document will hold once it lands, and the merge activates it. The state facet answers to the merge, the way HW-DR-0034 made the warrant facet answer to it."
+summary: "A settled decision carries the status current, not draft, in its pull request. An author writes the state a document will hold once it merges, and the merge activates it. The state facet answers to the merge, the way HW-DR-0034 made the warrant facet answer to it."
 last_verified: 2026-09-06
 title: "A document is proposed at the state it will hold, and the merge activates it"
 provenance:

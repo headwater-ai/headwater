@@ -1,8 +1,8 @@
 ---
 id: HW-RUN-campaign-of-2026-09-28-campaign-tier-present-arm-sufficiency
-status: current
-status_since: 2026-09-28
-summary: "The present arm of the campaign tier over the sufficiency selection, in the full #980 campaign batch: 120 sessions, 6385 cents, the intent hook live in 120."
+status: deprecated
+status_since: 2026-09-29
+summary: "The present arm of the campaign tier over the sufficiency selection, in the full #980 campaign batch: 120 sessions, 6385 cents, the intent hook live in 120. The recording is retired, because a later change moved the read set of its probes."
 last_verified: 2026-09-28
 tier: campaign
 arm: present
@@ -35,6 +35,8 @@ cost_cents: 6385
 **The oracle.** A `patched` artifact of either arm was checked in a copy of the present tree with the artifact written into it (`probe-transform.sh --oracle-tree`), so one oracle graded both arms.
 
 **3 sessions of this line were recorded twice.** On the first pass, each reached the cap of 60 turns on the fourth probe of the selection. The harness exited nonzero, so the recorder wrote no events for it. The batch held three such sessions in the present arm and one in the absent arm. The owner ruled on [#980](https://github.com/headwater-ai/headwater/issues/980) that the four are recorded again with a cap of 80 turns, and the events below are from that second pass. Every other session of the batch ended in fewer than 60 turns, so the higher cap would not have changed it.
+
+**This transcript stands at `deprecated`, and the reason is the read set of its probes.** The lock above is not the lock of this tree, and the engine reads such a recording only while the read set of its probes is the one this tree composes. On 2026-09-29, #1294 rewrote the task and the closed answer set of the probe on the status of a settled decision. In each arm of this batch, the sessions answered that probe from what the model already knew, with no tool call. The change moved the read set of this selection, so the first of the five confirmations now refuses this recording. The owner ruled on 2026-09-29 to retire the five full-batch transcripts rather than record them again. The result derived from this transcript carries no verdict on a later tree, and its verdicts stand only in the history of that result. A reader may take no rate from it as a measurement of the corpus as it now stands.
 
 ## Events
 
