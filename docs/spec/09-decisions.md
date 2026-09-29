@@ -88,6 +88,8 @@ A probe is a document with a declared expectation, and cadence follows the purpo
 
 A repository holds one or more corpora, the tier above harvests pinned exports, and no merged graph exists. The record is [HW-DR-0009](../decisions/0009-multi-repository-corpora.md).
 
+A namespace does not keep two corpora apart, and no rule compares the identifier schemes of two locks. The record is [HW-DR-0099](../decisions/0099-a-namespace-does-not-keep-two-corpora-apart-and-no-rule-compares-identifier-schemes-across-two-locks.md), and it constrains HW-DR-0009.
+
 ### The aggregator authors its own facts
 
 The federation layer is a corpus at a higher altitude. It authors the facts that live between repositories, and it reads exports for everything else. This heading stays because [HW-EVAL-adjacent-work](../evaluations/adjacent-work.md) cites it twice. The text is now [a subsection of the record](../decisions/0009-multi-repository-corpora.md#the-aggregator-authors-its-own-facts).

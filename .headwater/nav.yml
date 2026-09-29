@@ -12,6 +12,7 @@ nav:
       - "Q6 — Where the corpus graph lives at rest": "decisions/0006-where-the-corpus-graph-lives-at-rest.md"
       - "Q7 — Scope of the MCP surface": "decisions/0007-scope-of-the-mcp-surface.md"
       - "Q8 — Probe cost and cadence": "decisions/0008-probe-cost-and-cadence.md"
+      - "A namespace does not keep two corpora apart, and no rule compares identifier schemes across two locks": "decisions/0099-a-namespace-does-not-keep-two-corpora-apart-and-no-rule-compares-identifier-schemes-across-two-locks.md"
       - "Q9 — Multi-repository corpora": "decisions/0009-multi-repository-corpora.md"
       - "Q10 — Naming": "decisions/0010-naming.md"
       - "Q11 — License and distribution posture": "decisions/0011-license-and-distribution-posture.md"
