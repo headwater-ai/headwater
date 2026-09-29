@@ -113,10 +113,17 @@ tiers:
   # The discovery category holds that probe too. `--exclude` names it out, so
   # the other two discovery probes, which the machine half of Q16 rests on,
   # plan at this tier (#980).
+  #
+  # `max_turns` is the turn cap of each session (#1384). #980 needed 80 for
+  # the four `patched` sessions it recorded again after the 60-turn cap of
+  # 2026-09-28 stopped them. A session the cap stops is recorded as observed,
+  # never dropped and never drawn again, so the cap is part of what the rate
+  # measures, and both arms and both paired tiers share it.
   campaign:
     budget_cents: 30000
     session_cost_cents: 50
     repetitions: 30
+    max_turns: 80
     arms: [present, absent]
     ablation: [CLAUDE.md, .claude, .githooks, .headwater]
 
@@ -150,10 +157,13 @@ tiers:
   # The absent tree is produced by
   # `sh tools/probe/ablate.sh documentation <workspace>`. Its cost over the
   # sufficiency probes is projected at the end of this file.
+  #
+  # Its turn cap is the campaign's, for the reason given there.
   documentation:
     budget_cents: 13000
     session_cost_cents: 50
     repetitions: 30
+    max_turns: 80
     arms: [present, absent]
     ablation:
       - CLAUDE.md
