@@ -200,16 +200,13 @@ pub fn hold(
         for href in hrefs {
             let Some(link) = in_site(href) else { continue };
             report.links += 1;
-            let target = match resolve(page, &link.path, &files) {
-                Some(target) => target,
-                None => {
-                    report.findings.push(Finding {
-                        rule: LINK_DEAD,
-                        at: page.clone(),
-                        detail: format!("`{href}` resolves to no file of the site"),
-                    });
-                    continue;
-                }
+            let Some(target) = resolve(page, &link.path, &files) else {
+                report.findings.push(Finding {
+                    rule: LINK_DEAD,
+                    at: page.clone(),
+                    detail: format!("`{href}` resolves to no file of the site"),
+                });
+                continue;
             };
             let Some(fragment) = link.fragment else {
                 continue;
