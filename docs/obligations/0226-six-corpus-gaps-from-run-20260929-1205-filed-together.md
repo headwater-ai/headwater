@@ -23,7 +23,7 @@ waiting_on: build
 
 **Stamps.**
 
-- HW-OBL-0062 gained a Discharge sentence on 2026-09-30 and keeps `last_verified: 2026-08-13`. No rule says whether a content edit to an open obligation owes a new re-verification stamp. (build, #1410)
+- HW-OBL-0062 gained a Discharge sentence in #1412 on 2026-09-29 and keeps `last_verified: 2026-08-13`. No rule says whether a content edit to an open obligation owes a new re-verification stamp. (build, #1410)
 - Row 20 of `docs/reviews/the-sixty-four-restored-help-strings-checked-against-the-binary.md` quotes the help text of `export --at` from before #1343. The review is a point-in-time record and stays as written. Nothing re-checks a help string that a review recorded, so the next reader cannot tell that the row is out of date. (build, #1343)
 
 **Wording narrower or looser than the behavior.**
