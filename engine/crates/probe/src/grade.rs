@@ -428,21 +428,49 @@ impl Interval {
 /// missing probe is reported rather than quietly dropped.
 pub fn narrowed(selection: &[Selected], record: &Record) -> Option<Vec<Selected>> {
     let recorded = &record.identity.as_ref()?.selection;
+    match planned_over(selection, recorded, &record.probes)? {
+        Planned::Whole => None,
+        Planned::Part(part) => Some(part),
+    }
+}
+
+/// What a recorded selection digest is, against the selection this tree
+/// composes.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Planned {
+    /// The recorded digest is the digest of the whole selection.
+    Whole,
+    /// The recorded digest is the digest of these probes, which are the probes
+    /// of the selection that the transcript's events name.
+    Part(Vec<Selected>),
+}
+
+/// The selection a transcript was planned over, recovered from the digest it
+/// recorded and the probes its events name, or `None` where it is neither the
+/// whole selection nor that part of it.
+///
+/// This is the one statement of the rule. [`narrowed`] grades against the
+/// part, the intake compares the part's read set where the lock moved
+/// (#1292), and [`crate::read_set::Staleness::over`] holds a committed result
+/// against the part's read set (#1387). A transcript records no `--exclude`
+/// list, so the digest over the probes it names is the only record of which
+/// probes it was planned over.
+pub fn planned_over(selection: &[Selected], recorded: &str, probes: &[String]) -> Option<Planned> {
     let whole: Vec<&str> = selection
         .iter()
         .map(|selected| selected.id.as_str())
         .collect();
-    if &crate::plan::selection_digest(&whole) == recorded {
-        return None;
+    if crate::plan::selection_digest(&whole) == recorded {
+        return Some(Planned::Whole);
     }
     let part: Vec<Selected> = selection
         .iter()
-        .filter(|selected| record.probes.contains(&selected.id))
+        .filter(|selected| probes.contains(&selected.id))
         .cloned()
         .collect();
     let ids: Vec<&str> = part.iter().map(|selected| selected.id.as_str()).collect();
-    match !part.is_empty() && &crate::plan::selection_digest(&ids) == recorded {
-        true => Some(part),
+    match !part.is_empty() && crate::plan::selection_digest(&ids) == recorded {
+        true => Some(Planned::Part(part)),
         false => None,
     }
 }
