@@ -342,7 +342,38 @@ case "$why" in
     *'dispatches hw-verify itself'*) pass 'and a parent that dispatches hw-verify is reported' ;;
     *) fail 'a parent that dispatches hw-verify is reported' "reported: \`$why\`" ;;
 esac
+# A dispatch in plain prose names no backticked agent, and it is the same
+# dispatch.
+cp "$commands/next-run.md" "$scratch/next-run.md"
+printf 'On a build report, dispatch the verifier.\n' >> "$scratch/next-run.md"
+why=$(loop_below_parent "$scratch/next-run.md" "$agents/hw-iterate.md")
+case "$why" in
+    *'dispatches hw-verify itself'*) pass 'and a parent that dispatches the verifier in plain prose is reported' ;;
+    *) fail 'a parent that dispatches the verifier in plain prose is reported' "reported: \`$why\`" ;;
+esac
+cp "$commands/next-run.md" "$scratch/next-run.md"
+printf 'When the queue holds an issue, dispatch hw-build for it.\n' >> "$scratch/next-run.md"
+why=$(loop_below_parent "$scratch/next-run.md" "$agents/hw-iterate.md")
+case "$why" in
+    *'dispatches hw-build itself'*) pass 'and a parent that dispatches hw-build unquoted is reported' ;;
+    *) fail 'a parent that dispatches hw-build unquoted is reported' "reported: \`$why\`" ;;
+esac
 if [ -f "$agents/hw-iterate.md" ]; then
+    # The phrase survives in the file, but only in a sentence that forbids it:
+    # both stages would run in the shared checkout.
+    sed 's/ with `isolation: "worktree"`//g' "$agents/hw-iterate.md" > "$scratch/hw-iterate.md"
+    printf 'Never pass `isolation: "worktree"`.\n' >> "$scratch/hw-iterate.md"
+    why=$(loop_below_parent "$commands/next-run.md" "$scratch/hw-iterate.md")
+    case "$why" in
+        *'passes no isolation: "worktree" to hw-build'*'passes no isolation: "worktree" to hw-verify'*) pass 'and a loop agent that names isolation only to forbid it is reported' ;;
+        *) fail 'a loop agent that names isolation only to forbid it is reported' "reported: \`$why\`" ;;
+    esac
+    sed 's/Dispatch `hw-build` with `isolation/Dispatch `hw-build` without `isolation/' "$agents/hw-iterate.md" > "$scratch/hw-iterate.md"
+    why=$(loop_below_parent "$commands/next-run.md" "$scratch/hw-iterate.md")
+    case "$why" in
+        *'passes no isolation: "worktree" to hw-build'*) pass 'and a loop agent that dispatches its builder without isolation is reported' ;;
+        *) fail 'a loop agent that dispatches its builder without isolation is reported' "reported: \`$why\`" ;;
+    esac
     sed 's/isolation: "worktree"/isolation unset/g' "$agents/hw-iterate.md" > "$scratch/hw-iterate.md"
     why=$(loop_below_parent "$commands/next-run.md" "$scratch/hw-iterate.md")
     case "$why" in
