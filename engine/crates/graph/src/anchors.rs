@@ -1244,6 +1244,29 @@ mod tests {
         dir
     }
 
+    /// A scratch directory for a case that binds a Unix socket. A socket path
+    /// must be shorter than 108 bytes, and a runner's temporary directory can
+    /// be longer than that by itself, so the directory is in `/tmp` whatever
+    /// `TMPDIR` says. The name is keyed on the pid, the thread and the clock,
+    /// because cargo runs a target's cases as threads of one process.
+    #[cfg(unix)]
+    fn short_scratch() -> Scratch {
+        let thread: String = format!("{:?}", std::thread::current().id())
+            .chars()
+            .filter(char::is_ascii_digit)
+            .collect();
+        let nanos = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .expect("a clock later than the epoch")
+            .subsec_nanos();
+        let dir = Scratch(std::path::PathBuf::from(format!(
+            "/tmp/hw-sock-{}-{thread}-{nanos}",
+            std::process::id()
+        )));
+        std::fs::create_dir_all(&dir).expect("a short scratch directory");
+        dir
+    }
+
     /// The decisive fixture: one file, two comments, and the resolver's
     /// verdict flips on the identifier the second line cites rather than on
     /// anything about the file itself.
@@ -1313,7 +1336,7 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn a_citation_target_that_is_a_socket_or_a_device_is_refused_and_a_directory_is_not_one() {
-        let dir = scratch("socket-device-dir");
+        let dir = short_scratch();
         let _socket = std::os::unix::net::UnixListener::bind(dir.join("socket.rs"))
             .expect("the socket is bound");
         std::os::unix::fs::symlink("/dev/null", dir.join("device.rs")).expect("the link is made");
@@ -1649,15 +1672,7 @@ mod tests {
         // path must fit in 108 bytes, and a temporary directory on a CI
         // runner does not, so the socket is bound under a short directory in
         // `/tmp` and reached through a link, which the reader follows.
-        let short = Scratch(std::path::PathBuf::from(format!(
-            "/tmp/hw-sock-{}-{}",
-            std::process::id(),
-            std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .expect("a clock later than the epoch")
-                .subsec_nanos()
-        )));
-        std::fs::create_dir_all(&*short).expect("a short directory");
+        let short = short_scratch();
         let _socket =
             std::os::unix::net::UnixListener::bind(short.join("s")).expect("the socket is bound");
         std::os::unix::fs::symlink(short.join("s"), dir.join("sock"))
