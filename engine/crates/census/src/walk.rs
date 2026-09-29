@@ -192,10 +192,16 @@ pub fn relative(base: &Path, path: &Path) -> Option<String> {
 /// [`within`] is the reading that refuses one that leads out. The shortest
 /// such part whose remainder stays under it stands for the root: a path that
 /// leaves the root with `..` and comes back in (`root/../root/x`) names the
-/// root twice, and only the longer of the two keeps `x` inside. A root that
-/// cannot be made canonical, and a target with no such leading part, keep the
-/// first answer. A relative target is read against `root` and never against
-/// the working directory of the process.
+/// root twice, and only the longer of the two keeps `x` inside. Where no
+/// leading part is the root, as for a link outside the root that leads into a
+/// directory under it, the longest leading part that exists is made
+/// canonical, the rest is joined back on, and the result is compared with the
+/// canonical root. That last read answers with or without a file at the
+/// target, and it is the only one that follows a link to a place below the
+/// root. A root that cannot be made canonical, and a target none of these
+/// reads place under the root, keep the first answer. A relative target is
+/// read against `root` and never against the working directory of the
+/// process.
 pub fn typed(root: &Path, target: &str) -> Option<String> {
     let path = Path::new(target);
     if !path.is_absolute() {
@@ -208,7 +214,17 @@ pub fn typed(root: &Path, target: &str) -> Option<String> {
             .ancestors()
             .filter(|at| at.canonicalize().is_ok_and(|at| at == canonical_root))
             .collect();
-        roots.into_iter().rev().find_map(|at| relative(at, path))
+        roots
+            .into_iter()
+            .rev()
+            .find_map(|at| relative(at, path))
+            .or_else(|| {
+                let (at, canonical) = path
+                    .ancestors()
+                    .find_map(|at| at.canonicalize().ok().map(|canonical| (at, canonical)))?;
+                let rest = path.strip_prefix(at).ok()?;
+                relative(&canonical_root, &canonical.join(rest))
+            })
     })
 }
 
