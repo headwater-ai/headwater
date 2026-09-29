@@ -68,33 +68,53 @@ sentences() {
 }
 
 # The build-order stages a file dispatches in plain prose, which
-# `agent_names_in` cannot see: a sentence with a dispatch verb, not negated
-# before it, and after it `hw-build`, `hw-verify`, the builder or the verifier.
+# `agent_names_in` cannot see. Each dispatch verb of a sentence is read on its
+# own: the verb's object runs to the next dispatch verb or to a relative clause
+# (`, which`), and it names `hw-build`, `hw-verify`, the builder or the verifier.
+# A verb whose word before it is never, not, no or without is a refusal, and a
+# verb whose word before it is which, that, who, it or hw-iterate is somebody
+# else's dispatch. A negation earlier in the sentence ("If it does not answer,
+# dispatch the verifier") does not count.
 prose_dispatches_in() {
     sentences "$1" | awk '
+        function lastword(s,    n, w, i) {
+            n = split(s, w, /[^a-z-]+/)
+            for (i = n; i >= 1; i--) if (w[i] != "") return w[i]
+            return ""
+        }
         {
             t = tolower($0)
-            if (!match(t, /(^|[^a-z])(dispatch|launch|spawn)[a-z]*/)) next
-            if (substr(t, 1, RSTART) ~ /(^|[^a-z])(never|not|no|without)([^a-z]|$)/) next
-            rest = substr(t, RSTART + RLENGTH)
-            if (rest ~ /(^|[^a-z-])(hw-build|builder)([^a-z-]|$)/) print "hw-build"
-            if (rest ~ /(^|[^a-z-])(hw-verify|verifier)([^a-z-]|$)/) print "hw-verify"
+            pos = 1
+            while (pos <= length(t) && match(substr(t, pos), /(dispatch|launch|spawn)[a-z]*/)) {
+                s = pos + RSTART - 1
+                e = s + RLENGTH
+                pos = e
+                if (s > 1 && substr(t, s - 1, 1) ~ /[a-z]/) continue
+                if (lastword(substr(t, 1, s - 1)) ~ /^(never|not|no|without|which|that|who|it|hw-iterate)$/) continue
+                obj = substr(t, e)
+                if (match(obj, /(dispatch|launch|spawn)/)) obj = substr(obj, 1, RSTART - 1)
+                if (match(obj, /, (which|who|that) /)) obj = substr(obj, 1, RSTART - 1)
+                if (obj ~ /(^|[^a-z-])(hw-build|builder)([^a-z-]|$)/) print "hw-build"
+                if (obj ~ /(^|[^a-z-])(hw-verify|verifier)([^a-z-]|$)/) print "hw-verify"
+            }
         }' | sort -u
 }
 
 # Whether a file dispatches a stage with `isolation: "worktree"`: one sentence
-# in which a dispatch verb and the stage come before the phrase, with no never,
-# not, no or without before the phrase.
+# in which a dispatch verb, then the stage, then the phrase come in that order,
+# with no never, not, no, without, skip or omit between the stage and the
+# phrase.
 dispatches_isolated() {
     sentences "$1" | awk -v stage="$2" '
         {
             p = index($0, "isolation: \"worktree\"")
             if (!p) next
             pre = substr($0, 1, p - 1)
-            if (!index(pre, stage)) next
-            t = tolower(pre)
-            if (t !~ /dispatch/) next
-            if (t ~ /(^|[^a-z])(never|not|no|without)([^a-z]|$)/) next
+            sp = 0
+            while ((i = index(substr(pre, sp + 1), stage)) > 0) sp += i
+            # With no stage, sp is 0, the prefix below is empty and holds no verb.
+            if (tolower(substr(pre, 1, sp - 1)) !~ /(^|[^a-z])(dispatch|launch|spawn)/) next
+            if (tolower(substr(pre, sp)) ~ /(^|[^a-z])(never|not|no|without|skip|omit)([^a-z]|$)/) next
             found = 1
         }
         END { exit !found }'
@@ -435,6 +455,8 @@ prose_arm 'Do not dispatch the verifier yourself.' ''
 prose_arm 'Rule each verdict without dispatching the verifier.' ''
 prose_arm 'There is no dispatch of the builder in this file.' ''
 prose_arm 'Dispatch hw-iterate, which launches the builder and the verifier.' ''
+prose_arm 'Dispatch hw-iterate, which owns the builder and the verifier.' ''
+prose_arm 'Dispatch hw-iterate and let it launch the builder.' ''
 if [ -f "$agents/hw-iterate.md" ]; then
     # The phrase survives in the file, but only in a sentence that forbids it:
     # both stages would run in the shared checkout.
