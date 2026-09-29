@@ -1,6 +1,6 @@
 ---
 name: hw-run-policy
-description: The standing rulings and the environment of a Headwater build-order run, so that no stage stops to ask. Invoke before starting any hw-queue, hw-adjudicate, hw-build, hw-verify or hw-integrate dispatch. It cites the rulings by identifier rather than restating them, carries the traps each of which cost somebody an hour, and reads the same list for cost.
+description: The standing rulings and the environment of a Headwater build-order run, so that no stage stops to ask. Invoke before starting any hw-queue, hw-adjudicate, hw-iterate, hw-build, hw-verify or hw-integrate dispatch. It cites the rulings by identifier rather than restating them, carries the traps each of which cost somebody an hour, and reads the same list for cost.
 ---
 
 # The run policy

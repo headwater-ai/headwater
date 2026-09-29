@@ -3,7 +3,7 @@ id: HW-EVAL-the-build-order-as-a-multi-agent-system
 status: current
 status_since: 2026-09-07
 summary: "What one 20-hour run of the build order measured about its own orchestrator, the cost model those measurements settle, and the architecture that follows. What was rejected, and the numbers the next run is held against."
-last_verified: 2026-09-27
+last_verified: 2026-09-29
 title: "The build order as a multi-agent system"
 provenance:
   warrant: asserted
@@ -175,6 +175,20 @@ Four more measurements spend the same unit of cost, a turn at full context. Each
 **A builder that runs the whole suite on each edit pays for the workspace on each turn.** In the same run, one builder ran `cargo test --workspace` eleven times over its own build. Another builder ran `cargo` directly thirteen times, outside the slots of `tools/hw-cargo`. `.claude/agents/hw-build.md` now scopes a test run to one crate while the builder iterates, and it keeps one workspace run before the pull request.
 
 **A long report costs the parent on every later turn.** In one run, forty of forty-one stage reports were two to four times the 400-token limit. The parent read each one again on every later turn. Each stage now writes its narrative to a file and returns only the fixed block that its definition names.
+
+## What the first run with the loop below the parent measured
+
+[HW-PD-0022](../process/decisions/0022-the-verify-and-rework-loop-for-one-issue-runs-below-the-parent.md) moved the verify and rework loop for one issue into `hw-iterate`. It set a target of 3 parent wakes or fewer for each merged issue. Run `20260928-1109` is the first run that measured that number.
+
+**The method.** A wake is a top-level user turn of the parent transcript that carries a `<task-notification>`. The count reads one parent session, `2ecbf66e`, from 2026-09-28T11:09Z to 2026-09-29T02:35Z, with no restart. A merged issue is an issue that a `merge` line of the run's `log.jsonl` names. In that span the run merged 24 pull requests for 23 issues, and one more pull request, #1351, named no issue. HW-PD-0022 counts three kinds of wake: the adjudicate report, the `hw-iterate` report and the integrator report. The count gives each adjudicate wake and each `hw-iterate` wake to the issue that its summary names. It gives every integrator wake to the merged issues, because an integrator runs only to merge them.
+
+**The number.** The merged issues took 17 adjudicate wakes, 29 `hw-iterate` wakes and 14 integrator wakes. That is 60 wakes, or 2.61 for each of the 23 merged issues. Six of the merged issues had their adjudication in an earlier session. With one more wake for each of those six, the count is 66 wakes, or 2.87 for each merged issue. Both numbers are below the target of 3.
+
+**All the wakes.** The parent woke 90 times in the span, which is 3.6 for each of the 25 merged pull requests. 30 wakes are outside the count. Of these, 10 adjudicate wakes and 7 `hw-iterate` wakes were for issues that had not merged yet. The rest were 5 product owner passes, 3 release verifications and 5 single tasks. The owner also wrote 15 turns, which are not stage wakes.
+
+**The baseline.** HW-PD-0022 gives about 8 wakes for each merged issue in run `20260927-0443`, and it does not state how it counted. The same method on session `b5554ef1` of that run gives 626 wakes for 52 merged pull requests, which is 12.0 for each. Those pull requests closed 44 issues, so the count is 14.2 for each merged issue. The old shape also woke the parent for each build and each verify. So compare this baseline with the 3.6 of all wakes above, and not with the count of HW-PD-0022.
+
+**A live child does not wake its parent.** [HW-PD-0021](../process/decisions/0021-a-subagent-waits-in-the-foreground-because-a-background-wait-wakes-its-parent.md) left one question open: whether `hw-iterate` wakes the parent when it ends its turn while its builder or verifier runs. In this run, 8 issues gave the parent more than one `hw-iterate` wake. Each repeat wake came after a `SendMessage` from the parent to that agent, or after a new `hw-iterate` dispatch for the issue. The messages were rulings on a `STOP`, a disk that the parent freed, and conflicts after a merge. No repeat wake came while the parent was silent. So the ended turns of `hw-iterate` cost the parent nothing in this run. The count matches each agent to its issue by the summary of the notification and the time of the send. It does not use the agent id.
 
 ## What this evaluation cannot show
 
