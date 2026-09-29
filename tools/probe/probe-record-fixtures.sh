@@ -1330,6 +1330,53 @@ STUB
     absent "a file the session left alone is not produced" 'path: "docs/same.md"' "$scratch/bash-write.md"
     absent "an engine cache is not produced" ".headwater/cache" "$scratch/bash-write.md"
 
+    # `campaign.sh` runs one job with the tier's cap and its tree as the
+    # baseline, and assembly counts a capped session (#1384). The batch half
+    # of the script needs a clean checkout and the harness, so the case builds
+    # the output directory a batch writes and runs one `--job` over it, with a
+    # stub harness that writes through the shell and is stopped by the cap.
+    if [ "$(git -C "$root" rev-parse --show-toplevel 2>/dev/null)" = "$root" ]; then
+        batch=$scratch/batch
+        rm -rf "$batch"
+        mkdir -p "$batch/tasks" "$batch/sessions" "$batch/ws" "$batch/trees"
+        cp -a "$scratch/bw-base" "$batch/trees/oracle"
+        cp -a "$scratch/bw-base" "$batch/trees/campaign-present"
+        git -C "$root" rev-parse HEAD > "$batch/head"
+        printf 'claude-haiku-4-5\n' > "$batch/model"
+        : > "$batch/repetitions"
+        : > "$batch/max-turns"
+        : > "$batch/cap"
+        printf '30000\n' > "$batch/ceiling.campaign"
+        printf '50\n' > "$batch/unit.campaign"
+        printf '80\n' > "$batch/max-turns.campaign"
+        printf '1 campaign present sufficiency\n' > "$batch/lines"
+        cp "$scratch/task.md" "$batch/tasks/HW-PROBE-$tombstone.md"
+        cat > "$scratch/bin/claude" <<STUB
+#!/bin/sh
+printf '%s\n' "\$@" > "$scratch/claude-args"
+printf 'new\n' > docs/written-by-bash.md
+printf '%s\n' '{"type":"system","subtype":"init","model":"claude-haiku-4-5","session_id":"s15"}'
+printf '%s\n' '{"type":"result","subtype":"error_max_turns","is_error":true,"total_cost_usd":0.01,"modelUsage":{"claude-haiku-4-5-20251001":{"inputTokens":10}}}'
+exit 1
+STUB
+        chmod +x "$scratch/bin/claude"
+        rm -f "$scratch/claude-args"
+        job="L1-campaign-present-p1-r1 1 campaign present sufficiency HW-PROBE-$tombstone"
+        PATH="$scratch/bin:$PATH" sh "$root/tools/probe/campaign.sh" --out "$batch" --job "$job" \
+            >/dev/null 2>"$scratch/batch-job.err"
+        same "a campaign job stopped by the cap records with status 0" "0" \
+            "$(cat "$batch/sessions/L1-campaign-present-p1-r1/status" 2>/dev/null)"
+        same "and the tier's cap reaches the harness" "80" \
+            "$(awk 'prev == "--max-turns" { print; exit } { prev = $0 }' "$scratch/claude-args" 2>/dev/null)"
+        present "and the file it wrote through the shell is produced, against the tier's tree" \
+            'path: "docs/written-by-bash.md"' "$batch/sessions/L1-campaign-present-p1-r1/record.md"
+        sh "$root/tools/probe/campaign.sh" --out "$batch" --assemble >/dev/null 2>"$scratch/batch-assemble.err"
+        same "and assembly counts the capped session" "1 sessions, 1 cents, the intent hook live in 0, 1 stopped at the turn cap" \
+            "$(cat "$batch/assembled/campaign-present-sufficiency.summary" 2>/dev/null)"
+    else
+        printf 'note not a checkout of this repository, so the campaign job case did not run.\n'
+    fi
+
     # The plan's refusal is the driver's refusal (#980). The harness here is
     # the stub that exits 7, so a driver that reached it would exit 10: an 11
     # proves the refusal came before any harness call, which is before any
