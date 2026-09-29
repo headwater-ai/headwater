@@ -596,7 +596,7 @@ contains "a record that governs ./.github/workflows/ci.yml and is not cited ther
 #   - `deploy-site.yml` is started by `workflow_call` alone, and it is the one
 #     workflow whose steps run `tools/site/deploy-site.sh` or `wrangler
 #     deploy`, so two callers share one job and one concurrency group
-#     (HW-DR-0047's one deploy path).
+#     (HW-DR-0097's one deploy job).
 #   - `ci.yml` has a job that calls it.
 #   - `release.yml` has a job that calls it, that `needs` `publish`, that
 #     passes `ref: main`, and that carries no `if:`. Inside a called workflow
@@ -607,6 +607,10 @@ contains "a record that governs ./.github/workflows/ci.yml and is not cited ther
 #   - `deploy-site.yml` checks out `inputs.ref`, so the `ref: main` a caller
 #     passes reaches the checkout, and each caller passes `secrets`, without
 #     which the deploy has no Cloudflare token.
+#   - No file that describes the APT route says that "the Cloudflare build"
+#     deploys it (#1339). HW-DR-0097 moved the deploy into `deploy-site.yml`,
+#     and a maintainer who reads the old route looks for a build that does
+#     not exist. `apt_route` below reads the four files that describe it.
 # ---------------------------------------------------------------------------
 deploys_py='
 import glob, os, re, sys
@@ -701,6 +705,25 @@ deploys() {
     python3 -c "$deploys_py" "$1"
 }
 
+# apt_route ROOT — prints one line for each file that describes the APT route
+# and says that "the Cloudflare build" deploys it, and nothing for a tree that
+# holds. The match ignores case and a line break inside the phrase, because
+# the shell and YAML comments wrap it.
+apt_route_files="docs/decisions/0094-the-apt-repository-is-served-from-headwater-tools-and-signed-by-a-subkey-the-owner-s-offline-key-certifies.md
+tools/site/fetch-apt.sh
+.github/workflows/ci.yml
+docs/how-to/rotate-or-revoke-the-apt-signing-subkey.md"
+
+apt_route() {
+    printf '%s\n' "$apt_route_files" | while IFS= read -r f; do
+        if [ ! -f "$1/$f" ]; then
+            echo "$f is missing, so nothing states the APT route there"
+        elif tr '\n' ' ' < "$1/$f" | sed 's/#//g' | tr -s ' \t' ' ' | grep -qi 'cloudflare build'; then
+            echo "$f says the Cloudflare build deploys the APT repository"
+        fi
+    done
+}
+
 # edit_wf DIR FILE PYTHON — loads DIR/.github/workflows/FILE, runs PYTHON on
 # it as `doc`, and writes it back. A copy loses its comments, which no judge
 # here reads.
@@ -784,6 +807,23 @@ edit_wf "$scratch/d5" release.yml "doc['jobs']['deploy-copy'] = {'needs': 'publi
 contains "a copy of the deploy steps in release.yml is red" \
     "release.yml job deploy-copy runs the deploy itself, so the site has two deploy paths" \
     "$(deploys "$scratch/d5")"
+
+# d9. The APT route as each file that describes it states it (#1339).
+same "no file says the Cloudflare build deploys the APT repository" "" \
+    "$(apt_route "$root" | tr '\n' '|' | sed 's/|$//')"
+
+# d10. The phrase planted in a copy of fetch-apt.sh, wrapped as a comment
+# wraps it, so the case can fail.
+mkdir -p "$scratch/d10"
+printf '%s\n' "$apt_route_files" | while IFS= read -r f; do
+    mkdir -p "$scratch/d10/$(dirname "$f")"
+    cp "$root/$f" "$scratch/d10/$f"
+done
+printf '%s\n' '#   The site reaches Cloudflare by one path only, the Cloudflare' \
+    '#   build, so this step reads those assets at build time.' >> "$scratch/d10/tools/site/fetch-apt.sh"
+same "fetch-apt.sh that names the Cloudflare build is red" \
+    "tools/site/fetch-apt.sh says the Cloudflare build deploys the APT repository" \
+    "$(apt_route "$scratch/d10" | tr '\n' '|' | sed 's/|$//')"
 
 # d6. The called workflow gains a second trigger, so a third deploy path.
 copy_tree "$scratch/d6"
