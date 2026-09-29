@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The `add` half of a missing dependency. The key goes under a kind only
+# `provider` declares. Without the refusal HW-DR-0095 owes, the merge grafts a
+# `design_spec` mapping that holds one key and that no bundle declares, and it
+# succeeds. The refusal names this bundle, the missing one, and the mapping.
+#
+# The second `add` makes a kind of its own and one key under it. That parent is
+# written here, so it is not a dependent write and is not refused.
+
+bundle: dependent
+extends: headwater/standard@1.0.0
+requires: [provider]
+
+add:
+  kinds.design_spec.voice: declarative
+  kinds.report: {is_a: governed_document, purpose: behavior}
+  kinds.report.voice: narrative

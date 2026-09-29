@@ -163,6 +163,7 @@ impl Built {
             register: &self.register,
             observations: &self.observations,
             pin: None,
+            harvests: &[],
             adoption: None,
             source: "query.taxonomy.yml",
         }
