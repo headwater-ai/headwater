@@ -259,6 +259,9 @@ pub enum Unwalkable {
     UnreadableDirectory { error: String },
     /// A name that is not UTF-8, so no pattern can match it.
     UnreadableName,
+    /// A named pipe, a socket or a device, which the census never opens
+    /// (#1333).
+    Special,
 }
 
 /// How much of the census to write out.
@@ -318,6 +321,9 @@ fn outcome_of(entry: &walk::Entry, taxonomy: &Taxonomy) -> Read {
         EntryKind::UnreadableName => {
             return unread(Outcome::Unwalkable(Unwalkable::UnreadableName))
         }
+        // Never read: the `fs::read` below would block forever on a named
+        // pipe with no writer (#1333).
+        EntryKind::Special => return unread(Outcome::Unwalkable(Unwalkable::Special)),
         EntryKind::File => {}
     }
 
@@ -553,6 +559,9 @@ impl Outcome {
             }
             Outcome::Unwalkable(Unwalkable::UnreadableName) => {
                 "a name that is not UTF-8, so no pattern can match it".to_string()
+            }
+            Outcome::Unwalkable(Unwalkable::Special) => {
+                "a named pipe, a socket or a device, which the census never opens".to_string()
             }
         }
     }

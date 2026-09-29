@@ -1207,6 +1207,12 @@ fn collect(dir: &Path, root: &Path, ignored: &[String], found: &mut Vec<String>)
                 continue;
             }
             collect(&path, root, ignored, found);
+        } else if std::fs::metadata(&path).is_ok_and(|kind| !kind.is_file()) {
+            // A named pipe, a socket or a device, following a symlink. The
+            // readers of `found` open each path, and a read of a named pipe
+            // that has no writer never ends, so `derived` never lists one
+            // (#1333).
+            continue;
         } else if !ignored.contains(&relative) {
             found.push(relative);
         }

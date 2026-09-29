@@ -65,7 +65,7 @@
 //! is. A rule whose instances are only its findings reports a count that reads
 //! as its own denominator.
 //!
-//! # The three silences, and the one report an unrecorded edge gets
+//! # The three silences, and the reports an edge with no digest gets
 //!
 //! An edge with no recorded revision passes, with one exception below. A
 //! person who types an entry by hand records nothing to compare, and every
@@ -84,10 +84,16 @@
 //! reaches ([HW-OBL-0104](../../../../docs/obligations/0104-a-governs-edge-reaches-the-path-it-names-and-nothing.md)).
 //! A list member that names a directory is reported the same way, in one
 //! finding per entry that names each such member, because one directory
-//! member leaves the whole list without a digest (#1104). A literal that
-//! names a named pipe, a socket or a device has no digest either, because the
-//! source tree never opens one (#1269), but it passes: `/**` after it names
-//! nothing, so the directory remedy would be false.
+//! member leaves the whole list without a digest (#1104).
+//!
+//! **An edge that reaches only named pipes, sockets or devices is reported
+//! too.** The source tree never opens one (#1269), so such an edge has no
+//! digest and could never go suspect either. The rule reports it at `Info`,
+//! and names the regular files the document governs as the remedy, or the
+//! removal of the entry (#1333). It names no `/**`, because `/**` after such a
+//! path names nothing. An edge whose entries hold a regular file beside a pipe
+//! has a digest over the regular files, and the count a moved digest reports
+//! is the count of those files.
 //!
 //! A target that is not an anchor passes, and a document target is skipped
 //! with its reason. A document holds no revision, and an unbound target is
@@ -224,7 +230,13 @@ impl EdgeCheck for Suspect<'_> {
     /// 6: the fix, and the `Info` report over an unrecorded edge, are decided
     /// by the change rather than by the clock, so a verdict cached at 5 on a
     /// document verified today is stale (#1259).
-    const VERSION: u32 = 6;
+    ///
+    /// 7: a moved digest over a pattern counts the regular files the digest
+    /// covers rather than every entry the pattern matched, so a message
+    /// cached at 6 over a set that holds a named pipe, a socket or a device
+    /// states the wrong count. An edge whose entries are all such files is
+    /// reported rather than passed (#1333).
+    const VERSION: u32 = 7;
     /// The change decides the fix, and the clock decides nothing (#1259).
     const NEEDS_CLOCK: bool = false;
     /// The fix is offered only on a document the change re-verified, so the
@@ -288,12 +300,25 @@ impl EdgeCheck for Suspect<'_> {
             // suspect. That is reported rather than passed, with the wildcard
             // that does carry a digest as the remedy. No patch: the remedy
             // widens what the edge reaches, which is the author's to decide.
-            // Every other edge with no revision keeps its silence, and that
-            // includes a literal that names a named pipe (#1269). A list with
-            // one directory member has no digest either (#1104), and gets one
+            // An edge whose entries are all named pipes, sockets or devices
+            // has no digest either, because the source tree opens none of
+            // them (#1269), so it is reported too, with no `/**` remedy,
+            // because `/**` after such a path names nothing (#1333). Every
+            // other edge with no revision keeps its silence. A list with one
+            // directory member has no digest either (#1104), and gets one
             // finding that names every such member.
             let members = directory_members(resolver, patterns);
             return match (patterns.as_slice(), members.as_slice()) {
+                (_, []) if resolver == SOURCE_TREE && revision.names_no_regular_file() => {
+                    Outcome::failed_with(finding(
+                        Severity::Info,
+                        no_regular_file(&edge.source.id, &edge.name, &edge.raw_target),
+                        "name the regular files the document governs, or remove this entry if it \
+                         governs none"
+                            .to_string(),
+                        None,
+                    ))
+                }
                 (_, []) => Outcome::Passed,
                 ([_], [literal]) => Outcome::failed_with(finding(
                     Severity::Info,
@@ -364,7 +389,9 @@ impl EdgeCheck for Suspect<'_> {
                     current,
                     match literal {
                         true => Reach::One,
-                        false => Reach::Set(reached),
+                        // The entries the digest covers, which leaves out a
+                        // named pipe, a socket or a device it matched (#1333).
+                        false => Reach::Set(revision.covered().unwrap_or(reached)),
                     },
                 ),
                 reread(current),
@@ -397,8 +424,9 @@ impl EdgeCheck for Suspect<'_> {
 /// member leaves a list with no digest over its union too. A literal that
 /// names a named pipe, a socket or a device also gets no digest, because the
 /// resolver never opens one (#1269), but it is not a directory, and `/**`
-/// after it names nothing, so it is not a member here and the edge passes.
-/// Empty for every other resolver, and for an anchor with no such member.
+/// after it names nothing, so it is not a member here. The rule reports that
+/// edge with its own finding instead (#1333). Empty for every other resolver,
+/// and for an anchor with no such member.
 fn directory_members<'e>(
     resolver: &str,
     patterns: &'e [headwater_graph::edges::PatternMember],
@@ -422,6 +450,16 @@ fn directory(id: &str, name: &str, literal: &str) -> String {
     format!(
         "`{id}` declares `{name}: {literal}`, and `{literal}` names a directory, which the source \
          tree takes no digest of, so this edge never goes suspect when what it governs changes"
+    )
+}
+
+/// An edge over entries none of which is a regular file, in the terms of the
+/// document that declares it.
+fn no_regular_file(id: &str, name: &str, raw: &str) -> String {
+    format!(
+        "`{id}` declares `{name}: {raw}`, and `{raw}` names no regular file, only a named pipe, a \
+         socket or a device, which the source tree never opens, so this edge never goes suspect \
+         when what it governs changes"
     )
 }
 
@@ -485,8 +523,9 @@ fn recording(edge: &Edge, current: &str) -> Option<Patch> {
 enum Reach {
     /// A literal path: one entry, so the one that changed.
     One,
-    /// A pattern or a list: this many entries now, and the digest does not say
-    /// how many of them changed.
+    /// A pattern or a list: this many regular files under the digest now, and
+    /// the digest does not say how many of them changed. A named pipe, a
+    /// socket or a device the pattern matched is not counted (#1333).
     Set(usize),
 }
 
@@ -499,11 +538,11 @@ fn moved(id: &str, name: &str, raw: &str, verified: &str, current: &str, reach: 
         ),
         Reach::Set(count) => format!(
             "`{id}` declares `{name}: {raw}`, which was verified against content `{verified}`, \
-             and the {count} {entries} it matches now read `{current}`; the digest covers the \
-             set, so how many of them changed is not recorded",
-            entries = match count {
-                1 => "entry",
-                _ => "entries",
+             and the {count} regular {files} it covers now read `{current}`; the digest covers \
+             the set, so how many of them changed is not recorded",
+            files = match count {
+                1 => "file",
+                _ => "files",
             }
         ),
     }

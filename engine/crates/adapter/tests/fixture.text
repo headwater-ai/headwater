@@ -694,7 +694,7 @@ read set
   version shelf.placement_is_primary 2
   version relation.target.unresolved 1
   version relation.target.is_source 2
-  version relation.target.suspect 6
+  version relation.target.suspect 7
   version relation.reciprocity.missing 3
   version relation.endpoint.not_permitted 1
   version lifecycle.dependency.on_terminal 1

@@ -383,16 +383,18 @@ pub struct Entry {
 /// What the walk found, as a closed set.
 #[derive(Clone, Debug)]
 pub enum EntryKind {
+    /// A regular file.
     File,
+    /// A named pipe, a socket or a device: an entry that is not a regular
+    /// file, a directory or a symlink. Nothing opens one. Opening a named pipe
+    /// that has no writer blocks the process forever, so a census that read a
+    /// pipe at a document path never ended (#1333).
+    Special,
     /// A symlink, and where it pointed, as written.
-    Symlink {
-        target: String,
-    },
+    Symlink { target: String },
     /// A directory the walk could not read, so the files under it are missing
     /// from the count and this entry is the only record of that.
-    UnreadableDirectory {
-        error: String,
-    },
+    UnreadableDirectory { error: String },
     /// A name that is not UTF-8. It cannot be matched against a pattern that is
     /// UTF-8, so it can be neither shelved nor excluded, and the path below is
     /// the lossy form for a person to read.
@@ -492,7 +494,10 @@ fn descend(corpus: &Corpus, directory: &Path, prefix: &str, found: &mut Vec<Entr
             found.push(Entry {
                 path,
                 on_disk,
-                kind: EntryKind::File,
+                kind: match metadata.is_file() {
+                    true => EntryKind::File,
+                    false => EntryKind::Special,
+                },
                 excluded_by,
             });
         }
@@ -541,6 +546,46 @@ mod tests {
                 .any(|e| e.path.contains("link-to-directory/")),
             "the walk descended through a symlink"
         );
+    }
+
+    /// A named pipe and a socket are each an entry of their own kind and not
+    /// a file, so no reader of the walk opens one by mistake (#1333). Opening
+    /// a named pipe that has no writer blocks forever. A socket path must fit
+    /// in 108 bytes, and a temporary directory on a CI runner does not, so
+    /// the root is a short directory under `/tmp`.
+    #[cfg(unix)]
+    #[test]
+    fn a_named_pipe_and_a_socket_are_special_entries_and_not_files() {
+        let at = std::path::PathBuf::from("/tmp").join(format!(
+            "hw-walk-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .expect("a clock later than the epoch")
+                .subsec_nanos()
+        ));
+        std::fs::create_dir_all(at.join("docs")).expect("the root is made");
+        std::fs::write(at.join("docs/a.md"), "# A\n").expect("the file writes");
+        let fifo = std::process::Command::new("mkfifo")
+            .arg(at.join("docs/x.md"))
+            .status()
+            .expect("mkfifo runs");
+        assert!(fifo.success(), "the named pipe is made");
+        let socket = std::os::unix::net::UnixListener::bind(at.join("docs/s.md"))
+            .expect("the socket is bound");
+
+        let entries = walk(&Corpus::new(at.clone(), "docs"));
+        drop(socket);
+        std::fs::remove_dir_all(&at).ok();
+        let kind = |path: &str| {
+            entries
+                .iter()
+                .find(|entry| entry.path == path)
+                .map(|entry| entry.kind.clone())
+        };
+        assert!(matches!(kind("docs/x.md"), Some(EntryKind::Special)));
+        assert!(matches!(kind("docs/s.md"), Some(EntryKind::Special)));
+        assert!(matches!(kind("docs/a.md"), Some(EntryKind::File)));
     }
 
     #[test]
