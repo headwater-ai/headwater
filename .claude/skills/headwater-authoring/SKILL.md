@@ -1,6 +1,6 @@
 ---
 name: headwater-authoring
-description: Draft or revise a governed document in this repository — a decision, an obligation record, an evaluation, a review record, a numbered specification part. Use when asked to record a finding, file a decision, write up an evaluation, or add a document under docs/, and when `headwater new` refuses. It calls the engine for everything the taxonomy decides and carries only the judgment the engine reports as hand entry.
+description: Write or revise a governed document in this repository — a decision, an obligation record, an evaluation, a review record, a specification part. Use when asked to record a finding, file a decision, or add a document under docs/, and when `headwater new` refuses. A settled document goes into its pull request at `status: current`, not `draft` (HW-DR-0052). It calls the engine for what the taxonomy decides and carries the judgment it leaves as hand entry.
 ---
 
 # Headwater authoring
@@ -63,7 +63,7 @@ These are the behaviors that pressure to be helpful breaks first, and spec 5 sta
 
 `headwater new` decides everything before it writes anything, and it carries twenty-three refusals: nineteen from the decision, and four from the write, which puts every file on the tree or none of them. Two of the nineteen are the taxonomy telling you that a declaration is missing.
 
-`Unnameable` means the kind names no identifier scheme and a relation may name a document of it, so the document would be neither end of any edge. `FacetUndeterminable` means a required facet declares a closed value set, an integer or a date that no role determines, and a prompt in that field is a value the checks refuse.
+`Unnameable` means the kind names no identifier scheme and a relation may name a document of it, so the document would be neither end of any edge. Its message prints the two overlay lines that declare a scheme for the kind. `FacetUndeterminable` means a required facet declares a closed value set, an integer or a date that no role determines, and a prompt in that field is a value the checks refuse.
 
 Neither is worked around. Hand both to the `headwater-taxonomy` skill, which owns the declaration.
 

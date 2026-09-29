@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The `dependent-add-to` case with `requires` emptied. Nothing orders the pair
+# now, and an `add_to` and an `add` that reach one list leave the result to the
+# order of application, so the resolver refuses it and names both bundles and
+# the list.
+
+bundle: dependent
+extends: headwater/standard@1.0.0
+requires: []
+
+add:
+  kinds.design_spec.voice: declarative
+
+add_to:
+  kinds.design_spec.sections.require: [Rationale]

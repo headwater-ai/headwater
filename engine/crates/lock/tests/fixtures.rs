@@ -78,9 +78,75 @@ fn sources(case: &Path) -> Vec<Source> {
     overlays.sort();
     for overlay in overlays {
         let shown = overlay.file_name().unwrap().to_string_lossy().to_string();
-        out.push(Source::read(&overlay, &shown, Role::Overlay).expect("an overlay loads"));
+        let source = Source::read(&overlay, &shown, Role::Overlay).expect("an overlay loads");
+        out.push(match selected_as(&shown) {
+            Some(bundle) => source.selected_as(&bundle),
+            None => source,
+        });
     }
     out
+}
+
+/// `overlay-<n>-<name>.yml` is the bundle `<name>`, as the resolver's own
+/// harness reads it, so a case whose bundles name each other in `requires`
+/// resolves here as it does there.
+fn selected_as(file: &str) -> Option<String> {
+    let rest = file.strip_prefix("overlay-")?.strip_suffix(".yml")?;
+    let (number, name) = rest.split_once('-')?;
+    (!number.is_empty() && number.bytes().all(|byte| byte.is_ascii_digit()))
+        .then(|| name.to_string())
+}
+
+/// This repository's own selection: `design-spec` and `decision-record` both
+/// require `evidence-and-obligation`. The order between those two is held
+/// fixed, `design-spec` first. The three orders that place
+/// `evidence-and-obligation` first, between, and last are written out.
+#[test]
+fn every_order_of_a_selection_writes_one_lock_and_lists_each_dependency_first() {
+    let root = repository_root();
+    let consumer = headwater_resolve::package::consumer(&root).expect("this repository's consumer");
+    let adoption = headwater_lock::authored_at(&root);
+    let position = |order: &[usize], bundle: &str| {
+        order
+            .iter()
+            .position(|index| consumer.bundles[*index] == bundle)
+            .unwrap_or_else(|| panic!("this repository selects {bundle}"))
+    };
+    let mut locks: Vec<String> = Vec::new();
+    for order in permutations(consumer.bundles.len()) {
+        if position(&order, "design-spec") > position(&order, "decision-record") {
+            continue;
+        }
+        let mut trial = consumer.clone();
+        trial.bundles = order
+            .iter()
+            .map(|index| consumer.bundles[*index].clone())
+            .collect();
+        let sources = headwater_resolve::package::sources(&root, &trial).expect("its sources");
+        let resolution = resolve(&sources).expect("every order resolves");
+        locks.push(
+            headwater_lock::write(
+                &trial.package,
+                &trial.version,
+                &sources,
+                &resolution,
+                adoption.payload(),
+            )
+            .expect("it validates"),
+        );
+    }
+    assert_eq!(locks.len(), 3, "three places for the dependency");
+    assert!(
+        locks.iter().all(|lock| *lock == locks[0]),
+        "two orders wrote two locks"
+    );
+    let at = |bundle: &str| {
+        locks[0]
+            .find(&format!("bundles/{bundle}/bundle.yml"))
+            .unwrap_or_else(|| panic!("{bundle} is listed"))
+    };
+    assert!(at("evidence-and-obligation") < at("design-spec"));
+    assert!(at("evidence-and-obligation") < at("decision-record"));
 }
 
 /// One digest per case, over every legal order of its overlays.
