@@ -39,6 +39,20 @@
 //! session that opened a document no probe examines read that document, and
 //! only the transcript records it.
 //!
+//! **A Bash call names a document and witnesses nothing.** The recorder writes
+//! the argument of a Bash call as the JSON of its input, so the argument is
+//! never a path. It writes no result identity for it either, because a command
+//! returns no one document. So this module reads the words of the command by
+//! the rule the grader reads them with ([`crate::grade::bash_read_words`]). A
+//! word that names a member marks that member as named through Bash, and a word
+//! that names a classified document no probe examines adds that document as an
+//! `opened` member. The Bash call is never the witness of a member, because its
+//! empty result compared with a content digest would report every such
+//! document as moved on a tree nobody edited. A later call that recorded an
+//! identity for the same path is the witness, in first-call order. A Bash call
+//! whose words name no document of this corpus is reported once, as the
+//! argument it recorded, and not once for each word.
+//!
 //! The two halves check each other. Where the digest holds and a witness
 //! disagrees, the document did not move, so what the recorder wrote as a result
 //! identity is not this engine's content digest of that document. That is a
@@ -125,8 +139,11 @@ pub struct Member {
     /// What this corpus holds for it now, and `None` where this corpus holds no
     /// classified document at that path.
     pub now: Option<String>,
-    /// The first recorded call that named it.
+    /// The first recorded call that named it and recorded an identity.
     pub witness: Option<Witness>,
+    /// The first Bash call that named it, as `(event, call)`, both one-based.
+    /// A Bash call records no identity, so it is never the witness.
+    pub bash: Option<(usize, usize)>,
 }
 
 impl Member {
@@ -312,6 +329,7 @@ impl Staleness {
                 },
                 now: read.digest.clone(),
                 witness: None,
+                bash: None,
             });
         }
 
@@ -349,6 +367,7 @@ impl Staleness {
                             because: Provenance::Opened,
                             now: digest,
                             witness: Some(witness(&path)),
+                            bash: None,
                         }),
                         // A path this corpus holds no classified document at.
                         // A read set is a list of corpus paths, so nothing here
@@ -474,6 +493,14 @@ impl Staleness {
                 member.now.as_deref().unwrap_or("no such document"),
             );
             match &member.witness {
+                None if member.bash.is_some() => {
+                    let (event, call) = member.bash.unwrap_or_default();
+                    let _ = writeln!(
+                        out,
+                        "    event {event} call {call} named it through Bash, which records no \
+                         identity, so no witness says whether it moved"
+                    );
+                }
                 None => {
                     let _ = writeln!(
                         out,

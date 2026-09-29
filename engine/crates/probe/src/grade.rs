@@ -1444,6 +1444,130 @@ mod tests {
         }
     }
 
+    /// A heredoc that the command never closes ends at the end of the input,
+    /// and the tokenizer returns (#1384 verify, M5). Without that stop the loop
+    /// that skips the body never ends, so the case runs on a thread of its own
+    /// and a regression fails it rather than hanging the suite.
+    #[test]
+    fn a_heredoc_with_no_delimiter_line_ends_at_the_end_of_the_input() {
+        let (send, receive) = std::sync::mpsc::channel();
+        std::thread::spawn(move || {
+            let _ = send.send(shell_tokens("cat <<EOF\nsee docs/probes/one.md"));
+        });
+        let tokens = receive
+            .recv_timeout(std::time::Duration::from_secs(5))
+            .expect("the tokenizer did not return over a heredoc with no delimiter line");
+        assert!(
+            !tokens.contains(&Token::Word("docs/probes/one.md".into())),
+            "the body of an unclosed heredoc was read as a command: {tokens:?}"
+        );
+    }
+
+    /// Two heredocs on one line take their bodies in order: the first
+    /// delimiter ends the first body and the second ends the second (#1384
+    /// verify, M2). Taken in the other order, the second delimiter swallows
+    /// both bodies and the first waits past the command after them.
+    #[test]
+    fn two_heredocs_on_one_line_take_their_bodies_in_order() {
+        let want = target(None, "docs/probes/one.md");
+        assert!(
+            bash_names(
+                r#"{"command":"cat <<A <<B\nx\nA\ny\nB\ncat docs/probes/one.md"}"#,
+                &want
+            ),
+            "the command after both bodies is not read"
+        );
+        assert!(
+            !bash_names(
+                r#"{"command":"cat <<A <<B\nx\nA\ndocs/probes/one.md\nB\nls"}"#,
+                &want
+            ),
+            "the body of the second heredoc was read as a command"
+        );
+    }
+
+    /// Only the delimiter line itself ends a body. A line with a trailing
+    /// space does not, in bash (#1384 verify, M4), and after `<<-` only tabs
+    /// are taken off the front of the line, never spaces (M6).
+    #[test]
+    fn a_delimiter_line_is_the_delimiter_and_nothing_else() {
+        let want = target(None, "docs/probes/one.md");
+        for command in [
+            r#"{"command":"cat <<EOF\nEOF \ndocs/probes/one.md\nEOF"}"#,
+            r#"{"command":"cat <<-EOF\n  EOF\ndocs/probes/one.md\nEOF"}"#,
+        ] {
+            assert!(!bash_names(command, &want), "{command}");
+        }
+    }
+
+    /// The limits the tokenizer states. `<< -EOF` has the delimiter `-EOF` and
+    /// keeps its tabs, as in bash, because only `<<-` written as one operator
+    /// strips them. `<<` inside an arithmetic expansion is read as a heredoc,
+    /// which bash does not do, so the lines after it are skipped up to a line
+    /// that is its right operand. A here-string `<<<` is not a heredoc: the
+    /// word after it is a word the command is given, and it counts as a read
+    /// the way any other word does.
+    #[test]
+    fn the_stated_limits_of_the_tokenizer_hold() {
+        let want = target(None, "docs/probes/one.md");
+        // `<< -EOF`: `EOF` does not end the body, `-EOF` does.
+        assert!(!bash_names(
+            r#"{"command":"cat << -EOF\nEOF\ndocs/probes/one.md\n-EOF"}"#,
+            &want
+        ));
+        assert!(bash_names(
+            r#"{"command":"cat << -EOF\nx\n-EOF\ncat docs/probes/one.md"}"#,
+            &want
+        ));
+        // `<<-EOF` and `<<- EOF` strip tabs and end on `EOF`.
+        for command in [
+            r#"{"command":"cat <<-EOF\n\tx\n\tEOF\ncat docs/probes/one.md"}"#,
+            r#"{"command":"cat <<- EOF\n\tx\n\tEOF\ncat docs/probes/one.md"}"#,
+        ] {
+            assert!(bash_names(command, &want), "{command}");
+        }
+        // Arithmetic: the limit, pinned as stated.
+        assert!(!bash_names(
+            r#"{"command":"echo $((1<<2))\ncat docs/probes/one.md"}"#,
+            &want
+        ));
+        // A here-string word is a word the command is given.
+        assert!(bash_names(
+            r#"{"command":"grep x <<< docs/probes/one.md"}"#,
+            &want
+        ));
+    }
+
+    /// A recorded digest that is the digest of the whole selection is the
+    /// whole, whichever probes the events name (#1384, item 2). A part equal
+    /// to the whole has the same digest, so the order of the two tests in
+    /// [`planned_over`] is the rule, and each of these cases holds it.
+    #[test]
+    fn the_digest_of_the_whole_selection_is_the_whole() {
+        let one = opened_over_one_document();
+        let two = Selected {
+            path: "probes/two.md".into(),
+            id: "PROBE-FIX-two".into(),
+            ..opened_over_one_document()
+        };
+        let selection = vec![one, two];
+        let whole = crate::plan::selection_digest(&["PROBE-FIX-one", "PROBE-FIX-two"]);
+        assert_eq!(
+            planned_over(&selection, &whole, &["PROBE-FIX-one".to_string()]),
+            Some(Planned::Whole),
+            "events that name one probe of two, under the digest of the whole"
+        );
+        assert_eq!(
+            planned_over(
+                &selection,
+                &whole,
+                &["PROBE-FIX-one".to_string(), "PROBE-FIX-two".to_string()]
+            ),
+            Some(Planned::Whole),
+            "events that name every probe are the whole and not a part"
+        );
+    }
+
     /// Only a Bash call's argument is read as a command. Another tool whose
     /// input happens to carry a `command` key has not run it.
     #[test]
