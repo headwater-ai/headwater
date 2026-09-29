@@ -14,6 +14,7 @@ an unstated warrant as `asserted`. Both defects fail here.
 
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -29,6 +30,18 @@ TREE = os.path.join(HERE, "fixtures", "tree")
 REPO = os.path.join(HERE, "..", "..")
 
 
+def built_engine():
+    """The newer of the two built engines, or a skip when neither is built."""
+    engines = [
+        os.path.join(REPO, "engine", "target", profile, "headwater")
+        for profile in ("release", "dev-release")
+    ]
+    engines = [path for path in engines if os.access(path, os.X_OK)]
+    if not engines:
+        raise unittest.SkipTest("no built engine")
+    return max(engines, key=os.path.getmtime)
+
+
 def repo_export():
     """This repository's graph export, which is computed and never committed (#1251).
 
@@ -41,14 +54,10 @@ def repo_export():
     if named:
         with open(named, encoding="utf-8") as handle:
             return json.load(handle)
-    engines = [
-        os.path.join(REPO, "engine", "target", profile, "headwater")
-        for profile in ("release", "dev-release")
-    ]
-    engines = [path for path in engines if os.access(path, os.X_OK)]
-    if not engines:
+    try:
+        engine = built_engine()
+    except unittest.SkipTest:
         raise unittest.SkipTest("no built engine to compute the export, and HEADWATER_EXPORT is unset")
-    engine = max(engines, key=os.path.getmtime)
     written = subprocess.run(
         [engine, "export", "--format", "json", "--root", REPO],
         check=True,
@@ -224,6 +233,178 @@ class AListAnchorIsCountedByItsMembers(unittest.TestCase):
         with self.assertRaises(dashboard.ExportRefused) as raised:
             dashboard.load(export, corpus_identity="fixture")
         self.assertIn("target.patterns", str(raised.exception))
+
+
+DEAD_MEMBER_REASON = "`code_path`: `src/gone.rs` no `src/gone.rs` in the source tree"
+
+# The smallest governed document whose governs list has one live member and one dead one.
+DEAD_MEMBER_DOCUMENT = """---
+id: HW-DR-0074
+status: current
+status_since: 2026-09-20
+summary: "A probe decision whose governs list names one file that exists and one that does not."
+last_verified: 2026-09-20
+title: "A probe decision for a governs list with a dead member"
+relations:
+  governs:
+    - [README.txt, src/gone.rs]
+---
+
+# A probe decision for a governs list with a dead member
+
+The list names README.txt, which exists, and src/gone.rs, which does not.
+"""
+
+
+def with_dead_member_list(export):
+    """The fixture export plus `governs: [[README.txt, src/gone.rs]]` from FX-DR-0002.
+
+    `README.txt` is in the tree and `src/gone.rs` is not. The engine binds
+    nothing for such a list (HW-DR-0074), and exports the edge with the shape
+    `Target::Unbound` writes: `bound` and `reason`, and no members.
+    """
+    export["graph"]["edges"].append(
+        {
+            "source": "docs/decisions/0002-recent.md",
+            "relation": "governs",
+            "written_as": "governs",
+            "target": {"bound": "nothing", "reason": DEAD_MEMBER_REASON},
+        }
+    )
+    return export
+
+
+class AListWithADeadMemberIsShownRefused(unittest.TestCase):
+    """#1307: a governs edge that binds nothing is reported on the page, and covers no file."""
+
+    def test_the_page_names_the_refused_edge_and_its_reason(self):
+        model = dashboard.load(with_dead_member_list(load_fixture()), corpus_identity="fixture")
+        page = dashboard.render(model, dashboard.coverage_view(model, tree=TREE))
+        # Before #1307 the edge left no trace on the page, and this line failed.
+        self.assertIn("<tr><td>FX-DR-0002</td><td>%s</td></tr>" % dashboard.html.escape(DEAD_MEMBER_REASON), page)
+        self.assertIn("Governs edges that bind nothing", page)
+        self.assertIn("including the paths in it that do match", page)
+        self.assertEqual(
+            [(row["key"], row["governed_by"], row["reason"]) for row in model.refused],
+            [(("fixture", "FX-DR-0002"), "FX-DR-0002", DEAD_MEMBER_REASON)],
+        )
+
+    def test_the_matching_member_is_not_counted_as_covered(self):
+        before = dashboard.coverage_view(dashboard.load(load_fixture(), corpus_identity="fixture"), tree=TREE)
+        model = dashboard.load(with_dead_member_list(load_fixture()), corpus_identity="fixture")
+        after = dashboard.coverage_view(model, tree=TREE)
+        self.assertEqual((after.covered, after.total), (before.covered, before.total))
+        self.assertEqual([row["id"] for row, _ in after.rows], [row["id"] for row, _ in before.rows])
+
+    def test_governed_paths_is_unchanged(self):
+        before = dashboard.governed_paths(dashboard.load(load_fixture(), corpus_identity="fixture"))
+        model = dashboard.load(with_dead_member_list(load_fixture()), corpus_identity="fixture")
+        self.assertEqual(dashboard.governed_paths(model), before)
+        self.assertNotIn("README.txt", dashboard.governed_paths(model))
+
+    def test_a_page_with_no_refused_edge_says_there_is_none(self):
+        model = dashboard.load(load_fixture(), corpus_identity="fixture")
+        self.assertEqual(model.refused, [])
+        self.assertIn("No governs edge binds nothing", dashboard.render(model))
+
+    def test_a_refused_edge_of_another_relation_is_not_listed(self):
+        export = with_dead_member_list(load_fixture())
+        export["graph"]["edges"][-1]["relation"] = "cites"
+        model = dashboard.load(export, corpus_identity="fixture")
+        self.assertEqual(model.refused, [])
+
+    def test_the_engine_exports_the_shape_this_case_reads(self):
+        engine = built_engine()
+        with tempfile.TemporaryDirectory() as root:
+            shutil.copytree(os.path.join(REPO, ".headwater"), os.path.join(root, ".headwater"),
+                            ignore=shutil.ignore_patterns("ids", "corpus.json"))
+            with open(os.path.join(root, "README.txt"), "w", encoding="utf-8") as handle:
+                handle.write("present\n")
+            os.makedirs(os.path.join(root, "docs", "decisions"))
+            with open(os.path.join(root, "docs", "decisions", "0074-probe.md"), "w", encoding="utf-8") as handle:
+                handle.write(DEAD_MEMBER_DOCUMENT)
+            written = subprocess.run([engine, "export", "--format", "json", "--root", root],
+                                     check=True, capture_output=True)
+        export = json.loads(written.stdout)
+        governs = [edge for edge in export["graph"]["edges"] if edge["relation"] == "governs"]
+        self.assertEqual([edge["target"] for edge in governs], [{"bound": "nothing", "reason": DEAD_MEMBER_REASON}])
+        model = dashboard.load(export, corpus_identity="probe")
+        self.assertEqual([(row["governed_by"], row["reason"]) for row in model.refused],
+                         [("HW-DR-0074", DEAD_MEMBER_REASON)])
+
+    def test_the_reason_is_escaped_on_the_page(self):
+        export = with_dead_member_list(load_fixture())
+        export["graph"]["edges"][-1]["target"]["reason"] = "`code_path`: `<b>&x` no `<b>&x` in the source tree"
+        page = dashboard.render(dashboard.load(export, corpus_identity="fixture"))
+        self.assertIn("<td>`code_path`: `&lt;b&gt;&amp;x` no `&lt;b&gt;&amp;x` in the source tree</td>", page)
+        self.assertNotIn("<b>&x", page)
+
+    def test_refused_rows_sort_by_governor_then_reason(self):
+        export = load_fixture()
+        for source, reason in (
+            ("docs/obligations/0001-old.md", "a reason"),
+            ("docs/decisions/0002-recent.md", "z reason"),
+            ("docs/decisions/0002-recent.md", "b reason"),
+        ):
+            export["graph"]["edges"].append(
+                {"source": source, "relation": "governs", "written_as": "governs",
+                 "target": {"bound": "nothing", "reason": reason}}
+            )
+        model = dashboard.load(export, corpus_identity="fixture")
+        self.assertEqual(
+            [(row["governed_by"], row["reason"]) for row in model.refused],
+            # The governor orders first: FX-OBL-0001's reason sorts before
+            # both of FX-DR-0002's, and its row still comes last.
+            [("FX-DR-0002", "b reason"), ("FX-DR-0002", "z reason"), ("FX-OBL-0001", "a reason")],
+        )
+
+    def test_a_withheld_governs_edge_is_not_refused(self):
+        export = load_fixture()
+        export["graph"]["edges"].append(
+            {"source": "docs/decisions/0002-recent.md", "relation": "governs", "written_as": "governs",
+             "target": {"bound": "withheld", "anchor_kind": "code_path", "rule": "public"}}
+        )
+        model = dashboard.load(export, corpus_identity="fixture")
+        self.assertEqual(model.refused, [])
+        self.assertIn("No governs edge binds nothing", dashboard.render(model))
+
+    def test_a_reason_that_is_not_a_string_is_refused_as_input(self):
+        for value in (7, ["a"]):
+            export = with_dead_member_list(load_fixture())
+            export["graph"]["edges"][-1]["target"]["reason"] = value
+            with self.assertRaises(dashboard.ExportRefused) as raised:
+                dashboard.load(export, corpus_identity="fixture")
+            self.assertIn("target.reason", str(raised.exception))
+
+    def test_a_refused_edge_with_no_source_is_refused_as_input(self):
+        export = with_dead_member_list(load_fixture())
+        del export["graph"]["edges"][-1]["source"]
+        with self.assertRaises(dashboard.ExportRefused) as raised:
+            dashboard.load(export, corpus_identity="fixture")
+        self.assertIn("`source`", str(raised.exception))
+
+    def test_a_source_that_names_no_document_is_shown_by_its_path(self):
+        export = with_dead_member_list(load_fixture())
+        export["graph"]["edges"][-1]["source"] = "docs/<gone>.md"
+        model = dashboard.load(export, corpus_identity="fixture")
+        self.assertEqual([row["key"] for row in model.refused], [("fixture", "docs/<gone>.md")])
+        page = dashboard.render(model)
+        self.assertIn("<tr><td>docs/&lt;gone&gt;.md</td>", page)
+        self.assertNotIn("docs/<gone>.md", page)
+
+    def test_a_refused_edge_with_an_empty_reason_is_refused_as_input(self):
+        export = with_dead_member_list(load_fixture())
+        export["graph"]["edges"][-1]["target"]["reason"] = ""
+        with self.assertRaises(dashboard.ExportRefused) as raised:
+            dashboard.load(export, corpus_identity="fixture")
+        self.assertIn("target.reason", str(raised.exception))
+
+    def test_a_refused_edge_with_no_reason_is_refused_as_input(self):
+        export = with_dead_member_list(load_fixture())
+        del export["graph"]["edges"][-1]["target"]["reason"]
+        with self.assertRaises(dashboard.ExportRefused) as raised:
+            dashboard.load(export, corpus_identity="fixture")
+        self.assertIn("target.reason", str(raised.exception))
 
 
 class TheCommandLine(unittest.TestCase):
