@@ -375,6 +375,10 @@ mod tests {
     /// pass and would not be decisive. A marker that a later change deletes,
     /// or a key that gains a real reader with no update to the prose beside
     /// it, fails here.
+    ///
+    /// [Q67](../../../../docs/decisions/0095-q67-one-library-entry-may-address-the-keys-of-an-entry-it-names-in-requires-and-confluence-holds-over-the-dependency-order.md)
+    /// later gave `requires` one reader, and the last assertion holds the
+    /// sentence that says so in place of the marker.
     #[test]
     fn the_unread_disclosure_stands_beside_every_key_of_the_extends_family() {
         const MARKER: &str = "The engine reads nothing from this key today.";
@@ -407,9 +411,28 @@ mod tests {
             disclosed("  extends: {scalar: string}"),
             "operations.extends (an overlay's root) carries no unread disclosure"
         );
+
+        // Q67 (HW-DR-0095) gave `requires` one reader, so its disclosure
+        // names that reader in place of the marker, and the other four keep
+        // theirs.
+        const READ_FOR_Q67: &str = "The engine reads this key for Q67 and for nothing else.";
+        let at = lines
+            .iter()
+            .position(|line| line.contains("  requires: {seq: {scalar: string}}"))
+            .expect("operations.requires is declared");
+        let comment: Vec<&str> = lines[..at]
+            .iter()
+            .rev()
+            .take_while(|line| line.trim_start().starts_with('#'))
+            .copied()
+            .collect();
         assert!(
-            disclosed("  requires: {seq: {scalar: string}}"),
-            "operations.requires carries no unread disclosure"
+            comment.iter().any(|line| line.contains(READ_FOR_Q67)),
+            "operations.requires does not say it is read for Q67"
+        );
+        assert!(
+            !comment.iter().any(|line| line.contains(MARKER)),
+            "operations.requires still says the engine reads nothing from it"
         );
     }
 

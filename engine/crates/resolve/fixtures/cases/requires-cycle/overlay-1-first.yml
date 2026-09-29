@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Two bundles that name each other in `requires`. No order puts each
+# dependency first, so the resolver refuses the selection and names both.
+
+bundle: first
+extends: headwater/standard@1.0.0
+requires: [second]
+
+add:
+  kinds.report: {is_a: governed_document, purpose: behavior}

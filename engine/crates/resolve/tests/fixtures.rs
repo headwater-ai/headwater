@@ -93,9 +93,24 @@ fn sources(case: &Path) -> Vec<Source> {
     overlays.sort();
     for overlay in overlays {
         let shown = overlay.file_name().unwrap().to_string_lossy().to_string();
-        out.push(Source::read(&overlay, &shown, Role::Overlay).expect("an overlay loads"));
+        let source = Source::read(&overlay, &shown, Role::Overlay).expect("an overlay loads");
+        out.push(match selected_as(&shown) {
+            Some(bundle) => source.selected_as(&bundle),
+            None => source,
+        });
     }
     out
+}
+
+/// The bundle name an overlay file stands for: `overlay-<n>-<name>.yml` is the
+/// bundle `<name>`, the way a consumer's `bundles:` list would name it. An
+/// overlay with no number, such as `overlay-adopter.yml`, is not a bundle and
+/// its `requires` is not read.
+fn selected_as(file: &str) -> Option<String> {
+    let rest = file.strip_prefix("overlay-")?.strip_suffix(".yml")?;
+    let (number, name) = rest.split_once('-')?;
+    (!number.is_empty() && number.bytes().all(|byte| byte.is_ascii_digit()))
+        .then(|| name.to_string())
 }
 
 /// The resolved taxonomy, or the refusal, as one text.
