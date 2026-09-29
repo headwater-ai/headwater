@@ -207,20 +207,32 @@ mod tests {
 
     #[test]
     fn a_single_literal_source_tree_pattern_equal_to_the_source_is_its_own_file() {
-        assert!(names_own_file(&anchor("source-tree", &["docs/a.md"]), "docs/a.md"));
+        assert!(names_own_file(
+            &anchor("source-tree", &["docs/a.md"]),
+            "docs/a.md"
+        ));
     }
 
     #[test]
     fn another_file_a_list_a_wildcard_and_another_resolver_are_not() {
-        assert!(!names_own_file(&anchor("source-tree", &["docs/b.md"]), "docs/a.md"));
+        assert!(!names_own_file(
+            &anchor("source-tree", &["docs/b.md"]),
+            "docs/a.md"
+        ));
         assert!(!names_own_file(
             &anchor("source-tree", &["docs/a.md", "docs/b.md"]),
             "docs/a.md"
         ));
-        assert!(!names_own_file(&anchor("snapshot", &["docs/a.md"]), "docs/a.md"));
+        assert!(!names_own_file(
+            &anchor("snapshot", &["docs/a.md"]),
+            "docs/a.md"
+        ));
         // A file whose own name holds a wildcard character: the pattern that
         // spells it is a glob over more than that file, so it is wider than
         // the exact own file.
-        assert!(!names_own_file(&anchor("source-tree", &["docs/a?.md"]), "docs/a?.md"));
+        assert!(!names_own_file(
+            &anchor("source-tree", &["docs/a?.md"]),
+            "docs/a?.md"
+        ));
     }
 }

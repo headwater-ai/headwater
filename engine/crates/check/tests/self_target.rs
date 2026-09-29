@@ -228,7 +228,10 @@ fn an_anchor_onto_the_declaring_file_is_reported_and_a_wildcard_over_it_is_not()
         .iter()
         .find(|finding| finding.rule == RULE && finding.path == "self-target/notes/g.md")
         .expect("the finding");
-    assert!(finding.patch.is_none(), "only the author knows the file meant");
+    assert!(
+        finding.patch.is_none(),
+        "only the author knows the file meant"
+    );
     assert!(
         finding.remediation.contains("file"),
         "{}",
