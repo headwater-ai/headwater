@@ -24,9 +24,15 @@
 # clean and was never assembled to be — so a strict run exits 1 in both arms
 # and discriminates nothing.
 #
-# The demonstration also does not need, and cannot perform, a `require` on a
-# kind another entry declares. That is the operation with no add-only form, and
-# HW-OBL-0040 holds it. Nothing here reaches it.
+# Case groups 2-7 are the optional half: the entry attaches the facet to the
+# base's abstract kind and needs no operation on another entry. Case group 8 is
+# the required half, which HW-DR-0095 (Q67) made legal: a bundle that names the
+# sibling entry in `requires` writes `add_to` into the `facets.require` list of
+# a kind that entry declares. The `diataxis` entry itself does not do this, and
+# its bundle comments say why. So group 8 builds a scratch-only bundle, adds it
+# to a scratch copy of the package source and publishes that copy, because a
+# bundle written into the vendored copy would fail `taxonomy.pin.diverged`.
+# Nothing in the tree gains the bundle.
 #
 # # WHAT EACH JUDGE READS
 #
@@ -209,17 +215,25 @@ selection_list() {
     LC_ALL=C sort -u "$scratch/sel"
 }
 
-# A scratch root that selects the bundles named in $2. $1 = destination.
+# A scratch root that selects the bundles named in $2. $1 = destination. $3
+# and $4, when given, are a published package directory and the digest its
+# publish printed. Without them the root takes the vendored copy and the pin
+# of this repository.
 make_root() {
     at=$1
     bundles=$2
+    pkg=${3:-$root/.headwater/packages/headwater-standard}
     mkdir -p "$at/.headwater/packages" "$at/docs"
-    cp -r "$root/.headwater/packages/headwater-standard" "$at/.headwater/packages/"
+    cp -r "$pkg" "$at/.headwater/packages/headwater-standard"
     {
         echo 'taxonomy:'
         echo '  package: headwater/standard'
-        sed -n 's/^  version: /  version: /p' "$root/.headwater/taxonomy.yml" | head -n 1
-        sed -n 's/^  digest: /  digest: /p' "$root/.headwater/taxonomy.yml" | head -n 1
+        sed -n 's/^version: /  version: /p' "$pkg/package.yml" | head -n 1
+        if [ -n "${4:-}" ]; then
+            echo "  digest: $4"
+        else
+            sed -n 's/^  digest: /  digest: /p' "$root/.headwater/taxonomy.yml" | head -n 1
+        fi
         echo "  bundles: [$bundles]"
         echo '  overlay: .headwater/overlay.yml'
         echo
@@ -234,13 +248,17 @@ make_root() {
     (cd "$at" && "$engine" taxonomy validate) > "$scratch/ns.out" 2> "$scratch/ns.err"
     sed -n 's/.*`identifier_schemes\.\([a-z_]*\)`: identifier integrity: carries no namespace.*/\1/p' \
         "$scratch/ns.out" "$scratch/ns.err" | LC_ALL=C sort -u > "$scratch/ns.list"
-    {
-        echo 'add:'
-        while read -r scheme; do
-            [ -n "$scheme" ] || continue
-            echo "  identifier_schemes.${scheme}.namespace: DX"
-        done < "$scratch/ns.list"
-    } > "$at/.headwater/overlay.yml"
+    # A selection that is refused before validation names no scheme, and an
+    # empty `add:` is itself a refusal that would hide the one under test.
+    if [ -s "$scratch/ns.list" ]; then
+        {
+            echo 'add:'
+            while read -r scheme; do
+                [ -n "$scheme" ] || continue
+                echo "  identifier_schemes.${scheme}.namespace: DX"
+            done < "$scratch/ns.list"
+        } > "$at/.headwater/overlay.yml"
+    fi
     rm -rf "$at/docs"
     cp -r "$corpus" "$at/docs"
 }
@@ -270,6 +288,7 @@ label_page() {
 # $1 = root, $2 = tag.
 run_arm() {
     (cd "$1" && "$engine" taxonomy resolve) > "$scratch/$2-resolve.out" 2>&1
+    echo $? > "$scratch/$2-resolve.code"
     (cd "$1" && "$engine" check --no-cache --now "$today") \
         > "$scratch/$2.out" 2> "$scratch/$2.err"
     echo $? > "$scratch/$2.code"
@@ -339,6 +358,39 @@ finding_block() {
         inb { flush() }
         END { flush() }
     ' "$1"
+}
+
+# Every `facet.required.missing` finding of a report whose message names the
+# facet $2, as `<page> TAB <kind>`. The message wraps over continuation lines,
+# so each finding is joined into one line before it is read. $1 = report.
+required_facet_findings() {
+    awk -v want="$2" '
+        function flush() {
+            if (inb && buf ~ /^ facet\.required\.missing /) {
+                re = "`[a-z_]+` requires the facet `" want "`"
+                if (match(buf, re)) {
+                    k = substr(buf, RSTART + 1)
+                    sub(/`.*/, "", k)
+                    print page "\t" k
+                }
+            }
+            inb = 0
+            buf = ""
+        }
+        /^  [^ ].* (✗|▲|●) (error|warn|info)$/ {
+            flush()
+            hdr = $0
+            sub(/^  /, "", hdr)
+            sub(/ [^ ]+ [a-z]+$/, "", hdr)
+            page = hdr
+            sub(/:[0-9]+:[0-9]+$/, "", page)
+            inb = 1
+            next
+        }
+        inb && /^    / { l = $0; sub(/^ +/, "", l); buf = buf " " l; next }
+        inb { flush() }
+        END { flush() }
+    ' "$1" | LC_ALL=C sort
 }
 
 today=$(date -u +%Y-%m-%d)
@@ -513,6 +565,130 @@ judge "no finding against that page names $facet ($(grep -c . "$scratch/labeled-
     "" "$(echo "$said" | sed 's/^ *//')"
 
 echo
+echo "case group 8 — a mode made mandatory over another entry's kind"
+# The required half (HW-DR-0095, Q67). A scratch-only bundle names the sibling
+# entry and this entry in `requires`, and appends the facet to the
+# `facets.require` list of one kind the sibling entry declares. It needs the
+# sibling for the list and this entry for the facet, and it is refused if the
+# second is left out, because the facet it names is then declared by nothing.
+#
+# The bundle cannot go into the vendored copy: `make_root` pins that copy's
+# digest, and one added file fails `taxonomy.pin.diverged`. So the package
+# source and the library are copied into scratch, the bundle is added beside
+# the others, and the copy is published. Every arm below takes that published
+# package and the digest its publish printed, so the only thing that separates
+# the arms is the selection.
+required_kind=design_spec
+req_bundle=diataxis-required-fixture
+judge "the sibling entry declares the kind the fixture requires the facet on" 1 \
+    "$(grep -c "^  kinds\.$required_kind:" "$root/$sibling/bundle.yml" || true)"
+src8="$scratch/src8"
+mkdir -p "$src8/taxonomy-source" "$src8/docs"
+cp -r "$root/taxonomy-source/headwater-standard" "$src8/taxonomy-source/"
+cp -r "$root/docs/taxonomies" "$src8/docs/"
+mkdir -p "$src8/docs/taxonomies/$req_bundle"
+{
+    echo "# Written by tools/repo/diataxis-facet-fixtures.sh into scratch, and never"
+    echo "# into the tree: the required half of the composition demonstration."
+    echo "bundle: $req_bundle"
+    echo 'extends: headwater/standard@1.0.0'
+    echo "requires: [$(basename "$sibling"), $(basename "$entry")]"
+    echo
+    echo 'add_to:'
+    echo "  kinds.$required_kind.facets.require: [$facet]"
+} > "$src8/docs/taxonomies/$req_bundle/bundle.yml"
+(cd "$src8" && "$engine" taxonomy publish --from taxonomy-source/headwater-standard \
+    --out "$scratch/pkg8") > "$scratch/publish8.out" 2> "$scratch/publish8.err"
+judge "the scratch package with the fixture bundle publishes" 0 "$?"
+digest8=$(sed -n 's/^  digest //p' "$scratch/publish8.out" | head -n 1)
+if [ -n "$digest8" ]; then
+    pass "the publish printed a digest to pin"
+else
+    fail "the publish printed a digest to pin" "none in its output"
+fi
+
+# The four selections: the base selection over the republished package, the
+# same with the fixture bundle, that one in reverse order, and that one less
+# the sibling entry.
+sel8_plain=$selection
+sel8_req=$( { selection_list; echo "$req_bundle"; } | LC_ALL=C sort -u |
+    tr '\n' ',' | sed -e 's/,/, /g' -e 's/, *$//')
+sel8_rev=$( { selection_list; echo "$req_bundle"; } | LC_ALL=C sort -u -r |
+    tr '\n' ',' | sed -e 's/,/, /g' -e 's/, *$//')
+sel8_nodep=$( { selection_list; echo "$req_bundle"; } | LC_ALL=C sort -u |
+    grep -vx "$(basename "$sibling")" | tr '\n' ',' | sed -e 's/,/, /g' -e 's/, *$//')
+echo "  with fixture:  $sel8_req"
+for arm in plain req rev nodep; do
+    eval "sel=\$sel8_$arm"
+    make_root "$scratch/r8-$arm" "$sel" "$scratch/pkg8" "$digest8"
+done
+for arm in plain req rev; do
+    run_arm "$scratch/r8-$arm" "r8-$arm"
+    judge "the $arm selection resolves" 0 "$(cat "$scratch/r8-$arm-resolve.code")"
+    finding_pairs "$scratch/r8-$arm.out" > "$scratch/r8-$arm.pairs"
+    required_facet_findings "$scratch/r8-$arm.out" "$facet" > "$scratch/r8-$arm.req"
+done
+
+# (a) The facet is now required on the sibling's kind.
+judge "republishing with the fixture bundle and leaving it unselected changes no finding" \
+    "" "$(LC_ALL=C comm -3 "$scratch/unlabeled.pairs" "$scratch/r8-plain.pairs" |
+        tr '\t' ' ' | tr '\n' ';' | sed 's/;*$//')"
+judge "without the fixture bundle no finding requires $facet" "" \
+    "$(tr '\t' ' ' < "$scratch/r8-plain.req" | tr '\n' ';' | sed 's/;*$//')"
+req8_n=$(grep -c . "$scratch/r8-req.req" || true)
+if [ "$req8_n" -ge 1 ]; then
+    pass "with it, unlabeled pages report $facet as required ($req8_n read)"
+else
+    fail "with it, unlabeled pages report $facet as required" "none parsed out of the report"
+fi
+judge "every such finding is against a $required_kind page" "" \
+    "$(cut -f 2 "$scratch/r8-req.req" | grep -vx "$required_kind" | LC_ALL=C sort -u | tr '\n' ' ' | sed 's/ *$//')"
+r8p_find=$(report_number "$scratch/r8-plain.out" "findings")
+r8r_find=$(report_number "$scratch/r8-req.out" "findings")
+judge "the fixture bundle adds exactly those findings and no other" \
+    "$((${r8p_find:-0} + req8_n))" "${r8r_find:-0}"
+judge "the fixture bundle loses no finding" "" \
+    "$(LC_ALL=C comm -23 "$scratch/r8-plain.pairs" "$scratch/r8-req.pairs" |
+        tr '\t' ' ' | tr '\n' ';' | sed 's/;*$//')"
+
+# (b) Bundle order. The `sources` list of a lock records the order the
+# resolver applied the bundles in, and bundles that do not depend on each other
+# apply in the order the selection names them. So the list moves with the
+# selection and is not asserted. What is asserted is that the resolved taxonomy
+# and its digest do not move.
+lock_req="$scratch/r8-req/.headwater/taxonomy.lock"
+lock_rev="$scratch/r8-rev/.headwater/taxonomy.lock"
+judge "both bundle orders resolve to one lock digest" \
+    "$(sed -n 's/^  digest: //p' "$lock_req" | head -n 1)" \
+    "$(sed -n 's/^  digest: //p' "$lock_rev" | head -n 1)"
+sed '/^    - path: /,/^      digest: /d' "$lock_req" > "$scratch/lock-req.body"
+sed '/^    - path: /,/^      digest: /d' "$lock_rev" > "$scratch/lock-rev.body"
+if cmp -s "$scratch/lock-req.body" "$scratch/lock-rev.body"; then
+    pass "both bundle orders write the same lock outside its sources list"
+else
+    fail "both bundle orders write the same lock outside its sources list" \
+        "$(diff "$scratch/lock-req.body" "$scratch/lock-rev.body" | head -n 4 | tr '\n' ' ')"
+fi
+judge "both bundle orders report the same findings" "" \
+    "$(LC_ALL=C comm -3 "$scratch/r8-req.pairs" "$scratch/r8-rev.pairs" |
+        tr '\t' ' ' | tr '\n' ';' | sed 's/;*$//')"
+
+# (c) The dependency is enforced, not assumed.
+(cd "$scratch/r8-nodep" && "$engine" taxonomy resolve) \
+    > "$scratch/r8-nodep-resolve.out" 2> "$scratch/r8-nodep-resolve.err"
+judge "a selection without $(basename "$sibling") is refused" 1 "$?"
+tr '\n' ' ' < "$scratch/r8-nodep-resolve.out" > "$scratch/r8-nodep.msg"
+tr '\n' ' ' < "$scratch/r8-nodep-resolve.err" >> "$scratch/r8-nodep.msg"
+for needle in "\`$req_bundle\`" "\`$(basename "$sibling")\` it names in \`requires\`" \
+    "kinds.$required_kind.facets.require"; do
+    if grep -qF "$needle" "$scratch/r8-nodep.msg"; then
+        pass "the refusal names $needle"
+    else
+        fail "the refusal names $needle" "$(head -c 300 "$scratch/r8-nodep.msg")"
+    fi
+done
+
+echo
 echo "the run record, recorded and not asserted"
 echo "  engine:        $("$engine" --version)"
 echo "  now:           $today"
@@ -526,6 +702,11 @@ echo "  labeled:       $(report_number "$scratch/labeled.out" "✗ error") error
 echo "  check exit:    $(cat "$scratch/unlabeled.code") and $(cat "$scratch/labeled.code") plain, $(cat "$scratch/unlabeled-strict.code") and $(cat "$scratch/labeled-strict.code") strict"
 echo "  the one finding:"
 sed 's/^/  /' "$scratch/gained.block"
+echo "  group 8:       $req_bundle requires $(basename "$sibling") and $(basename "$entry"), add_to kinds.$required_kind.facets.require: [$facet]"
+echo "  group 8 pkg:   $digest8"
+echo "  group 8:       ${r8p_find:-0} findings without it, ${r8r_find:-0} with it, $req8_n of them requiring $facet on:"
+cut -f 1 "$scratch/r8-req.req" | sed 's/^/                   /'
+echo "  group 8 lock:  $(sed -n 's/^  digest: //p' "$lock_req" | head -n 1) in both orders"
 
 exec 2>&3 3>&-
 judge "no sort or comm in this run wrote to standard error" \
