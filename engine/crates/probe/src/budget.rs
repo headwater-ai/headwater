@@ -564,8 +564,14 @@ tiers:
         );
         assert_ne!(source, GOOD, "the replacement found the campaign tier");
         let budgets = Budgets::read(&source).expect("reads");
-        assert_eq!(budgets.of(Tier::Campaign).expect("campaign").max_turns, Some(80));
-        assert_eq!(budgets.of(Tier::Regression).expect("regression").max_turns, None);
+        assert_eq!(
+            budgets.of(Tier::Campaign).expect("campaign").max_turns,
+            Some(80)
+        );
+        assert_eq!(
+            budgets.of(Tier::Regression).expect("regression").max_turns,
+            None
+        );
     }
 
     #[test]
