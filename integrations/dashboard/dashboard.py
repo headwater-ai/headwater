@@ -10,7 +10,9 @@ three views: staleness (every document by `facets.last_verified`, oldest
 first), warrant (every document by its top-level `warrant`, with an absent key
 shown as "none stated"), and coverage (every `code_path` anchor that a
 `governs` edge reaches, and, given `--tree`, the share of that tree's files the
-anchors cover).
+anchors cover). The coverage view also lists every `governs` edge that binds
+nothing, with the reason the engine exported: such an edge covers no file,
+even where some of the paths it names exist (HW-DR-0074).
 
 The script reads the export and, with `--tree`, lists the tree's files. It
 runs no Headwater verb, writes nothing but the page, and commits nothing.
@@ -34,6 +36,11 @@ EMPTY_CORPUS = (
     "This export holds no documents, so every view below is empty. "
     "The corpus it was generated from has no governed document yet."
 )
+REFUSED_EDGE = (
+    "An edge that names a path that matches no file binds nothing, including the paths in it "
+    "that do match (HW-DR-0074). Each row below is such an edge, with the reason the engine gives."
+)
+NO_REFUSED_EDGE = "No governs edge binds nothing in this export."
 MINIMUM_EXPORT_VERSION = (1, 1)
 WARRANT_ORDER = ["asserted", NONE_STATED, "proposed", "accepted"]
 
@@ -45,11 +52,13 @@ class ExportRefused(Exception):
 class Model:
     """One corpus's rows. Every row carries `key` = (corpus_identity, id)."""
 
-    def __init__(self, corpus_identity, documents, anchors, profile):
+    def __init__(self, corpus_identity, documents, anchors, profile, refused=None):
         self.corpus_identity = corpus_identity
         self.documents = documents
         self.anchors = anchors
         self.profile = profile
+        # Governs edges the engine exported as `bound: nothing`. They cover no file.
+        self.refused = refused if refused is not None else []
 
 
 class Coverage:
@@ -190,6 +199,7 @@ def load(export, corpus_identity):
 
     governed_by = {}
     patterns_of = {}
+    refused = []
     for index, edge in enumerate(raw_edges):
         where = "graph.edges[%d]" % index
         if not isinstance(edge, dict):
@@ -197,6 +207,29 @@ def load(export, corpus_identity):
         target = edge.get("target")
         if not isinstance(target, dict):
             _refuse(where, "target", "is missing or is not an object")
+        if edge.get("relation") == "governs" and target.get("bound") == "nothing":
+            # HW-DR-0074: an anchor binds only when every pattern it holds
+            # matches, so a list with one dead member binds nothing, and the
+            # members that do match are not governed by it. The export carries
+            # the reason and no members, and the reason is shown verbatim.
+            reason = _optional_string(target.get("reason"), where, "target.reason")
+            if not reason:
+                _refuse(where, "target.reason", "is missing on a governs edge that binds nothing")
+            source_path = _optional_string(edge.get("source"), where, "source")
+            source = by_path.get(source_path)
+            governor = source["id"] if source else source_path
+            if not governor:
+                _refuse(where, "source", "is missing on a governs edge")
+            refused.append(
+                {
+                    "corpus_identity": corpus_identity,
+                    "id": governor,
+                    "key": (corpus_identity, governor),
+                    "governed_by": governor,
+                    "reason": reason,
+                }
+            )
+            continue
         if edge.get("relation") != "governs" or target.get("bound") != "anchor":
             continue
         if target.get("anchor_kind") != "code_path":
@@ -226,7 +259,8 @@ def load(export, corpus_identity):
                 "governed_by": sorted(governed_by[identifier]),
             }
         )
-    return Model(corpus_identity, documents, anchors, export.get("profile") or {})
+    refused.sort(key=lambda row: (row["governed_by"], row["reason"]))
+    return Model(corpus_identity, documents, anchors, export.get("profile") or {}, refused)
 
 
 def staleness_view(model):
@@ -387,7 +421,17 @@ def render(model, coverage=None):
             _cell("" if count is None else count),
             _cell(", ".join(row["governed_by"])),
         ))
-    out.append("</table></body></html>")
+    out.append("</table>")
+    out.append("<h3 id=\"refused\">Governs edges that bind nothing (refused, so they cover no file)</h3>")
+    out.append("<p>%s</p>" % html.escape(REFUSED_EDGE))
+    if model.refused:
+        out.append("<table><tr><th>Governed by</th><th>Reason</th></tr>")
+        for row in model.refused:
+            out.append("<tr>%s%s</tr>" % (_cell(row["governed_by"]), _cell(row["reason"])))
+        out.append("</table>")
+    else:
+        out.append("<p class=\"muted\">%s</p>" % html.escape(NO_REFUSED_EDGE))
+    out.append("</body></html>")
     return "\n".join(out) + "\n"
 
 
