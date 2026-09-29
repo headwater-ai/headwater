@@ -327,6 +327,7 @@ pub(crate) fn emit(
         plan.outputs.push(Output {
             path: one.output.clone(),
             kind: Kind::ProbeResult,
+            committed: true,
             bytes,
         });
     }
