@@ -9,7 +9,7 @@ relations:
   governs:
     - [engine/crates/cli/src/lib.rs, engine/crates/cli/src/main.rs]
     - to: engine/crates/query/src/explain.rs
-      verified_revision: sha256:6db0ec0734b7fbe09a4479bf3fc5171f819587f9b5d62e28a755604214c9433a
+      verified_revision: sha256:785942bd8dd0c45ace2cac7220cdd31ecccee1575770b356dd86de98ebf822ce
     - to: engine/crates/census/src/walk.rs
       verified_revision: sha256:41331986b4a8f1942af52154cea911c0b70e7ec63199e470e1ee0b6b5cae3241
 ---
