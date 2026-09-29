@@ -1219,6 +1219,42 @@ PATH="$scratch/no-harness" "$shell" "$driver" --probe "HW-PROBE-$tombstone" --se
 same "the driver refuses a copy of a declared fold at a path the list does not name" "9" "$?"
 present "and it names the copy" "engine/nav.yml" "$scratch/outside3.err"
 
+# An undeclared file under `.headwater/`, the directory most folds live in,
+# is not a fold by where it is (verify round 1: a filter that passed every
+# path under `.headwater/` kept every case green).
+mkdir -p "$scratch/dotdir/.headwater"
+printf 'HW-PROBE-%s: absent\n' "$tombstone" > "$scratch/dotdir/.headwater/answers.yml"
+PATH="$scratch/no-harness" "$shell" "$driver" --probe "HW-PROBE-$tombstone" --session x \
+    --task-file "$scratch/task.md" --workspace "$scratch/dotdir" \
+    >/dev/null 2>"$scratch/dotdir.err"
+same "the driver refuses an undeclared file under .headwater/ that names the probe" "9" "$?"
+sh "$root/tools/probe/seal.sh" "$scratch/dotdir" "HW-PROBE-$tombstone" >/dev/null 2>&1
+if [ -e "$scratch/dotdir/.headwater/answers.yml" ]; then
+    fail "and seal.sh removes it" "$(ls -a "$scratch/dotdir/.headwater")"
+else
+    pass "and seal.sh removes it"
+fi
+
+# A path is one name, whatever it holds: a space is not a separator, and a
+# `*` is not a pattern (verify round 1: a file named `*` made the seal remove
+# every file of its directory, and a split on spaces kept the file).
+mkdir -p "$scratch/odd/tools/probe" "$scratch/odd/.claude"
+printf 'see HW-PROBE-%s\n' "$tombstone" > "$scratch/odd/tools/probe/*"
+printf 'names no probe\n' > "$scratch/odd/tools/probe/kept.sh"
+printf 'see HW-PROBE-%s\n' "$tombstone" > "$scratch/odd/.claude/my notes.sh"
+sh "$root/tools/probe/seal.sh" "$scratch/odd" "HW-PROBE-$tombstone" >"$scratch/odd.out" 2>&1
+same "seal.sh seals a workspace whose paths hold a space and a star" "0" "$?"
+if [ -e "$scratch/odd/tools/probe/*" ] || [ -e "$scratch/odd/.claude/my notes.sh" ]; then
+    fail "and it removes each file that names the probe" "$(ls -aR "$scratch/odd")"
+else
+    pass "and it removes each file that names the probe"
+fi
+if [ -f "$scratch/odd/tools/probe/kept.sh" ]; then
+    pass "and it keeps the file beside the star, which names no probe"
+else
+    fail "and it keeps the file beside the star, which names no probe" "$(cat "$scratch/odd.out")"
+fi
+
 # The list itself. Each path it declares is a committed file of this checkout,
 # so a fold that moved is found here and not in a refused campaign. The two
 # files that state an answer are not on it.
