@@ -655,6 +655,38 @@ same "a word in Markdown emphasis on the final line is no answer" \
     "" \
     "$(sh "$driver" --answer-only "$scratch/emphasis.jsonl" --answers "merge, stamp" 2>/dev/null)"
 
+# A declared answer of two words is compared as a set of words (#1384). The
+# status pilot of 2026-09-29 recorded `HW-DR-0052 current` as no answer for
+# the set `current HW-DR-0052, draft HW-DR-0052`, although it names the same
+# two facts. The words may come in any order, and the recorder writes the
+# declared form. An extra word is still prose, and so is a missing one.
+two="current HW-DR-0052, draft HW-DR-0052"
+printf '%s\n' '{"type":"result","result":"I read the record.\n\nHW-DR-0052 current"}' \
+    > "$scratch/two-swapped.jsonl"
+same "a two-word answer in the other order records the declared form" \
+    "current HW-DR-0052" \
+    "$(sh "$driver" --answer-only "$scratch/two-swapped.jsonl" --answers "$two" 2>/dev/null)"
+printf '%s\n' '{"type":"result","result":"draft   HW-DR-0052"}' \
+    > "$scratch/two-spaced.jsonl"
+same "runs of space between the words of an answer are one separator" \
+    "draft HW-DR-0052" \
+    "$(sh "$driver" --answer-only "$scratch/two-spaced.jsonl" --answers "$two" 2>/dev/null)"
+printf '%s\n' '{"type":"result","result":"0052 current HW-DR-0052"}' \
+    > "$scratch/two-extra.jsonl"
+same "a two-word answer with an extra word is no answer" \
+    "" \
+    "$(sh "$driver" --answer-only "$scratch/two-extra.jsonl" --answers "$two" 2>/dev/null)"
+printf '%s\n' '{"type":"result","result":"current"}' \
+    > "$scratch/two-short.jsonl"
+same "one word of a two-word answer is no answer" \
+    "" \
+    "$(sh "$driver" --answer-only "$scratch/two-short.jsonl" --answers "$two" 2>/dev/null)"
+printf '%s\n' '{"type":"result","result":"current current"}' \
+    > "$scratch/two-repeated.jsonl"
+same "a repeated word does not stand in for the other word of an answer" \
+    "" \
+    "$(sh "$driver" --answer-only "$scratch/two-repeated.jsonl" --answers "$two" 2>/dev/null)"
+
 # ---------------------------------------------------------------------------
 # The negative direction. The raw harness log is refused by the intake on a key
 # outside the closed sets, which is the property the filter exists to restore.
@@ -1072,6 +1104,32 @@ PATH="$scratch/no-harness" "$shell" "$driver" --probe "$patched" --session x \
     >/dev/null 2>"$scratch/answered2.err"
 same "and the driver passes the guard over the sealed tree" "3" "$?"
 
+# Named documents (#1384). The seal deletes a record under `docs/` that names
+# the probe, and every line that links that record (#1293). A workspace where
+# the record is gone and a register line still links it states the record's
+# subject, and before #1384 the guard passed it: the line names the record and
+# not the probe. HW-OBL-0013 names the tombstone probe on this checkout. A line
+# that names a longer identifier with HW-OBL-0013 inside it is not a link to
+# the record, so the guard passes that tree.
+named_line=$(sh "$root/tools/probe/seal.sh" --named "HW-PROBE-$tombstone" | awk '$1 == "HW-OBL-0013" { print $2; exit }')
+same "seal.sh --named lists a record that names the probe, by its identifier" \
+    "docs/obligations/0013-no-probe-tests-whether-a-counted-tombstone-stops-a-confident.md" "$named_line"
+same "and by its file name, the other name the seal strips" \
+    "1" "$(sh "$root/tools/probe/seal.sh" --named "HW-PROBE-$tombstone" | grep -c '^0013-no-probe-tests-whether-a-counted-tombstone-stops-a-confident\.md ')"
+mkdir -p "$scratch/named/docs/spec"
+printf '%s\n' '- [HW-OBL-0013](../obligations/0013-no-probe-tests-whether-a-counted-tombstone-stops-a-confident.md) — the tombstone gap' \
+    > "$scratch/named/docs/spec/13.md"
+PATH="$scratch/no-harness" "$shell" "$driver" --probe "HW-PROBE-$tombstone" --session x \
+    --task-file "$scratch/task.md" --workspace "$scratch/named" \
+    >/dev/null 2>"$scratch/named.err"
+same "the driver refuses a workspace that still links a record naming the probe" "9" "$?"
+present "and it names the file that holds the link" "docs/spec/13.md" "$scratch/named.err"
+printf '%s\n' '- HW-OBL-00130 is another record' > "$scratch/named/docs/spec/13.md"
+PATH="$scratch/no-harness" "$shell" "$driver" --probe "HW-PROBE-$tombstone" --session x \
+    --task-file "$scratch/task.md" --workspace "$scratch/named" \
+    >/dev/null 2>"$scratch/named2.err"
+same "a longer identifier that holds the record's identifier passes the guard" "3" "$?"
+
 # ---------------------------------------------------------------------------
 # Step 3 of #819: the recorder names its session, and says whether the hook ran.
 #
@@ -1149,6 +1207,105 @@ STUB
     same "a harness that exits 7 makes the driver exit 10, never 7" "10" "$?"
     present "and the driver names the harness's own status" \
         "the harness exited 7" "$scratch/failed-run.err"
+
+    # The turn cap (#1384). A harness stopped by `--max-turns` ends its stream
+    # with a `result` line of subtype `error_max_turns` and exits 1. Until
+    # #1384 the driver read that as a failure and exited 10, so the campaign
+    # of 2026-09-28 dropped 4 of 540 sessions, all on the `patched` probe, and
+    # a resume drew them again. A capped session is an observation: the driver
+    # records its calls and `answer: null`, and says in prose that it was
+    # capped. The stub also records the arguments it was given, so the case
+    # holds that the cap reaches the harness.
+    cat > "$scratch/bin/claude" <<STUB
+#!/bin/sh
+printf '%s\n' "\$@" > "$scratch/claude-args"
+printf '%s\n' '{"type":"system","subtype":"init","model":"claude-haiku-4-5","session_id":"s11"}'
+printf '%s\n' '{"type":"assistant","message":{"content":[{"type":"tool_use","id":"t1","name":"Read","input":{"file_path":"docs/x.md"}}]}}'
+printf '%s\n' '{"type":"result","subtype":"error_max_turns","is_error":true,"num_turns":81,"total_cost_usd":0.02,"modelUsage":{"claude-haiku-4-5-20251001":{"inputTokens":10}}}'
+exit 1
+STUB
+    chmod +x "$scratch/bin/claude"
+    PATH="$scratch/bin:$PATH" sh "$driver" --probe "HW-PROBE-$tombstone" --session fixture-capped \
+        --task-file "$scratch/task.md" --workspace "$scratch/ws" --max-turns 80 \
+        > "$scratch/capped-run.md" 2>"$scratch/capped-run.err"
+    same "a session stopped at the turn cap records, and the driver exits 0" "0" "$?"
+    present "the transcript says the session stopped at the cap" \
+        "The session stopped at the turn cap of 80." "$scratch/capped-run.md"
+    present "and it keeps the calls the session made" 'tool: "Read"' "$scratch/capped-run.md"
+    present "and the answer is null, because a capped session gave none" \
+        "answer: null" "$scratch/capped-run.md"
+    same "the cap reaches the harness" "80" \
+        "$(awk 'prev == "--max-turns" { print; exit } { prev = $0 }' "$scratch/claude-args")"
+
+    # Any other nonzero exit is still a failure, even with a `result` line.
+    cat > "$scratch/bin/claude" <<'STUB'
+#!/bin/sh
+printf '%s\n' '{"type":"system","subtype":"init","model":"claude-haiku-4-5","session_id":"s12"}'
+printf '%s\n' '{"type":"result","subtype":"error_during_execution","is_error":true,"total_cost_usd":0.02}'
+exit 1
+STUB
+    chmod +x "$scratch/bin/claude"
+    PATH="$scratch/bin:$PATH" sh "$driver" --probe "HW-PROBE-$tombstone" --session fixture-errored \
+        --task-file "$scratch/task.md" --workspace "$scratch/ws" --max-turns 80 \
+        >/dev/null 2>"$scratch/errored-run.err"
+    same "a session that errored for another reason still exits 10" "10" "$?"
+
+    # The turn cap a tier declares reaches the harness with no `--max-turns`
+    # (#1384). `.headwater/probe.yml` declares 80 for the campaign tier, and
+    # the plan prints it in its cost section.
+    cat > "$scratch/bin/claude" <<STUB
+#!/bin/sh
+printf '%s\n' "\$@" > "$scratch/claude-args"
+printf '%s\n' '{"type":"system","subtype":"init","model":"claude-haiku-4-5","session_id":"s13"}'
+printf '%s\n' '{"type":"result","subtype":"success","result":"withheld","total_cost_usd":0.01,"modelUsage":{"claude-haiku-4-5-20251001":{"inputTokens":10}}}'
+STUB
+    chmod +x "$scratch/bin/claude"
+    rm -f "$scratch/claude-args"
+    PATH="$scratch/bin:$PATH" sh "$driver" --probe "HW-PROBE-$tombstone" --session fixture-tier-cap \
+        --tier campaign --category sufficiency --task-file "$scratch/task.md" --workspace "$scratch/ws" \
+        >/dev/null 2>"$scratch/tier-cap.err"
+    same "a campaign session runs under the tier's declared cap" "0" "$?"
+    same "and the cap the plan declares reaches the harness" "80" \
+        "$(awk 'prev == "--max-turns" { print; exit } { prev = $0 }' "$scratch/claude-args" 2>/dev/null)"
+
+    # Bash writes (#1384). A write made through `Bash` names no path in its
+    # input, so the transform cannot see it in the log, and 22 of 30
+    # present-arm sessions of the `cited` probe on 2026-09-28 recorded
+    # `produced: []`. With `--baseline`, the driver compares the workspace
+    # after the session with the tree it was copied from, and every file that
+    # is new or changed is produced. A file the session left alone is not, and
+    # neither is a cache the engine writes.
+    rm -rf "$scratch/bw" "$scratch/bw-base"
+    # The transform checks each produced file, so the tree carries the lock,
+    # the vendored packages and the consumer declaration, and nothing that
+    # names the probe or a record about it.
+    mkdir -p "$scratch/bw-base/docs" "$scratch/bw-base/.claude/worktrees/w/docs" "$scratch/bw-base/.headwater"
+    cp -a "$root/.headwater/taxonomy.lock" "$root/.headwater/taxonomy.yml" "$root/.headwater/packages" \
+        "$scratch/bw-base/.headwater/"
+    printf 'old\n' > "$scratch/bw-base/docs/changed.md"
+    printf 'same\n' > "$scratch/bw-base/docs/same.md"
+    cp -a "$scratch/bw-base" "$scratch/bw"
+    cat > "$scratch/bin/claude" <<'STUB'
+#!/bin/sh
+printf 'new\n' > docs/changed.md
+printf 'new\n' > docs/written-by-bash.md
+printf 'new\n' > .claude/worktrees/w/docs/in-a-worktree.md
+mkdir -p .headwater/cache && printf 'x\n' > .headwater/cache/entry
+printf '%s\n' '{"type":"system","subtype":"init","model":"claude-haiku-4-5","session_id":"s14"}'
+printf '%s\n' '{"type":"assistant","message":{"content":[{"type":"tool_use","id":"t1","name":"Bash","input":{"command":"printf new > docs/written-by-bash.md"}}]}}'
+printf '%s\n' '{"type":"result","subtype":"success","total_cost_usd":0.01,"modelUsage":{"claude-haiku-4-5-20251001":{"inputTokens":10}}}'
+STUB
+    chmod +x "$scratch/bin/claude"
+    PATH="$scratch/bin:$PATH" sh "$driver" --probe "HW-PROBE-$tombstone" --session fixture-bash-write \
+        --task-file "$scratch/task.md" --workspace "$scratch/bw" --baseline "$scratch/bw-base" \
+        > "$scratch/bash-write.md" 2>"$scratch/bash-write.err"
+    same "a session that writes through Bash records" "0" "$?"
+    present "a file a Bash call wrote is produced" 'path: "docs/written-by-bash.md"' "$scratch/bash-write.md"
+    present "a file a Bash call changed is produced" 'path: "docs/changed.md"' "$scratch/bash-write.md"
+    present "a file written in a worktree of the workspace is produced" \
+        'path: ".claude/worktrees/w/docs/in-a-worktree.md"' "$scratch/bash-write.md"
+    absent "a file the session left alone is not produced" 'path: "docs/same.md"' "$scratch/bash-write.md"
+    absent "an engine cache is not produced" ".headwater/cache" "$scratch/bash-write.md"
 
     # The plan's refusal is the driver's refusal (#980). The harness here is
     # the stub that exits 7, so a driver that reached it would exit 10: an 11

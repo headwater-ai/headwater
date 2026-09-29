@@ -26,10 +26,12 @@
 //! does land, its transcript carries the realized cost and the two numbers are
 //! then comparable — which is the only route from a guess to an estimate.
 //!
-//! # Every field is required
+//! # Every field is required, except the turn cap
 //!
 //! A default would be this engine choosing how much money to spend. A tier that
-//! omits a field is refused, and a run at that tier does not happen.
+//! omits a field is refused, and a run at that tier does not happen. The one
+//! exception is `max_turns`: it bounds a session rather than the batch, and a
+//! tier with none runs each session to the harness's own end.
 
 use crate::{Arm, Cents, Tier};
 use headwater_yaml::value::{Mapping, Value};
@@ -57,6 +59,12 @@ pub struct Envelope {
     /// removes. Spec 5: the absent arm names a declared ablation. Empty for a
     /// tier that runs no absent arm, and refused as empty for one that does.
     pub ablation: Vec<String>,
+    /// The turn cap each session of this tier runs under, where the tier
+    /// declares one. A session the cap stops is recorded as observed and never
+    /// drawn again (#1384), so the cap is part of what a rate of the tier
+    /// measures and both arms share it. It is the one optional field: a
+    /// regression tier watches one session and declares none.
+    pub max_turns: Option<u32>,
 }
 
 /// Every declared tier.
@@ -216,6 +224,20 @@ fn envelope(tier: Tier, fields: &Mapping) -> Result<Envelope, Unreadable> {
         return Err(Unreadable::AblationWithoutAbsent { tier: name });
     }
 
+    let max_turns = match text(fields, "max_turns") {
+        None => None,
+        Some(found) => match found.parse::<u32>() {
+            Ok(turns) if turns > 0 => Some(turns),
+            _ => {
+                return Err(Unreadable::NotACount {
+                    tier: name,
+                    field: "max_turns",
+                    found,
+                });
+            }
+        },
+    };
+
     Ok(Envelope {
         tier,
         budget,
@@ -223,6 +245,7 @@ fn envelope(tier: Tier, fields: &Mapping) -> Result<Envelope, Unreadable> {
         repetitions,
         arms,
         ablation,
+        max_turns,
     })
 }
 
@@ -531,5 +554,35 @@ tiers:
                 field: "budget_cents",
             })
         );
+    }
+
+    #[test]
+    fn a_declared_turn_cap_is_read_and_a_tier_without_one_has_none() {
+        let source = GOOD.replace(
+            "    repetitions: 58\n    arms: [present, absent]\n    ablation: [CLAUDE.md, .claude, .githooks, .headwater]\n",
+            "    repetitions: 58\n    max_turns: 80\n    arms: [present, absent]\n    ablation: [CLAUDE.md, .claude, .githooks, .headwater]\n",
+        );
+        assert_ne!(source, GOOD, "the replacement found the campaign tier");
+        let budgets = Budgets::read(&source).expect("reads");
+        assert_eq!(budgets.of(Tier::Campaign).expect("campaign").max_turns, Some(80));
+        assert_eq!(budgets.of(Tier::Regression).expect("regression").max_turns, None);
+    }
+
+    #[test]
+    fn a_turn_cap_of_zero_or_a_word_is_refused() {
+        for found in ["0", "many"] {
+            let source = GOOD.replace(
+                "    session_cost_cents: 4\n    repetitions: 1\n",
+                &format!("    session_cost_cents: 4\n    repetitions: 1\n    max_turns: {found}\n"),
+            );
+            assert_eq!(
+                Budgets::read(&source),
+                Err(Unreadable::NotACount {
+                    tier: "regression",
+                    field: "max_turns",
+                    found: found.to_string(),
+                })
+            );
+        }
     }
 }
