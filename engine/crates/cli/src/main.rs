@@ -4306,6 +4306,16 @@ fn show(root: &Path, target: &str) -> ExitCode {
         Ok(explanation) => explanation,
         Err(code) => return code,
     };
+    // A row the walk could not read is refused in `explain`'s sentence, with
+    // the verb changed: a symlink, a named pipe, a socket or a device, a
+    // directory the walk could not read, and a name that is not UTF-8
+    // (#1366). The checks below stay as a second guard on the read itself:
+    // the walk makes no row under a linked directory, so no row found above
+    // reaches them today, and they keep the read inside the root if one does.
+    if let Some(refusal) = explanation.refusal_for("show") {
+        eprintln!("headwater: {}", err(&refusal));
+        return ExitCode::FAILURE;
+    }
     // A census path is relative to the repository root, which is `root`.
     // The walk does not follow a symlink, and neither does this read: a link
     // anywhere between the root and the file could name any file on the host,

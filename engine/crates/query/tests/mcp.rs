@@ -980,6 +980,58 @@ fn the_explain_tool_refuses_a_row_the_walk_could_not_read() {
     );
 }
 
+/// The `related` tool refuses the row `explain` refuses, in the same
+/// sentence with its own name as the verb, and never says the row "declares
+/// no relation" or "is not a document" (#1366).
+#[cfg(unix)]
+#[test]
+fn the_related_tool_refuses_a_row_the_walk_could_not_read() {
+    let scratch = Scratch::of(&fixtures_dir(), "related-unwalkable");
+    let link = "query/specs/link.md";
+    std::os::unix::fs::symlink("api-design.md", scratch.0.join(link)).expect("the link is made");
+    let built = fixture_tree_at(&scratch.0);
+    let server = built.server(RECORDED_AT);
+    let answer = content(&once(
+        &server,
+        &calling("related", &format!(r#"{{"target":"{link}"}}"#)),
+    ))
+    .concat();
+    assert_eq!(
+        answer,
+        format!(
+            "`{link}` is a symlink to `api-design.md`, which the walk does not follow, so \
+             `related` prints nothing\n"
+        ),
+        "the tool refuses the row in the verb's sentence"
+    );
+}
+
+/// `governing_docs_for_path` takes a code path, not a document, so a named
+/// pipe under the tree is a path that no document governs, and the tool
+/// answers so without opening it, with `pointers` present and empty (#1366).
+#[cfg(unix)]
+#[test]
+fn governing_docs_for_path_answers_a_named_pipe_without_opening_it() {
+    let scratch = Scratch::of(&fixtures_dir(), "governing-pipe");
+    let pipe = "query/specs/pipe.md";
+    let made = std::process::Command::new("mkfifo")
+        .arg(scratch.0.join(pipe))
+        .status()
+        .expect("mkfifo runs");
+    assert!(made.success(), "the named pipe is made");
+    let built = fixture_tree_at(&scratch.0);
+    let server = built.server(RECORDED_AT);
+    let answer = content(&once(
+        &server,
+        &calling(
+            "governing_docs_for_path",
+            &format!(r#"{{"path":"{pipe}"}}"#),
+        ),
+    ))
+    .concat();
+    assert_eq!(answer, format!("no document governs {pipe}\n"));
+}
+
 /// The one sentence every path route prints for a target outside the
 /// repository (#1249), as `docs/interfaces/headwater-explain.md` writes it.
 /// Stated here as a literal so the contract is read off the page, and checked
