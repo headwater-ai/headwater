@@ -19,6 +19,10 @@
 //! with `./` and a `..` segment. The resolver normalizes it, and the
 //! comparison reads the normalized path.
 //!
+//! **A rule that lost the target's identity.** `notes/k.md` writes the path of
+//! `NOTE-FIX-b` in two spellings. It is one finding and one repeated target,
+//! as the repeat was when both bound as one anchor.
+//!
 //! **The identifier form.** `notes/c.md` writes `NOTE-FIX-b`, which binds to
 //! the document, so `NOTE-FIX-b` has the reverse edge.
 //!
@@ -176,8 +180,48 @@ fn a_path_that_is_not_in_canonical_form_is_compared_after_normalization() {
     let found = at(&run, "notes/a2.md");
     assert_eq!(found.len(), 1, "{found:?}");
     assert!(found[0].contains("NOTE-FIX-b"), "{found:?}");
+    // The message names the document's own path, not the spelling written.
+    assert!(
+        found[0].contains("(document-path-target/notes/b.md)"),
+        "{found:?}"
+    );
+    assert!(
+        matches!(
+            target_of(&graph, "NOTE-FIX-a2"),
+            Target::Unbound(Unbound::DocumentByPath { path, .. })
+                if path == "document-path-target/notes/b.md"
+        ),
+        "{:?}",
+        target_of(&graph, "NOTE-FIX-a2")
+    );
+}
+
+/// One document's path in two spellings is one target written twice. Before
+/// #1410 both bound as one anchor and `relation.declaration.unusable` reported
+/// the repeat. The finding keeps that identity, so the repeat still fires and
+/// a verdict cached by the earlier engine is still the right one.
+#[test]
+fn one_document_path_in_two_spellings_is_still_one_target_written_twice() {
+    let (graph, run) = build();
+
+    assert_eq!(at(&run, "notes/k.md").len(), 1, "{:?}", at(&run, "notes/k.md"));
+    let repeated: Vec<&str> = run
+        .findings
+        .iter()
+        .filter(|finding| {
+            finding.rule == "relation.declaration.unusable"
+                && finding.path == "document-path-target/notes/k.md"
+        })
+        .map(|finding| finding.message.as_str())
+        .collect();
+    assert_eq!(repeated.len(), 1, "{repeated:?}");
+    assert!(
+        repeated[0].contains("names document-path-target/notes/b.md twice"),
+        "{repeated:?}"
+    );
+    // The repeat declares no second edge.
     assert!(matches!(
-        target_of(&graph, "NOTE-FIX-a2"),
+        target_of(&graph, "NOTE-FIX-k"),
         Target::Unbound(Unbound::DocumentByPath { .. })
     ));
 }
@@ -228,7 +272,7 @@ fn every_other_path_stays_an_anchor_and_is_not_reported() {
         );
     }
 
-    // The whole tree: two findings, both the decisive case.
+    // The whole tree: three findings, each the decisive case.
     let all: Vec<&str> = run
         .findings
         .iter()
@@ -239,7 +283,8 @@ fn every_other_path_stays_an_anchor_and_is_not_reported() {
         all,
         [
             "document-path-target/notes/a.md",
-            "document-path-target/notes/a2.md"
+            "document-path-target/notes/a2.md",
+            "document-path-target/notes/k.md"
         ]
     );
 }
