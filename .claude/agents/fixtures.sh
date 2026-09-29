@@ -10,7 +10,7 @@
 # definition's instructions, and a skill name nobody matches never loads. This
 # suite is what reports the drift.
 #
-# Ten cases, and the ceilings are the reason two of them exist. The parent's
+# Eleven cases, and the ceilings are the reason two of them exist. The parent's
 # context is the unit of cost ([HW-PD-0003]), so the command and the doctrine
 # carry a byte ceiling declared here, once, and CLAUDE.md carries one because
 # every agent pays for it on every dispatch ([HW-PD-0001]).
@@ -358,6 +358,33 @@ if [ -f "$agents/hw-iterate.md" ]; then
 else
     fail 'the refusal arms on hw-iterate.md run' 'no .claude/agents/hw-iterate.md to copy'
 fi
+
+# --- 11. the rule against filing an issue names the parent in its bold lead ---
+
+# The parent is an agent of the run too, and a lead that names only a stage
+# reads as not covering it (#1275). The parent loads hw-run-policy at the start
+# of every session, so the skill's bold lead is where the words reach it. The
+# case reads the bold lead alone: the rest of the line already ends "and the
+# parent rules on it", which is about ruling and not about filing.
+printf '\n# the rule against filing an issue in hw-run-policy names the parent in its bold lead\n'
+# Prints the bold lead of the no-filing rule in the file given.
+no_filing_lead() {
+    grep -m1 -E '^- \*\*No .*files an issue' "$1" | sed -n 's/^- \*\*\([^*]*\)\*\*.*/\1/p'
+}
+lead=$(no_filing_lead "$skills/hw-run-policy/SKILL.md")
+case "$lead" in
+    '') fail 'hw-run-policy carries a no-filing rule with a bold lead' 'no line opens `- **No ... files an issue`' ;;
+    *parent*) pass "the bold lead names the parent: $lead" ;;
+    *) fail 'the bold lead of the no-filing rule names the parent' "it reads: $lead" ;;
+esac
+# The refusal arm: the lead that named only a stage is reported.
+sed 's/^- \*\*No [^*]*files an issue[^*]*\*\*/- **No stage files an issue inside a run.**/' "$skills/hw-run-policy/SKILL.md" > "$scratch/hw-run-policy.md"
+lead=$(no_filing_lead "$scratch/hw-run-policy.md")
+case "$lead" in
+    *parent*) fail 'a bold lead that names only a stage is reported' "it read as naming the parent: $lead" ;;
+    'No stage files an issue inside a run.') pass 'and a bold lead that names only a stage is reported' ;;
+    *) fail 'a bold lead that names only a stage is reported' "the scratch copy reads: $lead" ;;
+esac
 
 printf '\n%s passed, %s failed\n' "$passed" "$failed"
 [ "$failed" -eq 0 ]
