@@ -410,6 +410,31 @@ if [ -z "$why" ]; then
 else
     fail 'a parent that forbids itself the verifier in prose is not reported' "reported: \`$why\`"
 fi
+# One sentence appended to the parent's command file, and the stage it must be
+# reported as dispatching, or nothing where it must stay clean.
+prose_arm() {
+    cp "$commands/next-run.md" "$scratch/next-run.md"
+    printf '%s\n' "$1" >> "$scratch/next-run.md"
+    why=$(loop_below_parent "$scratch/next-run.md" "$agents/hw-iterate.md")
+    if [ -n "$2" ]; then
+        case "$why" in
+            *"dispatches $2 itself"*) pass "and \"$1\" is reported as $2" ;;
+            *) fail "\"$1\" is reported as $2" "reported: \`$why\`" ;;
+        esac
+    elif [ -z "$why" ]; then
+        pass "and \"$1\" is not reported"
+    else
+        fail "\"$1\" is not reported" "reported: \`$why\`"
+    fi
+}
+prose_arm 'If hw-iterate does not answer, dispatch the verifier yourself.' hw-verify
+prose_arm 'When the queue holds no refusal, dispatch the builder for the issue.' hw-build
+prose_arm 'On a build report, launch the verifier.' hw-verify
+prose_arm 'Spawn hw-build for the next issue.' hw-build
+prose_arm 'Do not dispatch the verifier yourself.' ''
+prose_arm 'Rule each verdict without dispatching the verifier.' ''
+prose_arm 'There is no dispatch of the builder in this file.' ''
+prose_arm 'Dispatch hw-iterate, which launches the builder and the verifier.' ''
 if [ -f "$agents/hw-iterate.md" ]; then
     # The phrase survives in the file, but only in a sentence that forbids it:
     # both stages would run in the shared checkout.
@@ -433,6 +458,31 @@ if [ -f "$agents/hw-iterate.md" ]; then
         *'passes no isolation: "worktree" to hw-build'*) pass 'and a loop agent that names isolation beside its builder without dispatching it is reported' ;;
         *) fail 'a loop agent that names isolation beside its builder without dispatching it is reported' "reported: \`$why\`" ;;
     esac
+    # One edit to hw-iterate.md, and the stage it must be reported as passing
+    # no isolation to, or nothing where it must stay clean.
+    isolation_arm() {
+        sed "$1" "$agents/hw-iterate.md" > "$scratch/hw-iterate.md"
+        why=$(loop_below_parent "$commands/next-run.md" "$scratch/hw-iterate.md")
+        if [ -n "$2" ]; then
+            case "$why" in
+                *"passes no isolation: \"worktree\" to $2"*) pass "and \`$1\` is reported for $2" ;;
+                *) fail "\`$1\` is reported for $2" "reported: \`$why\`" ;;
+            esac
+        elif [ -z "$why" ]; then
+            pass "and \`$1\` is not reported"
+        else
+            fail "\`$1\` is not reported" "reported: \`$why\`"
+        fi
+    }
+    isolation_arm 's/Dispatch `hw-build` with `isolation/Dispatch `hw-build` but never with `isolation/' hw-build
+    isolation_arm 's/Dispatch `hw-build` with `isolation/Dispatch `hw-build`, and do not pass `isolation/' hw-build
+    isolation_arm 's/Dispatch `hw-build` with `isolation/Dispatch `hw-build` with no `isolation/' hw-build
+    isolation_arm 's/Dispatch `hw-build` with `isolation/Dispatch `hw-build` and skip `isolation/' hw-build
+    isolation_arm 's/Dispatch `hw-build` with `isolation/Dispatch `hw-build` and omit `isolation/' hw-build
+    isolation_arm 's/Dispatch `hw-build` with `isolation: "worktree"`/Dispatch `hw-build` in its own worktree/' hw-build
+    isolation_arm 's/Dispatch `hw-build` with `isolation/Dispatch `hw-build` as `hw-build.md` says, with `isolation/' ''
+    isolation_arm 's/Dispatch a fresh `hw-verify` with `isolation/Launch a fresh `hw-verify` with `isolation/' ''
+    isolation_arm 's/Dispatch `hw-build` with `isolation/Spawn `hw-build` with `isolation/' ''
     sed 's/isolation: "worktree"/isolation unset/g' "$agents/hw-iterate.md" > "$scratch/hw-iterate.md"
     why=$(loop_below_parent "$commands/next-run.md" "$scratch/hw-iterate.md")
     case "$why" in
