@@ -225,6 +225,21 @@ fn an_uncommitted_graph_export_is_written_by_export_and_not_by_generate() {
     let bytes = std::fs::read_to_string(&at).unwrap_or_else(|error| {
         panic!("`export` did not write the publish-time file: {error}\n{said}")
     });
+    // A plain `export`, with no `--at`, is how such a file is usually built,
+    // and its marker must not claim a gate that never reads it (#1343).
+    let marker = bytes
+        .lines()
+        .find(|line| line.contains("\"headwater:generated\""))
+        .expect("the marker member");
+    assert!(
+        marker.contains("`headwater export` builds this file at publish time")
+            && !marker.contains("`headwater generate --check` holds it"),
+        "an undated uncommitted export claims a gate holds it: {marker}"
+    );
+    assert!(
+        !bytes.contains("\"generated_at\""),
+        "an export with no --at states a date\n{bytes}"
+    );
 
     std::fs::write(&at, format!("{bytes}\n")).expect("the stale copy");
     for gate in [&["generate", "--check"][..], &["export", "--check"][..]] {
@@ -235,4 +250,189 @@ fn an_uncommitted_graph_export_is_written_by_export_and_not_by_generate() {
             "{gate:?} compares a stale local copy\n{said}"
         );
     }
+}
+
+/// The answered-export fixture with its `control` export declared
+/// `committed: false`, resolved into the lock.
+fn uncommitted_control() -> Scratch {
+    let root = scratch();
+    copy_tree(&fixtures(), &root);
+    std::fs::rename(root.join("packages"), root.join(".headwater/packages"))
+        .expect("the package moves");
+    let package = root.join(".headwater/packages/acme-answered-export/taxonomy.yml");
+    let source = std::fs::read_to_string(&package).expect("the package reads");
+    let declared = "    output: exports/control.json\n";
+    assert!(source.contains(declared), "the fixture moved: {source}");
+    std::fs::write(
+        &package,
+        source.replace(declared, &format!("{declared}    committed: false\n")),
+    )
+    .expect("the package writes");
+    let (code, said) = status(&run(&root, &["taxonomy", "resolve"]));
+    assert_eq!(code, Some(0), "the taxonomy does not resolve\n{said}");
+    root
+}
+
+/// `headwater export --at` dates the export that `committed: false` declares,
+/// and its marker says which verb builds it
+/// ([#1343](https://github.com/headwater-ai/headwater/issues/1343)).
+///
+/// Spec 6 asks a filtered export that leaves the repository to state when it
+/// was generated. An uncommitted export is that artifact, and no gate compares
+/// it by byte, so the date the byte gate forbids elsewhere is allowed here. A
+/// run whose plan holds a committed export is still refused whole, because a
+/// date inside that one would fail `generate --check` on the next morning.
+#[test]
+fn export_at_dates_an_uncommitted_graph_export_and_refuses_a_committed_one() {
+    let root = uncommitted_control();
+    let (code, said) = status(&run(&root, &["generate"]));
+    assert_eq!(code, Some(0), "`generate` failed\n{said}");
+    let control = root.join("exports/control.json");
+    let filtered = root.join("exports/filtered.json");
+    let committed = std::fs::read_to_string(&filtered).expect("the committed export");
+
+    // The whole plan holds the committed `filtered` export, so the date is
+    // refused for the run, and nothing is written.
+    let refused = run(&root, &["export", "--at", "2026-09-30"]);
+    let (code, said) = status(&refused);
+    assert_eq!(
+        code,
+        Some(1),
+        "`export --at` dated a committed export\n{said}"
+    );
+    assert!(
+        refused.stdout.is_empty(),
+        "the refusal wrote a report\n{said}"
+    );
+    let stderr = String::from_utf8_lossy(&refused.stderr);
+    assert!(
+        stderr.contains("exports/filtered.json"),
+        "the refusal does not name the committed output\n{said}"
+    );
+    assert!(
+        !stderr.contains("exports/control.json"),
+        "the refusal names the uncommitted output as committed\n{said}"
+    );
+    assert!(
+        !control.exists(),
+        "the refused run wrote the uncommitted export\n{said}"
+    );
+    assert_eq!(
+        std::fs::read_to_string(&filtered).expect("the committed export"),
+        committed,
+        "the refused run rewrote the committed export"
+    );
+
+    let (code, said) = status(&run(
+        &root,
+        &["export", "--profile", "control", "--at", "2026-09-30"],
+    ));
+    assert_eq!(
+        code,
+        Some(0),
+        "`export --at` refused an uncommitted export\n{said}"
+    );
+    let written = std::fs::read_to_string(&control).expect("the dated export");
+    assert!(
+        written.contains("\"generated_at\": \"2026-09-30\""),
+        "the uncommitted export does not state the injected date\n{written}"
+    );
+    let marker = written
+        .lines()
+        .find(|line| line.contains("\"headwater:generated\""))
+        .expect("the marker member");
+    assert!(
+        marker.contains("\"graph_export. ") && marker.contains("`headwater export`"),
+        "the marker does not name the verb that builds the file: {marker}"
+    );
+    assert!(
+        !marker.contains("`headwater generate --check` holds it"),
+        "the marker claims a gate holds an export that no gate compares: {marker}"
+    );
+    assert!(
+        committed.contains("`headwater generate --check` holds it"),
+        "the committed export lost the marker its gate relies on\n{committed}"
+    );
+
+    for gate in [&["generate", "--check"][..], &["export", "--check"][..]] {
+        let (code, said) = status(&run(&root, gate));
+        assert_eq!(
+            code,
+            Some(0),
+            "{gate:?} failed after the dated export\n{said}"
+        );
+    }
+    // A second publish recognizes its own dated file rather than refusing to
+    // overwrite it.
+    let (code, said) = status(&run(
+        &root,
+        &["export", "--profile", "control", "--at", "2026-10-01"],
+    ));
+    assert_eq!(
+        code,
+        Some(0),
+        "`export` refused its own earlier output\n{said}"
+    );
+    let rewritten = std::fs::read_to_string(&control).expect("the dated export");
+    assert!(
+        rewritten.contains("\"generated_at\": \"2026-10-01\""),
+        "the second publish did not rewrite the date\n{rewritten}"
+    );
+}
+
+/// Only a committed *graph export* refuses `--at`. A committed projection of
+/// another kind, such as a shelf index, is not in `export`'s plan, and a
+/// corpus that declares one still dates its uncommitted exports.
+#[test]
+fn export_at_is_not_refused_by_a_committed_projection_of_another_kind() {
+    let root = uncommitted_control();
+    let package = root.join(".headwater/packages/acme-answered-export/taxonomy.yml");
+    let source = std::fs::read_to_string(&package).expect("the package reads");
+    let filtered = "    output: exports/filtered.json\n";
+    let projections = "projections:\n";
+    assert!(
+        source.contains(filtered) && source.contains(projections),
+        "the fixture moved: {source}"
+    );
+    let source = source
+        .replace(filtered, &format!("{filtered}    committed: false\n"))
+        .replace(
+            projections,
+            "projections:\n  - {kind: shelf_index, for: [answers], output: \"{shelf}/README.md\"}\n",
+        );
+    std::fs::write(&package, source).expect("the package writes");
+    let (code, said) = status(&run(&root, &["taxonomy", "resolve"]));
+    assert_eq!(code, Some(0), "the taxonomy does not resolve\n{said}");
+
+    let (code, said) = status(&run(&root, &["export", "--at", "2026-09-30"]));
+    assert_eq!(
+        code,
+        Some(0),
+        "a committed shelf index refused `--at` over uncommitted exports\n{said}"
+    );
+    for name in ["control", "filtered"] {
+        let written = std::fs::read_to_string(root.join(format!("exports/{name}.json")))
+            .unwrap_or_else(|error| panic!("`export` did not write {name}: {error}\n{said}"));
+        assert!(
+            written.contains("\"generated_at\": \"2026-09-30\""),
+            "{name} does not state the injected date\n{written}"
+        );
+    }
+    assert!(
+        !root.join("docs/answers/README.md").exists(),
+        "`export` wrote the shelf index\n{said}"
+    );
+}
+
+/// `--at` with `--check` is refused, because nothing `--check` compares
+/// carries a date.
+#[test]
+fn export_at_is_refused_with_check() {
+    let root = uncommitted_control();
+    let (code, said) = status(&run(&root, &["export", "--check", "--at", "2026-09-30"]));
+    assert_eq!(code, Some(1), "`export --check --at` ran\n{said}");
+    assert!(
+        said.contains("'--check' cannot be used with '--at <date>'"),
+        "`export --check --at` is not refused as a conflict of the two flags\n{said}"
+    );
 }
