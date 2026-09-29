@@ -82,7 +82,7 @@ printf 'site/\n' >> .gitignore
 
 Commit `.headwater/nav.yml` with the other generated files, and do not generate it only in the build step. `headwater generate --check` fails when the file is not on the tree, and the conformance rule `projections.current` is then not met, so your corpus falls below L2. `headwater check --strict` still passes without it, so the check alone does not tell you. When two branches each add a document, their copies of `.headwater/nav.yml` can conflict. Run `headwater generate` on the merged tree to write the file again, and do not merge it by hand.
 
-8. Compare the built site with your corpus. Do this step after each build, and do it last. The command reads the directory that MkDocs writes the pages to. When you set `site_dir` in `mkdocs.yml`, give that directory in place of the second word.
+8. Compare the built site with your corpus. Do this step after each build, and do it last. The command reads the directory that MkDocs writes the pages to. When you set `site_dir` in `mkdocs.yml`, give that directory as the last word of the command.
 
 <!-- headwater allow=surface.local_path.instructed scope=block until=2027-09-30 reason=false_positive note=site here is the output directory MkDocs writes in the repository of the adopter, which is the site generator integration point -->
 
@@ -90,7 +90,7 @@ Commit `.headwater/nav.yml` with the other generated files, and do not generate 
 headwater site site
 ```
 
-The command exits 0 when the site agrees with the corpus. Otherwise it writes one line for each problem and exits 1. A line can show a page that the navigation names and the build did not write. A line can also show a page that has no document in the corpus now. A third type of line shows a link or a fragment that points to nothing in the built site. [The contract of the command](../interfaces/headwater-site.md) gives each type of line and what the command reads. Correct the corpus or the build, and do steps 6 and 8 again.
+The command exits 0 when the site agrees with the corpus. Otherwise it writes one line for each problem and exits 1. A line can show a page that the navigation names and the build did not write. A line can also show a page that has no document in the corpus now. A third type of line shows a link or a fragment that points to nothing in the built site. [The contract of the command](../interfaces/headwater-site.md) gives each type of line and what the command reads. Correct the corpus or the build. Then do step 2 again if you added, moved or removed a document, and do steps 6 and 8 again.
 
 ## How to know it worked
 

@@ -104,10 +104,12 @@ grep -q '^mkdocs build' "$work/commands.sh" || fail "the guide runs no mkdocs bu
 grep '^mkdocs build' "$work/commands.sh" >"$work/build-commands.sh"
 
 # The last step of a publish is `headwater site` over the directory MkDocs
-# wrote, and nothing the guide runs comes after it.
+# wrote, and nothing the guide runs comes after it. The line is exactly
+# `headwater site site`, because step 8 tells a reader with another `site_dir`
+# to put it as the last word of the command.
 last=$(awk 'NF { line = $0 } END { print line }' "$work/commands.sh")
 case $last in
-  'headwater site site' | 'headwater site site '*) ;;
+  'headwater site site') ;;
   *) fail "the guide's last command is not \`headwater site site\`: $last" ;;
 esac
 last_build=$(grep -n '^mkdocs build' "$work/commands.sh" | tail -n 1 | cut -d: -f1)
