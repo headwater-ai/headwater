@@ -1353,7 +1353,6 @@ STUB
         : > "$batch/cap"
         printf '30000\n' > "$batch/ceiling.campaign"
         printf '50\n' > "$batch/unit.campaign"
-        printf '80\n' > "$batch/max-turns.campaign"
         printf '1 campaign present sufficiency\n' > "$batch/lines"
         cp "$scratch/task.md" "$batch/tasks/HW-PROBE-$tombstone.md"
         cat > "$scratch/bin/claude" <<STUB
@@ -1380,6 +1379,31 @@ STUB
             "$(cat "$batch/assembled/campaign-present-sufficiency.summary" 2>/dev/null)"
     else
         printf 'note not a checkout of this repository, so the campaign job case did not run.\n'
+    fi
+
+    # A batch over a tier that declares no turn cap, with no `--max-turns`,
+    # refuses with 2 before it builds a tree (#1384). The regression tier
+    # declares none. The batch needs a clean checkout first, so the case runs
+    # only on one, which is what CI checks out. `cargo` is a stub, because the
+    # engine this suite reads is already built.
+    if [ "$(git -C "$root" rev-parse --show-toplevel 2>/dev/null)" = "$root" ] \
+        && [ -z "$(git -C "$root" status --porcelain --untracked-files=no)" ]; then
+        printf '#!/bin/sh\nexit 0\n' > "$scratch/bin/cargo"
+        chmod +x "$scratch/bin/cargo"
+        printf 'regression present sufficiency\n' > "$scratch/uncapped.spec"
+        PATH="$scratch/bin:$PATH" sh "$root/tools/probe/campaign.sh" --out "$scratch/uncapped" \
+            --model claude-haiku-4-5 --spec "$scratch/uncapped.spec" \
+            >/dev/null 2>"$scratch/uncapped.err"
+        same "a batch over a tier with no turn cap and no --max-turns refuses with 2" "2" "$?"
+        present "and it names the missing cap" "declares no \`max_turns\`" "$scratch/uncapped.err"
+        if [ -e "$scratch/uncapped/trees" ]; then
+            fail "and it builds no tree" "$(ls "$scratch/uncapped")"
+        else
+            pass "and it builds no tree"
+        fi
+        rm -f "$scratch/bin/cargo"
+    else
+        printf 'note the checkout is not clean, so the uncapped batch case did not run.\n'
     fi
 
     # The plan's refusal is the driver's refusal (#980). The harness here is
