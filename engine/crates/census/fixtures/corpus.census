@@ -236,8 +236,6 @@ docs/evaluations/linkml-worked-example.md
   typed: evaluation
 docs/evaluations/n8n-worked-example.md
   typed: evaluation
-docs/evaluations/one-clone-many-agents-how-this-repository-isolates-the-sessions-that-build-it.md
-  typed: evaluation
 docs/evaluations/owl-skos-worked-example.md
   typed: evaluation
 docs/evaluations/relation-storage.md
@@ -248,8 +246,6 @@ docs/evaluations/shacl-worked-example.md
   typed: evaluation
 docs/evaluations/specifying-the-engine.md
   typed: evaluation
-docs/evaluations/the-build-order-as-a-multi-agent-system.md
-  typed: evaluation
 docs/evaluations/the-measurement-layer.md
   typed: evaluation
 docs/evaluations/the-pointer-probe-grades-a-session-against-the-router-s-own-first-pick-so-a-correct-session-that-declines-a-wrong-pointer-fails.md
@@ -259,8 +255,6 @@ docs/evaluations/the-serving-boundary.md
 docs/evaluations/the-three-discovery-misses-of-2026-09-16-have-three-different-mechanisms-and-only-one-is-routing-precision.md
   typed: evaluation
 docs/evaluations/theoretical-foundations.md
-  typed: evaluation
-docs/evaluations/two-triggers-one-verdict-how-this-repository-s-ci-decides-where-a-job-runs-and-what-it-trusts.md
   typed: evaluation
 docs/evaluations/warrant-and-adjudication.md
   typed: evaluation
@@ -630,8 +624,6 @@ docs/obligations/0143-a-specification-sentence-closes-a-set-with-a-count-the-sou
   typed: obligation_record
 docs/obligations/0144-the-cache-identity-test-reads-the-live-working-tree-so-an-edit-during-the-run-reports-the-correctness-root-as-violated.md
   typed: obligation_record
-docs/obligations/0145-the-ci-job-named-advisory-carries-every-blocking-shell-suite-in-the-repository.md
-  typed: obligation_record
 docs/obligations/0146-the-stop-hook-reads-its-re-entry-guard-with-an-interpreter-it-does-not-require-so-a-machine-with-no-python3-re-blocks-the-same-turn.md
   typed: obligation_record
 docs/obligations/0147-the-skills-fixture-suite-passes-on-an-empty-input-set-and-always-fails-in-a-clone-that-has-not-built-the-engine.md
@@ -694,8 +686,6 @@ docs/obligations/0175-two-documents-take-one-sequence-on-a-sequence-declaring-sh
   typed: obligation_record
 docs/obligations/0176-a-blessed-fixture-is-read-by-a-sibling-case-that-runs-while-the-write-truncates-it.md
   typed: obligation_record
-docs/obligations/0177-the-value-rule-writes-adopter-on-every-self-audit-record-and-most-of-them-wait-on-a-build.md
-  typed: obligation_record
 docs/obligations/0178-the-every-instance-report-detail-reaches-four-test-files-and-no-caller-outside-them.md
   typed: obligation_record
 docs/obligations/0179-the-commit-gate-checks-prose-with-a-binary-it-never-compares-against-the-engine-sources.md
@@ -744,29 +734,15 @@ docs/obligations/0200-three-graded-regression-runs-are-owed-a-fresh-recording-ag
   typed: obligation_record
 docs/obligations/0201-no-coverage-or-mutation-measurement-has-ever-been-taken-over-the-engine-s-test-suite.md
   typed: obligation_record
-docs/obligations/0202-a-bare-none-footprint-is-claimed-as-a-literal-path-so-two-disjoint-issues-collide.md
-  typed: obligation_record
-docs/obligations/0203-three-small-run-tooling-gaps-from-run-20260922-1121-filed-together.md
-  typed: obligation_record
 docs/obligations/0204-docs-decisions-0077-still-describes-hw-dr-0049-s-rewrite-as-pending-after-574-made-it.md
   typed: obligation_record
 docs/obligations/0205-hw-obl-0002-s-sample-counts-and-voice-rs-s-own-census-predate-the-scent-role-fix-and-need-retaking.md
   typed: obligation_record
 docs/obligations/0206-hw-run-policy-names-a-worktree-add-workaround-that-write-edit-refuses-under-this-harness.md
   typed: obligation_record
-docs/obligations/0207-the-plan-usage-of-one-issue-is-known-only-as-the-average-of-its-run.md
-  typed: obligation_record
 docs/obligations/0208-four-small-test-and-wording-gaps-from-run-20260923-0733-filed-together.md
   typed: obligation_record
-docs/obligations/0209-a-build-order-dispatch-passes-no-isolation-so-a-stage-can-inherit-the-parent-worktree-as-its-working-directory.md
-  typed: obligation_record
 docs/obligations/0210-no-fixture-holds-the-symlink-case-of-new-worktree-sh-and-a-bare-name-of-two-dots-leaves-a-branch-behind.md
-  typed: obligation_record
-docs/obligations/0211-two-hand-remedy-lines-for-hw-cargo-in-hw-run-policy-may-no-longer-earn-their-cost-on-every-dispatch.md
-  typed: obligation_record
-docs/obligations/0212-ci-done-sh-reads-a-cancelled-run-of-another-branch-as-a-red-result-on-a-main-merge-commit.md
-  typed: obligation_record
-docs/obligations/0213-ci-builds-no-mkdocs-site-so-a-generated-page-under-docs-is-never-checked-against-a-strict-build-before-merge.md
   typed: obligation_record
 docs/obligations/0214-the-commit-gate-does-not-see-docs-taxonomies-readme-md-drift-from-its-vendored-copy.md
   typed: obligation_record
@@ -777,10 +753,6 @@ docs/obligations/0216-two-merge-hooks-of-this-repository-print-a-resolve-flag-th
 docs/obligations/0217-the-site-review-marker-lives-in-the-common-directory-of-a-clone-so-one-worktree-s-unreviewed-merge-blocks-the-push-of-every-worktree.md
   typed: obligation_record
 docs/obligations/0218-the-opening-sentence-of-the-self-found-list-in-spec-13-counts-forty-nine-items-in-ranges-that-do-not-match-the-list.md
-  typed: obligation_record
-docs/obligations/0220-no-disk-floor-is-stated-for-a-build-order-run-and-nothing-prunes-the-cargo-pool.md
-  typed: obligation_record
-docs/obligations/0221-subagents-read-skills-from-the-shared-checkout-and-a-worktree-isolated-integrator-cannot-fast-forward-it-after-a-merge.md
   typed: obligation_record
 docs/obligations/0222-ten-rules-of-the-editions-ledger-have-one-recorded-corpus-so-a-rule-change-blessed-with-an-edit-to-that-corpus-passes.md
   typed: obligation_record
@@ -956,12 +928,50 @@ docs/process/decisions/0022-the-verify-and-rework-loop-for-one-issue-runs-below-
   typed: process_decision
 docs/process/decisions/0023-a-build-order-parent-restarts-every-few-merges-drains-to-zero-first-and-resumes-from-the-handover-files-on-disk.md
   typed: process_decision
+docs/process/decisions/0024-a-document-that-moves-to-a-process-shelf-keeps-its-identifier.md
+  typed: process_decision
 docs/process/decisions/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
+docs/process/evaluations/README.md
+  generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
+docs/process/evaluations/one-clone-many-agents-how-this-repository-isolates-the-sessions-that-build-it.md
+  typed: process_evaluation
+docs/process/evaluations/the-build-order-as-a-multi-agent-system.md
+  typed: process_evaluation
+docs/process/evaluations/two-triggers-one-verdict-how-this-repository-s-ci-decides-where-a-job-runs-and-what-it-trusts.md
+  typed: process_evaluation
 docs/process/explanations/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/process/explanations/where-a-ci-job-runs.md
   typed: process_explanation
+docs/process/obligations/0145-the-ci-job-named-advisory-carries-every-blocking-shell-suite-in-the-repository.md
+  typed: process_obligation
+docs/process/obligations/0177-the-value-rule-writes-adopter-on-every-self-audit-record-and-most-of-them-wait-on-a-build.md
+  typed: process_obligation
+docs/process/obligations/0202-a-bare-none-footprint-is-claimed-as-a-literal-path-so-two-disjoint-issues-collide.md
+  typed: process_obligation
+docs/process/obligations/0203-three-small-run-tooling-gaps-from-run-20260922-1121-filed-together.md
+  typed: process_obligation
+docs/process/obligations/0207-the-plan-usage-of-one-issue-is-known-only-as-the-average-of-its-run.md
+  typed: process_obligation
+docs/process/obligations/0209-a-build-order-dispatch-passes-no-isolation-so-a-stage-can-inherit-the-parent-worktree-as-its-working-directory.md
+  typed: process_obligation
+docs/process/obligations/0211-two-hand-remedy-lines-for-hw-cargo-in-hw-run-policy-may-no-longer-earn-their-cost-on-every-dispatch.md
+  typed: process_obligation
+docs/process/obligations/0212-ci-done-sh-reads-a-cancelled-run-of-another-branch-as-a-red-result-on-a-main-merge-commit.md
+  typed: process_obligation
+docs/process/obligations/0213-ci-builds-no-mkdocs-site-so-a-generated-page-under-docs-is-never-checked-against-a-strict-build-before-merge.md
+  typed: process_obligation
+docs/process/obligations/0220-no-disk-floor-is-stated-for-a-build-order-run-and-nothing-prunes-the-cargo-pool.md
+  typed: process_obligation
+docs/process/obligations/0221-subagents-read-skills-from-the-shared-checkout-and-a-worktree-isolated-integrator-cannot-fast-forward-it-after-a-merge.md
+  typed: process_obligation
+docs/process/obligations/README.md
+  generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
+docs/process/specs/README.md
+  generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
+docs/process/specs/orchestration-architecture.md
+  typed: process_spec
 docs/requirements/0001-the-engine-reaches-no-network-at-check-time.md
   typed: requirement
 docs/requirements/0002-every-document-of-a-kind-that-requires-sections-carries-all-of-them.md
@@ -1013,8 +1023,6 @@ docs/spec/13-open-obligations.md
 docs/spec/15-the-recorder-contract.md
   typed: design_spec
 docs/spec/16-harness-support.md
-  typed: design_spec
-docs/spec/17-orchestration-architecture.md
   typed: design_spec
 docs/spec/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
