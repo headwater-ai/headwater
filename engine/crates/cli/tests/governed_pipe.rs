@@ -546,7 +546,8 @@ fn sweep_plan_finishes_when_a_named_pipe_takes_a_document_path() {
 /// The committed embedding pin, copied into a stub root so that `neighbors`
 /// reads past `.headwater/embedding.yml` to the model files it names.
 fn pin_into(at: &std::path::Path) {
-    let pin = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../.headwater/embedding.yml");
+    let pin =
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../.headwater/embedding.yml");
     std::fs::create_dir_all(at.join(".headwater")).expect("the directory is made");
     std::fs::copy(pin, at.join(".headwater/embedding.yml")).expect("the pin copies");
 }
@@ -625,8 +626,14 @@ fn neighbors_finishes_when_a_named_pipe_takes_a_document_path() {
         "neighbors opened the named pipe at docs/x.md, and waited on it",
     );
     assert_eq!(status.code(), Some(0), "neighbors ends: {err}");
-    assert!(out.contains("summarized documents"), "neighbors ranked: {out}");
-    assert!(!out.contains("docs/x.md"), "the pipe is never ranked: {out}");
+    assert!(
+        out.contains("summarized documents"),
+        "neighbors ranked: {out}"
+    );
+    assert!(
+        !out.contains("docs/x.md"),
+        "the pipe is never ranked: {out}"
+    );
 }
 
 /// The walk makes no row under a directory that is a symlink, so a path
