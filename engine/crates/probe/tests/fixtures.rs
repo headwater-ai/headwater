@@ -919,6 +919,27 @@ fn a_bash_call_after_the_witness_names_the_member_and_nothing_outside() {
     );
 }
 
+/// One Bash command that names two documents names both (#1384 verify, W3).
+/// Every read word of the command is tested, not only the first that matches.
+#[test]
+fn one_bash_command_naming_two_documents_names_both() {
+    let calls = bash_call(&format!("cat corpus/probes/0002-answered.md {COMMITTED}"));
+    let source = with_calls(&fixtures_dir(), &calls);
+    let staleness = staleness_of(&fixtures_dir(), &source);
+    let report = staleness.render(ColorMode::Plain);
+    for path in ["corpus/probes/0002-answered.md", COMMITTED] {
+        let member = staleness
+            .members
+            .iter()
+            .find(|member| member.path == path)
+            .unwrap_or_else(|| panic!("{path} is not a member:\n{report}"));
+        assert_eq!(member.bash, Some((1, 1)), "{path}\n{report}");
+        assert!(member.witness.is_none(), "{path}\n{report}");
+    }
+    assert!(staleness.outside.is_empty(), "{report}");
+    assert_eq!(staleness.verdict(), Stale::Stands, "{report}");
+}
+
 /// A member with a witness is reported by its witness, even where a Bash call
 /// named it first (#1384 verify, D5). The Bash line is for a member that
 /// nothing witnessed, and printing it here would say that no witness decides a

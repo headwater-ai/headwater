@@ -1534,6 +1534,17 @@ mod tests {
         }
     }
 
+    /// A plain `<<` keeps the tabs of its delimiter line, so a tab before
+    /// `EOF` does not end the body (#1384 verify, W5). Only `<<-` strips them.
+    #[test]
+    fn a_tab_before_the_delimiter_does_not_end_a_plain_heredoc() {
+        let tokens = shell_tokens("cat <<EOF\n\tEOF\ndocs/probes/one.md\nEOF\nls");
+        assert!(
+            !read_words(&tokens).contains(&"docs/probes/one.md"),
+            "a tab-indented `EOF` ended a plain heredoc: {tokens:?}"
+        );
+    }
+
     /// The limits the tokenizer states. `<< -EOF` has the delimiter `-EOF` and
     /// keeps its tabs, as in bash, because only `<<-` written as one operator
     /// strips them. `<<` inside an arithmetic expansion is read as a heredoc,
