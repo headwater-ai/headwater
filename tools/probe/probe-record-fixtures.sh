@@ -823,6 +823,175 @@ same "and the driver passes both guards over the sealed tree" "3" "$?"
 sh "$root/tools/probe/seal.sh" "$root/docs" "HW-PROBE-$tombstone" >/dev/null 2>&1
 same "seal.sh refuses a path inside this checkout" "6" "$?"
 
+# A named document is sealed the way an answer key is (#1293). The #980 batch
+# deleted HW-OBL-0013 because it names the tombstone probe, and left its claim
+# file, its register line and its shelf-index line, so 23 of 30 present-arm
+# sessions still found and queried it. The document goes, and so do its claim
+# and every line that names it; the files that held those lines stay.
+mkdir -p "$scratch/linked/docs/probes" "$scratch/linked/docs/obligations" "$scratch/linked/docs/spec" \
+    "$scratch/linked/.headwater/ids/obligation_record_id"
+cp "$root/docs/probes/$tombstone.md" "$scratch/linked/docs/probes/"
+printf -- '---\nid: HW-OBL-0013\n---\nNo probe tests it; see docs/probes/%s.md\n' "$tombstone" \
+    > "$scratch/linked/docs/obligations/0013-x.md"
+printf '%s\n' '- [HW-OBL-0013](../obligations/0013-x.md) — the tombstone gap' \
+    '- [HW-OBL-0014](../obligations/0014-y.md) — another entry' > "$scratch/linked/docs/spec/13.md"
+printf '%s\n' '| [0013-x](0013-x.md) | the tombstone gap |' '| [0014-y](0014-y.md) | another entry |' \
+    > "$scratch/linked/docs/obligations/README.md"
+printf 'docs/obligations/0013-x.md\n' > "$scratch/linked/.headwater/ids/obligation_record_id/HW-OBL-0013"
+printf -- '- docs/probes/%s.md\n' "$tombstone" > "$scratch/linked/.headwater/nav.yml"
+printf '# HW-PROBE-%s\n' "$tombstone" > "$scratch/linked/.headwater/overlay.yml"
+sh "$root/tools/probe/seal.sh" "$scratch/linked" "HW-PROBE-$tombstone" >"$scratch/linked.out" 2>&1
+same "seal.sh seals a workspace whose index and register link a named document" "0" "$?"
+if [ -e "$scratch/linked/docs/obligations/0013-x.md" ] || [ -e "$scratch/linked/.headwater/ids/obligation_record_id/HW-OBL-0013" ]; then
+    fail "and it removes the named document and its identifier claim" "$(ls -aR "$scratch/linked")"
+else
+    pass "and it removes the named document and its identifier claim"
+fi
+same "and it removes the register line that names the document and keeps the line that does not" \
+    "- [HW-OBL-0014](../obligations/0014-y.md) — another entry" "$(cat "$scratch/linked/docs/spec/13.md")"
+same "and it removes the shelf-index line that links the document and keeps the line that does not" \
+    "| [0014-y](0014-y.md) | another entry |" "$(cat "$scratch/linked/docs/obligations/README.md")"
+if [ -f "$scratch/linked/.headwater/nav.yml" ] && [ -f "$scratch/linked/.headwater/overlay.yml" ]; then
+    pass "and the derived fold and the hand-written overlay survive as files"
+else
+    fail "and the derived fold and the hand-written overlay survive as files" "$(ls -aR "$scratch/linked")"
+fi
+present "and it counts the lines it removed for the document" "seal: removed the named document HW-OBL-0013 of HW-PROBE-$tombstone, and 2 lines naming it" "$scratch/linked.out"
+
+# A named document whose slug is `README` is deleted with its claim, and its
+# slug drives no line removal: every shelf has a README, and a line that says
+# so names no answer.
+mkdir -p "$scratch/readme/docs/probes" "$scratch/readme/docs/evaluations" "$scratch/readme/docs/obligations"
+cp "$root/docs/probes/$tombstone.md" "$scratch/readme/docs/probes/"
+printf 'The readings of docs/probes/%s.md\n' "$tombstone" > "$scratch/readme/docs/evaluations/README.md"
+printf '%s\n' 'See [the index](README.md) for each record.' 'An obligation line.' \
+    > "$scratch/readme/docs/obligations/README.md"
+sh "$root/tools/probe/seal.sh" "$scratch/readme" "HW-PROBE-$tombstone" >"$scratch/readme.out" 2>&1
+same "seal.sh seals a workspace in which a README names the probe" "0" "$?"
+if [ -e "$scratch/readme/docs/evaluations/README.md" ]; then
+    fail "and it removes the README that names the probe" "$(ls -aR "$scratch/readme")"
+else
+    pass "and it removes the README that names the probe"
+fi
+same "and it keeps every line elsewhere that holds the word README" \
+    "$(printf '%s\n' 'See [the index](README.md) for each record.' 'An obligation line.')" \
+    "$(cat "$scratch/readme/docs/obligations/README.md")"
+present "and it says that the generic slug removed no lines" "seal: kept every line naming README" "$scratch/readme.out"
+
+# A one-word slug is generic too. A named `docs/spec/glossary.md` must not
+# strip every line that holds the word, or that links the glossary, from the
+# rest of the tree (verify round 1 of #1293: 163 lines in 78 files).
+mkdir -p "$scratch/glossary/docs/probes" "$scratch/glossary/docs/spec" "$scratch/glossary/engine"
+cp "$root/docs/probes/$tombstone.md" "$scratch/glossary/docs/probes/"
+printf 'Terms. See docs/probes/%s.md\n' "$tombstone" > "$scratch/glossary/docs/spec/glossary.md"
+printf '%s\n' 'See the [glossary](glossary.md).' 'let glossary = load();' > "$scratch/glossary/docs/spec/01.md"
+sh "$root/tools/probe/seal.sh" "$scratch/glossary" "HW-PROBE-$tombstone" >"$scratch/glossary.out" 2>&1
+same "seal.sh keeps every line that holds a one-word slug of a named document" \
+    "$(printf '%s\n' 'See the [glossary](glossary.md).' 'let glossary = load();')" \
+    "$(cat "$scratch/glossary/docs/spec/01.md")"
+
+# A slug that another file of the workspace also has is generic, as every
+# skill's SKILL.md is, so a link to the other file survives.
+mkdir -p "$scratch/shared/docs/probes" "$scratch/shared/docs/a" "$scratch/shared/docs/b"
+cp "$root/docs/probes/$tombstone.md" "$scratch/shared/docs/probes/"
+printf 'see docs/probes/%s.md\n' "$tombstone" > "$scratch/shared/docs/a/shared-name.md"
+printf 'the other one\n' > "$scratch/shared/docs/b/shared-name.md"
+printf '%s\n' 'See [the b file](b/shared-name.md).' > "$scratch/shared/docs/index-of-both.md"
+sh "$root/tools/probe/seal.sh" "$scratch/shared" "HW-PROBE-$tombstone" >"$scratch/shared.out" 2>&1
+same "seal.sh keeps a line that links another file of the same name" \
+    'See [the b file](b/shared-name.md).' "$(cat "$scratch/shared/docs/index-of-both.md")"
+
+# An identifier or slug matches only as a whole name. A document whose slug or
+# identifier is a prefix or a suffix of another's must not take the other's
+# lines with it. 43 slug pairs of this corpus are substrings of each other.
+mkdir -p "$scratch/prefix/docs/probes" "$scratch/prefix/docs/obligations" "$scratch/prefix/docs/spec"
+cp "$root/docs/probes/$tombstone.md" "$scratch/prefix/docs/probes/"
+printf -- '---\nid: HW-EVAL-short-name\n---\nsee docs/probes/%s.md\n' "$tombstone" \
+    > "$scratch/prefix/docs/obligations/short-name.md"
+printf '%s\n' '- [HW-EVAL-short-name](../obligations/short-name.md)' \
+    '- [HW-EVAL-short-name-longer](../obligations/short-name-longer.md)' \
+    '- [HW-EVAL-a-short-name](../obligations/a-short-name.md)' > "$scratch/prefix/docs/spec/13.md"
+sh "$root/tools/probe/seal.sh" "$scratch/prefix" "HW-PROBE-$tombstone" >"$scratch/prefix.out" 2>&1
+same "seal.sh removes the line of the named document and not a line of a document whose name contains it" \
+    "$(printf '%s\n' '- [HW-EVAL-short-name-longer](../obligations/short-name-longer.md)' '- [HW-EVAL-a-short-name](../obligations/a-short-name.md)')" \
+    "$(cat "$scratch/prefix/docs/spec/13.md")"
+
+# A JSON fold loses the array element that names the document, and never a
+# line inside it, so it still parses (verify round 1 of #1293: the seal left
+# `{"shelf": "evaluations",}` in `.headwater/corpus.json`).
+mkdir -p "$scratch/folds/docs/probes" "$scratch/folds/docs/obligations" "$scratch/folds/.headwater"
+cp "$root/docs/probes/$tombstone.md" "$scratch/folds/docs/probes/"
+printf -- '---\nid: HW-OBL-0013\n---\nsee docs/probes/%s.md\n' "$tombstone" > "$scratch/folds/docs/obligations/0013-x.md"
+printf '%s\n' '{' '  "shelves": [' '    {' '      "shelf": "obligations",' \
+    '      "path": "docs/obligations/0013-x.md",' '      "id": "HW-OBL-0013"' '    },' '    {' \
+    '      "shelf": "obligations",' '      "path": "docs/obligations/0014-y.md",' '      "id": "HW-OBL-0014"' \
+    '    }' '  ],' '  "count": 2' '}' > "$scratch/folds/.headwater/corpus.json"
+sh "$root/tools/probe/seal.sh" "$scratch/folds" "HW-PROBE-$tombstone" >"$scratch/folds.out" 2>&1
+same "seal.sh seals a workspace with a JSON fold" "0" "$?"
+same "and the fold keeps the element that names no deleted document, and still parses" \
+    'HW-OBL-0014' "$(jq -r '[.shelves[].id] | join(",")' "$scratch/folds/.headwater/corpus.json" 2>&1)"
+
+# The #980 selection over this corpus. The synthetic trees above state the
+# rule; this case holds it over the documents the batch of 2026-09-28 sealed,
+# which left 42 files naming one of the 6 named documents it deleted. Every
+# committed file of this checkout is copied out, sealed with the seven probes
+# of that batch, and nothing left may name the identifier or the slug of a
+# document the seal deleted outside the instrument shelves.
+if [ "$(git -C "$root" rev-parse --show-toplevel 2>/dev/null)" = "$root" ]; then
+    mkdir -p "$scratch/corpus"
+    git -C "$root" archive HEAD | tar -x -C "$scratch/corpus"
+    ( cd "$scratch/corpus" && find docs -type f -name '*.md' | grep -v -e '^docs/probes/' -e '^docs/probe-runs/' -e '^docs/probe-results/' | sort ) \
+        > "$scratch/corpus-before.txt"
+    sh "$root/tools/probe/seal.sh" "$scratch/corpus" \
+        HW-PROBE-a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer \
+        HW-PROBE-a-session-answers-from-the-register-without-opening-the-question-it-replaced \
+        HW-PROBE-a-session-names-the-event-that-makes-a-document-accepted \
+        HW-PROBE-a-session-names-the-status-a-settled-decision-carries-in-its-pull-request \
+        HW-PROBE-a-session-records-an-unmeasured-claim-in-the-shape-this-corpus-checks \
+        HW-PROBE-an-agent-reaches-the-adjudication-from-the-document-that-lost-it \
+        HW-PROBE-what-a-session-writes-points-back-at-the-ruling-it-rests-on \
+        >"$scratch/corpus-seal.out" 2>&1
+    same "seal.sh seals a copy of this corpus with the #980 selection" "0" "$?"
+    deleted=0
+    left=""
+    while IFS= read -r doc; do
+        [ -e "$scratch/corpus/$doc" ] && continue
+        deleted=$((deleted + 1))
+        doc_slug=${doc##*/}
+        doc_slug=${doc_slug%.md}
+        doc_id=$(sed -n 's/^id: *//p' "$root/$doc" 2>/dev/null | head -1)
+        case $doc_slug in
+            *-*|*_*) [ -z "$(find "$scratch/corpus" -name "$doc_slug.md" -print | head -1)" ] || doc_slug="" ;;
+            *) doc_slug="" ;;
+        esac
+        [ -n "$doc_id" ] || doc_id=$doc_slug
+        [ -n "$doc_id" ] || continue
+        if [ -n "$doc_slug" ]; then
+            hits=$(grep -rlIF -e "$doc_id" -e "$doc_slug" -- "$scratch/corpus" 2>/dev/null)
+        else
+            hits=$(grep -rlIF -e "$doc_id" -- "$scratch/corpus" 2>/dev/null)
+        fi
+        [ -n "$hits" ] && left="$left $doc_id:$(printf '%s' "$hits" | sed "s|$scratch/corpus/||" | tr '\n' ',')"
+    done < "$scratch/corpus-before.txt"
+    if [ "$deleted" -gt 0 ]; then
+        pass "and it deletes $deleted documents outside the instrument shelves"
+    else
+        fail "and it deletes documents outside the instrument shelves" "none deleted; the selection no longer names a record"
+    fi
+    if [ -z "$left" ]; then
+        pass "and no file of the sealed corpus names a document it deleted"
+    else
+        fail "and no file of the sealed corpus names a document it deleted" "$left"
+    fi
+    broken=""
+    for fold in $(cd "$scratch/corpus" && find . -name '*.json' | sort); do
+        jq empty "$scratch/corpus/$fold" >/dev/null 2>&1 || broken="$broken $fold"
+    done
+    same "and every JSON file of the sealed corpus still parses" "" "$broken"
+else
+    echo "skip the #980 corpus seal: $root is not a git checkout"
+fi
+
 # Answer keys (#980). The `patched` probe's task was answered by HW-OBL-0198,
 # which names neither the probe nor its slug, so the seal above kept it and
 # every present-arm session of the pilot found its task already done. The

@@ -32,8 +32,9 @@
 # Other derived files name a probe by its path or title and state neither its
 # expectation nor its answer: `.headwater/nav.yml`, `.headwater/corpus.json`,
 # `.headwater/capture-cost.jsonl` and the census and graph fixtures under
-# `engine/`. They stay in every arm, the seal of #1229 included, and a title
-# can hint at a target. So a present-arm rate over an `opened` probe is an
+# `engine/`. They stay in every arm, the seal of #1229 included, less each line
+# that names a document the seal deletes (#1293), and a title can hint at a
+# target. So a present-arm rate over an `opened` probe is an
 # upper bound on what the documents alone achieve.
 instrument:
   - docs/probes
@@ -192,21 +193,31 @@ tiers:
 #
 # **What the seal removes, in every arm, and why.** The instrument above, and
 # each document under `docs/` whose bytes name a selected probe by its
-# identifier or its slug. On 2026-09-28 those documents were 6 obligations and
-# 3 evaluations, and each of the 9 states a probe's expected value, a recorded
-# verdict or answer of a session, or an `examines` target. So they are answer keys
-# in the same sense as the instrument. The 2026-09-17 tombstone session read
-# its own probe file before it answered (#1229).
+# identifier or its slug. For the seven probes of the #980 batch, on
+# 2026-09-29, those documents were 5 obligations and 1 evaluation, and each
+# states a probe's expected value, a recorded verdict or answer of a session,
+# or an `examines` target. So they are answer keys in the same sense as the
+# instrument. The 2026-09-17 tombstone session read its own probe file before
+# it answered (#1229).
 #
-# The seal removes nothing else. Every other file that names a probe does so
+# A deleted document goes with its identifier claim and with every line in
+# the workspace that holds its identifier as a whole name or its file name,
+# as an answer key below does. A JSON fold loses the array element instead,
+# so it still parses. The #980 batch deleted HW-OBL-0013 and left its
+# shelf-index line, its register line and its claim, and 23 of 30 present-arm
+# sessions of the tombstone probe queried it (#1293). A generic slug, one
+# word or a file name that another file shares such as `README`, removes no
+# line.
+#
+# The seal deletes no other file. Every other file that names a probe does so
 # by path or title and states no answer: the derived folds listed above, the
 # census and graph fixtures, and a comment in the hand-written
 # `.headwater/overlay.yml`. The present arm is meant to test `.headwater/`, so
-# the seal keeps all of it. No probe's `examines` target names a probe, so the
-# documents that a probe tests survive the seal.
+# the seal keeps each one as a file. No probe's `examines` target names a
+# probe, so the documents that a probe tests survive the seal.
 #
-# **What the seal does to the comparison.** It runs in every arm, so the 9
-# records are absent from both sides of every present-versus-absent pair, and
+# **What the seal does to the comparison.** It runs in every arm, so the
+# sealed records are absent from both sides of every present-versus-absent pair, and
 # the pair still differs only by the tier's `ablation`. A rate is then a rate
 # over the corpus less those records. The `documentation` tier removes all of
 # `docs/` in its absent arm anyway, so the seal changes only its present arm.
