@@ -129,9 +129,12 @@ done
 echo "seal: removed $removed of $declared instrument paths from $here"
 
 # Remove a deleted document's identifier claim, and every line in the
-# workspace that names it, from the files that hold such a line. The files
+# workspace that names it, from the files that hold such a line. Most files
 # that cite a record are shelf indexes, registers, folds and paragraphs, each
-# one line per item, so each file keeps every other line and stays a file.
+# one line per item, so each file keeps every other line and stays a file. The
+# removal also reaches scripts and fixtures, such as the census fixture and
+# `probe-record-fixtures.sh`, so the workspace copy of such a file can no
+# longer run. A session answers from the corpus and does not run them.
 #
 #     strip_document <identifier> <slug>
 #
