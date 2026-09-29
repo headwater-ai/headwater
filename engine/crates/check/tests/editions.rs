@@ -223,10 +223,11 @@ fn recorded() -> Vec<Recorded> {
         },
         // The corpus of `relation.target.is_source`: an entry that names its
         // own document through either half, a control that names another
-        // document, and a self-path that binds to nothing (#1232). Four
-        // `code_path` anchors: one literal onto the declaring file, which is
-        // reported, and a literal onto another file, a wildcard over the own
-        // file and a list that holds it, which pass (#1350).
+        // document, and a self-path that binds to nothing (#1232). Five
+        // `code_path` anchors: two literals onto the declaring file, one of
+        // them spelled in a non-canonical form, which are reported, and a
+        // literal onto another file, a wildcard over the own file and a list
+        // that holds it, which pass (#1350).
         Recorded {
             label: "self-target",
             base: fixtures_dir(),

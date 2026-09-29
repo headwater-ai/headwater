@@ -33,6 +33,10 @@
 //! its own file through a `code_path` anchor whose one literal pattern is that
 //! file. The owner ruled on #1350 that this exact case is a self-reference.
 //!
+//! **A rule that compared the path as the author spelled it** misses
+//! `notes/k.md`, which writes its own path with `./` and a `..` segment. The
+//! resolver normalizes the pattern, and the rule compares the normalized one.
+//!
 //! **A rule that reported any anchor** reports `notes/h.md`, whose one literal
 //! pattern names another file.
 //!
@@ -41,9 +45,9 @@
 //! `notes/j.md`, whose list holds its own file and another. The ruling reaches
 //! the exact own file and nothing wider.
 //!
-//! **A rule whose instances were its findings** reports a denominator of four.
+//! **A rule whose instances were its findings** reports a denominator of five.
 //! Every entry outside the association family is an instance, so the count is
-//! nine.
+//! ten.
 
 use headwater_census::census;
 use headwater_census::shelves::Taxonomy;
@@ -201,13 +205,13 @@ fn every_entry_is_an_instance() {
         .iter()
         .filter(|instance| instance.rule == RULE)
         .count();
-    assert_eq!(instances, 9);
+    assert_eq!(instances, 10);
     let findings = run
         .findings
         .iter()
         .filter(|finding| finding.rule == RULE)
         .count();
-    assert_eq!(findings, 4);
+    assert_eq!(findings, 5);
 }
 
 /// The decisive case of #1350: a `code_path` anchor whose one literal pattern
@@ -239,6 +243,18 @@ fn an_anchor_onto_the_declaring_file_is_reported_and_a_wildcard_over_it_is_not()
     );
 
     assert!(at(&run, RULE, "notes/i.md").is_empty());
+}
+
+/// The rule compares the pattern the resolver normalized, not the spelling the
+/// author wrote: an own path written with `./` and a `..` segment is the same
+/// file, and it is reported.
+#[test]
+fn an_own_file_anchor_spelled_in_a_non_canonical_form_is_reported() {
+    let run = run();
+    let found = at(&run, RULE, "notes/k.md");
+    assert_eq!(found.len(), 1, "{found:?}");
+    assert!(found[0].contains("self-target/notes/k.md"), "{}", found[0]);
+    assert!(at(&run, headwater_check::target::RULE, "notes/k.md").is_empty());
 }
 
 /// A literal anchor onto another file, and a list that holds the own file among
