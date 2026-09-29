@@ -259,7 +259,7 @@ The documents on this shelf, in the reading order this corpus derives. Each head
 
 ## A document is proposed at the state it will hold, and the merge activates it
 
-[HW-DR-0052](../decisions/0052-a-document-is-proposed-at-the-state-it-will-hold-and-the-merge-activates-it.md) — An author writes the state a document will hold once it lands, and the merge activates it. The state facet answers to the merge, the way HW-DR-0034 made the warrant facet answer to it.
+[HW-DR-0052](../decisions/0052-a-document-is-proposed-at-the-state-it-will-hold-and-the-merge-activates-it.md) — A settled decision carries the status current, not draft, in its pull request. An author writes the state a document will hold once it merges, and the merge activates it. The state facet answers to the merge, the way HW-DR-0034 made the warrant facet answer to it.
 
 ## A package manifest declares no selection, a recipe declares one, and a flattened manifest records provenance
 
