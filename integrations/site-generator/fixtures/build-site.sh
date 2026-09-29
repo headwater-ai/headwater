@@ -44,8 +44,8 @@
 # given.
 #
 # Needs: `headwater` (`HEADWATER_BIN`, else the engine this checkout built,
-# else `PATH`), MkDocs 1.6.1 (`MKDOCS`, default `mkdocs`), `awk`, `grep`,
-# `mktemp`. The tutorial it may run needs `python3` and `git` as well.
+# else `PATH`), MkDocs 1.6.1 (`MKDOCS`, default `mkdocs`), `awk`, `cp`,
+# `cut`, `grep`, `head`, `mktemp`, `tail`. The tutorial it may run needs `python3` and `git` as well.
 set -eu
 
 here=$(cd "$(dirname "$0")" && pwd)

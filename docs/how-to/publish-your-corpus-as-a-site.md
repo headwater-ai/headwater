@@ -2,7 +2,7 @@
 id: HW-HOW-publish-your-corpus-as-a-site
 status: current
 status_since: 2026-09-28
-summary: "MkDocs builds a site from a governed corpus through the navigation that headwater generate writes, a strict build fails on a missing page, and headwater site holds the built site against the corpus last."
+summary: "MkDocs builds a site from the navigation that headwater generate writes, and headwater site then holds the built site against the corpus."
 last_verified: 2026-09-29
 title: "Publish your corpus as a site"
 provenance:
