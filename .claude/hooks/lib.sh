@@ -197,11 +197,32 @@ hw_quote() {
 # bad line and this line stays whole. The torn line is kept as it is, because
 # nothing here rewrites what a file already holds.
 #
+# The check of the last byte and the write are one step under an exclusive
+# `flock` on the log file, held until the write returns. Without the lock the
+# check races another writer's `write()`: a read can see the file grow before
+# that write ends, so the last byte is not yet its newline, and this writer
+# adds a newline the file does not need. The result is an empty line, which a
+# strict JSONL reader refuses and `wc -l` counts (the verify of PR #1390
+# measured 2 of 40 rounds with 40KB lines and 1 of 100 with 2KB lines). A
+# `write()` that holds the lock ends before the next writer reads, so the next
+# writer reads a complete line. The wait is at most 2 seconds. After that, or
+# on a host with no `flock`, the line is written without the lock, because a
+# line with a rare empty line before it is worth more than no line.
+#
 # The record is staged in a file beside the log, named `.<pid>.part`, so a
 # reader that counts `*.jsonl` files never counts it. Any failure returns 1
 # and writes nothing on either stream: the brace groups carry the redirect
 # for the reason `intent.sh`'s header gives.
 hw_append_line() {
+    if command -v flock >/dev/null 2>&1; then
+        { flock -w 2 9 || :; _hw_append_now "$1" "$2"; } 2>/dev/null 9>>"$1" || return 1
+        return 0
+    fi
+    _hw_append_now "$1" "$2"
+}
+
+# The check and the write of `hw_append_line`, with no lock of their own.
+_hw_append_now() {
     _hal_file=$1
     _hal_record=$2
     if [ -s "$_hal_file" ] && [ -n "$({ tail -c 1 "$_hal_file"; } 2>/dev/null)" ]; then

@@ -1336,7 +1336,7 @@ if [ -x "$engine" ]; then
         fi
         rm -f "$held_file.expected"
     else
-        printf 'skip %s\n' 'a line appended while another writer holds the log: this host has no flock'
+        skip 'a line appended while another writer holds the log' 'this host has no flock'
     fi
 
     # Step 3 of #819: the recorder's name for its session, which
