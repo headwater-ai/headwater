@@ -522,3 +522,19 @@ fn check_and_new_finish_when_a_claim_file_is_a_named_pipe() {
         "new opened the named pipe in the claim store, and waited on it",
     );
 }
+
+/// `sweep plan` reads the text of every document it briefs, and a named pipe
+/// at a document path is a row of the census that it must not open. It ends
+/// under the deadline and writes its briefing (#1366). `neighbors` is not run
+/// here: a stub root holds no embedding model, and the verb refuses on the
+/// missing `.headwater/embedding.yml` before it reads a document.
+#[test]
+fn sweep_plan_finishes_when_a_named_pipe_takes_a_document_path() {
+    let root = document_pipe("neighbors-sweep-document-pipe");
+    let (plan, _) = under_deadline(
+        &root,
+        &["sweep", "plan"],
+        "sweep plan opened the named pipe at docs/x.md, and waited on it",
+    );
+    assert!(plan.contains("## The slice"), "sweep plan wrote its briefing: {plan}");
+}
