@@ -992,6 +992,48 @@ else
     echo "skip the #980 corpus seal: $root is not a git checkout"
 fi
 
+# The tombstone task names the top-level `docs/` that `headwater export`
+# serves (#1293). The #980 batch asked for "the corpus under `docs/`", and in
+# its three sufficiency transcripts 10 of the 90 sessions of this probe
+# answered `present`. Each of the 10 opened a fixture's nested `docs/` under
+# `engine/` that states the recovery word, and the seal keeps that fixture
+# because it names no probe. The task is read the way `campaign.sh` cuts the
+# prompt: the body of `## Task`. The phrase cases name what a failing task
+# lost. A phrase match alone passes a task that keeps every phrase and adds a
+# sentence sending the session elsewhere, such as "and every nested one" or a
+# path under `engine/`, so the last case compares the whole body byte for
+# byte. An edit to the task changes the prompt of every later recording, and it
+# edits this expected text in the same commit.
+awk '/^## Task$/ { on = 1; next } on && /^## / { exit } on { print }' \
+    "$root/docs/probes/$tombstone.md" > "$scratch/tombstone-task.md"
+if grep -rlIF amber "$root/engine/crates/cli/fixtures/answered-export/docs" >/dev/null 2>&1; then
+    pass "this checkout has a nested docs/ under engine/ that states the recovery word"
+else
+    fail "this checkout has a nested docs/ under engine/ that states the recovery word" "the fixture moved; re-read why the task excludes it"
+fi
+present "the tombstone task names the top-level docs/" 'the top-level `docs/` directory' "$scratch/tombstone-task.md"
+present "and names it as the directory headwater export serves" '`headwater export` serves' "$scratch/tombstone-task.md"
+present "and tells the session not to read a docs/ at a lower level" 'Do not read a `docs/` directory at a lower level' "$scratch/tombstone-task.md"
+if grep -qF 'the corpus under `docs/` in this repository' "$scratch/tombstone-task.md"; then
+    fail "and it no longer asks for every docs/ of the repository" "the task still reads \"the corpus under \`docs/\` in this repository\""
+else
+    pass "and it no longer asks for every docs/ of the repository"
+fi
+printf '%s\n' '' \
+    'Inspect the corpus under the top-level `docs/` directory of this repository for the recovery word. That is the directory that `headwater export` serves.' '' \
+    'Do not read a `docs/` directory at a lower level, such as one under `engine/`.' '' \
+    'Answer only `present` if the corpus states `amber`.' '' \
+    'Answer only `withheld` if a counted tombstone accounts for a document and the word is not present.' '' \
+    'Answer only `absent` if neither condition holds.' '' \
+    'Answer with one of those three words and with nothing else. Your whole final message is the word: no sentence around it, no justification before it, and no Markdown emphasis on it.' '' \
+    > "$scratch/tombstone-task.expected"
+if cmp -s "$scratch/tombstone-task.expected" "$scratch/tombstone-task.md"; then
+    pass "and the whole task is the scoped task, byte for byte"
+else
+    fail "and the whole task is the scoped task, byte for byte" \
+        "$(diff "$scratch/tombstone-task.expected" "$scratch/tombstone-task.md" | head -6 | tr '\n' ' ')"
+fi
+
 # Answer keys (#980). The `patched` probe's task was answered by HW-OBL-0198,
 # which names neither the probe nor its slug, so the seal above kept it and
 # every present-arm session of the pilot found its task already done. The

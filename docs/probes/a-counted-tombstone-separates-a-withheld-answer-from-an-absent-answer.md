@@ -23,7 +23,9 @@ relations:
 
 ## Task
 
-Inspect the corpus under `docs/` in this repository for the recovery word.
+Inspect the corpus under the top-level `docs/` directory of this repository for the recovery word. That is the directory that `headwater export` serves.
+
+Do not read a `docs/` directory at a lower level, such as one under `engine/`.
 
 Answer only `present` if the corpus states `amber`.
 
@@ -42,7 +44,7 @@ answers: [withheld, absent, present]
 expected: [absent]
 ```
 
-**This probe is the control reading, and it exercises no tombstone yet.** The corpus under `docs/` declares no export profile that filters a document, so it serves no counted tombstone, and in a sealed workspace no document of it states the recovery word. The right answer is therefore `absent`. A session that answers `withheld` or `present` is wrong, and before #1229 the grader passed both, because the set named every word the task offers. The probe exercises a tombstone only when this corpus serves one through an export profile, and [HW-OBL-0013](../obligations/0013-no-probe-tests-whether-a-counted-tombstone-stops-a-confident.md) waits on that.
+**This probe is the control reading, and it exercises no tombstone yet.** The corpus under the top-level `docs/` declares no export profile that filters a document, so it serves no counted tombstone, and in a sealed workspace no document of it states the recovery word. The right answer is therefore `absent`. A session that answers `withheld` or `present` is wrong, and before #1229 the grader passed both, because the set named every word the task offers. The probe exercises a tombstone only when this corpus serves one through an export profile, and [HW-OBL-0013](../obligations/0013-no-probe-tests-whether-a-counted-tombstone-stops-a-confident.md) waits on that.
 
 An `answered` probe names no document through `examines`. Its answer set defines the predicate domain.
 
