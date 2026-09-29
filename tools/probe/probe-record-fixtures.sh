@@ -823,6 +823,61 @@ same "and the driver passes both guards over the sealed tree" "3" "$?"
 sh "$root/tools/probe/seal.sh" "$root/docs" "HW-PROBE-$tombstone" >/dev/null 2>&1
 same "seal.sh refuses a path inside this checkout" "6" "$?"
 
+# A named document is sealed the way an answer key is (#1293). The #980 batch
+# deleted HW-OBL-0013 because it names the tombstone probe, and left its claim
+# file, its register line and its shelf-index line, so 23 of 30 present-arm
+# sessions still found and queried it. The document goes, and so do its claim
+# and every line that names it; the files that held those lines stay.
+mkdir -p "$scratch/linked/docs/probes" "$scratch/linked/docs/obligations" "$scratch/linked/docs/spec" \
+    "$scratch/linked/.headwater/ids/obligation_record_id"
+cp "$root/docs/probes/$tombstone.md" "$scratch/linked/docs/probes/"
+printf -- '---\nid: HW-OBL-0013\n---\nNo probe tests it; see docs/probes/%s.md\n' "$tombstone" \
+    > "$scratch/linked/docs/obligations/0013-x.md"
+printf '%s\n' '- [HW-OBL-0013](../obligations/0013-x.md) — the tombstone gap' \
+    '- [HW-OBL-0014](../obligations/0014-y.md) — another entry' > "$scratch/linked/docs/spec/13.md"
+printf '%s\n' '| [0013-x](0013-x.md) | the tombstone gap |' '| [0014-y](0014-y.md) | another entry |' \
+    > "$scratch/linked/docs/obligations/README.md"
+printf 'docs/obligations/0013-x.md\n' > "$scratch/linked/.headwater/ids/obligation_record_id/HW-OBL-0013"
+printf -- '- docs/probes/%s.md\n' "$tombstone" > "$scratch/linked/.headwater/nav.yml"
+printf '# HW-PROBE-%s\n' "$tombstone" > "$scratch/linked/.headwater/overlay.yml"
+sh "$root/tools/probe/seal.sh" "$scratch/linked" "HW-PROBE-$tombstone" >"$scratch/linked.out" 2>&1
+same "seal.sh seals a workspace whose index and register link a named document" "0" "$?"
+if [ -e "$scratch/linked/docs/obligations/0013-x.md" ] || [ -e "$scratch/linked/.headwater/ids/obligation_record_id/HW-OBL-0013" ]; then
+    fail "and it removes the named document and its identifier claim" "$(ls -aR "$scratch/linked")"
+else
+    pass "and it removes the named document and its identifier claim"
+fi
+same "and it removes the register line that names the document and keeps the line that does not" \
+    "- [HW-OBL-0014](../obligations/0014-y.md) — another entry" "$(cat "$scratch/linked/docs/spec/13.md")"
+same "and it removes the shelf-index line that links the document and keeps the line that does not" \
+    "| [0014-y](0014-y.md) | another entry |" "$(cat "$scratch/linked/docs/obligations/README.md")"
+if [ -f "$scratch/linked/.headwater/nav.yml" ] && [ -f "$scratch/linked/.headwater/overlay.yml" ]; then
+    pass "and the derived fold and the hand-written overlay survive as files"
+else
+    fail "and the derived fold and the hand-written overlay survive as files" "$(ls -aR "$scratch/linked")"
+fi
+present "and it counts the lines it removed for the document" "seal: removed the named document HW-OBL-0013 of HW-PROBE-$tombstone, and 2 lines naming it" "$scratch/linked.out"
+
+# A named document whose slug is `README` is deleted with its claim, and its
+# slug drives no line removal: every shelf has a README, and a line that says
+# so names no answer.
+mkdir -p "$scratch/readme/docs/probes" "$scratch/readme/docs/evaluations" "$scratch/readme/docs/obligations"
+cp "$root/docs/probes/$tombstone.md" "$scratch/readme/docs/probes/"
+printf 'The readings of docs/probes/%s.md\n' "$tombstone" > "$scratch/readme/docs/evaluations/README.md"
+printf '%s\n' 'See [the index](README.md) for each record.' 'An obligation line.' \
+    > "$scratch/readme/docs/obligations/README.md"
+sh "$root/tools/probe/seal.sh" "$scratch/readme" "HW-PROBE-$tombstone" >"$scratch/readme.out" 2>&1
+same "seal.sh seals a workspace in which a README names the probe" "0" "$?"
+if [ -e "$scratch/readme/docs/evaluations/README.md" ]; then
+    fail "and it removes the README that names the probe" "$(ls -aR "$scratch/readme")"
+else
+    pass "and it removes the README that names the probe"
+fi
+same "and it keeps every line elsewhere that holds the word README" \
+    "$(printf '%s\n' 'See [the index](README.md) for each record.' 'An obligation line.')" \
+    "$(cat "$scratch/readme/docs/obligations/README.md")"
+present "and it says that the generic slug removed no lines" "seal: kept every line naming README" "$scratch/readme.out"
+
 # Answer keys (#980). The `patched` probe's task was answered by HW-OBL-0198,
 # which names neither the probe nor its slug, so the seal above kept it and
 # every present-arm session of the pilot found its task already done. The
