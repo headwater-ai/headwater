@@ -10,7 +10,7 @@
 # definition's instructions, and a skill name nobody matches never loads. This
 # suite is what reports the drift.
 #
-# Ten cases, and the ceilings are the reason two of them exist. The parent's
+# Eleven cases, and the ceilings are the reason two of them exist. The parent's
 # context is the unit of cost ([HW-PD-0003]), so the command and the doctrine
 # carry a byte ceiling declared here, once, and CLAUDE.md carries one because
 # every agent pays for it on every dispatch ([HW-PD-0001]).
@@ -357,6 +357,66 @@ if [ -f "$agents/hw-iterate.md" ]; then
     esac
 else
     fail 'the refusal arms on hw-iterate.md run' 'no .claude/agents/hw-iterate.md to copy'
+fi
+
+# --- 11. the rule against filing an issue covers the parent in its bold lead --
+
+# The parent is an agent of the run too, and a lead that names only a stage
+# reads as not covering it (#1275). The parent loads hw-run-policy at the start
+# of every session, so the skill's bold lead is where the words reach it. The
+# case reads the bold lead alone: the rest of the line already ends "and the
+# parent rules on it", which is about ruling and not about filing. The lead is
+# the text of a bullet up to its first `**`, so single-asterisk emphasis
+# inside it does not end it, and the rule is the first bullet whose lead says an agent "files an
+# issue" or "files no issue", so a rewording in either form is still found.
+printf '\n# the rule against filing an issue in hw-run-policy covers the parent in its bold lead\n'
+# Prints the bold lead of the no-filing rule in the file given.
+no_filing_lead() {
+    awk 'index($0, "- **") == 1 {
+        lead = substr($0, 5); i = index(lead, "**"); if (i == 0) next
+        lead = substr(lead, 1, i - 1)
+        if (lead ~ /files (an|no) issue/) { print lead; exit }
+    }' "$1"
+}
+# Prints why a lead fails to cover the parent, or nothing when it covers it.
+lead_misses_parent() {
+    case "$1" in
+        '') printf 'no bullet has a bold lead that says an agent files an issue or files no issue' ; return ;;
+        *parent*) ;;
+        *) printf 'the lead does not name the parent: %s' "$1" ; return ;;
+    esac
+    if printf '%s\n' "$1" | grep -qiE '(except|apart from|other than|but|besides|excluding|save|not) (for )?the parent'; then
+        printf 'the lead names the parent as an exception: %s' "$1"
+    fi
+}
+lead=$(no_filing_lead "$skills/hw-run-policy/SKILL.md")
+why=$(lead_misses_parent "$lead")
+if [ -z "$why" ]; then
+    pass "the bold lead covers the parent: $lead"
+else
+    fail 'the bold lead of the no-filing rule covers the parent' "$why"
+fi
+# The arms, each a one-line rule in a scratch file: two leads that do not cover
+# the parent are reported, and a rewording with emphasis inside the lead holds.
+lead_arm() {
+    printf -- '- **%s** The rest of the rule.\n' "$1" > "$scratch/no-filing.md"
+    lead_misses_parent "$(no_filing_lead "$scratch/no-filing.md")"
+}
+why=$(lead_arm 'No stage files an issue inside a run.')
+case "$why" in
+    *'does not name the parent'*) pass 'and a bold lead that names only a stage is reported' ;;
+    *) fail 'a bold lead that names only a stage is reported' "reported: \`$why\`" ;;
+esac
+why=$(lead_arm 'No stage files an issue inside a run, apart from the parent.')
+case "$why" in
+    *'as an exception'*) pass 'and a bold lead that exempts the parent is reported' ;;
+    *) fail 'a bold lead that exempts the parent is reported' "reported: \`$why\`" ;;
+esac
+why=$(lead_arm 'An agent of a run, the *parent* included, files no issue.')
+if [ -z "$why" ]; then
+    pass 'and a reworded lead with emphasis inside it holds'
+else
+    fail 'a reworded lead with emphasis inside it holds' "$why"
 fi
 
 printf '\n%s passed, %s failed\n' "$passed" "$failed"

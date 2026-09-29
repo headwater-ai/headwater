@@ -18,7 +18,7 @@ relations:
     - to: tools/run/run-census.sh
       verified_revision: sha256:57954a4dfd1fff9fd92571099130aa42cd9dd186df50a2dabce2d4d12e64fe69
     - to: .claude/skills/hw-run-policy/SKILL.md
-      verified_revision: sha256:c3f38c8456e5a3a2074c66adec6b77fdc42750fa27c9e8af1a250feccdddce1d
+      verified_revision: sha256:4fb63f39a523bf9dd45dbf59caff456f2eb5203fb4cdf93ba0f9ebdd63643f8e
 ---
 
 # A background wait caps below the cache lifetime and re-issues itself
