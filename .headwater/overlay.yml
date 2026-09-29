@@ -1509,6 +1509,7 @@ add:
       - docs/tutorials/*.md
       - docs/how-to/relocate-a-shelf.md
       - docs/how-to/wire-headwater-check-into-your-own-workflow.md
+      - docs/how-to/publish-your-corpus-as-a-site.md
     local_roots: [tools/, .githooks/, .claude/, .github/, site/, mkdocs/]
     # The names after `tar` are declared because the tutorial and the
     # relocation how-to tell an adopter to run them, and
@@ -1520,7 +1521,13 @@ add:
     # `cargo` is not here: no Rust toolchain is mandatory. The tutorial
     # installs from the release download and names `cargo install` in prose
     # alone, so no block runs it and no directive excuses one (#975).
-    commands: [headwater, git, sh, curl, tar, cd, echo, grep, mkdir, printf, rm, wc, xargs]
+    # `python3` and `mkdocs` are the two dependencies that `site_generator`
+    # declares under `integration_points` above. HW-DR-0077 clause 2 says that
+    # an integration point declares its dependencies beyond the binary, so the
+    # page for that point, `docs/how-to/publish-your-corpus-as-a-site.md`, may
+    # instruct them. They are not prerequisites: no other page runs them, and
+    # no conformance level asks for them (#977).
+    commands: [headwater, git, sh, curl, tar, cd, echo, grep, mkdir, printf, rm, wc, xargs, python3, mkdocs]
 
 # --- projections ------------------------------------------------------------
 # `projections` is a list in the base, so an `add` cannot reach it, and this is
