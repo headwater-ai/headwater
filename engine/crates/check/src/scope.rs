@@ -305,7 +305,10 @@ impl Scope {
     /// The body destructures `Scope` with no `..`, so an eighth field does not
     /// compile (E0027) until its author names it here. The list is then held
     /// against spec 12 by `tests/spec_twelve_scope.rs`, which fails until the
-    /// specification names the new flag. That chain is what keeps the block in
+    /// specification names the new flag. The compiler's help offers
+    /// `needs_x: _` and `..`, which compile, so the same file also reads the
+    /// fields of this struct from source and holds this list to them. That
+    /// chain is what keeps the block in
     /// spec 12 from falling behind this type, which it did by two flags before
     /// #1407.
     pub const fn flags(&self) -> [(&'static str, bool); 7] {

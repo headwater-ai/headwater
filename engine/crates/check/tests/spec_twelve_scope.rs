@@ -23,7 +23,10 @@
 //!
 //! The engine's list is [`Scope::flags`], whose body destructures `Scope` with
 //! no `..`. A new field does not compile until `flags` names it, and this file
-//! then fails until spec 12 does.
+//! then fails until spec 12 does. The compiler's help for that error offers
+//! `needs_x: _` and `..`, and either one compiles, so a second case reads the
+//! `needs_*` fields of `struct Scope` from its source and holds `flags` to
+//! them.
 //!
 //! # What this does not hold
 //!
@@ -114,5 +117,63 @@ fn the_scope_block_of_spec_12_names_every_flag_scope_declares() {
         rows.len(),
         named.len(),
         "docs/spec/12-check-layer.md's `Scope` block names a flag twice: {rows:?}"
+    );
+}
+
+/// The `needs_*` field names of `pub struct Scope`, read from the source of
+/// `engine/crates/check/src/scope.rs`.
+fn struct_fields() -> Vec<String> {
+    let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("src/scope.rs");
+    let text = std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
+    let (_, after) = text
+        .split_once("pub struct Scope {")
+        .unwrap_or_else(|| panic!("{}: no `pub struct Scope {{`", path.display()));
+    let body = after
+        .split_once("\n}")
+        .map(|(body, _)| body)
+        .unwrap_or_else(|| panic!("{}: `pub struct Scope` is never closed", path.display()));
+    let fields: Vec<String> = body
+        .lines()
+        .filter_map(|line| line.trim().split_once(':').map(|(name, _)| name.trim()))
+        .filter(|name| name.starts_with("needs_"))
+        .map(str::to_string)
+        .collect();
+    assert!(
+        !fields.is_empty(),
+        "{}: `pub struct Scope` holds no `needs_` field, so this case would compare nothing",
+        path.display()
+    );
+    fields
+}
+
+/// `Scope::flags` names every `needs_*` field of `Scope`, and no other.
+///
+/// The destructure in `flags` makes a new field a compile error, and the
+/// compiler's own help then offers `needs_x: _` or `..`, which compile with no
+/// warning and leave the field out of the list. This case reads the struct's
+/// fields from its source, so that repair turns this red instead.
+///
+/// # Watched failing
+///
+/// Adding `needs_zz: bool` to `Scope` and its constructors, with `needs_zz: _`
+/// in the destructure of `flags`, reddens this naming `needs_zz`, while the
+/// spec case above still passes.
+#[test]
+fn scope_flags_names_every_needs_field_of_scope() {
+    let fields = struct_fields();
+    let declared: BTreeSet<&str> = fields.iter().map(String::as_str).collect();
+    let listed: BTreeSet<&str> = headwater_check::coverage::SCOPE
+        .flags()
+        .iter()
+        .map(|(name, _)| *name)
+        .collect();
+
+    let unlisted: Vec<&&str> = declared.difference(&listed).collect();
+    let unknown: Vec<&&str> = listed.difference(&declared).collect();
+    assert!(
+        unlisted.is_empty() && unknown.is_empty(),
+        "`Scope` in engine/crates/check/src/scope.rs and `Scope::flags` disagree. The struct \
+         declares {unlisted:?} and `flags` does not list them, so spec 12 is never held to them. \
+         `flags` lists {unknown:?} and the struct has no such field"
     );
 }
