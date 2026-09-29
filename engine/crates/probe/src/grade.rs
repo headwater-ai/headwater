@@ -826,6 +826,10 @@ pub(crate) fn names_path(argument: &str, path: &str) -> bool {
             && argument[..argument.len() - path.len()].ends_with('/'))
 }
 
+fn bash_names(_argument: &str, _target: &Examined) -> bool {
+    false
+}
+
 /// Every recorded call of the session, and `None` where no event recorded any.
 fn recorded_calls(session: &[&Event]) -> Option<usize> {
     let mut total = None;
@@ -1065,6 +1069,112 @@ mod tests {
         assert!(
             !names("otherdocs/spec/05-ai-integration.md", &want),
             "the boundary is what stops a suffix from matching a different tree"
+        );
+    }
+
+    fn call(tool: &str, argument: &str) -> crate::intake::Call {
+        crate::intake::Call {
+            tool: tool.into(),
+            argument: argument.into(),
+            result: "sha256:0".into(),
+        }
+    }
+
+    fn over_the_probe_document(expectation: Expectation) -> Selected {
+        Selected {
+            expectation,
+            examines: vec![target(Some("PROBE-FIX-one"), "docs/probes/one.md")],
+            ..opened_over_one_document()
+        }
+    }
+
+    /// A Bash read is a read (#1384). The recorder writes a Bash call's
+    /// argument as the JSON of its input, so the whole argument never equals a
+    /// path. The present arm reads through Bash about twice as often as the
+    /// absent arm, so a grader blind to Bash misses on one arm more than the
+    /// other.
+    #[test]
+    fn a_bash_command_that_names_the_document_is_a_read_of_it() {
+        let sed = event(
+            1,
+            "sed",
+            Some(vec![call(
+                "Bash",
+                r#"{"command":"sed -n 1,80p docs/probes/one.md","description":"x"}"#,
+            )]),
+        );
+        assert!(
+            matches!(
+                verdict(&over_the_probe_document(Expectation::Opened), &[&sed]),
+                Verdict::Satisfied(Witness::Read { call: 1, .. })
+            ),
+            "a Bash `sed` of the document opened it"
+        );
+        assert!(
+            matches!(
+                verdict(&over_the_probe_document(Expectation::NotOpened), &[&sed]),
+                Verdict::NotSatisfied(Miss::Read { call: 1, .. })
+            ),
+            "a Bash `sed` of the document is the read `not_opened` forbids"
+        );
+
+        let copy = event(
+            2,
+            "copy",
+            Some(vec![call(
+                "Bash",
+                r#"{"command":"cat docs/probes/one.md.bak","description":"x"}"#,
+            )]),
+        );
+        assert_eq!(
+            verdict(&over_the_probe_document(Expectation::Opened), &[&copy]),
+            Verdict::NotSatisfied(Miss::NeverRead { calls: 1, over: 1 }),
+            "the boundary rule holds per word, so a copy is not the document"
+        );
+    }
+
+    /// The words of a command are the words a shell would pass: quotes are
+    /// taken off, and an operator ends a word whether or not a space follows
+    /// it.
+    #[test]
+    fn a_command_is_split_into_the_words_a_shell_would_pass() {
+        let want = target(None, "docs/probes/one.md");
+        for command in [
+            r#"{"command":"cat 'docs/probes/one.md'"}"#,
+            r#"{"command":"head -n 5 \"docs/probes/one.md\""}"#,
+            r#"{"command":"wc -l <docs/probes/one.md"}"#,
+            r#"{"command":"grep -c x docs/a.md;cat docs/probes/one.md|head"}"#,
+            r#"{"command":"cd /repo && sed -n 1,9p /repo/docs/probes/one.md 2>/dev/null"}"#,
+            r#"{"command":"cat docs/probes/one\\.md"}"#,
+        ] {
+            assert!(bash_names(command, &want), "{command}");
+        }
+        for command in [
+            r#"{"command":"cat docs/probes/one.md.bak"}"#,
+            r#"{"command":"cat otherdocs/probes/one.md"}"#,
+            r#"{"command":"echo 'docs/probes/one.md is here'"}"#,
+            r#"{"description":"docs/probes/one.md"}"#,
+            "docs/probes/one.md is not JSON",
+        ] {
+            assert!(!bash_names(command, &want), "{command}");
+        }
+    }
+
+    /// Only a Bash call's argument is read as a command. Another tool whose
+    /// input happens to carry a `command` key has not run it.
+    #[test]
+    fn only_a_bash_call_is_read_as_a_command() {
+        let other = event(
+            1,
+            "other",
+            Some(vec![call(
+                "Monitor",
+                r#"{"command":"cat docs/probes/one.md"}"#,
+            )]),
+        );
+        assert_eq!(
+            verdict(&over_the_probe_document(Expectation::Opened), &[&other]),
+            Verdict::NotSatisfied(Miss::NeverRead { calls: 1, over: 1 }),
         );
     }
 
