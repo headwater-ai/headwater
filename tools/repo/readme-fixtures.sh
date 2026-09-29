@@ -2714,7 +2714,10 @@ newest_standard_version() {
 
 # standard_pin_judge NEWEST FILE... — `ok`, or one line per mention of a
 # `headwater-standard/v<x>`, a `headwater-standard-<x>.zip` or a
-# `headwater/standard <x>` whose version is not NEWEST.
+# `headwater/standard <x>` or `headwater/standard v<x>` whose version is not
+# NEWEST. Every match on a line is read, not the first alone, because a
+# vendor URL carries the tag path and the zip name on one line and either can
+# be the stale half.
 standard_pin_judge() {
     spj_newest=$1
     shift
@@ -2725,11 +2728,11 @@ standard_pin_judge() {
     awk -v want="$spj_newest" '
         {
             s = $0
-            while (match(s, /headwater-standard\/v[0-9]+(\.[0-9]+)*|headwater-standard-[0-9]+(\.[0-9]+)*\.zip|headwater\/standard [0-9]+(\.[0-9]+)*/)) {
+            while (match(s, /headwater-standard\/v[0-9]+(\.[0-9]+)*|headwater-standard-[0-9]+(\.[0-9]+)*\.zip|headwater\/standard v?[0-9]+(\.[0-9]+)*/)) {
                 m = substr(s, RSTART, RLENGTH)
                 s = substr(s, RSTART + RLENGTH)
                 v = m
-                sub(/^headwater-standard\/v|^headwater-standard-|^headwater\/standard /, "", v)
+                sub(/^headwater-standard\/v|^headwater-standard-|^headwater\/standard v?/, "", v)
                 sub(/\.zip$/, "", v)
                 if (v != want && v != "0.0.0") print FILENAME ":" FNR ": " m
             }
@@ -2802,6 +2805,36 @@ same "  a \`headwater/standard <version>\` in prose naming another version fails
     "$(standard_pin_judge 99.0.0 "$scratch/standard/prose.md")"
 same "  and the unpinned 0.0.0 that init writes passes" ok \
     "$(standard_pin_judge 99.0.0 "$scratch/standard/init.md")"
+
+# 8m, continued. The shape the five files actually use puts the tag path and
+# the zip name on ONE line, so a judge that read only the first match on a
+# line passed a current tag path beside a stale zip name. 8l counts lines and
+# the cases above put one shape on each, so neither could see it. A `v` before
+# the version in prose is read as well.
+printf '%s\n' 'https://example.invalid/download/taxonomy/headwater-standard/v99.0.0/headwater-standard-4.9.1.zip' >"$scratch/standard/mixed.md"
+printf '%s\n' 'L1 reached, against headwater/standard v4.9.1' >"$scratch/standard/vprose.md"
+same "  a current tag path beside a stale zip name on one line fails on the zip" \
+    "$scratch/standard/mixed.md:1: headwater-standard-4.9.1.zip" \
+    "$(standard_pin_judge 99.0.0 "$scratch/standard/mixed.md")"
+same "  a \`headwater/standard v<version>\` in prose naming another version fails" \
+    "$scratch/standard/vprose.md:1: headwater/standard v4.9.1" \
+    "$(standard_pin_judge 99.0.0 "$scratch/standard/vprose.md")"
+
+# 8o. The newest tag is the newest by VERSION. These four tags are chosen so
+#     that each wrong reading picks a different one: git's default order is
+#     lexical and ascending, and it lists v4.10.0 first; lexical descending
+#     lists v4.9.1 first; version ascending lists v4.2.0 first. Only a
+#     descending version sort names v4.12.0. The real clone's tags cannot
+#     hold this, because today lexical order happens to list v4.12.0 first.
+order="$scratch/standard/order"
+git init -q "$order" >/dev/null 2>&1
+git -C "$order" -c user.name=fixture -c user.email=fixture@example.invalid \
+    -c commit.gpgsign=false commit -q --allow-empty -m seed >/dev/null 2>&1
+for v in 4.2.0 4.9.1 4.10.0 4.12.0; do
+    git -C "$order" tag "taxonomy/headwater-standard/v$v" >/dev/null 2>&1
+done
+same "  the newest tag is read by version, not by name" 4.12.0 \
+    "$(newest_standard_version "$order")"
 
 # 8n. Provoked: a clone with no tags is red, never green. It is cloned from
 #     this one with `--no-tags`, so it has every commit and nothing to say
