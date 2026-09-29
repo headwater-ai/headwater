@@ -12,6 +12,11 @@
 #   cargo build --profile dev-release -p headwater-cli --manifest-path engine/Cargo.toml --locked
 #   PATH="$PWD/engine/target/dev-release:$PATH" vhs .github/assets/headwater-demo.tape
 #
+# On a host whose browser sandbox refuses to start, vhs stops with "could not
+# start browser". Record there with the sandbox off:
+#
+#   VHS_NO_SANDBOX=true PATH="$PWD/engine/target/dev-release:$PATH" vhs .github/assets/headwater-demo.tape
+#
 # The release binary that the tutorial pins works too: put it on PATH in place
 # of the dev-release build. Then change the marker date in README.md to the
 # day of the new recording.

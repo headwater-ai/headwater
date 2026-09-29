@@ -129,7 +129,7 @@ The identity of a read is the content digest of the document, in the form that `
 
 The session writes in a copy of the corpus and not in the corpus. So the driver names that copy as the workspace, and the transform reads each artifact from it. A path inside the workspace is written relative to it. `headwater check` runs over the workspace, which is the tree that holds the artifact. A path outside the workspace has no `findings` key, because no check read that file.
 
-**A write through `Bash` stays invisible to this step.** A redirect, a `sed -i` or a heredoc names no path in its input, so the transform cannot find the file. That write still needs `--produced`. It is the same gap that an `opened` predicate has for a read through `Bash`.
+**A write through `Bash` stays invisible to this step.** A redirect, a `sed -i` or a heredoc names no path in its input, so the transform cannot find the file. That write still needs `--produced`. A read through `Bash` is different. The grader splits the `command` of the call into shell words. An `opened` or `not_opened` predicate then reads a word that names the document, whatever command the word goes to. So `ls` and `rm` of the document count as reads of it. The target of an output redirect and an argument of `tee` are writes, and they do not count. The body of a heredoc is text and not a command, so a path in it does not count either. The grader expands nothing. A path that a variable, a glob or a command substitution inside double quotes makes is not visible to it.
 
 ## An empty list and an absent key are two facts, and a grader is wrong without both
 
