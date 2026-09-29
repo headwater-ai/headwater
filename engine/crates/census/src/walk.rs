@@ -246,10 +246,15 @@ pub fn typed(root: &Path, target: &str) -> Option<String> {
 /// it will be once the walk reads it. A symlink below the corpus root is not
 /// followed, and one that leads out still makes the path outside.
 ///
-/// It reads the filesystem: the longest leading part of the path that exists
-/// is made canonical and compared with the canonical root. A path with no part
-/// on disk below the root, and a root that cannot be made canonical, keep the
-/// lexical answer.
+/// It reads the filesystem: every symlink along the path is followed, one
+/// that dangles as well, and where the path leads is compared with the
+/// canonical root. A link out of the root to a place that does not exist yet
+/// makes the path outside, and a link to a place under the root that does not
+/// exist yet does not
+/// ([#1367](https://github.com/headwater-ai/headwater/issues/1367)). A loop of
+/// links is outside, because it is not a path a reader can read. A path with
+/// no link along it keeps the lexical answer, and so does a root that cannot
+/// be made canonical.
 pub fn within(root: &Path, corpus_root: &str, target: &str) -> Option<String> {
     let relative = typed(root, target)?;
     match escapes(root, corpus_root, &relative) {
@@ -258,10 +263,17 @@ pub fn within(root: &Path, corpus_root: &str, target: &str) -> Option<String> {
     }
 }
 
-/// Whether the longest leading part of `relative` that exists under `root`
-/// resolves, through a symlink, to a place that is neither under `root` nor,
-/// for a path under `corpus_root`, under where the corpus root leads.
-/// `relative` is what [`typed`] returned, so it holds no `..`.
+/// Whether `relative` under `root` resolves, through a symlink, to a place
+/// that is neither under `root` nor, for a path under `corpus_root`, under
+/// where the corpus root leads. `relative` is what [`typed`] returned, so it
+/// holds no `..`.
+///
+/// A symlink that dangles is followed to where it leads, as [`physical`]
+/// follows every link, so a link out of the root to a place not written yet
+/// makes the path outside, and a link to a place under the root not written
+/// yet does not ([#1367](https://github.com/headwater-ai/headwater/issues/1367)).
+/// A path that [`physical`] cannot resolve, a loop of links or a chain longer
+/// than [`LINK_HOPS`], is outside, because it is not a path a reader can read.
 fn escapes(root: &Path, corpus_root: &str, relative: &str) -> bool {
     let Ok(canonical_root) = root.canonicalize() else {
         return false;
@@ -270,18 +282,85 @@ fn escapes(root: &Path, corpus_root: &str, relative: &str) -> bool {
         true => root.join(corpus_root).canonicalize().ok(),
         false => None,
     };
-    let mut at = Path::new(relative);
-    while !at.as_os_str().is_empty() {
-        if let Ok(canonical) = root.join(at).canonicalize() {
-            let inside = canonical.starts_with(&canonical_root)
-                || linked_corpus
-                    .as_ref()
-                    .is_some_and(|corpus| canonical.starts_with(corpus));
-            return !inside;
+    let Ok(start) = std::path::absolute(root.join(relative)) else {
+        return false;
+    };
+    let Some(resolved) = physical(&start) else {
+        return true;
+    };
+    let inside = resolved.starts_with(&canonical_root)
+        || linked_corpus
+            .as_ref()
+            .is_some_and(|corpus| resolved.starts_with(corpus));
+    !inside
+}
+
+/// The most symlinks [`physical`] follows in one path, as `SYMLOOP_MAX` is
+/// on Linux.
+const LINK_HOPS: usize = 40;
+
+/// Where the absolute `path` leads on disk, with every symlink followed,
+/// whether or not anything is at its target. The part that exists is read as
+/// the filesystem reads it, and the rest is joined on by name. A symlink whose
+/// target is missing is followed to that target, and a relative target is
+/// read against the directory that holds the link. `None` for a link that
+/// cannot be read and for more than [`LINK_HOPS`] links, which a loop is.
+/// The longest leading part of the answer that exists is made canonical, so
+/// the answer compares with a canonical root on every platform.
+fn physical(path: &Path) -> Option<PathBuf> {
+    use std::path::Component;
+
+    let mut pending: Vec<std::ffi::OsString> = Vec::new();
+    let mut at = PathBuf::new();
+    let mut hops = 0;
+    let mut missing = false;
+    let mut queue: std::collections::VecDeque<PathBuf> = path
+        .components()
+        .map(|part| PathBuf::from(part.as_os_str()))
+        .collect();
+    while let Some(part) = queue.pop_front() {
+        match part.components().next() {
+            Some(Component::Prefix(_)) => at = part,
+            Some(Component::RootDir) => {
+                pending.clear();
+                missing = false;
+                at.push(part);
+            }
+            Some(Component::CurDir) | None => {}
+            Some(Component::ParentDir) => match pending.pop() {
+                Some(_) => missing = !pending.is_empty(),
+                None => {
+                    at.pop();
+                }
+            },
+            Some(Component::Normal(name)) => {
+                if missing {
+                    pending.push(name.to_os_string());
+                    continue;
+                }
+                let next = at.join(name);
+                match std::fs::symlink_metadata(&next) {
+                    Ok(meta) if meta.file_type().is_symlink() => {
+                        hops += 1;
+                        if hops > LINK_HOPS {
+                            return None;
+                        }
+                        let target = std::fs::read_link(&next).ok()?;
+                        for part in target.components().rev() {
+                            queue.push_front(PathBuf::from(part.as_os_str()));
+                        }
+                    }
+                    Ok(_) => at = next,
+                    Err(_) => {
+                        missing = true;
+                        pending.push(name.to_os_string());
+                    }
+                }
+            }
         }
-        at = at.parent().unwrap_or(Path::new(""));
     }
-    false
+    let at = at.canonicalize().ok()?;
+    Some(pending.into_iter().fold(at, |at, name| at.join(name)))
 }
 
 /// Where a path falls in a corpus, decided by name alone — the closed set
