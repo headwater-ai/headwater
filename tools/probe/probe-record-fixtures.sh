@@ -890,6 +890,17 @@ same "seal.sh keeps every line that holds a one-word slug of a named document" \
     "$(printf '%s\n' 'See the [glossary](glossary.md).' 'let glossary = load();')" \
     "$(cat "$scratch/glossary/docs/spec/01.md")"
 
+# A slug that another file of the workspace also has is generic, as every
+# skill's SKILL.md is, so a link to the other file survives.
+mkdir -p "$scratch/shared/docs/probes" "$scratch/shared/docs/a" "$scratch/shared/docs/b"
+cp "$root/docs/probes/$tombstone.md" "$scratch/shared/docs/probes/"
+printf 'see docs/probes/%s.md\n' "$tombstone" > "$scratch/shared/docs/a/shared-name.md"
+printf 'the other one\n' > "$scratch/shared/docs/b/shared-name.md"
+printf '%s\n' 'See [the b file](b/shared-name.md).' > "$scratch/shared/docs/index-of-both.md"
+sh "$root/tools/probe/seal.sh" "$scratch/shared" "HW-PROBE-$tombstone" >"$scratch/shared.out" 2>&1
+same "seal.sh keeps a line that links another file of the same name" \
+    'See [the b file](b/shared-name.md).' "$(cat "$scratch/shared/docs/index-of-both.md")"
+
 # An identifier or slug matches only as a whole name. A document whose slug or
 # identifier is a prefix or a suffix of another's must not take the other's
 # lines with it. 43 slug pairs of this corpus are substrings of each other.
@@ -950,7 +961,8 @@ if [ "$(git -C "$root" rev-parse --show-toplevel 2>/dev/null)" = "$root" ]; then
         doc_slug=${doc_slug%.md}
         doc_id=$(sed -n 's/^id: *//p' "$root/$doc" 2>/dev/null | head -1)
         case $doc_slug in
-            README|readme|Readme|index|INDEX|_index) doc_slug="" ;;
+            *-*|*_*) [ -z "$(find "$scratch/corpus" -name "$doc_slug.md" -print | head -1)" ] || doc_slug="" ;;
+            *) doc_slug="" ;;
         esac
         [ -n "$doc_id" ] || doc_id=$doc_slug
         [ -n "$doc_id" ] || continue

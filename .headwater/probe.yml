@@ -201,11 +201,13 @@ tiers:
 # it answered (#1229).
 #
 # A deleted document goes with its identifier claim and with every line in
-# the workspace that names its identifier or slug, as an answer key below
-# does. The #980 batch deleted HW-OBL-0013 and left its shelf-index line, its
-# register line and its claim, and 23 of 30 present-arm sessions of the
-# tombstone probe queried it (#1293). A generic slug such as `README` removes
-# no line.
+# the workspace that holds its identifier as a whole name or its file name,
+# as an answer key below does. A JSON fold loses the array element instead,
+# so it still parses. The #980 batch deleted HW-OBL-0013 and left its
+# shelf-index line, its register line and its claim, and 23 of 30 present-arm
+# sessions of the tombstone probe queried it (#1293). A generic slug, one
+# word or a file name that another file shares such as `README`, removes no
+# line.
 #
 # The seal deletes no other file. Every other file that names a probe does so
 # by path or title and states no answer: the derived folds listed above, the
