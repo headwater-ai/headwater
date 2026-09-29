@@ -1163,6 +1163,69 @@ PATH="$scratch/no-harness" "$shell" "$driver" --probe "HW-PROBE-$tombstone" --se
     >/dev/null 2>"$scratch/named3.err"
 same "and so does one that holds it after a letter" "3" "$?"
 
+# A file outside `docs/` that names the probe (#1384). Two committed files do
+# that and state an answer: `.claude/skills/fixtures.sh` asserts the status
+# probe's answer, and `probe-record-fixtures.sh`, this file, names the
+# tombstone probe beside its record. Before, the seal and the guard read
+# `docs/` alone, so a session could read either one. Now each reads the whole
+# workspace, less the files `folds:` in `.headwater/probe.yml` declares, which
+# name a probe by path or title and state no answer.
+mkdir -p "$scratch/outside/.claude/skills" "$scratch/outside/.headwater" "$scratch/outside/docs/spec"
+printf '# docs/probes/%s.md answers `absent`\n' "$tombstone" > "$scratch/outside/.claude/skills/x.sh"
+printf -- '- docs/probes/%s.md\n' "$tombstone" > "$scratch/outside/.headwater/nav.yml"
+printf 'a spec that names no probe\n' > "$scratch/outside/docs/spec/01.md"
+PATH="$scratch/no-harness" "$shell" "$driver" --probe "HW-PROBE-$tombstone" --session x \
+    --task-file "$scratch/task.md" --workspace "$scratch/outside" \
+    >/dev/null 2>"$scratch/outside.err"
+same "the driver refuses a workspace whose file outside docs/ names the probe" "9" "$?"
+present "and it names that file" ".claude/skills/x.sh" "$scratch/outside.err"
+sh "$root/tools/probe/seal.sh" "$scratch/outside" "HW-PROBE-$tombstone" >"$scratch/outside.out" 2>&1
+same "seal.sh seals a workspace with a file outside docs/ that names the probe" "0" "$?"
+if [ -e "$scratch/outside/.claude/skills/x.sh" ]; then
+    fail "and it removes that file" "$(cat "$scratch/outside.out")"
+else
+    pass "and it removes that file"
+fi
+if [ -f "$scratch/outside/.headwater/nav.yml" ] && [ -f "$scratch/outside/docs/spec/01.md" ]; then
+    pass "and it keeps a declared fold that names the probe, and a file that names none"
+else
+    fail "and it keeps a declared fold that names the probe, and a file that names none" "$(ls -aR "$scratch/outside")"
+fi
+PATH="$scratch/no-harness" "$shell" "$driver" --probe "HW-PROBE-$tombstone" --session x \
+    --task-file "$scratch/task.md" --workspace "$scratch/outside" \
+    >/dev/null 2>"$scratch/outside2.err"
+same "and the driver passes the guard over the sealed tree" "3" "$?"
+# A fold is declared by its path, and the same bytes at an undeclared path
+# are refused: the list names files, not a kind of file.
+mkdir -p "$scratch/outside/engine"
+cp "$scratch/outside/.headwater/nav.yml" "$scratch/outside/engine/nav.yml"
+PATH="$scratch/no-harness" "$shell" "$driver" --probe "HW-PROBE-$tombstone" --session x \
+    --task-file "$scratch/task.md" --workspace "$scratch/outside" \
+    >/dev/null 2>"$scratch/outside3.err"
+same "the driver refuses a copy of a declared fold at a path the list does not name" "9" "$?"
+present "and it names the copy" "engine/nav.yml" "$scratch/outside3.err"
+
+# The list itself. Each path it declares is a committed file of this checkout,
+# so a fold that moved is found here and not in a refused campaign. The two
+# files that state an answer are not on it.
+folds=$(sh "$root/tools/probe/seal.sh" --folds)
+same "seal.sh --folds reads the declared folds" "0" "$?"
+missing=""
+for fold in $folds; do
+    [ -e "$root/$fold" ] || missing="$missing $fold"
+done
+same "and every declared fold is a file of this checkout" "" "$missing"
+answering=""
+for answer in .claude/skills/fixtures.sh tools/probe/probe-record-fixtures.sh; do
+    if printf '%s\n' "$folds" | grep -qxF -e "$answer"; then
+        answering="$answering $answer"
+    fi
+done
+same "and no file that states a probe's answer is on it" "" "$answering"
+printf '%s\n' 'instrument:' '  - docs/probes' '' 'tiers: {}' > "$scratch/no-folds.yml"
+same "a declaration with no folds lists none, so the guard refuses every file outside docs/ that names the probe" \
+    "" "$(HW_PROBE_YML="$scratch/no-folds.yml" sh "$root/tools/probe/seal.sh" --folds)"
+
 # ---------------------------------------------------------------------------
 # Step 3 of #819: the recorder names its session, and says whether the hook ran.
 #
