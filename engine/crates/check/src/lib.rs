@@ -1239,6 +1239,13 @@ impl Scoped {
              read",
             self.named.documents, self.named.added, self.named.carried
         );
+        if self.named.verified > 0 {
+            let _ = writeln!(
+                out,
+                "  {:5} stated as re-verified by a `verified` line",
+                self.named.verified
+            );
+        }
         if self.named.unreadable > 0 {
             let _ = writeln!(
                 out,
