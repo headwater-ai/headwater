@@ -565,8 +565,22 @@ mod tests {
             .expect("a linked corpus root");
         std::os::unix::fs::symlink(&elsewhere, elsewhere.join("corpus/out"))
             .expect("a link out below the corpus root");
+        // #1367: a link that dangles still leads somewhere. One that leads out
+        // of the root makes the path outside, although nothing is at its
+        // target, and one that leads to a place under the root that is not
+        // written yet keeps the path inside. A loop of links leads nowhere a
+        // reader can read, so it is outside too.
+        std::os::unix::fs::symlink(base.join("nowhere/dir"), root.join("docs/dang"))
+            .expect("a dangling link out");
+        std::os::unix::fs::symlink(root.join("docs/missing-dir"), root.join("docs/stub"))
+            .expect("a dangling link in");
+        std::os::unix::fs::symlink("missing-dir", root.join("docs/near"))
+            .expect("a relative dangling link in");
+        std::os::unix::fs::symlink("dang/deeper", root.join("docs/chain"))
+            .expect("a dangling link through a dangling link out");
+        std::os::unix::fs::symlink("loop", root.join("docs/loop")).expect("a link loop");
 
-        let cases: [(&str, Option<&str>); 12] = [
+        let cases: [(&str, Option<&str>); 20] = [
             ("linked/shelf/new.md", Some("linked/shelf/new.md")),
             ("./linked/new.md", Some("linked/new.md")),
             ("linked/out/x.md", None),
@@ -579,6 +593,14 @@ mod tests {
             ("docs/never-written.md", Some("docs/never-written.md")),
             ("./", Some("")),
             ("../elsewhere/x.md", None),
+            ("docs/dang/new.md", None),
+            ("docs/dang", None),
+            ("./docs/dang/new.md", None),
+            ("docs/chain/new.md", None),
+            ("docs/loop/new.md", None),
+            ("docs/stub/new.md", Some("docs/stub/new.md")),
+            ("docs/stub", Some("docs/stub")),
+            ("docs/near/new.md", Some("docs/near/new.md")),
         ];
         let answers: Vec<(&str, Option<String>)> = cases
             .iter()
@@ -656,6 +678,7 @@ mod tests {
             ("into/never-written.md", "docs/never-written.md"),
             ("into/present.md", "docs/present.md"),
             ("into/new/../never-written.md", "docs/never-written.md"),
+            ("into/stub/new.md", "docs/stub/new.md"),
         ]
         .iter()
         .flat_map(|(target, expected)| {
@@ -686,6 +709,24 @@ mod tests {
                 .collect::<Vec<_>>()
         })
         .collect();
+        // #1367: a link outside the root into it, and then a dangling link
+        // under the root that leads out again. `typed` stays lexical and
+        // names the path under the root; `within` follows the dangling link
+        // and refuses it.
+        let into_dangling: Vec<(String, Option<String>, Option<String>)> =
+            [root.clone(), via.clone(), root.join("docs/..")]
+                .into_iter()
+                .map(|at| {
+                    let target = links.join("into/dang/new.md").display().to_string();
+                    let typed_answer = typed(&at, &target);
+                    let within_answer = within(&at, "linked", &target);
+                    (
+                        format!("{target} under {}", at.display()),
+                        typed_answer,
+                        within_answer,
+                    )
+                })
+                .collect();
         let name = root.file_name().expect("the root has a name");
         let back_in: Vec<(String, Option<String>)> = [
             root.join("..").join(name).join("docs/never-written.md"),
@@ -748,6 +789,18 @@ mod tests {
                 answer.as_deref(),
                 Some(*expected),
                 "`typed` on `{target}`, through a link outside the root into it"
+            );
+        }
+        for (target, typed_answer, within_answer) in &into_dangling {
+            assert_eq!(
+                typed_answer.as_deref(),
+                Some("docs/dang/new.md"),
+                "`typed` on `{target}` stays lexical"
+            );
+            assert_eq!(
+                within_answer.as_deref(),
+                None,
+                "`within` on `{target}`, through a link into the root and a dangling link out of it"
             );
         }
         for (target, answer) in &back_in {
