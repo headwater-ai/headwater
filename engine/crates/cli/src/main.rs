@@ -3743,6 +3743,11 @@ struct Loaded {
     /// per load and never cached, for the reason `observations` is read here:
     /// a fact about the tree beside the corpus. See [`headwater_check::pin`].
     pin: headwater_check::pin::Pin,
+    /// Each pinned corpus export, as the resolver built for it read it: whether
+    /// it binds, and why not. Read once per load beside the resolver set and
+    /// never cached, for the reason `pin` is. See
+    /// [`headwater_check::harvest`].
+    harvests: Vec<headwater_check::harvest::Harvest>,
     /// The front-matter keys the graph phase reads by name. Held here, and
     /// built once, so the index and the identifier rule read an identifier from
     /// the same key. Two `Config::default()` calls would be two guesses that a
@@ -3851,7 +3856,11 @@ fn load_against(root: &Path, bound: Bound) -> Result<Loaded, ExitCode> {
             return Err(ExitCode::FAILURE);
         }
     };
-    for export in headwater_import::harvest::over(root, &harvests) {
+    // What each pin read, kept beside the resolvers so the check layer can
+    // name a pin that did not read whether or not an anchor reaches it.
+    let exports = headwater_import::harvest::over(root, &harvests);
+    let harvested = headwater_import::harvest::readings(root, &harvests, &exports);
+    for export in exports {
         resolvers = match resolvers.with(Box::new(export)) {
             Ok(resolvers) => resolvers,
             Err(why) => {
@@ -3897,6 +3906,7 @@ fn load_against(root: &Path, bound: Bound) -> Result<Loaded, ExitCode> {
     Ok(Loaded {
         bound,
         pin,
+        harvests: harvested,
         consumer,
         census,
         graph,
@@ -3924,6 +3934,7 @@ impl Loaded {
             register: &self.register,
             observations: &self.observations,
             pin: Some(&self.pin),
+            harvests: &self.harvests,
             adoption: self.bound.adoption.as_ref(),
             source: &self.bound.source,
         }
@@ -6681,6 +6692,7 @@ fn infer(
             register: &loaded.register,
             observations: &loaded.observations,
             pin: Some(&loaded.pin),
+            harvests: &loaded.harvests,
             adoption: declared.as_ref(),
             source: headwater_lock::LOCK,
         },

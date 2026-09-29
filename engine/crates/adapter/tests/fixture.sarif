@@ -146,7 +146,7 @@
               "properties": {
                 "headwater": {
                   "scope": "edge",
-                  "version": 2,
+                  "version": 3,
                   "obligations": [
                     "OB-FIX-1"
                   ],
@@ -631,6 +631,20 @@
             },
             {
               "id": "taxonomy.pin.diverged",
+              "shortDescription": {
+                "text": "taxonomy scope, the resolved taxonomy, and no document"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "taxonomy",
+                  "version": 1,
+                  "obligations": [],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
+              "id": "harvest.pin.unread",
               "shortDescription": {
                 "text": "taxonomy scope, the resolved taxonomy, and no document"
               },

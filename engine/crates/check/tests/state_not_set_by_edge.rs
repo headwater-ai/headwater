@@ -86,6 +86,7 @@ fn run() -> Run {
             register: &register,
             observations: &headwater_check::Observations::empty(),
             pin: None,
+            harvests: &[],
             adoption: None,
             source: &source,
         },

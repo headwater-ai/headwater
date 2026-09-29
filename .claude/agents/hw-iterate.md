@@ -18,6 +18,7 @@ One report, the fixed block and nothing before it. Your narrative goes to `<scra
     PR: #<number>
     ROUNDS: <n> — one line per round: <round>. <PASS|FAIL> <the finding in one line>
     UNCHECKED: <the UNCHECKED line of the last verify, verbatim>
+    EXPLORE: <the EXPLORE line of the builder's last report, verbatim>
     NOTES: <scratch>/build.md, <scratch>/verify-report.md
 
 `STOP` names its reason on the last round line: the third FAIL, a builder that returned no pull request, a red CI the builder could not repair, or a full disk. `HANDOVER` means the run is draining, and the last round line names the stage the checkpoint holds.

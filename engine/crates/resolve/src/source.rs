@@ -33,9 +33,29 @@ pub struct Source {
     /// The text this loaded from. The lock records a digest of it, so that a
     /// stale lock can name the file that moved without resolving anything.
     pub text: String,
+    /// The bundle name this source was selected as: the name in a consumer's
+    /// `bundles:` list, or the directory name a package ships it under. `None`
+    /// for a base, an adopter overlay, and any source nothing selected as a
+    /// bundle.
+    ///
+    /// The name comes from the selection and never from the source's own
+    /// `bundle:` key. [HW-DR-0095] reads `requires` for one purpose and leaves
+    /// the other keys of Q40 as labels, so the key a bundle writes about itself
+    /// stays unread. The resolver reads this source's `requires` only when this
+    /// is `Some`.
+    ///
+    /// [HW-DR-0095]: ../../../../docs/decisions/0095-q67-one-library-entry-may-address-the-keys-of-an-entry-it-names-in-requires-and-confluence-holds-over-the-dependency-order.md
+    pub selected_as: Option<String>,
 }
 
 impl Source {
+    /// This source, named as the bundle a selection chose.
+    #[must_use]
+    pub fn selected_as(mut self, bundle: &str) -> Self {
+        self.selected_as = Some(bundle.to_string());
+        self
+    }
+
     pub fn read(path: &Path, name: &str, role: Role) -> Result<Self, Vec<ResolveError>> {
         let text = read_text(path).map_err(|mut errors| {
             for error in &mut errors {
@@ -61,6 +81,7 @@ impl Source {
             role,
             root,
             text: source.to_string(),
+            selected_as: None,
         })
     }
 

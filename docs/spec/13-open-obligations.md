@@ -106,6 +106,8 @@ The register's own item is discharged and it is not in the list below. The `$`-r
 
 [HW-OBL-0077](../obligations/0077-a-fragment-on-a-path-needs-a-grain-that-no-scope-supplies.md) is discharged and it is not in the list below. A fragment on a path needed a grain that no scope supplied, and the grain was `Corpus`, which this engine already had. `link.fragment.unresolved` is corpus-scoped at version 3 and reads a fragment on a path as well as a bare one.
 
+[HW-OBL-0040](../obligations/0040-composition-between-two-library-entries-has-no-add-only-form.md) is discharged and it is not in the list below. Two library entries had no add-only way to share vocabulary, and [Q67](09-decisions.md#q67--what-form-composition-between-two-library-entries-takes) ruled the form. The resolver now reads `requires` for that form alone. An entry may add into an entry that it names, and the named entry applies first. A selection that lacks the named entry is refused before the merge.
+
 [HW-OBL-0118](../obligations/0118-the-published-read-set-names-no-anchor-so-a-gate-decides-nothing-about-one.md) arrived from that work and it is in the list below. It is the same gap in the artifact a gate reads, where a barrier voids every answer before it is reachable.
 
 [HW-OBL-0119](../obligations/0119-an-audit-reading-carries-no-declared-bar-so-a-distribution-cannot-become-a-finding.md) arrived from `taxonomy audit` and it is in the list below. That verb is the first code here to measure the schema against the corpus rather than to hold a document to the schema. Six readings run and five of them have no bar in any declaration, so five print a population and no verdict. The one exception is the freshness window, which a facet states, and this verb is its first reader in the engine.
@@ -158,7 +160,6 @@ The second said that a control declares one posture and that spec 4 writes two v
 - [HW-OBL-0036](../obligations/0036-identity-below-the-grain-of-a-document.md) — Identity below the grain of a document
 - [HW-OBL-0037](../obligations/0037-the-register-is-not-a-projection-of-the-lock-alone-so-generate.md) — The register is not a projection of the lock alone, so `generate --check` cannot hold it
 - [HW-OBL-0038](../obligations/0038-a-corpus-that-never-runs-generate-check-has-no-test.md) — A corpus that never runs `generate --check` has no test of a generated-file marker
-- [HW-OBL-0040](../obligations/0040-composition-between-two-library-entries-has-no-add-only-form.md) — Composition between two library entries has no add-only form
 - [HW-OBL-0041](../obligations/0041-no-declaration-expresses-a-rule-about-content-or-state-over.md) — No declaration expresses a rule about content or state over time
 - [HW-OBL-0042](../obligations/0042-a-declared-invalid-when-reaches-no-check-and-two-live.md) — A declared `invalid_when` reaches no check, and two live contradictory decisions pass in silence
 - [HW-OBL-0043](../obligations/0043-two-meta-schema-surfaces-have-a-required-declaration.md) — Two meta-schema surfaces have a required declaration and no stated form
