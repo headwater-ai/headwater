@@ -1779,7 +1779,7 @@ projections:
     );
 
     // (d) `headwater export` writes it, because that is the publish step.
-    let exported = headwater_generate::export_plan(&before.surface(), &projections, None)
+    let exported = headwater_generate::export_plan(&before.surface(), &projections, None, None)
         .expect("the export plan");
     let published = publish(&tree, &exported);
     assert!(
@@ -1821,7 +1821,7 @@ projections:
         "a stale local copy of an uncommitted graph_export fails the gate: {}",
         stale.render(ColorMode::Plain)
     );
-    let exported = headwater_generate::export_plan(&after.surface(), &projections, None)
+    let exported = headwater_generate::export_plan(&after.surface(), &projections, None, None)
         .expect("the export plan");
     let export_check = check(&tree, &exported);
     assert!(

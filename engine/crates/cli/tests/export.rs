@@ -280,8 +280,15 @@ fn export_at_dates_an_uncommitted_graph_export_and_refuses_a_committed_one() {
     // refused for the run, and nothing is written.
     let refused = run(&root, &["export", "--at", "2026-09-30"]);
     let (code, said) = status(&refused);
-    assert_eq!(code, Some(1), "`export --at` dated a committed export\n{said}");
-    assert!(refused.stdout.is_empty(), "the refusal wrote a report\n{said}");
+    assert_eq!(
+        code,
+        Some(1),
+        "`export --at` dated a committed export\n{said}"
+    );
+    assert!(
+        refused.stdout.is_empty(),
+        "the refusal wrote a report\n{said}"
+    );
     let stderr = String::from_utf8_lossy(&refused.stderr);
     assert!(
         stderr.contains("exports/filtered.json"),
@@ -364,5 +371,9 @@ fn export_at_dates_an_uncommitted_graph_export_and_refuses_a_committed_one() {
 fn export_at_is_refused_with_check() {
     let root = uncommitted_control();
     let (code, said) = status(&run(&root, &["export", "--check", "--at", "2026-09-30"]));
-    assert_eq!(code, Some(2), "`export --check --at` ran\n{said}");
+    assert_eq!(code, Some(1), "`export --check --at` ran\n{said}");
+    assert!(
+        said.contains("'--check' cannot be used with '--at <date>'"),
+        "`export --check --at` is not refused as a conflict of the two flags\n{said}"
+    );
 }
