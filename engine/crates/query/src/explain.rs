@@ -52,6 +52,12 @@ pub struct Explanation {
     pub permitted: Vec<Permitted>,
     /// What this document is already related to, with the cue at each edge.
     pub related: Vec<Neighbour>,
+    /// Why the walk did not read the entry, for a row it could not walk: a
+    /// symlink, an unreadable directory, a name that is not UTF-8, or a named
+    /// pipe, a socket or a device. The census never opened such an entry, so
+    /// it knows no kind and nothing required of it, and a caller refuses the
+    /// row with this reason rather than rendering it as a document (#1366).
+    pub unwalkable: Option<String>,
 }
 
 /// One relation a kind may declare, and what it may reach.
@@ -87,6 +93,7 @@ impl Surface<'_> {
                 sections: self.shape().required_sections(document.kind),
                 permitted,
                 related: self.related(&document),
+                unwalkable: None,
             });
         }
 
@@ -110,6 +117,10 @@ impl Surface<'_> {
             sections: Vec::new(),
             permitted: Vec::new(),
             related: Vec::new(),
+            unwalkable: match &row.outcome {
+                Outcome::Unwalkable(_) => Some(row.outcome.detail()),
+                _ => None,
+            },
         })
     }
 
@@ -144,6 +155,16 @@ fn lines(text: &str) -> Vec<String> {
 }
 
 impl Explanation {
+    /// The sentence that refuses a row the walk could not read, and `None`
+    /// for every other row. `headwater explain` prints it on standard error
+    /// and the `explain` tool of `headwater mcp` answers with it, so the two
+    /// refuse in one sentence (#1366).
+    pub fn refusal(&self) -> Option<String> {
+        self.unwalkable
+            .as_ref()
+            .map(|reason| format!("`{}` is {reason}, so `explain` prints nothing", self.path))
+    }
+
     /// The explanation as text, in spec 2's own order.
     ///
     /// `mode` colors the path and dims the repeated structural labels —
@@ -263,6 +284,7 @@ mod tests {
             sections: Vec::new(),
             permitted: Vec::new(),
             related: Vec::new(),
+            unwalkable: None,
         }
     }
 

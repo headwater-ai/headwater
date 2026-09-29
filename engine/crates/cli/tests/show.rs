@@ -264,6 +264,61 @@ fn show_refuses_a_symlink_and_prints_nothing_of_its_target() {
     );
 }
 
+/// The same row, asked of `explain`. The census never read the link, so it
+/// knows no kind and nothing required of it, and `explain` refuses the row
+/// rather than answering as for a document (#1366). `--json` writes nothing.
+#[cfg(unix)]
+#[test]
+fn explain_refuses_a_symlink_row_and_prints_nothing() {
+    let root = Root::new("explain-symlink");
+    let outside = root.at.with_extension("outside");
+    std::fs::write(&outside, b"a secret outside the root\n").expect("the target writes");
+    let path = "docs/decisions/9998-link.md";
+    std::os::unix::fs::symlink(&outside, root.at.join(path)).expect("the link is made");
+
+    for args in [&["explain", path][..], &["explain", path, "--json"]] {
+        let explained = root.run(args);
+        let stderr = String::from_utf8_lossy(&explained.stderr)
+            .split_whitespace()
+            .collect::<Vec<_>>()
+            .join(" ");
+        assert_eq!(
+            explained.status.code(),
+            Some(1),
+            "{args:?} refuses a symlink row: {stderr}"
+        );
+        assert!(
+            explained.stdout.is_empty(),
+            "{args:?} prints nothing of a symlink row: {:?}",
+            String::from_utf8_lossy(&explained.stdout)
+        );
+        assert!(
+            stderr.contains("is a symlink to") && stderr.contains("so `explain` prints nothing"),
+            "{args:?} names the row and why: {stderr}"
+        );
+    }
+    let _ = std::fs::remove_file(&outside);
+
+    // The control: an untyped document the walk did read still answers, as
+    // `docs/interfaces/headwater-explain.md` promises it an explanation.
+    let untyped = "docs/decisions/9997-untyped.md";
+    std::fs::write(root.at.join(untyped), "# No front matter\n").expect("the file writes");
+    for args in [&["explain", untyped][..], &["explain", untyped, "--json"]] {
+        let explained = root.run(args);
+        assert_eq!(
+            explained.status.code(),
+            Some(0),
+            "{args:?} explains an untyped document: {}",
+            String::from_utf8_lossy(&explained.stderr)
+        );
+        assert!(
+            String::from_utf8_lossy(&explained.stdout).contains(untyped),
+            "{args:?} names the untyped document: {:?}",
+            String::from_utf8_lossy(&explained.stdout)
+        );
+    }
+}
+
 /// A bare `show` names what it takes, in the shape a bare `explain` does.
 #[test]
 fn a_bare_show_names_what_it_takes() {
