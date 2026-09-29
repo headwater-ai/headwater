@@ -2744,9 +2744,18 @@ standard_pin_judge() {
 
 standard_newest=$(newest_standard_version "$root")
 standard_paths=
+standard_present=0
 for f in $standard_pin_files; do
     standard_paths="$standard_paths $root/$f"
+    if [ -f "$root/$f" ]; then
+        standard_present=$((standard_present + 1))
+    fi
 done
+
+# The five files are the population, and each one is on disk. awk skips a file
+# it cannot open and the judge below then reads four as `ok`, so a page that
+# moved, or a name dropped from the list above, would pass without this count.
+same "the five files that name a headwater/standard version are all on disk" 5 "$standard_present"
 
 # 8j. The population: the clone carries a tag to compare with.
 if [ -n "$standard_newest" ]; then
