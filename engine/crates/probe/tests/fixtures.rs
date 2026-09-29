@@ -716,6 +716,296 @@ fn a_call_that_named_no_document_of_this_corpus_is_reported_apart() {
     assert!(staleness.outside.is_empty());
 }
 
+/// The one call the committed transcript records, as it writes it.
+const THE_READ_CALL: &str = "    - tool: read\n      argument: corpus/probes/0002-answered.md\n      result: sha256:fc8ef4987672f249a06adb2faaa8f0fcf583aca537858a50ef561cea0d3f65c8\n";
+
+/// The committed transcript at `dir` with its one call replaced by `calls`.
+fn with_calls(dir: &Path, calls: &str) -> String {
+    let source = std::fs::read_to_string(dir.join(COMMITTED)).expect("the committed transcript");
+    assert_eq!(
+        source.matches(THE_READ_CALL).count(),
+        1,
+        "the committed transcript no longer records the call this case replaces"
+    );
+    source.replace(THE_READ_CALL, calls)
+}
+
+/// A Bash call as the recorder writes it: the JSON of its input, and no result
+/// identity, because a command returns no one document.
+fn bash_call(command: &str) -> String {
+    format!(
+        "    - tool: Bash\n      argument: '{{\"command\":\"{command}\"}}'\n      result: \"\"\n"
+    )
+}
+
+/// A document a session read through Bash is in the read set, and nothing
+/// witnesses it (#1384).
+///
+/// The document is the committed transcript itself, which is classified and
+/// which no probe examines, so only the call can put it in the read set.
+/// Before #1384 the call went to the list of paths outside the corpus, as the
+/// JSON of its input. The naive fix, a Bash call as a witness, voids the result
+/// on an unedited tree, because the recorder writes an empty result for a Bash
+/// call and the empty result is not the digest of the document.
+#[test]
+fn a_document_a_session_read_through_bash_is_a_member_that_no_witness_decides() {
+    let at = copied("read-set-bash");
+    let source = with_calls(&at, &bash_call(&format!("sed -n 1,40p {COMMITTED}")));
+
+    let staleness = staleness_of(&at, &source);
+    let report = staleness.render(ColorMode::Plain);
+    let member = staleness
+        .members
+        .iter()
+        .find(|member| member.path == COMMITTED)
+        .unwrap_or_else(|| panic!("the document the Bash call read is not a member:\n{report}"));
+    assert_eq!(member.because, Provenance::Opened);
+    assert!(
+        member.witness.is_none(),
+        "a Bash call became a witness: {member:?}"
+    );
+    assert_eq!(member.bash, Some((1, 1)));
+    assert!(
+        staleness.outside.is_empty(),
+        "a Bash call that named a document is reported outside the corpus:\n{report}"
+    );
+    assert_eq!(
+        staleness.verdict(),
+        Stale::Stands,
+        "an unedited tree voided a result that read through Bash:\n{report}"
+    );
+
+    // The document moves, and nothing recorded an identity for it, so nothing
+    // here can say that it moved. The report says why rather than saying that
+    // no call named it, which would be false.
+    edit(
+        &at,
+        COMMITTED,
+        "An edit to the prose here",
+        "One edit to the prose here",
+    );
+    let staleness = staleness_of(&at, &source);
+    let report = staleness.render(ColorMode::Plain);
+    assert_eq!(staleness.verdict(), Stale::Stands, "{report}");
+    assert!(!report.contains(VOIDED), "{report}");
+    assert!(
+        report.contains(
+            "event 1 call 1 named it through Bash, which records no identity, so no witness says \
+             whether it moved"
+        ),
+        "the report does not say the Bash call recorded no identity:\n{report}"
+    );
+}
+
+/// A later call that recorded an identity is the witness of a document an
+/// earlier Bash call named. A Bash call that named nothing this corpus holds is
+/// reported once, as the argument it recorded, and not once per word.
+#[test]
+fn a_later_call_with_an_identity_is_the_witness_and_a_bash_call_naming_nothing_is_one_line() {
+    let calls = format!(
+        "{}{}{THE_READ_CALL}",
+        bash_call("ls -la /tmp"),
+        bash_call("cat corpus/probes/0002-answered.md"),
+    );
+    let source = with_calls(&fixtures_dir(), &calls);
+    let staleness = staleness_of(&fixtures_dir(), &source);
+    let report = staleness.render(ColorMode::Plain);
+    let member = staleness
+        .members
+        .iter()
+        .find(|member| member.path == "corpus/probes/0002-answered.md")
+        .expect("the examined probe is a member");
+    assert_eq!(member.bash, Some((1, 2)), "{report}");
+    assert_eq!(
+        member.witness.as_ref().map(|witness| witness.call),
+        Some(3),
+        "the call that recorded an identity is not the witness:\n{report}"
+    );
+    assert_eq!(staleness.verdict(), Stale::Stands, "{report}");
+    let outside: Vec<&str> = staleness
+        .outside
+        .iter()
+        .map(|witness| witness.path.as_str())
+        .collect();
+    assert_eq!(outside, vec![r#"{"command":"ls -la /tmp"}"#], "{report}");
+}
+
+/// The first Bash call that named a document is the one the report cites, as
+/// the first call with an identity is the witness (#1384 verify, D2). Two Bash
+/// calls name the committed transcript here, and the report names the first.
+#[test]
+fn the_first_bash_call_that_named_a_document_is_the_one_cited() {
+    let calls = format!(
+        "{}{}",
+        bash_call(&format!("sed -n 1,40p {COMMITTED}")),
+        bash_call(&format!("wc -l {COMMITTED}")),
+    );
+    let source = with_calls(&fixtures_dir(), &calls);
+    let staleness = staleness_of(&fixtures_dir(), &source);
+    let report = staleness.render(ColorMode::Plain);
+    let member = staleness
+        .members
+        .iter()
+        .find(|member| member.path == COMMITTED)
+        .unwrap_or_else(|| panic!("the document the Bash calls read is not a member:\n{report}"));
+    assert_eq!(member.bash, Some((1, 1)), "{report}");
+    assert!(
+        report.contains("event 1 call 1 named it through Bash"),
+        "the report does not cite the first Bash call:\n{report}"
+    );
+    assert!(
+        !report.contains("event 1 call 2 named it through Bash"),
+        "the report cites a later Bash call:\n{report}"
+    );
+}
+
+/// A Bash call is cited by its own event and call, in that order (#1384
+/// verify, V5 and V6). The call here is the first call of the third event, so
+/// a report that swapped the two numbers, or took every Bash call as one of
+/// the first event, would say `event 1` somewhere.
+#[test]
+fn a_bash_call_in_a_later_event_is_cited_by_that_event() {
+    let source =
+        std::fs::read_to_string(fixtures_dir().join(COMMITTED)).expect("the committed transcript");
+    let events = source
+        .strip_suffix("```\n")
+        .expect("the transcript ends with its events block");
+    let third = format!(
+        "- probe: PROBE-FIX-answered\n  session: 1\n  calls:\n{}  produced: []\n  answer: null\n",
+        bash_call(&format!("sed -n 1,40p {COMMITTED}")),
+    );
+    let source = format!("{events}{third}```\n");
+    let staleness = staleness_of(&fixtures_dir(), &source);
+    let report = staleness.render(ColorMode::Plain);
+    let member = staleness
+        .members
+        .iter()
+        .find(|member| member.path == COMMITTED)
+        .unwrap_or_else(|| panic!("the document the Bash call read is not a member:\n{report}"));
+    assert_eq!(member.bash, Some((3, 1)), "{report}");
+    assert!(
+        report.contains("event 3 call 1 named it through Bash"),
+        "the report does not cite the Bash call by its event and call:\n{report}"
+    );
+}
+
+/// A Bash call that names a member a call already witnessed still named it
+/// (#1384 verify, V8). It is recorded against that member and never goes to
+/// the list of paths outside the corpus, which would say the corpus holds no
+/// classified document where it holds one.
+#[test]
+fn a_bash_call_after_the_witness_names_the_member_and_nothing_outside() {
+    let calls = format!(
+        "{THE_READ_CALL}{}",
+        bash_call("cat corpus/probes/0002-answered.md"),
+    );
+    let source = with_calls(&fixtures_dir(), &calls);
+    let staleness = staleness_of(&fixtures_dir(), &source);
+    let report = staleness.render(ColorMode::Plain);
+    let member = staleness
+        .members
+        .iter()
+        .find(|member| member.path == "corpus/probes/0002-answered.md")
+        .expect("the examined probe is a member");
+    assert_eq!(
+        member.witness.as_ref().map(|witness| witness.call),
+        Some(1),
+        "{report}"
+    );
+    assert_eq!(member.bash, Some((1, 2)), "{report}");
+    assert!(
+        staleness.outside.is_empty(),
+        "a Bash call that named a member is reported outside the corpus:\n{report}"
+    );
+}
+
+/// One Bash command that names two documents names both (#1384 verify, W3).
+/// Every read word of the command is tested, not only the first that matches.
+#[test]
+fn one_bash_command_naming_two_documents_names_both() {
+    let calls = bash_call(&format!("cat corpus/probes/0002-answered.md {COMMITTED}"));
+    let source = with_calls(&fixtures_dir(), &calls);
+    let staleness = staleness_of(&fixtures_dir(), &source);
+    let report = staleness.render(ColorMode::Plain);
+    for path in ["corpus/probes/0002-answered.md", COMMITTED] {
+        let member = staleness
+            .members
+            .iter()
+            .find(|member| member.path == path)
+            .unwrap_or_else(|| panic!("{path} is not a member:\n{report}"));
+        assert_eq!(member.bash, Some((1, 1)), "{path}\n{report}");
+        assert!(member.witness.is_none(), "{path}\n{report}");
+    }
+    assert!(staleness.outside.is_empty(), "{report}");
+    assert_eq!(staleness.verdict(), Stale::Stands, "{report}");
+}
+
+/// A member with a witness is reported by its witness, even where a Bash call
+/// named it first (#1384 verify, D5). The Bash line is for a member that
+/// nothing witnessed, and printing it here would say that no witness decides a
+/// document one call did decide.
+#[test]
+fn a_member_with_a_witness_is_reported_by_it_even_where_bash_named_it_first() {
+    let calls = format!(
+        "{}{THE_READ_CALL}",
+        bash_call("cat corpus/probes/0002-answered.md"),
+    );
+    let source = with_calls(&fixtures_dir(), &calls);
+    let staleness = staleness_of(&fixtures_dir(), &source);
+    let report = staleness.render(ColorMode::Plain);
+    let member = staleness
+        .members
+        .iter()
+        .find(|member| member.path == "corpus/probes/0002-answered.md")
+        .expect("the examined probe is a member");
+    assert_eq!(member.bash, Some((1, 1)), "{report}");
+    assert!(member.witness.is_some(), "{report}");
+    assert!(
+        report.contains(
+            "- corpus/probes/0002-answered.md (probe) sha256:fc8ef4987672f249a06adb2faaa8f0fcf583aca537858a50ef561cea0d3f65c8\n    event 1 call 2 observed the same identity, so this document stands\n"
+        ),
+        "the witnessed member is not reported by its witness:\n{report}"
+    );
+    assert!(
+        !report.contains("named it through Bash"),
+        "a member with a witness is reported as one no witness decides:\n{report}"
+    );
+}
+
+/// A transcript whose events name every probe of the selection, and whose
+/// recorded digest is the digest of the whole selection, was planned over the
+/// whole (#1384, item 2).
+///
+/// The committed transcript names 2 of the 5 probes, so a `planned_over` that
+/// never answered `Whole` reached the same report through `None`: the digest
+/// over those 2 is not the recorded one. Over all 5 the digest of the part is
+/// the digest of the whole, and only the order of the two tests in
+/// `planned_over` decides which the report names.
+#[test]
+fn a_transcript_naming_every_probe_of_the_whole_selection_is_held_against_the_whole() {
+    let more = ["PROBE-FIX-answered", "PROBE-FIX-cited", "PROBE-FIX-patched"]
+        .iter()
+        .map(|probe| {
+            format!("- probe: {probe}\n  session: 1\n  calls: []\n  produced: []\n  answer: null\n")
+        })
+        .collect::<String>();
+    let source =
+        std::fs::read_to_string(fixtures_dir().join(COMMITTED)).expect("the committed transcript");
+    // The events block is the last block of the transcript, so the new events
+    // go after its last line and the fence closes it again.
+    let events = source
+        .strip_suffix("```\n")
+        .expect("the transcript ends with its events block");
+    let source = format!("{events}{more}```\n");
+    let staleness = staleness_of(&fixtures_dir(), &source);
+    let report = staleness.render(ColorMode::Plain);
+    assert_eq!(staleness.part, None, "{report}");
+    assert!(
+        report.contains("The read set covers 5 documents"),
+        "the report does not hold the transcript against the whole selection:\n{report}"
+    );
+}
+
 // --- the recorded artifacts --------------------------------------------------
 
 #[test]

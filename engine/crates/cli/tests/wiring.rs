@@ -617,6 +617,35 @@ fn a_plan_that_stopped_partway_grades_nothing_through_the_verb() {
     );
 }
 
+/// `probe stale` holds a transcript planned over the whole selection against
+/// the whole (#1384, item 2).
+///
+/// The fixture corpus holds two well-formed probes and one committed
+/// transcript whose events name both. Its recorded digest is the digest of the
+/// whole selection, and it is the digest of the part its events name as well,
+/// because that part is the whole. A `planned_over` that never answered
+/// `Whole` would call it a part and report "The read set of the 2 probes of
+/// 2", so this case holds the order of the two tests there through the verb.
+#[test]
+fn probe_stale_holds_a_whole_selection_transcript_against_the_whole() {
+    let root = Root::over("probe-stale", "stale-whole-selection");
+    let stale = root.run(&["probe", "stale"]);
+    assert_eq!(stale.code, Some(0), "{}{}", stale.out, stale.err);
+    assert!(
+        stale.says(
+            "Nothing this run read has moved. The read set covers 2 documents, and the digest \
+             the transcript recorded is the digest this corpus composes."
+        ),
+        "the verb does not hold the transcript against the whole selection:\n{}",
+        stale.out
+    );
+    assert!(
+        stale.says("Of 1 committed transcript, this tree moved the read set of 0."),
+        "{}",
+        stale.out
+    );
+}
+
 /// The `Loaded::runs()` call site hands the generator the plan and not the
 /// selection.
 ///

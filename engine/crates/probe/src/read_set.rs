@@ -39,6 +39,20 @@
 //! session that opened a document no probe examines read that document, and
 //! only the transcript records it.
 //!
+//! **A Bash call names a document and witnesses nothing.** The recorder writes
+//! the argument of a Bash call as the JSON of its input, so the argument is
+//! never a path. It writes no result identity for it either, because a command
+//! returns no one document. So this module reads the words of the command by
+//! the rule the grader reads them with ([`crate::grade::bash_read_words`]). A
+//! word that names a member marks that member as named through Bash, and a word
+//! that names a classified document no probe examines adds that document as an
+//! `opened` member. The Bash call is never the witness of a member, because its
+//! empty result compared with a content digest would report every such
+//! document as moved on a tree nobody edited. A later call that recorded an
+//! identity for the same path is the witness, in first-call order. A Bash call
+//! whose words name no document of this corpus is reported once, as the
+//! argument it recorded, and not once for each word.
+//!
 //! The two halves check each other. Where the digest holds and a witness
 //! disagrees, the document did not move, so what the recorder wrote as a result
 //! identity is not this engine's content digest of that document. That is a
@@ -125,8 +139,11 @@ pub struct Member {
     /// What this corpus holds for it now, and `None` where this corpus holds no
     /// classified document at that path.
     pub now: Option<String>,
-    /// The first recorded call that named it.
+    /// The first recorded call that named it and recorded an identity.
     pub witness: Option<Witness>,
+    /// The first Bash call that named it, as `(event, call)`, both one-based.
+    /// A Bash call records no identity, so it is never the witness.
+    pub bash: Option<(usize, usize)>,
 }
 
 impl Member {
@@ -312,6 +329,7 @@ impl Staleness {
                 },
                 now: read.digest.clone(),
                 witness: None,
+                bash: None,
             });
         }
 
@@ -336,6 +354,40 @@ impl Staleness {
                     event: event.at,
                     call: index + 1,
                 };
+                if call.tool == "Bash" {
+                    // A Bash call names documents and witnesses none, and the
+                    // reason is in this module's own documentation.
+                    let mut named = false;
+                    for word in crate::grade::bash_read_words(&call.argument) {
+                        let at = match member_of(&staleness.members, &word) {
+                            Some(at) => at,
+                            None => match classified(census, &word) {
+                                Some((path, digest)) => {
+                                    staleness.members.push(Member {
+                                        path,
+                                        because: Provenance::Opened,
+                                        now: digest,
+                                        witness: None,
+                                        bash: None,
+                                    });
+                                    staleness.members.len() - 1
+                                }
+                                None => continue,
+                            },
+                        };
+                        named = true;
+                        staleness.members[at]
+                            .bash
+                            .get_or_insert((event.at, index + 1));
+                    }
+                    if !named {
+                        let seen = witness(&call.argument);
+                        if !staleness.outside.contains(&seen) {
+                            staleness.outside.push(seen);
+                        }
+                    }
+                    continue;
+                }
                 match member_of(&staleness.members, &call.argument) {
                     Some(at) => {
                         if staleness.members[at].witness.is_none() {
@@ -349,6 +401,7 @@ impl Staleness {
                             because: Provenance::Opened,
                             now: digest,
                             witness: Some(witness(&path)),
+                            bash: None,
                         }),
                         // A path this corpus holds no classified document at.
                         // A read set is a list of corpus paths, so nothing here
@@ -473,15 +526,22 @@ impl Staleness {
                 member.because.name(),
                 member.now.as_deref().unwrap_or("no such document"),
             );
-            match &member.witness {
-                None => {
+            match (&member.witness, member.bash) {
+                (None, Some((event, call))) => {
+                    let _ = writeln!(
+                        out,
+                        "    event {event} call {call} named it through Bash, which records no \
+                         identity, so no witness says whether it moved"
+                    );
+                }
+                (None, None) => {
                     let _ = writeln!(
                         out,
                         "    no recorded call named it, so no witness of this transcript says \
                          whether it moved"
                     );
                 }
-                Some(witness) => match member.disagrees() {
+                (Some(witness), _) => match member.disagrees() {
                     true => {
                         let _ = writeln!(
                             out,

@@ -845,13 +845,33 @@ pub(crate) fn names_path(argument: &str, path: &str) -> bool {
 /// the read. What it does not count is a write that the shell makes plain: the
 /// target of an output redirect and an argument of `tee` ([`read_words`]).
 fn bash_names(argument: &str, target: &Examined) -> bool {
+    bash_read_words(argument)
+        .iter()
+        .any(|word| names_path(word, &target.path))
+}
+
+/// The words a Bash call's argument reads, each followed by the value of its
+/// `-o=value` or `--option=value` form where it has one.
+///
+/// This is the one statement of what a Bash call reads. [`bash_names`] tests
+/// each word against an examined target, and
+/// [`crate::read_set::Staleness::over`] tests each word against the members of
+/// a read set and the classified documents of the corpus (#1384). Two copies
+/// of it would be two places for a heredoc body or a written file to count as
+/// a read in one and not the other. An argument that is not JSON, or has no
+/// `command` string, reads nothing.
+pub(crate) fn bash_read_words(argument: &str) -> Vec<String> {
     let Some(command) = headwater_yaml::json::field(argument, &["command".to_string()]) else {
-        return false;
+        return Vec::new();
     };
-    read_words(&shell_tokens(&command)).into_iter().any(|word| {
-        names_path(word, &target.path)
-            || option_value(word).is_some_and(|value| names_path(value, &target.path))
-    })
+    let mut words = Vec::new();
+    for word in read_words(&shell_tokens(&command)) {
+        words.push(word.to_string());
+        if let Some(value) = option_value(word) {
+            words.push(value.to_string());
+        }
+    }
+    words
 }
 
 /// The value of a `-o=value` or `--option=value` word.
@@ -871,9 +891,13 @@ enum Token {
 /// The words of a command that it reads.
 ///
 /// An operator with `>` in it makes the next word a written file, and that
-/// word is not read. A heredoc operator, `<<`, makes the next word a
+/// word is not read. A heredoc operator, `<<` or `<<-`, makes the next word a
 /// delimiter, and that word is not read either. Any other operator with `<` in
-/// it makes the next word a read file, whatever the command. Every other operator (`|`, `;`, `&&`, `(`, a
+/// it makes the next word a read, whatever the command. That includes the
+/// here-string `<<<`: the word after it is text the command is given and not
+/// a file, and it counts as a read the way `echo x.md` counts `x.md`, because
+/// the grader takes a name given to a command as the read ([`bash_names`]).
+/// Every other operator (`|`, `;`, `&&`, `(`, a
 /// backtick, a newline) starts a new command. A command whose first word is
 /// `tee` writes its other words, so they are not read. A `tee` behind `sudo`
 /// or `xargs` is not seen.
@@ -921,14 +945,21 @@ fn read_words(tokens: &[Token]) -> Vec<&str> {
 /// line.
 ///
 /// The body of a heredoc is text and not a command, so it gives no token. The
-/// word after `<<` is its delimiter, with quotes taken off, and after
-/// `<<-` the delimiter line may start with tabs. At the end of the line that
-/// holds the operator, every line up to the delimiter line is skipped. Where
-/// one line opens two heredocs, their bodies follow in order.
+/// word after `<<` is its delimiter, with quotes taken off. After `<<-`,
+/// written as one operator, the lines of the body and the delimiter line may
+/// start with tabs, and only tabs. At the end of the line that holds the
+/// operator, every line up to the delimiter line is skipped, and the
+/// delimiter line is the delimiter and nothing else, so `EOF ` with a trailing
+/// space does not end the body. Where one line opens two heredocs, their
+/// bodies follow in order. A heredoc that no delimiter line closes runs to the
+/// end of the input.
 ///
 /// This is not a shell. It expands nothing and runs nothing. So it cannot see
 /// a path built from a variable or a glob, or a command substitution inside
-/// double quotes, such as `"$(cat x.md)"`.
+/// double quotes, such as `"$(cat x.md)"`. It does not know arithmetic either:
+/// `$((1<<2))` opens a heredoc here whose delimiter is `2`, where bash shifts
+/// a number, so the lines after it are skipped up to a line that is `2` or to
+/// the end of the input, and a path named on them is not read.
 fn shell_tokens(command: &str) -> Vec<Token> {
     const OPERATORS: &str = "|&;<>()`";
     let mut lexed = Lexed::default();
@@ -979,7 +1010,13 @@ fn shell_tokens(command: &str) -> Vec<Token> {
                 while let Some(next) = chars.next_if(|&next| OPERATORS.contains(next)) {
                     operator.push(next);
                 }
-                lexed.wanted = heredoc(&operator);
+                // `<<-` is one operator in bash, and `-` is no operator
+                // character here, so it is taken with the `<<` it touches.
+                // `<< -EOF` is `<<` and the delimiter `-EOF`.
+                lexed.wanted = match heredoc(&operator) {
+                    true => Some(chars.next_if_eq(&'-').is_some()),
+                    false => None,
+                };
                 lexed.tokens.push(Token::Operator(operator));
             }
             c if c.is_whitespace() => lexed.end_word(),
@@ -993,8 +1030,9 @@ fn shell_tokens(command: &str) -> Vec<Token> {
     lexed.tokens
 }
 
-/// Whether an operator opens a heredoc: `<<` and `<<-`, and not the
-/// here-string `<<<`, whose next word is the text itself.
+/// Whether an operator opens a heredoc: `<<`, which [`shell_tokens`] reads
+/// as `<<-` where a `-` touches it, and not the here-string `<<<`, whose next
+/// word is text the command is given and which [`read_words`] counts as read.
 fn heredoc(operator: &str) -> bool {
     operator.contains("<<") && !operator.contains("<<<")
 }
@@ -1009,8 +1047,8 @@ struct Lexed {
     /// The delimiter each heredoc of this line waits for, and whether `<<-`
     /// opened it.
     delimiters: Vec<(String, bool)>,
-    /// The next word is a heredoc delimiter.
-    wanted: bool,
+    /// The next word is a heredoc delimiter, and whether `<<-` opened it.
+    wanted: Option<bool>,
 }
 
 impl Lexed {
@@ -1021,12 +1059,8 @@ impl Lexed {
             return;
         }
         let text = std::mem::take(&mut self.word);
-        if std::mem::take(&mut self.wanted) {
-            // `<<-EOF` lexes as the operator `<<` and the word `-EOF`.
-            self.delimiters.push(match text.strip_prefix('-') {
-                Some(rest) => (rest.to_string(), true),
-                None => (text.clone(), false),
-            });
+        if let Some(tabs) = self.wanted.take() {
+            self.delimiters.push((text.clone(), tabs));
         }
         self.tokens.push(Token::Word(text));
     }
@@ -1442,6 +1476,146 @@ mod tests {
         ] {
             assert!(bash_names(command, &want), "{command}");
         }
+    }
+
+    /// A heredoc that the command never closes ends at the end of the input,
+    /// and the tokenizer returns (#1384 verify, M5). Without that stop the loop
+    /// that skips the body never ends, so the case runs on a thread of its own
+    /// and a regression fails it rather than hanging the suite.
+    #[test]
+    fn a_heredoc_with_no_delimiter_line_ends_at_the_end_of_the_input() {
+        let (send, receive) = std::sync::mpsc::channel();
+        std::thread::spawn(move || {
+            let _ = send.send(shell_tokens("cat <<EOF\nsee docs/probes/one.md"));
+        });
+        let tokens = receive
+            .recv_timeout(std::time::Duration::from_secs(5))
+            .expect("the tokenizer did not return over a heredoc with no delimiter line");
+        assert!(
+            !tokens.contains(&Token::Word("docs/probes/one.md".into())),
+            "the body of an unclosed heredoc was read as a command: {tokens:?}"
+        );
+    }
+
+    /// Two heredocs on one line take their bodies in order: the first
+    /// delimiter ends the first body and the second ends the second (#1384
+    /// verify, M2). Taken in the other order, the second delimiter swallows
+    /// both bodies and the first waits past the command after them.
+    #[test]
+    fn two_heredocs_on_one_line_take_their_bodies_in_order() {
+        let want = target(None, "docs/probes/one.md");
+        assert!(
+            bash_names(
+                r#"{"command":"cat <<A <<B\nx\nA\ny\nB\ncat docs/probes/one.md"}"#,
+                &want
+            ),
+            "the command after both bodies is not read"
+        );
+        assert!(
+            !bash_names(
+                r#"{"command":"cat <<A <<B\nx\nA\ndocs/probes/one.md\nB\nls"}"#,
+                &want
+            ),
+            "the body of the second heredoc was read as a command"
+        );
+    }
+
+    /// Only the delimiter line itself ends a body. A line with a trailing
+    /// space does not, in bash (#1384 verify, M4), and after `<<-` only tabs
+    /// are taken off the front of the line, never spaces (M6).
+    #[test]
+    fn a_delimiter_line_is_the_delimiter_and_nothing_else() {
+        let want = target(None, "docs/probes/one.md");
+        for command in [
+            r#"{"command":"cat <<EOF\nEOF \ndocs/probes/one.md\nEOF"}"#,
+            r#"{"command":"cat <<-EOF\n  EOF\ndocs/probes/one.md\nEOF"}"#,
+        ] {
+            assert!(!bash_names(command, &want), "{command}");
+        }
+    }
+
+    /// A plain `<<` keeps the tabs of its delimiter line, so a tab before
+    /// `EOF` does not end the body (#1384 verify, W5). Only `<<-` strips them.
+    #[test]
+    fn a_tab_before_the_delimiter_does_not_end_a_plain_heredoc() {
+        let tokens = shell_tokens("cat <<EOF\n\tEOF\ndocs/probes/one.md\nEOF\nls");
+        assert!(
+            !read_words(&tokens).contains(&"docs/probes/one.md"),
+            "a tab-indented `EOF` ended a plain heredoc: {tokens:?}"
+        );
+    }
+
+    /// The limits the tokenizer states. `<< -EOF` has the delimiter `-EOF` and
+    /// keeps its tabs, as in bash, because only `<<-` written as one operator
+    /// strips them. `<<` inside an arithmetic expansion is read as a heredoc,
+    /// which bash does not do, so the lines after it are skipped up to a line
+    /// that is its right operand. A here-string `<<<` is not a heredoc: the
+    /// word after it is a word the command is given, and it counts as a read
+    /// the way any other word does.
+    #[test]
+    fn the_stated_limits_of_the_tokenizer_hold() {
+        let want = target(None, "docs/probes/one.md");
+        // `<< -EOF`: `EOF` does not end the body, `-EOF` does.
+        assert!(!bash_names(
+            r#"{"command":"cat << -EOF\nEOF\ndocs/probes/one.md\n-EOF"}"#,
+            &want
+        ));
+        assert!(bash_names(
+            r#"{"command":"cat << -EOF\nx\n-EOF\ncat docs/probes/one.md"}"#,
+            &want
+        ));
+        // `<<-EOF` and `<<- EOF` strip tabs and end on `EOF`.
+        for command in [
+            r#"{"command":"cat <<-EOF\n\tx\n\tEOF\ncat docs/probes/one.md"}"#,
+            r#"{"command":"cat <<- EOF\n\tx\n\tEOF\ncat docs/probes/one.md"}"#,
+        ] {
+            assert!(bash_names(command, &want), "{command}");
+        }
+        // Arithmetic: the limit, pinned as stated. The lines up to the line
+        // `2` are skipped, and the line after it is a command again.
+        assert!(!bash_names(
+            r#"{"command":"echo $((1<<2))\ncat docs/probes/one.md\n2\nls"}"#,
+            &want
+        ));
+        assert!(bash_names(
+            r#"{"command":"echo $((1<<2))\nls\n2\ncat docs/probes/one.md"}"#,
+            &want
+        ));
+        // A here-string word is a word the command is given.
+        assert!(bash_names(
+            r#"{"command":"grep x <<< docs/probes/one.md"}"#,
+            &want
+        ));
+    }
+
+    /// A recorded digest that is the digest of the whole selection is the
+    /// whole, whichever probes the events name (#1384, item 2). A part equal
+    /// to the whole has the same digest, so the order of the two tests in
+    /// [`planned_over`] is the rule, and each of these cases holds it.
+    #[test]
+    fn the_digest_of_the_whole_selection_is_the_whole() {
+        let one = opened_over_one_document();
+        let two = Selected {
+            path: "probes/two.md".into(),
+            id: "PROBE-FIX-two".into(),
+            ..opened_over_one_document()
+        };
+        let selection = vec![one, two];
+        let whole = crate::plan::selection_digest(&["PROBE-FIX-one", "PROBE-FIX-two"]);
+        assert_eq!(
+            planned_over(&selection, &whole, &["PROBE-FIX-one".to_string()]),
+            Some(Planned::Whole),
+            "events that name one probe of two, under the digest of the whole"
+        );
+        assert_eq!(
+            planned_over(
+                &selection,
+                &whole,
+                &["PROBE-FIX-one".to_string(), "PROBE-FIX-two".to_string()]
+            ),
+            Some(Planned::Whole),
+            "events that name every probe are the whole and not a part"
+        );
     }
 
     /// Only a Bash call's argument is read as a command. Another tool whose
