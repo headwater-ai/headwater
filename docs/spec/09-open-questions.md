@@ -53,6 +53,10 @@ The documents on this shelf, in the reading order this corpus derives. Each head
 
 [HW-DR-0008](../decisions/0008-probe-cost-and-cadence.md) — A probe is a document with a declared expectation, and cadence follows the purpose of the run.
 
+## A namespace does not keep two corpora apart, and no rule compares identifier schemes across two locks
+
+[HW-DR-0099](../decisions/0099-a-namespace-does-not-keep-two-corpora-apart-and-no-rule-compares-identifier-schemes-across-two-locks.md) — Two corpora in one tree, or a vendored corpus beside its host, can mint one identifier, because one namespace plus a literal can spell another. The engine loads one root and one lock, so no rule compares schemes across two locks. An adopter picks namespaces that no pattern can spell from another, or resolves a scratch overlay that declares both corpora's schemes. (asserted, and no human has accepted it)
+
 ## Q9 — Multi-repository corpora
 
 [HW-DR-0009](../decisions/0009-multi-repository-corpora.md) — A repository holds one or more corpora, the tier above harvests pinned exports, and no merged graph exists.
