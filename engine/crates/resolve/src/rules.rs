@@ -1008,9 +1008,20 @@ fn identifier_integrity(view: &View, out: &mut Vec<ResolveError>) {
     // both admit `ZED-SPECIFICATION-scope` (#1357). `disjoint` reads the
     // namespace as literal characters, so it decides that pair as it decides
     // any other.
+    // A kind mints under the scheme its nearest ancestor names, the way the
+    // check layer reads it (`Shape::identifier_scheme_of`), and an abstract
+    // kind mints nothing, because no document is one.
     let mut minted_by: BTreeMap<&str, Vec<&str>> = BTreeMap::new();
-    for (kind, body) in view.members("kinds") {
-        if let Some(scheme) = block(body, "identifier").and_then(|node| text(node, "scheme")) {
+    for (kind, _) in view.members("kinds") {
+        if view.is_abstract(kind) {
+            continue;
+        }
+        let scheme = view.ancestry(kind).into_iter().find_map(|step| {
+            view.kind(step)
+                .and_then(|body| block(body, "identifier"))
+                .and_then(|node| text(node, "scheme"))
+        });
+        if let Some(scheme) = scheme {
             minted_by.entry(scheme).or_default().push(kind);
         }
     }
