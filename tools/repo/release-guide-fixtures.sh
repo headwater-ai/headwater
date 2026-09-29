@@ -820,7 +820,7 @@ printf '%s\n' "$apt_route_files" | while IFS= read -r f; do
     cp "$root/$f" "$scratch/d10/$f"
 done
 printf '%s\n' '#   The site reaches Cloudflare by one path only, the Cloudflare' \
-    '#   build, so this step reads those assets at build time.' >> "$scratch/d10/tools/site/fetch-apt.sh"
+    '#   Build, so this step reads those assets at build time.' >> "$scratch/d10/tools/site/fetch-apt.sh"
 same "fetch-apt.sh that names the Cloudflare build is red" \
     "tools/site/fetch-apt.sh says the Cloudflare build deploys the APT repository" \
     "$(apt_route "$scratch/d10" | tr '\n' '|' | sed 's/|$//')"
