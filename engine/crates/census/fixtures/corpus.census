@@ -334,6 +334,8 @@ docs/interfaces/headwater-route.md
   typed: interface_contract
 docs/interfaces/headwater-show.md
   typed: interface_contract
+docs/interfaces/headwater-site.md
+  typed: interface_contract
 docs/interfaces/headwater-sweep.md
   typed: interface_contract
 docs/interfaces/headwater-taxonomy.md

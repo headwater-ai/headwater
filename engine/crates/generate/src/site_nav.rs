@@ -159,6 +159,13 @@ pub(crate) fn emit(
         });
     }
 
+    for group in &groups {
+        plan.navigation.extend(group.index.iter().cloned());
+        plan.navigation
+            .extend(group.pages.iter().map(|(path, _)| path.clone()));
+        plan.navigation
+            .extend(group.ordered.iter().map(|pointer| pointer.path.clone()));
+    }
     plan.outputs.push(Output {
         bytes: render(&declaration.output, &groups, &identity.corpus_root),
         path: declaration.output.clone(),
