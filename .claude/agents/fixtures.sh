@@ -366,15 +366,15 @@ fi
 # of every session, so the skill's bold lead is where the words reach it. The
 # case reads the bold lead alone: the rest of the line already ends "and the
 # parent rules on it", which is about ruling and not about filing. The lead is
-# the text of a bullet up to its first `**`, with single-asterisk emphasis
-# removed, and the rule is the first bullet whose lead says an agent "files an
+# the text of a bullet up to its first `**`, so single-asterisk emphasis
+# inside it does not end it, and the rule is the first bullet whose lead says an agent "files an
 # issue" or "files no issue", so a rewording in either form is still found.
 printf '\n# the rule against filing an issue in hw-run-policy covers the parent in its bold lead\n'
 # Prints the bold lead of the no-filing rule in the file given.
 no_filing_lead() {
     awk 'index($0, "- **") == 1 {
         lead = substr($0, 5); i = index(lead, "**"); if (i == 0) next
-        lead = substr(lead, 1, i - 1); gsub(/\*/, "", lead)
+        lead = substr(lead, 1, i - 1)
         if (lead ~ /files (an|no) issue/) { print lead; exit }
     }' "$1"
 }
