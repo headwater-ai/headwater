@@ -21,7 +21,7 @@ The verb takes one argument, the directory that a site generator wrote. It holds
 
 ## Description
 
-This verb answers one question: does the built site agree with the corpus it was built from? A generator reads the corpus one time and writes HTML. After that, nothing reads the HTML again. Three defects then reach a reader. The navigation names a page that the build did not write. A page stays after its document left the corpus. A link points to a page that is not there. This repository had each defect. It had 326 dead fragment links ([#431](https://github.com/headwater-ai/headwater/issues/431)). It had shelf indexes that the navigation did not name ([#528](https://github.com/headwater-ai/headwater/issues/528)). It had 17 links with no fragment that answered 404 ([#350](https://github.com/headwater-ai/headwater/issues/350)).
+This verb answers one question: does the built site agree with the corpus it was built from? A generator reads the corpus one time and writes HTML. After that, nothing reads the HTML again. Three defects then reach a reader. The navigation names a page that the build did not write. A page stays after its document left the corpus. A link points to a page that is not there. This repository had each defect. It had dead fragment links ([#431](https://github.com/headwater-ai/headwater/issues/431)). It had shelf indexes that the navigation did not name ([#528](https://github.com/headwater-ai/headwater/issues/528)). It had 17 links with no fragment that answered 404 ([#350](https://github.com/headwater-ai/headwater/issues/350)).
 
 The verb reports four classes of finding. Each line starts with the class, then names the page or the source, then gives one sentence.
 
