@@ -342,9 +342,9 @@ class AListWithADeadMemberIsShownRefused(unittest.TestCase):
     def test_refused_rows_sort_by_governor_then_reason(self):
         export = load_fixture()
         for source, reason in (
-            ("docs/obligations/0001-old.md", "z reason"),
+            ("docs/obligations/0001-old.md", "a reason"),
+            ("docs/decisions/0002-recent.md", "z reason"),
             ("docs/decisions/0002-recent.md", "b reason"),
-            ("docs/decisions/0002-recent.md", "a reason"),
         ):
             export["graph"]["edges"].append(
                 {"source": source, "relation": "governs", "written_as": "governs",
@@ -353,8 +353,44 @@ class AListWithADeadMemberIsShownRefused(unittest.TestCase):
         model = dashboard.load(export, corpus_identity="fixture")
         self.assertEqual(
             [(row["governed_by"], row["reason"]) for row in model.refused],
-            [("FX-DR-0002", "a reason"), ("FX-DR-0002", "b reason"), ("FX-OBL-0001", "z reason")],
+            # The governor orders first: FX-OBL-0001's reason sorts before
+            # both of FX-DR-0002's, and its row still comes last.
+            [("FX-DR-0002", "b reason"), ("FX-DR-0002", "z reason"), ("FX-OBL-0001", "a reason")],
         )
+
+    def test_a_withheld_governs_edge_is_not_refused(self):
+        export = load_fixture()
+        export["graph"]["edges"].append(
+            {"source": "docs/decisions/0002-recent.md", "relation": "governs", "written_as": "governs",
+             "target": {"bound": "withheld", "anchor_kind": "code_path", "rule": "public"}}
+        )
+        model = dashboard.load(export, corpus_identity="fixture")
+        self.assertEqual(model.refused, [])
+        self.assertIn("No governs edge binds nothing", dashboard.render(model))
+
+    def test_a_reason_that_is_not_a_string_is_refused_as_input(self):
+        for value in (7, ["a"]):
+            export = with_dead_member_list(load_fixture())
+            export["graph"]["edges"][-1]["target"]["reason"] = value
+            with self.assertRaises(dashboard.ExportRefused) as raised:
+                dashboard.load(export, corpus_identity="fixture")
+            self.assertIn("target.reason", str(raised.exception))
+
+    def test_a_refused_edge_with_no_source_is_refused_as_input(self):
+        export = with_dead_member_list(load_fixture())
+        del export["graph"]["edges"][-1]["source"]
+        with self.assertRaises(dashboard.ExportRefused) as raised:
+            dashboard.load(export, corpus_identity="fixture")
+        self.assertIn("`source`", str(raised.exception))
+
+    def test_a_source_that_names_no_document_is_shown_by_its_path(self):
+        export = with_dead_member_list(load_fixture())
+        export["graph"]["edges"][-1]["source"] = "docs/<gone>.md"
+        model = dashboard.load(export, corpus_identity="fixture")
+        self.assertEqual([row["key"] for row in model.refused], [("fixture", "docs/<gone>.md")])
+        page = dashboard.render(model)
+        self.assertIn("<tr><td>docs/&lt;gone&gt;.md</td>", page)
+        self.assertNotIn("docs/<gone>.md", page)
 
     def test_a_refused_edge_with_an_empty_reason_is_refused_as_input(self):
         export = with_dead_member_list(load_fixture())
