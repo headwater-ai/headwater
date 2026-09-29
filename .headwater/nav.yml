@@ -146,6 +146,7 @@ nav:
       - "Diagnose an isolation failure": "how-to/diagnose-an-isolation-failure.md"
       - "Keep derived files from conflicting in parallel pull requests": "how-to/keep-derived-files-from-conflicting-in-parallel-pull-requests.md"
       - "Mine the shadow-mode routing log": "how-to/mine-the-shadow-mode-routing-log.md"
+      - "Publish your corpus as a site": "how-to/publish-your-corpus-as-a-site.md"
       - "Relocate a shelf": "how-to/relocate-a-shelf.md"
       - "Rotate or revoke the APT signing subkey": "how-to/rotate-or-revoke-the-apt-signing-subkey.md"
       - "Wire headwater check into your own workflow": "how-to/wire-headwater-check-into-your-own-workflow.md"

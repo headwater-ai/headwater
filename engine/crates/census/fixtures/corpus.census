@@ -282,6 +282,8 @@ docs/how-to/keep-derived-files-from-conflicting-in-parallel-pull-requests.md
   typed: how_to
 docs/how-to/mine-the-shadow-mode-routing-log.md
   typed: how_to
+docs/how-to/publish-your-corpus-as-a-site.md
+  typed: how_to
 docs/how-to/relocate-a-shelf.md
   typed: how_to
 docs/how-to/rotate-or-revoke-the-apt-signing-subkey.md
