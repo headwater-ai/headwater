@@ -126,7 +126,12 @@ naming() {
     naming_here=$1
     naming_probe=$2
     naming_slug=""
-    naming_shelf=$(grep -rlx -- "id: $naming_probe" "$root/docs/probes" 2>/dev/null) || naming_shelf=""
+    # `grep` exits 1 on no match and 2 when it cannot read a file. A 2 is a
+    # search that did not finish, and its matches are not the whole list, so
+    # it fails closed: the seal stops at 8 and the guard refuses with 9.
+    naming_status=0
+    naming_shelf=$(grep -rlx -- "id: $naming_probe" "$root/docs/probes" 2>/dev/null) || naming_status=$?
+    [ "$naming_status" -le 1 ] || return 8
     case "$naming_shelf" in
         *.md)
             naming_slug=${naming_shelf##*/}
@@ -134,10 +139,13 @@ naming() {
             ;;
     esac
     if [ -n "$naming_slug" ]; then
-        naming_files=$(grep -rlF -e "$naming_probe" -e "$naming_slug" -- "$naming_here" 2>/dev/null) || naming_files=""
+        naming_status=0
+        naming_files=$(grep -rlF -e "$naming_probe" -e "$naming_slug" -- "$naming_here" 2>/dev/null) || naming_status=$?
     else
-        naming_files=$(grep -rlF -e "$naming_probe" -- "$naming_here" 2>/dev/null) || naming_files=""
+        naming_status=0
+        naming_files=$(grep -rlF -e "$naming_probe" -- "$naming_here" 2>/dev/null) || naming_status=$?
     fi
+    [ "$naming_status" -le 1 ] || return 8
     [ -n "$naming_files" ] || return 0
     naming_folds=$(folds) || return 8
     printf '%s\n' "$naming_files" | HW_SEAL_FOLDS="$naming_folds" HW_SEAL_HERE="$naming_here/" awk '
@@ -387,7 +395,7 @@ for probe in "$@"; do
     # One search over the workspace, less the folds, split by where each file
     # is: a record under `docs/`, or a file outside it that states an answer.
     naming_all=$(naming "$here" "$probe") || {
-        echo "seal: the folds of the probe declaration could not be read." >&2
+        echo "seal: the files that name $probe could not be read: a file of the workspace is unreadable, or the folds of the probe declaration are." >&2
         exit 8
     }
     named=$(printf '%s\n' "$naming_all" | awk -v docs="$here/docs/" 'index($0, docs) == 1')
