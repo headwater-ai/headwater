@@ -26,7 +26,7 @@ relations:
 
 **Inside one lock, a rule already refuses such a pair.** The identifier-integrity rule of [spec 2](../spec/02-taxonomy-model.md#the-meta-schema) compares every pair of schemes in the resolved taxonomy, whatever their namespaces. `headwater taxonomy resolve` writes no lock while one pair overlaps. `headwater new` reads the same comparison when it proposes a scheme. Both readers see one resolved taxonomy, and so one lock.
 
-**Across two locks, nothing compares them, and the engine has no place to do it.** Three facts, measured on 2026-09-30 against `main` at `a0736315`, stop a rule from being written now:
+**Across two locks, nothing compares them, and the engine has no place to do it.** Three facts, measured against `main` at `a0736315`, stop a rule from being written now:
 
 1. Every verb takes one `--root` and reads one `.headwater/taxonomy.lock`. No code in `engine/crates/` looks for a second lock under a root.
 2. Spec 1 says that a path resolves to exactly one corpus, and that the most specific root wins. No code implements that rule, so the engine has no index of the corpora in one tree.
@@ -43,7 +43,7 @@ A cross-lock rule would therefore need a new model of how the engine finds corpo
 1. Choose namespaces so that no namespace, followed by a hyphen, begins another. `ACME` and `BETA` are safe. `ZED` and `ZED-SPECIFICATION` are not.
 2. To test a pair, copy the `.headwater/` directory of one corpus to a scratch directory. Add each scheme of the other corpus to the copy's overlay, under a scheme name the copy does not use, and run `headwater taxonomy resolve --root <scratch>`. The verb exits 1 and names the pair when two schemes admit one string. It exits 0 when every pair is disjoint.
 
-The second step was measured on 2026-09-30. The probe added a scheme `{namespace}-{seq:04d}` under the namespace `HW-DR` to a copy of the overlay of this repository. The verb exited 1 and named `decision_id` as the other half of the pair. The same scheme under `ACME` let the verb exit 0.
+The second step was measured against the same commit. The probe added a scheme `{namespace}-{seq:04d}` under the namespace `HW-DR` to a copy of the overlay of this repository. The verb exited 1 and named `decision_id` as the other half of the pair. The same scheme under `ACME` let the verb exit 0.
 
 **This record constrains HW-DR-0009 and does not rewrite it.** The sentence in its Context that says namespaced identifiers stop two corpora from colliding is superseded by this record. The same sentence in [HW-EVAL-graph-export-and-federation](../evaluations/graph-export-and-federation.md) is superseded too. The evaluation stays as written, because it is evidence of what its authors believed at the time.
 
