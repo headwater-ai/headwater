@@ -361,7 +361,10 @@ refused, PlacementDoesNotResolve
 === new standard --title "A relation endpoint with no scheme"
 
 refused, Unnameable
-  `standard` names no identifier scheme, and `supersedes`, `assesses`, `traces_to` may name a document of it. Such a document is neither end of any edge, which `identifier.unusable` reports on every run. Declare `kinds.standard.identifier` first
+  `standard` names no identifier scheme, and `supersedes`, `assesses`, `traces_to` may name a document of it. Such a document is neither end of any edge, which `identifier.unusable` reports on every run. Declare `kinds.standard.identifier` first. Add these two lines under `add:` in .headwater/overlay.yml, in place of `{}` if the block is empty, then run `headwater taxonomy resolve` and this verb again:
+
+  identifier_schemes.standard_id: {pattern: "{namespace}-STANDARD-{slug}", namespace: FIX, allocation: minted-once}
+  kinds.standard.identifier: {scheme: standard_id}
 
 === new design_spec --title "The first part"
 

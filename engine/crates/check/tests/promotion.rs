@@ -96,6 +96,7 @@ fn run_with(ctx: &Context, cache: &mut Cache) -> Run {
             register: &register,
             observations: &headwater_check::Observations::empty(),
             pin: None,
+            harvests: &[],
             adoption: None,
             source: "engine/crates/check/fixtures/promotion.taxonomy.yml",
         },
