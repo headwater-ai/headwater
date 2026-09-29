@@ -21,7 +21,7 @@ relations:
 
 ## Context
 
-Before this record, the reasons lived in comments of `.github/workflows/ci.yml` on 2026-09-27. The comments were on the `runs-on` of the `engine` job (lines 213 to 222) and at the end of the header (lines 73 to 77). The `runs-on` expressions are at lines 223 and 493. [Two triggers, one verdict](../../evaluations/two-triggers-one-verdict-how-this-repository-s-ci-decides-where-a-job-runs-and-what-it-trusts.md#the-only-boundary-is-the-event-and-it-is-the-only-one-that-can-be) holds the argument.
+Before this record, the reasons lived in comments of `.github/workflows/ci.yml` on 2026-09-27. The comments were on the `runs-on` of the `engine` job (lines 213 to 222) and at the end of the header (lines 73 to 77). The `runs-on` expressions are at lines 223 and 493. [Two triggers, one verdict](../evaluations/two-triggers-one-verdict-how-this-repository-s-ci-decides-where-a-job-runs-and-what-it-trusts.md#the-only-boundary-is-the-event-and-it-is-the-only-one-that-can-be) holds the argument.
 
 The variable lives in the repository settings and not in the tree. So a reader of the tree cannot see its value, and a document that states the value goes stale when a person changes it.
 

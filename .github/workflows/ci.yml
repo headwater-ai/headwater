@@ -21,8 +21,8 @@
 # No action from outside the `actions` organization (HW-PD-0019).
 #
 # Where a job runs, what this file trusts, and what it tests before a merge
-# are stated as a whole in docs/evaluations/two-triggers-one-verdict-how-this-
-# repository-s-ci-decides-where-a-job-runs-and-what-it-trusts.md, with the
+# are stated as a whole in docs/process/evaluations/two-triggers-one-verdict-
+# how-this-repository-s-ci-decides-where-a-job-runs-and-what-it-trusts.md, with the
 # measurements behind each rule. Each rule below is decided in the record it
 # cites, which carries the reason and the condition that reopens it. This
 # header keeps only what an editor of this file must obey. Read the record
