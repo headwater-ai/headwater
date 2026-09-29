@@ -1233,6 +1233,55 @@ mod tests {
         }
     }
 
+    /// A tab or a newline ends a word as a space does. A session often sends
+    /// a Bash command of several lines.
+    #[test]
+    fn a_tab_or_a_newline_ends_a_word() {
+        let want = target(None, "docs/probes/one.md");
+        for command in [
+            r#"{"command":"cat\tdocs/probes/one.md"}"#,
+            r#"{"command":"cd /repo\ncat docs/probes/one.md"}"#,
+            r#"{"command":"cat docs/probes/one.md\n"}"#,
+        ] {
+            assert!(bash_names(command, &want), "{command}");
+        }
+    }
+
+    /// A redirect target and an argument of `tee` are writes, and a write is
+    /// not a read (#1384 verify). A `<` redirect is a read. A comment runs no
+    /// command, so a path in it is not read.
+    #[test]
+    fn a_write_or_a_comment_is_not_a_read() {
+        let want = target(None, "docs/probes/one.md");
+        for command in [
+            r#"{"command":"echo new > docs/probes/one.md"}"#,
+            r#"{"command":"echo new >>docs/probes/one.md"}"#,
+            r#"{"command":"make 2>docs/probes/one.md"}"#,
+            r#"{"command":"make &>docs/probes/one.md"}"#,
+            r#"{"command":"echo x >| docs/probes/one.md"}"#,
+            r#"{"command":"echo x | tee docs/probes/one.md"}"#,
+            r#"{"command":"echo x | tee -a docs/probes/one.md >/dev/null"}"#,
+            r##"{"command":"# cat docs/probes/one.md"}"##,
+            r#"{"command":"ls # then docs/probes/one.md"}"#,
+        ] {
+            assert!(!bash_names(command, &want), "{command}");
+        }
+        for command in [
+            r#"{"command":"wc -l < docs/probes/one.md"}"#,
+            r#"{"command":"cat docs/probes/one.md > out.txt"}"#,
+            r#"{"command":"cat docs/probes/one.md 2>&1"}"#,
+            r#"{"command":"tee out.txt < docs/probes/one.md"}"#,
+            r#"{"command":"echo x | tee log; cat docs/probes/one.md"}"#,
+            r#"{"command":"echo x >log\ncat docs/probes/one.md"}"#,
+            r#"{"command":"echo a#b docs/probes/one.md"}"#,
+            r##"{"command":"# note\ncat docs/probes/one.md"}"##,
+            r#"{"command":"echo `cat docs/probes/one.md`"}"#,
+            r#"{"command":"grep --file=docs/probes/one.md x"}"#,
+        ] {
+            assert!(bash_names(command, &want), "{command}");
+        }
+    }
+
     /// Only a Bash call's argument is read as a command. Another tool whose
     /// input happens to carry a `command` key has not run it.
     #[test]
