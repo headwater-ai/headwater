@@ -133,9 +133,11 @@ fn check_no_cache_finishes_when_a_governs_edge_reaches_a_named_pipe() {
     assert!(
         flat(&out).contains(
             "· info relation.target.suspect (OB-REL-6): `HW-DR-0002` declares `governs: \
-             tools/pipe`, and `tools/pipe` names no regular file"
+             tools/pipe`, and `tools/pipe` names no regular file, only a named pipe, a socket \
+             or a device, which the source tree never opens, so this edge never goes suspect \
+             when what it governs changes"
         ),
-        "the edge that can never age is reported at info: {out}"
+        "the edge that can never age is reported at info, in the full sentence (#1366): {out}"
     );
 }
 
