@@ -4262,6 +4262,14 @@ fn explain(root: &Path, target: &str, json: bool) -> ExitCode {
         Ok(explanation) => explanation,
         Err(code) => return code,
     };
+    // A row the walk could not read is not a document: the census never
+    // opened it, so it has no kind and nothing is required of it that the
+    // census could know. It is refused in `show`'s shape, and `--json` writes
+    // nothing (#1366).
+    if let Some(refusal) = explanation.refusal() {
+        eprintln!("headwater: {}", err(&refusal));
+        return ExitCode::FAILURE;
+    }
     // A target that names no document was refused in [`find_document`], on standard
     // error and with the same exit status either way. `--json` selects the
     // artifact and never the status: a refusal is not a document with a member
@@ -4406,7 +4414,8 @@ fn find_document(root: &Path, target: &str) -> Result<headwater_query::Explanati
                 // A path that passes through a symlink out of the root is
                 // outside the repository, whatever its spelling reads as
                 // (#1249). It is asked only here, after every lookup missed,
-                // so a document row that is itself a symlink still answers.
+                // so a census row that is itself a symlink is found, and the
+                // verb refuses it in its own sentence (#1366).
                 let classification = match headwater_census::walk::within(
                     root,
                     &loaded.consumer.corpus_root,

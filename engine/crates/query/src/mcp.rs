@@ -816,7 +816,12 @@ fn call(server: &Server<'_>, message: &Mapping) -> Result<Answer, Failure> {
             // Plain, unconditionally: an MCP server's own stdout is never a
             // terminal, so a real invocation piped the same way would sense
             // the same mode.
-            Some(explanation) => explanation.render(headwater_check::paint::ColorMode::Plain),
+            // A row the walk could not read answers with the verb's refusal
+            // and never as a document (#1366).
+            Some(explanation) => match explanation.refusal() {
+                Some(refusal) => format!("{refusal}\n"),
+                None => explanation.render(headwater_check::paint::ColorMode::Plain),
+            },
             None => missing(server, &argument),
         },
         "related" => match retried(
