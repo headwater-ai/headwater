@@ -353,11 +353,16 @@ impl Edge {
     /// The target after the thing that owns its identity normalized it.
     ///
     /// An identifier is its own normal form: spec 3 mints it once and never
-    /// reuses it. An anchor string is whatever its resolver made of it.
+    /// reuses it. An anchor string is whatever its resolver made of it. The
+    /// path of a document, which binds to nothing (#1410), keeps the normalized
+    /// path the resolver made of it, so that two spellings of one path are
+    /// still one target written twice, as they were when both bound as one
+    /// anchor.
     pub fn normalized_target(&self) -> String {
         match &self.target {
             Target::Document { id, .. } => id.clone(),
             Target::Anchor { normalized, .. } => normalized.clone(),
+            Target::Unbound(Unbound::DocumentByPath { path, .. }) => path.clone(),
             Target::Withheld { .. } | Target::Unbound(_) => self.raw_target.clone(),
         }
     }

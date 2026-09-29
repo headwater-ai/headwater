@@ -204,7 +204,12 @@ fn a_path_that_is_not_in_canonical_form_is_compared_after_normalization() {
 fn one_document_path_in_two_spellings_is_still_one_target_written_twice() {
     let (graph, run) = build();
 
-    assert_eq!(at(&run, "notes/k.md").len(), 1, "{:?}", at(&run, "notes/k.md"));
+    assert_eq!(
+        at(&run, "notes/k.md").len(),
+        1,
+        "{:?}",
+        at(&run, "notes/k.md")
+    );
     let repeated: Vec<&str> = run
         .findings
         .iter()
