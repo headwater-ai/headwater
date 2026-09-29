@@ -993,10 +993,14 @@ else
 fi
 
 # The tombstone task names the top-level `docs/` that `headwater export`
-# serves (#1293). The #980 batch asked for "the corpus under `docs/`", and all
-# 3 of its `present` answers read the recovery word from a fixture's nested
-# `docs/` under `engine/`, which the seal keeps because it names no probe. The
-# task is read the way `campaign.sh` cuts the prompt: the body of `## Task`.
+# serves (#1293). The #980 batch asked for "the corpus under `docs/`", and in
+# its three sufficiency transcripts 10 of the 90 sessions of this probe
+# answered `present`. Each of the 10 opened a fixture's nested `docs/` under
+# `engine/` that states the recovery word, and the seal keeps that fixture
+# because it names no probe. The task is read the way `campaign.sh` cuts the
+# prompt: the body of `## Task`. A phrase match alone passes a task that adds a
+# sentence sending the session back under `engine/`, so every line of the task
+# that names a `docs/` must scope it to the top level or exclude a lower one.
 awk '/^## Task$/ { on = 1; next } on && /^## / { exit } on { print }' \
     "$root/docs/probes/$tombstone.md" > "$scratch/tombstone-task.md"
 if grep -rlIF amber "$root/engine/crates/cli/fixtures/answered-export/docs" >/dev/null 2>&1; then
@@ -1012,6 +1016,10 @@ if grep -qF 'the corpus under `docs/` in this repository' "$scratch/tombstone-ta
 else
     pass "and it no longer asks for every docs/ of the repository"
 fi
+unscoped=$(sed -e 's/the top-level `docs\/` directory//' \
+    -e 's/Do not read a `docs\/` directory at a lower level, such as one under `engine\/`\.//' \
+    "$scratch/tombstone-task.md" | grep -n -e 'docs/' -e 'engine/')
+same "and no other line of the task names a docs/ or engine/" "" "$unscoped"
 
 # Answer keys (#980). The `patched` probe's task was answered by HW-OBL-0198,
 # which names neither the probe nor its slug, so the seal above kept it and
