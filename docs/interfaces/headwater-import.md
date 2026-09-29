@@ -27,7 +27,7 @@ It requires a digest from the declaration or from `--expect`. It refuses the who
 
 ## Preconditions
 
-The consumer declaration must contain one or more import declarations. A bare command is valid only when exactly one import exists. The selected snapshot directory must exist and match the expected digest.
+The consumer declaration must contain one or more import declarations. A bare command is valid only when exactly one import exists. The selected snapshot directory must exist and match the expected digest. The `imports` block and each entry under it must be mappings. Each `at` path must be under the repository root, with no `..` segment, no absolute path and no symlink that leads out of the root. Otherwise the verb stops with exit 1 and names the entry.
 
 ## Options
 

@@ -1,0 +1,3 @@
+refused
+
+overlay-1-dependent.yml `add_to.kinds.design_spec.sections.require` (14:3): the bundle `dependent` writes into `kinds.design_spec.sections.require`, which it expects from the bundle `provider` it names in `requires`, and the selection does not hold it. Select `provider` as well: `requires` never adds a bundle to a selection

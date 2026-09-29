@@ -3,9 +3,16 @@ add-collides-behind-remove: 1 order, refused
 address-into-a-list: 1 order, refused
 an-add-that-founds-what-it-addresses: 1 order, sha256:c81b5c5e170c5f4d86aabf2cedc6d829409ade1fd8fe7aa44aabe5f0df725673
 core-last-satisfier: 1 order, refused
+dependent-add-to: 2 orders, sha256:4f995d27ca475b59596b036a51f4f9c6172330a3d6f27f4c695b6948b177a21d
+dependent-add-to-without-requires: 2 orders, refused
 list-operations: 1 order, sha256:ce0c66f29c02c493cb45dfd2450c6b5fa6e7d970b10548591fcf2cf544f73b2c
+missing-dependency-add: 1 order, refused
+missing-dependency-add-to: 1 order, refused
+missing-dependency-no-dependent-write: 1 order, sha256:6889317d75c52926b40e72a00dc6c89f2535e90b3df64df3496a3521b9623198
 not-confluent: 2 orders, refused
 remove-a-required-member: 1 order, refused
 remove-breaks-a-reference: 1 order, refused
+requires-cycle: 2 orders, refused
+transitive-requires-grants-no-write: 6 orders, refused
 two-adds-into-one-kind: 2 orders, sha256:87dbc0867256c6cee4c02114957dc98127ef481241e871b1afafb276b573fe26
 worked-overlay: 1 order, sha256:7946afe94b09d620fe441bde525cd57951b102fcf4993df78a0463fa810015e0

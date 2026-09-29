@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The link in the middle. It names `provider` and writes nothing of it.
+
+bundle: middle
+extends: headwater/standard@1.0.0
+requires: [provider]
+
+add:
+  kinds.report: {is_a: governed_document, purpose: behavior}

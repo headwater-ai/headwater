@@ -318,6 +318,7 @@ fn scoped_at(adoption: Option<&Mapping>, scoping: Scoping) -> Ran {
             register: &register,
             observations: &headwater_check::Observations::empty(),
             pin: None,
+            harvests: &[],
             adoption,
             source: "engine/crates/check/fixtures/check.taxonomy.yml",
         },

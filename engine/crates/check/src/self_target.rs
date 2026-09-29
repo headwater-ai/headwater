@@ -35,15 +35,29 @@
 //!
 //! # What it is not
 //!
-//! It compares the resolved target with the declaring document. A target that
-//! resolved to nothing is [`crate::target`]'s finding, and a path that spells
-//! the document's own file is one of those, because an edge target is an
-//! identifier and never a path. So an unbound target passes here, and so do an
-//! anchor and a `Withheld` target. Every instance stays in the denominator,
+//! It compares the resolved target with the declaring document, and only a
+//! target that resolved to a document is compared. A target that resolved to
+//! nothing is [`crate::target`]'s finding, so an unbound target passes here,
+//! and so does a `Withheld` target. Every instance stays in the denominator,
 //! whatever its verdict, for the reason [`crate::target`] gives.
 //!
-//! An anchor target is outside this rule. `governs` onto a code path names a
-//! path in the tree and not a document, so it cannot name its own source.
+//! An anchor target passes too, and that includes an anchor onto the declaring
+//! document's own file. A target written as a path, under a relation whose
+//! endpoint admits a `code_path` anchor (in headwater/standard: `governs`,
+//! `traces_to` and `examines`), binds as an anchor and not as an unresolved
+//! identifier. Its pattern can match the file that declares it: a decision
+//! that writes `traces_to:` with its own path binds onto itself, and this
+//! rule does not report it. The reason is that an anchor is a pattern over
+//! the tree and not a document identity
+//! ([HW-DR-0074](../../../../docs/decisions/0074-a-code-path-anchor-is-a-pattern-over-the-tree-and-it-binds-when-the-pattern-matches-at-least-one-entry.md)).
+//! A pattern that covers its own file is often correct, as when a decision
+//! governs the directory it sits in. Only a literal single-path pattern equal
+//! to the declaring file is plainly a self-reference, and spec 2 rules on
+//! document targets and says nothing about anchors (#1335).
+//!
+//! What reopens this: an owner ruling that a literal anchor onto the declaring
+//! file is a self-reference under spec 2's rule. That ruling comes first, and
+//! a finding for that one case follows from it.
 
 use crate::finding::{at, Finding, Severity};
 use crate::instance::Outcome;
@@ -58,7 +72,7 @@ pub const RULE: &str = "relation.target.is_source";
 const NO_HALF: &str = "the entry carries no declared half";
 
 /// The one family spec 2 lets point at its own document.
-const EXEMPT_FAMILY: &str = "association";
+pub(crate) const EXEMPT_FAMILY: &str = "association";
 
 /// The check, generated from the relation declarations.
 pub struct SelfTarget<'a> {
