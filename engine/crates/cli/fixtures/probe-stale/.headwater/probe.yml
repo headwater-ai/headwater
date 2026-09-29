@@ -1,0 +1,20 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The envelope this fixture corpus is planned against. No test here turns on a
+# ceiling. The file is here because `probe stale` composes the plan the
+# committed transcript is held against, and it refuses a corpus that declares
+# no envelope.
+
+tiers:
+  regression:
+    budget_cents: 2000
+    session_cost_cents: 25
+    repetitions: 1
+    arms: [present]
+
+  campaign:
+    budget_cents: 2000
+    session_cost_cents: 25
+    repetitions: 4
+    arms: [present, absent]
+    ablation: [CLAUDE.md, .claude, .githooks, .headwater]

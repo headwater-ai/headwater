@@ -354,6 +354,40 @@ impl Staleness {
                     event: event.at,
                     call: index + 1,
                 };
+                if call.tool == "Bash" {
+                    // A Bash call names documents and witnesses none, and the
+                    // reason is in this module's own documentation.
+                    let mut named = false;
+                    for word in crate::grade::bash_read_words(&call.argument) {
+                        let at = match member_of(&staleness.members, &word) {
+                            Some(at) => at,
+                            None => match classified(census, &word) {
+                                Some((path, digest)) => {
+                                    staleness.members.push(Member {
+                                        path,
+                                        because: Provenance::Opened,
+                                        now: digest,
+                                        witness: None,
+                                        bash: None,
+                                    });
+                                    staleness.members.len() - 1
+                                }
+                                None => continue,
+                            },
+                        };
+                        named = true;
+                        staleness.members[at]
+                            .bash
+                            .get_or_insert((event.at, index + 1));
+                    }
+                    if !named {
+                        let seen = witness(&call.argument);
+                        if !staleness.outside.contains(&seen) {
+                            staleness.outside.push(seen);
+                        }
+                    }
+                    continue;
+                }
                 match member_of(&staleness.members, &call.argument) {
                     Some(at) => {
                         if staleness.members[at].witness.is_none() {
@@ -492,23 +526,22 @@ impl Staleness {
                 member.because.name(),
                 member.now.as_deref().unwrap_or("no such document"),
             );
-            match &member.witness {
-                None if member.bash.is_some() => {
-                    let (event, call) = member.bash.unwrap_or_default();
+            match (&member.witness, member.bash) {
+                (None, Some((event, call))) => {
                     let _ = writeln!(
                         out,
                         "    event {event} call {call} named it through Bash, which records no \
                          identity, so no witness says whether it moved"
                     );
                 }
-                None => {
+                (None, None) => {
                     let _ = writeln!(
                         out,
                         "    no recorded call named it, so no witness of this transcript says \
                          whether it moved"
                     );
                 }
-                Some(witness) => match member.disagrees() {
+                (Some(witness), _) => match member.disagrees() {
                     true => {
                         let _ = writeln!(
                             out,

@@ -733,7 +733,9 @@ fn with_calls(dir: &Path, calls: &str) -> String {
 /// A Bash call as the recorder writes it: the JSON of its input, and no result
 /// identity, because a command returns no one document.
 fn bash_call(command: &str) -> String {
-    format!("    - tool: Bash\n      argument: '{{\"command\":\"{command}\"}}'\n      result: \"\"\n")
+    format!(
+        "    - tool: Bash\n      argument: '{{\"command\":\"{command}\"}}'\n      result: \"\"\n"
+    )
 }
 
 /// A document a session read through Bash is in the read set, and nothing
@@ -839,16 +841,12 @@ fn a_later_call_with_an_identity_is_the_witness_and_a_bash_call_naming_nothing_i
 /// `planned_over` decides which the report names.
 #[test]
 fn a_transcript_naming_every_probe_of_the_whole_selection_is_held_against_the_whole() {
-    let more = [
-        "PROBE-FIX-answered",
-        "PROBE-FIX-cited",
-        "PROBE-FIX-patched",
-    ]
-    .iter()
-    .map(|probe| {
-        format!("- probe: {probe}\n  session: 1\n  calls: []\n  produced: []\n  answer: null\n")
-    })
-    .collect::<String>();
+    let more = ["PROBE-FIX-answered", "PROBE-FIX-cited", "PROBE-FIX-patched"]
+        .iter()
+        .map(|probe| {
+            format!("- probe: {probe}\n  session: 1\n  calls: []\n  produced: []\n  answer: null\n")
+        })
+        .collect::<String>();
     let source =
         std::fs::read_to_string(fixtures_dir().join(COMMITTED)).expect("the committed transcript");
     // The events block is the last block of the transcript, so the new events
