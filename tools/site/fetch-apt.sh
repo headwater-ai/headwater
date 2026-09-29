@@ -6,10 +6,11 @@
 #
 #   The metadata is signed in `.github/workflows/release.yml`, because the
 #   signing subkey is a secret there, and the release carries it as four
-#   assets beside the package. The site reaches Cloudflare by one path only,
-#   the Cloudflare build (HW-DR-0047), so this step reads those assets at
-#   build time rather than a second job deploying them. HW-DR-0094 is the
-#   decision.
+#   assets beside the package. The site reaches Cloudflare by one job only,
+#   `.github/workflows/deploy-site.yml` (HW-DR-0097), so this step reads those
+#   assets in that job rather than a second job deploying them. `ci.yml` calls
+#   the job on a push to `main`, and `release.yml` calls it after `publish`,
+#   so the new release reaches `apt/` (#1316). HW-DR-0094 is the decision.
 #
 # TWO KINDS OF "NOTHING TO SERVE", AND WHY THEY END DIFFERENTLY
 #
@@ -21,8 +22,8 @@
 #   A download that fails for any other reason is no answer at all: GitHub
 #   unreachable, a 5xx, a rate limit, a server that never answers. A deploy
 #   built then would drop a repository adopters already use, and every
-#   `apt update` would get 404. So the script exits 1 and the site build
-#   fails. A failed build deploys nothing, and the previous deployment, with
+#   `apt update` would get 404. So the script exits 1 and the deploy job
+#   fails. A failed job deploys nothing, and the previous deployment, with
 #   its `apt/`, goes on serving.
 #
 #   The files come from `releases/latest/download/<name>`, which is a
@@ -53,10 +54,10 @@
 #
 #   So the worst case is the deadline plus the one-second pauses and the
 #   local work: under 11 minutes with the defaults, whatever number of
-#   files never answer. That is inside the 20 minutes Cloudflare Workers
-#   Builds gives a build, so a silent server fails this build rather than
-#   the platform's timeout. `tools/site/fetch-apt-fixtures.sh` holds the
-#   bound with two silent files and a ten-second deadline.
+#   files never answer. The deploy job sets no `timeout-minutes`, so this
+#   deadline is what stops a silent server, rather than the six hours
+#   GitHub gives a job. `tools/site/fetch-apt-fixtures.sh` holds the bound
+#   with two silent files and a ten-second deadline.
 #
 #   The retries are this script's own loop and not `curl --retry`, because
 #   curl's retries each get a full `--max-time` and so multiply it.
