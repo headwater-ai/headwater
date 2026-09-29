@@ -181,12 +181,27 @@ pub fn relative(base: &Path, path: &Path) -> Option<String> {
 ///
 /// [`relative`] does the reading, and this adds the root an absolute target is
 /// compared with. A root such as `.` is relative, so an absolute target is
-/// stripped against the root made absolute first. Where that misses, both
-/// sides are made canonical and compared again, so a target typed through a
-/// symlinked directory (a home directory, a temporary directory) still finds a
-/// root reached the other way. That second read needs a file on disk, and a
-/// target with none keeps the first answer. A relative target is read against
-/// `root` and never against the working directory of the process.
+/// stripped against the root made absolute first. Where that misses, the
+/// leading parts of the target that exist on disk are made canonical, and each
+/// one that is the canonical root can stand for the root. So a target typed
+/// through a symlinked directory (a home directory, a temporary directory)
+/// still finds a root reached the other way, with or without a file at the
+/// target ([#1334](https://github.com/headwater-ai/headwater/issues/1334)).
+/// The part of the target below that point is read lexically, as the first
+/// read reads it, so a symlink below the root is not followed here, and
+/// [`within`] is the reading that refuses one that leads out. The shortest
+/// such part whose remainder stays under it stands for the root: a path that
+/// leaves the root with `..` and comes back in (`root/../root/x`) names the
+/// root twice, and only the longer of the two keeps `x` inside. Where no
+/// leading part is the root, as for a link outside the root that leads into a
+/// directory under it, the longest leading part that exists is made
+/// canonical, the rest is joined back on, and the result is compared with the
+/// canonical root. That last read answers with or without a file at the
+/// target, and it is the only one that follows a link to a place below the
+/// root. A root that cannot be made canonical, and a target none of these
+/// reads place under the root, keep the first answer. A relative target is
+/// read against `root` and never against the working directory of the
+/// process.
 pub fn typed(root: &Path, target: &str) -> Option<String> {
     let path = Path::new(target);
     if !path.is_absolute() {
@@ -195,7 +210,21 @@ pub fn typed(root: &Path, target: &str) -> Option<String> {
     let absolute_root = std::path::absolute(root).unwrap_or_else(|_| root.to_path_buf());
     relative(&absolute_root, path).or_else(|| {
         let canonical_root = root.canonicalize().ok()?;
-        relative(&canonical_root, &path.canonicalize().ok()?)
+        let roots: Vec<&Path> = path
+            .ancestors()
+            .filter(|at| at.canonicalize().is_ok_and(|at| at == canonical_root))
+            .collect();
+        roots
+            .into_iter()
+            .rev()
+            .find_map(|at| relative(at, path))
+            .or_else(|| {
+                let (at, canonical) = path
+                    .ancestors()
+                    .find_map(|at| at.canonicalize().ok().map(|canonical| (at, canonical)))?;
+                let rest = path.strip_prefix(at).ok()?;
+                relative(&canonical_root, &canonical.join(rest))
+            })
     })
 }
 
@@ -610,6 +639,114 @@ mod tests {
             .iter()
             .map(|(target, _)| within(&via, "linked", target))
             .collect();
+        // #1334: each case again as an absolute path typed through the link,
+        // against the root reached the other way, as a shell in a macOS
+        // temporary directory types it. Most of these name no file, so the
+        // root has to be found among the leading parts of the path that exist.
+        let absolute: Vec<(String, Option<String>)> = cases
+            .iter()
+            .map(|(target, _)| {
+                let typed_through = via.join(target).display().to_string();
+                let answer = within(&root, "linked", &typed_through);
+                (typed_through, answer)
+            })
+            .collect();
+        // And each case typed through the root itself, against the root
+        // reached by the link. Under the linked corpus root, only the leading
+        // part that is the root reads the path lexically below it, as
+        // `linked` is the one link the walk follows.
+        let physical: Vec<(String, Option<String>)> = cases
+            .iter()
+            .map(|(target, _)| {
+                let typed_through = root.join(target).display().to_string();
+                let answer = within(&via, "linked", &typed_through);
+                (typed_through, answer)
+            })
+            .collect();
+        let back_to_corpus = within(
+            &root,
+            "linked",
+            &root
+                .join("..")
+                .join(root.file_name().expect("the root has a name"))
+                .join("linked/shelf/new.md")
+                .display()
+                .to_string(),
+        );
+        let missing = typed(
+            &root,
+            &via.join("docs/never-written.md").display().to_string(),
+        );
+        // A link below the root back to the root is read as its name, as the
+        // lexical read names it, so the shortest leading part that is the
+        // root stands for it and not the longest.
+        std::os::unix::fs::symlink(&root, root.join("again")).expect("a link back to the root");
+        let again = typed(
+            &root,
+            &via.join("again/never-written.md").display().to_string(),
+        );
+        // A path that climbs out of the root with `..` and comes back in
+        // names the root at more than one leading part, and the shortest one
+        // leaves the rest of the path climbing above it. The first leading
+        // part, from the shortest up, that the rest stays under is the root.
+        // A link outside the root that leads into a directory under it names
+        // no leading part that is the root, so the longest leading part that
+        // exists is made canonical and the rest is joined back on, with a
+        // file at the target or without one.
+        let links = base.join("links");
+        std::fs::create_dir_all(&links).expect("the links directory");
+        std::os::unix::fs::symlink(root.join("docs"), links.join("into")).expect("a link in");
+        std::fs::write(root.join("docs/present.md"), b"present\n").expect("it writes");
+        let into: Vec<(String, Option<String>, &str)> = [
+            ("into/never-written.md", "docs/never-written.md"),
+            ("into/present.md", "docs/present.md"),
+            ("into/new/../never-written.md", "docs/never-written.md"),
+        ]
+        .iter()
+        .flat_map(|(target, expected)| {
+            let target = links.join(target).display().to_string();
+            // The root as given, the root reached by a link, and the root
+            // spelled with a `..` in it, as `--root ..` is once it is made
+            // absolute: only the canonical root is the same for all three,
+            // so the third read compares with it.
+            [root.clone(), via.clone(), root.join("docs/..")]
+                .into_iter()
+                .flat_map(move |at| {
+                    let target = target.clone();
+                    let typed_answer = typed(&at, &target);
+                    let within_answer = within(&at, "linked", &target);
+                    [
+                        (
+                            format!("typed {target} under {}", at.display()),
+                            typed_answer,
+                            *expected,
+                        ),
+                        (
+                            format!("within {target} under {}", at.display()),
+                            within_answer,
+                            *expected,
+                        ),
+                    ]
+                })
+                .collect::<Vec<_>>()
+        })
+        .collect();
+        let name = root.file_name().expect("the root has a name");
+        let back_in: Vec<(String, Option<String>)> = [
+            root.join("..").join(name).join("docs/never-written.md"),
+            root.join("docs/../..")
+                .join(name)
+                .join("docs/never-written.md"),
+            via.join("../via/docs/never-written.md"),
+            via.join("..").join(name).join("docs/never-written.md"),
+        ]
+        .iter()
+        .map(|target| {
+            let target = target.display().to_string();
+            let answer = typed(&root, &target);
+            (target, answer)
+        })
+        .collect();
         let lexical = typed(&root, "escape/x.md");
         let _ = std::fs::remove_dir_all(&base);
         for ((target, expected), (_, answer)) in cases.iter().zip(&answers) {
@@ -620,6 +757,49 @@ mod tests {
                 answer.as_deref(),
                 *expected,
                 "`within` on `{target}` under a root reached by a link"
+            );
+        }
+        for ((_, expected), (target, answer)) in cases.iter().zip(&absolute) {
+            assert_eq!(
+                answer.as_deref(),
+                *expected,
+                "`within` on the absolute `{target}` typed through a link to the root"
+            );
+        }
+        assert_eq!(
+            missing.as_deref(),
+            Some("docs/never-written.md"),
+            "`typed` finds the root under an absolute path with no file"
+        );
+        assert_eq!(
+            again.as_deref(),
+            Some("again/never-written.md"),
+            "`typed` reads a link back to the root by its name"
+        );
+        for ((_, expected), (target, answer)) in cases.iter().zip(&physical) {
+            assert_eq!(
+                answer.as_deref(),
+                *expected,
+                "`within` on the absolute `{target}` against a root reached by a link"
+            );
+        }
+        assert_eq!(
+            back_to_corpus.as_deref(),
+            Some("linked/shelf/new.md"),
+            "`within` on a path that leaves the root and comes back under the linked corpus root"
+        );
+        for (target, answer, expected) in &into {
+            assert_eq!(
+                answer.as_deref(),
+                Some(*expected),
+                "`typed` on `{target}`, through a link outside the root into it"
+            );
+        }
+        for (target, answer) in &back_in {
+            assert_eq!(
+                answer.as_deref(),
+                Some("docs/never-written.md"),
+                "`typed` on `{target}`, which leaves the root and comes back"
             );
         }
         assert_eq!(
