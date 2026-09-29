@@ -54,6 +54,17 @@
 # that workflow passed for every tag on a binary that refused to run. Both
 # defects are in what the file DOES, and no reader of what it SAYS can see them.
 #
+# Group 10 reads the page's APT block against three files and fetches nothing:
+# the `Sign the APT metadata` step of `release.yml` for the suite and the
+# component it publishes and the `Package:` it builds, `tools/site/fetch-apt.sh`
+# for the keyring it copies into `apt/`, and `site/apt/` for that keyring. apt
+# accepts a sources line naming a suite nobody publishes, and only
+# `apt-get update` on the reader's machine refuses it. What the group cannot
+# hold is that `https://headwater.tools/apt` serves anything. The `smoke-apt`
+# job in `release.yml` installs the package from a repository it signs itself,
+# so it holds the package and not the site. Only a run of the block in a clean
+# container holds the site.
+#
 # Run it from anywhere:
 #     sh tools/repo/readme-fixtures.sh
 #
@@ -2716,6 +2727,269 @@ got=$(recording_judge "$scratch/recording-html.md" | sed '$d' | tr '\n' '|')
 same "  and an HTML img embed with no marker fails" \
     "1: demo.gif  no \`recorded on YYYY-MM-DD\` marker within two lines|" \
     "$got"
+
+echo
+echo "the APT route the page offers, and the repository the release publishes"
+
+# The fourth kind of claim group 7 opened: the page against the files that
+# publish what it names. `release.yml` signs APT metadata for one suite and
+# the components it names, `tools/site/fetch-apt.sh` serves that metadata and
+# the keyring under `apt/` on the site, and the page tells a stranger which
+# line to add to their sources. apt accepts a sources line that names a suite
+# or a component nobody publishes, and only `apt-get update` refuses it, with
+# "does not have a Release file", on the reader's machine. The metadata is
+# signed on a tag and served on a deploy, so no pull request runs either side.
+# Every value below is read out of those two files, and none is written here.
+#
+# What this group cannot hold is that `https://headwater.tools/apt` serves
+# anything. That needs a socket, which no case here opens. The `smoke-apt` job
+# in `release.yml` signs a local repository, so it does not hold it either, and
+# only a run of the block in a clean container does.
+
+apt_fetch="$root/tools/site/fetch-apt.sh"
+apt_sign_step="Sign the APT metadata"
+
+# apt_fence_lines FILE — every line inside a fence, in page order.
+apt_fence_lines() {
+    awk '/^[ \t]*```/ { fence = 1 - fence; next } fence { print }' "$1"
+}
+
+# apt_sources_of FILE — the first APT sources line a fence carries, as
+# `signed-by|uri|suite|components`, or nothing. The line is cut at the quote
+# or the pipe that ends it, so `echo "deb [...] ..." | tee` reads the same as
+# a bare `deb [...] ...`.
+apt_sources_of() {
+    apt_fence_lines "$1" | awk '
+        {
+            i = index($0, "deb [")
+            if (i == 0) next
+            s = substr($0, i + 5)
+            j = index(s, "]")
+            if (j == 0) next
+            opts = substr(s, 1, j - 1)
+            rest = substr(s, j + 1)
+            sub(/["\047|>].*$/, "", rest)
+            sb = ""
+            n = split(opts, o, /[ \t]+/)
+            for (k = 1; k <= n; k++)
+                if (o[k] ~ /^signed-by=/) sb = substr(o[k], 11)
+            n = split(rest, w, /[ \t]+/)
+            uri = ""; suite = ""; comps = ""
+            for (k = 1; k <= n; k++) {
+                if (w[k] == "") continue
+                if (uri == "") uri = w[k]
+                else if (suite == "") suite = w[k]
+                else comps = (comps == "" ? w[k] : comps " " w[k])
+            }
+            print sb "|" uri "|" suite "|" comps
+            exit
+        }
+    '
+}
+
+# apt_field N FILE — one field of `apt_sources_of`.
+apt_field() {
+    apt_sources_of "$2" | cut -d'|' -f"$1"
+}
+
+# apt_published OPTION WORKFLOW — the value the signing step hands
+# `apt-ftparchive` for `APT::FTPArchive::Release::OPTION`, read from the step
+# the release runs rather than from a copy of it.
+apt_published() {
+    workflow_step_run "$2" "$apt_sign_step" |
+        sed -n "s/.*APT::FTPArchive::Release::$1=\([^[:space:]\\\\]*\).*/\1/p" |
+        head -1 | tr -d '\42\47'
+}
+
+# apt_population_judge PAGE WORKFLOW — a release that signs APT metadata is a
+# repository the page must offer, and a page that offers one needs a release
+# that signs it.
+apt_population_judge() {
+    apj_flow=$(workflow_step_run "$2" "$apt_sign_step")
+    apj_page=$(apt_sources_of "$1")
+    if [ -n "$apj_flow" ] && [ -n "$apj_page" ]; then
+        echo ok
+    elif [ -n "$apj_flow" ]; then
+        echo "release.yml signs APT metadata and the page offers no APT sources line"
+    elif [ -n "$apj_page" ]; then
+        echo "the page offers an APT sources line and release.yml signs no APT metadata"
+    else
+        echo "neither the page nor release.yml names an APT repository"
+    fi
+}
+
+# apt_suite_judge PAGE WORKFLOW — THE DECISIVE CASE. The suite and every
+# component on the page are the ones the signing step publishes.
+apt_suite_judge() {
+    asj_suite=$(apt_published Suite "$2")
+    asj_comps=$(apt_published Components "$2")
+    asj_psuite=$(apt_field 3 "$1")
+    asj_pcomps=$(apt_field 4 "$1")
+    if [ -z "$asj_suite" ] || [ -z "$asj_comps" ]; then
+        echo "the signing step names no Suite= or no Components=, so nothing says where the page may point"
+        return
+    fi
+    if [ -z "$asj_psuite" ] || [ -z "$asj_pcomps" ]; then
+        echo "the page's sources line names no suite or no component"
+        return
+    fi
+    for asj_c in $asj_pcomps; do
+        case " $asj_comps " in
+            *" $asj_c "*) ;;
+            *) asj_bad=1 ;;
+        esac
+    done
+    if [ "$asj_psuite" != "$asj_suite" ] || [ -n "${asj_bad:-}" ]; then
+        unset asj_bad
+        echo "the page names suite \`$asj_psuite\` and component \`$asj_pcomps\`, and release.yml publishes suite \`$asj_suite\` with component \`$asj_comps\`"
+    else
+        echo ok
+    fi
+}
+
+# apt_keyring_judge PAGE FETCH ROOT — the page downloads the keyring from the
+# repository it adds, under the name `fetch-apt.sh` copies out of `site/apt/`,
+# and that file is in the tree ROOT.
+apt_keyring_judge() {
+    akj_name=$(sed -n 's|^[[:space:]]*cp site/apt/\([^[:space:]]*\)[[:space:]].*|\1|p' "$2" | head -1)
+    if [ -z "$akj_name" ]; then
+        echo "fetch-apt.sh copies no keyring out of site/apt/"
+        return
+    fi
+    if [ ! -f "$3/site/apt/$akj_name" ]; then
+        echo "fetch-apt.sh copies site/apt/$akj_name, and the tree has no such file"
+        return
+    fi
+    akj_url=$(apt_fence_lines "$1" | grep -o 'https\?://[^[:space:]"'\'']*\.\(asc\|gpg\)' | head -1)
+    akj_want="$(apt_field 2 "$1")/$akj_name"
+    if [ "$akj_url" = "$akj_want" ]; then
+        echo ok
+    else
+        echo "the page downloads \`${akj_url:-nothing}\`, and the site serves the keyring at \`$akj_want\`"
+    fi
+}
+
+# apt_signedby_judge PAGE — the path the block writes the keyring to is the
+# path `signed-by` names. A mismatch is `NO_PUBKEY` on the reader's machine.
+apt_signedby_judge() {
+    asb_sb=$(apt_field 1 "$1")
+    asb_to=$(apt_fence_lines "$1" | grep 'https\?://[^[:space:]]*\.\(asc\|gpg\)' | head -1 | tr -d '\42\47' | awk '
+        {
+            for (k = 1; k < NF; k++)
+                if ($k == "-o" || $k == "--output" || $k == "tee" || $k == ">") to = $(k + 1)
+        }
+        END { print to }
+    ')
+    if [ -z "$asb_sb" ]; then
+        echo "the sources line names no signed-by keyring"
+    elif [ -z "$asb_to" ]; then
+        echo "the block downloads the keyring to no path this suite can read"
+    elif [ "$asb_sb" = "$asb_to" ]; then
+        echo ok
+    else
+        echo "the block writes the keyring to \`$asb_to\`, and signed-by names \`$asb_sb\`"
+    fi
+}
+
+# apt_package_judge PAGE WORKFLOW — the package the block installs after it
+# adds the repository is the `Package:` the release builds.
+apt_package_judge() {
+    apk_flow=$(release_yaml_text "$2" | sed -n "s/.*printf 'Package: \([a-z0-9.+-]*\)\\\\n.*/\1/p" | head -1)
+    apk_page=$(apt_fence_lines "$1" | awk '
+        index($0, "deb [") { after = 1; next }
+        after && /apt(-get)? +install/ {
+            s = $0
+            sub(/^.*apt(-get)? +install/, "", s)
+            n = split(s, w, /[ \t]+/)
+            for (k = 1; k <= n; k++) if (w[k] != "" && w[k] !~ /^-/) print w[k]
+        }
+    ')
+    if [ -z "$apk_flow" ]; then
+        echo "release.yml builds no package with a Package: field"
+    elif [ -z "$apk_page" ]; then
+        echo "the block installs no package after it adds the repository"
+    elif printf '%s\n' "$apk_page" | grep -qx "$apk_flow"; then
+        echo ok
+    else
+        echo "the page installs \`$(oneline "$apk_page")\`, and the package release.yml builds is \`$apk_flow\`"
+    fi
+}
+
+# 10a. The population, over the real page and the real workflow. On the day
+#      this group landed, the page offered no APT line and this case was red.
+same "the page offers the APT repository release.yml signs" ok \
+    "$(apt_population_judge "$readme" "$release_wf")"
+
+# 10b-10e. The real page against the real files.
+same "  and its suite and component are the ones the release publishes" ok \
+    "$(apt_suite_judge "$readme" "$release_wf")"
+same "  and it fetches the keyring the site serves" ok \
+    "$(apt_keyring_judge "$readme" "$apt_fetch" "$root")"
+same "  and signed-by names the path the keyring is written to" ok \
+    "$(apt_signedby_judge "$readme")"
+same "  and it installs the package the release builds" ok \
+    "$(apt_package_judge "$readme" "$release_wf")"
+
+# Every judge provoked in a scratch copy. Each arm compares its planted copy
+# with the original first, because an edit that changed nothing measures
+# nothing.
+mkdir -p "$scratch/apt"
+
+# apt_planted NAME ORIGINAL PLANTED EXPECTED ACTUAL — `same`, after `cmp`.
+apt_planted() {
+    if cmp -s "$2" "$3"; then
+        fail "$1" "the planted edit changed nothing, so this case measured nothing"
+    else
+        same "$1" "$4" "$5"
+    fi
+}
+
+# 10a, provoked. The page with its sources line removed.
+grep -v 'deb \[' "$readme" >"$scratch/apt/no-line.md"
+apt_planted "  a page with no APT sources line is refused" "$readme" "$scratch/apt/no-line.md" \
+    "release.yml signs APT metadata and the page offers no APT sources line" \
+    "$(apt_population_judge "$scratch/apt/no-line.md" "$release_wf")"
+
+# 10b, provoked. A suite and a component that apt accepts and that no release
+# publishes. Every other case stays green on both.
+sed 's| stable main"| bookworm main"|' "$readme" >"$scratch/apt/suite.md"
+apt_planted "  a page naming a suite the release does not publish is refused" "$readme" "$scratch/apt/suite.md" \
+    "the page names suite \`bookworm\` and component \`main\`, and release.yml publishes suite \`stable\` with component \`main\`" \
+    "$(apt_suite_judge "$scratch/apt/suite.md" "$release_wf")"
+sed 's| stable main"| stable contrib"|' "$readme" >"$scratch/apt/component.md"
+apt_planted "  a page naming a component the release does not publish is refused" "$readme" "$scratch/apt/component.md" \
+    "the page names suite \`stable\` and component \`contrib\`, and release.yml publishes suite \`stable\` with component \`main\`" \
+    "$(apt_suite_judge "$scratch/apt/component.md" "$release_wf")"
+# The other side moves. The suite is read out of the step, so a release that
+# publishes another suite refuses the page that did not follow it.
+sed 's|Release::Suite=stable|Release::Suite=unstable|' "$release_wf" >"$scratch/apt/unstable.yml"
+apt_planted "  a release that publishes another suite refuses the page" "$release_wf" "$scratch/apt/unstable.yml" \
+    "the page names suite \`stable\` and component \`main\`, and release.yml publishes suite \`unstable\` with component \`main\`" \
+    "$(apt_suite_judge "$readme" "$scratch/apt/unstable.yml")"
+
+# 10c, provoked. The keyring renamed in the tree and in fetch-apt.sh, with the
+# page left as it was, and then the file removed from the tree alone.
+mkdir -p "$scratch/apt/tree/site/apt"
+sed 's|headwater-archive-keyring\.asc|headwater-keyring.asc|g' "$apt_fetch" >"$scratch/apt/fetch-renamed.sh"
+: >"$scratch/apt/tree/site/apt/headwater-keyring.asc"
+apt_planted "  a keyring the site serves under another name is refused" "$apt_fetch" "$scratch/apt/fetch-renamed.sh" \
+    "the page downloads \`https://headwater.tools/apt/headwater-archive-keyring.asc\`, and the site serves the keyring at \`https://headwater.tools/apt/headwater-keyring.asc\`" \
+    "$(apt_keyring_judge "$readme" "$scratch/apt/fetch-renamed.sh" "$scratch/apt/tree")"
+same "  and a keyring the tree does not carry is refused" \
+    "fetch-apt.sh copies site/apt/headwater-archive-keyring.asc, and the tree has no such file" \
+    "$(apt_keyring_judge "$readme" "$apt_fetch" "$scratch/apt/tree")"
+
+# 10d, provoked. The keyring written to one path and named at another.
+sed 's|-o /etc/apt/keyrings/|-o /usr/share/keyrings/|' "$readme" >"$scratch/apt/signed-by.md"
+apt_planted "  a keyring written where signed-by does not look is refused" "$readme" "$scratch/apt/signed-by.md" \
+    "the block writes the keyring to \`/usr/share/keyrings/headwater-archive-keyring.asc\`, and signed-by names \`/etc/apt/keyrings/headwater-archive-keyring.asc\`" \
+    "$(apt_signedby_judge "$scratch/apt/signed-by.md")"
+
+# 10e, provoked. A package name the release does not build.
+sed 's|apt-get install -y headwater$|apt-get install -y headwater-cli|' "$readme" >"$scratch/apt/package.md"
+apt_planted "  a package the release does not build is refused" "$readme" "$scratch/apt/package.md" \
+    "the page installs \`headwater-cli\`, and the package release.yml builds is \`headwater\`" \
+    "$(apt_package_judge "$scratch/apt/package.md" "$release_wf")"
 
 echo
 echo "$passed passed, $failed failed"

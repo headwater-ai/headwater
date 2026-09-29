@@ -1693,6 +1693,10 @@ surface:
     - xargs
     - python3
     - mkdocs
+    - apt-get
+    - sudo
+    - install
+    - tee
   companions:
     - "headwater probe"
     - "headwater neighbors"
