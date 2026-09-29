@@ -992,6 +992,27 @@ else
     echo "skip the #980 corpus seal: $root is not a git checkout"
 fi
 
+# The tombstone task names the top-level `docs/` that `headwater export`
+# serves (#1293). The #980 batch asked for "the corpus under `docs/`", and all
+# 3 of its `present` answers read the recovery word from a fixture's nested
+# `docs/` under `engine/`, which the seal keeps because it names no probe. The
+# task is read the way `campaign.sh` cuts the prompt: the body of `## Task`.
+awk '/^## Task$/ { on = 1; next } on && /^## / { exit } on { print }' \
+    "$root/docs/probes/$tombstone.md" > "$scratch/tombstone-task.md"
+if grep -rlIF amber "$root/engine/crates/cli/fixtures/answered-export/docs" >/dev/null 2>&1; then
+    pass "this checkout has a nested docs/ under engine/ that states the recovery word"
+else
+    fail "this checkout has a nested docs/ under engine/ that states the recovery word" "the fixture moved; re-read why the task excludes it"
+fi
+present "the tombstone task names the top-level docs/" 'the top-level `docs/` directory' "$scratch/tombstone-task.md"
+present "and names it as the directory headwater export serves" '`headwater export` serves' "$scratch/tombstone-task.md"
+present "and tells the session not to read a docs/ at a lower level" 'Do not read a `docs/` directory at a lower level' "$scratch/tombstone-task.md"
+if grep -qF 'the corpus under `docs/` in this repository' "$scratch/tombstone-task.md"; then
+    fail "and it no longer asks for every docs/ of the repository" "the task still reads \"the corpus under \`docs/\` in this repository\""
+else
+    pass "and it no longer asks for every docs/ of the repository"
+fi
+
 # Answer keys (#980). The `patched` probe's task was answered by HW-OBL-0198,
 # which names neither the probe nor its slug, so the seal above kept it and
 # every present-arm session of the pilot found its task already done. The
