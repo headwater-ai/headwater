@@ -252,14 +252,15 @@ class AListWithADeadMemberIsShownRefused(unittest.TestCase):
 
     def test_the_page_names_the_refused_edge_and_its_reason(self):
         model = dashboard.load(with_dead_member_list(load_fixture()), corpus_identity="fixture")
+        page = dashboard.render(model, dashboard.coverage_view(model, tree=TREE))
+        # Before #1307 the edge left no trace on the page, and this line failed.
+        self.assertIn("<tr><td>FX-DR-0002</td><td>%s</td></tr>" % dashboard.html.escape(DEAD_MEMBER_REASON), page)
+        self.assertIn("Governs edges that bind nothing", page)
+        self.assertIn("including the paths in it that do match", page)
         self.assertEqual(
             [(row["key"], row["governed_by"], row["reason"]) for row in model.refused],
             [(("fixture", "FX-DR-0002"), "FX-DR-0002", DEAD_MEMBER_REASON)],
         )
-        page = dashboard.render(model, dashboard.coverage_view(model, tree=TREE))
-        self.assertIn("Governs edges that bind nothing", page)
-        self.assertIn("<tr><td>FX-DR-0002</td><td>%s</td></tr>" % dashboard.html.escape(DEAD_MEMBER_REASON), page)
-        self.assertIn("including the paths in it that do match", page)
 
     def test_the_matching_member_is_not_counted_as_covered(self):
         before = dashboard.coverage_view(dashboard.load(load_fixture(), corpus_identity="fixture"), tree=TREE)
