@@ -956,7 +956,7 @@ fn anchor_integrity(view: &View, out: &mut Vec<ResolveError>) {
 /// [#210](https://github.com/headwater-ai/headwater/issues/210) reports.
 fn identifier_integrity(view: &View, out: &mut Vec<ResolveError>) {
     const RULE: &str = "identifier integrity";
-    let mut by_namespace: BTreeMap<&str, Vec<(&str, Template)>> = BTreeMap::new();
+    let mut parsed: Vec<(&str, &str, Template)> = Vec::new();
     for (scheme, body) in view.members("identifier_schemes") {
         // Three states and not two. The meta-schema lets a package omit
         // `namespace`, so an absent key means the choice is open and an empty
@@ -993,10 +993,7 @@ fn identifier_integrity(view: &View, out: &mut Vec<ResolveError>) {
         // refused rather than reported around.
         let pattern = text(body, "pattern").unwrap_or_default();
         match Template::parse(pattern, namespace) {
-            Ok(template) => by_namespace
-                .entry(namespace)
-                .or_default()
-                .push((scheme, template)),
+            Ok(template) => parsed.push((scheme, namespace, template)),
             Err(why) => out.push(refusal(
                 RULE,
                 &format!("identifier_schemes.{scheme}.pattern"),
@@ -1004,23 +1001,47 @@ fn identifier_integrity(view: &View, out: &mut Vec<ResolveError>) {
             )),
         }
     }
-    // Grouping by namespace is a shortcut and never the rule. Two schemes in
-    // two namespaces are disjoint because the namespace is a run of literal
-    // characters in both patterns, which `disjoint` reads for itself; the
-    // grouping only saves the comparison.
-    for (namespace, schemes) in by_namespace {
-        for (index, (scheme, template)) in schemes.iter().enumerate() {
-            for (other, other_template) in &schemes[index + 1..] {
-                if !template.disjoint(other_template) {
-                    out.push(refusal(
-                        RULE,
-                        &format!("identifier_schemes.{scheme}.pattern"),
-                        format!(
-                            "and `identifier_schemes.{other}.pattern` are both in namespace \
-                             `{namespace}` and one string satisfies both"
-                        ),
-                    ));
-                }
+    // Every pair is compared, whatever its namespaces. Two namespaces that
+    // differ do not keep two schemes apart, because one namespace plus a
+    // literal can spell the other: `{namespace}-{slug}` under
+    // `ZED-SPECIFICATION` and `{namespace}-SPECIFICATION-{slug}` under `ZED`
+    // both admit `ZED-SPECIFICATION-scope` (#1357). `disjoint` reads the
+    // namespace as literal characters, so it decides that pair as it decides
+    // any other.
+    let mut minted_by: BTreeMap<&str, Vec<&str>> = BTreeMap::new();
+    for (kind, body) in view.members("kinds") {
+        if let Some(scheme) = block(body, "identifier").and_then(|node| text(node, "scheme")) {
+            minted_by.entry(scheme).or_default().push(kind);
+        }
+    }
+    let describe = |scheme: &str, namespace: &str| {
+        let minters = match minted_by.get(scheme).map(Vec::as_slice) {
+            None | Some([]) => "no kind mints under it".to_string(),
+            Some([kind]) => format!("kind `{kind}` mints under it"),
+            Some(kinds) => format!(
+                "kinds {} mint under it",
+                kinds
+                    .iter()
+                    .map(|kind| format!("`{kind}`"))
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            ),
+        };
+        format!("`{scheme}` is in namespace `{namespace}`, and {minters}")
+    };
+    for (index, (scheme, namespace, template)) in parsed.iter().enumerate() {
+        for (other, other_namespace, other_template) in &parsed[index + 1..] {
+            if !template.disjoint(other_template) {
+                out.push(refusal(
+                    RULE,
+                    &format!("identifier_schemes.{scheme}.pattern"),
+                    format!(
+                        "and `identifier_schemes.{other}.pattern` admit one string, so two \
+                         records could carry one identifier. {}. {}",
+                        describe(scheme, namespace),
+                        describe(other, other_namespace)
+                    ),
+                ));
             }
         }
     }

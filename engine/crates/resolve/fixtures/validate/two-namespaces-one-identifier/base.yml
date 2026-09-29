@@ -9,6 +9,9 @@
 # one identifier. A rule that compared schemes only inside one namespace made
 # this case valid.
 #
+# Two kinds mint under `spec_id` and one under `section_id`, so that the
+# refusal is seen to name every kind on each side of the pair.
+#
 # `decision_id` is the third arm. Its namespace `YAK` is a literal run that no
 # other scheme spells, so it overlaps nothing and appears in no finding.
 
@@ -60,6 +63,11 @@ kinds:
     purpose: rationale
     lifecycle: standard
     identifier: {scheme: spec_id}
+  appendix:
+    is_a: governed_document
+    purpose: rationale
+    lifecycle: standard
+    identifier: {scheme: spec_id}
   section:
     is_a: governed_document
     purpose: rationale
@@ -77,6 +85,10 @@ shelves:
     path: docs/spec/**
     homogeneous: true
     kind: specification
+  appendices:
+    path: docs/appendices/**
+    homogeneous: true
+    kind: appendix
   sections:
     path: docs/sections/**
     homogeneous: true
