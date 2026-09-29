@@ -26,7 +26,7 @@ relations:
     - HW-PD-0023
   governs:
     - to: .claude/commands/next-run.md
-      verified_revision: sha256:f6101592f2441ee4ab872a5856bfc58bb09b207be569a7ab3e34547d55adb135
+      verified_revision: sha256:f38d53f83395a72d0ac9dab81043cd5e27c5bd81c7a109e62b714fc22163dfa1
     - to: .claude/commands/next.md
       verified_revision: sha256:974d493829d7c81eacf06f5058e7e02f01f7fd409b82e0589d7bdd21a7783b09
     - to: .claude/agents/hw-queue.md
