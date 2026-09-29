@@ -1,6 +1,6 @@
 taxonomy
   headwater/fixture 1.0.0
-  87e6df6eaf5a191d7c8a55956a8fb20fde7ef00970a921d840ae3d84698c54b6
+  105e82f4b4435094f6bfd8ba5b3c3f3380341b35aeebc9aca2c3d508726d1601
 
 clock
   2026-08-12
@@ -68,7 +68,7 @@ graph
     identifier: the identifier is not a scalar, and an identifier is a word
 
 checks
-  31 seen, 29 classified, 28 checked, 358 check instances
+  31 seen, 29 classified, 28 checked, 368 check instances
         1 generated, held to regeneration by `headwater generate --check`
         1 skipped: no `id` facet, which is the key this engine reads an
           identifier from and which no declaration states
@@ -98,6 +98,7 @@ checks
        28 instances of identifier.pattern.not_met
        29 instances of shelf.placement_is_primary
        10 instances of relation.target.unresolved
+       10 instances of relation.target.is_source
         4 instances of relation.reciprocity.missing
         7 instances of relation.endpoint.not_permitted
         1 instances of lifecycle.dependency.on_terminal
@@ -142,6 +143,8 @@ checks
     shelf.placement_is_primary
       document scope, one document and its front matter
     relation.target.unresolved
+      edge scope, one relation instance and both endpoints
+    relation.target.is_source
       edge scope, one relation instance and both endpoints
     relation.target.suspect
       edge scope, one relation instance and both endpoints, and the version of
@@ -229,9 +232,9 @@ checks
       edge scope, one relation instance and both endpoints, and the committed
         observation snapshot
   register
-    28 obligations: 22 verified, 2 gap, 1 unverifiable, 3 with no disposition
+    29 obligations: 23 verified, 2 gap, 1 unverifiable, 3 with no disposition
        10 high, 9 verified
-       10 medium, 8 verified
+       11 medium, 9 verified
         8 low, 5 verified
     OB-FIX-1 verified, 1 finding is migration-pending under it
     OB-FIX-7 verified, 1 finding escaped under it
@@ -249,16 +252,16 @@ checks
     OB-FIX-20 gap, owner the fixture tree, and no target, and CT-FIX-17 claims
       to discharge it under a mechanism this engine does not implement, which is
       two dispositions
-    25 controls
-       24 posture advisory
+    26 controls
+       25 posture advisory
         1 posture blocking
-       24 acts detective
+       25 acts detective
         1 acts preventive
-       21 name a rule this engine carries
+       22 name a rule this engine carries
         1 name a phase this engine runs
         2 name a mechanism this engine does not implement
         1 name a mechanism outside this engine
-       23 with no promotion record, so nothing states what would promote them
+       24 with no promotion record, so nothing states what would promote them
         1 with criteria
         1 producing facts rather than findings
     escaped findings, in the precedence spec 4 fixes: no waiver reaches a check
@@ -671,7 +674,7 @@ not reported
       false_positive, until 2030-01-01 (the length is the fixture)
 
 read set
-  lock 87e6df6eaf5a191d7c8a55956a8fb20fde7ef00970a921d840ae3d84698c54b6
+  lock 105e82f4b4435094f6bfd8ba5b3c3f3380341b35aeebc9aca2c3d508726d1601
   clock 2026-08-12
   barrier identifier.claimed_twice
   barrier identifier.claim.missing
@@ -687,6 +690,7 @@ read set
   version identifier.pattern.not_met 1
   version shelf.placement_is_primary 2
   version relation.target.unresolved 1
+  version relation.target.is_source 1
   version relation.target.suspect 6
   version relation.reciprocity.missing 2
   version relation.endpoint.not_permitted 1
