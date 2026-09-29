@@ -118,7 +118,9 @@ impl Root {
         );
         self.page(
             "decisions/0001-alpha-choice/index.html",
-            "<h1 id=\"alpha\">Alpha</h1><a href=\"../0002-beta-choice/#beta\">beta</a><a href=\"../\">up</a><a href=\"#alpha\">here</a>",
+            // `#caf%C3%A9` names the `id` `café`: a generator writes an `id`
+            // decoded and a link percent-encoded, and the two must meet.
+            "<h1 id=\"alpha\">Alpha</h1><h2 id=\"caf\u{e9}\">Caf\u{e9}</h2><a href=\"../0002-beta-choice/#beta\">beta</a><a href=\"../\">up</a><a href=\"#alpha\">here</a><a href=\"#caf%C3%A9\">cafe</a>",
         );
         self.page(
             "decisions/0002-beta-choice/index.html",
@@ -225,6 +227,32 @@ fn a_page_the_navigation_names_and_the_site_lacks_is_missing() {
         &root.site(),
         "site.page.missing",
         "decisions/0002-beta-choice.md",
+    );
+}
+
+/// A shelf index is a page the navigation names too (#528). Its source is a
+/// `README.md`, so its page has one form rather than two, and the deletion
+/// also kills every link onto it, which the case allows and does not count.
+#[test]
+fn a_shelf_index_the_site_lacks_is_missing() {
+    let root = Root::new("missing-index", OVERLAY_WITH_NAV);
+    std::fs::remove_file(root.at.join("site/decisions/index.html")).expect("the index goes");
+    let outcome = root.site();
+    assert_eq!(outcome.code, Some(1), "{outcome:?}");
+    let missing: Vec<String> = findings(&outcome)
+        .into_iter()
+        .filter(|line| line.starts_with("site.page.missing"))
+        .collect();
+    assert_eq!(missing.len(), 1, "one missing page\n{outcome:?}");
+    assert!(
+        missing[0].starts_with("site.page.missing  decisions/README.md:"),
+        "the missing page is the shelf index\n{outcome:?}"
+    );
+    assert!(
+        findings(&outcome)
+            .iter()
+            .all(|line| line.starts_with("site.page.missing") || line.starts_with("site.link.dead")),
+        "the deletion gives a missing page and dead links, nothing else\n{outcome:?}"
     );
 }
 
