@@ -443,6 +443,156 @@ fn an_edit_the_read_set_does_not_cover_voids_no_result() {
     );
 }
 
+/// The one probe a narrowed run below is planned over. It examines
+/// `PROBE-FIX-answered`, and nothing it reads is `PROBE-FIX-opened`.
+const CITED: &str = "PROBE-FIX-cited";
+
+/// The committed transcript, restamped as a run planned over [`CITED`] alone,
+/// the way `--category` with `--exclude` plans a pilot (#980). Its selection
+/// digest names the one probe, its read set is the one probe's read set on the
+/// tree at `dir`, and its one event names the one probe, so the part is
+/// recoverable from the transcript and from nothing else.
+fn planned_over_cited(dir: &Path) -> String {
+    let root = taxonomy_map();
+    let taken = census_at(&root, dir);
+    let plan = plan_over(dir);
+    let part: Vec<Selected> = plan
+        .selected
+        .iter()
+        .filter(|selected| selected.id == CITED)
+        .cloned()
+        .collect();
+    assert_eq!(part.len(), 1, "the fixture selection holds {CITED}");
+    let committed = std::fs::read_to_string(dir.join(COMMITTED)).expect("the committed transcript");
+    let line = |key: &str| {
+        committed
+            .lines()
+            .find(|line| line.starts_with(key))
+            .unwrap_or_else(|| panic!("the committed transcript records `{key}`"))
+            .to_string()
+    };
+    let events = committed
+        .find("## Events")
+        .expect("the committed transcript has events");
+    let head = committed[..events]
+        .replace(
+            &line("selection: "),
+            &format!(
+                "selection: {}",
+                headwater_probe::plan::selection_digest(&[CITED])
+            ),
+        )
+        .replace(
+            &line("read_set: "),
+            &format!(
+                "read_set: {}",
+                headwater_probe::plan::read_set_over(&part, &taken).digest
+            ),
+        );
+    format!(
+        "{head}## Events\n\n```yaml\n- probe: {CITED}\n  session: 1\n  calls: []\n  produced: []\n  answer: null\n```\n"
+    )
+}
+
+/// Hold `source` against the plan the tree at `dir` composes now, which is
+/// what `headwater probe stale` does with each committed transcript.
+fn staleness_of(dir: &Path, source: &str) -> Staleness {
+    let root = taxonomy_map();
+    let taken = census_at(&root, dir);
+    let graph = graph_at(&root, &taken, dir);
+    let config = Config::default();
+    let plan = Plan::over(
+        &taken,
+        &graph,
+        &config,
+        &budgets(),
+        LOCK,
+        Tier::Regression,
+        &Narrowing::default(),
+    );
+    let tree = Tree {
+        census: &taken,
+        config: &config,
+        lock: LOCK,
+        selected: None,
+    };
+    Staleness::over(&Record::read(source, &tree), &plan, &taken)
+}
+
+/// A run planned over a part of the selection is held against that part (#1387).
+///
+/// `headwater probe stale` composes the plan over the whole selection, because
+/// the transcript records no `--exclude` list. It records the digest of the
+/// probes it was planned over, and those are the probes its events name. So an
+/// edit to a document only the rest of the selection reads leaves the result
+/// standing, and an edit to one the part reads voids it. Before #1387 the
+/// first case read as voided on an unedited tree, because the digest it was
+/// compared against covered five probes and the transcript recorded one.
+#[test]
+fn a_transcript_planned_over_one_probe_is_held_against_that_probe_alone() {
+    // Unedited: the recorded part's read set is the one this tree composes.
+    let at = copied("read-set-narrowed");
+    let source = planned_over_cited(&at);
+    let staleness = staleness_of(&at, &source);
+    assert_eq!(
+        staleness.verdict(),
+        Stale::Stands,
+        "an unedited tree voided a run planned over one probe"
+    );
+    let report = staleness.render(ColorMode::Plain);
+    assert!(
+        !report.contains(VOIDED),
+        "the report calls this result stale:\n{report}"
+    );
+    assert!(
+        staleness
+            .members
+            .iter()
+            .all(|member| member.path != "corpus/probes/0001-opened.md"),
+        "a document only the rest of the selection reads is a member: {:?}",
+        staleness.members
+    );
+
+    // A document the whole selection reads and the part does not.
+    let before = plan_over(&at);
+    edit(
+        &at,
+        "corpus/probes/0001-opened.md",
+        "status_since: 2026-08-14",
+        "status_since: 2026-08-15",
+    );
+    let after = plan_over(&at);
+    assert_ne!(
+        before.read_set, after.read_set,
+        "the edit moved nothing the whole selection reads, so it proves nothing about the part"
+    );
+    let staleness = staleness_of(&at, &source);
+    assert_eq!(
+        staleness.verdict(),
+        Stale::Stands,
+        "an edit outside the part the run was planned over voided it"
+    );
+
+    // A document the part reads.
+    edit(
+        &at,
+        "corpus/probes/0002-answered.md",
+        "status_since: 2026-08-14",
+        "status_since: 2026-08-15",
+    );
+    let staleness = staleness_of(&at, &source);
+    assert_eq!(
+        staleness.verdict(),
+        Stale::SetMoved,
+        "an edit to a document the part examines left the result standing"
+    );
+    let report = staleness.render(ColorMode::Plain);
+    assert!(
+        report.contains(VOIDED),
+        "the report does not call this result stale:\n{report}"
+    );
+}
+
 /// The positive direction over a member a call witnessed, which is the case
 /// that names the offender.
 #[test]
