@@ -542,3 +542,29 @@ fn sweep_plan_finishes_when_a_named_pipe_takes_a_document_path() {
         "sweep plan wrote its briefing: {plan}"
     );
 }
+
+/// The walk makes no row under a directory that is a symlink, so a path
+/// through one holds no document, and `show` refuses it in the sentence
+/// `explain` writes for such a path, as `docs/interfaces/headwater-show.md`
+/// says (#1366, verify round 1).
+#[test]
+fn show_refuses_a_path_through_a_linked_directory_as_a_path_with_no_document() {
+    let root = Root::shaped("show-linked-directory", |at| {
+        std::os::unix::fs::symlink("decisions", at.join("docs/linkdir")).expect("the link is made");
+    });
+    let target = "docs/linkdir/0001-the-warrant-a-person-set.md";
+    assert!(
+        root.at.join(target).is_file(),
+        "the link reaches a real document"
+    );
+    let (explain_status, _, explain) = ended(&root, &["explain", target], "explain did not end");
+    let (show_status, out, show) = ended(&root, &["show", target], "show did not end");
+    assert_eq!(explain_status.code(), Some(1), "explain refuses: {explain}");
+    assert_eq!(show_status.code(), Some(1), "show refuses: {show}");
+    assert!(out.is_empty(), "show prints nothing: {out}");
+    assert!(
+        flat(&show).contains("with no document written there yet"),
+        "{show}"
+    );
+    assert_eq!(flat(&show), flat(&explain), "one sentence for both verbs");
+}

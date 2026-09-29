@@ -1322,6 +1322,27 @@ mod tests {
         assert!(matches!(outcome, Binding::Resolved { .. }), "{outcome:?}");
     }
 
+    /// The guard against a named pipe asks what a link names, not what the
+    /// link is, so a `cited_in` link to a source file that cites the
+    /// asserter still resolves (#1366, verify round 1).
+    #[cfg(unix)]
+    #[test]
+    fn a_citation_reached_through_a_symlink_to_a_source_file_resolves() {
+        let dir = scratch("link-to-source");
+        std::fs::write(dir.join("sample.rs"), "//! proves HW-VER-0001\nfn f() {}\n")
+            .expect("a fixture file");
+        std::os::unix::fs::symlink("sample.rs", dir.join("link.rs")).expect("the link is made");
+
+        let resolver = CommentScan::new(
+            &dir,
+            "HW-VER-",
+            std::collections::BTreeSet::from(["HW-VER-0001".to_string()]),
+        );
+        let outcome = resolver.resolve_for("link.rs", "HW-VER-0001");
+
+        assert!(matches!(outcome, Binding::Resolved { .. }), "{outcome:?}");
+    }
+
     #[test]
     fn a_file_with_no_citation_is_refused_and_says_so() {
         let dir = scratch("no-citation");

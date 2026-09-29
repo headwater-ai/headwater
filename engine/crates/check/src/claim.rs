@@ -767,4 +767,54 @@ mod tests {
             "{finding:#?}"
         );
     }
+
+    /// The store reads a claim reached through a symlink, because the guard
+    /// against a named pipe asks what the link names and not what the link
+    /// is. A named pipe beside it reads as a claim that names nobody, and the
+    /// read ends (#1366, verify round 1).
+    #[cfg(unix)]
+    #[test]
+    fn a_claim_through_a_symlink_counts_and_a_named_pipe_names_nobody() {
+        let nanos = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .expect("a clock later than the epoch")
+            .as_nanos();
+        let root = std::env::temp_dir().join(format!(
+            "headwater-claim-link-{}-{nanos}",
+            std::process::id()
+        ));
+        let scheme = root.join(STORE).join("decision_id");
+        std::fs::create_dir_all(&scheme).expect("the scheme directory is made");
+        std::fs::write(root.join("held"), contents_for("docs/decisions/0001-a.md"))
+            .expect("the claim body writes");
+        std::os::unix::fs::symlink(root.join("held"), scheme.join("HW-DR-0001"))
+            .expect("the link is made");
+        let made = std::process::Command::new("mkfifo")
+            .arg(scheme.join("HW-DR-0002"))
+            .status()
+            .expect("mkfifo runs");
+        assert!(made.success(), "the named pipe is made");
+
+        let at = root.clone();
+        let (send, receive) = std::sync::mpsc::channel();
+        std::thread::spawn(move || {
+            let claims = Claims::at(&at);
+            send.send((
+                claims
+                    .claimant("decision_id", "HW-DR-0001")
+                    .map(str::to_string),
+                claims
+                    .claimant("decision_id", "HW-DR-0002")
+                    .map(str::to_string),
+            ))
+            .expect("the answer is sent");
+        });
+        let (linked, piped) = receive
+            .recv_timeout(std::time::Duration::from_secs(30))
+            .expect("Claims::at opened the named pipe, and waited on it");
+        std::fs::remove_dir_all(&root).ok();
+
+        assert_eq!(linked.as_deref(), Some("docs/decisions/0001-a.md"));
+        assert_eq!(piped.as_deref(), Some(""));
+    }
 }
