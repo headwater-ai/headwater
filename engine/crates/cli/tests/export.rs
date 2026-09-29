@@ -225,6 +225,21 @@ fn an_uncommitted_graph_export_is_written_by_export_and_not_by_generate() {
     let bytes = std::fs::read_to_string(&at).unwrap_or_else(|error| {
         panic!("`export` did not write the publish-time file: {error}\n{said}")
     });
+    // A plain `export`, with no `--at`, is how such a file is usually built,
+    // and its marker must not claim a gate that never reads it (#1343).
+    let marker = bytes
+        .lines()
+        .find(|line| line.contains("\"headwater:generated\""))
+        .expect("the marker member");
+    assert!(
+        marker.contains("`headwater export` builds this file at publish time")
+            && !marker.contains("`headwater generate --check` holds it"),
+        "an undated uncommitted export claims a gate holds it: {marker}"
+    );
+    assert!(
+        !bytes.contains("\"generated_at\""),
+        "an export with no --at states a date\n{bytes}"
+    );
 
     std::fs::write(&at, format!("{bytes}\n")).expect("the stale copy");
     for gate in [&["generate", "--check"][..], &["export", "--check"][..]] {

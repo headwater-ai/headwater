@@ -1146,8 +1146,9 @@ pub fn export_plan(
             return Err(format!(
                 "--at dates an export that is built at publish time, and {} {} committed. \
                  `generate --check` holds a committed export by byte, so a date inside it \
-                 would fail the gate on a day when nothing changed. Name an export declared \
-                 `committed: false` with --profile, or name a target with --format",
+                 would fail the gate on a day when nothing changed. Name a target with \
+                 --format, or name with --profile a profile whose declared exports all state \
+                 `committed: false`",
                 committed.join(", "),
                 match committed.len() {
                     1 => "is",
