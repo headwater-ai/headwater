@@ -422,10 +422,14 @@ const TYPO: &str = "HW-SOL-chekout";
 /// holds the shape the writer emits against the shape the resolver reads.
 fn filtered(label: &str, grain: &str) -> Root {
     let root = Root::new(label);
-    let overlay = std::fs::read_to_string(root.at.join(".headwater/overlay.yml"))
-        .expect("the overlay reads");
+    let overlay =
+        std::fs::read_to_string(root.at.join(".headwater/overlay.yml")).expect("the overlay reads");
     let anchor = "\nadd_to:\n\n  projections:\n";
-    assert_eq!(overlay.matches(anchor).count(), 1, "the overlay appends to its projections");
+    assert_eq!(
+        overlay.matches(anchor).count(),
+        1,
+        "the overlay appends to its projections"
+    );
     root.write(
         ".headwater/overlay.yml",
         &overlay.replacen(

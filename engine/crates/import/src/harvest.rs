@@ -268,7 +268,9 @@ fn documents(bytes: &[u8]) -> Result<(Vec<String>, bool, Withheld), String> {
         .value
         .as_map()
         .ok_or_else(|| "it is not a native export: the top level is not an object".to_string())?;
-    let declaration = map.get("profile").and_then(|profile| profile.value.as_map());
+    let declaration = map
+        .get("profile")
+        .and_then(|profile| profile.value.as_map());
     let member = |key: &str| {
         declaration
             .and_then(|profile| profile.get(key))
