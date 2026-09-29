@@ -645,6 +645,28 @@ mod tests {
         );
     }
 
+    /// A cache that a run wrote is read back by the next one, so a regular
+    /// cache file is opened and its entries served (#1366, verify round 2).
+    #[test]
+    fn a_written_cache_is_read_back_by_the_next_open() {
+        let root = Scratch(std::env::temp_dir().join(format!(
+            "headwater-embed-cache-round-trip-{}",
+            std::process::id()
+        )));
+        std::fs::create_dir_all(&root).expect("a scratch directory");
+        let key = headwater_hash::digest(b"a summary");
+        let vector = vec![0.5_f32, -0.25];
+        let mut cache = Cache::open(&root, "sha256:aa");
+        assert!(cache.entries.is_empty(), "no cache file yet");
+        cache.entries.insert(key.clone(), vector.clone());
+        cache.used.insert(key.clone());
+        cache.computed = 1;
+        cache.write("sha256:aa");
+        let reopened = Cache::open(&root, "sha256:aa");
+        assert_eq!(reopened.entries.get(&key), Some(&vector));
+        assert_eq!(reopened.computed(), 0);
+    }
+
     /// A named pipe at the cache file is an empty cache, and a write renames
     /// a regular file over it without opening it (#1366).
     #[cfg(unix)]
