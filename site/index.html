@@ -147,6 +147,10 @@
     background: var(--code-bg); padding: 0.7rem 1.1rem; max-width: 32rem;
   }
   .install div { overflow-wrap: anywhere; }
+  .install .label {
+    font-family: var(--sans); font-size: 0.75rem;
+    color: var(--muted); margin-top: 0.5rem;
+  }
   .install .note {
     font-family: var(--sans); font-size: 0.75rem;
     color: var(--muted); margin-top: 0.3rem;
@@ -380,15 +384,28 @@
         </div>
         <div class="install">
           <div><span class="dim">$</span> mkdir -p ~/.local/bin</div>
-          <div><span class="dim">$</span> curl -fsSLO https://github.com/headwater-ai/headwater/releases/download/v0.4.0/headwater-v0.4.0-x86_64-unknown-linux-musl.tar.gz</div>
-          <div><span class="dim">$</span> tar -xzf headwater-v0.4.0-x86_64-unknown-linux-musl.tar.gz -C ~/.local/bin headwater <span class="cursor" aria-hidden="true">▍</span></div>
+          <div><span class="dim">$</span> curl -fsSLO https://github.com/headwater-ai/headwater/releases/download/v0.4.1/headwater-v0.4.1-x86_64-unknown-linux-musl.tar.gz</div>
+          <div><span class="dim">$</span> tar -xzf headwater-v0.4.1-x86_64-unknown-linux-musl.tar.gz -C ~/.local/bin headwater</div>
           <!-- #975. The release download leads, because HW-DR-0077 makes no
                Rust toolchain mandatory. These three lines are the
                tutorial's install block, and they were run against the
-               v0.4.0 release on 2026-09-27: the archive unpacked, the
-               binary printed 0.4.0, and `sha256sum -c` read the checksum
+               v0.4.1 release on 2026-09-29: the archive unpacked, the
+               binary printed 0.4.1, and `sha256sum -c` read the checksum
                beside it as OK. -->
-          <div class="note">On Apple silicon macOS, use <code>aarch64-apple-darwin</code> instead. The <a href="/tutorial/">tutorial</a> then fetches the taxonomy package.</div>
+          <div class="label">Or, on Debian or Ubuntu (amd64):</div>
+          <div><span class="dim">$</span> sudo install -d -m 0755 /etc/apt/keyrings</div>
+          <div><span class="dim">$</span> sudo curl -fsSL -o /etc/apt/keyrings/headwater-archive-keyring.asc https://headwater.tools/apt/headwater-archive-keyring.asc</div>
+          <div><span class="dim">$</span> echo &quot;deb [signed-by=/etc/apt/keyrings/headwater-archive-keyring.asc] https://headwater.tools/apt stable main&quot; | sudo tee /etc/apt/sources.list.d/headwater.list</div>
+          <div><span class="dim">$</span> sudo apt-get update</div>
+          <div><span class="dim">$</span> sudo apt-get install -y headwater <span class="cursor" aria-hidden="true">▍</span></div>
+          <!-- #1348. These lines are the README's APT block less its first
+               two lines, which install ca-certificates and curl on a
+               minimal image. Group 11 of tools/repo/readme-fixtures.sh
+               holds the panel's release tag, sources line, keyring URL and
+               package against the README, so a release that moves one
+               and not the other is refused. Nobody has run these apt lines
+               from this page. The README says which images they install on. -->
+          <div class="note">On Apple silicon macOS, use <code>aarch64-apple-darwin</code> in the download lines. The <a href="/tutorial/">tutorial</a> then fetches the taxonomy package.</div>
         </div>
       </div>
       <div class="cards">

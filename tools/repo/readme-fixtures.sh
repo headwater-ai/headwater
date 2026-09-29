@@ -65,6 +65,14 @@
 # so it holds the package and not the site. Only a run of the block in a clean
 # container holds the site.
 #
+# Group 11 reads the install panel on the front page of the site,
+# `site/index.html`, against the page. The panel downloads the release the
+# page downloads and checks out, and its APT sources line, keyring URL and
+# package are the page's. Step 9 of `docs/how-to/cut-a-release.md` moves both
+# files, and v0.4.1 was cut with both still on v0.4.0 (#1348). The group does
+# not ask the remote whether the tag is the newest one, because that case would
+# turn `main` red from the push of a tag until the install text moves.
+#
 # Run it from anywhere:
 #     sh tools/repo/readme-fixtures.sh
 #
