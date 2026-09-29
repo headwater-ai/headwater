@@ -11,6 +11,11 @@
 #
 # `governs` admits only a `code_path` anchor. A path to a typed document under
 # it is an anchor, as it was before, because the relation admits no document.
+#
+# `cites` admits a document and a `snapshot_item`, whose resolver the test
+# supplies and which binds any string. Its patterns name items in another
+# system, so a string that spells a document's path is an item there and stays
+# an anchor. Only a `source-tree` pattern is a path in the corpus's own tree.
 
 facets:
   summary:
@@ -21,8 +26,14 @@ identifier_schemes:
 
 anchors:
   code_path: {resolver: source-tree}
+  snapshot_item: {resolver: fixture-snapshot}
 
 relations:
+  cites:
+    family: evidence
+    from: [explanation]
+    to:   [explanation, snapshot_item]
+    created_by: author
   traces_to:
     family: evidence
     from: [explanation]

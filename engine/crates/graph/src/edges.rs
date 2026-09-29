@@ -937,18 +937,17 @@ fn bind(
         // identifier (Q4), so it is a finding that names the identifier, and
         // never an anchor onto the document's file (#1410). The pattern the
         // resolver returns is normalized, so `./` and `..` spellings compare
-        // equal. A wildcard, a list, and a file with no identifier or no kind
-        // stay anchors, and so does every path under a relation that admits
+        // equal. A wildcard never equals a document's path, because no
+        // portable file name holds `*` or `?`. A wildcard, a list, and a file
+        // with no identifier or no kind stay anchors, and so does every path under a relation that admits
         // only anchors.
         if admits_a_document && resolver == SOURCE_TREE {
             if let [only] = resolved.as_slice() {
-                if Pattern::new(&only.normalized).is_literal() {
-                    if let Some(node) = index.typed_at(&only.normalized) {
-                        return Target::Unbound(Unbound::DocumentByPath {
-                            id: node.id.clone(),
-                            path: node.path.clone(),
-                        });
-                    }
+                if let Some(node) = index.typed_at(&only.normalized) {
+                    return Target::Unbound(Unbound::DocumentByPath {
+                        id: node.id.clone(),
+                        path: node.path.clone(),
+                    });
                 }
             }
         }

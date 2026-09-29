@@ -23,8 +23,14 @@
 //! the document, so `NOTE-FIX-b` has the reverse edge.
 //!
 //! **A rule that reported every path.** `notes/d.md` traces to a source file,
-//! `notes/e.md` to a wildcard over the documents, and `notes/g.md` to a
-//! Markdown file with no identifier. Each is an anchor and no finding.
+//! `notes/e.md` to a wildcard over the documents, `notes/g.md` to a Markdown
+//! file with no identifier, and `notes/j.md` to a file with an identifier and
+//! no kind. Each is an anchor and no finding.
+//!
+//! **A rule that compared any resolver's pattern.** `notes/h.md` writes the
+//! path of `NOTE-FIX-b` under `cites`, whose anchor kind's resolver is not
+//! `source-tree`. The string names an item in another system, so it is an
+//! anchor and no finding.
 //!
 //! **A rule that ignored the declaration.** `notes/f.md` writes the path of
 //! `NOTE-FIX-b` under `governs`, which admits only a `code_path` anchor. It is
@@ -34,7 +40,7 @@ use headwater_census::census;
 use headwater_census::shelves::Taxonomy;
 use headwater_census::walk::Corpus;
 use headwater_check::{Cache, Context, Date, Declared, Register, Run, Shape};
-use headwater_graph::anchors::Resolvers;
+use headwater_graph::anchors::{Binding, Resolver, Resolvers, Revision};
 use headwater_graph::declarations::Declarations;
 use headwater_graph::edges::{Target, Unbound};
 use headwater_graph::{Config, Graph};
@@ -47,6 +53,25 @@ const RULE: &str = "relation.target.unresolved";
 
 fn fixtures_dir() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("fixtures")
+}
+
+/// A resolver for an anchor kind outside the tree, which binds any string as
+/// itself: a snapshot of another system whose item names happen to spell paths.
+struct Snapshot;
+
+impl Resolver for Snapshot {
+    fn name(&self) -> &str {
+        "fixture-snapshot"
+    }
+
+    fn resolve(&self, raw: &str) -> Binding {
+        Binding::Resolved {
+            normalized: raw.to_string(),
+            matched: vec![raw.to_string()],
+            excluded_by: None,
+            revision: Revision::known(None),
+        }
+    }
 }
 
 fn build() -> (Graph, Run) {
@@ -69,7 +94,9 @@ fn build() -> (Graph, Run) {
     let graph = Graph::build(
         &taken,
         &declarations,
-        &Resolvers::over(&corpus),
+        &Resolvers::over(&corpus)
+            .with(Box::new(Snapshot))
+            .expect("no other resolver is named fixture-snapshot"),
         &corpus,
         &config,
     );
@@ -176,22 +203,25 @@ fn the_identifier_form_binds_to_the_document_and_makes_the_reverse_edge() {
 }
 
 /// A source file, a wildcard, a path under a relation that admits no
-/// document, and a Markdown file with no identifier all stay anchors.
+/// document, a Markdown file with no identifier, a file with an identifier and
+/// no kind, and a string that another resolver binds all stay anchors.
 #[test]
 fn every_other_path_stays_an_anchor_and_is_not_reported() {
     let (graph, run) = build();
 
-    for (file, id) in [
-        ("notes/d.md", "NOTE-FIX-d"),
-        ("notes/e.md", "NOTE-FIX-e"),
-        ("notes/f.md", "NOTE-FIX-f"),
-        ("notes/g.md", "NOTE-FIX-g"),
+    for (file, id, kind) in [
+        ("notes/d.md", "NOTE-FIX-d", "code_path"),
+        ("notes/e.md", "NOTE-FIX-e", "code_path"),
+        ("notes/f.md", "NOTE-FIX-f", "code_path"),
+        ("notes/g.md", "NOTE-FIX-g", "code_path"),
+        ("notes/h.md", "NOTE-FIX-h", "snapshot_item"),
+        ("notes/j.md", "NOTE-FIX-j", "code_path"),
     ] {
         assert!(at(&run, file).is_empty(), "{file}: {:?}", at(&run, file));
         assert!(
             matches!(
                 target_of(&graph, id),
-                Target::Anchor { anchor_kind, .. } if anchor_kind == "code_path"
+                Target::Anchor { anchor_kind, .. } if anchor_kind == kind
             ),
             "{file}: {:?}",
             target_of(&graph, id)
