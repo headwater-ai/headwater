@@ -31,7 +31,7 @@ For `route`, the member is the document that [`headwater route --json`](headwate
 
 The text block is for display only. The server never folds it, so a pointer takes one line unless its own summary or name holds a newline that the author wrote. The first line repeats the task, and a newline in the task shows there as well. So the text block is not a parse target. A path can hold ` (`, a summary can hold any word, and a line can end where the author put a newline. A client shows the text block as it is, and takes the pointers only from `structuredContent.pointers`. The server announces protocol `2024-11-05`, which does not define `structuredContent`, so a client that reads only that protocol ignores the member.
 
-`--write` also registers `new` and `fix`. `new` takes a kind, title and optional array of relation strings. `fix` takes one output format. No tool commits, pushes or merges, and the default server registers no tool that writes.
+`--write` also registers `new` and `fix`. `new` takes a kind, title and optional array of relation strings. `fix` takes one output format. The `fix` tool passes no change, so it writes no `verified_revision` stamp onto a suspect edge. To record a stamp, run `headwater change` and then `headwater check --fix --change` from a terminal, as [the `headwater check` contract](headwater-check.md) states. No tool commits, pushes or merges, and the default server registers no tool that writes.
 
 A write tool returns the account and artifact as separate content blocks. A call that moves a byte spends the server. Later tool calls receive a JSON-RPC `-32000` error because their answers would describe a stale corpus. A refused write or a write that lands no byte does not spend the server.
 
