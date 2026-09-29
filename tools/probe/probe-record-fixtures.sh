@@ -1325,7 +1325,8 @@ STUB
     printf '<!-- headwater:generated shelf_index -->\n\nold\n' > "$scratch/bw-base/docs/index.md"
     printf -- '---\n"headwater:generated": "shelf_sections."\nid: HW-REG-x\n---\n\nold\n' > "$scratch/bw-base/docs/register.md"
     printf '{\n  "headwater:generated": "corpus_descriptor.",\n  "a": "old"\n}\n' > "$scratch/bw-base/docs/data.json"
-    printf -- '---\nid: HW-DR-x\n---\n\nA generated page carries "headwater:generated": in its block.\n' > "$scratch/bw-base/docs/quotes.md"
+    printf -- '---\nid: HW-DR-x\n---\n\nA generated page carries this member in its block:\n\n"headwater:generated": "x"\n' > "$scratch/bw-base/docs/quotes.md"
+    printf '# headwater:generated site_nav.\nnav: old\n' > "$scratch/bw-base/docs/nav.yml"
     printf 'keep\n' > "$scratch/bw-base/docs/keep.md"
     cp -a "$scratch/bw-base" "$scratch/bw"
     cat > "$scratch/bin/claude" <<'STUB'
@@ -1342,6 +1343,7 @@ printf '<!-- headwater:generated shelf_index -->\n\nHW-DR-0049\n' > docs/index.m
 printf -- '---\n"headwater:generated": "shelf_sections."\nid: HW-REG-x\n---\n\nHW-DR-0049\n' > docs/register.md
 printf '{\n  "headwater:generated": "corpus_descriptor.",\n  "a": "HW-DR-0049"\n}\n' > docs/data.json
 printf 'HW-DR-0049\n' >> docs/quotes.md
+printf '# headwater:generated site_nav.\nnav: HW-DR-0049\n' > docs/nav.yml
 printf 'kept\n' > .claude/worktrees/w/docs/keep.md
 touch -r docs/keep.md .claude/worktrees/w/docs/keep.md
 mkdir -p .probe-log && printf 'HW-DR-0049\n' > .probe-log/other.txt
@@ -1369,6 +1371,8 @@ STUB
         ".claude/worktrees/w/.headwater/nav.yml" "$scratch/bash-write.md"
     absent "a file that carries the generated marker is not produced" \
         'path: "docs/index.md"' "$scratch/bash-write.md"
+    absent "a YAML fold that carries the marker in its first-line comment is not produced" \
+        'path: "docs/nav.yml"' "$scratch/bash-write.md"
     absent "a Markdown page that carries the marker in its front matter is not produced" \
         'path: "docs/register.md"' "$scratch/bash-write.md"
     absent "a JSON file that carries the marker as a member is not produced" \
