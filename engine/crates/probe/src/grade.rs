@@ -789,7 +789,10 @@ fn read<'a>(examines: &[Examined], session: &[&'a Event]) -> Option<Found<'a>> {
     for event in session {
         let Some(calls) = &event.calls else { continue };
         for (index, call) in calls.iter().enumerate() {
-            if examines.iter().any(|target| names(&call.argument, target)) {
+            let bash = call.tool == "Bash";
+            if examines.iter().any(|target| {
+                names(&call.argument, target) || (bash && bash_names(&call.argument, target))
+            }) {
                 return Some(Found {
                     event: event.at,
                     call: index + 1,
@@ -826,8 +829,72 @@ pub(crate) fn names_path(argument: &str, path: &str) -> bool {
             && argument[..argument.len() - path.len()].ends_with('/'))
 }
 
-fn bash_names(_argument: &str, _target: &Examined) -> bool {
-    false
+/// Whether a Bash call's argument runs a command that names an examined target.
+///
+/// The recorder writes a Bash call's argument as the JSON of its input, so the
+/// whole argument never equals a path (#1384). This reads the `command` member,
+/// splits it into the words a shell would pass, and tests each word with
+/// [`names_path`]. The boundary rule therefore holds per word: `cat x.md.bak`
+/// does not read `x.md`. An argument that is not JSON, or has no `command`
+/// string, names nothing.
+fn bash_names(argument: &str, target: &Examined) -> bool {
+    let Some(command) = headwater_yaml::json::field(argument, &["command".to_string()]) else {
+        return false;
+    };
+    shell_words(&command)
+        .iter()
+        .any(|word| names_path(word, &target.path))
+}
+
+/// The words of a shell command, with quotes and operators taken off.
+///
+/// Single quotes keep everything to the next single quote. Double quotes keep
+/// everything except a backslash escape. A backslash outside quotes keeps the
+/// next character. Whitespace and the operator characters `| & ; < > ( )`
+/// outside quotes end a word, so `<x.md` and `a;cat x.md` give `x.md` as a
+/// word. This is not a shell: it expands nothing and runs nothing, and a path
+/// built from a variable or a glob is not a path it can see.
+fn shell_words(command: &str) -> Vec<String> {
+    let mut words = Vec::new();
+    let mut word = String::new();
+    let mut open = false;
+    let mut chars = command.chars();
+    while let Some(c) = chars.next() {
+        match c {
+            '\'' => {
+                open = true;
+                word.extend(chars.by_ref().take_while(|&q| q != '\''));
+            }
+            '"' => {
+                open = true;
+                while let Some(q) = chars.next() {
+                    match q {
+                        '"' => break,
+                        '\\' => word.extend(chars.next()),
+                        _ => word.push(q),
+                    }
+                }
+            }
+            '\\' => {
+                open = true;
+                word.extend(chars.next());
+            }
+            c if c.is_whitespace() || "|&;<>()".contains(c) => {
+                if open {
+                    words.push(std::mem::take(&mut word));
+                    open = false;
+                }
+            }
+            c => {
+                open = true;
+                word.push(c);
+            }
+        }
+    }
+    if open {
+        words.push(word);
+    }
+    words
 }
 
 /// Every recorded call of the session, and `None` where no event recorded any.
