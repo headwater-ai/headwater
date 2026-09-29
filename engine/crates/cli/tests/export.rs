@@ -380,6 +380,50 @@ fn export_at_dates_an_uncommitted_graph_export_and_refuses_a_committed_one() {
     );
 }
 
+/// Only a committed *graph export* refuses `--at`. A committed projection of
+/// another kind, such as a shelf index, is not in `export`'s plan, and a
+/// corpus that declares one still dates its uncommitted exports.
+#[test]
+fn export_at_is_not_refused_by_a_committed_projection_of_another_kind() {
+    let root = uncommitted_control();
+    let package = root.join(".headwater/packages/acme-answered-export/taxonomy.yml");
+    let source = std::fs::read_to_string(&package).expect("the package reads");
+    let filtered = "    output: exports/filtered.json\n";
+    let projections = "projections:\n";
+    assert!(
+        source.contains(filtered) && source.contains(projections),
+        "the fixture moved: {source}"
+    );
+    let source = source
+        .replace(filtered, &format!("{filtered}    committed: false\n"))
+        .replace(
+            projections,
+            "projections:\n  - {kind: shelf_index, for: [answers], output: \"{shelf}/README.md\"}\n",
+        );
+    std::fs::write(&package, source).expect("the package writes");
+    let (code, said) = status(&run(&root, &["taxonomy", "resolve"]));
+    assert_eq!(code, Some(0), "the taxonomy does not resolve\n{said}");
+
+    let (code, said) = status(&run(&root, &["export", "--at", "2026-09-30"]));
+    assert_eq!(
+        code,
+        Some(0),
+        "a committed shelf index refused `--at` over uncommitted exports\n{said}"
+    );
+    for name in ["control", "filtered"] {
+        let written = std::fs::read_to_string(root.join(format!("exports/{name}.json")))
+            .unwrap_or_else(|error| panic!("`export` did not write {name}: {error}\n{said}"));
+        assert!(
+            written.contains("\"generated_at\": \"2026-09-30\""),
+            "{name} does not state the injected date\n{written}"
+        );
+    }
+    assert!(
+        !root.join("docs/answers/README.md").exists(),
+        "`export` wrote the shelf index\n{said}"
+    );
+}
+
 /// `--at` with `--check` is refused, because nothing `--check` compares
 /// carries a date.
 #[test]
