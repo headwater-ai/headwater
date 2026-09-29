@@ -557,6 +557,25 @@ fn a_transcript_planned_over_one_probe_is_held_against_that_probe_alone() {
         staleness.members
     );
 
+    // A recorded selection that is not the digest of the probes the events
+    // name is no part of this selection, so the whole stands and the part's
+    // read set is not the one it composes.
+    let elsewhere = source.replace(
+        &headwater_probe::plan::selection_digest(&[CITED]),
+        "sha256:a-selection-this-tree-does-not-compose",
+    );
+    assert_ne!(elsewhere, source, "the transcript records the part's digest");
+    let staleness = staleness_of(&at, &elsewhere);
+    assert_eq!(
+        staleness.part, None,
+        "a digest that names no part was read as one"
+    );
+    assert_eq!(
+        staleness.verdict(),
+        Stale::SetMoved,
+        "a transcript whose selection names no part of this one was held against a part"
+    );
+
     // A document the whole selection reads and the part does not.
     let before = plan_over(&at);
     edit(
@@ -1699,6 +1718,24 @@ fn a_moved_lock_the_read_set_does_not_see_leaves_the_transcript_gradable() {
             .contains("planned against taxonomy sha256:other"),
         "a reader of the record is told the lock moved and why it still reads"
     );
+}
+
+/// #1292 for a run planned over a part of the selection. The read set the
+/// intake composes is the part's, so a lock move that leaves the part's read
+/// set alone leaves the transcript gradable, although the whole selection's
+/// read set is not the one the transcript recorded.
+#[test]
+fn a_moved_lock_the_part_does_not_see_leaves_a_narrowed_transcript_gradable() {
+    let source = planned_over_cited(&fixtures_dir());
+    assert!(
+        !source.contains(&format!("read_set: {}", regression().read_set)),
+        "the part's read set is the whole selection's, so this proves nothing about the part"
+    );
+    let moved = record_over_the_fixture_selection(
+        &source.replace(&format!("lock: {LOCK}\n"), "lock: sha256:other\n"),
+    );
+    assert_eq!(moved.refusal, None, "{:?}", moved.refusal);
+    assert_eq!(moved.lock_moved.as_deref(), Some("sha256:other"));
 }
 
 #[test]
