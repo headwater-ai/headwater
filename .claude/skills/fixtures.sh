@@ -633,6 +633,47 @@ $out" ;;
         0 'no declared purpose answers this task' \
         "$engine" route zzzqqqwww --root "$root"
 
+    printf '\n# headwater-authoring, its description against the ruling it cites\n'
+
+    # The status of a settled decision in its pull request (#1294). A skill
+    # reaches a session through its description, which is always loaded, and
+    # the body loads only once a session invokes the skill. So the ruling is
+    # stated in the description, and the identifier it cites is the ruling.
+    #
+    # Every read is of the `description` key of the front matter alone:
+    # `claim` searches the whole file, and the body already states the ruling,
+    # so a sentence moved into the body would pass it. The front matter is the
+    # block between the first two `---` lines, and its first `description:`
+    # key is the one a harness loads. Leading blanks and a YAML quote are
+    # stripped, as YAML strips them, before the test for Draft.
+    #
+    # The sentence is matched whole, from its subject to the identifier, and
+    # after a sentence boundary, so a changed subject or an inserted `never`
+    # fails it. The identifier is the one inside the sentence, and the ruling
+    # is the first line `explain` prints, which is the path the identifier
+    # resolves to. A match anywhere in the output passes any decision whose
+    # edges reach 0052.
+    name='the authoring description states the status ruling and does not open with Draft'
+    description=$(awk 'NR == 1 && $0 == "---" { on = 1; next }
+                       on && $0 == "---" { exit }
+                       on && /^description:/ { sub(/^description:[ \t]*/, ""); sub(/^["'\'']/, ""); print; exit }' \
+        "$skills/headwater-authoring/SKILL.md")
+    sentence='. A settled document goes into its pull request at `status: current`, not `draft` ('
+    ruling='docs/decisions/0052-a-document-is-proposed-at-the-state-it-will-hold-and-the-merge-activates-it.md'
+    case $description in
+        [Dd][Rr][Aa][Ff][Tt]*)
+            fail "$name" "the description opens with Draft: $description" ;;
+        *"$sentence"*)
+            cited=${description#*"$sentence"}
+            cited=${cited%%)*}
+            resolved=$("$engine" explain "$cited" --root "$root" 2>/dev/null | head -n 1)
+            if [ "$resolved" = "$ruling" ]; then
+                pass "$name"
+            else
+                fail "$name" "the description cites \`$cited\`, which resolves to \`$resolved\` and not to $ruling"
+            fi ;;
+        *) fail "$name" "the description no longer says: $sentence<the ruling>): $description" ;;
+    esac
 
     printf '\n# headwater-maintainer, against the hook it invokes\n'
 

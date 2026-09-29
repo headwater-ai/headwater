@@ -66,6 +66,24 @@ pub enum ResolveErrorKind {
         path: String,
         why: &'static str,
     },
+    /// A selected bundle writes into a bundle it names in `requires`, and the
+    /// selection does not hold that bundle. [HW-DR-0095] owes this refusal
+    /// before the merge: without it an `add_to` fails inside the merge with no
+    /// word of the dependency, and an `add` grafts a stub that no entry
+    /// declares.
+    ///
+    /// [HW-DR-0095]: ../../../../docs/decisions/0095-q67-one-library-entry-may-address-the-keys-of-an-entry-it-names-in-requires-and-confluence-holds-over-the-dependency-order.md
+    MissingDependency {
+        /// The dependent bundle, by the name it was selected as.
+        bundle: String,
+        /// Every bundle it names in `requires` that the selection lacks.
+        missing: Vec<String>,
+        /// The node the write needs and nothing selected declares.
+        address: String,
+    },
+    /// The selected bundles name each other in `requires` in a cycle, so no
+    /// dependency can apply first.
+    RequiresCycle { bundles: Vec<String> },
     /// `add` states the whole value, so the key must not already be there. A
     /// base release that adds a key an overlay already added is a collision,
     /// and a collision is a task for a human rather than a promotion to
@@ -134,6 +152,8 @@ impl ResolveErrorKind {
             SourceRefused(_)
             | WrongRole { .. }
             | NotConfluent { .. }
+            | MissingDependency { .. }
+            | RequiresCycle { .. }
             | ReferenceUnresolved(_)
             | ReferenceChain { .. }
             | ReferenceRootUnavailable { .. }
@@ -158,6 +178,25 @@ impl std::fmt::Display for ResolveError {
             } => write!(
                 f,
                 "does not commute with `{other_at}` in {other_source}: both reach `{path}`, and {why}"
+            ),
+            MissingDependency {
+                bundle,
+                missing,
+                address,
+            } => write!(
+                f,
+                "the bundle `{bundle}` writes into `{address}`, which it expects from {} it names \
+                 in `requires`, and the selection does not hold {}. Select {} as well: \
+                 `requires` never adds a bundle to a selection",
+                plural_bundles(missing),
+                if missing.len() == 1 { "it" } else { "them" },
+                ticked(missing),
+            ),
+            RequiresCycle { bundles } => write!(
+                f,
+                "the bundles {} name each other in `requires` in a cycle, so none of them can \
+                 apply first. Remove one name from one `requires` list",
+                ticked(bundles),
             ),
             AddCollides(both) => write!(
                 f,
@@ -326,6 +365,24 @@ pub fn render(errors: &[ResolveError]) -> String {
         }
     }
     out
+}
+
+/// `` `a`, `b` and `c` ``: a list of bundle names as a sentence names them.
+fn ticked(names: &[String]) -> String {
+    let ticked: Vec<String> = names.iter().map(|name| format!("`{name}`")).collect();
+    match ticked.split_last() {
+        None => String::new(),
+        Some((last, [])) => last.clone(),
+        Some((last, rest)) => format!("{} and {last}", rest.join(", ")),
+    }
+}
+
+/// "the bundle `a`" or "the bundles `a` and `b`".
+fn plural_bundles(names: &[String]) -> String {
+    match names.len() {
+        1 => format!("the bundle {}", ticked(names)),
+        _ => format!("the bundles {}", ticked(names)),
+    }
 }
 
 #[cfg(test)]

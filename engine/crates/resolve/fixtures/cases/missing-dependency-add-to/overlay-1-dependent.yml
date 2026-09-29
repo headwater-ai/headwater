@@ -1,0 +1,14 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# A selection that holds a dependent bundle and not the bundle it names in
+# `requires`. The `add_to` appends to a list only `provider` declares. Without
+# the refusal HW-DR-0095 owes, the merge fails with "not a list" and says
+# nothing of the dependency. The refusal names this bundle, the missing one,
+# and the list.
+
+bundle: dependent
+extends: headwater/standard@1.0.0
+requires: [provider]
+
+add_to:
+  kinds.design_spec.sections.require: [Rationale]

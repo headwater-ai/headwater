@@ -1,0 +1,14 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The dependency. It declares the kind and the list that `dependent` writes
+# into, and it names nothing in `requires`.
+
+bundle: provider
+extends: headwater/standard@1.0.0
+requires: []
+
+add:
+  kinds.design_spec:
+    is_a: governed_document
+    purpose: behavior
+    sections: {require: [Scope]}

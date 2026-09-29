@@ -1,0 +1,3 @@
+refused
+
+overlay-3-last.yml `add_to.kinds.design_spec.sections.require` (13:3): does not commute with `add.kinds.design_spec` in overlay-1-provider.yml: both reach `kinds.design_spec.sections.require`, and two list operations over one list leave the order of the result to the order of application

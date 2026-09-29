@@ -1,0 +1,21 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# HW-DR-0095 (Q67): a bundle may write into a bundle it names in `requires`.
+# This one appends to a list the `provider` bundle declares, and adds a key
+# under a mapping the provider declares.
+#
+# The `add_to` meets the provider's `add` at one list, so without `requires`
+# the pair does not commute (`dependent-add-to-without-requires`). The `add`
+# writes a leaf the provider does not write, so it commutes with or without
+# `requires`: the dependency is what orders the `add_to`, and the `add` needs
+# nothing.
+
+bundle: dependent
+extends: headwater/standard@1.0.0
+requires: [provider]
+
+add:
+  kinds.design_spec.voice: declarative
+
+add_to:
+  kinds.design_spec.sections.require: [Rationale]
