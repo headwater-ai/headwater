@@ -332,6 +332,37 @@ class AListWithADeadMemberIsShownRefused(unittest.TestCase):
         self.assertEqual([(row["governed_by"], row["reason"]) for row in model.refused],
                          [("HW-DR-0074", DEAD_MEMBER_REASON)])
 
+    def test_the_reason_is_escaped_on_the_page(self):
+        export = with_dead_member_list(load_fixture())
+        export["graph"]["edges"][-1]["target"]["reason"] = "`code_path`: `<b>&x` no `<b>&x` in the source tree"
+        page = dashboard.render(dashboard.load(export, corpus_identity="fixture"))
+        self.assertIn("<td>`code_path`: `&lt;b&gt;&amp;x` no `&lt;b&gt;&amp;x` in the source tree</td>", page)
+        self.assertNotIn("<b>&x", page)
+
+    def test_refused_rows_sort_by_governor_then_reason(self):
+        export = load_fixture()
+        for source, reason in (
+            ("docs/obligations/0001-old.md", "z reason"),
+            ("docs/decisions/0002-recent.md", "b reason"),
+            ("docs/decisions/0002-recent.md", "a reason"),
+        ):
+            export["graph"]["edges"].append(
+                {"source": source, "relation": "governs", "written_as": "governs",
+                 "target": {"bound": "nothing", "reason": reason}}
+            )
+        model = dashboard.load(export, corpus_identity="fixture")
+        self.assertEqual(
+            [(row["governed_by"], row["reason"]) for row in model.refused],
+            [("FX-DR-0002", "a reason"), ("FX-DR-0002", "b reason"), ("FX-OBL-0001", "z reason")],
+        )
+
+    def test_a_refused_edge_with_an_empty_reason_is_refused_as_input(self):
+        export = with_dead_member_list(load_fixture())
+        export["graph"]["edges"][-1]["target"]["reason"] = ""
+        with self.assertRaises(dashboard.ExportRefused) as raised:
+            dashboard.load(export, corpus_identity="fixture")
+        self.assertIn("target.reason", str(raised.exception))
+
     def test_a_refused_edge_with_no_reason_is_refused_as_input(self):
         export = with_dead_member_list(load_fixture())
         del export["graph"]["edges"][-1]["target"]["reason"]
