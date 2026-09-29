@@ -1152,6 +1152,11 @@ PATH="$scratch/no-harness" "$shell" "$driver" --probe "HW-PROBE-$tombstone" --se
     --task-file "$scratch/task.md" --workspace "$scratch/named" \
     >/dev/null 2>"$scratch/named2.err"
 same "a longer identifier that holds the record's identifier passes the guard" "3" "$?"
+printf -- '- X%s is another record\n' "HW-OBL-0013" > "$scratch/named/docs/spec/13.md"
+PATH="$scratch/no-harness" "$shell" "$driver" --probe "HW-PROBE-$tombstone" --session x \
+    --task-file "$scratch/task.md" --workspace "$scratch/named" \
+    >/dev/null 2>"$scratch/named3.err"
+same "and so does one that holds it after a letter" "3" "$?"
 
 # ---------------------------------------------------------------------------
 # Step 3 of #819: the recorder names its session, and says whether the hook ran.
@@ -1298,7 +1303,11 @@ STUB
     # `produced: []`. With `--baseline`, the driver compares the workspace
     # after the session with the tree it was copied from, and every file that
     # is new or changed is produced. A file the session left alone is not, and
-    # neither is a cache the engine writes.
+    # neither is a file an engine verb writes (verify round 1 of #1384): the
+    # capture-cost store `headwater new` appends to, a fold under
+    # `.headwater/`, and a generated shelf index. Each one below names
+    # HW-DR-0049, which is the citation the `cited` probe grades, and only the
+    # present arm could write it. The probe log directory is passed over too.
     rm -rf "$scratch/bw" "$scratch/bw-base"
     # The transform checks each produced file, so the tree carries the lock,
     # the vendored packages and the consumer declaration, and nothing that
@@ -1308,6 +1317,7 @@ STUB
         "$scratch/bw-base/.headwater/"
     printf 'old\n' > "$scratch/bw-base/docs/changed.md"
     printf 'same\n' > "$scratch/bw-base/docs/same.md"
+    printf '<!-- headwater:generated shelf_index -->\n\nold\n' > "$scratch/bw-base/docs/index.md"
     cp -a "$scratch/bw-base" "$scratch/bw"
     cat > "$scratch/bin/claude" <<'STUB'
 #!/bin/sh
@@ -1317,12 +1327,17 @@ cp docs/same.md .claude/worktrees/w/docs/same.md
 printf 'new\n' > docs/written-by-bash.md
 printf 'new\n' > .claude/worktrees/w/docs/in-a-worktree.md
 mkdir -p .headwater/cache && printf 'x\n' > .headwater/cache/entry
+printf '{"cites":"HW-DR-0049"}\n' >> .headwater/capture-cost.jsonl
+mkdir -p .claude/worktrees/w/.headwater && printf 'nav: HW-DR-0049\n' > .claude/worktrees/w/.headwater/nav.yml
+printf '<!-- headwater:generated shelf_index -->\n\nHW-DR-0049\n' > docs/index.md
+mkdir -p .probe-log && printf 'HW-DR-0049\n' > .probe-log/other.txt
 printf '%s\n' '{"type":"system","subtype":"init","model":"claude-haiku-4-5","session_id":"s14"}'
 printf '%s\n' '{"type":"assistant","message":{"content":[{"type":"tool_use","id":"t1","name":"Bash","input":{"command":"printf new > docs/written-by-bash.md"}}]}}'
 printf '%s\n' '{"type":"result","subtype":"success","total_cost_usd":0.01,"modelUsage":{"claude-haiku-4-5-20251001":{"inputTokens":10}}}'
 STUB
     chmod +x "$scratch/bin/claude"
-    PATH="$scratch/bin:$PATH" sh "$driver" --probe "HW-PROBE-$tombstone" --session fixture-bash-write \
+    HEADWATER_PROBE_LOG_DIR="$scratch/bw/.probe-log" PATH="$scratch/bin:$PATH" \
+        sh "$driver" --probe "HW-PROBE-$tombstone" --session fixture-bash-write \
         --task-file "$scratch/task.md" --workspace "$scratch/bw" --baseline "$scratch/bw-base" \
         > "$scratch/bash-write.md" 2>"$scratch/bash-write.err"
     same "a session that writes through Bash records" "0" "$?"
@@ -1334,6 +1349,14 @@ STUB
     absent "a worktree's unchanged copy of a file is not produced" \
         'path: ".claude/worktrees/w/docs/same.md"' "$scratch/bash-write.md"
     absent "an engine cache is not produced" ".headwater/cache" "$scratch/bash-write.md"
+    absent "the capture-cost store a verb appends to is not produced" \
+        ".headwater/capture-cost.jsonl" "$scratch/bash-write.md"
+    absent "a fold under a worktree's .headwater/ is not produced" \
+        ".claude/worktrees/w/.headwater/nav.yml" "$scratch/bash-write.md"
+    absent "a file that carries the generated marker is not produced" \
+        'path: "docs/index.md"' "$scratch/bash-write.md"
+    absent "the probe log directory inside the workspace is not produced" \
+        ".probe-log/" "$scratch/bash-write.md"
 
     # `campaign.sh` runs one job with the tier's cap and its tree as the
     # baseline, and assembly counts a capped session (#1384). The batch half

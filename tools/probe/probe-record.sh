@@ -668,16 +668,27 @@ answer=
 # file that is new or changed after the session is passed to the transform as
 # `--produced`. A file under `.claude/worktrees/<name>/` is compared with the
 # file at the same path under the baseline's root, so a worktree the session
-# made counts the files it changed and not the checkout it copied. The engine's
-# build and cache directories and the probe log directory are passed over.
+# made counts the files it changed and not the checkout it copied.
+#
+# **A file an engine verb writes is not produced** (verify round 1 of #1384). A
+# session that ran only `headwater new` changed `.headwater/capture-cost.jsonl`,
+# whose history names HW-DR-0049, and the grader passed the `cited` probe on
+# that file. A session that ran `headwater generate` rewrote `.headwater/nav.yml`
+# the same way. Only the present arm holds `.headwater/` and an engine that
+# runs, so counting those files tilts a rate toward that arm. So the diff passes
+# over `.headwater/` whole, at the root and in a worktree, and every file whose
+# first line carries the `headwater:generated` marker, such as a shelf index
+# under `docs/`. A session that edits a generated file by hand loses that edit
+# here, and `headwater generate` would have overwritten it too. The engine's
+# build directory and the probe log directory are passed over as well.
 #
 # A file is unchanged when its size and its time match the baseline's, since a
 # `cp -a` keeps both, and otherwise when its content digest matches. It needs
 # GNU `find` for `-printf`. A path that holds a tab or a newline is passed over.
 step_diff_baseline() {
     list() {
-        (cd "$1" && find . \( -path ./engine/target -o -path ./.headwater/cache \
-            -o -path './.claude/worktrees/*/engine/target' -o -path './.claude/worktrees/*/.headwater/cache' \) \
+        (cd "$1" && find . \( -path ./engine/target -o -path ./.headwater \
+            -o -path './.claude/worktrees/*/engine/target' -o -path './.claude/worktrees/*/.headwater' \) \
             -prune -o -type f -printf '%P\t%s\t%T@\n')
     }
     list "$baseline" > "$diffdir/base.tsv" || return 1
@@ -713,7 +724,14 @@ step_diff_baseline() {
         awk 'NR == FNR { want[$1]; next } FNR in want' "$diffdir/differ" "$diffdir/here.list" \
             >> "$diffdir/produced"
     fi
-    sort -u "$diffdir/produced"
+    sort -u "$diffdir/produced" | while IFS= read -r path; do
+        [ -n "$path" ] || continue
+        first=$(sed -n 1p "$here/$path" 2>/dev/null) || first=""
+        case $first in
+            *headwater:generated*) ;;
+            *) printf '%s\n' "$path" ;;
+        esac
+    done
 }
 
 set --
