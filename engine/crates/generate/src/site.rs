@@ -132,27 +132,9 @@ pub fn hold(
     };
 
     // 1. A page the navigation names and the site does not hold.
-    for path in &plan.navigation {
-        let Some(source) = under(corpus_root, path) else {
-            report.findings.push(Finding {
-                rule: PAGE_MISSING,
-                at: path.clone(),
-                detail: "the navigation names it, and it is outside the corpus root, so no page of the site serves it".to_string(),
-            });
-            continue;
-        };
-        let forms = pages_of(source);
-        if !forms.is_empty() && !forms.iter().any(|form| files.contains(form)) {
-            report.findings.push(Finding {
-                rule: PAGE_MISSING,
-                at: source.to_string(),
-                detail: format!(
-                    "the navigation names it, and the site holds no {}",
-                    forms.join(" and no ")
-                ),
-            });
-        }
-    }
+    report
+        .findings
+        .extend(missing(&plan.navigation, corpus_root, &files));
 
     // 2. A page under a shelf's directory that answers to no source.
     let accounted: BTreeSet<String> = surface
@@ -163,21 +145,16 @@ pub fn hold(
         .filter_map(|path| under(corpus_root, &path).map(pages_of))
         .flatten()
         .collect();
-    let shelves: BTreeSet<String> = surface
-        .taxonomy()
-        .shelves
-        .iter()
-        .filter_map(|shelf| {
-            let directory = shelf_index::directory_of(shelf.pattern.source());
-            under(corpus_root, &directory).map(str::to_string)
-        })
-        .filter(|directory| !directory.is_empty())
-        .collect();
-    for page in &pages {
-        let on_shelf = shelves
+    let shelves = scopes(
+        corpus_root,
+        surface
+            .taxonomy()
+            .shelves
             .iter()
-            .any(|directory| page.starts_with(&format!("{directory}/")));
-        if on_shelf && !accounted.contains(*page) {
+            .map(|shelf| shelf_index::directory_of(shelf.pattern.source())),
+    );
+    for page in &pages {
+        if on_shelf(page, &shelves) && !accounted.contains(*page) {
             report.findings.push(Finding {
                 rule: PAGE_STALE,
                 at: (*page).clone(),
@@ -214,7 +191,7 @@ pub fn hold(
             let Some(on_target) = ids.get(&target) else {
                 continue;
             };
-            if !on_target.contains(&fragment) && !on_target.contains(&decode(&fragment)) {
+            if !names(on_target, &fragment) {
                 report.findings.push(Finding {
                     rule: FRAGMENT_DEAD,
                     at: page.clone(),
@@ -238,6 +215,64 @@ fn order(rule: &str) -> usize {
         .iter()
         .position(|known| *known == rule)
         .unwrap_or(usize::MAX)
+}
+
+/// A `site.page.missing` for each navigation path the site serves no page
+/// for. A path outside the corpus root is one: no generator that reads the
+/// corpus root serves it, so a reader who follows the entry lands nowhere.
+fn missing(navigation: &[String], corpus_root: &str, files: &BTreeSet<String>) -> Vec<Finding> {
+    let mut out = Vec::new();
+    for path in navigation {
+        let Some(source) = under(corpus_root, path) else {
+            out.push(Finding {
+                rule: PAGE_MISSING,
+                at: path.clone(),
+                detail: "the navigation names it, and it is outside the corpus root, so no page of the site serves it".to_string(),
+            });
+            continue;
+        };
+        let forms = pages_of(source);
+        if !forms.is_empty() && !forms.iter().any(|form| files.contains(form)) {
+            out.push(Finding {
+                rule: PAGE_MISSING,
+                at: source.to_string(),
+                detail: format!(
+                    "the navigation names it, and the site holds no {}",
+                    forms.join(" and no ")
+                ),
+            });
+        }
+    }
+    out
+}
+
+/// The site directories a stale page is looked for under: each shelf's
+/// directory, as a path under the corpus root. A shelf outside the corpus
+/// root has no page in the site, and a shelf whose directory is the corpus
+/// root itself would put the home page, `404.html` and every theme page in
+/// scope, so neither gives one.
+fn scopes(corpus_root: &str, directories: impl Iterator<Item = String>) -> BTreeSet<String> {
+    directories
+        .filter_map(|directory| under(corpus_root, &directory).map(str::to_string))
+        .filter(|directory| !directory.is_empty())
+        .collect()
+}
+
+/// Whether a page is under one of the scopes: inside the directory, and not
+/// in a sibling whose name only starts the same way.
+fn on_shelf(page: &str, scopes: &BTreeSet<String>) -> bool {
+    scopes
+        .iter()
+        .any(|directory| page.starts_with(&format!("{directory}/")))
+}
+
+/// Whether a fragment names an `id` of its page. The fragment as written is
+/// tried first and then percent-decoded, which is the order the HTML
+/// standard's "find a potential indicated element" takes: an `id` that holds
+/// a literal `%20` is reached by `#a%20b`, and an `id` of `café` by
+/// `#caf%C3%A9`.
+fn names(ids: &BTreeSet<String>, fragment: &str) -> bool {
+    ids.contains(fragment) || ids.contains(&decode(fragment))
 }
 
 fn is_page(path: &str) -> bool {
@@ -587,6 +622,60 @@ mod tests {
         assert_eq!(
             ids,
             ["three", "two"].iter().map(|s| s.to_string()).collect()
+        );
+    }
+
+    #[test]
+    fn a_navigation_path_outside_the_corpus_root_is_missing() {
+        let files: BTreeSet<String> = ["a/index.html"].iter().map(|s| s.to_string()).collect();
+        let found = missing(
+            &["docs/a.md".to_string(), "elsewhere/b.md".to_string()],
+            "docs",
+            &files,
+        );
+        assert_eq!(found.len(), 1, "{found:?}");
+        assert_eq!(found[0].rule, PAGE_MISSING);
+        assert_eq!(found[0].at, "elsewhere/b.md");
+    }
+
+    #[test]
+    fn a_shelf_at_the_corpus_root_or_outside_it_gives_no_scope() {
+        let found = scopes(
+            "docs",
+            ["docs", "docs/decisions", "elsewhere/notes"]
+                .iter()
+                .map(|s| s.to_string()),
+        );
+        assert_eq!(found, ["decisions".to_string()].into_iter().collect());
+    }
+
+    #[test]
+    fn a_sibling_directory_that_shares_a_prefix_is_not_on_the_shelf() {
+        let scope: BTreeSet<String> = ["decisions".to_string()].into_iter().collect();
+        assert!(on_shelf("decisions/gone/index.html", &scope));
+        assert!(!on_shelf("decisions-old/x.html", &scope));
+        assert!(!on_shelf("decisions.html", &scope));
+    }
+
+    #[test]
+    fn a_fragment_matches_as_written_and_then_decoded() {
+        let ids: BTreeSet<String> = ["a%20b", "caf\u{e9}"]
+            .iter()
+            .map(|s| s.to_string())
+            .collect();
+        assert!(names(&ids, "a%20b"), "the fragment as written");
+        assert!(names(&ids, "caf%C3%A9"), "the fragment decoded");
+        assert!(!names(&ids, "a%20c"), "neither as written nor decoded");
+    }
+
+    #[test]
+    fn an_escaped_ampersand_in_a_path_is_read_as_one() {
+        assert_eq!(
+            in_site("q&amp;a.html#x"),
+            Some(Link {
+                path: "q&a.html".to_string(),
+                fragment: Some("x".to_string())
+            })
         );
     }
 

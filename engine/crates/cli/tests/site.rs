@@ -107,8 +107,14 @@ impl Root {
     fn clean_site(&self) {
         self.page(
             "index.html",
-            "<a href=\"decisions/\">Decisions</a><a href=\"https://example.org/\">out</a>",
+            "<a href=\"decisions/\">Decisions</a><a href=\"https://example.org/\">out</a><a href=\"assets/guide.pdf#page=2\">guide</a>",
         );
+        // A file that is not a page. A fragment on a link to it names no `id`
+        // this verb can read, so it is not a finding.
+        let asset = self.at.join("site/assets/guide.pdf");
+        std::fs::create_dir_all(asset.parent().expect("an asset has a parent"))
+            .expect("the asset directory is made");
+        std::fs::write(&asset, "%PDF-1.4\n").expect("the asset writes");
         // A link that opens with `/` depends on where the site is served, so
         // it is not read. This one would resolve to nothing in the directory.
         self.page("404.html", "<a href=\"/headwater/\">home</a>");
@@ -273,6 +279,22 @@ fn a_link_to_a_file_the_site_lacks_is_dead() {
     root.page(
         "decisions/0002-beta-choice/index.html",
         "<h1 id=\"beta\">Beta</h1><a href=\"../0001-alpha-choice/#alpha\">alpha</a><a href=\"../\">up</a><a href=\"../other/\">other</a>",
+    );
+    one(
+        &root.site(),
+        "site.link.dead",
+        "decisions/0002-beta-choice/index.html",
+    );
+}
+
+/// A link with a fragment to a page the site lacks is a dead link, not a
+/// dead fragment and not nothing. This is the shape of most of #431.
+#[test]
+fn a_link_with_a_fragment_to_a_page_the_site_lacks_is_dead() {
+    let root = Root::new("link-fragment", OVERLAY_WITH_NAV);
+    root.page(
+        "decisions/0002-beta-choice/index.html",
+        "<h1 id=\"beta\">Beta</h1><a href=\"../0001-alpha-choice/#alpha\">alpha</a><a href=\"../\">up</a><a href=\"../gone.html#x\">gone</a>",
     );
     one(
         &root.site(),
