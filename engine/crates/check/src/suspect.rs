@@ -65,7 +65,7 @@
 //! is. A rule whose instances are only its findings reports a count that reads
 //! as its own denominator.
 //!
-//! # The three silences, and the one report an unrecorded edge gets
+//! # The three silences, and the reports an edge with no digest gets
 //!
 //! An edge with no recorded revision passes, with one exception below. A
 //! person who types an entry by hand records nothing to compare, and every
@@ -84,10 +84,16 @@
 //! reaches ([HW-OBL-0104](../../../../docs/obligations/0104-a-governs-edge-reaches-the-path-it-names-and-nothing.md)).
 //! A list member that names a directory is reported the same way, in one
 //! finding per entry that names each such member, because one directory
-//! member leaves the whole list without a digest (#1104). A literal that
-//! names a named pipe, a socket or a device has no digest either, because the
-//! source tree never opens one (#1269), but it passes: `/**` after it names
-//! nothing, so the directory remedy would be false.
+//! member leaves the whole list without a digest (#1104).
+//!
+//! **An edge that reaches only named pipes, sockets or devices is reported
+//! too.** The source tree never opens one (#1269), so such an edge has no
+//! digest and could never go suspect either. The rule reports it at `Info`,
+//! and names the regular files the document governs as the remedy, or the
+//! removal of the entry (#1333). It names no `/**`, because `/**` after such a
+//! path names nothing. An edge whose entries hold a regular file beside a pipe
+//! has a digest over the regular files, and the count a moved digest reports
+//! is the count of those files.
 //!
 //! A target that is not an anchor passes, and a document target is skipped
 //! with its reason. A document holds no revision, and an unbound target is
@@ -412,8 +418,9 @@ impl EdgeCheck for Suspect<'_> {
 /// member leaves a list with no digest over its union too. A literal that
 /// names a named pipe, a socket or a device also gets no digest, because the
 /// resolver never opens one (#1269), but it is not a directory, and `/**`
-/// after it names nothing, so it is not a member here and the edge passes.
-/// Empty for every other resolver, and for an anchor with no such member.
+/// after it names nothing, so it is not a member here. The rule reports that
+/// edge with its own finding instead (#1333). Empty for every other resolver,
+/// and for an anchor with no such member.
 fn directory_members<'e>(
     resolver: &str,
     patterns: &'e [headwater_graph::edges::PatternMember],

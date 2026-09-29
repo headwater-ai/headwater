@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: Apache-2.0
-//! `headwater check` finishes when a `governs` edge reaches a named pipe
-//! (#1269).
+//! `headwater check` and `headwater show` finish when a named pipe is in the
+//! tree, at a document path or under a `governs` edge (#1269, #1333).
 //!
 //! A named pipe with no writer blocks a process that opens it to read, and it
-//! never returns. The walk reports a pipe as a file, so an edge that names one,
-//! or a wildcard that matches one, hands it to the reader that digests what an
-//! edge governs. That reader takes regular files alone, so `check` never opens
-//! the pipe. Each case runs the verb under a deadline and fails on it, because
-//! a check that opened the pipe does not end.
+//! never returns. The walk reports a pipe as an entry of its own kind, so the
+//! census never reads one. An edge that names one, or a wildcard that matches
+//! one, hands it to the reader that digests what an edge governs. That reader
+//! takes regular files alone, so `check` never opens the pipe. Each case runs
+//! the verb under a deadline and fails on it, because a verb that opened the
+//! pipe does not end.
 
 #![cfg(unix)]
 

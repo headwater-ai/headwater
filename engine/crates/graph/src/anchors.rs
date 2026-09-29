@@ -126,17 +126,15 @@ pub enum Binding {
 ///
 /// Its `Debug` and its equality are those of the `Option<String>` it stands
 /// for, so [`crate::edges::Target::resolution`] writes the same cache key it
-/// wrote when the digest was computed at load. The one exception is a tree
-/// revision with no value whose entries hold no directory, such as a named
-/// pipe, an unreadable file or an entry that went away. The suspect rule
-/// reports a directory literal and passes every such edge, so the key has to
-/// state which of the two it is. Its `Debug` is therefore `NoDigest` rather
-/// than `None`, and a verdict cached over a directory does not answer for
-/// something else that took its name (#1269). A directory keeps the key
-/// `None`. Before #1269 a check that met a named pipe never ended, so no key
-/// over a pipe moves. A key over a socket, a device, an unreadable file or a
-/// gone entry does move, and that is intended: the rule now decides
-/// differently about such an edge.
+/// wrote when the digest was computed at load. The exceptions are the tree
+/// revisions with no value whose entries hold no directory. The suspect rule
+/// reports a directory literal, reports an edge whose entries are all named
+/// pipes, sockets or devices (#1333), and passes an edge with an unreadable
+/// file or an entry that went away. So the key states which of the three it
+/// is. A directory keeps the key `None`. A set of pipes, sockets or devices
+/// has the `Debug` `NoRegularFile`, and every other such revision has
+/// `NoDigest`. A verdict cached over one of them therefore does not answer for
+/// another that took its name (#1269, #1333).
 #[derive(Clone)]
 pub struct Revision(std::sync::Arc<RevisionCell>);
 
@@ -549,9 +547,9 @@ impl Resolver for SourceTree {
 /// Only a regular file reaches the manifest. A named pipe, a socket and a
 /// device are left out and never opened, because opening a named pipe that
 /// has no writer blocks the process forever, and a `check` that met one under
-/// a `governs` edge never ended (#1269). The walk reports such an entry as a
-/// file, so this reader is the one place that can refuse it. A symlink is
-/// followed, so a link to a pipe is left out too. When every entry was left
+/// a `governs` edge never ended (#1269). The walk reports such an entry as
+/// [`EntryKind::Special`], and a literal is bound without the walk, so this
+/// reader refuses it too. A symlink is followed, so a link to a pipe is left out too. When every entry was left
 /// out this way, the value is `None` rather than the digest of an empty
 /// manifest, which would be a revision that can never change.
 ///
