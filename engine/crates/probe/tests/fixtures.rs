@@ -859,6 +859,66 @@ fn the_first_bash_call_that_named_a_document_is_the_one_cited() {
     );
 }
 
+/// A Bash call is cited by its own event and call, in that order (#1384
+/// verify, V5 and V6). The call here is the first call of the third event, so
+/// a report that swapped the two numbers, or took every Bash call as one of
+/// the first event, would say `event 1` somewhere.
+#[test]
+fn a_bash_call_in_a_later_event_is_cited_by_that_event() {
+    let source =
+        std::fs::read_to_string(fixtures_dir().join(COMMITTED)).expect("the committed transcript");
+    let events = source
+        .strip_suffix("```\n")
+        .expect("the transcript ends with its events block");
+    let third = format!(
+        "- probe: PROBE-FIX-answered\n  session: 1\n  calls:\n{}  produced: []\n  answer: null\n",
+        bash_call(&format!("sed -n 1,40p {COMMITTED}")),
+    );
+    let source = format!("{events}{third}```\n");
+    let staleness = staleness_of(&fixtures_dir(), &source);
+    let report = staleness.render(ColorMode::Plain);
+    let member = staleness
+        .members
+        .iter()
+        .find(|member| member.path == COMMITTED)
+        .unwrap_or_else(|| panic!("the document the Bash call read is not a member:\n{report}"));
+    assert_eq!(member.bash, Some((3, 1)), "{report}");
+    assert!(
+        report.contains("event 3 call 1 named it through Bash"),
+        "the report does not cite the Bash call by its event and call:\n{report}"
+    );
+}
+
+/// A Bash call that names a member a call already witnessed still named it
+/// (#1384 verify, V8). It is recorded against that member and never goes to
+/// the list of paths outside the corpus, which would say the corpus holds no
+/// classified document where it holds one.
+#[test]
+fn a_bash_call_after_the_witness_names_the_member_and_nothing_outside() {
+    let calls = format!(
+        "{THE_READ_CALL}{}",
+        bash_call("cat corpus/probes/0002-answered.md"),
+    );
+    let source = with_calls(&fixtures_dir(), &calls);
+    let staleness = staleness_of(&fixtures_dir(), &source);
+    let report = staleness.render(ColorMode::Plain);
+    let member = staleness
+        .members
+        .iter()
+        .find(|member| member.path == "corpus/probes/0002-answered.md")
+        .expect("the examined probe is a member");
+    assert_eq!(
+        member.witness.as_ref().map(|witness| witness.call),
+        Some(1),
+        "{report}"
+    );
+    assert_eq!(member.bash, Some((1, 2)), "{report}");
+    assert!(
+        staleness.outside.is_empty(),
+        "a Bash call that named a member is reported outside the corpus:\n{report}"
+    );
+}
+
 /// A member with a witness is reported by its witness, even where a Bash call
 /// named it first (#1384 verify, D5). The Bash line is for a member that
 /// nothing witnessed, and printing it here would say that no witness decides a
