@@ -87,7 +87,7 @@ The documents on this shelf, in the reading order this corpus derives. Each head
 
 ## A recorded terminal demonstration may show a frozen number behind a recorded-on-date marker
 
-[HW-DR-0078](../decisions/0078-a-recorded-terminal-demonstration-may-show-a-frozen-number-behind-a-recorded-on-date-marker.md) — The owner relaxed principle 11 for one asset. A front-page recording may show a number a live run does not produce, if a recorded-on-<date> marker stands beside it. Nothing compares that number against a later run. (asserted, and no human has accepted it)
+[HW-DR-0078](../decisions/0078-a-recorded-terminal-demonstration-may-show-a-frozen-number-behind-a-recorded-on-date-marker.md) — The owner relaxed principle 11 for one asset. A front-page recording may show a number a live run does not produce, if a recorded-on-<date> marker stands beside it. Nothing compares that number against a later run.
 
 ## Q61 — How a recorded terminal demonstration is held against a run
 
