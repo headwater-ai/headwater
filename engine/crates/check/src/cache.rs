@@ -500,7 +500,9 @@ impl Cache {
         reads: &[Input],
         clock: Option<Date>,
     ) -> Option<String> {
-        self.key(rule, version, scope, target, reads, clock, None, false, None)
+        self.key(
+            rule, version, scope, target, reads, clock, None, false, None,
+        )
     }
 }
 

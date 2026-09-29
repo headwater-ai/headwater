@@ -452,7 +452,11 @@ fn a_stated_re_verification_records_the_digest_through_the_verbs() {
 
     // A change that states nothing records nothing: the decision #1259 made.
     fixed(&second, "unstated", &[]);
-    assert_eq!(recorded(&root), Some(stamped.clone()), "an unstated change stamped");
+    assert_eq!(
+        recorded(&root),
+        Some(stamped.clone()),
+        "an unstated change stamped"
+    );
 
     // The same change, stated, records the new digest.
     fixed(&second, "stated-second", &[GOVERNING]);

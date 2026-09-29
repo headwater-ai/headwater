@@ -1095,9 +1095,15 @@ mod tests {
             .lines()
             .filter(|line| line.starts_with("verified\t"))
             .collect();
-        assert_eq!(verified, vec!["verified\ta.md", "verified\tc.md"], "{manifest}");
+        assert_eq!(
+            verified,
+            vec!["verified\ta.md", "verified\tc.md"],
+            "{manifest}"
+        );
         assert!(
-            manifest.lines().any(|line| line.starts_with("prior\ta.md\t")),
+            manifest
+                .lines()
+                .any(|line| line.starts_with("prior\ta.md\t")),
             "{manifest}"
         );
         let _ = fs::remove_dir_all(&out);
@@ -1125,8 +1131,13 @@ mod tests {
         repo.write("a.md", "x\n");
         repo.commit("base");
         let out = repo.out("missing-base");
-        let error =
-            produce(&repo.at, "0000000000000000000000000000000000000000", &out, &[]).unwrap_err();
+        let error = produce(
+            &repo.at,
+            "0000000000000000000000000000000000000000",
+            &out,
+            &[],
+        )
+        .unwrap_err();
         assert!(error.contains("does not hold"), "{error}");
         let _ = fs::remove_dir_all(&out);
         let _ = fs::remove_dir_all(&repo.at);

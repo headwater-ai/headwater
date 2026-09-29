@@ -668,7 +668,10 @@ mod tests {
     #[test]
     fn the_remedy_names_the_verified_line_for_a_facet_that_reads_today() {
         let remedy = reread("sha256:new");
-        assert!(remedy.contains("set its `last_verified` to today"), "{remedy}");
+        assert!(
+            remedy.contains("set its `last_verified` to today"),
+            "{remedy}"
+        );
         assert!(remedy.contains("already reads today"), "{remedy}");
         assert!(
             remedy.contains("pass `--verified <this document>` to `headwater change`"),
