@@ -577,6 +577,46 @@ fn an_absolute_target_finds_its_document_under_a_root_reached_through_a_symlink(
     assert!(shown.stdout == document(), "the bytes on disk");
 }
 
+/// An absolute path through a link that sits outside the root and leads into
+/// a directory under it names the document there, with the file on disk and
+/// without one. No leading part of the path is the root, so the part that
+/// exists is made canonical and the rest is joined back on.
+#[cfg(unix)]
+#[test]
+fn an_absolute_path_through_a_link_into_the_root_finds_its_document() {
+    let root = Root::new("link-into");
+    let link = root.at.with_file_name(format!(
+        "{}-decisions",
+        root.at
+            .file_name()
+            .expect("the root has a name")
+            .to_string_lossy()
+    ));
+    let _ = std::fs::remove_file(&link);
+    std::os::unix::fs::symlink(root.at.join("docs/decisions"), &link).expect("the link is made");
+    let present = Path::new(DOCUMENT)
+        .file_name()
+        .expect("the document has a name");
+    let target = link.join(present).display().to_string();
+    let shown = root.run(&["show", &target]);
+    let missing = link.join("0002-not-written.md").display().to_string();
+    let refused = root.run(&["explain", &missing]);
+    let _ = std::fs::remove_file(&link);
+    assert_eq!(
+        shown.status.code(),
+        Some(0),
+        "`show {target}`: {}",
+        String::from_utf8_lossy(&shown.stderr)
+    );
+    assert!(shown.stdout == document(), "the bytes on disk");
+    let stderr = String::from_utf8_lossy(&refused.stderr);
+    assert_eq!(refused.status.code(), Some(1), "{stderr}");
+    assert!(
+        stderr.contains("is a path of this corpus, with no document written there yet"),
+        "`explain {missing}` through a link into the root: {stderr}"
+    );
+}
+
 /// An absolute path that leaves the root with `..` and comes back in names
 /// the document under it, as `a/../x` names `x`. Its leading parts name the
 /// root twice, and only the longer of the two leaves the rest of the path

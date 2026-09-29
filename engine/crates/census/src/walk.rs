@@ -606,6 +606,26 @@ mod tests {
         // names the root at more than one leading part, and the shortest one
         // leaves the rest of the path climbing above it. The first leading
         // part, from the shortest up, that the rest stays under is the root.
+        // A link outside the root that leads into a directory under it names
+        // no leading part that is the root, so the longest leading part that
+        // exists is made canonical and the rest is joined back on, with a
+        // file at the target or without one.
+        let links = base.join("links");
+        std::fs::create_dir_all(&links).expect("the links directory");
+        std::os::unix::fs::symlink(root.join("docs"), links.join("into")).expect("a link in");
+        std::fs::write(root.join("docs/present.md"), b"present\n").expect("it writes");
+        let into: Vec<(String, Option<String>, &str)> = [
+            ("into/never-written.md", "docs/never-written.md"),
+            ("into/present.md", "docs/present.md"),
+            ("into/new/../never-written.md", "docs/never-written.md"),
+        ]
+        .iter()
+        .map(|(target, expected)| {
+            let target = links.join(target).display().to_string();
+            let answer = typed(&root, &target);
+            (target, answer, *expected)
+        })
+        .collect();
         let name = root.file_name().expect("the root has a name");
         let back_in: Vec<(String, Option<String>)> = [
             root.join("..").join(name).join("docs/never-written.md"),
@@ -651,6 +671,13 @@ mod tests {
             Some("again/never-written.md"),
             "`typed` reads a link back to the root by its name"
         );
+        for (target, answer, expected) in &into {
+            assert_eq!(
+                answer.as_deref(),
+                Some(*expected),
+                "`typed` on `{target}`, through a link outside the root into it"
+            );
+        }
         for (target, answer) in &back_in {
             assert_eq!(
                 answer.as_deref(),
