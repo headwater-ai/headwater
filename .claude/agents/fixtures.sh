@@ -457,6 +457,14 @@ prose_arm 'There is no dispatch of the builder in this file.' ''
 prose_arm 'Dispatch hw-iterate, which launches the builder and the verifier.' ''
 prose_arm 'Dispatch hw-iterate, which owns the builder and the verifier.' ''
 prose_arm 'Dispatch hw-iterate and let it launch the builder.' ''
+prose_arm 'Read the report, and if you doubt it, dispatch the verifier yourself.' hw-verify
+prose_arm 'If the answer is no, dispatch the builder again.' hw-build
+prose_arm 'After hw-iterate, dispatch the verifier on the same branch.' hw-verify
+prose_arm 'Redispatch the verifier on the same branch.' hw-verify
+prose_arm 'Name the agent that launches the verifier.' ''
+prose_arm 'Name the agent who launches the builder.' ''
+prose_arm 'Let hw-iterate dispatch the verifier.' ''
+prose_arm 'Dispatch hw-iterate, who owns the builder.' ''
 if [ -f "$agents/hw-iterate.md" ]; then
     # The phrase survives in the file, but only in a sentence that forbids it:
     # both stages would run in the shared checkout.
@@ -502,7 +510,13 @@ if [ -f "$agents/hw-iterate.md" ]; then
     isolation_arm 's/Dispatch `hw-build` with `isolation/Dispatch `hw-build` and skip `isolation/' hw-build
     isolation_arm 's/Dispatch `hw-build` with `isolation/Dispatch `hw-build` and omit `isolation/' hw-build
     isolation_arm 's/Dispatch `hw-build` with `isolation: "worktree"`/Dispatch `hw-build` in its own worktree/' hw-build
-    isolation_arm 's/Dispatch `hw-build` with `isolation/Dispatch `hw-build` as `hw-build.md` says, with `isolation/' ''
+    isolation_arm 's/Dispatch `hw-build` with `isolation: "worktree"`/Dispatch `hw-build` with `isolation: "worktree"`, as `hw-build.md` says, not in the shared checkout/' hw-build
+    isolation_arm 's/Dispatch `hw-build` with `isolation/Never dispatch `hw-build` with `isolation/' hw-build
+    isolation_arm 's/Dispatch a fresh `hw-verify` with `isolation/Do not dispatch a fresh `hw-verify` with `isolation/' hw-verify
+    isolation_arm 's/Dispatch `hw-build` with `isolation: "worktree"`/Dispatch `hw-build` in the shared checkout, and `isolation: "worktree"` is not needed/' hw-build
+    isolation_arm 's/Dispatch a fresh `hw-verify` with `isolation: "worktree"`/Dispatch a fresh `hw-verify` in the shared checkout, unlike `hw-build`, which gets `isolation: "worktree"`/' hw-verify
+    isolation_arm 's/Dispatch `hw-build` with `isolation: "worktree"`/Dispatch `hw-build` with `isolation: "worktree"` and keep its notes/' ''
+    isolation_arm 's/Dispatch `hw-build` with `isolation: "worktree"`/Dispatch `hw-build` with `isolation: "worktree"` for another round/' ''
     isolation_arm 's/Dispatch a fresh `hw-verify` with `isolation/Launch a fresh `hw-verify` with `isolation/' ''
     isolation_arm 's/Dispatch `hw-build` with `isolation/Spawn `hw-build` with `isolation/' ''
     sed 's/isolation: "worktree"/isolation unset/g' "$agents/hw-iterate.md" > "$scratch/hw-iterate.md"
