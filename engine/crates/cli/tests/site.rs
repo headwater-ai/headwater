@@ -63,10 +63,8 @@ impl Drop for Root {
 
 impl Root {
     fn new(label: &str, overlay: &str) -> Root {
-        let at = std::env::temp_dir().join(format!(
-            "headwater-cli-site-{}-{label}",
-            std::process::id()
-        ));
+        let at =
+            std::env::temp_dir().join(format!("headwater-cli-site-{}-{label}", std::process::id()));
         let _ = std::fs::remove_dir_all(&at);
         std::fs::create_dir_all(at.join("docs")).expect("the corpus directory is made");
         let root = Root { at };
@@ -80,15 +78,24 @@ impl Root {
         let init = root.run(&["init"]);
         assert_eq!(init.code, Some(0), "the corpus initializes\n{init:?}");
         std::fs::remove_file(root.at.join("docs/seed.md")).expect("the seed goes");
-        std::fs::write(root.at.join(".headwater/overlay.yml"), overlay).expect("the overlay writes");
+        std::fs::write(root.at.join(".headwater/overlay.yml"), overlay)
+            .expect("the overlay writes");
         let resolved = root.run(&["taxonomy", "resolve"]);
-        assert_eq!(resolved.code, Some(0), "the taxonomy resolves\n{resolved:?}");
+        assert_eq!(
+            resolved.code,
+            Some(0),
+            "the taxonomy resolves\n{resolved:?}"
+        );
         for title in ["Alpha choice", "Beta choice"] {
             let made = root.run(&["new", "decision", "--title", title]);
             assert_eq!(made.code, Some(0), "the decision scaffolds\n{made:?}");
         }
         let generated = root.run(&["generate"]);
-        assert_eq!(generated.code, Some(0), "the projections write\n{generated:?}");
+        assert_eq!(
+            generated.code,
+            Some(0),
+            "the projections write\n{generated:?}"
+        );
         root.clean_site();
         root
     }
@@ -123,8 +130,11 @@ impl Root {
         let path = self.at.join("site").join(relative);
         std::fs::create_dir_all(path.parent().expect("a page has a parent"))
             .expect("the page directory is made");
-        std::fs::write(&path, format!("<!doctype html><html><body>{body}</body></html>\n"))
-            .expect("the page writes");
+        std::fs::write(
+            &path,
+            format!("<!doctype html><html><body>{body}</body></html>\n"),
+        )
+        .expect("the page writes");
     }
 
     fn run(&self, verb: &[&str]) -> Outcome {
@@ -189,7 +199,9 @@ fn the_clean_site_exits_0_with_no_finding() {
     assert_eq!(outcome.code, Some(0), "{outcome:?}");
     assert!(findings(&outcome).is_empty(), "{outcome:?}");
     assert!(
-        outcome.stdout.contains("0 findings over 3 navigation entries, 5 pages"),
+        outcome
+            .stdout
+            .contains("0 findings over 3 navigation entries, 5 pages"),
         "the summary counts what was read\n{outcome:?}"
     );
 }
@@ -209,7 +221,11 @@ fn a_page_the_navigation_names_and_the_site_lacks_is_missing() {
         "decisions/index.html",
         "<a href=\"0001-alpha-choice/\">1</a>",
     );
-    one(&root.site(), "site.page.missing", "decisions/0002-beta-choice.md");
+    one(
+        &root.site(),
+        "site.page.missing",
+        "decisions/0002-beta-choice.md",
+    );
 }
 
 /// The case the verb exists for. A page under a shelf for a document the
@@ -268,8 +284,14 @@ fn an_empty_directory_is_refused() {
     std::fs::create_dir_all(root.at.join("site")).expect("the empty site is made");
     let outcome = root.site();
     assert_eq!(outcome.code, Some(1), "{outcome:?}");
-    assert!(outcome.stderr.contains("holds no `.html` file"), "{outcome:?}");
-    assert!(outcome.stdout.is_empty(), "a refusal prints no report\n{outcome:?}");
+    assert!(
+        outcome.stderr.contains("holds no `.html` file"),
+        "{outcome:?}"
+    );
+    assert!(
+        outcome.stdout.is_empty(),
+        "a refusal prints no report\n{outcome:?}"
+    );
 }
 
 #[test]

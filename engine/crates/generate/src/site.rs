@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! `headwater site`: hold a built site against the corpus it was built from.
 //!
 //! # The defect this module exists for
@@ -210,8 +211,12 @@ pub fn hold(
                     continue;
                 }
             };
-            let Some(fragment) = link.fragment else { continue };
-            let Some(on_target) = ids.get(&target) else { continue };
+            let Some(fragment) = link.fragment else {
+                continue;
+            };
+            let Some(on_target) = ids.get(&target) else {
+                continue;
+            };
             if !on_target.contains(&fragment) && !on_target.contains(&decode(&fragment)) {
                 report.findings.push(Finding {
                     rule: FRAGMENT_DEAD,
@@ -337,7 +342,9 @@ fn has_scheme(href: &str) -> bool {
     };
     let scheme = &href[..colon];
     let mut chars = scheme.chars();
-    chars.next().is_some_and(|first| first.is_ascii_alphabetic())
+    chars
+        .next()
+        .is_some_and(|first| first.is_ascii_alphabetic())
         && chars.all(|c| c.is_ascii_alphanumeric() || matches!(c, '+' | '-' | '.'))
 }
 
@@ -423,13 +430,17 @@ pub fn scan(html: &str) -> (Vec<String>, BTreeSet<String>) {
         }
         // The tag name.
         let mut cursor = at + 1;
-        while cursor < bytes.len() && (bytes[cursor].is_ascii_alphanumeric() || bytes[cursor] == b'-') {
+        while cursor < bytes.len()
+            && (bytes[cursor].is_ascii_alphanumeric() || bytes[cursor] == b'-')
+        {
             cursor += 1;
         }
         let tag = html[at + 1..cursor].to_ascii_lowercase();
         // The attributes, up to the `>` that closes the tag.
         loop {
-            while cursor < bytes.len() && (bytes[cursor].is_ascii_whitespace() || bytes[cursor] == b'/') {
+            while cursor < bytes.len()
+                && (bytes[cursor].is_ascii_whitespace() || bytes[cursor] == b'/')
+            {
                 cursor += 1;
             }
             if cursor >= bytes.len() || bytes[cursor] == b'>' {
@@ -488,7 +499,10 @@ pub fn scan(html: &str) -> (Vec<String>, BTreeSet<String>) {
         at = cursor;
         if tag == "script" || tag == "style" {
             let close = format!("</{tag}");
-            at = match html[at.min(bytes.len())..].to_ascii_lowercase().find(&close) {
+            at = match html[at.min(bytes.len())..]
+                .to_ascii_lowercase()
+                .find(&close)
+            {
                 Some(end) => at + end,
                 None => bytes.len(),
             };
@@ -507,14 +521,24 @@ mod tests {
             pages_of("decisions/0001-a.md"),
             vec!["decisions/0001-a/index.html", "decisions/0001-a.html"]
         );
-        assert_eq!(pages_of("decisions/README.md"), vec!["decisions/index.html"]);
+        assert_eq!(
+            pages_of("decisions/README.md"),
+            vec!["decisions/index.html"]
+        );
         assert_eq!(pages_of("index.md"), vec!["index.html"]);
         assert!(pages_of("nav.yml").is_empty());
     }
 
     #[test]
     fn a_link_out_of_the_site_is_not_read() {
-        for href in ["https://example.org/", "mailto:a@b", "//cdn/x.js", "/abs/", "#", ""] {
+        for href in [
+            "https://example.org/",
+            "mailto:a@b",
+            "//cdn/x.js",
+            "/abs/",
+            "#",
+            "",
+        ] {
             assert_eq!(in_site(href), None, "{href}");
         }
         assert_eq!(
@@ -539,9 +563,18 @@ mod tests {
             .iter()
             .map(|s| s.to_string())
             .collect();
-        assert_eq!(resolve("a/b/index.html", "../", &files).as_deref(), Some("a/index.html"));
-        assert_eq!(resolve("a/b/index.html", "../../x.css", &files).as_deref(), Some("x.css"));
-        assert_eq!(resolve("a/index.html", "b", &files).as_deref(), Some("a/b/index.html"));
+        assert_eq!(
+            resolve("a/b/index.html", "../", &files).as_deref(),
+            Some("a/index.html")
+        );
+        assert_eq!(
+            resolve("a/b/index.html", "../../x.css", &files).as_deref(),
+            Some("x.css")
+        );
+        assert_eq!(
+            resolve("a/index.html", "b", &files).as_deref(),
+            Some("a/b/index.html")
+        );
         assert_eq!(resolve("a/index.html", "c/", &files), None);
         // A path with no final `/` that names neither a file nor a directory.
         assert_eq!(resolve("a/index.html", "c.html", &files), None);
