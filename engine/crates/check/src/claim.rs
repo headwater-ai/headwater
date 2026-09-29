@@ -206,8 +206,7 @@ impl Claims {
                 // writer blocks its reader for ever (#1366). Such an entry
                 // reads as a claim that names nobody, as an unreadable claim
                 // does, so `claim.stale` reports it at its own path.
-                let regular = std::fs::metadata(claim.path()).is_ok_and(|meta| meta.is_file());
-                let claimant = regular
+                let claimant = opens(&claim.path())
                     .then(|| std::fs::read_to_string(claim.path()).ok())
                     .flatten()
                     .unwrap_or_default()
@@ -226,7 +225,17 @@ impl Claims {
         entries.sort_by(|a, b| (&a.scheme, &a.id).cmp(&(&b.scheme, &b.id)));
         Claims { entries }
     }
+}
 
+/// Whether [`Claims::at`] opens the entry at `path`: a regular file, reached
+/// directly or through a link, and nothing else. A named pipe, a socket and a
+/// device are never opened, because a pipe with no writer and a device such as
+/// `/dev/zero` never end a read (#1366).
+fn opens(path: &Path) -> bool {
+    std::fs::metadata(path).is_ok_and(|meta| meta.is_file())
+}
+
+impl Claims {
     /// A store built from claims, for a caller that has them already. The
     /// order is imposed here rather than assumed of the caller.
     pub fn of(mut entries: Vec<Claim>) -> Self {
@@ -816,5 +825,54 @@ mod tests {
 
         assert_eq!(linked.as_deref(), Some("docs/decisions/0001-a.md"));
         assert_eq!(piped.as_deref(), Some(""));
+    }
+
+    /// The store opens a regular file, directly or through a link, and no
+    /// named pipe, socket or device. A device is asked about and never read:
+    /// a read of `/dev/zero` does not end, so a store that read one would not
+    /// fail this case, it would never finish it. `/dev/null` stands in, and
+    /// this asks the guard itself (#1366, verify round 2).
+    #[cfg(unix)]
+    #[test]
+    fn the_store_opens_a_regular_file_and_no_pipe_socket_or_device() {
+        let nanos = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .expect("a clock later than the epoch")
+            .as_nanos();
+        let dir = std::env::temp_dir().join(format!(
+            "headwater-claim-opens-{}-{nanos}",
+            std::process::id()
+        ));
+        std::fs::create_dir_all(&dir).expect("the directory is made");
+        std::fs::write(dir.join("file"), "docs/a.md\n").expect("the file writes");
+        std::os::unix::fs::symlink(dir.join("file"), dir.join("link")).expect("the link is made");
+        std::os::unix::fs::symlink("/dev/null", dir.join("device")).expect("the link is made");
+        std::os::unix::fs::symlink("/dev/zero", dir.join("endless")).expect("the link is made");
+        let made = std::process::Command::new("mkfifo")
+            .arg(dir.join("pipe"))
+            .status()
+            .expect("mkfifo runs");
+        assert!(made.success(), "the named pipe is made");
+        let socket = std::os::unix::net::UnixListener::bind(dir.join("socket"))
+            .expect("the socket is bound");
+
+        let answers: Vec<(&str, bool)> = ["file", "link", "device", "endless", "pipe", "socket"]
+            .into_iter()
+            .map(|name| (name, opens(&dir.join(name))))
+            .collect();
+        drop(socket);
+        std::fs::remove_dir_all(&dir).ok();
+
+        assert_eq!(
+            answers,
+            vec![
+                ("file", true),
+                ("link", true),
+                ("device", false),
+                ("endless", false),
+                ("pipe", false),
+                ("socket", false),
+            ]
+        );
     }
 }

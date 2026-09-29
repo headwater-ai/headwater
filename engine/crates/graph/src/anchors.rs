@@ -1305,6 +1305,43 @@ mod tests {
         );
     }
 
+    /// A socket and a device get the pipe's sentence, and a directory keeps
+    /// its own, so the guard is neither narrower than "not a file and not a
+    /// directory" nor wider (#1366, verify round 2). The device is a link to
+    /// `/dev/null`, which a read would answer with nothing rather than block,
+    /// so a resolver that opened it would say something else, and not hang.
+    #[cfg(unix)]
+    #[test]
+    fn a_citation_target_that_is_a_socket_or_a_device_is_refused_and_a_directory_is_not_one() {
+        let dir = scratch("socket-device-dir");
+        let _socket = std::os::unix::net::UnixListener::bind(dir.join("socket.rs"))
+            .expect("the socket is bound");
+        std::os::unix::fs::symlink("/dev/null", dir.join("device.rs")).expect("the link is made");
+        std::fs::create_dir_all(dir.join("tree.rs")).expect("the directory is made");
+
+        let resolver = CommentScan::new(
+            &dir,
+            "HW-VER-",
+            std::collections::BTreeSet::from(["HW-VER-0001".to_string()]),
+        );
+        for special in ["socket.rs", "device.rs"] {
+            let Binding::Unresolved(why) = resolver.resolve_for(special, "HW-VER-0001") else {
+                panic!("`{special}` resolved as a source file");
+            };
+            assert_eq!(
+                why,
+                format!(
+                    "`{special}` names a named pipe, a socket or a device, which the source tree \
+                     never opens"
+                )
+            );
+        }
+        let Binding::Unresolved(why) = resolver.resolve_for("tree.rs", "HW-VER-0001") else {
+            panic!("a directory resolved as a source file");
+        };
+        assert_eq!(why, "no `tree.rs` in the source tree");
+    }
+
     #[test]
     fn a_citation_of_a_minted_identifier_resolves() {
         let dir = scratch("minted");
