@@ -93,6 +93,25 @@ pub fn marker_text(kind: &str) -> String {
     )
 }
 
+/// What the marker says for a declared artifact that `headwater generate`
+/// does not write and no gate compares.
+///
+/// A `graph_export` that its taxonomy declares `committed: false` is built by
+/// `headwater export` at publish time, and neither `generate --check` nor
+/// `export --check` reads it. [`marker_text`] would tell its reader that a
+/// gate holds the file, and no gate does
+/// ([#1343](https://github.com/headwater-ai/headwater/issues/1343)).
+///
+/// The kind stays the first word before the first period, because
+/// [`kind_named`] reads it there, and `publish` recognizes its own earlier
+/// output by that name before it overwrites the file.
+pub fn published_marker_text(kind: &str) -> String {
+    format!(
+        "{kind}. `headwater export` builds this file at publish time, and no gate compares it. \
+         Edit the corpus, not this file."
+    )
+}
+
 /// The marker as a front-matter member, for a generated Markdown document that
 /// declares an identity.
 ///
@@ -347,6 +366,14 @@ mod tests {
         );
         assert_eq!(
             kind_named("docs/graph.json", &json).as_deref(),
+            Some("graph_export")
+        );
+        let published = format!(
+            "{{\n  \"{MARKER}\": \"{}\"\n}}\n",
+            published_marker_text("graph_export")
+        );
+        assert_eq!(
+            kind_named("exports/graph.json", &published).as_deref(),
             Some("graph_export")
         );
     }
