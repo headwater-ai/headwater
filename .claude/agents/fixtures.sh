@@ -61,6 +61,45 @@ agent_names_in() {
     spans "$1" | grep -E '^(hw-[a-z]+|headwater-(maintainer|product-owner))$' | sort -u
 }
 
+# The sentences of a file, one per line: each line split at a full stop that a
+# space follows, so a path such as `next-run.md` stays whole.
+sentences() {
+    awk '{ n = split($0, s, /\. /); for (i = 1; i <= n; i++) print s[i] }' "$1"
+}
+
+# The build-order stages a file dispatches in plain prose, which
+# `agent_names_in` cannot see: a sentence with a dispatch verb, not negated
+# before it, and after it `hw-build`, `hw-verify`, the builder or the verifier.
+prose_dispatches_in() {
+    sentences "$1" | awk '
+        {
+            t = tolower($0)
+            if (!match(t, /(^|[^a-z])(dispatch|launch|spawn)[a-z]*/)) next
+            if (substr(t, 1, RSTART) ~ /(^|[^a-z])(never|not|no|without)([^a-z]|$)/) next
+            rest = substr(t, RSTART + RLENGTH)
+            if (rest ~ /(^|[^a-z-])(hw-build|builder)([^a-z-]|$)/) print "hw-build"
+            if (rest ~ /(^|[^a-z-])(hw-verify|verifier)([^a-z-]|$)/) print "hw-verify"
+        }' | sort -u
+}
+
+# Whether a file dispatches a stage with `isolation: "worktree"`: one sentence
+# in which a dispatch verb and the stage come before the phrase, with no never,
+# not, no or without before the phrase.
+dispatches_isolated() {
+    sentences "$1" | awk -v stage="$2" '
+        {
+            p = index($0, "isolation: \"worktree\"")
+            if (!p) next
+            pre = substr($0, 1, p - 1)
+            if (!index(pre, stage)) next
+            t = tolower(pre)
+            if (t !~ /dispatch/) next
+            if (t ~ /(^|[^a-z])(never|not|no|without)([^a-z]|$)/) next
+            found = 1
+        }
+        END { exit !found }'
+}
+
 # --- 1. every agent a command or an agent dispatches is a definition ----------
 
 printf '# every agent a command or an agent dispatches is a definition on this tree\n'
@@ -299,15 +338,18 @@ fi
 # --- 10. the parent dispatches the loop agent, and the loop agent dispatches build and verify
 
 # The verify-and-rework loop for one issue is below the parent (#1276,
-# HW-PD-0022). The parent names `hw-iterate` and never `hw-build` or
-# `hw-verify`; `hw-iterate` names both, gives each its own worktree, and can
-# resume its builder by id, which needs `SendMessage` in its tools.
+# HW-PD-0022). The parent names `hw-iterate`, and it names neither `hw-build`
+# nor `hw-verify` and dispatches neither the builder nor the verifier in plain
+# prose. `hw-iterate` names both, passes `isolation: "worktree"` in the sentence
+# that dispatches each, with no never, not, no or without before it there, and
+# can resume its builder by id, which needs `SendMessage` in its tools.
 printf '\n# the parent dispatches hw-iterate, and hw-iterate dispatches hw-build and hw-verify\n'
 # Prints why the pair fails, or nothing when it holds.
 loop_below_parent() {
     command_file=$1 iterate_file=$2
     why=''
-    names=$(agent_names_in "$command_file")
+    names=$(agent_names_in "$command_file"; prose_dispatches_in "$command_file")
+    names=$(printf '%s\n' "$names" | sort -u)
     printf '%s\n' "$names" | grep -qx hw-iterate || why="$why; $(basename "$command_file") does not dispatch hw-iterate"
     for stage in hw-build hw-verify; do
         printf '%s\n' "$names" | grep -qx "$stage" && why="$why; $(basename "$command_file") dispatches $stage itself"
@@ -319,7 +361,9 @@ loop_below_parent() {
         for stage in hw-build hw-verify; do
             printf '%s\n' "$inner" | grep -qx "$stage" || why="$why; $(basename "$iterate_file") does not dispatch $stage"
         done
-        grep -qF 'isolation: "worktree"' "$iterate_file" || why="$why; $(basename "$iterate_file") passes no isolation: \"worktree\""
+        for stage in hw-build hw-verify; do
+            dispatches_isolated "$iterate_file" "$stage" || why="$why; $(basename "$iterate_file") passes no isolation: \"worktree\" to $stage"
+        done
         tools=$(sed -n 's/^tools: *//p' "$iterate_file" | head -1 | tr -d ' ')
         case ",$tools," in
             *,SendMessage,*) ;;
@@ -330,7 +374,7 @@ loop_below_parent() {
 }
 why=$(loop_below_parent "$commands/next-run.md" "$agents/hw-iterate.md")
 if [ -z "$why" ]; then
-    pass 'next-run.md dispatches hw-iterate alone, and hw-iterate dispatches hw-build and hw-verify in worktrees'
+    pass 'next-run.md dispatches hw-iterate and names no build or verify dispatch, by name or in prose, and hw-iterate dispatches hw-build and hw-verify each in a sentence that passes isolation: "worktree"'
 else
     fail 'the verify-and-rework loop is below the parent' "$why"
 fi
@@ -358,6 +402,14 @@ case "$why" in
     *'dispatches hw-build itself'*) pass 'and a parent that dispatches hw-build unquoted is reported' ;;
     *) fail 'a parent that dispatches hw-build unquoted is reported' "reported: \`$why\`" ;;
 esac
+cp "$commands/next-run.md" "$scratch/next-run.md"
+printf 'Never dispatch the verifier yourself.\n' >> "$scratch/next-run.md"
+why=$(loop_below_parent "$scratch/next-run.md" "$agents/hw-iterate.md")
+if [ -z "$why" ]; then
+    pass 'and a parent that forbids itself the verifier in prose is not reported'
+else
+    fail 'a parent that forbids itself the verifier in prose is not reported' "reported: \`$why\`"
+fi
 if [ -f "$agents/hw-iterate.md" ]; then
     # The phrase survives in the file, but only in a sentence that forbids it:
     # both stages would run in the shared checkout.
@@ -373,6 +425,13 @@ if [ -f "$agents/hw-iterate.md" ]; then
     case "$why" in
         *'passes no isolation: "worktree" to hw-build'*) pass 'and a loop agent that dispatches its builder without isolation is reported' ;;
         *) fail 'a loop agent that dispatches its builder without isolation is reported' "reported: \`$why\`" ;;
+    esac
+    # The phrase and the stage in one sentence that dispatches nothing.
+    sed 's/Dispatch `hw-build` with `isolation: "worktree"`/Read `hw-build` for why `isolation: "worktree"` matters/' "$agents/hw-iterate.md" > "$scratch/hw-iterate.md"
+    why=$(loop_below_parent "$commands/next-run.md" "$scratch/hw-iterate.md")
+    case "$why" in
+        *'passes no isolation: "worktree" to hw-build'*) pass 'and a loop agent that names isolation beside its builder without dispatching it is reported' ;;
+        *) fail 'a loop agent that names isolation beside its builder without dispatching it is reported' "reported: \`$why\`" ;;
     esac
     sed 's/isolation: "worktree"/isolation unset/g' "$agents/hw-iterate.md" > "$scratch/hw-iterate.md"
     why=$(loop_below_parent "$commands/next-run.md" "$scratch/hw-iterate.md")
