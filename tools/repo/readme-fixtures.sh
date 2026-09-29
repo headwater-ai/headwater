@@ -14,15 +14,15 @@
 # This suite closes TWO of those eight — the dead link and the dead fragment —
 # it holds one further claim about those same links, that above `## License` the
 # only path into the specification shelf is the generated index, and it holds
-# six more claims the page makes about itself. It closes none of the other six.
+# further claims the page makes about itself. It closes none of the other six.
 # The section below says so with the measurement, rather than leaving a reader
 # to assume from a passing step that the page is covered.
 #
-# Two of those six are a different KIND of claim from the rest. That count is
-# the sentence in this header that goes stale: it read five on the day group 7
-# landed and stayed five, because no case reads it and a group added on one
-# branch does not conflict with the number written on another. Count the `echo`
-# lines below rather than trusting it.
+# This header gives no count of those claims. It gave one, and the count went
+# stale each time a group landed, because no case reads it and a group added on
+# one branch does not conflict with the number written on another. Each group
+# opens with an `echo` line that names what it holds, and those lines are the
+# list. Some groups make a different KIND of claim from the rest:
 # Groups 1 to 5 read the page and judge what it says. Group 6 takes a command
 # the page tells a newcomer to run, runs it against the engine, and reads what
 # that newcomer would see. The defect it closes was a command that always exited
@@ -2793,20 +2793,31 @@ README.md
 docs/tutorials/your-first-governed-corpus.md
 site/tutorial/index.html"
 
-# newest_standard_version ROOT — the version of the newest
-# `taxonomy/headwater-standard/v*` tag in the clone at ROOT, or nothing.
+# `.claude/tutorial/drive.py` reads the version off the page it drives, so it
+# names none of its own. It is held by the stale-version rule alone, and the
+# names-no-version floor in `standard_pin_judge` skips it by this name.
+standard_pin_unversioned=.claude/tutorial/drive.py
+
+# newest_standard_version ROOT — the version of the newest release tag
+# `taxonomy/headwater-standard/v<major>.<minor>.<patch>` in the clone at ROOT,
+# or nothing. A pre-release such as `v4.13.0-rc.1` is not a release, and it
+# sorts above the release it precedes, so the filter comes before the pick.
 newest_standard_version() {
     git -C "$1" tag -l 'taxonomy/headwater-standard/v*' --sort=-v:refname \
         >"$scratch/standard-tags.txt" 2>/dev/null
-    sed -n '1s|^taxonomy/headwater-standard/v||p' "$scratch/standard-tags.txt"
+    sed -n '/^taxonomy\/headwater-standard\/v[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*$/{
+        s|^taxonomy/headwater-standard/v||p
+        q
+    }' "$scratch/standard-tags.txt"
 }
 
 # standard_pin_judge NEWEST FILE... — `ok`, or one line per mention of a
 # `headwater-standard/v<x>`, a `headwater-standard-<x>.zip` or a
 # `headwater/standard <x>` or `headwater/standard v<x>` whose version is not
-# NEWEST. Every match on a line is read, not the first alone, because a
-# vendor URL carries the tag path and the zip name on one line and either can
-# be the stale half.
+# NEWEST, and one line per file that names no version at all. Every match on
+# a line is read, not the first alone, because a vendor URL carries the tag
+# path and the zip name on one line and either can be the stale half. A file
+# whose path ends in `/$standard_pin_unversioned` is exempt from the floor.
 standard_pin_judge() {
     spj_newest=$1
     shift
@@ -2814,7 +2825,7 @@ standard_pin_judge() {
         echo "no \`taxonomy/headwater-standard/v*\` tag in this clone, so nothing says which version is newest. Fetch the tags, or set \`fetch-tags: true\` on the checkout"
         return 0
     fi
-    awk -v want="$spj_newest" '
+    awk -v want="$spj_newest" -v unversioned="/$standard_pin_unversioned" '
         {
             s = $0
             while (match(s, /headwater-standard\/v[0-9]+(\.[0-9]+)*|headwater-standard-[0-9]+(\.[0-9]+)*\.zip|headwater\/standard v?[0-9]+(\.[0-9]+)*/)) {
@@ -2824,6 +2835,17 @@ standard_pin_judge() {
                 sub(/^headwater-standard\/v|^headwater-standard-|^headwater\/standard v?/, "", v)
                 sub(/\.zip$/, "", v)
                 if (v != want && v != "0.0.0") print FILENAME ":" FNR ": " m
+                named[FILENAME] = 1
+            }
+        }
+        # An empty file yields no record, so the floor walks ARGV rather
+        # than the files a record came from.
+        END {
+            for (i = 1; i < ARGC; i++) {
+                f = ARGV[i]
+                if (f in named) continue
+                if (substr(f, length(f) - length(unversioned) + 1) == unversioned) continue
+                print f ": names no headwater/standard version"
             }
         }
     ' "$@" >"$scratch/standard-pin.out" 2>"$scratch/standard-pin.err"
@@ -2933,6 +2955,35 @@ case $got in
         fail "  a file the judge cannot open fails, and is not read as ok" "got \`$got\`" ;;
 esac
 
+# 8m, continued. A file that names NO version is not a file that names the
+# newest one. The stale rule reads matches, so an empty tape, or one cut off
+# before its vendor line, gave it nothing to object to and read as `ok`, and
+# the count above holds only that the file exists (#1385). So each file the
+# judge is handed must name at least one version, unless it is named in
+# `standard_pin_unversioned`.
+: >"$scratch/standard/empty.tape"
+sed -n '1,20p' "$root/.github/assets/headwater-demo.tape" >"$scratch/standard/truncated.tape"
+same "  an empty file fails, and names the file" \
+    "$scratch/standard/empty.tape: names no headwater/standard version" \
+    "$(standard_pin_judge 99.0.0 "$scratch/standard/empty.tape")"
+same "  a tape cut off before its vendor line fails, and names the file" \
+    "$scratch/standard/truncated.tape: names no headwater/standard version" \
+    "$(standard_pin_judge 99.0.0 "$scratch/standard/clean1.md" "$scratch/standard/truncated.tape")"
+
+# 8m, continued. The exemption is one path and no wider. A driver at exactly
+# `.claude/tutorial/drive.py` that names no version passes. A sibling beside
+# it, and the tutorial's site page, fail when they name none, so an exemption
+# widened to a directory or to any path that holds `/tutorial` goes red here.
+mkdir -p "$scratch/standard/x/.claude/tutorial" "$scratch/standard/x/site/tutorial"
+: >"$scratch/standard/x/.claude/tutorial/drive.py"
+: >"$scratch/standard/x/.claude/tutorial/other.py"
+: >"$scratch/standard/x/site/tutorial/index.html"
+same "  the tutorial driver, which reads the version off the page, is exempt from the floor" ok \
+    "$(standard_pin_judge 99.0.0 "$scratch/standard/x/.claude/tutorial/drive.py")"
+same "  and the exemption is that one path: a sibling and the site page still fail" \
+    "$scratch/standard/x/.claude/tutorial/other.py: names no headwater/standard version|$scratch/standard/x/site/tutorial/index.html: names no headwater/standard version" \
+    "$(standard_pin_judge 99.0.0 "$scratch/standard/x/.claude/tutorial/other.py" "$scratch/standard/x/site/tutorial/index.html" | tr '\n' '|' | sed 's/|$//')"
+
 # 8o. The newest tag is the newest by VERSION. These four tags are chosen so
 #     that each wrong reading picks a different one: git's default order is
 #     lexical and ascending, and it lists v4.10.0 first; lexical descending
@@ -2947,6 +2998,15 @@ for v in 4.2.0 4.9.1 4.10.0 4.12.0; do
     git -C "$order" tag "taxonomy/headwater-standard/v$v" >/dev/null 2>&1
 done
 same "  the newest tag is read by version, not by name" 4.12.0 \
+    "$(newest_standard_version "$order")"
+
+# 8o, continued. The newest tag is the newest RELEASE. A pre-release tag sorts
+#     above the release it precedes, so `v4.13.0-rc.1` read as newest would
+#     send every page to a version no newcomer can install and turn this gate
+#     red on the day the candidate is pushed (#1385). Only a tag whose version
+#     is three dotted numbers and nothing else is read.
+git -C "$order" tag "taxonomy/headwater-standard/v4.13.0-rc.1" >/dev/null 2>&1
+same "  a pre-release tag newer than the release is not the newest" 4.12.0 \
     "$(newest_standard_version "$order")"
 
 # 8n. Provoked: a clone with no tags is red, never green. It is cloned from
