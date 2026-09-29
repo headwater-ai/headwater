@@ -22,7 +22,7 @@ into it so that a `~` in a tutorial command cannot escape.
 
 **One command reaches the network, and it is step 3's.** Step 3 runs
 `headwater taxonomy vendor` on the `https://` location of the zip that the real
-`taxonomy/headwater-standard/v4.2.0` release carries — the taxonomy-only route
+`taxonomy/headwater-standard/v<version>` release the page names carries — the taxonomy-only route
 `.github/workflows/release-taxonomy.yml` cuts, and not an engine tag. The engine
 under test does the fetch itself. Every
 assertion before it runs first and reaches no network, so a fetch failure here is
@@ -325,7 +325,8 @@ def main():
 
         # Step 3. The one command in this suite that reaches the network:
         # `headwater taxonomy vendor` fetches the zip of the real
-        # `taxonomy/headwater-standard/v4.2.0` release itself. A fetch or
+        # `taxonomy/headwater-standard/v<version>` release the page names
+        # itself. A fetch or
         # network failure here is reported as its own claim, never read as a
         # defect in a step above it, and nothing below this step reaches the
         # network again.
@@ -483,15 +484,19 @@ def main():
 
         # Step 16. Pinning the digest in step 3 already carried this corpus onto
         # `L0` and `L1`, unlike the copy route the page used to take, so the
-        # only gap left here is `projections.current`.
+        # only gap left here is `projections.current`. The version is the one
+        # step 5 read out of block 10, never a literal here: a literal is a
+        # second copy of the pin, and one stayed behind when the page moved
+        # (#1341).
         result = run(used(42).strip())
         cut('step 16: the levels', result.stdout, 43)
         for command in used(44).strip('\n').split('\n'):
             run(command)
+        pinned = lines[1][len('  version: '):]
         compare("step 16: grep 'L2'",
                 run("headwater conformance 2>/dev/null | grep 'L2'").stdout,
                 '  L2 Regenerated — reached, 4 of 4 rules met\n'
-                'L2 reached, against headwater/standard 4.9.1', today)
+                'L2 reached, against headwater/standard ' + pinned, today)
 
         # Where to go next.
         assert_true('where to go next: headwater infer exits 0',

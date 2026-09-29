@@ -2676,6 +2676,202 @@ else
         "the arms did not run: no \`.github/workflows/release-taxonomy.yml\` to check"
 fi
 
+# 8j-8n. The version a newcomer is sent to fetch is the newest one published.
+#
+# `digest_route_judge` above holds that the digest a reader is sent to read
+# belongs to the tree the same paragraph sends them to fetch. This extends it by
+# one clause: AND THAT TREE IS THE NEWEST TAG'S. #1341 found the tutorial, its
+# rendered site page, this page, the demo tape and the tutorial's driver all on
+# `v4.9.1` after `v4.12.0` was cut, and every case above stayed green, because
+# each one compares a page with a tag the page itself names. None of them asks
+# the clone which tag is newest.
+#
+# The newest version is read out of this clone's tags, never out of a literal
+# here and never out of `package.yml`, which moves on a branch before its tag is
+# cut. The tag list is written to a file first and read second, so a `git`
+# failure cannot be hidden behind a filter's exit status. An empty tag list is
+# red, as `tag_object_present` rules for one tag: a clone with no tags cannot
+# say which version is newest, and passing there is a check that could not run
+# reading as one that passed. The `headwater` CI job checks out with
+# `fetch-tags: true`.
+#
+# `0.0.0` is exempt by name. It is the version `headwater init` writes before a
+# pin, and step 4 of the tutorial quotes the engine refusing it. No tag carries
+# it, so it can never be the stale half of a comparison.
+standard_pin_files=".claude/tutorial/drive.py
+.github/assets/headwater-demo.tape
+README.md
+docs/tutorials/your-first-governed-corpus.md
+site/tutorial/index.html"
+
+# newest_standard_version ROOT — the version of the newest
+# `taxonomy/headwater-standard/v*` tag in the clone at ROOT, or nothing.
+newest_standard_version() {
+    git -C "$1" tag -l 'taxonomy/headwater-standard/v*' --sort=-v:refname \
+        >"$scratch/standard-tags.txt" 2>/dev/null
+    sed -n '1s|^taxonomy/headwater-standard/v||p' "$scratch/standard-tags.txt"
+}
+
+# standard_pin_judge NEWEST FILE... — `ok`, or one line per mention of a
+# `headwater-standard/v<x>`, a `headwater-standard-<x>.zip` or a
+# `headwater/standard <x>` or `headwater/standard v<x>` whose version is not
+# NEWEST. Every match on a line is read, not the first alone, because a
+# vendor URL carries the tag path and the zip name on one line and either can
+# be the stale half.
+standard_pin_judge() {
+    spj_newest=$1
+    shift
+    if [ -z "$spj_newest" ]; then
+        echo "no \`taxonomy/headwater-standard/v*\` tag in this clone, so nothing says which version is newest. Fetch the tags, or set \`fetch-tags: true\` on the checkout"
+        return 0
+    fi
+    awk -v want="$spj_newest" '
+        {
+            s = $0
+            while (match(s, /headwater-standard\/v[0-9]+(\.[0-9]+)*|headwater-standard-[0-9]+(\.[0-9]+)*\.zip|headwater\/standard v?[0-9]+(\.[0-9]+)*/)) {
+                m = substr(s, RSTART, RLENGTH)
+                s = substr(s, RSTART + RLENGTH)
+                v = m
+                sub(/^headwater-standard\/v|^headwater-standard-|^headwater\/standard v?/, "", v)
+                sub(/\.zip$/, "", v)
+                if (v != want && v != "0.0.0") print FILENAME ":" FNR ": " m
+            }
+        }
+    ' "$@" >"$scratch/standard-pin.out" 2>"$scratch/standard-pin.err"
+    spj_status=$?
+    # A file awk cannot open is a judge that read nothing, and an empty output
+    # from it would read as `ok`. So a non-zero exit is the finding.
+    if [ "$spj_status" -ne 0 ]; then
+        echo "awk exited $spj_status reading the files, so the judge could not read them: $(head -n 1 "$scratch/standard-pin.err")"
+        return 0
+    fi
+    if [ -s "$scratch/standard-pin.out" ]; then
+        sed "s|^$root/||" "$scratch/standard-pin.out"
+    else
+        echo ok
+    fi
+}
+
+standard_newest=$(newest_standard_version "$root")
+standard_paths=
+standard_present=0
+for f in $standard_pin_files; do
+    standard_paths="$standard_paths $root/$f"
+    if [ -f "$root/$f" ]; then
+        standard_present=$((standard_present + 1))
+    fi
+done
+
+# The five files are the population, and each one is on disk. awk skips a file
+# it cannot open and the judge below then reads four as `ok`, so a page that
+# moved, or a name dropped from the list above, would pass without this count.
+same "the five files that name a headwater/standard version are all on disk" 5 "$standard_present"
+
+# 8j. The population: the clone carries a tag to compare with.
+if [ -n "$standard_newest" ]; then
+    pass "this clone carries a \`taxonomy/headwater-standard/v*\` tag (newest v$standard_newest)"
+else
+    fail "this clone carries a \`taxonomy/headwater-standard/v*\` tag" \
+        "none, so the case below compares the pages with nothing"
+fi
+
+# 8k. THE DECISIVE CASE: the five files a newcomer follows, or that follow them,
+#     name the newest version and no other.
+# shellcheck disable=SC2086
+same "the tutorial, its site page, this page, the demo tape and the tutorial driver name the newest headwater/standard" ok \
+    "$(standard_pin_judge "$standard_newest" $standard_paths | tr '\n' '|' | sed 's/|$//')"
+
+# 8l. Provoked: a scratch copy of the tutorial moved back to 4.9.1 fails, and
+#     names the lines. The copy is the real page, so a judge that stopped
+#     reading the page's own shapes goes green here.
+mkdir -p "$scratch/standard"
+tutorial_page="$root/docs/tutorials/your-first-governed-corpus.md"
+if [ -n "$standard_newest" ] && [ "$standard_newest" != 4.9.1 ]; then
+    sed "s/$(printf '%s' "$standard_newest" | sed 's/\./\\./g')/4.9.1/g" "$tutorial_page" >"$scratch/standard/old.md"
+    got=$(standard_pin_judge "$standard_newest" "$scratch/standard/old.md" | grep -c 'standard[/ -]v\{0,1\}4\.9\.1')
+    more_than "  a copy of the tutorial that names 4.9.1 fails, line by line" 0 "$got"
+else
+    fail "  a copy of the tutorial that names 4.9.1 fails, line by line" \
+        "no newest tag other than 4.9.1 to provoke the judge with"
+fi
+
+# 8m. Provoked, one shape at a time: each of the three forms the judge reads is
+#     read on its own, so dropping one alternative from the pattern goes red.
+printf '%s\n' 'fetch taxonomy/headwater-standard/v4.9.1 by hand' >"$scratch/standard/tag.md"
+printf '%s\n' 'unpack headwater-standard-4.9.1.zip by hand' >"$scratch/standard/zip.md"
+printf '%s\n' 'L1 reached, against headwater/standard 4.9.1' >"$scratch/standard/prose.md"
+printf '%s\n' 'this takes headwater/standard 0.0.0, and the package here is X' >"$scratch/standard/init.md"
+same "  a tag path naming another version fails" \
+    "$scratch/standard/tag.md:1: headwater-standard/v4.9.1" \
+    "$(standard_pin_judge 99.0.0 "$scratch/standard/tag.md")"
+same "  a zip name naming another version fails" \
+    "$scratch/standard/zip.md:1: headwater-standard-4.9.1.zip" \
+    "$(standard_pin_judge 99.0.0 "$scratch/standard/zip.md")"
+same "  a \`headwater/standard <version>\` in prose naming another version fails" \
+    "$scratch/standard/prose.md:1: headwater/standard 4.9.1" \
+    "$(standard_pin_judge 99.0.0 "$scratch/standard/prose.md")"
+same "  and the unpinned 0.0.0 that init writes passes" ok \
+    "$(standard_pin_judge 99.0.0 "$scratch/standard/init.md")"
+
+# 8m, continued. The shape the five files actually use puts the tag path and
+# the zip name on ONE line, so a judge that read only the first match on a
+# line passed a current tag path beside a stale zip name. 8l counts lines and
+# the cases above put one shape on each, so neither could see it. A `v` before
+# the version in prose is read as well.
+printf '%s\n' 'https://example.invalid/download/taxonomy/headwater-standard/v99.0.0/headwater-standard-4.9.1.zip' >"$scratch/standard/mixed.md"
+printf '%s\n' 'L1 reached, against headwater/standard v4.9.1' >"$scratch/standard/vprose.md"
+same "  a current tag path beside a stale zip name on one line fails on the zip" \
+    "$scratch/standard/mixed.md:1: headwater-standard-4.9.1.zip" \
+    "$(standard_pin_judge 99.0.0 "$scratch/standard/mixed.md")"
+same "  a \`headwater/standard v<version>\` in prose naming another version fails" \
+    "$scratch/standard/vprose.md:1: headwater/standard v4.9.1" \
+    "$(standard_pin_judge 99.0.0 "$scratch/standard/vprose.md")"
+
+# 8m, continued. The judge reads EVERY file it is handed. 8k hands it five, and
+# a judge that read only the first, or that was handed one path that does not
+# exist, reported `ok` over pages it never opened. So: three files with the
+# stale one last, and three files with a missing one among them.
+printf '%s\n' 'against headwater/standard 99.0.0' >"$scratch/standard/clean1.md"
+printf '%s\n' 'taxonomy/headwater-standard/v99.0.0' >"$scratch/standard/clean2.md"
+same "  of several files, a stale version in the last one fails" \
+    "$scratch/standard/prose.md:1: headwater/standard 4.9.1" \
+    "$(standard_pin_judge 99.0.0 "$scratch/standard/clean1.md" "$scratch/standard/clean2.md" "$scratch/standard/prose.md")"
+got=$(standard_pin_judge 99.0.0 "$scratch/standard/clean1.md" "$scratch/standard/absent.md" "$scratch/standard/clean2.md")
+case $got in
+    "awk exited "*)
+        pass "  a file the judge cannot open fails, and is not read as ok" ;;
+    *)
+        fail "  a file the judge cannot open fails, and is not read as ok" "got \`$got\`" ;;
+esac
+
+# 8o. The newest tag is the newest by VERSION. These four tags are chosen so
+#     that each wrong reading picks a different one: git's default order is
+#     lexical and ascending, and it lists v4.10.0 first; lexical descending
+#     lists v4.9.1 first; version ascending lists v4.2.0 first. Only a
+#     descending version sort names v4.12.0. The real clone's tags cannot
+#     hold this, because today lexical order happens to list v4.12.0 first.
+order="$scratch/standard/order"
+git init -q "$order" >/dev/null 2>&1
+git -C "$order" -c user.name=fixture -c user.email=fixture@example.invalid \
+    -c commit.gpgsign=false commit -q --allow-empty -m seed >/dev/null 2>&1
+for v in 4.2.0 4.9.1 4.10.0 4.12.0; do
+    git -C "$order" tag "taxonomy/headwater-standard/v$v" >/dev/null 2>&1
+done
+same "  the newest tag is read by version, not by name" 4.12.0 \
+    "$(newest_standard_version "$order")"
+
+# 8n. Provoked: a clone with no tags is red, never green. It is cloned from
+#     this one with `--no-tags`, so it has every commit and nothing to say
+#     which version is newest.
+git clone -q --no-tags --no-checkout "$root" "$scratch/standard/notags" >/dev/null 2>&1
+got=$(standard_pin_judge "$(newest_standard_version "$scratch/standard/notags")" "$tutorial_page")
+case $got in
+    "no \`taxonomy/headwater-standard/v*\` tag in this clone"*)
+        pass "  a clone with no tags fails, and says to fetch them" ;;
+    *)
+        fail "  a clone with no tags fails, and says to fetch them" "got \`$got\`" ;;
+esac
+
 echo
 echo "the recorded terminal demonstration, and its frozen-snapshot marker"
 
