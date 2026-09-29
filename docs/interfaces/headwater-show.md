@@ -32,7 +32,7 @@ Use `explain` to learn what a document is. Use `show` to read what it says, by i
 
 ## Preconditions
 
-The repository must carry a readable `.headwater/taxonomy.lock`, consumer declaration and corpus. The target must resolve to a typed or untyped census row that the walk could read. `show` refuses a row that the walk could not read, as the two paragraphs under Exit status say ([#1366](https://github.com/headwater-ai/headwater/issues/1366)).
+The repository must carry a readable `.headwater/taxonomy.lock`, consumer declaration and corpus. The target must resolve to a typed or untyped census row. `show` refuses a symlink and a named pipe, a socket or a device, as the two paragraphs under Exit status say. For a directory that the walk could not read, `show` writes the sentence for a file that could not be read ([#1366](https://github.com/headwater-ai/headwater/issues/1366)).
 
 An identifier resolves only to a typed document. An untyped document resolves only by its path.
 
