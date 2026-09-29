@@ -588,7 +588,7 @@ mod tests {
     /// A namespace is compared character by character like any literal, so two
     /// schemes whose expanded runs differ at some character are disjoint.
     #[test]
-    fn two_namespaces_that_differ_make_two_schemes_disjoint() {
+    fn two_namespaces_that_differ_in_one_position_make_two_schemes_disjoint() {
         assert!(disjoint(
             ("{namespace}-SPEC-{slug}", "HW"),
             ("{namespace}-SPEC-{slug}", "XX")
