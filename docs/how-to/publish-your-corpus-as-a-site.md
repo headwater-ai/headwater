@@ -52,7 +52,7 @@ headwater generate
 
 3. Copy the configuration [`integrations/site-generator/mkdocs.yml`](https://github.com/headwater-ai/headwater/blob/main/integrations/site-generator/mkdocs.yml) from `headwater-ai/headwater` to the root of your repository, next to `.headwater/`. Set `site_name` to the name of your site. Set `docs_dir` to the `corpus.root` value in `.headwater/taxonomy.yml`. The file has no `nav:` of its own, because `INHERIT` reads it from `.headwater/nav.yml`.
 
-4. Install MkDocs.
+4. Install MkDocs. When your Python refuses to install a package outside a virtual environment, create and activate one first.
 
 ```sh
 python3 -m pip install mkdocs==1.6.1
