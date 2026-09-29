@@ -1,4 +1,4 @@
-31 seen, 29 classified, 28 checked, 357 check instances
+31 seen, 29 classified, 28 checked, 367 check instances
       1 generated, held to regeneration by `headwater generate --check`
       1 skipped: no `id` facet, which is the key this engine reads an identifier from and which no declaration states
       1 skipped: the `id` facet is a sequence, and an identifier is a word
@@ -14,6 +14,7 @@
      28 instances of identifier.pattern.not_met
      29 instances of shelf.placement_is_primary
      10 instances of relation.target.unresolved
+     10 instances of relation.target.is_source
       4 instances of relation.reciprocity.missing
       7 instances of relation.endpoint.not_permitted
       7 instances of lifecycle.dependency.on_initial
@@ -56,6 +57,8 @@ rules, and for each the scope that binds it
   shelf.placement_is_primary
     document scope, one document and its front matter
   relation.target.unresolved
+    edge scope, one relation instance and both endpoints
+  relation.target.is_source
     edge scope, one relation instance and both endpoints
   relation.target.suspect
     edge scope, one relation instance and both endpoints, and the version of the declaring document that stood before the change, where the run carries one
@@ -130,9 +133,9 @@ rules, and for each the scope that binds it
   relation.target.verification.suspect
     edge scope, one relation instance and both endpoints, and the committed observation snapshot
 register
-  28 obligations: 22 verified, 2 gap, 1 unverifiable, 3 with no disposition
+  29 obligations: 23 verified, 2 gap, 1 unverifiable, 3 with no disposition
      10 high, 9 verified
-     10 medium, 8 verified
+     11 medium, 9 verified
       8 low, 5 verified
   OB-FIX-7 verified, 1 finding escaped under it
   OB-FIX-8 verified, 1 finding escaped under it
@@ -143,16 +146,16 @@ register
   OB-FIX-18 with no disposition, and CT-FIX-15 claims to discharge it under a mechanism this engine does not implement
   OB-FIX-19 with no disposition, and CT-FIX-16 claims to discharge it under a mechanism outside this engine that no committed observation names
   OB-FIX-20 gap, owner the fixture tree, and no target, and CT-FIX-17 claims to discharge it under a mechanism this engine does not implement, which is two dispositions
-  25 controls
-     24 posture advisory
+  26 controls
+     25 posture advisory
       1 posture blocking
-     24 acts detective
+     25 acts detective
       1 acts preventive
-     21 name a rule this engine carries
+     22 name a rule this engine carries
       1 name a phase this engine runs
       2 name a mechanism this engine does not implement
       1 name a mechanism outside this engine
-     23 with no promotion record, so nothing states what would promote them
+     24 with no promotion record, so nothing states what would promote them
       1 with criteria
       1 producing facts rather than findings
   escaped findings, in the precedence spec 4 fixes: no waiver reaches a check finding, 0 migration-pending, 2 suppressed
@@ -485,6 +488,26 @@ instances
   relation.target.unresolved check/spec/13-dangling.md
     failed
   relation.target.unresolved check/spec/15-unusable-entries.md + check/evaluations/alpha.md
+    passed
+  relation.target.is_source check/evaluations/alpha.md + check/spec/00-both-halves.md
+    passed
+  relation.target.is_source check/evaluations/delta.md + check/spec/02-cited-only.md
+    passed
+  relation.target.is_source check/evaluations/eta.md + check/evaluations/alpha.md
+    passed
+  relation.target.is_source check/evaluations/gamma.md + check/spec/00-both-halves.md
+    passed
+  relation.target.is_source check/spec/00-both-halves.md + check/evaluations/alpha.md
+    passed
+  relation.target.is_source check/spec/01-one-half.md + check/evaluations/beta.md
+    passed
+  relation.target.is_source check/spec/01-one-half.md + check/evaluations/alpha.md
+    passed
+  relation.target.is_source check/spec/13-dangling.md
+    passed
+  relation.target.is_source check/spec/13-dangling.md
+    passed
+  relation.target.is_source check/spec/15-unusable-entries.md + check/evaluations/alpha.md
     passed
   relation.reciprocity.missing check/spec/00-both-halves.md + check/evaluations/alpha.md
     passed
