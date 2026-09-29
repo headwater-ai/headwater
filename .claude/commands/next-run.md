@@ -45,8 +45,7 @@ Ten lines the parent of a build-order run obeys on every turn. A run copies them
 
 ## The veto
 
-Your veto of a `PASS` goes by `SendMessage` to that `hw-iterate` id, with your finding. It counts toward the three `FAIL`s at which that agent stops: something upstream is wrong, and a fourth will not find it.
-
+Your veto of a `PASS` goes by `SendMessage` to that `hw-iterate` id, with your finding. It counts toward the three `FAIL`s at which that agent stops: something upstream is wrong, and a fourth will not find it. Name exact mutants, never a standard.
 ## Resume
 
 `/next-run --resume <run-id>` is a fresh parent on a run `tools/run/supervise.sh` restarted. Drain to zero before any exit, because a subagent dies with its parent. `hw-run-policy` says what a resumed parent reads and does.

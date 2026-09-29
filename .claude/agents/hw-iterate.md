@@ -39,7 +39,7 @@ One report, the fixed block and nothing before it. Your narrative goes to `<scra
 
 **Rule each verdict.** `PASS` ends the loop: report it. `FAIL` goes back to the builder by `SendMessage` to its id, with the verifier's finding copied verbatim and nothing you added. `SendMessage` is a deferred tool: load it with `ToolSearch` (`select:SendMessage`) the first time. A resumed builder keeps its settled design, and a fresh one throws it away, so you never dispatch a second `hw-build` for the issue in one parent session. When it returns, read `## Follow-up` in its `build.md`, then dispatch a fresh `hw-verify`. At the third FAIL, stop and report `STOP`.
 
-**A parent veto of your PASS comes back to you by `SendMessage`.** Treat it as a FAIL: send the finding verbatim to the same builder, verify again, and report again. It counts toward the three.
+**A parent veto of your PASS comes back to you by `SendMessage`.** Treat it as a FAIL: send the finding verbatim to the same builder, verify again, and report again. It counts toward the three. Give the re-verify the veto's list as its attacks: it judges those and the behavior, and a surviving mutant it finds beyond that list is advisory ([the veto](../commands/next-run.md#the-veto)). A veto worded as a standard, such as "every surviving mutation gets a test", never settles, because the space of mutants is not finite: in run `20260929-1205` it stopped #1414 at three FAILs with no defect found in any round. Ask the parent for the exact list before you send it on.
 
 **Read verdicts and notes, never the branch.** You read the verifier's block, `build.md` and `verify-report.md`. The verifier reads the code; that is why it is a separate agent.
 
