@@ -230,7 +230,13 @@ impl EdgeCheck for Suspect<'_> {
     /// 6: the fix, and the `Info` report over an unrecorded edge, are decided
     /// by the change rather than by the clock, so a verdict cached at 5 on a
     /// document verified today is stale (#1259).
-    const VERSION: u32 = 6;
+    ///
+    /// 7: a moved digest over a pattern counts the regular files the digest
+    /// covers rather than every entry the pattern matched, so a message
+    /// cached at 6 over a set that holds a named pipe, a socket or a device
+    /// states the wrong count. An edge whose entries are all such files is
+    /// reported rather than passed (#1333).
+    const VERSION: u32 = 7;
     /// The change decides the fix, and the clock decides nothing (#1259).
     const NEEDS_CLOCK: bool = false;
     /// The fix is offered only on a document the change re-verified, so the

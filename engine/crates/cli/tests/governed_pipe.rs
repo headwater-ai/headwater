@@ -227,6 +227,18 @@ fn check_no_cache_finishes_when_a_named_pipe_takes_a_document_path() {
     );
 }
 
+/// `derived` walks the tree itself, not through the census, and reads each
+/// file it finds. It lists no named pipe, so it ends (#1333, verify round 1).
+#[test]
+fn derived_finishes_when_a_named_pipe_takes_a_document_path() {
+    let root = document_pipe("derived-document-pipe");
+    under_deadline(
+        &root,
+        &["derived"],
+        "derived opened the named pipe at docs/x.md, and waited on it",
+    );
+}
+
 /// `show` reads the bytes of a document, and the census it finds the
 /// document in is the walk that met the pipe. The row is not a document, so
 /// `show` refuses it rather than opening it.

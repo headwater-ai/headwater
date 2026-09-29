@@ -450,14 +450,16 @@ mod tests {
         );
     }
 
-    /// A named pipe is an entry of its own kind and not a file, so no reader
-    /// of the walk opens it by mistake (#1333). Opening one that has no
-    /// writer blocks forever.
+    /// A named pipe and a socket are each an entry of their own kind and not
+    /// a file, so no reader of the walk opens one by mistake (#1333). Opening
+    /// a named pipe that has no writer blocks forever. A socket path must fit
+    /// in 108 bytes, and a temporary directory on a CI runner does not, so
+    /// the root is a short directory under `/tmp`.
     #[cfg(unix)]
     #[test]
-    fn a_named_pipe_is_a_special_entry_and_not_a_file() {
-        let at = std::env::temp_dir().join(format!(
-            "headwater-walk-pipe-{}-{}",
+    fn a_named_pipe_and_a_socket_are_special_entries_and_not_files() {
+        let at = std::path::PathBuf::from("/tmp").join(format!(
+            "hw-walk-{}-{}",
             std::process::id(),
             std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
@@ -471,8 +473,11 @@ mod tests {
             .status()
             .expect("mkfifo runs");
         assert!(fifo.success(), "the named pipe is made");
+        let socket = std::os::unix::net::UnixListener::bind(at.join("docs/s.md"))
+            .expect("the socket is bound");
 
         let entries = walk(&Corpus::new(at.clone(), "docs"));
+        drop(socket);
         std::fs::remove_dir_all(&at).ok();
         let kind = |path: &str| {
             entries
@@ -481,6 +486,7 @@ mod tests {
                 .map(|entry| entry.kind.clone())
         };
         assert!(matches!(kind("docs/x.md"), Some(EntryKind::Special)));
+        assert!(matches!(kind("docs/s.md"), Some(EntryKind::Special)));
         assert!(matches!(kind("docs/a.md"), Some(EntryKind::File)));
     }
 
