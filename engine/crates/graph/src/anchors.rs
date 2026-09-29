@@ -1451,9 +1451,18 @@ mod tests {
             walked: RefCell::new(HashMap::new()),
         };
 
-        assert_eq!(resolver.real_path("notes/b.md").as_deref(), Some("notes/b.md"));
-        assert_eq!(resolver.real_path("alias.md").as_deref(), Some("notes/b.md"));
-        assert_eq!(resolver.real_path("linked/b.md").as_deref(), Some("notes/b.md"));
+        assert_eq!(
+            resolver.real_path("notes/b.md").as_deref(),
+            Some("notes/b.md")
+        );
+        assert_eq!(
+            resolver.real_path("alias.md").as_deref(),
+            Some("notes/b.md")
+        );
+        assert_eq!(
+            resolver.real_path("linked/b.md").as_deref(),
+            Some("notes/b.md")
+        );
         assert_eq!(resolver.real_path("far.md"), None);
         assert_eq!(resolver.real_path("broken.md"), None);
         assert_eq!(resolver.real_path("notes/none.md"), None);
