@@ -562,6 +562,45 @@ fn an_edit_to_a_document_the_probes_read_keeps_every_verdict_and_marks_them() {
     assert!(!check(&at, &second).has_errors());
 }
 
+/// #1338 with the lock unmoved. The same edit is named by the run the same
+/// way, so whether the author meets it does not turn on an unrelated package
+/// publish.
+#[test]
+fn an_edit_under_an_unmoved_lock_is_named_by_the_run_and_keeps_every_verdict() {
+    let at = copied("probe-result-read-set-moved-lock-unmoved");
+    let (first, _) = result_bytes(&at);
+    write(&at, &first);
+    let verdicts =
+        verdicts_of(&std::fs::read_to_string(at.join(RESULT)).expect("the result reads"))
+            .to_string();
+    assert!(
+        check(&at, &plan_over(&at)).moved_read_sets.is_empty(),
+        "an unmoved read set is named by nothing"
+    );
+
+    edit(
+        &at,
+        "runs/probes/0002-answered.md",
+        "Say whether the cache may change a verdict.",
+        "Say whether the cache can change a verdict.",
+    );
+    let (moved, marked) = result_bytes(&at);
+    let checked = check(&at, &moved);
+    match checked.moved_read_sets.as_slice() {
+        [one] => {
+            assert_eq!(one.transcript, TRANSCRIPT);
+            assert_eq!(one.output, RESULT);
+        }
+        other => panic!("the run named {} moved read sets, not one", other.len()),
+    }
+    assert!(checked.refused.is_empty());
+    assert_eq!(verdicts_of(&marked), verdicts);
+    assert!(
+        marked.contains("the read set of its probes moved since the recording"),
+        "{marked}"
+    );
+}
+
 /// The comparison a result reports about the selection it was recorded over.
 ///
 /// Three directions, because a comparison that never moves and one that always

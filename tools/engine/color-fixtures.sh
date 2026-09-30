@@ -410,13 +410,16 @@ senses_its_terminal 'probe grade' "$engine probe grade $transcript --root ."
 # writes one section for each of them. `probe_stale` paints the `## The result
 # of` frame around each section, so the four arms alone would pass a
 # `Staleness::render` call site that states `ColorMode::Plain`. The two line
-# checks below read lines that only `Staleness::render` writes. Every committed
-# transcript is pinned to a lock this tree no longer carries, so over the
-# committed tree the report holds only the sentence of the unusable verdict. So
-# the case runs over a copy of the tree with one more transcript in it, the one
+# checks below read lines that only `Staleness::render` writes. The case runs
+# over a copy of the tree with two more transcripts in it. The first is the one
 # above with the digests `probe plan` prints over the copy. That transcript
 # reads, and its section writes a member line. The file moves the tree digest
-# the transcript states, and nothing here reads that digest.
+# the transcript states, and nothing here reads that digest. The second names
+# another lock and a selection that is not a part of this tree's, so this tree
+# composes no read set for it and the intake refuses it. Its section writes the
+# sentence of the unusable verdict. Since #1338 no committed transcript is
+# refused, because a moved read set marks the verdicts and keeps them, so the
+# committed tree alone no longer writes that sentence.
 stale_root="$scratch/stale-root"
 mkdir "$stale_root"
 if git archive HEAD | tar -x -C "$stale_root"; then
@@ -427,6 +430,10 @@ if git archive HEAD | tar -x -C "$stale_root"; then
         -e "s/^read_set: sha256:.*/$(printf '%s\n' "$stale_identity" | grep '^read_set: sha256:')/" \
         docs/probe-runs/regression-probe-transcript-for-2026-09-17-after-the-probe-corrections.md \
         >"$stale_root/docs/probe-runs/color-fixture-transcript.md"
+    sed -e 's/^lock: sha256:.*/lock: sha256:another-taxonomy/' \
+        -e 's/^selection: sha256:.*/selection: sha256:a-selection-this-tree-does-not-compose/' \
+        docs/probe-runs/regression-probe-transcript-for-2026-09-17-after-the-probe-corrections.md \
+        >"$stale_root/docs/probe-runs/color-fixture-refused-transcript.md"
     senses_its_terminal 'probe stale' "$engine probe stale --root $stale_root"
     paints_the_line 'probe stale, unusable verdict' "$engine probe stale --root $stale_root" \
         'Nothing here decides whether this result is stale'
