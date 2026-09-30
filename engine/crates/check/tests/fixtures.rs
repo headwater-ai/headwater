@@ -1919,6 +1919,11 @@ fn the_scope_of_every_rule_comes_from_the_trait_that_binds_it() {
             // is the same grain for the reason the two above it are: the
             // defect survives in one document.
             Grain::Document,
+            // The warrant against spec 3's closed set, and the acceptor against
+            // the warrant: both are one document's provenance block (#1438,
+            // #1437).
+            Grain::Document,
+            Grain::Document,
             // The third rule that reads a lifecycle regime, and the only one
             // whose subject is a document this corpus no longer holds. A
             // deleted document has no census row, so there is nothing smaller

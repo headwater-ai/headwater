@@ -85,7 +85,7 @@ The entry sits outside the corpus root on purpose, the same reason the other fix
 
 ## What a run reports
 
-`headwater taxonomy resolve` then `headwater check --no-cache --now 2026-09-01` over the assembled root, with the committed `.headwater/`: **35 files under the corpus root, 35 typed, 0 excluded, 35 checked, 427 check instances, 136 findings, 118 of them errors and 18 warnings.** The warning count was 21 until [#783](https://github.com/headwater-ai/headwater/issues/783) put an inline quotation outside every prose rule. Three of these warnings read quoted words as n8n's own prose, and the check instances did not move. The census reads 35 `how_to`. The graph reads 35 nodes, 0 declared edge halves, and 14 prose links that did not resolve. `headwater check --strict` exits 1. Nothing under the corpus root is untyped, which is the case this fixture was vendored to record.
+`headwater taxonomy resolve` then `headwater check --no-cache --now 2026-09-01` over the assembled root, with the committed `.headwater/`: **35 files under the corpus root, 35 typed, 0 excluded, 35 checked, 497 check instances, 136 findings, 118 of them errors and 18 warnings.** The warning count was 21 until [#783](https://github.com/headwater-ai/headwater/issues/783) put an inline quotation outside every prose rule. Three of these warnings read quoted words as n8n's own prose, and the check instances did not move. The census reads 35 `how_to`. The graph reads 35 nodes, 0 declared edge halves, and 14 prose links that did not resolve. `headwater check --strict` exits 1. Nothing under the corpus root is untyped, which is the case this fixture was vendored to record.
 
 | Rule | Count | Severity |
 |---|---|---|
