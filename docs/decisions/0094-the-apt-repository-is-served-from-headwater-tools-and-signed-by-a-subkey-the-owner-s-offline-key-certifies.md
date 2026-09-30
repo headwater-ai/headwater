@@ -14,9 +14,9 @@ provenance:
 relations:
   governs:
     - to: .github/workflows/release.yml
-      verified_revision: sha256:b0b36b7376133c211948572cc5a835c1d3e46f2e87c986869748c8d5f9170f47
+      verified_revision: sha256:8cea15616685636e280524a654bf6303543920806bb9a2c77e801a195de1c845
     - to: tools/site/fetch-apt.sh
-      verified_revision: sha256:141b9659d92f91b799b7f35ca8604c94394b27a200c47f2392bc5838be1eea6a
+      verified_revision: sha256:cb44a3ed11960c738f0e4d9352565c03a0246544c35fa54fb805ef827a1dfd4c
 ---
 
 # The APT repository is served from headwater.tools and signed by a subkey the owner's offline key certifies

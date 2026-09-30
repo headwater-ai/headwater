@@ -23,11 +23,11 @@ relations:
     - to: tools/site/refresh-figures.sh
       verified_revision: sha256:7408acc04eb80e92801ee2037319fd873f65522cb8b6d5a7c0f0a1a206a388c7
     - to: tools/site/deploy-site.sh
-      verified_revision: sha256:18f7b6be6591074451fd39faa0c38346e59437285e3b0f930142da87ac33faa0
+      verified_revision: sha256:047119caad486cd1f94a5f0ba25a0768a2fea1f4e223a32c83bc029f06c6b111
     - to: tools/site/check-site-figures.sh
       verified_revision: sha256:52ae77f1c1c66f68649935759cb305401f8608cf1b9320b4f69aac207ae88974
     - to: tools/site/figures-fixtures.sh
-      verified_revision: sha256:8c46ae88e996fc9f5c1c64f01ffce2e51f98d192404aad8165b3ccfe6474cead
+      verified_revision: sha256:17601803a83d702cfd5334ac29bb651a4f3064f8ff61d86cfe1a0283f2c35705
     - to: .github/workflows/deploy-site.yml
       verified_revision: sha256:7f7297d1663af5be42847dd0c619033a52e5d99d11531090258d278fe6a4042d
 ---
@@ -52,7 +52,7 @@ relations:
 
 **The committed pages carry every `data-figure` element empty.** `sh tools/site/refresh-figures.sh --blank` writes that form, and it is the one command that resolves a conflict on a page: take either side's prose, then blank. It measures nothing and needs no engine.
 
-**Shape A is the deploy path.** The one deploy job is in `.github/workflows/deploy-site.yml`, and it runs `tools/site/deploy-site.sh`. Two workflows call it and no event starts it alone. `ci.yml` calls it on a push to `main`, after the two gating jobs of that push, `Engine tests` and `headwater check (advisory)`. `release.yml` calls it with `ref: main` after its `publish` job creates the release, because `tools/site/fetch-apt.sh` reads the newest release ([#1316](https://github.com/headwater-ai/headwater/issues/1316)). It is not a required check. The script renders the generated half, assembles the directory, and fills the figures with `refresh-figures.sh --into .headwater/site-deploy`. Then it adds the APT repository with `tools/site/fetch-apt.sh` and deploys with `wrangler` at a pinned version. Shapes B and C are rejected for the reasons in the context above.
+**Shape A is the deploy path.** The one deploy job is in `.github/workflows/deploy-site.yml`, and it runs `tools/site/deploy-site.sh`. Two workflows call it and no event starts it alone. `ci.yml` calls it on a push to `main`, after the two gating jobs of that push, `Engine tests` and `headwater check (advisory)`. `release.yml` calls it with `ref: main` after its `publish` job creates the release, because `tools/site/fetch-apt.sh` reads the newest release ([#1316](https://github.com/headwater-ai/headwater/issues/1316)). It is not a required check. The script renders the generated half, assembles the directory, and fills the figures with `refresh-figures.sh --into .headwater/site-deploy`. Then it adds the APT repository with `tools/site/fetch-apt.sh`, refuses a directory with no APT repository ([#1449](https://github.com/headwater-ai/headwater/issues/1449)), and deploys with `wrangler` at a pinned version. Shapes B and C are rejected for the reasons in the context above.
 
 **A deploy that cannot measure publishes nothing.** The script runs under `set -eu`. A failing measurement, an unknown key, a measured figure that reaches no page, or a marker the pattern cannot read stops it before `wrangler` runs. `tools/site/check-site-figures.sh` then refuses an assembled directory that still holds an empty element. `tools/site/figures-fixtures.sh` holds each of these with `wrangler` stubbed.
 
