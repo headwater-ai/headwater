@@ -17,7 +17,7 @@ This answers HW-OBL-0097 as package data, not as a permanent decision: an adopte
 
 The bundle writes `purposes.procedure`, `kinds.tutorial`, `identifier_schemes.tutorial_id`, and `shelves.tutorials`, which this repository's overlay also writes. It therefore cannot resolve beside that overlay, and the collision fixture records the first shared address. The product-suite profile tier also reserves `purposes.procedure`; this bundle claims that address only for a documentation-site package. A site selecting this bundle must not declare an adopter kind at these addresses.
 
-The relationship to #509 is that this bundle supplies the new-entry form of procedure-shaped kinds. It does not decide the composition demonstration or HW-OBL-0040; an add-only connection between this kind set and another entry remains separate work.
+The relationship to #509 is that this bundle supplies the new-entry form of procedure-shaped kinds. It does not decide the composition demonstration. A connection between this kind set and another entry is separate work. Since [HW-DR-0095](https://github.com/headwater-ai/headwater/blob/main/docs/decisions/0095-q67-one-library-entry-may-address-the-keys-of-an-entry-it-names-in-requires-and-confluence-holds-over-the-dependency-order.md) (Q67), such a connection takes the form of a write into an entry that this bundle names in `requires`.
 
 ## Worked instances
 
