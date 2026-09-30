@@ -2033,14 +2033,19 @@ projections:
         );
         assert!(!tree.join(at).exists(), "{at} was written");
     }
-    assert!(
-        !verdict(JSON).is_error(),
+    // The `.json` output is one this run could write, and the two above refuse
+    // the run before its first write, so it is withheld and not written
+    // (#1466). The withholding is not an error by itself.
+    assert_eq!(
+        verdict(JSON),
+        Verdict::Withheld,
         "{}",
         report.render(ColorMode::Plain)
     );
+    assert!(!verdict(JSON).is_error());
     assert!(
-        tree.join(JSON).exists(),
-        "the export at `.json` was not written"
+        !tree.join(JSON).exists(),
+        "a run that refused still wrote the export at `.json`"
     );
     assert!(
         report.render(ColorMode::Plain).contains("census"),
