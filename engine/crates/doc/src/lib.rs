@@ -85,6 +85,45 @@ pub const EVIDENCE_BASIS: &str = "evidence_basis";
 /// word. One spelling, for the reason [`warrant`] has one reader.
 pub const REGENERATED: &str = "regenerated";
 
+/// The warrant of a document a person read and named themselves on.
+pub const ACCEPTED: &str = "accepted";
+
+/// The warrant of a document that nobody accepted, whoever wrote it.
+pub const ASSERTED: &str = "asserted";
+
+/// The closed warrant set of [spec 3](../../../../docs/spec/03-authoring-and-lifecycle.md#the-warrant-and-what-each-value-requires),
+/// in the order that document's table lists it.
+///
+/// One spelling for the engine. `headwater_check::warrant` reports a value
+/// outside it, `headwater_check::basis` and `headwater_query` read a value
+/// outside it as no acceptance, and `headwater_audit::WARRANTS` names this
+/// constant rather than repeating the four words. No taxonomy extends the set,
+/// because the provenance block is the engine's.
+pub const WARRANTS: [&str; 4] = [ACCEPTED, REGENERATED, "transcribed", ASSERTED];
+
+/// The member of the provenance block that names who accepted the document.
+///
+/// Spec 3's table pairs it with the warrant: `accepted` requires it, and the
+/// other three values forbid it.
+pub const ACCEPTED_BY: &str = "accepted_by";
+
+/// Whether a warrant is one of spec 3's four values, exactly as written.
+///
+/// Case counts. `Accepted` is not `accepted`, for the reason a misspelling is
+/// not: a reader that folded the case would be guessing what the author meant.
+pub fn is_warrant(value: &str) -> bool {
+    WARRANTS.contains(&value)
+}
+
+/// The provenance block of a document's front matter, when it wrote one as a
+/// mapping.
+///
+/// A check that anchors a finding at a member of the block reads the member's
+/// span here. The two readers above answer with the value alone.
+pub fn provenance(facets: &Mapping) -> Option<&Mapping> {
+    facets.get(PROVENANCE).and_then(|node| node.value.as_map())
+}
+
 /// What stands behind a document, from the provenance block of its front
 /// matter.
 ///

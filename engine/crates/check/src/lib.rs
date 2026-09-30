@@ -188,6 +188,7 @@ pub mod target;
 pub mod transition;
 pub mod verification;
 pub mod voice;
+pub mod warrant;
 
 pub use adoption::Ledger;
 #[doc(hidden)]
@@ -225,7 +226,7 @@ use headwater_graph::{Declarations, Graph};
 /// The order is the five origins of
 /// [spec 12](../../../../docs/spec/12-check-layer.md#the-five-origins-of-a-check),
 /// which is Shape, then Graph, then the runner's own accounting.
-pub const RULES: [&str; 44] = [
+pub const RULES: [&str; 46] = [
     facet_required::RULE,
     facet_value::RULE,
     facet_blank::RULE,
@@ -260,6 +261,8 @@ pub const RULES: [&str; 44] = [
     promotion::RULE,
     transition::RULE,
     lifecycle_state::RULE,
+    warrant::VALUE,
+    warrant::UNPAIRED,
     retention::RULE,
     coverage::RULE,
     register::DISPOSITION,
@@ -617,6 +620,18 @@ fn registry() -> [(&'static str, Scope, u32, scope::ExportTargets); RULES.len()]
             scope::document_exports::<lifecycle_state::StateAdmitted<'_>>(),
         ),
         (
+            warrant::VALUE,
+            scope::document_scope::<warrant::Closed>(),
+            scope::document_version::<warrant::Closed>(),
+            scope::document_exports::<warrant::Closed>(),
+        ),
+        (
+            warrant::UNPAIRED,
+            scope::document_scope::<warrant::Pairing>(),
+            scope::document_version::<warrant::Pairing>(),
+            scope::document_exports::<warrant::Pairing>(),
+        ),
+        (
             retention::RULE,
             scope::corpus_scope::<retention::Retention<'_>>(),
             scope::corpus_version::<retention::Retention<'_>>(),
@@ -727,6 +742,11 @@ pub fn run(
     // The state between the two rules above: the key is declared, and it
     // carries no content. See [`facet_blank`].
     let blank = facet_blank::Blank::over(declared.shape);
+    // The provenance block's warrant against spec 3's closed set, and its
+    // acceptor against the warrant. The set is the engine's, so these two carry
+    // no declaration. See [`warrant`].
+    let closed = warrant::Closed;
+    let pairing = warrant::Pairing;
     let identifiers =
         identifier::Identifier::over(declared.shape, &declared.config.identifier_facet);
     let placement = placement::Placement::over(declared.taxonomy);
@@ -832,6 +852,8 @@ pub fn run(
     let mut instances = scope::over_documents(&required, census, graph, ctx, cache);
     instances.extend(scope::over_documents(&values, census, graph, ctx, cache));
     instances.extend(scope::over_documents(&blank, census, graph, ctx, cache));
+    instances.extend(scope::over_documents(&closed, census, graph, ctx, cache));
+    instances.extend(scope::over_documents(&pairing, census, graph, ctx, cache));
     instances.extend(scope::over_documents(
         &identifiers,
         census,

@@ -310,16 +310,13 @@ impl DwellReading {
 /// The closed warrant set of [spec 3](../../../../docs/spec/03-authoring-and-lifecycle.md#the-warrant-and-what-each-value-requires),
 /// in the order that document's table lists it.
 ///
-/// Written out here rather than derived from the values in use, for the reason
+/// Written out rather than derived from the values in use, for the reason
 /// [`CREATORS`] is written out. A warrant that no document of a corpus carries
 /// is an arm of the promotion reading that this corpus cannot fill, and a
 /// report built from the values in use omits exactly the arm a reader needs.
-pub const WARRANTS: [&str; 4] = [
-    "accepted",
-    headwater_doc::REGENERATED,
-    "transcribed",
-    "asserted",
-];
+/// It names [`headwater_doc::WARRANTS`], which is the one spelling the check
+/// layer and the query surface also read.
+pub const WARRANTS: [&str; 4] = headwater_doc::WARRANTS;
 
 /// The two warrants the engine derives from the generated-file marker.
 ///

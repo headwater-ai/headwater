@@ -1976,6 +1976,7 @@ mod label_tests {
             purpose: None,
             summary: None,
             unwarranted: false,
+            outside: None,
         }
     }
 

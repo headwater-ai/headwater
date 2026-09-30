@@ -276,8 +276,13 @@ fn render(
         // Spec 6 rules that an emitter which cannot carry the warrant does not
         // carry the content. Markdown can carry it, so this one says it rather
         // than withholding the row.
-        if pointer.unwarranted {
-            out.push_str(" (asserted, and no human has accepted it)");
+        match (&pointer.outside, pointer.unwarranted) {
+            (Some(warrant), _) => out.push_str(&format!(
+                " (warrant `{warrant}` is not one of the four values, so no acceptance is read \
+                 from it)"
+            )),
+            (None, true) => out.push_str(" (asserted, and no human has accepted it)"),
+            (None, false) => {}
         }
         out.push('\n');
     }
@@ -335,7 +340,46 @@ pub(crate) fn relative(base: &str, path: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::relative;
+    use super::{relative, render};
+    use headwater_query::Pointer;
+
+    /// A warrant outside spec 3's closed set is stated as what it is, and is
+    /// not called `asserted` (#1438). An `asserted` one keeps its sentence.
+    #[test]
+    fn a_warrant_outside_the_closed_set_is_stated_and_not_called_asserted() {
+        let pointer = |path: &str, outside: Option<&str>| Pointer {
+            path: path.to_string(),
+            id: None,
+            kind: "decision".to_string(),
+            name: None,
+            purpose: None,
+            summary: Some("a summary".to_string()),
+            unwarranted: true,
+            outside: outside.map(str::to_string),
+        };
+        let out = render(
+            "decisions",
+            "d/README.md",
+            &[
+                pointer("d/0001.md", Some("proposed")),
+                pointer("d/0002.md", None),
+            ],
+            &std::collections::BTreeMap::new(),
+            None,
+        );
+        assert!(
+            out.contains(
+                "a summary (warrant `proposed` is not one of the four values, so no acceptance \
+                 is read from it)\n"
+            ),
+            "{out}"
+        );
+        assert!(
+            out.contains("a summary (asserted, and no human has accepted it)\n"),
+            "{out}"
+        );
+        assert_eq!(out.matches("asserted").count(), 1, "{out}");
+    }
 
     /// The case a shelf index never reaches and a declared output path does.
     /// A leading `/` was the earlier answer, and a renderer reads it as a path

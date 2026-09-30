@@ -260,6 +260,9 @@ fn of_pointer(pointer: &Pointer) -> Json {
         purpose,
         summary,
         unwarranted,
+        // Rust-only, for the renderings: `unwarranted` is the contract, and a
+        // new member here would be a change to the MCP contract row.
+        outside: _,
     } = pointer;
     let mut members: Vec<(&'static str, Json)> = vec![
         ("path", Json::string(path.clone())),
@@ -554,6 +557,7 @@ mod tests {
             purpose: Some("rationale".to_string()),
             summary: Some("a summary".to_string()),
             unwarranted: false,
+            outside: None,
         }];
         route.evidence = vec![Evidence::Ranked {
             terms: vec!["xyzzy".to_string()],
@@ -612,6 +616,7 @@ mod tests {
             purpose: None,
             summary: Some("a \u{1b}[31mred\u{1b}[0m summary".to_string()),
             unwarranted: false,
+            outside: None,
         }];
         let document = of_route(&route).render_pretty();
         assert!(
