@@ -1701,6 +1701,7 @@ mod tests {
             refusal: None,
             declared: 1,
             lock_moved: None,
+            read_set_moved: None,
         };
         let results = Results::over(&record, std::slice::from_ref(&selected));
         assert_eq!(

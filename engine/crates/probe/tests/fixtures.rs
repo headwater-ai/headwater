@@ -1947,7 +1947,7 @@ fn a_transcript_planned_against_another_taxonomy_is_refused_whole() {
     assert!(
         matches!(
             record_of(&source).refusal,
-            Some(headwater_probe::intake::Refusal::TaxonomyMoved { composed: None, .. })
+            Some(headwater_probe::intake::Refusal::TaxonomyMoved { .. })
         ),
         "with no selection in hand nothing shows that the move left the probes alone, so a \
          rate over documents another taxonomy typed is a rate about another corpus"
@@ -2033,20 +2033,60 @@ fn a_moved_lock_the_part_does_not_see_leaves_a_narrowed_transcript_gradable() {
     assert_eq!(moved.lock_moved.as_deref(), Some("sha256:other"));
 }
 
+/// #1338. A moved read set is always a document edit, because no lock move
+/// changes the bytes of a document. Refusing the transcript dropped every paid
+/// verdict on the first routine edit after an unrelated lock move, so the
+/// transcript is graded and the record carries the recorded digest as a mark.
 #[test]
-fn a_moved_lock_whose_read_set_moved_is_refused_and_names_what_this_tree_composes() {
+fn a_moved_lock_whose_read_set_moved_keeps_every_verdict_and_is_marked() {
     let plan = regression();
-    let source = planned_by_the_fixture(
-        "sha256:other",
-        "sha256:a-read-set-this-tree-does-not-compose",
+    let recorded = "sha256:a-read-set-this-tree-does-not-compose";
+    let unmoved = record_over_the_fixture_selection(&planned_by_the_fixture(LOCK, &plan.read_set));
+    let moved =
+        record_over_the_fixture_selection(&planned_by_the_fixture("sha256:other", recorded));
+    assert_eq!(moved.refusal, None, "{:?}", moved.refusal);
+    assert!(!moved.events.is_empty(), "the fixture records events");
+    assert_eq!(
+        moved.events, unmoved.events,
+        "an edit to a document the probes read keeps every event the recording paid for"
     );
-    match record_over_the_fixture_selection(&source).refusal {
-        Some(headwater_probe::intake::Refusal::TaxonomyMoved {
-            composed: Some(composed),
-            ..
-        }) => assert_eq!(composed, plan.read_set),
-        other => panic!("a lock move that reached a probe's documents stays refused: {other:?}"),
-    }
+    assert_eq!(moved.read_set_moved.as_deref(), Some(recorded));
+    assert_eq!(moved.lock_moved.as_deref(), Some("sha256:other"));
+    let rendered = moved.render(headwater_check::paint::ColorMode::Plain);
+    assert!(
+        rendered.contains("the read set of its probes moved since the recording"),
+        "a reader of the record is told the read set moved: {rendered}"
+    );
+    assert!(
+        !rendered.contains(&plan.read_set),
+        "the mark names no composed digest, so a second edit does not move the bytes: {rendered}"
+    );
+    assert!(
+        !rendered.contains("reaches no document a verdict reads"),
+        "the lock-moved sentence is false once the read set moved: {rendered}"
+    );
+}
+
+/// #1338, the twin with the lock unmoved. The same edit is marked the same
+/// way, so whether an edit keeps the evidence no longer turns on an unrelated
+/// package publish.
+#[test]
+fn an_unmoved_lock_whose_read_set_moved_keeps_every_verdict_and_is_marked() {
+    let plan = regression();
+    let recorded = "sha256:a-read-set-this-tree-does-not-compose";
+    let unmoved = record_over_the_fixture_selection(&planned_by_the_fixture(LOCK, &plan.read_set));
+    let moved = record_over_the_fixture_selection(&planned_by_the_fixture(LOCK, recorded));
+    assert_eq!(moved.refusal, None, "{:?}", moved.refusal);
+    assert_eq!(moved.events, unmoved.events);
+    assert_eq!(moved.read_set_moved.as_deref(), Some(recorded));
+    assert_eq!(moved.lock_moved, None);
+    assert_eq!(
+        unmoved.read_set_moved, None,
+        "an unmoved read set carries no mark"
+    );
+    let rendered = moved.render(headwater_check::paint::ColorMode::Plain);
+    assert!(rendered.contains("the read set of its probes moved since the recording"));
+    assert!(!rendered.contains(&plan.read_set), "{rendered}");
 }
 
 #[test]

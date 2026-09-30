@@ -14,24 +14,44 @@ A probe result is a function of three committed inputs and of nothing else: the 
 
 ## The run this transcript recorded
 
-This transcript recorded nothing usable: it was planned against taxonomy sha256:2676416f710b8889bdb7599c5b0bb64f0383d249dc87c4eff6f6464e655c1d43 and this tree carries sha256:4b95fd419a3824634b9644c91b13356ba9b71567f813445913c430e3aa12c13a, and the read set of its probes moved with it: this tree composes sha256:571c07fcebcca5db435ba6e53676b893884a339fa94076b72d170eac8115ed44
+A regression run in the present arm, on claude-haiku-4-5 at 2026-09-16.
+served version claude-haiku-4-5-20251001, tree sha256:71a12f7cfbd2e0563bc4dd840c73e1a79606f579068dd3319b4fc931bfa476ef, selection sha256:aa4aaa7375349b5c8cc667a196819166519aac3f519d436f3f237afb7923530a, read set sha256:1dcd3c358af1b5c12d1e7f8f4f711a52631ac60c71bbd008bfbfa5c29315409d, seed 0, harness 0.2.0.
+realized cost $1.66, which the adaptive layer reads as the cost of its own instrument.
+It was planned against taxonomy sha256:2676416f710b8889bdb7599c5b0bb64f0383d249dc87c4eff6f6464e655c1d43, and this tree carries another, and the read set of its probes moved since the recording. Each verdict below is what the session did over the documents it met, graded against the expectations this tree declares now, which can differ from the ones the session ran under. `headwater probe stale` names what moved.
 
-This transcript reached no grader: it was planned against taxonomy sha256:2676416f710b8889bdb7599c5b0bb64f0383d249dc87c4eff6f6464e655c1d43 and this tree carries sha256:4b95fd419a3824634b9644c91b13356ba9b71567f813445913c430e3aa12c13a, and the read set of its probes moved with it: this tree composes sha256:571c07fcebcca5db435ba6e53676b893884a339fa94076b72d170eac8115ed44
+8 events over 8 of the 10 probes this corpus declares, in 8 sessions and 197 tool calls.
 
-A transcript that fails any of the five confirmations is refused whole, so there are no verdicts to report and no rate over none.
+The engine confirmed the taxonomy, that every member of the run identity is present, the membership of every probe named, that no key outside the closed set appears, and that a realized cost was recorded. Present is not confirmed: of the six members a plan fixes before a run, the lock is the one compared here. A lock that differs refuses the file only where this tree composes no read set over its probes, and a read set that differs marks the verdicts and keeps them. `headwater probe stale` compares the read set against the tree in front of it. It graded nothing: a verdict is a function of this transcript, the expectations these probes declare and a grader version, and `headwater probe grade` is the verb that holds all three.
 
-## What reads this result
+**The selection this transcript names is not the selection this corpus composes.** The transcript names `sha256:aa4aaa7375349b5c8cc667a196819166519aac3f519d436f3f237afb7923530a` and this corpus composes `sha256:50ed5ce43072d9f674a8dc52e1dcad84de4d649e39a77ce22179836188196b09`. The transcript's digest is the digest of 8 of the 10 probes this corpus composes, so the run was planned over that part of the selection, or the rest were added after it was recorded. Every verdict below is over that part, and a probe outside it is not a session this run owed. The tree, the seed and the harness above are provenance and nothing compares them.
 
-This result carries no verdict, so a rate taken off it is a rate over none. The documents of this corpus below link this result or the transcript it graded, and each one is where a reader meets a measurement this corpus does not hold:
+The `read_set` digest above covers every probe of the selection and every document one of them examines, by path and content. It is recorded here, and this file names no digest the tree in front of a reader composes. Where that tree composes another one, a single sentence above says that the read set moved, and it moves these bytes once. A digest from that tree would move these bytes on every edit to a document the selection points at, and `generate --check` holds this file to its bytes, so the staleness of a measurement would stop a merge. `headwater probe stale` takes the digest and reports which recorded results a change voided.
 
-- `docs/evaluations/a-probe-task-section-is-the-prompt-so-commentary-under-that-heading-is-prompt.md`
-- `docs/obligations/0005-a-closed-set-expectation-has-no-reproducibility-reading-under.md`
-- `docs/obligations/0010-the-corpus-descriptor-exists-and-no-probe-has-run-against.md`
-- `docs/obligations/0013-no-probe-tests-whether-a-counted-tombstone-stops-a-confident.md`
-- `docs/obligations/0014-no-probe-tests-whether-an-agent-reaches-the-adjudication-from.md`
-- `docs/obligations/0111-the-capture-cost-surface-names-an-entry-point-and-never-the-caller.md`
-- `docs/obligations/0123-a-facet-that-applies-to-one-value-of-another-facet-has-nowhere-to-say-so.md`
-- `docs/obligations/0124-a-probe-result-is-printed-and-never-committed-so-nothing-regenerates-one.md`
-- `docs/spec/13-open-obligations.md`
+Graded by grader 0.5.0.
+A regression run in the present arm, on claude-haiku-4-5 at served version claude-haiku-4-5-20251001.
 
-The state this recording stands in decides whether the refusal fails a run, and it says nothing about the list above: those are other documents, and retiring the recording leaves every sentence in them where it was.
+## The verdicts
+
+- HW-PROBE-a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor (discovery, expects opened)
+    session regression-20260916-cold-current: not satisfied — 27 recorded calls, and none named any of the 1 document
+- HW-PROBE-a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer (sufficiency, expects answered)
+    session regression-20260916-tombstone: not satisfied — the session ended with no answer
+- HW-PROBE-a-session-answers-from-the-register-without-opening-the-question-it-replaced (navigability, expects not_opened)
+    session regression-20260916-register: satisfied — 4 recorded calls, and none named any of the 1 document
+- HW-PROBE-a-session-records-an-unmeasured-claim-in-the-shape-this-corpus-checks (sufficiency, expects patched)
+    session regression-20260916-unmeasured-claim: satisfied — event 4: `section.required.missing` reported nothing over `docs/obligations/0198-nothing-states-how-much-of-a-session-s-budget-the-standing-instructions-consume-before-work-starts.md`
+- HW-PROBE-an-agent-reaches-the-adjudication-from-the-document-that-lost-it (navigability, expects opened)
+    session regression-20260916-adjudication: satisfied — event 5, call 2: `Read /home/james/.claude/jobs/eb30b5a4/tmp/probe170/workspace-5/docs/decisions/0008-probe-cost-and-cadence.md`
+- HW-PROBE-the-authoring-skill-reaches-an-agent-that-is-about-to-write-a-governed-document (discovery, expects opened)
+    session regression-20260916-authoring-skill: not satisfied — 29 recorded calls, and none named any of the 1 document
+- HW-PROBE-the-pointer-this-corpus-offers-for-a-task-is-the-document-a-session-opens (discovery, expects opened)
+    session regression-20260916-pointer: not satisfied — 0 recorded calls, and none named any of the 1 document
+- HW-PROBE-what-a-session-writes-points-back-at-the-ruling-it-rests-on (navigability, expects cited)
+    session regression-20260916-points-back: satisfied — event 8: `docs/evaluations/why-corpus-counts-are-derived-not-stored.md` cites HW-DR-0049
+
+## The rate, and the denominator it is over
+
+4 of 8 graded sessions satisfied their expectation: 50.0%, in a 95% interval of 21.5% to 78.5%.
+The denominator is the graded sessions and never the selected probes. 0 sessions reached no verdict, and a session with no verdict is outside both halves of that fraction.
+
+An interval that overlaps the previous run's is variance and one that does not is drift. This is one arm, so it estimates no effect: an efficacy claim is a comparison of two results, and the arm each one recorded is on it.
