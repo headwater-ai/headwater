@@ -439,6 +439,20 @@ mod tests {
         let unmarked = format!("{{\n  \"note\": \"{published}\"\n}}\n");
         assert!(!built_at_publish("docs/graph.json", &unmarked));
 
+        // On one compact line the marker's value ends at its closing quote, so
+        // a later member that quotes a whole published marker is not read.
+        let compact_quoting =
+            format!("{{\"{MARKER}\":\"\",\"note\":\"{published}\",\"nodes\":[]}}\n");
+        assert!(carries_marker("out/compact.json", &compact_quoting));
+        assert!(!built_at_publish("out/compact.json", &compact_quoting));
+
+        // The clause opens the text after the kind, and anywhere later in the
+        // marker it is not the claim the writer makes.
+        let later = format!(
+            "{{\n  \"{MARKER}\": \"graph_export. Edit the corpus. {BUILT_AT_PUBLISH}.\"\n}}\n"
+        );
+        assert!(!built_at_publish("docs/graph.json", &later));
+
         // The clause before the kind's period is not the clause after it.
         let misplaced = format!("{{\n  \"{MARKER}\": \"{BUILT_AT_PUBLISH}.\"\n}}\n");
         assert!(!built_at_publish("docs/graph.json", &misplaced));

@@ -1199,11 +1199,22 @@ fn a_marked_file_goes_to_the_verb_its_marker_names() {
          \"nodes\": []\n}\n",
     );
 
+    // Generate's marker, and a value that quotes the published marker whole.
+    // `claimed_by` reads the marker and not the file, so this stays generate's.
+    root.write(
+        "exports/quoting.json",
+        "{\n  \"headwater:generated\": \"graph_export. `headwater generate` writes this file, \
+         and `headwater generate --check` holds it. Edit the corpus, not this file.\",\n  \
+         \"note\": \"graph_export. `headwater export` builds this file at publish time, and no \
+         gate compares it. Edit the corpus, not this file.\",\n  \"nodes\": []\n}\n",
+    );
+
     let population = headwater_census::derived::population(root.path());
     let report = population.render(headwater_paint::ColorMode::Plain);
     for (path, producer) in [
         ("exports/control.json", Producer::Export),
         ("exports/filtered.json", Producer::Generate),
+        ("exports/quoting.json", Producer::Generate),
     ] {
         let claimed: Vec<Producer> = population
             .outputs
