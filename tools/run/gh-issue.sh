@@ -117,10 +117,15 @@ closes() {
 # visible FILE: the lines of a Markdown body that GitHub renders as text,
 # with carriage returns dropped (a body edited in the web form comes back
 # with CRLF line ends). A fenced block is dropped whole: it closes only on a
-# fence of its own character at least as long as the one that opened it, so
-# a ``` line inside a ~~~ fence stays inside. An HTML comment is cut out of
-# the line it sits on, the text before `<!--` and after `-->` stays, and no
-# fence opens inside a comment.
+# fence of its own character at least as long as the one that opened it,
+# with nothing after it, so a ``` line inside a ~~~ fence stays inside. An
+# HTML comment is cut out of the line it sits on, and the text before `<!--`
+# and after `-->` stays. No fence opens inside a comment, and a `<!--` in a
+# code span opens none. A `<!--` after other text on its line is a comment
+# only where a `-->` closes it before the paragraph ends, as GitHub reads
+# it; otherwise it is text. Where a fence or a comment is still open at the
+# end of the body, the reader cannot tell what GitHub shows inside a list or
+# a quote, so it names the line on stderr and exits 3 rather than guess.
 visible() {
     tr -d '\r' < "$1" | awk '
         function fence_of(s,   t) {
@@ -129,35 +134,81 @@ visible() {
             if (match(t, /^```+/) || match(t, /^~~~+/)) return substr(t, 1, RLENGTH)
             return ""
         }
-        {
-            line = $0
-            if (fence != "") {
-                f = fence_of(line)
-                rest = line
-                sub(/^[ \t]*[`~]+/, "", rest)
-                if (f != "" && substr(f, 1, 1) == substr(fence, 1, 1) && length(f) >= length(fence) && rest ~ /^[ \t]*$/) fence = ""
-                next
-            }
-            if (!incomment) {
-                f = fence_of(line)
-                if (f != "") { fence = f; next }
-            }
+        # the line with every code span blanked to spaces, so an index into
+        # it finds a `<!--` only where GitHub would read one
+        function mask(s,   out, i, run, j, r2, found) {
             out = ""
-            while (1) {
-                if (incomment) {
-                    i = index(line, "-->")
-                    if (!i) break
-                    line = substr(line, i + 3)
-                    incomment = 0
+            i = 1
+            while (i <= length(s)) {
+                if (substr(s, i, 1) != "`") { out = out substr(s, i, 1); i++; continue }
+                run = 0
+                while (substr(s, i + run, 1) == "`") run++
+                j = i + run
+                found = 0
+                while (j <= length(s)) {
+                    if (substr(s, j, 1) != "`") { j++; continue }
+                    r2 = 0
+                    while (substr(s, j + r2, 1) == "`") r2++
+                    if (r2 == run) { found = 1; break }
+                    j += r2
+                }
+                if (!found) { out = out substr(s, i, run); i += run; continue }
+                out = out sprintf("%" (j + run - i) "s", "")
+                i = j + run
+            }
+            return out
+        }
+        function closes_in_paragraph(ln, rest,   k) {
+            if (index(rest, "-->")) return 1
+            for (k = ln + 1; k <= n; k++) {
+                if (L[k] ~ /^[ \t]*$/) return 0
+                if (index(L[k], "-->")) return 1
+            }
+            return 0
+        }
+        { L[++n] = $0 }
+        END {
+            for (ln = 1; ln <= n; ln++) {
+                line = L[ln]
+                if (fence != "") {
+                    f = fence_of(line)
+                    rest = line
+                    sub(/^[ \t]*[`~]+/, "", rest)
+                    if (f != "" && substr(f, 1, 1) == substr(fence, 1, 1) && length(f) >= length(fence) && rest ~ /^[ \t]*$/) fence = ""
                     continue
                 }
-                i = index(line, "<!--")
-                if (!i) { out = out line; break }
-                out = out substr(line, 1, i - 1)
-                line = substr(line, i + 4)
-                incomment = 1
+                if (!incomment) {
+                    f = fence_of(line)
+                    if (f != "") { fence = f; opened = ln; continue }
+                }
+                out = ""
+                while (1) {
+                    if (incomment) {
+                        i = index(line, "-->")
+                        if (!i) break
+                        line = substr(line, i + 3)
+                        incomment = 0
+                        continue
+                    }
+                    i = index(mask(line), "<!--")
+                    if (!i) { out = out line; break }
+                    pre = substr(line, 1, i - 1)
+                    if (!(out == "" && pre ~ /^[ \t]*$/) && !closes_in_paragraph(ln, substr(line, i + 4))) {
+                        out = out substr(line, 1, i + 3)
+                        line = substr(line, i + 4)
+                        continue
+                    }
+                    out = out pre
+                    line = substr(line, i + 4)
+                    incomment = 1
+                    opened = ln
+                }
+                print out
             }
-            print out
+            if (fence != "" || incomment) {
+                print "a " (fence != "" ? "fence" : "comment") " opened on line " opened " never closes" > "/dev/stderr"
+                exit 3
+            }
         }
     '
 }
@@ -167,13 +218,19 @@ visible() {
 # starts at the first heading of any level whose text opens `Done when`, in
 # any case, and runs to the end of the body; no later heading of any level
 # ends it. A clause is a task item GitHub renders: a `-`, `*` or `+` bullet,
-# or an ordered `1.` or `1)` item, then `[ ]`, `[x]` or `[X]`. Only what
-# `visible` keeps is read, so a box in a fence or a comment is no clause.
+# or an ordered `1.` or `1)` item, in a quote or not, then `[ ]`, `[x]` or
+# `[X]`. Only what `visible` keeps is read, so a box in a fence or a comment
+# is no clause, and where `visible` refuses, this returns 3 and reads none.
 clauses_of() {
-    visible "$1" | awk '
+    v=$(mktemp) || exit 1
+    if ! visible "$1" > "$v"; then
+        rm -f "$v"
+        return 3
+    fi
+    awk '
         !started && tolower($0) ~ /^#+[ \t]+done when/ { started = 1; next }
         !started { next }
-        /^[ \t]*([-*+]|[0-9]+[.)])[ \t]+\[[ xX]\]/ {
+        /^[ \t]*(>[ \t]*)*([-*+]|[0-9]+[.)])[ \t]+\[[ xX]\]/ {
             i = index($0, "[")
             mark = substr($0, i + 1, 1)
             text = substr($0, i + 3)
@@ -181,7 +238,8 @@ clauses_of() {
             k++
             printf "%d [%s] %s\n", k, mark, text
         }
-    '
+    ' "$v"
+    rm -f "$v"
 }
 
 # account ISSUE CLAUSES-FILE PR-BODY-FILE: print one line for each clause of
@@ -193,7 +251,7 @@ account() {
     awk -v n="$1" -v prfile="$3" '
         BEGIN {
             while ((getline line < prfile) > 0) {
-                if (!match(line, /^[ \t]*([-*+]|[0-9]+[.)])[ \t]+\[[ xX]\][ \t]+#[0-9]+\.[0-9]+/)) continue
+                if (!match(line, /^[ \t]*(>[ \t]*)*([-*+]|[0-9]+[.)])[ \t]+\[[ xX]\][ \t]+#[0-9]+\.[0-9]+/)) continue
                 head = substr(line, RSTART, RLENGTH)
                 key = substr(head, index(head, "#") + 1)
                 mark = substr(head, index(head, "[") + 1, 1)
@@ -226,7 +284,9 @@ clauses() {
         exit 1
     fi
     clauses_of "$tmp"
+    st=$?
     rm -f "$tmp"
+    [ "$st" -eq 0 ] || { echo "gh-issue: #$n cannot be read for clauses." >&2; exit 1; }
 }
 
 clause_check() {
@@ -249,7 +309,12 @@ clause_check() {
         echo "gh-issue: could not read the body of pull request #$pr." >&2
         exit 1
     fi
-    visible "$tmp/pr" > "$tmp/pr.visible"
+    if ! visible "$tmp/pr" > "$tmp/pr.visible" 2> "$tmp/why"; then
+        echo "#$pr body: $(cat "$tmp/why"), so no line of it is read as accounting."
+        rm -rf "$tmp"
+        echo "clause-check: #$pr refused. Close it in the pull request body." >&2
+        exit 1
+    fi
     refused=0
     for i in $issues; do
         need_number "$i" clause-check
@@ -258,7 +323,11 @@ clause_check() {
             echo "gh-issue: could not read the body of #$i." >&2
             exit 1
         fi
-        clauses_of "$tmp/issue" > "$tmp/clauses"
+        if ! clauses_of "$tmp/issue" > "$tmp/clauses" 2> "$tmp/why"; then
+            echo "#$i body: $(cat "$tmp/why"), so its clauses cannot be counted."
+            refused=1
+            continue
+        fi
         if [ ! -s "$tmp/clauses" ]; then
             echo "#$i has no clause: no checkbox under a Done-when heading, so nothing can account for it."
             refused=1

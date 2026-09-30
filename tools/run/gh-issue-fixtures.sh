@@ -432,5 +432,107 @@ else
     echo "        stderr holds: $(cat "$scratch/err")"
 fi
 
+# The shapes the second verify of #1485 found. A `<!--` in a code span, or
+# one that no `-->` closes before its paragraph ends, is text on GitHub and
+# opened a comment that swallowed every later clause, folds included. A
+# task item in a quote was not read. And five fence and mark shapes held
+# nothing: a four-backtick fence holding ```, a ``` line with text after it
+# inside a fence, an indented fence in a list item, a `[X]` clause and a
+# `* [X]` accounting line. This body has eight clauses, t1 to t8.
+cat > "$scratch/issue-105.md" <<'EOF'
+## Done when
+
+- [ ] t1 strip the `<!--` opener and the `-->` closer from a directive
+- [ ] t2 an inline <!-- that nothing closes in its paragraph
+
+- [ ] t3 after a blank line -->
+> - [ ] t4 in a quote
+- [X] t5 a capital X
+````
+```
+- [ ] a box in a four-backtick fence is not a clause
+````
+```
+- [ ] a box in a fence is not a clause
+``` text after a fence is no closer
+```
+- [ ] t6 after the fences
+- [ ] t7 an item
+  ```
+  - [ ] a box in an indented fence is not a clause
+  ```
+- [ ] t8 after the indented fence
+
+### Folded from #9
+
+- [ ] t9 under a fold, past every trap above
+EOF
+
+echo "clauses reads a <!-- that GitHub shows as text, a quoted item, and every fence shape"
+ISSUE_BODY="$scratch/issue-105.md" run clauses 105 > "$scratch/out" 2>"$scratch/err"
+check_status "clauses exits 0" zero $?
+if [ "$(grep -c . "$scratch/out")" -eq 9 ]; then
+    passed=$((passed + 1)); echo "  ok    nine clauses"
+else
+    failed=$((failed + 1)); echo "  FAIL  nine clauses (got $(grep -c . "$scratch/out"))"
+    echo "        stdout holds: $(cat "$scratch/out")"
+fi
+check_out "  a <!-- in a code span opens no comment" "2 [ ] t2 an inline"
+check_out '  a code span holding <!-- and --> is kept whole' '1 [ ] t1 strip the `<!--` opener and the `-->` closer'
+check_out "  a <!-- that no --> closes in its paragraph is text" "3 [ ] t3 after a blank line"
+check_out "  a task item in a quote is a clause" "4 [ ] t4 in a quote"
+check_out "  a [X] clause keeps its mark" "5 [X] t5 a capital X"
+check_out '  a ``` line does not close a four-backtick fence' "6 [ ] t6 after the fences"
+check_out "  an indented fence closes, and what follows is read" "8 [ ] t8 after the indented fence"
+check_out "  the fold after every trap is read" "9 [ ] t9 under a fold"
+check_not_out "  no box in a four-backtick fence" "four-backtick"
+check_not_out "  no box in a fence with a false closer" "a box in a fence is not"
+check_not_out "  no box in an indented fence" "indented fence is not"
+
+# account105 FILE LAST MARKER: a body that marks clauses 1..LAST of #105 met.
+account105() {
+    printf 'Closes #105\n\n' > "$1"
+    k=1
+    while [ "$k" -le "$2" ]; do
+        printf -- '%s [X] #105.%s held\n' "$3" "$k" >> "$1"
+        k=$((k + 1))
+    done
+}
+
+echo "clause-check reads a * [X] accounting line and a quoted one"
+account105 "$scratch/pr-105-all.md" 8 '*'
+printf -- '> - [x] #105.9 held, quoted\n' >> "$scratch/pr-105-all.md"
+ISSUE_BODY="$scratch/issue-105.md" PR_BODY="$scratch/pr-105-all.md" CLOSES_JSON='[105]' \
+    run clause-check 1601 > "$scratch/out" 2>"$scratch/err"
+check_status "nine of nine passes" zero $?
+
+echo "clause-check refuses the verifier's #201 shape: the code-span <!-- hid the fold"
+account105 "$scratch/pr-105-one.md" 1 '-'
+ISSUE_BODY="$scratch/issue-105.md" PR_BODY="$scratch/pr-105-one.md" CLOSES_JSON='[105]' \
+    run clause-check 1601 > "$scratch/out" 2>"$scratch/err"
+check_status "one of nine refuses" nonzero $?
+check_out "  it names #105 clause 9, under the fold" "#105 clause 9:"
+
+echo "a fence or a comment still open at the end of a body refuses, and is not guessed"
+printf '## Done when\n\n- [ ] a\n- [ ] b\n  ```\n  code\n- [ ] c\n' > "$scratch/issue-open-fence.md"
+printf '## Done when\n\n- [ ] a\n<!--\n- [ ] b\n' > "$scratch/issue-open-comment.md"
+account "$scratch/pr-abc.md" 1 3
+ISSUE_BODY="$scratch/issue-open-fence.md" run clauses 106 > "$scratch/out" 2>"$scratch/err"
+check_status "clauses refuses a fence that never closes" nonzero $?
+ISSUE_BODY="$scratch/issue-open-fence.md" PR_BODY="$scratch/pr-abc.md" CLOSES_JSON='[1315]' \
+    run clause-check 1602 > "$scratch/out" 2>"$scratch/err"
+check_status "clause-check refuses a fence that never closes" nonzero $?
+check_out "  it names the line" "#1315 body: a fence opened on line 5 never closes"
+ISSUE_BODY="$scratch/issue-open-comment.md" PR_BODY="$scratch/pr-abc.md" CLOSES_JSON='[1315]' \
+    run clause-check 1602 > "$scratch/out" 2>"$scratch/err"
+check_status "clause-check refuses a comment that never closes" nonzero $?
+check_out "  it names the line" "#1315 body: a comment opened on line 4 never closes"
+account "$scratch/pr-open.md" 1 11
+printf -- '```\n' >> "$scratch/pr-open.md"
+ISSUE_BODY="$scratch/issue-1315.md" PR_BODY="$scratch/pr-open.md" CLOSES_JSON='[1315]' \
+    run clause-check 1602 > "$scratch/out" 2>"$scratch/err"
+check_status "a pull request body with a fence that never closes refuses" nonzero $?
+check_out "  it names the pull request body" "#1602 body: a fence opened on line"
+
 echo "$passed passed; $failed failed"
 [ "$failed" -eq 0 ]
