@@ -407,6 +407,359 @@ fn an_export_this_binary_wrote_is_one_the_resolver_reads() {
     assert_eq!(ran.code, Some(0), "{ran:?}");
 }
 
+/// The identifier of the document a filtered profile withholds.
+const WITHHELD: &str = "HW-SOL-refund";
+
+/// An identifier that no document of either corpus ever held.
+const TYPO: &str = "HW-SOL-chekout";
+
+/// A scratch root that pins, as repository A, a filtered export that this
+/// binary wrote of the root itself, under the grain named. The filter
+/// withholds the one `draft` note, [`WITHHELD`]. The checkout note then names
+/// two documents in A: the withheld one and [`TYPO`].
+///
+/// The export is one the binary wrote and not a hand-written copy, so the case
+/// holds the shape the writer emits against the shape the resolver reads.
+fn filtered(label: &str, grain: &str) -> Root {
+    filtered_with(
+        label,
+        grain,
+        "{exclude: {status: [draft]}}",
+        &[(WITHHELD, "draft")],
+        &[WITHHELD, TYPO],
+    )
+}
+
+/// [`filtered`], with the filter, the notes the scratch root adds as
+/// `(identifier, status)`, and the anchors the checkout note writes into A,
+/// each as it appears in YAML.
+fn filtered_with(
+    label: &str,
+    grain: &str,
+    filter: &str,
+    notes: &[(&str, &str)],
+    anchors: &[&str],
+) -> Root {
+    let root = Root::new(label);
+    let overlay =
+        std::fs::read_to_string(root.at.join(".headwater/overlay.yml")).expect("the overlay reads");
+    let anchor = "\nadd_to:\n\n  projections:\n";
+    assert_eq!(
+        overlay.matches(anchor).count(),
+        1,
+        "the overlay appends to its projections"
+    );
+    root.write(
+        ".headwater/overlay.yml",
+        &overlay.replacen(
+            anchor,
+            &format!(
+                "{anchor}    - kind: graph_export\n      profile: partner\n      format: json\n      output: exports/partner.json\n      filter: {filter}\n      tombstone: {grain}\n\n"
+            ),
+            1,
+        ),
+    );
+    let resolved = root.run(&["taxonomy", "resolve"]);
+    assert_eq!(resolved.code, Some(0), "{resolved:?}");
+    for (id, status) in notes {
+        root.write(
+            &format!("docs/solution/{}.md", id.to_lowercase()),
+            &format!(
+                "---\nid: {id}\ntitle: The note {id}\nsummary: The note {id} is not settled yet.\nstatus: {status}\nstatus_since: 2026-09-01\nlast_verified: 2026-09-01\n---\n\n# The note {id}\n\nThis note is not settled yet.\n"
+            ),
+        );
+    }
+
+    let exported = root.run(&["export", "--profile", "partner", "--format", "json"]);
+    assert_eq!(exported.code, Some(0), "{exported:?}");
+    assert!(exported.out.contains("\"filtered\": true"), "{exported:?}");
+    for (id, _) in notes {
+        assert!(
+            !exported.out.contains(id),
+            "the withheld identifier {id} reached the export: {exported:?}"
+        );
+    }
+    let pinned = std::fs::read_to_string(root.at.join(".headwater/taxonomy.yml"))
+        .expect("the declaration reads");
+    let before = root.digest(EXPORT_A);
+    root.write(EXPORT_A, &exported.out);
+    root.write(
+        ".headwater/taxonomy.yml",
+        &pinned.replace(&before, &root.digest(EXPORT_A)),
+    );
+    root.write(
+        "docs/solution/checkout.md",
+        &NOTE.replace(
+            "  uses_service_in_a:\n    - SVC-1",
+            &format!(
+                "  uses_service_in_a:\n{}",
+                anchors
+                    .iter()
+                    .map(|anchor| format!("    - {anchor}\n"))
+                    .collect::<String>()
+                    .trim_end()
+            ),
+        ),
+    );
+    root
+}
+
+/// The decisive case of #1309. Under `counted`, the export lists a digest of
+/// each withheld identifier, so an anchor to the withheld document binds as
+/// withheld and a typo beside it stays unresolved. Before #1309 both were
+/// unresolved, and nothing could tell the two apart.
+#[test]
+fn a_withheld_identifier_binds_withheld_and_a_typo_stays_unresolved() {
+    let root = filtered("counted", "counted");
+    let ran = root.run(&["check", "--strict"]);
+    let unresolved = unresolved(&ran);
+    assert_eq!(unresolved.len(), 1, "{unresolved:?}\n{ran:?}");
+    assert!(unresolved[0].contains(TYPO), "{unresolved:?}");
+    assert!(
+        unresolved[0].contains("not one of the identifiers it withheld"),
+        "the reason says the typo is not withheld: {unresolved:?}"
+    );
+    assert!(
+        !ran.out.contains(WITHHELD),
+        "a finding named the withheld identifier: {ran:?}"
+    );
+
+    // The graph summary of the run counts the edge in the withheld class.
+    assert!(
+        ran.out
+            .lines()
+            .chain(ran.err.lines())
+            .any(|line| line.trim() == "1 withheld"),
+        "the run counts one withheld edge: {ran:?}"
+    );
+
+    // The tier's own export carries the withheld edge with the profile that
+    // withheld its target, which is the name a reader asks for access by.
+    let tier = root.run(&["export", "--profile", "default", "--format", "json"]);
+    assert_eq!(tier.code, Some(0), "{tier:?}");
+    let loaded = headwater_yaml::load(&tier.out).expect("the tier export loads");
+    let withheld: Vec<(String, String)> = loaded
+        .value
+        .as_map()
+        .and_then(|map| map.get("graph"))
+        .and_then(|graph| graph.value.as_map())
+        .and_then(|graph| graph.get("edges"))
+        .and_then(|edges| edges.value.as_seq())
+        .expect("the tier export holds `graph.edges`")
+        .iter()
+        .filter_map(|edge| edge.value.as_map())
+        .filter_map(|edge| edge.get("target"))
+        .filter_map(|target| target.value.as_map())
+        .filter(|target| {
+            target
+                .get("bound")
+                .and_then(|bound| bound.value.as_scalar())
+                .is_some_and(|bound| bound.text == "withheld")
+        })
+        .map(|target| {
+            let text = |key: &str| {
+                target
+                    .get(key)
+                    .and_then(|node| node.value.as_scalar())
+                    .map(|node| node.text.clone())
+                    .unwrap_or_default()
+            };
+            (text("anchor_kind"), text("rule"))
+        })
+        .collect();
+    assert_eq!(
+        withheld,
+        vec![("service_in_a".to_string(), "partner".to_string())],
+        "{}",
+        tier.out
+    );
+}
+
+/// Under `sealed` the publisher chose that existence is the secret. The export
+/// lists nothing, so this tier cannot tell a withheld document from a typo, and
+/// both anchors stay unresolved with a reason that names the grain.
+#[test]
+fn under_a_sealed_grain_a_withheld_identifier_and_a_typo_both_stay_unresolved() {
+    let root = filtered("sealed", "sealed");
+    let ran = root.run(&["check", "--strict"]);
+    let unresolved = unresolved(&ran);
+    assert_eq!(unresolved.len(), 2, "{unresolved:?}\n{ran:?}");
+    for id in [WITHHELD, TYPO] {
+        assert!(
+            unresolved
+                .iter()
+                .any(|finding| finding.contains(id) && finding.contains("`sealed`")),
+            "{id} is unresolved and the reason names the sealed grain: {unresolved:?}"
+        );
+    }
+}
+
+/// A `counted` export older than version 1.3 carries a tombstone with no
+/// `identifiers` list. The resolver cannot tell a withheld document from a
+/// typo there, so a miss stays unresolved, and the reason says that the export
+/// predates the list rather than that the string is not withheld.
+#[test]
+fn a_counted_export_older_than_the_identifier_list_leaves_a_miss_unresolved_and_says_why() {
+    let root = Root::new("older");
+    let pinned = std::fs::read_to_string(root.at.join(".headwater/taxonomy.yml"))
+        .expect("the declaration reads");
+    let before = root.digest(EXPORT_A);
+    // Version 1.2 is the last one before the list, so it is the boundary a
+    // version test has to hold.
+    let older = export("gold")
+        .replace(
+            "\"filtered\":false}",
+            "\"filtered\":true,\"tombstone\":\"counted\"},\
+             \"tombstones\":[{\"rule\":\"full.exclude.status\",\"documents\":1}]",
+        )
+        .replace("\"export_version\":\"0.4.0\"", "\"export_version\":\"1.2\"");
+    assert!(older.contains("\"tombstones\""), "{older}");
+    assert!(older.contains("\"export_version\":\"1.2\""), "{older}");
+    root.write(EXPORT_A, &older);
+    root.write(
+        ".headwater/taxonomy.yml",
+        &pinned.replace(&before, &root.digest(EXPORT_A)),
+    );
+    root.write(
+        "docs/solution/checkout.md",
+        &NOTE.replace(
+            "  uses_service_in_a:\n    - SVC-1",
+            "  uses_service_in_a:\n    - SVC-2",
+        ),
+    );
+    let ran = root.run(&["check", "--strict"]);
+    let unresolved = unresolved(&ran);
+    assert_eq!(unresolved.len(), 1, "{unresolved:?}\n{ran:?}");
+    assert!(
+        unresolved[0].contains("SVC-2") && unresolved[0].contains("predates"),
+        "the reason says the export predates the identifier list: {unresolved:?}"
+    );
+}
+
+/// An anchor is trimmed before it is looked up, and the digest is over the
+/// trimmed string. A quoted anchor with spaces around the withheld identifier
+/// binds as withheld, as the plain identifier does.
+#[test]
+fn a_padded_anchor_to_a_withheld_identifier_binds_withheld() {
+    let padded = format!("\"  {WITHHELD}  \"");
+    let root = filtered_with(
+        "padded",
+        "counted",
+        "{exclude: {status: [draft]}}",
+        &[(WITHHELD, "draft")],
+        &[&padded],
+    );
+    let ran = root.run(&["check", "--strict"]);
+    assert_eq!(unresolved(&ran), Vec::<String>::new(), "{ran:?}");
+    assert!(
+        ran.out
+            .lines()
+            .chain(ran.err.lines())
+            .any(|line| line.trim() == "1 withheld"),
+        "the padded anchor binds as withheld: {ran:?}"
+    );
+}
+
+/// A filter with two rules writes two tombstones, each with its own list. An
+/// identifier withheld under either rule binds as withheld, so the resolver
+/// reads every list and not only one.
+#[test]
+fn an_identifier_withheld_under_either_of_two_rules_binds_withheld() {
+    let other = "HW-SOL-legacy";
+    let root = filtered_with(
+        "two-rules",
+        "counted",
+        "{include: {status: [current, draft]}, exclude: {status: [draft]}}",
+        &[(WITHHELD, "draft"), (other, "deprecated")],
+        &[WITHHELD, other, TYPO],
+    );
+    let exported = std::fs::read_to_string(root.at.join(EXPORT_A)).expect("the export reads");
+    assert_eq!(
+        exported.matches("\"rule\"").count(),
+        2,
+        "the filter withheld one document under each rule: {exported}"
+    );
+    let loaded = headwater_yaml::load(&exported).expect("the export loads");
+    let mut stones: Vec<(String, Vec<String>)> = loaded
+        .value
+        .as_map()
+        .and_then(|map| map.get("tombstones"))
+        .and_then(|stones| stones.value.as_seq())
+        .expect("the export holds `tombstones`")
+        .iter()
+        .filter_map(|stone| stone.value.as_map())
+        .map(|stone| {
+            let rule = stone
+                .get("rule")
+                .and_then(|rule| rule.value.as_scalar())
+                .map(|rule| rule.text.clone())
+                .unwrap_or_default();
+            let listed = stone
+                .get("identifiers")
+                .and_then(|listed| listed.value.as_seq())
+                .map(|listed| {
+                    listed
+                        .iter()
+                        .filter_map(|digest| digest.value.as_scalar())
+                        .map(|digest| digest.text.clone())
+                        .collect()
+                })
+                .unwrap_or_default();
+            (rule, listed)
+        })
+        .collect();
+    stones.sort();
+    assert_eq!(
+        stones,
+        vec![
+            (
+                "partner.exclude.status".to_string(),
+                vec![headwater_hash::digest(WITHHELD.as_bytes())]
+            ),
+            (
+                "partner.include.status".to_string(),
+                vec![headwater_hash::digest(other.as_bytes())]
+            ),
+        ],
+        "each tombstone lists the digest of the identifier its own rule withheld, \
+         and no other: {exported}"
+    );
+    let ran = root.run(&["check", "--strict"]);
+    let unresolved = unresolved(&ran);
+    assert_eq!(unresolved.len(), 1, "{unresolved:?}\n{ran:?}");
+    assert!(unresolved[0].contains(TYPO), "{unresolved:?}");
+    assert!(
+        ran.out
+            .lines()
+            .chain(ran.err.lines())
+            .any(|line| line.trim() == "2 withheld"),
+        "both withheld anchors bind as withheld: {ran:?}"
+    );
+}
+
+/// A 1.3 `counted` export whose filter withheld nothing writes no tombstone,
+/// so no list is there to read. The miss can only be a typo, and the reason
+/// must not say that the export predates the list.
+#[test]
+fn a_counted_export_that_withheld_nothing_reports_a_miss_as_not_withheld() {
+    let root = filtered_with(
+        "none-withheld",
+        "counted",
+        "{exclude: {status: [draft]}}",
+        &[],
+        &[TYPO],
+    );
+    let ran = root.run(&["check", "--strict"]);
+    let unresolved = unresolved(&ran);
+    assert_eq!(unresolved.len(), 1, "{unresolved:?}\n{ran:?}");
+    assert!(
+        unresolved[0].contains(TYPO)
+            && unresolved[0].contains("not one of the identifiers it withheld")
+            && !unresolved[0].contains("predates"),
+        "the reason says the typo is not withheld: {unresolved:?}"
+    );
+}
+
 /// Rewrite the consumer declaration of a scratch root, and assert the one
 /// substitution landed.
 fn declare(root: &Root, from: &str, to: &str) {
