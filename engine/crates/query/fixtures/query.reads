@@ -21,10 +21,14 @@ route "what does the ingest service do"
   purpose rationale 3
   query/specs/ingest.md — what the ingest service does with a request, and the
     limits it holds
-    matched what does, rank 1 of 2
+    matched what does, rank 1 of 3
   query/specs/asserted-notes.md — what the ingest service does about throttling,
     as nobody has checked it [asserted: nobody accepted this document]
-    matched what does, rank 2 of 2
+    matched what does, rank 2 of 3
+  query/specs/misspelled-notes.md — what the ingest service does about retries,
+    under a warrant nobody spelled right [warrant `acepted` is not one of the
+    four values: no acceptance is read from it]
+    matched what does, rank 3 of 3
 
 route "how do I rotate the keys"
   terms how do rotate the keys
@@ -66,16 +70,20 @@ route "what may I rely on when the tide comes in"
   purpose procedure 3
   query/specs/api-design.md — the API surface conventions, versioning and error
     shapes a service may rely on
-    matched may rely on, rank 1 of 4
+    matched may rely on, rank 1 of 5
   query/specs/api-errors.md — the error shapes the ingest service returns, in
     detail
-    matched in, rank 2 of 4
+    matched in, rank 2 of 5
   query/specs/asserted-notes.md — what the ingest service does about throttling,
     as nobody has checked it [asserted: nobody accepted this document]
-    matched what, rank 3 of 4
+    matched what, rank 3 of 5
   query/specs/ingest.md — what the ingest service does with a request, and the
     limits it holds
-    matched what, rank 4 of 4
+    matched what, rank 4 of 5
+  query/specs/misspelled-notes.md — what the ingest service does about retries,
+    under a warrant nobody spelled right [warrant `acepted` is not one of the
+    four values: no acceptance is read from it]
+    matched what, rank 5 of 5
 
 explain
   query/specs/api-design.md

@@ -1,0 +1,68 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The APT block of `README.md`, run as a reader runs it (#1408).
+#
+# The page tells a Debian or Ubuntu reader to paste eight commands, and it
+# names the oldest release of each distribution they run on. This job runs
+# those commands on a clean container of each of those two releases, against
+# the published repository at `https://headwater.tools/apt`, and the last
+# command is `headwater --version`. It is the one check that reaches the site:
+# group 10 of `tools/repo/readme-fixtures.sh` reads the block against the files
+# that publish the repository and fetches nothing, and the `smoke-apt` job of
+# `release.yml` installs from a repository it signs itself.
+#
+# `tools/repo/readme-apt-block.sh` prints the block, less `sudo`, and it is the
+# only copy of the commands outside the page. It exits nonzero when the
+# paragraph or its fence is gone, because `sh -e` of an empty script exits 0.
+# Group 12 of `tools/repo/readme-fixtures.sh` holds, on every push, that each
+# floor the page names is an image below and that this job calls the extractor
+# and carries no copy of the block.
+#
+# Three triggers:
+#
+#   - `schedule`, daily. A distribution's archive moves with no release and no
+#     pull request here, and that is how the block stopped working on Debian
+#     11. The schedule is what finds it.
+#   - `workflow_call`, from `release.yml` after `deploy-site`, so each release
+#     runs the block against the repository it has just deployed.
+#   - `workflow_dispatch`, to run it by hand.
+#
+# It is not a job of `ci.yml` and not a required check. It depends on
+# `deb.debian.org`, `archive.ubuntu.com` and `headwater.tools`, and an outage
+# of any of them would stop the merge queue. HW-PD-0015 rules out a path
+# filter as the way around that, because a skipped required check stays
+# pending. A failure here turns this job red and nothing else.
+name: README APT block
+
+on:
+  schedule:
+    - cron: '17 6 * * *'
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  readme-apt:
+    name: The README APT block installs headwater on ${{ matrix.image }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # The floor the page names: "Debian N or later and Ubuntu X.Y or
+        # later". Group 12 of `tools/repo/readme-fixtures.sh` holds each of
+        # the two here.
+        image: ['debian:12', 'ubuntu:20.04']
+    runs-on: ubuntu-24.04
+    container: ${{ matrix.image }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Print the block the page shows
+        run: sh tools/repo/readme-apt-block.sh README.md > readme-apt-block.sh
+      - name: Run the block as root on a clean image
+        # No `DEBIAN_FRONTEND` and nothing else the page does not tell a
+        # reader to set, so the job runs what the reader runs.
+        run: |
+          cat readme-apt-block.sh
+          sh -e readme-apt-block.sh

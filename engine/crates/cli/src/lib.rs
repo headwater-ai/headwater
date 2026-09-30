@@ -627,6 +627,15 @@ pub enum Verb {
         target: Option<String>,
         #[arg(long, help = JSON_ALONE)]
         json: bool,
+        #[arg(
+            long,
+            value_name = "n",
+            value_parser = a_budget,
+            requires = "json",
+            help = "write at most the first n entries of each `paths` list under `--json`. \
+                    `matched`, `total` and `governed_entries` still count every entry"
+        )]
+        paths_at_most: Option<usize>,
     },
     Show {
         #[arg(

@@ -4,7 +4,7 @@ title: "A cache of check results does not make a run proportional to the change"
 status: current
 status_since: 2026-08-12
 waiting_on: ruling
-last_verified: 2026-08-14
+last_verified: 2026-09-30
 summary: "Spec 6 promises a run proportional to the change, and a warm run still walks the corpus and builds the whole graph."
 provenance:
   warrant: accepted
@@ -27,7 +27,7 @@ relations:
 
 ## Obligation
 
-So a warm run serves every verdict it can and it still walks the corpus, parses every document and builds the whole graph. [HW-OBL-0080](0080-changed-only-is-the-content-addressed-cache-under-another-name.md) measures which of the two halves a run spends its time in, and the answer is the first one. Phase A costs about 40 ms of a 57 ms warm run over this corpus. Check evaluation is the other nine tenths of the 476 ms that a run with no cache costs, and the cache serves all of it.
+So a warm run serves every verdict it can and it still walks the corpus, parses every document and builds the whole graph. [HW-OBL-0080](0080-changed-only-is-the-content-addressed-cache-under-another-name.md) measures which of the two halves a run spends its time in. In 2026-08, at 158 documents, Phase A cost about 40 ms of a 57 ms warm run. The cache then served nearly all of check evaluation. On 2026-09-30, at 489 typed documents, Phase A cost 80 ms of a 233 ms warm run. A run with no cache cost 587 ms. So a warm run now spends about 150 ms after Phase A that the cache does not remove. No record states yet what that time is.
 
 The cache therefore makes the second half proportional to the change and leaves the first half proportional to the corpus. What spec 6 promises is the whole run.
 

@@ -12,9 +12,248 @@
     "classified": 29,
     "checked": 28,
     "generated": 1,
-    "instances": 368,
-    "skipped": 60,
+    "instances": 426,
+    "skipped": 118,
     "skips": [
+      {
+        "reason": "this document declares no warrant, and an absent warrant is not a value outside the closed set",
+        "instances": 58,
+        "documents": [
+          {
+            "path": "check/evaluations/alpha.md",
+            "rules": [
+              "warrant.value.not_permitted",
+              "warrant.acceptance.unpaired"
+            ],
+            "routings": 2
+          },
+          {
+            "path": "check/evaluations/beta.md",
+            "rules": [
+              "warrant.value.not_permitted",
+              "warrant.acceptance.unpaired"
+            ],
+            "routings": 2
+          },
+          {
+            "path": "check/evaluations/delta.md",
+            "rules": [
+              "warrant.value.not_permitted",
+              "warrant.acceptance.unpaired"
+            ],
+            "routings": 2
+          },
+          {
+            "path": "check/evaluations/epsilon.md",
+            "rules": [
+              "warrant.value.not_permitted",
+              "warrant.acceptance.unpaired"
+            ],
+            "routings": 2
+          },
+          {
+            "path": "check/evaluations/eta.md",
+            "rules": [
+              "warrant.value.not_permitted",
+              "warrant.acceptance.unpaired"
+            ],
+            "routings": 2
+          },
+          {
+            "path": "check/evaluations/gamma.md",
+            "rules": [
+              "warrant.value.not_permitted",
+              "warrant.acceptance.unpaired"
+            ],
+            "routings": 2
+          },
+          {
+            "path": "check/evaluations/zeta.md",
+            "rules": [
+              "warrant.value.not_permitted",
+              "warrant.acceptance.unpaired"
+            ],
+            "routings": 2
+          },
+          {
+            "path": "check/spec/00-both-halves.md",
+            "rules": [
+              "warrant.value.not_permitted",
+              "warrant.acceptance.unpaired"
+            ],
+            "routings": 2
+          },
+          {
+            "path": "check/spec/01-one-half.md",
+            "rules": [
+              "warrant.value.not_permitted",
+              "warrant.acceptance.unpaired"
+            ],
+            "routings": 2
+          },
+          {
+            "path": "check/spec/02-cited-only.md",
+            "rules": [
+              "warrant.value.not_permitted",
+              "warrant.acceptance.unpaired"
+            ],
+            "routings": 2
+          },
+          {
+            "path": "check/spec/03-no-instance.md",
+            "rules": [
+              "warrant.value.not_permitted",
+              "warrant.acceptance.unpaired"
+            ],
+            "routings": 2
+          },
+          {
+            "path": "check/spec/05-no-summary.md",
+            "rules": [
+              "warrant.value.not_permitted",
+              "warrant.acceptance.unpaired"
+            ],
+            "routings": 2
+          },
+          {
+            "path": "check/spec/06-retired.md",
+            "rules": [
+              "warrant.value.not_permitted",
+              "warrant.acceptance.unpaired"
+            ],
+            "routings": 2
+          },
+          {
+            "path": "check/spec/07-prose-defects.md",
+            "rules": [
+              "warrant.value.not_permitted",
+              "warrant.acceptance.unpaired"
+            ],
+            "routings": 2
+          },
+          {
+            "path": "check/spec/08-contract-met.md",
+            "rules": [
+              "warrant.value.not_permitted",
+              "warrant.acceptance.unpaired"
+            ],
+            "routings": 2
+          },
+          {
+            "path": "check/spec/09-contract-missing.md",
+            "rules": [
+              "warrant.value.not_permitted",
+              "warrant.acceptance.unpaired"
+            ],
+            "routings": 2
+          },
+          {
+            "path": "check/spec/10-suppressed.md",
+            "rules": [
+              "warrant.value.not_permitted",
+              "warrant.acceptance.unpaired"
+            ],
+            "routings": 2
+          },
+          {
+            "path": "check/spec/11-identifier-mismatch.md",
+            "rules": [
+              "warrant.value.not_permitted",
+              "warrant.acceptance.unpaired"
+            ],
+            "routings": 2
+          },
+          {
+            "path": "check/spec/13-dangling.md",
+            "rules": [
+              "warrant.value.not_permitted",
+              "warrant.acceptance.unpaired"
+            ],
+            "routings": 2
+          },
+          {
+            "path": "check/spec/14-relations-not-a-mapping.md",
+            "rules": [
+              "warrant.value.not_permitted",
+              "warrant.acceptance.unpaired"
+            ],
+            "routings": 2
+          },
+          {
+            "path": "check/spec/15-unusable-entries.md",
+            "rules": [
+              "warrant.value.not_permitted",
+              "warrant.acceptance.unpaired"
+            ],
+            "routings": 2
+          },
+          {
+            "path": "check/spec/16-no-identifier.md",
+            "rules": [
+              "warrant.value.not_permitted",
+              "warrant.acceptance.unpaired"
+            ],
+            "routings": 2
+          },
+          {
+            "path": "check/spec/17-identifier-not-a-word.md",
+            "rules": [
+              "warrant.value.not_permitted",
+              "warrant.acceptance.unpaired"
+            ],
+            "routings": 2
+          },
+          {
+            "path": "check/spec/18-blank-facets.md",
+            "rules": [
+              "warrant.value.not_permitted",
+              "warrant.acceptance.unpaired"
+            ],
+            "routings": 2
+          },
+          {
+            "path": "check/spec/20-fragment-target.md",
+            "rules": [
+              "warrant.value.not_permitted",
+              "warrant.acceptance.unpaired"
+            ],
+            "routings": 2
+          },
+          {
+            "path": "check/spec/21-summary-facet-prose.md",
+            "rules": [
+              "warrant.value.not_permitted",
+              "warrant.acceptance.unpaired"
+            ],
+            "routings": 2
+          },
+          {
+            "path": "check/spec/22-voice-facet-prose.md",
+            "rules": [
+              "warrant.value.not_permitted",
+              "warrant.acceptance.unpaired"
+            ],
+            "routings": 2
+          },
+          {
+            "path": "check/spec/23-voice-empty-population.md",
+            "rules": [
+              "warrant.value.not_permitted",
+              "warrant.acceptance.unpaired"
+            ],
+            "routings": 2
+          },
+          {
+            "path": "check/spec/24-voice-context-section.md",
+            "rules": [
+              "warrant.value.not_permitted",
+              "warrant.acceptance.unpaired"
+            ],
+            "routings": 2
+          }
+        ],
+        "unrouted": 0
+      },
       {
         "reason": "no `id` facet, which is the key this engine reads an identifier from and which no declaration states",
         "instances": 1,
@@ -595,7 +834,7 @@
     {
       "rule": "warrant.evidence.unsupported",
       "scope": "edge",
-      "version": 2,
+      "version": 3,
       "obligations": []
     },
     {
@@ -734,6 +973,18 @@
     },
     {
       "rule": "lifecycle.state.not_admitted",
+      "scope": "document",
+      "version": 1,
+      "obligations": []
+    },
+    {
+      "rule": "warrant.value.not_permitted",
+      "scope": "document",
+      "version": 1,
+      "obligations": []
+    },
+    {
+      "rule": "warrant.acceptance.unpaired",
       "scope": "document",
       "version": 1,
       "obligations": []
@@ -898,7 +1149,7 @@
       "path": "check/spec/03-no-instance.md",
       "line": 0,
       "column": 0,
-      "message": "this document is classified and all 2 of its check instances were skipped",
+      "message": "this document is classified and all 4 of its check instances were skipped",
       "remediation": "check that the shelf pattern claims the right files, and that the kind declares something a check reads",
       "fixable": false,
       "escape": "none"

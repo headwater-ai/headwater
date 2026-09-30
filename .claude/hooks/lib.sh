@@ -406,9 +406,18 @@ hw_ungoverned_in_scope() {
 # size the editor has to check and not the number of lines. An edge with no
 # `reach`, an anchor that binds nothing or a document target, prints its
 # `targets` as written.
+#
+# The call passes `--paths-at-most` with the same bound, so `paths` holds at
+# most the entries this function can list, while `matched` and
+# `governed_entries` still count every entry. Each `hw_field` and `hw_count`
+# below parses the whole document again in a new engine process. Over a glob
+# of 50,000 files the unbounded document is 1.75 MB, and seven such reads took
+# the hook to 375 ms of CPU time against a 200 ms budget (#1346). The bound
+# must equal `hw_governs_listed_at_most`: at one less, a member of exactly
+# that size would lose its last listed entry.
 hw_governed_by_document() {
     _engine=$(hw_engine) || return 1
-    _explain=$("$_engine" explain --json --root "$hw_root" "$1" 2>/dev/null) || return 1
+    _explain=$("$_engine" explain --json --paths-at-most "$hw_governs_listed_at_most" --root "$hw_root" "$1" 2>/dev/null) || return 1
     _total=$(hw_count "$_explain" related) || return 1
     _governs= _governs_n=0 _summed=0 _cites= _cites_n=0 _at=0
     while [ "$_at" -lt "$_total" ]; do

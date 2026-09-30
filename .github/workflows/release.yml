@@ -635,3 +635,13 @@ jobs:
     with:
       ref: main
     secrets: inherit
+
+  readme-apt:
+    name: The README APT block installs this release from the site
+    # `deploy-site` has just put this release under `apt/`, so the block of
+    # `README.md` runs against it here, on the floor the page names (#1408).
+    # `readme-apt.yml` holds the one job, and it also runs daily. It waits for
+    # `deploy-site`, so a run that skips the deploy skips this too; give it no
+    # `if:`, for the reason `deploy-site` gives.
+    needs: deploy-site
+    uses: ./.github/workflows/readme-apt.yml

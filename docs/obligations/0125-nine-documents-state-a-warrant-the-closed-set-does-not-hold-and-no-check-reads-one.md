@@ -3,8 +3,8 @@ id: HW-OBL-0125
 status: current
 status_since: 2026-08-15
 waiting_on: ruling
-summary: "Spec 3 closes the warrant vocabulary at four values, nine documents here state a fifth, no check reads a warrant, and the query surface serves an unknown value as a vouched one."
-last_verified: 2026-08-15
+summary: "Spec 3 closes the warrant at four values. Nine documents here state a fifth, and an adoption task holds them until a human sets each value."
+last_verified: 2026-09-30
 title: "Nine documents state a warrant the closed set does not hold, and no check reads one"
 provenance:
   warrant: asserted
@@ -48,3 +48,14 @@ Two things are owed, and they are separable.
 `headwater taxonomy audit` reports the count on every run, under the warrant reading, apart from the four rows of the closed set. That is the instrument, and it is the whole of what runs today. Nothing reports the third finding, because a pointer that says nothing is what a reader sees.
 
 The first half closes when a check reads the value against the closed set and a fixture fails without it. The second half closes when a human sets the value on the nine documents. A ruling that `proposed` belongs in the closed set closes it too, and that ruling states what the value requires. The third half closes with a ruling on what a pointer says about a warrant it does not know.
+
+**The first half and the third half closed on 2026-09-30, in [#1438](https://github.com/headwater-ai/headwater/issues/1438).** The Context above records the state before that change.
+
+- `warrant.value.not_permitted` is an error on a hand-authored document whose warrant is outside the closed set. `engine/crates/check/tests/warrant_value.rs` is the fixture that fails without it.
+- `warrant.acceptance.unpaired` reads the pairing that spec 3 states for `accepted_by`. It found no instance in this corpus on the day it landed ([#1437](https://github.com/headwater-ai/headwater/issues/1437)).
+- `warrant.evidence.unsupported` reads a target warrant outside the set as no support, so two more claims that rest on a `proposed` document are reported.
+- A pointer reads no acceptance from a value outside the set. It names the value as written and does not call it `asserted`. The flag in the MCP contract is unchanged.
+
+**The second half stays open, and so does this record.** The nine documents keep `warrant: proposed`. Task `AD-2` in the adoption block of `.headwater/taxonomy.lock` holds their nine findings, so a strict run passes. A human sets each value, or rules that `proposed` joins the closed set. Either act closes the task and this record.
+
+An absent warrant is still a finding nowhere. Spec 3 calls it a finding, and 134 documents under `docs/` declare no warrant. The new rule skips such a document and says why, because a missing value and a wrong value are two defects with two remedies.
