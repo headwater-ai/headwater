@@ -36,13 +36,13 @@ relations:
     - to: .claude/agents/hw-iterate.md
       verified_revision: sha256:eab71ea73124082fe3c6d53745451efdcf432aabe562bf4f071bdf442aaf1892
     - to: .claude/agents/hw-build.md
-      verified_revision: sha256:2f6d08e5db461ee480c7affe309cf69f82c0606fccec74813914e4a085575ffb
+      verified_revision: sha256:5fc308fd43b3f451280adf595bab809e6e34c44a94087a8e6433dcd54db043a1
     - to: .claude/agents/hw-verify.md
-      verified_revision: sha256:2851dcc90830016d17c14f2692ad614e696a3435850558631dd3a525a9bc5d87
+      verified_revision: sha256:50a652c2244770cf104df9aa07f0ca71ca27f879373035c75c22697814feee6d
     - to: .claude/agents/hw-integrate.md
-      verified_revision: sha256:faf27bbed077b3963873e7af3ca9e5348e64f18198dd44380a41c8468a808336
+      verified_revision: sha256:268b4af20f1016f3921972d8bf2a8485f9f7e7d3552ccf9e3663db7a7f963033
     - to: .claude/skills/hw-run-policy/SKILL.md
-      verified_revision: sha256:964b5348ada2da7f8efc18ff862704e5e8456a6c865e7381c85bb826fbdcbf28
+      verified_revision: sha256:67ac1cc387de05fcc6ca412a0d71d8a9ae20621439957fd8072a8ecfe2464bee
     - to: .claude/skills/hw-verification-bar/SKILL.md
       verified_revision: sha256:a68ce6b14b5a8d7068aeafd8c7443e0497a55b4e444e2b971daa1da738c2153b
 ---
