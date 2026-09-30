@@ -1232,7 +1232,71 @@ if [ -x "$engine" ]; then
     # but 12 of 12 when each line was 2KB (measured 2026-09-29). The stub engine answers `route` with a long
     # document that has no pointers, and hands every other verb to the real
     # engine.
+    #
+    # The second writer takes no lock, on purpose. It is what tests that a
+    # hook writes its line in one `write()`, the property that still holds
+    # when the lock times out. A second writer that took the lock would
+    # serialize every write, and the two-write form would pass. So this case
+    # asserts what `hw_append_line`'s header in `lib.sh` states for a writer
+    # outside the lock: every record is whole, and an empty line is the
+    # accepted cost ("a line with a rare empty line before it is worth more
+    # than no line"). The hook's check of the last byte can read the file
+    # while an unlocked `noise` write is half visible, and it then starts its
+    # record with a newline the file does not need. That gave an empty line in
+    # 2 of 400 rounds with this unlocked second writer, 0 of 200 with it
+    # locked, and 0 of 400 gave a torn record (measured 2026-09-30, #1390).
+    # So the classifier puts each line in one of four classes: `noise`, a
+    # whole record of this session, an empty line, and a torn or merged line.
+    # The case passes on every record whole and no torn or merged line, counts
+    # empty lines and tolerates them. On a failure it prints each line that is
+    # not noise and not a whole record, so an empty line and a tear read
+    # apart. The two cases just below hold the classifier to that on fixed
+    # input. The held-lock case further down is the test that two hooks,
+    # which both take the lock, never leave an empty line between them.
+    race_classify() {
+        race_whole=0
+        race_empty=0
+        race_other=0
+        race_bad=
+        race_n=0
+        while IFS= read -r race_line || [ -n "$race_line" ]; do
+            race_n=$((race_n + 1))
+            if [ "$race_line" = noise ]; then
+                continue
+            elif [ -z "$race_line" ]; then
+                race_empty=$((race_empty + 1))
+                race_bad="$race_bad  $race_n: (empty)
+"
+            elif [ "$(printf '%s' "$race_line" | "$engine" json field session 2>/dev/null)" = "$2" ]; then
+                race_whole=$((race_whole + 1))
+            else
+                race_other=$((race_other + 1))
+                race_bad="$race_bad  $race_n:$(printf '%s' "$race_line" | cut -c1-60)
+"
+            fi
+        done < "$1"
+    }
     race_root=$(mktemp -d "${TMPDIR:-/tmp}/headwater-shadow-race.XXXXXX")
+    printf 'noise\n{"session":"fixture-classify","task":"one"}\n\nnoise\n{"session":"fixture-classify","task":"two"}\n' > "$race_root/classify-empty"
+    race_classify "$race_root/classify-empty" fixture-classify
+    if [ "$race_whole" -eq 2 ] && [ "$race_other" -eq 0 ]; then
+        printf 'ok   %s\n' 'the concurrent-writer classifier tolerates an empty line, the stated cost of a writer outside the lock'
+        passed=$((passed + 1))
+    else
+        printf 'FAIL %s\n  %s whole, %s empty, %s torn or merged:\n%s' 'the concurrent-writer classifier counted an empty line as torn or merged' "$race_whole" "$race_empty" "$race_other" "$race_bad"
+        failed=$((failed + 1))
+    fi
+    # The last line has no newline, as a writer killed inside its write
+    # leaves it, and it is still counted.
+    printf 'noise\n{"session":"fixture-classify","task":"one"}\n{"session":"fixture-classify","tanoise\nsk":"two"}' > "$race_root/classify-torn"
+    race_classify "$race_root/classify-torn" fixture-classify
+    if [ "$race_whole" -eq 1 ] && [ "$race_other" -eq 2 ] && [ "$race_empty" -eq 0 ]; then
+        printf 'ok   %s\n' 'the concurrent-writer classifier counts a torn line as torn and not as empty'
+        passed=$((passed + 1))
+    else
+        printf 'FAIL %s\n  %s whole, %s empty, %s torn or merged:\n%s' 'the concurrent-writer classifier missed a torn line' "$race_whole" "$race_empty" "$race_other" "$race_bad"
+        failed=$((failed + 1))
+    fi
     mkdir -p "$race_root/engine/target/dev-release" "$race_root/.headwater"
     cp "$root/.headwater/taxonomy.lock" "$race_root/.headwater/taxonomy.lock"
     head -c 40000 /dev/zero | tr '\0' x > "$race_root/pad"
@@ -1256,25 +1320,13 @@ if [ -x "$engine" ]; then
     wait $race_pids
     rm -f "$race_root/running"
     wait "$race_noise"
-    # Every line is either the second writer's `noise` or one whole JSON
-    # object for this session. Anything else is a torn or merged line.
-    race_whole=0
-    race_other=0
-    while IFS= read -r race_line; do
-        if [ "$race_line" = noise ]; then
-            continue
-        elif [ "$(printf '%s' "$race_line" | "$engine" json field session 2>/dev/null)" = "$race_session" ]; then
-            race_whole=$((race_whole + 1))
-        else
-            race_other=$((race_other + 1))
-        fi
-    done < "$race_file"
+    race_classify "$race_file" "$race_session"
     race_out=$(cat "$race_root"/out.* 2>/dev/null)
     if [ "$race_whole" -eq "$race_writers" ] && [ "$race_other" -eq 0 ] && [ -z "$race_out" ]; then
-        printf 'ok   %s\n' "$race_writers hooks and a second writer appending to one session file at once leave $race_writers whole lines, each one JSON object"
+        printf 'ok   %s\n' "$race_writers hooks and a second writer appending to one session file at once leave $race_writers whole lines, each one JSON object ($race_empty empty)"
         passed=$((passed + 1))
     else
-        printf 'FAIL %s\n  %s whole lines of %s writers, %s torn or merged lines; hook output:\n%s\n' 'hooks and a second writer appending to one session file at once left a torn or merged line' "$race_whole" "$race_writers" "$race_other" "$race_out"
+        printf 'FAIL %s\n  %s whole lines of %s writers, %s torn or merged lines, %s empty lines; each line that is not noise or a whole record:\n%s  hook output:\n%s\n' 'hooks and a second writer appending to one session file at once left a torn or merged line' "$race_whole" "$race_writers" "$race_other" "$race_empty" "$race_bad" "$race_out"
         failed=$((failed + 1))
     fi
     rm -rf "$race_root"

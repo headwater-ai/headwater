@@ -23,6 +23,18 @@
 //! `NOTE-FIX-b` in two spellings. It is one finding and one repeated target,
 //! as the repeat was when both bound as one anchor.
 //!
+//! **A second path through a symlink** (#1417). `notes/l.md` writes
+//! `src/alias.md`, a symlink onto the file of `NOTE-FIX-b`, and `notes/l2.md`
+//! writes `linked/b.md`, where `linked` is a symlink onto `notes/`. The
+//! normalized path is lexical and names no document, but the real path of the
+//! link does. Each is the finding of `notes/a.md`, and the graph holds no
+//! anchor for either. `notes/n.md` writes `src/lib-link.rs`, a symlink onto a
+//! source file, which is no document, so it stays an anchor and no finding.
+//!
+//! **The path and the identifier together.** `notes/m.md` writes the path of
+//! `NOTE-FIX-b` and then `NOTE-FIX-b`. The path is one finding, and the
+//! identifier binds to the document beside it.
+//!
 //! **The identifier form.** `notes/c.md` writes `NOTE-FIX-b`, which binds to
 //! the document, so `NOTE-FIX-b` has the reverse edge.
 //!
@@ -151,6 +163,16 @@ fn target_of<'a>(graph: &'a Graph, id: &str) -> &'a Target {
     only
 }
 
+/// Every target the document with this identifier declares, in order.
+fn targets_of<'a>(graph: &'a Graph, id: &str) -> Vec<&'a Target> {
+    graph
+        .edges
+        .iter()
+        .filter(|edge| edge.source.id == id)
+        .map(|edge| &edge.target)
+        .collect()
+}
+
 /// The decisive case: the path of a typed document with an identifier is a
 /// finding that names the identifier, and it is no anchor.
 #[test]
@@ -248,7 +270,77 @@ fn the_identifier_form_binds_to_the_document_and_makes_the_reverse_edge() {
         .filter(|edge| matches!(&edge.target, Target::Document { id, .. } if id == "NOTE-FIX-b"))
         .map(|edge| edge.source.id.as_str())
         .collect();
-    assert_eq!(incoming, ["NOTE-FIX-c"]);
+    // `notes/m.md` writes the identifier beside a path, and its identifier
+    // binds too. No path entry and no symlink adds a reverse edge.
+    assert_eq!(incoming, ["NOTE-FIX-c", "NOTE-FIX-m"]);
+}
+
+/// A symlink onto a typed document, or a path through a symlinked directory,
+/// names that document by another path. The real path is compared, so it is
+/// the finding of the document's own path, and it is no anchor (#1417).
+#[test]
+fn a_path_through_a_symlink_to_an_identified_document_is_reported_with_the_identifier() {
+    let (graph, run) = build();
+
+    for (file, id) in [("notes/l.md", "NOTE-FIX-l"), ("notes/l2.md", "NOTE-FIX-l2")] {
+        let found = at(&run, file);
+        assert_eq!(found.len(), 1, "{file}: {found:?}");
+        assert!(found[0].contains("NOTE-FIX-b"), "{file}: {found:?}");
+        // The message names the document's own path, not the link.
+        assert!(
+            found[0].contains("(document-path-target/notes/b.md)"),
+            "{file}: {found:?}"
+        );
+        assert!(
+            matches!(
+                target_of(&graph, id),
+                Target::Unbound(Unbound::DocumentByPath { id, path })
+                    if id == "NOTE-FIX-b" && path == "document-path-target/notes/b.md"
+            ),
+            "{file}: {:?}",
+            target_of(&graph, id)
+        );
+    }
+}
+
+/// One block that names a document by its path and by its identifier: the
+/// path is one finding, and the identifier binds to the document. The two
+/// entries are not one target written twice, because the finding keeps the
+/// path as its identity and the edge keeps the identifier, so
+/// `relation.declaration.unusable` reports nothing here.
+#[test]
+fn a_path_beside_the_identifier_is_one_finding_and_the_identifier_still_binds() {
+    let (graph, run) = build();
+
+    let found = at(&run, "notes/m.md");
+    assert_eq!(found.len(), 1, "{found:?}");
+    assert!(found[0].contains("NOTE-FIX-b"), "{found:?}");
+
+    let targets = targets_of(&graph, "NOTE-FIX-m");
+    assert_eq!(targets.len(), 2, "{targets:?}");
+    assert!(
+        matches!(
+            targets[0],
+            Target::Unbound(Unbound::DocumentByPath { id, path })
+                if id == "NOTE-FIX-b" && path == "document-path-target/notes/b.md"
+        ),
+        "{targets:?}"
+    );
+    assert!(
+        matches!(targets[1], Target::Document { id, .. } if id == "NOTE-FIX-b"),
+        "{targets:?}"
+    );
+
+    let repeated: Vec<&str> = run
+        .findings
+        .iter()
+        .filter(|finding| {
+            finding.rule == "relation.declaration.unusable"
+                && finding.path == "document-path-target/notes/m.md"
+        })
+        .map(|finding| finding.message.as_str())
+        .collect();
+    assert!(repeated.is_empty(), "{repeated:?}");
 }
 
 /// A source file, a wildcard, a path under a relation that admits no
@@ -265,6 +357,7 @@ fn every_other_path_stays_an_anchor_and_is_not_reported() {
         ("notes/g.md", "NOTE-FIX-g", "code_path"),
         ("notes/h.md", "NOTE-FIX-h", "snapshot_item"),
         ("notes/j.md", "NOTE-FIX-j", "code_path"),
+        ("notes/n.md", "NOTE-FIX-n", "code_path"),
     ] {
         assert!(at(&run, file).is_empty(), "{file}: {:?}", at(&run, file));
         assert!(
@@ -277,7 +370,7 @@ fn every_other_path_stays_an_anchor_and_is_not_reported() {
         );
     }
 
-    // The whole tree: three findings, each the decisive case.
+    // The whole tree: six findings, each the decisive case.
     let all: Vec<&str> = run
         .findings
         .iter()
@@ -289,7 +382,10 @@ fn every_other_path_stays_an_anchor_and_is_not_reported() {
         [
             "document-path-target/notes/a.md",
             "document-path-target/notes/a2.md",
-            "document-path-target/notes/k.md"
+            "document-path-target/notes/k.md",
+            "document-path-target/notes/l.md",
+            "document-path-target/notes/l2.md",
+            "document-path-target/notes/m.md"
         ]
     );
 }

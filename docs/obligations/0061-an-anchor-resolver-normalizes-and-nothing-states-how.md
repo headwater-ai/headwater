@@ -31,6 +31,6 @@ The engine had to decide the rules, and a decision of that class belongs to the 
 
 ## Discharge
 
-`engine/crates/graph/src/anchors.rs` states them. A backslash reads as a separator. A `.` segment goes, and a `..` segment cancels the segment before it. An absolute path, and a path that climbs above the repository, are refused rather than clamped. Every rule is lexical, because a resolver that asks the filesystem follows a symlink out of the repository.
+`engine/crates/graph/src/anchors.rs` states them. A backslash reads as a separator. A `.` segment goes, and a `..` segment cancels the segment before it. An absolute path, and a path that climbs above the repository, are refused rather than clamped. Every rule is lexical, because a resolver that asks the filesystem follows a symlink out of the repository. One comparison asks the filesystem after normalization, and not as part of it. `Resolver::real_path` follows each symlink on a path to find a typed document that the path reaches by a second name. It gives no path where the real path leaves the repository (#1417).
 
 This is a meta-schema decision of the same class as [the shelf order](0060-the-most-specific-shelf-wins-names-no-order.md).

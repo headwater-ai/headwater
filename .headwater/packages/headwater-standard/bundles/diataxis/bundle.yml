@@ -24,8 +24,11 @@
 # not a kind of any other entry. That is what keeps it add-only and disjoint:
 # the address set of this bundle meets no address that the design-spec entry or
 # the decision-record entry writes, so an adopter may select any subset of the
-# three. Reaching a concrete kind of another entry to *require* the facet is the
-# operation that has no add-only form, and HW-OBL-0040 holds that question.
+# three. To *require* the facet on a concrete kind of another entry, a bundle
+# names that entry in `requires` and writes `add_to` into its `facets.require`
+# list. HW-DR-0095 (Q67) made that legal, and case group 8 of
+# `tools/repo/diataxis-facet-fixtures.sh` runs it. This entry declines it on
+# purpose, so that it stays usable without `design-spec` or any other entry.
 
 bundle: diataxis
 extends: headwater/standard@3.2.0
@@ -95,9 +98,10 @@ add:
   #
   # `optional` rather than `require`, for the reason the facet declares
   # `required: false` above, and for a second reason: an entry that required the
-  # facet on a kind would need `kinds.<k>.facets.require` on a kind whose
-  # `facets` block another entry already wrote, and an `add` cannot reach into a
-  # list that exists. HW-OBL-0040 carries that.
+  # facet on a kind would write `kinds.<k>.facets.require` on a kind whose
+  # `facets` block another entry already wrote. HW-DR-0095 permits that only
+  # with `add_to` from a bundle that names the other entry in `requires`, and
+  # this entry names no entry there, so that an adopter can select it alone.
   #
   # **What this line does in the engine, exactly.** It satisfies the relevance
   # canon of [spec 2](https://github.com/headwater-ai/headwater/blob/main/docs/spec/02-taxonomy-model.md#facet-acceptance-tests),

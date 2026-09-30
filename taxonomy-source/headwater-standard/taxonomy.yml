@@ -149,6 +149,13 @@ taxonomy: headwater/standard
 # on load where they differ, and it names both files and both numbers. A bump
 # moves both or neither. `package.yml` states why the value is declared twice.
 #
+# 4.13.0 changes doctrine and comments and no declaration. The library pages
+# stop saying that composition between two entries is blocked: HW-DR-0095
+# (Q67) lets an entry write into an entry it names in `requires`, and the
+# pages now say so and cite the fixture that runs it. The history comment of
+# 4.6.0 below is corrected. The owner named it a minor rather than a patch
+# (#1337). It follows 4.12.0.
+#
 # 4.12.0 adds `OB-REL-7` and `CT-REL-7`, which are the obligation and the
 # control behind `relation.target.is_source`. Nothing is removed and nothing
 # already declared changes meaning, so it is a minor. What a consumer meets is
@@ -243,8 +250,9 @@ taxonomy: headwater/standard
 # edge, so a `governs` edge goes suspect when the code it governs changes.
 # Nothing is removed, and no edge a consumer holds is reported until its author
 # records a digest, so it is a minor. What a consumer meets is one `Info`
-# finding on an unrecorded `governs` entry of a document verified today, with
-# a fix that records the digest. It follows 4.5.0 (#853).
+# finding on an unrecorded `governs` entry of a document that a change
+# re-verified (since #1259), with a fix that records the digest. It follows
+# 4.5.0 (#853).
 #
 # 4.5.0 declares `lifecycle_sensitive: true` on `supersedes`. HW-DR-0065 lets a
 # relation state for itself that its ends have a lifecycle, and the core
@@ -268,7 +276,7 @@ taxonomy: headwater/standard
 # each carries a recipe rather than a bare instruction. One package version
 # covers every content file it publishes, this one included, so the number
 # here moves with a change to either.
-version: 4.12.0
+version: 4.13.0
 
 purposes:
   rationale:
