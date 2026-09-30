@@ -568,29 +568,11 @@ fn every_workspace_dependency_on_a_member_names_the_workspace_version() {
 /// caught, and the finding names the entry it missed.
 #[test]
 fn a_bump_that_misses_one_workspace_dependency_names_that_dependency() {
-    let real = workspace_manifest();
     let version = headwater_resolve::release::ENGINE;
-    let package = format!("\nversion = \"{version}\"\n");
-    assert!(
-        real.contains(&package),
-        "engine/Cargo.toml carries no `version = \"{version}\"` line to plant a bump on"
-    );
     // Move the package version and every entry but `headwater-yaml` to a new
     // version, which is the bump that missed one line.
     let next = "99.0.1";
-    let entry = format!("version = \"{version}\" }}");
-    let planted: String = real
-        .replacen(&package, &format!("\nversion = \"{next}\"\n"), 1)
-        .lines()
-        .map(|line| {
-            if line.starts_with("headwater-") && !line.starts_with("headwater-yaml ") {
-                line.replace(&entry, &format!("version = \"{next}\" }}"))
-            } else {
-                line.to_string()
-            }
-        })
-        .collect::<Vec<_>>()
-        .join("\n");
+    let planted = planted_bump(next, &["headwater-yaml"]);
     let stale = stale_member_dependency_versions(&planted);
     assert!(
         stale.len() == 1 && stale[0].contains("headwater-yaml"),
@@ -611,36 +593,77 @@ fn next_patch(version: &str) -> String {
     format!("{head}.{}", patch + 1)
 }
 
+/// The real manifest with `[workspace.package] version` moved to `next`, and
+/// the version of every `[workspace.dependencies]` entry on a member moved to
+/// `next` as well, except the entries named in `missed`.
+///
+/// It finds each version through the parsed document and replaces the bytes
+/// of that value alone. A replacement of text such as `version = "<v>" }`
+/// matches one spelling of an entry, so an ordinary edit to another entry,
+/// such as `default-features = false` after its version or its keys in another
+/// order, left that entry out of the bump. Each case that plants on it then
+/// named that entry beside the one it missed, and blamed the judge for the
+/// plant.
+fn planted_bump(next: &str, missed: &[&str]) -> String {
+    let real = workspace_manifest();
+    let members = member_paths(&real);
+    let document =
+        toml_edit::Document::parse(real.as_str()).expect("engine/Cargo.toml is TOML");
+    let workspace = document
+        .get("workspace")
+        .and_then(toml_edit::Item::as_table_like)
+        .expect("engine/Cargo.toml has a [workspace] table");
+    let mut spans: Vec<std::ops::Range<usize>> = Vec::new();
+    spans.push(
+        workspace
+            .get("package")
+            .and_then(|package| package.get("version"))
+            .and_then(toml_edit::Item::span)
+            .expect("[workspace.package] declares a version, and the parse keeps its span"),
+    );
+    let dependencies = workspace
+        .get("dependencies")
+        .and_then(toml_edit::Item::as_table_like)
+        .expect("engine/Cargo.toml has a [workspace.dependencies] table");
+    for (name, entry) in dependencies.iter() {
+        if missed.contains(&name) {
+            continue;
+        }
+        let Some(entry) = entry.as_table_like() else {
+            continue;
+        };
+        let on_member = entry
+            .get("path")
+            .and_then(toml_edit::Item::as_str)
+            .is_some_and(|path| members.iter().any(|member| member == path));
+        if let (true, Some(version)) = (on_member, entry.get("version")) {
+            spans.push(
+                version
+                    .span()
+                    .expect("the parse keeps the span of each version"),
+            );
+        }
+    }
+    spans.sort_by_key(|span| std::cmp::Reverse(span.start));
+    let mut planted = real.clone();
+    for span in spans {
+        planted.replace_range(span, &format!("\"{next}\""));
+    }
+    planted
+}
+
 /// The manifest planted with a bump to `next` that missed `headwater-yaml`,
 /// with the `headwater-yaml` entry then rewritten by `rewrite`. The bump moves
 /// the package and every other entry to `next`.
 fn planted_bump_missing_yaml(next: &str, rewrite: impl Fn(&str) -> String) -> String {
-    let real = workspace_manifest();
     let version = headwater_resolve::release::ENGINE;
+    let bumped = planted_bump(next, &["headwater-yaml"]);
     let entry = format!("headwater-yaml = {{ path = \"crates/yaml\", version = \"{version}\" }}");
     assert!(
-        real.contains(&entry),
-        "engine/Cargo.toml has no `{entry}` line to plant on"
+        bumped.contains(&entry),
+        "engine/Cargo.toml has no `{entry}` line, so this plant cannot rewrite the \
+         headwater-yaml entry into another form; the plant is out of date, not the judge"
     );
-    let bumped: String = real
-        .replacen(
-            &format!("\nversion = \"{version}\"\n"),
-            &format!("\nversion = \"{next}\"\n"),
-            1,
-        )
-        .lines()
-        .map(|line| {
-            if line.starts_with("headwater-") && !line.starts_with("headwater-yaml ") {
-                line.replace(
-                    &format!("version = \"{version}\" }}"),
-                    &format!("version = \"{next}\" }}"),
-                )
-            } else {
-                line.to_string()
-            }
-        })
-        .collect::<Vec<_>>()
-        .join("\n");
     bumped.replace(&entry, &rewrite(version))
 }
 
@@ -705,6 +728,43 @@ fn a_patch_bump_that_misses_one_workspace_dependency_names_it() {
         "the patch bump moved the package and every other entry to {next} and left \
          headwater-yaml at {version}; the judge should name headwater-yaml alone and say it \
          `{stale_version}`, and it said: {stale:?}"
+    );
+}
+
+/// A bump that moves only `[workspace.package] version` leaves every member
+/// entry behind, and the judge names each one. So the judge holds each entry
+/// against the package version, and not against another entry: a judge that
+/// compared the entries with each other would find them all equal here.
+#[test]
+fn a_bump_of_the_package_version_alone_names_every_member_entry() {
+    let real = workspace_manifest();
+    let version = headwater_resolve::release::ENGINE;
+    let entries: Vec<String> = member_dependency_versions(&real)
+        .into_iter()
+        .map(|entry| entry.name)
+        .collect();
+    assert!(
+        !entries.is_empty(),
+        "engine/Cargo.toml has no [workspace.dependencies] entry on a member to hold"
+    );
+    let missed: Vec<&str> = entries.iter().map(String::as_str).collect();
+    let next = next_patch(version);
+    let stale = stale_member_dependency_versions(&planted_bump(&next, &missed));
+    let stale_version = format!("names version {version},");
+    let unnamed: Vec<&String> = entries
+        .iter()
+        .filter(|name| {
+            !stale
+                .iter()
+                .any(|line| line.starts_with(&format!("{name} ")) && line.contains(&stale_version))
+        })
+        .collect();
+    assert!(
+        stale.len() == entries.len() && unnamed.is_empty(),
+        "the package moved to {next} and all {} member entries stayed at {version}; the judge \
+         should name each of them, and it named {} and missed {unnamed:?}",
+        entries.len(),
+        stale.len()
     );
 }
 
