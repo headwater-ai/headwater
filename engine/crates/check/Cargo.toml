@@ -9,6 +9,12 @@ license.workspace = true
 rust-version.workspace = true
 repository.workspace = true
 
+# Off by default, and for measurement alone (#1450). `headwater-cli` turns it
+# on through its own `phase-times` feature, which no released binary carries.
+# `src/phase.rs` says what it writes and how it counts.
+[features]
+phase-times = []
+
 [dependencies]
 # A cache key is a hash over the in-scope input hashes, the lock digest and the
 # check version. It uses the function the census and the lock use, so no two of
