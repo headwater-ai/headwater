@@ -1614,6 +1614,15 @@ same "a guide whose search is outside step 9 is red" \
     "step 9 of $guide_rel carries no \`git grep -nE '...'\` search" \
     "$(step9_misses "$scratch/s6" | tr '\n' '|' | sed 's/|$//')"
 
+# s7. A new numbered step ends step 9 too, and not only a heading. A step 10
+# inserted before the search line puts the search in step 10, which is red.
+step9_copy "$scratch/s7"
+awk '/^[[:space:]]*git grep -nE '"'"'/ && !done { print "10. **A new step.**"; print ""; done = 1 } { print }' \
+    "$root/$guide_rel" > "$scratch/s7/$guide_rel"
+same "a guide whose search follows a new step 10 is red" \
+    "step 9 of $guide_rel carries no \`git grep -nE '...'\` search" \
+    "$(step9_misses "$scratch/s7" | tr '\n' '|' | sed 's/|$//')"
+
 echo
 echo "$passed passed, $failed failed"
 [ "$failed" -eq 0 ]
