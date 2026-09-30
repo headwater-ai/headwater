@@ -31,7 +31,8 @@
 # measured. A stage the build does not mark, or a thread the clock of the
 # stages does not see, would read as time that nothing spent. The same holds
 # for the part past Phase A: the stages after `load` must sum to within 10% of
-# the warm run less the explain run, or the script refuses. It writes only
+# the warm run less the explain run, or the script refuses.
+# `tools/measure/check-phases-fixtures.sh` holds each refusal. It writes only
 # under a fresh temporary directory, and it deletes that directory when it ends.
 set -eu
 
