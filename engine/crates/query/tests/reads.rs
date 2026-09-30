@@ -753,3 +753,124 @@ fn a_pointer_to_a_warrant_outside_the_closed_set_reads_no_acceptance() {
     assert!(rendered.contains("no acceptance is read"), "{rendered}");
     assert!(!rendered.contains("asserted"), "{rendered}");
 }
+
+/// How the anchor resolver and the path tools read one spelling of a path.
+#[derive(Debug, Clone, Copy, PartialEq)]
+enum Reading {
+    /// Both refuse it, or both accept it as the same path.
+    Agree,
+    /// The two readings differ on purpose, and HW-OBL-0061's `## Discharge`
+    /// names the difference in a bullet that opens with this bold lead.
+    Stated(&'static str),
+}
+
+/// [#1314](https://github.com/headwater-ai/headwater/issues/1314): the rule
+/// HW-OBL-0061 states between the two normalizers of a path. An anchor that a
+/// document writes is read by `headwater_graph::anchors::normalize`, and a
+/// path that a reader types to `explain`, `related` or
+/// `governing_docs_for_path` is read by `headwater_census::walk::within`. On a
+/// spelling that both accept, they return the same path, and every spelling
+/// where they differ is a divergence that the Discharge names. A row whose two
+/// readings differ and that the table marks `Agree` fails, and so does a
+/// `Stated` row whose phrase the Discharge does not carry.
+#[test]
+fn the_anchor_resolver_and_the_path_tools_agree_on_every_spelling_both_accept() {
+    let scratch = std::env::temp_dir().join(format!(
+        "headwater-reads-spellings-{}-{}",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .expect("after the epoch")
+            .as_nanos()
+    ));
+    let root = scratch.join("repo");
+    let away = scratch.join("away");
+    std::fs::create_dir_all(root.join("a")).expect("the repository");
+    std::fs::create_dir_all(&away).expect("a directory outside it");
+    std::os::unix::fs::symlink(&away, root.join("link")).expect("a link out of the root");
+    let root = root.canonicalize().expect("a canonical root");
+    let absolute = root.join("a/b").display().to_string();
+
+    let rows: Vec<(&str, Option<&str>, Option<&str>, Reading)> = vec![
+        ("a/b", Some("a/b"), Some("a/b"), Reading::Agree),
+        ("./a/b", Some("a/b"), Some("a/b"), Reading::Agree),
+        ("a/./b", Some("a/b"), Some("a/b"), Reading::Agree),
+        ("a//b", Some("a/b"), Some("a/b"), Reading::Agree),
+        ("a/b/", Some("a/b"), Some("a/b"), Reading::Agree),
+        ("x/../a/b", Some("a/b"), Some("a/b"), Reading::Agree),
+        ("../x", None, None, Reading::Agree),
+        ("a/../../x", None, None, Reading::Agree),
+        ("/etc/passwd", None, None, Reading::Agree),
+        (
+            absolute.as_str(),
+            None,
+            Some("a/b"),
+            Reading::Stated("**An absolute path under the repository root.**"),
+        ),
+        (
+            "link/x",
+            Some("link/x"),
+            None,
+            Reading::Stated("**A path through a symlink that leads out of the repository.**"),
+        ),
+        (
+            "a\\b",
+            Some("a/b"),
+            Some("a\\b"),
+            Reading::Stated("**A backslash.**"),
+        ),
+        (
+            " a/b ",
+            Some("a/b"),
+            Some(" a/b "),
+            Reading::Stated("**Surrounding whitespace.**"),
+        ),
+        (
+            "",
+            None,
+            Some(""),
+            Reading::Stated("**The empty path, and `.`.**"),
+        ),
+        (
+            ".",
+            None,
+            Some(""),
+            Reading::Stated("**The empty path, and `.`.**"),
+        ),
+    ];
+
+    let obligation = Path::new(env!("CARGO_MANIFEST_DIR")).join(
+        "../../../docs/obligations/0061-an-anchor-resolver-normalizes-and-nothing-states-how.md",
+    );
+    let text = std::fs::read_to_string(&obligation)
+        .unwrap_or_else(|e| panic!("{}: {e}", obligation.display()));
+    let discharge = text
+        .split_once("## Discharge")
+        .map(|(_, rest)| rest)
+        .expect("HW-OBL-0061 has a Discharge");
+
+    for (spelling, anchor, tool, reading) in rows {
+        let anchored = headwater_graph::anchors::normalize(spelling).ok();
+        let typed = headwater_census::walk::within(&root, "docs", spelling);
+        assert_eq!(
+            anchored.as_deref(),
+            anchor,
+            "the anchor resolver reads {spelling:?}"
+        );
+        assert_eq!(typed.as_deref(), tool, "the path tools read {spelling:?}");
+        assert_eq!(
+            anchored == typed,
+            reading == Reading::Agree,
+            "{spelling:?}: the anchor side reads {anchored:?} and the tool side {typed:?}, \
+             and the table says {reading:?}"
+        );
+        if let Reading::Stated(phrase) = reading {
+            assert!(
+                discharge.contains(phrase),
+                "{spelling:?} is read two ways, and HW-OBL-0061's Discharge does not name \
+                 the {phrase:?} divergence"
+            );
+        }
+    }
+    std::fs::remove_dir_all(&scratch).expect("the scratch tree goes");
+}
