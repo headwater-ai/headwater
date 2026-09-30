@@ -357,6 +357,49 @@ fn the_result_names_the_grader_by_its_own_version_and_not_the_engine_release() {
          change moves the grader version, and a release does not."
     );
 
+    // The constant alone is not enough: a result takes its grader where
+    // `Results` is built, and that site could read the engine release while the
+    // constant stays a literal. So no code line of the grader reads the engine
+    // version at all, and every `grader:` field it builds is `VERSION`.
+    let code: Vec<(usize, &str)> = source
+        .lines()
+        .enumerate()
+        .map(|(at, line)| (at + 1, line.trim()))
+        .filter(|(_, line)| !line.starts_with("//"))
+        .collect();
+    for (at, line) in &code {
+        for engine_read in [
+            "headwater_resolve",
+            "release::ENGINE",
+            "CARGO_PKG_VERSION",
+            "env!(",
+        ] {
+            assert!(
+                !line.contains(engine_read),
+                "{}:{at} reads the engine version with `{engine_read}`: `{line}`. The grader \
+                 names its own version, so a release leaves every committed result as it was.",
+                source_path.display()
+            );
+        }
+    }
+    let fields: Vec<&(usize, &str)> = code
+        .iter()
+        .filter(|(_, line)| line.starts_with("grader:"))
+        .collect();
+    assert!(
+        !fields.is_empty(),
+        "{} builds no `grader:` field, so this test no longer sees where a result takes its grader",
+        source_path.display()
+    );
+    for (at, line) in fields {
+        assert_eq!(
+            *line,
+            "grader: VERSION,",
+            "{}:{at} gives a result a grader other than `VERSION`",
+            source_path.display()
+        );
+    }
+
     let recorded = std::fs::read_to_string(fixtures_dir().join("probe-result.record"))
         .expect("it reads the recorded result");
     let line = format!("Graded by grader {}.", headwater_probe::grade::VERSION);
