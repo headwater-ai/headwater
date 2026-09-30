@@ -936,9 +936,10 @@ mod tests {
             .expect("the socket is bound");
         std::os::unix::fs::symlink(dir.join("gone"), dir.join("dangling"))
             .expect("the link is made");
+        std::os::unix::fs::symlink(&dir, dir.join("dirlink")).expect("the link is made");
 
         let answers: Vec<(&str, Entry)> = [
-            "file", "link", "device", "endless", "pipe", "socket", "dangling",
+            "file", "link", "device", "endless", "pipe", "socket", "dangling", "dirlink",
         ]
         .into_iter()
         .map(|name| (name, entry_of(&dir.join(name))))
@@ -956,6 +957,7 @@ mod tests {
                 ("pipe", Entry::Special),
                 ("socket", Entry::Special),
                 ("dangling", Entry::Unreadable),
+                ("dirlink", Entry::Unreadable),
             ]
         );
     }
@@ -992,6 +994,13 @@ mod tests {
         let socket = std::os::unix::net::UnixListener::bind(scheme.join("DR-0003"))
             .expect("the socket is bound");
         std::fs::write(scheme.join("DR-0004"), "").expect("the empty claim writes");
+        // A dangling link and a link to a directory are not special: neither
+        // is a pipe, a socket or a device, so each keeps the empty-claimant
+        // sentence (#1366, verify round 1).
+        std::os::unix::fs::symlink(root.join("gone"), scheme.join("DR-0005"))
+            .expect("the dangling link is made");
+        std::os::unix::fs::symlink(&root, scheme.join("DR-0006"))
+            .expect("the directory link is made");
 
         let claims = Claims::at(&root);
         let empty = Claims::of(
@@ -1019,6 +1028,8 @@ mod tests {
                 ("DR-0002", true),
                 ("DR-0003", true),
                 ("DR-0004", false),
+                ("DR-0005", false),
+                ("DR-0006", false),
             ]
         );
         assert_ne!(
@@ -1028,7 +1039,7 @@ mod tests {
         );
 
         let found = findings(&Index::default(), &claims);
-        assert_eq!(found.len(), 4, "{found:#?}");
+        assert_eq!(found.len(), 6, "{found:#?}");
         for finding in &found[..3] {
             assert!(
                 finding
@@ -1042,10 +1053,13 @@ mod tests {
             );
             assert!(finding.remediation.starts_with("delete `"), "{finding:#?}");
         }
-        assert!(
-            found[3].message.contains("names no document, so `DR-0004`"),
-            "{:#?}",
-            found[3]
-        );
+        for (finding, id) in found[3..].iter().zip(["DR-0004", "DR-0005", "DR-0006"]) {
+            assert!(
+                finding
+                    .message
+                    .contains(&format!("names no document, so `{id}`")),
+                "{finding:#?}"
+            );
+        }
     }
 }
