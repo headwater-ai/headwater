@@ -38,7 +38,7 @@ The report ends with this block:
 
     sh tools/run/wait-for.sh 'sh tools/run/queue-done.sh <PR>'
 
-It ends on `merged <sha>`, `ejected: <reason>`, `closed` or `not queued`. A merged pull request is a `MERGED` line. An ejected one is an `EJECTED` line with the reason as printed, which names the failing check or the conflict, and you never enqueue it again: that is a new ruling, and the parent's. `not queued` means the merge call did not take, and it goes in `LEFT`.
+It ends on `merged <sha>`, `ejected: <reason>`, `unmergeable: the queue will eject it with merge_conflict`, `closed` or `not queued`. A merged pull request is a `MERGED` line. An ejected one is an `EJECTED` line with the reason as printed, which names the failing check or the conflict, and you never enqueue it again: that is a new ruling, and the parent's. An unmergeable one conflicts with the group ahead of it and is still in the queue. Write it as an `EJECTED` line with the reason `merge_conflict (unmergeable)` at once, without waiting for the queue to remove it, and never enqueue it again. `not queued` means the merge call did not take, and it goes in `LEFT`.
 
 **When the queue is done with all of them, move the checkout once.** Squash is the only method the `Protect main` ruleset allows, whatever the merge-button settings report. Then in the shared checkout, which you alone touch:
 

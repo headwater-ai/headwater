@@ -1,8 +1,12 @@
 #!/bin/sh
 # What holds `tools/run/queue-done.sh`: a pull request in the queue, or one
-# with auto-merge set, is not finished; a merged, closed, ejected or never
-# queued one is, and each says which; a failed call is never read as an
-# ejection; and a number that is not a number is refused before `gh` runs.
+# with auto-merge set, is not finished; a merged, closed, ejected,
+# unmergeable or never queued one is, and each says which; a removal as
+# merged (#1353) and an add whose removal is not visible yet (#1412) are not
+# finished and never read as ejected or not queued; an unmergeable entry
+# (#1328) is final at once; a failed call is never read as an ejection; and
+# a number that is not a number is refused before `gh` runs. The fifth field
+# of a row is the last queue event: `added`, `removed:<reason>`, or `-`.
 #
 # Run it from anywhere:
 #     sh tools/run/queue-done-fixtures.sh

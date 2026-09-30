@@ -11,17 +11,39 @@
 #
 #     queue-done: #<PR> merged <sha>
 #     queue-done: #<PR> ejected: <the reason GitHub recorded>
+#     queue-done: #<PR> unmergeable: the queue will eject it with merge_conflict
 #     queue-done: #<PR> closed
 #     queue-done: #<PR> not queued: open, in no queue, and never removed from one
 #
 # The last line means the merge call did not take, so waiting longer will
 # not change it.
 #
-# Ejected means the pull request is open and in no queue. The reason is the
-# last `RemovedFromMergeQueueEvent` on its timeline, which names the check
-# that failed on the group or the conflict the group met. An ejected pull
-# request stays out: nothing here enqueues it again, because that is a new
-# ruling and the parent's.
+# The queue state is read from the timeline: the last `AddedToMergeQueueEvent`
+# or `RemovedFromMergeQueueEvent`, whichever came later. Four incidents set
+# the rules that read it.
+#
+# Ejected means the pull request is open, in no queue, and its last queue
+# event is a removal. The reason is that removal's, which names the check
+# that failed on the group or the conflict the group met. A removal whose
+# reason is `merged` is never an ejection: the queue records it about one
+# second before the merge, and in that second #1353 printed `ejected:
+# merged`. It exits 1 until the merge is recorded.
+#
+# A last event that is an add, with no entry in the queue, means the entry
+# has cleared and the removal is not on the timeline yet. It exits 1. In
+# that window #1412 printed `not queued`, because the script then read
+# removals alone and could not tell a pull request never queued from one
+# whose removal it could not see yet. `not queued` now needs no queue event
+# at all.
+#
+# Unmergeable means the pull request is still in the queue and conflicts
+# with the group ahead of it. The queue ejects it with `merge_conflict`
+# about nine minutes later, which #1328 waited through three times. The
+# answer is final at once, so it exits 0 then. An integrator reads it as an
+# ejection with reason `merge_conflict (unmergeable)`.
+#
+# An ejected or unmergeable pull request stays out: nothing here enqueues it
+# again, because that is a new ruling and the parent's.
 #
 # Before the `Protect main` ruleset carries a `merge_queue` rule, `gh pr
 # merge --squash` merges at once, and this reports `merged` on its first
@@ -41,13 +63,14 @@ case $pr in
         ;;
 esac
 
-query='query($owner:String!,$name:String!,$n:Int!){repository(owner:$owner,name:$name){pullRequest(number:$n){state mergeCommit{oid} mergeQueueEntry{state} autoMergeRequest{enabledAt} timelineItems(itemTypes:[REMOVED_FROM_MERGE_QUEUE_EVENT],last:1){nodes{... on RemovedFromMergeQueueEvent{reason}}}}}}'
+query='query($owner:String!,$name:String!,$n:Int!){repository(owner:$owner,name:$name){pullRequest(number:$n){state mergeCommit{oid} mergeQueueEntry{state} autoMergeRequest{enabledAt} timelineItems(itemTypes:[ADDED_TO_MERGE_QUEUE_EVENT,REMOVED_FROM_MERGE_QUEUE_EVENT],last:1){nodes{__typename ... on RemovedFromMergeQueueEvent{reason}}}}}}'
 
-# One line of TSV: state, merge commit, queue entry state, auto-merge,
-# last removal reason. A missing value is `-`, so no field is ever empty
-# and a split never shifts a column.
+# One line of TSV: state, merge commit, queue entry state, auto-merge, and
+# the last queue event on the timeline, packed into one field: `added`,
+# `removed:<reason>`, or `-` when there is none. A missing value is `-`, so
+# no field is ever empty and a split never shifts a column.
 row=$(gh api graphql -F owner='{owner}' -F name='{repo}' -F n="$pr" -f query="$query" \
-    --jq '.data.repository.pullRequest | [.state, (.mergeCommit.oid // "-"), (.mergeQueueEntry.state // "-"), (if .autoMergeRequest then "auto" else "-" end), ((.timelineItems.nodes[0].reason // "-") | gsub("[\t\n]"; " "))] | @tsv') || {
+    --jq '.data.repository.pullRequest | [.state, (.mergeCommit.oid // "-"), (.mergeQueueEntry.state // "-"), (if .autoMergeRequest then "auto" else "-" end), (.timelineItems.nodes[-1] | if . == null then "-" elif .__typename == "AddedToMergeQueueEvent" then "added" elif .__typename == "RemovedFromMergeQueueEvent" then "removed:" + ((.reason // "-") | gsub("[\t\n]"; " ")) else .__typename end)] | @tsv') || {
     echo "queue-done: #$pr: the query failed; asking again next time" >&2
     exit 1
 }
@@ -64,7 +87,7 @@ if [ "$#" -ne 5 ]; then
     exit 1
 fi
 
-state=$1 oid=$2 entry=$3 auto=$4 reason=$5
+state=$1 oid=$2 entry=$3 auto=$4 event=$5
 
 case $state in
     MERGED)
@@ -82,6 +105,13 @@ case $state in
         ;;
 esac
 
+# An unmergeable entry is still in the queue, but it conflicts with the
+# group ahead of it, and the queue removes it with `merge_conflict` about
+# nine minutes later (#1328). The answer is final now, so say it now.
+if [ "$entry" = "UNMERGEABLE" ]; then
+    echo "queue-done: #$pr unmergeable: the queue will eject it with merge_conflict"
+    exit 0
+fi
 if [ "$entry" != "-" ]; then
     echo "queue-done: #$pr is in the queue, $entry" >&2
     exit 1
@@ -91,9 +121,33 @@ if [ "$auto" != "-" ]; then
     exit 1
 fi
 
-if [ "$reason" = "-" ]; then
-    echo "queue-done: #$pr not queued: open, in no queue, and never removed from one"
-    exit 0
-fi
+case $event in
+    -)
+        echo "queue-done: #$pr not queued: open, in no queue, and never removed from one"
+        exit 0
+        ;;
+    added)
+        # The entry has cleared and the removal event is not on the
+        # timeline yet (#1412). Never `not queued`: it was queued.
+        echo "queue-done: #$pr left the queue, and its removal is not visible yet" >&2
+        exit 1
+        ;;
+    removed:*)
+        reason=${event#removed:}
+        ;;
+    *)
+        echo "queue-done: #$pr: the last queue event read '$event', not one this script knows" >&2
+        exit 1
+        ;;
+esac
+
+# The queue removes a pull request with reason `merged` one second before
+# the merge is recorded (#1353). That removal is never an ejection.
+case $(printf '%s' "$reason" | tr '[:upper:]' '[:lower:]') in
+    merged)
+        echo "queue-done: #$pr left the queue as merged; the merge is not recorded yet" >&2
+        exit 1
+        ;;
+esac
 echo "queue-done: #$pr ejected: $reason"
 exit 0

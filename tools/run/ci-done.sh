@@ -24,6 +24,15 @@
 # conclusion is not success, skipped or neutral. Finished is not green, so a
 # red run still ends the wait and is read from the last line.
 #
+# A cancelled run that another run of the same workflow on the same commit
+# superseded is printed as `run <id> cancelled <workflow> (superseded,
+# <branch>)` and counts for nothing, and neither do the check runs of its
+# check suite. A commit is the head of more than one branch at once, and in
+# run 20260924-0411 the merge commit d5aa24bd of main read red because the
+# CI run of fix/809-derived-check-attr on the same sha was cancelled. The
+# superseding run must have run: a skipped or neutral one does not count. A
+# lone cancelled run is still red. The rule is where it is applied, below.
+#
 # Exit 1: not finished yet, with one line on standard error saying how far it
 # has got. No workflow run at all is not finished either: a push takes a few
 # seconds to start one, and a conflicting pull request starts none, which the
@@ -59,9 +68,9 @@ fi
 short=$(printf '%.8s' "$sha")
 
 runs=$(gh api "repos/$repo/actions/runs?head_sha=$sha&per_page=100" \
-    --jq '.workflow_runs[] | [.id, .status, (.conclusion // "-"), .name] | @tsv') || exit 1
+    --jq '.workflow_runs[] | [.id, .status, (.conclusion // "-"), .name, (.check_suite_id // "-"), (.head_branch // "-")] | @tsv') || exit 1
 checks=$(gh api "repos/$repo/commits/$sha/check-runs?per_page=100" \
-    --jq '.check_runs[] | [.status, (.conclusion // "-"), .name] | @tsv') || exit 1
+    --jq '.check_runs[] | [.status, (.conclusion // "-"), .name, (.check_suite.id // "-")] | @tsv') || exit 1
 
 if [ -z "$runs" ]; then
     echo "ci-done: $short has no workflow run yet. A fresh push starts one within seconds; a conflicting pull request starts none." >&2
@@ -69,6 +78,23 @@ if [ -z "$runs" ]; then
 fi
 
 tab=$(printf '\t')
+
+# A cancelled run is superseded when another run of the same workflow on the
+# same commit completed and ran: its conclusion is neither cancelled, skipped
+# nor neutral. The superseded run and every check run of its check suite are
+# left out of what follows, so they neither hold the wait nor turn it red.
+# d5aa24bd, the merge commit of main in run 20260924-0411, was also the head
+# of a branch whose CI run was cancelled, and the cancelled suite's two check
+# runs read as red on a commit whose main run had passed. A lone cancelled
+# run supersedes nothing and stays red.
+dropped=$(printf '%s\n' "$runs" | awk -F"$tab" '
+    NF { c[NR] = $3; n[NR] = $4; s[NR] = $5
+         if ($2 == "completed" && $3 != "cancelled" && $3 != "skipped" && $3 != "neutral" && $3 != "-") ran[$4] = 1 }
+    END { for (i = 1; i <= NR; i++) if (c[i] == "cancelled" && (n[i] in ran)) print s[i] }' | paste -sd' ' -)
+all_runs=$runs
+runs=$(printf '%s\n' "$all_runs" | awk -F"$tab" -v d=" $dropped " 'NF && index(d, " " $5 " ") == 0')
+checks=$(printf '%s\n' "$checks" | awk -F"$tab" -v d=" $dropped " 'NF && index(d, " " $4 " ") == 0')
+
 runs_total=$(printf '%s\n' "$runs" | grep -c .)
 runs_done=$(printf '%s\n' "$runs" | awk -F"$tab" '$2 == "completed"' | grep -c .)
 checks_total=$(printf '%s\n' "$checks" | grep -c .)
@@ -79,7 +105,9 @@ if [ "$runs_done" -lt "$runs_total" ] || [ "$checks_done" -lt "$checks_total" ];
     exit 1
 fi
 
-printf '%s\n' "$runs" | awk -F"$tab" '{ print "run " $1 " " $3 " " $4 }'
+printf '%s\n' "$all_runs" | awk -F"$tab" -v d=" $dropped " 'NF {
+    if (index(d, " " $5 " ") > 0) print "run " $1 " " $3 " " $4 " (superseded, " $6 ")"
+    else print "run " $1 " " $3 " " $4 }'
 
 # A workflow that fails before it starts a job, a startup failure, leaves no
 # check run behind, so a failed workflow run is named as well as a failed check.

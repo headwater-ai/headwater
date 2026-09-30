@@ -129,6 +129,12 @@ tsv 'completed|success|Build site|9011' 'completed|cancelled|Engine tests|9012' 
 run "$full"; status=$?
 if [ "$status" -eq 0 ] && grep -q 'red: Engine tests, workflow CI' "$scratch/out" && ! grep -q superseded "$scratch/out"; then ok "only a run of the same workflow supersedes"; else bad "other workflow (exit $status)"; fi
 
+echo "a skipped run of the same workflow ran nothing and supersedes nothing"
+tsv '11|completed|skipped|CI|9011|main' '12|completed|cancelled|CI|9012|topic' > "$runs"
+tsv 'completed|cancelled|Engine tests|9012' > "$checks"
+run "$full"; status=$?
+if [ "$status" -eq 0 ] && grep -qx 'ci-done: 01234567 red: Engine tests, workflow CI' "$scratch/out" && ! grep -q superseded "$scratch/out"; then ok "a skipped sibling leaves the cancelled run red"; else bad "skipped sibling (exit $status)"; fi
+
 echo "a failed run of the same workflow supersedes the cancelled one and stays red"
 tsv '11|completed|failure|CI|9011|main' '12|completed|cancelled|CI|9012|topic' > "$runs"
 tsv 'completed|failure|Engine tests|9011' 'completed|cancelled|Lint|9012' > "$checks"
