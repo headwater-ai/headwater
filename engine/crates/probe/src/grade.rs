@@ -481,7 +481,10 @@ pub fn planned_over(selection: &[Selected], recorded: &str, probes: &[String]) -
 /// Every verdict of one transcript.
 #[derive(Clone, Debug)]
 pub struct Results {
-    pub grader: &'static str,
+    /// Always [`VERSION`]. The field is private so that no caller can set it to
+    /// another number after grading, such as the engine release (#1317). Read
+    /// it with [`Results::grader`].
+    grader: &'static str,
     /// The run this transcript recorded, where the intake read one.
     pub tier: Option<Tier>,
     pub arm: Option<Arm>,
@@ -493,6 +496,11 @@ pub struct Results {
 }
 
 impl Results {
+    /// The grader version these results name, which is always [`VERSION`].
+    pub fn grader(&self) -> &'static str {
+        self.grader
+    }
+
     /// Grade a record against the selection that planned it.
     ///
     /// It never fails. A transcript the intake refused produces results with

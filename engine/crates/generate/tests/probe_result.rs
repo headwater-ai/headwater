@@ -360,7 +360,9 @@ fn the_result_names_the_grader_by_its_own_version_and_not_the_engine_release() {
     // The constant alone is not enough: a result takes its grader where
     // `Results` is built, and that site could read the engine release while the
     // constant stays a literal. So no code line of the grader reads the engine
-    // version at all, and every `grader:` field it builds is `VERSION`.
+    // version at all, and every `grader:` field it builds is `VERSION`. The
+    // field is private, so no caller outside `grade.rs` can set it after
+    // grading; that half is held by the compiler.
     let code: Vec<(usize, &str)> = source
         .lines()
         .enumerate()
@@ -384,7 +386,7 @@ fn the_result_names_the_grader_by_its_own_version_and_not_the_engine_release() {
     }
     let fields: Vec<&(usize, &str)> = code
         .iter()
-        .filter(|(_, line)| line.starts_with("grader:"))
+        .filter(|(_, line)| line.starts_with("grader:") && *line != "grader: &'static str,")
         .collect();
     assert!(
         !fields.is_empty(),
