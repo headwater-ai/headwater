@@ -415,6 +415,17 @@ impl Change {
             }
         }
         named.unmatched = self.unmatched().len();
+        // A bound `verified` path that no entry names is a document of its own
+        // class, and the only one the classes above do not hold (#1398).
+        named.verified_alone = self
+            .verified
+            .iter()
+            .filter(|path| {
+                self.entries
+                    .binary_search_by(|(known, _)| known.as_str().cmp(path.as_str()))
+                    .is_err()
+            })
+            .count();
         named
     }
 

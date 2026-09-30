@@ -1086,7 +1086,14 @@ fn states_the_verified_counts(
     alone: usize,
 ) -> bool {
     match format {
-        Format::Text | Format::Markdown => artifact.contains(&format!(
+        // The text report is filled to a width, so a line break may fall
+        // anywhere in the sentence. Read it with every run of whitespace as
+        // one space.
+        Format::Text | Format::Markdown => artifact
+            .split_whitespace()
+            .collect::<Vec<_>>()
+            .join(" ")
+            .contains(&format!(
             "{verified} stated as re-read by a `verified` line, {alone} of them named by that \
              line alone"
         )),
@@ -1544,7 +1551,7 @@ fn a_run_that_skipped_nothing_is_not_a_run_that_reports_no_skips() {
     assert!(count(&skipping, "skipped") > 0);
     // And the shape version is what dates the member, so a reader of a document
     // that carries no `skipped` knows which of the two it is holding.
-    assert_eq!(headwater_adapter::json::VERSION, "1.3");
+    assert_eq!(headwater_adapter::json::VERSION, "1.4");
 }
 
 /// A change that named nothing is not a full-corpus run, in any of the four.
@@ -1630,7 +1637,7 @@ fn the_change_rides_in_the_runs_property_bag() {
         .and_then(|properties| member(&properties, "headwater"))
         .and_then(|headwater| member(&headwater, "change"))
         .expect("the change is in the run's property bag");
-    assert_eq!(text(&bag, "documents"), "10");
+    assert_eq!(text(&bag, "documents"), "15");
     assert!(
         member(&run, "change").is_none(),
         "an invented member of the run object"
