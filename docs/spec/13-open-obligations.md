@@ -328,7 +328,6 @@ This class dates from 2026-08-26. Before that date, such a finding was filed as 
 - [HW-OBL-0183](../obligations/0183-no-mechanism-holds-a-committed-binary-asset-against-a-run.md) — No mechanism holds a committed binary asset against a run
 - [HW-OBL-0185](../obligations/0185-whether-an-admitted-library-entry-may-require-a-bundle-that-admission-refuses.md) — Whether an admitted library entry may require a bundle that admission refuses
 - [HW-OBL-0196](../obligations/0196-a-relation-writes-a-state-onto-a-kind-that-binds-no-lifecycle-regime-and-nothing-reads-that-pair.md) — A relation writes a state onto a kind that binds no lifecycle regime and nothing reads that pair
-- [HW-OBL-0198](../obligations/0198-nothing-states-how-much-of-a-session-s-budget-the-standing-instructions-consume-before-work-starts.md) — Nothing states how much of a session's budget the standing instructions consume before work starts
 - [HW-OBL-0200](../obligations/0200-three-graded-regression-runs-are-owed-a-fresh-recording-against-a-moved-taxonomy-lock.md) — Three graded regression runs are owed a fresh recording against a moved taxonomy lock
 - [HW-OBL-0201](../obligations/0201-no-coverage-or-mutation-measurement-has-ever-been-taken-over-the-engine-s-test-suite.md) — No coverage or mutation measurement has ever been taken over the engine's test suite
 - [HW-OBL-0208](../obligations/0208-four-small-test-and-wording-gaps-from-run-20260923-0733-filed-together.md) — Four small test and wording gaps from run 20260923-0733 filed together
