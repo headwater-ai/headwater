@@ -38,6 +38,8 @@ docs/reviews/README.md
   1:1: no front matter; a document declares its facets in a `---` block on the first line
 docs/spec/README.md
   1:1: no front matter; a document declares its facets in a `---` block on the first line
+docs/subsystems/README.md
+  1:1: no front matter; a document declares its facets in a `---` block on the first line
 docs/taxonomies/brd-prd/fixtures/README.md
   1:1: no front matter; a document declares its facets in a `---` block on the first line
 docs/taxonomies/decision-record/fixtures/README.md

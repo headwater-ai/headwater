@@ -158,7 +158,10 @@ fn every_crate_is_in_exactly_one_row_of_spec_6s_subsystem_map() {
     let mut rows_of: BTreeMap<String, Vec<String>> = BTreeMap::new();
     for row in spec_six_rows() {
         for krate in row.crates {
-            rows_of.entry(krate).or_default().push(row.subsystem.clone());
+            rows_of
+                .entry(krate)
+                .or_default()
+                .push(row.subsystem.clone());
         }
     }
     let twice: Vec<String> = rows_of
