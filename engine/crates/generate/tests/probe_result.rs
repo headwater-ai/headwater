@@ -886,6 +886,53 @@ cost_cents: 25
 ```
 ";
 
+/// The absent arm with every key recorded and no session satisfied: nothing
+/// read, and the wrong answer. Against [`CAMPAIGN_PRESENT`] the pair separates.
+const CAMPAIGN_ABSENT_UNSATISFIED: &str = "\
+---
+id: RUN-FIX-campaign-absent-unsatisfied
+status: current
+status_since: 2026-09-20
+summary: One recorded campaign session of the absent arm, in which no session satisfied.
+tier: campaign
+arm: absent
+---
+
+# One recorded campaign session, absent arm
+
+## Run identity
+
+```yaml
+model: a-model
+served_version: a-model-20260701
+tree: sha256:fixture-tree
+lock: sha256:fixture
+selection: sha256:c6f58f5bd22dfb4b353528edb188b7de55e447426fd4ad335559d172e000a9f9
+read_set: sha256:d8b44184b3ae9d52b503c6bdce4e3d6b1ee9d51e45ad91a844429249f9f491e9
+seed: 0
+harness: 0.2.0
+tier: campaign
+arm: absent
+at: 2026-09-20
+cost_cents: 25
+```
+
+## Events
+
+```yaml
+- probe: PROBE-FIX-opened
+  session: watched
+  calls: []
+  produced: []
+  answer: null
+- probe: PROBE-FIX-answered
+  session: watched
+  calls: []
+  produced: []
+  answer: \"yes\"
+```
+";
+
 /// The decisive fixture for the two-arm comparison: two campaign transcripts
 /// that share one selection digest, one model, one served version and one tree,
 /// where the absent arm records a session with no `calls` key.
@@ -988,6 +1035,169 @@ fn two_clean_arms_carry_their_difference_in_each_result() {
             bytes.contains("in a 95% Newcombe interval of"),
             "{path} carries no difference interval:\n{bytes}"
         );
+    }
+}
+
+/// The two results of the significant pair below, keyed by path, over a copy of
+/// the fixture corpus whose two transcripts stand at `state`. The copy is named
+/// for the state, because the cases run as threads of one process and one
+/// directory shared between two of them is a race.
+fn the_significant_pair_at(state: &str) -> Vec<(&'static str, String)> {
+    let at = copied(&format!("significant-pair-{state}"));
+    std::fs::write(
+        at.join("runs/probe-runs/campaign-present.md"),
+        CAMPAIGN_PRESENT,
+    )
+    .expect("the present-arm transcript lands");
+    std::fs::write(
+        at.join("runs/probe-runs/campaign-absent.md"),
+        CAMPAIGN_ABSENT_UNSATISFIED,
+    )
+    .expect("the absent-arm transcript lands");
+    if state != "current" {
+        for transcript in [
+            "runs/probe-runs/campaign-present.md",
+            "runs/probe-runs/campaign-absent.md",
+        ] {
+            edit(
+                &at,
+                transcript,
+                "status: current",
+                &format!("status: {state}"),
+            );
+        }
+    }
+    let plan = plan_over(&at);
+    assert!(plan.defective_arms.is_empty(), "{:?}", plan.defective_arms);
+    assert!(plan.ambiguous_arms.is_empty(), "{:?}", plan.ambiguous_arms);
+    [
+        "runs/probe-results/campaign-present.md",
+        "runs/probe-results/campaign-absent.md",
+    ]
+    .into_iter()
+    .map(|path| {
+        let bytes = plan
+            .outputs
+            .iter()
+            .find(|output| output.path == path)
+            .unwrap_or_else(|| panic!("no result at {path}"))
+            .bytes
+            .clone();
+        (path, bytes)
+    })
+    .collect()
+}
+
+/// The text of a result between its `# The result of` line and its first
+/// `## ` heading, which is what a reader meets before any figure.
+fn opening(bytes: &str) -> &str {
+    let start = bytes
+        .find("# The result of")
+        .expect("the result has its title");
+    let rest = &bytes[start..];
+    let end = rest.find("\n## ").unwrap_or(rest.len());
+    &rest[..end]
+}
+
+const SIGNIFICANT: [&str; 2] = [
+    "satisfied more often at the 5% level",
+    "satisfied less often at the 5% level",
+];
+
+/// A result over a withdrawn recording says so before any figure, states no
+/// significance, and takes the recording's state (#1509, HW-DR-0063 as amended
+/// on 2026-10-01).
+///
+/// Before this, 24 of the 35 results in this repository graded a recording
+/// that was not `current`, all 35 were written `current`, and 5 of the 24
+/// printed a direction at the 5% level over a withdrawn run. The control half
+/// comes first: over `current` recordings the same pair does separate, so the
+/// withdrawn half cannot pass for want of a comparison.
+#[test]
+fn a_result_over_a_withdrawn_transcript_says_so_first_and_claims_no_significance() {
+    for (path, bytes) in the_significant_pair_at("current") {
+        assert!(
+            SIGNIFICANT.iter().any(|reading| bytes.contains(reading)),
+            "the control pair does not separate at the 5% level in {path}:\n{bytes}"
+        );
+        assert!(
+            bytes.contains("\nstatus: current\n"),
+            "{path} over a current recording is not current:\n{bytes}"
+        );
+        assert!(
+            !opening(&bytes).contains("`current`"),
+            "{path} over a current recording names its state first:\n{bytes}"
+        );
+    }
+    for (path, bytes) in the_significant_pair_at("deprecated") {
+        let opening = opening(&bytes);
+        let named = opening
+            .find("`deprecated`")
+            .unwrap_or_else(|| panic!("{path} does not name the state first:\n{bytes}"));
+        let inputs = opening
+            .find("A probe result is a function of three committed inputs")
+            .expect("the result states its inputs");
+        assert!(
+            named < inputs,
+            "{path} names the state after its inputs:\n{bytes}"
+        );
+        for reading in SIGNIFICANT {
+            assert!(
+                !bytes.contains(reading),
+                "{path} states a significance over a withdrawn recording:\n{bytes}"
+            );
+        }
+        assert!(
+            bytes.contains("in a 95% Newcombe interval of"),
+            "{path} dropped the interval figures:\n{bytes}"
+        );
+        assert!(
+            bytes.contains("\nstatus: deprecated\n"),
+            "{path} over a deprecated recording does not take its state:\n{bytes}"
+        );
+    }
+}
+
+/// A recording at the initial state is named first too, and the result stays
+/// at the `live` value: `draft` is the wrong word for a file nobody argues
+/// over (HW-DR-0063).
+#[test]
+fn a_result_over_a_draft_transcript_says_so_first_and_stays_live() {
+    for (path, bytes) in the_significant_pair_at("draft") {
+        assert!(
+            opening(&bytes).contains("`draft`"),
+            "{path} does not name the draft state first:\n{bytes}"
+        );
+        for reading in SIGNIFICANT {
+            assert!(
+                !bytes.contains(reading),
+                "{path} states a significance over a draft recording:\n{bytes}"
+            );
+        }
+        assert!(
+            bytes.contains("\nstatus: current\n"),
+            "{path} over a draft recording left the live value:\n{bytes}"
+        );
+    }
+}
+
+/// A recording whose state has no role this engine folds, and one whose state
+/// the facet does not hold, are both named first as a state nothing here reads.
+#[test]
+fn a_result_over_a_transcript_of_unread_state_says_so_first() {
+    for state in ["filed", "shelved"] {
+        for (path, bytes) in the_significant_pair_at(state) {
+            assert!(
+                opening(&bytes).contains(&format!("`{state}`")),
+                "{path} does not name the state `{state}` first:\n{bytes}"
+            );
+            for reading in SIGNIFICANT {
+                assert!(
+                    !bytes.contains(reading),
+                    "{path} states a significance over a `{state}` recording:\n{bytes}"
+                );
+            }
+        }
     }
 }
 
