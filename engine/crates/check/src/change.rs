@@ -243,8 +243,17 @@ pub struct Named {
     /// holds. One that no row holds is counted in `unmatched` instead. A
     /// document can be counted here and in one of the counts above, because
     /// a `verified` line names no version of it and may sit beside a line that
-    /// does.
+    /// does. So this count is a reading and not one of the classes above.
     pub verified: usize,
+    /// Of those, the ones that only a `verified` line names and that a row of
+    /// this corpus holds. It is the class `verified` is not: a path that also
+    /// has an `added` or `prior` line is counted in that line's class, and one
+    /// that binds to no row is counted in `unmatched`.
+    ///
+    /// With it the classes are disjoint and they sum:
+    /// `added + carried + unreadable + unmatched + verified_alone == documents`
+    /// (#1398).
+    pub verified_alone: usize,
 }
 
 impl Unbound {

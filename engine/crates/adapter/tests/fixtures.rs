@@ -209,6 +209,15 @@ fn manifest_over(taken: &Census) -> Change {
          prior\tcheck/spec/00-both-halves.markdown\t{PRIOR}{carried}\n\
          prior\t./{carried}\t{PRIOR}{carried}\n"
     ));
+    // Five documents that only a `verified` line names, one `verified` line
+    // beside the `prior` line of the carried document, and one on a path that
+    // binds to nothing and that an `added` line above already names. So the
+    // verified lines reach all three states one can, and five and six are
+    // counts that no other member of the block holds (#1398).
+    for path in &paths[6..11] {
+        manifest.push_str(&format!("verified\t{path}\n"));
+    }
+    manifest.push_str(&format!("verified\t{carried}\nverified\tREADME.md\n"));
     bound(&manifest, taken)
 }
 
@@ -1008,11 +1017,16 @@ fn the_scoped_fixture_reaches_every_state_a_manifest_line_can() {
     let run = scoped_run().run;
     let scoped = run.change.expect("the run was scoped");
     let named = &scoped.named;
-    assert_eq!(named.documents, 10);
+    assert_eq!(named.documents, 15);
     assert_eq!(named.added, 2, "two documents the change adds");
     assert_eq!(named.carried, 1, "one prior version this run read");
     assert_eq!(named.unreadable, 3, "three prior versions it could not");
     assert_eq!(named.unmatched, 4, "four paths that bind to no row");
+    assert_eq!(named.verified, 6, "six `verified` lines that bind to a row");
+    assert_eq!(
+        named.verified_alone, 5,
+        "five documents that only a `verified` line names"
+    );
     // The list and the count are two readings of one set, and an artifact that
     // wrote the list while a consumer read the count would put the two at odds.
     assert_eq!(scoped.unmatched.len(), named.unmatched);
@@ -1031,6 +1045,57 @@ fn the_scoped_fixture_reaches_every_state_a_manifest_line_can() {
             "engine/crates/check/src/change.rs",
         ]
     );
+}
+
+/// The disjoint classes of the scoped fixture sum to the documents it named,
+/// and every format writes the verified counts (#1398).
+///
+/// `verified` is not one of the classes, because a `verified` line may sit
+/// beside a line that names a version of the same document. `verified_alone`
+/// is: a document that only a `verified` line names and that binds to a row.
+/// Before it, the fixture's documents were ten and the classes summed to ten
+/// only because no manifest line reached the state that broke the sum.
+#[test]
+fn the_classes_of_the_scoped_fixture_sum_to_documents() {
+    let ran = scoped_run();
+    let scoped = ran.run.change.as_ref().expect("the run was scoped");
+    let named = &scoped.named;
+    assert_eq!(
+        named.added + named.carried + named.unreadable + named.unmatched + named.verified_alone,
+        named.documents,
+        "the classes of {named:?} do not sum to the documents it named"
+    );
+    for format in Format::ALL {
+        let artifact = render(&ran, format);
+        assert!(
+            states_the_verified_counts(format, &artifact, named.verified, named.verified_alone),
+            "the {} artifact of a scoped run does not write {} verified and {} verified alone",
+            format.name(),
+            named.verified,
+            named.verified_alone
+        );
+    }
+}
+
+/// Whether one artifact writes both verified counts, read off its bytes for the
+/// reason [`states_the_scoping`] gives.
+fn states_the_verified_counts(
+    format: Format,
+    artifact: &str,
+    verified: usize,
+    alone: usize,
+) -> bool {
+    match format {
+        Format::Text | Format::Markdown => artifact.contains(&format!(
+            "{verified} stated as re-read by a `verified` line, {alone} of them named by that \
+             line alone"
+        )),
+        Format::Json | Format::Sarif => {
+            let compact: String = artifact.chars().filter(|c| !c.is_whitespace()).collect();
+            compact.contains(&format!("\"verified\":{verified},"))
+                && compact.contains(&format!("\"verified_alone\":{alone},"))
+        }
+    }
 }
 
 /// No two values of the block the recorded scoped fixtures carry are equal.
@@ -1057,6 +1122,8 @@ fn no_two_counts_of_the_scoped_fixture_are_equal() {
         ("unreadable", named.unreadable),
         ("promotions", scoped.promotions),
         ("the unmatched paths", scoped.unmatched.len()),
+        ("verified", named.verified),
+        ("verified alone", named.verified_alone),
     ];
     for (one, left) in counts {
         for (two, right) in counts {
