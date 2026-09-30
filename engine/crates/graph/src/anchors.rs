@@ -142,6 +142,44 @@ struct RevisionCell {
     value: std::sync::OnceLock<Option<String>>,
     /// The tree and the entries to digest, where the value is not known yet.
     tree: Option<(PathBuf, Vec<String>)>,
+    /// The file digests of the resolver that made this value, shared with
+    /// every other value it made. See [`FileDigests`].
+    digested: FileDigests,
+}
+
+/// The digest of each file one resolver has read, keyed by its path under the
+/// resolver's base, and `None` for a file that could not be read.
+///
+/// A file that many anchors govern is read and digested once per resolver
+/// rather than once per anchor. Until #1450 each [`Revision`] read its own
+/// entries, and over this repository a warm `headwater check` read 37 MB to
+/// digest 8.5 MB of distinct files, which was 86 ms of a 150 ms run past
+/// Phase A. The map lives as long as the resolver and the values it made, the
+/// lifetime of [`SourceTree`]'s own walk cache, so a fresh process still reads
+/// fresh bytes. Within one resolver, a file has one digest, which is the
+/// statement a graph built once already makes about every document it read.
+#[derive(Clone, Debug, Default)]
+pub(crate) struct FileDigests(std::sync::Arc<std::sync::Mutex<HashMap<String, Option<String>>>>);
+
+impl FileDigests {
+    /// The digest of the bytes of `path` under `base`, read now unless this
+    /// map already holds it, or `None` where the file cannot be read.
+    fn of(&self, base: &Path, path: &str) -> Option<String> {
+        // A poisoned lock is a panic elsewhere in this process, and a read
+        // from disk is always a correct answer, so it reads rather than fails.
+        if let Ok(known) = self.0.lock() {
+            if let Some(digest) = known.get(path) {
+                return digest.clone();
+            }
+        }
+        let digest = std::fs::read(base.join(path))
+            .ok()
+            .map(|bytes| headwater_hash::digest(&bytes));
+        if let Ok(mut known) = self.0.lock() {
+            known.insert(path.to_owned(), digest.clone());
+        }
+        digest
+    }
 }
 
 impl Revision {
@@ -153,15 +191,23 @@ impl Revision {
         Self(std::sync::Arc::new(RevisionCell {
             value: cell,
             tree: None,
+            digested: FileDigests::default(),
         }))
     }
 
     /// The [`tree_revision`] of `matched` under `base`, computed when it is
     /// first read.
     pub fn of_tree(base: &Path, matched: &[String]) -> Self {
+        Self::of_tree_in(base, matched, &FileDigests::default())
+    }
+
+    /// [`Self::of_tree`], reading each file through `digested`, which the
+    /// resolver shares between every value it makes.
+    pub(crate) fn of_tree_in(base: &Path, matched: &[String], digested: &FileDigests) -> Self {
         Self(std::sync::Arc::new(RevisionCell {
             value: std::sync::OnceLock::new(),
             tree: Some((base.to_path_buf(), matched.to_vec())),
+            digested: digested.clone(),
         }))
     }
 
@@ -237,7 +283,7 @@ impl Revision {
 
     fn value(&self) -> &Option<String> {
         self.0.value.get_or_init(|| match &self.0.tree {
-            Some((base, matched)) => tree_revision(base, matched),
+            Some((base, matched)) => tree_revision_in(base, matched, &self.0.digested),
             None => None,
         })
     }
@@ -403,6 +449,10 @@ pub struct SourceTree {
     /// and this one does not touch it: a fresh process still reads a fresh
     /// tree, because it builds a fresh `SourceTree`.
     walked: RefCell<HashMap<String, Rc<[Entry]>>>,
+    /// The digest of every file a revision of this resolver has read, on the
+    /// same terms as `walked`: one read of a file per resolver, never across
+    /// a run. See [`FileDigests`].
+    digested: FileDigests,
 }
 
 impl SourceTree {
@@ -411,6 +461,7 @@ impl SourceTree {
             base: corpus.base.clone(),
             exclusions: corpus.exclusions.clone(),
             walked: RefCell::new(HashMap::new()),
+            digested: FileDigests::default(),
         }
     }
 }
@@ -477,7 +528,7 @@ impl Resolver for SourceTree {
 
             let matched = vec![normalized.clone()];
             return Binding::Resolved {
-                revision: Revision::of_tree(&self.base, &matched),
+                revision: Revision::of_tree_in(&self.base, &matched, &self.digested),
                 matched,
                 normalized,
                 excluded_by,
@@ -548,13 +599,13 @@ impl Resolver for SourceTree {
         Binding::Resolved {
             normalized,
             excluded_by: None,
-            revision: Revision::of_tree(&self.base, &matched),
+            revision: Revision::of_tree_in(&self.base, &matched, &self.digested),
             matched,
         }
     }
 
     fn revision_of(&self, matched: &[String]) -> Revision {
-        Revision::of_tree(&self.base, matched)
+        Revision::of_tree_in(&self.base, matched, &self.digested)
     }
 }
 
@@ -590,6 +641,11 @@ impl Resolver for SourceTree {
 /// directory literal at `Info` and names `**` after the directory as the
 /// remedy, rather than passing it in silence.
 pub fn tree_revision(base: &Path, matched: &[String]) -> Option<String> {
+    tree_revision_in(base, matched, &FileDigests::default())
+}
+
+/// [`tree_revision`], reading each file through `digested`.
+fn tree_revision_in(base: &Path, matched: &[String], digested: &FileDigests) -> Option<String> {
     let mut sorted: Vec<&String> = matched.iter().collect();
     sorted.sort();
     sorted.dedup();
@@ -605,10 +661,10 @@ pub fn tree_revision(base: &Path, matched: &[String]) -> Option<String> {
             skipped = true;
             continue;
         }
-        let bytes = std::fs::read(&at).ok()?;
+        let digest = digested.of(base, path)?;
         manifest.push_str(path);
         manifest.push('\0');
-        manifest.push_str(&headwater_hash::digest(&bytes));
+        manifest.push_str(&digest);
         manifest.push('\n');
     }
     if skipped && manifest.is_empty() {
@@ -926,6 +982,7 @@ mod tests {
             base: PathBuf::from(env!("CARGO_MANIFEST_DIR")),
             exclusions: Vec::new(),
             walked: RefCell::new(HashMap::new()),
+            digested: FileDigests::default(),
         };
         assert!(matches!(
             resolver.resolve("Cargo.toml"),
@@ -998,6 +1055,7 @@ mod tests {
             base: dir.to_path_buf(),
             exclusions: Vec::new(),
             walked: RefCell::new(HashMap::new()),
+            digested: FileDigests::default(),
         };
 
         let Binding::Resolved { matched, .. } = resolver.resolve(".claude/hooks/**") else {
@@ -1022,6 +1080,7 @@ mod tests {
             base: dir.to_path_buf(),
             exclusions: Vec::new(),
             walked: RefCell::new(HashMap::new()),
+            digested: FileDigests::default(),
         };
 
         let Binding::Resolved { matched, .. } = resolver.resolve(".claude/hooks") else {
@@ -1041,6 +1100,7 @@ mod tests {
             base: dir.to_path_buf(),
             exclusions: Vec::new(),
             walked: RefCell::new(HashMap::new()),
+            digested: FileDigests::default(),
         };
 
         let Binding::Unresolved(why) = resolver.resolve(".claude/nothing-here/*.sh") else {
@@ -1064,6 +1124,7 @@ mod tests {
             base: dir.to_path_buf(),
             exclusions: Vec::new(),
             walked: RefCell::new(HashMap::new()),
+            digested: FileDigests::default(),
         };
 
         let Binding::Unresolved(why) = resolver.resolve("**/write.sh") else {
@@ -1085,6 +1146,7 @@ mod tests {
             base: dir.to_path_buf(),
             exclusions: vec![Exclusion::new(".claude/hooks/**", "a fixture exclusion")],
             walked: RefCell::new(HashMap::new()),
+            digested: FileDigests::default(),
         };
 
         let Binding::Unresolved(why) = resolver.resolve(".claude/hooks/**") else {
@@ -1107,6 +1169,7 @@ mod tests {
             base: dir.to_path_buf(),
             exclusions: Vec::new(),
             walked: RefCell::new(HashMap::new()),
+            digested: FileDigests::default(),
         };
 
         // Two resolvers, not one asked twice: `SourceTree::walked` caches a
@@ -1173,6 +1236,7 @@ mod tests {
             base: dir.to_path_buf(),
             exclusions: Vec::new(),
             walked: RefCell::new(HashMap::new()),
+            digested: FileDigests::default(),
         };
 
         // Same prefix (`.claude/hooks`) as the pattern below, asked first so
@@ -1245,6 +1309,7 @@ mod tests {
             base: PathBuf::from(env!("CARGO_MANIFEST_DIR")),
             exclusions: vec![Exclusion::new("src/**", "a fixture exclusion")],
             walked: RefCell::new(HashMap::new()),
+            digested: FileDigests::default(),
         };
         let Binding::Resolved { excluded_by, .. } = resolver.resolve("src/anchors.rs") else {
             panic!("the file is there, so the anchor resolves");
@@ -1449,6 +1514,7 @@ mod tests {
             base: dir.to_path_buf(),
             exclusions: Vec::new(),
             walked: RefCell::new(HashMap::new()),
+            digested: FileDigests::default(),
         };
 
         assert_eq!(
@@ -1476,6 +1542,7 @@ mod tests {
             base: via.to_path_buf(),
             exclusions: Vec::new(),
             walked: RefCell::new(HashMap::new()),
+            digested: FileDigests::default(),
         };
         assert_eq!(through.real_path("alias.md").as_deref(), Some("notes/b.md"));
     }
