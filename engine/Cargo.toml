@@ -252,3 +252,12 @@ inherits = "release"
 lto = false
 codegen-units = 4
 strip = false
+
+# `cargo build --profile phase --features phase-times -p headwater-cli`, and
+# nothing else. It is `dev-release` under another name, so a build of the
+# measurement feature that `tools/measure/check-phases.sh` reads lands at
+# `target/phase/headwater`. The commit gate and the hooks read only
+# `target/release` and `target/dev-release`, so a binary with the feature can
+# never answer as the checked one (#1450).
+[profile.phase]
+inherits = "dev-release"

@@ -4074,12 +4074,14 @@ impl Loaded {
         ctx: &Context,
         cache: &mut Cache,
     ) -> headwater_check::Run {
+        let ctx = self.check_context(ctx.clone(), root);
+        headwater_check::phase::mark("context");
         headwater_check::run(
             &self.census,
             &self.graph,
             declared,
             &self.claims,
-            &self.check_context(ctx.clone(), root),
+            &ctx,
             cache,
         )
     }
@@ -6427,9 +6429,12 @@ struct Asked {
 }
 
 fn check(root: &Path, asked: Asked) -> ExitCode {
-    match checked(root, asked) {
+    let code = match checked(root, asked) {
         Ok(code) | Err(code) => code,
-    }
+    };
+    // What `checked` held is dropped on its return, and that is a stage too.
+    headwater_check::phase::mark("drop");
+    code
 }
 
 /// The body of `check`, where `Err` is a stream that could not be written.
@@ -6506,6 +6511,9 @@ fn checked(root: &Path, asked: Asked) -> Result<ExitCode, ExitCode> {
     // The patches already landed, and the contract keeps standard output
     // complete where standard error fails. The failure is the exit status,
     // decided after the report.
+    // Everything before the walk: the start of the process and the parse of
+    // the command line. See `headwater_check::phase` for what a mark costs.
+    headwater_check::phase::mark("start");
     let mut unsaid = false;
     let refused = match fixing {
         false => Vec::new(),
@@ -6522,6 +6530,7 @@ fn checked(root: &Path, asked: Asked) -> Result<ExitCode, ExitCode> {
         Ok(loaded) => loaded,
         Err(code) => return Ok(code),
     };
+    headwater_check::phase::mark("load");
     let Loaded {
         bound,
         consumer: _,
@@ -6548,10 +6557,12 @@ fn checked(root: &Path, asked: Asked) -> Result<ExitCode, ExitCode> {
         true => Cache::at(root, &bound.digest, &rules_digest()),
         false => Cache::disabled(),
     };
+    headwater_check::phase::mark("cache-read");
     let run = loaded.check(root, &loaded.declared(), &ctx, &mut cache);
     // Held until the report is out, and then said on standard error. See
     // `Cache::write` for why a failure here moves no verdict.
     let unwritten = cache.write(root).err();
+    headwater_check::phase::mark("cache-write");
 
     // The run, in the vocabulary the caller asked for. Spec 6 lists four
     // formats and `headwater_adapter::render` writes every one of them, so this
@@ -6584,6 +6595,7 @@ fn checked(root: &Path, asked: Asked) -> Result<ExitCode, ExitCode> {
     };
     let artifact = headwater_adapter::render_at(&run, taken, graph, &subject, format, width, mode);
     report(&artifact)?;
+    headwater_check::phase::mark("render");
     // The census over what was written, in the shape spec 6 fixes for the
     // graph emitters. A finding that reached no output and that no loss
     // reason covers is a defect in the adapter, and it fails the run the
@@ -6631,6 +6643,7 @@ fn checked(root: &Path, asked: Asked) -> Result<ExitCode, ExitCode> {
     // `--no-cache` and a cached run write the same bytes to standard output,
     // and a line here would be the one thing that made them differ.
     say(&run.cache.render())?;
+    headwater_check::phase::mark("tail");
     if let Some((path, error)) = unwritten {
         say(&unwritten_cache(&path, &error))?;
     }
