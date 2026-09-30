@@ -639,6 +639,7 @@ fn pair_arms(graded: &[Graded], plan: &mut Plan) -> Vec<Comparison> {
                 served_version: served_version.to_string(),
                 present: of_arm(Arm::Present),
                 absent: of_arm(Arm::Absent),
+                components: Vec::new(),
             });
             continue;
         }

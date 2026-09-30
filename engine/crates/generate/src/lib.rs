@@ -924,6 +924,9 @@ pub struct AmbiguousArms {
     pub present: Vec<String>,
     /// Every absent-arm transcript under this key, in path order.
     pub absent: Vec<String>,
+    /// Each component arm (#1472) with a transcript under this key, by its
+    /// name, with its transcripts in path order.
+    pub components: Vec<(String, Vec<String>)>,
 }
 
 impl AmbiguousArms {
@@ -2309,6 +2312,7 @@ mod paint_tests {
                     "docs/probe-runs/campaign-present-b.md".to_string(),
                 ],
                 absent: vec!["docs/probe-runs/campaign-absent-a.md".to_string()],
+                components: Vec::new(),
             }],
             orphaned: vec![Orphaned {
                 path: "docs/stale-index.md".to_string(),
