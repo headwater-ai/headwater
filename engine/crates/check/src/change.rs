@@ -717,6 +717,7 @@ mod tests {
                 unreadable: 0,
                 unmatched: 2,
                 verified: 2,
+                verified_alone: 1,
             }
         );
         // Every count is "of those" documents, as each report words it. A
@@ -728,6 +729,13 @@ mod tests {
         // writes both. `docs/typo.md` is named only in a `verified` line, and
         // `docs/gone.md` in both kinds, so it counts once.
         assert_eq!(change.named().unmatched, change.unmatched().len());
+        // `docs/c.md` is named only in a `verified` line and binds, so it is
+        // the one document of its own class, and the classes sum (#1398).
+        let named = change.named();
+        assert_eq!(
+            named.added + named.carried + named.unreadable + named.unmatched + named.verified_alone,
+            named.documents
+        );
     }
 
     /// What the run reports about its own input.
@@ -748,6 +756,7 @@ mod tests {
                 unreadable: 1,
                 unmatched: 0,
                 verified: 0,
+                verified_alone: 0,
             }
         );
     }
@@ -775,6 +784,7 @@ mod tests {
                 unreadable: 0,
                 unmatched: 1,
                 verified: 0,
+                verified_alone: 0,
             }
         );
         assert_eq!(bound.unmatched(), vec!["docs/a.md"]);
