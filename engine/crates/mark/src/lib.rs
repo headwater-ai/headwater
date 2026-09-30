@@ -106,11 +106,13 @@ pub fn marker_text(kind: &str) -> String {
 /// [`kind_named`] reads it there, and `publish` recognizes its own earlier
 /// output by that name before it overwrites the file.
 pub fn published_marker_text(kind: &str) -> String {
-    format!(
-        "{kind}. `headwater export` builds this file at publish time, and no gate compares it. \
-         Edit the corpus, not this file."
-    )
+    format!("{kind}. {BUILT_AT_PUBLISH}, and no gate compares it. Edit the corpus, not this file.")
 }
+
+/// The clause that opens a published marker after its kind, which
+/// [`published_marker_text`] writes and [`built_at_publish`] reads. One
+/// constant, so the writer and the reader cannot drift apart.
+const BUILT_AT_PUBLISH: &str = "`headwater export` builds this file at publish time";
 
 /// The marker as a front-matter member, for a generated Markdown document that
 /// declares an identity.
@@ -199,6 +201,20 @@ pub fn marks_format(path: &str) -> bool {
 /// census does not open (#1344).
 pub const MARKED_FORMATS: &[&str] = &["md", "markdown", "json", "yml", "yaml", "toml"];
 
+/// Whether the marker at a path says that `headwater export` builds the file at
+/// publish time, which is what [`published_marker_text`] writes.
+///
+/// The marker's own text after the kind is read, and nothing else in the file,
+/// so a string value that quotes the clause is not a claim. A file this answers
+/// true for is one `headwater generate` never writes, and the producer that
+/// `headwater derived` names for it follows this answer
+/// ([#1415](https://github.com/headwater-ai/headwater/issues/1415)).
+pub fn built_at_publish(path: &str, text: &str) -> bool {
+    marker_body(path, text)
+        .and_then(|body| body.split_once('.'))
+        .is_some_and(|(_, rest)| rest.trim_start().starts_with(BUILT_AT_PUBLISH))
+}
+
 /// The kind the marker at a path names, when it names one.
 ///
 /// **What the file says about itself, and never what is true.** The marker is a
@@ -210,6 +226,19 @@ pub const MARKED_FORMATS: &[&str] = &["md", "markdown", "json", "yml", "yaml", "
 /// `None` where the marker carries no name: a file whose first line is the bare
 /// word, which is what a hand-written marker usually is.
 pub fn kind_named(path: &str, text: &str) -> Option<String> {
+    let after = marker_body(path, text)?;
+    // The name runs to the first period, which is where `marker_text` ends it.
+    let name = after.trim_start().split('.').next()?.trim();
+    match name.is_empty() {
+        true => None,
+        false => Some(name.to_string()),
+    }
+}
+
+/// The text the marker states, with the syntax that carries it taken off: the
+/// value of the member, or the rest of the comment. [`kind_named`] reads the
+/// kind from its start and [`built_at_publish`] reads the clause after it.
+fn marker_body<'a>(path: &str, text: &'a str) -> Option<&'a str> {
     let line = marker_line(path, text)?;
     // The syntax that carries the marker comes off before the name is read.
     // A reader that skipped this step answers `-->` for a file whose first line
@@ -238,12 +267,7 @@ pub fn kind_named(path: &str, text: &str) -> Option<String> {
         }
         Comment::Hash => line.split_once(MARKER).map(|(_, rest)| rest)?,
     };
-    // The name runs to the first period, which is where `marker_text` ends it.
-    let name = after.trim_start().split('.').next()?.trim();
-    match name.is_empty() {
-        true => None,
-        false => Some(name.to_string()),
-    }
+    Some(after)
 }
 
 /// The line that carries the marker, by the rule the path's format admits.
@@ -434,6 +458,62 @@ mod tests {
             kind_named("exports/graph.json", &published).as_deref(),
             Some("graph_export")
         );
+    }
+
+    #[test]
+    fn the_published_clause_reads_back_out_of_the_marker_and_nowhere_else() {
+        // What `published_marker_text` writes, `built_at_publish` reads, in the
+        // pretty and the compact shape a JSON writer prints (#1415).
+        let published = published_marker_text("graph_export");
+        let pretty = format!("{{\n  \"{MARKER}\": \"{published}\"\n}}\n");
+        assert!(built_at_publish("exports/graph.json", &pretty));
+        let compact = format!("{{\"{MARKER}\":\"{published}\",\"nodes\":[]}}\n");
+        assert!(built_at_publish("exports/graph.json", &compact));
+
+        // The marker `headwater generate` writes is not a publish-time one.
+        let generated = format!(
+            "{{\n  \"{MARKER}\": \"{}\"\n}}\n",
+            marker_text("graph_export")
+        );
+        assert!(carries_marker("docs/graph.json", &generated));
+        assert!(!built_at_publish("docs/graph.json", &generated));
+
+        // A bare marker names no kind and states no clause.
+        for bare in [
+            format!("<!-- {MARKER} -->\n"),
+            format!("{{\n  \"{MARKER}\": \"\"\n}}\n"),
+        ] {
+            assert!(!built_at_publish("docs/x.md", &bare), "{bare}");
+            assert!(!built_at_publish("out/x.json", &bare), "{bare}");
+        }
+
+        // The clause quoted in a value of a file whose marker is generate's is
+        // not a claim, and neither is the clause in a file with no marker.
+        let quoting = format!(
+            "{{\n  \"{MARKER}\": \"{}\",\n  \"note\": \"{published}\"\n}}\n",
+            marker_text("graph_export")
+        );
+        assert!(!built_at_publish("docs/graph.json", &quoting));
+        let unmarked = format!("{{\n  \"note\": \"{published}\"\n}}\n");
+        assert!(!built_at_publish("docs/graph.json", &unmarked));
+
+        // On one compact line the marker's value ends at its closing quote, so
+        // a later member that quotes a whole published marker is not read.
+        let compact_quoting =
+            format!("{{\"{MARKER}\":\"\",\"note\":\"{published}\",\"nodes\":[]}}\n");
+        assert!(carries_marker("out/compact.json", &compact_quoting));
+        assert!(!built_at_publish("out/compact.json", &compact_quoting));
+
+        // The clause opens the text after the kind, and anywhere later in the
+        // marker it is not the claim the writer makes.
+        let later = format!(
+            "{{\n  \"{MARKER}\": \"graph_export. Edit the corpus. {BUILT_AT_PUBLISH}.\"\n}}\n"
+        );
+        assert!(!built_at_publish("docs/graph.json", &later));
+
+        // The clause before the kind's period is not the clause after it.
+        let misplaced = format!("{{\n  \"{MARKER}\": \"{BUILT_AT_PUBLISH}.\"\n}}\n");
+        assert!(!built_at_publish("docs/graph.json", &misplaced));
     }
 
     #[test]
