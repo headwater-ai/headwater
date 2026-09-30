@@ -262,6 +262,49 @@ if [ "${1:-}" = --named ]; then
     exit 0
 fi
 
+# `--leak <workspace> <probe>...` prints each leak string of a named probe that the
+# text a harness loads into every session states, and touches nothing (#1472).
+#
+# The seal finds an answer by a name, and the status probe's leak names none:
+# the description of the authoring skill states the ruling the probe expects
+# and never the probe. So each probe declares its **leak strings** under `leaks:` in
+# `.headwater/probe.yml`: the strings whose presence in always-loaded text
+# gives the answer away. A leak string is never an `expected:` value, because an
+# expected value such as `merge` is a common word that every file holds.
+#
+# The always-loaded set is the text the harness puts into every session: the
+# memory files (`CLAUDE.md`, `.claude/CLAUDE.md`, `CLAUDE.local.md`,
+# `AGENTS.md`, `.claude/AGENTS.md`, `.claude/rules/`, and each file they
+# import with `@<path>`), the name, `description:` and `when_to_use:` of each
+# skill, agent definition and command, the first body line of a skill or a
+# command with no description, and, where the workspace declares a project MCP
+# server in `.mcp.json`, the description of each tool `headwater mcp` lists.
+# `tools/probe/leak.py` reads it, with a YAML parser and never a hand-written
+# reader (verify round 3), and its header names each channel and why. One line
+# per hit:
+#
+#     leak <probe> <where> <leak string>      a leak string the declaration does not keep
+#     kept <probe> <where> <leak string>      a leak string kept on purpose, under `leaks_kept:`
+#     undeclared <probe>                  a probe that declares no leak string
+#
+# `<where>` is the path relative to the workspace, or `mcp:<tool>`. A probe
+# listed under `leaks_kept:` keeps its leak string on purpose: its own document says it
+# measures the leak string, and a campaign reports it on its own line and never in a
+# rate of its category. It exits 1 when any `leak` line printed, 0 when none
+# did, 2 on a usage error or a declaration that does not read, and 3 when the
+# always-loaded text cannot be read whole: no `python3` or no PyYAML to read
+# it, or an MCP server that no engine lists. An `undeclared` probe is a probe
+# this check cannot see, and it does not fail the check.
+if [ "${1:-}" = --leak ]; then
+    [ -n "${2:-}" ] && [ -n "${3:-}" ] || { echo "usage: sh tools/probe/seal.sh --leak <workspace> <probe-id>..." >&2; exit 2; }
+    command -v python3 >/dev/null 2>&1 || {
+        echo "seal: no python3, so the always-loaded text cannot be read and the leak check does not run" >&2
+        exit 3
+    }
+    shift
+    exec python3 "$root/tools/probe/leak.py" "$root" "$@"
+fi
+
 workspace=${1:-}
 [ -n "$workspace" ] && [ "$#" -ge 2 ] || {
     echo "usage: sh tools/probe/seal.sh <workspace> <probe-id>..." >&2

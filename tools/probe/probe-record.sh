@@ -570,9 +570,21 @@ task=$(cat "$task_file")
 # The subshell cannot return 7 for its own `cd` and let a harness return 7
 # too, so it leaves a marker instead and the status below is the harness's.
 rm -f "$raw.nocd"
+# The MCP servers a session may load (#1472). `--strict-mcp-config` in every
+# arm, so a server of the recording host's own configuration, such as a
+# connector of the person who runs the batch, loads into no arm. The `mcp`
+# arm's workspace holds `.mcp.json`, and a project server there does not load
+# under `claude -p` without approval, so the file is passed by name. In
+# every other arm no server loads at all.
+mcp_config=
+[ -f "$here/.mcp.json" ] && mcp_config=$here/.mcp.json
 (
     cd "$here" || { : > "$raw.nocd"; exit 1; }
-    claude -p --output-format stream-json --verbose \
+    # `--mcp-config` takes one or more values, so the option after it must be
+    # a flag that is always there. Before the task text, it would read the
+    # task as a second config path (verify round 1).
+    claude -p ${mcp_config:+--mcp-config "$mcp_config"} --strict-mcp-config \
+        --output-format stream-json --verbose \
         ${model:+--model "$model"} \
         ${max_turns:+--max-turns "$max_turns"} \
         "$task"
@@ -647,6 +659,46 @@ else
         "$session"
 fi
 printf '\n'
+
+# What the arm holds, read from the declaration (#1472). The identity block
+# names the arm, and this sentence names its delta against the present tree,
+# so a reader of one transcript knows what the session could not read, or
+# could read in addition, without opening `.headwater/probe.yml`.
+#
+# A delta that cannot be read is said to be unread, and never printed as the
+# present tree (verify round 1).
+arm_delta=
+arm_read=1
+if [ "${arm:-present}" != present ]; then
+    arm_delta=$(sh "$root/tools/probe/ablate.sh" --delta "${tier:-regression}" "$arm" 2>/dev/null) || arm_read=0
+fi
+arm_less=$(printf '%s\n' "$arm_delta" | sed -n 's/^declared - //p' | awk 'NF { printf "%s`%s`", sep, $0; sep = ", " }')
+arm_plus=$(printf '%s\n' "$arm_delta" | sed -n 's/^declared + //p' | awk 'NF { printf "%s`%s`", sep, $0; sep = ", " }')
+if [ "${arm:-present}" = present ]; then
+    printf 'The `present` arm is the present tree: this repository less the probe instrument.\n\n'
+elif [ "$arm_read" = 1 ] && [ -n "$arm_less" ]; then
+    printf 'The `%s` arm is the present tree less %s.\n\n' "$arm" "$arm_less"
+elif [ "$arm_read" = 1 ] && [ -n "$arm_plus" ]; then
+    printf 'The `%s` arm is the present tree with %s added.\n\n' "$arm" "$arm_plus"
+else
+    printf 'The delta of the `%s` arm of the `%s` tier could not be read from `.headwater/probe.yml`, so this transcript does not state what the arm holds.\n\n' \
+        "$arm" "${tier:-regression}"
+fi
+
+# How many calls the session made to a tool of an MCP server (#1472). The
+# harness names each such tool `mcp__<server>__<tool>`. The #1384 re-run
+# recorded none in 658 sessions, and no arm of it loaded a server. A stream
+# that does not parse is said to be uncounted, and never printed as none
+# (verify round 1).
+if mcp_calls=$(jq -s '[.[] | select(.type == "assistant") | .message.content[]?
+    | select(.type == "tool_use") | select((.name // "") | startswith("mcp__"))] | length' < "$raw" 2>/dev/null) \
+    && [ -n "$mcp_calls" ]; then
+    printf 'The session made %s %s to a tool of an MCP server.\n\n' "$mcp_calls" \
+        "$([ "$mcp_calls" = 1 ] && echo call || echo calls)"
+else
+    printf 'The calls this session made to a tool of an MCP server were not counted, because its stream did not parse as JSON.\n\n'
+fi
+
 if [ "$capped" = 1 ]; then
     printf 'The session stopped at the turn cap of %s.\n\n' "${max_turns:-the harness}"
 fi

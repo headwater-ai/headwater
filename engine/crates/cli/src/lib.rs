@@ -1077,14 +1077,23 @@ pub enum ProbeWord {
         tier: Option<String>,
         #[arg(
             long,
-            value_name = "present|absent",
+            value_name = "present|absent|no-hook|no-skills|no-claude-md|mcp",
             help = "narrow the selection to one arm the tier declares. Every arm the tier \
-                    declares by default, which is one for `regression` and two for `campaign` and \
-                    `documentation`. \
+                    declares under `arms` by default. \
                     An arm the tier does not declare refuses the run rather than planning \
                     another one, and the refusal names the arms the tier declares"
         )]
         arm: Option<String>,
+        #[arg(
+            long,
+            requires = "arm",
+            help = "plan nothing, and print how the tree of the `--arm` arm differs from the \
+                    present tree, as the tier declares it: `- <path>` for each path the arm \
+                    removes and `+ <path>` for each path it adds, one per line. It reads \
+                    `.headwater/probe.yml` alone and loads no corpus. An arm the tier does not \
+                    run is refused with status 1"
+        )]
+        delta: bool,
         #[arg(
             long,
             value_name = "name",

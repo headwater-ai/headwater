@@ -272,6 +272,17 @@ pub enum Refusal {
         /// The ablation entry the path equals or sits under.
         entry: String,
     },
+    /// A probe whose predicate names a document that a component arm of the
+    /// tier removes (#1472): the absent arm's rule, for an arm that removes
+    /// one part of the layer, and named for that arm.
+    ComponentExamined {
+        probe: String,
+        /// The examined path, relative to the corpus root.
+        path: String,
+        /// The entry of the arm's delta the path equals or sits under.
+        entry: String,
+        arm: Arm,
+    },
     /// A probe whose predicate names a document under the instrument, which
     /// every arm of every tier removes. No session of any arm could open it.
     InstrumentExamined {
@@ -333,7 +344,7 @@ impl Refusal {
             Refusal::ExcludedUnknown { .. } => true,
             // A policy about which probes a paired run may carry, decided
             // after the whole selection is read, like a narrowed campaign.
-            Refusal::AblatedExamined { .. } => false,
+            Refusal::AblatedExamined { .. } | Refusal::ComponentExamined { .. } => false,
             Refusal::InstrumentExamined { .. } => false,
             Refusal::NoProbes
             | Refusal::SelectionEmpty { .. }
@@ -483,6 +494,20 @@ impl std::fmt::Display for Refusal {
                  `{entry}`. A session cannot open or cite a document it never had, so the pair \
                  would measure the ablation. Narrow the selection to `answered` and `patched` \
                  probes, or run it at a tier whose ablation keeps the document"
+            ),
+            Refusal::ComponentExamined {
+                probe,
+                path,
+                entry,
+                arm,
+            } => write!(
+                f,
+                "{probe} expects a predicate over `{path}`, and this tier's `{}` arm removes \
+                 `{entry}`. A session of that arm cannot open or cite a document it never had, so \
+                 its comparison with the present arm would measure the delta. Narrow the \
+                 selection to `answered` and `patched` probes, or remove the document from the \
+                 arm's delta",
+                arm.name()
             ),
             Refusal::InstrumentExamined { probe, path, entry } => write!(
                 f,
@@ -901,6 +926,20 @@ impl Plan {
         plan.session_cost = envelope.session_cost;
         plan.max_turns = envelope.max_turns;
         plan.arms = arms(envelope, narrowing.arm);
+        // An arm the tier does not declare is named as that, at every tier,
+        // before a paired tier refuses the narrowing itself. With six arms to
+        // name since #1472, `CampaignNarrowed` for a misspelled arm would send
+        // the reader after the wrong mistake.
+        if plan.arms.is_empty() && tier.pairs_arms() {
+            if let Some(arm) = narrowing.arm {
+                plan.refusal = Some(Refusal::ArmNotDeclared {
+                    tier,
+                    arm,
+                    declared: envelope.arms.clone(),
+                });
+                return plan;
+            }
+        }
         if plan.arms.len() < envelope.arms.len() && tier.pairs_arms() {
             plan.refusal = Some(Refusal::CampaignNarrowed);
             return plan;
@@ -934,11 +973,25 @@ impl Plan {
             plan.refusal = Some(Refusal::InstrumentExamined { probe, path, entry });
             return plan;
         }
-        if plan.arms.contains(&Arm::Absent) {
-            if let Some(refusal) = ablated_examined(&plan.selected, &envelope.ablation) {
-                plan.refusal = Some(refusal);
-                return plan;
-            }
+        // Every arm that removes paths is held to the same rule as the absent
+        // arm: a component arm that removes a probe's document cannot measure
+        // the probe either (#1472).
+        for arm in plan.arms.clone() {
+            let Some(refusal) = ablated_examined(&plan.selected, envelope.removes(arm)) else {
+                continue;
+            };
+            plan.refusal = Some(match refusal {
+                Refusal::AblatedExamined { probe, path, entry } if arm != Arm::Absent => {
+                    Refusal::ComponentExamined {
+                        probe,
+                        path,
+                        entry,
+                        arm,
+                    }
+                }
+                other => other,
+            });
+            return plan;
         }
 
         plan.sessions =

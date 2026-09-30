@@ -9,6 +9,23 @@
 #         [--repetitions <n>] [--parallel <n>] [--max-turns <n>] [--seed <n>] \
 #         [--cap-cents <n>]
 #     sh tools/probe/campaign.sh --out <dir> --assemble
+#     sh tools/probe/campaign.sh --dry-run --spec <file>
+#
+# `--dry-run` spends nothing and calls no model (#1472). It plans every line
+# of the spec, prints the sessions and the cost of each line, each arm and
+# each tier against its ceiling, and the total. It prints the power
+# calculation that `power:` in `.headwater/probe.yml` declares, and prices a
+# line of a pooled category at the repetitions that calculation needs. It
+# builds the present tree from `git archive` of `HEAD` in a directory outside
+# this checkout, prints the delta of every arm with `ablate.sh --diff`, starts
+# `headwater mcp` in the `mcp` arm's tree and checks that it lists tools, and
+# runs the leak check (`seal.sh --leak`) over the present tree and the `mcp`
+# arm's tree. It refuses a line that pools a probe under `leaks_kept:` with one that
+# is not. It exits 0 when the only refusal of any plan is the ceiling, which
+# it prints as a line, 5 for any other refusal of a plan, and 8 when an arm
+# differs from the present tree by more than its delta, a leak string leaks, a leak-kept
+# probe shares a line, or the MCP server lists no tool. It deletes the trees
+# before it exits.
 #
 # `--cap-cents` stops the batch below a figure a person agreed to for this batch
 # alone, such as a pilot, where the tier's ceiling is set for the full run.
@@ -125,6 +142,7 @@ max_turns=
 seed=0
 cap=
 assemble=0
+dry=0
 job=
 
 while [ $# -gt 0 ]; do
@@ -138,6 +156,7 @@ while [ $# -gt 0 ]; do
         --seed) seed=${2:-}; shift 2 ;;
         --cap-cents) cap=${2:-}; shift 2 ;;
         --assemble) assemble=1; shift ;;
+        --dry-run) dry=1; shift ;;
         --job) job=${2:-}; shift 2 ;;
         *) echo "campaign: unknown argument \`$1\`" >&2; exit 2 ;;
     esac
@@ -150,6 +169,10 @@ esac
 root=$(cd "$invoked_from/../.." && pwd -P)
 engine=$root/engine/target/dev-release/headwater
 [ -x "$engine" ] || engine=$root/engine/target/release/headwater
+
+if [ "$dry" = 1 ]; then
+    exec sh "$root/tools/probe/campaign-dry-run.sh" "$spec" ${repetitions:+"$repetitions"}
+fi
 
 [ -n "$out" ] || { echo "campaign: --out is required" >&2; exit 2; }
 mkdir -p "$out" || exit 2
@@ -265,7 +288,9 @@ if [ "$assemble" = 1 ]; then
         # shellcheck disable=SC2086
         set -- $line
         index=$1 tier=$2 arm=$3 category=$4
-        stem=$tier-$arm-$category
+        # The line number leads the stem, because a spec may run one category
+        # on two lines of one arm, as the leak-kept probes of #1472 do.
+        stem=L$index-$tier-$arm-$category
         identity=
         cost=0
         count=0

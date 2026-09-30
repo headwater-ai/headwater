@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "headwater": {
+      "type": "stdio",
+      "command": "./engine/target/dev-release/headwater",
+      "args": ["mcp", "--root", "."]
+    }
+  }
+}
