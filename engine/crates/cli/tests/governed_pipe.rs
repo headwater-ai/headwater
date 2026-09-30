@@ -685,3 +685,80 @@ fn show_refuses_a_path_through_a_linked_directory_as_a_path_with_no_document() {
     );
     assert_eq!(flat(&show), flat(&explain), "one sentence for both verbs");
 }
+
+/// A root whose file at `path` under `.headwater/` is replaced by a named pipe.
+/// The pipe goes in after [`Root::shaped`] has resolved the root, because that
+/// resolve reads the same files with no deadline over it.
+fn declaration_pipe(label: &str, path: &str) -> Root {
+    let root = Root::shaped(label, |_| {});
+    let at = root.at.join(".headwater").join(path);
+    std::fs::remove_file(&at).expect("the file is there to replace");
+    fifo(&at);
+    root
+}
+
+/// Every verb that loads the taxonomy reads `.headwater/taxonomy.lock`, and
+/// `taxonomy resolve` reads `.headwater/taxonomy.yml` first. A named pipe at
+/// either path is refused in one sentence that names it, before anything
+/// opens it, so no verb waits on the pipe for ever (#1366).
+#[test]
+fn check_show_and_explain_finish_when_a_named_pipe_takes_the_lock_or_the_consumer_declaration(
+) {
+    let document = "docs/decisions/0001-the-warrant-a-person-set.md";
+    for (label, path) in [
+        ("lock-pipe", "taxonomy.lock"),
+        ("consumer-pipe", "taxonomy.yml"),
+    ] {
+        let root = declaration_pipe(label, path);
+        let named = format!(".headwater/{path}");
+        for args in [
+            vec!["check", "--no-cache"],
+            vec!["show", document],
+            vec!["explain", document],
+            vec!["taxonomy", "resolve", "--check"],
+        ] {
+            let hung = format!(
+                "{} opened the named pipe at {named}, and waited on it",
+                args.join(" ")
+            );
+            let (status, out, err) = ended(&root, &args, &hung);
+            assert_eq!(status.code(), Some(1), "{args:?} refuses at {named}: {err}");
+            assert!(out.is_empty(), "{args:?} prints nothing at {named}: {out}");
+            assert!(flat(&err).contains(&named), "{args:?} names {named}: {err}");
+            assert!(
+                flat(&err).contains("not a regular file"),
+                "{args:?} says why at {named}: {err}"
+            );
+        }
+    }
+}
+
+/// `taxonomy resolve` reads the overlay as a taxonomy source, so a named pipe
+/// there is refused in the same sentence (#1366).
+#[test]
+fn taxonomy_resolve_check_finishes_when_a_named_pipe_takes_the_overlay() {
+    let root = declaration_pipe("overlay-pipe", "overlay.yml");
+    let (status, out, err) = ended(
+        &root,
+        &["taxonomy", "resolve", "--check"],
+        "taxonomy resolve --check opened the named pipe at .headwater/overlay.yml, and waited on it",
+    );
+    assert_eq!(status.code(), Some(1), "resolve refuses: {err}");
+    assert!(out.is_empty(), "resolve prints nothing: {out}");
+    assert!(flat(&err).contains(".headwater/overlay.yml"), "{err}");
+    assert!(flat(&err).contains("not a regular file"), "{err}");
+}
+
+/// The file-type test follows a link, so a lock that is a link to a regular
+/// file still reads, and `check` runs to its end (#1366).
+#[test]
+fn check_reads_a_lock_that_is_a_link_to_a_regular_file() {
+    let root = Root::shaped("linked-lock", |_| {});
+    let at = &root.at;
+    std::fs::rename(at.join(".headwater/taxonomy.lock"), at.join("lock.target"))
+        .expect("the lock moves");
+    std::os::unix::fs::symlink("../lock.target", at.join(".headwater/taxonomy.lock"))
+        .expect("the link is made");
+    let (status, _, err) = ended(&root, &["check", "--no-cache"], "check did not end");
+    assert_eq!(status.code(), Some(0), "check reads the linked lock: {err}");
+}
