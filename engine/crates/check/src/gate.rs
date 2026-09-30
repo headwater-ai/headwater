@@ -260,7 +260,7 @@ impl Reason {
                 ("found", text(found)),
             ]),
             Reason::Gone { path } | Reason::Escaped { path } | Reason::Unhashed { path } => {
-                members.push(("path", text(path)))
+                members.push(("path", text(path)));
             }
         }
         Json::object(members)

@@ -275,6 +275,10 @@ fn a_snapshot_with_no_digest_is_a_finding_that_says_what_to_write() {
 #[test]
 fn each_snapshot_file_joins_the_read_set_and_a_gate_sees_it_move() {
     let root = Root::new("read-set", "sha256:0000");
+    // A member beside the record and the payload, which only the walk of the
+    // snapshot directory lists.
+    let member = format!("{AT}/notes/fetch.txt");
+    root.write(&member, "fetched by the nightly job\n");
     let digest = root.snapshot();
     root.declare(&digest);
     let read_set = root.at.join("clean.readset");
@@ -284,7 +288,7 @@ fn each_snapshot_file_joins_the_read_set_and_a_gate_sees_it_move() {
     let recorded = std::fs::read_to_string(read_set).expect("the read set reads");
     let payload = format!("{AT}/snapshot.yml");
     let record = format!("{AT}/release.yml");
-    for file in [&payload, &record] {
+    for file in [&payload, &record, &member] {
         let bytes = std::fs::read(root.at.join(file)).expect("the file reads");
         let digest = headwater_hash::digest(&bytes);
         assert!(
@@ -295,7 +299,18 @@ fn each_snapshot_file_joins_the_read_set_and_a_gate_sees_it_move() {
         );
     }
     let still = root.run(&["gate", "--read-set", read_set]);
-    assert!(!still.out.contains(&payload), "{still:?}");
+    assert!(
+        !still.out.contains(&payload) && !still.out.contains(&member),
+        "{still:?}"
+    );
+
+    root.write(&member, "fetched again\n");
+    let member_moved = root.run(&["gate", "--read-set", read_set]);
+    assert!(
+        member_moved.out.contains(&format!("{member} reads ")),
+        "the gate names the member that moved: {member_moved:?}"
+    );
+    assert!(!member_moved.out.contains(&payload), "{member_moved:?}");
 
     root.write(&payload, &PAYLOAD.replace("\"7\"", "\"8\""));
     let moved = root.run(&["gate", "--read-set", read_set]);
