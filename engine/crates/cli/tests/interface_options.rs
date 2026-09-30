@@ -597,6 +597,40 @@ fn flags_in(span: &str) -> Vec<Flag> {
     out
 }
 
+/// The reader of a code span takes a placeholder only where the span writes
+/// one after the flag.
+///
+/// Every span on the shelf today puts a bracketed flag last or before another
+/// bracket, so no document would fail if the bracket rule were dropped. This
+/// case holds the rule on the spans a table may write next: a flag that
+/// closes its bracket before a positional, a value list with escaped pipes
+/// already unescaped by [`cells`], and a flag with an angle-bracket value.
+#[test]
+fn a_code_span_gives_each_flag_the_placeholder_written_after_it() {
+    let none = |name: &str| (name.to_string(), None);
+    let some = |name: &str, value: &str| (name.to_string(), Some(value.to_string()));
+    assert_eq!(flags_in("migrate [--apply] <dir>"), vec![none("--apply")]);
+    assert_eq!(
+        flags_in("diff <dir> [--to <version>] [--now <date>]"),
+        vec![some("--to", "version"), some("--now", "date")]
+    );
+    assert_eq!(
+        flags_in("--format text|json|sarif|markdown"),
+        vec![some("--format", "text|json|sarif|markdown")]
+    );
+    assert_eq!(
+        flags_in("--strict --fix"),
+        vec![none("--strict"), none("--fix")]
+    );
+    assert_eq!(
+        cells(r"| `--format text\|json` | Select the report. |"),
+        vec![
+            "`--format text|json`".to_string(),
+            "Select the report.".to_string()
+        ]
+    );
+}
+
 /// The flags a document's Options tables name, keyed by the command line each
 /// one belongs to.
 ///

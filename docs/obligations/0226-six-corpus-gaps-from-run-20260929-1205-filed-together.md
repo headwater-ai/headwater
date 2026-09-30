@@ -3,9 +3,9 @@ id: HW-OBL-0226
 status: current
 status_since: 2026-09-29
 summary: "Run 20260929-1205 surfaced six findings about this corpus's own edges, stamps and wording, none with a reader outside this repository. This record files them together under the intake cap."
-last_verified: 2026-09-29
+last_verified: 2026-10-01
 title: "Six corpus gaps from run 20260929-1205, filed together"
-waiting_on: build
+waiting_on: ruling
 ---
 
 # Six corpus gaps from run 20260929-1205, filed together
@@ -29,7 +29,10 @@ waiting_on: build
 **Wording narrower or looser than the behavior.**
 
 - One resolved `traces_to` edge raised seven population tallies of the `adoption` block by one each, with no new finding. Among them are `relation.target.unresolved` (886 to 887), `relation.target.is_source`, `relation.target.suspect`, `relation.endpoint.not_permitted`, `lifecycle.dependency.on_initial` and `warrant.evidence.unsupported`. A tally under the name of a rule reads as a count of failures, and this one counts every edge the rule reads. No document says which it is. (build, #1386)
-- Line 40 of HW-OBL-0200 says the seal removes "every document under docs/ that names a selected probe". Since PR #1413 (#1384 PR D) the seal also removes files outside `docs/` that are not a fold, so the sentence is narrower than the behavior. (build, #1384)
+
+**Paid, and struck from the list above.** [#1487](https://github.com/headwater-ai/headwater/issues/1487) paid one of the six. The Discharge section of HW-OBL-0200 said that the seal removes every document under `docs/` that names a selected probe. That sentence was narrower than `tools/probe/seal.sh`. It now names the probe shelves and `.headwater/export.json`, the answer keys, and each file outside `docs/` that names a probe and is not a declared fold.
+
+**Five stay, and each one waits on a person.** The two edges are `created_by: agent`, so a person types them. The stamp item needs a rule that nobody has ruled. The review row stays as written, because a review is a point-in-time record. #1487 looked for the document that describes the tallies of the `adoption` block and found none that says what a tally counts. So the tally item has no home to write the sentence into yet, and where it goes is a ruling too.
 
 ## Discharge
 
