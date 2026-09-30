@@ -355,6 +355,54 @@ fn a_governs_pattern_that_reaches_outside_its_row_is_foreign() {
     }
 }
 
+/// `governed_patterns` over a temporary spec file whose text is `text`. The
+/// file name carries the pid, the thread id and a counter, because cargo runs
+/// the cases of one target as threads of one process.
+fn governed_patterns_of_text(text: &str) -> BTreeSet<String> {
+    static SEQ: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+    let dir = std::env::temp_dir().join(format!(
+        "subsystem_map-governed_patterns-{}-{:?}-{}",
+        std::process::id(),
+        std::thread::current().id(),
+        SEQ.fetch_add(1, std::sync::atomic::Ordering::SeqCst)
+    ));
+    std::fs::create_dir_all(&dir).expect("the temp dir is written");
+    let spec = dir.join("spec.md");
+    std::fs::write(&spec, text).expect("the temp spec is written");
+    let governed = governed_patterns(&spec);
+    std::fs::remove_dir_all(&dir).expect("the temp dir is removed");
+    governed
+}
+
+/// A comment line or a blank line inside the `governs` list, or between the
+/// keys of `relations:`, hides no entry. The engine reads the front matter as
+/// YAML and binds every entry after either one, so a reader that stopped
+/// there would pass a spec that governs a crate outside its row.
+#[test]
+fn a_comment_or_a_blank_line_in_the_governs_list_hides_no_entry() {
+    let cases = [
+        (
+            "a comment line",
+            "---\nid: HW-SPEC-temp\nrelations:\n  governs:\n    - engine/crates/hash/src/**\n    # the graph crate as well\n    - engine/crates/graph/src/**\n---\n\n# Temp\n",
+        ),
+        (
+            "a blank line",
+            "---\nid: HW-SPEC-temp\nrelations:\n  governs:\n    - engine/crates/hash/src/**\n\n    - engine/crates/graph/src/**\n---\n\n# Temp\n",
+        ),
+        (
+            "a blank line before the key",
+            "---\nid: HW-SPEC-temp\nrelations:\n  traces_to:\n    - HW-SPEC-engine-architecture\n\n  governs:\n    - engine/crates/graph/src/**\n---\n\n# Temp\n",
+        ),
+    ];
+    for (shape, text) in cases {
+        let governed = governed_patterns_of_text(text);
+        assert!(
+            governed.contains("engine/crates/graph/src/**"),
+            "with {shape} in `relations:`, governed_patterns does not hold engine/crates/graph/src/** (it holds {governed:?})"
+        );
+    }
+}
+
 /// The corpus case reads a spec's `governs` through `governed_patterns`, so a
 /// spelling the resolver normalizes and a member of a list anchor each reach
 /// the crate they would govern. The spec here is a temporary file written in
@@ -366,22 +414,9 @@ fn a_governs_pattern_that_reaches_outside_its_row_is_foreign() {
 /// unnormalized `./` entry and the list anchor.
 #[test]
 fn a_spec_read_through_governed_patterns_reaches_the_crates_it_names() {
-    static SEQ: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
-    let dir = std::env::temp_dir().join(format!(
-        "subsystem_map-governed_patterns-{}-{:?}-{}",
-        std::process::id(),
-        std::thread::current().id(),
-        SEQ.fetch_add(1, std::sync::atomic::Ordering::SeqCst)
-    ));
-    std::fs::create_dir_all(&dir).expect("the temp dir is written");
-    let spec = dir.join("spec.md");
-    std::fs::write(
-        &spec,
+    let governed = governed_patterns_of_text(
         "---\nid: HW-SPEC-temp\nrelations:\n  governs:\n    - ./engine/crates/check/src/**\n    - [engine/crates/graph/src/lib.rs, engine/crates/check/src/lib.rs]\n  traces_to:\n    - HW-SPEC-engine-architecture\n---\n\n# Temp\n",
-    )
-    .expect("the temp spec is written");
-    let governed = governed_patterns(&spec);
-    std::fs::remove_dir_all(&dir).expect("the temp dir is removed");
+    );
     let row = vec!["graph".to_string()];
     let crates: BTreeSet<String> = ["check", "graph", "hash"]
         .into_iter()
