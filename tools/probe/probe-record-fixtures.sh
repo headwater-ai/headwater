@@ -2371,6 +2371,42 @@ if [ -x "$engine" ]; then
     same "a server that lists no tool fails the dry run with 8" "8" "$?"
     present "and the dry run says so" "listed no tool in the mcp tree" "$scratch/dry-mcp.out"
 
+    # Verify round 5: the dry run reads `leaks_kept:` and `power:` with the
+    # parser the leak check uses, so a flow sequence keeps its probes and a
+    # quoted rate is refused rather than read as 0.
+    awk -v a="$status_probe" -v b=HW-PROBE-a-session-names-the-event-that-makes-a-document-accepted '
+        /^leaks_kept:/ { print "leaks_kept: [" a ", " b "]"; skip = 1; next }
+        skip && /^  - / { next }
+        { skip = 0; print }
+    ' "$root/.headwater/probe.yml" > "$scratch/flow-kept.yml"
+    HW_PROBE_YML="$scratch/flow-kept.yml" PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
+        --spec "$root/tools/probe/layer-campaign.spec" > "$scratch/flow-kept.out" 2> "$scratch/flow-kept.err"
+    same "a flow-sequence leaks_kept keeps the committed dry run at 0" "0" "$?"
+    present "and each leak-kept line is still on its own" "line 8 holds only leak-kept probes" "$scratch/flow-kept.out"
+    printf 'campaign present sufficiency %s HW-PROBE-a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer\n' \
+        "$status_probe" > "$scratch/mixed.spec"
+    HW_PROBE_YML="$scratch/flow-kept.yml" PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
+        --spec "$scratch/mixed.spec" > "$scratch/flow-mixed.out" 2> "$scratch/flow-mixed.err"
+    same "a line that pools a flow-kept probe with one that is not fails the dry run with 8" "8" "$?"
+    present "and names the line" "line 1 pools a probe under \`leaks_kept:\`" "$scratch/flow-mixed.out"
+    HW_PROBE_YML="$scratch/leak-probe.yml" PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
+        --spec "$scratch/mixed.spec" > /dev/null 2>&1
+    same "and with no probe kept the same line is a leak, 8" "8" "$?"
+
+    dry_power() {
+        # $1 name, $2 sed program over the power block, $3 text of the refusal
+        sed "$2" "$root/.headwater/probe.yml" > "$scratch/power.yml"
+        HW_PROBE_YML="$scratch/power.yml" PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
+            --spec "$root/tools/probe/layer-campaign.spec" > "$scratch/power.out" 2> "$scratch/power.err"
+        same "$1 is refused with 2" "2" "$?"
+        present "and the refusal says why" "$3" "$scratch/power.err"
+        absent "and nothing is priced" "tier campaign:" "$scratch/power.out"
+    }
+    dry_power "a quoted rate" 's/^  present: 0\.15/  present: "0.15"/' "must be a number"
+    dry_power "a rate that is a word" 's/^  absent: 0\.08/  absent: low/' "must be a number"
+    dry_power "a rate outside (0, 1)" 's/^  present: 0\.15/  present: 15/' "strictly between 0 and 1"
+    dry_power "a power block with no alpha" '/^  alpha: /d' "must be a number"
+
     if [ -e "$scratch/claude-called" ]; then
         fail "no refused dry run calls a model" "the harness on the path was called"
     else
