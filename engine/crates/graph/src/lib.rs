@@ -332,13 +332,14 @@ impl Graph {
     }
 
     /// How many prose links carry text that is exactly the identifier of a
-    /// document and reach a document that carries an identifier. That is every
-    /// link `link.identifier.mismatch` compares, whether it agrees or not.
+    /// document and reach a document that carries an identifier, a link into
+    /// the document that wrote it included. That is every link
+    /// `link.identifier.mismatch` compares, whether it agrees or not, because
+    /// both read [`links::Link::named`].
     pub fn identifier_link_count(&self) -> usize {
         self.links
             .iter()
-            .filter(|link| link.names.is_some())
-            .filter(|link| matches!(&link.binding, links::Binding::Corpus { id: Some(_), .. }))
+            .filter(|link| link.named().is_some())
             .count()
     }
 
@@ -405,7 +406,7 @@ impl Graph {
             if named > 0 {
                 let _ = writeln!(
                     out,
-                    "  {named:5} whose text is the identifier of a document, on a path that reaches a document with an identifier"
+                    "  {named:5} whose text is the identifier of a document, on a path that reaches a document with an identifier, its own included"
                 );
             }
         } else {

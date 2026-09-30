@@ -71,10 +71,18 @@ use std::collections::HashSet;
 /// documents wrote one artifact, because the only member that moved was a
 /// content digest of the read set.
 ///
+/// `1.4` added `compared` to the entry of `rules` for
+/// `link.identifier.mismatch`, and to no other entry: how many links the rule
+/// compared, whether they agree or not. The rule is silent over a corpus whose
+/// identifier links all agree, and it is silent over a corpus that has none,
+/// and the member is what tells the two apart. A `1.4` document that writes
+/// `"compared": 0` says the rule examined nothing. The same entry in a `1.3`
+/// document says only that this producer had no member for the count (#1347).
+///
 /// Two of the shapes here have a second reader: [`change`] and [`coverage`] are
 /// what the SARIF property bag carries, so this constant versions them for that
 /// artifact too and [`crate::sarif`] writes it there.
-pub const VERSION: &str = "1.3";
+pub const VERSION: &str = "1.4";
 
 /// What a run carries that these bytes do not write.
 ///
@@ -377,7 +385,7 @@ fn document(run: &Run, subject: &Subject<'_>) -> Json {
 }
 
 fn rule(served: &headwater_check::Serves) -> Json {
-    Json::object([
+    let mut members: Vec<(&'static str, Json)> = vec![
         ("rule", Json::string(served.rule)),
         ("scope", Json::string(served.scope.grain().name())),
         ("version", number(served.version as usize)),
@@ -391,7 +399,13 @@ fn rule(served: &headwater_check::Serves) -> Json {
                 Bound::Unnamed => Json::Array(Vec::new()),
             },
         ),
-    ])
+    ];
+    // Written for the one rule that carries it, and absent on every other
+    // entry: see [`VERSION`] at `1.4`.
+    if let Some(compared) = served.compared {
+        members.push(("compared", number(compared)));
+    }
+    Json::object(members)
 }
 
 fn finding(entry: &Reported<'_>) -> Json {

@@ -403,6 +403,11 @@ pub struct Serves {
     /// the scope and the edition. See [`scope::ExportTargets`], and
     /// [`partition`] for the rule that keeps the claim honest.
     pub exportable_as: scope::ExportTargets,
+    /// How many links the rule compared, for a rule whose silence says
+    /// nothing without that count, and `None` for every other rule. Only
+    /// [`link_identifier::RULE`] sets it. Read off the graph on every run,
+    /// cached or not, because the rule's outcome carries no count (#1347).
+    pub compared: Option<usize>,
 }
 
 /// The check registry: every rule, with the scope, the edition and the export
@@ -1089,6 +1094,7 @@ pub fn run(
             version,
             obligation: declared.register.bound(rule),
             exportable_as,
+            compared: (rule == link_identifier::RULE).then(|| graph.identifier_link_count()),
         })
         .collect();
     for finding in &mut findings {
@@ -1396,6 +1402,29 @@ impl Run {
         );
         for served in &self.served {
             let _ = writeln!(out, "  {}\n    {}", served.rule, served.scope.render());
+            // The denominator of a rule that is silent over a clean corpus, so
+            // a reader can tell "compared 1019 and all agree" from "compared
+            // nothing". The finding count is the rule's share of the run's
+            // own total below, and the totals print no count of findings, so
+            // they print the denominator alone (#1347).
+            if let Some(compared) = served.compared {
+                match detail {
+                    Detail::Totals => {
+                        let _ = writeln!(out, "    {compared} links compared");
+                    }
+                    _ => {
+                        let reported = self
+                            .findings
+                            .iter()
+                            .filter(|finding| finding.rule == served.rule)
+                            .count();
+                        let _ = writeln!(
+                            out,
+                            "    {compared} links compared, {reported} findings"
+                        );
+                    }
+                }
+            }
         }
 
         // Spec 4 makes the register a projection of the two declarations, and

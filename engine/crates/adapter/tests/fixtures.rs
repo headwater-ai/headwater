@@ -1477,7 +1477,7 @@ fn a_run_that_skipped_nothing_is_not_a_run_that_reports_no_skips() {
     assert!(count(&skipping, "skipped") > 0);
     // And the shape version is what dates the member, so a reader of a document
     // that carries no `skipped` knows which of the two it is holding.
-    assert_eq!(headwater_adapter::json::VERSION, "1.3");
+    assert_eq!(headwater_adapter::json::VERSION, "1.4");
 }
 
 /// A change that named nothing is not a full-corpus run, in any of the four.

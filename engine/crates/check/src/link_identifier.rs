@@ -33,6 +33,16 @@
 //! the link does not matter: an inline link and a reference-style link bind
 //! the same way.
 //!
+//! # The count of what it compared
+//!
+//! A corpus whose identifier links all agree gets no finding from this rule,
+//! and so does a corpus that has no identifier links at all. The two look the
+//! same unless the run says how many links the rule compared. So
+//! [`Link::named`] states the population once, this rule reads it, and
+//! [`crate::run`] sets [`crate::Serves::compared`] from the graph's count of
+//! it. The report prints that count under this rule beside the rule's own
+//! finding count, and the JSON writes it as `compared` (#1347).
+//!
 //! # Why the corpus grain
 //!
 //! [`crate::link_path`]'s argument, unchanged: a renumbering of the target
@@ -49,7 +59,7 @@
 use crate::finding::{Finding, Severity};
 use crate::instance::Outcome;
 use crate::scope::{CorpusCheck, CorpusView};
-use headwater_graph::links::{Binding, Link};
+use headwater_graph::links::{Link, Named};
 
 pub const RULE: &str = "link.identifier.mismatch";
 
@@ -78,18 +88,13 @@ impl CorpusCheck for Identifiers {
 /// One finding for a link whose text names one identifier and whose path
 /// reaches a document that carries another.
 fn finding(link: &Link) -> Option<Finding> {
-    let named = link.names.as_deref()?;
-    // A link into the same document reaches the document that wrote it, so
-    // the identifier it reaches is the citing document's own.
-    let (path, reached) = match &link.binding {
-        Binding::Corpus {
-            path,
-            id: Some(reached),
-            ..
-        } => (path.as_str(), reached.as_str()),
-        Binding::SameDocument => (link.source_path.as_str(), link.source_id.as_deref()?),
-        _ => return None,
-    };
+    // The population is the graph's, stated once, so the count a run prints
+    // beside this rule is the set of links this rule compared.
+    let Named {
+        named,
+        path,
+        reached,
+    } = link.named()?;
     if named == reached {
         return None;
     }
