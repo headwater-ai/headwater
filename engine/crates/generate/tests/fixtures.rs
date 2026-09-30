@@ -1793,9 +1793,9 @@ projections:
     let bytes = std::fs::read_to_string(tree.join(AT)).expect("`headwater export` wrote it");
 
     // (b) A marked copy that no longer matches is not compared, and nothing
-    // reports it orphaned. The census reads a JSON file as no document, so the
-    // orphan rule cannot reach this path today. The plan claims it all the same
-    // (asserted above), so an emitter that writes a page would not change that.
+    // reports it orphaned. The census reads the marker on a JSON file, so the
+    // copy is a `generated` row the orphan rule sees (#1344). The plan claims
+    // the path (asserted above), and that claim is what keeps it unreported.
     std::fs::write(tree.join(AT), format!("{bytes}\n")).expect("the stale copy");
     let after = Built::over(&Corpus::new(&tree, "generate"), &root);
     let second = planned(&after);
@@ -1833,6 +1833,94 @@ projections:
     );
 }
 
+/// A graph export is JSON, and its declared path can sit inside the corpus
+/// root. When the declaration moves or goes away, the file it wrote stays in
+/// the tree with the marker on it, and nothing writes it any more. That is the
+/// orphan spec 6 names ("somebody removed a declaration or repointed it and
+/// left the output behind"), and it is reported in JSON as it is in Markdown
+/// (#1344). An unmarked JSON file beside it is an authored data file, and it
+/// stays unreported.
+#[test]
+fn a_graph_export_left_behind_by_a_repointed_declaration_is_orphaned() {
+    const AT: &str = "generate/exports/site.json";
+    const DATA: &str = "generate/data.json";
+    let projections_of = |source: &str| {
+        let declared = headwater_yaml::load(source)
+            .expect("it loads")
+            .value
+            .as_map()
+            .expect("a mapping")
+            .clone();
+        Projections::read(&declared).expect("the projections read")
+    };
+    let declared = projections_of(
+        "\
+projections:
+  - kind: graph_export
+    profile: site
+    output: generate/exports/site.json
+",
+    );
+    let repointed = projections_of(
+        "\
+projections:
+  - kind: graph_export
+    profile: site
+    output: generate/exports/moved.json
+",
+    );
+    let removed = projections_of("projections: []\n");
+
+    let tree = empty_tree("graph-export-left-behind");
+    copy_tree(&fixtures_dir().join("generate"), &tree.join("generate"));
+    std::fs::write(tree.join(DATA), "{\n  \"authored\": true\n}\n").expect("the data file");
+    let root = load_map(&fixtures_dir().join("generate.taxonomy.yml"));
+    let planned = |built: &Built, projections: &Projections| {
+        plan(
+            &built.surface(),
+            &built.census,
+            projections,
+            &fixture_identity(),
+            &Runs::default(),
+            headwater_verbs::VERBS,
+        )
+    };
+
+    // The declaration writes the export inside the corpus root.
+    let before = Built::over(&Corpus::new(&tree, "generate"), &root);
+    let first = planned(&before, &declared);
+    let generated = write(&tree, &first);
+    assert!(
+        !generated.has_errors(),
+        "{}",
+        generated.render(ColorMode::Plain)
+    );
+    let bytes = std::fs::read_to_string(tree.join(AT)).expect("`generate` wrote the export");
+    assert!(
+        bytes.contains("\"headwater:generated\""),
+        "the export carries no marker, so this test proves nothing:\n{bytes}"
+    );
+
+    let after = Built::over(&Corpus::new(&tree, "generate"), &root);
+    for (arm, projections) in [("repointed", &repointed), ("removed", &removed)] {
+        let stale = planned(&after, projections);
+        let claimed: Vec<(&str, Option<&str>)> = stale
+            .orphaned
+            .iter()
+            .map(|orphaned| (orphaned.path.as_str(), orphaned.kind.as_deref()))
+            .collect();
+        assert_eq!(
+            claimed,
+            vec![(AT, Some("graph_export"))],
+            "{arm}: the export left behind is not the one orphan, or the unmarked {DATA} is one"
+        );
+        assert!(
+            check(&tree, &stale).has_errors(),
+            "{arm}: `generate --check` passes a graph export that nothing writes"
+        );
+    }
+}
+
 /// `committed: false` is read on a `graph_export` alone. Every other kind is
 /// read in the tree, so an absent file there breaks a reader.
 #[test]
@@ -1857,6 +1945,179 @@ projections:
             .any(|error| error.message.contains("shelf_index")
                 && error.message.contains("graph_export")),
         "the refusal does not name the kind and the one kind that takes the member: {errors:?}"
+    );
+}
+
+/// Each kind writes its own content format whatever the extension, and the
+/// census reads the marker by the extension. A graph export is JSON, so at a
+/// `.yml` or `.md` path its marker is a member that the census does not read
+/// there, and a copy left behind would be an orphan nothing reports (#1344).
+/// So `generate` refuses to write an output that the census would not read
+/// back as generated, and it writes the one at `.json`.
+#[test]
+fn an_output_whose_marker_the_census_would_not_read_is_not_written() {
+    const YML: &str = "generate/exports/g.yml";
+    const MD: &str = "generate/exports/g.md";
+    const JSON: &str = "generate/exports/g.json";
+    let source = "\
+projections:
+  - kind: graph_export
+    profile: site
+    output: generate/exports/g.yml
+  - kind: graph_export
+    profile: site
+    output: generate/exports/g.md
+  - kind: graph_export
+    profile: site
+    output: generate/exports/g.json
+";
+    let declared = headwater_yaml::load(source)
+        .expect("it loads")
+        .value
+        .as_map()
+        .expect("a mapping")
+        .clone();
+    let projections = Projections::read(&declared).expect("the extensions are all admitted");
+    let tree = empty_tree("output-the-census-would-not-read");
+    copy_tree(&fixtures_dir().join("generate"), &tree.join("generate"));
+    let root = load_map(&fixtures_dir().join("generate.taxonomy.yml"));
+    let built = Built::over(&Corpus::new(&tree, "generate"), &root);
+    let planned = plan(
+        &built.surface(),
+        &built.census,
+        &projections,
+        &fixture_identity(),
+        &Runs::default(),
+        headwater_verbs::VERBS,
+    );
+    let report = write(&tree, &planned);
+    let verdict = |at: &str| {
+        report
+            .wrote
+            .iter()
+            .find(|wrote| wrote.path == at)
+            .map(|wrote| wrote.verdict.clone())
+            .expect("the output is reported")
+    };
+    for at in [YML, MD] {
+        assert!(
+            verdict(at).is_error(),
+            "{at}: an output the census would not read is not an error: {}",
+            report.render(ColorMode::Plain)
+        );
+        assert!(!tree.join(at).exists(), "{at} was written");
+    }
+    assert!(
+        !verdict(JSON).is_error(),
+        "{}",
+        report.render(ColorMode::Plain)
+    );
+    assert!(
+        tree.join(JSON).exists(),
+        "the export at `.json` was not written"
+    );
+    assert!(
+        report.render(ColorMode::Plain).contains("census"),
+        "the report does not say why: {}",
+        report.render(ColorMode::Plain)
+    );
+    let check = check(&tree, &planned);
+    assert!(
+        check.has_errors(),
+        "`generate --check` passes an output the census would not read"
+    );
+}
+
+/// Every output the fixture corpus declares is one the census reads back as
+/// generated, whatever its kind. This is the property the orphan rule needs of
+/// every emitter (#1344).
+#[test]
+fn every_output_the_fixture_writes_is_censused_as_generated() {
+    let tree = empty_tree("every-output-censused");
+    copy_tree(&fixtures_dir().join("generate"), &tree.join("generate"));
+    let root = load_map(&fixtures_dir().join("generate.taxonomy.yml"));
+    let projections = Projections::read(&root).expect("the fixture's projections read");
+    let built = Built::over(&Corpus::new(&tree, "generate"), &root);
+    let planned = plan(
+        &built.surface(),
+        &built.census,
+        &projections,
+        &fixture_identity(),
+        &Runs::default(),
+        headwater_verbs::VERBS,
+    );
+    let report = write(&tree, &planned);
+    assert!(!report.has_errors(), "{}", report.render(ColorMode::Plain));
+    let after = Built::over(&Corpus::new(&tree, "generate"), &root);
+    let inside: Vec<&str> = planned
+        .outputs
+        .iter()
+        .filter(|output| output.committed && output.path.starts_with("generate/"))
+        .map(|output| output.path.as_str())
+        .collect();
+    assert!(
+        !inside.is_empty(),
+        "no output lands inside the corpus root, so this proves nothing"
+    );
+    for path in inside {
+        let row = after
+            .census
+            .rows
+            .iter()
+            .find(|row| row.path == path)
+            .unwrap_or_else(|| panic!("{path} is not censused"));
+        assert!(
+            matches!(
+                row.outcome,
+                headwater_census::census::Outcome::Generated { .. }
+            ),
+            "{path} is written and censused as {:?}",
+            row.outcome
+        );
+    }
+}
+
+/// The census reads the marker only in a format a projection writes, which
+/// `headwater_mark::marks_format` names. A projection declared at any other
+/// extension would write a marked file that the census reads as not a
+/// document, and a copy left behind by a repointed declaration would then be
+/// an orphan that nothing reports (#1344). So the declaration is refused.
+#[test]
+fn a_projection_output_in_a_format_the_census_does_not_read_is_refused() {
+    let source = "\
+projections:
+  - kind: site_nav
+    output: docs/nav.txt
+  - kind: graph_export
+    profile: site
+    output: docs/exports/graph.JSON
+  - kind: graph_export
+    profile: site
+    output: docs/exports/graph.json
+";
+    let root = headwater_yaml::load(source)
+        .expect("it loads")
+        .value
+        .as_map()
+        .expect("a mapping")
+        .clone();
+    let errors = Projections::read(&root).expect_err("an output the census cannot read is refused");
+    let refused: Vec<&str> = [
+        "docs/nav.txt",
+        "docs/exports/graph.JSON",
+        "docs/exports/graph.json",
+    ]
+    .into_iter()
+    .filter(|path| errors.iter().any(|error| error.message.contains(path)))
+    .collect();
+    assert_eq!(
+        refused,
+        vec!["docs/nav.txt", "docs/exports/graph.JSON"],
+        "the refusal names each output outside the census's formats, and no other: {errors:?}"
+    );
+    assert!(
+        errors.iter().all(|error| error.message.contains(".json")),
+        "the refusal does not name the formats that are accepted: {errors:?}"
     );
 }
 
