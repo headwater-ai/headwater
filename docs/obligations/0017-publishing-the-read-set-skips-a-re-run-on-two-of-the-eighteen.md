@@ -1,8 +1,8 @@
 ---
 id: HW-OBL-0017
 title: "Publishing the read set skips a re-run on two of the eighteen merges where the question is live"
-status: current
-status_since: 2026-08-11
+status: discharged
+status_since: 2026-10-01
 waiting_on: build
 last_verified: 2026-08-14
 summary: "Q21 claims that a published read set lets a gate skip a full re-run on most merges, and the measurement came out against it."
@@ -37,3 +37,5 @@ The claim holds at 42 of 58 merges and fails at 2 of the 18 where the question i
 **Two of eighteen is the reading of the comparison over listed inputs, and the barrier rule sits above it.** [Spec 12](../spec/12-check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict) voids a verdict that rests on the extent of the census, because a list of members states no extent. `identifier.claimed_twice` is corpus-scoped, and it puts one instance in every run of this corpus. `lifecycle.deletion.not_permitted` is the second barrier and it puts one more. So this record read two `barrier` lines on every read set of 2026-08-14. One was always enough. A corpus that carries more of them reaches the same answer sooner. A gate therefore carries none of the eighteen, and the fraction for this corpus is zero. [HW-OBL-0102](0102-two-documents-state-what-voids-a-verdict-and-they-do-not.md) carries the ruling, and the count of barriers is the number that decides this record after all.
 
 **What happens next is a statement rather than a further run, which is why this record reads `build`.** The instrument ran and the reading is stable. A barrier line is structural for any corpus whose rule set generates over every kind. The count of them decides nothing that one does not. [Spec 12](../spec/12-check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict) states the claim about skipping a re-run and does not state that reading. What discharges this record is the qualification in spec 12, and no measurement of this corpus adds to it.
+
+**[#1475](https://github.com/headwater-ai/headwater/issues/1475) wrote that qualification in [#1505](https://github.com/headwater-ai/headwater/pull/1505), and this record is discharged.** [Spec 12](../spec/12-check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict) now states the reading. The paragraph that states it opens "Over this corpus, a gate never saves a full re-run". It gives the two of eighteen over listed inputs, and the zero once a barrier is present. [Spec 6](../spec/06-engine-architecture.md) says that over this corpus the decision of a gate is always to run again. It links to spec 12 for the numbers. Spec 12 now names six barrier rules, where this record read two. The count went up, and the reading stays at zero.
