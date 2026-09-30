@@ -309,7 +309,11 @@ fn a_source_that_does_not_claim_evidenced_passes_in_all_three_of_its_forms() {
 fn a_warrant_the_closed_set_does_not_name_is_a_finding() {
     let run = run();
     for (claim, target, value) in [
-        ("NOTE-FIX-rests-on-proposed", "NOTE-FIX-proposed", "proposed"),
+        (
+            "NOTE-FIX-rests-on-proposed",
+            "NOTE-FIX-proposed",
+            "proposed",
+        ),
         (
             "NOTE-FIX-rests-on-misspelled",
             "NOTE-FIX-misspelled",

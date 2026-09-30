@@ -119,7 +119,11 @@ fn outcome<'a>(run: &'a Run, rule: &str, file: &str) -> &'a Outcome {
         .filter(|instance| instance.reads.iter().any(|input| input.path == path))
         .map(|instance| &instance.outcome)
         .collect();
-    assert_eq!(over.len(), 1, "one instance of {rule} over {file}: {over:?}");
+    assert_eq!(
+        over.len(),
+        1,
+        "one instance of {rule} over {file}: {over:?}"
+    );
     over[0]
 }
 
@@ -185,7 +189,11 @@ fn each_member_of_the_closed_set_passes() {
         "regenerated.md",
         "transcribed.md",
     ] {
-        assert!(matches!(outcome(&run, VALUE, file), Outcome::Passed), "{file}: {:?}", outcome(&run, VALUE, file));
+        assert!(
+            matches!(outcome(&run, VALUE, file), Outcome::Passed),
+            "{file}: {:?}",
+            outcome(&run, VALUE, file)
+        );
     }
 }
 
@@ -239,7 +247,11 @@ fn the_pairing_follows_spec_three_row_by_row() {
         "regenerated.md",
         "transcribed.md",
     ] {
-        assert!(matches!(outcome(&run, UNPAIRED, file), Outcome::Passed), "{file}: {:?}", outcome(&run, UNPAIRED, file));
+        assert!(
+            matches!(outcome(&run, UNPAIRED, file), Outcome::Passed),
+            "{file}: {:?}",
+            outcome(&run, UNPAIRED, file)
+        );
     }
 }
 

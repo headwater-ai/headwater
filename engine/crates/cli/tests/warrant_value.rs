@@ -108,7 +108,9 @@ impl Root {
     /// The scaffolder writes none, because no taxonomy declares one.
     fn warrant(&self, value: &str) {
         let text = std::fs::read_to_string(&self.document).expect("the document reads");
-        let body = text.strip_prefix("---\n").expect("the document opens front matter");
+        let body = text
+            .strip_prefix("---\n")
+            .expect("the document opens front matter");
         let close = body.find("\n---\n").expect("the front matter closes");
         let written = format!(
             "---\n{}\nprovenance:\n  warrant: {value}\n  agency: human\n  accepted_by: a.person{}",
@@ -177,11 +179,10 @@ fn a_misspelled_warrant_stops_a_strict_run() {
         ran.err
     );
     let named = root.named();
-    let reported = ran
-        .out
-        .split(&named)
-        .skip(1)
-        .any(|after| after.contains("warrant.value.not_permitted") && after.contains("`acepted`"));
+    let reported =
+        ran.out.split(&named).skip(1).any(|after| {
+            after.contains("warrant.value.not_permitted") && after.contains("`acepted`")
+        });
     assert!(
         reported,
         "no `warrant.value.not_permitted` finding on {named} naming the value\n{}",
