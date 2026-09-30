@@ -3676,6 +3676,20 @@ readme_apt_judge() {
     if grep -q 'apt-get install -y headwater' "$2"; then
         echo "$(basename "$2") carries its own copy of the block"
     fi
+    if ! grep -qE '^[ ]{2}schedule:' "$2"; then
+        echo "$(basename "$2") runs on no schedule, so nothing finds a distribution that moved"
+    fi
+}
+
+# readme_apt_caller RELEASE — the `needs:` of the job of RELEASE that calls
+# readme-apt.yml, or nothing when no job calls it.
+readme_apt_caller() {
+    awk '
+        /^  [A-Za-z0-9_-]+:[ \t]*$/ { if (calls) { print needs; exit } needs = ""; calls = 0; next }
+        /^    needs:/ { needs = $0; sub(/^    needs:[ \t]*/, "", needs) }
+        /^    uses:[ \t]*\.\/\.github\/workflows\/readme-apt\.yml/ { calls = 1 }
+        END { if (calls) print needs }
+    ' "$1" | head -n 1
 }
 
 mkdir -p "$scratch/apt-job"
@@ -3685,6 +3699,8 @@ same "the page's APT floor is each an image of readme-apt.yml, and the job runs 
     "$(readme_apt_judge "$readme" "$apt_job" | tr '\n' '|' | sed 's/|$//')"
 same "  the page names a floor of two, one Debian and one Ubuntu" "2" \
     "$(readme_apt_floor "$readme" | grep -cE '^(debian:[0-9]+|ubuntu:[0-9]+\.[0-9]+)$')"
+same "  release.yml calls readme-apt.yml after deploy-site, so each release runs the block against the site it deployed" \
+    "deploy-site" "$(readme_apt_caller "$root/.github/workflows/release.yml")"
 
 # 12b. THE DECISIVE CASE. The page raises its Debian floor, and the job does
 # not follow.
