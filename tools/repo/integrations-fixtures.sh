@@ -393,6 +393,12 @@ else
     fail 'site fixture: a guide pin that differs from the MkDocs it runs fails, and names both versions' "exit $status; $(tail -n 5 "$scratch/site-a.err")"
 fi
 same 'site fixture: a failed pin check leaves nothing in TMPDIR' '' "$(ls -A "$scratch/site-tmp-a")"
+site_pin_line=$(grep -n 'mkdocs==9\.9\.9' "$scratch/site-guide-9.9.9.md" | head -n 1 | cut -d: -f1)
+if [ -n "$site_pin_line" ] && grep -q "guide line $site_pin_line:" "$scratch/site-a.err"; then
+    pass 'site fixture: a pin mismatch names the guide line that pins it'
+else
+    fail 'site fixture: a pin mismatch names the guide line that pins it' "want guide line ${site_pin_line:-?}; $(tail -n 2 "$scratch/site-a.err")"
+fi
 
 mkdir "$scratch/site-tmp-b"
 TMPDIR="$scratch/site-tmp-b" MKDOCS="sh $site_stub" HEADWATER_BIN="$site_stub" \
@@ -442,17 +448,41 @@ same 'site fixture: a failed MkDocs leaves nothing in TMPDIR' '' "$(ls -A "$scra
 
 # A run stopped by a signal removes its temporary directory too: an MkDocs
 # that sends TERM to the script that runs it.
-printf '#!/bin/sh\nkill -TERM "$PPID"\necho "mkdocs, version 1.6.1 from /stub (Python 3)"\n' >"$scratch/site-stub-term"
-mkdir "$scratch/site-tmp-f"
-TMPDIR="$scratch/site-tmp-f" MKDOCS="sh $scratch/site-stub-term" HEADWATER_BIN="$site_stub" \
-    sh "$site_fixture" "$scratch/no-such-corpus" >"$scratch/site-f.out" 2>"$scratch/site-f.err"
+for site_signal in TERM INT HUP; do
+    printf '#!/bin/sh\nkill -%s "$PPID"\necho "mkdocs, version 1.6.1 from /stub (Python 3)"\n' "$site_signal" >"$scratch/site-stub-$site_signal"
+    mkdir "$scratch/site-tmp-f-$site_signal"
+    TMPDIR="$scratch/site-tmp-f-$site_signal" MKDOCS="sh $scratch/site-stub-$site_signal" HEADWATER_BIN="$site_stub" \
+        sh "$site_fixture" "$scratch/no-such-corpus" >"$scratch/site-f.out" 2>"$scratch/site-f.err"
+    status=$?
+    if [ "$status" -ne 0 ]; then
+        pass "site fixture: SIG$site_signal stops the run with a non-zero status"
+    else
+        fail "site fixture: SIG$site_signal stops the run with a non-zero status" "exit $status"
+    fi
+    same "site fixture: a run stopped by $site_signal leaves nothing in TMPDIR" '' "$(ls -A "$scratch/site-tmp-f-$site_signal")"
+done
+
+# The comparison is exact: an MkDocs 1.6.10 does not pass a 1.6.1 pin.
+printf '#!/bin/sh\necho "mkdocs, version 1.6.10 from /stub (Python 3)"\n' >"$scratch/site-stub-1.6.10"
+MKDOCS="sh $scratch/site-stub-1.6.10" HEADWATER_BIN="$site_stub" \
+    sh "$site_fixture" "$scratch/no-such-corpus" >"$scratch/site-g.out" 2>"$scratch/site-g.err"
 status=$?
-if [ "$status" -ne 0 ]; then
-    pass 'site fixture: a TERM stops the run with a non-zero status'
+if [ "$status" -ne 0 ] && grep -q '1\.6\.10' "$scratch/site-g.err" && ! grep -q 'overlay' "$scratch/site-g.err"; then
+    pass 'site fixture: an MkDocs 1.6.10 fails a 1.6.1 pin'
 else
-    fail 'site fixture: a TERM stops the run with a non-zero status' "exit $status"
+    fail 'site fixture: an MkDocs 1.6.10 fails a 1.6.1 pin' "exit $status; $(tail -n 5 "$scratch/site-g.err")"
 fi
-same 'site fixture: a run stopped by TERM leaves nothing in TMPDIR' '' "$(ls -A "$scratch/site-tmp-f")"
+
+# One version pinned on two lines is one pin, and the run goes on to the corpus.
+sed 's/^python3 -m pip install mkdocs==1\.6\.1$/&\n&/' "$site_guide" >"$scratch/site-guide-same-twice.md"
+MKDOCS="sh $site_stub" HEADWATER_BIN="$site_stub" HEADWATER_SITE_GUIDE="$scratch/site-guide-same-twice.md" \
+    sh "$site_fixture" "$scratch/no-such-corpus" >"$scratch/site-h.out" 2>"$scratch/site-h.err"
+status=$?
+if [ "$status" -ne 0 ] && grep -q 'no \.headwater/overlay\.yml' "$scratch/site-h.err"; then
+    pass 'site fixture: one version pinned on two lines passes the pin check'
+else
+    fail 'site fixture: one version pinned on two lines passes the pin check' "exit $status; $(tail -n 5 "$scratch/site-h.err")"
+fi
 
 printf '\n%s passed, %s failed\n' "$passed" "$failed"
 [ "$failed" -eq 0 ]
