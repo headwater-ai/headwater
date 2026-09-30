@@ -379,7 +379,7 @@ The sentence above names three inputs, and a rate is citable when a reader can f
 |---|---|---|
 | the transcript | a `probe_transcript` document on `docs/probe-runs/` | the recorder, mechanically |
 | the expectations | a `probe` document on `docs/probes/` | a person |
-| the grader version | the version of the code that evaluated them | the engine |
+| the grader version | the version of the code that evaluated them | the grader's own version constant, which a grading change moves and a release does not |
 
 That placement separates a probe result from the [capture-cost store](03-authoring-and-lifecycle.md#capture-cost-is-a-tracked-metric), which sits outside the corpus root. The test is whether anything regenerates the artifact from a committed source. A capture-cost reading is a fact about a run that ended, and nothing recomputes it. A probe result is recomputed on every run of `generate --check`. So a result is corpus content, and the transcript under it is too.
 
