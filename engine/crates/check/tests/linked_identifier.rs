@@ -389,7 +389,10 @@ fn the_run_carries_how_many_links_the_rule_compared() {
     let reported = |run: &Run| run.findings.iter().filter(|f| f.rule == RULE).count();
     assert_eq!(compared(&after), compared(&before) + 2);
     assert_eq!(reported(&after), reported(&before));
-    assert!(compared(&before) > 0, "the fixture tree has identifier links");
+    assert!(
+        compared(&before) > 0,
+        "the fixture tree has identifier links"
+    );
 
     // No other rule carries the member: it is this rule's denominator.
     for served in &after.served {

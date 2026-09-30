@@ -1418,10 +1418,7 @@ impl Run {
                             .iter()
                             .filter(|finding| finding.rule == served.rule)
                             .count();
-                        let _ = writeln!(
-                            out,
-                            "    {compared} links compared, {reported} findings"
-                        );
+                        let _ = writeln!(out, "    {compared} links compared, {reported} findings");
                     }
                 }
             }
