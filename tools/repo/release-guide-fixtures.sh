@@ -695,14 +695,13 @@ else:
     # Each deploy job queues in one constant group and cancels nothing, so the
     # ci.yml and release.yml calls share one queue and the last deploy is the
     # newest one (#1342).
+    # A string is a group with cancel-in-progress false, as GitHub reads it.
     for job, body in sorted(jobs("deploy-site.yml").items()):
-        if not any(is_deploy(s) for s in as_list(body.get("steps"))):
-            continue
         c = body.get("concurrency")
         group = c.get("group") if isinstance(c, dict) else c
         if c is None:
             out.append("deploy-site.yml job %s has no concurrency group, so two deploys can run at once and an older one can finish last" % job)
-        elif not isinstance(group, str) or not group.strip() or "${{" in group:
+        elif not isinstance(group, str) or "${{" in group:
             out.append("deploy-site.yml job %s has a concurrency group that is not one constant, so the ci.yml and release.yml deploys do not share one queue" % job)
         if isinstance(c, dict) and c.get("cancel-in-progress", False) is not False:
             out.append("deploy-site.yml job %s can cancel a deploy in progress, so a release deploy can be cancelled and apt/ serves the previous release" % job)
@@ -897,7 +896,7 @@ print(" ".join(k for k, v in jobs.items() if isinstance(v, dict) and v.get("uses
 ' "$root" 2>/dev/null)
 
 # The same for ci.yml, and the job of deploy-site.yml that deploys, for the
-# arms d17 to d28 (#1342).
+# arms d17 to d34 (#1342).
 ci_job=$(python3 -c '
 import sys, yaml
 jobs = yaml.safe_load(open(sys.argv[1] + "/.github/workflows/ci.yml", encoding="utf-8"))["jobs"]
@@ -999,7 +998,7 @@ contains "a copy of the deploy steps in release.yml is red" \
     "release.yml job deploy-copy runs the deploy itself, so the site has two deploy paths" \
     "$(deploys "$scratch/d5")"
 
-# d16 to d29 hold what each workflow's own comment states about the one
+# d16 to d34 hold what each workflow's own comment states about the one
 # deploy job: its ref input, its token, its one path, the ci.yml gate, and its
 # one queue (#1342). Each arm applies one shape to a copy and names the line.
 
@@ -1052,9 +1051,28 @@ if [ -n "$dep_job" ]; then
     same "a deploy whose group is keyed on the ref is red" \
         "deploy-site.yml job $dep_job has a concurrency group that is not one constant, so the ci.yml and release.yml deploys do not share one queue" \
         "$(deploys "$scratch/d27" | tr '\n' '|' | sed 's/|$//')"
+
+    # d32. A concurrency mapping with no group queues nothing.
+    copy_tree "$scratch/d32"
+    edit_wf "$scratch/d32" deploy-site.yml "doc['jobs']['$dep_job']['concurrency'].pop('group')"
+    same "a deploy whose concurrency has no group is red" \
+        "deploy-site.yml job $dep_job has a concurrency group that is not one constant, so the ci.yml and release.yml deploys do not share one queue" \
+        "$(deploys "$scratch/d32" | tr '\n' '|' | sed 's/|$//')"
+
+    # d33. The group written as a string, which cancels nothing, holds.
+    copy_tree "$scratch/d33"
+    edit_wf "$scratch/d33" deploy-site.yml "doc['jobs']['$dep_job']['concurrency'] = 'deploy-site'"
+    same "a deploy whose concurrency is the one group as a string holds" "" \
+        "$(deploys "$scratch/d33" | tr '\n' '|' | sed 's/|$//')"
+
+    # d34. A group with no cancel-in-progress cancels nothing, and holds.
+    copy_tree "$scratch/d34"
+    edit_wf "$scratch/d34" deploy-site.yml "doc['jobs']['$dep_job']['concurrency'].pop('cancel-in-progress')"
+    same "a deploy whose group omits cancel-in-progress holds" "" \
+        "$(deploys "$scratch/d34" | tr '\n' '|' | sed 's/|$//')"
 else
     fail "deploy-site.yml has a job that runs tools/site/deploy-site.sh" \
-        "none, so the arms d25 to d27 have no job to edit"
+        "none, so the arms d25 to d27 and d32 to d34 have no job to edit"
 fi
 
 if [ -n "$ci_job" ]; then
@@ -1099,9 +1117,24 @@ if [ -n "$ci_job" ]; then
     same "a ci.yml deploy that passes a ref is red" \
         "ci.yml job $ci_job passes ref: v0.1.0, so a push to main deploys that ref and not its own commit" \
         "$(deploys "$scratch/d29" | tr '\n' '|' | sed 's/|$//')"
+
+    # d30. A push to main or a pull request: the condition names both terms
+    # and still admits a second event.
+    copy_tree "$scratch/d30"
+    edit_wf "$scratch/d30" ci.yml "doc['jobs']['$ci_job']['if'] = \"\${{ github.event_name == 'push' && github.ref == 'refs/heads/main' || github.event_name == 'pull_request' }}\""
+    same "a ci.yml deploy whose if: adds || another event is red" \
+        "ci.yml job $ci_job has an if: other than a push to main, so an event other than that push can run the deploy" \
+        "$(deploys "$scratch/d30" | tr '\n' '|' | sed 's/|$//')"
+
+    # d31. always() && the push to main runs the deploy after a gate failed.
+    copy_tree "$scratch/d31"
+    edit_wf "$scratch/d31" ci.yml "doc['jobs']['$ci_job']['if'] = \"\${{ always() && github.event_name == 'push' && github.ref == 'refs/heads/main' }}\""
+    same "a ci.yml deploy whose if: adds always() is red" \
+        "ci.yml job $ci_job has an if: other than a push to main, so an event other than that push can run the deploy" \
+        "$(deploys "$scratch/d31" | tr '\n' '|' | sed 's/|$//')"
 else
     fail "ci.yml has a job that calls deploy-site.yml" \
-        "none, so the arms d17 and d22 to d29 have no job to edit"
+        "none, so the arms d17, d22 to d24 and d28 to d31 have no job to edit"
 fi
 
 # d9. The APT route as each file that describes it states it (#1339).
