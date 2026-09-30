@@ -24,6 +24,8 @@ The command proposes and writes one document whose kind, shelf, facets, sections
 
 The command decides the complete artifact before it writes any file. It derives engine-owned fields, accepts a title and declared facet values, and can add scaffold-created relation edges.
 
+The command writes `provenance: {warrant: asserted}` into each document, because nobody has accepted the document yet. It writes no other member of the provenance block. A person who accepts the document sets `warrant: accepted` and adds their name in `accepted_by`.
+
 A relation that declares `reciprocal: required` needs one half on each of its two documents. When the new document opens at a state whose role is `initial`, such as `draft`, the command writes nothing into the target document. The target document owes its half only when the new document leaves that state ([HW-DR-0086](../decisions/0086-a-reciprocal-half-is-owed-once-its-writer-leaves-its-initial-state.md)). For each owed half, the report prints one line in this form:
 
     the far half `<relation>` is owed by <target path> once this document leaves `<state>`, and `headwater check --fix` writes it then

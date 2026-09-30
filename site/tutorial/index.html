@@ -473,6 +473,7 @@ taxonomy.yml</pre>
         <p class="prose">A <strong>shelf</strong> is a region of the tree that carries a purpose, and <code>docs/decisions/**</code> is the shelf named <code>decisions</code>. Placement is the loudest signal a document sends, so a shelf decides first and metadata never contradicts it.</p>
         <p class="prose">A <strong>kind</strong> is what a document permanently is. The <code>decisions</code> shelf holds one kind, so placement alone settled that this file is a <code>decision</code>. A kind names the facets a document must declare, the sections it must carry, and the relations it may declare.</p>
         <p class="prose">A <strong>facet</strong> is a property of one document, declared in the front matter. <code>status</code>, <code>status_since</code>, <code>summary</code> and <code>last_verified</code> are the four that <code>decision</code> requires. Three of them were filled by a role rather than by a guess. <code>status</code> came from the lifecycle regime, and two dates came from the run's clock. <code>summary</code> carries no role of its own. <code>--summary &lt;text&gt;</code> states it directly, exactly as <code>--title</code> states the name. Left unstated, the field carries a prompt for a person to answer.</p>
+        <p class="prose">The <code>provenance</code> block states what stands behind the document. The verb writes <code>warrant: asserted</code> in it, because nobody has accepted the decision yet.</p>
         <p class="check"><span class="checkword">Check</span> <span><code>cat docs/decisions/0001-store-attempts-in-postgres.md</code> prints this, with your own dates:</span></p>
       </div>
       <div>
@@ -499,6 +500,8 @@ status: draft
 status_since: 2026-09-09
 summary: "The queue keeps every delivery attempt in Postgres."
 last_verified: 2026-09-09
+provenance:
+  warrant: asserted
 ---
 
 # Store attempts in Postgres
@@ -627,7 +630,7 @@ git commit -m "A first governed corpus"</pre>
           <pre class="out verbatim">  1 findings
         1 ✗ error
 
-  docs/decisions/0002-deliver-at-least-once.md:9:7 ✗ error
+  docs/decisions/0002-deliver-at-least-once.md:11:7 ✗ error
     relation.reciprocity.missing (OB-REL-1): `ACME-DR-0002` declares
       `supersedes: ACME-DR-0001`, and `supersedes` requires both ends, so
       docs/decisions/0001-store-attempts-in-postgres.md owes `superseded_by`
@@ -695,6 +698,7 @@ git commit -m "A first governed corpus"</pre>
     `decisions` is homogeneous, so placement carries the kind `decision`
   purpose rationale, to explain why a choice was made and what it forecloses
   summary Retrying a delivery is safe, so the queue may send one attempt twice.
+  warrant asserted
   requires the facets status, status_since, summary, last_verified
   requires the sections Context, Decision, Consequences
   may declare supersedes to governed_document, and the other end writes
@@ -724,6 +728,7 @@ git commit -m "A first governed corpus"</pre>
       <div>
         <h2><span class="n">15</span>Ask a question in your own words</h2>
         <p class="prose">A <strong>purpose</strong> is the reader intent that a kind exists to serve. The base package declares two, <code>rationale</code> and <code>behavior</code>, and the route scored your question against both before it looked at any prose. That is why the <code>summary</code> facet deserves the most care in any document. Routing serves it as the only pointer a reader gets.</p>
+        <p class="prose">The pointer ends in <code>[asserted: nobody accepted this document]</code>, because the decision still states the warrant that <code>headwater new</code> wrote. When a person accepts the decision, they change <code>warrant: asserted</code> to <code>warrant: accepted</code> and add their name in <code>accepted_by</code>. Then the mark goes away.</p>
         <p class="check"><span class="checkword">Check</span> <span>The pointer line names <code>docs/decisions/0001-store-attempts-in-postgres.md</code>. The line under it names the words of your question that reached that document.</span></p>
       </div>
       <div>
@@ -735,7 +740,7 @@ git commit -m "A first governed corpus"</pre>
   purpose behavior 3
   purpose rationale 3
   docs/decisions/0001-store-attempts-in-postgres.md — The queue keeps every
-    delivery attempt in Postgres.
+    delivery attempt in Postgres. [asserted: nobody accepted this document]
     matched attempts in postgres, rank 1 of 1</pre>
       </div>
     </div>

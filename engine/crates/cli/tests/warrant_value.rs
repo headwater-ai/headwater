@@ -104,17 +104,24 @@ impl Root {
         format!("docs/decisions/{}", name.to_string_lossy())
     }
 
-    /// Write a provenance block carrying this warrant into the front matter.
-    /// The scaffolder writes none, because no taxonomy declares one.
+    /// Replace the provenance block with one carrying this warrant. The
+    /// scaffolder writes `warrant: asserted` alone (#1409), so the block it
+    /// wrote is taken out first, or the front matter holds the key twice.
     fn warrant(&self, value: &str) {
         let text = std::fs::read_to_string(&self.document).expect("the document reads");
         let body = text
             .strip_prefix("---\n")
             .expect("the document opens front matter");
         let close = body.find("\n---\n").expect("the front matter closes");
+        let scaffolded = "provenance:\n  warrant: asserted\n";
+        let facets = format!("{}\n", &body[..close]);
+        assert!(
+            facets.contains(scaffolded),
+            "the scaffolder wrote no `warrant: asserted`:\n{facets}"
+        );
         let written = format!(
-            "---\n{}\nprovenance:\n  warrant: {value}\n  agency: human\n  accepted_by: a.person{}",
-            &body[..close],
+            "---\n{}provenance:\n  warrant: {value}\n  agency: human\n  accepted_by: a.person{}",
+            facets.replacen(scaffolded, "", 1),
             &body[close..]
         );
         std::fs::write(&self.document, written).expect("the document writes");
