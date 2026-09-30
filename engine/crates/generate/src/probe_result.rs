@@ -612,6 +612,11 @@ fn pair_arms(graded: &[Graded], plan: &mut Plan) -> Vec<Comparison> {
             found.sort_by(|a, b| a.path.cmp(&b.path));
             found
         };
+        // The component arms of #1472 (`no-hook`, `no-skills`,
+        // `no-claude-md`, `mcp`) have no role here yet. A transcript of one is
+        // graded and compares nothing, because the claim each one measures
+        // against the present arm is not written as a `Claim` until a run
+        // records one. The design of that run is on #1472.
         let roles = [
             role(Tier::Campaign, Arm::Present),
             role(Tier::Campaign, Arm::Absent),
