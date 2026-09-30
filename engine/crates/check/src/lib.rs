@@ -1269,6 +1269,16 @@ impl Scoped {
                 self.named.unreadable
             );
         }
+        // The second number is the class the three above do not hold, so a
+        // reader can add the classes to the documents named (#1398).
+        if self.named.verified > 0 {
+            let _ = writeln!(
+                out,
+                "  {:5} stated as re-read by a `verified` line, {} of them named by that line \
+                 alone",
+                self.named.verified, self.named.verified_alone
+            );
+        }
         // Above the count, because it is the line that says the count is over
         // fewer documents than the caller named. A path that reached no row is
         // checked by nothing, so no skipped instance carries it and this is the

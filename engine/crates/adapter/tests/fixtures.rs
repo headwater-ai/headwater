@@ -152,6 +152,9 @@ enum Scoping {
     Change,
     /// One change that named nothing.
     Nothing,
+    /// One change whose one `verified` line sits beside a `prior` line for the
+    /// same document, so `verified` is 1 and `verified_alone` is 0.
+    VerifiedBeside,
 }
 
 /// The name a prior version is written under in the manifests below.
@@ -209,6 +212,15 @@ fn manifest_over(taken: &Census) -> Change {
          prior\tcheck/spec/00-both-halves.markdown\t{PRIOR}{carried}\n\
          prior\t./{carried}\t{PRIOR}{carried}\n"
     ));
+    // Five documents that only a `verified` line names, one `verified` line
+    // beside the `prior` line of the carried document, and one on a path that
+    // binds to nothing and that an `added` line above already names. So the
+    // verified lines reach all three states one can, and five and six are
+    // counts that no other member of the block holds (#1398).
+    for path in &paths[6..11] {
+        manifest.push_str(&format!("verified\t{path}\n"));
+    }
+    manifest.push_str(&format!("verified\t{carried}\nverified\tREADME.md\n"));
     bound(&manifest, taken)
 }
 
@@ -305,6 +317,13 @@ fn scoped_at(adoption: Option<&Mapping>, scoping: Scoping) -> Ran {
         Scoping::Corpus => at,
         Scoping::Change => at.scoped_to(manifest_over(&taken)),
         Scoping::Nothing => at.scoped_to(bound(&format!("{FORMAT}\n"), &taken)),
+        Scoping::VerifiedBeside => {
+            let path = taken.rows[2].path.as_str();
+            at.scoped_to(bound(
+                &format!("{FORMAT}\nprior\t{path}\t{PRIOR}{path}\nverified\t{path}\n"),
+                &taken,
+            ))
+        }
     };
     let run = headwater_check::run(
         &taken,
@@ -1008,11 +1027,16 @@ fn the_scoped_fixture_reaches_every_state_a_manifest_line_can() {
     let run = scoped_run().run;
     let scoped = run.change.expect("the run was scoped");
     let named = &scoped.named;
-    assert_eq!(named.documents, 10);
+    assert_eq!(named.documents, 15);
     assert_eq!(named.added, 2, "two documents the change adds");
     assert_eq!(named.carried, 1, "one prior version this run read");
     assert_eq!(named.unreadable, 3, "three prior versions it could not");
     assert_eq!(named.unmatched, 4, "four paths that bind to no row");
+    assert_eq!(named.verified, 6, "six `verified` lines that bind to a row");
+    assert_eq!(
+        named.verified_alone, 5,
+        "five documents that only a `verified` line names"
+    );
     // The list and the count are two readings of one set, and an artifact that
     // wrote the list while a consumer read the count would put the two at odds.
     assert_eq!(scoped.unmatched.len(), named.unmatched);
@@ -1031,6 +1055,87 @@ fn the_scoped_fixture_reaches_every_state_a_manifest_line_can() {
             "engine/crates/check/src/change.rs",
         ]
     );
+}
+
+/// The disjoint classes of the scoped fixture sum to the documents it named,
+/// and every format writes the verified counts (#1398).
+///
+/// `verified` is not one of the classes, because a `verified` line may sit
+/// beside a line that names a version of the same document. `verified_alone`
+/// is: a document that only a `verified` line names and that binds to a row.
+/// Before it, the fixture's documents were ten and the classes summed to ten
+/// only because no manifest line reached the state that broke the sum.
+#[test]
+fn the_classes_of_the_scoped_fixture_sum_to_documents() {
+    let ran = scoped_run();
+    let scoped = ran.run.change.as_ref().expect("the run was scoped");
+    let named = &scoped.named;
+    assert_eq!(
+        named.added + named.carried + named.unreadable + named.unmatched + named.verified_alone,
+        named.documents,
+        "the classes of {named:?} do not sum to the documents it named"
+    );
+    for format in Format::ALL {
+        let artifact = render(&ran, format);
+        assert!(
+            states_the_verified_counts(format, &artifact, named.verified, named.verified_alone),
+            "the {} artifact of a scoped run does not write {} verified and {} verified alone",
+            format.name(),
+            named.verified,
+            named.verified_alone
+        );
+    }
+}
+
+/// A change whose every `verified` line sits beside another line for the same
+/// document still writes the verified count, in the text and the Markdown
+/// reports alike (#1398, the verifier's round 1).
+///
+/// Both reports write the line when `verified` is above zero. A report that
+/// read `verified_alone` for that condition passed every other test here,
+/// because the scoped fixture has both counts above zero, and it dropped the
+/// count for exactly this change.
+#[test]
+fn a_verified_line_beside_a_prior_line_is_still_reported() {
+    let ran = ran(Scoping::VerifiedBeside);
+    let scoped = ran.run.change.as_ref().expect("the run was scoped");
+    assert_eq!((scoped.named.verified, scoped.named.verified_alone), (1, 0));
+    for format in Format::ALL {
+        let artifact = render(&ran, format);
+        assert!(
+            states_the_verified_counts(format, &artifact, 1, 0),
+            "the {} artifact drops a verified count of 1 when none is alone",
+            format.name()
+        );
+    }
+}
+
+/// Whether one artifact writes both verified counts, read off its bytes for the
+/// reason [`states_the_scoping`] gives.
+fn states_the_verified_counts(
+    format: Format,
+    artifact: &str,
+    verified: usize,
+    alone: usize,
+) -> bool {
+    match format {
+        // The text report is filled to a width, so a line break may fall
+        // anywhere in the sentence. Read it with every run of whitespace as
+        // one space.
+        Format::Text | Format::Markdown => artifact
+            .split_whitespace()
+            .collect::<Vec<_>>()
+            .join(" ")
+            .contains(&format!(
+                "{verified} stated as re-read by a `verified` line, {alone} of them named by that \
+             line alone"
+            )),
+        Format::Json | Format::Sarif => {
+            let compact: String = artifact.chars().filter(|c| !c.is_whitespace()).collect();
+            compact.contains(&format!("\"verified\":{verified},"))
+                && compact.contains(&format!("\"verified_alone\":{alone},"))
+        }
+    }
 }
 
 /// No two values of the block the recorded scoped fixtures carry are equal.
@@ -1057,6 +1162,8 @@ fn no_two_counts_of_the_scoped_fixture_are_equal() {
         ("unreadable", named.unreadable),
         ("promotions", scoped.promotions),
         ("the unmatched paths", scoped.unmatched.len()),
+        ("verified", named.verified),
+        ("verified alone", named.verified_alone),
     ];
     for (one, left) in counts {
         for (two, right) in counts {
@@ -1479,7 +1586,7 @@ fn a_run_that_skipped_nothing_is_not_a_run_that_reports_no_skips() {
     assert!(count(&skipping, "skipped") > 0);
     // And the shape version is what dates the member, so a reader of a document
     // that carries no `skipped` knows which of the two it is holding.
-    assert_eq!(headwater_adapter::json::VERSION, "1.3");
+    assert_eq!(headwater_adapter::json::VERSION, "1.4");
 }
 
 /// A change that named nothing is not a full-corpus run, in any of the four.
@@ -1565,7 +1672,7 @@ fn the_change_rides_in_the_runs_property_bag() {
         .and_then(|properties| member(&properties, "headwater"))
         .and_then(|headwater| member(&headwater, "change"))
         .expect("the change is in the run's property bag");
-    assert_eq!(text(&bag, "documents"), "10");
+    assert_eq!(text(&bag, "documents"), "15");
     assert!(
         member(&run, "change").is_none(),
         "an invented member of the run object"

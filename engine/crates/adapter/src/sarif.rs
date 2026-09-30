@@ -254,6 +254,8 @@ pub const LOSS: &[Loss] = &[
                     "added",
                     "carried",
                     "unreadable",
+                    "verified",
+                    "verified_alone",
                     "unmatched",
                     "promotions",
                 ],
