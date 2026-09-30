@@ -102,6 +102,19 @@ test('route reads the pointers from structuredContent, in order, and nothing els
   );
 });
 
+test('route reports the count the budget withheld, and governing withholds nothing', async () => {
+  const withheld = await client.route('x', fake('route-pointers.jsonl').options);
+  assert.equal(withheld.pointers.length, 5);
+  assert.equal(withheld.withheld, 196);
+  assert.equal((await client.route('x', fake('route-paren-path.jsonl').options)).withheld, 0);
+  // `governing_docs_for_path` has no budget, so it answers the pointers alone.
+  assert.ok(Array.isArray(await client.governing('src/my module.rs', fake('governing-spaced-path.jsonl').options)));
+  // What the extension shows beside the list: a count above zero, and nothing at zero.
+  assert.equal(client.withheldNote(withheld), '196 more withheld by the budget');
+  assert.equal(client.withheldNote({ pointers: withheld.pointers, withheld: 1 }), '1 more withheld by the budget');
+  assert.equal(client.withheldNote({ pointers: withheld.pointers, withheld: 0 }), null);
+});
+
 test('a path that holds " (", a name with spaces and a summary past 80 columns read back exactly', async () => {
   // The text form split this path at its first ` (`, and a fold of this
   // summary at 80 columns starts a line with `governs`, which the text reader
