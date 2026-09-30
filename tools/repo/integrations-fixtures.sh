@@ -426,5 +426,33 @@ else
     fail 'site fixture: a guide that pins two MkDocs versions fails, and names both' "exit $status; $(tail -n 5 "$scratch/site-d.err")"
 fi
 
+# A failure whose log the exit trap removes prints that log first: an MkDocs
+# whose `--version` fails, with a line only its log holds.
+printf '#!/bin/sh\necho "site-stub-broke-here"\nexit 3\n' >"$scratch/site-stub-broken"
+mkdir "$scratch/site-tmp-e"
+TMPDIR="$scratch/site-tmp-e" MKDOCS="sh $scratch/site-stub-broken" HEADWATER_BIN="$site_stub" \
+    sh "$site_fixture" "$scratch/no-such-corpus" >"$scratch/site-e.out" 2>"$scratch/site-e.err"
+status=$?
+if [ "$status" -ne 0 ] && grep -q 'site-stub-broke-here' "$scratch/site-e.err"; then
+    pass 'site fixture: a failure prints the log it names before the log is removed'
+else
+    fail 'site fixture: a failure prints the log it names before the log is removed' "exit $status; $(tail -n 5 "$scratch/site-e.err")"
+fi
+same 'site fixture: a failed MkDocs leaves nothing in TMPDIR' '' "$(ls -A "$scratch/site-tmp-e")"
+
+# A run stopped by a signal removes its temporary directory too: an MkDocs
+# that sends TERM to the script that runs it.
+printf '#!/bin/sh\nkill -TERM "$PPID"\necho "mkdocs, version 1.6.1 from /stub (Python 3)"\n' >"$scratch/site-stub-term"
+mkdir "$scratch/site-tmp-f"
+TMPDIR="$scratch/site-tmp-f" MKDOCS="sh $scratch/site-stub-term" HEADWATER_BIN="$site_stub" \
+    sh "$site_fixture" "$scratch/no-such-corpus" >"$scratch/site-f.out" 2>"$scratch/site-f.err"
+status=$?
+if [ "$status" -ne 0 ]; then
+    pass 'site fixture: a TERM stops the run with a non-zero status'
+else
+    fail 'site fixture: a TERM stops the run with a non-zero status' "exit $status"
+fi
+same 'site fixture: a run stopped by TERM leaves nothing in TMPDIR' '' "$(ls -A "$scratch/site-tmp-f")"
+
 printf '\n%s passed, %s failed\n' "$passed" "$failed"
 [ "$failed" -eq 0 ]
