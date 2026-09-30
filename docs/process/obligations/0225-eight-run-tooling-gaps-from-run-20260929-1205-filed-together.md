@@ -39,6 +39,6 @@ Three items are discharged by #1419, which merged as `16eecca0`:
 - A worktree-isolated parent passes its isolation to `hw-integrate`, which then cannot move the shared checkout. A detached tree under `.claude/worktrees/` worked for the post-merge rebuild, `generate`, `check --strict` and bless, and no instruction named that route. `.claude/agents/hw-integrate.md` and `hw-run-policy` now name it. HW-OBL-0224 (its second item) and HW-OBL-0221 carry the same gap, and this record does not discharge them. (integrate, #1368)
 - A pull request body that said "Neither closes #1384" made GitHub list #1384 in `closingIssuesReferences`, because the keyword matches inside a negation. No build agent's instructions warned against it. `.claude/agents/hw-build.md` now says that a `Refs` pull request carries no closing keyword, not even in a negated sentence. This repository has no pull request template. (parent, #1384)
 
-One item is discharged by PRNUM, the pull request for #1484:
+One item is discharged by #1518, the pull request for #1484:
 
 - `tools/run/queue-done.sh` printed "not queued: never removed from one" for PR #1412. The GraphQL timeline holds a `RemovedFromMergeQueueEvent` with reason `failed_checks` at 2026-09-29T19:09:58Z. HW-OBL-0224 records two earlier misreports of this script. The script read removals alone, so it could not tell a pull request never queued from one whose removal was not visible yet. It now reads the added and removed events together, and an add with no entry and no later removal holds the wait. (integrate, #1412)
