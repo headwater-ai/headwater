@@ -191,8 +191,8 @@ fn template(at: &Path) {
     write(at, "site/.keep", "");
     write(at, "report.json", "{}\n");
     write(at, "transcript.jsonl", "{}\n");
-    let declared = std::fs::read_to_string(at.join(".headwater/taxonomy.yml"))
-        .expect("the declaration reads");
+    let declared =
+        std::fs::read_to_string(at.join(".headwater/taxonomy.yml")).expect("the declaration reads");
     write(
         at,
         ".headwater/taxonomy.yml",
