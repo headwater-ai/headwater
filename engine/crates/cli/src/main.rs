@@ -4783,16 +4783,29 @@ fn scaffold_report(
                         owed.until
                     );
                 }
+                (None, None) if edge.symmetric => {
+                    let _ = writeln!(
+                        out,
+                        "    the relation is symmetric, so this half states the edge from both \
+                         ends and {} is not edited",
+                        paint(Role::Path, &edge.target_path, mode)
+                    );
+                }
                 (None, None) => {
                     let _ = writeln!(out, "    the relation asks for no far half");
                 }
             }
+            if let Some(state) = &edge.sets_target_state {
+                let _ = writeln!(
+                    out,
+                    "    the relation sets `{state}` on {}, and this run does not: \
+                     `lifecycle.state.not_set_by_edge` reports it once this document has \
+                     left its initial state, and `headwater check --fix` writes it",
+                    paint(Role::Path, &edge.target_path, mode)
+                );
+            }
         }
-        let _ = writeln!(
-            out,
-            "  no facet of another document moved. `on_target` is a lifecycle event, and no \
-             rule of this engine reads a transition"
-        );
+        let _ = writeln!(out, "  no facet of another document moved");
     }
 
     if !plan.expected.is_empty() {

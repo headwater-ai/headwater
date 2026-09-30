@@ -129,6 +129,7 @@ fn a_document_that_opens_at_a_live_state_writes_its_far_half() {
     let (plan, files) = scaffold("at_current", "elaborates");
     let paths = paths(&files);
     let edge = &plan.edges[0];
+    assert!(!edge.symmetric && edge.sets_target_state.is_none(), "{edge:?}");
     assert!(
         edge.owed.is_none(),
         "nothing is deferred at a live state: {edge:?}"
@@ -168,6 +169,8 @@ fn a_draft_writes_no_far_half_of_a_symmetric_relation() {
         edge.reciprocal.is_none() && edge.owed.is_none(),
         "a symmetric edge has no far half: {edge:?}"
     );
+    assert!(edge.symmetric, "the report reads this: {edge:?}");
+    assert_eq!(edge.sets_target_state, None, "{edge:?}");
     assert_eq!(paths(&files).len(), 1, "the anchor is left alone: {files:?}");
 }
 
@@ -187,6 +190,12 @@ fn a_live_supersession_writes_the_far_half_and_no_state() {
     let (plan, files) = scaffold("at_current", "supersedes");
     let edge = &plan.edges[0];
     assert!(edge.owed.is_none(), "{edge:?}");
+    assert!(!edge.symmetric, "{edge:?}");
+    assert_eq!(
+        edge.sets_target_state.as_deref(),
+        Some("superseded"),
+        "the report names the state this run leaves to check --fix: {edge:?}"
+    );
     let half = edge.reciprocal.as_ref().expect("the far half is written");
     assert_eq!(
         (half.relation.as_str(), half.path.as_str()),

@@ -30,7 +30,15 @@ A relation that declares `reciprocal: required` needs one half on each of its tw
 
 While the new document stays at its initial state, `headwater check` reports no finding for the owed half. When you move the new document to a state whose role is not `initial`, the check reports `relation.reciprocity.missing` on it. Then `headwater check --fix` writes the far half into the target document.
 
-When the new document does not open at an initial state, the command writes the far half into the target document at once. The report then names the path that it wrote. The command also writes the far half of a `reciprocal: symmetric` relation at once.
+When the new document does not open at an initial state, the command writes the far half into the target document at once. The report then names the path that it wrote.
+
+The command writes no far half of a `reciprocal: symmetric` relation, at any opening state ([HW-DR-0101](../decisions/0101-new-writes-no-far-half-of-a-symmetric-relation-and-no-state-on-a-supersedes-target.md)). A symmetric relation is its own inverse, so the half in the new document states the edge. A far half in a live target would make `lifecycle.dependency.on_initial` report a live document that rests on a draft. The report prints one line in this form:
+
+    the relation is symmetric, so this half states the edge from both ends and <target path> is not edited
+
+The command sets no state on the target of a relation that declares `on_target.set_state`, such as `supersedes`, at any opening state ([HW-DR-0101](../decisions/0101-new-writes-no-far-half-of-a-symmetric-relation-and-no-state-on-a-supersedes-target.md)). When the new document leaves its initial state, `lifecycle.state.not_set_by_edge` reports a live target that is not at the state the relation sets. Then `headwater check --fix` writes the state and its stamp. The report prints one line in this form:
+
+    the relation sets `<state>` on <target path>, and this run does not: `lifecycle.state.not_set_by_edge` reports it once this document has left its initial state, and `headwater check --fix` writes it
 
 Where the kind binds a language regime that holds prose to something, the report states the regime. It also states whether `headwater check` has a mechanical rule for its controlled-language and profile pair. It states the count of retired terms that regime names, and any construction a voice regime forbids for the kind. It never names a skill or a file outside the corpus. The engine reads no harness layout.
 
@@ -82,7 +90,7 @@ The command reads the system date when `--now` is absent. It reads no other envi
 | `.headwater/imports/` | Read where `.headwater/taxonomy.yml` declares an import, for the anchors that an imported snapshot supplies. An `imports` entry that does not read stops the verb with exit 1, and so does an `at` path outside the repository root. |
 | the path each `harvests.<name>.at` names | Read where `.headwater/taxonomy.yml` declares a pinned corpus export, for the anchors that export supplies. A `harvests` entry that does not read stops the verb with exit 1, and so does an `at` path outside the repository root. A pin with no digest binds no anchor. An absent file binds no anchor, and neither does a file that fails the pinned digest or is not an export. |
 | The selected document path | Written when it does not already exist. |
-| The target document of a scaffold-created relation | Written with the far half of a symmetric relation, or of a required relation when the new document does not open at an initial state. Not written while the far half is owed. |
+| The target document of a scaffold-created relation | Written with the far half of a required relation when the new document does not open at an initial state. Not written while the far half is owed, not written for a symmetric relation, and never written with a state. |
 | `.headwater/ids/<scheme>/<identifier>` | Written before the document, for a scheme that allocates `reconcile-first`. It holds the path of the document, it is never written twice, and it is never modified. |
 | `.headwater/capture-cost.jsonl` | Appended with one reading after the document write. |
 | `.headwater/overlay.yml` | Never read or written. A refusal for a kind with no identifier scheme names it as the file to edit. |
