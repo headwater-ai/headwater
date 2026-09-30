@@ -122,6 +122,7 @@ fn finding(link: &Link) -> Option<Finding> {
 mod tests {
     use super::*;
     use headwater_doc::LinkForm;
+    use headwater_graph::links::Binding;
     use headwater_yaml::{Position, Span};
 
     fn span(line: usize, col: usize) -> Span {
