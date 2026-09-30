@@ -492,6 +492,27 @@ impl Projections {
                 });
                 continue;
             };
+            // The census reads the marker only in these formats. A file at any
+            // other extension would be generated and never censused as such, so
+            // a copy that a repointed declaration left behind would be an
+            // orphan nothing reports (#1344).
+            if !headwater_mark::marks_format(&output.text) {
+                errors.push(DeclarationError {
+                    message: format!(
+                        "`projections.{index}.output` is `{}`, and the census reads the \
+                         generated-file marker only in a file ending in {}. Name an output \
+                         with one of these extensions",
+                        output.text,
+                        headwater_mark::MARKED_FORMATS
+                            .iter()
+                            .map(|extension| format!("`.{extension}`"))
+                            .collect::<Vec<_>>()
+                            .join(", ")
+                    ),
+                    span: item.span,
+                });
+                continue;
+            }
             let mut shelves = Vec::new();
             if let Some(node) = body.get("for") {
                 if let Value::Seq(items) = &node.value {

@@ -173,10 +173,12 @@ pub fn carries_marker(path: &str, text: &str) -> bool {
 /// Whether a file at a path is in a format that a projection writes with a
 /// marker, so that a reader has a reason to open it and look for one.
 ///
-/// **The formats the emitters write, and no others.** A shelf index and a
+/// **The formats a projection may write, and no others.** A shelf index and a
 /// section list are Markdown, a graph export and the corpus descriptor are
 /// JSON, and the navigation file is YAML, or TOML where a declaration names a
-/// `.toml` output. The census asks this before it reads a file that is not a
+/// `.toml` output. A declaration names its output path, and `marker` writes a
+/// line for any extension, so the generator refuses an output at an extension
+/// this does not admit. The census asks this before it reads a file that is not a
 /// Markdown document, so a `graph_export` left inside the corpus root is read
 /// and reported as an orphan (#1344), while an image or an archive stays
 /// unread. `comment_for` is not the test, because its last arm answers for
@@ -186,13 +188,16 @@ pub fn carries_marker(path: &str, text: &str) -> bool {
 /// census gives about `.md`: a case-insensitive rule behaves differently on two
 /// filesystems.
 pub fn marks_format(path: &str) -> bool {
-    matches!(
-        std::path::Path::new(path)
-            .extension()
-            .and_then(|extension| extension.to_str()),
-        Some("md" | "markdown" | "json" | "yml" | "yaml" | "toml")
-    )
+    std::path::Path::new(path)
+        .extension()
+        .and_then(|extension| extension.to_str())
+        .is_some_and(|extension| MARKED_FORMATS.contains(&extension))
 }
+
+/// The extensions [`marks_format`] admits. The generator refuses a projection
+/// declared at any other extension, so no projection writes a file that the
+/// census does not open (#1344).
+pub const MARKED_FORMATS: &[&str] = &["md", "markdown", "json", "yml", "yaml", "toml"];
 
 /// The kind the marker at a path names, when it names one.
 ///

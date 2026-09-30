@@ -1,1 +1,1 @@
-# headwater:generated graph_export. No projection writes a text file, so the census does not open this one, and the marker on its first line is never read.
+# headwater:generated graph_export. The generator refuses a projection declared at a .txt output, so this line is a hand-written claim, and the census does not open a text file to read it.

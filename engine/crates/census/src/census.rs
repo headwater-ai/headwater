@@ -133,8 +133,9 @@
 //! `generated` row. So a file in a format the emitters write is read and tested
 //! for the marker (`headwater_mark::marks_format` names the formats), and a
 //! marked one is `generated` (#1344). Every other file under the corpus root,
-//! including every image and every archive, stays `not a document` and unread,
-//! because no projection writes one and so no marker can be in it.
+//! including every image and every archive, stays `not a document` and unread.
+//! That is sound because the generator refuses a projection declared at any
+//! other extension, so no file this engine writes is in a format left unread.
 
 use crate::resolve::{self, Resolution};
 use crate::shelves::Taxonomy;
