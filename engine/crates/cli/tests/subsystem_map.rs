@@ -257,6 +257,10 @@ fn every_crate_is_in_exactly_one_row_of_spec_6s_subsystem_map() {
 /// pattern per crate ([HW-DR-0074]). It governs no crate the row does not
 /// name, because every crate belongs to exactly one subsystem (HW-DR-0098).
 ///
+/// Watched failing two ways over the Taxonomy resolution row before it passed
+/// (#1288): with the row linked and no spec on disk, and with the spec's
+/// `governs` missing `engine/crates/hash/src/**` (the message named `hash`).
+///
 /// [HW-DR-0074]: ../../../../docs/decisions/0074-a-code-path-anchor-is-a-pattern-over-the-tree-and-it-binds-when-the-pattern-matches-at-least-one-entry.md
 #[test]
 fn a_row_that_links_a_subsystem_spec_is_governed_by_it() {
@@ -304,6 +308,11 @@ fn a_row_that_links_a_subsystem_spec_is_governed_by_it() {
 /// row. A spelling the resolver normalizes (`./`, `..`) and a pattern whose
 /// literal prefix stops above one crate directory each reach the crates they
 /// would govern, which is what `headwater route` reports for a file there.
+///
+/// Watched failing two ways before it passed (#1288): with `foreign_crates`
+/// narrowed to `engine/crates/<crate>/src/**` (the `check/tests/**` row went
+/// red), and with `overlaps` replaced by a match of `src/lib.rs` alone (the
+/// `check/src/main.rs` row went red once the `check/tests/**` row was out).
 #[test]
 fn a_governs_pattern_that_reaches_outside_its_row_is_foreign() {
     let row = vec!["graph".to_string()];
@@ -351,6 +360,10 @@ fn a_governs_pattern_that_reaches_outside_its_row_is_foreign() {
 /// the crate they would govern. The spec here is a temporary file written in
 /// the shape `headwater new` writes, so the case holds the read path of the
 /// corpus case and not a copy of it.
+///
+/// Watched failing before it passed (#1288): with `governed_patterns`
+/// returning the raw entries and not calling `patterns_of`, it named the
+/// unnormalized `./` entry and the list anchor.
 #[test]
 fn a_spec_read_through_governed_patterns_reaches_the_crates_it_names() {
     static SEQ: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
@@ -374,7 +387,10 @@ fn a_spec_read_through_governed_patterns_reaches_the_crates_it_names() {
         .into_iter()
         .map(str::to_string)
         .collect();
-    for pattern in ["engine/crates/check/src/**", "engine/crates/check/src/lib.rs"] {
+    for pattern in [
+        "engine/crates/check/src/**",
+        "engine/crates/check/src/lib.rs",
+    ] {
         assert!(
             governed.contains(pattern),
             "governed_patterns does not hold {pattern} (it holds {governed:?})"
