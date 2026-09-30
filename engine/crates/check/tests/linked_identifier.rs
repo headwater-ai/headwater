@@ -360,7 +360,9 @@ fn a_reference_link_and_a_same_document_link_are_read_too() {
 /// rule's own finding count. The population is the rule's own: an agreeing
 /// inline link and an agreeing link into the same document each add one, and
 /// neither adds a finding. A count that left the same-document form out would
-/// go up by one here.
+/// go up by one here. Identifier text on a path that reaches nothing, and on
+/// an address outside the repository, reaches no identifier, so the rule
+/// compares neither and neither adds one.
 #[test]
 fn the_run_carries_how_many_links_the_rule_compared() {
     use headwater_check::paint::ColorMode;
@@ -375,6 +377,8 @@ fn the_run_carries_how_many_links_the_rule_compared() {
         &[
             "Inline, agreeing: [SPEC-FIX-cited-only](02-cited-only.md) reaches its own document.",
             "Same document, agreeing: [SPEC-FIX-both-halves](#both-halves) lands on this file.",
+            "Missing: [SPEC-FIX-cited-only](no-such-file.md) reaches nothing.",
+            "External: [SPEC-FIX-cited-only](https://example.com/x) leaves the repository.",
         ],
     );
     let after = run_over(&base, Some(&payload));
@@ -411,12 +415,25 @@ fn the_run_carries_how_many_links_the_rule_compared() {
         .scope
         .render();
     let line = format!(
-        "  {RULE}\n    {scope}\n    {} links compared, {} findings\n",
+        "  {RULE}\n    {scope}\n    {} links compared, {} of them with a finding\n",
         compared(&after),
         reported(&after)
     );
     let text = after.render(Detail::Findings, ColorMode::Plain);
     assert!(text.contains(&line), "{line}\nnot in\n{text}");
+    // Scripts read the run's total as the first line that ends in
+    // `<n> findings` (`tools/repo/diataxis-facet-fixtures.sh`'s
+    // `report_number`, `tools/taxonomy/drive_n8n.py`). The per-rule line comes
+    // before the total, so it must not have that shape.
+    let first_total = text
+        .lines()
+        .find_map(|line| {
+            let head = line.strip_suffix(" findings")?;
+            let number = head.rsplit([' ', ',']).next()?;
+            number.parse::<usize>().ok()
+        })
+        .expect("the report has a findings total");
+    assert_eq!(first_total, after.findings.len(), "{text}");
     // The totals carry no count of findings, by Detail::Totals's contract, so
     // they print the denominator alone.
     let totals = after.render(Detail::Totals, ColorMode::Plain);
@@ -487,7 +504,7 @@ fn the_run_carries_how_many_fragment_links_the_fragment_rule_compared() {
         .scope
         .render();
     let line = format!(
-        "  {FRAGMENT}\n    {scope}\n    {} links compared, {} findings\n",
+        "  {FRAGMENT}\n    {scope}\n    {} links compared, {} of them with a finding\n",
         compared(&after),
         reported(&after)
     );

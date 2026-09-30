@@ -3310,10 +3310,12 @@
           },
           "clock": "2026-08-12",
           "change": {
-            "documents": 10,
+            "documents": 15,
             "added": 2,
             "carried": 1,
             "unreadable": 3,
+            "verified": 6,
+            "verified_alone": 5,
             "unmatched": [
               "./check/evaluations/delta.md",
               "README.md",

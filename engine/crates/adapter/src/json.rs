@@ -71,19 +71,30 @@ use std::collections::HashSet;
 /// documents wrote one artifact, because the only member that moved was a
 /// content digest of the read set.
 ///
-/// `1.4` added `compared` to the entries of `rules` for
+/// `1.4` added `verified` and `verified_alone` to [`change`]. `verified` counts
+/// the documents a `verified` line names that a row of the corpus holds, and it
+/// overlaps the other counts, because such a line may sit beside a line that
+/// names a version of the same document. `verified_alone` counts the ones that
+/// only a `verified` line names, which is the class none of the others holds.
+/// So at `1.4` `added + carried + unreadable + verified_alone` plus the length
+/// of `unmatched` is `documents`. A `1.3` document of a change that named a
+/// document by a `verified` line alone counted it in `documents` and in no
+/// member beside it, and a consumer that added the members found the sum short
+/// with nothing to say why (#1398).
+///
+/// `1.5` added `compared` to the entries of `rules` for
 /// `link.identifier.mismatch` and `link.fragment.unresolved`, and to no other
 /// entry: how many links the rule compared, whether they pass or not. Each rule
 /// is silent over a corpus whose links all pass, and it is silent over a
 /// corpus that has none of the links it reads, and the member is what tells
-/// the two apart. A `1.4` document that writes
-/// `"compared": 0` says the rule examined nothing. The same entry in a `1.3`
-/// document says only that this producer had no member for the count (#1347).
+/// the two apart. A `1.5` document that writes `"compared": 0` says the rule
+/// examined nothing. The same entry in a `1.4` document says only that this
+/// producer had no member for the count (#1347).
 ///
 /// Two of the shapes here have a second reader: [`change`] and [`coverage`] are
 /// what the SARIF property bag carries, so this constant versions them for that
 /// artifact too and [`crate::sarif`] writes it there.
-pub const VERSION: &str = "1.4";
+pub const VERSION: &str = "1.5";
 
 /// What a run carries that these bytes do not write.
 ///
@@ -130,6 +141,10 @@ pub fn change(scoped: &Scoped) -> Json {
         ("added", number(scoped.named.added)),
         ("carried", number(scoped.named.carried)),
         ("unreadable", number(scoped.named.unreadable)),
+        // `verified` overlaps the classes above, and `verified_alone` is the
+        // class none of them holds, so the classes sum to `documents` (#1398).
+        ("verified", number(scoped.named.verified)),
+        ("verified_alone", number(scoped.named.verified_alone)),
         // The paths, and not the count that `Named` holds beside them. A caller
         // who mistyped one character needs the path, and a count sends them to
         // read their own manifest against a census by hand. The length is the
@@ -402,7 +417,7 @@ fn rule(served: &headwater_check::Serves) -> Json {
         ),
     ];
     // Written for the two rules that carry it, and absent on every other
-    // entry: see [`VERSION`] at `1.4`.
+    // entry: see [`VERSION`] at `1.5`.
     if let Some(compared) = served.compared {
         members.push(("compared", number(compared)));
     }

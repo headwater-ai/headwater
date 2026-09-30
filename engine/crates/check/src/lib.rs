@@ -1261,6 +1261,16 @@ impl Scoped {
                 self.named.unreadable
             );
         }
+        // The second number is the class the three above do not hold, so a
+        // reader can add the classes to the documents named (#1398).
+        if self.named.verified > 0 {
+            let _ = writeln!(
+                out,
+                "  {:5} stated as re-read by a `verified` line, {} of them named by that line \
+                 alone",
+                self.named.verified, self.named.verified_alone
+            );
+        }
         // Above the count, because it is the line that says the count is over
         // fewer documents than the caller named. A path that reached no row is
         // checked by nothing, so no skipped instance carries it and this is the
@@ -1415,6 +1425,12 @@ impl Run {
             // nothing". The finding count is the rule's share of the run's
             // own total below, and the totals print no count of findings, so
             // they print the denominator alone (#1347).
+            //
+            // The line never ends in `<n> findings`. Scripts read the run's
+            // total as the first line of that shape, and a per-rule line that
+            // matched it came before the total and turned their tallies to 0.
+            // Each of the two rules reports at most one finding per link, so
+            // "of them with a finding" counts findings and links alike.
             if let Some(compared) = served.compared {
                 match detail {
                     Detail::Totals => {
@@ -1426,7 +1442,10 @@ impl Run {
                             .iter()
                             .filter(|finding| finding.rule == served.rule)
                             .count();
-                        let _ = writeln!(out, "    {compared} links compared, {reported} findings");
+                        let _ = writeln!(
+                            out,
+                            "    {compared} links compared, {reported} of them with a finding"
+                        );
                     }
                 }
             }

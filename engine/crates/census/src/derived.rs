@@ -19,16 +19,17 @@
 //! those rules. A producer output added to a tree changes the answer with no
 //! edit here.
 //!
-//! # The three producers, and each one's own rule
+//! # The four producers, and each one's own rule
 //!
 //! | producer | its rule |
 //! |---|---|
-//! | `headwater generate` | the file carries the generated-file marker, which is [`headwater_mark::carries_marker`] and the same predicate the verb refuses to overwrite on |
+//! | `headwater generate` | the file carries the generated-file marker, which is [`headwater_mark::carries_marker`] and the same predicate the verb refuses to overwrite on, and the marker does not say the file is built at publish time |
+//! | `headwater export` | the file carries the marker of an export built at publish time, which is [`headwater_mark::built_at_publish`]: a `graph_export` declared `committed: false`, which `headwater generate` never writes (#1415) |
 //! | `headwater taxonomy resolve` | the lock path, which the verb writes and nothing else does |
 //! | a recorded corpus fixture | a `corpus.*` fixture of an engine crate whose opening states a fold: a count over the corpus, or a digest over the whole canonical text |
 //!
 //! A tree is asked only about the producers it holds, by
-//! [`Producer::held_by`]. An adopter's tree holds the two verbs and not the
+//! [`Producer::held_by`]. An adopter's tree holds the three verbs and not the
 //! engine workspace, so a report there names no command that the tree cannot
 //! run.
 //!
@@ -110,6 +111,8 @@ use std::path::{Path, PathBuf};
 pub enum Producer {
     /// The projection layer, enumerable by the marker it writes.
     Generate,
+    /// The publish-time export, enumerable by the marker text it writes.
+    Export,
     /// The taxonomy resolver, which writes the committed lock.
     TaxonomyResolve,
     /// A recorded fixture of an engine crate that states a fold.
@@ -121,6 +124,7 @@ impl Producer {
     pub fn command(self) -> &'static str {
         match self {
             Producer::Generate => "headwater generate",
+            Producer::Export => "headwater export",
             Producer::TaxonomyResolve => "headwater taxonomy resolve",
             Producer::RecordedFold => "HEADWATER_BLESS=1 cargo test",
         }
@@ -128,7 +132,8 @@ impl Producer {
 
     /// Whether the tree at `root` holds this producer, so that it can be run there.
     ///
-    /// The two verbs are held by every tree that has the engine. The blessing
+    /// The three verbs are held by every tree that has the engine, because
+    /// every engine ships them, and no lock is read to decide it. The blessing
     /// run belongs to the repository that maintains the engine, and a tree
     /// holds it only where it carries the file that runs it:
     /// [`ENGINE_MANIFEST`]. A producer that a
@@ -137,7 +142,7 @@ impl Producer {
     /// for it. This is the one predicate both read.
     pub fn held_by(self, root: &Path) -> bool {
         match self {
-            Producer::Generate | Producer::TaxonomyResolve => true,
+            Producer::Generate | Producer::Export | Producer::TaxonomyResolve => true,
             Producer::RecordedFold => root.join(ENGINE_MANIFEST).is_file(),
         }
     }
@@ -146,6 +151,7 @@ impl Producer {
     pub fn rule(self) -> &'static str {
         match self {
             Producer::Generate => "carries the generated-file marker",
+            Producer::Export => "carries the marker of an export built at publish time",
             Producer::TaxonomyResolve => "is the committed taxonomy lock",
             Producer::RecordedFold => "is a recorded corpus fixture whose opening states a fold",
         }
@@ -619,6 +625,7 @@ impl Population {
 /// The producers, in report order. The only list here, and it is of rules.
 pub const PRODUCERS: &[Producer] = &[
     Producer::Generate,
+    Producer::Export,
     Producer::TaxonomyResolve,
     Producer::RecordedFold,
 ];
@@ -776,7 +783,12 @@ fn shape_of(root: &Path, path: &str, producer: Option<Producer>, blessing: bool)
         // A file whose marker line is its only line is a projection written
         // compactly, and one line cannot be one record per entity: any two
         // edits conflict on it, and the cure is to regenerate (#809).
-        Some(Producer::Generate) => {
+        //
+        // A publish-time export takes the same rule, so naming its producer
+        // left its shape as it was. The other arm would make every such file a
+        // fold, which `headwater init --git` then writes a `-merge` line for,
+        // and the file is never committed (#1415).
+        Some(Producer::Generate | Producer::Export) => {
             let text = std::fs::read_to_string(root.join(path)).ok()?;
             return Some(match states_a_fold(&text) || is_one_marked_line(&text) {
                 true => Shape::Fold,
@@ -825,8 +837,9 @@ fn rebuild_of(path: &str, producer: Option<Producer>, blessing: bool) -> Option<
 /// Which producer's rule claims a path, and none for a file nobody writes.
 ///
 /// A path is claimed by at most one producer. No two rules here overlap: the
-/// marker rule stops at a `fixtures/` component, and the lock carries no
-/// marker.
+/// marker rule stops at a `fixtures/` component, the lock carries no marker,
+/// and a marked file goes to `headwater export` or to `headwater generate` by
+/// what its marker says, never to both.
 fn claimed_by(root: &Path, path: &str) -> Option<Producer> {
     if path == LOCK {
         return Some(Producer::TaxonomyResolve);
@@ -838,7 +851,16 @@ fn claimed_by(root: &Path, path: &str) -> Option<Producer> {
     if in_a_fixture_tree(path) {
         return None;
     }
-    headwater_mark::carries_marker(path, &text).then_some(Producer::Generate)
+    if !headwater_mark::carries_marker(path, &text) {
+        return None;
+    }
+    // A marked file that `headwater export` builds at publish time is one
+    // `headwater generate` never writes, so naming `generate` sends its reader
+    // to a command that does not rebuild it (#1415).
+    Some(match headwater_mark::built_at_publish(path, &text) {
+        true => Producer::Export,
+        false => Producer::Generate,
+    })
 }
 
 /// A `corpus.*` fixture of an engine crate, which a blessing run writes.
@@ -1278,7 +1300,7 @@ mod tests {
     fn plain_writes_the_whole_report_and_no_escape_sequence() {
         let rendered = disagreeing().render(ColorMode::Plain);
         assert!(!rendered.contains('\x1b'), "{rendered:?}");
-        assert!(rendered.starts_with("2 derived artifacts, computed from 3 producers\n"));
+        assert!(rendered.starts_with("2 derived artifacts, computed from 4 producers\n"));
         assert!(rendered.contains("  headwater generate — carries the generated-file marker"));
         assert!(rendered.contains("    docs/spec/06-engine-architecture.md\n"));
         assert!(rendered.contains("these are written by a producer and carry neither"));
@@ -1297,7 +1319,7 @@ mod tests {
         for (role, expected) in [
             (
                 "heading",
-                "\x1b[1m2 derived artifacts, computed from 3 producers\x1b[0m",
+                "\x1b[1m2 derived artifacts, computed from 4 producers\x1b[0m",
             ),
             ("verb", "\x1b[1;32mheadwater generate\x1b[0m"),
             ("path", "\x1b[36mdocs/spec/06-engine-architecture.md\x1b[0m"),
