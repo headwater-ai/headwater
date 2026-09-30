@@ -74,6 +74,8 @@ No environment variable reaches this verb. The target and repository come from t
 | `.headwater/taxonomy.lock` | Read for the resolved taxonomy. |
 | `.headwater/taxonomy.yml` | Read through the consumer loader. |
 | The corpus | Read for census rows and identifiers. The resolved document is read as bytes. |
+| `.headwater/imports/` | Read where `.headwater/taxonomy.yml` declares an import, for the anchors that an imported snapshot supplies. An `imports` entry that does not read stops the verb with exit 1, and so does an `at` path outside the repository root. |
+| the path each `harvests.<name>.at` names | Read where `.headwater/taxonomy.yml` declares a pinned corpus export, for the anchors that export supplies. A `harvests` entry that does not read stops the verb with exit 1, and so does an `at` path outside the repository root. A pin with no digest binds no anchor. An absent file binds no anchor, and neither does a file that fails the pinned digest or is not an export. |
 
 The verb writes no file.
 

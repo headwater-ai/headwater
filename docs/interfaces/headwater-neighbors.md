@@ -68,6 +68,8 @@ No environment variable reaches this verb. The hook reads `HEADWATER_MODEL_DIR` 
 | `<model dir>/.<file>.verified` | Written after a file matches its pin. It holds the digest, the length and the modification time. While all three still agree with the file, the verb does not calculate the digest again. |
 | `.headwater/cache/embeddings/<model digest>` | Read, and written through a rename. It keeps only the entries of the current run. |
 | `.headwater/taxonomy.lock`, `.headwater/taxonomy.yml`, the corpus | Read for the typed documents and their summaries. |
+| `.headwater/imports/` | Read where `.headwater/taxonomy.yml` declares an import, for the anchors that an imported snapshot supplies. An `imports` entry that does not read stops the verb with exit 1, and so does an `at` path outside the repository root. |
+| the path each `harvests.<name>.at` names | Read where `.headwater/taxonomy.yml` declares a pinned corpus export, for the anchors that export supplies. A `harvests` entry that does not read stops the verb with exit 1, and so does an `at` path outside the repository root. A pin with no digest binds no anchor. An absent file binds no anchor, and neither does a file that fails the pinned digest or is not an export. |
 
 The verb does not open a pin, a model file, a stamp or a cache that is not a regular file. A named pipe is one example. It refuses a pin or a model file of that type. It does not read or write a stamp of that type, and it reads a cache of that type as empty.
 
