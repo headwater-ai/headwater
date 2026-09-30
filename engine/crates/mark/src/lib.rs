@@ -393,7 +393,10 @@ mod tests {
             "docs.json/LICENSE",
             "docs/.htaccess",
         ] {
-            assert!(!marks_format(path), "{path} is not a format a projection writes");
+            assert!(
+                !marks_format(path),
+                "{path} is not a format a projection writes"
+            );
         }
     }
 
