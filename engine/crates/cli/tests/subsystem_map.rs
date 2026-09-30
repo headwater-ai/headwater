@@ -120,39 +120,54 @@ fn spec_six_rows() -> Vec<Row> {
 }
 
 /// The `governs` list under the `relations:` block of a document's front
-/// matter, read for the fixed shape `headwater new` writes: an inline `[a, b]`
-/// list or a block of `- a` lines. A `governs:` key anywhere else declares no
-/// edge, and `headwater route` reads nothing from it, so it is not read here.
+/// matter, read with the YAML loader the engine reads it with, so a comment, a
+/// blank line or a flow list reads as the engine reads it. Each entry comes
+/// back as text: a scalar as written, and a list anchor (`- [a, b]`) as
+/// `[a, b]` for `patterns_of`. A `governs:` key anywhere else declares no edge,
+/// and `headwater route` reads nothing from it, so it is not read here.
 fn governs(path: &Path) -> Vec<String> {
     let text = std::fs::read_to_string(path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
     let front = text
         .strip_prefix("---\n")
         .and_then(|rest| rest.split_once("\n---").map(|(front, _)| front))
         .unwrap_or_else(|| panic!("{}: no front matter", path.display()));
-    let unquote = |s: &str| s.trim().trim_matches('"').trim_matches('\'').to_string();
-    let mut lines = front
-        .lines()
-        .skip_while(|line| line.trim_end() != "relations:")
-        .skip(1)
-        .take_while(|line| line.starts_with(' '));
-    while let Some(line) = lines.next() {
-        let Some(value) = line.trim_start().strip_prefix("governs:") else {
-            continue;
-        };
-        let value = value.trim();
-        if let Some(inline) = value.strip_prefix('[') {
-            return inline
-                .trim_end_matches(']')
-                .split(',')
-                .map(unquote)
-                .filter(|s| !s.is_empty())
-                .collect();
+    let root = headwater_yaml::load(front)
+        .unwrap_or_else(|e| panic!("{}: the front matter does not load: {e:?}", path.display()));
+    let Some(list) = root
+        .value
+        .as_map()
+        .and_then(|front| front.get("relations"))
+        .and_then(|relations| relations.value.as_map())
+        .and_then(|relations| relations.get("governs"))
+    else {
+        return Vec::new();
+    };
+    let entry = |node: &headwater_yaml::Spanned<headwater_yaml::Value>| -> String {
+        if let Some(scalar) = node.value.as_scalar() {
+            return scalar.text.clone();
         }
-        return lines
-            .map_while(|line| line.trim_start().strip_prefix("- ").map(unquote))
+        let members: Vec<String> = node
+            .value
+            .as_seq()
+            .unwrap_or_else(|| panic!("{}: a `governs` entry is a mapping", path.display()))
+            .iter()
+            .map(|member| {
+                member
+                    .value
+                    .as_scalar()
+                    .unwrap_or_else(|| {
+                        panic!("{}: a list anchor member is not a scalar", path.display())
+                    })
+                    .text
+                    .clone()
+            })
             .collect();
+        format!("[{}]", members.join(", "))
+    };
+    match list.value.as_seq() {
+        Some(entries) => entries.iter().map(entry).collect(),
+        None => vec![entry(list)],
     }
-    Vec::new()
 }
 
 /// The patterns of one `governs` entry, normalized the way the `source-tree`
@@ -168,6 +183,17 @@ fn patterns_of(entry: &str) -> Vec<String> {
         .split(',')
         .map(|member| member.trim().trim_matches('"').trim_matches('\''))
         .filter_map(|member| headwater_graph::anchors::normalize(member).ok())
+        .collect()
+}
+
+/// Every pattern the `governs` list of the spec at `path` holds, each entry
+/// normalized through `patterns_of`. The corpus case reads a spec through this
+/// function and nothing else, so the case below holds what the corpus case
+/// sees.
+fn governed_patterns(path: &Path) -> BTreeSet<String> {
+    governs(path)
+        .iter()
+        .flat_map(|entry| patterns_of(entry))
         .collect()
 }
 
@@ -246,6 +272,10 @@ fn every_crate_is_in_exactly_one_row_of_spec_6s_subsystem_map() {
 /// pattern per crate ([HW-DR-0074]). It governs no crate the row does not
 /// name, because every crate belongs to exactly one subsystem (HW-DR-0098).
 ///
+/// Watched failing two ways over the Taxonomy resolution row before it passed
+/// (#1288): with the row linked and no spec on disk, and with the spec's
+/// `governs` missing `engine/crates/hash/src/**` (the message named `hash`).
+///
 /// [HW-DR-0074]: ../../../../docs/decisions/0074-a-code-path-anchor-is-a-pattern-over-the-tree-and-it-binds-when-the-pattern-matches-at-least-one-entry.md
 #[test]
 fn a_row_that_links_a_subsystem_spec_is_governed_by_it() {
@@ -261,10 +291,7 @@ fn a_row_that_links_a_subsystem_spec_is_governed_by_it() {
             "spec 6 '{HEADING}' row {} links {link}, which does not exist",
             row.subsystem
         );
-        let governed: BTreeSet<String> = governs(&path)
-            .iter()
-            .flat_map(|entry| patterns_of(entry))
-            .collect();
+        let governed = governed_patterns(&path);
         let foreign: Vec<String> = governed
             .iter()
             .flat_map(|pattern| {
@@ -296,6 +323,11 @@ fn a_row_that_links_a_subsystem_spec_is_governed_by_it() {
 /// row. A spelling the resolver normalizes (`./`, `..`) and a pattern whose
 /// literal prefix stops above one crate directory each reach the crates they
 /// would govern, which is what `headwater route` reports for a file there.
+///
+/// Watched failing two ways before it passed (#1288): with `foreign_crates`
+/// narrowed to `engine/crates/<crate>/src/**` (the `check/tests/**` row went
+/// red), and with `overlaps` replaced by a match of `src/lib.rs` alone (the
+/// `check/src/main.rs` row went red once the `check/tests/**` row was out).
 #[test]
 fn a_governs_pattern_that_reaches_outside_its_row_is_foreign() {
     let row = vec!["graph".to_string()];
@@ -311,8 +343,11 @@ fn a_governs_pattern_that_reaches_outside_its_row_is_foreign() {
             .into_iter()
             .collect()
     };
-    let cases: [(&str, &[&str]); 10] = [
+    let cases: [(&str, &[&str]); 13] = [
         ("engine/crates/graph/src/**", &[]),
+        ("engine/crates/check/tests/**", &["check"]),
+        ("engine/crates/check/src/main.rs", &["check"]),
+        ("engine/crates/hash/src/deep/mod.rs", &["hash"]),
         ("./engine/crates/graph/src/**", &[]),
         ("engine/crates/graph/tests/**", &[]),
         ("engine/crates/check/../graph/src/**", &[]),
@@ -331,6 +366,94 @@ fn a_governs_pattern_that_reaches_outside_its_row_is_foreign() {
             reach(entry),
             expected,
             "the crates `{entry}` reaches outside its row"
+        );
+    }
+}
+
+/// `governed_patterns` over a temporary spec file whose text is `text`. The
+/// file name carries the pid, the thread id and a counter, because cargo runs
+/// the cases of one target as threads of one process.
+fn governed_patterns_of_text(text: &str) -> BTreeSet<String> {
+    static SEQ: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+    let dir = std::env::temp_dir().join(format!(
+        "subsystem_map-governed_patterns-{}-{:?}-{}",
+        std::process::id(),
+        std::thread::current().id(),
+        SEQ.fetch_add(1, std::sync::atomic::Ordering::SeqCst)
+    ));
+    std::fs::create_dir_all(&dir).expect("the temp dir is written");
+    let spec = dir.join("spec.md");
+    std::fs::write(&spec, text).expect("the temp spec is written");
+    let governed = governed_patterns(&spec);
+    std::fs::remove_dir_all(&dir).expect("the temp dir is removed");
+    governed
+}
+
+/// A comment line or a blank line inside the `governs` list, or between the
+/// keys of `relations:`, hides no entry. The engine reads the front matter as
+/// YAML and binds every entry after either one, so a reader that stopped
+/// there would pass a spec that governs a crate outside its row.
+///
+/// Watched failing before it passed (#1288, verify round 2): over the line
+/// reader that `governs` replaced, which stopped at the comment line and
+/// dropped the graph entry. With the loader, a comment and the graph entry in
+/// the Taxonomy resolution spec turned the corpus case red, as it must.
+#[test]
+fn a_comment_or_a_blank_line_in_the_governs_list_hides_no_entry() {
+    let cases = [
+        (
+            "a comment line",
+            "---\nid: HW-SPEC-temp\nrelations:\n  governs:\n    - engine/crates/hash/src/**\n    # the graph crate as well\n    - engine/crates/graph/src/**\n---\n\n# Temp\n",
+        ),
+        (
+            "a blank line",
+            "---\nid: HW-SPEC-temp\nrelations:\n  governs:\n    - engine/crates/hash/src/**\n\n    - engine/crates/graph/src/**\n---\n\n# Temp\n",
+        ),
+        (
+            "a blank line before the key",
+            "---\nid: HW-SPEC-temp\nrelations:\n  traces_to:\n    - HW-SPEC-engine-architecture\n\n  governs:\n    - engine/crates/graph/src/**\n---\n\n# Temp\n",
+        ),
+    ];
+    for (shape, text) in cases {
+        let governed = governed_patterns_of_text(text);
+        assert!(
+            governed.contains("engine/crates/graph/src/**"),
+            "with {shape} in `relations:`, governed_patterns does not hold engine/crates/graph/src/** (it holds {governed:?})"
+        );
+    }
+}
+
+/// The corpus case reads a spec's `governs` through `governed_patterns`, so a
+/// spelling the resolver normalizes and a member of a list anchor each reach
+/// the crate they would govern. The spec here is a temporary file written in
+/// the shape `headwater new` writes, so the case holds the read path of the
+/// corpus case and not a copy of it.
+///
+/// Watched failing before it passed (#1288): with `governed_patterns`
+/// returning the raw entries and not calling `patterns_of`, it named the
+/// unnormalized `./` entry and the list anchor.
+#[test]
+fn a_spec_read_through_governed_patterns_reaches_the_crates_it_names() {
+    let governed = governed_patterns_of_text(
+        "---\nid: HW-SPEC-temp\nrelations:\n  governs:\n    - ./engine/crates/check/src/**\n    - [engine/crates/graph/src/lib.rs, engine/crates/check/src/lib.rs]\n  traces_to:\n    - HW-SPEC-engine-architecture\n---\n\n# Temp\n",
+    );
+    let row = vec!["graph".to_string()];
+    let crates: BTreeSet<String> = ["check", "graph", "hash"]
+        .into_iter()
+        .map(str::to_string)
+        .collect();
+    for pattern in [
+        "engine/crates/check/src/**",
+        "engine/crates/check/src/lib.rs",
+    ] {
+        assert!(
+            governed.contains(pattern),
+            "governed_patterns does not hold {pattern} (it holds {governed:?})"
+        );
+        assert_eq!(
+            foreign_crates(pattern, &row, &crates),
+            ["check"],
+            "the crates `{pattern}` reaches outside its row"
         );
     }
 }

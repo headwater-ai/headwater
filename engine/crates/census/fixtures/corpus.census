@@ -1094,6 +1094,8 @@ docs/subsystems/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/subsystems/graph-build.md
   typed: subsystem_spec
+docs/subsystems/taxonomy-resolution.md
+  typed: subsystem_spec
 docs/taxonomies/README.md
   typed: library_doctrine
 docs/taxonomies/brd-prd/bundle.yml

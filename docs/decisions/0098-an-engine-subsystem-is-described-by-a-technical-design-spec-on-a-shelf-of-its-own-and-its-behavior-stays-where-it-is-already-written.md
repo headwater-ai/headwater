@@ -6,10 +6,11 @@ summary: "Each engine subsystem gets one technical spec, a subsystem_spec on a n
 last_verified: 2026-09-28
 title: "An engine subsystem is described by a technical design spec on a shelf of its own, and its behavior stays where it is already written"
 provenance:
-  warrant: asserted
+  warrant: accepted
   agency: agent
   drafted_by: claude-opus-5-5
   activity: measure+draft+revise
+  accepted_by: j.baxter
   evidence_basis: evidenced
 relations:
   traces_to:
