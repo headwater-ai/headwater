@@ -20,10 +20,10 @@
 # this checkout, prints the delta of every arm with `ablate.sh --diff`, starts
 # `headwater mcp` in the `mcp` arm's tree and checks that it lists tools, and
 # runs the leak check (`seal.sh --leak`) over the present tree and the `mcp`
-# arm's tree. It refuses a line that pools a probe under `cued:` with one that
+# arm's tree. It refuses a line that pools a probe under `leaks_kept:` with one that
 # is not. It exits 0 when the only refusal of any plan is the ceiling, which
 # it prints as a line, 5 for any other refusal of a plan, and 8 when an arm
-# differs from the present tree by more than its delta, a cue leaks, a cued
+# differs from the present tree by more than its delta, a leak string leaks, a leak-kept
 # probe shares a line, or the MCP server lists no tool. It deletes the trees
 # before it exits.
 #
@@ -289,7 +289,7 @@ if [ "$assemble" = 1 ]; then
         set -- $line
         index=$1 tier=$2 arm=$3 category=$4
         # The line number leads the stem, because a spec may run one category
-        # on two lines of one arm, as the cued probes of #1472 do.
+        # on two lines of one arm, as the leak-kept probes of #1472 do.
         stem=L$index-$tier-$arm-$category
         identity=
         cost=0

@@ -32,3 +32,5 @@ A paired campaign over one corpus is the instrument.
 ## Discharge
 
 No campaign has run, and this corpus authors no cue. If a cue does not raise precision, it is authoring cost with no scent gain. The honest response is then to remove it rather than to make it longer.
+
+**The design of #1472 does not discharge this record.** That issue declares the component arms of the campaign tier, a power calculation and a dry run that prices the plan. It runs no session, and the owner ruled that this record stays open until the campaign runs.

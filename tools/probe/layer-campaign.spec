@@ -9,7 +9,7 @@
 # campaign's absent arm and present arm of the same batch.
 #
 # Sufficiency is two lines per arm. The status probe and the accepted-event
-# probe keep their cue in the present arm (`cued:` in `.headwater/probe.yml`),
+# probe keep their leak string in the present arm (`leaks_kept:` in `.headwater/probe.yml`),
 # so they run on a line of their own and are never pooled into the rate of
 # the other two. Discovery runs without the authoring-skill probe, which no
 # arm without `.claude/` can satisfy, and at the powered repetitions the dry
@@ -18,7 +18,7 @@
 # Nobody runs this spec until the owner rules on one ceiling for the whole
 # plan (#1472) and the sessions are confined (#1467).
 
-# Sufficiency, less the two cued probes.
+# Sufficiency, less the two leak-kept probes.
 campaign      present      sufficiency HW-PROBE-a-session-names-the-status-a-settled-decision-carries-in-its-pull-request HW-PROBE-a-session-names-the-event-that-makes-a-document-accepted
 campaign      absent       sufficiency HW-PROBE-a-session-names-the-status-a-settled-decision-carries-in-its-pull-request HW-PROBE-a-session-names-the-event-that-makes-a-document-accepted
 campaign      no-hook      sufficiency HW-PROBE-a-session-names-the-status-a-settled-decision-carries-in-its-pull-request HW-PROBE-a-session-names-the-event-that-makes-a-document-accepted
@@ -27,7 +27,7 @@ campaign      no-claude-md sufficiency HW-PROBE-a-session-names-the-status-a-set
 campaign      mcp          sufficiency HW-PROBE-a-session-names-the-status-a-settled-decision-carries-in-its-pull-request HW-PROBE-a-session-names-the-event-that-makes-a-document-accepted
 documentation absent       sufficiency HW-PROBE-a-session-names-the-status-a-settled-decision-carries-in-its-pull-request HW-PROBE-a-session-names-the-event-that-makes-a-document-accepted
 
-# The two cued probes, on lines of their own.
+# The two leak-kept probes, on lines of their own.
 campaign      present      sufficiency HW-PROBE-a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer HW-PROBE-a-session-records-an-unmeasured-claim-in-the-shape-this-corpus-checks
 campaign      absent       sufficiency HW-PROBE-a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer HW-PROBE-a-session-records-an-unmeasured-claim-in-the-shape-this-corpus-checks
 campaign      no-hook      sufficiency HW-PROBE-a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer HW-PROBE-a-session-records-an-unmeasured-claim-in-the-shape-this-corpus-checks

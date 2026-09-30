@@ -46,3 +46,5 @@ The claim has a precise shape, and a published rate has to keep it. Present agai
 Two runs discharge this record: one of the `documentation` tier and one of the `campaign` tier. They run over the same selection, in one batch, on one model version, and both transcripts are committed under `docs/probe-runs/`. The result names the difference between the two absent arms as the effect of the documents, with its interval.
 
 A ruling that the documents are not a claim this repository makes also discharges it. That ruling removes the `documentation` tier.
+
+**The design of #1472 does not discharge this record.** That issue declares the component arms of the campaign tier, a power calculation and a dry run that prices the plan. It runs no session. Its plan keeps the `documentation` tier beside the campaign tier, so the two runs that discharge this record are both in it.

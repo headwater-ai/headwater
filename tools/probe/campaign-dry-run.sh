@@ -117,9 +117,9 @@ n=${needed#* }
 printf 'power: %s against %s at a two-sided level of %s and a power of %s needs %s sessions per arm, %s with the Fleiss continuity correction. A line of %s pools its probes into one rate and runs ceil(%s / k) repetitions of each of its k probes.\n' \
     "$p1" "$p2" "$alpha" "$power" "$n0" "$n" "${pooled:-no category}" "$n"
 
-# The probes kept on their own line (`cued:`).
-cued=$(awk '
-    /^cued:/ { on = 1; next }
+# The probes kept on their own line (`leaks_kept:`).
+kept_probes=$(awk '
+    /^leaks_kept:/ { on = 1; next }
     on && /^[^ #]/ { on = 0 }
     on && /^  - / { e = substr($0, 5); sub(/[ ]+#.*$/, "", e); gsub(/^[ "\047]+|[ "\047]+$/, "", e); print e }
 ' "$declaration")
@@ -203,14 +203,14 @@ while IFS= read -r line; do
         "$(awk -v c="$cents" 'BEGIN { printf "%.2f", c / 100 }')"
     printf '%s %s %s %s %s\n' "$tier" "$arm" "$sessions" "$cents" "$ceiling" >> "$work/costs"
 
-    # A cued probe is reported on its own line and never pooled with one that
+    # A leak-kept probe is reported on its own line and never pooled with one that
     # is not (#1472).
     has_cued=0
     has_other=0
     for probe in $probes; do
         printf '%s %s %s\n' "$index" "$tier" "$probe" >> "$work/probes"
         case "
-$cued
+$kept_probes
 " in
             *"
 $probe
@@ -219,10 +219,10 @@ $probe
         esac
     done
     if [ "$has_cued" = 1 ] && [ "$has_other" = 1 ]; then
-        printf 'line %s pools a probe under `cued:` with one that is not, so its rate would hold the cue.\n' "$index"
+        printf 'line %s pools a probe under `leaks_kept:` with one that is not, so its rate would hold the leak string.\n' "$index"
         [ "$status" = 5 ] || status=8
     elif [ "$has_cued" = 1 ]; then
-        printf 'line %s holds only cued probes, and is reported on its own line.\n' "$index"
+        printf 'line %s holds only leak-kept probes, and is reported on its own line.\n' "$index"
     fi
 done < "$work/lines"
 

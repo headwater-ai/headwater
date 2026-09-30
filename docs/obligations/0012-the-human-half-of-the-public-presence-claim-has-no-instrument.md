@@ -31,3 +31,5 @@ The Discovery probe category is the instrument for the machine half.
 ## Discharge
 
 The human half has no instrument at all, which is worth a statement rather than a silence. No probe category grades what a person understood from a page, and this project has proposed none.
+
+**The design of #1472 does not discharge this record.** That issue declares the component arms of the campaign tier, a power calculation and a dry run that prices the plan. It runs no session, and the owner ruled that this record stays open until the campaign runs.

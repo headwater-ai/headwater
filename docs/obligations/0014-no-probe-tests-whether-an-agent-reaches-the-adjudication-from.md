@@ -39,3 +39,5 @@ The harness exists and this corpus still holds no adjudicated pair. [HW-PROBE-an
 This remains a reading of the supersession and not of Q18. Q18 rules that an adjudication is a decision document which carries `overrides`, and no document of this corpus carries that key. So the instrument the obligation names still has nothing to run against, and this record waits on a build.
 
 **Every recording that this record cites predates the sealed workspace (#1229).** Each session ran in a workspace that kept every probe file, so a session could read its own expectation. A reading that counts for this record comes from a workspace that [`tools/probe/seal.sh`](../../tools/probe/seal.sh) sealed.
+
+**The design of #1472 does not discharge this record.** That issue declares the component arms of the campaign tier, a power calculation and a dry run that prices the plan. It runs no session, and the owner ruled that this record stays open until the campaign runs.

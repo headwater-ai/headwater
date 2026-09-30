@@ -1887,7 +1887,7 @@ kept "and removes exactly its entries" CLAUDE.md .githooks .headwater engine -- 
 # The leak check (#1472). The status probe's answer is in text the harness
 # loads into every session, and no search by the probe's identifier or slug
 # finds it, because that text names the ruling and never the probe. So the
-# check reads the cues each probe declares, over the always-loaded set of a
+# check reads the leak strings each probe declares, over the always-loaded set of a
 # copy of this repository's present tree.
 # ---------------------------------------------------------------------------
 seal="$root/tools/probe/seal.sh"
@@ -1905,26 +1905,26 @@ else
     pass "the always-loaded text does not name the status probe"
 fi
 
-# THE decisive case: a declaration that keeps no cue. The check names the
+# THE decisive case: a declaration that keeps no leak string. The check names the
 # authoring skill with the ruling's identifier, and exits 1.
-awk '/^cued:/ { skip = 1; next } skip && /^[^ #]/ { skip = 0 } !skip' \
+awk '/^leaks_kept:/ { skip = 1; next } skip && /^[^ #]/ { skip = 0 } !skip' \
     "$root/.headwater/probe.yml" > "$scratch/leak-probe.yml"
 HW_PROBE_YML="$scratch/leak-probe.yml" sh "$seal" --leak "$scratch/leak-ws" "$status_probe" \
     > "$scratch/leak.out" 2> "$scratch/leak.err"
 same "the leak check fails the present tree for the status probe" "1" "$?"
-present "and names the authoring skill with the cue HW-DR-0052" \
+present "and names the authoring skill with the leak string HW-DR-0052" \
     "leak $status_probe .claude/skills/headwater-authoring/SKILL.md HW-DR-0052" "$scratch/leak.out"
-present "and the cue \`status: current\` too" \
+present "and the leak string \`status: current\` too" \
     "leak $status_probe .claude/skills/headwater-authoring/SKILL.md status: current" "$scratch/leak.out"
 
-# The committed declaration keeps the cue on purpose (#1472, outcome b): the
+# The committed declaration keeps the leak string on purpose (#1472, outcome b): the
 # probe is reported on its own line and never in a sufficiency rate.
 sh "$seal" --leak "$scratch/leak-ws" "$status_probe" > "$scratch/kept.out" 2> "$scratch/kept.err"
-same "a cue the declaration keeps does not fail the check" "0" "$?"
+same "a leak string the declaration keeps does not fail the check" "0" "$?"
 present "and the check still prints it, as kept" \
     "kept $status_probe .claude/skills/headwater-authoring/SKILL.md HW-DR-0052" "$scratch/kept.out"
 
-# A description is the one line a harness loads. A cue in the body of a skill
+# A description is the one line a harness loads. A leak string in the body of a skill
 # is not always loaded, so it is no leak.
 rm -rf "$scratch/leak-body"
 mkdir -p "$scratch/leak-body/.claude/skills/s"
@@ -1932,19 +1932,19 @@ printf -- '---\nname: s\ndescription: Nothing to see.\n---\n\nThe ruling is HW-D
     > "$scratch/leak-body/.claude/skills/s/SKILL.md"
 HW_PROBE_YML="$scratch/leak-probe.yml" sh "$seal" --leak "$scratch/leak-body" "$status_probe" \
     > "$scratch/body.out" 2>&1
-same "a cue in the body of a skill and not in its description is no leak" "0" "$?"
+same "a leak string in the body of a skill and not in its description is no leak" "0" "$?"
 # A folded description is read to its end.
 printf -- '---\nname: s\ndescription: >\n  Nothing to see, and\n  the ruling is HW-DR-0052.\n---\n' \
     > "$scratch/leak-body/.claude/skills/s/SKILL.md"
 HW_PROBE_YML="$scratch/leak-probe.yml" sh "$seal" --leak "$scratch/leak-body" "$status_probe" \
     > "$scratch/folded.out" 2>&1
-same "a cue on the second line of a folded description is a leak" "1" "$?"
+same "a leak string on the second line of a folded description is a leak" "1" "$?"
 
-# A probe that declares no cue is printed as one the check cannot see, and
+# A probe that declares no leak string is printed as one the check cannot see, and
 # does not pass as clean by saying nothing.
-sh "$seal" --leak "$scratch/leak-ws" HW-PROBE-no-such-probe > "$scratch/uncued.out" 2>&1
-same "a probe with no cue does not fail the check" "0" "$?"
-present "and is printed as uncued" "uncued HW-PROBE-no-such-probe" "$scratch/uncued.out"
+sh "$seal" --leak "$scratch/leak-ws" HW-PROBE-no-such-probe > "$scratch/undeclared.out" 2>&1
+same "a probe with no leak string does not fail the check" "0" "$?"
+present "and is printed as undeclared" "undeclared HW-PROBE-no-such-probe" "$scratch/undeclared.out"
 
 # The MCP tools. A workspace that declares a server has the descriptions of
 # its tools loaded too, and the check lists them through the engine.
@@ -1953,10 +1953,10 @@ if [ -x "$engine" ]; then
     mkdir -p "$scratch/leak-mcp"
     cp -R "$root/.headwater" "$scratch/leak-mcp/.headwater"
     printf '{"mcpServers":{}}\n' > "$scratch/leak-mcp/.mcp.json"
-    printf 'cues:\n  HW-PROBE-x: [Resolve a task description]\n' > "$scratch/mcp-probe.yml"
+    printf 'leaks:\n  HW-PROBE-x: [Resolve a task description]\n' > "$scratch/mcp-probe.yml"
     HW_PROBE_YML="$scratch/mcp-probe.yml" sh "$seal" --leak "$scratch/leak-mcp" HW-PROBE-x \
         > "$scratch/mcp.out" 2> "$scratch/mcp.err"
-    same "a cue in an MCP tool's description is a leak" "1" "$?"
+    same "a leak string in an MCP tool's description is a leak" "1" "$?"
     present "and names the tool" "leak HW-PROBE-x mcp:route Resolve a task description" "$scratch/mcp.out"
     rm -f "$scratch/leak-mcp/.mcp.json"
     HW_PROBE_YML="$scratch/mcp-probe.yml" sh "$seal" --leak "$scratch/leak-mcp" HW-PROBE-x \
@@ -2072,16 +2072,16 @@ if [ -x "$engine" ]; then
         "lists route explain" "$scratch/dry.out"
     present "and the leak check reports the status probe as kept" \
         "leak check, present tree: kept $status_probe .claude/skills/headwater-authoring/SKILL.md HW-DR-0052" "$scratch/dry.out"
-    present "and each cued line on its own" "line 8 holds only cued probes" "$scratch/dry.out"
+    present "and each leak-kept line on its own" "line 8 holds only leak-kept probes" "$scratch/dry.out"
 
-    # A line that pools a cued probe with one that is not fails the dry run,
+    # A line that pools a leak-kept probe with one that is not fails the dry run,
     # and a plan over its ceiling is printed rather than fatal: four
     # sufficiency probes over six arms at 30 repetitions is 720 sessions.
     printf 'campaign present sufficiency\n' > "$scratch/pooled.spec"
     PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
         --spec "$scratch/pooled.spec" > "$scratch/pooled.out" 2> "$scratch/pooled.err"
-    same "a line that pools a cued probe fails the dry run with 8, not 5" "8" "$?"
-    present "and names the line" "line 1 pools a probe under \`cued:\`" "$scratch/pooled.out"
+    same "a line that pools a leak-kept probe fails the dry run with 8, not 5" "8" "$?"
+    present "and names the line" "line 1 pools a probe under \`leaks_kept:\`" "$scratch/pooled.out"
     present "and the ceiling's refusal is printed as a line" \
         "L1 720 sessions project \$360.00 against a declared ceiling of \$300.00" "$scratch/pooled.out"
 

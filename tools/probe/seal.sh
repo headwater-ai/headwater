@@ -262,14 +262,14 @@ if [ "${1:-}" = --named ]; then
     exit 0
 fi
 
-# `--leak <workspace> <probe>...` prints each cue of a named probe that the
+# `--leak <workspace> <probe>...` prints each leak string of a named probe that the
 # text a harness loads into every session states, and touches nothing (#1472).
 #
 # The seal finds an answer by a name, and the status probe's leak names none:
 # the description of the authoring skill states the ruling the probe expects
-# and never the probe. So each probe declares its **cues** under `cues:` in
+# and never the probe. So each probe declares its **leak strings** under `leaks:` in
 # `.headwater/probe.yml`: the strings whose presence in always-loaded text
-# gives the answer away. A cue is never an `expected:` value, because an
+# gives the answer away. A leak string is never an `expected:` value, because an
 # expected value such as `merge` is a common word that every file holds.
 #
 # The always-loaded set is `CLAUDE.md`, the `description:` of each
@@ -277,22 +277,22 @@ fi
 # the workspace declares a project MCP server in `.mcp.json`, the description
 # of each tool that `headwater mcp` lists. One line per hit:
 #
-#     leak <probe> <where> <cue>      a cue the declaration does not keep
-#     kept <probe> <where> <cue>      a cue kept on purpose, under `cued:`
-#     uncued <probe>                  a probe that declares no cue
+#     leak <probe> <where> <leak string>      a leak string the declaration does not keep
+#     kept <probe> <where> <leak string>      a leak string kept on purpose, under `leaks_kept:`
+#     undeclared <probe>                  a probe that declares no leak string
 #
 # `<where>` is the path relative to the workspace, or `mcp:<tool>`. A probe
-# listed under `cued:` keeps its cue on purpose: its own document says it
-# measures the cue, and a campaign reports it on its own line and never in a
+# listed under `leaks_kept:` keeps its leak string on purpose: its own document says it
+# measures the leak string, and a campaign reports it on its own line and never in a
 # rate of its category. It exits 1 when any `leak` line printed, 0 when none
 # did, 2 on a usage error, and 3 when the workspace declares an MCP server and
-# no engine or no `jq` can list its tools. An `uncued` probe is a probe this
+# no engine or no `jq` can list its tools. An `undeclared` probe is a probe this
 # check cannot see, and it does not fail the check.
 leak_cues() {
     declaration=${HW_PROBE_YML:-$root/.headwater/probe.yml}
     awk -v want="$1" '
         function trim(s) { sub(/^[ \t]+/, "", s); sub(/[ \t]+$/, "", s); return s }
-        /^cues:/ { on = 1; next }
+        /^leaks:/ { on = 1; next }
         on && /^[^ #]/ { on = 0 }
         on {
             line = $0
@@ -303,9 +303,9 @@ leak_cues() {
             sub(/\][ \t]*(#.*)?$/, "", line)
             n = split(line, parts, ",")
             for (i = 1; i <= n; i++) {
-                cue = trim(parts[i])
-                if (cue ~ /^".*"$/ || cue ~ /^\047.*\047$/) cue = substr(cue, 2, length(cue) - 2)
-                if (cue != "") print cue
+                s = trim(parts[i])
+                if (s ~ /^".*"$/ || s ~ /^\047.*\047$/) s = substr(s, 2, length(s) - 2)
+                if (s != "") print s
             }
         }
     ' "$declaration"
@@ -314,7 +314,7 @@ leak_cues() {
 leak_kept() {
     declaration=${HW_PROBE_YML:-$root/.headwater/probe.yml}
     awk -v want="$1" '
-        /^cued:/ { on = 1; next }
+        /^leaks_kept:/ { on = 1; next }
         on && /^[^ #]/ { on = 0 }
         on && /^  - / {
             entry = substr($0, 5)
@@ -380,7 +380,7 @@ if [ "${1:-}" = --leak ]; then
     for leak_probe in "$@"; do
         leak_list=$(leak_cues "$leak_probe")
         if [ -z "$leak_list" ]; then
-            printf 'uncued %s\n' "$leak_probe"
+            printf 'undeclared %s\n' "$leak_probe"
             continue
         fi
         leak_verdict=leak
