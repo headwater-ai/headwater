@@ -138,6 +138,12 @@ printf 'MERGED%sabc123%s-%s-%s-\n' "$t" "$t" "$t" "$t" > "$answer"
 run 42
 if grep -q 'graphql' "$log" && grep -q 'n=42' "$log"; then ok "gh api graphql with n=42"; else bad "arguments: $(cat "$log")"; fi
 
+# The fake answers after the --jq filter, so the rows cannot see the query.
+# The last event is the latest one only when the query asks for the last
+# of both event types; `first:1` or removals alone would read a stale event.
+echo "the query asks for the last added or removed queue event"
+if grep -qF 'timelineItems(itemTypes:[ADDED_TO_MERGE_QUEUE_EVENT,REMOVED_FROM_MERGE_QUEUE_EVENT],last:1)' "$log" && grep -qF '__typename' "$log"; then ok "both event types, last:1, with __typename"; else bad "query: $(cat "$log")"; fi
+
 echo "a number that is not a number is refused before gh runs"
 run '42; rm -rf /'; status=$?
 if [ "$status" -eq 64 ] && [ ! -s "$log" ]; then ok "refused: exit 64, gh never ran"; else bad "non-number (exit $status)"; fi

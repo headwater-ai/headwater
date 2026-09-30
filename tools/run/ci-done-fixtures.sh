@@ -141,6 +141,18 @@ tsv 'completed|failure|Engine tests|9011' 'completed|cancelled|Lint|9012' > "$ch
 run "$full"; status=$?
 if [ "$status" -eq 0 ] && grep -qx 'ci-done: 01234567 red: Engine tests, workflow CI' "$scratch/out"; then ok "the failure is red, the superseded run and its check are not named"; else bad "failed sibling (exit $status)"; fi
 
+echo "a run on any branch supersedes, not only a run on main"
+tsv '11|completed|cancelled|CI|9011|hw/a' '12|completed|success|CI|9012|hw/b' > "$runs"
+tsv 'completed|cancelled|Engine tests|9011' 'completed|success|Engine tests|9012' > "$checks"
+run "$full"; status=$?
+if [ "$status" -eq 0 ] && grep -qx 'ci-done: 01234567 green' "$scratch/out" && grep -qx 'run 11 cancelled CI (superseded, hw/a)' "$scratch/out"; then ok "two feature branches: the cancelled one is superseded"; else bad "any branch (exit $status)"; fi
+
+echo "a superseded run with no check suite drops no check that also has none"
+tsv '11|completed|success|CI|9011|main' '12|completed|cancelled|CI|-|topic' > "$runs"
+tsv 'completed|success|Lint|9011' 'completed|failure|Workers Builds|-' > "$checks"
+run "$full"; status=$?
+if [ "$status" -eq 0 ] && grep -qx 'ci-done: 01234567 red: Workers Builds' "$scratch/out"; then ok "a missing suite id is never a key: the external failure stays red"; else bad "null suite (exit $status)"; fi
+
 echo "a short sha is resolved before the runs endpoint is asked"
 tsv '11|completed|success|CI|9011|main' > "$runs"
 tsv 'completed|success|Lint|9011' > "$checks"
