@@ -608,9 +608,10 @@ contains "a record that governs ./.github/workflows/ci.yml and is not cited ther
 #     passes reaches the checkout, and each caller passes `secrets`, without
 #     which the deploy has no Cloudflare token.
 #   - A step outside `deploy-site.yml` that uses `cloudflare/wrangler-action`
-#     or `cloudflare/pages-action`, or runs `wrangler` and `deploy` on one
-#     line after backslash continuations are joined, is a second deploy
-#     path (#1342).
+#     or `cloudflare/pages-action` in any letter case, or runs `wrangler` and
+#     `deploy` or `publish` on one line after backslash continuations are
+#     joined, is a second deploy path, and no workflow but `ci.yml` and
+#     `release.yml` calls `deploy-site.yml` (#1342).
 #   - `deploy-site.yml` declares a `ref` input whose default is empty, so a
 #     push to `main` deploys its own commit, and the `ci.yml` caller passes no
 #     `ref` (#1342).
@@ -619,8 +620,9 @@ contains "a record that governs ./.github/workflows/ci.yml and is not cited ther
 #     (#1342).
 #   - The `ci.yml` caller `needs` `engine` and `headwater`, and its `if:` is
 #     the push term and the `main` term joined by `&&`, with `success()` at
-#     most besides, so no `!`, `||` or status function such as `always()`
-#     admits another event (#1342).
+#     most besides, inside one `${{ }}` or none, so no `!`, `||`, status
+#     function such as `always()` or always-true string template admits
+#     another event (#1342).
 #   - The deploy job of `deploy-site.yml` has one constant concurrency group
 #     with `cancel-in-progress: false`, a workflow-level concurrency, if any,
 #     is held the same way, and neither caller has a concurrency of its own,
@@ -642,9 +644,10 @@ except ImportError:
 
 callee = "./.github/workflows/deploy-site.yml"
 # A step deploys when it runs the script, runs wrangler with deploy later on
-# the same line (`npx wrangler deploy`, `wrangler pages deploy`), or uses a
-# Cloudflare action that deploys (#1342).
-runs_deploy = re.compile(r"tools/site/deploy-site\.sh|\bwrangler\b[^\n]*\bdeploy\b")
+# the same line (`npx wrangler deploy`, `wrangler pages deploy`, or the older
+# `wrangler pages publish`), or uses a Cloudflare action that deploys, in
+# any letter case, as GitHub matches an owner (#1342, verify round 2).
+runs_deploy = re.compile(r"tools/site/deploy-site\.sh|\bwrangler\b[^\n]*\b(?:deploy|publish)\b")
 deploy_actions = ("cloudflare/wrangler-action", "cloudflare/pages-action")
 
 # A backslash continuation is joined first, because the shell runs
@@ -653,7 +656,7 @@ deploy_actions = ("cloudflare/wrangler-action", "cloudflare/pages-action")
 def is_deploy(step):
     return isinstance(step, dict) and bool(
         runs_deploy.search(re.sub(r"\\\n", " ", str(step.get("run", ""))))
-        or str(step.get("uses", "")).startswith(deploy_actions))
+        or str(step.get("uses", "")).lower().startswith(deploy_actions))
 
 def as_list(v):
     if v is None:
@@ -744,6 +747,13 @@ for name in ("ci.yml", "release.yml"):
         if "concurrency" in body:
             out.append("%s job %s has a concurrency of its own, so its deploy does not wait in the one deploy-site queue alone" % (name, job))
 
+# Two workflows call the deploy (HW-DR-0097). A third caller is held by
+# none of the clauses here, so it could deploy any ref (#1342 verify round 2).
+for name in sorted(docs):
+    if name not in ("ci.yml", "release.yml", "deploy-site.yml"):
+        for job in sorted(callers(name)):
+            out.append("%s job %s calls deploy-site.yml, so a third caller deploys a tree that nothing here holds" % (name, job))
+
 if not callers("ci.yml"):
     out.append("ci.yml has no job that calls deploy-site.yml, so a push to main deploys nothing")
 # The ci.yml call runs on a push to main alone, after both gating jobs, and
@@ -758,7 +768,14 @@ for job, body in sorted(callers("ci.yml").items()):
     # so any other term, a !, a || or a status function such as always() is
     # refused (#1342 verify round 1). success() is the default GitHub adds
     # to an if: with no status function, so it may stand as a third term.
-    cond = re.sub(r"\s+", "", str(body.get("if", ""))).replace("${{", "").replace("}}", "")
+    # The ${{ }} wrapper is stripped only when it holds the whole value. Text
+    # outside one ${{ }}, or two of them, makes GitHub read the value as a
+    # string template, which is always true, so such a value keeps its
+    # braces and fails the terms test (#1342 verify round 2).
+    cond = re.sub(r"\s+", "", str(body.get("if", "")))
+    whole = re.fullmatch(r"\$\{\{(.*)\}\}", cond)
+    if whole:
+        cond = whole.group(1)
     terms = cond.split("&&")
     if "if" not in body:
         out.append("ci.yml job %s has no if:, so a pull request or a merge group runs the deploy" % job)
@@ -882,9 +899,10 @@ apt_route() {
     done
 }
 
-# edit_wf DIR FILE PYTHON — loads DIR/.github/workflows/FILE, runs PYTHON on
-# it as `doc`, and writes it back. A copy loses its comments, which no judge
-# here reads.
+# edit_wf DIR FILE PYTHON [VALUE] — loads DIR/.github/workflows/FILE, runs
+# PYTHON on it as `doc`, and writes it back. PYTHON reads VALUE as
+# sys.argv[4], so a value that holds both quotes needs no escaping. A copy
+# loses its comments, which no judge here reads.
 edit_wf() {
     python3 -c '
 import sys, yaml
@@ -894,7 +912,7 @@ with open(path, encoding="utf-8") as f:
 exec(sys.argv[3])
 with open(path, "w", encoding="utf-8") as f:
     yaml.safe_dump(doc, f, sort_keys=False)
-' "$1" "$2" "$3"
+' "$@"
 }
 
 echo
@@ -911,7 +929,7 @@ print(" ".join(k for k, v in jobs.items() if isinstance(v, dict) and v.get("uses
 ' "$root" 2>/dev/null)
 
 # The same for ci.yml, and the job of deploy-site.yml that deploys, for the
-# arms d17 to d50 (#1342).
+# arms d17 to d57 (#1342).
 ci_job=$(python3 -c '
 import sys, yaml
 jobs = yaml.safe_load(open(sys.argv[1] + "/.github/workflows/ci.yml", encoding="utf-8"))["jobs"]
@@ -1028,7 +1046,7 @@ contains "a copy of the deploy steps in release.yml is red" \
     "release.yml job deploy-copy runs the deploy itself, so the site has two deploy paths" \
     "$(deploys "$scratch/d5")"
 
-# d16 to d50 hold what each workflow's own comment states about the one
+# d16 to d57 hold what each workflow's own comment states about the one
 # deploy job: its ref input, its token, its one path, the ci.yml gate, and its
 # one queue (#1342). Each arm applies one shape to a copy and names the line.
 
@@ -1052,6 +1070,30 @@ edit_wf "$scratch/d42" release.yml "doc['jobs']['wpa'] = {'runs-on': 'ubuntu-lat
 same "a pages-action step in release.yml is red" \
     "release.yml job wpa runs the deploy itself, so the site has two deploy paths" \
     "$(deploys "$scratch/d42" | tr '\n' '|' | sed 's/|$//')"
+
+# d55. GitHub matches an action's owner in any letter case (#1342 verify
+# round 2).
+copy_tree "$scratch/d55"
+edit_wf "$scratch/d55" release.yml "doc['jobs']['wcap'] = {'runs-on': 'ubuntu-latest', 'steps': [{'uses': 'Cloudflare/wrangler-action@v3'}]}"
+same "a wrangler-action step whose owner is capitalized is red" \
+    "release.yml job wcap runs the deploy itself, so the site has two deploy paths" \
+    "$(deploys "$scratch/d55" | tr '\n' '|' | sed 's/|$//')"
+
+# d56. `wrangler pages publish` is the older name of `pages deploy`.
+copy_tree "$scratch/d56"
+edit_wf "$scratch/d56" release.yml "doc['jobs']['wpub'] = {'runs-on': 'ubuntu-latest', 'steps': [{'run': 'npx wrangler pages publish site'}]}"
+same "a wrangler pages publish step in release.yml is red" \
+    "release.yml job wpub runs the deploy itself, so the site has two deploy paths" \
+    "$(deploys "$scratch/d56" | tr '\n' '|' | sed 's/|$//')"
+
+# d57. A third workflow that calls the deploy, by hand, with a tag.
+copy_tree "$scratch/d57"
+printf '%s\n' 'name: Redeploy' 'on: workflow_dispatch' 'jobs:' '  redeploy:' \
+    '    uses: ./.github/workflows/deploy-site.yml' '    with:' '      ref: v0.1.0' \
+    '    secrets: inherit' > "$scratch/d57/.github/workflows/redeploy.yml"
+same "a third workflow that calls deploy-site.yml is red" \
+    "redeploy.yml job redeploy calls deploy-site.yml, so a third caller deploys a tree that nothing here holds" \
+    "$(deploys "$scratch/d57" | tr '\n' '|' | sed 's/|$//')"
 
 # d47. The wrangler command continued onto a second line is one command to
 # the shell (#1342 verify round 1).
@@ -1259,9 +1301,30 @@ if [ -n "$ci_job" ]; then
     edit_wf "$scratch/d50" ci.yml "doc['jobs']['$ci_job']['if'] = \"\${{ success() && github.event_name == 'push' && github.ref == 'refs/heads/main' }}\""
     same "a ci.yml deploy whose if: adds success() holds" "" \
         "$(deploys "$scratch/d50" | tr '\n' '|' | sed 's/|$//')"
+
+    # d51 to d53. Text outside one ${{ }} makes GitHub read the if: as a
+    # string template, which is always true (#1342 verify round 2).
+    for arm in d51 d52 d53; do
+        case "$arm" in
+            d51) cond="\${{ github.event_name == 'push' }} && \${{ github.ref == 'refs/heads/main' }}" ;;
+            d52) cond="\${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }} && success()" ;;
+            d53) cond="github.event_name == 'push' && \${{ github.ref == 'refs/heads/main' }}" ;;
+        esac
+        copy_tree "$scratch/$arm"
+        edit_wf "$scratch/$arm" ci.yml "doc['jobs']['$ci_job']['if'] = sys.argv[4]" "$cond"
+        same "a ci.yml deploy whose if: is a template ($arm) is red" \
+            "ci.yml job $ci_job has an if: other than a push to main, so an event other than that push can run the deploy" \
+            "$(deploys "$scratch/$arm" | tr '\n' '|' | sed 's/|$//')"
+    done
+
+    # d54. The two terms with no ${{ }} at all are an expression, and hold.
+    copy_tree "$scratch/d54"
+    edit_wf "$scratch/d54" ci.yml "doc['jobs']['$ci_job']['if'] = \"github.event_name == 'push' && github.ref == 'refs/heads/main'\""
+    same "a ci.yml deploy whose if: has no \${{ }} holds" "" \
+        "$(deploys "$scratch/d54" | tr '\n' '|' | sed 's/|$//')"
 else
     fail "ci.yml has a job that calls deploy-site.yml" \
-        "none, so the arms d17, d22 to d24, d28 to d31, d35 to d39, d45, d46, d49 and d50 have no job to edit"
+        "none, so the arms d17, d22 to d24, d28 to d31, d35 to d39, d45, d46 and d49 to d54 have no job to edit"
 fi
 
 # d9. The APT route as each file that describes it states it (#1339).
