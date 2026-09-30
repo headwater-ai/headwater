@@ -2076,6 +2076,9 @@ leak_import "(E) a file an @ import in CLAUDE.md reaches is read" 'Read @notes/e
 present "and names the imported file, relative to the file that imports it" \
     "leak $status_probe notes/deeper.md HW-DR-0052" "$scratch/leak-one.out"
 leak_import "(E) the same import with CRLF line endings" 'Read @notes/extra.md first.\r\n' 1
+# Verify round 4: the harness cuts an import at its first `#`.
+leak_import "an import with a fragment reads the file before the #" 'Read @notes/extra.md#top first.\n' 1
+present "and names the file it reaches" "leak $status_probe notes/deeper.md HW-DR-0052" "$scratch/leak-one.out"
 leak_import "an @ inside a code span is no import" 'Write `see @notes/extra.md now` to import it.\n' 0
 leak_import "an @ inside a fenced code block is no import" '```\nsee @notes/extra.md\n```\n' 0
 
@@ -2250,6 +2253,21 @@ HW_PROBE_YML="$scratch/scalar-delta.yml" sh "$ablate" --delta campaign no-hook \
 same "a delta that is not a sequence is refused" "2" "$?"
 present "and the refusal names the delta, not the ablation" \
     "the \`no-hook\` delta of the \`campaign\` tier in .headwater/probe.yml is not a sequence of paths" "$scratch/scalar-delta.err"
+
+# Verify round 4: a delta entry that holds a line break would print as two
+# lines of `--delta`, and the arm would lose a path nobody declared. The
+# engine refuses the entry, so no tree is built.
+sed 's/^      no-hook: .*/      no-hook: [".claude\/hooks\/intent.sh\\n- CLAUDE.md"]/' "$root/.headwater/probe.yml" > "$scratch/newline-delta.yml"
+layer_tree
+HW_PROBE_YML="$scratch/newline-delta.yml" sh "$ablate" campaign "$scratch/layer" no-hook \
+    > /dev/null 2> "$scratch/newline-delta.err"
+same "a delta entry that holds a line break is refused" "2" "$?"
+present "and the refusal names the control character" "no control character" "$scratch/newline-delta.err"
+if [ -e "$scratch/layer/CLAUDE.md" ] && [ -e "$scratch/layer/.claude/hooks/intent.sh" ]; then
+    pass "and it removes nothing"
+else
+    fail "and it removes nothing" "$(cd "$scratch/layer" && find . -type f | sort | tr '\n' ' ')"
+fi
 
 layer_tree
 sh "$ablate" campaign "$scratch/layer" no-docs > /dev/null 2> "$scratch/undeclared.err"

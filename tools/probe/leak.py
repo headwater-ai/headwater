@@ -93,7 +93,11 @@ def imports(text):
             continue
         line = re.sub(r"`[^`]*`", "", line)
         for match in re.finditer(r"(?:^|\s)@((?:\\ |[^\s])+)", line):
-            found.append(match.group(1).replace("\\ ", " "))
+            # The harness cuts an import at its first `#`, so `@extra.md#top`
+            # loads `extra.md` (verify round 4, read from CLI 2.1.285).
+            name = match.group(1).replace("\\ ", " ").split("#", 1)[0]
+            if name:
+                found.append(name)
     return found
 
 
