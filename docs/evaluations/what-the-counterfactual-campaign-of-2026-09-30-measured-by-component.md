@@ -98,13 +98,13 @@ The six recordings hold 1326 sessions and 51358 recorded cents ($513.58). With t
 
 ## Limits
 
-**Some sessions read outside their workspace.** Nothing held a session inside its workspace. 44 of 658 sessions made a call that names a path outside it. By line: present sufficiency 9/119, absent sufficiency 2/119, present navigability 8/90, absent navigability 0/90, present discovery 5/60, absent discovery 3/60, and `documentation` absent 17/120. 8 of the 44 named the checkout of this repository. Without the 44, the rates that move are these:
+**Some sessions read outside their workspace.** Nothing held a session inside its workspace. 51 of 658 sessions made a call that names a path outside it. By line: present sufficiency 9/119, absent sufficiency 4/119, present navigability 8/90, absent navigability 0/90, present discovery 5/60, absent discovery 3/60, and `documentation` absent 22/120. 16 of the 51 named a checkout of this repository. The host holds three: the owner's checkout, a second copy under `/mnt/new-projects/`, and the checkout of the CI runner. Six `documentation` absent sessions read HW-DR-0052, the answer of the status probe, from a checkout. Two `campaign` absent sessions ran the CI runner's `headwater` binary. Without the 51, the rates that move are these:
 
-- present unmeasured claim 16/20 (58.4-91.9), and absent unmeasured claim 26/27 (81.7-99.3)
+- present unmeasured claim 16/20 (58.4-91.9), and absent unmeasured claim 24/25 (80.5-99.3)
 - present cited 7/22 (16.4-52.7), present descriptor 7/25 (14.3-47.6), absent descriptor 4/29, and absent pointer 1/28
-- `documentation` absent: tombstone 28/28, accepted event 0/29, status 7/24 (14.9-49.2), and unmeasured claim 3/22 (4.7-33.3)
+- `documentation` absent: tombstone 28/28, accepted event 0/26, status 5/22 (10.1-43.4), and unmeasured claim 3/22 (4.7-33.3)
 
-No separation and no non-separation above changes without them. [#1467](https://github.com/headwater-ai/headwater/issues/1467) gives each session a sandbox.
+No separation and no non-separation above changes without them. The committed transcripts count 44, because their count did not read the two checkouts under `/mnt/`. [#1467](https://github.com/headwater-ai/headwater/issues/1467) gives each session a sandbox.
 
 **The model pin is a name.** Every transcript records `served_version: claude-sonnet-5`, which equals the model name, because the provider exposed nothing finer. The sessions ran under Claude Code 2.1.285, and no transcript records that version.
 
