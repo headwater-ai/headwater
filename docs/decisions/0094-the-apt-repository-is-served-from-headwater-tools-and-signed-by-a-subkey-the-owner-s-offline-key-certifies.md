@@ -14,9 +14,9 @@ provenance:
 relations:
   governs:
     - to: .github/workflows/release.yml
-      verified_revision: sha256:b0b36b7376133c211948572cc5a835c1d3e46f2e87c986869748c8d5f9170f47
+      verified_revision: sha256:8cea15616685636e280524a654bf6303543920806bb9a2c77e801a195de1c845
     - to: tools/site/fetch-apt.sh
-      verified_revision: sha256:141b9659d92f91b799b7f35ca8604c94394b27a200c47f2392bc5838be1eea6a
+      verified_revision: sha256:cb44a3ed11960c738f0e4d9352565c03a0246544c35fa54fb805ef827a1dfd4c
 ---
 
 # The APT repository is served from headwater.tools and signed by a subkey the owner's offline key certifies
@@ -39,13 +39,13 @@ The owner made two rulings on the issue. On 2026-09-22 the owner chose "CLI pack
 
 **The key.** A signing subkey signs the metadata. The secret `APT_SIGNING_KEY` holds the ASCII-armored private subkey, with no passphrase, because the secret store is its protection. The owner holds the primary key offline. The publish step imports the subkey into a directory that it makes and removes. The key does not go into a log, the tree or an artifact.
 
-**The route to the site.** When the secret is set, the release carries `Packages`, `Release`, `InRelease` and `Release.gpg` beside the package, in the one `gh release create` call of [HW-PD-0009](../process/decisions/0009-a-release-gets-all-its-assets-in-one-create-call-and-a-person-deletes-it-to-run-again.md). `tools/site/fetch-apt.sh` runs in the `deploy-site.yml` job and copies those assets of the newest release into `apt/` of the served directory. `release.yml` calls that job after `publish`, so `apt/` serves the new release and not the release before it ([#1316](https://github.com/headwater-ai/headwater/issues/1316)). When the newest release has no `InRelease`, the script prints one line and the site has no `apt/` directory. When a download fails for another reason, the script stops the deploy job, so the deployed site keeps the repository that it serves.
+**The route to the site.** When the secret is set, the release carries `Packages`, `Release`, `InRelease` and `Release.gpg` beside the package, in the one `gh release create` call of [HW-PD-0009](../process/decisions/0009-a-release-gets-all-its-assets-in-one-create-call-and-a-person-deletes-it-to-run-again.md). `tools/site/fetch-apt.sh` runs in the `deploy-site.yml` job and copies those assets of the newest release into `apt/` of the served directory. `release.yml` calls that job after `publish`, so `apt/` serves the new release and not the release before it ([#1316](https://github.com/headwater-ai/headwater/issues/1316)). When the script cannot copy a whole repository, it stops the deploy job, so the deployed site keeps the repository that it serves. A newest release with no `InRelease` also stops the job. `tools/site/deploy-site.sh` also refuses a served directory with no `apt/dists/stable/Release` or `InRelease`, before it deploys. The script reads `releases/latest`, so that release must be an engine release. `release-taxonomy.yml` creates each taxonomy release with `--latest=false` for this reason. On 2026-09-30 a taxonomy release became the latest release, and each deploy after it published a site with no `apt/` ([#1449](https://github.com/headwater-ai/headwater/issues/1449)).
 
 **The proof.** `smoke-apt` makes a local repository of the package, signed by a throwaway key, and installs from it through apt. It also makes a repository signed by a second key and one with no signature. It fails unless apt refuses both. Publishing waits on this job.
 
 ## Consequences
 
-Each release from v0.4.1 is signed. The public keyring is committed as `site/apt/headwater-archive-keyring.asc`, and the README states the `apt` install. When `APT_SIGNING_KEY` is not set, a release carries the `.deb` and no metadata, and the workflow prints a warning that names the secret. In that state `fetch-apt.sh` copies nothing, and the site serves no APT metadata.
+Each release from v0.4.1 is signed. The public keyring is committed as `site/apt/headwater-archive-keyring.asc`, and the README states the `apt` install. When `APT_SIGNING_KEY` is not set, a release carries the `.deb` and no metadata, and the workflow prints a warning that names the secret. In that state `fetch-apt.sh` stops each deploy of the site, and the site keeps the repository of the last signed release.
 
 The APT key authenticates the publisher of the engine on the APT route only. It does not authenticate a taxonomy package, so [HW-OBL-0115](../obligations/0115-a-pinned-digest-authenticates-the-pin-and-never-the-publisher.md) stays open.
 
