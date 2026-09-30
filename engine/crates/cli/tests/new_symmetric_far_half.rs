@@ -70,7 +70,10 @@ impl Root {
         .expect("the declaration copies");
         let overlay = std::fs::read_to_string(repository.join(".headwater/overlay.yml"))
             .expect("the overlay reads");
-        assert!(overlay.contains("\nadd:\n"), "the overlay has one add block");
+        assert!(
+            overlay.contains("\nadd:\n"),
+            "the overlay has one add block"
+        );
         std::fs::write(
             at.join(".headwater/overlay.yml"),
             overlay.replacen("\nadd:\n", &format!("\n{PAIRS_WITH}"), 1),
@@ -92,15 +95,16 @@ impl Root {
             .map(|entry| entry.expect("the entry reads").path())
             .find(|path| {
                 path.extension().is_some_and(|kind| kind == "md")
-                    && path
-                        .file_name()
-                        .is_some_and(|name| name != "README.md")
+                    && path.file_name().is_some_and(|name| name != "README.md")
             })
             .expect("the scaffolder wrote a document");
         let text = std::fs::read_to_string(&path).expect("the document reads");
         assert!(text.contains("\nstatus: draft\n"), "{text}");
-        std::fs::write(&path, text.replacen("\nstatus: draft\n", "\nstatus: current\n", 1))
-            .expect("the anchor is promoted");
+        std::fs::write(
+            &path,
+            text.replacen("\nstatus: draft\n", "\nstatus: current\n", 1),
+        )
+        .expect("the anchor is promoted");
         let id = text
             .lines()
             .find_map(|line| line.strip_prefix("id: "))
@@ -166,7 +170,8 @@ fn a_symmetric_relation_leaves_its_live_target_alone_and_says_why() {
         "the live anchor is not edited\n{made:?}"
     );
     assert!(
-        made.out.contains("the relation is symmetric, so this half states the edge"),
+        made.out
+            .contains("the relation is symmetric, so this half states the edge"),
         "{made:?}"
     );
     assert!(
@@ -203,7 +208,9 @@ fn a_relation_that_sets_a_target_state_names_the_rule_that_reads_it() {
         "{made:?}"
     );
     assert!(
-        !made.out.contains("no rule of this engine reads a transition"),
+        !made
+            .out
+            .contains("no rule of this engine reads a transition"),
         "{made:?}"
     );
 }

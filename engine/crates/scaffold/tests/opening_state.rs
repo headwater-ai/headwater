@@ -129,7 +129,10 @@ fn a_document_that_opens_at_a_live_state_writes_its_far_half() {
     let (plan, files) = scaffold("at_current", "elaborates");
     let paths = paths(&files);
     let edge = &plan.edges[0];
-    assert!(!edge.symmetric && edge.sets_target_state.is_none(), "{edge:?}");
+    assert!(
+        !edge.symmetric && edge.sets_target_state.is_none(),
+        "{edge:?}"
+    );
     assert!(
         edge.owed.is_none(),
         "nothing is deferred at a live state: {edge:?}"
@@ -171,7 +174,11 @@ fn a_draft_writes_no_far_half_of_a_symmetric_relation() {
     );
     assert!(edge.symmetric, "the report reads this: {edge:?}");
     assert_eq!(edge.sets_target_state, None, "{edge:?}");
-    assert_eq!(paths(&files).len(), 1, "the anchor is left alone: {files:?}");
+    assert_eq!(
+        paths(&files).len(),
+        1,
+        "the anchor is left alone: {files:?}"
+    );
 }
 
 #[test]
@@ -182,7 +189,11 @@ fn a_live_document_writes_no_far_half_of_a_symmetric_relation() {
         edge.reciprocal.is_none() && edge.owed.is_none(),
         "a symmetric edge has no far half at any opening state: {edge:?}"
     );
-    assert_eq!(paths(&files).len(), 1, "the anchor is left alone: {files:?}");
+    assert_eq!(
+        paths(&files).len(),
+        1,
+        "the anchor is left alone: {files:?}"
+    );
 }
 
 #[test]
@@ -220,7 +231,11 @@ fn a_draft_supersession_owes_its_far_half_and_leaves_the_target_alone() {
         (owed.half.relation.as_str(), owed.until.as_str()),
         ("superseded_by", "draft")
     );
-    assert_eq!(paths(&files).len(), 1, "the anchor is left alone: {files:?}");
+    assert_eq!(
+        paths(&files).len(),
+        1,
+        "the anchor is left alone: {files:?}"
+    );
 }
 
 /// Written through its inverse, `supersedes` retires the new document and not
