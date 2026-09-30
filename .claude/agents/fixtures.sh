@@ -10,7 +10,7 @@
 # definition's instructions, and a skill name nobody matches never loads. This
 # suite is what reports the drift.
 #
-# Eleven cases, and the ceilings are the reason two of them exist. The parent's
+# Twelve cases, and the ceilings are the reason two of them exist. The parent's
 # context is the unit of cost ([HW-PD-0003]), so the command and the doctrine
 # carry a byte ceiling declared here, once, and CLAUDE.md carries one because
 # every agent pays for it on every dispatch ([HW-PD-0001]).
@@ -417,6 +417,70 @@ if [ -z "$why" ]; then
     pass 'and a reworded lead with emphasis inside it holds'
 else
     fail 'a reworded lead with emphasis inside it holds' "$why"
+fi
+
+# --- 12. the Record ruling checks the intake line against the tree -----------
+
+# An intake line becomes an obligation record under the product owner's Record
+# ruling, and three records filed that way were false on the day they were
+# written, because nothing opened the file the line named (#1486). The ruling
+# must say two things: the product owner confirms the finding on the current
+# tree, and the record names the file and the symbol it checked. The case reads
+# the item under `## Intake` whose bold lead is `Record.`, and it matches on the
+# words `tree`, `file` and `symbol` as whole words, so a rewording that keeps the
+# requirement still holds and `filed` does not count as `file`.
+printf '\n# the Record ruling of headwater-product-owner checks the line against the tree\n'
+# Prints the item under `## Intake` whose bold lead is `Record.`.
+record_ruling() {
+    awk '/^## / { inside = ($0 == "## Intake") ; next }
+        inside && index($0, "**Record.**") { print; exit }' "$1"
+}
+# Prints why a Record ruling fails the requirement, or nothing when it holds.
+record_misses_check() {
+    if [ -z "$1" ]; then
+        printf 'no item under ## Intake has the bold lead Record.' ; return
+    fi
+    if ! printf '%s\n' "$1" | grep -qiw 'tree'; then
+        printf 'the ruling does not check the line against the tree: %s' "$1" ; return
+    fi
+    if ! printf '%s\n' "$1" | grep -qiw 'file' || ! printf '%s\n' "$1" | grep -qiw 'symbol'; then
+        printf 'the ruling does not require naming the file and symbol checked: %s' "$1"
+    fi
+}
+ruling=$(record_ruling "$agents/headwater-product-owner.md")
+why=$(record_misses_check "$ruling")
+if [ -z "$why" ]; then
+    pass 'the Record ruling checks the line against the tree and names the file and symbol'
+else
+    fail 'the Record ruling checks the line against the tree and names the file and symbol' "$why"
+fi
+# The arms, each an Intake section in a scratch file: the ruling as it stood
+# before #1486 is reported, a ruling that checks the tree but names no symbol is
+# reported, a file with no Record item is reported, and a reworded ruling holds.
+record_arm() {
+    printf '## Intake\n\n1. **Fold.** An open issue covers it.\n%s\n\n## Report\n' "$1" > "$scratch/record.md"
+    record_misses_check "$(record_ruling "$scratch/record.md")"
+}
+why=$(record_arm '2. **Record.** The line names no reader outside this repository. It goes to 13 as an obligation record. `headwater new` writes the record at `draft`, and 13 records filed at `draft` had to move by hand.')
+case "$why" in
+    *'against the tree'*) pass 'and the ruling as it stood before #1486 is reported' ;;
+    *) fail 'the ruling as it stood before #1486 is reported' "reported: \`$why\`" ;;
+esac
+why=$(record_arm '2. **Record.** Open the file the line names on the current tree and confirm it, then write the record.')
+case "$why" in
+    *'file and symbol'*) pass 'and a ruling that checks the tree but names no symbol is reported' ;;
+    *) fail 'a ruling that checks the tree but names no symbol is reported' "reported: \`$why\`" ;;
+esac
+why=$(record_arm '2. **Backlog.** It has a reader.')
+case "$why" in
+    *'no item'*) pass 'and an Intake section with no Record item is reported' ;;
+    *) fail 'an Intake section with no Record item is reported' "reported: \`$why\`" ;;
+esac
+why=$(record_arm '2. **Record.** Before you record it, confirm the finding on the current *tree*: open the File it names. The Context names that file and the Symbol you read, never a line number.')
+if [ -z "$why" ]; then
+    pass 'and a reworded ruling with both requirements holds'
+else
+    fail 'a reworded ruling with both requirements holds' "$why"
 fi
 
 printf '\n%s passed, %s failed\n' "$passed" "$failed"
