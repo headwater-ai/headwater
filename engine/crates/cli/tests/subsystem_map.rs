@@ -12,6 +12,7 @@
 //! under `docs/subsystems/`. The shape follows `verbs.rs`, which holds the
 //! same part's CLI grammar block against `VERBS`.
 
+use headwater_census::Pattern;
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
 
@@ -154,10 +155,34 @@ fn governs(path: &Path) -> Vec<String> {
     Vec::new()
 }
 
-/// The crate a `governs` pattern names, when it names one under
-/// `engine/crates/`.
-fn crate_of(pattern: &str) -> Option<&str> {
-    pattern.strip_prefix("engine/crates/")?.split('/').next()
+/// The patterns of one `governs` entry, normalized the way the `source-tree`
+/// resolver normalizes them. A block entry `- [a, b]` is a list anchor
+/// ([HW-DR-0074](../../../../docs/decisions/0074-a-code-path-anchor-is-a-pattern-over-the-tree-and-it-binds-when-the-pattern-matches-at-least-one-entry.md))
+/// and gives each member. A value that does not normalize binds nothing, so
+/// it reaches no crate and is left out.
+fn patterns_of(entry: &str) -> Vec<String> {
+    entry
+        .trim()
+        .trim_start_matches('[')
+        .trim_end_matches(']')
+        .split(',')
+        .map(|member| member.trim().trim_matches('"').trim_matches('\''))
+        .filter_map(|member| headwater_graph::anchors::normalize(member).ok())
+        .collect()
+}
+
+/// Each crate of `crates` outside `row` that `pattern` can reach: some path
+/// under `engine/crates/<crate>/` that the pattern admits. So `engine/**`,
+/// `engine/crates/**` and `./engine/crates/check/src/**` each reach `check`,
+/// and `engine/crates/graph/src/**` reaches no crate but `graph`.
+fn foreign_crates(pattern: &str, row: &[String], crates: &BTreeSet<String>) -> Vec<String> {
+    let pattern = Pattern::new(pattern);
+    crates
+        .iter()
+        .filter(|krate| !row.contains(krate))
+        .filter(|krate| pattern.overlaps(&Pattern::new(&format!("engine/crates/{krate}/**"))))
+        .cloned()
+        .collect()
 }
 
 /// Every `.md` file under `dir` and its subdirectories except `README.md`,
@@ -225,6 +250,7 @@ fn every_crate_is_in_exactly_one_row_of_spec_6s_subsystem_map() {
 #[test]
 fn a_row_that_links_a_subsystem_spec_is_governed_by_it() {
     let spec_six = root().join("docs/spec");
+    let crates = workspace_crates();
     let mut linked = 0;
     for row in spec_six_rows() {
         let Some(link) = row.link else { continue };
@@ -235,16 +261,22 @@ fn a_row_that_links_a_subsystem_spec_is_governed_by_it() {
             "spec 6 '{HEADING}' row {} links {link}, which does not exist",
             row.subsystem
         );
-        let governed: BTreeSet<String> = governs(&path).into_iter().collect();
-        let foreign: Vec<&String> = governed
+        let governed: BTreeSet<String> = governs(&path)
             .iter()
-            .filter(|pattern| {
-                crate_of(pattern).is_some_and(|krate| !row.crates.iter().any(|c| c == krate))
+            .flat_map(|entry| patterns_of(entry))
+            .collect();
+        let foreign: Vec<String> = governed
+            .iter()
+            .flat_map(|pattern| {
+                foreign_crates(pattern, &row.crates, &crates)
+                    .into_iter()
+                    .map(move |krate| format!("{pattern} reaches `{krate}`"))
             })
             .collect();
         assert!(
             foreign.is_empty(),
-            "{link} governs a crate that its row of spec 6 '{HEADING}' does not name: {foreign:?}"
+            "{link} governs a crate that its row of spec 6 '{HEADING}' does not name: {}",
+            foreign.join("; ")
         );
         for krate in &row.crates {
             let pattern = format!("engine/crates/{krate}/src/**");
@@ -258,6 +290,49 @@ fn a_row_that_links_a_subsystem_spec_is_governed_by_it() {
         linked > 0,
         "no row of spec 6 '{HEADING}' links a subsystem spec"
     );
+}
+
+/// Which crates a `governs` entry of the Graph build row reaches outside that
+/// row. A spelling the resolver normalizes (`./`, `..`) and a pattern whose
+/// literal prefix stops above one crate directory each reach the crates they
+/// would govern, which is what `headwater route` reports for a file there.
+#[test]
+fn a_governs_pattern_that_reaches_outside_its_row_is_foreign() {
+    let row = vec!["graph".to_string()];
+    let crates: BTreeSet<String> = ["check", "graph", "hash"]
+        .into_iter()
+        .map(str::to_string)
+        .collect();
+    let reach = |entry: &str| -> Vec<String> {
+        patterns_of(entry)
+            .iter()
+            .flat_map(|pattern| foreign_crates(pattern, &row, &crates))
+            .collect::<BTreeSet<String>>()
+            .into_iter()
+            .collect()
+    };
+    let cases: [(&str, &[&str]); 10] = [
+        ("engine/crates/graph/src/**", &[]),
+        ("./engine/crates/graph/src/**", &[]),
+        ("engine/crates/graph/tests/**", &[]),
+        ("engine/crates/check/../graph/src/**", &[]),
+        ("docs/spec/**", &[]),
+        ("./engine/crates/check/src/**", &["check"]),
+        ("engine/**", &["check", "hash"]),
+        ("engine/crates/**", &["check", "hash"]),
+        ("engine/crates/*/src/lib.rs", &["check", "hash"]),
+        (
+            "[engine/crates/graph/src/lib.rs, engine/crates/hash/src/lib.rs]",
+            &["hash"],
+        ),
+    ];
+    for (entry, expected) in cases {
+        assert_eq!(
+            reach(entry),
+            expected,
+            "the crates `{entry}` reaches outside its row"
+        );
+    }
 }
 
 /// Every subsystem spec on the shelf, in a subdirectory too, is linked from
