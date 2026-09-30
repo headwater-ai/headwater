@@ -429,6 +429,7 @@ fn dispatch(root: &Path, verb: Verb) -> ExitCode {
             Some(ProbeWord::Plan {
                 tier,
                 arm,
+                delta,
                 category,
                 seed,
                 exclude,
@@ -437,6 +438,7 @@ fn dispatch(root: &Path, verb: Verb) -> ExitCode {
                 root,
                 tier.as_deref(),
                 arm.as_deref(),
+                delta,
                 category.as_deref(),
                 seed,
                 exclude,
@@ -5285,6 +5287,7 @@ fn probe_plan(
     root: &Path,
     tier: Option<&str>,
     arm: Option<&str>,
+    delta: bool,
     category: Option<&str>,
     seed: u64,
     exclude: Vec<String>,
@@ -5352,6 +5355,13 @@ fn probe_plan(
         Err(unreadable) => return refuse(&unreadable.to_string()),
     };
 
+    // `--delta` prints what the declaration already parsed, so a script that
+    // builds an arm's tree reads the delta from here and parses no YAML itself
+    // (#1472). Clap has already required `--arm`.
+    if delta {
+        return probe_delta(&budgets, tier, narrowing.arm);
+    }
+
     let loaded = match load(root) {
         Ok(loaded) => loaded,
         Err(code) => return code,
@@ -5366,6 +5376,51 @@ fn probe_plan(
         &narrowing,
     );
     print!("{}", plan.render(headwater_cli::paint::stdout_color()));
+    ExitCode::SUCCESS
+}
+
+/// `headwater probe plan --delta --arm <arm>`: the paths an arm's tree lacks
+/// and holds against the present tree, as `- <path>` and `+ <path>` lines.
+///
+/// It prints the parse `Budgets::read` already made and nothing else, so it
+/// accepts every form of the declaration the plan accepts. An arm the tier
+/// does not run is refused, at status 1 and not 0 as the plan refuses it,
+/// because a caller that builds a tree from this output must not build one
+/// from nothing.
+fn probe_delta(
+    budgets: &headwater_probe::Budgets,
+    tier: headwater_probe::Tier,
+    arm: Option<headwater_probe::Arm>,
+) -> ExitCode {
+    let Some(arm) = arm else {
+        return refuse("`--delta` prints the delta of one arm, so it needs `--arm`");
+    };
+    let Some(envelope) = budgets.of(tier) else {
+        return refuse(&format!(
+            "{} declares no `{}` tier, so it declares no arm of it",
+            headwater_probe::budget::PATH,
+            tier.name()
+        ));
+    };
+    if !envelope.arms.contains(&arm) {
+        return refuse(&format!(
+            "the `{}` tier does not run the `{}` arm. It runs {}",
+            tier.name(),
+            arm.name(),
+            envelope
+                .arms
+                .iter()
+                .map(|arm| format!("`{}`", arm.name()))
+                .collect::<Vec<_>>()
+                .join(", ")
+        ));
+    }
+    for path in envelope.removes(arm) {
+        println!("- {path}");
+    }
+    for path in envelope.adds(arm) {
+        println!("+ {path}");
+    }
     ExitCode::SUCCESS
 }
 
