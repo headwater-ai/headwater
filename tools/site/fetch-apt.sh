@@ -12,23 +12,32 @@
 #   the job on a push to `main`, and `release.yml` calls it after `publish`,
 #   so the new release reaches `apt/` (#1316). HW-DR-0094 is the decision.
 #
-# TWO KINDS OF "NOTHING TO SERVE", AND WHY THEY END DIFFERENTLY
+# NOTHING TO SERVE STOPS THE BUILD
 #
-#   A newest release with no `InRelease` is an answer: no release is signed
-#   yet. The script prints one line, exits 0, and writes no `apt/` directory.
-#   That is the state until the owner sets `APT_SIGNING_KEY` and cuts a
-#   release.
+#   Every case in which this script cannot serve a whole repository ends
+#   the same way: it exits 1 and the deploy job fails. A failed job deploys
+#   nothing, and the previous deployment, with its `apt/`, goes on serving.
+#   A deploy built without `apt/` would drop a repository adopters already
+#   use, and every `apt update` would get 404.
 #
-#   A download that fails for any other reason is no answer at all: GitHub
-#   unreachable, a 5xx, a rate limit, a server that never answers. A deploy
-#   built then would drop a repository adopters already use, and every
-#   `apt update` would get 404. So the script exits 1 and the deploy job
-#   fails. A failed job deploys nothing, and the previous deployment, with
-#   its `apt/`, goes on serving.
+#   That includes a newest release with no `InRelease`. Until #1449 the
+#   script read that as "no release is signed yet", printed one line and
+#   exited 0. That state ended with v0.5.0. Then a taxonomy release, which
+#   carries only its zip, became GitHub's "latest" release, and every
+#   deploy of `main` published a site with no `apt/`, all of them green.
+#   The script cannot tell an unsigned engine release from a release that
+#   is not an engine release, and both now mean a deploy that removes the
+#   repository, so both stop the build. `tools/site/deploy-site.sh` also
+#   refuses a served tree with no `apt/dists/stable/Release`, whatever this
+#   script returned.
 #
 #   The files come from `releases/latest/download/<name>`, which is a
 #   redirect to the asset and not the REST API, so the API's rate limit for
-#   a shared builder address does not apply.
+#   a shared builder address does not apply. So `releases/latest` must be an
+#   engine release, and `.github/workflows/release-taxonomy.yml` creates
+#   each taxonomy release with `--latest=false` for that reason.
+#   `integrations/headwater-check/resolve-version.sh` found the same hazard
+#   first, and filters the `v*` stream for it.
 #
 # ONE RELEASE, NOT TWO
 #
@@ -103,11 +112,8 @@ get() {
 }
 
 code=$(get InRelease "$stage/InRelease")
-if [ "$code" = 404 ]; then
-    echo "fetch-apt.sh: the newest release carries no InRelease, so the site serves no APT repository"
-    rm -rf "$stage"
-    exit 0
-fi
+[ "$code" != 404 ] ||
+    stop "the newest release carries no InRelease"
 for name in InRelease Release Release.gpg Packages; do
     [ "$name" = InRelease ] || code=$(get "$name" "$stage/$name")
     [ "$code" = 200 ] || stop "$name answered HTTP $code"

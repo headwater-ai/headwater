@@ -101,6 +101,9 @@ jobs:
       - name: Attach the archive to the release, with the digest in its notes
         # The archive goes into the one `create` call, and a tag that has a
         # release refuses (HW-PD-0009). `--notes` states the digest (HW-DR-0090).
+        # `--latest=false` keeps `releases/latest` an engine release: the site
+        # copies its APT repository from there, and a taxonomy release that
+        # became "latest" took `apt/` off the site (HW-DR-0094, #1449).
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ steps.tag.outputs.tag }}
@@ -111,7 +114,7 @@ jobs:
           fi
           notes=$(printf 'release.digest: %s\n\nPass this value to `headwater taxonomy vendor https://github.com/%s/releases/download/%s/%s --expect %s`, with headwater v0.2.1 or later, or to `headwater taxonomy vendor <dir> --expect %s` on an unpacked copy of the zip. It is the value `headwater taxonomy publish` printed for this tag, not a checksum of %s.' \
               "$DIGEST" "$GITHUB_REPOSITORY" "$TAG" "$asset" "$DIGEST" "$DIGEST" "$asset")
-          gh release create "$TAG" "$asset" --title "$TAG" --notes "$notes"
+          gh release create "$TAG" "$asset" --title "$TAG" --notes "$notes" --latest=false
       - name: What the release now carries
         env:
           GH_TOKEN: ${{ github.token }}

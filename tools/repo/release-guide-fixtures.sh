@@ -699,6 +699,19 @@ for job, body in sorted(rel.items()):
     if "if" in body:
         out.append("release.yml job %s has an if:, so it can deploy when publish did not run" % job)
 
+# `fetch-apt.sh` reads `releases/latest`, so that release must be an engine
+# release. A taxonomy release carries only its zip, and when one became
+# "latest" every deploy served no apt/ (#1449). So each `gh release create`
+# in release-taxonomy.yml passes `--latest=false`.
+creates = [(job, s) for job, b in sorted(jobs("release-taxonomy.yml").items()) for s in as_list(b.get("steps"))
+           if isinstance(s, dict) and re.search(r"\bgh\s+release\s+create\b", str(s.get("run", "")))]
+if "release-taxonomy.yml" in docs and not creates:
+    out.append("release-taxonomy.yml creates no release, so nothing here can hold that it passes --latest=false")
+for job, s in creates:
+    for line in str(s.get("run", "")).splitlines():
+        if re.search(r"\bgh\s+release\s+create\b", line) and not re.search(r"--latest=false\b", line):
+            out.append("release-taxonomy.yml job %s creates a release without --latest=false, so a taxonomy release can become releases/latest and the site serves no apt/" % job)
+
 for line in out:
     print(line)
 '
@@ -846,6 +859,13 @@ else
     fail "release.yml has a job that calls deploy-site.yml" \
         "none, so the arms d1 to d4 have no job to edit"
 fi
+
+# d12. A taxonomy release created without --latest=false can become GitHub's
+# "latest" release, and fetch-apt.sh then finds no InRelease (#1449).
+copy_tree "$scratch/d12"
+edit_wf "$scratch/d12" release-taxonomy.yml "[s.__setitem__('run', s['run'].replace(' --latest=false', '')) for j in doc['jobs'].values() for s in j.get('steps', []) if 'gh release create' in str(s.get('run', ''))]"
+contains "a taxonomy release created without --latest=false is red" \
+    "release-taxonomy.yml job artifact creates a release without --latest=false" "$(deploys "$scratch/d12")"
 
 # d8. The called workflow checks out its caller's ref, whatever the input, so
 # a release deploys its tag.
