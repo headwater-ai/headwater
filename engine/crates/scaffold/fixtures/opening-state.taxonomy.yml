@@ -10,10 +10,10 @@
 #
 # `supersedes` also requires both ends and declares a state for its target.
 # The scaffold writes the far half as `elaborates` does, and it writes no
-# state onto the target at any opening state (HW-DR-0104).
+# state onto the target at any opening state (HW-DR-0101).
 #
 # `pairs_with` is symmetric. The scaffold writes no far half for it at any
-# opening state, because one half states a symmetric edge (HW-DR-0104).
+# opening state, because one half states a symmetric edge (HW-DR-0101).
 #
 # `proposed` carries no role at all. A reading that deferred on anything but a
 # live state, or on anything but a terminal one, would defer it or `current`,

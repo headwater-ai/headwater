@@ -163,7 +163,7 @@ fn a_symmetric_relation_leaves_its_live_target_alone_and_says_why() {
         "--relates",
         &relates,
     ]);
-    assert_eq!(made.code, Some(0), "{made:?}");
+    assert_eq!(made.code, Some(0), "stderr:\n{}", made.err);
     assert_eq!(
         std::fs::read(&anchor).expect("the anchor reads"),
         before,
@@ -195,7 +195,7 @@ fn a_relation_that_sets_a_target_state_names_the_rule_that_reads_it() {
         "--relates",
         &relates,
     ]);
-    assert_eq!(made.code, Some(0), "{made:?}");
+    assert_eq!(made.code, Some(0), "stderr:\n{}", made.err);
     assert_eq!(
         std::fs::read(&anchor).expect("the anchor reads"),
         before,
