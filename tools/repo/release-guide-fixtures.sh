@@ -607,8 +607,9 @@ contains "a record that governs ./.github/workflows/ci.yml and is not cited ther
 #   - `deploy-site.yml` checks out `inputs.ref`, so the `ref: main` a caller
 #     passes reaches the checkout, and each caller passes `secrets`, without
 #     which the deploy has no Cloudflare token.
-#   - No file that describes the APT route says that "the Cloudflare build"
-#     deploys it (#1339). HW-DR-0097 moved the deploy into `deploy-site.yml`,
+#   - No file that describes the APT route says that a build service of
+#     Cloudflare deploys it, by any of the names that service goes by (#1339,
+#     #1408). HW-DR-0097 moved the deploy into `deploy-site.yml`,
 #     and a maintainer who reads the old route looks for a build that does
 #     not exist. `apt_route` below reads the five files that describe it,
 #     the README among them, because an adopter reads the route there.
@@ -707,9 +708,31 @@ deploys() {
 }
 
 # apt_route ROOT — prints one line for each file that describes the APT route
-# and says that "the Cloudflare build" deploys it, and nothing for a tree that
-# holds. The match ignores case and a line break inside the phrase, because
-# the shell and YAML comments wrap it.
+# and says that a build service of Cloudflare deploys it, and nothing for a
+# tree that holds. The service has more than one name, so the match reads each
+# of them: "Cloudflare build", "Cloudflare Workers Build(s)", "Workers
+# Build(s)", "Cloudflare Pages build" and "the build service of Cloudflare"
+# (#1408). The match ignores case, a `#` and a line break inside the phrase,
+# because the shell and YAML comments wrap it.
+#
+# It reads a present claim and not the vendor's noun. Two lines in these files
+# say what deployed the site before HW-DR-0097, and they are true: a sentence
+# that names the service and carries a past marker ("ran", "before", or
+# "deployed" that is not "is deployed") is history, and it passes. d11 holds
+# that such a line passes, and the d10 plants in the passive voice hold that
+# "is deployed by" is not read as history.
+apt_route_py='
+import re, sys
+service = re.compile(r"cloudflare\s+(?:workers\s+|pages\s+)?builds?\b|\bworkers\s+builds?\b|build\s+service\s+of\s+cloudflare", re.I)
+past = re.compile(r"\b(?:ran|was|were|had|before|formerly|previously|used\s+to|no\s+longer)\b|(?<!\bis )(?<!\bare )(?<!\bbe )\b(?:deployed|served|built)\b", re.I)
+text = open(sys.argv[1], encoding="utf-8").read().replace("#", " ")
+text = re.sub(r"\s+", " ", text)
+for sentence in re.split(r"(?<=[.!?;])\s", text):
+    if service.search(sentence) and not past.search(sentence):
+        sys.exit(0)
+sys.exit(1)
+'
+
 apt_route_files="docs/decisions/0094-the-apt-repository-is-served-from-headwater-tools-and-signed-by-a-subkey-the-owner-s-offline-key-certifies.md
 tools/site/fetch-apt.sh
 .github/workflows/ci.yml
@@ -720,8 +743,8 @@ apt_route() {
     printf '%s\n' "$apt_route_files" | while IFS= read -r f; do
         if [ ! -f "$1/$f" ]; then
             echo "$f is missing, so nothing states the APT route there"
-        elif tr '\n' ' ' < "$1/$f" | sed 's/#//g' | tr -s ' \t' ' ' | grep -qi 'cloudflare build'; then
-            echo "$f says the Cloudflare build deploys the APT repository"
+        elif python3 -c "$apt_route_py" "$1/$f"; then
+            echo "$f says a build service of Cloudflare deploys the APT repository"
         fi
     done
 }
@@ -811,7 +834,7 @@ contains "a copy of the deploy steps in release.yml is red" \
     "$(deploys "$scratch/d5")"
 
 # d9. The APT route as each file that describes it states it (#1339).
-same "no file says the Cloudflare build deploys the APT repository" "" \
+same "no file says a build service of Cloudflare deploys the APT repository" "" \
     "$(apt_route "$root" | tr '\n' '|' | sed 's/|$//')"
 
 # d10. The phrase planted in a copy of fetch-apt.sh, wrapped as a comment
@@ -824,8 +847,41 @@ done
 printf '%s\n' '#   The site reaches Cloudflare by one path only, the Cloudflare' \
     '#   Build, so this step reads those assets at build time.' >> "$scratch/d10/tools/site/fetch-apt.sh"
 same "fetch-apt.sh that names the Cloudflare build is red" \
-    "tools/site/fetch-apt.sh says the Cloudflare build deploys the APT repository" \
+    "tools/site/fetch-apt.sh says a build service of Cloudflare deploys the APT repository" \
     "$(apt_route "$scratch/d10" | tr '\n' '|' | sed 's/|$//')"
+
+# d10, the other names of the service (#1408). Each is planted in a fresh copy
+# of fetch-apt.sh, wrapped as a comment wraps it, and each is red. The first
+# half of each plant goes on one line and the name ends it or starts the next,
+# so the break falls inside the phrase where it can.
+apt_route_plant() {
+    rm -rf "$scratch/$1"
+    mkdir -p "$scratch/$1"
+    printf '%s\n' "$apt_route_files" | while IFS= read -r f; do
+        mkdir -p "$scratch/$1/$(dirname "$f")"
+        cp "$root/$f" "$scratch/$1/$f"
+    done
+    printf '%s\n' "$2" "$3" >> "$scratch/$1/tools/site/fetch-apt.sh"
+    if cmp -s "$root/tools/site/fetch-apt.sh" "$scratch/$1/tools/site/fetch-apt.sh"; then
+        echo "the plant changed nothing"
+    else
+        apt_route "$scratch/$1" | tr '\n' '|' | sed 's/|$//'
+    fi
+}
+apt_route_red="tools/site/fetch-apt.sh says a build service of Cloudflare deploys the APT repository"
+same "fetch-apt.sh that says Cloudflare Workers Builds deploys the repository is red" "$apt_route_red" \
+    "$(apt_route_plant d10w '#   The repository under apt/ is deployed by Cloudflare Workers' '#   Builds, on each push to main.')"
+same "fetch-apt.sh that says Workers Build serves the site is red" "$apt_route_red" \
+    "$(apt_route_plant d10b '#   Workers' '#   Build serves the site and the APT repository from this tree.')"
+same "fetch-apt.sh that says the Cloudflare Pages build deploys the site is red" "$apt_route_red" \
+    "$(apt_route_plant d10p '#   The Cloudflare Pages' '#   build deploys the site, and apt/ with it.')"
+same "fetch-apt.sh that says the build service of Cloudflare deploys the repository is red" "$apt_route_red" \
+    "$(apt_route_plant d10s '#   The APT repository is deployed by the build service of' '#   Cloudflare from this script.')"
+
+# d11. A line that says what deployed the site BEFORE HW-DR-0097 is history,
+# and it is true, so it passes. Two of the five files carry one.
+same "fetch-apt.sh that says Cloudflare Workers Builds deployed the site before is green" "" \
+    "$(apt_route_plant d11 '#   Cloudflare Workers Builds deployed the site before; it could not' '#   wait for CI.')"
 
 # d6. The called workflow gains a second trigger, so a third deploy path.
 copy_tree "$scratch/d6"

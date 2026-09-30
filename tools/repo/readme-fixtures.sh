@@ -63,7 +63,9 @@
 # hold is that `https://headwater.tools/apt` serves anything. The `smoke-apt`
 # job in `release.yml` installs the package from a repository it signs itself,
 # so it holds the package and not the site. Only a run of the block in a clean
-# container holds the site.
+# container holds the site, and `.github/workflows/readme-apt.yml` is that run:
+# daily, and after each release deploys the site. Group 12 holds that the job
+# runs the page's block on the floor the page names (#1408).
 #
 # Group 11 reads the install panel on the front page of the site,
 # `site/index.html`, against the page. The panel opens with the page's download
@@ -3096,8 +3098,9 @@ echo "the APT route the page offers, and the repository the release publishes"
 #
 # What this group cannot hold is that `https://headwater.tools/apt` serves
 # anything. That needs a socket, which no case here opens. The `smoke-apt` job
-# in `release.yml` signs a local repository, so it does not hold it either, and
-# only a run of the block in a clean container does.
+# in `release.yml` signs a local repository, so it does not hold it either.
+# `.github/workflows/readme-apt.yml` runs the block in a clean container against
+# the site, and group 12 holds that job against the page.
 
 apt_fetch="$root/tools/site/fetch-apt.sh"
 apt_sign_step="Sign the APT metadata"
