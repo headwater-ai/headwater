@@ -2393,6 +2393,18 @@ if [ -x "$engine" ]; then
         --spec "$scratch/mixed.spec" > /dev/null 2>&1
     same "and with no probe kept the same line is a leak, 8" "8" "$?"
 
+    # A `leaks_kept:` that is not a sequence of identifiers is refused, never
+    # read as a list of its characters or as nothing.
+    awk -v a="$status_probe" '
+        /^leaks_kept:/ { print "leaks_kept: " a; skip = 1; next }
+        skip && /^  - / { next }
+        { skip = 0; print }
+    ' "$root/.headwater/probe.yml" > "$scratch/scalar-kept.yml"
+    HW_PROBE_YML="$scratch/scalar-kept.yml" PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
+        --spec "$root/tools/probe/layer-campaign.spec" > /dev/null 2> "$scratch/scalar-kept.err"
+    same "a leaks_kept that is one scalar is refused with 2" "2" "$?"
+    present "and the refusal says why" "is not a sequence of probe identifiers" "$scratch/scalar-kept.err"
+
     dry_power() {
         # $1 name, $2 sed program over the power block, $3 text of the refusal
         sed "$2" "$root/.headwater/probe.yml" > "$scratch/power.yml"
