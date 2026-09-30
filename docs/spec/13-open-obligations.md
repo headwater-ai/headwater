@@ -171,7 +171,6 @@ The second said that a control declares one posture and that spec 4 writes two v
 - [HW-OBL-0037](../obligations/0037-the-register-is-not-a-projection-of-the-lock-alone-so-generate.md) — The register is not a projection of the lock alone, so `generate --check` cannot hold it
 - [HW-OBL-0038](../obligations/0038-a-corpus-that-never-runs-generate-check-has-no-test.md) — A corpus that never runs `generate --check` has no test of a generated-file marker
 - [HW-OBL-0041](../obligations/0041-no-declaration-expresses-a-rule-about-content-or-state-over.md) — No declaration expresses a rule about content or state over time
-- [HW-OBL-0042](../obligations/0042-a-declared-invalid-when-reaches-no-check-and-two-live.md) — A declared `invalid_when` reaches no check, and two live contradictory decisions pass in silence
 - [HW-OBL-0043](../obligations/0043-two-meta-schema-surfaces-have-a-required-declaration.md) — Two meta-schema surfaces have a required declaration and no stated form
 - [HW-OBL-0045](../obligations/0045-what-shelf-expands-to-in-a-projection-output.md) — What `{shelf}` expands to in a projection output
 - [HW-OBL-0046](../obligations/0046-the-identifier-scheme-grammar.md) — The identifier scheme grammar
@@ -242,6 +241,8 @@ The second said that a control declares one posture and that spec 4 writes two v
 [HW-OBL-0186](../obligations/0186-a-facet-only-entry-has-no-kind-and-the-entry-anatomy-asks-for-two-things-that-presume-one.md) is discharged and it is not in the list above. The [library index](../taxonomies/README.md) now states criterion 4's own reading. A facet-only entry's worked corpus borrows a kind from another entry. It names the kind it borrows, and it demonstrates its own facet, not the borrowed kind's purpose. The `diataxis` entry took this reading before the criterion stated it, and its record carries the reason.
 
 [HW-OBL-0085](../obligations/0085-headwater-init-cannot-reach-a-package-that-is-not-already.md) is discharged and it is not in the list above. [#959](https://github.com/headwater-ai/headwater/issues/959) gave the fetch a stated form: `headwater taxonomy vendor` takes an `https://` location and checks the digest of what it fetches. `headwater init` names that argument in the line it prints and in the comment it writes. A test in `engine/crates/cli/tests/init.rs` takes the route from a location to a resolved version. No released binary carries the fetch yet, and the record states what that costs a reader.
+
+[HW-OBL-0042](../obligations/0042-a-declared-invalid-when-reaches-no-check-and-two-live.md) is discharged and it is not in the list above. The base declared `invalid_when` on `conflicts_with`, and no rule read it. `relation.pair.invalid` now reports a pair of documents where the declared condition holds at both ends. It reads the facet that the condition names. [#1491](https://github.com/headwater-ai/headwater/issues/1491) holds seven more declarations that reach no check.
 
 ## What else each decision left open
 

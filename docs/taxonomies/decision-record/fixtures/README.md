@@ -29,7 +29,7 @@ The run is not automatic, and nothing in CI performs it. `headwater check` reads
 
 ## What a run reports
 
-`headwater check --no-cache --now 2026-08-13` over the assembled root: **44 files seen, 10 classified, 10 checked, 78 check instances, 3 findings.** Two of the three are planted.
+`headwater check --no-cache --now 2026-08-13` over the assembled root: **44 files seen, 10 classified, 10 checked, 78 check instances, 3 findings.** Two of the three are planted. The fourth item below arrived with a later rule.
 
 **1. `0003-integration-guide-states-the-old-guarantee.md` has no `Discharge` section.** `section.required.missing`, error, under `OB-SECT-1`. The kind requires `Context`, `Obligation` and `Discharge`, and the third is the one that makes a debt actionable. An obligation whose discharge nobody can state is a wish, and this is the fixture that proves the heading is enforced rather than suggested.
 
@@ -39,11 +39,11 @@ The run is not automatic, and nothing in CI performs it. `headwater check` reads
 
 That third finding is the [first doctrine finding](../doctrine.md#findings) arriving as a measurement. An expectation names one target kind, and an endpoint list names concrete kinds, so a second entry that composes with a first inherits its expectations and cannot amend them. It is also the case that design-spec's own [finding 4](../../design-spec/doctrine.md#findings) predicted from the inside.
 
+**4. The two `current` decisions joined by `conflicts_with` are reported, once in each file.** `relation.pair.invalid`, warning, with no fix. `HW-DR-0002` and `HW-DR-0006` contradict each other, both are `current`, and both declare the edge. The base declares `conflicts_with` with `invalid_when: {both: {status: current}}`, and [spec 2](../../../spec/02-taxonomy-model.md#the-decision-relation-vocabulary) lists that state first among the four checks that the decision-relation vocabulary brings. Until [#1491](https://github.com/headwater-ai/headwater/issues/1491), no rule read the declaration, and this pair passed in silence. That is why the conflict is here rather than in the planted list. The rule reads the condition as the taxonomy declares it, so each author learns of the conflict in the file that declares it. The fix is a decision that `overrides` or `supersedes` one side, and only a person can choose the side. The [doctrine](../doctrine.md#findings) carried the finding.
+
+The count above predates this rule. The engine of 2026-10-01 reads the fixture differently in other ways too. The same assembly now needs `evidence-and-obligation` in `bundles:` and a namespace for `decision_id` and `obligation_record_id` in the overlay. Over that root, `--now 2026-08-13` reports 10 seen, 10 checked, 199 check instances and 17 findings. Two of the 17 are the pair above: 2 instances of `relation.pair.invalid`, and 2 findings.
+
 ## What a run does not report, and should
-
-**The two `current` decisions joined by `conflicts_with` pass in silence.** `HW-DR-0002` and `HW-DR-0006` contradict each other, both are `current`, and both declare the edge. The base declares `conflicts_with` with `invalid_when: {both: {status: current}}`. [Spec 2](../../../spec/02-taxonomy-model.md#the-decision-relation-vocabulary) lists that state first among the four checks that the decision-relation vocabulary brings, and [HW-EVAL-adjacent-work](../../../evaluations/adjacent-work.md) calls it "a deterministic, blocking-eligible check" that was in the design all along. No rule in the engine reads it. The declaration reaches one place in the resolver, where it makes the `status` facet count as read for the relevance canon, and it reaches no check.
-
-This is the fixture's most useful result, and it is why the conflict is here rather than in the planted list. A corpus that holds two live contradictory decisions gets a clean run today. The [doctrine](../doctrine.md#findings) carries the finding.
 
 **Neither obligation of this tradition reports anything.** `OB-DR-1` and `OB-DR-2` are declared with `gap` dispositions and no control, so the register prints them as gaps and no rule fires. `0005-partition-by-tenant.md` has stood in `draft` since 2026-01-05 and nothing says so. An accepted record edited after acceptance would be equally invisible, and no fixture can demonstrate an absence, so this file states it instead.
 
