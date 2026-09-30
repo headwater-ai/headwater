@@ -119,6 +119,8 @@ repository = "https://github.com/headwater-ai/headwater"
 # The version is the same literal as `[workspace.package] version` above,
 # because every member of this workspace has always moved as one number; nothing
 # here reads that field to derive this one, so a bump has both to change.
+# `engine/crates/cli/tests/publish_order.rs` holds every entry on a member at
+# that version, and names the entry a bump missed (#1315).
 [workspace.dependencies]
 headwater-adapter = { path = "crates/adapter", version = "0.5.0" }
 headwater-audit = { path = "crates/audit", version = "0.5.0" }

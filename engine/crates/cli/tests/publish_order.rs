@@ -27,6 +27,15 @@
 //! graph decides that. This file holds the set exactly, and holds the order
 //! only where a member's manifest declares a dependency on another member —
 //! which is the part a wrong order actually breaks.
+//!
+//! # The version each internal dependency names
+//!
+//! The last cases hold a second hand-kept list in the same manifest: the
+//! `version` of every `[workspace.dependencies]` entry on a member, against
+//! `[workspace.package] version`. A release bump that misses one entry is green
+//! in every job until the publish ([#1315](https://github.com/headwater-ai/headwater/issues/1315)).
+//! The members come from the same `members = [...]` parse as above, never from
+//! a list written here, which is what HW-OBL-0172 asks for.
 
 use std::path::{Path, PathBuf};
 
@@ -463,8 +472,53 @@ fn the_index_gate_refuses_a_dependency_whose_release_version_is_yanked() {
 /// through the same judge. An entry whose `path` names no member is a
 /// dependency from outside this workspace, and it is not read.
 fn stale_member_dependency_versions(manifest: &str) -> Vec<String> {
-    let _ = manifest;
-    Vec::new()
+    let members = member_paths(manifest);
+    let quoted = |line: &str, key: &str| -> Option<String> {
+        let at = line.find(&format!("{key} = \""))? + key.len() + " = \"".len();
+        line[at..].split('"').next().map(str::to_string)
+    };
+    let package = section(manifest, "[workspace.package]")
+        .iter()
+        .find_map(|line| line.trim().strip_prefix("version = \""))
+        .and_then(|rest| rest.split('"').next())
+        .expect("[workspace.package] declares a version")
+        .to_string();
+
+    let mut stale = Vec::new();
+    for line in section(manifest, "[workspace.dependencies]") {
+        let line = line.trim();
+        let Some((name, _)) = line.split_once(" = ") else {
+            continue;
+        };
+        let Some(path) = quoted(line, "path") else {
+            continue;
+        };
+        if !members.contains(&path) {
+            continue;
+        }
+        match quoted(line, "version") {
+            Some(version) if version == package => {}
+            Some(version) => stale.push(format!(
+                "{name} (path {path}) names version {version}, and [workspace.package] version is {package}"
+            )),
+            None => stale.push(format!(
+                "{name} (path {path}) names no version, so it cannot be published; [workspace.package] version is {package}"
+            )),
+        }
+    }
+    stale
+}
+
+/// The lines of one `[table]` of a manifest, from its header to the next
+/// header, less comments.
+fn section<'a>(manifest: &'a str, header: &str) -> Vec<&'a str> {
+    manifest
+        .lines()
+        .skip_while(|line| line.trim() != header)
+        .skip(1)
+        .take_while(|line| !line.trim_start().starts_with('['))
+        .filter(|line| !line.trim_start().starts_with('#'))
+        .collect()
 }
 
 /// The real manifest names the workspace version on every internal
@@ -514,6 +568,39 @@ fn a_bump_that_misses_one_workspace_dependency_names_that_dependency() {
         "the planted bump left headwater-yaml at {version} and moved the rest to {next}; \
          the judge should name headwater-yaml alone, and it said: {stale:?}"
     );
+}
+
+/// An internal dependency with a path and no version is named too: cargo
+/// refuses to publish a crate that depends on one.
+#[test]
+fn a_workspace_dependency_on_a_member_with_no_version_is_named() {
+    let real = workspace_manifest();
+    let version = headwater_resolve::release::ENGINE;
+    let planted = real.replace(
+        &format!("headwater-yaml = {{ path = \"crates/yaml\", version = \"{version}\" }}"),
+        "headwater-yaml = { path = \"crates/yaml\" }",
+    );
+    assert_ne!(planted, real, "engine/Cargo.toml has no headwater-yaml entry to plant on");
+    let stale = stale_member_dependency_versions(&planted);
+    assert!(
+        stale.len() == 1 && stale[0].contains("headwater-yaml") && stale[0].contains("no version"),
+        "headwater-yaml was planted with no version; the judge said: {stale:?}"
+    );
+}
+
+/// An entry whose path names no member is not this workspace's to hold, so a
+/// different version on it is not a finding.
+#[test]
+fn a_workspace_dependency_outside_the_members_is_not_read() {
+    let real = workspace_manifest();
+    let planted = real.replacen(
+        "[workspace.dependencies]\n",
+        "[workspace.dependencies]\nelsewhere = { path = \"../elsewhere\", version = \"0.0.1\" }\n",
+        1,
+    );
+    assert_ne!(planted, real, "engine/Cargo.toml has no [workspace.dependencies] table");
+    let stale = stale_member_dependency_versions(&planted);
+    assert!(stale.is_empty(), "the judge read a non-member entry: {stale:?}");
 }
 
 /// Every member inherits its version from `[workspace.package]`, so the one
