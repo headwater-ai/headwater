@@ -1643,6 +1643,57 @@ mod tests {
         assert!(why.contains("does not start `HW-VER-`"), "{why}");
     }
 
+    /// One resolver reads a file once, however many anchors it binds that
+    /// file under, and a second resolver reads it again (#1450). The first
+    /// half is what took a warm `headwater check` from 257 ms toward 200 ms
+    /// over this repository: 524 reads of 299 files became 299. The second
+    /// half is what keeps it correct: the map lives as long as one resolver,
+    /// so a fresh process sees a changed byte.
+    #[test]
+    fn one_resolver_digests_a_file_once_and_a_fresh_one_reads_it_again() {
+        let dir = scratch("digest-once");
+        std::fs::create_dir_all(dir.join("src")).expect("a fixture directory");
+        std::fs::write(dir.join("src/a.rs"), "fn a() {}\n").expect("a fixture file");
+        std::fs::write(dir.join("src/b.rs"), "fn b() {}\n").expect("a fixture file");
+        let both_files = ["src/a.rs".to_owned(), "src/b.rs".to_owned()];
+        let unedited = tree_revision(&dir, &both_files);
+        let corpus = Corpus::new(dir.to_path_buf(), "");
+        let resolver = SourceTree::over(&corpus);
+        let Binding::Resolved {
+            revision: alone, ..
+        } = resolver.resolve("src/a.rs")
+        else {
+            panic!("src/a.rs is there, so the anchor resolves");
+        };
+        let Binding::Resolved { revision: both, .. } = resolver.resolve("src/*.rs") else {
+            panic!("two files match, so the pattern resolves");
+        };
+        assert!(alone.get().is_some(), "a regular file has a revision");
+
+        // The bytes move after the first value read them. The second value of
+        // the same resolver reads `src/a.rs` through the map, so it states the
+        // bytes this resolver already read.
+        std::fs::write(dir.join("src/a.rs"), "fn a() { moved() }\n").expect("the edit");
+        let edited = tree_revision(&dir, &both_files);
+        assert_ne!(unedited, edited, "the edit moves the revision of a fresh read");
+        assert_eq!(
+            both.get().map(str::to_owned),
+            unedited,
+            "one resolver reads a file once, so its second value states the bytes it first read"
+        );
+
+        // A fresh resolver is a fresh process: it reads the moved bytes.
+        let fresh = SourceTree::over(&corpus);
+        let Binding::Resolved { revision: now, .. } = fresh.resolve("src/*.rs") else {
+            panic!("both files are still there");
+        };
+        assert_eq!(
+            now.get().map(str::to_owned),
+            edited,
+            "the map of one resolver never answers for another"
+        );
+    }
+
     /// A named pipe reaches no line of the manifest, so it is never opened
     /// (#1269). Opening one that has no writer blocks forever, so a reader
     /// that opens it hangs this test rather than failing it. A set of entries
