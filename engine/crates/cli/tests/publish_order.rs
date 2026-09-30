@@ -580,7 +580,10 @@ fn a_workspace_dependency_on_a_member_with_no_version_is_named() {
         &format!("headwater-yaml = {{ path = \"crates/yaml\", version = \"{version}\" }}"),
         "headwater-yaml = { path = \"crates/yaml\" }",
     );
-    assert_ne!(planted, real, "engine/Cargo.toml has no headwater-yaml entry to plant on");
+    assert_ne!(
+        planted, real,
+        "engine/Cargo.toml has no headwater-yaml entry to plant on"
+    );
     let stale = stale_member_dependency_versions(&planted);
     assert!(
         stale.len() == 1 && stale[0].contains("headwater-yaml") && stale[0].contains("no version"),
@@ -598,9 +601,15 @@ fn a_workspace_dependency_outside_the_members_is_not_read() {
         "[workspace.dependencies]\nelsewhere = { path = \"../elsewhere\", version = \"0.0.1\" }\n",
         1,
     );
-    assert_ne!(planted, real, "engine/Cargo.toml has no [workspace.dependencies] table");
+    assert_ne!(
+        planted, real,
+        "engine/Cargo.toml has no [workspace.dependencies] table"
+    );
     let stale = stale_member_dependency_versions(&planted);
-    assert!(stale.is_empty(), "the judge read a non-member entry: {stale:?}");
+    assert!(
+        stale.is_empty(),
+        "the judge read a non-member entry: {stale:?}"
+    );
 }
 
 /// Every member inherits its version from `[workspace.package]`, so the one
