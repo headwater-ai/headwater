@@ -1293,6 +1293,28 @@ mod tests {
         }
     }
 
+    /// A marker in a format the census does not read is a hand-written claim,
+    /// and `headwater derived` answers for it as the census does (#1344). The
+    /// same line in a YAML file is `headwater generate`'s.
+    #[test]
+    fn a_marker_in_a_format_the_census_does_not_read_claims_no_producer() {
+        let root = std::env::temp_dir().join(format!(
+            "headwater-derived-marked-txt-{}-{:?}",
+            std::process::id(),
+            std::thread::current().id()
+        ));
+        std::fs::create_dir_all(root.join("docs")).expect("the scratch tree");
+        let line = "# headwater:generated site_nav. `headwater generate` writes this file.\nnav:\n";
+        std::fs::write(root.join("docs/nav.txt"), line).expect("the text file");
+        std::fs::write(root.join("docs/nav.yml"), line).expect("the YAML file");
+        assert_eq!(super::claimed_by(&root, "docs/nav.txt"), None);
+        assert_eq!(
+            super::claimed_by(&root, "docs/nav.yml"),
+            Some(Producer::Generate)
+        );
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
     /// `Plain` writes the whole report and not one escape byte.
     ///
     /// This is the arm every headless test of this repository already had, and
