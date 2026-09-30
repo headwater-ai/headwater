@@ -29,6 +29,11 @@
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
+/// The obligation the control of `headwater/standard` binds the rule to
+/// (HW-OBL-0170, #1492). A finding names it beside the rule, so a control that
+/// stops naming the rule changes the text every refusal below reads.
+const OBLIGATION: &str = "OB-FACET-3";
+
 fn repository() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("../../..")
@@ -196,10 +201,12 @@ fn refuses(label: &str, line: &str, complaint: &str) {
         .out
         .split(&named)
         .skip(1)
-        .any(|after| after.contains("facet.value.blank") && after.contains(complaint));
+        .any(|after| {
+            after.contains(&format!("facet.value.blank ({OBLIGATION})")) && after.contains(complaint)
+        });
     assert!(
         reported,
-        "no `facet.value.blank` finding on {named} saying {complaint}\n{}",
+        "no `facet.value.blank ({OBLIGATION})` finding on {named} saying {complaint}\n{}",
         ran.out
     );
 }
