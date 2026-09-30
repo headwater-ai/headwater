@@ -1295,7 +1295,7 @@ engine_digest_claim_judge() {
     edc_verb='(states?|carr(y|ies)|ha(s|ve))'
     edc_what='(`release\.digest`|digest)'
     edc_claim=$(awk '/^```/{f=!f; next} !f' "$1" \
-        | grep -oiE "[^.]*engine releases?[^.]*($edc_verb no|(does|do) not (state|carry|have)( a| any)?) $edc_what[^.]*\\.|[^.]*no engine releases? $edc_verb( a| any)? $edc_what[^.]*\\." \
+        | grep -oiE "[^.]*engine release[^.]*($edc_verb no|(does|do) not (state|carry|have)( a| any)?) $edc_what[^.]*\\.|[^.]*no engine releases? $edc_verb( a| any)? $edc_what[^.]*\\." \
         | head -1 | sed 's/^ *//')
     if [ -z "$edc_claim" ]; then
         echo ok
@@ -2709,6 +2709,12 @@ if [ -f "$release_wf" ]; then
             "$(engine_digest_claim_judge "$scratch/release/wording-$edc_n.md" "$release_wf")"
     done <"$scratch/release/digest-wordings.txt"
     same "  over the eight wordings the #1397 verifier wrote" 8 "$edc_n"
+    # The sentence that opens "No engine release" in the plural as well.
+    edc_plural='No engine releases carry a `release.digest`.'
+    { cat "$readme"; printf '\n%s\n' "$edc_plural"; } >"$scratch/release/wording-plural.md"
+    same "  and a README that says \"$edc_plural\" is refused" \
+        "the README says \"$edc_plural\", but \`gh release create\` in the engine workflow passes a notes file that the step \"The digest the package in this tree publishes\" opens with \`release.digest\`" \
+        "$(engine_digest_claim_judge "$scratch/release/wording-plural.md" "$release_wf")"
     # The control: a sentence that says the engine release DOES state the
     # digest is true, and a judge widened past negation would refuse it.
     { cat "$readme"; printf '\n%s\n' 'Each engine release states the `release.digest` of the package in its tree.'; } >"$scratch/release/true-claim.md"
