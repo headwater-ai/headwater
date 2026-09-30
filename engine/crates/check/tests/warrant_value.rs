@@ -179,6 +179,38 @@ fn every_value_outside_the_set_is_reported() {
     }
 }
 
+/// A list is named as what it is, once: "the warrant is a sequence".
+#[test]
+fn a_warrant_that_is_not_one_value_is_named_by_its_shape() {
+    let run = run();
+    let finding = findings(&run, VALUE, "listed.md")[0];
+    assert!(
+        finding.message.starts_with("the warrant is a sequence,"),
+        "{}",
+        finding.message
+    );
+    assert!(!finding.message.contains("a a "), "{}", finding.message);
+}
+
+/// A pairing finding stands at the text to change: the acceptor where one is
+/// written, and the warrant where none is.
+#[test]
+fn a_pairing_finding_stands_at_the_line_to_change() {
+    let run = run();
+    for (file, line) in [
+        // `accepted_by:` with no value, on line 10.
+        ("accepted-blank.md", 10),
+        // No acceptor at all, so the warrant on line 7.
+        ("accepted-unsigned.md", 7),
+        // A forbidden acceptor, on line 10.
+        ("asserted-signed.md", 10),
+    ] {
+        let reported = findings(&run, UNPAIRED, file);
+        assert_eq!(reported.len(), 1, "{file}");
+        assert_eq!(reported[0].line, line, "{file}: {:?}", reported[0]);
+    }
+}
+
 /// Each of the four values passes the value rule.
 #[test]
 fn each_member_of_the_closed_set_passes() {

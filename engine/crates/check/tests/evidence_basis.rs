@@ -358,6 +358,30 @@ fn a_target_that_declares_no_warrant_skips_rather_than_passing() {
     );
 }
 
+/// A warrant key with no value is an absence, and not a value outside the set.
+///
+/// The parser hands `warrant:` back as the plain scalar `~`, which the core
+/// schema reads as null. A reader that took the text reported "`~` is not a
+/// value of spec 3's closed set" over an edge that passed before (round 1 of
+/// the verify of #1438). `headwater_doc::warrant` reads it as absent, so the
+/// instance skips as it does onto `quiet.md`.
+#[test]
+fn a_target_whose_warrant_key_has_no_value_skips_like_one_with_no_warrant() {
+    let run = run();
+    assert!(
+        about(&run, "NOTE-FIX-onto-blank").is_empty(),
+        "a blank warrant was reported: {:?}",
+        refusals(&run)
+    );
+    let skips = skips(&run);
+    let mine: Vec<&(Vec<&str>, &String)> = skips
+        .iter()
+        .filter(|(reads, _)| reads.contains(&"evidence-basis/targets/blank.md"))
+        .collect();
+    assert_eq!(mine.len(), 1, "{skips:?}");
+    assert!(mine[0].1.contains("declares no warrant"), "{}", mine[0].1);
+}
+
 /// A target this engine wrote is decided, on the warrant the engine derives.
 ///
 /// [Spec 3](../../../../docs/spec/03-authoring-and-lifecycle.md#the-warrant-and-what-each-value-requires):

@@ -135,8 +135,20 @@ pub fn provenance(facets: &Mapping) -> Option<&Mapping> {
 /// [`warrant_of`] instead.** This function answers what an author declared, and
 /// a generated document declares nothing here by design, so `None` from this
 /// function is an absence of a declaration rather than an absence of a warrant.
+///
+/// `warrant:` with no value is an absence too. The core schema reads it as
+/// null, and the parser hands it back as the scalar `~`, so a reader that took
+/// the text would find a fifth value that nobody wrote. Every reader of the
+/// warrant comes through here, so the two rules of `headwater_check::warrant`,
+/// `warrant.evidence.unsupported` and the query pointer all read it as absent.
 pub fn warrant(facets: &Mapping) -> Option<&str> {
-    member(facets, WARRANT)
+    facets
+        .get(PROVENANCE)
+        .and_then(|node| node.value.as_map())
+        .and_then(|map| map.get(WARRANT))
+        .and_then(|node| node.value.as_scalar())
+        .filter(|scalar| !headwater_yaml::core_schema::as_null(scalar))
+        .map(|scalar| scalar.text.as_str())
 }
 
 /// What stands behind a document, for a caller that has the census row as well
@@ -253,6 +265,20 @@ pub fn parse_prose(source: &str) -> Result<Document, Vec<ParseError>> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// `warrant:` with no value, and its two written spellings of null, are
+    /// an absence. A quoted `"~"` is text somebody wrote, and it is read.
+    #[test]
+    fn a_warrant_key_with_no_value_is_no_warrant() {
+        for written in ["warrant:", "warrant: ~", "warrant: null"] {
+            let source = format!("---\nid: X\nprovenance:\n  {written}\n---\n\n# X\n");
+            let document = parse(&source).expect("parses");
+            assert_eq!(warrant(&document.facets), None, "{written}");
+        }
+        let source = "---\nid: X\nprovenance:\n  warrant: \"~\"\n---\n\n# X\n";
+        let document = parse(source).expect("parses");
+        assert_eq!(warrant(&document.facets), Some("~"));
+    }
 
     #[test]
     fn a_file_with_no_front_matter_is_prose_with_an_empty_mapping() {

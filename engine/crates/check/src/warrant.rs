@@ -98,7 +98,7 @@ fn declared(facets: &Mapping) -> Declared<'_> {
             Declared::Member(scalar.text.as_str())
         }
         Value::Scalar(scalar) => Declared::Outside(entry, scalar.text.clone()),
-        other => Declared::Outside(entry, format!("a {}", other.kind_name())),
+        other => Declared::Outside(entry, other.kind_name().to_string()),
     }
 }
 
