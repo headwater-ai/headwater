@@ -288,6 +288,8 @@ class AListWithADeadMemberIsShownRefused(unittest.TestCase):
             [(row["key"], row["governed_by"], row["reason"]) for row in model.refused],
             [(("fixture", "FX-DR-0002"), "FX-DR-0002", DEAD_MEMBER_REASON)],
         )
+        # HW-DR-0080 keys a row by (corpus_identity, id), so the id is the key's second part.
+        self.assertEqual([(row["id"], row["key"][1]) for row in model.refused], [("FX-DR-0002", "FX-DR-0002")])
 
     def test_the_matching_member_is_not_counted_as_covered(self):
         before = dashboard.coverage_view(dashboard.load(load_fixture(), corpus_identity="fixture"), tree=TREE)
@@ -388,6 +390,7 @@ class AListWithADeadMemberIsShownRefused(unittest.TestCase):
         export["graph"]["edges"][-1]["source"] = "docs/<gone>.md"
         model = dashboard.load(export, corpus_identity="fixture")
         self.assertEqual([row["key"] for row in model.refused], [("fixture", "docs/<gone>.md")])
+        self.assertEqual([row["id"] for row in model.refused], ["docs/<gone>.md"])
         page = dashboard.render(model)
         self.assertIn("<tr><td>docs/&lt;gone&gt;.md</td>", page)
         self.assertNotIn("docs/<gone>.md", page)
@@ -405,6 +408,57 @@ class AListWithADeadMemberIsShownRefused(unittest.TestCase):
         with self.assertRaises(dashboard.ExportRefused) as raised:
             dashboard.load(export, corpus_identity="fixture")
         self.assertIn("target.reason", str(raised.exception))
+
+    def test_a_refused_edge_whose_source_is_not_a_string_is_refused_as_input(self):
+        # load() refuses malformed input with ExportRefused. Read without the
+        # string check, a list-valued source raises TypeError from the path
+        # lookup, and an integer source becomes the row's governor.
+        for value in (7, ["docs/decisions/0002-recent.md"]):
+            export = with_dead_member_list(load_fixture())
+            export["graph"]["edges"][-1]["source"] = value
+            with self.assertRaises(dashboard.ExportRefused) as raised:
+                dashboard.load(export, corpus_identity="fixture")
+            self.assertIn("`source`", str(raised.exception))
+
+    def test_the_page_lists_every_refused_row_whole_in_the_coverage_section(self):
+        # The part of the long reason past its 80th character is what the page must keep.
+        long_reason = "`code_path`: `src/" + "a" * 120 + "/end.rs` no such path in the source tree"
+        self.assertGreater(len(long_reason), 80)
+        export = load_fixture()
+        for source, reason in (
+            ("docs/obligations/0001-old.md", "a reason"),
+            ("docs/decisions/0002-recent.md", long_reason),
+            ("docs/decisions/0002-recent.md", "b reason"),
+        ):
+            export["graph"]["edges"].append(
+                {"source": source, "relation": "governs", "written_as": "governs",
+                 "target": {"bound": "nothing", "reason": reason}}
+            )
+        model = dashboard.load(export, corpus_identity="fixture")
+        page = dashboard.render(model, dashboard.coverage_view(model, tree=TREE))
+        rows = [
+            "<tr><td>%s</td><td>%s</td></tr>" % (governor, dashboard.html.escape(reason))
+            for governor, reason in (
+                ("FX-DR-0002", long_reason),
+                ("FX-DR-0002", "b reason"),
+                ("FX-OBL-0001", "a reason"),
+            )
+        ]
+        # Every row is on the page, whole, in the order the model sorts them.
+        positions = [page.index(row) for row in rows]
+        self.assertEqual(positions, sorted(positions))
+        self.assertIn(dashboard.html.escape(long_reason[80:]), page)
+        # The notice for an empty list is not shown above rows.
+        self.assertNotIn(dashboard.html.escape(dashboard.NO_REFUSED_EDGE), page)
+        # The refused table is in the coverage section, after staleness and warrant.
+        refused = page.index('id="refused"')
+        self.assertLess(page.index('id="staleness"'), refused)
+        self.assertLess(page.index('id="warrant"'), refused)
+        self.assertLess(page.index('id="coverage"'), refused)
+        self.assertLess(refused, positions[0])
+        # It is an <h3> under the coverage <h2>, with no other <h2> between them.
+        self.assertIn('<h3 id="refused">', page)
+        self.assertNotIn("<h2", page[page.index('id="coverage"'):refused])
 
 
 class TheCommandLine(unittest.TestCase):

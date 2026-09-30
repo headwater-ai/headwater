@@ -23,9 +23,11 @@ The verb takes no argument. It reports the derived artifacts of the tree in fron
 
 `headwater derived` answers one question: which files of this repository does a producer write? It asks each producer for its own output set, and the union of those sets is the answer. No file of this repository holds the set as a list, so a new producer output changes the answer with no edit to the engine.
 
-Three producers answer, and each one has its own rule. `headwater generate` claims a file that carries the generated-file marker. `headwater taxonomy resolve` claims the committed lock. A blessing run of the test suite claims a recorded corpus fixture whose opening states a fold. Until #1273 a fourth producer, a script local to this repository, claimed a page of its hand-built site that carried a `data-figure` element. Those pages now commit each figure empty, so no producer claims them.
+Four producers answer, and each one has its own rule. `headwater generate` claims a file that carries the generated-file marker, unless the marker says that `headwater export` builds the file. `headwater export` claims a file whose marker says that `headwater export` builds it at publish time. `headwater taxonomy resolve` claims the committed lock. A blessing run of the test suite claims a recorded corpus fixture whose opening states a fold.
 
-**A tree that does not hold a producer is not asked about it.** The two verbs are held by every tree. The blessing run is held only where the tree carries the engine workspace. A producer that the tree does not hold claims no file. The report names neither its command nor its rule, and the opening count names only the producers that the tree holds. A recorded fixture in such a tree gets no shape and no rebuild command, because nothing in the tree records it. `headwater init --git` reads the same predicate, so it writes a line only for an output of a producer that the tree holds.
+The marker text decides between the first two producers, because both write the same marker member. A graph export that the taxonomy declares `committed: false` is the file that `headwater export` claims, and `headwater generate` never writes it. Its shape is the shape of a file that `headwater generate` writes. Until #1273 another producer, a script local to this repository, claimed a page of its hand-built site that carried a `data-figure` element. Those pages now commit each figure empty, so no producer claims them.
+
+**A tree that does not hold a producer is not asked about it.** The three verbs are held by every tree. The blessing run is held only where the tree carries the engine workspace. A producer that the tree does not hold claims no file. The report names neither its command nor its rule, and the opening count names only the producers that the tree holds. A recorded fixture in such a tree gets no shape and no rebuild command, because nothing in the tree records it. `headwater init --git` reads the same predicate, so it writes a line only for an output of a producer that the tree holds.
 
 The third rule reads the shape of the artifact and not the name of the file. [HW-DR-0049](../decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md) decomposed two recorded fixtures into one record for each entity, so that they merge correctly. A decomposed artifact must not declare the merge driver. What separates the two groups is the fold. A fold shows in the first lines of the artifact as a count over the corpus or as a digest over the whole canonical text.
 
@@ -135,7 +137,7 @@ The verb writes no file. It changes no artifact and no cache.
 
 [HW-DR-0049](../decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md) rules that a corpus-wide fold is derived and never stored, and it is the decision this verb computes the population of.
 
-[`headwater generate`](headwater-generate.md) writes the largest of the three producer output sets, and `--check` holds every byte of it.
+[`headwater generate`](headwater-generate.md) writes the largest of the four producer output sets, and `--check` holds every byte of it.
 
 [*What a check can know*](../evaluations/what-a-check-can-know.md#the-shapes-a-record-takes) is where the five shapes and their treatments are stated. This verb reads that table and does not restate it.
 

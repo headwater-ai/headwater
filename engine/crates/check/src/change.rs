@@ -243,8 +243,17 @@ pub struct Named {
     /// holds. One that no row holds is counted in `unmatched` instead. A
     /// document can be counted here and in one of the counts above, because
     /// a `verified` line names no version of it and may sit beside a line that
-    /// does.
+    /// does. So this count is a reading and not one of the classes above.
     pub verified: usize,
+    /// Of those, the ones that only a `verified` line names and that a row of
+    /// this corpus holds. It is the class `verified` is not: a path that also
+    /// has an `added` or `prior` line is counted in that line's class, and one
+    /// that binds to no row is counted in `unmatched`.
+    ///
+    /// With it the classes are disjoint and they sum:
+    /// `added + carried + unreadable + unmatched + verified_alone == documents`
+    /// (#1398).
+    pub verified_alone: usize,
 }
 
 impl Unbound {
@@ -406,6 +415,17 @@ impl Change {
             }
         }
         named.unmatched = self.unmatched().len();
+        // A bound `verified` path that no entry names is a document of its own
+        // class, and the only one the classes above do not hold (#1398).
+        named.verified_alone = self
+            .verified
+            .iter()
+            .filter(|path| {
+                self.entries
+                    .binary_search_by(|(known, _)| known.as_str().cmp(path.as_str()))
+                    .is_err()
+            })
+            .count();
         named
     }
 
@@ -697,6 +717,7 @@ mod tests {
                 unreadable: 0,
                 unmatched: 2,
                 verified: 2,
+                verified_alone: 1,
             }
         );
         // Every count is "of those" documents, as each report words it. A
@@ -708,6 +729,13 @@ mod tests {
         // writes both. `docs/typo.md` is named only in a `verified` line, and
         // `docs/gone.md` in both kinds, so it counts once.
         assert_eq!(change.named().unmatched, change.unmatched().len());
+        // `docs/c.md` is named only in a `verified` line and binds, so it is
+        // the one document of its own class, and the classes sum (#1398).
+        let named = change.named();
+        assert_eq!(
+            named.added + named.carried + named.unreadable + named.unmatched + named.verified_alone,
+            named.documents
+        );
     }
 
     /// What the run reports about its own input.
@@ -728,6 +756,7 @@ mod tests {
                 unreadable: 1,
                 unmatched: 0,
                 verified: 0,
+                verified_alone: 0,
             }
         );
     }
@@ -755,6 +784,7 @@ mod tests {
                 unreadable: 0,
                 unmatched: 1,
                 verified: 0,
+                verified_alone: 0,
             }
         );
         assert_eq!(bound.unmatched(), vec!["docs/a.md"]);
