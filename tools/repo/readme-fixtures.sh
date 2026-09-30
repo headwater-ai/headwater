@@ -3606,5 +3606,136 @@ same "  the extraction reads the prompt lines of the panel alone, decoded" \
     "$(site_panel_of "$scratch/site/shape.html" | tr '\n' '|' | sed 's/|$//')"
 
 echo
+echo "the APT block the page offers, against the job that runs it"
+
+# Group 10 holds what the APT block names and fetches nothing. What holds the
+# block itself is `.github/workflows/readme-apt.yml`: it runs the block on a
+# clean container of each distribution the page names as its floor, against
+# the published repository at `https://headwater.tools/apt`, every day and after
+# each release deploys the site (#1408). That job cannot run on a pull request,
+# because it depends on networks this repository does not own. So this group
+# holds, on every push, the two things that would let the job pass while it
+# held nothing:
+#
+#   - the page names a floor the matrix does not run. The page says "Debian N
+#     or later and Ubuntu X.Y or later", and each of those two is an `image`
+#     of the matrix. A page that raises or lowers its floor without the job,
+#     or a job that drops an image, is red.
+#   - the job runs something other than the page. Its run step calls
+#     `tools/repo/readme-apt-block.sh`, which prints the page's block, and it
+#     carries no copy of the block. A copy would stay green after the page
+#     changed.
+#
+# The extractor refuses a page whose paragraph or fence is gone, because
+# `sh -e` of an empty script exits 0, and 12d holds that refusal.
+
+apt_block="$root/tools/repo/readme-apt-block.sh"
+apt_job="$root/.github/workflows/readme-apt.yml"
+
+# readme_apt_floor README — the oldest Debian and the oldest Ubuntu the page
+# names, one per line, as `debian:N` and `ubuntu:X.Y`. Nothing when the
+# sentence is gone.
+readme_apt_floor() {
+    sed -n 's/.*The block below runs on Debian \([0-9][0-9]*\) or later and Ubuntu \([0-9][0-9]*\.[0-9][0-9]*\) or later.*/debian:\1\
+ubuntu:\2/p' "$1" | head -n 2
+}
+
+# readme_apt_images WORKFLOW — every image of a flow-style `image: [...]`
+# matrix line, one per line, without quotes.
+readme_apt_images() {
+    sed -n 's/^[ \t]*image:[ \t]*\[\(.*\)\][ \t]*$/\1/p' "$1" |
+        tr ',' '\n' | tr -d "\"' \t" | sed '/^$/d'
+}
+
+# readme_apt_judge README WORKFLOW — one line for each defect, and nothing for
+# a pair that holds.
+readme_apt_judge() {
+    if [ ! -f "$2" ]; then
+        echo "no workflow runs the APT block: $(basename "$2") is missing"
+        return
+    fi
+    floor=$(readme_apt_floor "$1")
+    if [ -z "$floor" ]; then
+        echo "the page names no Debian and Ubuntu floor for the APT block"
+    fi
+    images=$(readme_apt_images "$2")
+    if [ -z "$images" ]; then
+        echo "$(basename "$2") names no image in a matrix"
+    fi
+    for img in $floor; do
+        if ! printf '%s\n' "$images" | grep -qxF "$img"; then
+            echo "$img is the page's floor and not an image of $(basename "$2")"
+        fi
+    done
+    if ! grep -q 'run:.*sh tools/repo/readme-apt-block\.sh' "$2"; then
+        echo "$(basename "$2") does not run tools/repo/readme-apt-block.sh"
+    fi
+    if grep -q 'apt-get install -y headwater' "$2"; then
+        echo "$(basename "$2") carries its own copy of the block"
+    fi
+}
+
+mkdir -p "$scratch/apt-job"
+
+# 12a. The real page against the real job.
+same "the page's APT floor is each an image of readme-apt.yml, and the job runs the page" "" \
+    "$(readme_apt_judge "$readme" "$apt_job" | tr '\n' '|' | sed 's/|$//')"
+same "  the page names a floor of two, one Debian and one Ubuntu" "2" \
+    "$(readme_apt_floor "$readme" | grep -cE '^(debian:[0-9]+|ubuntu:[0-9]+\.[0-9]+)$')"
+
+# 12b. THE DECISIVE CASE. The page raises its Debian floor, and the job does
+# not follow.
+sed 's/runs on Debian [0-9][0-9]* or later/runs on Debian 13 or later/' "$readme" >"$scratch/apt-job/raised.md"
+apt_planted "a page whose floor is Debian 13 and a job that does not run it is red" \
+    "$readme" "$scratch/apt-job/raised.md" \
+    "debian:13 is the page's floor and not an image of readme-apt.yml" \
+    "$(readme_apt_judge "$scratch/apt-job/raised.md" "$apt_job" | tr '\n' '|' | sed 's/|$//')"
+
+# 12b, the other way. The job drops the page's Ubuntu floor.
+if [ -f "$apt_job" ]; then
+    sed "/^[ \t]*image:[ \t]*\[/s/[\"']ubuntu:20\.04[\"'][ \t]*,\{0,1\}[ \t]*//" "$apt_job" >"$scratch/apt-job/readme-apt.yml"
+else
+    : >"$scratch/apt-job/readme-apt.yml"
+fi
+apt_planted "a job that drops ubuntu:20.04 from its matrix is red" \
+    "$apt_job" "$scratch/apt-job/readme-apt.yml" \
+    "ubuntu:20.04 is the page's floor and not an image of readme-apt.yml" \
+    "$(readme_apt_judge "$readme" "$scratch/apt-job/readme-apt.yml" | tr '\n' '|' | sed 's/|$//')"
+
+# 12c. The job inlines the block instead of calling the extractor.
+mkdir -p "$scratch/apt-job/inline"
+if [ -f "$apt_job" ]; then
+    awk -v block="$(sh "$apt_block" "$readme" 2>/dev/null | sed 's/^/          /')" '
+        /run:.*sh tools\/repo\/readme-apt-block\.sh/ { sub(/run:.*/, "run: |"); print; print block; next }
+        { print }
+    ' "$apt_job" >"$scratch/apt-job/inline/readme-apt.yml"
+else
+    : >"$scratch/apt-job/inline/readme-apt.yml"
+fi
+apt_planted "a job that inlines the block instead of calling the extractor is red" \
+    "$apt_job" "$scratch/apt-job/inline/readme-apt.yml" \
+    "readme-apt.yml does not run tools/repo/readme-apt-block.sh|readme-apt.yml carries its own copy of the block" \
+    "$(readme_apt_judge "$readme" "$scratch/apt-job/inline/readme-apt.yml" | tr '\n' '|' | sed 's/|$//')"
+
+# 12d. The extractor prints the block the page shows, less `sudo`, and refuses
+# a page whose paragraph is gone.
+apt_printed=$(sh "$apt_block" "$readme" 2>/dev/null)
+same "the extractor prints the page's eight APT lines, first and last as the page has them" \
+    "8|apt-get update|headwater --version|0" \
+    "$(printf '%s\n' "$apt_printed" | sed -n '$=')|$(printf '%s\n' "$apt_printed" | sed -n 1p)|$(printf '%s\n' "$apt_printed" | sed -n '$p')|$(printf '%s\n' "$apt_printed" | grep -c 'sudo')"
+grep -v '^\*\*Install it with apt' "$readme" >"$scratch/apt-job/no-paragraph.md"
+if [ -f "$apt_block" ]; then
+    sh "$apt_block" "$scratch/apt-job/no-paragraph.md" >"$scratch/apt-job/no-paragraph.out" 2>/dev/null
+    apt_refused=$?
+else
+    : >"$scratch/apt-job/no-paragraph.out"
+    apt_refused=0
+fi
+apt_planted "the extractor on a page with no APT paragraph prints nothing and exits nonzero" \
+    "$readme" "$scratch/apt-job/no-paragraph.md" \
+    "0|nonzero" \
+    "$(wc -c <"$scratch/apt-job/no-paragraph.out" | tr -d ' ')|$([ "$apt_refused" -ne 0 ] && echo nonzero || echo zero)"
+
+echo
 echo "$passed passed, $failed failed"
 [ "$failed" -eq 0 ]
