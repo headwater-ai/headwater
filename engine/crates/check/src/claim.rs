@@ -937,10 +937,12 @@ mod tests {
         std::os::unix::fs::symlink(dir.join("gone"), dir.join("dangling"))
             .expect("the link is made");
 
-        let answers: Vec<(&str, Entry)> = ["file", "link", "device", "endless", "pipe", "socket", "dangling"]
-            .into_iter()
-            .map(|name| (name, entry_of(&dir.join(name))))
-            .collect();
+        let answers: Vec<(&str, Entry)> = [
+            "file", "link", "device", "endless", "pipe", "socket", "dangling",
+        ]
+        .into_iter()
+        .map(|name| (name, entry_of(&dir.join(name))))
+        .collect();
         drop(socket);
         std::fs::remove_dir_all(&dir).ok();
 
@@ -987,8 +989,8 @@ mod tests {
             .status()
             .expect("mkfifo runs");
         assert!(made.success(), "the named pipe is made");
-        let socket =
-            std::os::unix::net::UnixListener::bind(scheme.join("DR-0003")).expect("the socket is bound");
+        let socket = std::os::unix::net::UnixListener::bind(scheme.join("DR-0003"))
+            .expect("the socket is bound");
         std::fs::write(scheme.join("DR-0004"), "").expect("the empty claim writes");
 
         let claims = Claims::at(&root);

@@ -710,8 +710,7 @@ fn declaration_pipe(label: &str, path: &str) -> Root {
 /// either path is refused in one sentence that names it, before anything
 /// opens it, so no verb waits on the pipe for ever (#1366).
 #[test]
-fn check_show_and_explain_finish_when_a_named_pipe_takes_the_lock_or_the_consumer_declaration(
-) {
+fn check_show_and_explain_finish_when_a_named_pipe_takes_the_lock_or_the_consumer_declaration() {
     let document = "docs/decisions/0001-the-warrant-a-person-set.md";
     for (label, path) in [
         ("lock-pipe", "taxonomy.lock"),

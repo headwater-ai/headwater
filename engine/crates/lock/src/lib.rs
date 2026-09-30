@@ -636,7 +636,10 @@ fn lock_text(path: &Path) -> Result<Option<String>, LockError> {
         if error.kind() == std::io::ErrorKind::NotFound {
             Ok(None)
         } else {
-            Err(LockError::Unreadable(format!("{}: {error}", path.display())))
+            Err(LockError::Unreadable(format!(
+                "{}: {error}",
+                path.display()
+            )))
         }
     };
     match std::fs::metadata(path) {
@@ -955,7 +958,10 @@ mod tests {
         std::fs::write(root.join("lock.target"), "not: a lock\n").expect("the target writes");
         std::os::unix::fs::symlink("../lock.target", &lock).expect("the link is made");
         assert!(
-            !matches!(at(&root), Err(LockError::Unreadable(_) | LockError::Absent(_))),
+            !matches!(
+                at(&root),
+                Err(LockError::Unreadable(_) | LockError::Absent(_))
+            ),
             "a link to a regular file is read"
         );
         std::fs::remove_file(&lock).expect("the link goes");
