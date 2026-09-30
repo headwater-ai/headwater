@@ -34,6 +34,7 @@ Twelve of the 127 candidates are checked, and nine passed while three failed. Th
 3. The sentence also names a noun that a source can enumerate, in the singular or the plural. The nouns are exit, exit status, verb, crate, rule, kind, facet, relation, shelf, format, stream, severity, scope, emitter, arm, barrier, tier and key. 90 sentences match.
 
 None of the 90 is checked against its source yet. The filter misses a table row and a list with no number word, as the two instances above show. So a sweep of the 90 does not close the class.
+
 ## Discharge
 
 Discharge requires every one of the 127 candidates checked against its source, or the population re-derived with a stated filter and checked again. A sentence found wrong needs correction, or its count replaced by a reference to the verb or file that produces it. Spec 6 states that a count copied into prose is a claim no run re-derives. This waits on the sweep running to completion. No rule traces a sentence to the source it describes, and none has been designed.
