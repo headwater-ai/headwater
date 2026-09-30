@@ -27,7 +27,7 @@ The implemented rule counted a prior anchor as a repeat when it began with the s
 
 ## Obligation
 
-[#1487](https://github.com/headwater-ai/headwater/issues/1487) wrote the sharper bar. [Spec 12](../spec/12-check-layer.md#testing-a-check-without-a-failing-fixture-does-not-ship) now states the discriminating condition beside the firing condition: an input must exist on which the implemented rule and a plausible neighboring rule disagree. It carries `link.fragment.unresolved` before #209 as the worked case, with the two candidate rules and the input that separates them. `.claude/skills/headwater-taxonomy/SKILL.md` states the same condition, and the pointer in `.claude/skills/headwater-engine/SKILL.md` names both conditions. `sh .claude/skills/fixtures.sh` holds the sentence in all three files.
+[#1487](https://github.com/headwater-ai/headwater/issues/1487) wrote the sharper bar. [Spec 12](../spec/12-check-layer.md#testing-a-check-without-a-failing-fixture-does-not-ship) now states the discriminating condition beside the firing condition. An input must exist on which the implemented rule and a plausible neighboring rule disagree. It carries `link.fragment.unresolved` before #209 as the worked case, with the two candidate rules and the input that separates them. `.claude/skills/headwater-taxonomy/SKILL.md` states the same condition, and the pointer in `.claude/skills/headwater-engine/SKILL.md` names both conditions. `sh .claude/skills/fixtures.sh` holds the sentence in all three files.
 
 One thing is still owed. The owner accepts that wording as the bar that governs every check yet to ship, or rewrites it. The rewrite changes a rule for every future author, so an agent does not accept it.
 
@@ -35,4 +35,4 @@ Whether every shipped check meets the sharpened bar is a separate survey, and #2
 
 ## Discharge
 
-This closes when the owner accepts the wording of the discriminating condition in spec 12, or replaces it with a wording that `sh .claude/skills/fixtures.sh` then holds in the spec and in the two skill files.
+This closes when the owner accepts the wording of the discriminating condition in spec 12. It also closes when the owner replaces that wording, and `sh .claude/skills/fixtures.sh` then holds the new wording in the spec and in the two skill files.
