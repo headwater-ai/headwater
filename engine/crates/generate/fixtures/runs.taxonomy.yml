@@ -95,6 +95,14 @@ relations:
     family: evidence
     from: [probe]
     to:   [governed_document]
+  # An edge that sets a result's state, so that one case can hold that an
+  # edge wins over the terminal state of the transcript the result grades
+  # (HW-DR-0063, amended 2026-10-01). No committed note declares it.
+  reinstates:
+    family: governance
+    from: [note]
+    to:   [probe_result]
+    on_target: {set_state: current}
 
 shelves:
   probes:        {path: "runs/probes/**",        homogeneous: true, kind: probe}

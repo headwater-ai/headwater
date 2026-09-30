@@ -1043,7 +1043,18 @@ fn two_clean_arms_carry_their_difference_in_each_result() {
 /// for the state, because the cases run as threads of one process and one
 /// directory shared between two of them is a race.
 fn the_significant_pair_at(state: &str) -> Vec<(&'static str, String)> {
-    let at = copied(&format!("significant-pair-{state}"));
+    the_significant_pair(&format!("significant-pair-{state}"), state, state, None)
+}
+
+/// The same pair with each arm at its own state, and with one more document
+/// written into the copy where `extra` names one as `(path, source)`.
+fn the_significant_pair(
+    name: &str,
+    present: &str,
+    absent: &str,
+    extra: Option<(&str, &str)>,
+) -> Vec<(&'static str, String)> {
+    let at = copied(name);
     std::fs::write(
         at.join("runs/probe-runs/campaign-present.md"),
         CAMPAIGN_PRESENT,
@@ -1054,11 +1065,11 @@ fn the_significant_pair_at(state: &str) -> Vec<(&'static str, String)> {
         CAMPAIGN_ABSENT_UNSATISFIED,
     )
     .expect("the absent-arm transcript lands");
-    if state != "current" {
-        for transcript in [
-            "runs/probe-runs/campaign-present.md",
-            "runs/probe-runs/campaign-absent.md",
-        ] {
+    for (transcript, state) in [
+        ("runs/probe-runs/campaign-present.md", present),
+        ("runs/probe-runs/campaign-absent.md", absent),
+    ] {
+        if state != "current" {
             edit(
                 &at,
                 transcript,
@@ -1066,6 +1077,9 @@ fn the_significant_pair_at(state: &str) -> Vec<(&'static str, String)> {
                 &format!("status: {state}"),
             );
         }
+    }
+    if let Some((path, source)) = extra {
+        std::fs::write(at.join(path), source).expect("the extra document lands");
     }
     let plan = plan_over(&at);
     assert!(plan.defective_arms.is_empty(), "{:?}", plan.defective_arms);
@@ -1154,6 +1168,78 @@ fn a_result_over_a_withdrawn_transcript_says_so_first_and_claims_no_significance
         assert!(
             bytes.contains("\nstatus: deprecated\n"),
             "{path} over a deprecated recording does not take its state:\n{bytes}"
+        );
+    }
+}
+
+/// One withdrawn arm is enough. The result over the current arm keeps its own
+/// state and names no state first, and its comparison still states no
+/// direction, because the difference reads the withdrawn arm too.
+#[test]
+fn one_withdrawn_arm_withholds_the_significance_of_both_results() {
+    for (withdrawn, name) in [
+        ("present", "one-withdrawn-present"),
+        ("absent", "one-withdrawn-absent"),
+    ] {
+        let (present, absent) = match withdrawn {
+            "present" => ("deprecated", "current"),
+            _ => ("current", "deprecated"),
+        };
+        for (path, bytes) in the_significant_pair(name, present, absent, None) {
+            for reading in SIGNIFICANT {
+                assert!(
+                    !bytes.contains(reading),
+                    "{path} states a significance with the {withdrawn} arm withdrawn:\n{bytes}"
+                );
+            }
+            let own = match path.contains("present") {
+                true => present,
+                false => absent,
+            };
+            assert!(
+                bytes.contains(&format!("\nstatus: {own}\n")),
+                "{path} does not stand at its own transcript's state `{own}`:\n{bytes}"
+            );
+        }
+    }
+}
+
+/// An edge that sets a result's state wins over the terminal state of the
+/// transcript it grades: the edge is a declaration about the result, and the
+/// transcript's state is not (HW-DR-0063, amended 2026-10-01).
+#[test]
+fn an_edge_that_sets_the_state_wins_over_a_withdrawn_transcript() {
+    const REINSTATING: &str = "\
+---
+id: NOTE-FIX-reinstating
+status: current
+status_since: 2026-09-21
+summary: A note whose edge sets the state of one result, whatever its transcript stands at.
+relations:
+  reinstates:
+    - RESULT-FIX-campaign-present
+---
+
+# The note that reinstates one result
+";
+    let pair = the_significant_pair(
+        "edge-over-withdrawn",
+        "deprecated",
+        "deprecated",
+        Some(("runs/notes/reinstating.md", REINSTATING)),
+    );
+    for (path, bytes) in pair {
+        let expected = match path.contains("present") {
+            true => "current",
+            false => "deprecated",
+        };
+        assert!(
+            bytes.contains(&format!("\nstatus: {expected}\n")),
+            "{path} does not stand at `{expected}`:\n{bytes}"
+        );
+        assert!(
+            opening(&bytes).contains("`deprecated`"),
+            "{path} does not name its transcript's state first:\n{bytes}"
         );
     }
 }

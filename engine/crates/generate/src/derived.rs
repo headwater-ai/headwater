@@ -468,7 +468,11 @@ fn standing(
         return Some((state, Locus::Edge(setters)));
     }
     if let Some(state) = &composed.state {
-        let sources = composed.sources.iter().map(|path| path.to_string()).collect();
+        let sources = composed
+            .sources
+            .iter()
+            .map(|path| path.to_string())
+            .collect();
         return Some((state.clone(), Locus::Source(sources)));
     }
     let facet = surface.shape().facet_in_role(STATE)?;
