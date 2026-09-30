@@ -222,3 +222,14 @@ fn a_draft_supersession_owes_its_far_half_and_leaves_the_target_alone() {
     );
     assert_eq!(paths(&files).len(), 1, "the anchor is left alone: {files:?}");
 }
+
+/// Written through its inverse, `supersedes` retires the new document and not
+/// the anchor, so the edge names no state for the anchor.
+#[test]
+fn an_inverse_supersession_names_no_state_for_its_target() {
+    let (plan, _) = scaffold("at_current", "superseded_by");
+    let edge = &plan.edges[0];
+    assert_eq!(edge.sets_target_state, None, "{edge:?}");
+    let half = edge.reciprocal.as_ref().expect("the far half is written");
+    assert_eq!(half.relation, "supersedes", "{edge:?}");
+}
