@@ -127,7 +127,15 @@
 #   in-tree source to be checked against. A milestone that closes with no edit
 #   to this page leaves the names wrong and this suite silent. The authority
 #   for that is the GitHub API, and a gate here does not open a socket — the
-#   same posture `headwater probe` takes.
+#   same posture `headwater probe` takes. Two shapes that went stale on
+#   2026-09-30 do have an in-tree authority, and case group 5 holds both on
+#   the README and on the three public pages under `site/` (the home page,
+#   `proof/` and `compare/`), the one place this suite reads beyond the README:
+#   5d refuses a sentence that calls EVERY claim unmeasured while a result page
+#   stands under `docs/probe-results/`, and 5e refuses a retired `M<n>` or
+#   `M<n>b` milestone label, which HW-PD-0008 replaced with versions. Neither
+#   holds the names of the open version milestones, or whether a figure the
+#   pages quote still matches its evaluation.
 #
 #   An absolute URL is not fetched. A dead external link stays dead and green.
 #   Case group 3 judges only the ORG AND REPOSITORY a GitHub URL names, which
