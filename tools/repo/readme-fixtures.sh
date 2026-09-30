@@ -2709,12 +2709,26 @@ if [ -f "$release_wf" ]; then
             "$(engine_digest_claim_judge "$scratch/release/wording-$edc_n.md" "$release_wf")"
     done <"$scratch/release/digest-wordings.txt"
     same "  over the eight wordings the #1397 verifier wrote" 8 "$edc_n"
-    # The sentence that opens "No engine release" in the plural as well.
-    edc_plural='No engine releases carry a `release.digest`.'
-    { cat "$readme"; printf '\n%s\n' "$edc_plural"; } >"$scratch/release/wording-plural.md"
-    same "  and a README that says \"$edc_plural\" is refused" \
-        "the README says \"$edc_plural\", but \`gh release create\` in the engine workflow passes a notes file that the step \"The digest the package in this tree publishes\" opens with \`release.digest\`" \
-        "$(engine_digest_claim_judge "$scratch/release/wording-plural.md" "$release_wf")"
+    # Each other part of the three shapes, one wording apiece, so narrowing
+    # any alternative of the pattern goes red: "No engine release" in the
+    # plural, "have no", "do not", "does not carry", "does not have", and
+    # "any" in place of "a" in both shapes that take an article.
+    printf '%s\n' \
+        'No engine releases carry a `release.digest`.' \
+        'Engine releases have no `release.digest`.' \
+        'Engine releases do not carry any digest.' \
+        'An engine release does not carry a `release.digest`.' \
+        'An engine release does not have a digest.' \
+        'No engine release states any digest.' >"$scratch/release/digest-shapes.txt"
+    edc_n=0
+    while IFS= read -r edc_wording; do
+        edc_n=$((edc_n + 1))
+        { cat "$readme"; printf '\n%s\n' "$edc_wording"; } >"$scratch/release/shape-$edc_n.md"
+        same "  and a README that says \"$edc_wording\" is refused" \
+            "the README says \"$edc_wording\", but \`gh release create\` in the engine workflow passes a notes file that the step \"The digest the package in this tree publishes\" opens with \`release.digest\`" \
+            "$(engine_digest_claim_judge "$scratch/release/shape-$edc_n.md" "$release_wf")"
+    done <"$scratch/release/digest-shapes.txt"
+    same "  over six wordings, one for each part of the three shapes" 6 "$edc_n"
     # The control: a sentence that says the engine release DOES state the
     # digest is true, and a judge widened past negation would refuse it.
     { cat "$readme"; printf '\n%s\n' 'Each engine release states the `release.digest` of the package in its tree.'; } >"$scratch/release/true-claim.md"
@@ -3058,6 +3072,12 @@ same "  and the unpinned 0.0.0 that init writes passes beside the newest version
 same "  but a file whose only version is the 0.0.0 placeholder names none" \
     "$scratch/standard/init.md: names no headwater/standard version" \
     "$(standard_pin_judge 99.0.0 "$scratch/standard/init.md")"
+# The placeholder is exactly 0.0.0. Another version under 1 is a real
+# version, and a stale one, so a skip widened to `0.` would hide it.
+printf '%s\n' 'this takes headwater/standard 0.9.0, and the package here is headwater/standard 99.0.0' >"$scratch/standard/zero-nine.md"
+same "  and a stale 0.9.0 beside the newest version is still reported" \
+    "$scratch/standard/zero-nine.md:1: headwater/standard 0.9.0" \
+    "$(standard_pin_judge 99.0.0 "$scratch/standard/zero-nine.md")"
 
 # 8m, continued. The shape the five files actually use puts the tag path and
 # the zip name on ONE line, so a judge that read only the first match on a
@@ -3312,6 +3332,17 @@ awk '/^Type "headwater taxonomy resolve"/{ held = $0; next } { print } /^Type "h
 same "  and a tape that types the verbs out of order fails" \
     "the tape does not type, in the tutorial's order, \`headwater check\`, which the tutorial runs in steps 1 to 7" \
     "$(tape_verbs_judge "$tutorial_page" "$scratch/reordered.tape")"
+# Only a `Type` line is typed. A tape that names the verb in a comment and
+# never types it records nothing of it, so the comment does not count.
+sed 's/^Type "headwater check.*/# headwater check/' "$demo_tape" >"$scratch/commented.tape"
+if cmp -s "$demo_tape" "$scratch/commented.tape"; then
+    fail "  and a tape that names a verb in a comment and never types it fails" \
+        "the planted edit changed nothing, so this case measured nothing"
+else
+    same "  and a tape that names a verb in a comment and never types it fails" \
+        "the tape does not type, in the tutorial's order, \`headwater check\`, which the tutorial runs in steps 1 to 7" \
+        "$(tape_verbs_judge "$tutorial_page" "$scratch/commented.tape")"
+fi
 
 echo
 echo "the APT route the page offers, and the repository the release publishes"
