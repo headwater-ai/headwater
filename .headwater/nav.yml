@@ -557,6 +557,9 @@ nav:
       - "The recorder contract": "spec/15-the-recorder-contract.md"
       - "Harness support": "spec/16-harness-support.md"
       - "Glossary": "spec/glossary.md"
+  - "Engine subsystems":
+      - "Engine subsystems": "subsystems/README.md"
+      - "Graph build": "subsystems/graph-build.md"
   - "Tutorials":
       - "Tutorials": "tutorials/README.md"
       - "Your first governed corpus": "tutorials/your-first-governed-corpus.md"

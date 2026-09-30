@@ -126,6 +126,11 @@
           "id": "HW-SPEC-vision-and-scope"
         },
         {
+          "shelf": "subsystems",
+          "path": "docs/subsystems/graph-build.md",
+          "id": "HW-SPEC-graph-build"
+        },
+        {
           "shelf": "tutorials",
           "path": "docs/tutorials/your-first-governed-corpus.md",
           "id": "HW-TUT-your-first-governed-corpus"
