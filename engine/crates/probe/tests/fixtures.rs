@@ -2042,7 +2042,8 @@ fn a_moved_lock_whose_read_set_moved_keeps_every_verdict_and_is_marked() {
     let plan = regression();
     let recorded = "sha256:a-read-set-this-tree-does-not-compose";
     let unmoved = record_over_the_fixture_selection(&planned_by_the_fixture(LOCK, &plan.read_set));
-    let moved = record_over_the_fixture_selection(&planned_by_the_fixture("sha256:other", recorded));
+    let moved =
+        record_over_the_fixture_selection(&planned_by_the_fixture("sha256:other", recorded));
     assert_eq!(moved.refusal, None, "{:?}", moved.refusal);
     assert!(!moved.events.is_empty(), "the fixture records events");
     assert_eq!(
@@ -2079,7 +2080,10 @@ fn an_unmoved_lock_whose_read_set_moved_keeps_every_verdict_and_is_marked() {
     assert_eq!(moved.events, unmoved.events);
     assert_eq!(moved.read_set_moved.as_deref(), Some(recorded));
     assert_eq!(moved.lock_moved, None);
-    assert_eq!(unmoved.read_set_moved, None, "an unmoved read set carries no mark");
+    assert_eq!(
+        unmoved.read_set_moved, None,
+        "an unmoved read set carries no mark"
+    );
     let rendered = moved.render(headwater_check::paint::ColorMode::Plain);
     assert!(rendered.contains("the read set of its probes moved since the recording"));
     assert!(!rendered.contains(&plan.read_set), "{rendered}");

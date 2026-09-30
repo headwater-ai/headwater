@@ -1627,7 +1627,10 @@ impl Report {
             ));
             out.push('\n');
             for moved in &self.moved_read_sets {
-                out.push_str(&format!("  {}\n", paint(Role::Path, &moved.transcript, mode)));
+                out.push_str(&format!(
+                    "  {}\n",
+                    paint(Role::Path, &moved.transcript, mode)
+                ));
                 out.push_str(&dim(&format!("    {}", moved.line()), mode));
                 out.push('\n');
             }

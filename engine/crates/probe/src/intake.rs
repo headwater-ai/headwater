@@ -169,7 +169,10 @@ pub enum Refusal {
     /// transcript's probes, because no selection was in hand or the recorded
     /// selection is not a part of it. A lock move where a read set is composed
     /// is graded, and marked where the read set moved (#1292, #1338).
-    TaxonomyMoved { claimed: String, tree: String },
+    TaxonomyMoved {
+        claimed: String,
+        tree: String,
+    },
     UnknownTier(String),
     UnknownArm(String),
     CostNotACount(String),
