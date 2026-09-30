@@ -15,5 +15,4 @@ relations:
 
 # The evidenced claim resting on a proposed record
 
-`proposed` is not `asserted`. The rule passes rather than skips, because it
-read both ends and found nothing spec 3 rules on.
+`proposed` is not one of the four values. The rule reports the pointer, because a value outside the closed set says nothing about who read the target.
