@@ -40,7 +40,7 @@ Three statements pull against each other here:
 
 **Under `sealed`, the export lists nothing, and a miss stays unresolved.** The reason names the `sealed` grain. The publisher chose that the existence of a document is the secret, so this tier cannot tell a withheld document from a typo. This is the one case where the rule "withheld is never reported as unresolved" does not hold. The reason is the error asymmetry that HW-DR-0017 applies to a withholding. A typo reported as withheld is silent, and nothing shows it again. A withheld anchor reported as unresolved is visible, and a person can clear it. So the tier takes the visible error.
 
-**Under an export older than version 1.3, a miss stays unresolved.** No tombstone of such an export carries `identifiers`. The reason says that the export predates the list.
+**Under an export older than version 1.3, a miss stays unresolved.** No tombstone of such an export carries `identifiers`. The reason says that the export predates the list. The resolver reads `export_version` to tell this case apart from a 1.3 `counted` export whose filter withheld nothing. That export writes no tombstone, so its list is empty, and a miss there is not withheld.
 
 **The export version moves from 1.2 to 1.3.** The change adds a member and removes none, so it is a minor version.
 

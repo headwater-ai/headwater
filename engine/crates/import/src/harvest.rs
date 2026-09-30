@@ -207,8 +207,9 @@ struct Withheld {
     /// The grain, `profile.tombstone`, where the export states one.
     grain: Option<String>,
     /// The digest of every withheld identifier, over every tombstone. `None`
-    /// where no tombstone carries an `identifiers` list: a `sealed` export, and
-    /// one older than export version 1.3.
+    /// where the export states no list: a `sealed` export, and a `counted` one
+    /// older than export version 1.3. A 1.3 `counted` export that withheld
+    /// nothing writes no tombstone, and its list is empty rather than absent.
     digests: Option<Vec<String>>,
 }
 
@@ -299,11 +300,22 @@ fn documents(bytes: &[u8]) -> Result<(Vec<String>, bool, Withheld), String> {
             );
         }
     }
+    let grain = member("tombstone").map(|grain| grain.text.clone());
+    // A `counted` export from 1.3 on states every withheld identifier it holds,
+    // so one with no tombstone withheld nothing, and a miss there is not
+    // withheld. The list is then empty and not absent (HW-DR-0100).
+    let lists = map
+        .get("export_version")
+        .and_then(|version| version.value.as_scalar())
+        .is_some_and(|version| lists_identifiers(&version.text));
+    if lists && grain.as_deref() == Some("counted") {
+        digests.get_or_insert_with(Vec::new);
+    }
     let withheld = Withheld {
         profile: member("name")
             .map(|name| name.text.clone())
             .unwrap_or_default(),
-        grain: member("tombstone").map(|grain| grain.text.clone()),
+        grain,
         digests,
     };
     let documents = map
@@ -322,6 +334,19 @@ fn documents(bytes: &[u8]) -> Result<(Vec<String>, bool, Withheld), String> {
         .map(|id| id.text.clone())
         .collect();
     Ok((ids, filtered, withheld))
+}
+
+/// Whether an export of this `export_version` lists the digest of each
+/// withheld identifier in a `counted` tombstone: 1.3 and every later version.
+/// A version that does not read as `<major>.<minor>` lists nothing.
+fn lists_identifiers(version: &str) -> bool {
+    let mut parts = version.trim().splitn(3, '.');
+    let major = parts.next().and_then(|part| part.parse::<u64>().ok());
+    let minor = parts.next().and_then(|part| part.parse::<u64>().ok());
+    match (major, minor) {
+        (Some(major), Some(minor)) => (major, minor) >= (1, 3),
+        _ => false,
+    }
 }
 
 /// Every resolver this repository's pinned exports supply, in declaration

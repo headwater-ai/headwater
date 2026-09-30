@@ -346,17 +346,18 @@ pub(crate) fn emit_marked(
         return Err(Refusal::NotBuilt(emitter));
     }
     let graph = surface.graph();
-    let (withheld, identifiers) = withhold(surface, profile)?;
+    let withholding = withhold(surface, profile)?;
+    let withheld = &withholding.0;
     let all = nodes(surface, graph);
 
     let body = match emitter {
         Emitter::JsonSchema => schema(surface, &all),
-        _ => native(surface, graph, &all, &withheld),
+        _ => native(surface, graph, &all, withheld),
     };
 
     let census = audit(
         surface,
-        &withheld,
+        withheld,
         &body.carried_nodes,
         &body.carried_edges,
         &body.losses,
@@ -366,8 +367,7 @@ pub(crate) fn emit_marked(
         emitter,
         generated_at,
         built,
-        &withheld,
-        &identifiers,
+        &withholding,
         &census,
         body,
     );
@@ -1088,11 +1088,11 @@ fn envelope(
     emitter: Emitter,
     generated_at: Option<&str>,
     built: Built,
-    withheld: &[(String, String)],
-    identifiers: &[(String, String)],
+    withholding: &Withholding,
     census: &Census,
     body: Body,
 ) -> Json {
+    let (withheld, identifiers) = withholding;
     let filtered = !profile.filter.is_empty();
     let mut declaration = vec![
         ("name".to_string(), Json::string(profile.name.as_str())),
