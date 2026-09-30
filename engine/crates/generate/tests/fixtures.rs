@@ -1946,6 +1946,46 @@ projections:
     );
 }
 
+/// The census reads the marker only in a format a projection writes, which
+/// `headwater_mark::marks_format` names. A projection declared at any other
+/// extension would write a marked file that the census reads as not a
+/// document, and a copy left behind by a repointed declaration would then be
+/// an orphan that nothing reports (#1344). So the declaration is refused.
+#[test]
+fn a_projection_output_in_a_format_the_census_does_not_read_is_refused() {
+    let source = "\
+projections:
+  - kind: site_nav
+    output: docs/nav.txt
+  - kind: graph_export
+    profile: site
+    output: docs/exports/graph.JSON
+  - kind: graph_export
+    profile: site
+    output: docs/exports/graph.json
+";
+    let root = headwater_yaml::load(source)
+        .expect("it loads")
+        .value
+        .as_map()
+        .expect("a mapping")
+        .clone();
+    let errors = Projections::read(&root).expect_err("an output the census cannot read is refused");
+    let refused: Vec<&str> = ["docs/nav.txt", "docs/exports/graph.JSON", "docs/exports/graph.json"]
+        .into_iter()
+        .filter(|path| errors.iter().any(|error| error.message.contains(path)))
+        .collect();
+    assert_eq!(
+        refused,
+        vec!["docs/nav.txt", "docs/exports/graph.JSON"],
+        "the refusal names each output outside the census's formats, and no other: {errors:?}"
+    );
+    assert!(
+        errors.iter().all(|error| error.message.contains(".json")),
+        "the refusal does not name the formats that are accepted: {errors:?}"
+    );
+}
+
 /// The meta-schema refuses a `committed` that is not a boolean over the
 /// sources, and the reader refuses it over a lock, so a word that reads as a
 /// no is never taken for the default.
