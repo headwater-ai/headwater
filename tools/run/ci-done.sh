@@ -87,13 +87,18 @@ tab=$(printf '\t')
 # of a branch whose CI run was cancelled, and the cancelled suite's two check
 # runs read as red on a commit whose main run had passed. A lone cancelled
 # run supersedes nothing and stays red.
-dropped=$(printf '%s\n' "$runs" | awk -F"$tab" '
-    NF { c[NR] = $3; n[NR] = $4; s[NR] = $5
+# A run is keyed by its id, and its check runs by its check suite's id. A
+# run whose suite id is missing (`-`) is still dropped, but `-` is never a
+# key for check runs: an external check with no suite would match it.
+superseded=$(printf '%s\n' "$runs" | awk -F"$tab" '
+    NF { id[NR] = $1; c[NR] = $3; n[NR] = $4; s[NR] = $5
          if ($2 == "completed" && $3 != "cancelled" && $3 != "skipped" && $3 != "neutral" && $3 != "-") ran[$4] = 1 }
-    END { for (i = 1; i <= NR; i++) if (c[i] == "cancelled" && (n[i] in ran)) print s[i] }' | paste -sd' ' -)
+    END { for (i = 1; i <= NR; i++) if (c[i] == "cancelled" && (n[i] in ran)) print id[i] "\t" s[i] }')
+dropped_runs=$(printf '%s\n' "$superseded" | awk -F"$tab" 'NF { print $1 }' | paste -sd' ' -)
+dropped_suites=$(printf '%s\n' "$superseded" | awk -F"$tab" 'NF && $2 != "-" { print $2 }' | paste -sd' ' -)
 all_runs=$runs
-runs=$(printf '%s\n' "$all_runs" | awk -F"$tab" -v d=" $dropped " 'NF && index(d, " " $5 " ") == 0')
-checks=$(printf '%s\n' "$checks" | awk -F"$tab" -v d=" $dropped " 'NF && index(d, " " $4 " ") == 0')
+runs=$(printf '%s\n' "$all_runs" | awk -F"$tab" -v d=" $dropped_runs " 'NF && index(d, " " $1 " ") == 0')
+checks=$(printf '%s\n' "$checks" | awk -F"$tab" -v d=" $dropped_suites " 'NF && index(d, " " $4 " ") == 0')
 
 runs_total=$(printf '%s\n' "$runs" | grep -c .)
 runs_done=$(printf '%s\n' "$runs" | awk -F"$tab" '$2 == "completed"' | grep -c .)
@@ -105,8 +110,8 @@ if [ "$runs_done" -lt "$runs_total" ] || [ "$checks_done" -lt "$checks_total" ];
     exit 1
 fi
 
-printf '%s\n' "$all_runs" | awk -F"$tab" -v d=" $dropped " 'NF {
-    if (index(d, " " $5 " ") > 0) print "run " $1 " " $3 " " $4 " (superseded, " $6 ")"
+printf '%s\n' "$all_runs" | awk -F"$tab" -v d=" $dropped_runs " 'NF {
+    if (index(d, " " $1 " ") > 0) print "run " $1 " " $3 " " $4 " (superseded, " $6 ")"
     else print "run " $1 " " $3 " " $4 }'
 
 # A workflow that fails before it starts a job, a startup failure, leaves no
