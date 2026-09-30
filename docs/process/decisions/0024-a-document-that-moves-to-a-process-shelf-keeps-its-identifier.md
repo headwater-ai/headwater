@@ -3,7 +3,7 @@ id: HW-PD-0024
 status: current
 status_since: 2026-09-29
 summary: "A specification, an evaluation or an obligation record that moves from a product shelf to a process shelf keeps its identifier. Each process kind binds the scheme of the product kind it mirrors, and the move rewrites every relative link to the file."
-last_verified: 2026-09-29
+last_verified: 2026-09-30
 title: "A document that moves to a process shelf keeps its identifier"
 provenance:
   warrant: asserted
@@ -14,6 +14,7 @@ provenance:
 relations:
   governs:
     - to: tools/repo/obligation-register-fixtures.sh
+      verified_revision: sha256:150b3b88c08547ccddc09663dba4939181b0b7ca1c155f259626bba8aea59df1
   traces_to:
     - HW-OBL-0031
     - HW-OBL-0139

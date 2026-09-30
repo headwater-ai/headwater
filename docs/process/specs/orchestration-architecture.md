@@ -3,7 +3,7 @@ id: HW-SPEC-orchestration-architecture
 status: current
 status_since: 2026-09-22
 summary: "The six stages of a build-order run, what each one owns and never does, where the veto sits, and how claims order the merges."
-last_verified: 2026-09-29
+last_verified: 2026-09-30
 title: "Orchestration architecture"
 provenance:
   warrant: asserted
@@ -26,23 +26,23 @@ relations:
     - HW-PD-0023
   governs:
     - to: .claude/commands/next-run.md
-      verified_revision: sha256:f38d53f83395a72d0ac9dab81043cd5e27c5bd81c7a109e62b714fc22163dfa1
+      verified_revision: sha256:3b23c76457d1bf7816f688d784ee5cca18f7667f789f46cd0e957c3c817bc5fe
     - to: .claude/commands/next.md
-      verified_revision: sha256:974d493829d7c81eacf06f5058e7e02f01f7fd409b82e0589d7bdd21a7783b09
+      verified_revision: sha256:69dd88bcbea169b0f42438d67e4627716f847128982ea38072a6857e4188d530
     - to: .claude/agents/hw-queue.md
-      verified_revision: sha256:3e7a6397fd22c80436ff488cb2be0c8059f28924c1698706be5e0d1b782c9c6a
+      verified_revision: sha256:24ddc87861f3f7bada00eb1f779f41627a40f9f6b1eb7b1411558b0a356eaf22
     - to: .claude/agents/hw-adjudicate.md
-      verified_revision: sha256:c957a511466d03fcf8d7d628b97ebc8e416ce61f85d1aab1a379342ff8a7c8d0
+      verified_revision: sha256:caded9e6934bcc2eb7ff2bccbe68f0eb85b4e488a74af0ca9f334efd5bd785c3
     - to: .claude/agents/hw-iterate.md
-      verified_revision: sha256:c1f0b77195e81666064afdb5eccc3c568354deb2b55ab451ba771cab8db85e37
+      verified_revision: sha256:eab71ea73124082fe3c6d53745451efdcf432aabe562bf4f071bdf442aaf1892
     - to: .claude/agents/hw-build.md
-      verified_revision: sha256:d82de2b0b05e803f187fb8201e51d832f3caafd459eb15d6b756a484e367210c
+      verified_revision: sha256:2f6d08e5db461ee480c7affe309cf69f82c0606fccec74813914e4a085575ffb
     - to: .claude/agents/hw-verify.md
-      verified_revision: sha256:43c950e51171c9e61d0cc801584703ec5ed6577316e0d014cdee706bc25e0783
+      verified_revision: sha256:2851dcc90830016d17c14f2692ad614e696a3435850558631dd3a525a9bc5d87
     - to: .claude/agents/hw-integrate.md
-      verified_revision: sha256:de99652546460adf3a7ce5ab652c2501973e56f8f65fcb6cc591d438043ecd65
+      verified_revision: sha256:faf27bbed077b3963873e7af3ca9e5348e64f18198dd44380a41c8468a808336
     - to: .claude/skills/hw-run-policy/SKILL.md
-      verified_revision: sha256:c3f38c8456e5a3a2074c66adec6b77fdc42750fa27c9e8af1a250feccdddce1d
+      verified_revision: sha256:964b5348ada2da7f8efc18ff862704e5e8456a6c865e7381c85bb826fbdcbf28
     - to: .claude/skills/hw-verification-bar/SKILL.md
       verified_revision: sha256:a68ce6b14b5a8d7068aeafd8c7443e0497a55b4e444e2b971daa1da738c2153b
 ---
@@ -76,7 +76,7 @@ flowchart LR
     adjudicate -->|"BUILD or REFUSE<br/>FOOTPRINT, FIXTURE"| parent
     build -->|"BRANCH, PR<br/>FIXTURE, PUSHED, EXPLORE"| iterate
     verify -->|"PASS or FAIL<br/>RAN, FIRED, UNCHECKED"| iterate
-    iterate -->|"PASS or STOP<br/>ROUNDS, UNCHECKED"| parent
+    iterate -->|"PASS or STOP<br/>ROUNDS, UNCHECKED, EXPLORE"| parent
     integrate -->|"MERGED<br/>REGENERATED, LEFT"| parent
 
     parent -.->|"the veto of a PASS, by SendMessage"| iterate
@@ -152,7 +152,7 @@ flowchart LR
 
 [`.claude/agents/hw-build.md`](../../../.claude/agents/hw-build.md) builds one adjudicated issue in a worktree of its own and opens the pull request. `hw-iterate` dispatches it.
 
-**It owns the branch, the commits and the pull request.** It claims the issue on the board before its first commit, because a board claim is atomic and needs no coordinator. It extends the contract, the decision clause or the case table the note names before it writes any implementation. It repairs a format, lint or unblessed-fixture failure in its own continuous-integration run before it reports. A red run that it cannot repair is the first line of its report.
+**It owns the branch, the commits and the pull request.** It claims the issue on the board before its first commit, because a board claim is atomic and needs no coordinator. It extends the contract, the decision clause or the case table the note names before it writes any implementation. It runs the format gate and re-blesses each recorded fixture that the change moved before it pushes. It reports when the pull request is open, and it does not wait for continuous integration. The verifier waits for that run, and a red run comes back to the builder as a `FAIL` that names the failed checks.
 
 **It never merges, never force-pushes and never touches the shared checkout.** The integrator alone writes `main`. A generating verb run in the shared checkout while a merge lands is the silent bad merge from the other direction.
 
@@ -200,7 +200,7 @@ Nine records under [`docs/process/decisions/`](../decisions/README.md) settle th
 
 **[HW-PD-0007](../decisions/0007-a-background-wait-caps-below-the-cache-lifetime-and-re-issues-itself.md) bounds a background wait under the prompt-cache lifetime.** A subagent's cache holds its context for about five minutes. A turn that wakes after that pays to write the whole context back rather than to read it. So a wait that might run longer is wrapped in a timeout under the lifetime and re-issued on return. Each bounded call is one blocking loop, ended before the agent that started it exits. The parent is exempt, because its own cache holds for an hour.
 
-**[HW-PD-0021](../decisions/0021-a-subagent-waits-in-the-foreground-because-a-background-wait-wakes-its-parent.md) runs that bounded wait in the foreground.** A subagent whose only work left is a background wait ends its turn. Each attempt then wakes its parent at the full context of the parent. So `hw-build`, `hw-verify` and `hw-integrate` run `wait-for.sh` in the foreground and keep their turn. `hw-iterate` and the parent wait on agents, not on a condition, so they end their turn and run no `wait-for.sh`.
+**[HW-PD-0021](../decisions/0021-a-subagent-waits-in-the-foreground-because-a-background-wait-wakes-its-parent.md) runs that bounded wait in the foreground.** A subagent whose only work left is a background wait ends its turn. Each attempt then wakes its parent at the full context of the parent. So `hw-verify` waits on continuous integration and `hw-integrate` waits on the merge queue, each with `wait-for.sh` in the foreground, and each keeps its turn. `hw-iterate` and the parent wait on agents, not on a condition, so they end their turn and run no `wait-for.sh`.
 
 **[HW-PD-0022](../decisions/0022-the-verify-and-rework-loop-for-one-issue-runs-below-the-parent.md) moves the loop for one issue below the parent.** Each `FAIL` woke the parent at its full context, so one agent per issue now owns build, verify and rework. The parent wakes for its report and rules the final verdict. The builder does not dispatch its own verifier, because that verifier would then not be independent. The instruction to rework a `FAIL` now goes from `hw-iterate` to its own builder, down the tree that HW-PD-0004 keeps.
 
