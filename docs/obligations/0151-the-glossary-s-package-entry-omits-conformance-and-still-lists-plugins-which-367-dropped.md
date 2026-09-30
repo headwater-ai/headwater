@@ -1,7 +1,7 @@
 ---
 id: HW-OBL-0151
-status: current
-status_since: 2026-09-06
+status: discharged
+status_since: 2026-10-01
 title: "The glossary's Package entry omits conformance and still lists plugins, which #367 dropped"
 summary: "The glossary's Package entry is missing `conformance` and still names `plugins`, a key that spec 7 does not declare."
 provenance:
@@ -11,7 +11,7 @@ provenance:
   activity: draft
   accepted_by: j.baxter
   evidence_basis: evidenced
-last_verified: 2026-08-26
+last_verified: 2026-10-01
 waiting_on: build
 ---
 
@@ -30,3 +30,5 @@ A correct entry lists exactly six `contents` keys: `taxonomy`, `conformance`, `b
 ## Discharge
 
 This closes when the `Package` entry in `docs/spec/glossary.md` names the six `contents` keys spec 7's corrected example carries. The wording should stay consistent with spec 7's own account of a package. The fix touches only that one glossary line, not spec 7 itself, spec 12's check-plugin architecture, or the manifest schema.
+
+**This record is discharged.** [#1487](https://github.com/headwater-ai/headwater/issues/1487) rewrote the `Taxonomy package` entry in `docs/spec/glossary.md`. It names seven `contents` keys rather than six. The seventh, `assemblies`, joined spec 7's example after this record was written. The seven are `taxonomy`, `conformance`, `bundles`, `assemblies`, `migrations`, `doctrine` and `templates`. It names the top-level `profiles` and `interview` keys too, and it does not name `plugins`. The list is the one that spec 7's manifest example declares, and `required_kind` in `engine/crates/resolve/src/package.rs` reads the same seven keys.

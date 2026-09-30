@@ -38,8 +38,7 @@ Unreadable store lines are reported with their line numbers. An unreadable store
 
 | Option | What it does |
 |---|---|
-| `--format text` | Write the person-readable report. This is the default. |
-| `--format json` | Write the machine-readable count report. |
+| `--format text\|json` | Select the report. `text` writes the person-readable report and is the default. `json` writes the machine-readable count report. |
 | `--json` | The same target as `--format json`. |
 | `--root <path>` | Select the repository and store to read. |
 | `--no-color` | Force plain text on both streams: bold and dim weight plus glyphs, no escape sequence. The default already senses whether each stream is a terminal, and renders color only there. |

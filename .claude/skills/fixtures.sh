@@ -396,6 +396,26 @@ do
     fi
 done
 
+printf '\n# the fixture bar for a new check, in the two skills that repeat it\n'
+# HW-OBL-0140: spec 12 states the discriminating condition beside the firing
+# condition, and each skill that repeats the bar says the same. The spec is
+# the third file read, because it is the source the skills repeat. No rule reads
+# this prose, so this case holds only that the sentence is still there.
+for pair in \
+    'headwater-taxonomy/SKILL.md|**A check also owes the discriminating condition: an input on which the implemented rule and a plausible neighboring rule disagree.**' \
+    'headwater-engine/SKILL.md|an input on which the check and a plausible neighboring rule disagree.' \
+    '../../docs/spec/12-check-layer.md|**The floor is the firing condition, and a check also owes the discriminating condition.**'
+do
+    file=${pair%%|*}
+    sentence=${pair#*|}
+    name="$file states the discriminating condition of the fixture bar"
+    if grep -qF "$sentence" "$skills/$file"; then
+        pass "$name"
+    else
+        fail "$name" "the skill no longer says: $sentence"
+    fi
+done
+
 if [ -x "$engine" ]; then
     printf '\n# headwater-authoring, against the verb it calls\n'
 

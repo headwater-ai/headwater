@@ -42,7 +42,7 @@ The workspace, from `engine/`. CI runs it with no filter, so the workspace is th
 
 [DEVELOPING.md](../../../DEVELOPING.md) carries the three invocations, the environment variable that re-records, and which files move.
 
-**Rebase onto `main` before you bless, and treat that as part of blessing rather than as a courtesy.** An artifact that keeps a count over the whole corpus merges without a conflict and states a number true of neither branch, so a branch blessed against a stale `main` can be green on its own tip and turn `main` red on landing. [HW-DR-0049](../../../docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md) rules why, and `.gitattributes` names the artifacts that still carry a fold. Nothing enforces the rebase before a push, so this paragraph is the mechanism.
+**Rebase onto `main` before you bless, and treat that as part of blessing rather than as a courtesy.** An artifact that keeps a count over the whole corpus merges without a conflict and states a number true of neither branch, so a branch blessed against a stale `main` can be green on its own tip and fail on the merge-queue group tip, which ejects it. [HW-DR-0049](../../../docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md) rules why, and `.gitattributes` names the artifacts that still carry a fold. The queue enforces currency at landing, and nothing enforces the rebase before a push, so this paragraph is what saves the ejection.
 
 ## The five mistakes
 
@@ -66,4 +66,4 @@ Read what [DEVELOPING.md](../../../DEVELOPING.md) says about sccache before you 
 
 ## What this skill does not decide
 
-A change to `.headwater/packages/`, `docs/taxonomies/` or `.headwater/overlay.yml` is a taxonomy change, and [headwater-taxonomy](../headwater-taxonomy/SKILL.md) carries it. A new rule is declared there and implemented in `engine/crates/check/`, and the bar that a check without a failing fixture does not ship is stated there rather than here.
+A change to `.headwater/packages/`, `docs/taxonomies/` or `.headwater/overlay.yml` is a taxonomy change, and [headwater-taxonomy](../headwater-taxonomy/SKILL.md) carries it. A new rule is declared there and implemented in `engine/crates/check/`, and the bar for a new check is stated there rather than here: a fixture that the check fails, and an input on which the check and a plausible neighboring rule disagree.
