@@ -3,7 +3,7 @@ id: HW-DR-0078
 status: current
 status_since: 2026-09-20
 summary: "The owner relaxed principle 11 for one asset. A front-page recording may show a number a live run does not produce, if a recorded-on-<date> marker stands beside it. Nothing compares that number against a later run."
-last_verified: 2026-09-20
+last_verified: 2026-09-30
 title: "A recorded terminal demonstration may show a frozen number behind a recorded-on-date marker"
 relations:
   supersedes:
@@ -15,10 +15,11 @@ relations:
     - .github/assets/headwater-demo.gif
     - .claude/tutorial/drive.py
 provenance:
-  warrant: asserted
+  warrant: accepted
   agency: agent
   drafted_by: claude-sonnet-5
   activity: measure+draft
+  accepted_by: j.baxter
   evidence_basis: evidenced
 ---
 
