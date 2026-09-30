@@ -32,6 +32,12 @@
 # eye was the only thing standing between a later edit and the same defect.
 # This suite is what stands there now.
 #
+# It also holds `integrations/site-generator/fixtures/build-site.sh` on the
+# two things its own CI step cannot see (#1370): the MkDocs pin in
+# `docs/how-to/publish-your-corpus-as-a-site.md` against the version the
+# fixture runs, and the removal of its temporary directory when it fails. A
+# stub stands in for MkDocs and the engine, so these cases need only `sh`.
+#
 # What this suite does NOT hold: that the action actually passes on a clean
 # corpus and fails on a staled one, end to end, against a real download.
 # `.github/workflows/integrations-headwater-check.yml` is that suite, and it
@@ -398,6 +404,27 @@ else
     fail 'site fixture: a matching pin passes the check, and a later failure names the missing overlay' "exit $status; $(tail -n 5 "$scratch/site-b.err")"
 fi
 same 'site fixture: a failure after the pin check leaves nothing in TMPDIR' '' "$(ls -A "$scratch/site-tmp-b")"
+
+# A guide that pins nothing, and a guide that pins two versions, both fail the
+# check before the corpus is read.
+sed 's/mkdocs==1\.6\.1/mkdocs/' "$site_guide" >"$scratch/site-guide-none.md"
+MKDOCS="sh $site_stub" HEADWATER_BIN="$site_stub" HEADWATER_SITE_GUIDE="$scratch/site-guide-none.md" \
+    sh "$site_fixture" "$scratch/no-such-corpus" >"$scratch/site-c.out" 2>"$scratch/site-c.err"
+status=$?
+if [ "$status" -ne 0 ] && grep -q 'pins mkdocs==<version>' "$scratch/site-c.err"; then
+    pass 'site fixture: a guide that pins no MkDocs version fails'
+else
+    fail 'site fixture: a guide that pins no MkDocs version fails' "exit $status; $(tail -n 5 "$scratch/site-c.err")"
+fi
+sed 's/^python3 -m pip install mkdocs==1\.6\.1$/&\npython3 -m pip install mkdocs==1.6.2/' "$site_guide" >"$scratch/site-guide-two.md"
+MKDOCS="sh $site_stub" HEADWATER_BIN="$site_stub" HEADWATER_SITE_GUIDE="$scratch/site-guide-two.md" \
+    sh "$site_fixture" "$scratch/no-such-corpus" >"$scratch/site-d.out" 2>"$scratch/site-d.err"
+status=$?
+if [ "$status" -ne 0 ] && grep -q 'more than one MkDocs version' "$scratch/site-d.err" && grep -q '1\.6\.2' "$scratch/site-d.err"; then
+    pass 'site fixture: a guide that pins two MkDocs versions fails, and names both'
+else
+    fail 'site fixture: a guide that pins two MkDocs versions fails, and names both' "exit $status; $(tail -n 5 "$scratch/site-d.err")"
+fi
 
 printf '\n%s passed, %s failed\n' "$passed" "$failed"
 [ "$failed" -eq 0 ]
