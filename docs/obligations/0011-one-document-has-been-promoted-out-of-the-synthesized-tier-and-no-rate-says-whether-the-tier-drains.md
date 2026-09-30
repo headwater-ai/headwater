@@ -1,11 +1,11 @@
 ---
 id: HW-OBL-0011
-title: "Nothing has been promoted out of the synthesized tier"
+title: "One document has been promoted out of the synthesized tier, and no rate says whether the tier drains"
 status: current
 status_since: 2026-08-10
 waiting_on: measurement
 last_verified: 2026-08-15
-summary: "Q15 claims that asserted content moves to accepted rather than accumulates, both halves of the instrument now run, and no change of this repository has moved a warrant yet."
+summary: "Q15 claims that asserted content moves to accepted rather than accumulates. Both halves of the instrument run, one change has promoted one document, and no rate over time has been read."
 provenance:
   warrant: accepted
   agency: mixed
@@ -18,7 +18,7 @@ relations:
     - HW-DR-0015
 ---
 
-# Nothing has been promoted out of the synthesized tier
+# One document has been promoted out of the synthesized tier, and no rate says whether the tier drains
 
 ## Context
 
@@ -34,4 +34,6 @@ Half of the instrument now runs. `taxonomy audit` reports the warrant of every c
 
 The numerator now runs, and it runs in another verb. A promotion is a lifecycle transition, from the `asserted` warrant to `accepted`. `warrant.promoted` declares the `needs_prior` input that [spec 12](../spec/12-check-layer.md#temporal-inputs-the-clock-and-the-prior-version) designs, and `headwater check --change` is where a caller supplies one. The count is change-scoped for that reason, so it cannot live in `taxonomy audit`, which reads one working tree.
 
-What this record waits on is a corpus rather than a build. No change of this repository has moved a warrant from `asserted` to `accepted`. So the count has been zero on every run of the instrument. The run set is now the last 120 commits, rather than the changes a person thought to look at. If it stays at zero while the `asserted` population grows, the tier is a place documents go and do not leave. The honest response is to say so.
+What this record waits on is a rate rather than a first promotion. [#1425](https://github.com/headwater-ai/headwater/pull/1425), which merged as `40d08a1d`, moved [HW-DR-0078](../decisions/0078-a-recorded-terminal-demonstration-may-show-a-frozen-number-behind-a-recorded-on-date-marker.md) from `asserted` to `accepted`. It is the first promotion in this repository. On 2026-09-30, `headwater check --change` against `40d08a1d^` counted one promotion under `warrant.promoted`, and no other. Before that change, the count was zero on every run of the instrument, over the last 120 commits.
+
+One promotion shows that the act happens. It does not show whether the `asserted` population drains or grows. So this record discharges on a reading over a window of changes. The reading is the promotions in the window, against the `asserted` count at each end of it. If promotions stay rare while the `asserted` population grows, the tier is a place documents go and do not leave. The honest response is to say so.

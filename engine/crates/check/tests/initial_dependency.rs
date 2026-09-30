@@ -83,6 +83,7 @@ fn run_over(tree: &str) -> Run {
             observations: &headwater_check::Observations::empty(),
             pin: None,
             harvests: &[],
+            imports: &[],
             adoption: None,
             source: &source,
         },

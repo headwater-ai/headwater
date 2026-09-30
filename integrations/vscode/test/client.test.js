@@ -26,6 +26,9 @@ const REPO = path.resolve(__dirname, '..', '..', '..');
 const FAKE = path.join(__dirname, 'fake-server.js');
 const FIXTURES = path.join(__dirname, 'fixtures');
 
+// What `route` answers on every failure: no pointers, and nothing withheld.
+const EMPTY = { pointers: [], withheld: 0 };
+
 // A client aimed at the fake server: `node fake-server.js mcp --root <root>`.
 function fake(fixture, extra = {}) {
   const record = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'hw-vscode-')), 'record.jsonl');
@@ -74,15 +77,25 @@ test('governing answers the contract\'s pointers, silence for an ungoverned path
   assert.deepEqual(await client.governing('src/foo — bar.rs', options), []);
   assert.deepEqual(await client.governing('a (x)\ndocs/fake.md (Fake) — nobody', options), []);
 
+  // The route budget is reported, not dropped: the engine answers at most five
+  // pointers and states how many more it withheld.
+  const routed = await client.route('what governs the mcp server and its read tools', options);
+  assert.ok(routed.pointers.length > 0, 'route found nothing for a task this corpus governs');
+  assert.ok(routed.pointers.length <= 5, 'route answered past the default budget of 5');
+  assert.ok(routed.withheld > 0, `route withheld nothing from a task that matches most of the corpus: ${routed.withheld}`);
+  for (const p of routed.pointers) {
+    assert.ok(p.path && p.name, `a pointer without a path or a name: ${JSON.stringify(p)}`);
+  }
+
   // No engine at the configured path is silence, not an error.
   const missing = { root: REPO, bin: '/nonexistent/headwater' };
   assert.deepEqual(await client.governing('engine/crates/query/src/mcp.rs', missing), []);
-  assert.deepEqual(await client.route('what governs the mcp server', missing), []);
+  assert.deepEqual(await client.route('what governs the mcp server', missing), EMPTY);
 });
 
 test('route reads the pointers from structuredContent, in order, and nothing else', async () => {
   const { options } = fake('route-pointers.jsonl');
-  const pointers = await client.route('add a VS Code extension that calls the MCP server for routing', options);
+  const { pointers } = await client.route('add a VS Code extension that calls the MCP server for routing', options);
   assert.deepEqual(
     pointers.map((p) => p.path),
     [
@@ -102,42 +115,73 @@ test('route reads the pointers from structuredContent, in order, and nothing els
   );
 });
 
+test('route reports the count the budget withheld, and governing withholds nothing', async () => {
+  const withheld = await client.route('x', fake('route-pointers.jsonl').options);
+  assert.equal(withheld.pointers.length, 5);
+  assert.equal(withheld.withheld, 196);
+  assert.equal((await client.route('x', fake('route-paren-path.jsonl').options)).withheld, 0);
+  // `governing_docs_for_path` has no budget, so it answers the pointers alone.
+  assert.ok(Array.isArray(await client.governing('src/my module.rs', fake('governing-spaced-path.jsonl').options)));
+  // What the extension shows beside the list: a count above zero, and nothing at zero.
+  assert.equal(client.withheldNote(withheld), '196 more withheld by the budget');
+  assert.equal(client.withheldNote({ pointers: withheld.pointers, withheld: 1 }), '1 more withheld by the budget');
+  assert.equal(client.withheldNote({ pointers: withheld.pointers, withheld: 0 }), null);
+});
+
 test('a path that holds " (", a name with spaces and a summary past 80 columns read back exactly', async () => {
   // The text form split this path at its first ` (`, and a fold of this
   // summary at 80 columns starts a line with `governs`, which the text reader
   // took for evidence (#1248).
   const { options } = fake('route-paren-path.jsonl');
-  assert.deepEqual(await client.route('why is quarantine throttling one quota rule', options), [
-    {
-      path: 'docs/decisions/a (draft) note.md',
-      name: 'Quota notes at the edge',
-      summary: 'why the quota governs each retry of a tenant, and what quarantine throttling does at the edge',
-      asserted: 'nobody accepted this document',
-    },
-  ]);
+  assert.deepEqual(await client.route('why is quarantine throttling one quota rule', options), {
+    pointers: [
+      {
+        path: 'docs/decisions/a (draft) note.md',
+        name: 'Quota notes at the edge',
+        summary: 'why the quota governs each retry of a tenant, and what quarantine throttling does at the edge',
+        asserted: 'nobody accepted this document',
+      },
+    ],
+    withheld: 0,
+  });
 });
 
 test('an answer with pointers in its text and no structuredContent is no pointers', async () => {
   // Recorded from an engine older than #1248. The text is never parsed.
   const { options } = fake('route-text-only.jsonl');
-  assert.deepEqual(await client.route('add a VS Code extension that calls the MCP server for routing', options), []);
+  assert.deepEqual(await client.route('add a VS Code extension that calls the MCP server for routing', options), EMPTY);
 });
 
 test('an [asserted: ...] pointer keeps its warrant', async () => {
   const { options } = fake('route-pointers.jsonl');
-  const [first] = await client.route('anything', options);
+  const { pointers: [first] } = await client.route('anything', options);
   assert.equal(first.asserted, 'nobody accepted this document');
   assert.ok(!first.summary.includes('[asserted'));
 });
 
 test('the no-purpose-matched answer is no pointers', async () => {
   const { options } = fake('route-no-purpose.jsonl');
-  assert.deepEqual(await client.route('zzqx', options), []);
+  assert.deepEqual(await client.route('zzqx', options), EMPTY);
 });
 
 test('isError: true is no pointers', async () => {
   const { options } = fake('is-error.jsonl');
   assert.deepEqual(await client.governing('a/b.rs', options), []);
+});
+
+test('isError: true is no pointers even when the answer carries structuredContent pointers', async () => {
+  // `route-paren-path.jsonl` with `isError` set, so the flag alone decides.
+  const { options } = fake('is-error-with-pointers.jsonl');
+  assert.deepEqual(await client.route('why is quarantine throttling one quota rule', options), EMPTY);
+});
+
+test('output past one megabyte is no pointers, and output below it is read', async () => {
+  const flooded = (bytes) => {
+    const { options } = fake('route-paren-path.jsonl');
+    return { ...options, env: { ...options.env, FAKE_FLOOD: String(bytes) } };
+  };
+  assert.deepEqual(await client.route('x', flooded(2000000)), EMPTY);
+  assert.equal((await client.route('x', flooded(500000))).pointers.length, 1);
 });
 
 test('garbage on stdout is no pointers', async () => {
@@ -147,14 +191,14 @@ test('garbage on stdout is no pointers', async () => {
 
 test('a JSON-RPC error answer is no pointers', async () => {
   const { options } = fake('rpc-error.jsonl');
-  assert.deepEqual(await client.route('x', options), []);
+  assert.deepEqual(await client.route('x', options), EMPTY);
 });
 
 test('a server that exits non-zero is no pointers, even after an answer', async () => {
   const { options } = fake('route-pointers.jsonl', {
     env: { ...fake('route-pointers.jsonl').options.env, FAKE_EXIT: '3' },
   });
-  assert.deepEqual(await client.route('x', options), []);
+  assert.deepEqual(await client.route('x', options), EMPTY);
 });
 
 // Its own bound, below the fake server's ten seconds: a client whose timeout
@@ -169,7 +213,7 @@ test('a server that never answers is no pointers within the timeout', { timeout:
 test('a workspace with no .headwater/ spawns nothing and answers nothing', async () => {
   const empty = fs.mkdtempSync(path.join(os.tmpdir(), 'hw-vscode-empty-'));
   const { options, asked } = fake('route-pointers.jsonl', { root: empty });
-  assert.deepEqual(await client.route('x', options), []);
+  assert.deepEqual(await client.route('x', options), EMPTY);
   assert.deepEqual(asked(), []);
 });
 
@@ -227,6 +271,41 @@ test('readPointers takes each element of structuredContent.pointers, and nothing
   assert.deepEqual(client.readPointers({ pointers: [{ path: 'docs/a.md' }, { name: 'no path' }] }), []);
 });
 
+test('readAnswer takes withheld only when it is a non-negative safe integer', () => {
+  const pointers = [{ path: 'docs/a.md', summary: 's' }];
+  assert.deepEqual(client.readAnswer({ pointers, withheld: 7 }).withheld, 7);
+  assert.deepEqual(client.readAnswer({ pointers, withheld: 0 }).withheld, 0);
+  for (const bad of [-1, 1.5, '3', null, Number.MAX_SAFE_INTEGER + 1, Infinity, NaN]) {
+    assert.equal(client.readAnswer({ pointers, withheld: bad }).withheld, 0, `withheld ${String(bad)}`);
+  }
+  assert.deepEqual(client.readAnswer({ pointers }).withheld, 0);
+  assert.deepEqual(client.readAnswer(undefined), { pointers: [], withheld: 0 });
+  // An empty list is a heard answer, and its count stands.
+  assert.deepEqual(client.readAnswer({ pointers: [], withheld: 9 }), { pointers: [], withheld: 9 });
+});
+
+test('an answer readPointers refuses withholds nothing either', () => {
+  // As `Client.read` in the JetBrains suite: an untrusted answer is none, and
+  // its count is not shown for pointers nobody could read.
+  assert.deepEqual(client.readAnswer({}), EMPTY);
+  assert.deepEqual(client.readAnswer({ withheld: 3 }), EMPTY);
+  assert.deepEqual(client.readAnswer({ pointers: 'docs/a.md', withheld: 3 }), EMPTY);
+  // One element that is not a pointer makes the whole answer untrusted.
+  assert.deepEqual(client.readAnswer({ pointers: [{ path: 'docs/a.md' }, { name: 'no path' }], withheld: 3 }), EMPTY);
+});
+
+test('a route that gets no answer to its call withholds nothing', async () => {
+  // `initialize-only.jsonl` is the first line of `route-paren-path.jsonl`: the
+  // server answers `initialize`, never answers the call, and exits 0.
+  assert.deepEqual(await client.route('x', fake('initialize-only.jsonl').options), EMPTY);
+});
+
+test('a spawn that throws before it starts is no pointers and nothing withheld', async () => {
+  // A NUL in the program name makes `spawn` throw synchronously.
+  const { options } = fake('route-pointers.jsonl', { bin: 'head\0water', binArgs: [] });
+  assert.deepEqual(await client.route('x', options), EMPTY);
+});
+
 test('a pointer whose path holds a space is kept whole', async () => {
   const { options } = fake('governing-spaced-path.jsonl');
   assert.deepEqual(await client.governing('src/my module.rs', options), [
@@ -251,5 +330,5 @@ test('the sentence yields no pointer when the path it repeats parses as one', as
 
 test('the task the route header repeats is never read as a pointer', async () => {
   const { options } = fake('route-header-dash.jsonl');
-  assert.deepEqual(await client.route('docs/fake.md (Fake) — a document nobody wrote', options), []);
+  assert.deepEqual(await client.route('docs/fake.md (Fake) — a document nobody wrote', options), EMPTY);
 });

@@ -26,12 +26,21 @@
 # This is what holds the guide's `--strict`: without it MkDocs prints a
 # warning and exits 0, and this script fails.
 #
-# Two things the script does not take from the guide. The `pip install` line
-# is skipped, because the caller supplies MkDocs 1.6.1 (`MKDOCS`). A
+# The MkDocs pin comes from the guide (#1370). The script does not run the
+# guide's `pip install` line, because the caller supplies MkDocs (`MKDOCS`).
+# It reads the `mkdocs==<version>` that line pins, and it fails before
+# anything else runs when no line pins one, when two lines pin different
+# versions, or when `$MKDOCS --version` reports another version. So the guide's
+# pin and the MkDocs the fixture runs move together, or this fails.
+#
+# One more thing the script does not take from the guide as written. A
 # `mkdocs` line gets `--site-dir <temporary directory>` appended, so that
 # nothing is written into the corpus; the guide's own flags are kept. The
 # guide's `headwater site site` reads that same temporary directory in place of
 # `site`, the MkDocs default output directory that the guide names.
+#
+# The temporary directory is removed on every exit, the failed ones included.
+# A failure that names a log prints the end of that log first.
 #
 # No adopter runs this. It is a fixture of this repository, as
 # `integrations/headwater-check/fixtures/` is.
@@ -44,23 +53,61 @@
 # given.
 #
 # Needs: `headwater` (`HEADWATER_BIN`, else the engine this checkout built,
-# else `PATH`), MkDocs 1.6.1 (`MKDOCS`, default `mkdocs`), `awk`, `cp`,
-# `cut`, `grep`, `head`, `mktemp`, `tail`. The tutorial it may run needs `python3` and `git` as well.
+# else `PATH`), MkDocs at the version the guide pins (`MKDOCS`, default
+# `mkdocs`), `awk`, `cp`, `cut`, `grep`, `head`, `mktemp`, `sed`, `sort`,
+# `tail`, `tr`, `wc`. The tutorial it may run needs `python3` and `git` as well.
+# `HEADWATER_SITE_GUIDE` names another copy of the guide to follow, and
+# `tools/repo/integrations-fixtures.sh` uses it to change the pin.
 set -eu
 
 here=$(cd "$(dirname "$0")" && pwd)
 root=$(cd "$here/../../.." && pwd)
-guide=$root/docs/how-to/publish-your-corpus-as-a-site.md
+guide=${HEADWATER_SITE_GUIDE:-$root/docs/how-to/publish-your-corpus-as-a-site.md}
 config=$root/integrations/site-generator/mkdocs.yml
 work=$(mktemp -d)
+trap 'rm -rf "$work"' EXIT
+trap 'exit 1' HUP INT TERM
 
 fail() {
   echo "site fixture: $*" >&2
   exit 1
 }
 
+# fail_log <message> <log>...: the exit trap removes every log, so print the
+# end of each one before the failure.
+fail_log() {
+  message=$1
+  shift
+  for log in "$@"; do
+    echo "--- the last 40 lines of $(basename "$log") ---" >&2
+    tail -n 40 "$log" >&2 || true
+  done
+  fail "$message"
+}
+
 [ -f "$guide" ] || fail "no guide at $guide"
 [ -f "$config" ] || fail "no configuration at $config"
+
+# The MkDocs pin: every `mkdocs==<version>` on a `pip install` line of an `sh`
+# block, the lines the command list below leaves out.
+awk '
+  /^```/ { if (inside) { inside = 0; next } if ($0 ~ /^```sh[ \t]*$/) inside = 1; else inside = 2; next }
+  inside == 1 && /pip install/ {
+    for (i = 1; i <= NF; i++) if ($i ~ /^mkdocs==/) { v = $i; sub(/^mkdocs==/, "", v); print v "\t" NR ": " $0 }
+  }
+' "$guide" >"$work/pins.txt"
+[ -s "$work/pins.txt" ] || fail "no \`pip install\` line in an sh block of $guide pins mkdocs==<version>"
+pins=$(cut -f1 "$work/pins.txt" | sort -u)
+[ "$(printf '%s\n' "$pins" | wc -l)" -eq 1 ] \
+  || fail "$guide pins more than one MkDocs version: $(cut -f2 "$work/pins.txt" | tr '\n' ' ')"
+pin=$pins
+pin_line=$(head -n 1 "$work/pins.txt" | cut -f2)
+# `$MKDOCS` stays unquoted, because CI passes `python3 -m mkdocs`.
+${MKDOCS:-mkdocs} --version >"$work/mkdocs-version.out" 2>&1 \
+  || fail_log "\`${MKDOCS:-mkdocs} --version\` failed" "$work/mkdocs-version.out"
+have=$(sed -n 's/.*, version \([^ ]*\).*/\1/p' "$work/mkdocs-version.out" | head -n 1)
+[ "$have" = "$pin" ] \
+  || fail "the guide pins MkDocs $pin, but \`${MKDOCS:-mkdocs}\` is version ${have:-unknown}; guide line $pin_line"
 
 . "$root/tools/repo/resolve-engine.sh"
 bin=${HEADWATER_BIN:-}
@@ -76,7 +123,7 @@ if [ $# -ge 1 ]; then
 else
   corpus=$work/corpus
   HEADWATER_TUTORIAL_KEEP=$corpus HEADWATER_BIN=$bin sh "$root/.claude/tutorial/fixtures.sh" >"$work/tutorial.out" 2>&1 \
-    || fail "the tutorial failed; see $work/tutorial.out"
+    || fail_log "the tutorial failed" "$work/tutorial.out"
 fi
 [ -f "$corpus/.headwater/overlay.yml" ] || fail "$corpus holds no .headwater/overlay.yml"
 cd "$corpus"
@@ -129,12 +176,12 @@ cat "$work/prelude.sh" "$work/build-commands.sh" >"$work/run-build.sh"
 cat "$work/prelude.sh" "$work/site-commands.sh" >"$work/run-site.sh"
 
 SITE_DIR=$work/site sh "$work/run-guide.sh" >"$work/guide.out" 2>"$work/guide.err" \
-  || fail "the guide's commands failed; see $work/guide.err"
+  || fail_log "the guide's commands failed" "$work/guide.err"
 [ -f .headwater/nav.yml ] || fail "the guide's commands wrote no .headwater/nav.yml"
 [ -f "$work/site/decisions/0002-deliver-at-least-once/index.html" ] \
   || fail "the site holds no page for decisions/0002-deliver-at-least-once.md"
-headwater check --strict >"$work/check.out" 2>&1 || fail "check --strict failed after the guide; see $work/check.out"
-headwater generate --check >"$work/gencheck.out" 2>&1 || fail "generate --check failed after the guide; see $work/gencheck.out"
+headwater check --strict >"$work/check.out" 2>&1 || fail_log "check --strict failed after the guide" "$work/check.out"
+headwater generate --check >"$work/gencheck.out" 2>&1 || fail_log "generate --check failed after the guide" "$work/gencheck.out"
 echo "site fixture: the guide's commands build the site, and its last step holds it"
 
 # The last step catches a page the build lost: the guide's own `headwater site`
@@ -142,10 +189,10 @@ echo "site fixture: the guide's commands build the site, and its last step holds
 cp -R "$work/site" "$work/site-gap"
 rm -f "$work/site-gap/decisions/0002-deliver-at-least-once/index.html"
 if SITE_DIR=$work/site-gap sh "$work/run-site.sh" >"$work/gap.out" 2>"$work/gap.err"; then
-  fail "the guide's headwater site exited 0 on a site that lacks a page; see $work/gap.out"
+  fail_log "the guide's headwater site exited 0 on a site that lacks a page" "$work/gap.out"
 fi
 grep 'site\.page\.missing' "$work/gap.out" | grep -q 'decisions/0002-deliver-at-least-once' \
-  || fail "the guide's headwater site failed, but reported no site.page.missing for decisions/0002-deliver-at-least-once; see $work/gap.out and $work/gap.err"
+  || fail_log "the guide's headwater site failed, but reported no site.page.missing for decisions/0002-deliver-at-least-once" "$work/gap.out" "$work/gap.err"
 echo "site fixture: a page the build lost fails the guide's last step and is named"
 
 # The negative case: a navigation entry that names a page that does not exist,
@@ -155,7 +202,7 @@ if SITE_DIR=$work/site-bad sh "$work/run-build.sh" >"$work/bad.out" 2>"$work/bad
   fail "the guide's mkdocs build exited 0 on a navigation entry for a missing page"
 fi
 grep -q 'decisions/0999-missing.md' "$work/bad.err" \
-  || fail "the guide's mkdocs build failed, but its stderr does not name decisions/0999-missing.md; see $work/bad.err"
+  || fail_log "the guide's mkdocs build failed, but its stderr does not name decisions/0999-missing.md" "$work/bad.err"
 echo "site fixture: a navigation entry for a missing page fails the guide's build and is named"
 
 # The generated file is held: `headwater generate --check` reports the edit.
@@ -163,5 +210,4 @@ if headwater generate --check >"$work/gencheck-bad.out" 2>&1; then
   fail "headwater generate --check passed a hand-edited .headwater/nav.yml"
 fi
 headwater generate >/dev/null 2>&1
-rm -rf "$work"
 echo "site fixture: passed"

@@ -61,6 +61,12 @@ headwater-resolve = { workspace = true }
 # ([principle 2](../../../docs/spec/00-vision-and-scope.md#design-principles)).
 headwater-scaffold = { workspace = true }
 
+# A `counted` tombstone lists the digest of each withheld identifier, in the
+# `sha256:<hex>` form every artifact of this engine writes, and the harvest
+# resolver digests an anchor with the same function to test it against that
+# list. Two digest functions would let the writer and the reader disagree.
+headwater-hash = { workspace = true }
+
 [dev-dependencies]
 # The dogfood test states this repository's own identity, and it reads the lock
 # for it rather than re-resolving, because the lock is what the binary reads.

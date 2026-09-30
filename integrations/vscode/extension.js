@@ -2,8 +2,9 @@
 //
 // Glue between VS Code and `client.js`. Every decision about what to ask the
 // server and what counts as an answer is in `client.js`, where `node --test`
-// holds it. This file only shows what the client returns, and it shows nothing
-// when the client returns no pointers.
+// holds it. This file only shows what the client returns: the pointers, and the
+// line `client.withheldNote` gives when the route budget held pointers back. It
+// shows nothing when the client returns neither.
 
 'use strict';
 
@@ -81,9 +82,13 @@ function activate(context) {
       if (!folder) return;
       const task = await vscode.window.showInputBox({ prompt: 'What are you about to do?' });
       if (!task) return;
-      const pointers = await client.route(task, options(folder));
-      if (pointers.length === 0) return;
-      await pick(pointers, folder, 'Documents that govern this task');
+      const answered = await client.route(task, options(folder));
+      const note = client.withheldNote(answered);
+      if (answered.pointers.length === 0) {
+        if (note) vscode.window.showInformationMessage(`Headwater: no document shown; ${note}`);
+        return;
+      }
+      await pick(answered.pointers, folder, `Documents that govern this task${note ? ` (${note})` : ''}`);
     }),
     vscode.commands.registerCommand('headwater.governing', async () => {
       if (shown.length === 0 || !shownFolder) return;

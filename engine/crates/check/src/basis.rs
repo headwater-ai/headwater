@@ -60,7 +60,7 @@
 //!
 //! `proposed` is a warrant this corpus writes and spec 3's closed set does not
 //! name;
-//! [HW-OBL-0125](../../../../docs/obligations/0125-nine-documents-state-a-warrant-the-closed-set-does-not-hold-and-no-check-reads-one.md)
+//! [HW-OBL-0125](../../../../docs/obligations/0125-nine-documents-state-a-warrant-outside-the-closed-set-and-only-a-person-can-set-the-value.md)
 //! holds the nine documents that do. An earlier edition passed it, because it
 //! is not `asserted` and the defect was the value, which another rule would
 //! report. No rule did, so a misspelling such as `acepted` read as support

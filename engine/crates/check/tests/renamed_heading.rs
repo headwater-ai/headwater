@@ -169,6 +169,7 @@ fn run_over(base: &Path, adoption: Option<&Mapping>) -> Run {
             observations: &headwater_check::Observations::empty(),
             pin: None,
             harvests: &[],
+            imports: &[],
             adoption,
             source: "fixtures/check.taxonomy.yml",
         },

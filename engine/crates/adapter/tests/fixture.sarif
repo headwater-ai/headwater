@@ -114,7 +114,7 @@
               "properties": {
                 "headwater": {
                   "scope": "edge",
-                  "version": 2,
+                  "version": 3,
                   "obligations": [
                     "OB-FIX-29"
                   ],
@@ -673,6 +673,20 @@
             },
             {
               "id": "harvest.pin.unread",
+              "shortDescription": {
+                "text": "taxonomy scope, the resolved taxonomy, and no document"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "taxonomy",
+                  "version": 1,
+                  "obligations": [],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
+              "id": "import.pin.unread",
               "shortDescription": {
                 "text": "taxonomy scope, the resolved taxonomy, and no document"
               },

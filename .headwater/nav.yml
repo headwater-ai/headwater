@@ -102,6 +102,7 @@ nav:
       - "Q67 — One library entry may address the keys of an entry it names in requires, and confluence holds over the dependency order": "decisions/0095-q67-one-library-entry-may-address-the-keys-of-an-entry-it-names-in-requires-and-confluence-holds-over-the-dependency-order.md"
       - "Harper does not become part of the engine now, and Q41 stands": "decisions/0096-harper-does-not-become-part-of-the-engine-now-and-q41-stands.md"
       - "An engine subsystem is described by a technical design spec on a shelf of its own, and its behavior stays where it is already written": "decisions/0098-an-engine-subsystem-is-described-by-a-technical-design-spec-on-a-shelf-of-its-own-and-its-behavior-stays-where-it-is-already-written.md"
+      - "A counted tombstone lists a digest of each withheld identifier, and a sealed one lists nothing": "decisions/0100-a-counted-tombstone-lists-a-digest-of-each-withheld-identifier-and-a-sealed-one-lists-nothing.md"
   - "Acceptance criteria":
       - "Acceptance criteria": "acceptance-criteria/README.md"
       - "No engine source outside the fetch crate names a network API and no crate of the checking loop reaches a network package": "acceptance-criteria/0001-no-engine-source-outside-the-fetch-crate-names-a-network-api-and-no-crate-of-the-checking-loop-reaches-a-network-package.md"
@@ -199,7 +200,7 @@ nav:
       - "An adoption payload has a first reading and no elapsed time": "obligations/0008-an-adoption-payload-has-a-first-reading-and-no-elapsed-time.md"
       - "The Shape-origin finding rate is already zero, so the intervention has nowhere to act": "obligations/0009-the-shape-origin-finding-rate-is-already-zero.md"
       - "The corpus descriptor exists and no probe has run against it": "obligations/0010-the-corpus-descriptor-exists-and-no-probe-has-run-against.md"
-      - "Nothing has been promoted out of the synthesized tier": "obligations/0011-nothing-has-been-promoted-out-of-the-synthesized-tier.md"
+      - "One document has been promoted out of the synthesized tier, and no rate says whether the tier drains": "obligations/0011-one-document-has-been-promoted-out-of-the-synthesized-tier-and-no-rate-says-whether-the-tier-drains.md"
       - "The human half of the public presence claim has no instrument at all": "obligations/0012-the-human-half-of-the-public-presence-claim-has-no-instrument.md"
       - "No probe tests whether a counted tombstone stops a confident report of absence": "obligations/0013-no-probe-tests-whether-a-counted-tombstone-stops-a-confident.md"
       - "No probe tests whether an agent reaches the adjudication from the losing document": "obligations/0014-no-probe-tests-whether-an-agent-reaches-the-adjudication-from.md"
@@ -313,7 +314,7 @@ nav:
       - "Nothing holds the conformance rule set of a package a consumer takes from source": "obligations/0122-nothing-holds-the-conformance-rule-set-of-a-package-a-consumer-takes-from-source.md"
       - "A facet that applies to one value of another facet has nowhere to say so": "obligations/0123-a-facet-that-applies-to-one-value-of-another-facet-has-nowhere-to-say-so.md"
       - "A probe result is printed and never committed, so nothing regenerates one": "obligations/0124-a-probe-result-is-printed-and-never-committed-so-nothing-regenerates-one.md"
-      - "Nine documents state a warrant the closed set does not hold, and no check reads one": "obligations/0125-nine-documents-state-a-warrant-the-closed-set-does-not-hold-and-no-check-reads-one.md"
+      - "Nine documents state a warrant outside the closed set, and only a person can set the value": "obligations/0125-nine-documents-state-a-warrant-outside-the-closed-set-and-only-a-person-can-set-the-value.md"
       - "Every asserted document carries the freshness date that spec 3 says it cannot": "obligations/0126-every-asserted-document-carries-the-freshness-date-that-spec-3-says-it-cannot.md"
       - "A deletion is invisible where the version that stood there does not parse": "obligations/0127-a-deletion-is-invisible-where-the-version-that-stood-there-does-not-parse.md"
       - "Nothing holds a crate to having a contract under a root that excludes it": "obligations/0128-nothing-holds-a-crate-to-having-a-contract-under-a-root-that-excludes-it.md"
@@ -536,6 +537,7 @@ nav:
       - "Subagents read skills from the shared checkout, and a worktree-isolated integrator cannot fast-forward it after a merge": "process/obligations/0221-subagents-read-skills-from-the-shared-checkout-and-a-worktree-isolated-integrator-cannot-fast-forward-it-after-a-merge.md"
       - "Thirteen run-tooling gaps from run 20260928-1109, filed together": "process/obligations/0224-thirteen-run-tooling-gaps-from-run-20260928-1109-filed-together.md"
       - "Eight run-tooling gaps from run 20260929-1205, filed together": "process/obligations/0225-eight-run-tooling-gaps-from-run-20260929-1205-filed-together.md"
+      - "Seven run-tooling gaps from run 20260929-2201, filed together": "process/obligations/0227-seven-run-tooling-gaps-from-run-20260929-2201-filed-together.md"
   - "Process specifications":
       - "Process specifications": "process/specs/README.md"
       - "Orchestration architecture": "process/specs/orchestration-architecture.md"
@@ -570,6 +572,9 @@ nav:
       - "The recorder contract": "spec/15-the-recorder-contract.md"
       - "Harness support": "spec/16-harness-support.md"
       - "Glossary": "spec/glossary.md"
+  - "Engine subsystems":
+      - "Engine subsystems": "subsystems/README.md"
+      - "Graph build": "subsystems/graph-build.md"
   - "Tutorials":
       - "Tutorials": "tutorials/README.md"
       - "Your first governed corpus": "tutorials/your-first-governed-corpus.md"

@@ -56,9 +56,10 @@ use headwater_census::census;
 use headwater_census::shelves::Taxonomy;
 use headwater_census::walk::Corpus;
 use headwater_check::{
-    adoption, basis, command, coverage, dependency, endpoint, harvest, initial_dependency,
-    outside_root, pin, reciprocity, register, surface, suspect, target, verification, Cache,
-    Context, Date, Declared, Observation, Observations, Outcome, Register, Run, Shape, RULES,
+    adoption, basis, command, coverage, dependency, endpoint, harvest, import_pin,
+    initial_dependency, outside_root, pin, reciprocity, register, surface, suspect, target,
+    verification, Cache, Context, Date, Declared, Observation, Observations, Outcome, Register,
+    Run, Shape, RULES,
 };
 use headwater_graph::anchors::Resolvers;
 use headwater_graph::declarations::Declarations;
@@ -115,6 +116,12 @@ const UNCOVERED: &[(&str, &str)] = &[
         "the runner reaches it from the pinned exports the caller read, outside any instance, \
          so no cache entry holds its verdict; its cases are unit tests in src/harvest.rs and the \
          CLI cases in cli/tests/harvest.rs",
+    ),
+    (
+        import_pin::RULE,
+        "the runner reaches it from the imports snapshots the caller read, outside any instance, \
+         so no cache entry holds its verdict; its cases are unit tests in src/import_pin.rs and \
+         the CLI cases in cli/tests/import_pin.rs",
     ),
     (
         register::DISPOSITION,
@@ -312,6 +319,7 @@ fn run(recorded: &Recorded) -> Run {
             observations: &recorded.observations,
             pin: None,
             harvests: &[],
+            imports: &[],
             adoption: None,
             source: &source,
         },

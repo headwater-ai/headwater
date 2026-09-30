@@ -44,13 +44,20 @@
 //! # An anchor onto the declaring document's own file
 //!
 //! A target written as a path, under a relation whose endpoint admits a
-//! `code_path` anchor (in headwater/standard: `governs`, `traces_to` and
-//! `examines`), binds as an anchor and not as a document. This rule reports
-//! one such anchor: a `source-tree` anchor that holds exactly one pattern,
-//! where that pattern has no wildcard and is the declaring document's own
-//! path. A decision that writes `traces_to:` with its own path governs itself,
-//! and the owner ruled that this exact case is a self-reference under spec 2's
-//! rule (#1350, 2026-09-29: "Report it, exact own file").
+//! `code_path` anchor and no document (in headwater/standard: `governs`),
+//! binds as an anchor and not as a document. This rule reports one such
+//! anchor: a `source-tree` anchor whose every pattern has no wildcard and is
+//! the declaring document's own path. A decision that writes `governs:` with
+//! its own path governs itself, and the owner ruled that this exact case is a
+//! self-reference under spec 2's rule (#1350, 2026-09-29: "Report it, exact
+//! own file"). Under a relation whose endpoint also admits a document, such as
+//! `traces_to`, the own path binds as a document named by its path and never
+//! as an anchor (#1410), and that is `relation.target.unresolved`'s finding.
+//!
+//! A list whose every member is the own file names the exact own file and
+//! nothing wider, so it is reported as the one-member list is. The graph sorts
+//! a list and keeps its duplicates, so `[own, own]` reaches this rule as two
+//! patterns, and a rule that required one pattern passes it.
 //!
 //! Every other anchor passes, because the ruling reaches the exact own file and
 //! nothing wider. An anchor is a pattern over the tree and not a document
@@ -58,9 +65,29 @@
 //! ([HW-DR-0074](../../../../docs/decisions/0074-a-code-path-anchor-is-a-pattern-over-the-tree-and-it-binds-when-the-pattern-matches-at-least-one-entry.md)).
 //! A pattern with a wildcard that matches the own file passes, as when a
 //! decision governs the directory it sits in, and that is often correct. A
-//! list that holds the own file among other paths passes. An anchor of another
-//! resolver passes, because its pattern can name a path in another repository
-//! that has the same spelling.
+//! list that holds the own file among other paths passes. An anchor of any
+//! resolver other than `source-tree` passes, `comment-scan` included, although
+//! `comment-scan` reads the same tree. The ruling reached a `code_path` anchor
+//! that `source-tree` binds, and a `comment-scan` anchor binds a citation in a
+//! test site, which is another thing than the file that declares it. A
+//! resolver name that no corpus supplies passes for the same reason.
+//!
+//! The comparison is byte-exact on every filesystem. A pattern that differs
+//! from the own path only in case is not the exact own file, and this rule
+//! passes it. On a case-sensitive tree that pattern resolves to nothing, which
+//! is `relation.target.unresolved`'s finding. On a case-insensitive tree the
+//! resolver's literal branch finds the file, and the pattern passes here too.
+//! A rule that compared without case would give a different verdict on two
+//! machines for one corpus. The census makes the same ruling for the `.md`
+//! extension.
+//!
+//! An anchor that carries `excluded_by` is reported all the same. The
+//! exclusion is a note about the file that the pattern names, and never about
+//! the edge, so it does not make the self-reference less of one. Under one
+//! corpus the case does not arise: the census reads no excluded entry as a
+//! document, and the resolver matches the same exclusion list, so a declaring
+//! document's own path never carries it. The unit tests hold it on a target
+//! built by hand.
 
 use crate::finding::{at, Finding, Severity};
 use crate::instance::Outcome;
@@ -99,7 +126,7 @@ impl<'a> SelfTarget<'a> {
 impl EdgeCheck for SelfTarget<'_> {
     const RULE: &'static str = self::RULE;
     /// See [`crate::placement::Placement::VERSION`].
-    const VERSION: u32 = 2;
+    const VERSION: u32 = 3;
     /// See the module comment.
     const UNIT: EdgeUnit = EdgeUnit::Entry;
 
@@ -158,10 +185,11 @@ impl EdgeCheck for SelfTarget<'_> {
 }
 
 /// Whether an anchor target is exactly the declaring document's own file: a
-/// `source-tree` anchor with one pattern, that pattern literal, and equal to
-/// the source's path. Both sides are normalized repository-relative paths, so
-/// string equality is the comparison. A wildcard, a list, another resolver and
-/// every non-anchor target answer no. See the module comment.
+/// `source-tree` anchor with at least one pattern, every pattern literal and
+/// equal to the source's path. Both sides are normalized repository-relative
+/// paths, so byte equality is the comparison. A wildcard, a list that holds
+/// another path, another resolver and every non-anchor target answer no. See
+/// the module comment.
 fn names_own_file(target: &Target, source_path: &str) -> bool {
     let Target::Anchor {
         resolver, patterns, ..
@@ -169,17 +197,19 @@ fn names_own_file(target: &Target, source_path: &str) -> bool {
     else {
         return false;
     };
-    let [only] = patterns.as_slice() else {
-        return false;
-    };
     resolver == SOURCE_TREE
-        && headwater_meta::Pattern::new(&only.pattern).is_literal()
-        && only.pattern == source_path
+        && !patterns.is_empty()
+        && patterns.iter().all(|member| {
+            headwater_meta::Pattern::new(&member.pattern).is_literal()
+                && member.pattern == source_path
+        })
 }
 
-/// The one resolver whose patterns are paths in the tree that holds the
-/// declaring document. Another resolver's pattern can name a path in another
-/// repository that happens to share the spelling.
+/// The one resolver whose anchor the owner's ruling on #1350 reached: a
+/// `code_path` pattern over the tree that holds the declaring document.
+/// Another resolver passes, `comment-scan` included, although it reads the
+/// same tree, because what it binds is another thing than the declaring file.
+/// See the module comment.
 const SOURCE_TREE: &str = "source-tree";
 
 #[cfg(test)]
@@ -188,11 +218,15 @@ mod tests {
     use headwater_graph::edges::PatternMember;
 
     fn anchor(resolver: &str, patterns: &[&str]) -> Target {
+        excluded(resolver, patterns, None)
+    }
+
+    fn excluded(resolver: &str, patterns: &[&str], excluded_by: Option<&str>) -> Target {
         Target::Anchor {
             anchor_kind: "code_path".to_string(),
             resolver: resolver.to_string(),
             normalized: patterns.join(", "),
-            excluded_by: None,
+            excluded_by: excluded_by.map(str::to_string),
             revision: headwater_graph::anchors::Revision::known(None),
             patterns: patterns
                 .iter()
@@ -253,6 +287,57 @@ mod tests {
         assert!(!names_own_file(
             &anchor("source-tree", &["docs/a.md"]),
             "other/docs/a.md"
+        ));
+    }
+
+    /// A list whose every member is the own file names the exact own file,
+    /// and the owner's ruling on #1350 reaches it. A list that holds another
+    /// path, even once, is wider and passes.
+    #[test]
+    fn a_list_whose_every_member_is_the_own_file_is_its_own_file() {
+        assert!(names_own_file(
+            &anchor("source-tree", &["docs/a.md", "docs/a.md"]),
+            "docs/a.md"
+        ));
+        assert!(!names_own_file(
+            &anchor("source-tree", &["docs/a.md", "docs/a.md", "docs/b.md"]),
+            "docs/a.md"
+        ));
+        assert!(!names_own_file(&anchor("source-tree", &[]), "docs/a.md"));
+    }
+
+    /// The comparison is byte-exact on every filesystem, so a pattern that
+    /// differs from the own path only in case is not the own file. See the
+    /// module comment.
+    #[test]
+    fn a_pattern_that_differs_from_the_own_path_only_in_case_is_not() {
+        assert!(!names_own_file(
+            &anchor("source-tree", &["docs/A.md"]),
+            "docs/a.md"
+        ));
+    }
+
+    /// The allowlist is `source-tree` alone. `comment-scan` reads the same
+    /// tree and still passes, and so does a resolver name no corpus supplies.
+    #[test]
+    fn comment_scan_and_an_unknown_resolver_are_not() {
+        assert!(!names_own_file(
+            &anchor("comment-scan", &["docs/a.md"]),
+            "docs/a.md"
+        ));
+        assert!(!names_own_file(
+            &anchor("corpus-export", &["docs/a.md"]),
+            "docs/a.md"
+        ));
+    }
+
+    /// `excluded_by` is a note about the file and never about the edge, so an
+    /// own-file anchor that carries one is still the own file.
+    #[test]
+    fn an_own_file_anchor_that_carries_excluded_by_is_its_own_file() {
+        assert!(names_own_file(
+            &excluded("source-tree", &["docs/a.md"], Some("notes/**")),
+            "docs/a.md"
         ));
     }
 }

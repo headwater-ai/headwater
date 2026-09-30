@@ -124,6 +124,7 @@ fn run_at(root: &Path, ctx: &Context, cache: &mut Cache) -> Run {
             observations: &headwater_check::Observations::empty(),
             pin: None,
             harvests: &[],
+            imports: &[],
             adoption: None,
             source: "engine/crates/check/tests/cache.rs",
         },

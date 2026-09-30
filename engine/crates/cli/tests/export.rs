@@ -93,6 +93,16 @@ fn stock_export_exposes_the_control_answer_and_the_filtered_tombstone() {
         String::from_utf8_lossy(&filtered.stderr)
     );
 
+    // The withheld document declares no identifier, so the tombstone counts it
+    // and lists no digest for it (HW-DR-0100). A digest of its path in that
+    // list would be a leak of a name no anchor can use. The Python validator
+    // below states the same, and this holds it where no `python3` runs.
+    let filtered_text = String::from_utf8_lossy(&filtered.stdout);
+    assert!(
+        filtered_text.contains("\"identifiers\": []"),
+        "the tombstone lists a digest for a document with no identifier:\n{filtered_text}"
+    );
+
     let scratch = scratch();
     let control_path = scratch.join("control.json");
     let filtered_path = scratch.join("filtered.json");

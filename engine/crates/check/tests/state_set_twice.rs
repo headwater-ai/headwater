@@ -99,6 +99,7 @@ fn run_cached(taxonomy_file: &str, ctx: &Context, cache: &mut Cache) -> Run {
             observations: &headwater_check::Observations::empty(),
             pin: None,
             harvests: &[],
+            imports: &[],
             adoption: None,
             source: "engine/crates/check/fixtures/state-set-twice.taxonomy.yml",
         },

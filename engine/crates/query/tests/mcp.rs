@@ -164,6 +164,7 @@ impl Built {
             observations: &self.observations,
             pin: None,
             harvests: &[],
+            imports: &[],
             adoption: None,
             source: "query.taxonomy.yml",
         }
@@ -1122,6 +1123,144 @@ fn the_related_and_governing_tools_read_every_spelling_of_a_path_as_explain_does
             refused,
             Some(canonical(&empty.value)),
             "the refusal keeps the machine contract's member (#1248)"
+        );
+    }
+}
+
+/// [#1314](https://github.com/headwater-ai/headwater/issues/1314): each path
+/// tool tells a client every spelling of a path that it answers. An assistant
+/// reads the argument's `description` in `tools/list` to choose what to send,
+/// so a schema that names fewer spellings than the tool accepts tells it that a
+/// working spelling does not work. For each of the three tools that read a
+/// path, this calls the tool with `./x`, `d/../x` and the absolute path under
+/// the root, asserts each answers what `x` answers, and asserts that the
+/// argument's description names that spelling and the outside refusal.
+#[test]
+fn every_path_tool_describes_each_spelling_it_answers() {
+    let built = fixture_tree();
+    let server = built.server(RECORDED_AT);
+    let asked = |tool: &str, key: &str, target: &str| {
+        let response = once(
+            &server,
+            &calling(tool, &format!(r#"{{"{key}":"{target}"}}"#)),
+        );
+        let text = content(&response).concat();
+        let structured = structured(&response).map(|answer| canonical(&answer.value));
+        (text, structured)
+    };
+
+    let listed = once(&server, r#"{"jsonrpc":"2.0","id":1,"method":"tools/list"}"#);
+    let listed = headwater_yaml::load(&listed).expect("a response is JSON");
+    let tools = listed
+        .value
+        .as_map()
+        .expect("an object")
+        .get("result")
+        .expect("a result")
+        .value
+        .as_map()
+        .expect("an object")
+        .get("tools")
+        .expect("tools")
+        .value
+        .as_seq()
+        .expect("a list");
+    let described = |tool: &str, key: &str| -> String {
+        let entry = tools
+            .iter()
+            .map(|entry| entry.value.as_map().expect("a tool is an object"))
+            .find(|entry| {
+                entry
+                    .get("name")
+                    .and_then(|name| name.value.as_scalar())
+                    .is_some_and(|name| name.text == tool)
+            })
+            .unwrap_or_else(|| panic!("`{tool}` is listed"));
+        entry
+            .get("inputSchema")
+            .expect("an input schema")
+            .value
+            .as_map()
+            .expect("an object")
+            .get("properties")
+            .expect("properties")
+            .value
+            .as_map()
+            .expect("an object")
+            .get(key)
+            .unwrap_or_else(|| panic!("`{tool}` takes `{key}`"))
+            .value
+            .as_map()
+            .expect("an object")
+            .get("description")
+            .expect("a description")
+            .value
+            .as_scalar()
+            .expect("a scalar")
+            .text
+            .clone()
+    };
+
+    for (tool, key, path, dir, identifier) in [
+        (
+            "explain",
+            "target",
+            "query/specs/api-design.md",
+            "query",
+            true,
+        ),
+        (
+            "related",
+            "target",
+            "query/specs/api-design.md",
+            "query",
+            true,
+        ),
+        (
+            "governing_docs_for_path",
+            "path",
+            "src/ingest/mod.rs",
+            "src",
+            false,
+        ),
+    ] {
+        let plain = asked(tool, key, path);
+        assert!(
+            !plain.0.contains("is not a document of this corpus")
+                && !plain.0.contains("no document governs"),
+            "`{tool} {path}` has an answer: {}",
+            plain.0
+        );
+        let absolute = built.root.join(path).display().to_string();
+        let description = described(tool, key);
+        for (target, named) in [
+            (format!("./{path}"), "`./"),
+            (format!("{dir}/../{path}"), "`..` segments"),
+            (absolute, "absolute path under the repository root"),
+        ] {
+            assert_eq!(
+                asked(tool, key, &target),
+                plain,
+                "`{tool} {target}` answers what `{tool} {path}` answers"
+            );
+            assert!(
+                description.contains(named),
+                "`{tool}` answers `{target}`, and its `{key}` description does not name \
+                 {named:?}: {description:?}"
+            );
+        }
+        assert!(
+            description.contains("relative to the repository root"),
+            "`{tool}` reads a relative path against the root, and says so: {description:?}"
+        );
+        assert!(
+            description.contains("outside"),
+            "`{tool}` refuses a path that leaves the repository, and says so: {description:?}"
+        );
+        assert_eq!(
+            description.contains("identifier"),
+            identifier,
+            "`{tool}` names an identifier exactly when it resolves one: {description:?}"
         );
     }
 }

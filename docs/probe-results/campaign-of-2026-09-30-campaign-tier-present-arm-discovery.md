@@ -17,6 +17,7 @@ A probe result is a function of three committed inputs and of nothing else: the 
 A campaign run in the present arm, on claude-sonnet-5 at 2026-09-30.
 served version claude-sonnet-5, tree sha256:1c21e55eb09aca89b3d736ac79f8accfc64ddd7853bace5fb5e577a82d794bb9, selection sha256:8ec515cf6d769b34f8fc840d00f902606dc575c74a4105c7599670b563be6ad5, read set sha256:c563ff36d54e56139a6d1ca7cca03fbe175864970d6fcacabe5144cfcaaaffc9, seed 0, harness 0.5.0.
 realized cost $36.86, which the adaptive layer reads as the cost of its own instrument.
+It is read over this tree, and the read set of its probes moved since the recording. Each verdict below is what the session did over the documents it met, graded against the expectations this tree declares now, which can differ from the ones the session ran under. `headwater probe stale` names what moved.
 
 60 events over 2 of the 10 probes this corpus declares, in 60 sessions and 1292 tool calls.
 

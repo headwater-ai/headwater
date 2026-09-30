@@ -45,9 +45,13 @@
 //! `notes/j.md`, whose list holds its own file and another. The ruling reaches
 //! the exact own file and nothing wider.
 //!
-//! **A rule whose instances were its findings** reports a denominator of five.
+//! **A rule that required one pattern** misses `notes/l.md`, whose list names
+//! its own file twice. The graph sorts a list and keeps its duplicates, so the
+//! anchor holds two patterns, and each of them is the exact own file.
+//!
+//! **A rule whose instances were its findings** reports a denominator of six.
 //! Every entry outside the association family is an instance, so the count is
-//! ten.
+//! eleven.
 
 use headwater_census::census;
 use headwater_census::shelves::Taxonomy;
@@ -104,6 +108,7 @@ fn run() -> Run {
             observations: &headwater_check::Observations::empty(),
             pin: None,
             harvests: &[],
+            imports: &[],
             adoption: None,
             source: "engine/crates/check/fixtures/self-target.taxonomy.yml",
         },
@@ -206,13 +211,13 @@ fn every_entry_is_an_instance() {
         .iter()
         .filter(|instance| instance.rule == RULE)
         .count();
-    assert_eq!(instances, 10);
+    assert_eq!(instances, 11);
     let findings = run
         .findings
         .iter()
         .filter(|finding| finding.rule == RULE)
         .count();
-    assert_eq!(findings, 5);
+    assert_eq!(findings, 6);
 }
 
 /// The decisive case of #1350: a `code_path` anchor whose one literal pattern
@@ -258,6 +263,19 @@ fn an_own_file_anchor_spelled_in_a_non_canonical_form_is_reported() {
     assert!(at(&run, headwater_check::target::RULE, "notes/k.md").is_empty());
 }
 
+/// A list whose every member is the own file names the exact own file and
+/// nothing wider, so it is reported, as the owner ruled on #1350. The graph
+/// keeps a list's duplicates, so a rule that required one pattern passes it.
+#[test]
+fn a_list_whose_every_member_is_the_own_file_is_reported() {
+    let run = run();
+    let found = at(&run, RULE, "notes/l.md");
+    assert_eq!(found.len(), 1, "{found:?}");
+    assert!(found[0].contains("governs"), "{}", found[0]);
+    assert!(found[0].contains("its own file"), "{}", found[0]);
+    assert!(at(&run, headwater_check::target::RULE, "notes/l.md").is_empty());
+}
+
 /// A literal anchor onto another file, and a list that holds the own file among
 /// other paths, pass: the ruling reaches the exact own file and nothing wider.
 #[test]
@@ -267,7 +285,13 @@ fn an_anchor_onto_another_file_or_a_list_that_holds_the_own_file_is_not_reported
     assert!(at(&run, RULE, "notes/j.md").is_empty());
     // Each of them still binds, so the pass is this rule's and not a target
     // that never resolved.
-    for file in ["notes/g.md", "notes/h.md", "notes/i.md", "notes/j.md"] {
+    for file in [
+        "notes/g.md",
+        "notes/h.md",
+        "notes/i.md",
+        "notes/j.md",
+        "notes/l.md",
+    ] {
         assert!(
             at(&run, headwater_check::target::RULE, file).is_empty(),
             "{file}: {:?}",

@@ -113,6 +113,12 @@ impl Items {
     pub fn held(&self) -> usize {
         self.items.len()
     }
+
+    /// Why this resolver binds nothing, and `None` where its snapshot read.
+    /// The counterpart of `crate::harvest::Export::unread`.
+    pub fn unread(&self) -> Option<&str> {
+        self.unavailable.as_deref()
+    }
 }
 
 impl Resolver for Items {
@@ -213,6 +219,63 @@ pub fn over(root: &Path, declarations: &[Declaration]) -> Vec<Items> {
         .iter()
         .filter_map(|declaration| open(root, declaration))
         .collect()
+}
+
+/// What a run of the checks is told about each declared import that names a
+/// resolver, beside the resolver [`over`] built for it: its name, its
+/// directory, each file of the snapshot as the tree holds it, and why it binds
+/// nothing where it does not. See [`headwater_check::import_pin`].
+///
+/// `items` is what [`over`] returned for `declarations`. [`over`] drops a
+/// declaration that names no resolver, so the two lists are paired by the
+/// resolver's name rather than by position. A declaration with no resolver
+/// supplies nothing to bind and has no reading here.
+pub fn readings(
+    root: &Path,
+    declarations: &[Declaration],
+    items: &[Items],
+) -> Vec<headwater_check::import_pin::Import> {
+    declarations
+        .iter()
+        .filter_map(|declaration| {
+            let resolver = declaration.resolver.as_deref().map(str::trim)?;
+            let found = items.iter().find(|items| items.resolver == resolver)?;
+            Some(headwater_check::import_pin::Import {
+                name: declaration.name.clone(),
+                at: declaration.at.clone(),
+                inputs: inputs(root, &declaration.at),
+                unread: found.unread().map(str::to_string),
+            })
+        })
+        .collect()
+}
+
+/// Each file of the snapshot at `at`, as read-set inputs under its path from
+/// the root. The release record and the payload are listed whether or not they
+/// are there, with no digest where one is absent, so that a read set never
+/// drops the file whose absence the rule reports. Every other member the
+/// directory holds is listed with the digest of its bytes.
+fn inputs(root: &Path, at: &str) -> Vec<headwater_check::Input> {
+    let dir = root.join(at);
+    let at = at.trim_end_matches('/');
+    let file = |relative: &str| {
+        let digest = std::fs::read(dir.join(relative))
+            .ok()
+            .map(|bytes| headwater_hash::digest(&bytes));
+        headwater_check::Input::new(format!("{at}/{relative}"), digest.as_deref())
+    };
+    let mut out = vec![file(release::RECORD), file(crate::snapshot::PAYLOAD)];
+    if let Ok(members) = release::members(&dir) {
+        for member in members {
+            out.push(headwater_check::Input::new(
+                format!("{at}/{}", member.path),
+                Some(&member.digest),
+            ));
+        }
+    }
+    out.sort_by(|a, b| a.path.cmp(&b.path));
+    out.dedup_by(|a, b| a.path == b.path);
+    out
 }
 
 #[cfg(test)]

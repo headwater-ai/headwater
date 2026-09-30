@@ -204,6 +204,8 @@ docs/decisions/0098-an-engine-subsystem-is-described-by-a-technical-design-spec-
   typed: decision
 docs/decisions/0099-a-namespace-does-not-keep-two-corpora-apart-and-no-rule-compares-identifier-schemes-across-two-locks.md
   typed: decision
+docs/decisions/0100-a-counted-tombstone-lists-a-digest-of-each-withheld-identifier-and-a-sealed-one-lists-nothing.md
+  typed: decision
 docs/decisions/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/doctrine/maturity-model.md
@@ -362,7 +364,7 @@ docs/obligations/0009-the-shape-origin-finding-rate-is-already-zero.md
   typed: obligation_record
 docs/obligations/0010-the-corpus-descriptor-exists-and-no-probe-has-run-against.md
   typed: obligation_record
-docs/obligations/0011-nothing-has-been-promoted-out-of-the-synthesized-tier.md
+docs/obligations/0011-one-document-has-been-promoted-out-of-the-synthesized-tier-and-no-rate-says-whether-the-tier-drains.md
   typed: obligation_record
 docs/obligations/0012-the-human-half-of-the-public-presence-claim-has-no-instrument.md
   typed: obligation_record
@@ -590,7 +592,7 @@ docs/obligations/0123-a-facet-that-applies-to-one-value-of-another-facet-has-now
   typed: obligation_record
 docs/obligations/0124-a-probe-result-is-printed-and-never-committed-so-nothing-regenerates-one.md
   typed: obligation_record
-docs/obligations/0125-nine-documents-state-a-warrant-the-closed-set-does-not-hold-and-no-check-reads-one.md
+docs/obligations/0125-nine-documents-state-a-warrant-outside-the-closed-set-and-only-a-person-can-set-the-value.md
   typed: obligation_record
 docs/obligations/0126-every-asserted-document-carries-the-freshness-date-that-spec-3-says-it-cannot.md
   typed: obligation_record
@@ -1022,6 +1024,8 @@ docs/process/obligations/0224-thirteen-run-tooling-gaps-from-run-20260928-1109-f
   typed: process_obligation
 docs/process/obligations/0225-eight-run-tooling-gaps-from-run-20260929-1205-filed-together.md
   typed: process_obligation
+docs/process/obligations/0227-seven-run-tooling-gaps-from-run-20260929-2201-filed-together.md
+  typed: process_obligation
 docs/process/obligations/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/process/specs/README.md
@@ -1084,6 +1088,10 @@ docs/spec/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/spec/glossary.md
   typed: design_spec
+docs/subsystems/README.md
+  generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
+docs/subsystems/graph-build.md
+  typed: subsystem_spec
 docs/taxonomies/README.md
   typed: library_doctrine
 docs/taxonomies/brd-prd/bundle.yml

@@ -81,6 +81,7 @@ fn run() -> Run {
             observations: &headwater_check::Observations::empty(),
             pin: None,
             harvests: &[],
+            imports: &[],
             adoption: None,
             source: "engine/crates/check/fixtures/terminal-dependency.taxonomy.yml",
         },
