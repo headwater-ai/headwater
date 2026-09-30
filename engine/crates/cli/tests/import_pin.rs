@@ -2,7 +2,7 @@
 //! A committed imports snapshot that binds nothing is a finding that names the
 //! pin, whether or not an anchor names its resolver.
 //!
-//! [Q19](../../../../docs/spec/09-decisions.md#q19--inbound-integration) says a
+//! [Q19](../../../../docs/spec/09-decisions.md#q19--inbound-integration-an-external-system-of-record) says a
 //! committed snapshot "is a pin". `harvest.pin.unread` made an unread corpus
 //! export visible on those terms (#1311), and its imports twin was missing: a
 //! declared import whose snapshot was absent, unpinned or not the pinned

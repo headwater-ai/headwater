@@ -66,6 +66,7 @@ fn run_over(scratch: &Scratch, declaration: &Declaration, cache: &mut Cache) -> 
             observations: &headwater_check::Observations::empty(),
             pin: None,
             harvests: &[],
+            imports: &[],
             adoption: None,
             source: "taxonomy.yml",
         },

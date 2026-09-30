@@ -153,6 +153,7 @@ fn run_scanning(
             observations: &headwater_check::Observations::empty(),
             pin: None,
             harvests: &[],
+            imports: &[],
             adoption,
             source,
         },
@@ -1945,6 +1946,9 @@ fn the_scope_of_every_rule_comes_from_the_trait_that_binds_it() {
             Grain::Taxonomy,
             // `harvest.pin.unread`, the same grain: a pinned corpus export
             // the consumer declares, read against the tree.
+            Grain::Taxonomy,
+            // `import.pin.unread`, the same grain: a committed imports
+            // snapshot the consumer declares, read against the tree.
             Grain::Taxonomy,
             // `relation.target.verification.suspect`, edge grained like
             // `basis::RULE`: the criterion is at one end and the

@@ -155,6 +155,7 @@ pub mod gate;
 pub mod harvest;
 pub mod identifier;
 pub mod identity;
+pub mod import_pin;
 pub mod initial_dependency;
 pub mod instance;
 pub mod language;
@@ -225,7 +226,7 @@ use headwater_graph::{Declarations, Graph};
 /// The order is the five origins of
 /// [spec 12](../../../../docs/spec/12-check-layer.md#the-five-origins-of-a-check),
 /// which is Shape, then Graph, then the runner's own accounting.
-pub const RULES: [&str; 44] = [
+pub const RULES: [&str; 45] = [
     facet_required::RULE,
     facet_value::RULE,
     facet_blank::RULE,
@@ -269,6 +270,7 @@ pub const RULES: [&str; 44] = [
     outside_root::RULE,
     pin::RULE,
     harvest::RULE,
+    import_pin::RULE,
     verification::RULE,
 ];
 
@@ -330,6 +332,13 @@ pub struct Declared<'a> {
     /// because the crate that reads a pin depends on this one. See
     /// [`harvest`].
     pub harvests: &'a [harvest::Harvest],
+    /// Every committed snapshot `.headwater/taxonomy.yml` declares under
+    /// `imports` with a resolver, as the caller read it, and empty where it
+    /// took no reading.
+    ///
+    /// Read off the tree on the terms [`Self::harvests`] is, for the same
+    /// reason. See [`import_pin`].
+    pub imports: &'a [import_pin::Import],
     /// The `adoption` block of the lock, where the lock declares one.
     ///
     /// It arrives as a mapping rather than as tasks because the lock does not
@@ -664,6 +673,12 @@ fn registry() -> [(&'static str, Scope, u32, scope::ExportTargets); RULES.len()]
             harvest::SCOPE,
             harvest::VERSION,
             harvest::EXPORTABLE_AS,
+        ),
+        (
+            import_pin::RULE,
+            import_pin::SCOPE,
+            import_pin::VERSION,
+            import_pin::EXPORTABLE_AS,
         ),
         (
             verification::RULE,
@@ -1076,6 +1091,9 @@ pub fn run(
     // pin, for the same reason: spec 7 owes the finding whether or not an
     // anchor reaches the export.
     findings.extend(harvest::findings(declared.harvests));
+    // A committed imports snapshot that binds nothing, on the same terms: Q19
+    // makes the snapshot a pin, and a pin no anchor names is still owed one.
+    findings.extend(import_pin::findings(declared.imports));
 
     // The obligation is stamped here rather than written into each rule,
     // because the binding is data. A rule states its id, a control names that
@@ -1159,12 +1177,15 @@ pub fn run(
     // see a hand edit to either.
     // Each pinned export, on the same terms, so a gate sees one move.
     let harvested = declared.harvests.iter().map(harvest::Harvest::input);
+    // Each file of each imports snapshot, on the same terms.
+    let imported = declared.imports.iter().flat_map(import_pin::Import::inputs);
     for input in declared
         .pin
         .map(pin::Pin::inputs)
         .unwrap_or_default()
         .into_iter()
         .chain(harvested)
+        .chain(imported)
     {
         if let Err(at) = read_set
             .inputs

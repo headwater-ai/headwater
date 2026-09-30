@@ -312,6 +312,7 @@ fn run(recorded: &Recorded) -> Run {
             observations: &recorded.observations,
             pin: None,
             harvests: &[],
+            imports: &[],
             adoption: None,
             source: &source,
         },

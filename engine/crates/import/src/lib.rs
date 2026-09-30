@@ -447,7 +447,7 @@ pub(crate) fn block<'a>(
 /// `headwater_census::walk::escapes`, copied: census is a dev-dependency of
 /// this crate and not a dependency, and the corpus walk and a declared path
 /// are two callers that share no type.
-pub(crate) fn contained(root: &Path, at: &str) -> bool {
+pub fn contained(root: &Path, at: &str) -> bool {
     let lexical = Path::new(at).components().all(|component| {
         matches!(
             component,
