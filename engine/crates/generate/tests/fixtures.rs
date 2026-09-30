@@ -1831,6 +1831,94 @@ projections:
     );
 }
 
+/// A graph export is JSON, and its declared path can sit inside the corpus
+/// root. When the declaration moves or goes away, the file it wrote stays in
+/// the tree with the marker on it, and nothing writes it any more. That is the
+/// orphan spec 6 names ("somebody removed a declaration or repointed it and
+/// left the output behind"), and it is reported in JSON as it is in Markdown
+/// (#1344). An unmarked JSON file beside it is an authored data file, and it
+/// stays unreported.
+#[test]
+fn a_graph_export_left_behind_by_a_repointed_declaration_is_orphaned() {
+    const AT: &str = "generate/exports/site.json";
+    const DATA: &str = "generate/data.json";
+    let projections_of = |source: &str| {
+        let declared = headwater_yaml::load(source)
+            .expect("it loads")
+            .value
+            .as_map()
+            .expect("a mapping")
+            .clone();
+        Projections::read(&declared).expect("the projections read")
+    };
+    let declared = projections_of(
+        "\
+projections:
+  - kind: graph_export
+    profile: site
+    output: generate/exports/site.json
+",
+    );
+    let repointed = projections_of(
+        "\
+projections:
+  - kind: graph_export
+    profile: site
+    output: generate/exports/moved.json
+",
+    );
+    let removed = projections_of("projections: []\n");
+
+    let tree = empty_tree("graph-export-left-behind");
+    copy_tree(&fixtures_dir().join("generate"), &tree.join("generate"));
+    std::fs::write(tree.join(DATA), "{\n  \"authored\": true\n}\n").expect("the data file");
+    let root = load_map(&fixtures_dir().join("generate.taxonomy.yml"));
+    let planned = |built: &Built, projections: &Projections| {
+        plan(
+            &built.surface(),
+            &built.census,
+            projections,
+            &fixture_identity(),
+            &Runs::default(),
+            headwater_verbs::VERBS,
+        )
+    };
+
+    // The declaration writes the export inside the corpus root.
+    let before = Built::over(&Corpus::new(&tree, "generate"), &root);
+    let first = planned(&before, &declared);
+    let generated = write(&tree, &first);
+    assert!(
+        !generated.has_errors(),
+        "{}",
+        generated.render(ColorMode::Plain)
+    );
+    let bytes = std::fs::read_to_string(tree.join(AT)).expect("`generate` wrote the export");
+    assert!(
+        bytes.contains("\"headwater:generated\""),
+        "the export carries no marker, so this test proves nothing:\n{bytes}"
+    );
+
+    let after = Built::over(&Corpus::new(&tree, "generate"), &root);
+    for (arm, projections) in [("repointed", &repointed), ("removed", &removed)] {
+        let stale = planned(&after, projections);
+        let claimed: Vec<(&str, Option<&str>)> = stale
+            .orphaned
+            .iter()
+            .map(|orphaned| (orphaned.path.as_str(), orphaned.kind.as_deref()))
+            .collect();
+        assert_eq!(
+            claimed,
+            vec![(AT, Some("graph_export"))],
+            "{arm}: the export left behind is not the one orphan, or the unmarked {DATA} is one"
+        );
+        assert!(
+            check(&tree, &stale).has_errors(),
+            "{arm}: `generate --check` passes a graph export that nothing writes"
+        );
+    }
+}
+
 /// `committed: false` is read on a `graph_export` alone. Every other kind is
 /// read in the tree, so an absent file there breaks a reader.
 #[test]
