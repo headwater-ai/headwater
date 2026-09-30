@@ -36,9 +36,15 @@ const EDGES: &[(&str, &str)] = &[
     ("engine/crates/census/src/walk.rs", "HW-IFACE-headwater-mcp"),
     ("engine/crates/query/src/mcp.rs", "HW-IFACE-headwater-mcp"),
     ("engine/crates/import/src/harvest.rs", "HW-DR-0100"),
-    ("engine/crates/check/src/harvest.rs", "HW-IFACE-headwater-check"),
+    (
+        "engine/crates/check/src/harvest.rs",
+        "HW-IFACE-headwater-check",
+    ),
     ("engine/crates/check/src/pin.rs", "HW-IFACE-headwater-check"),
-    ("engine/crates/check/src/claim.rs", "HW-IFACE-headwater-check"),
+    (
+        "engine/crates/check/src/claim.rs",
+        "HW-IFACE-headwater-check",
+    ),
     (
         "engine/crates/check/src/suspect.rs",
         "HW-SPEC-distribution-and-federation",
@@ -47,16 +53,34 @@ const EDGES: &[(&str, &str)] = &[
         "engine/crates/check/src/link_identifier.rs",
         "HW-SPEC-check-layer",
     ),
-    ("engine/crates/check/src/reciprocity.rs", "HW-SPEC-check-layer"),
+    (
+        "engine/crates/check/src/reciprocity.rs",
+        "HW-SPEC-check-layer",
+    ),
     ("engine/crates/check/src/target.rs", "HW-SPEC-check-layer"),
-    ("engine/crates/check/src/self_target.rs", "HW-SPEC-taxonomy-model"),
+    (
+        "engine/crates/check/src/self_target.rs",
+        "HW-SPEC-taxonomy-model",
+    ),
     ("engine/crates/resolve/src/order.rs", "HW-DR-0095"),
     ("engine/crates/resolve/src/confluence.rs", "HW-DR-0095"),
     ("engine/crates/meta/src/identifier.rs", "HW-DR-0025"),
-    ("engine/crates/import/src/anchors.rs", "HW-IFACE-headwater-import"),
-    ("engine/crates/mark/src/lib.rs", "HW-IFACE-headwater-derived"),
-    ("engine/crates/probe/src/plan.rs", "HW-IFACE-headwater-probe"),
-    ("engine/crates/probe/src/budget.rs", "HW-IFACE-headwater-probe"),
+    (
+        "engine/crates/import/src/anchors.rs",
+        "HW-IFACE-headwater-import",
+    ),
+    (
+        "engine/crates/mark/src/lib.rs",
+        "HW-IFACE-headwater-derived",
+    ),
+    (
+        "engine/crates/probe/src/plan.rs",
+        "HW-IFACE-headwater-probe",
+    ),
+    (
+        "engine/crates/probe/src/budget.rs",
+        "HW-IFACE-headwater-probe",
+    ),
     (
         "engine/crates/probe/src/intake.rs",
         "HW-SPEC-the-recorder-contract",
@@ -69,11 +93,23 @@ const EDGES: &[(&str, &str)] = &[
         "engine/crates/generate/src/probe_result.rs",
         "HW-SPEC-the-recorder-contract",
     ),
-    ("engine/crates/generate/src/lib.rs", "HW-IFACE-headwater-export"),
-    ("engine/crates/cli/tests/export.rs", "HW-IFACE-headwater-export"),
-    ("engine/crates/generate/src/site_nav.rs", "HW-IFACE-headwater-site"),
+    (
+        "engine/crates/generate/src/lib.rs",
+        "HW-IFACE-headwater-export",
+    ),
+    (
+        "engine/crates/cli/tests/export.rs",
+        "HW-IFACE-headwater-export",
+    ),
+    (
+        "engine/crates/generate/src/site_nav.rs",
+        "HW-IFACE-headwater-site",
+    ),
     ("engine/crates/verbs/src/lib.rs", "HW-IFACE-headwater-help"),
-    ("engine/crates/cli/tests/show.rs", "HW-IFACE-headwater-explain"),
+    (
+        "engine/crates/cli/tests/show.rs",
+        "HW-IFACE-headwater-explain",
+    ),
 ];
 
 /// The repository root, from this crate's manifest directory.
