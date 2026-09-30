@@ -354,6 +354,75 @@ fn a_reference_link_and_a_same_document_link_are_read_too() {
     }
 }
 
+/// The denominator of the rule's silence (#1347). A run over a corpus whose
+/// identifier links all agree reports no finding, so the run carries how many
+/// links the rule compared, and the report prints that count beside the
+/// rule's own finding count. The population is the rule's own: an agreeing
+/// inline link and an agreeing link into the same document each add one, and
+/// neither adds a finding. A count that left the same-document form out would
+/// go up by one here.
+#[test]
+fn the_run_carries_how_many_links_the_rule_compared() {
+    use headwater_check::paint::ColorMode;
+    use headwater_check::Detail;
+
+    let base = scratch("compared");
+
+    let payload = debt_of(&run_over(&base, None));
+    let before = run_over(&base, Some(&payload));
+    append(
+        &base,
+        &[
+            "Inline, agreeing: [SPEC-FIX-cited-only](02-cited-only.md) reaches its own document.",
+            "Same document, agreeing: [SPEC-FIX-both-halves](#both-halves) lands on this file.",
+        ],
+    );
+    let after = run_over(&base, Some(&payload));
+
+    let compared = |run: &Run| {
+        run.served
+            .iter()
+            .find(|served| served.rule == RULE)
+            .and_then(|served| served.compared)
+            .expect("the rule carries a compared count")
+    };
+    let reported = |run: &Run| run.findings.iter().filter(|f| f.rule == RULE).count();
+    assert_eq!(compared(&after), compared(&before) + 2);
+    assert_eq!(reported(&after), reported(&before));
+    assert!(compared(&before) > 0, "the fixture tree has identifier links");
+
+    // No other rule carries the member: it is this rule's denominator.
+    for served in &after.served {
+        if served.rule != RULE {
+            assert_eq!(served.compared, None, "{}", served.rule);
+        }
+    }
+
+    // The report prints both numbers on the line under the rule's scope.
+    let scope = after
+        .served
+        .iter()
+        .find(|served| served.rule == RULE)
+        .expect("the rule is served")
+        .scope
+        .render();
+    let line = format!(
+        "  {RULE}\n    {scope}\n    {} links compared, {} findings\n",
+        compared(&after),
+        reported(&after)
+    );
+    let text = after.render(Detail::Findings, ColorMode::Plain);
+    assert!(text.contains(&line), "{line}\nnot in\n{text}");
+    // The totals carry no count of findings, by Detail::Totals's contract, so
+    // they print the denominator alone.
+    let totals = after.render(Detail::Totals, ColorMode::Plain);
+    let alone = format!(
+        "  {RULE}\n    {scope}\n    {} links compared\n",
+        compared(&after)
+    );
+    assert!(totals.contains(&alone), "{alone}\nnot in\n{totals}");
+}
+
 /// The matched link alone leaves the run green: the rule reads a link whose
 /// text is an identifier, and passes it when the path agrees.
 #[test]
