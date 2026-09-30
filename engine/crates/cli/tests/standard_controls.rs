@@ -87,6 +87,59 @@ fn every_lifecycle_rule_reaches_one_obligation_of_the_standard_package() {
     );
 }
 
+/// The rules that may reach no single obligation of `headwater/standard`, each
+/// with the reason it stands outside the package. A rule is named here one at
+/// a time and never by a pattern, so a new rule that ships without a control
+/// fails the case below and names itself (#1492).
+const EXCEPTIONS: &[(&str, &str)] = &[];
+
+/// Every rule the engine carries reaches exactly one obligation of the
+/// maintained package, except the rules [`EXCEPTIONS`] names (#1492,
+/// HW-OBL-0170). The register prints a line for each rule that reaches none
+/// or several, so the set of rules on those lines is the set this case holds.
+/// A register-line count would not name the rule, and a list of the bound
+/// rules would not see a new one.
+#[test]
+fn every_rule_reaches_one_obligation_of_the_standard_package() {
+    let root = Root::shaped("standard-controls-every-rule", |_| {});
+    let ran = root.run(&["check"]);
+    let flat = ran.out.split_whitespace().collect::<Vec<_>>().join(" ");
+    assert!(
+        flat.contains("so it names none")
+            || flat.contains("every rule this engine carries reaches one obligation"),
+        "the register block is not in the output, so this case reads nothing: {ran:?}"
+    );
+    let words: Vec<&str> = flat.split(' ').collect();
+    let mut unbound: Vec<&str> = words
+        .windows(2)
+        .filter(|pair| pair[1] == "reaches" && pair[0].contains('.'))
+        .map(|pair| pair[0])
+        .filter(|rule| rule.chars().all(|c| c.is_ascii_lowercase() || c == '.' || c == '_'))
+        .collect();
+    unbound.sort_unstable();
+    unbound.dedup();
+    let mut expected: Vec<&str> = EXCEPTIONS.iter().map(|(rule, _)| *rule).collect();
+    expected.sort_unstable();
+    let unexpected: Vec<&str> = unbound
+        .iter()
+        .copied()
+        .filter(|rule| !expected.contains(rule))
+        .collect();
+    let stale: Vec<&str> = expected
+        .iter()
+        .copied()
+        .filter(|rule| !unbound.contains(rule))
+        .collect();
+    assert!(
+        unexpected.is_empty(),
+        "these rules reach no single obligation of headwater/standard, so the register names none for each: {unexpected:?}"
+    );
+    assert!(
+        stale.is_empty(),
+        "these exceptions now reach one obligation, so remove them from EXCEPTIONS: {stale:?}"
+    );
+}
+
 /// The declaration of the one control of the maintained package whose
 /// mechanism is `check:<rule>`. Controls sit one to a block, a blank line
 /// separates two blocks, and each block opens with its identifier.
