@@ -11,9 +11,6 @@ provenance:
   drafted_by: claude-opus-5
   activity: measure+draft
   evidence_basis: evidenced
-relations:
-  traces_to:
-    - HW-DR-0017
 ---
 
 # A counted tombstone lists a digest of each withheld identifier, and a sealed one lists nothing

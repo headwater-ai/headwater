@@ -532,6 +532,47 @@ fn a_withheld_identifier_binds_withheld_and_a_typo_stays_unresolved() {
             .any(|line| line.trim() == "1 withheld"),
         "the run counts one withheld edge: {ran:?}"
     );
+
+    // The tier's own export carries the withheld edge with the profile that
+    // withheld its target, which is the name a reader asks for access by.
+    let tier = root.run(&["export", "--profile", "default", "--format", "json"]);
+    assert_eq!(tier.code, Some(0), "{tier:?}");
+    let loaded = headwater_yaml::load(&tier.out).expect("the tier export loads");
+    let withheld: Vec<(String, String)> = loaded
+        .value
+        .as_map()
+        .and_then(|map| map.get("graph"))
+        .and_then(|graph| graph.value.as_map())
+        .and_then(|graph| graph.get("edges"))
+        .and_then(|edges| edges.value.as_seq())
+        .expect("the tier export holds `graph.edges`")
+        .iter()
+        .filter_map(|edge| edge.value.as_map())
+        .filter_map(|edge| edge.get("target"))
+        .filter_map(|target| target.value.as_map())
+        .filter(|target| {
+            target
+                .get("bound")
+                .and_then(|bound| bound.value.as_scalar())
+                .is_some_and(|bound| bound.text == "withheld")
+        })
+        .map(|target| {
+            let text = |key: &str| {
+                target
+                    .get(key)
+                    .and_then(|node| node.value.as_scalar())
+                    .map(|node| node.text.clone())
+                    .unwrap_or_default()
+            };
+            (text("anchor_kind"), text("rule"))
+        })
+        .collect();
+    assert_eq!(
+        withheld,
+        vec![("service_in_a".to_string(), "partner".to_string())],
+        "{}",
+        tier.out
+    );
 }
 
 /// Under `sealed` the publisher chose that existence is the secret. The export
@@ -563,12 +604,17 @@ fn a_counted_export_older_than_the_identifier_list_leaves_a_miss_unresolved_and_
     let pinned = std::fs::read_to_string(root.at.join(".headwater/taxonomy.yml"))
         .expect("the declaration reads");
     let before = root.digest(EXPORT_A);
-    let older = export("gold").replace(
-        "\"filtered\":false}",
-        "\"filtered\":true,\"tombstone\":\"counted\"},\
+    // Version 1.2 is the last one before the list, so it is the boundary a
+    // version test has to hold.
+    let older = export("gold")
+        .replace(
+            "\"filtered\":false}",
+            "\"filtered\":true,\"tombstone\":\"counted\"},\
              \"tombstones\":[{\"rule\":\"full.exclude.status\",\"documents\":1}]",
-    );
+        )
+        .replace("\"export_version\":\"0.4.0\"", "\"export_version\":\"1.2\"");
     assert!(older.contains("\"tombstones\""), "{older}");
+    assert!(older.contains("\"export_version\":\"1.2\""), "{older}");
     root.write(EXPORT_A, &older);
     root.write(
         ".headwater/taxonomy.yml",
@@ -632,6 +678,51 @@ fn an_identifier_withheld_under_either_of_two_rules_binds_withheld() {
         exported.matches("\"rule\"").count(),
         2,
         "the filter withheld one document under each rule: {exported}"
+    );
+    let loaded = headwater_yaml::load(&exported).expect("the export loads");
+    let mut stones: Vec<(String, Vec<String>)> = loaded
+        .value
+        .as_map()
+        .and_then(|map| map.get("tombstones"))
+        .and_then(|stones| stones.value.as_seq())
+        .expect("the export holds `tombstones`")
+        .iter()
+        .filter_map(|stone| stone.value.as_map())
+        .map(|stone| {
+            let rule = stone
+                .get("rule")
+                .and_then(|rule| rule.value.as_scalar())
+                .map(|rule| rule.text.clone())
+                .unwrap_or_default();
+            let listed = stone
+                .get("identifiers")
+                .and_then(|listed| listed.value.as_seq())
+                .map(|listed| {
+                    listed
+                        .iter()
+                        .filter_map(|digest| digest.value.as_scalar())
+                        .map(|digest| digest.text.clone())
+                        .collect()
+                })
+                .unwrap_or_default();
+            (rule, listed)
+        })
+        .collect();
+    stones.sort();
+    assert_eq!(
+        stones,
+        vec![
+            (
+                "partner.exclude.status".to_string(),
+                vec![headwater_hash::digest(WITHHELD.as_bytes())]
+            ),
+            (
+                "partner.include.status".to_string(),
+                vec![headwater_hash::digest(other.as_bytes())]
+            ),
+        ],
+        "each tombstone lists the digest of the identifier its own rule withheld, \
+         and no other: {exported}"
     );
     let ran = root.run(&["check", "--strict"]);
     let unresolved = unresolved(&ran);
