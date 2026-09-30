@@ -142,6 +142,44 @@ struct RevisionCell {
     value: std::sync::OnceLock<Option<String>>,
     /// The tree and the entries to digest, where the value is not known yet.
     tree: Option<(PathBuf, Vec<String>)>,
+    /// The file digests of the resolver that made this value, shared with
+    /// every other value it made. See [`FileDigests`].
+    digested: FileDigests,
+}
+
+/// The digest of each file one resolver has read, keyed by its path under the
+/// resolver's base, and `None` for a file that could not be read.
+///
+/// A file that many anchors govern is read and digested once per resolver
+/// rather than once per anchor. Until #1450 each [`Revision`] read its own
+/// entries, and over this repository a warm `headwater check` read 37 MB to
+/// digest 8.5 MB of distinct files, which was 86 ms of a 150 ms run past
+/// Phase A. The map lives as long as the resolver and the values it made, the
+/// lifetime of [`SourceTree`]'s own walk cache, so a fresh process still reads
+/// fresh bytes. Within one resolver, a file has one digest, which is the
+/// statement a graph built once already makes about every document it read.
+#[derive(Clone, Debug, Default)]
+pub(crate) struct FileDigests(std::sync::Arc<std::sync::Mutex<HashMap<String, Option<String>>>>);
+
+impl FileDigests {
+    /// The digest of the bytes of `path` under `base`, read now unless this
+    /// map already holds it, or `None` where the file cannot be read.
+    fn of(&self, base: &Path, path: &str) -> Option<String> {
+        // A poisoned lock is a panic elsewhere in this process, and a read
+        // from disk is always a correct answer, so it reads rather than fails.
+        if let Ok(known) = self.0.lock() {
+            if let Some(digest) = known.get(path) {
+                return digest.clone();
+            }
+        }
+        let digest = std::fs::read(base.join(path))
+            .ok()
+            .map(|bytes| headwater_hash::digest(&bytes));
+        if let Ok(mut known) = self.0.lock() {
+            known.insert(path.to_owned(), digest.clone());
+        }
+        digest
+    }
 }
 
 impl Revision {
@@ -153,15 +191,23 @@ impl Revision {
         Self(std::sync::Arc::new(RevisionCell {
             value: cell,
             tree: None,
+            digested: FileDigests::default(),
         }))
     }
 
     /// The [`tree_revision`] of `matched` under `base`, computed when it is
     /// first read.
     pub fn of_tree(base: &Path, matched: &[String]) -> Self {
+        Self::of_tree_in(base, matched, &FileDigests::default())
+    }
+
+    /// [`Self::of_tree`], reading each file through `digested`, which the
+    /// resolver shares between every value it makes.
+    pub(crate) fn of_tree_in(base: &Path, matched: &[String], digested: &FileDigests) -> Self {
         Self(std::sync::Arc::new(RevisionCell {
             value: std::sync::OnceLock::new(),
             tree: Some((base.to_path_buf(), matched.to_vec())),
+            digested: digested.clone(),
         }))
     }
 
@@ -237,7 +283,7 @@ impl Revision {
 
     fn value(&self) -> &Option<String> {
         self.0.value.get_or_init(|| match &self.0.tree {
-            Some((base, matched)) => tree_revision(base, matched),
+            Some((base, matched)) => tree_revision_in(base, matched, &self.0.digested),
             None => None,
         })
     }
@@ -403,6 +449,10 @@ pub struct SourceTree {
     /// and this one does not touch it: a fresh process still reads a fresh
     /// tree, because it builds a fresh `SourceTree`.
     walked: RefCell<HashMap<String, Rc<[Entry]>>>,
+    /// The digest of every file a revision of this resolver has read, on the
+    /// same terms as `walked`: one read of a file per resolver, never across
+    /// a run. See [`FileDigests`].
+    digested: FileDigests,
 }
 
 impl SourceTree {
@@ -411,6 +461,7 @@ impl SourceTree {
             base: corpus.base.clone(),
             exclusions: corpus.exclusions.clone(),
             walked: RefCell::new(HashMap::new()),
+            digested: FileDigests::default(),
         }
     }
 }
@@ -477,7 +528,7 @@ impl Resolver for SourceTree {
 
             let matched = vec![normalized.clone()];
             return Binding::Resolved {
-                revision: Revision::of_tree(&self.base, &matched),
+                revision: Revision::of_tree_in(&self.base, &matched, &self.digested),
                 matched,
                 normalized,
                 excluded_by,
@@ -548,13 +599,13 @@ impl Resolver for SourceTree {
         Binding::Resolved {
             normalized,
             excluded_by: None,
-            revision: Revision::of_tree(&self.base, &matched),
+            revision: Revision::of_tree_in(&self.base, &matched, &self.digested),
             matched,
         }
     }
 
     fn revision_of(&self, matched: &[String]) -> Revision {
-        Revision::of_tree(&self.base, matched)
+        Revision::of_tree_in(&self.base, matched, &self.digested)
     }
 }
 
@@ -590,6 +641,11 @@ impl Resolver for SourceTree {
 /// directory literal at `Info` and names `**` after the directory as the
 /// remedy, rather than passing it in silence.
 pub fn tree_revision(base: &Path, matched: &[String]) -> Option<String> {
+    tree_revision_in(base, matched, &FileDigests::default())
+}
+
+/// [`tree_revision`], reading each file through `digested`.
+fn tree_revision_in(base: &Path, matched: &[String], digested: &FileDigests) -> Option<String> {
     let mut sorted: Vec<&String> = matched.iter().collect();
     sorted.sort();
     sorted.dedup();
@@ -605,10 +661,10 @@ pub fn tree_revision(base: &Path, matched: &[String]) -> Option<String> {
             skipped = true;
             continue;
         }
-        let bytes = std::fs::read(&at).ok()?;
+        let digest = digested.of(base, path)?;
         manifest.push_str(path);
         manifest.push('\0');
-        manifest.push_str(&headwater_hash::digest(&bytes));
+        manifest.push_str(&digest);
         manifest.push('\n');
     }
     if skipped && manifest.is_empty() {
@@ -926,6 +982,7 @@ mod tests {
             base: PathBuf::from(env!("CARGO_MANIFEST_DIR")),
             exclusions: Vec::new(),
             walked: RefCell::new(HashMap::new()),
+            digested: FileDigests::default(),
         };
         assert!(matches!(
             resolver.resolve("Cargo.toml"),
@@ -998,6 +1055,7 @@ mod tests {
             base: dir.to_path_buf(),
             exclusions: Vec::new(),
             walked: RefCell::new(HashMap::new()),
+            digested: FileDigests::default(),
         };
 
         let Binding::Resolved { matched, .. } = resolver.resolve(".claude/hooks/**") else {
@@ -1022,6 +1080,7 @@ mod tests {
             base: dir.to_path_buf(),
             exclusions: Vec::new(),
             walked: RefCell::new(HashMap::new()),
+            digested: FileDigests::default(),
         };
 
         let Binding::Resolved { matched, .. } = resolver.resolve(".claude/hooks") else {
@@ -1041,6 +1100,7 @@ mod tests {
             base: dir.to_path_buf(),
             exclusions: Vec::new(),
             walked: RefCell::new(HashMap::new()),
+            digested: FileDigests::default(),
         };
 
         let Binding::Unresolved(why) = resolver.resolve(".claude/nothing-here/*.sh") else {
@@ -1064,6 +1124,7 @@ mod tests {
             base: dir.to_path_buf(),
             exclusions: Vec::new(),
             walked: RefCell::new(HashMap::new()),
+            digested: FileDigests::default(),
         };
 
         let Binding::Unresolved(why) = resolver.resolve("**/write.sh") else {
@@ -1085,6 +1146,7 @@ mod tests {
             base: dir.to_path_buf(),
             exclusions: vec![Exclusion::new(".claude/hooks/**", "a fixture exclusion")],
             walked: RefCell::new(HashMap::new()),
+            digested: FileDigests::default(),
         };
 
         let Binding::Unresolved(why) = resolver.resolve(".claude/hooks/**") else {
@@ -1107,6 +1169,7 @@ mod tests {
             base: dir.to_path_buf(),
             exclusions: Vec::new(),
             walked: RefCell::new(HashMap::new()),
+            digested: FileDigests::default(),
         };
 
         // Two resolvers, not one asked twice: `SourceTree::walked` caches a
@@ -1173,6 +1236,7 @@ mod tests {
             base: dir.to_path_buf(),
             exclusions: Vec::new(),
             walked: RefCell::new(HashMap::new()),
+            digested: FileDigests::default(),
         };
 
         // Same prefix (`.claude/hooks`) as the pattern below, asked first so
@@ -1245,6 +1309,7 @@ mod tests {
             base: PathBuf::from(env!("CARGO_MANIFEST_DIR")),
             exclusions: vec![Exclusion::new("src/**", "a fixture exclusion")],
             walked: RefCell::new(HashMap::new()),
+            digested: FileDigests::default(),
         };
         let Binding::Resolved { excluded_by, .. } = resolver.resolve("src/anchors.rs") else {
             panic!("the file is there, so the anchor resolves");
@@ -1449,6 +1514,7 @@ mod tests {
             base: dir.to_path_buf(),
             exclusions: Vec::new(),
             walked: RefCell::new(HashMap::new()),
+            digested: FileDigests::default(),
         };
 
         assert_eq!(
@@ -1476,6 +1542,7 @@ mod tests {
             base: via.to_path_buf(),
             exclusions: Vec::new(),
             walked: RefCell::new(HashMap::new()),
+            digested: FileDigests::default(),
         };
         assert_eq!(through.real_path("alias.md").as_deref(), Some("notes/b.md"));
     }
@@ -1641,6 +1708,99 @@ mod tests {
 
         assert!(why.contains("HW-SPEC-x"), "{why}");
         assert!(why.contains("does not start `HW-VER-`"), "{why}");
+    }
+
+    /// The map of one resolver keys a file by its whole path, so two files
+    /// that share a name in two directories are two entries (#1450). A map
+    /// keyed on less than the path serves the bytes of one file as the
+    /// revision of the other, and a governed edge then ages or stays fresh on
+    /// bytes it does not name. The byte-identity differential cannot see
+    /// that, because a cached run and a `--no-cache` run build the same
+    /// resolver.
+    #[test]
+    fn two_files_with_one_name_are_two_entries_of_one_resolver() {
+        let dir = scratch("digest-one-name");
+        for (sub, body) in [("x", "fn x() {}\n"), ("y", "fn y() { other() }\n")] {
+            std::fs::create_dir_all(dir.join("src").join(sub)).expect("a fixture directory");
+            std::fs::write(dir.join("src").join(sub).join("mod.rs"), body).expect("a fixture file");
+        }
+        let resolver = SourceTree::over(&Corpus::new(dir.to_path_buf(), ""));
+        let revision = |raw: &str| match resolver.resolve(raw) {
+            Binding::Resolved { revision, .. } => revision.get().map(str::to_owned),
+            other => panic!("{raw} resolves, and it bound {other:?}"),
+        };
+        let x = revision("src/x/mod.rs");
+        let y = revision("src/y/mod.rs");
+        let both = revision("src/**/mod.rs");
+
+        assert_eq!(x, tree_revision(&dir, &["src/x/mod.rs".to_owned()]));
+        assert_eq!(
+            y,
+            tree_revision(&dir, &["src/y/mod.rs".to_owned()]),
+            "the second file of one name is read for itself, not served the first"
+        );
+        assert_ne!(x, y, "two files with different bytes have two revisions");
+        assert_eq!(
+            both,
+            tree_revision(
+                &dir,
+                &["src/x/mod.rs".to_owned(), "src/y/mod.rs".to_owned()]
+            )
+        );
+    }
+
+    /// One resolver reads a file once, however many anchors it binds that
+    /// file under, and a second resolver reads it again (#1450). The first
+    /// half is what took a warm `headwater check` from 257 ms toward 200 ms
+    /// over this repository: 524 reads of 299 files became 299. The second
+    /// half is what keeps it correct: the map lives as long as one resolver,
+    /// so a fresh process sees a changed byte.
+    #[test]
+    fn one_resolver_digests_a_file_once_and_a_fresh_one_reads_it_again() {
+        let dir = scratch("digest-once");
+        std::fs::create_dir_all(dir.join("src")).expect("a fixture directory");
+        std::fs::write(dir.join("src/a.rs"), "fn a() {}\n").expect("a fixture file");
+        std::fs::write(dir.join("src/b.rs"), "fn b() {}\n").expect("a fixture file");
+        let both_files = ["src/a.rs".to_owned(), "src/b.rs".to_owned()];
+        let unedited = tree_revision(&dir, &both_files);
+        let corpus = Corpus::new(dir.to_path_buf(), "");
+        let resolver = SourceTree::over(&corpus);
+        let Binding::Resolved {
+            revision: alone, ..
+        } = resolver.resolve("src/a.rs")
+        else {
+            panic!("src/a.rs is there, so the anchor resolves");
+        };
+        let Binding::Resolved { revision: both, .. } = resolver.resolve("src/*.rs") else {
+            panic!("two files match, so the pattern resolves");
+        };
+        assert!(alone.get().is_some(), "a regular file has a revision");
+
+        // The bytes move after the first value read them. The second value of
+        // the same resolver reads `src/a.rs` through the map, so it states the
+        // bytes this resolver already read.
+        std::fs::write(dir.join("src/a.rs"), "fn a() { moved() }\n").expect("the edit");
+        let edited = tree_revision(&dir, &both_files);
+        assert_ne!(
+            unedited, edited,
+            "the edit moves the revision of a fresh read"
+        );
+        assert_eq!(
+            both.get().map(str::to_owned),
+            unedited,
+            "one resolver reads a file once, so its second value states the bytes it first read"
+        );
+
+        // A fresh resolver is a fresh process: it reads the moved bytes.
+        let fresh = SourceTree::over(&corpus);
+        let Binding::Resolved { revision: now, .. } = fresh.resolve("src/*.rs") else {
+            panic!("both files are still there");
+        };
+        assert_eq!(
+            now.get().map(str::to_owned),
+            edited,
+            "the map of one resolver never answers for another"
+        );
     }
 
     /// A named pipe reaches no line of the manifest, so it is never opened

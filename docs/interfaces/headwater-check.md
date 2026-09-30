@@ -118,6 +118,8 @@ Two of those are worth separating. **A refused patch is not a finding**, so no a
 
 **One variable reaches this binary, and a run of this verb reads it under `--wide` alone.** `COLUMNS` says how wide the help and the report of this verb are laid out. `engine/crates/cli/src/paint.rs` reads it, and only where the raw command line carries `--wide`. That call is the one `std::env::var` under `engine/crates/` outside a test target. The reading is held to the range 80 to 120, and a reading that is absent or is not a number gives 80. So a run of this verb that carries no `--wide` is a function of the command line, the tree and the lock. Nothing a shell exported reaches it.
 
+**A measurement build writes more to standard error, and no shipped build is one.** The `phase-times` feature of `headwater-cli` is off by default. A binary built with it writes one `phase <name> <microseconds>` line for each stage of this verb, and a measurement script of this repository reads those lines. `release.yml` builds the default features, so no released binary carries it, and no variable or flag turns it on.
+
 A reader who met `HEADWATER_NOW` in a continuous-integration job is reading a shell variable of that job, which the job passes to `--now`.
 
 ## Files

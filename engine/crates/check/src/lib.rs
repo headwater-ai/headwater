@@ -167,6 +167,7 @@ pub mod outside_root;
 pub mod paint;
 pub mod participation;
 pub mod patch;
+pub mod phase;
 pub mod pin;
 pub mod placement;
 pub mod promotion;
@@ -870,6 +871,9 @@ pub fn run(
     let retention = retention::Retention::over(declared.taxonomy, declared.shape);
 
     let digests = scope::Digests::of(census);
+    // The stages of this function for `tools/measure/check-phases.sh`, which
+    // cost nothing without the `phase-times` feature. See [`phase`].
+    phase::mark("run.setup");
     let mut instances = scope::over_documents(&required, census, graph, ctx, cache);
     instances.extend(scope::over_documents(&values, census, graph, ctx, cache));
     instances.extend(scope::over_documents(&blank, census, graph, ctx, cache));
@@ -883,6 +887,9 @@ pub fn run(
         cache,
     ));
     instances.extend(scope::over_documents(&placement, census, graph, ctx, cache));
+    phase::mark("run.documents");
+    // The first edge-scoped rule reads the revision of every `governs` target
+    // for its cache key, so the bytes of every governed file are read here.
     instances.extend(scope::over_edges(
         &targets,
         census,
@@ -973,6 +980,7 @@ pub fn run(
         ctx,
         cache,
     ));
+    phase::mark("run.edges");
     instances.extend(scope::over_neighbourhoods(
         &participation,
         census,
@@ -1079,6 +1087,7 @@ pub fn run(
         &retention, census, graph, claims, ctx, cache,
     ));
 
+    phase::mark("run.others");
     let coverage = Coverage::of(census, &instances);
 
     let mut register = register::Projection::of(declared.register, declared.observations);
@@ -1243,7 +1252,7 @@ pub fn run(
             .count(),
     });
 
-    Run {
+    let run = Run {
         instances,
         coverage,
         findings,
@@ -1260,7 +1269,9 @@ pub fn run(
         ),
         change,
         cache: cache.report(),
-    }
+    };
+    phase::mark("run.findings");
+    run
 }
 
 /// What one run's change carried, for the report that states its own inputs.
