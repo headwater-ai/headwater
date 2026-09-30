@@ -179,11 +179,19 @@ impl DocumentCheck for Pairing {
             return Outcome::Skipped(ABSENT.to_string());
         };
         let acceptor = block.entry(ACCEPTED_BY);
-        // Named means a value that is not empty. `accepted_by:` with nothing
-        // after it names nobody, and a presence test would pass it.
-        let named = acceptor
-            .and_then(|entry| entry.value.value.as_scalar())
-            .is_some_and(|scalar| !as_null(scalar) && !scalar.text.trim().is_empty());
+        // Named means at least one name that is not empty. `accepted_by:` with
+        // nothing after it names nobody, and a presence test would pass it. A
+        // list names whoever it lists, as `drafted_by` does in this corpus, and
+        // an empty list names nobody.
+        let names = |value: &Value| {
+            value
+                .as_scalar()
+                .is_some_and(|scalar| !as_null(scalar) && !scalar.text.trim().is_empty())
+        };
+        let named = acceptor.is_some_and(|entry| match &entry.value.value {
+            Value::Seq(items) => items.iter().any(|item| names(&item.value)),
+            other => names(other),
+        });
 
         let finding = |anchor: &Entry, message: String, remediation: String| Finding {
             rule: self::UNPAIRED,

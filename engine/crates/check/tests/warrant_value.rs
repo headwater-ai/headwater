@@ -260,6 +260,8 @@ fn the_pairing_follows_spec_three_row_by_row() {
     for file in [
         "accepted-unsigned.md",
         "accepted-blank.md",
+        // `accepted_by: []` lists nobody.
+        "accepted-empty-list.md",
         "asserted-signed.md",
         "regenerated-signed.md",
         "transcribed-signed.md",
@@ -275,6 +277,8 @@ fn the_pairing_follows_spec_three_row_by_row() {
     }
     for file in [
         "accepted.md",
+        // `accepted_by: [a.person]` names a person, written as a list.
+        "accepted-listed.md",
         "asserted.md",
         "regenerated.md",
         "transcribed.md",

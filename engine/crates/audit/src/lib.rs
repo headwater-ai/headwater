@@ -347,8 +347,8 @@ pub struct WarrantReading {
     /// Classified documents whose provenance block states this value.
     pub stated: usize,
     /// Whether the closed set of spec 3 holds this value. A row where this is
-    /// false is a value a corpus invented, and no check reads a warrant
-    /// *value*, so this reading is the only place one is reported.
+    /// false is a value a corpus invented. `warrant.value.not_permitted`
+    /// reports each document that states one, and this reading counts them.
     /// `warrant.promoted` reads a movement between two values and admits any
     /// value at either end, which is why it reports none of this.
     pub closed_set: bool,
@@ -750,8 +750,8 @@ fn warrants(classified: &[&Row]) -> Warrants {
             derived: DERIVED.contains(value),
         })
         .collect();
-    // Then whatever else a document stated. No check reads a warrant value, so
-    // a value outside the closed set reaches no other report in this engine.
+    // Then whatever else a document stated. `warrant.value.not_permitted`
+    // reports each document at such a value, and this row counts them.
     readings.extend(stated.into_iter().map(|(value, stated)| WarrantReading {
         value,
         stated,
