@@ -337,6 +337,7 @@ This class dates from 2026-08-26. Before that date, such a finding was filed as 
 - [HW-OBL-0210](../obligations/0210-no-fixture-holds-the-symlink-case-of-new-worktree-sh-and-a-bare-name-of-two-dots-leaves-a-branch-behind.md) — No fixture holds the symlink case of new-worktree.sh, and a bare name of two dots leaves a branch behind
 - [HW-OBL-0214](../obligations/0214-the-commit-gate-does-not-see-docs-taxonomies-readme-md-drift-from-its-vendored-copy.md) — The commit gate does not see docs/taxonomies/README.md drift from its vendored copy
 - [HW-OBL-0222](../obligations/0222-ten-rules-of-the-editions-ledger-have-one-recorded-corpus-so-a-rule-change-blessed-with-an-edit-to-that-corpus-passes.md) — Ten rules of the editions ledger have one recorded corpus, so a rule change blessed with an edit to that corpus passes
+- [HW-OBL-0226](../obligations/0226-six-corpus-gaps-from-run-20260929-1205-filed-together.md) — Six corpus gaps from run 20260929-1205, filed together
 
 ## What the first typing of this corpus found
 
