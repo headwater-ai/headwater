@@ -77,15 +77,17 @@ function none() {
 }
 
 /**
- * The pointers and the withheld count of one answer's `structuredContent`. A
- * `withheld` that is not a non-negative safe integer is 0.
+ * The pointers and the withheld count of one answer's `structuredContent`. An
+ * answer that `readPointers` refuses is no pointers and nothing withheld, so no
+ * count is shown for pointers nobody could read. A `withheld` that is not a
+ * non-negative safe integer is 0.
  */
 function readAnswer(structured) {
-  const n = structured ? structured.withheld : undefined;
-  return {
-    pointers: readPointers(structured),
-    withheld: Number.isSafeInteger(n) && n >= 0 ? n : 0,
-  };
+  if (!structured || !Array.isArray(structured.pointers)) return none();
+  const pointers = readPointers(structured);
+  if (pointers.length !== structured.pointers.length) return none();
+  const n = structured.withheld;
+  return { pointers, withheld: Number.isSafeInteger(n) && n >= 0 ? n : 0 };
 }
 
 /** The line shown beside a route's pointers, or null when nothing was withheld. */
