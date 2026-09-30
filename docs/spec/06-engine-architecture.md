@@ -368,7 +368,7 @@ The budget declaration is `.headwater/probe.yml`, beside the lock. It is outside
 
 The CLI is advisory by default (exit 0 with findings on stdout). Use `--strict` for gates. The default is deliberate: a tool that blocks on first contact is removed, and a removed tool catches nothing.
 
-**No flag decides which findings count, and there is no `--changed-only`.** A flag that took a caller's list of changed documents would put a second input into the verdict that no reviewer sees. It would also report the rest as neither checked nor skipped. A scope derived from content rather than from a list is the cache, and the cache ships. That hidden input is the argument against the flag, and cost is not. The cache does not keep the commit hook inside its budget any more. That hook runs a full warm `check --strict`, which cost 243 ms of CPU time at 487 typed documents on 2026-09-30, against a 200 ms target. A flag would buy that time with a verdict that no reviewer can see, so the flag stays refused. [HW-OBL-0080](../obligations/0080-changed-only-is-the-content-addressed-cache-under-another-name.md) holds the measurement and the condition that reopens it. An adopter who wants patient debt gets it from the [adoption payload](07-distribution-and-federation.md#first-contact-adoption-is-a-migration-from-no-taxonomy). That is a fact about the corpus, rather than a property of an invocation ([Q12](09-decisions.md#q12--migration-path-for-an-existing-corpus)).
+**No flag decides which findings count, and there is no `--changed-only`.** A flag that took a caller's list of changed documents would put a second input into the verdict that no reviewer sees. It would also report the rest as neither checked nor skipped. A scope derived from content rather than from a list is the cache, and the cache ships. That hidden input is the argument against the flag, and cost is not. The cache does not keep the commit hook inside its budget any more. That hook runs a full warm `check --strict`, which cost 233 ms of CPU time at 489 typed documents on 2026-09-30, against a 200 ms target. A flag would buy that time with a verdict that no reviewer can see, so the flag stays refused. [HW-OBL-0080](../obligations/0080-changed-only-is-the-content-addressed-cache-under-another-name.md) holds the measurement and the condition that reopens it. An adopter who wants patient debt gets it from the [adoption payload](07-distribution-and-federation.md#first-contact-adoption-is-a-migration-from-no-taxonomy). That is a fact about the corpus, rather than a property of an invocation ([Q12](09-decisions.md#q12--migration-path-for-an-existing-corpus)).
 
 **`--read-set` writes what the report already states.** A run reports the union of its in-scope inputs beside its coverage numbers ([spec 12](12-check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict)). The flag writes the same bytes to a file. The reader that needs them is a gate, which holds this run against a later tree and reads a file rather than a report. The flag decides no finding and it moves no verdict.
 
@@ -442,9 +442,9 @@ The other two scales are refusals rather than omissions. The obligation's scale 
 
 | Operation | Target | Measured |
 |---|---|---|
-| Full check with no cache, 1,000 documents: `check --strict --no-cache` | < 5 s | 623 ms at 487 typed documents, 2026-09-30. Nothing has measured 1,000 documents. |
-| Full check, warm cache: `check --strict` | < 1 s | 243 ms at 487 typed documents, 2026-09-30. |
-| Commit hook: the same full warm `check --strict`, because no change-scoped check exists | < 200 ms | 243 ms at 487 typed documents, 2026-09-30. This is past the target. |
+| Full check with no cache, 1,000 documents: `check --strict --no-cache` | < 5 s | 587 ms at 489 typed documents, 2026-09-30. Nothing has measured 1,000 documents. |
+| Full check, warm cache: `check --strict` | < 1 s | 233 ms at 489 typed documents, 2026-09-30. |
+| Commit hook: the same full warm `check --strict`, because no change-scoped check exists | < 200 ms | 233 ms at 489 typed documents, 2026-09-30. This is past the target. |
 | Edit hook: `explain --json --paths-at-most 20` and the `headwater json` reads of its document | < 200 ms | 90 ms for a document that governs one glob over 50,000 files, 2026-09-30. |
 | Route query: `route` | < 100 ms | 60 ms at 444 checked documents, 2026-09-28. |
 
