@@ -271,6 +271,17 @@ test('readPointers takes each element of structuredContent.pointers, and nothing
   assert.deepEqual(client.readPointers({ pointers: [{ path: 'docs/a.md' }, { name: 'no path' }] }), []);
 });
 
+test('readAnswer takes withheld only when it is a non-negative safe integer', () => {
+  const pointers = [{ path: 'docs/a.md', summary: 's' }];
+  assert.deepEqual(client.readAnswer({ pointers, withheld: 7 }).withheld, 7);
+  assert.deepEqual(client.readAnswer({ pointers, withheld: 0 }).withheld, 0);
+  for (const bad of [-1, 1.5, '3', null, Number.MAX_SAFE_INTEGER + 1, Infinity, NaN]) {
+    assert.equal(client.readAnswer({ pointers, withheld: bad }).withheld, 0, `withheld ${String(bad)}`);
+  }
+  assert.deepEqual(client.readAnswer({ pointers }).withheld, 0);
+  assert.deepEqual(client.readAnswer(undefined), { pointers: [], withheld: 0 });
+});
+
 test('a pointer whose path holds a space is kept whole', async () => {
   const { options } = fake('governing-spaced-path.jsonl');
   assert.deepEqual(await client.governing('src/my module.rs', options), [
