@@ -72,8 +72,11 @@
 # block, line for line, it downloads the release the page checks out, and its
 # APT sources line, keyring URL, keyring path and package are the page's. Step 9 of `docs/how-to/cut-a-release.md` moves both
 # files, and v0.4.1 was cut with both still on v0.4.0 (#1348). The group does
-# not ask the remote whether the tag is the newest one, because that case would
-# turn `main` red from the push of a tag until the install text moves.
+# not ask whether the tag is the newest one, because that case would turn
+# `main` red from the push of a tag until the install text moves. Group 13 asks
+# the clone's tags a weaker question that stays green in that window: the page's
+# tag is the newest release or the one before it. It also holds the tutorial's
+# engine tag against the page.
 #
 # Run it from anywhere:
 #     sh tools/repo/readme-fixtures.sh
@@ -4119,6 +4122,165 @@ apt_d11_deb=$(grep '^\*\*Install it with apt' "$readme" |
 same "the APT paragraph gives Debian 11 the release's Debian package, installed from its file" \
     "yes" \
     "$([ -n "$apt_d11_deb" ] && release_uploaded_debs "$root/.github/workflows/release.yml" | grep -qxF "$apt_d11_deb" && echo yes || echo "no: \`$apt_d11_deb\`")"
+
+echo
+echo "the engine tag the tutorial installs, and how far the page's tag is behind"
+
+# Group 13 reconciles groups 8 and 11 for the ENGINE tag (#1315). The tutorial
+# installs the engine in its own words: a download block, a macOS archive name,
+# a release-page link and the prose line "This installs version X". Step 9 of
+# `docs/how-to/cut-a-release.md` moves them, and until this group nothing read
+# them, in the Markdown or in the page `tools/site/render-tutorial.py` renders
+# from it. Group 8 holds the tutorial's TAXONOMY version only.
+#
+# 13a holds the tutorial against the README, as group 11 holds the site panel:
+# every engine tag in the Markdown and in the rendered page is the tag the
+# README downloads and checks out, and the prose line names that version.
+#
+# 13b asks the clone's tags, as group 8 does, and closes what group 11 leaves
+# open. The README's tag is the newest `v<major>.<minor>.<patch>` tag, or the
+# one before it. One behind is the window between step 7 of the guide, which
+# pushes the tag, and step 9, which moves the install text, so it stays green.
+# Two behind is the failure that left `FIXTURE_TAG`'s comment calling v0.4.0 the
+# newest release after v0.5.0 was cut. The residue is stated rather than hidden:
+# a release that skips step 9 goes red only when the NEXT tag is pushed. A clone
+# with no tags is red and says to fetch them; the CI checkout sets `fetch-tags`.
+tutorial_md="$root/docs/tutorials/your-first-governed-corpus.md"
+tutorial_html="$root/site/tutorial/index.html"
+mkdir -p "$scratch/engine-tag"
+
+# engine_tags_of FILE — every engine tag the file names, one per line: the tag
+# of each `releases/download/v<x>/` and `releases/tag/v<x>` URL and of each
+# `headwater-v<x>-` archive name. A taxonomy URL carries
+# `releases/download/taxonomy/`, so it is not read.
+engine_tags_of() {
+    grep -oE 'releases/(download|tag)/v[0-9][0-9A-Za-z.+-]*|headwater-v[0-9][0-9.]*[0-9]-' "$1" |
+        sed -E 's#^releases/(download|tag)/##; s#^headwater-##; s#-$##; s#/.*$##'
+}
+
+# installs_versions_of FILE — the version each "This installs version X" line
+# names, one per line.
+installs_versions_of() {
+    grep -oE 'This installs version [0-9][0-9A-Za-z.+-]*[0-9A-Za-z]' "$1" |
+        sed 's/^This installs version //'
+}
+
+# tutorial_tag_judge FILE PAGE — `ok`, or one line naming what disagrees. The
+# tag PAGE downloads and checks out is the one tag FILE may name, and FILE's
+# "This installs version" line names it without the `v`.
+tutorial_tag_judge() {
+    ttj_page=$(download_tag_of "$2")
+    ttj_pin=$(pinned_tag_of "$2")
+    if [ -z "$ttj_page" ] || [ "$ttj_page" != "$ttj_pin" ]; then
+        echo "the page downloads \`${ttj_page:-nothing}\` and checks out \`${ttj_pin:-nothing}\`, so nothing names the tag the tutorial must follow"
+        return 0
+    fi
+    ttj_tags=$(engine_tags_of "$1" | sort -u)
+    ttj_says=$(installs_versions_of "$1" | sort -u)
+    if [ -z "$ttj_tags" ]; then
+        echo "${1#"$root"/} names no engine tag"
+    elif [ "$ttj_tags" != "$ttj_page" ]; then
+        echo "${1#"$root"/} names $(printf '%s' "$ttj_tags" | tr '\n' ' ') and the page downloads \`$ttj_page\`"
+    elif [ -z "$ttj_says" ]; then
+        echo "${1#"$root"/} has no \"This installs version\" line"
+    elif [ "$ttj_says" != "${ttj_page#v}" ]; then
+        echo "${1#"$root"/} says it installs version $(printf '%s' "$ttj_says" | tr '\n' ' ') and the page downloads \`$ttj_page\`"
+    else
+        echo ok
+    fi
+}
+
+# engine_release_tags ROOT — the release tags `v<major>.<minor>.<patch>` in
+# the clone at ROOT, newest first by version. A pre-release is not a release,
+# and it sorts above the release it precedes, so the filter comes before the
+# pick, as in `newest_standard_version`.
+engine_release_tags() {
+    git -C "$1" tag -l 'v*' --sort=-v:refname >"$scratch/engine-tag/tags.txt" 2>/dev/null
+    grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' "$scratch/engine-tag/tags.txt"
+}
+
+# engine_pin_judge PIN ROOT — `ok` when PIN is the newest release tag in the
+# clone at ROOT or the one before it, or one line saying how far behind it is.
+engine_pin_judge() {
+    epj_newest=$(engine_release_tags "$2" | sed -n 1p)
+    epj_before=$(engine_release_tags "$2" | sed -n 2p)
+    if [ -z "$epj_newest" ]; then
+        echo "no \`v<major>.<minor>.<patch>\` tag in this clone, so nothing says which release is newest; fetch the tags (\`git fetch --tags\`)"
+    elif [ -z "$1" ]; then
+        echo "the page pins no tag"
+    elif [ "$1" = "$epj_newest" ] || [ "$1" = "$epj_before" ]; then
+        echo ok
+    else
+        echo "the page pins \`$1\`, and the newest release is \`$epj_newest\` with \`${epj_before:-nothing}\` before it; step 9 of docs/how-to/cut-a-release.md was skipped"
+    fi
+}
+
+# 13a. The population: the tutorial and its page each name the engine tag and
+#      say which version they install.
+more_than "the tutorial names an engine tag" 0 "$(engine_tags_of "$tutorial_md" | wc -l | tr -d ' ')"
+more_than "  and its rendered page names one" 0 "$(engine_tags_of "$tutorial_html" | wc -l | tr -d ' ')"
+
+# 13a. The real tutorial and its page against the real README.
+same "  the tutorial downloads the release the README downloads, by the README's own reading of a fence" ok \
+    "$(site_tag_judge "$tutorial_md" "$readme")"
+same "  every engine tag in the tutorial is the README's, and it says it installs that version" ok \
+    "$(tutorial_tag_judge "$tutorial_md" "$readme")"
+same "  every engine tag in the rendered tutorial is the README's, and it says it installs that version" ok \
+    "$(tutorial_tag_judge "$tutorial_html" "$readme")"
+
+# 13a, provoked. The tag is the README's own, so the arms move with it.
+engine_tag=$(pinned_tag_of "$readme")
+engine_version=${engine_tag#v}
+engine_esc=$(printf '%s' "$engine_version" | sed 's/\./\\./g')
+sed "s/v$engine_esc/v0.0.1/g; s/installs version $engine_esc/installs version 0.0.1/" \
+    "$tutorial_md" >"$scratch/engine-tag/back.md"
+same "  a tutorial moved back to another release is refused" \
+    "$scratch/engine-tag/back.md names v0.0.1 and the page downloads \`$engine_tag\`" \
+    "$(tutorial_tag_judge "$scratch/engine-tag/back.md" "$readme")"
+sed "s/installs version $engine_esc/installs version 0.0.1/" "$tutorial_md" >"$scratch/engine-tag/prose.md"
+same "  a tutorial whose prose line alone names another version is refused" \
+    "$scratch/engine-tag/prose.md says it installs version 0.0.1 and the page downloads \`$engine_tag\`" \
+    "$(tutorial_tag_judge "$scratch/engine-tag/prose.md" "$readme")"
+sed "s/headwater-$engine_tag-aarch64/headwater-v0.0.1-aarch64/" "$tutorial_md" >"$scratch/engine-tag/mac.md"
+same "  a tutorial whose macOS archive name alone names another release is refused" \
+    "$scratch/engine-tag/mac.md names v0.0.1 $engine_tag and the page downloads \`$engine_tag\`" \
+    "$(tutorial_tag_judge "$scratch/engine-tag/mac.md" "$readme")"
+sed "s/v$engine_esc/v0.0.1/g; s/installs version $engine_esc/installs version 0.0.1/" \
+    "$tutorial_html" >"$scratch/engine-tag/back.html"
+same "  a rendered tutorial moved back to another release is refused" \
+    "$scratch/engine-tag/back.html names v0.0.1 and the page downloads \`$engine_tag\`" \
+    "$(tutorial_tag_judge "$scratch/engine-tag/back.html" "$readme")"
+grep -v 'This installs version' "$tutorial_html" >"$scratch/engine-tag/silent.html"
+same "  a rendered tutorial that no longer says which version it installs is refused" \
+    "$scratch/engine-tag/silent.html has no \"This installs version\" line" \
+    "$(tutorial_tag_judge "$scratch/engine-tag/silent.html" "$readme")"
+
+# 13b. The real README against the real clone's tags.
+same "the README's engine tag is the newest release in this clone, or the one before it" ok \
+    "$(engine_pin_judge "$engine_tag" "$root")"
+
+# 13b, provoked, against a clone whose tags are chosen here: v1.0.0, v1.0.1
+#      and v1.1.0, with a pre-release above them all.
+tags="$scratch/engine-tag/order"
+git init -q "$tags" >/dev/null 2>&1
+git -C "$tags" -c user.name=fixture -c user.email=fixture@example.invalid \
+    -c commit.gpgsign=false commit -q --allow-empty -m seed >/dev/null 2>&1
+for v in v1.0.0 v1.0.1 v1.1.0 v1.2.0-rc.1 v1.10 taxonomy/headwater-standard/v9.0.0; do
+    git -C "$tags" tag "$v" >/dev/null 2>&1
+done
+same "  a page on the newest release passes" ok "$(engine_pin_judge v1.1.0 "$tags")"
+same "  a page one release behind passes, which is the window before step 9" ok "$(engine_pin_judge v1.0.1 "$tags")"
+same "  a page two releases behind is refused" \
+    "the page pins \`v1.0.0\`, and the newest release is \`v1.1.0\` with \`v1.0.1\` before it; step 9 of docs/how-to/cut-a-release.md was skipped" \
+    "$(engine_pin_judge v1.0.0 "$tags")"
+git clone -q --no-tags --no-checkout "$root" "$scratch/engine-tag/notags" >/dev/null 2>&1
+case $(engine_pin_judge "$engine_tag" "$scratch/engine-tag/notags") in
+    "no \`v<major>.<minor>.<patch>\` tag in this clone"*"fetch the tags"*)
+        pass "  a clone with no tags fails, and says to fetch them" ;;
+    *)
+        fail "  a clone with no tags fails, and says to fetch them" \
+            "got \`$(engine_pin_judge "$engine_tag" "$scratch/engine-tag/notags")\`" ;;
+esac
 
 echo
 echo "$passed passed, $failed failed"
