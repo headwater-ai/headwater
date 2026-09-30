@@ -575,6 +575,7 @@ nav:
   - "Engine subsystems":
       - "Engine subsystems": "subsystems/README.md"
       - "Graph build": "subsystems/graph-build.md"
+      - "Taxonomy resolution": "subsystems/taxonomy-resolution.md"
   - "Tutorials":
       - "Tutorials": "tutorials/README.md"
       - "Your first governed corpus": "tutorials/your-first-governed-corpus.md"
