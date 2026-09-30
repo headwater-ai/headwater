@@ -1489,21 +1489,18 @@ step9_misses() {
         echo "step 9 of $guide_rel carries no \`git grep -nE '...'\` search"
         return 0
     fi
-    total=0
     for page in $step9_pages; do
         found=$(grep -nE -e "$pat" "$1/$page" 2>/dev/null | cut -d: -f1)
         expected=$( { grep -nF -e "v$ver" "$1/$page"; grep -nF -e "installs version $ver" "$1/$page"; } 2>/dev/null |
             cut -d: -f1 | sort -un)
         for n in $expected; do
-            total=$((total + 1))
             if ! printf '%s\n' "$found" | grep -qx "$n"; then
                 echo "$page:$n names release $ver and step 9's search does not find it"
             fi
         done
     done
-    if [ "$total" -eq 0 ]; then
-        echo "no line of the four install pages names v$ver, so the search was held against nothing"
-    fi
+    # The set is never empty: the README.md line that gives the version names
+    # `v<version>` itself, so the search is always held against that line.
 }
 
 # step9_copy DIR — a scratch copy of the guide and the four install pages.
@@ -1568,6 +1565,26 @@ contains "an install line planted as \`/download/v<version>/\` is found by the s
     "$(step9_found "$scratch/s4" docs/tutorials/your-first-governed-corpus.md | tr '\n' '|')"
 same "the tree with both planted lines is green" "" \
     "$(step9_misses "$scratch/s4" | tr '\n' '|' | sed 's/|$//')"
+
+# s5. README.md with no `git checkout v<version>` line names no release, and
+# that is red too.
+step9_copy "$scratch/s5"
+grep -v '^git checkout v' "$root/README.md" > "$scratch/s5/README.md"
+same "a README.md with no checkout line is red" \
+    "README.md has no \`git checkout v<version>\` line, so no install line can be named" \
+    "$(step9_misses "$scratch/s5" | tr '\n' '|' | sed 's/|$//')"
+
+# s6. The search is read from step 9 alone. A guide that moves it under a
+# later heading, out of step 9, is red, as a guide with no search is.
+step9_copy "$scratch/s6"
+{
+    grep -v "^[[:space:]]*git grep -nE '" "$root/$guide_rel"
+    printf '\n## Moved\n\n'
+    grep "^[[:space:]]*git grep -nE '" "$root/$guide_rel"
+} > "$scratch/s6/$guide_rel"
+same "a guide whose search is outside step 9 is red" \
+    "step 9 of $guide_rel carries no \`git grep -nE '...'\` search" \
+    "$(step9_misses "$scratch/s6" | tr '\n' '|' | sed 's/|$//')"
 
 echo
 echo "$passed passed, $failed failed"
