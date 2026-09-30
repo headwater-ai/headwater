@@ -227,6 +227,8 @@ anchors
     cited by HW-DR-0023
   code_path `engine/README.md` via source-tree
     cited by HW-DR-0029
+  code_path `engine/crates/adapter/src/json.rs` via source-tree
+    cited by HW-IFACE-headwater-check
   code_path `engine/crates/adapter/src/lib.rs` via source-tree
     cited by HW-OBL-0172
   code_path `engine/crates/audit/src/lib.rs` via source-tree
@@ -571,6 +573,8 @@ anchors
     cited by HW-EVAL-owl-skos-worked-example
   code_path `tools/repo/obligation-register-fixtures.sh` via source-tree
     cited by HW-OBL-0142
+  code_path `tools/repo/obligation-register-fixtures.sh` via source-tree
+    cited by HW-PD-0024
   code_path `tools/repo/readme-fixtures.sh` via source-tree
     cited by HW-DR-0084
   code_path `tools/repo/retire-worktree.sh` via source-tree
