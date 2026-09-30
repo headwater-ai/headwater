@@ -484,7 +484,7 @@ census
       <span style="font-size: 1rem;">Benchmark against comparables</span>
       <span class="tag">unmeasured</span>
     </div>
-    <p class="sans" style="font-size: 0.82rem; opacity: 0.6; margin: 0.9rem 0 0; max-width: 48rem;">This row stays empty until a measurement campaign runs, which is milestone M7. Principle 11 forbids publishing a number that no run produced.</p>
+    <p class="sans" style="font-size: 0.82rem; opacity: 0.6; margin: 0.9rem 0 0; max-width: 48rem;">A measurement campaign ran on 2026-09-30, and it measured this repository against itself with parts removed, not against the projects it is compared with. So this row stays empty. Principle 11 forbids publishing a number that no run produced.</p>
   </div>
 </section>
 
@@ -616,19 +616,7 @@ owes `superseded_by`
       <h2>Status, honestly</h2>
       <span class="secline"></span>
     </div>
-    <div class="rail" aria-hidden="true">
-      <span class="dot"></span><span class="span"></span>
-      <span class="dot"></span><span class="span"></span>
-      <span class="dot"></span><span class="span"></span>
-      <span class="dot"></span><span class="span"></span>
-      <span class="dot"></span><span class="span"></span>
-      <span class="dot"></span><span class="span open"></span>
-      <span class="dot open"></span>
-    </div>
-    <div class="raillabels">
-      <span>M1 core</span><span>M2 graph</span><span>M3 checks</span><span>M4 projections</span><span>M5 authoring</span><span>M6 distribution</span><span>M7 measurement — open</span>
-    </div>
-    <p style="font-size: 0.98rem; max-width: 46rem; margin: 0 0 1.1rem;">The engine runs, and one layer of it is unfinished. This repository types its own corpus, checks it on every commit, and scaffolds, explains, routes, generates and exports it. M6, distribution, is closed; what it left open — a second package and one outside adopter — continues as M6b. Every efficacy claim in this repository is still marked unmeasured. A lettered milestone for the canonical taxonomy library runs beside the numbered ones, and it is open too.</p>
+    <p style="font-size: 0.98rem; max-width: 46rem; margin: 0 0 1.1rem;">The engine runs, and one campaign has measured part of what it claims. This repository types its own corpus, checks it on every commit, and scaffolds, explains, routes, generates and exports it. <a href="https://github.com/headwater-ai/headwater/blob/main/docs/evaluations/what-the-counterfactual-campaign-of-2026-09-30-measured-by-component.md">The counterfactual campaign of 2026-09-30</a> measured it by component. The documents under <code>docs/</code> have a large measured effect on whether an agent gives a sufficient answer. The hooks and skills showed no detectable gain. The evaluation states each figure, with its interval and its cost, and this page repeats none of them. No arm measured the MCP server or the quality of governance itself, and the efficacy claims stay open until one does. The work still open is on <a href="https://github.com/headwater-ai/headwater/milestones">the milestones page</a>.</p>
     <!-- Both figures below come from the refresh script: the emitter split is
          read off the `Emitter` enum and `is_built` in
          engine/crates/generate/src/profile.rs, and the verb figures come from
