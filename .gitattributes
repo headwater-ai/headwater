@@ -97,10 +97,12 @@
 # `.githooks/merged-fold-check`, which runs the two producers
 # `headwater generate --check` and `headwater taxonomy resolve --check` over the
 # tree the merge produced. CI runs the same two on the merge-queue group tip.
-# No page under `site/` carries a measured figure since HW-DR-0097, so no
-# figure check runs on the merged tree. It needs no `git config` beyond the `core.hooksPath` every
-# hook here needs, and the hook file says why that position and not
-# `pre-merge-commit`.
+# The hook runs no figure check, because no committed page under `site/`
+# carries a measured figure since HW-DR-0097. CI still runs
+# `sh tools/site/refresh-figures.sh --check` on every tree, the group tip
+# included, to check that the figure markers are blank. The hook needs no
+# `git config` beyond the `core.hooksPath` every hook here needs, and the hook
+# file says why that position and not `pre-merge-commit`.
 #
 # # Which derived paths are folds
 #

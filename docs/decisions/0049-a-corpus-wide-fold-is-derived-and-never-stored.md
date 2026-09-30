@@ -15,7 +15,7 @@ provenance:
 relations:
   governs:
     - to: .gitattributes
-      verified_revision: sha256:9bb7abf94b7983f37f6803014e77508f73bf194a61a2e7742024c656fac1af19
+      verified_revision: sha256:7bec0c864a001745d8d0d7e64d63c749bc80d337bee7790d2faddd3ca6288c2a
   traces_to:
     - HW-EVAL-what-a-check-can-know
     - engine/crates/census/src/census.rs
