@@ -429,6 +429,8 @@ nav:
       - "Probe result for second-campaign-pilot-of-2026-09-28-documentation-tier-absent-arm-sufficiency": "probe-results/second-campaign-pilot-of-2026-09-28-documentation-tier-absent-arm-sufficiency.md"
       - "Probe result for status-probe-pilot-of-2026-09-29-campaign-tier-absent-arm-sufficiency": "probe-results/status-probe-pilot-of-2026-09-29-campaign-tier-absent-arm-sufficiency.md"
       - "Probe result for status-probe-pilot-of-2026-09-29-campaign-tier-present-arm-sufficiency": "probe-results/status-probe-pilot-of-2026-09-29-campaign-tier-present-arm-sufficiency.md"
+      - "Probe result for tombstone-probe-pilot-of-2026-09-29-campaign-tier-absent-arm-sufficiency": "probe-results/tombstone-probe-pilot-of-2026-09-29-campaign-tier-absent-arm-sufficiency.md"
+      - "Probe result for tombstone-probe-pilot-of-2026-09-29-campaign-tier-present-arm-sufficiency": "probe-results/tombstone-probe-pilot-of-2026-09-29-campaign-tier-present-arm-sufficiency.md"
   - "Probe runs":
       - "Probe runs": "probe-runs/README.md"
       - "Campaign of 2026-09-28, campaign tier, absent arm, navigability": "probe-runs/campaign-of-2026-09-28-campaign-tier-absent-arm-navigability.md"
@@ -457,6 +459,8 @@ nav:
       - "Second campaign pilot of 2026-09-28, documentation tier, absent arm, sufficiency": "probe-runs/second-campaign-pilot-of-2026-09-28-documentation-tier-absent-arm-sufficiency.md"
       - "Status probe pilot of 2026-09-29, campaign tier, absent arm, sufficiency": "probe-runs/status-probe-pilot-of-2026-09-29-campaign-tier-absent-arm-sufficiency.md"
       - "Status probe pilot of 2026-09-29, campaign tier, present arm, sufficiency": "probe-runs/status-probe-pilot-of-2026-09-29-campaign-tier-present-arm-sufficiency.md"
+      - "Tombstone probe pilot of 2026-09-29, campaign tier, absent arm, sufficiency": "probe-runs/tombstone-probe-pilot-of-2026-09-29-campaign-tier-absent-arm-sufficiency.md"
+      - "Tombstone probe pilot of 2026-09-29, campaign tier, present arm, sufficiency": "probe-runs/tombstone-probe-pilot-of-2026-09-29-campaign-tier-present-arm-sufficiency.md"
   - "Probes":
       - "Probes": "probes/README.md"
       - "A cold agent reaches the governing document through the corpus descriptor": "probes/a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor.md"
