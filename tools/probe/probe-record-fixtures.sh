@@ -2076,7 +2076,8 @@ leak_import "(E) a file an @ import in CLAUDE.md reaches is read" 'Read @notes/e
 present "and names the imported file, relative to the file that imports it" \
     "leak $status_probe notes/deeper.md HW-DR-0052" "$scratch/leak-one.out"
 leak_import "(E) the same import with CRLF line endings" 'Read @notes/extra.md first.\r\n' 1
-leak_import "an @ inside a code span is no import" 'Write `@notes/extra.md` to import it.\n' 0
+leak_import "an @ inside a code span is no import" 'Write `see @notes/extra.md now` to import it.\n' 0
+leak_import "an @ inside a fenced code block is no import" '```\nsee @notes/extra.md\n```\n' 0
 
 # AGENTS.md as a link to CLAUDE.md, as in this repository, is one file and
 # one line.
@@ -2088,6 +2089,11 @@ HW_PROBE_YML="$scratch/leak-probe.yml" sh "$seal" --leak "$scratch/leak-one" "$s
     > "$scratch/leak-one.out" 2>&1
 same "AGENTS.md as a link to CLAUDE.md is read once" "leak $status_probe CLAUDE.md HW-DR-0052" \
     "$(grep HW-DR-0052 "$scratch/leak-one.out")"
+
+# A leak string that a line break of a literal block splits is still one
+# leak string, because every text is read with its whitespace runs as one space.
+leak_one "a leak string split by a line break of a literal block is a leak" \
+    .claude/skills/s/SKILL.md '---\nname: s\ndescription: |\n  The status:\n  current one.\n---\n' 1
 
 # Front matter that does not parse is read whole, never skipped.
 leak_one "front matter that does not parse is read whole" \
