@@ -405,8 +405,16 @@ fn the_result_names_the_grader_by_its_own_version_and_not_the_engine_release() {
         );
     }
 
-    let recorded = std::fs::read_to_string(fixtures_dir().join("probe-result.record"))
-        .expect("it reads the recorded result");
+    // Under `HEADWATER_BLESS`, the fixture-tree case rewrites the record on
+    // another thread of this process, and a read here can land between its
+    // truncate and its write and find the file empty. So a blessed run reads
+    // the bytes it is about to record instead, and a plain run reads the file.
+    let recorded = if std::env::var_os("HEADWATER_BLESS").is_some() {
+        result_bytes(&fixtures_dir()).1
+    } else {
+        std::fs::read_to_string(fixtures_dir().join("probe-result.record"))
+            .expect("it reads the recorded result")
+    };
     let line = format!("Graded by grader {}.", headwater_probe::grade::VERSION);
     assert_eq!(
         recorded.lines().filter(|l| *l == line).count(),
