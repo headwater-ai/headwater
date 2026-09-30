@@ -386,6 +386,10 @@ Fixture discipline (below) covers checks. It does not cover the components that 
 
 Every check ships with at least one fixture that it fails and one that it passes. This is the floor, not the goal.
 
+**The floor is the firing condition, and a check also owes the discriminating condition.** The firing condition asks whether the check can fire at all. The discriminating condition asks whether an input exists on which the implemented rule and a plausible neighboring rule disagree. A fixture set can meet the firing condition in full and still never pose that choice. So an author names the neighboring rule and points at the fixture on which the two rules give different verdicts.
+
+`link.fragment.unresolved` before #209 is the worked case. The implemented rule counted a prior anchor as a repeat when that anchor began with the slug and a hyphen. The neighboring rule, which is the correct one, counts a prior anchor as a repeat only when it is the same slug. The unit test asserted the anchors of three identical headings, and on that input the two rules agree. The input that separates them is a fourth heading whose slug extends the slug of another one. That input was in the corpus and not in the fixtures, so the defect shipped and stayed wrong for a full release ([HW-OBL-0140](../obligations/0140-a-check-can-meet-the-failing-fixture-bar-with-a-fixture-that-cannot-distinguish-the-rule-from-its-neighbour.md)).
+
 This rule also connects to promotion ([spec 4](04-assurance-model.md#promotion-advisory-to-blocking)). The false-positive rate is measured against real corpora. A check that fails on no constructed example is a check whose author does not know what it detects. That is exactly the wallpaper that the manifesto principle exists to remove.
 
 ## What this leaves open
