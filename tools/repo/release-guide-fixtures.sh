@@ -607,6 +607,21 @@ contains "a record that governs ./.github/workflows/ci.yml and is not cited ther
 #   - `deploy-site.yml` checks out `inputs.ref`, so the `ref: main` a caller
 #     passes reaches the checkout, and each caller passes `secrets`, without
 #     which the deploy has no Cloudflare token.
+#   - A step outside `deploy-site.yml` that uses `cloudflare/wrangler-action`
+#     or `cloudflare/pages-action`, or runs `wrangler` and `deploy` on one
+#     line, is a second deploy path (#1342).
+#   - `deploy-site.yml` declares a `ref` input whose default is empty, so a
+#     push to `main` deploys its own commit, and the `ci.yml` caller passes no
+#     `ref` (#1342).
+#   - Each caller passes `secrets: inherit` and no other value, because
+#     `deploy-site.yml` declares no secrets and a mapping delivers no token
+#     (#1342).
+#   - The `ci.yml` caller `needs` `engine` and `headwater`, and its `if:`
+#     admits a push to `main` alone, with no `||`, `always()`, `cancelled()`
+#     or `failure()` (#1342).
+#   - The deploy job of `deploy-site.yml` has one constant concurrency group
+#     with `cancel-in-progress: false`, and neither caller has a concurrency
+#     of its own, so both calls share one queue (#1342).
 #   - No file that describes the APT route says that a build service of
 #     Cloudflare deploys it, by any of the names that service goes by (#1339,
 #     #1408). HW-DR-0097 moved the deploy into `deploy-site.yml`,
@@ -881,6 +896,19 @@ jobs = yaml.safe_load(open(sys.argv[1] + "/.github/workflows/release.yml", encod
 print(" ".join(k for k, v in jobs.items() if isinstance(v, dict) and v.get("uses") == "./.github/workflows/deploy-site.yml"))
 ' "$root" 2>/dev/null)
 
+# The same for ci.yml, and the job of deploy-site.yml that deploys, for the
+# arms d17 to d28 (#1342).
+ci_job=$(python3 -c '
+import sys, yaml
+jobs = yaml.safe_load(open(sys.argv[1] + "/.github/workflows/ci.yml", encoding="utf-8"))["jobs"]
+print(" ".join(k for k, v in jobs.items() if isinstance(v, dict) and v.get("uses") == "./.github/workflows/deploy-site.yml"))
+' "$root" 2>/dev/null)
+dep_job=$(python3 -c '
+import sys, yaml
+jobs = yaml.safe_load(open(sys.argv[1] + "/.github/workflows/deploy-site.yml", encoding="utf-8"))["jobs"]
+print(" ".join(k for k, v in jobs.items() if isinstance(v, dict) and "deploy-site.sh" in str(v.get("steps"))))
+' "$root" 2>/dev/null)
+
 if [ -n "$rel_job" ]; then
     # d1. The deploy job is deleted from release.yml: the case #1316 exists for.
     copy_tree "$scratch/d1"
@@ -970,6 +998,111 @@ edit_wf "$scratch/d5" release.yml "doc['jobs']['deploy-copy'] = {'needs': 'publi
 contains "a copy of the deploy steps in release.yml is red" \
     "release.yml job deploy-copy runs the deploy itself, so the site has two deploy paths" \
     "$(deploys "$scratch/d5")"
+
+# d16 to d29 hold what each workflow's own comment states about the one
+# deploy job: its ref input, its token, its one path, the ci.yml gate, and its
+# one queue (#1342). Each arm applies one shape to a copy and names the line.
+
+# d20. A deploy through Cloudflare's action, inlined into release.yml.
+copy_tree "$scratch/d20"
+edit_wf "$scratch/d20" release.yml "doc['jobs']['wa'] = {'needs': 'publish', 'runs-on': 'ubuntu-latest', 'steps': [{'uses': 'cloudflare/wrangler-action@v3', 'with': {'command': 'deploy'}}]}"
+same "a wrangler-action step in release.yml is red" \
+    "release.yml job wa runs the deploy itself, so the site has two deploy paths" \
+    "$(deploys "$scratch/d20" | tr '\n' '|' | sed 's/|$//')"
+
+# d21. A wrangler command with words between it and deploy.
+copy_tree "$scratch/d21"
+edit_wf "$scratch/d21" release.yml "doc['jobs']['wp'] = {'runs-on': 'ubuntu-latest', 'steps': [{'run': 'npx wrangler pages deploy site'}]}"
+same "a wrangler pages deploy step in release.yml is red" \
+    "release.yml job wp runs the deploy itself, so the site has two deploy paths" \
+    "$(deploys "$scratch/d21" | tr '\n' '|' | sed 's/|$//')"
+
+# d18. A ref default makes every push to main deploy that ref.
+copy_tree "$scratch/d18"
+edit_wf "$scratch/d18" deploy-site.yml "k = 'on' if 'on' in doc else True; doc[k]['workflow_call']['inputs']['ref']['default'] = 'v0.1.0'"
+same "a deploy-site.yml whose ref defaults to a tag is red" \
+    "deploy-site.yml defaults ref to v0.1.0, so a push to main deploys that ref and not its own commit" \
+    "$(deploys "$scratch/d18" | tr '\n' '|' | sed 's/|$//')"
+
+# d19. With no ref input, the ref: main of release.yml has nowhere to go.
+copy_tree "$scratch/d19"
+edit_wf "$scratch/d19" deploy-site.yml "k = 'on' if 'on' in doc else True; doc[k]['workflow_call']['inputs'].pop('ref')"
+same "a deploy-site.yml with no ref input is red" \
+    "deploy-site.yml declares no ref input, so the ref: main that release.yml passes reaches no checkout" \
+    "$(deploys "$scratch/d19" | tr '\n' '|' | sed 's/|$//')"
+
+if [ -n "$dep_job" ]; then
+    # d25. A deploy that cancels the one in progress.
+    copy_tree "$scratch/d25"
+    edit_wf "$scratch/d25" deploy-site.yml "doc['jobs']['$dep_job']['concurrency']['cancel-in-progress'] = True"
+    same "a deploy with cancel-in-progress: true is red" \
+        "deploy-site.yml job $dep_job can cancel a deploy in progress, so a release deploy can be cancelled and apt/ serves the previous release" \
+        "$(deploys "$scratch/d25" | tr '\n' '|' | sed 's/|$//')"
+
+    # d26. A deploy in no concurrency group.
+    copy_tree "$scratch/d26"
+    edit_wf "$scratch/d26" deploy-site.yml "doc['jobs']['$dep_job'].pop('concurrency')"
+    same "a deploy with no concurrency group is red" \
+        "deploy-site.yml job $dep_job has no concurrency group, so two deploys can run at once and an older one can finish last" \
+        "$(deploys "$scratch/d26" | tr '\n' '|' | sed 's/|$//')"
+
+    # d27. A group keyed on the ref splits the two callers into two queues.
+    copy_tree "$scratch/d27"
+    edit_wf "$scratch/d27" deploy-site.yml "doc['jobs']['$dep_job']['concurrency']['group'] = 'deploy-site-\${{ github.ref }}'"
+    same "a deploy whose group is keyed on the ref is red" \
+        "deploy-site.yml job $dep_job has a concurrency group that is not one constant, so the ci.yml and release.yml deploys do not share one queue" \
+        "$(deploys "$scratch/d27" | tr '\n' '|' | sed 's/|$//')"
+else
+    fail "deploy-site.yml has a job that runs tools/site/deploy-site.sh" \
+        "none, so the arms d25 to d27 have no job to edit"
+fi
+
+if [ -n "$ci_job" ]; then
+    # d17. The ci.yml caller passes an empty secrets mapping.
+    copy_tree "$scratch/d17"
+    edit_wf "$scratch/d17" ci.yml "doc['jobs']['$ci_job']['secrets'] = {}"
+    same "a ci.yml deploy that passes secrets: {} is red" \
+        "ci.yml job $ci_job passes secrets other than inherit, so the deploy has no Cloudflare token" \
+        "$(deploys "$scratch/d17" | tr '\n' '|' | sed 's/|$//')"
+
+    # d22. With no if:, a pull request and a merge group deploy.
+    copy_tree "$scratch/d22"
+    edit_wf "$scratch/d22" ci.yml "doc['jobs']['$ci_job'].pop('if')"
+    same "a ci.yml deploy with no if: is red" \
+        "ci.yml job $ci_job has no if:, so a pull request or a merge group runs the deploy" \
+        "$(deploys "$scratch/d22" | tr '\n' '|' | sed 's/|$//')"
+
+    # d23. An if: always() deploys on every event.
+    copy_tree "$scratch/d23"
+    edit_wf "$scratch/d23" ci.yml "doc['jobs']['$ci_job']['if'] = 'always()'"
+    same "a ci.yml deploy with if: always() is red" \
+        "ci.yml job $ci_job has an if: other than a push to main, so an event other than that push can run the deploy" \
+        "$(deploys "$scratch/d23" | tr '\n' '|' | sed 's/|$//')"
+
+    # d24. A deploy that does not wait for the engine tests.
+    copy_tree "$scratch/d24"
+    edit_wf "$scratch/d24" ci.yml "doc['jobs']['$ci_job']['needs'] = ['headwater']"
+    same "a ci.yml deploy that does not need engine is red" \
+        "ci.yml job $ci_job does not need engine, so it can deploy a commit that failed CI" \
+        "$(deploys "$scratch/d24" | tr '\n' '|' | sed 's/|$//')"
+
+    # d28. A caller with a queue of its own.
+    copy_tree "$scratch/d28"
+    edit_wf "$scratch/d28" ci.yml "doc['jobs']['$ci_job']['concurrency'] = {'group': 'ci-deploy', 'cancel-in-progress': True}"
+    same "a ci.yml deploy with a concurrency of its own is red" \
+        "ci.yml job $ci_job has a concurrency of its own, so its deploy does not wait in the one deploy-site queue alone" \
+        "$(deploys "$scratch/d28" | tr '\n' '|' | sed 's/|$//')"
+
+    # d29. The ci.yml caller names a ref, so a push to main deploys that ref.
+    copy_tree "$scratch/d29"
+    edit_wf "$scratch/d29" ci.yml "doc['jobs']['$ci_job']['with'] = {'ref': 'v0.1.0'}"
+    same "a ci.yml deploy that passes a ref is red" \
+        "ci.yml job $ci_job passes ref: v0.1.0, so a push to main deploys that ref and not its own commit" \
+        "$(deploys "$scratch/d29" | tr '\n' '|' | sed 's/|$//')"
+else
+    fail "ci.yml has a job that calls deploy-site.yml" \
+        "none, so the arms d17 and d22 to d29 have no job to edit"
+fi
 
 # d9. The APT route as each file that describes it states it (#1339).
 same "no file says a build service of Cloudflare deploys the APT repository" "" \
