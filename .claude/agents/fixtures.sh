@@ -440,13 +440,17 @@ record_misses_check() {
     if [ -z "$1" ]; then
         printf 'no item under ## Intake has the bold lead Record.' ; return
     fi
-    # One sentence must both name the tree and say to open, read, confirm or
-    # check: a ruling that meets the tree only where it withdraws a line has
-    # not said to look at it.
-    if ! printf '%s\n' "$1" | sed 's/\. /.\n/g' | grep -iw 'tree' | grep -qiwE 'opens?|reads?|confirms?|checks?'; then
+    # Each test reads one clause, split at a sentence end, a colon, a semicolon
+    # or ", and". One clause must both name the tree and say to open, read,
+    # confirm, check or verify: a ruling that meets the tree only where it
+    # withdraws a line has not said to look at it. One clause must name both the
+    # file and the symbol: a ruling that says "open the file" in one clause and
+    # "name the symbol" in another has not asked the record to name the file.
+    clauses=$(printf '%s\n' "$1" | sed 's/\. /.\n/g; s/: /:\n/g; s/; /;\n/g; s/, and /,\nand /g')
+    if ! printf '%s\n' "$clauses" | grep -iw 'tree' | grep -qiwE 'opens?|reads?|confirms?|checks?|verify|verifies'; then
         printf 'the ruling does not check the line against the tree: %s' "$1" ; return
     fi
-    if ! printf '%s\n' "$1" | grep -qiw 'file' || ! printf '%s\n' "$1" | grep -qiw 'symbol'; then
+    if ! printf '%s\n' "$clauses" | grep -iw 'file' | grep -qiw 'symbol'; then
         printf 'the ruling does not require naming the file and symbol checked: %s' "$1"
     fi
 }
@@ -459,8 +463,9 @@ else
 fi
 # The arms, each an Intake section in a scratch file: the ruling as it stood
 # before #1486 is reported, a ruling that meets the tree only where it withdraws
-# a line is reported, a ruling that checks the tree but names no symbol is
-# reported, a file with no Record item is reported, and a reworded ruling holds.
+# a line is reported, a ruling that names no symbol or no file in the clause
+# that asks the record to name them is reported, a file with no Record item
+# under Intake is reported, and two reworded rulings hold.
 record_arm() {
     printf '## Intake\n\n1. **Fold.** An open issue covers it.\n%s\n\n## Report\n' "$1" > "$scratch/record.md"
     record_misses_check "$(record_ruling "$scratch/record.md")"
@@ -480,11 +485,35 @@ case "$why" in
     *'file and symbol'*) pass 'and a ruling that checks the tree but names no symbol is reported' ;;
     *) fail 'a ruling that checks the tree but names no symbol is reported' "reported: \`$why\`" ;;
 esac
+why=$(record_arm '2. **Record.** Open the file the line names on the current tree and confirm it, and name in the Context the symbol you checked.')
+case "$why" in
+    *'file and symbol'*) pass 'and a ruling that opens the file but asks the record to name only the symbol is reported' ;;
+    *) fail 'a ruling that opens the file but asks the record to name only the symbol is reported' "reported: \`$why\`" ;;
+esac
+why=$(record_arm '2. **Record.** Check the line on the current tree, and name in the Context the symbol you read.')
+case "$why" in
+    *'file and symbol'*) pass 'and a ruling that checks the tree and names a symbol but no file is reported' ;;
+    *) fail 'a ruling that checks the tree and names a symbol but no file is reported' "reported: \`$why\`" ;;
+esac
 why=$(record_arm '2. **Backlog.** It has a reader.')
 case "$why" in
     *'no item'*) pass 'and an Intake section with no Record item is reported' ;;
     *) fail 'an Intake section with no Record item is reported' "reported: \`$why\`" ;;
 esac
+# A Record item that would hold, under a heading other than Intake: the reader
+# must not find it.
+printf '## Intake\n\n1. **Fold.** An open issue covers it.\n\n## Report\n\n2. **Record.** Open the file on the current tree, and name the file and the symbol.\n' > "$scratch/record.md"
+why=$(record_misses_check "$(record_ruling "$scratch/record.md")")
+case "$why" in
+    *'no item'*) pass 'and a Record item outside ## Intake is not read' ;;
+    *) fail 'a Record item outside ## Intake is not read' "reported: \`$why\`" ;;
+esac
+why=$(record_arm '2. **Record.** Verify the finding on the current tree, and name in the Context the file and the symbol.')
+if [ -z "$why" ]; then
+    pass 'and a reworded ruling that says verify holds'
+else
+    fail 'a reworded ruling that says verify holds' "$why"
+fi
 why=$(record_arm '2. **Record.** Before you record it, confirm the finding on the current *tree*: open the File it names. The Context names that file and the Symbol you read, never a line number.')
 if [ -z "$why" ]; then
     pass 'and a reworded ruling with both requirements holds'
