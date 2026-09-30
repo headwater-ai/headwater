@@ -2157,20 +2157,45 @@ awk '/^      no-hook: / { print "      no-hook: [.claude/hooks/intent.sh"; next 
     "$root/.headwater/probe.yml" > "$scratch/open-flow.yml"
 HW_PROBE_YML="$scratch/open-flow.yml" sh "$ablate" --delta campaign no-hook > /dev/null 2> "$scratch/open-flow.err"
 same "a flow sequence that never closes is refused" "2" "$?"
-present "as a form the script does not read, not as an empty delta" \
-    "is not a sequence of paths in a form this script reads" "$scratch/open-flow.err"
+present "with the engine's reason, not as an empty delta" \
+    "did not parse as YAML" "$scratch/open-flow.err"
+absent "and never as an empty delta" "empty delta" "$scratch/open-flow.err"
+
+# Verify round 3, finding 3: four forms the engine plans and a hand-written
+# reader got wrong. The delta now comes from `headwater probe plan --delta`,
+# so each builds the arm the engine reads. The last one also holds the arm
+# after it: no-skills must still read as its own delta.
+delta_form "a delta under a components key that carries a comment" \
+    '/^    components:/ { print "    components: # the component arms"; next } { print }'
+delta_form "a delta under a quoted key" \
+    '/^      no-hook: / { print "      \"no-hook\": [.claude/hooks/intent.sh]"; next } { print }'
+delta_form "a flow-sequence delta with a trailing comma" \
+    '/^      no-hook: / { print "      no-hook: [.claude/hooks/intent.sh, ]"; next } { print }'
+delta_form "a multi-line flow delta with a comment before its closing bracket" \
+    '/^      no-hook: / { print "      no-hook: ["; print "        .claude/hooks/intent.sh, # the intent hook"; print "        # nothing else"; print "      ]"; next } { print }'
+HW_PROBE_YML="$scratch/form.yml" sh "$ablate" --delta campaign no-skills > "$scratch/form-next.out" 2> "$scratch/form-next.err"
+same "and the arm after it reads as its own delta" "declared - .claude/skills" "$(cat "$scratch/form-next.out")"
 
 sed 's/^      no-hook: .*/      no-hook: .claude\/hooks\/intent.sh/' "$root/.headwater/probe.yml" > "$scratch/scalar-delta.yml"
 HW_PROBE_YML="$scratch/scalar-delta.yml" sh "$ablate" --delta campaign no-hook \
     > /dev/null 2> "$scratch/scalar-delta.err"
 same "a delta that is not a sequence is refused" "2" "$?"
 present "and the refusal names the delta, not the ablation" \
-    "the \`no-hook\` delta of the \`campaign\` tier is not a sequence of paths" "$scratch/scalar-delta.err"
+    "the \`no-hook\` delta of the \`campaign\` tier in .headwater/probe.yml is not a sequence of paths" "$scratch/scalar-delta.err"
 
 layer_tree
 sh "$ablate" campaign "$scratch/layer" no-docs > /dev/null 2> "$scratch/undeclared.err"
 same "ablate.sh refuses an arm the tier declares no delta for" "2" "$?"
-present "and names it" "no delta for the \`no-docs\` arm" "$scratch/undeclared.err"
+present "and names it" "\`--arm no-docs\` names no arm" "$scratch/undeclared.err"
+if [ -e "$scratch/layer/.claude/hooks/intent.sh" ] && [ -e "$scratch/layer/CLAUDE.md" ]; then
+    pass "and it removes nothing"
+else
+    fail "and it removes nothing" "$(cd "$scratch/layer" && find . -type f | sort | tr '\n' ' ')"
+fi
+layer_tree
+sh "$ablate" regression "$scratch/layer" no-hook > /dev/null 2> "$scratch/not-run.err"
+same "ablate.sh refuses a component arm the tier does not run" "2" "$?"
+present "and says the tier does not run it" "does not run the \`no-hook\` arm" "$scratch/not-run.err"
 
 layer_tree
 sh "$ablate" campaign "$scratch/layer" mcp > /dev/null 2> "$scratch/mcp.err"
