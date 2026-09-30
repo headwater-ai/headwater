@@ -517,6 +517,14 @@ fn check_and_new_finish_when_a_claim_file_is_a_named_pipe() {
         flat(&out).contains(".headwater/ids/decision_id/HW-DR-9990"),
         "check names the pipe in the claim store: {out}"
     );
+    assert!(
+        flat(&out).contains("is a named pipe, a socket or a device, so it names no document"),
+        "check says what the entry is: {out}"
+    );
+    assert!(
+        !flat(&out).contains("write the path of the document whose"),
+        "check never asks for a write into the pipe: {out}"
+    );
     under_deadline(
         &root,
         &["new", "decision", "--title", "After the pipe"],

@@ -151,6 +151,11 @@ pub struct Claim {
     /// root. Empty where the file holds no line at all, which is the state
     /// [`STALE`] reports and no writer here can produce.
     pub claimant: String,
+    /// The entry is a named pipe, a socket or a device, which the store never
+    /// opens, so its claimant is empty. [`STALE`] says what it is rather than
+    /// asking the reader to write into it, because a write to a pipe blocks
+    /// (#1366).
+    pub special: bool,
 }
 
 /// Every claim the store holds, in `(scheme, identifier)` order.
@@ -203,22 +208,29 @@ impl Claims {
                 // Only a regular file is opened. `metadata` follows a link, so
                 // a claim reached through one is still read. A named pipe, a
                 // socket or a device is never opened, because a pipe with no
-                // writer blocks its reader for ever (#1366). Such an entry
-                // reads as a claim that names nobody, as an unreadable claim
-                // does, so `claim.stale` reports it at its own path.
-                let claimant = opens(&claim.path())
-                    .then(|| std::fs::read_to_string(claim.path()).ok())
-                    .flatten()
-                    .unwrap_or_default()
-                    .lines()
-                    .next()
-                    .unwrap_or_default()
-                    .trim()
-                    .to_string();
+                // writer blocks its reader for ever (#1366). Such an entry is
+                // recorded as special, and an entry that cannot be read at
+                // all reads as a claim that names nobody, so `claim.stale`
+                // reports either at its own path.
+                let (claimant, special) = match entry_of(&claim.path()) {
+                    Entry::Regular => (
+                        std::fs::read_to_string(claim.path())
+                            .unwrap_or_default()
+                            .lines()
+                            .next()
+                            .unwrap_or_default()
+                            .trim()
+                            .to_string(),
+                        false,
+                    ),
+                    Entry::Special => (String::new(), true),
+                    Entry::Unreadable => (String::new(), false),
+                };
                 entries.push(Claim {
                     scheme: scheme_name.clone(),
                     id,
                     claimant,
+                    special,
                 });
             }
         }
@@ -227,12 +239,33 @@ impl Claims {
     }
 }
 
-/// Whether [`Claims::at`] opens the entry at `path`: a regular file, reached
-/// directly or through a link, and nothing else. A named pipe, a socket and a
-/// device are never opened, because a pipe with no writer and a device such as
-/// `/dev/zero` never end a read (#1366).
-fn opens(path: &Path) -> bool {
-    std::fs::metadata(path).is_ok_and(|meta| meta.is_file())
+/// What [`Claims::at`] found at one entry of the store.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Entry {
+    /// A regular file, reached directly or through a link. The only entry
+    /// that is opened.
+    Regular,
+    /// A named pipe, a socket or a device, reached directly or through a link.
+    /// It is never opened, because a pipe with no writer and a device such as
+    /// `/dev/zero` never end a read (#1366).
+    Special,
+    /// Anything else: a dangling link, an entry `metadata` cannot read, or a
+    /// link to a directory. It is not opened and names nobody.
+    Unreadable,
+}
+
+/// One decision per entry of the store, taken on the file type `metadata`
+/// reports after it follows a link. What is neither a file nor a directory
+/// once the link is followed is a named pipe, a socket or a device.
+fn entry_of(path: &Path) -> Entry {
+    let Ok(meta) = std::fs::metadata(path) else {
+        return Entry::Unreadable;
+    };
+    match (meta.is_file(), meta.is_dir()) {
+        (true, _) => Entry::Regular,
+        (false, true) => Entry::Unreadable,
+        (false, false) => Entry::Special,
+    }
 }
 
 impl Claims {
@@ -270,10 +303,17 @@ impl Claims {
     }
 
     /// The store as one string, in canonical order, length-prefixed so that no
-    /// claimant can write the separator of the next entry.
+    /// claimant can write the separator of the next entry. A special entry is
+    /// written as `-` in place of the length, which no regular entry writes,
+    /// so the digest tells a named pipe from an empty file and a store of
+    /// regular files digests as it did before the distinction (#1366).
     pub fn render(&self) -> String {
         let mut out = String::new();
         for claim in &self.entries {
+            if claim.special {
+                out.push_str(&format!("{}/{} -\n", claim.scheme, claim.id));
+                continue;
+            }
             out.push_str(&format!(
                 "{}/{} {} {}\n",
                 claim.scheme,
@@ -501,7 +541,12 @@ impl CorpusCheck for Stale<'_> {
     /// The second edition: a claim naming a path no document stands at, whose
     /// identifier one document holds at another path, is now reported and
     /// names that path. The first reported nothing for it.
-    const VERSION: u32 = 2;
+    ///
+    /// The third edition: a named pipe, a socket or a device in the store is
+    /// reported as what it is, and its remediation says to delete it. The
+    /// second reported it as a claim that names nobody and told the reader to
+    /// write into it, and a write to a named pipe blocks (#1366).
+    const VERSION: u32 = 3;
     const NEEDS_CLAIMS: bool = true;
 
     fn evaluate(&self, view: &CorpusView<'_>) -> Outcome {
@@ -511,6 +556,31 @@ impl CorpusCheck for Stale<'_> {
         let mut findings = Vec::new();
         for claim in claims.entries() {
             let at_path = path_of(&claim.scheme, &claim.id);
+            // A named pipe, a socket or a device, which the store never opens.
+            // It names no document, and the remediation must not ask for a
+            // write into it, because a write to a named pipe blocks (#1366).
+            if claim.special {
+                findings.push(Finding {
+                    rule: self::STALE,
+                    severity: Severity::Warn,
+                    obligation: None,
+                    path: at_path.clone(),
+                    line: 0,
+                    column: 0,
+                    message: format!(
+                        "`{at_path}` is a named pipe, a socket or a device, so it names no \
+                         document and `{}` is claimed by nobody",
+                        claim.id
+                    ),
+                    remediation: format!(
+                        "delete `{at_path}`. If the identifier was spent, put a regular file \
+                         there that holds the path of the document whose `{}` is `{}`",
+                        self.facet, claim.id
+                    ),
+                    patch: None,
+                });
+                continue;
+            }
             // A claim naming nothing. No writer of this engine produces one,
             // and a hand edit or a merge that concatenated two claims does. It
             // is reported against the claim itself, because there is no
@@ -647,6 +717,7 @@ mod tests {
             scheme: "decision_id".to_string(),
             id: id.to_string(),
             claimant: claimant.to_string(),
+            special: false,
         }
     }
 
@@ -863,10 +934,12 @@ mod tests {
         assert!(made.success(), "the named pipe is made");
         let socket = std::os::unix::net::UnixListener::bind(dir.join("socket"))
             .expect("the socket is bound");
+        std::os::unix::fs::symlink(dir.join("gone"), dir.join("dangling"))
+            .expect("the link is made");
 
-        let answers: Vec<(&str, bool)> = ["file", "link", "device", "endless", "pipe", "socket"]
+        let answers: Vec<(&str, Entry)> = ["file", "link", "device", "endless", "pipe", "socket", "dangling"]
             .into_iter()
-            .map(|name| (name, opens(&dir.join(name))))
+            .map(|name| (name, entry_of(&dir.join(name))))
             .collect();
         drop(socket);
         std::fs::remove_dir_all(&dir).ok();
@@ -874,13 +947,103 @@ mod tests {
         assert_eq!(
             answers,
             vec![
-                ("file", true),
-                ("link", true),
-                ("device", false),
-                ("endless", false),
-                ("pipe", false),
-                ("socket", false),
+                ("file", Entry::Regular),
+                ("link", Entry::Regular),
+                ("device", Entry::Special),
+                ("endless", Entry::Special),
+                ("pipe", Entry::Special),
+                ("socket", Entry::Special),
+                ("dangling", Entry::Unreadable),
             ]
+        );
+    }
+
+    /// A named pipe, a socket or a device in the store names no document, and
+    /// `claim.stale` says what it is. A write to a pipe blocks, so the
+    /// remediation never tells the reader to write into the entry: it says to
+    /// delete it. A regular file that holds no line keeps the empty-claimant
+    /// sentence, and the store's digest tells the two apart (#1366).
+    #[cfg(unix)]
+    #[test]
+    fn a_pipe_socket_or_device_in_the_store_is_reported_as_what_it_is() {
+        let thread: String = format!("{:?}", std::thread::current().id())
+            .chars()
+            .filter(char::is_ascii_digit)
+            .collect();
+        let nanos = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .expect("a clock later than the epoch")
+            .subsec_nanos();
+        // Under `/tmp` for the socket's 108-byte path limit, as above.
+        let root = std::path::PathBuf::from(format!(
+            "/tmp/hw-stale-{}-{thread}-{nanos}",
+            std::process::id()
+        ));
+        let scheme = root.join(STORE).join("decision_id");
+        std::fs::create_dir_all(&scheme).expect("the directory is made");
+        std::os::unix::fs::symlink("/dev/null", scheme.join("DR-0001")).expect("the link is made");
+        let made = std::process::Command::new("mkfifo")
+            .arg(scheme.join("DR-0002"))
+            .status()
+            .expect("mkfifo runs");
+        assert!(made.success(), "the named pipe is made");
+        let socket =
+            std::os::unix::net::UnixListener::bind(scheme.join("DR-0003")).expect("the socket is bound");
+        std::fs::write(scheme.join("DR-0004"), "").expect("the empty claim writes");
+
+        let claims = Claims::at(&root);
+        let empty = Claims::of(
+            claims
+                .entries()
+                .iter()
+                .map(|claim| Claim {
+                    special: false,
+                    ..claim.clone()
+                })
+                .collect(),
+        );
+        drop(socket);
+        std::fs::remove_dir_all(&root).ok();
+
+        let special: Vec<(&str, bool)> = claims
+            .entries()
+            .iter()
+            .map(|claim| (claim.id.as_str(), claim.special))
+            .collect();
+        assert_eq!(
+            special,
+            vec![
+                ("DR-0001", true),
+                ("DR-0002", true),
+                ("DR-0003", true),
+                ("DR-0004", false),
+            ]
+        );
+        assert_ne!(
+            claims.digest(),
+            empty.digest(),
+            "the digest tells a special entry from an empty file"
+        );
+
+        let found = findings(&Index::default(), &claims);
+        assert_eq!(found.len(), 4, "{found:#?}");
+        for finding in &found[..3] {
+            assert!(
+                finding
+                    .message
+                    .contains("is a named pipe, a socket or a device, so it names no document"),
+                "{finding:#?}"
+            );
+            assert!(
+                !finding.remediation.contains("write the path"),
+                "{finding:#?}"
+            );
+            assert!(finding.remediation.starts_with("delete `"), "{finding:#?}");
+        }
+        assert!(
+            found[3].message.contains("names no document, so `DR-0004`"),
+            "{:#?}",
+            found[3]
         );
     }
 }

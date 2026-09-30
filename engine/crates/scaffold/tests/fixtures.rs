@@ -619,6 +619,7 @@ fn a_value_the_store_holds_is_taken_and_the_allocator_mints_past_it() {
         scheme: "decision_id".to_string(),
         id: taken.clone(),
         claimant: "corpus/decisions/on-another-branch.md".to_string(),
+        special: false,
     }]);
     let sources = Sources {
         claims: &claims,
