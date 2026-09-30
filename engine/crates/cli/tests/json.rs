@@ -1445,7 +1445,10 @@ fn explain_json_with_paths_at_most_lists_the_first_n_and_counts_every_file() {
         .expect("`matched`")
         .parse()
         .expect("`matched` is a number");
-    assert_eq!(matched, FILES, "`matched` counts every file, not the listed ones");
+    assert_eq!(
+        matched, FILES,
+        "`matched` counts every file, not the listed ones"
+    );
     let paths: Vec<&str> = only
         .as_map()
         .and_then(|map| map.get("paths"))
@@ -1473,11 +1476,22 @@ fn explain_json_with_paths_at_most_lists_the_first_n_and_counts_every_file() {
 #[test]
 fn explain_json_paths_at_most_refuses_zero() {
     let output = Command::new(env!("CARGO_BIN_EXE_headwater"))
-        .args(["explain", "--json", "--paths-at-most", "0", "HW-DR-0074", "--root"])
+        .args([
+            "explain",
+            "--json",
+            "--paths-at-most",
+            "0",
+            "HW-DR-0074",
+            "--root",
+        ])
         .arg(repository())
         .output()
         .expect("the binary runs");
-    assert_eq!(output.status.code(), Some(2), "clap refuses the value");
+    assert_eq!(
+        output.status.code(),
+        Some(1),
+        "the grammar refuses the value"
+    );
     let stderr = String::from_utf8_lossy(&output.stderr);
     assert!(
         stderr.contains("a whole number above zero"),
@@ -1498,7 +1512,11 @@ fn explain_paths_at_most_without_json_is_refused() {
         .arg(repository())
         .output()
         .expect("the binary runs");
-    assert_eq!(output.status.code(), Some(2), "clap refuses the option");
+    assert_eq!(
+        output.status.code(),
+        Some(1),
+        "the grammar refuses the option"
+    );
     assert!(output.stdout.is_empty(), "nothing is explained");
     let stderr = String::from_utf8_lossy(&output.stderr);
     assert!(
