@@ -1983,3 +1983,86 @@ fn probe_plan_delta_prints_the_parsed_delta_of_each_arm() {
     let bare = root.run(&["probe", "plan", "--tier", "campaign", "--delta"]);
     assert_ne!(bare.code, Some(0), "{}{}", bare.out, bare.err);
 }
+
+/// `probe plan --instrument` prints the `instrument` sequence the declaration
+/// parses, one path per line, in every form the engine accepts, so that
+/// `tools/probe/ablate.sh` reads it from here and parses no YAML itself
+/// (#1472, clause 8). A hand-written reader matched a block sequence at two
+/// spaces alone, so a block at four spaces printed nothing and every arm then
+/// kept the answer key.
+#[test]
+fn probe_plan_instrument_prints_the_parsed_instrument() {
+    let at = std::env::temp_dir().join(format!(
+        "headwater-cli-wiring-{}-probe-instrument",
+        std::process::id()
+    ));
+    let _ = std::fs::remove_dir_all(&at);
+    std::fs::create_dir_all(at.join(".headwater")).expect("the declaration directory is there");
+    let root = Root { at };
+    let declared = std::fs::read_to_string(repository().join(".headwater/probe.yml"))
+        .expect("this repository declares its probes");
+    let block = "instrument:\n  - docs/probes\n  - docs/probe-runs\n  - docs/probe-results\n  - .headwater/export.json\n";
+    assert!(
+        declared.contains(block),
+        "the instrument block moved, so this case no longer rewrites it"
+    );
+    let expected = "docs/probes\ndocs/probe-runs\ndocs/probe-results\n.headwater/export.json\n";
+    for (form, written) in [
+        ("block", block.to_string()),
+        (
+            "four-space block",
+            "instrument:\n    - docs/probes\n    - docs/probe-runs\n    - docs/probe-results\n    - .headwater/export.json\n"
+                .to_string(),
+        ),
+        (
+            "flow",
+            "instrument: [docs/probes, \"docs/probe-runs\", docs/probe-results, .headwater/export.json] # the answer key\n"
+                .to_string(),
+        ),
+    ] {
+        std::fs::write(
+            root.path(".headwater/probe.yml"),
+            declared.replace(block, &written),
+        )
+        .expect("the declaration writes");
+        let printed = root.run(&["probe", "plan", "--instrument"]);
+        assert_eq!(
+            printed.code,
+            Some(0),
+            "{form}: {}{}",
+            printed.out,
+            printed.err
+        );
+        assert_eq!(printed.out, expected, "{form}: {}", printed.err);
+    }
+
+    // An unsafe entry is refused at status 1 and prints no path, because a
+    // script removes each printed path with `rm -rf`.
+    std::fs::write(
+        root.path(".headwater/probe.yml"),
+        declared.replace(block, "instrument:\n  - docs/probes\n  - ../outside\n"),
+    )
+    .expect("the declaration writes");
+    let unsafe_entry = root.run(&["probe", "plan", "--instrument"]);
+    assert_eq!(
+        unsafe_entry.code,
+        Some(1),
+        "{}{}",
+        unsafe_entry.out,
+        unsafe_entry.err
+    );
+    assert_eq!(unsafe_entry.out, "", "a refused instrument prints no path");
+
+    // `--instrument` and `--delta` are two outputs, and one run prints one.
+    let both = root.run(&[
+        "probe",
+        "plan",
+        "--tier",
+        "campaign",
+        "--arm",
+        "absent",
+        "--delta",
+        "--instrument",
+    ]);
+    assert_ne!(both.code, Some(0), "{}{}", both.out, both.err);
+}

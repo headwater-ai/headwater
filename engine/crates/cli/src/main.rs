@@ -430,6 +430,7 @@ fn dispatch(root: &Path, verb: Verb) -> ExitCode {
                 tier,
                 arm,
                 delta,
+                instrument,
                 category,
                 seed,
                 exclude,
@@ -451,6 +452,9 @@ fn dispatch(root: &Path, verb: Verb) -> ExitCode {
                 Ok((tier, narrowing, budgets)) if delta => {
                     probe_delta(&budgets, tier, narrowing.arm)
                 }
+                // `--instrument` prints the parsed `instrument` sequence, so
+                // a script that removes it parses no YAML either (#1472).
+                Ok((_, _, budgets)) if instrument => probe_instrument(&budgets),
                 Ok((tier, narrowing, budgets)) => probe_plan(root, &budgets, tier, &narrowing),
             },
             Some(ProbeWord::Record { path }) => match path {
@@ -5410,6 +5414,20 @@ fn probe_plan(
         narrowing,
     );
     print!("{}", plan.render(headwater_cli::paint::stdout_color()));
+    ExitCode::SUCCESS
+}
+
+/// `headwater probe plan --instrument`: the paths every arm of every tier
+/// removes, one per line.
+///
+/// It prints the parse `Budgets::read` already made, which refused an unsafe
+/// entry before anything reached here, so a caller that removes each line
+/// with `rm -rf` removes only a path inside the tree. A declaration with no
+/// `instrument` prints nothing and exits 0.
+fn probe_instrument(budgets: &headwater_probe::Budgets) -> ExitCode {
+    for path in &budgets.instrument {
+        println!("{path}");
+    }
     ExitCode::SUCCESS
 }
 
