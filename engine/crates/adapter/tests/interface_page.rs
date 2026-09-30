@@ -64,9 +64,11 @@ fn page_members(page: &str) -> Vec<String> {
 /// entry of `rules`. The table names `coverage`, `findings` and `read_set` as
 /// top-level members and sends the reader elsewhere for their insides.
 fn written_members(fixture: &str, into: &mut Vec<String>) {
-    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests").join(fixture);
-    let text =
-        std::fs::read_to_string(&path).unwrap_or_else(|error| panic!("{}: {error}", path.display()));
+    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("tests")
+        .join(fixture);
+    let text = std::fs::read_to_string(&path)
+        .unwrap_or_else(|error| panic!("{}: {error}", path.display()));
     let value = headwater_yaml::load(&text)
         .unwrap_or_else(|errors| panic!("{} does not parse: {errors:?}", path.display()))
         .value;
