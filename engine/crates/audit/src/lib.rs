@@ -310,16 +310,13 @@ impl DwellReading {
 /// The closed warrant set of [spec 3](../../../../docs/spec/03-authoring-and-lifecycle.md#the-warrant-and-what-each-value-requires),
 /// in the order that document's table lists it.
 ///
-/// Written out here rather than derived from the values in use, for the reason
+/// Written out rather than derived from the values in use, for the reason
 /// [`CREATORS`] is written out. A warrant that no document of a corpus carries
 /// is an arm of the promotion reading that this corpus cannot fill, and a
 /// report built from the values in use omits exactly the arm a reader needs.
-pub const WARRANTS: [&str; 4] = [
-    "accepted",
-    headwater_doc::REGENERATED,
-    "transcribed",
-    "asserted",
-];
+/// It names [`headwater_doc::WARRANTS`], which is the one spelling the check
+/// layer and the query surface also read.
+pub const WARRANTS: [&str; 4] = headwater_doc::WARRANTS;
 
 /// The two warrants the engine derives from the generated-file marker.
 ///
@@ -350,8 +347,8 @@ pub struct WarrantReading {
     /// Classified documents whose provenance block states this value.
     pub stated: usize,
     /// Whether the closed set of spec 3 holds this value. A row where this is
-    /// false is a value a corpus invented, and no check reads a warrant
-    /// *value*, so this reading is the only place one is reported.
+    /// false is a value a corpus invented. `warrant.value.not_permitted`
+    /// reports each document that states one, and this reading counts them.
     /// `warrant.promoted` reads a movement between two values and admits any
     /// value at either end, which is why it reports none of this.
     pub closed_set: bool,
@@ -753,8 +750,8 @@ fn warrants(classified: &[&Row]) -> Warrants {
             derived: DERIVED.contains(value),
         })
         .collect();
-    // Then whatever else a document stated. No check reads a warrant value, so
-    // a value outside the closed set reaches no other report in this engine.
+    // Then whatever else a document stated. `warrant.value.not_permitted`
+    // reports each document at such a value, and this row counts them.
     readings.extend(stated.into_iter().map(|(value, stated)| WarrantReading {
         value,
         stated,

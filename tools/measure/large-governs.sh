@@ -18,6 +18,7 @@
 #
 #   - `headwater check --strict` over the scratch corpus;
 #   - `headwater explain --json` of the one document;
+#   - the same with `--paths-at-most 20`, the bound the edit hook passes;
 #   - `hw_governed_by_document` of `.claude/hooks/lib.sh` on that document,
 #     which is the edit-time hook's reader of `reach.members[].paths`;
 #   - `headwater check --strict` over this repository, as the base figure.
@@ -27,7 +28,9 @@
 # load on a shared host does not change it, which is how spec 5 measured
 # `headwater route`. One sample is the mean of a batch of runs, 10 by default
 # and `HW_MEASURE_BATCH` otherwise, because `time -p` counts hundredths of a
-# second. It also prints the byte size of the explain document.
+# second. It also prints the byte size of each explain document. The hook
+# reads its document once for each count it needs, so the size of the bounded
+# document is what the hook's cost follows (#1346).
 #
 # The engine is the `dev-release` build of this checkout, and never `--release`
 # (DEVELOPING.md says why). `HW_MEASURE_ENGINE` names another binary. The
@@ -118,6 +121,8 @@ EOF
 
 "$engine" explain --json "$document" --root "$tree" > "$scratch/explain.json"
 bytes=$(wc -c < "$scratch/explain.json" | tr -d ' ')
+"$engine" explain --json --paths-at-most 20 "$document" --root "$tree" > "$scratch/bounded.json"
+bounded_bytes=$(wc -c < "$scratch/bounded.json" | tr -d ' ')
 documents=$(awk '$2 == "typed" && NF == 2 { print $1; exit }' "$scratch/warm-repo.out")
 
 # The batch loop discards each run's exit status, so a command that failed
@@ -129,11 +134,13 @@ status() {
 }
 check_status=$(status "$engine" check --strict --root "$tree")
 explain_status=$(status "$engine" explain --json "$document" --root "$tree")
+bounded_status=$(status "$engine" explain --json --paths-at-most 20 "$document" --root "$tree")
 hook_status=$(status sh "$scratch/hook.sh")
 repo_status=$(status "$engine" check --strict --root "$repo")
 
 check_ms=$(median "$engine" check --strict --root "$tree")
 explain_ms=$(median "$engine" explain --json "$document" --root "$tree")
+bounded_ms=$(median "$engine" explain --json --paths-at-most 20 "$document" --root "$tree")
 hook_ms=$(median sh "$scratch/hook.sh")
 repo_ms=$(median "$engine" check --strict --root "$repo")
 
@@ -142,6 +149,7 @@ printf 'files             %s under src/big/, one governs edge onto src/big/**\n'
 printf 'runs              median of %s warm samples, each the mean of %s runs, user+system CPU\n' "$runs" "$batch"
 printf 'check --strict    %s ms (generated tree), exit %s\n' "$check_ms" "$check_status"
 printf 'explain --json    %s ms, %s bytes, exit %s\n' "$explain_ms" "$bytes" "$explain_status"
+printf 'explain bounded   %s ms, %s bytes, exit %s (--paths-at-most 20)\n' "$bounded_ms" "$bounded_bytes" "$bounded_status"
 printf 'hook              %s ms (hw_governed_by_document), exit %s\n' "$hook_ms" "$hook_status"
 printf 'check --strict    %s ms (this repository, %s typed documents), exit %s\n' "$repo_ms" "$documents" "$repo_status"
 printf 'hook output       %s\n' "$(head -n 2 "$scratch/hook.out" | tr '\n' ' ')"

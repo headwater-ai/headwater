@@ -23,7 +23,7 @@ relations:
 
 ## Context
 
-[Spec 3](../spec/03-authoring-and-lifecycle.md#provenance-is-recorded-not-assumed) puts the shape of the provenance block with the engine rather than with a taxonomy. It also says that four engine rules turn on the warrant. The [meta-schema](../../engine/crates/meta/meta-schema.yml) declares no provenance block, and no check reads one.
+[Spec 3](../spec/03-authoring-and-lifecycle.md#provenance-is-recorded-not-assumed) puts the shape of the provenance block with the engine rather than with a taxonomy. It also says that four engine rules turn on the warrant. The [meta-schema](../../engine/crates/meta/meta-schema.yml) declares no provenance block. Since [#1438](https://github.com/headwater-ai/headwater/issues/1438), `warrant.value.not_permitted` and `warrant.acceptance.unpaired` read the warrant and the acceptor in it. No check reads the shape of the block as a whole.
 
 ## Obligation
 

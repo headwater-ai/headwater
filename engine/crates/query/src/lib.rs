@@ -75,7 +75,7 @@ const SCENT: &str = "scent";
 const NAME: &str = "name";
 
 /// The warrant value that spec 5 makes a pointer state out loud.
-const ASSERTED: &str = "asserted";
+const ASSERTED: &str = headwater_doc::ASSERTED;
 
 /// The reads, over one census and the graph built from it.
 ///
@@ -143,11 +143,22 @@ pub struct Pointer {
     pub purpose: Option<String>,
     /// The `scent` facet: the cue a reader decides on.
     pub summary: Option<String>,
-    /// The warrant, carried only when it is one a reader must be told about.
-    /// Spec 5: a pointer to an `asserted` document "states that warrant beside
-    /// the summary", because nobody accepted the document and an agent that
-    /// follows the pointer has to know before it reads.
+    /// Whether no acceptance is read from the document's warrant, which a
+    /// reader must be told. Spec 5: a pointer to an `asserted` document "states
+    /// that warrant beside the summary", because nobody accepted the document
+    /// and an agent that follows the pointer has to know before it reads.
+    ///
+    /// A declared warrant outside spec 3's closed set sets it too. Nothing in
+    /// `acepted` or `proposed` says a person read the document, and a pointer
+    /// that served one as vouched is the defect #1438 found.
     pub unwarranted: bool,
+    /// The declared warrant, as written, when it is outside the closed set, so
+    /// that a rendering says what it is rather than calling it `asserted`.
+    ///
+    /// Rust-only. The MCP contract carries `unwarranted` alone, and
+    /// [`crate::json`] writes no member for this field, so the contract row in
+    /// `docs/interfaces/headwater-mcp.md` does not move.
+    pub outside: Option<String>,
 }
 
 /// What a traversal offers: the far end of one edge, with the cue that stands
@@ -512,7 +523,12 @@ impl<'a> Surface<'a> {
                 .purpose_of(document.kind)
                 .map(|purpose| purpose.name.clone()),
             summary: self.summary(document),
-            unwarranted: self.warrant(document).as_deref() == Some(ASSERTED),
+            unwarranted: self
+                .warrant(document)
+                .is_some_and(|warrant| warrant == ASSERTED || !headwater_doc::is_warrant(&warrant)),
+            outside: self
+                .warrant(document)
+                .filter(|warrant| !headwater_doc::is_warrant(warrant)),
         }
     }
 
@@ -650,8 +666,12 @@ impl Pointer {
             line.push_str(" — ");
             line.push_str(summary);
         }
-        if self.unwarranted {
-            line.push_str(" [asserted: nobody accepted this document]");
+        match (&self.outside, self.unwarranted) {
+            (Some(warrant), _) => line.push_str(&format!(
+                " [warrant `{warrant}` is not one of the four values: no acceptance is read from it]"
+            )),
+            (None, true) => line.push_str(" [asserted: nobody accepted this document]"),
+            (None, false) => {}
         }
         line
     }

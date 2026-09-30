@@ -967,8 +967,11 @@ fn every_warrant_of_the_closed_set_has_a_row_and_a_value_outside_it_is_reported(
 
     let report = audit.render(ColorMode::Plain);
     assert!(report.contains("`pending`"), "{report}");
+    // The line names the check that reports each such document, now that one
+    // does (#1438), and no longer says that it is the only report.
+    assert!(report.contains("`warrant.value.not_permitted`"), "{report}");
     assert!(
-        report.contains("No\n  check of this engine reads a warrant"),
+        !report.contains("the only line that reports one"),
         "{report}"
     );
 }

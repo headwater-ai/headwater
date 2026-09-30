@@ -1421,8 +1421,10 @@ fn every_format_states_how_many_instances_reached_no_verdict() {
 
     let text_report = render(&ran, Format::Text);
     let markdown = render(&ran, Format::Markdown);
-    assert!(text_report.contains("368 check instances"));
-    assert!(markdown.contains("It created 368 check instances, and 60 of them reached no verdict."));
+    assert!(text_report.contains("426 check instances"));
+    assert!(
+        markdown.contains("It created 426 check instances, and 118 of them reached no verdict.")
+    );
     // The report is laid out at a width, so a long reason arrives over more
     // than one line. The class is a run of words either way.
     let flat = flowed(&text_report);
@@ -1584,7 +1586,7 @@ fn a_run_that_skipped_nothing_is_not_a_run_that_reports_no_skips() {
     assert!(count(&skipping, "skipped") > 0);
     // And the shape version is what dates the member, so a reader of a document
     // that carries no `skipped` knows which of the two it is holding.
-    assert_eq!(headwater_adapter::json::VERSION, "1.4");
+    assert_eq!(headwater_adapter::json::VERSION, "1.5");
 }
 
 /// A change that named nothing is not a full-corpus run, in any of the four.

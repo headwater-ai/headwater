@@ -139,7 +139,7 @@ The documents on this shelf, in the reading order this corpus derives. Each head
 
 ## Q22 — The integrity posture of a published package
 
-[HW-DR-0022](../decisions/0022-q22-the-integrity-posture-of-a-published-package.md) — A package digest checks a fetched artifact against a pin that a person committed, and it is never a signature. The in-house SHA-256 is held against a second implementation rather than replaced by a dependency.
+[HW-DR-0022](../decisions/0022-q22-the-integrity-posture-of-a-published-package.md) — A package digest checks a fetched artifact against a pin that a person committed, and it is never a signature. The in-house SHA-256 is held against a second implementation rather than replaced by a dependency. (warrant `proposed` is not one of the four values, so no acceptance is read from it)
 
 ## Q23 — The engine lint floor
 

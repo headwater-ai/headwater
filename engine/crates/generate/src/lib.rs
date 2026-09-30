@@ -492,6 +492,27 @@ impl Projections {
                 });
                 continue;
             };
+            // The census reads the marker only in these formats. A file at any
+            // other extension would be generated and never censused as such, so
+            // a copy that a repointed declaration left behind would be an
+            // orphan nothing reports (#1344).
+            if !headwater_mark::marks_format(&output.text) {
+                errors.push(DeclarationError {
+                    message: format!(
+                        "`projections.{index}.output` is `{}`, and the census reads the \
+                         generated-file marker only in a file ending in {}. Name an output \
+                         with one of these extensions",
+                        output.text,
+                        headwater_mark::MARKED_FORMATS
+                            .iter()
+                            .map(|extension| format!("`.{extension}`"))
+                            .collect::<Vec<_>>()
+                            .join(", ")
+                    ),
+                    span: item.span,
+                });
+                continue;
+            }
             let mut shelves = Vec::new();
             if let Some(node) = body.get("for") {
                 if let Value::Seq(items) = &node.value {
@@ -1341,6 +1362,10 @@ pub enum Verdict {
     /// false`, so `headwater export` builds the file at publish time and the
     /// tree does not hold it. A copy a local export left there is not read.
     Uncommitted,
+    /// Not written and not compared: the kind writes content whose marker the
+    /// census does not read at this path's extension, so the census would not
+    /// count the file as generated and the orphan rule could never report it.
+    MarkerUnread,
     /// The write failed, and this is what the operating system said.
     Failed(String),
 }
@@ -1354,7 +1379,11 @@ impl Verdict {
     pub fn is_error(&self) -> bool {
         matches!(
             self,
-            Verdict::Occupied | Verdict::Differs | Verdict::Missing | Verdict::Failed(_)
+            Verdict::Occupied
+                | Verdict::Differs
+                | Verdict::Missing
+                | Verdict::MarkerUnread
+                | Verdict::Failed(_)
         )
     }
 
@@ -1374,6 +1403,11 @@ impl Verdict {
             Verdict::Missing => "not committed, and this run would write it".to_string(),
             Verdict::Uncommitted => "built at publish time by `headwater export`, and not \
                  written or compared here"
+                .to_string(),
+            Verdict::MarkerUnread => "not written: this kind writes content whose marker the \
+                 census does not read at this extension, so a copy left behind would be an \
+                 orphan nothing reports. A graph export is JSON, a navigation file is YAML, and \
+                 a page is Markdown: name the output with the extension of what the kind writes"
                 .to_string(),
             Verdict::Failed(error) => format!("not written: {error}"),
         }
@@ -1854,6 +1888,21 @@ fn run(root: &Path, plan: &Plan, mode: Mode) -> Report {
             });
             continue;
         }
+        // Each kind writes its own content format whatever the extension, and
+        // the census reads the marker by the extension. An output whose marker
+        // the census would not read is a file nothing reports once its
+        // declaration moves (#1344), and one this verb could not overwrite
+        // again, so it is neither written nor compared.
+        if !headwater_mark::marks_format(&output.path)
+            || !headwater_mark::carries_marker(&output.path, &output.bytes)
+        {
+            report.wrote.push(Wrote {
+                path: output.path.clone(),
+                kind: output.kind,
+                verdict: Verdict::MarkerUnread,
+            });
+            continue;
+        }
         let path = root.join(&output.path);
         let committed = std::fs::read_to_string(&path).ok();
         let verdict = match (&committed, checking) {
@@ -2038,6 +2087,7 @@ mod label_tests {
             purpose: None,
             summary: None,
             unwarranted: false,
+            outside: None,
         }
     }
 

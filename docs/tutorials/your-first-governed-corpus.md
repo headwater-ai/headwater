@@ -320,12 +320,12 @@ census
 ```
 
 ```
-  1 seen, 1 classified, 1 checked, 19 check instances
+  1 seen, 1 classified, 1 checked, 21 check instances
 ```
 
 **Check.** `headwater check 2>/dev/null | grep 'check instances'` prints the second block above.
 
-The corpus did not grow. The count of checks that ran went from 4 to 17, because a typed document is a document that rules can reach. That is the whole trade this system asks for: type a document, and seventeen questions become answerable about it.
+The corpus did not grow. The count of checks that ran went from 7 to 21, because a typed document is a document that rules can reach. That is the whole trade this system asks for: type a document, and fourteen more questions become answerable about it.
 
 ### Step 10 — Commit the first governed corpus
 

@@ -607,8 +607,9 @@ contains "a record that governs ./.github/workflows/ci.yml and is not cited ther
 #   - `deploy-site.yml` checks out `inputs.ref`, so the `ref: main` a caller
 #     passes reaches the checkout, and each caller passes `secrets`, without
 #     which the deploy has no Cloudflare token.
-#   - No file that describes the APT route says that "the Cloudflare build"
-#     deploys it (#1339). HW-DR-0097 moved the deploy into `deploy-site.yml`,
+#   - No file that describes the APT route says that a build service of
+#     Cloudflare deploys it, by any of the names that service goes by (#1339,
+#     #1408). HW-DR-0097 moved the deploy into `deploy-site.yml`,
 #     and a maintainer who reads the old route looks for a build that does
 #     not exist. `apt_route` below reads the five files that describe it,
 #     the README among them, because an adopter reads the route there.
@@ -698,6 +699,28 @@ for job, body in sorted(rel.items()):
     if "if" in body:
         out.append("release.yml job %s has an if:, so it can deploy when publish did not run" % job)
 
+# `fetch-apt.sh` reads `releases/latest`, so that release must be an engine
+# release. A taxonomy release carries only its zip, and when one became
+# "latest" every deploy served no apt/ (#1449). So each `gh release create`
+# in release-taxonomy.yml passes `--latest=false`.
+creates = [(job, s) for job, b in sorted(jobs("release-taxonomy.yml").items()) for s in as_list(b.get("steps"))
+           if isinstance(s, dict) and re.search(r"\bgh\s+release\s+create\b", str(s.get("run", "")))]
+if "release-taxonomy.yml" in docs and not creates:
+    out.append("release-taxonomy.yml creates no release, so nothing here can hold that it passes --latest=false")
+# The line is read as the shell reads it, so a flag behind a `#`, or inside a
+# quoted argument, is no flag (#1449 verify round 1): a backslash continuation
+# is joined, and shlex drops a comment and keeps a quoted argument whole.
+import shlex
+for job, s in creates:
+    for line in re.sub(r"\\\n", " ", str(s.get("run", ""))).splitlines():
+        try:
+            words = shlex.split(line, comments=True)
+        except ValueError:
+            words = []
+        calls = [i for i in range(len(words) - 2) if words[i:i + 3] == ["gh", "release", "create"]]
+        if re.search(r"\bgh\s+release\s+create\b", line) and not (calls and "--latest=false" in words[calls[0]:]):
+            out.append("release-taxonomy.yml job %s creates a release without --latest=false, so a taxonomy release can become releases/latest and the site serves no apt/" % job)
+
 for line in out:
     print(line)
 '
@@ -707,9 +730,56 @@ deploys() {
 }
 
 # apt_route ROOT — prints one line for each file that describes the APT route
-# and says that "the Cloudflare build" deploys it, and nothing for a tree that
-# holds. The match ignores case and a line break inside the phrase, because
-# the shell and YAML comments wrap it.
+# and says that a build service of Cloudflare deploys it, and nothing for a
+# tree that holds. The service has more than one name, so the match reads each
+# of them: "Cloudflare build", "Cloudflare Workers Build(s)", "Workers
+# Build(s)", "Cloudflare Pages build" and "the build service of Cloudflare"
+# (#1408). The match ignores case, a `#` and a line break inside the phrase,
+# because the shell and YAML comments wrap it.
+#
+# It reads a present claim and not the vendor's noun. Two lines in these files
+# say what deployed the site before HW-DR-0097, and they are true. So a
+# sentence that names the service passes only when it is history: it carries a
+# past verb ("ran", "deployed", "was", ...) and no present one ("is", "gets",
+# "still", "now", "deploys", "serves", ...). Every other sentence that names
+# the service is a claim, and a sentence with both is a claim too, because
+# "is deployed by", "has deployed" and "deploys apt/ before" are present. The
+# bare phrase "Cloudflare build" is a claim in any tense, as it was before
+# #1408, so the widened reader loses no line the narrow one caught. A sentence
+# ends at `.`, `!`, `?` or `;` and a space, but not after an initial such as
+# "J." or after "e.g." and "i.e.". The present list is
+# read after the service's own name is removed, so "Workers Builds" is not
+# the verb "builds", and after a link target is removed, so a slug is not a
+# sentence. d11 holds that the history line passes, and the d10 plants hold
+# that each present shape is red.
+#
+# The reader exits 0 on a claim, 1 on a file that holds, and anything else when
+# it could not read the file, and `apt_route` reports that last case as a
+# finding. A reader that fails is not a file that holds.
+apt_route_py='
+import re, sys
+service = re.compile(r"cloudflare\s+(?:workers\s+|pages\s+)?builds?\b|\bworkers\s+builds?\b|build\s+service\s+of\s+cloudflare", re.I)
+past = re.compile(r"\b(?:ran|deployed|served|built|published|hosted|was|were|had|formerly|previously|used\s+to)\b", re.I)
+present = re.compile(r"\b(?:is|are|am|be|has|have|gets?|getting|still|now|currently|deploys|serves|builds|runs|publishes|hosts|does|will|reaches|handles|uploads|pushes|copies|carries)\b|(?<!\bthe )(?<!\ba )\b(?:deploy|serve|run|publish|host)\b", re.I)
+always = re.compile(r"cloudflare\s+builds?\b", re.I)
+try:
+    text = open(sys.argv[1], encoding="utf-8").read()
+except Exception as err:
+    print(f"{sys.argv[1]}: {err}", file=sys.stderr)
+    sys.exit(3)
+text = re.sub(r"\]\([^)]*\)", "]", text).replace("#", " ")
+text = re.sub(r"\s+", " ", text)
+if always.search(text):
+    sys.exit(0)
+for sentence in re.split(r"(?<=[.!?;])(?<!\b[A-Z]\.)(?<!\be\.g\.)(?<!\bi\.e\.)\s", text):
+    if not service.search(sentence):
+        continue
+    rest = service.sub(" ", sentence)
+    if present.search(rest) or not past.search(rest):
+        sys.exit(0)
+sys.exit(1)
+'
+
 apt_route_files="docs/decisions/0094-the-apt-repository-is-served-from-headwater-tools-and-signed-by-a-subkey-the-owner-s-offline-key-certifies.md
 tools/site/fetch-apt.sh
 .github/workflows/ci.yml
@@ -720,8 +790,13 @@ apt_route() {
     printf '%s\n' "$apt_route_files" | while IFS= read -r f; do
         if [ ! -f "$1/$f" ]; then
             echo "$f is missing, so nothing states the APT route there"
-        elif tr '\n' ' ' < "$1/$f" | sed 's/#//g' | tr -s ' \t' ' ' | grep -qi 'cloudflare build'; then
-            echo "$f says the Cloudflare build deploys the APT repository"
+        else
+            python3 -c "$apt_route_py" "$1/$f"
+            case $? in
+                0) echo "$f says a build service of Cloudflare deploys the APT repository" ;;
+                1) ;;
+                *) echo "$f could not be read, so nothing says whether it names a build service of Cloudflare" ;;
+            esac
         fi
     done
 }
@@ -794,6 +869,32 @@ else
         "none, so the arms d1 to d4 have no job to edit"
 fi
 
+# d12. A taxonomy release created without --latest=false can become GitHub's
+# "latest" release, and fetch-apt.sh then finds no InRelease (#1449).
+copy_tree "$scratch/d12"
+edit_wf "$scratch/d12" release-taxonomy.yml "[s.__setitem__('run', s['run'].replace(' --latest=false', '')) for j in doc['jobs'].values() for s in j.get('steps', []) if 'gh release create' in str(s.get('run', ''))]"
+contains "a taxonomy release created without --latest=false is red" \
+    "release-taxonomy.yml job artifact creates a release without --latest=false" "$(deploys "$scratch/d12")"
+
+# d13. The flag behind a shell comment reaches no `gh`: the line still reads
+# "--latest=false", and the shell never passes it.
+copy_tree "$scratch/d13"
+edit_wf "$scratch/d13" release-taxonomy.yml "[s.__setitem__('run', s['run'].replace(' --latest=false', ' # --latest=false')) for j in doc['jobs'].values() for s in j.get('steps', []) if 'gh release create' in str(s.get('run', ''))]"
+contains "a --latest=false behind a shell comment is red" \
+    "release-taxonomy.yml job artifact creates a release without --latest=false" "$(deploys "$scratch/d13")"
+
+# d14. The flag inside a quoted argument is text of that argument, not a flag.
+copy_tree "$scratch/d14"
+edit_wf "$scratch/d14" release-taxonomy.yml "[s.__setitem__('run', s['run'].replace('--notes \"\$notes\" --latest=false', '--notes \"\$notes --latest=false\"')) for j in doc['jobs'].values() for s in j.get('steps', []) if 'gh release create' in str(s.get('run', ''))]"
+contains "a --latest=false inside a quoted argument is red" \
+    "release-taxonomy.yml job artifact creates a release without --latest=false" "$(deploys "$scratch/d14")"
+
+# d15. A create call split over lines with a backslash still passes the flag.
+copy_tree "$scratch/d15"
+edit_wf "$scratch/d15" release-taxonomy.yml "[s.__setitem__('run', s['run'].replace(' --latest=false', ' \\\\\n              --latest=false')) for j in doc['jobs'].values() for s in j.get('steps', []) if 'gh release create' in str(s.get('run', ''))]"
+same "a create call continued onto a second line that carries the flag holds" "" \
+    "$(deploys "$scratch/d15" | grep -F 'latest=false' | tr '\n' '|' | sed 's/|$//')"
+
 # d8. The called workflow checks out its caller's ref, whatever the input, so
 # a release deploys its tag.
 copy_tree "$scratch/d8"
@@ -811,7 +912,7 @@ contains "a copy of the deploy steps in release.yml is red" \
     "$(deploys "$scratch/d5")"
 
 # d9. The APT route as each file that describes it states it (#1339).
-same "no file says the Cloudflare build deploys the APT repository" "" \
+same "no file says a build service of Cloudflare deploys the APT repository" "" \
     "$(apt_route "$root" | tr '\n' '|' | sed 's/|$//')"
 
 # d10. The phrase planted in a copy of fetch-apt.sh, wrapped as a comment
@@ -824,8 +925,77 @@ done
 printf '%s\n' '#   The site reaches Cloudflare by one path only, the Cloudflare' \
     '#   Build, so this step reads those assets at build time.' >> "$scratch/d10/tools/site/fetch-apt.sh"
 same "fetch-apt.sh that names the Cloudflare build is red" \
-    "tools/site/fetch-apt.sh says the Cloudflare build deploys the APT repository" \
+    "tools/site/fetch-apt.sh says a build service of Cloudflare deploys the APT repository" \
     "$(apt_route "$scratch/d10" | tr '\n' '|' | sed 's/|$//')"
+
+# d10, the other names of the service (#1408). Each is planted in a fresh copy
+# of fetch-apt.sh, wrapped as a comment wraps it, and each is red. The first
+# half of each plant goes on one line and the name ends it or starts the next,
+# so the break falls inside the phrase where it can.
+apt_route_plant() {
+    rm -rf "$scratch/$1"
+    mkdir -p "$scratch/$1"
+    printf '%s\n' "$apt_route_files" | while IFS= read -r f; do
+        mkdir -p "$scratch/$1/$(dirname "$f")"
+        cp "$root/$f" "$scratch/$1/$f"
+    done
+    printf '%s\n' "$2" "$3" >> "$scratch/$1/tools/site/fetch-apt.sh"
+    if cmp -s "$root/tools/site/fetch-apt.sh" "$scratch/$1/tools/site/fetch-apt.sh"; then
+        echo "the plant changed nothing"
+    else
+        apt_route "$scratch/$1" | tr '\n' '|' | sed 's/|$//'
+    fi
+}
+apt_route_red="tools/site/fetch-apt.sh says a build service of Cloudflare deploys the APT repository"
+same "fetch-apt.sh that says Cloudflare Workers Builds deploys the repository is red" "$apt_route_red" \
+    "$(apt_route_plant d10w '#   The repository under apt/ is deployed by Cloudflare Workers' '#   Builds, on each push to main.')"
+same "fetch-apt.sh that says Workers Build serves the site is red" "$apt_route_red" \
+    "$(apt_route_plant d10b '#   Workers' '#   Build serves the site and the APT repository from this tree.')"
+same "fetch-apt.sh that says the Cloudflare Pages build deploys the site is red" "$apt_route_red" \
+    "$(apt_route_plant d10p '#   The Cloudflare Pages' '#   build deploys the site, and apt/ with it.')"
+same "fetch-apt.sh that says the build service of Cloudflare deploys the repository is red" "$apt_route_red" \
+    "$(apt_route_plant d10s '#   The APT repository is deployed by the build service of' '#   Cloudflare from this script.')"
+
+# d11. A line that says what deployed the site BEFORE HW-DR-0097 is history,
+# and it is true, so it passes. Two of the five files carry one.
+same "fetch-apt.sh that says Cloudflare Workers Builds deployed the site before is green" "" \
+    "$(apt_route_plant d11 '#   Cloudflare Workers Builds deployed the site before; it could not' '#   wait for CI.')"
+
+# d12. Present claims that carry a past word or a passive, each red. The last
+# one names the phrase the check read before #1408, so the widened reader
+# keeps every line the narrow one caught.
+same "a claim that the repository is now deployed by Cloudflare Workers Builds is red" "$apt_route_red" \
+    "$(apt_route_plant d12a '#   The APT repository is now deployed by Cloudflare Workers' '#   Builds.')"
+same "a claim that the site gets deployed by Cloudflare Workers Builds is red" "$apt_route_red" \
+    "$(apt_route_plant d12b '#   The site gets deployed by Cloudflare Workers Builds' '#   from this tree.')"
+same "a claim that apt/ is built by the Cloudflare build is red" "$apt_route_red" \
+    "$(apt_route_plant d12c '#   apt/ is automatically built by the Cloudflare' '#   build.')"
+same "a claim that Cloudflare Workers Builds still deploys the site, as it was set up to, is red" "$apt_route_red" \
+    "$(apt_route_plant d12d '#   Cloudflare Workers Builds still deploys the site, as it was' '#   set up to do.')"
+same "a claim that the Cloudflare build deploys apt/ before the notes go out is red" "$apt_route_red" \
+    "$(apt_route_plant d12e '#   The Cloudflare build deploys apt/ before the release notes' '#   go out.')"
+same "a claim that Cloudflare Workers Builds deploy the repository is red" "$apt_route_red" \
+    "$(apt_route_plant d12f '#   Cloudflare Workers Builds deploy the APT repository from' '#   this tree.')"
+
+same "a claim that the Cloudflare build has deployed apt/ since #1316 is red" "$apt_route_red" \
+    "$(apt_route_plant d12g '#   The Cloudflare build has deployed apt/ since' '#   #1316.')"
+same "a claim that the Cloudflare build ships apt/, as it was set up to, is red" "$apt_route_red" \
+    "$(apt_route_plant d12h '#   The Cloudflare build ships apt/, as it was set up' '#   to do.')"
+same "a claim that Workers Builds has deployed apt/ since #1316 is red" "$apt_route_red" \
+    "$(apt_route_plant d12i '#   Cloudflare Workers Builds has deployed apt/ since' '#   #1316.')"
+same "a claim split by an initial, Workers Builds, which was added by J. Baxter, deploys apt/, is red" "$apt_route_red" \
+    "$(apt_route_plant d12j '#   Workers Builds, which was added in #1316 by J.' '#   Baxter, deploys apt/.')"
+
+# d13. A file the reader cannot decode is a finding, and not a file that holds.
+mkdir -p "$scratch/d13"
+printf '%s\n' "$apt_route_files" | while IFS= read -r f; do
+    mkdir -p "$scratch/d13/$(dirname "$f")"
+    cp "$root/$f" "$scratch/d13/$f"
+done
+printf '#   \377\376 not UTF-8\n' >> "$scratch/d13/tools/site/fetch-apt.sh"
+same "a route file that is not UTF-8 is reported as unread, not as holding" \
+    "tools/site/fetch-apt.sh could not be read, so nothing says whether it names a build service of Cloudflare" \
+    "$(apt_route "$scratch/d13" 2>/dev/null | tr '\n' '|' | sed 's/|$//')"
 
 # d6. The called workflow gains a second trigger, so a third deploy path.
 copy_tree "$scratch/d6"
