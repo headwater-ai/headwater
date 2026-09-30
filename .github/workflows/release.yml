@@ -555,8 +555,9 @@ jobs:
         # Only where the owner's signing subkey is a secret (HW-DR-0094). The
         # key is imported into a directory this step makes and removes, and it
         # is never echoed, written to the tree or uploaded. Without the secret
-        # the release carries the package and no metadata, and the site then
-        # serves no APT repository.
+        # the release carries the package and no metadata, and
+        # `tools/site/fetch-apt.sh` then stops each deploy of the site, so the
+        # site keeps the APT repository of the last signed release (#1449).
         env:
           TAG: ${{ needs.tag.outputs.tag }}
           APT_SIGNING_KEY: ${{ secrets.APT_SIGNING_KEY }}
@@ -635,3 +636,13 @@ jobs:
     with:
       ref: main
     secrets: inherit
+
+  readme-apt:
+    name: The README APT block installs this release from the site
+    # `deploy-site` has just put this release under `apt/`, so the block of
+    # `README.md` runs against it here, on the floor the page names (#1408).
+    # `readme-apt.yml` holds the one job, and it also runs daily. It waits for
+    # `deploy-site`, so a run that skips the deploy skips this too; give it no
+    # `if:`, for the reason `deploy-site` gives.
+    needs: deploy-site
+    uses: ./.github/workflows/readme-apt.yml

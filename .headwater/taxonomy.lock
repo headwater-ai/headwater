@@ -55,6 +55,29 @@ adoption:
       pairs:
         - path: docs/spec/02-taxonomy-model.md
           rule: language.retired_term.used
+    - id: AD-2
+      statement: "The nine documents that stand at `warrant: proposed`, a value spec 3's closed set does not hold. HW-OBL-0125 records them, and an agent may not set them to `accepted`: whether each one is accepted, or whether `proposed` joins the set, is the owner's ruling"
+      owner: "the repository owner"
+      until: 2026-12-29
+      pairs:
+        - path: docs/decisions/0022-q22-the-integrity-posture-of-a-published-package.md
+          rule: warrant.value.not_permitted
+        - path: docs/obligations/0115-a-pinned-digest-authenticates-the-pin-and-never-the-publisher.md
+          rule: warrant.value.not_permitted
+        - path: docs/obligations/0116-no-anchor-resolver-reads-a-committed-snapshot-so-every-imported-edge-lands-unresolved.md
+          rule: warrant.value.not_permitted
+        - path: docs/obligations/0117-a-cached-verdict-about-an-anchor-survives-the-change-that-falsifies-it.md
+          rule: warrant.value.not_permitted
+        - path: docs/obligations/0118-the-published-read-set-names-no-anchor-so-a-gate-decides-nothing-about-one.md
+          rule: warrant.value.not_permitted
+        - path: docs/obligations/0119-an-audit-reading-carries-no-declared-bar-so-a-distribution-cannot-become-a-finding.md
+          rule: warrant.value.not_permitted
+        - path: docs/obligations/0120-no-reader-takes-a-waiver-against-a-check-finding-so-one-arm-of-the-escape-partition-is-empty.md
+          rule: warrant.value.not_permitted
+        - path: docs/obligations/0121-three-conformance-rules-name-an-attestation-that-no-record-format-exists-for.md
+          rule: warrant.value.not_permitted
+        - path: docs/obligations/0122-nothing-holds-the-conformance-rule-set-of-a-package-a-consumer-takes-from-source.md
+          rule: warrant.value.not_permitted
 
 # The resolved taxonomy. The digest above is over this text with the two
 # leading spaces of each line removed, which is the form the resolver writes

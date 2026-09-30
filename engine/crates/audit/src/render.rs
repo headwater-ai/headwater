@@ -569,7 +569,7 @@ impl Audit {
             true => out.push_str("  Every value in use is one the closed set holds.\n"),
             false => {
                 out.push_str(
-                    "  Values the closed set does not hold, each with the count that states it. No\n  check of this engine reads a warrant value, so this is the only line that reports one:\n",
+                    "  Values the closed set does not hold, each with the count that states it.\n  `headwater check` reports each document that states one, under\n  `warrant.value.not_permitted`:\n",
                 );
                 for reading in outside {
                     let _ = writeln!(out, "    {:5} `{}`", reading.stated, reading.value);

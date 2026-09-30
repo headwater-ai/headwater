@@ -15,8 +15,9 @@
 - `check/spec/00-both-halves.markdown`
 - `engine/crates/check/src/change.rs`
 
-**Coverage.** This run saw 31 files and classified 29 of them, and left 1 to `headwater generate --check`, which holds a generated file to the bytes its emitter writes. It created 368 check instances, and 33 of them reached no verdict.
+**Coverage.** This run saw 31 files and classified 29 of them, and left 1 to `headwater generate --check`, which holds a generated file to the bytes its emitter writes. It created 426 check instances, and 91 of them reached no verdict.
 
+- 58 — this document declares no warrant, and an absent warrant is not a value outside the closed set
 - 1 — no `id` facet, which is the key this engine reads an identifier from and which no declaration states
 - 1 — the `id` facet is a sequence, and an identifier is a word
 - 22 — the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it

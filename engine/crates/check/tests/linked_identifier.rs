@@ -355,6 +355,164 @@ fn a_reference_link_and_a_same_document_link_are_read_too() {
     }
 }
 
+/// The denominator of the rule's silence (#1347). A run over a corpus whose
+/// identifier links all agree reports no finding, so the run carries how many
+/// links the rule compared, and the report prints that count beside the
+/// rule's own finding count. The population is the rule's own: an agreeing
+/// inline link and an agreeing link into the same document each add one, and
+/// neither adds a finding. A count that left the same-document form out would
+/// go up by one here. Identifier text on a path that reaches nothing, and on
+/// an address outside the repository, reaches no identifier, so the rule
+/// compares neither and neither adds one.
+#[test]
+fn the_run_carries_how_many_links_the_rule_compared() {
+    use headwater_check::paint::ColorMode;
+    use headwater_check::Detail;
+
+    let base = scratch("compared");
+
+    let payload = debt_of(&run_over(&base, None));
+    let before = run_over(&base, Some(&payload));
+    append(
+        &base,
+        &[
+            "Inline, agreeing: [SPEC-FIX-cited-only](02-cited-only.md) reaches its own document.",
+            "Same document, agreeing: [SPEC-FIX-both-halves](#both-halves) lands on this file.",
+            "Missing: [SPEC-FIX-cited-only](no-such-file.md) reaches nothing.",
+            "External: [SPEC-FIX-cited-only](https://example.com/x) leaves the repository.",
+        ],
+    );
+    let after = run_over(&base, Some(&payload));
+
+    let compared = |run: &Run| {
+        run.served
+            .iter()
+            .find(|served| served.rule == RULE)
+            .and_then(|served| served.compared)
+            .expect("the rule carries a compared count")
+    };
+    let reported = |run: &Run| run.findings.iter().filter(|f| f.rule == RULE).count();
+    assert_eq!(compared(&after), compared(&before) + 2);
+    assert_eq!(reported(&after), reported(&before));
+    assert!(
+        compared(&before) > 0,
+        "the fixture tree has identifier links"
+    );
+
+    // No rule carries the member but the two link rules whose silence it
+    // qualifies.
+    for served in &after.served {
+        if served.rule != RULE && served.rule != headwater_check::fragment::RULE {
+            assert_eq!(served.compared, None, "{}", served.rule);
+        }
+    }
+
+    // The report prints both numbers on the line under the rule's scope.
+    let scope = after
+        .served
+        .iter()
+        .find(|served| served.rule == RULE)
+        .expect("the rule is served")
+        .scope
+        .render();
+    let line = format!(
+        "  {RULE}\n    {scope}\n    {} links compared, {} of them with a finding\n",
+        compared(&after),
+        reported(&after)
+    );
+    let text = after.render(Detail::Findings, ColorMode::Plain);
+    assert!(text.contains(&line), "{line}\nnot in\n{text}");
+    // Scripts read the run's total as the first line that ends in
+    // `<n> findings` (`tools/repo/diataxis-facet-fixtures.sh`'s
+    // `report_number`, `tools/taxonomy/drive_n8n.py`). The per-rule line comes
+    // before the total, so it must not have that shape.
+    let first_total = text
+        .lines()
+        .find_map(|line| {
+            let head = line.strip_suffix(" findings")?;
+            let number = head.rsplit([' ', ',']).next()?;
+            number.parse::<usize>().ok()
+        })
+        .expect("the report has a findings total");
+    assert_eq!(first_total, after.findings.len(), "{text}");
+    // The totals carry no count of findings, by Detail::Totals's contract, so
+    // they print the denominator alone.
+    let totals = after.render(Detail::Totals, ColorMode::Plain);
+    let alone = format!(
+        "  {RULE}\n    {scope}\n    {} links compared\n",
+        compared(&after)
+    );
+    assert!(totals.contains(&alone), "{alone}\nnot in\n{totals}");
+}
+
+/// The same denominator for `link.fragment.unresolved`, folded into #1347. The
+/// rule compares a fragment against the heading list of the document it
+/// names, so a fragment into this document and a fragment into another corpus
+/// document each add one to the count, whether they resolve or not. A
+/// fragment into a file outside the corpus root, into a file that carries no
+/// parsed document, or onto an address outside the repository has no heading
+/// list to compare against, and adds nothing.
+#[test]
+fn the_run_carries_how_many_fragment_links_the_fragment_rule_compared() {
+    use headwater_check::paint::ColorMode;
+    use headwater_check::Detail;
+    const FRAGMENT: &str = headwater_check::fragment::RULE;
+
+    let base = scratch("fragments-compared");
+
+    let payload = debt_of(&run_over(&base, None));
+    let before = run_over(&base, Some(&payload));
+    // A file under the corpus root that no kind claims, so the census walks
+    // it and parses no document out of it.
+    std::fs::write(base.join("check/plain.txt"), "# A heading\n").expect("a plain file");
+    let landed = append(
+        &base,
+        &[
+            "Same document, resolving: [here](#both-halves).",
+            "Across, dead: [there](02-cited-only.md#no-such-heading).",
+            "Outside the corpus root: [taxonomy](../../check.taxonomy.yml#kinds).",
+            "No parsed document: [plain](../plain.txt#a-heading).",
+            "External: [site](https://example.com/page#part).",
+        ],
+    );
+    let after = run_over(&base, Some(&payload));
+
+    let compared = |run: &Run| {
+        run.served
+            .iter()
+            .find(|served| served.rule == FRAGMENT)
+            .and_then(|served| served.compared)
+            .expect("the fragment rule carries a compared count")
+    };
+    let reported = |run: &Run| run.findings.iter().filter(|f| f.rule == FRAGMENT).count();
+    assert_eq!(compared(&after), compared(&before) + 2);
+    assert_eq!(reported(&after), reported(&before) + 1);
+    assert_eq!(
+        at(&after, FRAGMENT, landed[1]).len(),
+        1,
+        "{:#?}",
+        after.findings
+    );
+    for line in [landed[0], landed[2], landed[3], landed[4]] {
+        assert!(at(&after, FRAGMENT, line).is_empty(), "{line}");
+    }
+
+    let scope = after
+        .served
+        .iter()
+        .find(|served| served.rule == FRAGMENT)
+        .expect("the fragment rule is served")
+        .scope
+        .render();
+    let line = format!(
+        "  {FRAGMENT}\n    {scope}\n    {} links compared, {} of them with a finding\n",
+        compared(&after),
+        reported(&after)
+    );
+    let text = after.render(Detail::Findings, ColorMode::Plain);
+    assert!(text.contains(&line), "{line}\nnot in\n{text}");
+}
+
 /// The matched link alone leaves the run green: the rule reads a link whose
 /// text is an identifier, and passes it when the path agrees.
 #[test]

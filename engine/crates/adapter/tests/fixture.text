@@ -68,8 +68,10 @@ graph
     identifier: the identifier is not a scalar, and an identifier is a word
 
 checks
-  31 seen, 29 classified, 28 checked, 368 check instances
+  31 seen, 29 classified, 28 checked, 426 check instances
         1 generated, held to regeneration by `headwater generate --check`
+       58 skipped: this document declares no warrant, and an absent warrant is
+         not a value outside the closed set
         1 skipped: no `id` facet, which is the key this engine reads an
           identifier from and which no declaration states
         1 skipped: the `id` facet is a sequence, and an identifier is a word
@@ -119,6 +121,8 @@ checks
         1 instances of link.path.unresolved
         1 instances of link.identifier.mismatch
        29 instances of warrant.promoted
+       29 instances of warrant.value.not_permitted
+       29 instances of warrant.acceptance.unpaired
         1 instances of lifecycle.deletion.not_permitted
   suppressions
     2 findings hidden by 2 directives
@@ -199,10 +203,12 @@ checks
       document scope, one document, its front matter and its body
     link.fragment.unresolved
       corpus scope, every row of the census, and it is a barrier
+      3 links compared, 1 of them with a finding
     link.path.unresolved
       corpus scope, every row of the census, and it is a barrier
     link.identifier.mismatch
       corpus scope, every row of the census, and it is a barrier
+      2 links compared, 1 of them with a finding
     warrant.promoted
       document scope, one document and its front matter, and the version of it
         that stood before the change
@@ -210,6 +216,10 @@ checks
       document scope, one document and its front matter, and the version of it
         that stood before the change
     lifecycle.state.not_admitted
+      document scope, one document and its front matter
+    warrant.value.not_permitted
+      document scope, one document and its front matter
+    warrant.acceptance.unpaired
       document scope, one document and its front matter
     lifecycle.deletion.not_permitted
       corpus scope, every row of the census, and the version of each path the
@@ -287,6 +297,8 @@ checks
     warrant.promoted reaches no obligation, so it names none
     lifecycle.transition.not_permitted reaches no obligation, so it names none
     lifecycle.state.not_admitted reaches no obligation, so it names none
+    warrant.value.not_permitted reaches no obligation, so it names none
+    warrant.acceptance.unpaired reaches no obligation, so it names none
     lifecycle.deletion.not_permitted reaches no obligation, so it names none
     coverage.document_unchecked reaches no obligation, so it names none
     control.observation.invalid reaches no obligation, so it names none
@@ -335,7 +347,7 @@ checks
       a sentence, and this one has 34
     fix: split the sentence, or move a clause into its own sentence
   check/spec/03-no-instance.md ▲ warn
-    coverage.document_unchecked: this document is classified and all 2 of its
+    coverage.document_unchecked: this document is classified and all 4 of its
       check instances were skipped
     fix: check that the shelf pattern claims the right files, and that the kind
       declares something a check reads
@@ -703,7 +715,7 @@ read set
   version lifecycle.dependency.on_terminal 1
   version lifecycle.dependency.on_initial 1
   version lifecycle.state.not_set_by_edge 2
-  version warrant.evidence.unsupported 2
+  version warrant.evidence.unsupported 3
   version relation.participation.overdue 1
   version lifecycle.state.set_twice 2
   version relation.declaration.unusable 1
@@ -724,6 +736,8 @@ read set
   version warrant.promoted 1
   version lifecycle.transition.not_permitted 2
   version lifecycle.state.not_admitted 1
+  version warrant.value.not_permitted 1
+  version warrant.acceptance.unpaired 1
   version lifecycle.deletion.not_permitted 1
   version coverage.document_unchecked 1
   version obligation.disposition.not_one 1

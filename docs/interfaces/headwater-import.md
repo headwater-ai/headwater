@@ -56,8 +56,10 @@ The command reads no environment variable.
 
 | Path | How this verb treats it |
 |---|---|
-| `.headwater/taxonomy.yml` | Read for import declarations and digest. |
+| `.headwater/taxonomy.yml` | Read for import declarations and digest, and for the `harvests` block. |
 | The declared snapshot directory | Read and checked against its digest. |
+| `.headwater/imports/` | Read where `.headwater/taxonomy.yml` declares an import. The graph load reads every declared snapshot, and not only the selected one, for the anchors that an imported snapshot supplies. An `imports` entry that does not read stops the verb with exit 1, and so does an `at` path outside the repository root. |
+| the path each `harvests.<name>.at` names | Read where `.headwater/taxonomy.yml` declares a pinned corpus export, for the anchors that export supplies. A `harvests` entry that does not read stops the verb with exit 1, and so does an `at` path outside the repository root. A pin with no digest binds no anchor. An absent file binds no anchor, and neither does a file that fails the pinned digest or is not an export. |
 | Documents | Written only with `--write`, after the whole plan validates. |
 
 ## See also

@@ -298,28 +298,42 @@ fn a_source_that_does_not_claim_evidenced_passes_in_all_three_of_its_forms() {
     }
 }
 
-/// A warrant outside spec 3's closed set is not `asserted`, and the pass is
-/// deliberate.
+/// A warrant outside spec 3's closed set supports nothing, whatever it is.
 ///
-/// [HW-OBL-0125](../../../../docs/obligations/0125-nine-documents-state-a-warrant-the-closed-set-does-not-hold-and-no-check-reads-one.md)
-/// holds the nine documents of this repository that stand at `proposed`. This
-/// rule is not the one that reports them, and the test pins that as a decision
-/// rather than leaving it to be read off a green run.
+/// An earlier edition passed it, on the reasoning that the defect was the
+/// value and another rule would report it. No rule did, so `acepted` read as
+/// support. `warrant.value.not_permitted` now reports the value, and this rule
+/// reports the pointer: nothing in a value outside the set says a person read
+/// the target. The message names the value as written and does not call it
+/// `asserted`, because it is not.
 #[test]
-fn a_warrant_the_closed_set_does_not_name_is_a_pass_and_not_a_finding() {
+fn a_warrant_the_closed_set_does_not_name_is_a_finding() {
     let run = run();
-    assert!(
-        about(&run, "NOTE-FIX-rests-on-proposed").is_empty(),
-        "a proposed target was reported: {:?}",
-        refusals(&run)
-    );
-    assert!(
-        !skips(&run)
-            .iter()
-            .any(|(reads, _)| reads.contains(&"evidence-basis/claims/rests-on-proposed.md")),
-        "the proposed pair skipped: {:?}",
-        skips(&run)
-    );
+    for (claim, target, value) in [
+        (
+            "NOTE-FIX-rests-on-proposed",
+            "NOTE-FIX-proposed",
+            "proposed",
+        ),
+        (
+            "NOTE-FIX-rests-on-misspelled",
+            "NOTE-FIX-misspelled",
+            "acepted",
+        ),
+    ] {
+        let reported = about(&run, claim);
+        assert_eq!(reported.len(), 1, "{claim}: {:?}", refusals(&run));
+        let message = reported[0];
+        assert!(message.contains(target), "the target: {message}");
+        assert!(
+            message.contains(&format!("`{value}`")),
+            "the value as written: {message}"
+        );
+        assert!(
+            !message.contains("`asserted`"),
+            "a non-member is not asserted: {message}"
+        );
+    }
 }
 
 /// The document that declares no warrant is not the document standing at one.
@@ -343,6 +357,30 @@ fn a_target_that_declares_no_warrant_skips_rather_than_passing() {
         "the skip does not say which end had nothing to read: {}",
         mine[0].1
     );
+}
+
+/// A warrant key with no value is an absence, and not a value outside the set.
+///
+/// The parser hands `warrant:` back as the plain scalar `~`, which the core
+/// schema reads as null. A reader that took the text reported "`~` is not a
+/// value of spec 3's closed set" over an edge that passed before (round 1 of
+/// the verify of #1438). `headwater_doc::warrant` reads it as absent, so the
+/// instance skips as it does onto `quiet.md`.
+#[test]
+fn a_target_whose_warrant_key_has_no_value_skips_like_one_with_no_warrant() {
+    let run = run();
+    assert!(
+        about(&run, "NOTE-FIX-onto-blank").is_empty(),
+        "a blank warrant was reported: {:?}",
+        refusals(&run)
+    );
+    let skips = skips(&run);
+    let mine: Vec<&(Vec<&str>, &String)> = skips
+        .iter()
+        .filter(|(reads, _)| reads.contains(&"evidence-basis/targets/blank.md"))
+        .collect();
+    assert_eq!(mine.len(), 1, "{skips:?}");
+    assert!(mine[0].1.contains("declares no warrant"), "{}", mine[0].1);
 }
 
 /// A target this engine wrote is decided, on the warrant the engine derives.
@@ -431,11 +469,15 @@ fn an_edge_onto_an_anchor_reaches_no_instance_and_does_not_panic() {
 /// The whole corpus, in one assertion, so a case that stops being reported
 /// cannot hide behind a test that names only its own document.
 #[test]
-fn the_tree_reports_two_documents_and_nine_edges() {
+fn the_tree_reports_four_documents_and_eleven_edges() {
     let run = run();
     let mut reported: Vec<&str> = refusals(&run).into_iter().map(|(path, _)| path).collect();
     reported.sort_unstable();
-    let mut expected = vec!["evidence-basis/claims/rests-on-asserted.md"];
+    let mut expected = vec![
+        "evidence-basis/claims/rests-on-asserted.md",
+        "evidence-basis/claims/rests-on-misspelled.md",
+        "evidence-basis/claims/rests-on-proposed.md",
+    ];
     expected.extend(std::iter::repeat_n(
         "evidence-basis/claims/every-evidence-relation.md",
         FAMILY.len(),

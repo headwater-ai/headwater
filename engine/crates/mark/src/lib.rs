@@ -172,6 +172,35 @@ pub fn carries_marker(path: &str, text: &str) -> bool {
     marker_line(path, text).is_some()
 }
 
+/// Whether a file at a path is in a format that a projection writes with a
+/// marker, so that a reader has a reason to open it and look for one.
+///
+/// **The formats a projection may write, and no others.** A shelf index and a
+/// section list are Markdown, a graph export and the corpus descriptor are
+/// JSON, and the navigation file is YAML, or TOML where a declaration names a
+/// `.toml` output. A declaration names its output path, and `marker` writes a
+/// line for any extension, so the generator refuses an output at an extension
+/// this does not admit. The census asks this before it reads a file that is not a
+/// Markdown document, so a `graph_export` left inside the corpus root is read
+/// and reported as an orphan (#1344), while an image or an archive stays
+/// unread. `comment_for` is not the test, because its last arm answers for
+/// every extension, and a test built on it would read every file.
+///
+/// The extension is matched exactly and in lower case, for the reason the
+/// census gives about `.md`: a case-insensitive rule behaves differently on two
+/// filesystems.
+pub fn marks_format(path: &str) -> bool {
+    std::path::Path::new(path)
+        .extension()
+        .and_then(|extension| extension.to_str())
+        .is_some_and(|extension| MARKED_FORMATS.contains(&extension))
+}
+
+/// The extensions [`marks_format`] admits. The generator refuses a projection
+/// declared at any other extension, so no projection writes a file that the
+/// census does not open (#1344).
+pub const MARKED_FORMATS: &[&str] = &["md", "markdown", "json", "yml", "yaml", "toml"];
+
 /// Whether the marker at a path says that `headwater export` builds the file at
 /// publish time, which is what [`published_marker_text`] writes.
 ///
@@ -369,6 +398,35 @@ mod tests {
         // After a `,` with no `:` after it, the quoted word is not a key.
         let value = format!("{{\"a\": 1, \"{MARKER}\"}}\n");
         assert!(!carries_marker("out/compact.json", &value));
+    }
+
+    #[test]
+    fn a_format_the_emitters_write_is_one_to_open_and_nothing_else_is() {
+        for path in [
+            "docs/spec/README.md",
+            "docs/notes.markdown",
+            "docs/exports/site.json",
+            "docs/rules.yml",
+            "docs/rules.yaml",
+            "docs/nav.toml",
+        ] {
+            assert!(marks_format(path), "{path} is a format a projection writes");
+        }
+        for path in [
+            "docs/diagram.png",
+            "docs/bundle.tar.gz",
+            "docs/LICENSE",
+            "docs/README.MD",
+            "docs/site.JSON",
+            "docs/json",
+            "docs.json/LICENSE",
+            "docs/.htaccess",
+        ] {
+            assert!(
+                !marks_format(path),
+                "{path} is not a format a projection writes"
+            );
+        }
     }
 
     #[test]
