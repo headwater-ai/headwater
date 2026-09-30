@@ -199,6 +199,7 @@ checks
       document scope, one document, its front matter and its body
     link.fragment.unresolved
       corpus scope, every row of the census, and it is a barrier
+      3 links compared, 1 findings
     link.path.unresolved
       corpus scope, every row of the census, and it is a barrier
     link.identifier.mismatch

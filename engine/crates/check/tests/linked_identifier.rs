@@ -469,7 +469,12 @@ fn the_run_carries_how_many_fragment_links_the_fragment_rule_compared() {
     let reported = |run: &Run| run.findings.iter().filter(|f| f.rule == FRAGMENT).count();
     assert_eq!(compared(&after), compared(&before) + 2);
     assert_eq!(reported(&after), reported(&before) + 1);
-    assert_eq!(at(&after, FRAGMENT, landed[1]).len(), 1, "{:#?}", after.findings);
+    assert_eq!(
+        at(&after, FRAGMENT, landed[1]).len(),
+        1,
+        "{:#?}",
+        after.findings
+    );
     for line in [landed[0], landed[2], landed[3], landed[4]] {
         assert!(at(&after, FRAGMENT, line).is_empty(), "{line}");
     }

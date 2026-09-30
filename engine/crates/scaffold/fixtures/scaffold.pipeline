@@ -92,6 +92,7 @@ rules, and for each the scope that binds it
     document scope, one document, its front matter and its body
   link.fragment.unresolved
     corpus scope, every row of the census, and it is a barrier
+    0 links compared, 0 findings
   link.path.unresolved
     corpus scope, every row of the census, and it is a barrier
   link.identifier.mismatch
