@@ -669,6 +669,46 @@ milestone_judge() {
     ' "$1"
 }
 
+# result_pages DIR — how many result pages a results directory holds: every
+# `.md` file in it except its `README.md`, which is the shelf's own index and
+# no measurement. A directory that is not there holds none.
+result_pages() {
+    if [ -d "$1" ]; then
+        find "$1" -maxdepth 1 -type f -name '*.md' ! -name 'README.md' | wc -l | tr -d ' '
+    else
+        echo 0
+    fi
+}
+
+# unmeasured_judge FILE RESULTS — a sentence saying that EVERY claim is still
+# unmeasured, on a page whose repository holds RESULTS result pages. With none,
+# the sentence is true and passes; with any, a measurement ran and the blanket
+# sentence is what went stale on 2026-09-30. The three words must stand in one
+# sentence, so a long HTML line that says each of them apart is not read as one.
+unmeasured_judge() {
+    awk -v results="$2" '
+        results > 0 {
+            line = tolower($0)
+            if (line ~ /every[^.]*claim[^.]*unmeasured/)
+                print NR ": every claim is called unmeasured, and a result page under docs/probe-results/ says a measurement ran"
+        }
+    ' "$1"
+}
+
+# retired_milestone_judge FILE — a milestone named by its retired label, `M7` or
+# `M6b`. HW-PD-0008 made every open milestone a version, so a label of that shape
+# names something the board no longer holds. The label must be followed by a
+# word, a comma, a full stop, a tag or a dash, so the `M12 4` of an SVG path is
+# not read as one.
+retired_milestone_judge() {
+    awk '
+        {
+            if ($0 ~ /(^|[^A-Za-z0-9#_-])M[0-9]+b?( [a-z]|,|\.|<| —)/)
+                print NR ": a retired milestone label, and HW-PD-0008 made every open milestone a version"
+        }
+    ' "$1"
+}
+
 # release_names_raw FILE MODE — every release asset name the file states, one
 # per line, in the order it meets them, with the tag reduced to `<tag>` however
 # the file spells it.
@@ -2079,6 +2119,73 @@ got=$(milestone_judge "$scratch/status.md" | tr '\n' '|')
 same "the milestone judge names a count and a range, and leaves the names alone" \
     "1: a count of milestones, and nothing in this tree can check one|3: a range of milestones, and nothing in this tree can check one|" \
     "$got"
+
+# 5d. No blanket "every claim is unmeasured" once a measurement has run. The
+#     authority is in the tree: a result page under `docs/probe-results/` is a
+#     graded run. The README and the three public pages that said it are read;
+#     the population guard first, so a page that moved is a failure, not a pass.
+results=$(result_pages "$root/docs/probe-results")
+more_than "docs/probe-results/ holds at least one result page" 0 "$results"
+public_pages="README.md site/index.html site/proof/index.html site/compare/index.html"
+read_pages=0
+bad=""
+for page in $public_pages; do
+    if [ -s "$root/$page" ]; then
+        read_pages=$((read_pages + 1))
+        for hit in $(unmeasured_judge "$root/$page" "$results" | cut -d: -f1); do
+            bad="$bad$page:$hit|"
+        done
+    else
+        fail "the public page $page is there to be read" "no such file, so 5d and 5e judge less than they claim"
+    fi
+done
+same "5d and 5e read all four public pages" 4 "$read_pages"
+same "no public page calls every claim unmeasured while a result page exists" "" "$bad"
+
+# 5d, provoked. The same sentence is refused with a result page and passes
+#     without one, and a Status that says something else passes either way.
+mkdir -p "$scratch/results.none" "$scratch/results.one"
+printf '%s\n' '# Probe results' >"$scratch/results.none/README.md"
+printf '%s\n' '# Probe results' >"$scratch/results.one/README.md"
+printf '%s\n' '# A graded run' >"$scratch/results.one/run.md"
+printf '%s\n' \
+    '## Status' \
+    '' \
+    '> The engine runs. Every efficacy claim in this repository is still marked unmeasured.' >"$scratch/blanket.md"
+printf '%s\n' \
+    '## Status' \
+    '' \
+    '> The engine runs. One campaign measured the documents, and the other claims stay open.' >"$scratch/measured.md"
+same "  the results README alone is not a result page" 0 "$(result_pages "$scratch/results.none")"
+same "  a blanket unmeasured sentence is refused once a result page exists" \
+    "3: every claim is called unmeasured, and a result page under docs/probe-results/ says a measurement ran|" \
+    "$(unmeasured_judge "$scratch/blanket.md" "$(result_pages "$scratch/results.one")" | tr '\n' '|')"
+same "  the same sentence passes while no result page exists" "" \
+    "$(unmeasured_judge "$scratch/blanket.md" "$(result_pages "$scratch/results.none")")"
+same "  a Status that names what was measured passes" "" \
+    "$(unmeasured_judge "$scratch/measured.md" "$(result_pages "$scratch/results.one")")"
+
+# 5e. No public page names a milestone by its retired label.
+bad=""
+for page in $public_pages; do
+    [ -s "$root/$page" ] || continue
+    for hit in $(retired_milestone_judge "$root/$page" | cut -d: -f1); do
+        bad="$bad$page:$hit|"
+    done
+done
+same "no public page names a milestone by a retired M label" "" "$bad"
+
+# 5e, provoked: a rail label, a continuation label and a label in running
+#     prose are refused, and an SVG path and a version milestone pass.
+printf '%s\n' \
+    '<span>M7 measurement — open</span>' \
+    'what it left open continues as M6b.' \
+    'the measurement layer, milestone M7, runs.' \
+    '<path d="M12 4 L3 12h18"/>' \
+    'The 0.6 milestone, measured evidence, is open.' >"$scratch/labels.html"
+same "  the retired label judge names three labels and leaves a path and a version alone" \
+    "1: a retired milestone label, and HW-PD-0008 made every open milestone a version|2: a retired milestone label, and HW-PD-0008 made every open milestone a version|3: a retired milestone label, and HW-PD-0008 made every open milestone a version|" \
+    "$(retired_milestone_judge "$scratch/labels.html" | tr '\n' '|')"
 
 echo "the command the page tells a newcomer to run"
 
