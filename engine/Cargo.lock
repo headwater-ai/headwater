@@ -653,6 +653,7 @@ dependencies = [
  "headwater-census",
  "headwater-check",
  "headwater-graph",
+ "headwater-hash",
  "headwater-lock",
  "headwater-mark",
  "headwater-probe",

@@ -412,3 +412,7 @@ The documents on this shelf, in the reading order this corpus derives. Each head
 ## An engine subsystem is described by a technical design spec on a shelf of its own, and its behavior stays where it is already written
 
 [HW-DR-0098](../decisions/0098-an-engine-subsystem-is-described-by-a-technical-design-spec-on-a-shelf-of-its-own-and-its-behavior-stays-where-it-is-already-written.md) — Each engine subsystem gets one technical spec, a subsystem_spec on a new shelf, and it governs its crates by one pattern each. No crate gets a functional spec, because interface contracts, spec parts and requirements already state behavior. (asserted, and no human has accepted it)
+
+## A counted tombstone lists a digest of each withheld identifier, and a sealed one lists nothing
+
+[HW-DR-0100](../decisions/0100-a-counted-tombstone-lists-a-digest-of-each-withheld-identifier-and-a-sealed-one-lists-nothing.md) — Under the counted grain, each tombstone of a filtered export lists the SHA-256 digest of each identifier it withheld. A tier that pins the export then binds an anchor to a withheld document as withheld, and it reports a typo as unresolved. Under sealed the export lists nothing, and both stay unresolved. An export older than version 1.3 lists nothing either. (asserted, and no human has accepted it)

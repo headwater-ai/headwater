@@ -13,12 +13,12 @@
 //!
 //! [Spec 1](../../../../docs/spec/01-conceptual-model.md#external-anchor) fixes
 //! the set: an anchor resolves, or it fails to resolve, or its target sits
-//! behind a declared withholding. The third is [`Binding::Withheld`], and
-//! nothing produces it yet, because an export filter is
-//! [M6](https://github.com/headwater-ai/headwater/milestone/6) and no profile
-//! exists to withhold anything. The variant is declared now rather than added
-//! later, so that the day a filter arrives the compiler lists every site that
-//! has to tell the two apart, which is
+//! behind a declared withholding. The third is [`Binding::Withheld`]. Its one
+//! producer is the resolver over a pinned export, `headwater_import::harvest`,
+//! which binds it when an anchor's digest is one that a `counted` tombstone
+//! lists ([HW-DR-0100](../../../../docs/decisions/0100-a-counted-tombstone-lists-a-digest-of-each-withheld-identifier-and-a-sealed-one-lists-nothing.md)).
+//! The variant is a member of a closed set, so the compiler lists every site
+//! that has to tell the two apart, which is
 //! [Q1](../../../../docs/spec/09-decisions.md#q1--implementation-language)'s
 //! argument for a closed set.
 //!
