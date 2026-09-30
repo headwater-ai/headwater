@@ -98,13 +98,23 @@ The six recordings hold 1326 sessions and 51358 recorded cents ($513.58). With t
 
 ## Limits
 
-**Some sessions read outside their workspace.** Nothing held a session inside its workspace. 51 of 658 sessions made a call that names a path outside it. By line: present sufficiency 9/119, absent sufficiency 4/119, present navigability 8/90, absent navigability 0/90, present discovery 5/60, absent discovery 3/60, and `documentation` absent 22/120. 16 of the 51 named a checkout of this repository. The host holds three: the owner's checkout, a second copy under `/mnt/new-projects/`, and the checkout of the CI runner. Six `documentation` absent sessions read HW-DR-0052, the answer of the status probe, from a checkout. Two `campaign` absent sessions ran the CI runner's `headwater` binary. Without the 51, the rates that move are these:
+**Some sessions reached this repository from outside their workspace.** Nothing held a session inside its workspace. This page counts a session as a leak when a call names a source of this repository that its arm did not give it. There are three channels:
 
-- present unmeasured claim 16/20 (58.4-91.9), and absent unmeasured claim 24/25 (80.5-99.3)
+- A copy of this repository on the host, or the batch directory that held the pilot's trees. The host holds four copies: the owner's checkout, a copy under `/mnt/new-projects/`, the checkout of the CI runner, and a full tree under `/tmp/v1384r3/base`.
+- A `headwater` binary on the host, outside the workspace, in an arm that holds none.
+- This repository on GitHub, through `gh api` or a web search or fetch.
+
+By that rule, 58 of 658 sessions leaked. By line: present sufficiency 9/119, absent sufficiency 5/119, present navigability 8/90, absent navigability 0/90, present discovery 5/60, absent discovery 3/60, and `documentation` absent 28/120. 17 of the 58 named a copy on the host, and 2 of those ran the CI runner's binary. 35 named only the batch directory, 5 used GitHub, and 1 ran a host binary that is in no copy. HW-DR-0052 is the answer of the status probe. 6 `documentation` absent sessions read it from a copy on the host, and 1 fetched it from GitHub.
+
+The rule is narrower than "a path outside the workspace". 118 sessions name such a path. Most of those paths are scratch files under `/tmp` or the harness's own `~/.claude`, which hold no copy of this repository. The transcripts blank every tool result. So a counted session is one whose call names the source, and nothing shows that it read content there.
+
+Without the 58, the rates that move are these:
+
+- present unmeasured claim 16/20 (58.4-91.9), and absent unmeasured claim 23/24 (79.8-99.3)
 - present cited 7/22 (16.4-52.7), present descriptor 7/25 (14.3-47.6), absent descriptor 4/29, and absent pointer 1/28
-- `documentation` absent: tombstone 28/28, accepted event 0/26, status 5/22 (10.1-43.4), and unmeasured claim 3/22 (4.7-33.3)
+- `documentation` absent: tombstone 28/28, accepted event 0/26, status 2/19 (2.9-31.4), and unmeasured claim 1/19 (0.9-24.6)
 
-No separation and no non-separation above changes without them. The committed transcripts count 44, because their count did not read the two checkouts under `/mnt/`. [#1467](https://github.com/headwater-ai/headwater/issues/1467) gives each session a sandbox.
+No separation and no non-separation above changes without them. Where the leak moved a rate, it raised the `documentation` absent arm, so the effect of the documents is larger without it. The committed transcripts state 44 sessions, because their count read two channels of the first kind and no other. [#1467](https://github.com/headwater-ai/headwater/issues/1467) gives each session a sandbox.
 
 **The model pin is a name.** Every transcript records `served_version: claude-sonnet-5`, which equals the model name, because the provider exposed nothing finer. The sessions ran under Claude Code 2.1.285, and no transcript records that version.
 
