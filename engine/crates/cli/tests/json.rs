@@ -1525,6 +1525,129 @@ fn explain_paths_at_most_without_json_is_refused() {
     );
 }
 
+/// `--paths-at-most` bounds every `paths` list, on every edge and every
+/// member, not only the first.
+///
+/// [#1346](https://github.com/headwater-ai/headwater/issues/1346). The case
+/// above holds one edge with one member, so a bound applied to the first edge
+/// alone passed it. Here one document governs two globs as two edges and a
+/// list anchor of two more globs as a third, each over more files than the
+/// bound. Every member must list exactly the bound and count every file.
+#[test]
+fn explain_json_with_paths_at_most_bounds_every_edge_and_every_member() {
+    const PER_DIRECTORY: usize = 30;
+    const BOUND: usize = 4;
+    let at = scratch().join("reach-many-bounded");
+    let _ = std::fs::remove_dir_all(&at);
+    std::fs::create_dir_all(at.join(".headwater")).expect("the declaration directory is there");
+    std::fs::create_dir_all(at.join("docs/interfaces")).expect("the shelf is there");
+    for name in ["taxonomy.lock", "taxonomy.yml", "overlay.yml"] {
+        std::fs::copy(
+            repository().join(".headwater").join(name),
+            at.join(".headwater").join(name),
+        )
+        .expect("the declaration copies");
+    }
+    for directory in ["a", "b", "c", "d"] {
+        std::fs::create_dir_all(at.join(format!("src/{directory}")))
+            .expect("the source directory is there");
+        for index in 0..PER_DIRECTORY {
+            std::fs::write(at.join(format!("src/{directory}/f{index:02}.rs")), "")
+                .expect("the source file is written");
+        }
+    }
+    std::fs::write(
+        at.join("docs/interfaces/headwater-many.md"),
+        "---\nid: HW-IFACE-headwater-many\nstatus: current\nstatus_since: 2026-09-30\nsummary: \"Three anchors that hold four globs between them.\"\nlast_verified: 2026-09-30\ntitle: \"headwater many\"\nrelations:\n  governs:\n    - \"src/a/**\"\n    - \"src/b/**\"\n    - - \"src/c/**\"\n      - \"src/d/**\"\n---\n\n# headwater many\n\n## Synopsis\n\n    headwater many\n",
+    )
+    .expect("the document is written");
+    let output = Command::new(env!("CARGO_BIN_EXE_headwater"))
+        .args([
+            "explain",
+            "--json",
+            "--paths-at-most",
+            &BOUND.to_string(),
+            "docs/interfaces/headwater-many.md",
+            "--root",
+        ])
+        .arg(&at)
+        .output()
+        .expect("the binary runs");
+    let text = String::from_utf8_lossy(&output.stdout).into_owned();
+    assert_eq!(
+        output.status.code(),
+        Some(0),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let value = headwater_yaml::load(&text)
+        .unwrap_or_else(|errors| panic!("the explain document parses: {errors:?}"))
+        .value;
+    let edges: Vec<&headwater_yaml::Value> = value
+        .as_map()
+        .and_then(|map| map.get("related"))
+        .and_then(|spanned| spanned.value.as_seq())
+        .expect("the document writes `related`")
+        .iter()
+        .map(|element| &element.value)
+        .filter(|element| {
+            member(element, "relation").as_deref() == Some("governs")
+                && member(element, "inbound").as_deref() == Some("false")
+        })
+        .collect();
+    assert_eq!(
+        edges.len(),
+        3,
+        "three governs edges: two globs and one list anchor"
+    );
+    let mut members = 0;
+    for edge in edges {
+        let reach = edge
+            .as_map()
+            .and_then(|map| map.get("reach"))
+            .map(|spanned| &spanned.value)
+            .expect("each governs edge carries `reach`");
+        for element in reach
+            .as_map()
+            .and_then(|map| map.get("members"))
+            .and_then(|spanned| spanned.value.as_seq())
+            .expect("`reach.members`")
+        {
+            members += 1;
+            let pattern = member(&element.value, "pattern").expect("`pattern`");
+            let matched: usize = member(&element.value, "matched")
+                .expect("`matched`")
+                .parse()
+                .expect("`matched` is a number");
+            assert_eq!(
+                matched, PER_DIRECTORY,
+                "`matched` of {pattern} counts every file"
+            );
+            let listed = element
+                .value
+                .as_map()
+                .and_then(|map| map.get("paths"))
+                .and_then(|spanned| spanned.value.as_seq())
+                .expect("the member carries `paths`")
+                .len();
+            assert_eq!(
+                listed, BOUND,
+                "`paths` of {pattern} holds the bound and no more"
+            );
+        }
+    }
+    assert_eq!(members, 4, "four patterns, one member each");
+    let governed: usize = member(&value, "governed_entries")
+        .expect("the document writes `governed_entries`")
+        .parse()
+        .expect("`governed_entries` is a number");
+    assert_eq!(
+        governed,
+        4 * PER_DIRECTORY,
+        "`governed_entries` counts every file"
+    );
+}
+
 /// `governed_entries` counts an entry that two `governs` edges reach once.
 ///
 /// [#1093](https://github.com/headwater-ai/headwater/issues/1093). HW-DR-0037
