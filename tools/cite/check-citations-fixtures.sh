@@ -311,7 +311,7 @@ echo "what this repository itself carries"
 status=$(run sarif docs/spec/05-ai-integration.md)
 same "spec 5 carries exactly one line of the shape" 1 \
     "$(field . 'd["runs"][0]["properties"]["headwater"]["citations"]')"
-same "  at the line the page writes its worked example on" 289 \
+same "  at the line the page writes its worked example on" 293 \
     "$(field . 'd["runs"][0]["results"][0]["locations"][0]["physicalLocation"]["region"]["startLine"]')"
 same "  and it does not resolve, because its corpus is imagined" \
     citation.identifier.unresolved "$(rules)"
