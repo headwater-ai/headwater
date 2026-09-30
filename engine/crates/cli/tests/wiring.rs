@@ -444,7 +444,7 @@ fn a_stated_re_verification_records_the_digest_through_the_verbs() {
         stated.sort_unstable();
         assert_eq!(stated, asked, "{label}: the manifest's verified lines");
         let manifest = out.join("manifest").display().to_string();
-        let ran =root.run(&["check", "--no-cache", "--fix", "--change", &manifest]);
+        let ran = root.run(&["check", "--no-cache", "--fix", "--change", &manifest]);
         assert_eq!(ran.code, Some(0), "{label}: {}{}", ran.out, ran.err);
         ran
     };
