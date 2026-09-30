@@ -720,3 +720,46 @@ fn a_pin_that_a_symlink_takes_out_of_the_root_refuses_the_run() {
         "{ran:?}"
     );
 }
+
+/// The gate's twin of the case above (#1345). A read set is taken over a clean
+/// tree, and `harvest` is then replaced by a symlink to an identical copy
+/// outside the root. `check` refuses that tree, so a gate over it must not
+/// carry the verdict by hashing bytes the tree does not hold: it names each
+/// listed export as resolving outside the repository root.
+#[cfg(unix)]
+#[test]
+fn a_gate_does_not_read_a_listed_path_that_a_symlink_takes_out_of_the_root() {
+    let root = Root::new("gate-symlink");
+    let read_set = root.at.join("clean.readset");
+    let read_set = read_set.to_str().expect("the read set path is UTF-8");
+    let ran = root.run(&["check", "--read-set", read_set]);
+    assert_eq!(ran.code, Some(0), "{ran:?}");
+    let escaped = format!("{EXPORT_A} resolves outside the repository root");
+    let still = root.run(&["gate", "--read-set", read_set]);
+    assert!(!still.out.contains(&escaped), "{still:?}");
+
+    let outside = std::env::temp_dir().join(format!(
+        "headwater-cli-harvest-{}-gate-symlink-outside",
+        std::process::id()
+    ));
+    let _ = std::fs::remove_dir_all(&outside);
+    std::fs::create_dir_all(&outside).expect("the outside directory is made");
+    for export in [EXPORT_A, EXPORT_B] {
+        let name = Path::new(export).file_name().expect("it has a name");
+        std::fs::copy(root.at.join(export), outside.join(name)).expect("the export copies");
+    }
+    std::fs::remove_dir_all(root.at.join("harvest")).expect("the directory is removed");
+    std::os::unix::fs::symlink(&outside, root.at.join("harvest")).expect("the symlink is made");
+    let gated = root.run(&["gate", "--read-set", read_set]);
+    let _ = std::fs::remove_dir_all(&outside);
+    assert!(
+        gated.out.contains(&escaped),
+        "the gate names the export a symlink took out of the root: {gated:?}"
+    );
+    assert!(
+        gated
+            .out
+            .contains(&format!("{EXPORT_B} resolves outside the repository root")),
+        "{gated:?}"
+    );
+}
