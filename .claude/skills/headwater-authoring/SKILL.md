@@ -77,4 +77,6 @@ Errors must reach zero, which is what the commit gate holds. `headwater check --
 
 Prose under `docs/spec/`, `docs/decisions/`, `docs/evaluations/`, `docs/obligations/`, `docs/interfaces/`, `docs/requirements/`, `docs/acceptance-criteria/`, `docs/tutorials/` and `docs/process/decisions/` answers to the `ste_house` language regime. Invoke the `ste-editor` skill for the rules that no check reads.
 
+**An edit to a document that a probe reads marks each result over it.** The next `headwater generate` writes one sentence into each such result under `docs/probe-results/`, and it keeps every verdict. `generate --check` asks for that regeneration once, and `headwater probe stale` names the results the edit reached.
+
 Adding or removing a document under `docs/` moves three recorded fixtures. Run `cargo test --workspace --manifest-path engine/Cargo.toml`, re-record with `HEADWATER_BLESS=1`, and read the diff: `check --strict` and `generate --check` both pass while all three are stale.

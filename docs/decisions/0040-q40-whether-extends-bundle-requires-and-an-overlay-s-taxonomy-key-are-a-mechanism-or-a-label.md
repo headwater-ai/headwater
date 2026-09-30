@@ -2,7 +2,7 @@
 id: HW-DR-0040
 status: current
 status_since: 2026-08-30
-summary: "All four keys of the family are a label rather than a mechanism today, and the specification and the meta-schema now say so in plain prose."
+summary: "Three keys of the family are a label rather than a mechanism, and `requires` is read for one purpose since HW-DR-0095: an entry may add into the keys of an entry it names there."
 last_verified: 2026-08-30
 title: "Q40 — Whether extends, bundle, requires and an overlay's taxonomy key are a mechanism or a label"
 provenance:
@@ -48,6 +48,8 @@ relations:
 **Removing all four keys instead was considered and rejected.** The declaration set of the meta-schema's root is closed, so dropping any one of them is a breaking major bump. The meta-schema's own [0.3.0 removal of `lifecycle_regime.terminal`](../../engine/crates/meta/meta-schema.yml) is the precedent for what that costs. It would immediately refuse all five of this repository's own `bundle.yml` files on their next validation. It would force an edit to strip a bundle's own name, its author's stated base, and its author's stated dependency. That gains no reader over stating plainly that the reader is absent.
 
 ## Consequences
+
+**Amended 2026-09-30: `requires` is no longer a label.** [HW-DR-0095](0095-q67-one-library-entry-may-address-the-keys-of-an-entry-it-names-in-requires-and-confluence-holds-over-the-dependency-order.md) ruled that an entry may add into the keys of an entry it names in `requires`. [#1337](https://github.com/headwater-ai/headwater/issues/1337) built the resolver change, and [HW-OBL-0040](../obligations/0040-composition-between-two-library-entries-has-no-add-only-form.md) is discharged. The other three keys stay a label, and the rest of this record does not change. [#1338](https://github.com/headwater-ai/headwater/issues/1338) carries the amendment.
 
 **This record fully resolves the diataxis doctrine's Finding 1 without an issue of its own.** That finding named "a comparison at resolve time or removal" as the two remedies it saw. Label is the third remedy, and the finding's own prose already anticipated it, in the words "nothing reports the divergence." This record is what now makes the specification report, plainly, that it does not compare and is not expected to. A one-sentence note added to that finding, in both `.headwater/packages/headwater-standard/bundles/diataxis/doctrine.md` and `docs/taxonomies/diataxis/doctrine.md`, records that #295 answered it.
 
