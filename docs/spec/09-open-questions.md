@@ -411,7 +411,7 @@ The documents on this shelf, in the reading order this corpus derives. Each head
 
 ## An engine subsystem is described by a technical design spec on a shelf of its own, and its behavior stays where it is already written
 
-[HW-DR-0098](../decisions/0098-an-engine-subsystem-is-described-by-a-technical-design-spec-on-a-shelf-of-its-own-and-its-behavior-stays-where-it-is-already-written.md) — Each engine subsystem gets one technical spec, a subsystem_spec on a new shelf, and it governs its crates by one pattern each. No crate gets a functional spec, because interface contracts, spec parts and requirements already state behavior. (asserted, and no human has accepted it)
+[HW-DR-0098](../decisions/0098-an-engine-subsystem-is-described-by-a-technical-design-spec-on-a-shelf-of-its-own-and-its-behavior-stays-where-it-is-already-written.md) — Each engine subsystem gets one technical spec, a subsystem_spec on a new shelf, and it governs its crates by one pattern each. No crate gets a functional spec, because interface contracts, spec parts and requirements already state behavior.
 
 ## A counted tombstone lists a digest of each withheld identifier, and a sealed one lists nothing
 

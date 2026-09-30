@@ -71,7 +71,7 @@ Each stage is built by one subsystem, and each subsystem is a group of crates un
 
 | stage | subsystem | crates | why the crates are here |
 |---|---|---|---|
-| resolve | Taxonomy resolution (no spec yet, #1288) | `yaml`, `ref`, `meta`, `resolve`, `lock`, `hash` | Eleven other crates use `hash`. The lock is its first consumer, and one implementation stops two digests from disagreeing. |
+| resolve | [Taxonomy resolution](../subsystems/taxonomy-resolution.md) | `yaml`, `ref`, `meta`, `resolve`, `lock`, `hash` | Eleven other crates use `hash`. The lock is its first consumer, and one implementation stops two digests from disagreeing. |
 | resolve | Taxonomy distribution and audit (no spec yet, #1288) | `fetch`, `compat`, `audit` | These crates move a taxonomy between repositories and measure it against a corpus. None of them builds the lock. |
 | parse | Parse and census (no spec yet, #1288) | `doc`, `census`, `vcs` | `census` and `graph` use `vcs` for the change manifest. The only other crate that uses it is `cli`. |
 | graph build | [Graph build](../subsystems/graph-build.md) | `graph` | |
