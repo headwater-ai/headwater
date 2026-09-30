@@ -1973,10 +1973,14 @@ projections:
         .expect("a mapping")
         .clone();
     let errors = Projections::read(&root).expect_err("an output the census cannot read is refused");
-    let refused: Vec<&str> = ["docs/nav.txt", "docs/exports/graph.JSON", "docs/exports/graph.json"]
-        .into_iter()
-        .filter(|path| errors.iter().any(|error| error.message.contains(path)))
-        .collect();
+    let refused: Vec<&str> = [
+        "docs/nav.txt",
+        "docs/exports/graph.JSON",
+        "docs/exports/graph.json",
+    ]
+    .into_iter()
+    .filter(|path| errors.iter().any(|error| error.message.contains(path)))
+    .collect();
     assert_eq!(
         refused,
         vec!["docs/nav.txt", "docs/exports/graph.JSON"],
