@@ -71,11 +71,12 @@ use std::collections::HashSet;
 /// documents wrote one artifact, because the only member that moved was a
 /// content digest of the read set.
 ///
-/// `1.4` added `compared` to the entry of `rules` for
-/// `link.identifier.mismatch`, and to no other entry: how many links the rule
-/// compared, whether they agree or not. The rule is silent over a corpus whose
-/// identifier links all agree, and it is silent over a corpus that has none,
-/// and the member is what tells the two apart. A `1.4` document that writes
+/// `1.4` added `compared` to the entries of `rules` for
+/// `link.identifier.mismatch` and `link.fragment.unresolved`, and to no other
+/// entry: how many links the rule compared, whether they pass or not. Each rule
+/// is silent over a corpus whose links all pass, and it is silent over a
+/// corpus that has none of the links it reads, and the member is what tells
+/// the two apart. A `1.4` document that writes
 /// `"compared": 0` says the rule examined nothing. The same entry in a `1.3`
 /// document says only that this producer had no member for the count (#1347).
 ///
@@ -400,7 +401,7 @@ fn rule(served: &headwater_check::Serves) -> Json {
             },
         ),
     ];
-    // Written for the one rule that carries it, and absent on every other
+    // Written for the two rules that carry it, and absent on every other
     // entry: see [`VERSION`] at `1.4`.
     if let Some(compared) = served.compared {
         members.push(("compared", number(compared)));

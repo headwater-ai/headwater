@@ -405,8 +405,9 @@ pub struct Serves {
     pub exportable_as: scope::ExportTargets,
     /// How many links the rule compared, for a rule whose silence says
     /// nothing without that count, and `None` for every other rule. Only
-    /// [`link_identifier::RULE`] sets it. Read off the graph on every run,
-    /// cached or not, because the rule's outcome carries no count (#1347).
+    /// [`link_identifier::RULE`] and [`fragment::RULE`] set it. Read off the
+    /// graph on every run, cached or not, because the rule's outcome carries
+    /// no count (#1347).
     pub compared: Option<usize>,
 }
 
@@ -1086,6 +1087,9 @@ pub fn run(
     // because the binding is data. A rule states its id, a control names that
     // id and the obligations it discharges, and one place reads the two
     // together. See [`register`] for why that place is not the check.
+    // The heading lists `link.fragment.unresolved` compares against, built once
+    // more here because a cached run never reaches the rule's own copy.
+    let anchors = fragment::Anchors::of(census);
     let served: Vec<Serves> = registry()
         .into_iter()
         .map(|(rule, scope, version, exportable_as)| Serves {
@@ -1094,7 +1098,11 @@ pub fn run(
             version,
             obligation: declared.register.bound(rule),
             exportable_as,
-            compared: (rule == link_identifier::RULE).then(|| graph.identifier_link_count()),
+            compared: match rule {
+                link_identifier::RULE => Some(graph.identifier_link_count()),
+                fragment::RULE => Some(fragment::compared(&graph.links, &anchors)),
+                _ => None,
+            },
         })
         .collect();
     for finding in &mut findings {

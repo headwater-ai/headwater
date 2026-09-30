@@ -308,7 +308,10 @@ impl Graph {
     /// The fragment-bearing links, by which document a fragment names a heading
     /// of.
     ///
-    /// This is the denominator of `link.fragment.unresolved`. The two arms are
+    /// These are the links `link.fragment.unresolved` can read, before it
+    /// drops a link into a file that carries no parsed document. The rule's
+    /// own count, after that, is `headwater_check::fragment::compared`, which
+    /// needs the heading lists this crate does not build. The two arms are
     /// counted apart because the rule read only the first one until its third
     /// edition, and a reader comparing an old report with a new one should see
     /// which half moved.
