@@ -757,7 +757,7 @@ enum Reading {
     /// Both refuse it, or both accept it as the same path.
     Agree,
     /// The two readings differ on purpose, and HW-OBL-0061's `## Discharge`
-    /// names the difference with this phrase.
+    /// names the difference in a bullet that opens with this bold lead.
     Stated(&'static str),
 }
 
@@ -802,18 +802,38 @@ fn the_anchor_resolver_and_the_path_tools_agree_on_every_spelling_both_accept() 
             absolute.as_str(),
             None,
             Some("a/b"),
-            Reading::Stated("absolute path under the repository root"),
+            Reading::Stated("**An absolute path under the repository root.**"),
         ),
         (
             "link/x",
             Some("link/x"),
             None,
-            Reading::Stated("symlink that leads out of the repository"),
+            Reading::Stated("**A path through a symlink that leads out of the repository.**"),
         ),
-        ("a\\b", Some("a/b"), Some("a\\b"), Reading::Stated("backslash")),
-        (" a/b ", Some("a/b"), Some(" a/b "), Reading::Stated("whitespace")),
-        ("", None, Some(""), Reading::Stated("empty path")),
-        (".", None, Some(""), Reading::Stated("empty path")),
+        (
+            "a\\b",
+            Some("a/b"),
+            Some("a\\b"),
+            Reading::Stated("**A backslash.**"),
+        ),
+        (
+            " a/b ",
+            Some("a/b"),
+            Some(" a/b "),
+            Reading::Stated("**Surrounding whitespace.**"),
+        ),
+        (
+            "",
+            None,
+            Some(""),
+            Reading::Stated("**The empty path, and `.`.**"),
+        ),
+        (
+            ".",
+            None,
+            Some(""),
+            Reading::Stated("**The empty path, and `.`.**"),
+        ),
     ];
 
     let obligation = Path::new(env!("CARGO_MANIFEST_DIR")).join(

@@ -1202,8 +1202,20 @@ fn every_path_tool_describes_each_spelling_it_answers() {
     };
 
     for (tool, key, path, dir, identifier) in [
-        ("explain", "target", "query/specs/api-design.md", "query", true),
-        ("related", "target", "query/specs/api-design.md", "query", true),
+        (
+            "explain",
+            "target",
+            "query/specs/api-design.md",
+            "query",
+            true,
+        ),
+        (
+            "related",
+            "target",
+            "query/specs/api-design.md",
+            "query",
+            true,
+        ),
         (
             "governing_docs_for_path",
             "path",
@@ -1223,7 +1235,7 @@ fn every_path_tool_describes_each_spelling_it_answers() {
         let description = described(tool, key);
         for (target, named) in [
             (format!("./{path}"), "`./"),
-            (format!("{dir}/../{path}"), "`..`"),
+            (format!("{dir}/../{path}"), "`..` segments"),
             (absolute, "absolute path under the repository root"),
         ] {
             assert_eq!(

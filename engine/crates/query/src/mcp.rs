@@ -413,7 +413,10 @@ pub const QUERY_CLASS: [Tool; 6] = [
                       fired, the purpose it serves, and what is consequently required of it.",
         arguments: &[Argument::required(
             "target",
-            concat!("An identifier as a document declares it, or a path. ", path_spellings!()),
+            concat!(
+                "An identifier as a document declares it, or a path. ",
+                path_spellings!()
+            ),
         )],
         writes: false,
     },
@@ -423,7 +426,10 @@ pub const QUERY_CLASS: [Tool; 6] = [
                       edge and which end governs the reading.",
         arguments: &[Argument::required(
             "target",
-            concat!("An identifier as a document declares it, or a path. ", path_spellings!()),
+            concat!(
+                "An identifier as a document declares it, or a path. ",
+                path_spellings!()
+            ),
         )],
         writes: false,
     },
@@ -441,10 +447,7 @@ pub const QUERY_CLASS: [Tool; 6] = [
         name: "governing_docs_for_path",
         description: "The documents that govern a path in the repository, through a declared \
                       governance edge onto that path.",
-        arguments: &[Argument::required(
-            "path",
-            path_spellings!(),
-        )],
+        arguments: &[Argument::required("path", path_spellings!())],
         writes: false,
     },
     Tool {
