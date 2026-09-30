@@ -26,7 +26,7 @@ waiting_on: adopter
 
 The comment states that the marker decides before the difference does. The code tests the difference first. The comment is the intent and the order is the behavior, and the two disagree.
 
-`headwater_mark::carries_marker` reads the marker in a position that the format of the file sets. In a Markdown file, it reads line 1 or a member of the front-matter block. In a JSON file, it reads a top-level member. In a YAML or TOML file, it reads line 1. The census reads the same function to classify a file as generated: `outcome_of` in `engine/crates/census/src/census.rs` reads a Markdown file, and `not_a_document` reads a JSON, YAML or TOML file (#1344). So one position of one comment line decides the census classification and the regeneration verdict, and it decides them through two different readers.
+`headwater_mark::carries_marker` reads the marker in a position that the format of the file sets. In a Markdown file, it reads line 1 or a member of the front-matter block. In a JSON file, it reads a top-level member. In a YAML or TOML file, it reads line 1. The census reads the same function to classify a file as generated, in `engine/crates/census/src/census.rs`. There, `outcome_of` reads a Markdown file, and `not_a_document` reads a JSON, YAML or TOML file (#1344). So one position of one comment line decides the census classification and the regeneration verdict, and it decides them through two different readers.
 
 ## Obligation
 
