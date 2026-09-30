@@ -1285,10 +1285,17 @@ release_notes_judge() {
 # digest. Where the workflow states none, the README's claim is true and the
 # judge has nothing to refuse. #1336 found the claim on the README after
 # HW-DR-0090 made it false.
+#
+# The claim is read in the three shapes a negation takes in English: "states
+# no digest" in either number ("releases state no"), "does not state a
+# digest", and "no engine release states a digest". A sentence that says the
+# release states the digest carries none of the three and passes (#1406).
 engine_digest_claim_judge() {
     [ "$(release_notes_judge "$2")" = ok ] || { echo ok; return 0; }
+    edc_verb='(states?|carr(y|ies)|ha(s|ve))'
+    edc_what='(`release\.digest`|digest)'
     edc_claim=$(awk '/^```/{f=!f; next} !f' "$1" \
-        | grep -oiE '[^.]*engine release[^.]*(states|carries|has) no (`release\.digest`|digest)[^.]*\.' \
+        | grep -oiE "[^.]*engine release[^.]*($edc_verb no|(does|do) not (state|carry|have)( a| any)?) $edc_what[^.]*\\.|[^.]*no engine releases? $edc_verb( a| any)? $edc_what[^.]*\\." \
         | head -1 | sed 's/^ *//')
     if [ -z "$edc_claim" ]; then
         echo ok
@@ -1306,17 +1313,46 @@ engine_digest_claim_judge() {
 # metadata and the site serves no repository. Where the step has that early
 # exit, the apt row of the route table must name the secret (#1336). Where the
 # step signs unconditionally, the row may state the signature alone.
+#
+# The row is one of three places a reader meets the condition. The bold lead
+# of the numbered item on the APT signature is what a reader who skims reads,
+# and the front-matter summary is what `headwater explain` and a search show,
+# so each of those states the condition too (#1406). A step the judge cannot
+# find is a refusal: an empty read is not a step that signs unconditionally.
 apt_condition_judge() {
     workflow_step_run "$2" "Sign the APT metadata" >"$scratch/apt-step.sh"
-    if ! grep -q -- '-z "$APT_SIGNING_KEY"' "$scratch/apt-step.sh"; then
+    if ! [ -s "$scratch/apt-step.sh" ]; then
+        echo "no step named \"Sign the APT metadata\" with a \`run: |\` block in the engine workflow, so nothing says whether the APT signature has a condition"
+        return 0
+    fi
+    if ! grep -qE -- '-z "\$\{?APT_SIGNING_KEY\}?"' "$scratch/apt-step.sh"; then
         echo ok
         return 0
     fi
     acj_row=$(grep '^| the `headwater` binary in a Debian package |' "$1" | head -1)
     case $acj_row in
-        '') echo "the page has no apt row in its route table, so it states nothing an adopter can check the condition against" ;;
-        *APT_SIGNING_KEY*) echo ok ;;
-        *) echo "the apt row of the route table states the signature and not the \`APT_SIGNING_KEY\` secret, but the step \"Sign the APT metadata\" exits 0 and signs nothing when that secret is empty" ;;
+        '') echo "the page has no apt row in its route table, so it states nothing an adopter can check the condition against"; return 0 ;;
+        *APT_SIGNING_KEY*) ;;
+        *) echo "the apt row of the route table states the signature and not the \`APT_SIGNING_KEY\` secret, but the step \"Sign the APT metadata\" exits 0 and signs nothing when that secret is empty"; return 0 ;;
+    esac
+    # The lead: the bold text that opens a numbered item and names the APT
+    # repository or its metadata together with signing.
+    acj_lead=$(sed -n 's/^[0-9][0-9]*\. \*\*\([^*]*\)\*\*.*/\1/p' "$1" \
+        | grep 'APT' | grep -i 'sign' | head -1)
+    case $acj_lead in
+        '') echo "the page has no numbered item whose bold lead states the APT signature, so its reader meets the condition in the route table alone"; return 0 ;;
+        *[Ww]hen*|*secret*|*APT_SIGNING_KEY*) ;;
+        *) echo "the lead \"$acj_lead\" states the APT signature and not its condition, but the step \"Sign the APT metadata\" exits 0 and signs nothing when \`APT_SIGNING_KEY\` is empty"; return 0 ;;
+    esac
+    # The summary: the sentence of the front-matter summary that names the
+    # APT repository.
+    acj_summary=$(sed -n '1,/^---$/{/^summary:/p;}' "$1" | head -1 \
+        | sed 's/^summary: *"\{0,1\}//; s/"$//' | tr '.' '\n' \
+        | grep 'APT' | head -1 | sed 's/^ *//')
+    case $acj_summary in
+        '') echo ok ;;
+        *[Ww]hen*|*secret*|*APT_SIGNING_KEY*) echo ok ;;
+        *) echo "the summary says \"$acj_summary.\" and not when the repository exists, but the step \"Sign the APT metadata\" exits 0 and signs nothing when \`APT_SIGNING_KEY\` is empty" ;;
     esac
 }
 
@@ -2651,6 +2687,54 @@ if [ -f "$release_wf" ]; then
     same "  and the same README is not refused where the workflow states no digest" ok \
         "$(engine_digest_claim_judge "$scratch/release/stale-claim.md" "$scratch/release/no-upload.yml")"
 
+    # 7l', continued. The claim in other words. The #1397 verifier wrote the
+    # clause eight ways, and a judge that read one verb in one number passed
+    # four of them: a plural, a bare verb, "does not state" and a sentence
+    # that opens "No engine release". Each is refused with itself quoted.
+    printf '%s\n' \
+        'An engine release carries no digest for its package.' \
+        'Engine releases state no digest for the package they carry.' \
+        'The notes of an engine release carry no `release.digest`.' \
+        'No engine release states a digest.' \
+        'An engine release does not state a digest for its package.' \
+        'The engine release has no `release.digest` in its notes.' \
+        'An engine release states no digest, so pin the taxonomy one.' \
+        'The Engine Release states no digest.' >"$scratch/release/digest-wordings.txt"
+    edc_n=0
+    while IFS= read -r edc_wording; do
+        edc_n=$((edc_n + 1))
+        { cat "$readme"; printf '\n%s\n' "$edc_wording"; } >"$scratch/release/wording-$edc_n.md"
+        same "  a README that says \"$edc_wording\" is refused" \
+            "the README says \"$edc_wording\", but \`gh release create\` in the engine workflow passes a notes file that the step \"The digest the package in this tree publishes\" opens with \`release.digest\`" \
+            "$(engine_digest_claim_judge "$scratch/release/wording-$edc_n.md" "$release_wf")"
+    done <"$scratch/release/digest-wordings.txt"
+    same "  over the eight wordings the #1397 verifier wrote" 8 "$edc_n"
+    # Each other part of the three shapes, one wording apiece, so narrowing
+    # any alternative of the pattern goes red: "No engine release" in the
+    # plural, "have no", "do not", "does not carry", "does not have", and
+    # "any" in place of "a" in both shapes that take an article.
+    printf '%s\n' \
+        'No engine releases carry a `release.digest`.' \
+        'Engine releases have no `release.digest`.' \
+        'Engine releases do not carry any digest.' \
+        'An engine release does not carry a `release.digest`.' \
+        'An engine release does not have a digest.' \
+        'No engine release states any digest.' >"$scratch/release/digest-shapes.txt"
+    edc_n=0
+    while IFS= read -r edc_wording; do
+        edc_n=$((edc_n + 1))
+        { cat "$readme"; printf '\n%s\n' "$edc_wording"; } >"$scratch/release/shape-$edc_n.md"
+        same "  and a README that says \"$edc_wording\" is refused" \
+            "the README says \"$edc_wording\", but \`gh release create\` in the engine workflow passes a notes file that the step \"The digest the package in this tree publishes\" opens with \`release.digest\`" \
+            "$(engine_digest_claim_judge "$scratch/release/shape-$edc_n.md" "$release_wf")"
+    done <"$scratch/release/digest-shapes.txt"
+    same "  over six wordings, one for each part of the three shapes" 6 "$edc_n"
+    # The control: a sentence that says the engine release DOES state the
+    # digest is true, and a judge widened past negation would refuse it.
+    { cat "$readme"; printf '\n%s\n' 'Each engine release states the `release.digest` of the package in its tree.'; } >"$scratch/release/true-claim.md"
+    same "  and a README that says an engine release states the digest is not refused" ok \
+        "$(engine_digest_claim_judge "$scratch/release/true-claim.md" "$release_wf")"
+
     # 7l''. What the explanation page says about the APT route. The workflow
     #       signs the metadata only when `APT_SIGNING_KEY` is set, so the apt
     #       row of the route table names that secret (#1336).
@@ -2676,6 +2760,61 @@ if [ -f "$release_wf" ]; then
         same "  an apt row that states the signature with no condition is refused" \
             "the apt row of the route table states the signature and not the \`APT_SIGNING_KEY\` secret, but the step \"Sign the APT metadata\" exits 0 and signs nothing when that secret is empty" \
             "$(apt_condition_judge "$scratch/release/apt-unconditional.md" "$release_wf")"
+    fi
+
+    # 7l'', continued. The early exit in braces is the same early exit, so a
+    # workflow that writes `${APT_SIGNING_KEY}` still holds the row to the
+    # condition.
+    sed 's/-z "\$APT_SIGNING_KEY"/-z "${APT_SIGNING_KEY}"/' "$release_wf" >"$scratch/release/apt-braces.yml"
+    if cmp -s "$release_wf" "$scratch/release/apt-braces.yml"; then
+        fail "  an early exit written \`\${APT_SIGNING_KEY}\` still holds the row to the condition" \
+            "the planted edit changed nothing, so this case measured nothing"
+    else
+        same "  an early exit written \`\${APT_SIGNING_KEY}\` still holds the row to the condition" \
+            "the apt row of the route table states the signature and not the \`APT_SIGNING_KEY\` secret, but the step \"Sign the APT metadata\" exits 0 and signs nothing when that secret is empty" \
+            "$(apt_condition_judge "$scratch/release/apt-unconditional.md" "$scratch/release/apt-braces.yml")"
+    fi
+
+    # 7l'', continued. A step the judge cannot find is not a step that signs
+    # unconditionally. Renaming it emptied what the judge read, and an empty
+    # read passed as `ok` (#1406).
+    sed 's/- name: Sign the APT metadata/- name: Sign the Debian metadata/' "$release_wf" >"$scratch/release/apt-renamed.yml"
+    same "  a workflow whose signing step is renamed is refused, not read as unconditional" \
+        "no step named \"Sign the APT metadata\" with a \`run: |\` block in the engine workflow, so nothing says whether the APT signature has a condition" \
+        "$(apt_condition_judge "$apt_page" "$scratch/release/apt-renamed.yml")"
+    # And the contract that stays: a step that exists and signs with no early
+    # exit lets the page state the signature alone.
+    sed '/-z "\$APT_SIGNING_KEY"/,/^ *fi$/d' "$release_wf" >"$scratch/release/apt-always.yml"
+    same "  and a step that signs with no early exit lets the row state the signature alone" ok \
+        "$(apt_condition_judge "$scratch/release/apt-unconditional.md" "$scratch/release/apt-always.yml")"
+
+    # 7l'', continued. The page states the condition in three places: the
+    # route table's apt row, the bold lead of the numbered item on the APT
+    # repository, and the summary in its front matter. A reader who skims
+    # reads the lead and the summary, not the row, so each is held.
+    sed 's/^\([0-9][0-9]*\. \)\*\*The APT repository is signed[^*]*\*\*/\1**The APT repository is signed.**/' \
+        "$apt_page" >"$scratch/release/apt-lead.md"
+    if cmp -s "$apt_page" "$scratch/release/apt-lead.md"; then
+        fail "  a numbered item whose lead states the APT signature with no condition is refused" \
+            "the planted edit changed nothing, so this case measured nothing"
+    else
+        same "  a numbered item whose lead states the APT signature with no condition is refused" \
+            "the lead \"The APT repository is signed.\" states the APT signature and not its condition, but the step \"Sign the APT metadata\" exits 0 and signs nothing when \`APT_SIGNING_KEY\` is empty" \
+            "$(apt_condition_judge "$scratch/release/apt-lead.md" "$release_wf")"
+    fi
+    sed '/^[0-9][0-9]*\. \*\*The APT repository is signed/d' "$apt_page" >"$scratch/release/apt-nolead.md"
+    same "  a page with no numbered item on the APT signature is refused" \
+        "the page has no numbered item whose bold lead states the APT signature, so its reader meets the condition in the route table alone" \
+        "$(apt_condition_judge "$scratch/release/apt-nolead.md" "$release_wf")"
+    sed '/^summary:/s/The APT repository exists only when CI holds the signing subkey, and that subkey signs it\./The APT repository is signed by a subkey that CI holds./' \
+        "$apt_page" >"$scratch/release/apt-summary.md"
+    if cmp -s "$apt_page" "$scratch/release/apt-summary.md"; then
+        fail "  a summary that states the APT repository with no condition is refused" \
+            "the planted edit changed nothing, so this case measured nothing"
+    else
+        same "  a summary that states the APT repository with no condition is refused" \
+            "the summary says \"The APT repository is signed by a subkey that CI holds.\" and not when the repository exists, but the step \"Sign the APT metadata\" exits 0 and signs nothing when \`APT_SIGNING_KEY\` is empty" \
+            "$(apt_condition_judge "$scratch/release/apt-summary.md" "$release_wf")"
     fi
 
     # 7m. The judge, provoked. Stripping the second flag leaves the call legal,
@@ -2818,6 +2957,8 @@ newest_standard_version() {
 # a line is read, not the first alone, because a vendor URL carries the tag
 # path and the zip name on one line and either can be the stale half. A file
 # whose path ends in `/$standard_pin_unversioned` is exempt from the floor.
+# The `0.0.0` that `headwater init` writes is the placeholder for a version,
+# so it is never stale and never counts as naming one (#1406).
 standard_pin_judge() {
     spj_newest=$1
     shift
@@ -2834,7 +2975,8 @@ standard_pin_judge() {
                 v = m
                 sub(/^headwater-standard\/v|^headwater-standard-|^headwater\/standard v?/, "", v)
                 sub(/\.zip$/, "", v)
-                if (v != want && v != "0.0.0") print FILENAME ":" FNR ": " m
+                if (v == "0.0.0") continue
+                if (v != want) print FILENAME ":" FNR ": " m
                 named[FILENAME] = 1
             }
         }
@@ -2921,8 +3063,21 @@ same "  a zip name naming another version fails" \
 same "  a \`headwater/standard <version>\` in prose naming another version fails" \
     "$scratch/standard/prose.md:1: headwater/standard 4.9.1" \
     "$(standard_pin_judge 99.0.0 "$scratch/standard/prose.md")"
-same "  and the unpinned 0.0.0 that init writes passes" ok \
+# The 0.0.0 that init writes is not stale, so beside the newest version it
+# passes. It is not a version either: it is the placeholder for one, so a file
+# whose only version is 0.0.0 names none and fails the floor (#1406).
+printf '%s\n' 'this takes headwater/standard 0.0.0, and the package here is headwater/standard 99.0.0' >"$scratch/standard/init-and-pin.md"
+same "  and the unpinned 0.0.0 that init writes passes beside the newest version" ok \
+    "$(standard_pin_judge 99.0.0 "$scratch/standard/init-and-pin.md")"
+same "  but a file whose only version is the 0.0.0 placeholder names none" \
+    "$scratch/standard/init.md: names no headwater/standard version" \
     "$(standard_pin_judge 99.0.0 "$scratch/standard/init.md")"
+# The placeholder is exactly 0.0.0. Another version under 1 is a real
+# version, and a stale one, so a skip widened to `0.` would hide it.
+printf '%s\n' 'this takes headwater/standard 0.9.0, and the package here is headwater/standard 99.0.0' >"$scratch/standard/zero-nine.md"
+same "  and a stale 0.9.0 beside the newest version is still reported" \
+    "$scratch/standard/zero-nine.md:1: headwater/standard 0.9.0" \
+    "$(standard_pin_judge 99.0.0 "$scratch/standard/zero-nine.md")"
 
 # 8m, continued. The shape the five files actually use puts the tag path and
 # the zip name on ONE line, so a judge that read only the first match on a
@@ -2983,6 +3138,14 @@ same "  the tutorial driver, which reads the version off the page, is exempt fro
 same "  and the exemption is that one path: a sibling and the site page still fail" \
     "$scratch/standard/x/.claude/tutorial/other.py: names no headwater/standard version|$scratch/standard/x/site/tutorial/index.html: names no headwater/standard version" \
     "$(standard_pin_judge 99.0.0 "$scratch/standard/x/.claude/tutorial/other.py" "$scratch/standard/x/site/tutorial/index.html" | tr '\n' '|' | sed 's/|$//')"
+# The exemption is the whole path suffix, not the file name: a `drive.py` that
+# is not under `.claude/tutorial/` fails the floor, so an exemption narrowed
+# to `/drive.py` goes red here.
+mkdir -p "$scratch/standard/y"
+: >"$scratch/standard/y/drive.py"
+same "  and a \`drive.py\` at another path still fails" \
+    "$scratch/standard/y/drive.py: names no headwater/standard version" \
+    "$(standard_pin_judge 99.0.0 "$scratch/standard/y/drive.py")"
 
 # 8o. The newest tag is the newest by VERSION. These four tags are chosen so
 #     that each wrong reading picks a different one: git's default order is
@@ -3007,6 +3170,14 @@ same "  the newest tag is read by version, not by name" 4.12.0 \
 #     is three dotted numbers and nothing else is read.
 git -C "$order" tag "taxonomy/headwater-standard/v4.13.0-rc.1" >/dev/null 2>&1
 same "  a pre-release tag newer than the release is not the newest" 4.12.0 \
+    "$(newest_standard_version "$order")"
+
+# 8o, continued. A release version is exactly THREE dotted numbers. A tag with
+#     two, or with four, sorts above v4.12.0 and is not a release version, so
+#     a filter that took any run of digits and dots would pick one of them.
+git -C "$order" tag "taxonomy/headwater-standard/v4.14" >/dev/null 2>&1
+git -C "$order" tag "taxonomy/headwater-standard/v4.13.0.1" >/dev/null 2>&1
+same "  a tag of two or four dotted numbers is not the newest release" 4.12.0 \
     "$(newest_standard_version "$order")"
 
 # 8n. Provoked: a clone with no tags is red, never green. It is cloned from
@@ -3080,6 +3251,98 @@ got=$(recording_judge "$scratch/recording-html.md" | sed '$d' | tr '\n' '|')
 same "  and an HTML img embed with no marker fails" \
     "1: demo.gif  no \`recorded on YYYY-MM-DD\` marker within two lines|" \
     "$got"
+
+# headwater_verbs — on standard input, one command per line; on standard
+# output, the verb of each `headwater` call in it, such as `init` or
+# `taxonomy resolve`: the words after `headwater` up to the first that is not
+# a bare lower-case word, so a URL, a flag or a pipe ends the verb.
+headwater_verbs() {
+    awk '{
+        gsub(/["`]/, "")
+        for (i = 1; i <= NF; i++) {
+            if ($i != "headwater") continue
+            verb = ""
+            for (j = i + 1; j <= NF && $j ~ /^[a-z][a-z-]*$/; j++)
+                verb = verb (verb == "" ? "" : " ") $j
+            if (verb != "") print verb
+        }
+    }'
+}
+
+# tutorial_step_verbs TUTORIAL — the distinct `headwater` verbs the tutorial
+# runs in steps 1 to 7, in the order it first runs each. A command is a line
+# of a ```sh block between the `### Step 1` and `### Step 8` headings, so the
+# output blocks that quote a verb in a sentence are not read.
+tutorial_step_verbs() {
+    awk '
+        /^### Step 1 / { on = 1 }
+        /^### Step 8 / { on = 0 }
+        /^```/ { insh = (!insh && $0 ~ /^```sh[ \t]*$/); next }
+        on && insh { print }
+    ' "$1" | headwater_verbs | awk '!seen[$0]++'
+}
+
+# tape_verbs_judge TUTORIAL TAPE — `ok`, or the sentence that names each verb
+# of `tutorial_step_verbs` that the tape's `Type` lines do not type in the
+# tutorial's order. The tape may type more; it may not type fewer.
+tape_verbs_judge() {
+    tutorial_step_verbs "$1" >"$scratch/tvj-want.txt"
+    if ! [ -s "$scratch/tvj-want.txt" ]; then
+        echo "the tutorial runs no \`headwater\` verb between \`### Step 1\` and \`### Step 8\`, so there is nothing to hold the tape to"
+        return 0
+    fi
+    sed -n 's/^Type[ \t]*//p' "$2" | headwater_verbs >"$scratch/tvj-got.txt"
+    tvj_missing=$(awk '
+        NR == FNR { want[++n] = $0; next }
+        k < n && $0 == want[k + 1] { k++ }
+        END { for (i = k + 1; i <= n; i++) print "`headwater " want[i] "`" }
+    ' "$scratch/tvj-want.txt" "$scratch/tvj-got.txt" | paste -sd, - | sed 's/,/, /g')
+    if [ -z "$tvj_missing" ]; then
+        echo ok
+    else
+        echo "the tape does not type, in the tutorial's order, $tvj_missing, which the tutorial runs in steps 1 to 7"
+    fi
+}
+
+# 9f. What the recording runs. The tape's header says it "runs the commands of
+#     docs/tutorials/your-first-governed-corpus.md, steps 1 to 7", and the
+#     README tells a newcomer the same. The recording is frozen (HW-DR-0078),
+#     so nothing re-runs it, but its text can still be read: every `headwater`
+#     verb the tutorial runs in those steps is typed by the tape, in the
+#     tutorial's order. The list comes from the tutorial, never from here.
+demo_tape="$root/.github/assets/headwater-demo.tape"
+tutorial_step_verbs "$tutorial_page" >"$scratch/tutorial-verbs.txt"
+more_than "the tutorial runs headwater verbs in steps 1 to 7, at least four of them" 3 \
+    "$(grep -c . "$scratch/tutorial-verbs.txt")"
+same "  and the demo tape types each of them, in the tutorial's order" ok \
+    "$(tape_verbs_judge "$tutorial_page" "$demo_tape")"
+
+# 9g. THE DECISIVE CASE OF #1406, provoked. A tape cut after its vendor line
+#     still names a version, so the pin rule of group 8 passes it, and it
+#     still sits beside its marker, so 9a passes it. It no longer runs what
+#     its header says it runs, and this is the case that says so.
+sed -n '1,49p' "$demo_tape" >"$scratch/cut.tape"
+same "  a tape cut after its vendor line fails, and names the verbs it no longer types" \
+    "the tape does not type, in the tutorial's order, \`headwater taxonomy resolve\`, \`headwater check\`, which the tutorial runs in steps 1 to 7" \
+    "$(tape_verbs_judge "$tutorial_page" "$scratch/cut.tape")"
+# The order is part of the claim: a tape that checks before it resolves does
+# not run the tutorial's steps.
+awk '/^Type "headwater taxonomy resolve"/{ held = $0; next } { print } /^Type "headwater check/{ if (held != "") print held }' \
+    "$demo_tape" >"$scratch/reordered.tape"
+same "  and a tape that types the verbs out of order fails" \
+    "the tape does not type, in the tutorial's order, \`headwater check\`, which the tutorial runs in steps 1 to 7" \
+    "$(tape_verbs_judge "$tutorial_page" "$scratch/reordered.tape")"
+# Only a `Type` line is typed. A tape that names the verb in a comment and
+# never types it records nothing of it, so the comment does not count.
+sed 's/^Type "headwater check.*/# headwater check/' "$demo_tape" >"$scratch/commented.tape"
+if cmp -s "$demo_tape" "$scratch/commented.tape"; then
+    fail "  and a tape that names a verb in a comment and never types it fails" \
+        "the planted edit changed nothing, so this case measured nothing"
+else
+    same "  and a tape that names a verb in a comment and never types it fails" \
+        "the tape does not type, in the tutorial's order, \`headwater check\`, which the tutorial runs in steps 1 to 7" \
+        "$(tape_verbs_judge "$tutorial_page" "$scratch/commented.tape")"
+fi
 
 echo
 echo "the APT route the page offers, and the repository the release publishes"
