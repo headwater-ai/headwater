@@ -4,6 +4,8 @@
 Three READMEs under `docs/taxonomies/*/fixtures/n8n/` each carry a *How to run this corpus* block and a *What a run reports* paragraph. The block is the recipe a reader types; the paragraph is a claim about this engine. Neither re-derives, and both went stale unseen: all three recipes refused at `headwater taxonomy resolve` for four minor versions of the vendored package before anything ran them.
 
 Nothing here carries a second copy of a figure. Every expected value is parsed out of the README, so a number this file holds is a number a reader reads.
+
+It holds one thing more: no README states an aggregate check-instance count outside *What a run reports*, the one section it diffs. That count moves with every rule a release adds, and two copies of it in the design-spec probe arms read 6 and 26 when a run reported 7 and 31 (#1452).
 """
 
 import os
