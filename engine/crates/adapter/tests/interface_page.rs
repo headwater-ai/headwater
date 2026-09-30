@@ -102,9 +102,38 @@ fn written_members(fixture: &str, into: &mut Vec<String>) {
     }
 }
 
-/// The page states the version the engine writes, and names every version of
-/// the shape from `1.0` to it. Bump [`headwater_adapter::json::VERSION`] and
-/// leave the page, and this fails naming the new version.
+/// The heading on the interface page that the version history sits under.
+const HISTORY: &str = "### Raising the version";
+
+/// The history under [`HISTORY`]: one `(version, what it added)` pair for each
+/// list item that opens with a version in a code span, as `` - `1.3` added ``.
+/// A version named anywhere else on the page does not count, so a sentence
+/// that mentions a version cannot stand in for the entry that says what it
+/// added.
+fn page_history(page: &str) -> Vec<(String, String)> {
+    let mut entries = Vec::new();
+    for line in page
+        .lines()
+        .skip_while(|line| *line != HISTORY)
+        .skip(1)
+        .take_while(|line| !line.starts_with('#'))
+    {
+        let Some(item) = line.strip_prefix("- `") else {
+            continue;
+        };
+        let Some((version, rest)) = item.split_once('`') else {
+            continue;
+        };
+        entries.push((version.to_string(), rest.trim().to_string()));
+    }
+    entries
+}
+
+/// The page states the version the engine writes, and its history under
+/// [`HISTORY`] holds exactly one entry for each version from `1.0` to it, in
+/// order, each saying what it added. Bump [`headwater_adapter::json::VERSION`]
+/// and leave the history, and this fails naming the new version, whatever the
+/// sentence that states the current version says.
 #[test]
 fn the_check_interface_page_names_every_version_of_the_json_shape() {
     let page = page();
@@ -117,14 +146,24 @@ fn the_check_interface_page_names_every_version_of_the_json_shape() {
     let minor: u32 = current
         .strip_prefix("1.")
         .and_then(|minor| minor.parse().ok())
-        .unwrap_or_else(|| panic!("json::VERSION {current} is not `1.<minor>`: the page test reads only a first major"));
-    let missing: Vec<String> = (0..=minor)
-        .map(|k| format!("`1.{k}`"))
-        .filter(|version| !page.contains(version.as_str()))
+        .unwrap_or_else(|| {
+            panic!("json::VERSION {current} is not `1.<minor>`: the page test reads only a first major")
+        });
+    let expected: Vec<String> = (0..=minor).map(|k| format!("1.{k}")).collect();
+    let history = page_history(&page);
+    let listed: Vec<String> = history.iter().map(|(version, _)| version.clone()).collect();
+    assert_eq!(
+        listed, expected,
+        "the history under `{HISTORY}` in {PAGE} must hold one entry for each version of the JSON shape from 1.0 to {current}, in order"
+    );
+    let silent: Vec<&String> = history
+        .iter()
+        .filter(|(_, added)| added.is_empty())
+        .map(|(version, _)| version)
         .collect();
     assert!(
-        missing.is_empty(),
-        "{PAGE} does not name these versions of the JSON shape: {missing:?}"
+        silent.is_empty(),
+        "these entries of the history in {PAGE} do not say what the version added: {silent:?}"
     );
 }
 
