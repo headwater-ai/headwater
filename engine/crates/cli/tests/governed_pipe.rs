@@ -698,7 +698,9 @@ fn show_refuses_a_path_through_a_linked_directory_as_a_path_with_no_document() {
 /// The pipe goes in after [`Root::shaped`] has resolved the root, because that
 /// resolve reads the same files with no deadline over it.
 fn declaration_pipe(label: &str, path: &str) -> Root {
-    let root = Root::shaped(label, |_| {});
+    // The pin, so that `neighbors` reaches the lock rather than refusing a
+    // missing pin first.
+    let root = Root::shaped(label, pin_into);
     let at = root.at.join(".headwater").join(path);
     std::fs::remove_file(&at).expect("the file is there to replace");
     fifo(&at);
@@ -722,7 +724,9 @@ fn check_show_and_explain_finish_when_a_named_pipe_takes_the_lock_or_the_consume
             vec!["check", "--no-cache"],
             vec!["show", document],
             vec!["explain", document],
+            vec!["neighbors", "a", "task"],
             vec!["taxonomy", "resolve", "--check"],
+            vec!["taxonomy", "resolve"],
         ] {
             let hung = format!(
                 "{} opened the named pipe at {named}, and waited on it",
@@ -740,20 +744,35 @@ fn check_show_and_explain_finish_when_a_named_pipe_takes_the_lock_or_the_consume
     }
 }
 
-/// `taxonomy resolve` reads the overlay as a taxonomy source, so a named pipe
-/// there is refused in the same sentence (#1366).
+/// `taxonomy resolve` reads the overlay and every package file as taxonomy
+/// sources, so a named pipe at either is refused in the same sentence, in
+/// both modes (#1366).
 #[test]
-fn taxonomy_resolve_check_finishes_when_a_named_pipe_takes_the_overlay() {
-    let root = declaration_pipe("overlay-pipe", "overlay.yml");
-    let (status, out, err) = ended(
-        &root,
-        &["taxonomy", "resolve", "--check"],
-        "taxonomy resolve --check opened the named pipe at .headwater/overlay.yml, and waited on it",
-    );
-    assert_eq!(status.code(), Some(1), "resolve refuses: {err}");
-    assert!(out.is_empty(), "resolve prints nothing: {out}");
-    assert!(flat(&err).contains(".headwater/overlay.yml"), "{err}");
-    assert!(flat(&err).contains("not a regular file"), "{err}");
+fn taxonomy_resolve_finishes_when_a_named_pipe_takes_the_overlay_or_a_package_source() {
+    for (label, path) in [
+        ("overlay-pipe", "overlay.yml"),
+        ("package-pipe", "packages/headwater-standard/taxonomy.yml"),
+    ] {
+        let root = declaration_pipe(label, path);
+        let named = format!(".headwater/{path}");
+        for args in [
+            vec!["taxonomy", "resolve", "--check"],
+            vec!["taxonomy", "resolve"],
+        ] {
+            let hung = format!(
+                "{} opened the named pipe at {named}, and waited on it",
+                args.join(" ")
+            );
+            let (status, out, err) = ended(&root, &args, &hung);
+            assert_eq!(status.code(), Some(1), "{args:?} refuses at {named}: {err}");
+            assert!(out.is_empty(), "{args:?} prints nothing at {named}: {out}");
+            assert!(flat(&err).contains(&named), "{args:?} names {named}: {err}");
+            assert!(
+                flat(&err).contains("not a regular file"),
+                "{args:?} says why at {named}: {err}"
+            );
+        }
+    }
 }
 
 /// The file-type test follows a link, so a lock that is a link to a regular
