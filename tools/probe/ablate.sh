@@ -171,7 +171,7 @@ case "$tier" in
     --instrument) arm=list ;;
 esac
 # The third argument names a component arm of the tier (#1472): its delta is
-# read from `components` under the tier, and it is applied to the present
+# the one `headwater probe plan --delta` prints, and it is applied to the present
 # tree the workspace already is. `absent` is the default, and `present` is
 # `--present`.
 component=
@@ -214,13 +214,13 @@ declaration=${HW_PROBE_YML:-$root/.headwater/probe.yml}
 # ablation entry, in declared order. The file is a flat two-level mapping
 # with two-space indentation, which is what the engine reads too; `ablation`
 # is either a one-line flow sequence or a block sequence under the key.
-listing=$(awk -v want="$tier" -v arm="$arm" -v component="$component" '
+listing=$(awk -v want="$tier" -v arm="$arm" '
     function trim(s) { sub(/^[ \t]+/, "", s); sub(/[ \t]+$/, "", s); return s }
     function emit(e, kind,    n, c, i) {
         bad = (e == "" || e ~ /^\//)
         n = split(e, c, "/")
         for (i = 1; i <= n; i++) if (c[i] == ".." || c[i] == "." || c[i] == "") bad = 1
-        print (bad ? "unsafe " : (kind == "instrument" ? "instrument " : (kind == "component" ? "delta " : "entry "))) e
+        print (bad ? "unsafe " : (kind == "instrument" ? "instrument " : "entry ")) e
     }
     # A YAML comment starts at a `#` after whitespace, and the engine reads
     # past it. So does this, or a comment the plan accepts would make the
@@ -246,49 +246,11 @@ listing=$(awk -v want="$tier" -v arm="$arm" -v component="$component" '
     /^[^ #]/ { iblock = 0; intiers = ($0 ~ /^tiers:/); cur = ""; block = 0; next }
     !intiers { next }
     /^  [^ #][^:]*:[ \t]*$/ {
-        cur = trim(substr($0, 3)); sub(/:$/, "", cur); block = 0; comp = 0
-        if (cur == want && (arm == "absent" || arm == "component")) print "tier"
+        cur = trim(substr($0, 3)); sub(/:$/, "", cur); block = 0
+        if (cur == want && arm == "absent") print "tier"
         next
     }
     cur != want { next }
-    # `components`, a mapping of arm to a sequence of paths (#1472). The
-    # engine reads any YAML sequence there, so this reads the three forms a
-    # person writes: a flow sequence on the key line, a flow sequence that
-    # runs over several lines, and a block sequence under the key at any
-    # indentation from the key column on (verify rounds 1 and 2). Any other
-    # form is refused as a form this script does not read, never as empty.
-    function flow(s,    n, parts, i) {
-        s = trim(s)
-        s = substr(s, 2, length(s) - 2)
-        n = split(s, parts, ",")
-        if (trim(s) == "") n = 0
-        for (i = 1; i <= n; i++) emit(unquote(parts[i]), "component")
-    }
-    /^    components:[ \t]*$/ { comp = 1; block = 0; cblock = 0; cflow = 0; next }
-    comp && cflow {
-        acc = acc " " uncomment($0)
-        if (acc ~ /\][ \t]*$/) { cflow = 0; flow(acc) }
-        next
-    }
-    comp && cblock && /^       *-([ \t]|$)/ {
-        entry = $0; sub(/^[ \t]*-[ \t]*/, "", entry)
-        emit(unquote(uncomment(entry)), "component")
-        next
-    }
-    comp && /^      [^ #-][^:]*:/ {
-        cblock = 0
-        name = trim(substr($0, 7)); sub(/:.*$/, "", name)
-        if (name != component) next
-        print "component"
-        rest = uncomment(substr($0, index($0, ":") + 1))
-        if (rest == "") { cblock = 1; next }
-        if (rest ~ /^\[/ && rest !~ /\]$/) { cflow = 1; acc = rest; next }
-        if (rest !~ /^\[.*\]$/) { print "malformed-component"; next }
-        flow(rest)
-        next
-    }
-    /^    [^ ]/ { comp = 0; cblock = 0; cflow = 0 }
-    END { if (cflow) print "malformed-component" }
     /^    ablation:/ {
         rest = uncomment(substr($0, index($0, ":") + 1))
         if (rest == "") { block = 1; print "declared"; next }
@@ -305,7 +267,7 @@ listing=$(awk -v want="$tier" -v arm="$arm" -v component="$component" '
     /^    [^ ]/ { block = 0 }
 ' "$declaration")
 
-if [ "$arm" = absent ] || [ "$arm" = component ]; then
+if [ "$arm" = absent ]; then
     case "$listing" in
         tier*|*"
 tier"*) ;;
@@ -315,20 +277,7 @@ tier"*) ;;
             ;;
     esac
 fi
-if [ "$arm" = component ]; then
-    case "$listing" in
-        *component*) ;;
-        *)
-            echo "ablate: the \`$tier\` tier declares no delta for the \`$component\` arm under \`components\`" >&2
-            exit 2
-            ;;
-    esac
-fi
 case "$listing" in
-    *malformed-component*)
-        echo "ablate: the \`$component\` delta of the \`$tier\` tier is not a sequence of paths in a form this script reads: a flow sequence, on one line or several, or a block sequence under the key" >&2
-        exit 2
-        ;;
     *malformed*)
         echo "ablate: the \`$tier\` tier's ablation is not a sequence of paths" >&2
         exit 2
@@ -350,28 +299,44 @@ fi
 entries=$(printf '%s\n' "$listing" | awk '/^entry / { print substr($0, 7) }')
 additions=
 if [ "$arm" = component ]; then
-    delta=$(printf '%s\n' "$listing" | awk '/^delta / { print substr($0, 7) }')
-    if [ -z "$delta" ]; then
-        echo "ablate: the \`$component\` arm of the \`$tier\` tier declares an empty delta" >&2
+    # The delta of a component arm is the engine's parse of the declaration,
+    # printed by `headwater probe plan --delta` as `- <path>` for a path the
+    # arm removes and `+ <path>` for a path it adds. This script parses no
+    # YAML for it, so every form the plan accepts builds the same tree here
+    # (#1472, verify round 3). The engine reads `.headwater/probe.yml` under
+    # its `--root`, so a declaration named by `HW_PROBE_YML` is copied into a
+    # scratch root of its own first. The engine refuses a tier that does not
+    # run the arm, and a delta it cannot read, and so does this script.
+    engine=$root/engine/target/dev-release/headwater
+    [ -x "$engine" ] || engine=$root/engine/target/release/headwater
+    [ -x "$engine" ] || {
+        echo "ablate: no engine under $root/engine/target to read the \`$component\` delta of the \`$tier\` tier. Build it first" >&2
+        exit 2
+    }
+    delta_scratch=$(mktemp -d "${TMPDIR:-/tmp}/headwater-ablate-delta.XXXXXX") || exit 2
+    mkdir -p "$delta_scratch/root/.headwater"
+    cp "$declaration" "$delta_scratch/root/.headwater/probe.yml" || { rm -rf "$delta_scratch"; exit 2; }
+    if ! "$engine" probe plan --root "$delta_scratch/root" --tier "$tier" --arm "$component" --delta \
+        > "$delta_scratch/out" 2> "$delta_scratch/err"; then
+        echo "ablate: the engine did not print the \`$component\` delta of the \`$tier\` tier:" >&2
+        cat "$delta_scratch/err" >&2
+        rm -rf "$delta_scratch"
         exit 2
     fi
-    # The direction of a delta is the arm's, as the engine's `Arm::adds`
-    # states it: `mcp` puts its paths into the present tree, and every other
-    # component arm takes them out. An added path is copied from
-    # `tools/probe/arms/<arm>/` in this checkout.
-    case "$component" in
-        mcp)
-            additions=$delta
-            entries=
-            for path in $additions; do
-                [ -e "$root/tools/probe/arms/$component/$path" ] || {
-                    echo "ablate: the \`$component\` arm adds \`$path\`, and tools/probe/arms/$component/$path is not there to copy" >&2
-                    exit 2
-                }
-            done
-            ;;
-        *) entries=$delta ;;
-    esac
+    entries=$(sed -n 's/^- //p' "$delta_scratch/out")
+    additions=$(sed -n 's/^+ //p' "$delta_scratch/out")
+    rm -rf "$delta_scratch"
+    if [ -z "$entries" ] && [ -z "$additions" ]; then
+        echo "ablate: the engine printed an empty delta for the \`$component\` arm of the \`$tier\` tier" >&2
+        exit 2
+    fi
+    # An added path is copied from `tools/probe/arms/<arm>/` in this checkout.
+    for path in $additions; do
+        [ -e "$root/tools/probe/arms/$component/$path" ] || {
+            echo "ablate: the \`$component\` arm adds \`$path\`, and tools/probe/arms/$component/$path is not there to copy" >&2
+            exit 2
+        }
+    done
     printf '%s\n' "$entries" | awk 'NF { print "declared - " $0 }'
     printf '%s\n' "$additions" | awk 'NF { print "declared + " $0 }'
     arm=absent
