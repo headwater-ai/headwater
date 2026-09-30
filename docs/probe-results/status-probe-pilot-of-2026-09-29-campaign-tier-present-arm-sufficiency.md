@@ -17,6 +17,7 @@ A probe result is a function of three committed inputs and of nothing else: the 
 A campaign run in the present arm, on claude-sonnet-5 at 2026-09-29.
 served version claude-sonnet-5, tree sha256:7c8d9c1568c93bd1747f64dbda46742cf0c82d9e27b795aa2302de8bba2433fd, selection sha256:002ab25221c821cea88b42dbbdb3e831304d41c12788a9557d7a1da2a01efa17, read set sha256:c97c613e433de3010d256895bc70c07bca1047d280d23f2dd841dc7712e0f2b7, seed 0, harness 0.4.1.
 realized cost $0.98, which the adaptive layer reads as the cost of its own instrument.
+It was planned against taxonomy sha256:badb09836f1099bd2d72472dc6370ac7fa0d14e93001264d38a69b5e59210e44, and this tree carries another. The read set of its probes is the one this tree composes, so the move reaches no document a verdict reads, and the transcript is read over this tree.
 
 10 events over 1 of the 10 probes this corpus declares, in 10 sessions and 0 tool calls.
 

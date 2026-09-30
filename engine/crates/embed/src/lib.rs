@@ -62,6 +62,9 @@ pub struct Pin {
 impl Pin {
     pub fn read(root: &Path) -> Result<Pin, String> {
         let path = root.join(PIN);
+        if not_regular(&path) {
+            return Err(format!("cannot read `{PIN}`: it is not a regular file"));
+        }
         let source = std::fs::read_to_string(&path)
             .map_err(|error| format!("cannot read `{PIN}`: {error}"))?;
         Pin::parse(&source)
@@ -255,6 +258,13 @@ fn verified(pin: &Pin, dir: &Path, name: &str) -> Result<Vec<u8>, String> {
         .file(name)
         .ok_or_else(|| format!("`{PIN}` pins no `{name}`"))?;
     let path = dir.join(name);
+    if not_regular(&path) {
+        return Err(format!(
+            "cannot read `{}`: it is not a regular file. Fetch the pinned files with \
+             `tools/embed/fetch-model.sh`",
+            path.display()
+        ));
+    }
     let bytes = std::fs::read(&path).map_err(|error| {
         format!(
             "cannot read `{}`: {error}. Fetch the pinned files with `tools/embed/fetch-model.sh`",
@@ -281,7 +291,7 @@ fn verified(pin: &Pin, dir: &Path, name: &str) -> Result<Vec<u8>, String> {
         ))
     });
     if let Some(witness) = &witness {
-        if std::fs::read_to_string(&stamp).is_ok_and(|held| held == *witness) {
+        if regular(&stamp) && std::fs::read_to_string(&stamp).is_ok_and(|held| held == *witness) {
             return Ok(bytes);
         }
     }
@@ -294,10 +304,27 @@ fn verified(pin: &Pin, dir: &Path, name: &str) -> Result<Vec<u8>, String> {
             pinned.digest
         ));
     }
+    // A stamp that is there and is not a regular file is left alone: a write
+    // opens the path, and a named pipe with no reader blocks that open.
     if let Some(witness) = witness {
-        let _ = std::fs::write(&stamp, witness);
+        if !not_regular(&stamp) {
+            let _ = std::fs::write(&stamp, witness);
+        }
     }
     Ok(bytes)
+}
+
+/// Whether `path` is a regular file, through a link. A path this crate reads
+/// is tested first, because a named pipe with no writer blocks the open and
+/// never returns (#1366).
+fn regular(path: &Path) -> bool {
+    std::fs::metadata(path).is_ok_and(|meta| meta.is_file())
+}
+
+/// Whether something is at `path`, through a link, and it is not a regular
+/// file. A path that is not there keeps the reader's own error.
+fn not_regular(path: &Path) -> bool {
+    std::fs::metadata(path).is_ok_and(|meta| !meta.is_file())
 }
 
 /// The dot product. Both vectors are unit length, so it is the cosine.
@@ -325,8 +352,9 @@ impl Cache {
     pub fn open(root: &Path, model: &str) -> Cache {
         let name = model.strip_prefix("sha256:").unwrap_or(model);
         let path = root.join(CACHE).join(name);
-        let entries = std::fs::read_to_string(&path)
-            .ok()
+        let entries = regular(&path)
+            .then(|| std::fs::read_to_string(&path).ok())
+            .flatten()
             .and_then(|text| parse_cache(&text, model))
             .unwrap_or_default();
         Cache {
@@ -520,6 +548,155 @@ mod tests {
         let refused = Model::load(&pin, &dir).expect_err("the stamp describes other bytes");
         let _ = std::fs::remove_dir_all(&dir);
         assert!(refused.contains("is not the pinned bytes"), "{refused}");
+    }
+
+    /// Run `work` on a thread and fail with `hung` if it has not returned in
+    /// 30 s, which is how a read of a named pipe with no writer ends (#1366).
+    fn within<T: Send + 'static>(hung: &str, work: impl FnOnce() -> T + Send + 'static) -> T {
+        let (send, receive) = std::sync::mpsc::channel();
+        std::thread::spawn(move || {
+            let _ = send.send(work());
+        });
+        receive
+            .recv_timeout(std::time::Duration::from_secs(30))
+            .unwrap_or_else(|_| panic!("{hung}"))
+    }
+
+    /// Make a named pipe at `at`.
+    #[cfg(unix)]
+    fn fifo(at: &Path) {
+        let made = std::process::Command::new("mkfifo")
+            .arg(at)
+            .status()
+            .expect("mkfifo runs");
+        assert!(made.success(), "the named pipe is made");
+    }
+
+    /// A named pipe at the stamp is no stamp, so the file is hashed and the
+    /// planted bytes are refused, and the stamp is never opened (#1366).
+    #[cfg(unix)]
+    #[test]
+    fn a_named_pipe_at_the_stamp_is_read_as_no_stamp() {
+        let dir = Scratch(
+            std::env::temp_dir().join(format!("headwater-embed-stamp-pipe-{}", std::process::id())),
+        );
+        std::fs::create_dir_all(&dir).expect("a scratch directory");
+        std::fs::write(dir.join(GRAPH), b"not a model").expect("a planted file");
+        fifo(&dir.join(format!(".{GRAPH}.verified")));
+        let at = dir.to_path_buf();
+        let refused = within("the stamp read opened the named pipe", move || {
+            let pin = Pin::parse(PINNED).expect("the fixture pin parses");
+            Model::load(&pin, &at).expect_err("the planted bytes do not match")
+        });
+        assert!(refused.contains("is not the pinned bytes"), "{refused}");
+    }
+
+    /// A file whose bytes are the pinned ones leaves a stamp, and a named pipe
+    /// there is left alone rather than opened for the write (#1366).
+    #[cfg(unix)]
+    #[test]
+    fn a_named_pipe_at_the_stamp_is_not_written() {
+        let dir = Scratch(std::env::temp_dir().join(format!(
+            "headwater-embed-stamp-write-{}",
+            std::process::id()
+        )));
+        std::fs::create_dir_all(&dir).expect("a scratch directory");
+        std::fs::write(dir.join(GRAPH), b"not a model").expect("a planted file");
+        let stamp = dir.join(format!(".{GRAPH}.verified"));
+        fifo(&stamp);
+        let pinned = PINNED.replace(
+            "sha256:6fd5d72fe4589f189f8ebc006442dbb529bb7ce38f8082112682524616046452",
+            &headwater_hash::digest(b"not a model"),
+        );
+        let at = dir.to_path_buf();
+        let bytes = within("the stamp write opened the named pipe", move || {
+            let pin = Pin::parse(&pinned).expect("the fixture pin parses");
+            verified(&pin, &at, GRAPH)
+        })
+        .expect("the planted bytes are the pinned ones");
+        assert_eq!(bytes, b"not a model");
+        assert!(
+            !std::fs::metadata(&stamp)
+                .expect("the pipe is there")
+                .is_file(),
+            "the pipe is left as it was"
+        );
+    }
+
+    /// A file whose bytes are the pinned ones leaves a regular stamp where
+    /// none was, so the next run does not hash it again (#1366, verify round 1).
+    #[test]
+    fn a_verified_file_leaves_a_stamp_where_none_was() {
+        let dir = Scratch(
+            std::env::temp_dir().join(format!("headwater-embed-stamp-new-{}", std::process::id())),
+        );
+        std::fs::create_dir_all(&dir).expect("a scratch directory");
+        std::fs::write(dir.join(GRAPH), b"not a model").expect("a planted file");
+        let stamp = dir.join(format!(".{GRAPH}.verified"));
+        let pinned = PINNED.replace(
+            "sha256:6fd5d72fe4589f189f8ebc006442dbb529bb7ce38f8082112682524616046452",
+            &headwater_hash::digest(b"not a model"),
+        );
+        let pin = Pin::parse(&pinned).expect("the fixture pin parses");
+        verified(&pin, &dir, GRAPH).expect("the planted bytes are the pinned ones");
+        assert!(
+            std::fs::metadata(&stamp).is_ok_and(|meta| meta.is_file()),
+            "the stamp is written"
+        );
+    }
+
+    /// A cache that a run wrote is read back by the next one, so a regular
+    /// cache file is opened and its entries served (#1366, verify round 2).
+    #[test]
+    fn a_written_cache_is_read_back_by_the_next_open() {
+        let root = Scratch(std::env::temp_dir().join(format!(
+            "headwater-embed-cache-round-trip-{}",
+            std::process::id()
+        )));
+        std::fs::create_dir_all(&root).expect("a scratch directory");
+        let key = headwater_hash::digest(b"a summary");
+        let vector = vec![0.5_f32, -0.25];
+        let mut cache = Cache::open(&root, "sha256:aa");
+        assert!(cache.entries.is_empty(), "no cache file yet");
+        cache.entries.insert(key.clone(), vector.clone());
+        cache.used.insert(key.clone());
+        cache.computed = 1;
+        cache.write("sha256:aa");
+        let reopened = Cache::open(&root, "sha256:aa");
+        assert_eq!(reopened.entries.get(&key), Some(&vector));
+        assert_eq!(reopened.computed(), 0);
+    }
+
+    /// A named pipe at the cache file is an empty cache, and a write renames
+    /// a regular file over it without opening it (#1366).
+    #[cfg(unix)]
+    #[test]
+    fn a_named_pipe_at_the_cache_file_is_an_empty_cache() {
+        let root = Scratch(
+            std::env::temp_dir().join(format!("headwater-embed-cache-pipe-{}", std::process::id())),
+        );
+        std::fs::create_dir_all(root.join(CACHE)).expect("a scratch directory");
+        let path = root.join(CACHE).join("aa");
+        fifo(&path);
+        let at = root.to_path_buf();
+        let mut cache = within("the cache read opened the named pipe", move || {
+            Cache::open(&at, "sha256:aa")
+        });
+        assert!(cache.entries.is_empty(), "the pipe holds no entries");
+        assert_eq!(cache.computed(), 0);
+        let key = headwater_hash::digest(b"a summary");
+        cache.entries.insert(key.clone(), vec![0.5]);
+        cache.used.insert(key);
+        cache.computed = 1;
+        within("the cache write opened the named pipe", move || {
+            cache.write("sha256:aa");
+        });
+        assert!(
+            std::fs::metadata(&path)
+                .expect("the cache is there")
+                .is_file(),
+            "the write replaced the pipe"
+        );
     }
 
     /// The pinned model reproduces the similarity sentence-transformers

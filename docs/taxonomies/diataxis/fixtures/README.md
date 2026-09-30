@@ -95,9 +95,40 @@ Every run above is over this entry's own Beacon corpus. This one is not. It sele
 
 **No exit status separates the arms, and the suite measures that rather than assuming it.** The plain run exits 0 in both arms and the strict run exits 1 in both, because 24 of the 26 findings in the unlabeled arm are errors, and every one of them is reported in both arms and raised by a rule this entry declares nothing about. The discriminator is the twenty-seventh finding and its message. A reader who takes an exit status as the result of this demonstration reads a number that was never about it.
 
-## What the composition did not need, and what it could not do
+## What the composition did not need
 
-The run above needed no operation that [HW-OBL-0040](../../../obligations/0040-composition-between-two-library-entries-has-no-add-only-form.md) holds. It selects two entries beside each other, and the facet reads over the other entry's kinds because one `optional` line attaches it to the base's abstract kind, which every concrete kind of every entry inherits from. Nothing here reaches an address that the `design-spec` entry writes, and nothing here is an `override` or a `remove`. **What it could not do is make a mode mandatory over that corpus.** A demonstration in which every page of another entry's corpus must carry a value wants `kinds.<k>.facets.require` on a kind that entry declared, and an `add` cannot reach into a `facets` block another bundle already wrote. That is the operation with no add-only form, and it is the one HW-OBL-0040 still waits on a ruling for. So this file records the optional half as measured and the required half as unavailable, and it is the report from the demonstration side that the ruling has so far lacked. Nothing above settles the obligation or picks a value inside it.
+The run above needed no write into another entry. It selects two entries beside each other, and the facet reads over the other entry's kinds because one `optional` line attaches it to the base's abstract kind, which every concrete kind of every entry inherits from. Nothing here reaches an address that the `design-spec` entry writes, and nothing here is an `override` or a `remove`. That is the optional half. The next section runs the required half.
+
+## The required half: a mode made mandatory over another entry's kind
+
+To make every page of another entry's corpus carry a mode, a bundle must write `kinds.<k>.facets.require` on a kind that entry declared. [HW-DR-0095](../../../decisions/0095-q67-one-library-entry-may-address-the-keys-of-an-entry-it-names-in-requires-and-confluence-holds-over-the-dependency-order.md) (Q67) permits that write with `add_to` from a bundle that names the other entry in `requires`, and the dependency applies first. Case group 8 of [`tools/repo/diataxis-facet-fixtures.sh`](../../../../tools/repo/diataxis-facet-fixtures.sh) runs it, and CI runs that program as a blocking step.
+
+**The fixture bundle.** The suite writes a bundle `diataxis-required-fixture` into scratch and never into the tree. It names `design-spec` and `diataxis` in `requires`, and it writes one operation: `add_to: kinds.design_spec.facets.require: [reader_mode]`. It needs `design-spec` for the list and `diataxis` for the facet. A run that selected it without `diataxis` was refused, because `reader_mode` is then declared by nothing. This entry does not ship that bundle, and the bundle comments in [`bundle.yml`](../bundle.yml) say why.
+
+**The package.** A bundle added to the vendored copy fails `taxonomy.pin.diverged`, because the scratch root pins the vendored digest. So the suite copies `taxonomy-source/headwater-standard/` and `docs/taxonomies/` into scratch, adds the bundle there, runs `headwater taxonomy publish` over the copy, and pins the digest that publish prints. Every arm of the group takes that one published package, so only the selection separates the arms.
+
+**What the run reports**, at engine 0.5.0 with the clock injected as 2026-09-29 (UTC). The suite prints each count and asserts only the differences:
+
+| arm | selection | result |
+|---|---|---|
+| plain | `design-spec`, `diataxis`, `evidence-and-obligation` | resolves, 26 findings, the same (page, rule) pairs as case group 4's unlabeled arm, and no finding that requires `reader_mode` |
+| required | the plain selection and `diataxis-required-fixture` | resolves, 30 findings: the 26 above and four `facet.required.missing` findings that name `reader_mode` |
+| reversed | the required selection in reverse order | resolves to the same lock digest and the same findings |
+| no dependency | the required selection without `design-spec` | refused before a lock is written |
+
+**The four new findings are the four `design_spec` pages of the sibling corpus**, `docs/spec/00-motivation.md`, `01-model.md`, `02-transport.md` and `04-transport.md`. Each one reads:
+
+    facet.required.missing (OB-FACET-1): `design_spec` requires the facet `reader_mode`, and it is not declared
+
+The suite asserts that every such finding is against a `design_spec` page, that the fixture bundle adds exactly those findings, and that it removes none.
+
+**The two bundle orders write one resolved taxonomy.** The lock digest is the same, and the lock is byte-identical outside its `sources` list. That list records the order in which the resolver applied the bundles, and bundles that do not depend on each other apply in the order the selection names them. So the list follows the selection, and the suite does not assert it.
+
+**The refusal names the dependency.** Without `design-spec`, `headwater taxonomy resolve` exits 1 with this message, and the suite asserts the bundle, the dependency and the address in it:
+
+    the bundle `diataxis-required-fixture` writes into `kinds.design_spec.facets.require`, which it expects from the bundle `design-spec` it names in `requires`, and the selection does not hold it. Select `design-spec` as well: `requires` never adds a bundle to a selection
+
+**An engine without HW-DR-0095 fails this group.** An engine built at the commit before the resolver change refuses the publish itself: the fixture bundle's `add_to` "does not commute with `add.kinds.design_spec`" in the `design-spec` bundle, because both reach one list. That is the refusal that [HW-OBL-0040](../../../obligations/0040-composition-between-two-library-entries-has-no-add-only-form.md) recorded before the ruling discharged it.
 
 ## What the audit says, and why one line of it is an artifact
 
