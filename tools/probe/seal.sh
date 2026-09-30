@@ -272,15 +272,16 @@ fi
 # gives the answer away. A leak string is never an `expected:` value, because an
 # expected value such as `merge` is a common word that every file holds.
 #
-# The always-loaded set is `CLAUDE.md`, the `description:` of each
-# `.claude/skills/*/SKILL.md`, of each `.claude/agents/*.md` and of each
-# command under `.claude/commands/` (verify round 1: the harness lists each
-# command with its description in every session), the `when_to_use:` of a
-# skill or a command, which the harness appends to its description, the first
-# body line of a command that has no `description:`, which the harness lists
-# in its place (verify round 2), and, where
-# the workspace declares a project MCP server in `.mcp.json`, the description
-# of each tool that `headwater mcp` lists. One line per hit:
+# The always-loaded set is the text the harness puts into every session: the
+# memory files (`CLAUDE.md`, `.claude/CLAUDE.md`, `CLAUDE.local.md`,
+# `AGENTS.md`, `.claude/AGENTS.md`, `.claude/rules/`, and each file they
+# import with `@<path>`), the name, `description:` and `when_to_use:` of each
+# skill, agent definition and command, the first body line of a skill or a
+# command with no description, and, where the workspace declares a project MCP
+# server in `.mcp.json`, the description of each tool `headwater mcp` lists.
+# `tools/probe/leak.py` reads it, with a YAML parser and never a hand-written
+# reader (verify round 3), and its header names each channel and why. One line
+# per hit:
 #
 #     leak <probe> <where> <leak string>      a leak string the declaration does not keep
 #     kept <probe> <where> <leak string>      a leak string kept on purpose, under `leaks_kept:`
@@ -290,151 +291,18 @@ fi
 # listed under `leaks_kept:` keeps its leak string on purpose: its own document says it
 # measures the leak string, and a campaign reports it on its own line and never in a
 # rate of its category. It exits 1 when any `leak` line printed, 0 when none
-# did, 2 on a usage error, and 3 when the workspace declares an MCP server and
-# no engine or no `jq` can list its tools. An `undeclared` probe is a probe this
-# check cannot see, and it does not fail the check.
-leak_cues() {
-    declaration=${HW_PROBE_YML:-$root/.headwater/probe.yml}
-    awk -v want="$1" '
-        function trim(s) { sub(/^[ \t]+/, "", s); sub(/[ \t]+$/, "", s); return s }
-        /^leaks:/ { on = 1; next }
-        on && /^[^ #]/ { on = 0 }
-        on {
-            line = $0
-            sub(/^[ ]+/, "", line)
-            if (index(line, want ":") != 1) next
-            line = substr(line, length(want) + 2)
-            sub(/^[^[]*\[/, "", line)
-            sub(/\][ \t]*(#.*)?$/, "", line)
-            n = split(line, parts, ",")
-            for (i = 1; i <= n; i++) {
-                s = trim(parts[i])
-                if (s ~ /^".*"$/ || s ~ /^\047.*\047$/) s = substr(s, 2, length(s) - 2)
-                if (s != "") print s
-            }
-        }
-    ' "$declaration"
-}
-
-leak_kept() {
-    declaration=${HW_PROBE_YML:-$root/.headwater/probe.yml}
-    awk -v want="$1" '
-        /^leaks_kept:/ { on = 1; next }
-        on && /^[^ #]/ { on = 0 }
-        on && /^  - / {
-            entry = substr($0, 5)
-            sub(/[ ]+#.*$/, "", entry)
-            gsub(/^[ "\047]+|[ "\047]+$/, "", entry)
-            if (entry == want) found = 1
-        }
-        END { exit found ? 0 : 1 }
-    ' "$declaration"
-}
-
-# The always-loaded text of a workspace, one record per line as
-# `<where><TAB><text>`, with every line of `CLAUDE.md` its own record.
-leak_loaded() {
-    leak_here=$1
-    if [ -f "$leak_here/CLAUDE.md" ]; then
-        awk '{ printf "CLAUDE.md\t%s\n", $0 }' "$leak_here/CLAUDE.md"
-    fi
-    for leak_file in "$leak_here"/.claude/skills/*/SKILL.md "$leak_here"/.claude/agents/*.md \
-        "$leak_here"/.claude/commands/*.md "$leak_here"/.claude/commands/*/*.md; do
-        [ -f "$leak_file" ] || continue
-        # What the harness lists for the file: the `description:` key of the
-        # front matter and the `when_to_use:` key, which it appends to the
-        # description of a skill or a command, each with a folded or literal
-        # block read to its end. A command with no `description:` is listed
-        # with the first line of its body instead (verify round 2, read from
-        # the installed harness, 2.1.285). Line endings are read with or
-        # without a carriage return.
-        case $leak_file in
-            "$leak_here"/.claude/commands/*) leak_command=1 ;;
-            *) leak_command=0 ;;
-        esac
-        awk -v where="${leak_file#"$leak_here"/}" -v command="$leak_command" '
-            { sub(/\r$/, "") }
-            NR == 1 && $0 == "---" { on = 1; next }
-            on && $0 == "---" { on = 0; body = 1; next }
-            on && key != "" && /^[ \t]/ { line = $0; sub(/^[ \t]+/, "", line); field[key] = field[key] " " line; next }
-            on { key = "" }
-            on && /^(description|when_to_use):/ {
-                name = $0; sub(/:.*$/, "", name)
-                value = $0; sub(/^[a-z_]+:[ \t]*/, "", value)
-                if (value ~ /^[>|][-+]?$/) { key = name; field[name] = ""; next }
-                if (!(name in field)) field[name] = value
-                next
-            }
-            on { next }
-            first == "" && $0 ~ /[^ \t]/ { first = $0; sub(/^[ \t#]+/, "", first) }
-            END {
-                text = field["description"]
-                if (text == "" && command == 1) text = first
-                if (field["when_to_use"] != "") text = text " - " field["when_to_use"]
-                if (text != "") printf "%s\t%s\n", where, text
-            }
-        ' "$leak_file"
-    done
-    if [ -f "$leak_here/.mcp.json" ]; then
-        leak_engine=$root/engine/target/dev-release/headwater
-        [ -x "$leak_engine" ] || leak_engine=$root/engine/target/release/headwater
-        [ -x "$leak_engine" ] || return 3
-        command -v jq >/dev/null 2>&1 || return 3
-        leak_listed=$(printf '%s\n' \
-            '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05"}}' \
-            '{"jsonrpc":"2.0","method":"notifications/initialized"}' \
-            '{"jsonrpc":"2.0","id":2,"method":"tools/list"}' \
-            | "$leak_engine" mcp --root "$leak_here" 2>/dev/null \
-            | jq -r 'select(.id == 2) | .result.tools[] | "mcp:" + .name + "\t" + (.description | gsub("[\n\t]"; " "))' 2>/dev/null) || return 3
-        [ -n "$leak_listed" ] || return 3
-        printf '%s\n' "$leak_listed"
-    fi
-    return 0
-}
-
+# did, 2 on a usage error or a declaration that does not read, and 3 when the
+# always-loaded text cannot be read whole: no `python3` or no PyYAML to read
+# it, or an MCP server that no engine lists. An `undeclared` probe is a probe
+# this check cannot see, and it does not fail the check.
 if [ "${1:-}" = --leak ]; then
     [ -n "${2:-}" ] && [ -n "${3:-}" ] || { echo "usage: sh tools/probe/seal.sh --leak <workspace> <probe-id>..." >&2; exit 2; }
-    leak_dir=$(cd "$2" 2>/dev/null && pwd -P) || { echo "seal: no workspace directory at $2" >&2; exit 2; }
-    shift 2
-    leak_text=$(leak_loaded "$leak_dir") || {
-        echo "seal: $leak_dir declares an MCP server, and no engine or no \`jq\` listed its tools, so the always-loaded text is not whole." >&2
+    command -v python3 >/dev/null 2>&1 || {
+        echo "seal: no python3, so the always-loaded text cannot be read and the leak check does not run" >&2
         exit 3
     }
-    leak_found=0
-    for leak_probe in "$@"; do
-        leak_list=$(leak_cues "$leak_probe")
-        if [ -z "$leak_list" ]; then
-            printf 'undeclared %s\n' "$leak_probe"
-            continue
-        fi
-        leak_verdict=leak
-        leak_kept "$leak_probe" && leak_verdict=kept
-        leak_hits=$(printf '%s\n' "$leak_list" | HW_LEAK_TEXT="$leak_text" awk -v probe="$leak_probe" -v verdict="$leak_verdict" '
-            BEGIN {
-                n = split(ENVIRON["HW_LEAK_TEXT"], rows, "\n")
-                for (i = 1; i <= n; i++) {
-                    tab = index(rows[i], "\t")
-                    if (tab == 0) continue
-                    where[i] = substr(rows[i], 1, tab - 1)
-                    text[i] = substr(rows[i], tab + 1)
-                }
-            }
-            $0 != "" {
-                for (i = 1; i <= n; i++) {
-                    if (!(i in where)) continue
-                    key = where[i] SUBSEP $0
-                    if (index(text[i], $0) > 0 && !(key in seen)) {
-                        seen[key] = 1
-                        printf "%s %s %s %s\n", verdict, probe, where[i], $0
-                    }
-                }
-            }')
-        if [ -n "$leak_hits" ]; then
-            printf '%s\n' "$leak_hits"
-            [ "$leak_verdict" = kept ] || leak_found=1
-        fi
-    done
-    exit "$leak_found"
+    shift
+    exec python3 "$root/tools/probe/leak.py" "$root" "$@"
 fi
 
 workspace=${1:-}
