@@ -116,6 +116,8 @@ Scope =
   + needs_clock:   bool
   + needs_prior:   bool      // change-scoped only: the prior committed version
   + needs_declarer_prior: bool  // edge grain: the declarer's prior version; runs, unhanded, with no change
+  + needs_claims:  bool      // corpus grain: the identifier claim store beside the corpus
+  + needs_observations: bool  // edge grain: the committed observation snapshot
 ```
 
 Scope gives four things. The fourth makes the other three trustworthy.
@@ -194,6 +196,16 @@ Two inputs are about time. Both are injected, never fetched.
 That is a deliberately reduced guarantee, stated rather than implied. Transitions are verified when they land, and they are not re-derived from history later. Git history is not a check input. Vendoring and squash merges destroy it, and a guarantee that depends on a search of repository history is not a guarantee.
 
 **A change reaches this engine as a named set of inputs, and never as a second tree.** The prior version above is the one exception, and the change that supplies it also bounds its scope. Three components enact the general rule. `headwater gate --read-set` decides a verdict by [a comparison over listed inputs](#the-read-set-and-what-a-merge-does-to-a-verdict) rather than by a diff of two trees. `headwater probe stale` decides whether a change voided a recorded result. It recomposes a digest over a named set of documents to do it. `taxonomy audit` reports the standing `asserted` population rather than the promotions per change that [spec 3](03-authoring-and-lifecycle.md#promotion-is-one-human-one-document-one-diff) once assigned to it. That verb reads one working tree, so it reaches no prior version. A count of promotions in one change is `warrant.promoted`, which declares `needs_prior` and reads the manifest a caller named. The caller names the set in each case, so the injection has an author. A verb that walked history would be the first component here to read a tree that no caller named. [`headwater change`](../interfaces/headwater-change.md) is that verb. The rule above holds for the three components it names: `check`, `gate --read-set` and `probe stale`. Each reads only the inputs a caller supplied. None of them runs a version control command. That invariant is unchanged. What it decides is *who* may supply the input, and not whether any verb of this binary may run one. `headwater change` runs `git diff`, `git show` and `git ls-files` to build the manifest `.githooks/change-manifest` runs the same three commands to build. It is a producer outside the check, gate and probe loop this paragraph describes, and not a component of that loop. [HW-DR-0072](../decisions/0072-the-binary-is-the-only-interface-an-adopter-must-run-and-every-integration-point-outside-it-is-declared.md) rules that this shape of git plumbing is legal where the binary cannot grant itself consent of the clone. It names the gap this verb closes.
+
+## Inputs beside the corpus: the claim store and the observation snapshot
+
+Two more inputs are not about time. Each one is a file outside the census, so no document digest covers it. Both are injected, never fetched.
+
+**The claim store** (`needs_claims`) is an input at corpus grain. A corpus-scoped check that declares it receives the identifier claim store at `.headwater/ids` ([HW-DR-0054](../decisions/0054-the-upper-bound-of-a-reconcile-first-allocator-is-the-corpus-and-a-claim-store.md) states what the store is). The store lives beside the corpus, and no census row covers it. So the flag joins the cache key, and a digest over the canonical listing of the store joins the read set. An absent store is an empty store and not a missing input. Unlike `needs_prior`, an instance of such a check therefore runs in every run and never skips. `identifier.claim.missing` and `identifier.claim.stale` are the two rules that read it.
+
+**The observation snapshot** (`needs_observations`) is an input at edge grain. An edge-scoped check that declares it receives the committed observation snapshot. The snapshot is neither endpoint of the edge, so no endpoint digest moves when only the snapshot changes. The flag joins the cache key, and the digest of the snapshot joins the read set. [#937](https://github.com/headwater-ai/headwater/issues/937) found the failure that this prevents. A rule read the snapshot from its own field. The engine then cached its verdict against a key that could not see an edit to that file. `relation.target.verification.suspect` is the one rule that reads it.
+
+The corpus-scoped view carries four more `NEEDS_` constants: `NEEDS_LINKS`, `NEEDS_ANCHORS`, `NEEDS_GRAPH` and `NEEDS_ORPHANED`. They are not `Scope` flags. The first three join no cache key, because each one is a reading of documents that the instance already reads. `NEEDS_ORPHANED` joins the key as a value that the caller injects, and not as a file of the read set. The doc comment of each constant in `engine/crates/check/src/scope.rs` says why.
 
 ## Instances, and why coverage needs them
 

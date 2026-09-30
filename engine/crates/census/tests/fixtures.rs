@@ -423,6 +423,12 @@ fn every_producer_output_is_declared_and_every_declared_path_has_a_producer() {
         population.outputs.len()
     );
     for producer in headwater_census::derived::PRODUCERS {
+        // This tree declares no export built at publish time, so `export`
+        // claims nothing here by design. `a_marked_file_goes_to_the_verb_its_marker_names`
+        // below and `cli/tests/export.rs` hold its rule on trees that do.
+        if *producer == headwater_census::derived::Producer::Export {
+            continue;
+        }
         assert!(
             population
                 .outputs
@@ -1163,6 +1169,78 @@ fn a_producer_output_whose_every_line_is_a_record_is_a_fold() {
     }
 }
 
+/// A marked file goes to the verb its marker names, and its shape stays the
+/// shape of a generated file (#1415).
+///
+/// Both files below carry the generated-file marker. The export's marker says
+/// that `headwater export` builds it at publish time, in the words
+/// `headwater_mark::published_marker_text` writes, so `headwater generate` is
+/// not its producer. Its shape is one record per entity, as a generated file's
+/// is, and not a fold: a fold would ask `headwater init --git` for a `-merge`
+/// line on a file that is never committed.
+#[test]
+fn a_marked_file_goes_to_the_verb_its_marker_names() {
+    use headwater_census::derived::{Producer, Shape};
+
+    let Some(root) = TempTree::outside("export") else {
+        return;
+    };
+    root.write(".gitattributes", "");
+    root.write(
+        "exports/control.json",
+        "{\n  \"headwater:generated\": \"graph_export. `headwater export` builds this file at \
+         publish time, and no gate compares it. Edit the corpus, not this file.\",\n  \
+         \"nodes\": []\n}\n",
+    );
+    root.write(
+        "exports/filtered.json",
+        "{\n  \"headwater:generated\": \"graph_export. `headwater generate` writes this file, \
+         and `headwater generate --check` holds it. Edit the corpus, not this file.\",\n  \
+         \"nodes\": []\n}\n",
+    );
+
+    // Generate's marker, and a value that quotes the published marker whole.
+    // `claimed_by` reads the marker and not the file, so this stays generate's.
+    root.write(
+        "exports/quoting.json",
+        "{\n  \"headwater:generated\": \"graph_export. `headwater generate` writes this file, \
+         and `headwater generate --check` holds it. Edit the corpus, not this file.\",\n  \
+         \"note\": \"graph_export. `headwater export` builds this file at publish time, and no \
+         gate compares it. Edit the corpus, not this file.\",\n  \"nodes\": []\n}\n",
+    );
+
+    let population = headwater_census::derived::population(root.path());
+    let report = population.render(headwater_paint::ColorMode::Plain);
+    for (path, producer) in [
+        ("exports/control.json", Producer::Export),
+        ("exports/filtered.json", Producer::Generate),
+        ("exports/quoting.json", Producer::Generate),
+    ] {
+        let claimed: Vec<Producer> = population
+            .outputs
+            .iter()
+            .filter(|output| output.path == path)
+            .map(|output| output.producer)
+            .collect();
+        assert_eq!(claimed, vec![producer], "{path}:\n{report}");
+        let member = population
+            .members
+            .iter()
+            .find(|member| member.path == path)
+            .unwrap_or_else(|| panic!("{path} is not in the report:\n{report}"));
+        assert_eq!(member.shape, Shape::RecordPerEntity, "{path}:\n{report}");
+        assert!(
+            report.contains(&format!("{path} — rerun with `{}`", producer.command())),
+            "{path} does not name `{}` as its rebuild:\n{report}",
+            producer.command()
+        );
+    }
+    assert!(
+        population.undeclared.is_empty(),
+        "a record-per-entity file needs no attribute:\n{report}"
+    );
+}
+
 /// A tree that does not hold the engine workspace is not told to run the blessing.
 ///
 /// The tree below is an adopter's: a recorded fixture whose opening states a
@@ -1201,7 +1279,8 @@ fn a_tree_that_lacks_a_producer_is_not_told_to_run_it() {
         "the report names a file that no held producer writes:\n{report}"
     );
     assert!(
-        report.contains("computed from 2 producers"),
+        // Three verbs: `generate`, `export` and `taxonomy resolve` (#1415).
+        report.contains("computed from 3 producers"),
         "the opening count names the producers the tree holds:\n{report}"
     );
     assert!(

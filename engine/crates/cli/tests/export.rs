@@ -447,6 +447,73 @@ fn export_at_is_refused_with_check() {
     );
 }
 
+/// `headwater derived` names `headwater export` as the producer of a graph
+/// export that only `export` builds, and keeps `headwater generate` for the
+/// committed export beside it
+/// ([#1415](https://github.com/headwater-ai/headwater/issues/1415)).
+///
+/// Both files carry the generated-file marker. What tells them apart is the
+/// text the marker states, so a report that decided the producer by the
+/// marker's presence named `headwater generate` as the command to rebuild a
+/// file that `generate` never writes.
+#[test]
+fn derived_names_export_as_the_producer_of_an_uncommitted_graph_export() {
+    let root = uncommitted_control();
+    let (code, said) = status(&run(&root, &["generate"]));
+    assert_eq!(code, Some(0), "`generate` failed\n{said}");
+    let (code, said) = status(&run(&root, &["export"]));
+    assert_eq!(code, Some(0), "`export` failed\n{said}");
+
+    let output = run(&root, &["derived"]);
+    let (code, said) = status(&output);
+    // The fixture commits no `.gitattributes`, so a fold may be reported as
+    // undeclared, and that exits 1. A crash is neither.
+    assert!(
+        matches!(code, Some(0) | Some(1)),
+        "`derived` did not report\n{said}"
+    );
+    let stdout = String::from_utf8_lossy(&output.stdout);
+
+    // The block each listed path sits in, keyed by the heading above it. A
+    // heading is indented two spaces and a path four, and any other line ends
+    // the block, so a path the shape section lists later is never read as a
+    // producer's.
+    let mut blocks: Vec<(String, Vec<String>)> = Vec::new();
+    for line in stdout.lines() {
+        if let Some(path) = line.strip_prefix("    ") {
+            if let Some((_, paths)) = blocks.last_mut() {
+                paths.push(path.trim().to_string());
+            }
+        } else if let Some(heading) = line.strip_prefix("  ") {
+            let command = heading.split(" — ").next().unwrap_or("");
+            blocks.push((command.to_string(), Vec::new()));
+        } else {
+            blocks.push((String::new(), Vec::new()));
+        }
+    }
+    let listed_under = |command: &str, path: &str| {
+        blocks
+            .iter()
+            .any(|(named, paths)| named == command && paths.iter().any(|p| p == path))
+    };
+    assert!(
+        listed_under("headwater export", "exports/control.json"),
+        "the publish-time export is not listed under `headwater export`\n{stdout}"
+    );
+    assert!(
+        !listed_under("headwater generate", "exports/control.json"),
+        "the publish-time export is listed under `headwater generate`\n{stdout}"
+    );
+    assert!(
+        listed_under("headwater generate", "exports/filtered.json"),
+        "the committed export is not listed under `headwater generate`\n{stdout}"
+    );
+    assert!(
+        !listed_under("headwater export", "exports/filtered.json"),
+        "the committed export is listed under `headwater export`\n{stdout}"
+    );
+}
+
 /// The repository this test tree sits in.
 fn repository() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR"))

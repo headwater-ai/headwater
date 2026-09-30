@@ -369,9 +369,13 @@ fn dispatch(root: &Path, verb: Verb) -> ExitCode {
             true => fail("`neighbors` takes a task description. Try `headwater neighbors \"add rate limiting to the ingest API\"`"),
             false => neighbors(root, &task.join(" "), model, top, json),
         },
-        Verb::Explain { target, json } => match target {
+        Verb::Explain {
+            target,
+            json,
+            paths_at_most,
+        } => match target {
             None => fail("`explain` takes a path or an identifier"),
-            Some(target) => explain(root, &target, json),
+            Some(target) => explain(root, &target, json, paths_at_most),
         },
         Verb::Show { target } => match target {
             None => fail("`show` takes a path or an identifier"),
@@ -4265,7 +4269,7 @@ fn neighbors(
 /// ([HW-DR-0043](../../../../docs/decisions/0043-q43-whether-a-refusal-under-json-is-a-json-document.md)):
 /// this remains a refusal, and what changes is only the English sentence a
 /// caller, or a hook, reads on standard error.
-fn explain(root: &Path, target: &str, json: bool) -> ExitCode {
+fn explain(root: &Path, target: &str, json: bool, paths_at_most: Option<usize>) -> ExitCode {
     let explanation = match find_document(root, target) {
         Ok(explanation) => explanation,
         Err(code) => return code,
@@ -4283,7 +4287,10 @@ fn explain(root: &Path, target: &str, json: bool) -> ExitCode {
     // artifact and never the status: a refusal is not a document with a member
     // missing from it.
     match json {
-        true => print!("{}", headwater_query::json::explain(&explanation)),
+        true => print!(
+            "{}",
+            headwater_query::json::explain_bounded(&explanation, paths_at_most)
+        ),
         false => print!(
             "{}",
             explanation.render(headwater_cli::paint::stdout_color())
@@ -7395,7 +7402,7 @@ const APPEND_ONLY_STORES: [&str; 2] = [
 /// `headwater init --git`: the attribute lines, and the configuration git needs.
 ///
 /// **The set is computed, and only from the producers the tree holds.**
-/// `headwater derived` knows three producers, and one of them is a toolchain of
+/// `headwater derived` knows four producers, and one of them is a toolchain of
 /// the repository that maintains this engine. An adopter does not hold it, so a
 /// line this step wrote for it would name a producer the adopter cannot run. `Producer::held_by` is the one predicate. The
 /// population applies it, so this step and `headwater derived` read one set. The lock is always in the set, because

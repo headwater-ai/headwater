@@ -2,7 +2,9 @@
 
 66 findings, 39 of them errors across 29 of 31 documents, against `headwater/fixture` 1.0.0 at `105e82f4b4435094f6bfd8ba5b3c3f3380341b35aeebc9aca2c3d508726d1601`, evaluated at 2026-08-12.
 
-**Scoped to a change.** This run was told what one change carries, so the checks that read the version a document stood at before it could run at all. 10 documents were named: 2 that the change adds, 1 with a prior version this run read, and 3 whose prior version did not read, so every check that needed one was skipped over it. The findings above are over the whole corpus, as they are in a run that names no change.
+**Scoped to a change.** This run was told what one change carries, so the checks that read the version a document stood at before it could run at all. 15 documents were named: 2 that the change adds, 1 with a prior version this run read, and 3 whose prior version did not read, so every check that needed one was skipped over it. The findings above are over the whole corpus, as they are in a run that names no change.
+
+6 stated as re-read by a `verified` line, 5 of them named by that line alone.
 
 0 promoted from `asserted` to `accepted` in this change. Nothing declares how many promotions in one change is too many.
 
