@@ -129,7 +129,7 @@ fn governs(path: &Path) -> Vec<String> {
     let unquote = |s: &str| s.trim().trim_matches('"').trim_matches('\'').to_string();
     let mut lines = front.lines();
     while let Some(line) = lines.next() {
-        let Some(value) = line.strip_prefix("governs:") else {
+        let Some(value) = line.trim_start().strip_prefix("governs:") else {
             continue;
         };
         let value = value.trim();

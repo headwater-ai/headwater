@@ -65,6 +65,25 @@ Headwater parses once, builds one typed graph, and runs every check against it. 
 
 **Cache** is content-addressed per file plus taxonomy hash, so incremental runs are proportional to the change, not the corpus. That first sentence is the promise [HW-OBL-0072](../obligations/0072-a-cache-of-check-results-does-not-make-a-run-proportional.md) holds open. The change-scoped mode that CI and hooks use is the same code path over the same corpus, and it narrows nothing. It supplies the version each named document stood at before the change, so the rules that read one reach a verdict rather than a skip. It therefore evaluates more instances than a full-corpus run and never fewer.
 
+### Subsystems
+
+Each stage is built by one subsystem, and each subsystem is a group of crates under `engine/crates/`. A subsystem spec on `docs/subsystems/` describes the inside of one subsystem and governs the source of its crates ([HW-DR-0098](../decisions/0098-an-engine-subsystem-is-described-by-a-technical-design-spec-on-a-shelf-of-its-own-and-its-behavior-stays-where-it-is-already-written.md)). Every crate is in exactly one row, and `engine/crates/cli/tests/subsystem_map.rs` holds this table against the directory.
+
+| stage | subsystem | crates | why the crates are here |
+|---|---|---|---|
+| resolve | Taxonomy resolution (no spec yet, #1288) | `yaml`, `ref`, `meta`, `resolve`, `lock`, `hash` | Thirteen crates use `hash`. The lock is its first consumer, and one implementation stops two digests from disagreeing. |
+| resolve | Taxonomy distribution and audit (no spec yet, #1288) | `fetch`, `compat`, `audit` | These crates move a taxonomy between repositories and measure it against a corpus. None of them builds the lock. |
+| parse | Parse and census (no spec yet, #1288) | `doc`, `census`, `vcs` | `census` and `graph` use `vcs` for the change manifest. The only other crate that uses it is `cli`. |
+| graph build | [Graph build](../subsystems/graph-build.md) | `graph` | |
+| cache, checks | Checks and cache (no spec yet, #1288) | `check`, `adapter` | `adapter` renders one run of the check layer for a CI platform. |
+| queries, explain | Queries and explain (no spec yet, #1288) | `query`, `embed` | `embed` is the offline embedding path that routing reads ([HW-DR-0064](../decisions/0064-q64-whether-intent-time-routing-gains-an-offline-embedding-path-in-shadow-mode.md)). |
+| projections, export | Projections and export (no spec yet, #1288) | `generate`, `mark` | `generate` writes the marker, and the census reads it. |
+| authoring | Authoring (no spec yet, #1288) | `scaffold`, `import` | |
+| measurement | Measurement (no spec yet, #1288) | `probe`, `conformance`, `sweep` | |
+| every stage | Command surface (no spec yet, #1288) | `cli`, `verbs`, `paint` | These crates run no stage. `verbs` is the dispatch list, and `paint` is the palette that every renderer applies ([HW-DR-0045](../decisions/0045-coloring-the-cli-and-where-the-banner-goes.md)). |
+
+The diagram above does not draw two subsystems. Authoring (`new`, `capture`, `import`) writes documents, and measurement (`probe`, `conformance`) measures a corpus or a consumer.
+
 ## Nothing stores the graph
 
 The graph is a function of the corpus and the lock, and every run rebuilds it. Three artifacts derive from it, and none of them is canonical for anything ([Q6](09-decisions.md#q6--where-the-corpus-graph-lives-at-rest)).
