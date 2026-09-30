@@ -17,6 +17,8 @@ status_since: 2026-08-14
 summary: "TODO one sentence: what a reader learns here, which is what routing reads"
 doc_type: design_spec
 sequence: 4
+provenance:
+  warrant: asserted
 ---
 
 # A scaffolded fourth part
@@ -46,6 +48,8 @@ status: draft
 status_since: 2026-08-14
 summary: "TODO one sentence: what a reader learns here, which is what routing reads"
 title: "A scaffolded decision"
+provenance:
+  warrant: asserted
 ---
 
 # A scaffolded decision
@@ -77,6 +81,8 @@ id: DR-FIX-0008
 status: draft
 status_since: 2026-08-14
 summary: "TODO one sentence: what a reader learns here, which is what routing reads"
+provenance:
+  warrant: asserted
 ---
 
 # A file named from its own identifier
@@ -95,6 +101,8 @@ assisted 2 of 3 — fields 2/3, sections 0/0, identifier 0/0, halves 0/0
 status: draft
 status_since: 2026-08-14
 summary: "TODO one sentence: what a reader learns here, which is what routing reads"
+provenance:
+  warrant: asserted
 ---
 
 # A kind no relation may name
@@ -118,6 +126,8 @@ status: draft
 status_since: 2026-08-14
 summary: "TODO one sentence: what a reader learns here, which is what routing reads"
 title: "A successor with a far half"
+provenance:
+  warrant: asserted
 relations:
   supersedes:
     - SPEC-FIX-the-second-part
@@ -156,6 +166,8 @@ status: draft
 status_since: 2026-08-14
 summary: "TODO one sentence: what a reader learns here, which is what routing reads"
 title: "A successor into a block with the key"
+provenance:
+  warrant: asserted
 relations:
   supersedes:
     - SPEC-FIX-the-third-part
@@ -194,6 +206,8 @@ status: draft
 status_since: 2026-08-14
 summary: "TODO one sentence: what a reader learns here, which is what routing reads"
 title: "A successor into a document with no block"
+provenance:
+  warrant: asserted
 relations:
   supersedes:
     - DR-FIX-0007
@@ -232,6 +246,8 @@ status: draft
 status_since: 2026-08-14
 summary: "TODO one sentence: what a reader learns here, which is what routing reads"
 title: "An assessment with no far half"
+provenance:
+  warrant: asserted
 relations:
   assesses:
     - SPEC-FIX-the-first-part
@@ -272,6 +288,8 @@ status: draft
 status_since: 2026-08-14
 summary: "TODO one sentence: what a reader learns here, which is what routing reads"
 title: "Two edges at once"
+provenance:
+  warrant: asserted
 relations:
   supersedes:
     - SPEC-FIX-the-second-part
@@ -418,6 +436,8 @@ status: draft
 status_since: 2026-08-14
 summary: "What a reader learns before opening the file."
 title: "A scent role the caller states"
+provenance:
+  warrant: asserted
 ---
 
 # A scent role the caller states
@@ -451,6 +471,8 @@ status: draft
 status_since: 2026-08-14
 summary: "TODO one sentence: what a reader learns here, which is what routing reads"
 title: "A scent role stated as blank spaces"
+provenance:
+  warrant: asserted
 ---
 
 # A scent role stated as blank spaces
@@ -484,6 +506,8 @@ status: draft
 status_since: 2026-08-14
 summary: "TODO one sentence: what a reader learns here, which is what routing reads"
 audience: internal
+provenance:
+  warrant: asserted
 ---
 
 # A closed set the caller states
@@ -533,6 +557,8 @@ id: SPEC-FIX-a-fixed-name-in-a-named-directory
 status: draft
 status_since: 2026-08-14
 summary: "TODO one sentence: what a reader learns here, which is what routing reads"
+provenance:
+  warrant: asserted
 ---
 
 # A fixed name in a named directory
@@ -552,6 +578,8 @@ id: SPEC-FIX-a-fixed-name-with-a-trailing-slash
 status: draft
 status_since: 2026-08-14
 summary: "TODO one sentence: what a reader learns here, which is what routing reads"
+provenance:
+  warrant: asserted
 ---
 
 # A fixed name with a trailing slash
@@ -591,6 +619,8 @@ id: SPEC-FIX-a-shelf-that-is-one-file
 status: draft
 status_since: 2026-08-14
 summary: "TODO one sentence: what a reader learns here, which is what routing reads"
+provenance:
+  warrant: asserted
 ---
 
 # A shelf that is one file
