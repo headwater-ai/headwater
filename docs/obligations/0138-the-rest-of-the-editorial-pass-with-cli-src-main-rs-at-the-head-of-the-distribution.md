@@ -12,7 +12,7 @@ provenance:
   evidence_basis: evidenced
 last_verified: 2026-08-26
 title: "The rest of the editorial pass, with cli/src/main.rs at the head of the distribution"
-waiting_on: adopter
+waiting_on: build
 ---
 
 # The rest of the editorial pass, with cli/src/main.rs at the head of the distribution

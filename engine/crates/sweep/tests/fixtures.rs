@@ -240,6 +240,7 @@ fn claims_over(index: &headwater_graph::index::Index) -> headwater_check::claim:
                 scheme: "decision_id".to_string(),
                 id: node.id.clone(),
                 claimant: node.path.clone(),
+                special: false,
             })
             .collect(),
     )

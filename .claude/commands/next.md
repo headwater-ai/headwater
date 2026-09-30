@@ -5,7 +5,7 @@ argument-hint: "[issue number, optional]"
 
 Work one iteration of the Headwater build order (org project "Headwater build order", `headwater-ai/headwater`), then stop. `$ARGUMENTS`, if given, names the issue; without it, dispatch `hw-queue` and take the top of what it writes.
 
-**The value rule binds here too.** `.claude/commands/next-run.md` states it once, under *The value rule*, and this file does not restate it. Before you start, name the reader who is not this repository.
+**The value rule binds here too.** `.claude/commands/next-run.md` states it once, under *The value rule*, and this file does not restate it. Before you start, name the ground the work stands on.
 
 ## What is the same
 

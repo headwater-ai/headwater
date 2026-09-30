@@ -5,6 +5,12 @@ status_since: 2026-09-30
 summary: "How the graph crate indexes identifiers and paths, turns relation blocks into edges, binds links and anchors, and reports each miss without a severity."
 last_verified: 2026-09-30
 title: "Graph build"
+provenance:
+  warrant: asserted
+  agency: agent
+  drafted_by: claude-opus-5-5
+  activity: measure+draft+revise
+  evidence_basis: evidenced
 relations:
   governs:
     - engine/crates/graph/src/**

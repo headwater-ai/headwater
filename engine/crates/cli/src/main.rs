@@ -429,11 +429,12 @@ fn dispatch(root: &Path, verb: Verb) -> ExitCode {
             Some(ProbeWord::Plan {
                 tier,
                 arm,
+                delta,
                 category,
                 seed,
                 exclude,
                 repetitions,
-            }) => probe_plan(
+            }) => match probe_plan_read(
                 root,
                 tier.as_deref(),
                 arm.as_deref(),
@@ -441,7 +442,17 @@ fn dispatch(root: &Path, verb: Verb) -> ExitCode {
                 seed,
                 exclude,
                 repetitions,
-            ),
+            ) {
+                Err(code) => code,
+                // `--delta` prints what the declaration already parsed, so a
+                // script that builds an arm's tree reads the delta from here
+                // and parses no YAML itself (#1472). Clap has already
+                // required `--arm`.
+                Ok((tier, narrowing, budgets)) if delta => {
+                    probe_delta(&budgets, tier, narrowing.arm)
+                }
+                Ok((tier, narrowing, budgets)) => probe_plan(root, &budgets, tier, &narrowing),
+            },
             Some(ProbeWord::Record { path }) => match path {
                 None => fail(
                     "`probe record` takes the path of a transcript a recorder wrote. \
@@ -1249,6 +1260,20 @@ fn resolve(root: &Path, check_only: bool) -> ExitCode {
     // off the committed file and writes it back. A resolve that dropped it
     // would delete an adopter's accounting as a side effect of a taxonomy edit,
     // and the run after it would report every pair the payload was holding.
+    //
+    // A lock that is there and is not a regular file is refused before either
+    // mode opens it. `--check` would wait on a named pipe for ever, or read it
+    // as an empty lock that diverges, and a write would wait on the pipe for a
+    // reader (#1366).
+    let path = root.join(headwater_lock::LOCK);
+    if std::fs::metadata(&path).is_ok_and(|meta| !meta.is_file()) {
+        let why = headwater_lock::LockError::Unreadable(format!(
+            "{} is not a regular file",
+            path.display()
+        ));
+        eprintln!("headwater: {}", err(&why.to_string()));
+        return ExitCode::FAILURE;
+    }
     let authored = headwater_lock::authored_at(root);
     let text = match headwater_lock::write(
         &repository.consumer.package,
@@ -1272,7 +1297,6 @@ fn resolve(root: &Path, check_only: bool) -> ExitCode {
         }
     };
 
-    let path = root.join(headwater_lock::LOCK);
     if check_only {
         let committed = std::fs::read_to_string(&path).unwrap_or_default();
         // Which half of the file moved, rather than whether the file moved. The
@@ -4074,12 +4098,14 @@ impl Loaded {
         ctx: &Context,
         cache: &mut Cache,
     ) -> headwater_check::Run {
+        let ctx = self.check_context(ctx.clone(), root);
+        headwater_check::phase::mark("context");
         headwater_check::run(
             &self.census,
             &self.graph,
             declared,
             &self.claims,
-            &self.check_context(ctx.clone(), root),
+            &ctx,
             cache,
         )
     }
@@ -5274,6 +5300,89 @@ fn sweep_report(root: &Path, path: &Path, format: Option<String>) -> ExitCode {
     ExitCode::SUCCESS
 }
 
+/// The tier, the narrowing and the declaration `headwater probe plan` read.
+type PlanRead = (
+    headwater_probe::Tier,
+    headwater_probe::plan::Narrowing,
+    headwater_probe::Budgets,
+);
+
+/// What `headwater probe plan` reads before it loads a corpus: the tier, the
+/// narrowing and the budget declaration. `--delta` stops here, and the plan
+/// goes on to load the corpus. Every refusal here is a caller's, at status 1.
+fn probe_plan_read(
+    root: &Path,
+    tier: Option<&str>,
+    arm: Option<&str>,
+    category: Option<&str>,
+    seed: u64,
+    exclude: Vec<String>,
+    repetitions: Option<u32>,
+) -> Result<PlanRead, ExitCode> {
+    let tier = match tier {
+        None => headwater_probe::Tier::Regression,
+        Some(name) => match headwater_probe::Tier::read(name) {
+            Some(tier) => tier,
+            None => {
+                return Err(refuse(&format!(
+                    "`--tier {name}` names no tier. The tiers are `regression`, `campaign` and \
+                     `documentation`"
+                )))
+            }
+        },
+    };
+    let narrowing = headwater_probe::plan::Narrowing {
+        category: match category {
+            None => None,
+            Some(name) => match headwater_probe::Category::read(name) {
+                Some(category) => Some(category),
+                None => {
+                    return Err(refuse(&format!(
+                        "`--category {name}` names no probe category. They are: {}",
+                        headwater_probe::Category::ALL
+                            .iter()
+                            .map(|category| category.name())
+                            .collect::<Vec<_>>()
+                            .join(", ")
+                    )))
+                }
+            },
+        },
+        arm: match arm {
+            None => None,
+            Some(name) => match headwater_probe::Arm::read(name) {
+                Some(arm) => Some(arm),
+                None => {
+                    return Err(refuse(&format!(
+                        "`--arm {name}` names no arm. The arms are {}",
+                        headwater_probe::Arm::listed()
+                    )))
+                }
+            },
+        },
+        seed,
+        exclude,
+        repetitions,
+    };
+
+    let path = root.join(headwater_probe::budget::PATH);
+    let source = match std::fs::read_to_string(&path) {
+        Ok(source) => source,
+        Err(error) => {
+            return Err(refuse(&format!(
+                "{} did not read: {error}. A harness with no declared ceiling cannot fail closed, \
+                 so no run is planned without one",
+                headwater_probe::budget::PATH
+            )))
+        }
+    };
+    let budgets = match headwater_probe::Budgets::read(&source) {
+        Ok(budgets) => budgets,
+        Err(unreadable) => return Err(refuse(&unreadable.to_string())),
+    };
+    Ok((tier, narrowing, budgets))
+}
+
 /// `headwater probe plan`.
 ///
 /// # It exits 0 on a refusal, and that is the point rather than a leniency
@@ -5296,74 +5405,10 @@ fn sweep_report(root: &Path, path: &Path, format: Option<String>) -> ExitCode {
 /// that is not in this repository.
 fn probe_plan(
     root: &Path,
-    tier: Option<&str>,
-    arm: Option<&str>,
-    category: Option<&str>,
-    seed: u64,
-    exclude: Vec<String>,
-    repetitions: Option<u32>,
+    budgets: &headwater_probe::Budgets,
+    tier: headwater_probe::Tier,
+    narrowing: &headwater_probe::plan::Narrowing,
 ) -> ExitCode {
-    let tier = match tier {
-        None => headwater_probe::Tier::Regression,
-        Some(name) => match headwater_probe::Tier::read(name) {
-            Some(tier) => tier,
-            None => {
-                return refuse(&format!(
-                    "`--tier {name}` names no tier. The tiers are `regression`, `campaign` and \
-                     `documentation`"
-                ))
-            }
-        },
-    };
-    let narrowing = headwater_probe::plan::Narrowing {
-        category: match category {
-            None => None,
-            Some(name) => match headwater_probe::Category::read(name) {
-                Some(category) => Some(category),
-                None => {
-                    return refuse(&format!(
-                        "`--category {name}` names no probe category. They are: {}",
-                        headwater_probe::Category::ALL
-                            .iter()
-                            .map(|category| category.name())
-                            .collect::<Vec<_>>()
-                            .join(", ")
-                    ))
-                }
-            },
-        },
-        arm: match arm {
-            None => None,
-            Some(name) => match headwater_probe::Arm::read(name) {
-                Some(arm) => Some(arm),
-                None => {
-                    return refuse(&format!(
-                        "`--arm {name}` names no arm. The arms are `present` and `absent`"
-                    ))
-                }
-            },
-        },
-        seed,
-        exclude,
-        repetitions,
-    };
-
-    let path = root.join(headwater_probe::budget::PATH);
-    let source = match std::fs::read_to_string(&path) {
-        Ok(source) => source,
-        Err(error) => {
-            return refuse(&format!(
-                "{} did not read: {error}. A harness with no declared ceiling cannot fail closed, \
-                 so no run is planned without one",
-                headwater_probe::budget::PATH
-            ))
-        }
-    };
-    let budgets = match headwater_probe::Budgets::read(&source) {
-        Ok(budgets) => budgets,
-        Err(unreadable) => return refuse(&unreadable.to_string()),
-    };
-
     let loaded = match load(root) {
         Ok(loaded) => loaded,
         Err(code) => return code,
@@ -5372,12 +5417,57 @@ fn probe_plan(
         &loaded.census,
         &loaded.graph,
         &loaded.config,
-        &budgets,
+        budgets,
         &loaded.bound.digest,
         tier,
-        &narrowing,
+        narrowing,
     );
     print!("{}", plan.render(headwater_cli::paint::stdout_color()));
+    ExitCode::SUCCESS
+}
+
+/// `headwater probe plan --delta --arm <arm>`: the paths an arm's tree lacks
+/// and holds against the present tree, as `- <path>` and `+ <path>` lines.
+///
+/// It prints the parse `Budgets::read` already made and nothing else, so it
+/// accepts every form of the declaration the plan accepts. An arm the tier
+/// does not run is refused, at status 1 and not 0 as the plan refuses it,
+/// because a caller that builds a tree from this output must not build one
+/// from nothing.
+fn probe_delta(
+    budgets: &headwater_probe::Budgets,
+    tier: headwater_probe::Tier,
+    arm: Option<headwater_probe::Arm>,
+) -> ExitCode {
+    let Some(arm) = arm else {
+        return refuse("`--delta` prints the delta of one arm, so it needs `--arm`");
+    };
+    let Some(envelope) = budgets.of(tier) else {
+        return refuse(&format!(
+            "{} declares no `{}` tier, so it declares no arm of it",
+            headwater_probe::budget::PATH,
+            tier.name()
+        ));
+    };
+    if !envelope.arms.contains(&arm) {
+        return refuse(&format!(
+            "the `{}` tier does not run the `{}` arm. It runs {}",
+            tier.name(),
+            arm.name(),
+            envelope
+                .arms
+                .iter()
+                .map(|arm| format!("`{}`", arm.name()))
+                .collect::<Vec<_>>()
+                .join(", ")
+        ));
+    }
+    for path in envelope.removes(arm) {
+        println!("- {path}");
+    }
+    for path in envelope.adds(arm) {
+        println!("+ {path}");
+    }
     ExitCode::SUCCESS
 }
 
@@ -6440,9 +6530,12 @@ struct Asked {
 }
 
 fn check(root: &Path, asked: Asked) -> ExitCode {
-    match checked(root, asked) {
+    let code = match checked(root, asked) {
         Ok(code) | Err(code) => code,
-    }
+    };
+    // What `checked` held is dropped on its return, and that is a stage too.
+    headwater_check::phase::mark("drop");
+    code
 }
 
 /// The body of `check`, where `Err` is a stream that could not be written.
@@ -6519,6 +6612,9 @@ fn checked(root: &Path, asked: Asked) -> Result<ExitCode, ExitCode> {
     // The patches already landed, and the contract keeps standard output
     // complete where standard error fails. The failure is the exit status,
     // decided after the report.
+    // Everything before the walk: the start of the process and the parse of
+    // the command line. See `headwater_check::phase` for what a mark costs.
+    headwater_check::phase::mark("start");
     let mut unsaid = false;
     let refused = match fixing {
         false => Vec::new(),
@@ -6535,6 +6631,7 @@ fn checked(root: &Path, asked: Asked) -> Result<ExitCode, ExitCode> {
         Ok(loaded) => loaded,
         Err(code) => return Ok(code),
     };
+    headwater_check::phase::mark("load");
     let Loaded {
         bound,
         consumer: _,
@@ -6561,10 +6658,12 @@ fn checked(root: &Path, asked: Asked) -> Result<ExitCode, ExitCode> {
         true => Cache::at(root, &bound.digest, &rules_digest()),
         false => Cache::disabled(),
     };
+    headwater_check::phase::mark("cache-read");
     let run = loaded.check(root, &loaded.declared(), &ctx, &mut cache);
     // Held until the report is out, and then said on standard error. See
     // `Cache::write` for why a failure here moves no verdict.
     let unwritten = cache.write(root).err();
+    headwater_check::phase::mark("cache-write");
 
     // The run, in the vocabulary the caller asked for. Spec 6 lists four
     // formats and `headwater_adapter::render` writes every one of them, so this
@@ -6597,6 +6696,7 @@ fn checked(root: &Path, asked: Asked) -> Result<ExitCode, ExitCode> {
     };
     let artifact = headwater_adapter::render_at(&run, taken, graph, &subject, format, width, mode);
     report(&artifact)?;
+    headwater_check::phase::mark("render");
     // The census over what was written, in the shape spec 6 fixes for the
     // graph emitters. A finding that reached no output and that no loss
     // reason covers is a defect in the adapter, and it fails the run the
@@ -6644,6 +6744,7 @@ fn checked(root: &Path, asked: Asked) -> Result<ExitCode, ExitCode> {
     // `--no-cache` and a cached run write the same bytes to standard output,
     // and a line here would be the one thing that made them differ.
     say(&run.cache.render())?;
+    headwater_check::phase::mark("tail");
     if let Some((path, error)) = unwritten {
         say(&unwritten_cache(&path, &error))?;
     }

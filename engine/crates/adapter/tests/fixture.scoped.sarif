@@ -114,7 +114,7 @@
               "properties": {
                 "headwater": {
                   "scope": "edge",
-                  "version": 2,
+                  "version": 3,
                   "obligations": [
                     "OB-FIX-29"
                   ],
@@ -325,7 +325,7 @@
               "properties": {
                 "headwater": {
                   "scope": "corpus",
-                  "version": 2,
+                  "version": 3,
                   "obligations": [],
                   "exportable_as": []
                 }

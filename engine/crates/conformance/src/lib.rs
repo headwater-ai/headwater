@@ -371,6 +371,14 @@ pub fn at(root: &Path, consumer: &Consumer) -> Result<RuleSet, SetError> {
         .map(|scalar| scalar.text.clone())
         .ok_or_else(|| SetError::Undeclared(consumer.package.clone()))?;
     let path = directory.join(&named);
+    // A named pipe, a socket or a device is refused before it is opened,
+    // because a pipe with no writer blocks its reader for ever (#1366).
+    if std::fs::metadata(&path).is_ok_and(|meta| !meta.is_file()) {
+        return Err(SetError::Unreadable(format!(
+            "{} is not a regular file",
+            path.display()
+        )));
+    }
     let text = std::fs::read_to_string(&path)
         .map_err(|error| SetError::Unreadable(format!("{}: {error}", path.display())))?;
     read(&text, &consumer.package)

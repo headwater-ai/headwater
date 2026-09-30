@@ -572,14 +572,10 @@ impl Authored {
 /// reads as a whole.
 pub fn authored_at(root: &Path) -> Authored {
     let path = root.join(LOCK);
-    let text = match std::fs::read_to_string(&path) {
-        Ok(text) => text,
-        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Authored::NoLock,
-        Err(error) => {
-            return Authored::Opaque {
-                why: LockError::Unreadable(format!("{}: {error}", path.display())),
-            }
-        }
+    let text = match lock_text(&path) {
+        Ok(Some(text)) => text,
+        Ok(None) => return Authored::NoLock,
+        Err(why) => return Authored::Opaque { why },
     };
     match read(&text) {
         Ok(lock) => match lock.adoption {
@@ -623,19 +619,40 @@ fn behind(why: LockError, text: &str) -> Authored {
 /// Read the lock of a repository.
 pub fn at(root: &Path) -> Result<Lock, LockError> {
     let path = root.join(LOCK);
-    let text = match std::fs::read_to_string(&path) {
-        Ok(text) => text,
-        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
-            return Err(LockError::Absent(path))
-        }
-        Err(error) => {
-            return Err(LockError::Unreadable(format!(
+    match lock_text(&path)? {
+        Some(text) => read(&text),
+        None => Err(LockError::Absent(path)),
+    }
+}
+
+/// The text of the lock at `path`, and nothing where no file is there.
+///
+/// Only a regular file is opened. `metadata` follows a link, so a lock reached
+/// through one still reads. A named pipe, a socket or a device is refused
+/// before it is opened, because a pipe with no writer blocks its reader for
+/// ever and every verb that loads the taxonomy reads this file (#1366).
+fn lock_text(path: &Path) -> Result<Option<String>, LockError> {
+    let unreadable = |error: std::io::Error| {
+        if error.kind() == std::io::ErrorKind::NotFound {
+            Ok(None)
+        } else {
+            Err(LockError::Unreadable(format!(
                 "{}: {error}",
                 path.display()
             )))
         }
     };
-    read(&text)
+    match std::fs::metadata(path) {
+        Ok(meta) if !meta.is_file() => {
+            return Err(LockError::Unreadable(format!(
+                "{} is not a regular file",
+                path.display()
+            )))
+        }
+        Ok(_) => {}
+        Err(error) => return unreadable(error),
+    }
+    std::fs::read_to_string(path).map(Some).or_else(unreadable)
 }
 
 /// The first line of the comment block that [`render`] writes between the
@@ -896,6 +913,62 @@ impl Lock {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// A named pipe at the lock is refused before it is opened, by both
+    /// readers, and neither reads it as a lock that is absent. `/dev/null`
+    /// through a link is a device and is refused the same way, and a link to a
+    /// regular file is read (#1366).
+    #[test]
+    fn a_lock_that_is_not_a_regular_file_is_refused_before_it_is_opened() {
+        let root = std::env::temp_dir().join(format!(
+            "headwater-lock-special-{}-{:?}",
+            std::process::id(),
+            std::thread::current().id()
+        ));
+        let _ = std::fs::remove_dir_all(&root);
+        std::fs::create_dir_all(root.join(".headwater")).expect("the root is made");
+        let lock = root.join(LOCK);
+        let made = std::process::Command::new("mkfifo")
+            .arg(&lock)
+            .status()
+            .expect("mkfifo runs");
+        assert!(made.success(), "the named pipe is made");
+        let refused = |why: &LockError| {
+            let why = why.to_string();
+            assert!(why.contains("is not a regular file"), "{why}");
+            assert!(why.contains(LOCK), "{why}");
+        };
+        match at(&root) {
+            Err(why @ LockError::Unreadable(_)) => refused(&why),
+            other => panic!("the pipe is refused: {other:?}"),
+        }
+        match authored_at(&root) {
+            Authored::Opaque { why } => refused(&why),
+            other => panic!("the pipe is opaque: {other:?}"),
+        }
+
+        std::fs::remove_file(&lock).expect("the pipe goes");
+        std::os::unix::fs::symlink("/dev/null", &lock).expect("the link is made");
+        match at(&root) {
+            Err(why @ LockError::Unreadable(_)) => refused(&why),
+            other => panic!("the device is refused: {other:?}"),
+        }
+
+        std::fs::remove_file(&lock).expect("the link goes");
+        std::fs::write(root.join("lock.target"), "not: a lock\n").expect("the target writes");
+        std::os::unix::fs::symlink("../lock.target", &lock).expect("the link is made");
+        assert!(
+            !matches!(
+                at(&root),
+                Err(LockError::Unreadable(_) | LockError::Absent(_))
+            ),
+            "a link to a regular file is read"
+        );
+        std::fs::remove_file(&lock).expect("the link goes");
+        assert!(matches!(at(&root), Err(LockError::Absent(_))));
+        assert!(matches!(authored_at(&root), Authored::NoLock));
+        let _ = std::fs::remove_dir_all(&root);
+    }
 
     fn resolved(source: &str) -> (Vec<Source>, Resolution) {
         let sources =

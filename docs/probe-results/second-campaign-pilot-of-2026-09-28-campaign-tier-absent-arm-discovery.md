@@ -2,13 +2,15 @@
 "headwater:generated": "probe_result. `headwater generate` writes this file, and `headwater generate --check` holds it. Edit the corpus, not this file."
 id: HW-RESULT-second-campaign-pilot-of-2026-09-28-campaign-tier-absent-arm-discovery
 title: Probe result for second-campaign-pilot-of-2026-09-28-campaign-tier-absent-arm-discovery
-status: current
+status: deprecated
 status_since: 2026-09-28
 summary: "The grade of the transcript `second-campaign-pilot-of-2026-09-28-campaign-tier-absent-arm-discovery`, taken over the probes this corpus declares and the version of the grader that evaluated them."
 last_verified: 2026-09-28
 ---
 
 # The result of docs/probe-runs/second-campaign-pilot-of-2026-09-28-campaign-tier-absent-arm-discovery.md
+
+The transcript this result grades stands at `deprecated`, a state that ends its lifecycle, so the run it recorded is withdrawn. No figure below is a current finding, and this result states no direction at the 5% level.
 
 A probe result is a function of three committed inputs and of nothing else: the transcript at `docs/probe-runs/second-campaign-pilot-of-2026-09-28-campaign-tier-absent-arm-discovery.md`, the expectations the probes of this corpus declare, and the version of the grader that evaluated them. Fetch the three and this file comes back.
 
@@ -51,4 +53,4 @@ What the governance changes. The treated arm is the `campaign` present arm and t
 - treated, `docs/probe-runs/second-campaign-pilot-of-2026-09-28-campaign-tier-present-arm-discovery.md`: 1 of 2 graded sessions satisfied their expectation, 50.0%, in a 95% interval of 9.5% to 90.5%. 0 sessions refused by the session itself.
 - control, `docs/probe-runs/second-campaign-pilot-of-2026-09-28-campaign-tier-absent-arm-discovery.md`: 0 of 2 graded sessions satisfied their expectation, 0.0%, in a 95% interval of 0.0% to 65.8%. 0 sessions refused by the session itself.
 
-The difference is +50.0 points, in a 95% Newcombe interval of -27.3 points to +90.5 points. The interval contains zero, so this run does not separate the two arms at the 5% level.
+The difference is +50.0 points, in a 95% Newcombe interval of -27.3 points to +90.5 points. The transcript of at least one arm is not current, so this page states no direction at the 5% level.

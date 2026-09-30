@@ -152,6 +152,12 @@ pub(crate) struct Composed<'a> {
     /// derived dates come from. An emitter that read no document of the corpus
     /// supplies none, and the dates are then unwritten rather than invented.
     pub sources: Vec<&'a str>,
+    /// The state of a source whose role is terminal, where the emitter read
+    /// one. A projection of a withdrawn source is withdrawn with it, so
+    /// [`standing`] takes this value after an incoming edge and before the
+    /// `live` fallback (HW-DR-0063, amended 2026-10-01). An emitter whose
+    /// output does not follow the state of what it read supplies `None`.
+    pub state: Option<String>,
 }
 
 /// What [`members`] computed, and why it could not compute the rest.
@@ -221,7 +227,7 @@ pub(crate) fn members(
             // No standing means no edge sets a state and the vocabulary holds
             // no `live` value. That is a taxonomy cause, so it keeps the
             // taxonomy wording.
-            match standing(surface, id, output) {
+            match standing(surface, id, output, composed) {
                 Some(standing) => Ok(Some(admitted(surface, kind, standing)?)),
                 None => Ok(None),
             }
@@ -310,7 +316,11 @@ enum Locus {
     /// the paths of every document whose edge agreed, in the order
     /// [`set_by`] finds them.
     Edge(Vec<String>),
-    /// No such edge exists, so the value is the facet's own `live`-role
+    /// No such edge exists, and a source the emitter read stands at a state
+    /// whose role is terminal ([`Composed::state`]). The paths are the
+    /// sources the emitter named.
+    Source(Vec<String>),
+    /// No such edge exists and no source is terminal, so the value is the facet's own `live`-role
     /// default — the vocabulary's answer rather than any relation's.
     Fallback,
 }
@@ -376,6 +386,11 @@ fn admitted(
             "{} declares the incoming edge that sets it",
             setters.join(", ")
         ),
+        Locus::Source(sources) => format!(
+            "no incoming edge sets a state, and {} stands at it, so `derived::standing` took the \
+             terminal state of the source this document projects",
+            sources.join(", ")
+        ),
         Locus::Fallback => {
             "no incoming edge sets a state, so `derived::standing` fell back to the facet value \
              whose role is `live`, this taxonomy's vocabulary-wide default"
@@ -436,10 +451,29 @@ fn documents<'a>(
 /// initial state of the regime would be false about every one of them. That is
 /// also what `headwater new` writes for an authored document, which reaches
 /// `current` in the commit that creates it rather than by a movement.
-fn standing(surface: &Surface<'_>, id: &str, output: &str) -> Option<(String, Locus)> {
+///
+/// Between the two sits a source at a terminal state, which the emitter names
+/// in [`Composed::state`]. A document that is exactly what its inputs say is
+/// withdrawn when its input is, and saying `current` over a withdrawn input
+/// claims a standing the input no longer has (#1509). An edge still wins: it
+/// is a declaration about this document, and the source's state is not.
+fn standing(
+    surface: &Surface<'_>,
+    id: &str,
+    output: &str,
+    composed: &Composed<'_>,
+) -> Option<(String, Locus)> {
     if let Some(state) = set_state(surface, id, output) {
         let setters = set_by(surface, id, output).unwrap_or_default();
         return Some((state, Locus::Edge(setters)));
+    }
+    if let Some(state) = &composed.state {
+        let sources = composed
+            .sources
+            .iter()
+            .map(|path| path.to_string())
+            .collect();
+        return Some((state.clone(), Locus::Source(sources)));
     }
     let facet = surface.shape().facet_in_role(STATE)?;
     let value = facet

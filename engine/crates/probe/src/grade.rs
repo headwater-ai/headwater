@@ -44,17 +44,19 @@
 //! for its own failing fixtures, and every verdict form and every refusal here
 //! has one.
 //!
-//! # The version, and why it is the harness version
+//! # The version, and why it is the grader's own
 //!
 //! A result is a function of three inputs and the third is this code. A series
 //! that averaged over two versions of it would report a change in the
 //! instrument as a change in the corpus, so [`VERSION`] is printed on every
 //! result and a report over a set of results says how many versions the set
-//! spans. It is the version of this crate, which is the harness version, for
-//! the reason the harness version is the engine's: two numbers that drift name
-//! two graders. A change to this file inside one version is caught by the
-//! recorded fixtures rather than by the number, which is why they are recorded
-//! whole.
+//! spans. It is the grader's own version and not the engine release. A change
+//! that alters a verdict or the rendered grade moves it. A release does not,
+//! because a release that leaves this code as it was has not changed the
+//! instrument, and a version that moved with it would restale every committed
+//! result for no reader's gain (#1317). The harness version stays the
+//! engine's. A change to this file is caught by the recorded fixtures, which
+//! are recorded whole, and the change that moves them moves [`VERSION`] too.
 //!
 //! # What this does not do
 //!
@@ -68,11 +70,12 @@ use crate::{Arm, Category, Expectation, Tier};
 use headwater_check::paint::{paint, ColorMode, Role};
 
 /// The grader version, which a result names for the reason a reading names its
-/// lock digest. This is the engine version, read from the one constant that
-/// defines it, rather than this crate's own manifest version — the two are
-/// the same number by the workspace's own design, and reading the constant
-/// directly is what keeps them from drifting apart.
-pub const VERSION: &str = headwater_resolve::release::ENGINE;
+/// lock digest. It is the grader's own version and not the engine release. A
+/// change that alters a verdict or the rendered grade moves it, and a release
+/// does not, so a release leaves every committed result as it was (#1317). It
+/// started at `0.5.0` because the grading code of engine 0.5.0 graded every
+/// result committed at that time.
+pub const VERSION: &str = "0.5.0";
 
 /// The confidence coefficient of the reported interval, at 95%.
 const Z: f64 = 1.959_964;
@@ -478,7 +481,10 @@ pub fn planned_over(selection: &[Selected], recorded: &str, probes: &[String]) -
 /// Every verdict of one transcript.
 #[derive(Clone, Debug)]
 pub struct Results {
-    pub grader: &'static str,
+    /// Always [`VERSION`]. The field is private so that no caller can set it to
+    /// another number after grading, such as the engine release (#1317). Read
+    /// it with [`Results::grader`].
+    grader: &'static str,
     /// The run this transcript recorded, where the intake read one.
     pub tier: Option<Tier>,
     pub arm: Option<Arm>,
@@ -490,6 +496,11 @@ pub struct Results {
 }
 
 impl Results {
+    /// The grader version these results name, which is always [`VERSION`].
+    pub fn grader(&self) -> &'static str {
+        self.grader
+    }
+
     /// Grade a record against the selection that planned it.
     ///
     /// It never fails. A transcript the intake refused produces results with

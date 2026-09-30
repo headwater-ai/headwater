@@ -487,7 +487,7 @@ Sending any finding of the skills corpus upstream, or fixing one, which is [#495
 
 A census of all 22 review-rule files as typed documents. Seven is the sample, and #508's own scope note sets that bar.
 
-Sending anything upstream to n8n, which is [#729](https://github.com/headwater-ai/headwater/issues/729). [The three genuine defects are fixed on the fork](#the-fixes-and-the-rule-that-found-each-one) under [#495](https://github.com/headwater-ai/headwater/issues/495), and nothing was reported to n8n. No issue and no pull request was opened against their repository, and the section above says why.
+Sending anything upstream to n8n, which is [#729](https://github.com/headwater-ai/headwater/issues/729). [The three genuine defects are fixed on the fork](#the-fixes-and-the-rule-that-found-each-one) under [#495](https://github.com/headwater-ai/headwater/issues/495), and nothing was reported to n8n. No issue and no pull request was opened against their repository, and the section above says why. The owner ruled on 2026-09-22 that no pull request goes to n8n from this work. Both issues closed on that ruling on 2026-09-30.
 
 Fixing the 33 findings that the two runs reported. All 33 are artifacts of this library's vocabulary rather than defects in n8n's writing, so there is nothing there for n8n to accept.
 

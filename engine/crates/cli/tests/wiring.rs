@@ -1876,3 +1876,110 @@ fn a_check_rule_this_engine_ships_is_an_edge_endpoint_and_a_typo_is_not() {
         overdue.out
     );
 }
+
+/// `probe plan --delta` prints the delta the declaration parses, in every form
+/// the plan accepts, so that `tools/probe/ablate.sh` reads it from here and
+/// parses no YAML itself (#1472, verify round 3, finding 3).
+///
+/// The declaration is this repository's own, with the `components` block of
+/// the campaign tier rewritten in the four forms a hand-written reader got
+/// wrong: a comment after `components:`, a quoted key, a flow sequence with a
+/// trailing comma, and a flow sequence over several lines with a comment
+/// before its closing bracket. No corpus is loaded, so the root holds the
+/// declaration alone.
+#[test]
+fn probe_plan_delta_prints_the_parsed_delta_of_each_arm() {
+    let at = std::env::temp_dir().join(format!(
+        "headwater-cli-wiring-{}-probe-delta",
+        std::process::id()
+    ));
+    let _ = std::fs::remove_dir_all(&at);
+    std::fs::create_dir_all(at.join(".headwater")).expect("the declaration directory is there");
+    let root = Root { at };
+    let declared = std::fs::read_to_string(repository().join(".headwater/probe.yml"))
+        .expect("this repository declares its probes");
+    let block = "    components:\n      no-hook: [.claude/hooks/intent.sh]\n      no-skills: [.claude/skills]\n      no-claude-md: [CLAUDE.md]\n      mcp: [.mcp.json]\n";
+    assert!(
+        declared.contains(block),
+        "the campaign tier's components block moved, so this case no longer rewrites it"
+    );
+    let awkward = "    components: # the component arms\n      \"no-hook\": [.claude/hooks/intent.sh, ]\n      no-skills: [\n        .claude/skills, # every skill\n        .claude/commands # and every command\n      ]\n      no-claude-md: [CLAUDE.md]\n      mcp: [.mcp.json]\n";
+    std::fs::write(
+        root.path(".headwater/probe.yml"),
+        declared.replace(block, awkward),
+    )
+    .expect("the declaration writes");
+
+    let delta = |arm: &str| {
+        root.run(&[
+            "probe", "plan", "--tier", "campaign", "--arm", arm, "--delta",
+        ])
+    };
+
+    let no_hook = delta("no-hook");
+    assert_eq!(no_hook.code, Some(0), "{}{}", no_hook.out, no_hook.err);
+    assert_eq!(
+        no_hook.out, "- .claude/hooks/intent.sh\n",
+        "{}",
+        no_hook.err
+    );
+
+    let no_skills = delta("no-skills");
+    assert_eq!(
+        no_skills.code,
+        Some(0),
+        "{}{}",
+        no_skills.out,
+        no_skills.err
+    );
+    assert_eq!(no_skills.out, "- .claude/skills\n- .claude/commands\n");
+
+    let mcp = delta("mcp");
+    assert_eq!(mcp.code, Some(0), "{}{}", mcp.out, mcp.err);
+    assert_eq!(mcp.out, "+ .mcp.json\n", "an adding arm prints `+`");
+
+    let present = delta("present");
+    assert_eq!(present.code, Some(0), "{}{}", present.out, present.err);
+    assert_eq!(
+        present.out, "",
+        "the present arm differs from itself by nothing"
+    );
+
+    let absent = delta("absent");
+    assert_eq!(absent.code, Some(0), "{}{}", absent.out, absent.err);
+    assert!(
+        absent.out.lines().count() > 0 && absent.out.lines().all(|line| line.starts_with("- ")),
+        "the absent arm prints its ablation as removed paths:\n{}",
+        absent.out
+    );
+
+    // An arm the tier does not run is refused with status 1, because a
+    // script that builds a tree from this output must not build one from
+    // nothing. The plan itself refuses the same arm at status 0.
+    let regression = root.run(&[
+        "probe",
+        "plan",
+        "--tier",
+        "regression",
+        "--arm",
+        "no-hook",
+        "--delta",
+    ]);
+    assert_eq!(
+        regression.code,
+        Some(1),
+        "{}{}",
+        regression.out,
+        regression.err
+    );
+    assert_eq!(regression.out, "", "a refused delta prints no path");
+    assert!(
+        regression.err.contains("does not run the `no-hook` arm"),
+        "{}",
+        regression.err
+    );
+
+    // `--delta` without `--arm` is a command-line error.
+    let bare = root.run(&["probe", "plan", "--tier", "campaign", "--delta"]);
+    assert_ne!(bare.code, Some(0), "{}{}", bare.out, bare.err);
+}

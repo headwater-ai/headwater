@@ -5,7 +5,7 @@ status_since: 2026-09-07
 summary: "Two design specs declaring sequence 16, whose file names both open with 16-, give check --strict exit 0 and the same finding count as the tree without them."
 last_verified: 2026-09-07
 title: "Two documents take one sequence on a sequence-declaring shelf and no rule reads it"
-waiting_on: adopter
+waiting_on: ruling
 provenance:
   warrant: asserted
   agency: agent

@@ -12,7 +12,7 @@ provenance:
   evidence_basis: evidenced
 last_verified: 2026-08-26
 title: "The comment prose defines by contrast 979 times in 179,000 words, and no mechanism here performs an editorial pass"
-waiting_on: adopter
+waiting_on: build
 ---
 
 # The comment prose defines by contrast 979 times in 179,000 words, and no mechanism here performs an editorial pass

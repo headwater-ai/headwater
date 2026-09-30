@@ -12,7 +12,7 @@ provenance:
   accepted_by: j.baxter
   evidence_basis: evidenced
 last_verified: 2026-08-26
-waiting_on: adopter
+waiting_on: build
 ---
 
 # The glossary's Package entry omits conformance and still lists plugins, which #367 dropped

@@ -12,7 +12,7 @@ provenance:
   activity: draft
   accepted_by: j.baxter
   evidence_basis: evidenced
-waiting_on: adopter
+waiting_on: measurement
 ---
 
 # A specification sentence closes a set with a count the source exceeds, and 115 of 127 candidates are unchecked

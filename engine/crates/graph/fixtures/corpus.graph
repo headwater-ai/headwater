@@ -415,12 +415,18 @@ anchors
     cited by HW-DR-0049
   code_path `engine/crates/graph/src/lib.rs` via source-tree
     cited by HW-DR-0068
+  code_path `engine/crates/hash/src/**` via source-tree
+    cited by HW-SPEC-taxonomy-resolution
   code_path `engine/crates/import/src/lib.rs` via source-tree
     cited by HW-IFACE-headwater-import
+  code_path `engine/crates/lock/src/**` via source-tree
+    cited by HW-SPEC-taxonomy-resolution
   code_path `engine/crates/meta/meta-schema.yml` via source-tree
     cited by HW-DR-0025
   code_path `engine/crates/meta/meta-schema.yml` via source-tree
     cited by HW-DR-0040
+  code_path `engine/crates/meta/src/**` via source-tree
+    cited by HW-SPEC-taxonomy-resolution
   code_path `engine/crates/meta/src/pattern.rs` via source-tree
     cited by HW-DR-0074
   code_path `engine/crates/paint/src/lib.rs` via source-tree
@@ -457,6 +463,10 @@ anchors
     cited by HW-IFACE-headwater-route
   code_path `engine/crates/query/tests/mcp.rs` via source-tree
     cited by HW-OBL-0176
+  code_path `engine/crates/ref/src/**` via source-tree
+    cited by HW-SPEC-taxonomy-resolution
+  code_path `engine/crates/resolve/src/**` via source-tree
+    cited by HW-SPEC-taxonomy-resolution
   code_path `engine/crates/resolve/src/lib.rs` via source-tree
     cited by HW-IFACE-headwater-taxonomy
   code_path `engine/crates/resolve/src/package.rs` via source-tree
@@ -487,6 +497,8 @@ anchors
     cited by HW-IFACE-headwater-change
   code_path `engine/crates/verbs/src/lib.rs` via source-tree
     cited by HW-REV-the-sixty-four-restored-help-strings-checked-against-the-binary
+  code_path `engine/crates/yaml/src/**` via source-tree
+    cited by HW-SPEC-taxonomy-resolution
   code_path `engine/crates/yaml/src/json.rs` via source-tree
     cited by HW-IFACE-headwater-json
   code_path `integrations/headwater-check/**` via source-tree

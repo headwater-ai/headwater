@@ -517,6 +517,14 @@ fn check_and_new_finish_when_a_claim_file_is_a_named_pipe() {
         flat(&out).contains(".headwater/ids/decision_id/HW-DR-9990"),
         "check names the pipe in the claim store: {out}"
     );
+    assert!(
+        flat(&out).contains("is a named pipe, a socket or a device, so it names no document"),
+        "check says what the entry is: {out}"
+    );
+    assert!(
+        !flat(&out).contains("write the path of the document whose"),
+        "check never asks for a write into the pipe: {out}"
+    );
     under_deadline(
         &root,
         &["new", "decision", "--title", "After the pipe"],
@@ -684,4 +692,196 @@ fn show_refuses_a_path_through_a_linked_directory_as_a_path_with_no_document() {
         "{show}"
     );
     assert_eq!(flat(&show), flat(&explain), "one sentence for both verbs");
+}
+
+/// A root whose file at `path` under `.headwater/` is replaced by a named pipe.
+/// The pipe goes in after [`Root::shaped`] has resolved the root, because that
+/// resolve reads the same files with no deadline over it.
+fn declaration_pipe(label: &str, path: &str) -> Root {
+    // The pin, so that `neighbors` reaches the lock rather than refusing a
+    // missing pin first.
+    let root = Root::shaped(label, pin_into);
+    let at = root.at.join(".headwater").join(path);
+    std::fs::remove_file(&at).expect("the file is there to replace");
+    fifo(&at);
+    root
+}
+
+/// Every verb that loads the taxonomy reads `.headwater/taxonomy.lock`, and
+/// `taxonomy resolve` reads `.headwater/taxonomy.yml` first. A named pipe at
+/// either path is refused in one sentence that names it, before anything
+/// opens it, so no verb waits on the pipe for ever (#1366).
+#[test]
+fn check_show_and_explain_finish_when_a_named_pipe_takes_the_lock_or_the_consumer_declaration() {
+    let document = "docs/decisions/0001-the-warrant-a-person-set.md";
+    for (label, path) in [
+        ("lock-pipe", "taxonomy.lock"),
+        ("consumer-pipe", "taxonomy.yml"),
+    ] {
+        let root = declaration_pipe(label, path);
+        let named = format!(".headwater/{path}");
+        for args in [
+            vec!["check", "--no-cache"],
+            vec!["show", document],
+            vec!["explain", document],
+            vec!["neighbors", "a", "task"],
+            vec!["taxonomy", "resolve", "--check"],
+            vec!["taxonomy", "resolve"],
+        ] {
+            let hung = format!(
+                "{} opened the named pipe at {named}, and waited on it",
+                args.join(" ")
+            );
+            let (status, out, err) = ended(&root, &args, &hung);
+            assert_eq!(status.code(), Some(1), "{args:?} refuses at {named}: {err}");
+            assert!(out.is_empty(), "{args:?} prints nothing at {named}: {out}");
+            assert!(flat(&err).contains(&named), "{args:?} names {named}: {err}");
+            assert!(
+                flat(&err).contains("not a regular file"),
+                "{args:?} says why at {named}: {err}"
+            );
+        }
+    }
+}
+
+/// `taxonomy resolve` reads the overlay and every package file as taxonomy
+/// sources, so a named pipe at either is refused in the same sentence, in
+/// both modes (#1366).
+#[test]
+fn taxonomy_resolve_finishes_when_a_named_pipe_takes_the_overlay_or_a_package_source() {
+    for (label, path) in [
+        ("overlay-pipe", "overlay.yml"),
+        ("package-pipe", "packages/headwater-standard/taxonomy.yml"),
+    ] {
+        let root = declaration_pipe(label, path);
+        let named = format!(".headwater/{path}");
+        for args in [
+            vec!["taxonomy", "resolve", "--check"],
+            vec!["taxonomy", "resolve"],
+        ] {
+            let hung = format!(
+                "{} opened the named pipe at {named}, and waited on it",
+                args.join(" ")
+            );
+            let (status, out, err) = ended(&root, &args, &hung);
+            assert_eq!(status.code(), Some(1), "{args:?} refuses at {named}: {err}");
+            assert!(out.is_empty(), "{args:?} prints nothing at {named}: {out}");
+            assert!(flat(&err).contains(&named), "{args:?} names {named}: {err}");
+            assert!(
+                flat(&err).contains("not a regular file"),
+                "{args:?} says why at {named}: {err}"
+            );
+        }
+    }
+}
+
+/// The file-type test follows a link, so a lock, a consumer declaration or an
+/// overlay that is a link to a regular file still reads. `check` and
+/// `taxonomy resolve --check` both run to their end on it (#1366, verify
+/// round 1: a `symlink_metadata` in the guard survived every other case).
+#[test]
+fn check_and_resolve_read_a_lock_declaration_or_overlay_that_is_a_link_to_a_regular_file() {
+    for (label, name) in [
+        ("linked-lock", "taxonomy.lock"),
+        ("linked-consumer", "taxonomy.yml"),
+        ("linked-overlay", "overlay.yml"),
+    ] {
+        let root = Root::shaped(label, |_| {});
+        let at = &root.at;
+        let target = format!("{name}.target");
+        std::fs::rename(at.join(".headwater").join(name), at.join(&target))
+            .expect("the file moves");
+        std::os::unix::fs::symlink(format!("../{target}"), at.join(".headwater").join(name))
+            .expect("the link is made");
+        for args in [
+            vec!["check", "--no-cache"],
+            vec!["taxonomy", "resolve", "--check"],
+        ] {
+            let (status, _, err) = ended(&root, &args, "the verb did not end on a linked file");
+            assert_eq!(
+                status.code(),
+                Some(0),
+                "{args:?} reads the linked .headwater/{name}: {err}"
+            );
+        }
+    }
+}
+
+/// A root that carries this repository's own `.headwater/`, whose consumer
+/// declaration pins a digest over the vendored package, and one document.
+/// [`Root::shaped`] takes its package from source and declares no pin, so it
+/// never reaches the reader that hashes the vendored files.
+fn pinned(label: &str) -> Root {
+    let at =
+        common::scratch_base().join(format!("headwater-cli-root-{}-{label}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&at);
+    let repository = common::repository();
+    std::fs::create_dir_all(at.join(".headwater")).expect("the directory is made");
+    for name in ["taxonomy.yml", "taxonomy.lock", "overlay.yml"] {
+        std::fs::copy(
+            repository.join(".headwater").join(name),
+            at.join(".headwater").join(name),
+        )
+        .expect("the declaration copies");
+    }
+    common::copy(
+        &repository.join(".headwater/packages"),
+        &at.join(".headwater/packages"),
+    );
+    std::fs::create_dir_all(at.join("docs")).expect("the corpus directory is made");
+    std::fs::write(at.join("docs/a.md"), "# A\n\nText.\n").expect("the document writes");
+    Root { at }
+}
+
+/// Under a pin, every vendored file is hashed against the pin before anything
+/// is read as a declaration, and `conformance` reads the package's rule set.
+/// A named pipe at a vendored file, at the rule set or at the release record
+/// is refused before it is opened, so no verb waits on it (#1366, verify
+/// round 1).
+#[test]
+fn every_verb_finishes_when_a_named_pipe_takes_a_file_of_a_pinned_package() {
+    for name in ["taxonomy.yml", "conformance.yml", "release.yml"] {
+        let root = pinned(&format!("pinned-{name}"));
+        let named = format!(".headwater/packages/headwater-standard/{name}");
+        let at = root.at.join(&named);
+        std::fs::remove_file(&at).expect("the vendored file is there to replace");
+        fifo(&at);
+        for args in [
+            vec!["check", "--no-cache"],
+            vec!["show", "docs/a.md"],
+            vec!["conformance"],
+            vec!["taxonomy", "audit"],
+            vec!["taxonomy", "resolve", "--check"],
+        ] {
+            let hung = format!(
+                "{} opened the named pipe at {named}, and waited on it",
+                args.join(" ")
+            );
+            ended(&root, &args, &hung);
+        }
+    }
+    // The two refusals a reader sees in words: `check` reports the pin, and
+    // `conformance` refuses the rule set.
+    let root = pinned("pinned-said");
+    let vendored = root
+        .at
+        .join(".headwater/packages/headwater-standard/taxonomy.yml");
+    std::fs::remove_file(&vendored).expect("the vendored file is there to replace");
+    fifo(&vendored);
+    let (_, out, _) = ended(&root, &["check", "--no-cache"], "check did not end");
+    assert!(
+        flat(&out).contains("headwater-standard/taxonomy.yml is not a regular file"),
+        "check names the pipe in the pinned package: {out}"
+    );
+    let rules = root
+        .at
+        .join(".headwater/packages/headwater-standard/conformance.yml");
+    std::fs::remove_file(&rules).expect("the rule set is there to replace");
+    fifo(&rules);
+    let (status, _, err) = ended(&root, &["conformance"], "conformance did not end");
+    assert_eq!(status.code(), Some(1), "conformance refuses: {err}");
+    assert!(
+        flat(&err).contains("headwater-standard/conformance.yml is not a regular file"),
+        "{err}"
+    );
 }

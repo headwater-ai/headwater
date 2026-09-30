@@ -1,9 +1,9 @@
 ---
 id: HW-OBL-0223
-status: current
-status_since: 2026-09-27
+status: discharged
+status_since: 2026-09-30
 summary: "The campaign's absent arm keeps docs/, so no rate says whether the documents change what an agent builds. The documentation tier removes them, and nobody has paid for a run of it."
-last_verified: 2026-09-27
+last_verified: 2026-09-30
 title: "No run measures whether the documents under docs change what an agent builds"
 waiting_on: measurement
 provenance:
@@ -17,6 +17,8 @@ relations:
     - HW-SPEC-ai-integration
     - HW-OBL-0004
     - HW-OBL-0112
+    - HW-RUN-campaign-of-2026-09-30-documentation-tier-absent-arm-sufficiency
+    - HW-RUN-campaign-of-2026-09-30-campaign-tier-absent-arm-sufficiency
 ---
 
 # No run measures whether the documents under docs change what an agent builds
@@ -31,7 +33,7 @@ Until [#1010](https://github.com/headwater-ai/headwater/issues/1010), one ablati
 
 ## Obligation
 
-No run of the `documentation` tier exists, so the claim is unmeasured.
+When this record was written, no run of the `documentation` tier existed, so the claim was unmeasured. The Discharge section names the run that measured it.
 
 Two probes on `docs/probes/` are its instrument. [HW-PROBE-a-session-names-the-status-a-settled-decision-carries-in-its-pull-request](../probes/a-session-names-the-status-a-settled-decision-carries-in-its-pull-request.md) grades the ruling of [HW-DR-0052](../decisions/0052-a-document-is-proposed-at-the-state-it-will-hold-and-the-merge-activates-it.md). [HW-PROBE-a-session-names-the-event-that-makes-a-document-accepted](../probes/a-session-names-the-event-that-makes-a-document-accepted.md) grades the ruling of [HW-DR-0034](../decisions/0034-q34-whether-acceptance-means-merged-to-main-and-what-an-agent-may-write-before-that.md). Each declares one expected answer from a closed set. The status probe also asks for the identifier of its ruling, because sessions that read nothing gave its expected value anyway (#1294).
 
@@ -46,3 +48,9 @@ The claim has a precise shape, and a published rate has to keep it. Present agai
 Two runs discharge this record: one of the `documentation` tier and one of the `campaign` tier. They run over the same selection, in one batch, on one model version, and both transcripts are committed under `docs/probe-runs/`. The result names the difference between the two absent arms as the effect of the documents, with its interval.
 
 A ruling that the documents are not a claim this repository makes also discharges it. That ruling removes the `documentation` tier.
+
+**This record is discharged.** The batch of 2026-09-30 ran both tiers over one sufficiency selection, in one batch, on `claude-sonnet-5` ([#1384](https://github.com/headwater-ai/headwater/issues/1384)). Both transcripts are committed. [The documentation-tier result](../probe-results/campaign-of-2026-09-30-documentation-tier-absent-arm-sufficiency.md) names the difference between the two absent arms. The `campaign` absent arm satisfied 114 of 119 graded sessions, and the `documentation` absent arm satisfied 46 of 120. The difference is +57.5 points, in a 95% Newcombe interval of +47.1 to +66.0 points. [The evaluation of that batch](../evaluations/what-the-counterfactual-campaign-of-2026-09-30-measured-by-component.md) states it by component, with its cost.
+
+**The effect survives the sessions that reached this repository from outside their workspace.** 28 of the 120 `documentation` absent sessions did. Some read a copy of this repository on the host, some read the batch directory, and some read the repository on GitHub. 6 of them read HW-DR-0052 from a copy on the host, and 1 fetched it from GitHub. Without the 28, the status rate of that arm falls from 12/30 to 2/19. The accepted-event rate stays at zero, 0/26, and the unmeasured-claim rate is 1/19 against 4/30. So the leak raised the control arm where it moved it, and the effect of the documents is larger without it. [The Limits section of the evaluation of that batch](../evaluations/what-the-counterfactual-campaign-of-2026-09-30-measured-by-component.md#limits) states the rule that counts a leak. The corpus was not frozen between the two arms' sessions, because this repository merged changes while the batch ran. Each session read one archive of the pin `109abba7`, so both arms read the same bytes.
+
+**The plan of #1472 keeps this comparison.** That issue adds four component arms to the campaign tier, and its plan still runs the `documentation` absent arm in the same batch. So the next run can measure the documents again beside each part of the layer.

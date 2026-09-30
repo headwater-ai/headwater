@@ -17,8 +17,9 @@
 # `governs` reaches a `code_path` anchor that `source-tree` resolves, so a path
 # written under it binds as a pattern over the tree. An entry whose one literal
 # pattern is the declaring document's own file is a self-reference (the owner
-# ruled on #1350). A wildcard that covers the own file, and a list that holds
-# the own file among other paths, are not.
+# ruled on #1350), and so is a list whose every member is the own file. A
+# wildcard that covers the own file, and a list that holds the own file among
+# other paths, are not.
 
 facets:
   summary:

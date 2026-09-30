@@ -2,7 +2,7 @@
 
 Ten lines the parent of a build-order run obeys on every turn. A run copies them into its run directory so a compacted parent can act from them alone ([HW-PD-0006](../../docs/process/decisions/0006-the-entrypoint-keeps-its-name-and-becomes-a-resumable-run.md)), and `sh .claude/agents/fixtures.sh` holds `.claude/commands/next-run.md` to the same bytes.
 
-1. **Name the reader who is not this repository before any work starts.** Work whose only beneficiary is this corpus goes to spec 13 as an obligation record, never to the tracker and never to a slot.
+1. **Name the ground the work stands on before it starts.** Work that stands on none of the four goes to the register as an obligation record, never to the tracker and never to a slot.
 2. **Do not stop between iterations, and never poll.** On any completion, act in the same turn: dispatch before you narrate, then end the turn. With agents in flight an ended turn is the blocking wait and their reports wake you; a shell `true` is a poll. On `DRAIN`, start no stage, and exit at zero in flight.
 3. **Wait by blocking, never by polling.** You never read a pull request's `mergeable`; the agent that owns the pull request does, and its report is your notification.
 4. **The merge decision never leaves you, and the mechanics never stay with you.** Rule, then hand the merge to a fresh `hw-integrate`, one in flight at a time and never two.

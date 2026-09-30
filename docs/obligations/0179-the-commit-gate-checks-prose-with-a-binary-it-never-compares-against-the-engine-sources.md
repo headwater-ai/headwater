@@ -5,7 +5,7 @@ status_since: 2026-09-08
 summary: "The prose clause of the commit gate runs a binary it never compares against the engine sources. The figures clause that did ask left the gate in #1273."
 last_verified: 2026-09-08
 title: "The commit gate checks prose with a binary it never compares against the engine sources"
-waiting_on: build
+waiting_on: ruling
 provenance:
   warrant: asserted
   agency: agent

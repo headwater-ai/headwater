@@ -12,7 +12,7 @@ provenance:
   activity: draft
   accepted_by: j.baxter
   evidence_basis: evidenced
-waiting_on: adopter
+waiting_on: ruling
 ---
 
 # A `current` decision declares no required edge to the document it settled, so 22 of 23 reach no specification at all

@@ -376,6 +376,11 @@ fn walk(root: &Path, dir: &Path, out: &mut Vec<Member>) -> Result<(), ReleaseErr
         if relative == RECORD {
             continue;
         }
+        // A named pipe, a socket or a device is refused before it is opened,
+        // because a pipe with no writer blocks its reader for ever (#1366).
+        if is_special(&entry) {
+            return Err(not_regular(&entry));
+        }
         let bytes = std::fs::read(&entry)
             .map_err(|error| ReleaseError::Unreadable(format!("{}: {error}", entry.display())))?;
         out.push(Member {
@@ -384,6 +389,18 @@ fn walk(root: &Path, dir: &Path, out: &mut Vec<Member>) -> Result<(), ReleaseErr
         });
     }
     Ok(())
+}
+
+/// Whether `path` is there and is not a regular file: a named pipe, a socket
+/// or a device. `metadata` follows a link, so a link to a regular file is not
+/// special, and a dangling link keeps the error its read reports.
+fn is_special(path: &Path) -> bool {
+    std::fs::metadata(path).is_ok_and(|meta| !meta.is_file())
+}
+
+/// The refusal for a path that is there and is not a regular file.
+fn not_regular(path: &Path) -> ReleaseError {
+    ReleaseError::Unreadable(format!("{} is not a regular file", path.display()))
 }
 
 fn relative(root: &Path, path: &Path) -> String {
@@ -565,6 +582,9 @@ pub fn read(text: &str) -> Result<Release, ReleaseError> {
 /// Read the record of a published package on disk.
 pub fn at(dir: &Path) -> Result<Release, ReleaseError> {
     let path = dir.join(RECORD);
+    if is_special(&path) {
+        return Err(not_regular(&path));
+    }
     let text = match std::fs::read_to_string(&path) {
         Ok(text) => text,
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => {

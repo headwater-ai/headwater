@@ -1,9 +1,9 @@
 ---
 id: HW-OBL-0206
-status: current
-status_since: 2026-09-26
+status: discharged
+status_since: 2026-09-30
 summary: "hw-run-policy tells a subagent needing its own workspace to make one by hand with git worktree add. Edit and Write on a file under that hand-made worktree are refused. That is because the write sandbox stays pinned to the worktree the subagent was launched into."
-last_verified: 2026-09-23
+last_verified: 2026-09-30
 title: "hw-run-policy names a worktree-add workaround that Write/Edit refuses under this harness"
 waiting_on: build
 ---
@@ -21,3 +21,5 @@ The documented workaround describes a pattern that fails under this harness's ow
 ## Discharge
 
 This discharges when `.claude/skills/hw-run-policy/SKILL.md`'s line for a subagent's own workspace is rewritten. The rewrite names `git checkout -b <branch> origin/main`, run inside the subagent's own launch worktree, as the working pattern. The `git worktree add` line is removed, or it stays and states why it does not work here.
+
+**This record is discharged.** `.claude/skills/hw-run-policy/SKILL.md` now names a branch made in place inside the launch worktree, and the `git worktree add` line is gone. The skill writes `git switch -c` where this record writes `git checkout -b`, and the two commands do the same work. The owner accepted the discharge on 2026-09-30, in the roadmap review of that day.
