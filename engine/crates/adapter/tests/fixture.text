@@ -722,7 +722,7 @@ read set
   version identifier.unusable 1
   version identifier.claimed_twice 1
   version identifier.claim.missing 2
-  version identifier.claim.stale 2
+  version identifier.claim.stale 3
   version voice.forbidden_construction 7
   version language.controlled.not_met 6
   version language.retired_term.used 6
