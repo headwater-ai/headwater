@@ -42,7 +42,7 @@ The workspace, from `engine/`. CI runs it with no filter, so the workspace is th
 
 [DEVELOPING.md](../../../DEVELOPING.md) carries the three invocations, the environment variable that re-records, and which files move.
 
-**Rebase onto `main` before you bless, and treat that as part of blessing rather than as a courtesy.** An artifact that keeps a count over the whole corpus merges without a conflict and states a number true of neither branch, so a branch blessed against a stale `main` can be green on its own tip and turn `main` red on landing. [HW-DR-0049](../../../docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md) rules why, and `.gitattributes` names the artifacts that still carry a fold. Nothing enforces the rebase before a push, so this paragraph is the mechanism.
+**Rebase onto `main` before you bless, and treat that as part of blessing rather than as a courtesy.** An artifact that keeps a count over the whole corpus merges without a conflict and states a number true of neither branch, so a branch blessed against a stale `main` can be green on its own tip and fail on the merge-queue group tip, which ejects it. [HW-DR-0049](../../../docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md) rules why, and `.gitattributes` names the artifacts that still carry a fold. The queue enforces currency at landing, and nothing enforces the rebase before a push, so this paragraph is what saves the ejection.
 
 ## The five mistakes
 
