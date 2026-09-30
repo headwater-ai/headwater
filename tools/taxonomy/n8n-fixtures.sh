@@ -17,9 +17,11 @@
 # verbatim against a scratch root, and diffs each figure against the block the
 # README prints. It carries no second copy of any number.
 #
-# It blocks in CI, and it holds three arms a green run cannot show you: the
+# It blocks in CI, and it holds four arms a green run cannot show you: the
 # count of corpora it found, an edited figure that must fail it naming the file
-# and both values, and a version pin the vendored package does not carry.
+# and both values, a version pin the vendored package does not carry, and a
+# check-instance count stated outside *What a run reports*, where nothing diffs
+# it, which must fail it naming the file and the line (#1452).
 #
 # It writes nothing inside this checkout: every scratch root is under a
 # temporary directory, and the directory is removed at the end.
