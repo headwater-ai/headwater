@@ -654,16 +654,57 @@ fn planted_bump(next: &str, missed: &[&str]) -> String {
 /// The manifest planted with a bump to `next` that missed `headwater-yaml`,
 /// with the `headwater-yaml` entry then rewritten by `rewrite`. The bump moves
 /// the package and every other entry to `next`.
+///
+/// The entry is found through the parse, from the first byte of its key to the
+/// last byte of its value, so a comment or another spelling of the entry does
+/// not stop the plant.
 fn planted_bump_missing_yaml(next: &str, rewrite: impl Fn(&str) -> String) -> String {
     let version = headwater_resolve::release::ENGINE;
-    let bumped = planted_bump(next, &["headwater-yaml"]);
-    let entry = format!("headwater-yaml = {{ path = \"crates/yaml\", version = \"{version}\" }}");
-    assert!(
-        bumped.contains(&entry),
-        "engine/Cargo.toml has no `{entry}` line, so this plant cannot rewrite the \
-         headwater-yaml entry into another form; the plant is out of date, not the judge"
-    );
-    bumped.replace(&entry, &rewrite(version))
+    replace_entry(
+        &planted_bump(next, &["headwater-yaml"]),
+        "headwater-yaml",
+        &rewrite(version),
+    )
+}
+
+/// The byte range of the `[workspace.dependencies]` entry `name` in
+/// `manifest`, from the first byte of its key to the last byte of its value,
+/// found through the parse. A comment after the entry, or its keys in another
+/// order, does not move it.
+fn entry_span(manifest: &str, name: &str) -> std::ops::Range<usize> {
+    let document = toml_edit::Document::parse(manifest).expect("the manifest is TOML");
+    let dependencies = document
+        .get("workspace")
+        .and_then(|workspace| workspace.get("dependencies"))
+        .and_then(toml_edit::Item::as_table_like)
+        .expect("the manifest has a [workspace.dependencies] table");
+    let key = dependencies
+        .key(name)
+        .and_then(toml_edit::Key::span)
+        .unwrap_or_else(|| panic!("[workspace.dependencies] has no {name} entry to plant on"));
+    let value = dependencies
+        .get(name)
+        .and_then(toml_edit::Item::span)
+        .unwrap_or_else(|| panic!("the parse keeps no span for the {name} entry"));
+    key.start..value.end
+}
+
+/// `manifest` with the `[workspace.dependencies]` entry `name` replaced by
+/// `text`.
+fn replace_entry(manifest: &str, name: &str, text: &str) -> String {
+    let mut planted = manifest.to_string();
+    planted.replace_range(entry_span(manifest, name), text);
+    planted
+}
+
+/// The `[workspace.package] version` of a manifest, read through the parse.
+fn package_version(manifest: &str) -> String {
+    workspace_table(manifest)
+        .get("package")
+        .and_then(|package| package.get("version"))
+        .and_then(toml_edit::Item::as_str)
+        .expect("[workspace.package] declares a version")
+        .to_string()
 }
 
 /// The missed entry is caught whatever TOML form it takes. Cargo reads an
@@ -711,12 +752,11 @@ fn a_missed_workspace_dependency_is_named_in_every_toml_form_cargo_reads() {
 fn a_patch_bump_that_misses_one_workspace_dependency_names_it() {
     let version = headwater_resolve::release::ENGINE;
     let next = next_patch(version);
-    let planted = planted_bump_missing_yaml(&next, |v| {
-        format!("headwater-yaml = {{ path = \"crates/yaml\", version = \"{v}\" }}")
-    });
+    let planted = planted_bump(&next, &["headwater-yaml"]);
+    let package = package_version(&planted);
     assert!(
-        planted.contains(&format!("\nversion = \"{next}\"\n")),
-        "the plant did not move [workspace.package] version to {next}"
+        package == next,
+        "the plant did not move [workspace.package] version to {next}; the parse reads {package}"
     );
     let stale = stale_member_dependency_versions(&planted);
     let stale_version = format!("names version {version},");
@@ -821,15 +861,10 @@ fn the_judge_reads_every_member_entry_that_a_member_depends_on() {
 /// refuses to publish a crate that depends on one.
 #[test]
 fn a_workspace_dependency_on_a_member_with_no_version_is_named() {
-    let real = workspace_manifest();
-    let version = headwater_resolve::release::ENGINE;
-    let planted = real.replace(
-        &format!("headwater-yaml = {{ path = \"crates/yaml\", version = \"{version}\" }}"),
+    let planted = replace_entry(
+        &workspace_manifest(),
+        "headwater-yaml",
         "headwater-yaml = { path = \"crates/yaml\" }",
-    );
-    assert_ne!(
-        planted, real,
-        "engine/Cargo.toml has no headwater-yaml entry to plant on"
     );
     let stale = stale_member_dependency_versions(&planted);
     assert!(
@@ -842,15 +877,18 @@ fn a_workspace_dependency_on_a_member_with_no_version_is_named() {
 /// different version on it is not a finding.
 #[test]
 fn a_workspace_dependency_outside_the_members_is_not_read() {
+    // The entry goes in front of the headwater-yaml entry, found through the
+    // parse, so it lands inside [workspace.dependencies] whatever the table's
+    // header line carries.
     let real = workspace_manifest();
-    let planted = real.replacen(
-        "[workspace.dependencies]\n",
-        "[workspace.dependencies]\nelsewhere = { path = \"../elsewhere\", version = \"0.0.1\" }\n",
-        1,
+    let mut planted = real.clone();
+    planted.insert_str(
+        entry_span(&real, "headwater-yaml").start,
+        "elsewhere = { path = \"../elsewhere\", version = \"0.0.1\" }\n",
     );
-    assert_ne!(
-        planted, real,
-        "engine/Cargo.toml has no [workspace.dependencies] table"
+    assert!(
+        member_dependency_versions(&planted).len() == member_dependency_versions(&real).len(),
+        "the plant changed the member entries, so it did not plant a non-member one"
     );
     let stale = stale_member_dependency_versions(&planted);
     assert!(
