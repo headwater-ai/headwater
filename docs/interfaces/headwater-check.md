@@ -125,7 +125,7 @@ A reader who met `HEADWATER_NOW` in a continuous-integration job is reading a sh
 | Path | How this verb treats it |
 |---|---|
 | `.headwater/taxonomy.lock` | read. The taxonomy every check is generated from, and the digest that keys the cache. A lock that is not a regular file stops the run with exit 1 before the run opens it. A named pipe is one example. The message names the path. A link to a regular file is read. |
-| `.headwater/taxonomy.yml` | read. The corpus root, the exclusions, the package the repository consumes and the digest pin. A declaration that is not a regular file stops the run with exit 1 before the run opens it, on the terms of the lock's row. |
+| `.headwater/taxonomy.yml` | read. The corpus root, the exclusions, the package the repository consumes and the digest pin. A declaration that is not a regular file stops the run as the lock's row states. |
 | `.headwater/packages/<name>/` | read where `.headwater/taxonomy.yml` pins a digest. Each file is hashed against the pin and nothing in it is read as a declaration. The pin file and each file here join `--read-set`'s output. |
 | the corpus | read. Every file under the declared root that no exclusion removes. |
 | `.headwater/cache/checks` | read and written, unless `--no-cache`. A file that is absent, unreadable or written by another engine reads as an empty cache. That costs one full run and is not an error. A cache that cannot be written is one line on standard error, `headwater: cache not written: <path>: <error>`. That is not an error either, and it changes no exit status and no byte of standard output. |
