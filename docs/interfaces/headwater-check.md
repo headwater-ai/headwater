@@ -15,6 +15,9 @@ relations:
   governs:
     - [engine/crates/cli/src/lib.rs, engine/crates/cli/src/main.rs]
     - engine/crates/check/src/lib.rs
+    - engine/crates/check/src/harvest.rs
+    - engine/crates/check/src/pin.rs
+    - engine/crates/check/src/claim.rs
 ---
 
 # headwater check

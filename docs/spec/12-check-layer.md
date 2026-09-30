@@ -17,6 +17,9 @@ provenance:
 relations:
   governs:
     - engine/crates/check/src/voice.rs
+    - engine/crates/check/src/link_identifier.rs
+    - engine/crates/check/src/reciprocity.rs
+    - engine/crates/check/src/target.rs
   cites_evidence:
     - HW-EVAL-graph-export-and-federation
     - HW-EVAL-language-spike-results

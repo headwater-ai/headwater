@@ -18,6 +18,7 @@ relations:
   governs:
     - [taxonomy-source/headwater-standard, .headwater/packages/headwater-standard]
     - taxonomy-source/headwater-standard/package.yml
+    - engine/crates/check/src/suspect.rs
   cites_evidence:
     - HW-EVAL-adjacent-work
     - HW-EVAL-default-taxonomy-first-run

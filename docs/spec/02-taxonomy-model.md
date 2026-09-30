@@ -15,6 +15,8 @@ provenance:
   accepted_by: j.baxter
   evidence_basis: evidenced
 relations:
+  governs:
+    - engine/crates/check/src/self_target.rs
   cites_evidence:
     - HW-EVAL-adjacent-work
     - HW-EVAL-default-taxonomy-first-run

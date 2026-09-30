@@ -15,6 +15,8 @@ provenance:
   accepted_by: j.baxter
   evidence_basis: evidenced
 relations:
+  governs:
+    - tools/repo/obligation-register-fixtures.sh
   supersedes:
     - HW-REG-open-questions
   cites_evidence:
