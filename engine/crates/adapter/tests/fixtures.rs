@@ -152,6 +152,9 @@ enum Scoping {
     Change,
     /// One change that named nothing.
     Nothing,
+    /// One change whose one `verified` line sits beside a `prior` line for the
+    /// same document, so `verified` is 1 and `verified_alone` is 0.
+    VerifiedBeside,
 }
 
 /// The name a prior version is written under in the manifests below.
@@ -314,6 +317,13 @@ fn scoped_at(adoption: Option<&Mapping>, scoping: Scoping) -> Ran {
         Scoping::Corpus => at,
         Scoping::Change => at.scoped_to(manifest_over(&taken)),
         Scoping::Nothing => at.scoped_to(bound(&format!("{FORMAT}\n"), &taken)),
+        Scoping::VerifiedBeside => {
+            let path = taken.rows[2].path.as_str();
+            at.scoped_to(bound(
+                &format!("{FORMAT}\nprior\t{path}\t{PRIOR}{path}\nverified\t{path}\n"),
+                &taken,
+            ))
+        }
     };
     let run = headwater_check::run(
         &taken,
@@ -1073,6 +1083,29 @@ fn the_classes_of_the_scoped_fixture_sum_to_documents() {
             format.name(),
             named.verified,
             named.verified_alone
+        );
+    }
+}
+
+/// A change whose every `verified` line sits beside another line for the same
+/// document still writes the verified count, in the text and the Markdown
+/// reports alike (#1398, the verifier's round 1).
+///
+/// Both reports write the line when `verified` is above zero. A report that
+/// read `verified_alone` for that condition passed every other test here,
+/// because the scoped fixture has both counts above zero, and it dropped the
+/// count for exactly this change.
+#[test]
+fn a_verified_line_beside_a_prior_line_is_still_reported() {
+    let ran = ran(Scoping::VerifiedBeside);
+    let scoped = ran.run.change.as_ref().expect("the run was scoped");
+    assert_eq!((scoped.named.verified, scoped.named.verified_alone), (1, 0));
+    for format in Format::ALL {
+        let artifact = render(&ran, format);
+        assert!(
+            states_the_verified_counts(format, &artifact, 1, 0),
+            "the {} artifact drops a verified count of 1 when none is alone",
+            format.name()
         );
     }
 }
