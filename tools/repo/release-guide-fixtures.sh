@@ -864,6 +864,14 @@ if [ -n "$rel_job" ]; then
     same "a release deploy that passes no secrets is red" \
         "release.yml job $rel_job passes no secrets, so the deploy has no Cloudflare token" \
         "$(deploys "$scratch/d7" | tr '\n' '|' | sed 's/|$//')"
+
+    # d16. The release caller passes an empty secrets mapping. deploy-site.yml
+    # declares no secrets, so no mapping can deliver the token (#1342).
+    copy_tree "$scratch/d16"
+    edit_wf "$scratch/d16" release.yml "doc['jobs']['$rel_job']['secrets'] = {}"
+    same "a release deploy that passes secrets: {} is red" \
+        "release.yml job $rel_job passes secrets other than inherit, so the deploy has no Cloudflare token" \
+        "$(deploys "$scratch/d16" | tr '\n' '|' | sed 's/|$//')"
 else
     fail "release.yml has a job that calls deploy-site.yml" \
         "none, so the arms d1 to d4 have no job to edit"
