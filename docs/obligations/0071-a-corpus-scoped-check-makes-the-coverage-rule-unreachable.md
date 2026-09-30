@@ -1,10 +1,10 @@
 ---
 id: HW-OBL-0071
 title: "A corpus-scoped check makes the coverage rule unreachable"
-status: current
-status_since: 2026-08-12
+status: discharged
+status_since: 2026-09-30
 waiting_on: build
-last_verified: 2026-08-14
+last_verified: 2026-09-30
 summary: "A corpus-scoped instance reads every document, and coverage counts routing rather than reading."
 provenance:
   warrant: accepted
@@ -46,3 +46,5 @@ The second option is refused. An instance that counted only for the documents it
 One cost stands. A rule that instantiates over every typed document reaches the unreachable end by a shorter route. Such a rule routes every document to a check before anything is read. The generated Shape checks instantiate per kind for that reason, so a kind that forbids what a rule reads gets no instance.
 
 **What happens next is the closure of this record, which is why it reads `build`.** The question is answered, `Grain::routes` carries the answer, spec 12 states it and one test holds it. Nothing further is owed by the engine or by the specification. What remains is the state movement of this record to `discharged`, and that is the owner's to take rather than an agent's.
+
+**This record is discharged.** The roadmap review of 2026-09-30 read the tree again. `Grain::routes` in `engine/crates/check/src/scope.rs` returns false for the corpus grain, spec 12 states the rule, and a test holds it. The owner accepted the discharge on 2026-09-30, in the roadmap review of that day.

@@ -5,7 +5,7 @@ status_since: 2026-09-09
 summary: "publish_with_retry retries a 429 forever, so GitHub Actions' unstated default timeout is its only ceiling, and nobody has measured it."
 last_verified: 2026-09-09
 title: "The publish-crates retry loop has no retry ceiling"
-waiting_on: measurement
+waiting_on: build
 provenance:
   warrant: asserted
   agency: mixed

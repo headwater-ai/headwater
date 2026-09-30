@@ -1,10 +1,10 @@
 ---
 id: HW-OBL-0112
 title: "A surface cannot move the assisted fraction of a run"
-status: current
-status_since: 2026-08-14
+status: discharged
+status_since: 2026-09-30
 waiting_on: measurement
-last_verified: 2026-08-14
+last_verified: 2026-09-30
 summary: "The four counts of a reading are derived from the plan, and a plan is the same plan whatever asked for it, so Q7's comparison has to read reach rather than the fraction."
 provenance:
   warrant: accepted
@@ -36,3 +36,5 @@ So two runs of one kind, with the same relations, write the same four counts wha
 Measured on 2026-08-14 over this repository. Two readings of one kind, one from each arm, carry the same four pairs. Front matter is 4 of 5, sections 3 of 3, identifier 1 of 1, and edge halves 0 of 0. Each run is 8 of 9. The two lines of the store differ in `surface`, in `document` and in `id`, and in nothing else.
 
 The comparison that HW-OBL-0004 asks for therefore reads one of two other things. The first is reach, which is a count over runs that happened. The report already states it. The second is the aggregate fraction over a mix of kinds that the two surfaces reached for differently. That second reading is a claim about what an author picks. It needs many runs and a stated population. This corpus holds five readings, three of which name an arm, so neither is available.
+
+**This record is discharged.** The Obligation section states a fact about the scaffolder, and the measurement above proves that fact. So this record is a finding, and it owes nothing more. [HW-OBL-0004](0004-working-tree-write-tools-have-no-measured-effect.md) stays open as the Q7 claim and carries the comparison. The store held 302 readings on 2026-09-30: 299 named the terminal surface, 1 named the protocol surface, and 2 named none. The owner ruled this on 2026-09-30, in the roadmap review of that day.

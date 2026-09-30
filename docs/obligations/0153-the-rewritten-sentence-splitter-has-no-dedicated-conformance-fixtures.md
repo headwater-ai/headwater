@@ -11,7 +11,7 @@ provenance:
   evidence_basis: evidenced
 last_verified: 2026-08-27
 title: "The rewritten sentence splitter has no dedicated conformance fixtures"
-waiting_on: adopter
+waiting_on: build
 ---
 
 # The rewritten sentence splitter has no dedicated conformance fixtures

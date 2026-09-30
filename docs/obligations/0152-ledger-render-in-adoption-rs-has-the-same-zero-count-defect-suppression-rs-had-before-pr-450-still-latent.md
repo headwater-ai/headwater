@@ -12,7 +12,7 @@ provenance:
   accepted_by: j.baxter
   evidence_basis: evidenced
 last_verified: 2026-08-26
-waiting_on: adopter
+waiting_on: build
 ---
 
 # Ledger::render() in adoption.rs has the same zero-count defect suppression.rs had before PR #450, still latent

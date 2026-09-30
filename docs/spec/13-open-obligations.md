@@ -192,9 +192,7 @@ The second said that a control declares one posture and that spec 4 writes two v
 - [HW-OBL-0068](../obligations/0068-the-promotion-record-has-three-members-and-no-unit-scale.md) — The promotion record has three members and no unit, scale or shape
 - [HW-OBL-0069](../obligations/0069-a-suppressed-finding-leaves-its-obligation-verified-and-spec-4.md) — A suppressed finding leaves its obligation verified, and spec 4 does not say so
 - [HW-OBL-0070](../obligations/0070-one-of-the-four-warrant-values-has-no-instance-in-this-corpus.md) — One of the four warrant values has no instance in this corpus
-- [HW-OBL-0071](../obligations/0071-a-corpus-scoped-check-makes-the-coverage-rule-unreachable.md) — A corpus-scoped check makes the coverage rule unreachable
 - [HW-OBL-0072](../obligations/0072-a-cache-of-check-results-does-not-make-a-run-proportional.md) — A cache of check results does not make a run proportional to the change
-- [HW-OBL-0073](../obligations/0073-the-prior-version-still-owes-the-key-edit-that-the-clock.md) — The prior version still owes the key edit that the clock has now made
 - [HW-OBL-0074](../obligations/0074-a-check-version-is-raised-by-hand-and-nothing-catches-a-stale.md) — A check version is raised by hand, and nothing catches a stale one
 - [HW-OBL-0075](../obligations/0075-a-participation-expectation-needs-depth-one-and-edge.md) — A participation expectation needs depth one, and `Edge` does not reach it
 - [HW-OBL-0076](../obligations/0076-a-generated-check-reads-its-severity-from-the-taxonomy.md) — A generated check reads its severity from the taxonomy
@@ -212,9 +210,7 @@ The second said that a control declares one posture and that spec 4 writes two v
 - [HW-OBL-0106](../obligations/0106-a-shelf-layout-names-a-file-at-birth-and-no-rule-reads-it.md) — A shelf layout names a file at birth, and no rule reads it
 - [HW-OBL-0107](../obligations/0107-the-base-package-ships-a-kind-that-the-scaffolder-refuses-to-write.md) — The base package ships a kind that the scaffolder refuses to write
 - [HW-OBL-0109](../obligations/0109-the-capture-cost-denominator-is-set-by-declaration-and-not-by-work.md) — The capture-cost denominator is set by declaration and not by work
-- [HW-OBL-0110](../obligations/0110-the-loss-census-carries-a-finding-by-substring-so-an-index-of-rules-and-paths-passes-it.md) — The loss census carries a finding by substring, so an index of rules and paths passes it
 - [HW-OBL-0111](../obligations/0111-the-capture-cost-surface-names-an-entry-point-and-never-the-caller.md) — The capture-cost surface names an entry point and never the caller
-- [HW-OBL-0112](../obligations/0112-a-surface-cannot-move-the-assisted-fraction-of-a-run.md) — A surface cannot move the assisted fraction of a run
 - [HW-OBL-0113](../obligations/0113-every-check-passes-a-document-that-is-still-the-scaffolder-s-placeholder.md) — Every check passes a document that is still the scaffolder's placeholder
 - [HW-OBL-0118](../obligations/0118-the-published-read-set-names-no-anchor-so-a-gate-decides-nothing-about-one.md) — The published read set names no anchor, so a gate decides nothing about one
 - [HW-OBL-0119](../obligations/0119-an-audit-reading-carries-no-declared-bar-so-a-distribution-cannot-become-a-finding.md) — An audit reading carries no declared bar, so a distribution cannot become a finding
@@ -307,7 +303,6 @@ This class dates from 2026-08-26. Before that date, such a finding was filed as 
 - [HW-OBL-0156](../obligations/0156-a-help-string-and-the-interface-contract-that-restates-it-can-both-be-false-with-the-whole-suite-green.md) — A help string and the interface contract that restates it can both be false with the whole suite green
 - [HW-OBL-0157](../obligations/0157-the-capture-report-says-two-denominators-over-a-store-that-named-seventeen-taxonomies.md) — The capture report says two denominators over a store that named seventeen taxonomies
 - [HW-OBL-0158](../obligations/0158-clap-owns-the-help-flag-so-h-help-reads-print-help-on-all-32-verb-pages.md) — clap owns the help flag, so -h, --help reads Print help on all 32 verb pages
-- [HW-OBL-0159](../obligations/0159-a-sentence-that-opens-with-a-hash-and-an-issue-number-is-folded-into-the-sentence-before-it.md) — A sentence that opens with a hash and an issue number is folded into the sentence before it
 - [HW-OBL-0161](../obligations/0161-the-validation-block-of-mkdocs-yml-is-a-gate-this-repository-owns-and-no-fixture-drives.md) — The validation block of mkdocs.yml is a gate this repository owns and no fixture drives
 - [HW-OBL-0162](../obligations/0162-spec-7-prints-a-package-version-that-no-check-compares-with-the-recipe.md) — Spec 7 prints a package version that no check compares with the recipe
 - [HW-OBL-0163](../obligations/0163-ten-decision-records-claim-a-q-number-the-decision-register-does-not-carry.md) — Ten decision records claim a Q number the decision register does not carry
@@ -324,7 +319,6 @@ This class dates from 2026-08-26. Before that date, such a finding was filed as 
 - [HW-OBL-0178](../obligations/0178-the-every-instance-report-detail-reaches-four-test-files-and-no-caller-outside-them.md) — The every-instance report detail reaches four test files and no caller outside them
 - [HW-OBL-0179](../obligations/0179-the-commit-gate-checks-prose-with-a-binary-it-never-compares-against-the-engine-sources.md) — The commit gate checks prose with a binary it never compares against the engine sources
 - [HW-OBL-0180](../obligations/0180-a-renderer-s-color-mode-is-wired-at-a-call-site-that-no-type-forbids-from-being-wrong.md) — A renderer's color mode is wired at a call site that no type forbids from being wrong
-- [HW-OBL-0181](../obligations/0181-an-unresolved-prose-link-reaches-a-run-as-a-graph-fact-and-no-rule-turns-it-into-a-finding.md) — An unresolved prose link reaches a run as a graph fact and no rule turns it into a finding
 - [HW-OBL-0182](../obligations/0182-the-publish-crates-retry-loop-has-no-retry-ceiling.md) — The publish-crates retry loop has no retry ceiling
 - [HW-OBL-0183](../obligations/0183-no-mechanism-holds-a-committed-binary-asset-against-a-run.md) — No mechanism holds a committed binary asset against a run
 - [HW-OBL-0185](../obligations/0185-whether-an-admitted-library-entry-may-require-a-bundle-that-admission-refuses.md) — Whether an admitted library entry may require a bundle that admission refuses
@@ -333,8 +327,6 @@ This class dates from 2026-08-26. Before that date, such a finding was filed as 
 - [HW-OBL-0198](../obligations/0198-nothing-states-how-much-of-a-session-s-budget-the-standing-instructions-consume-before-work-starts.md) — Nothing states how much of a session's budget the standing instructions consume before work starts
 - [HW-OBL-0200](../obligations/0200-three-graded-regression-runs-are-owed-a-fresh-recording-against-a-moved-taxonomy-lock.md) — Three graded regression runs are owed a fresh recording against a moved taxonomy lock
 - [HW-OBL-0201](../obligations/0201-no-coverage-or-mutation-measurement-has-ever-been-taken-over-the-engine-s-test-suite.md) — No coverage or mutation measurement has ever been taken over the engine's test suite
-- [HW-OBL-0204](../obligations/0204-docs-decisions-0077-still-describes-hw-dr-0049-s-rewrite-as-pending-after-574-made-it.md) — docs/decisions/0077 still describes HW-DR-0049's rewrite as pending, after #574 made it
-- [HW-OBL-0206](../obligations/0206-hw-run-policy-names-a-worktree-add-workaround-that-write-edit-refuses-under-this-harness.md) — hw-run-policy names a worktree-add workaround that Write/Edit refuses under this harness
 - [HW-OBL-0208](../obligations/0208-four-small-test-and-wording-gaps-from-run-20260923-0733-filed-together.md) — Four small test and wording gaps from run 20260923-0733 filed together
 - [HW-OBL-0210](../obligations/0210-no-fixture-holds-the-symlink-case-of-new-worktree-sh-and-a-bare-name-of-two-dots-leaves-a-branch-behind.md) — No fixture holds the symlink case of new-worktree.sh, and a bare name of two dots leaves a branch behind
 - [HW-OBL-0214](../obligations/0214-the-commit-gate-does-not-see-docs-taxonomies-readme-md-drift-from-its-vendored-copy.md) — The commit gate does not see docs/taxonomies/README.md drift from its vendored copy

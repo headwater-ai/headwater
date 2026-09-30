@@ -1,9 +1,9 @@
 ---
 id: HW-OBL-0159
-status: current
-status_since: 2026-09-06
+status: discharged
+status_since: 2026-09-30
 summary: "`opens_a_sentence` admits a digit and not a hash, so a sentence that cites an issue as `#346` is counted with the sentence before it and reported at their combined length."
-last_verified: 2026-08-28
+last_verified: 2026-09-30
 title: "A sentence that opens with a hash and an issue number is folded into the sentence before it"
 waiting_on: build
 provenance:
@@ -40,3 +40,5 @@ This is a defect in a shipped rule rather than a gap in a fixture set. [HW-OBL-0
 Admit `#` in `opens_a_sentence`, with the same reasoning the digit already carries, and add the pair above to the splitter's cases. Then read the corpus for a sentence whose reported length falls once the fold is gone. A finding that this defect created is a sentence somebody may already have rewritten.
 
 Decide at the same time whether the opener set stays a literal or becomes something a regime declares. The second is the wider fix and it is the one an adopting corpus needs. The first is enough for the character this repository writes.
+
+**This record is discharged.** `opens_as_a_name` in `engine/crates/doc/src/sentences.rs` admits a hash that a digit follows, and a test in that file holds the pair. Commit `0ee88a2d` made the change and read the corpus again, and 301 findings became 299. The opener set stays a literal, and the comment on that function records the choice. The owner accepted the discharge on 2026-09-30, in the roadmap review of that day.

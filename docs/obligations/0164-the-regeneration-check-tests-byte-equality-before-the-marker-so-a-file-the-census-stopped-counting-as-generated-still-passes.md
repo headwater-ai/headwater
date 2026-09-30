@@ -5,7 +5,7 @@ status_since: 2026-09-06
 summary: "`generate --check` reads byte equality before it reads the marker, so a generated file the census dropped from the generated set still passes it"
 last_verified: 2026-09-06
 title: "The regeneration check tests byte equality before the marker, so a file the census stopped counting as generated still passes"
-waiting_on: adopter
+waiting_on: build
 ---
 
 # The regeneration check tests byte equality before the marker, so a file the census stopped counting as generated still passes

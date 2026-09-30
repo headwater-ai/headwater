@@ -1,9 +1,9 @@
 ---
 id: HW-OBL-0181
-status: current
-status_since: 2026-09-08
+status: discharged
+status_since: 2026-09-30
 summary: A link in prose whose target path is absent is counted in the graph section of a run and reaches no rule. So it never becomes a finding and never fails a strict run.
-last_verified: 2026-09-08
+last_verified: 2026-09-30
 title: "An unresolved prose link reaches a run as a graph fact and no rule turns it into a finding"
 waiting_on: build
 provenance:
@@ -35,3 +35,5 @@ The corpus owes a decision on whether an unresolved path in a link is a finding,
 ## Discharge
 
 A rule that turns an unresolved link target into a finding discharges this. It is declared in the taxonomy and implemented with a fixture that fails before it passes. A ruling that the graph-section count is the right place for the fact, written where a reader of the report meets it, discharges it too. Either one closes it. Leaving the count in the graph section with no ruling does not.
+
+**This record is discharged.** The rule `link.path.unresolved` is in `engine/crates/check/src/link_path.rs`, and the base package binds it to `OB-LINK-2` at the advisory posture. The owner ruled on 2026-09-30, in the roadmap review of that day, that advisory is the correct posture.
