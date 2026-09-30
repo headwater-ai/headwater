@@ -705,14 +705,33 @@ unmeasured_judge() {
 
 # retired_milestone_judge FILE — a milestone named by its retired label, `M7` or
 # `M6b`. HW-PD-0008 made every open milestone a version, so a label of that shape
-# names something the board no longer holds. The label must be followed by a
-# word, a comma, a full stop, a tag or a dash, so the `M12 4` of an SVG path is
-# not read as one.
+# names something the board no longer holds. A label is `M`, digits and an
+# optional `b`, standing alone: no letter, digit, `#`, `_` or `-` before it and
+# no letter, digit or `_` after it. It is refused wherever it stands, except
+# where a coordinate follows it — a space, a comma, a full stop or a minus and
+# then a digit — because that is the moveto of an SVG path (`M12 4`, `M3,12`,
+# `M12-4`) and not a milestone. awk has no lookaround, so each candidate is
+# taken in turn and its neighbors read by hand.
 retired_milestone_judge() {
     awk '
         {
-            if ($0 ~ /(^|[^A-Za-z0-9#_-])M[0-9]+b?( [a-z]|,|\.|<| —)/)
-                print NR ": a retired milestone label, and HW-PD-0008 made every open milestone a version"
+            rest = $0
+            before = ""
+            while (match(rest, /M[0-9]+b?/)) {
+                pre = (RSTART > 1) ? substr(rest, RSTART - 1, 1) : substr(before, length(before), 1)
+                c1 = substr(rest, RSTART + RLENGTH, 1)
+                c2 = substr(rest, RSTART + RLENGTH + 1, 1)
+                label = 1
+                if (pre ~ /[A-Za-z0-9#_-]/) label = 0
+                if (c1 ~ /[A-Za-z0-9_]/) label = 0
+                if (c1 ~ /[ ,.-]/ && c2 ~ /[0-9]/) label = 0
+                if (label) {
+                    print NR ": a retired milestone label, and HW-PD-0008 made every open milestone a version"
+                    break
+                }
+                before = before substr(rest, 1, RSTART + RLENGTH - 1)
+                rest = substr(rest, RSTART + RLENGTH)
+            }
         }
     ' "$1"
 }
@@ -2205,10 +2224,11 @@ printf '%s\n' \
     'M7 — open' \
     '<path d="M12-4 L3,12"/>' \
     '<path d="M3,12 M4.5 6"/>' \
-    'HM7 open, #M7 open, x_M7 open, M7x open.' >"$scratch/labels.html"
+    'HM7 open, #M7 open, x_M7 open, M7x open, M3M7 open.' \
+    'M1 core, M2 graph and M6b open.' >"$scratch/labels.html"
 label_hit=": a retired milestone label, and HW-PD-0008 made every open milestone a version|"
-same "  the retired label judge names eight labels and leaves paths, a version and longer tokens alone" \
-    "1$label_hit""2$label_hit""3$label_hit""6$label_hit""7$label_hit""8$label_hit""9$label_hit""10$label_hit" \
+same "  the retired label judge names nine lines of labels, once each, and leaves paths, a version and longer tokens alone" \
+    "1$label_hit""2$label_hit""3$label_hit""6$label_hit""7$label_hit""8$label_hit""9$label_hit""10$label_hit""14$label_hit" \
     "$(retired_milestone_judge "$scratch/labels.html" | tr '\n' '|')"
 
 echo "the command the page tells a newcomer to run"
