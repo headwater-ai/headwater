@@ -1,0 +1,72 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The taxonomy the conflicting-pair tree is checked against. It is the smallest
+# shape `relation.pair.invalid` needs, and every relation here is one the rule
+# reads or one it must not read.
+#
+# `conflicts_with` is the standard package's declaration as written: symmetric,
+# with `invalid_when: {both: {status: current}}`, so two `current` decisions
+# joined by it are an incoherent corpus state (spec 2).
+#
+# `constrains` joins the same kind and declares no condition. Two `current`
+# ends of it are silent, which proves the declaration gates the rule and the
+# relation's name does not.
+#
+# `clashes_with` names `lifecycle`, a facet with no state role, so a rule that
+# read `status` or the state-role facet in place of the facet the condition
+# names reads the wrong ends.
+#
+# `contradicts` names two facets, and the condition holds only where every one
+# of them holds at both ends.
+
+facets:
+  status:
+    role: state
+    values:
+      - {value: draft,      role: initial}
+      - {value: current,    role: live}
+      - {value: superseded, role: terminal-retained}
+  lifecycle:
+    values: [live, retired]
+  summary:
+    role: scent
+
+identifier_schemes:
+  decision_id: {pattern: "DEC-{namespace}-{slug}", namespace: FIX, allocation: minted-once}
+
+relations:
+  conflicts_with:
+    family: association
+    from: [decision]
+    to:   [decision]
+    reciprocal: symmetric
+    invalid_when: {both: {status: current}}
+    created_by: author
+  constrains:
+    family: governance
+    from: [decision]
+    to:   [decision]
+    created_by: author
+  clashes_with:
+    family: association
+    from: [decision]
+    to:   [decision]
+    invalid_when: {both: {lifecycle: live}}
+    created_by: author
+  contradicts:
+    family: association
+    from: [decision]
+    to:   [decision]
+    invalid_when: {both: {status: current, lifecycle: live}}
+    created_by: author
+
+kinds:
+  decision:
+    identifier: {scheme: decision_id}
+    facets: {require: [status]}
+
+shelves:
+  decisions:
+    path: conflicting-pair/decisions/**
+    homogeneous: true
+    kind: decision
