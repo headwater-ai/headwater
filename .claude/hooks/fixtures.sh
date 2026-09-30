@@ -598,6 +598,28 @@ if [ -x "$engine" ]; then
         nu='{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"docs/process/decisions/0013-nu.md"}}'
         expect 'past the bound, the heading is the distinct count the engine reports' \
             write.sh 0 'It governs these code paths (21):' "$nu"
+        # The decisive case of #1346: the hook reads the explain document once
+        # for each count it needs, so it asks for `paths` cut to the bound it
+        # lists up to. Without the bound the output above is the same and a
+        # glob of 50,000 files costs the hook 390 ms, so only the arguments
+        # the engine received can show the bound is gone.
+        printf '#!/bin/sh\nprintf "%%s\\n" "$*" >> "%s/argv.log"\nexec "%s/engine/target/release/headwater" "$@"\n' \
+            "$reverse_root" "$reverse_root" > "$reverse_root/argv-engine.sh"
+        chmod +x "$reverse_root/argv-engine.sh"
+        : > "$reverse_root/argv.log"
+        (
+            hw_engine_pin="$reverse_root/argv-engine.sh"
+            . "$hooks/lib.sh"
+            hw_governed_by_document docs/process/decisions/0010-kappa.md > /dev/null
+        )
+        hw_listed_bound=$(. "$hooks/lib.sh"; printf %s "$hw_governs_listed_at_most")
+        if grep -q -- "^explain .*--paths-at-most $hw_listed_bound " "$reverse_root/argv.log"; then
+            printf 'ok   %s\n' 'the hook asks explain for paths cut to the bound it lists up to'
+            passed=$((passed + 1))
+        else
+            printf 'FAIL %s\n  the engine received:\n%s\n' 'the hook asks explain for paths cut to the bound it lists up to' "$(cat "$reverse_root/argv.log")"
+            failed=$((failed + 1))
+        fi
         expect 'a document with no edge in either direction is silent' \
             write.sh 0 '' \
             '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"docs/process/decisions/0004-delta.md"}}'
