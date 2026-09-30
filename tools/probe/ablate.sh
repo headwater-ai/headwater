@@ -8,9 +8,16 @@
 # will drive a session — and deletes the tier's ablation entries from it, in
 # place.
 #
-#     sh tools/probe/ablate.sh <tier> <workspace>
+#     sh tools/probe/ablate.sh <tier> <workspace> [<arm>]
 #     sh tools/probe/ablate.sh --present <workspace>
+#     sh tools/probe/ablate.sh --diff <tier> <arm> <present-tree>
 #     sh tools/probe/ablate.sh --instrument
+#
+# `<arm>` is `absent` when it is not given. A component arm of the tier
+# (#1472), such as `no-hook` or `mcp`, applies the delta the tier declares for
+# it under `components` to the present tree the workspace already is: `mcp`
+# adds its paths from `tools/probe/arms/mcp/`, and every other component arm
+# removes its paths. `--diff` is described where it is parsed below.
 #
 # `--instrument` prints the instrument entries, one per line, and touches
 # nothing. `probe-record.sh` reads it to refuse a workspace that still holds
@@ -64,13 +71,103 @@ case $0 in
 esac
 root=$(cd "$invoked_from/../.." && pwd -P)
 
-usage="usage: sh tools/probe/ablate.sh <tier> <workspace>, --present <workspace>, or --instrument"
+usage="usage: sh tools/probe/ablate.sh <tier> <workspace> [<arm>], --present <workspace>, --diff <tier> <arm> <present-tree>, or --instrument"
+
+# `--diff <tier> <arm> <present-tree>` builds the arm's tree in a copy of a
+# present tree outside this checkout, prints how it differs from the present
+# tree, and deletes the copy (#1472). One line per difference: `- <path>` for
+# a path the arm lacks and `+ <path>` for a path it adds, where a whole
+# directory is one line. It exits 1 when the arm's tree does not differ, or
+# differs by a path its declared delta does not name, which it prints as
+# `unexpected <line>`. A present tree has no instrument, so a tree that still
+# holds one is refused before anything is copied.
+if [ "${1:-}" = --diff ]; then
+    [ -n "${2:-}" ] && [ -n "${3:-}" ] && [ -n "${4:-}" ] || { echo "$usage" >&2; exit 2; }
+    diff_tier=$2
+    diff_arm=$3
+    diff_present=$(cd "$4" 2>/dev/null && pwd -P) || { echo "ablate: no present tree at $4" >&2; exit 2; }
+    for diff_path in $(sh "$0" --instrument); do
+        if [ -e "$diff_present/$diff_path" ]; then
+            echo "ablate: $diff_present still holds \`$diff_path\`, which every arm removes, so it is not a present tree" >&2
+            exit 2
+        fi
+    done
+    diff_scratch=$(mktemp -d "${TMPDIR:-/tmp}/headwater-ablate-diff.XXXXXX") || exit 2
+    cp -a "$diff_present" "$diff_scratch/arm" || { rm -rf "$diff_scratch"; exit 2; }
+    sh "$0" "$diff_tier" "$diff_scratch/arm" "$diff_arm" > "$diff_scratch/ablate.out" 2> "$diff_scratch/ablate.err" || {
+        cat "$diff_scratch/ablate.err" >&2
+        rm -rf "$diff_scratch"
+        exit 2
+    }
+    # The delta the declaration names, as `- <path>` and `+ <path>` lines.
+    sed -n 's/^declared \([-+]\) /\1 /p' "$diff_scratch/ablate.out" > "$diff_scratch/declared"
+    # `diff` exits 1 when the trees differ, which is the expected case, and 2
+    # when it could not compare them, which fails closed.
+    diff_status=0
+    diff -rq --no-dereference "$diff_present" "$diff_scratch/arm" > "$diff_scratch/diff" 2>&1 || diff_status=$?
+    if [ "$diff_status" -gt 1 ]; then
+        echo "ablate: diff could not compare the present tree with the \`$diff_arm\` arm:" >&2
+        cat "$diff_scratch/diff" >&2
+        rm -rf "$diff_scratch"
+        exit 2
+    fi
+    diff_status=0
+    awk -v present="$diff_present" -v arm="$diff_scratch/arm" '
+        /^Only in / {
+            rest = substr($0, 9)
+            colon = index(rest, ": ")
+            dir = substr(rest, 1, colon - 1)
+            name = substr(rest, colon + 2)
+            if (index(dir, arm) == 1) { sign = "+"; dir = substr(dir, length(arm) + 1) }
+            else if (index(dir, present) == 1) { sign = "-"; dir = substr(dir, length(present) + 1) }
+            else { print "? " $0; next }
+            sub(/^\//, "", dir)
+            print sign " " (dir == "" ? name : dir "/" name)
+            next
+        }
+        { print "? " $0 }
+    ' "$diff_scratch/diff" | LC_ALL=C sort > "$diff_scratch/found"
+    if [ ! -s "$diff_scratch/found" ]; then
+        echo "ablate: the \`$diff_arm\` arm of the \`$diff_tier\` tier builds a tree no different from the present tree" >&2
+        rm -rf "$diff_scratch"
+        exit 1
+    fi
+    while IFS= read -r diff_line; do
+        diff_expected=0
+        while IFS= read -r diff_entry; do
+            diff_sign=${diff_entry%% *}
+            diff_named=${diff_entry#* }
+            case "$diff_line" in
+                "$diff_sign $diff_named"|"$diff_sign $diff_named"/*) diff_expected=1 ;;
+            esac
+        done < "$diff_scratch/declared"
+        if [ "$diff_expected" = 1 ]; then
+            printf '%s\n' "$diff_line"
+        else
+            printf 'unexpected %s\n' "$diff_line"
+            diff_status=1
+        fi
+    done < "$diff_scratch/found"
+    rm -rf "$diff_scratch"
+    exit "$diff_status"
+fi
+
 tier=${1:-}
 workspace=${2:-}
 arm=absent
 case "$tier" in
     --present) arm=present ;;
     --instrument) arm=list ;;
+esac
+# The third argument names a component arm of the tier (#1472): its delta is
+# read from `components` under the tier, and it is applied to the present
+# tree the workspace already is. `absent` is the default, and `present` is
+# `--present`.
+component=
+case "${3:-}" in
+    ""|absent) ;;
+    present) arm=present ;;
+    *) arm=component; component=$3 ;;
 esac
 if [ "$arm" = list ]; then
     here=""
@@ -106,13 +203,13 @@ declaration=${HW_PROBE_YML:-$root/.headwater/probe.yml}
 # ablation entry, in declared order. The file is a flat two-level mapping
 # with two-space indentation, which is what the engine reads too; `ablation`
 # is either a one-line flow sequence or a block sequence under the key.
-listing=$(awk -v want="$tier" -v arm="$arm" '
+listing=$(awk -v want="$tier" -v arm="$arm" -v component="$component" '
     function trim(s) { sub(/^[ \t]+/, "", s); sub(/[ \t]+$/, "", s); return s }
     function emit(e, kind,    n, c, i) {
         bad = (e == "" || e ~ /^\//)
         n = split(e, c, "/")
         for (i = 1; i <= n; i++) if (c[i] == ".." || c[i] == "." || c[i] == "") bad = 1
-        print (bad ? "unsafe " : (kind == "instrument" ? "instrument " : "entry ")) e
+        print (bad ? "unsafe " : (kind == "instrument" ? "instrument " : (kind == "component" ? "delta " : "entry "))) e
     }
     # A YAML comment starts at a `#` after whitespace, and the engine reads
     # past it. So does this, or a comment the plan accepts would make the
@@ -138,11 +235,26 @@ listing=$(awk -v want="$tier" -v arm="$arm" '
     /^[^ #]/ { iblock = 0; intiers = ($0 ~ /^tiers:/); cur = ""; block = 0; next }
     !intiers { next }
     /^  [^ #][^:]*:[ \t]*$/ {
-        cur = trim(substr($0, 3)); sub(/:$/, "", cur); block = 0
-        if (cur == want && arm == "absent") print "tier"
+        cur = trim(substr($0, 3)); sub(/:$/, "", cur); block = 0; comp = 0
+        if (cur == want && (arm == "absent" || arm == "component")) print "tier"
         next
     }
     cur != want { next }
+    # `components`, a mapping of arm to a flow sequence of paths (#1472).
+    /^    components:[ \t]*$/ { comp = 1; block = 0; next }
+    comp && /^      [^ #][^:]*:/ {
+        name = trim(substr($0, 7)); sub(/:.*$/, "", name)
+        if (name != component) next
+        print "component"
+        rest = uncomment(substr($0, index($0, ":") + 1))
+        if (rest !~ /^\[.*\]$/) { print "malformed"; next }
+        rest = substr(rest, 2, length(rest) - 2)
+        n = split(rest, parts, ",")
+        if (trim(rest) == "") n = 0
+        for (i = 1; i <= n; i++) emit(unquote(parts[i]), "component")
+        next
+    }
+    /^    [^ ]/ { comp = 0 }
     /^    ablation:/ {
         rest = uncomment(substr($0, index($0, ":") + 1))
         if (rest == "") { block = 1; print "declared"; next }
@@ -159,12 +271,21 @@ listing=$(awk -v want="$tier" -v arm="$arm" '
     /^    [^ ]/ { block = 0 }
 ' "$declaration")
 
-if [ "$arm" = absent ]; then
+if [ "$arm" = absent ] || [ "$arm" = component ]; then
     case "$listing" in
         tier*|*"
 tier"*) ;;
         *)
             echo "ablate: \`$tier\` is not a tier $declaration declares" >&2
+            exit 2
+            ;;
+    esac
+fi
+if [ "$arm" = component ]; then
+    case "$listing" in
+        *component*) ;;
+        *)
+            echo "ablate: the \`$tier\` tier declares no delta for the \`$component\` arm under \`components\`" >&2
             exit 2
             ;;
     esac
@@ -189,7 +310,38 @@ if [ "$arm" = list ]; then
     exit 0
 fi
 entries=$(printf '%s\n' "$listing" | awk '/^entry / { print substr($0, 7) }')
-if [ "$arm" = absent ] && [ -z "$entries" ]; then
+additions=
+if [ "$arm" = component ]; then
+    delta=$(printf '%s\n' "$listing" | awk '/^delta / { print substr($0, 7) }')
+    if [ -z "$delta" ]; then
+        echo "ablate: the \`$component\` arm of the \`$tier\` tier declares an empty delta" >&2
+        exit 2
+    fi
+    # The direction of a delta is the arm's, as the engine's `Arm::adds`
+    # states it: `mcp` puts its paths into the present tree, and every other
+    # component arm takes them out. An added path is copied from
+    # `tools/probe/arms/<arm>/` in this checkout.
+    case "$component" in
+        mcp)
+            additions=$delta
+            entries=
+            for path in $additions; do
+                [ -e "$root/tools/probe/arms/$component/$path" ] || {
+                    echo "ablate: the \`$component\` arm adds \`$path\`, and tools/probe/arms/$component/$path is not there to copy" >&2
+                    exit 2
+                }
+            done
+            ;;
+        *) entries=$delta ;;
+    esac
+    printf '%s\n' "$entries" | awk 'NF { print "declared - " $0 }'
+    printf '%s\n' "$additions" | awk 'NF { print "declared + " $0 }'
+    arm=absent
+    tier="$tier $component"
+elif [ "$arm" = absent ]; then
+    printf '%s\n' "$entries" | awk 'NF { print "declared - " $0 }'
+fi
+if [ "$arm" = absent ] && [ -z "$entries" ] && [ -z "$additions" ]; then
     echo "ablate: the \`$tier\` tier declares no ablation, so it runs no absent arm to produce" >&2
     exit 2
 fi
@@ -224,3 +376,10 @@ if [ -z "$found" ]; then
 else
     echo "ablate: removed$found from $here for the \`$tier\` tier"
 fi
+
+# The paths an adding arm puts in, after the instrument is gone.
+for path in $additions; do
+    mkdir -p "$here/$(dirname "$path")"
+    cp "$root/tools/probe/arms/${tier#* }/$path" "$here/$path" || exit 2
+    echo "ablate: added $path to $here for the \`$tier\` arm"
+done

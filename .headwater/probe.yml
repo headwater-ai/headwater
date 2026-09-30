@@ -187,13 +187,50 @@ tiers:
   # 2026-09-28 stopped them. A session the cap stops is recorded as observed,
   # never dropped and never drawn again, so the cap is part of what the rate
   # measures, and both arms and both paired tiers share it.
+  #
+  # **The component arms (#1472).** The absent arm removes the whole layer at
+  # once, so a difference between present and absent cannot say which part
+  # of the layer caused it. Each component arm is the present tree with one
+  # part taken out or put in, and `components` states that delta as data:
+  #
+  # - `no-hook` removes `.claude/hooks/intent.sh`. `.claude/settings.json`
+  #   stays, so the harness still runs the hook's wrapper, which prints `hook
+  #   script not found` and exits 1. A `UserPromptSubmit` hook that exits 1 is
+  #   an error that does not block, so the session runs with no hook. Removing
+  #   `settings.json` instead would remove the other hooks too.
+  # - `no-skills` removes `.claude/skills`, the skills and their descriptions.
+  # - `no-claude-md` removes `CLAUDE.md`, the standing instructions.
+  # - `mcp` adds `.mcp.json`, copied from `tools/probe/arms/mcp/`, which
+  #   declares `headwater mcp` as a project server. A committed `.mcp.json`
+  #   does not load by itself under `claude -p`, because a project server
+  #   needs approval, so `probe-record.sh` passes `--mcp-config` when the
+  #   workspace holds one. It passes `--strict-mcp-config` in every arm, so
+  #   no server of the recording host's own configuration loads into any arm.
+  #
+  # Every component arm is compared with the present arm of the same batch.
+  # `sh tools/probe/ablate.sh campaign <workspace> <arm>` builds the arm from
+  # the present tree, and `--diff campaign <arm> <present-tree>` prints the
+  # delta and fails on any other difference.
+  #
+  # **What the arms cost.** Six arms is three times the sessions of the pair,
+  # so the plan of any category at 30 repetitions is over the ceiling below,
+  # and the plan refuses it. That refusal is correct: the ceiling is what a
+  # person agreed to spend, and nobody has agreed to spend more. `sh
+  # tools/probe/campaign.sh --dry-run --spec tools/probe/layer-campaign.spec`
+  # prints what each line and arm would cost against the ceiling. The owner
+  # rules on one ceiling for the whole plan before any of it runs (#1472).
   campaign:
     budget_cents: 30000
     session_cost_cents: 50
     repetitions: 30
     max_turns: 80
-    arms: [present, absent]
+    arms: [present, absent, no-hook, no-skills, no-claude-md, mcp]
     ablation: [CLAUDE.md, .claude, .githooks, .headwater]
+    components:
+      no-hook: [.claude/hooks/intent.sh]
+      no-skills: [.claude/skills]
+      no-claude-md: [CLAUDE.md]
+      mcp: [.mcp.json]
 
   # Estimate a difference for a second named claim: that the documents under
   # `docs/` change what an agent builds. Both arms, like the campaign. The

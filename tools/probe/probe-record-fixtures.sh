@@ -1475,8 +1475,11 @@ printf '%s\n' '{"type":"result","subtype":"success","result":"withheld","total_c
 STUB
     chmod +x "$scratch/bin/claude"
     rm -f "$scratch/claude-args"
+    # One repetition, because the six arms of the campaign tier at its declared
+    # 30 are over its ceiling since #1472, and the ceiling is not this case.
     PATH="$scratch/bin:$PATH" sh "$driver" --probe "HW-PROBE-$tombstone" --session fixture-tier-cap \
-        --tier campaign --category sufficiency --task-file "$scratch/task.md" --workspace "$scratch/ws" \
+        --tier campaign --category sufficiency --repetitions 1 \
+        --task-file "$scratch/task.md" --workspace "$scratch/ws" \
         >/dev/null 2>"$scratch/tier-cap.err"
     same "a campaign session runs under the tier's declared cap" "0" "$?"
     same "and the cap the plan declares reaches the harness" "80" \
@@ -1577,7 +1580,10 @@ STUB
         cp -a "$scratch/bw-base" "$batch/trees/campaign-present"
         git -C "$root" rev-parse HEAD > "$batch/head"
         printf 'claude-haiku-4-5\n' > "$batch/model"
-        : > "$batch/repetitions"
+        # One repetition: the six arms of the campaign tier at its declared
+        # 30 are over its ceiling since #1472, and the ceiling is not what
+        # this case holds.
+        printf '1\n' > "$batch/repetitions"
         : > "$batch/max-turns"
         : > "$batch/cap"
         printf '30000\n' > "$batch/ceiling.campaign"
@@ -1908,6 +1914,79 @@ if [ -x "$engine" ]; then
     same "and with no server declared the tools are not loaded" "0" "$?"
 else
     printf 'note no engine, so the MCP leak cases did not run.\n'
+fi
+
+# ---------------------------------------------------------------------------
+# The component arms (#1472). Each is built from the one present tree, and
+# `--diff` prints how it differs from that tree, against the committed
+# declaration.
+# ---------------------------------------------------------------------------
+layer_tree() {
+    rm -rf "$scratch/layer"
+    mkdir -p "$scratch/layer/.claude/hooks" "$scratch/layer/.claude/skills/s" \
+        "$scratch/layer/.claude/agents" "$scratch/layer/.headwater" "$scratch/layer/docs/spec"
+    : > "$scratch/layer/CLAUDE.md"
+    : > "$scratch/layer/.claude/hooks/intent.sh"
+    : > "$scratch/layer/.claude/hooks/write.sh"
+    : > "$scratch/layer/.claude/settings.json"
+    : > "$scratch/layer/.claude/skills/s/SKILL.md"
+    : > "$scratch/layer/.claude/agents/a.md"
+    : > "$scratch/layer/.headwater/taxonomy.lock"
+    : > "$scratch/layer/docs/spec/05.md"
+}
+layer_tree
+sh "$ablate" campaign "$scratch/layer" no-hook > /dev/null 2> "$scratch/layer.err"
+same "ablate.sh builds the no-hook arm" "0" "$?"
+if [ ! -e "$scratch/layer/.claude/hooks/intent.sh" ] && [ -e "$scratch/layer/.claude/settings.json" ] \
+    && [ -e "$scratch/layer/.claude/hooks/write.sh" ] && [ -e "$scratch/layer/CLAUDE.md" ]; then
+    pass "and it removes the intent hook's script and keeps the settings and every other hook"
+else
+    fail "and it removes the intent hook's script and keeps the settings and every other hook" \
+        "$(cd "$scratch/layer" && find . -type f | sort | tr '\n' ' ')"
+fi
+
+layer_tree
+for arm_delta in "no-hook|- .claude/hooks/intent.sh" "no-skills|- .claude/skills" \
+    "no-claude-md|- CLAUDE.md" "mcp|+ .mcp.json"; do
+    arm_name=${arm_delta%%|*}
+    sh "$ablate" --diff campaign "$arm_name" "$scratch/layer" > "$scratch/diff.$arm_name" 2> "$scratch/diff.err"
+    same "ablate.sh --diff campaign $arm_name exits 0" "0" "$?"
+    same "and its delta against present is exactly its component" "${arm_delta#*|}" "$(cat "$scratch/diff.$arm_name")"
+done
+sh "$ablate" --diff campaign absent "$scratch/layer" > "$scratch/diff.absent" 2>&1
+same "ablate.sh --diff campaign absent exits 0" "0" "$?"
+same "and its delta is the ablation the tree holds" \
+    "- .claude
+- .headwater
+- CLAUDE.md" "$(cat "$scratch/diff.absent")"
+if [ -e "$scratch/layer/.claude/hooks/intent.sh" ]; then
+    pass "--diff leaves the present tree as it was"
+else
+    fail "--diff leaves the present tree as it was" "it removed intent.sh from the present tree"
+fi
+
+rm -f "$scratch/layer/CLAUDE.md"
+sh "$ablate" --diff campaign no-claude-md "$scratch/layer" > "$scratch/diff.same" 2> "$scratch/diff.same.err"
+same "an arm whose tree does not differ from present fails --diff" "1" "$?"
+present "and says so" "no different from the present tree" "$scratch/diff.same.err"
+
+layer_tree
+mkdir -p "$scratch/layer/docs/probes"
+sh "$ablate" --diff campaign no-hook "$scratch/layer" > /dev/null 2> "$scratch/diff.instrument.err"
+same "--diff refuses a tree that still holds the instrument" "2" "$?"
+
+layer_tree
+sh "$ablate" campaign "$scratch/layer" no-docs > /dev/null 2> "$scratch/undeclared.err"
+same "ablate.sh refuses an arm the tier declares no delta for" "2" "$?"
+present "and names it" "no delta for the \`no-docs\` arm" "$scratch/undeclared.err"
+
+layer_tree
+sh "$ablate" campaign "$scratch/layer" mcp > /dev/null 2> "$scratch/mcp.err"
+same "ablate.sh builds the mcp arm" "0" "$?"
+if cmp -s "$root/tools/probe/arms/mcp/.mcp.json" "$scratch/layer/.mcp.json"; then
+    pass "and it adds the declared server file from tools/probe/arms/mcp/"
+else
+    fail "and it adds the declared server file from tools/probe/arms/mcp/" "the .mcp.json differs or is missing"
 fi
 
 present "the driver names the channel and never a file under ~/.claude/projects" \
