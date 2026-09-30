@@ -109,16 +109,26 @@ impl Source {
 }
 
 /// The text of one file, with a refusal that names it.
+///
+/// Only a regular file is opened. `metadata` follows a link, so a source
+/// reached through one still reads. A named pipe, a socket or a device is
+/// refused before it is opened, because a pipe with no writer blocks its reader
+/// for ever. This is the one reader under the consumer declaration, the
+/// overlay and every package source (#1366).
 fn read_text(path: &Path) -> Result<String, Vec<ResolveError>> {
     let name = path.display().to_string();
-    std::fs::read_to_string(path).map_err(|error| {
+    let refused = |why: String| {
         vec![ResolveError::new(
-            ResolveErrorKind::SourceRefused(format!("cannot read {name}: {error}")),
+            ResolveErrorKind::SourceRefused(format!("cannot read {name}: {why}")),
             &name,
             "",
             Span::default(),
         )]
-    })
+    };
+    if std::fs::metadata(path).is_ok_and(|meta| !meta.is_file()) {
+        return Err(refused("it is not a regular file".to_string()));
+    }
+    std::fs::read_to_string(path).map_err(|error| refused(error.to_string()))
 }
 
 /// Load one YAML file on the taxonomy dialect.

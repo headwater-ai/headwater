@@ -1249,6 +1249,20 @@ fn resolve(root: &Path, check_only: bool) -> ExitCode {
     // off the committed file and writes it back. A resolve that dropped it
     // would delete an adopter's accounting as a side effect of a taxonomy edit,
     // and the run after it would report every pair the payload was holding.
+    //
+    // A lock that is there and is not a regular file is refused before either
+    // mode opens it. `--check` would wait on a named pipe for ever, or read it
+    // as an empty lock that diverges, and a write would wait on the pipe for a
+    // reader (#1366).
+    let path = root.join(headwater_lock::LOCK);
+    if std::fs::metadata(&path).is_ok_and(|meta| !meta.is_file()) {
+        let why = headwater_lock::LockError::Unreadable(format!(
+            "{} is not a regular file",
+            path.display()
+        ));
+        eprintln!("headwater: {}", err(&why.to_string()));
+        return ExitCode::FAILURE;
+    }
     let authored = headwater_lock::authored_at(root);
     let text = match headwater_lock::write(
         &repository.consumer.package,
@@ -1272,7 +1286,6 @@ fn resolve(root: &Path, check_only: bool) -> ExitCode {
         }
     };
 
-    let path = root.join(headwater_lock::LOCK);
     if check_only {
         let committed = std::fs::read_to_string(&path).unwrap_or_default();
         // Which half of the file moved, rather than whether the file moved. The
