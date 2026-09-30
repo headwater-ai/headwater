@@ -1485,6 +1485,28 @@ fn explain_json_paths_at_most_refuses_zero() {
     );
 }
 
+/// `--paths-at-most` without `--json` is refused, because the text report
+/// lists no path for it to bound.
+///
+/// [#1346](https://github.com/headwater-ai/headwater/issues/1346). The
+/// interface page states the refusal, and an option that did nothing would
+/// let a caller believe it had bounded something.
+#[test]
+fn explain_paths_at_most_without_json_is_refused() {
+    let output = Command::new(env!("CARGO_BIN_EXE_headwater"))
+        .args(["explain", "--paths-at-most", "20", "HW-DR-0074", "--root"])
+        .arg(repository())
+        .output()
+        .expect("the binary runs");
+    assert_eq!(output.status.code(), Some(2), "clap refuses the option");
+    assert!(output.stdout.is_empty(), "nothing is explained");
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(
+        stderr.contains("--json"),
+        "the refusal names the option it requires: {stderr}"
+    );
+}
+
 /// `governed_entries` counts an entry that two `governs` edges reach once.
 ///
 /// [#1093](https://github.com/headwater-ai/headwater/issues/1093). HW-DR-0037
