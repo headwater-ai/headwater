@@ -134,7 +134,6 @@ clauses_of() {
         /^[ \t]*[-*+][ \t]+\[[ xX]\]/ {
             i = index($0, "[")
             mark = substr($0, i + 1, 1)
-            if (mark == "X") mark = "x"
             text = substr($0, i + 3)
             sub(/^[ \t]+/, "", text)
             k++
@@ -151,7 +150,6 @@ account() {
     awk -v n="$1" -v prfile="$3" '
         BEGIN {
             while ((getline line < prfile) > 0) {
-                sub(/\r$/, "", line)
                 if (!match(line, /^[ \t]*[-*+][ \t]+\[[ xX]\][ \t]+#[0-9]+\.[0-9]+/)) continue
                 head = substr(line, RSTART, RLENGTH)
                 key = substr(head, index(head, "#") + 1)

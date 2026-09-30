@@ -194,7 +194,7 @@ Plain words for a reader who never opened the repository.
 -->
 
 - [ ] c1 the workspace pin test fails on a drifted version
-- [ ] c2 the release guide names generate beside the bless step
+- [ ] c2 the release guide names generate beside the bless step <!-- carried from the #1348 build -->
 
 ### Folded 2026-09-29, first pass
 
@@ -250,6 +250,16 @@ check_out "  a ticked box in the issue keeps its mark" "6 [x] c6"
 check_not_out "  no box above Done when" "above the Done-when heading"
 check_not_out "  no box in an HTML comment" "template placeholder"
 check_not_out "  no box in a fenced block" "fenced block"
+check_out "  a comment closed on its own line does not hide its clause" "2 [ ] c2 the release guide"
+
+echo "clauses drops the carriage returns of a body edited in the web form"
+sed 's/$/\r/' "$scratch/issue-1315.md" > "$scratch/issue-1315-crlf.md"
+ISSUE_BODY="$scratch/issue-1315-crlf.md" run clauses 1315 > "$scratch/out" 2>"$scratch/err"
+if [ "$(grep -c . "$scratch/out")" -eq 11 ] && ! grep -q "$(printf '\r')" "$scratch/out"; then
+    passed=$((passed + 1)); echo "  ok    eleven clauses and no carriage return"
+else
+    failed=$((failed + 1)); echo "  FAIL  eleven clauses and no carriage return"
+fi
 
 echo "clause-check refuses the #1460 shape: five of eleven accounted"
 account "$scratch/pr-five.md" 1 5
