@@ -28,7 +28,7 @@ It refuses to overwrite a file that lacks the generated-file marker. A stale pro
 
 **A run that refuses writes nothing.** The command finds the verdict of every output before its first write. When one of these six refusals applies, the command writes no file, and it exits 1:
 
-- more than one transcript on one side of a pair of arms
+- more than one transcript of one arm of one tier in one run, for the present arm, the absent arm or a component arm
 - a pair of arms that holds a refused session that the recorder or the probe declaration caused
 - a refused transcript whose state holds the refusal
 - a marked file that no declaration writes
