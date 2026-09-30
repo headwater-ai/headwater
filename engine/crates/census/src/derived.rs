@@ -851,7 +851,10 @@ fn claimed_by(root: &Path, path: &str) -> Option<Producer> {
     if in_a_fixture_tree(path) {
         return None;
     }
-    if !headwater_mark::carries_marker(path, &text) {
+    // The census reads the marker only in a format a projection may write, and
+    // the generator refuses any other. A marker on any other file is a
+    // hand-written claim, and this answers as the census does (#1344).
+    if !headwater_mark::marks_format(path) || !headwater_mark::carries_marker(path, &text) {
         return None;
     }
     // A marked file that `headwater export` builds at publish time is one

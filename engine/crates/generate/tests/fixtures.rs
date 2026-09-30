@@ -2007,8 +2007,15 @@ projections:
         );
         assert!(!tree.join(at).exists(), "{at} was written");
     }
-    assert!(!verdict(JSON).is_error(), "{}", report.render(ColorMode::Plain));
-    assert!(tree.join(JSON).exists(), "the export at `.json` was not written");
+    assert!(
+        !verdict(JSON).is_error(),
+        "{}",
+        report.render(ColorMode::Plain)
+    );
+    assert!(
+        tree.join(JSON).exists(),
+        "the export at `.json` was not written"
+    );
     assert!(
         report.render(ColorMode::Plain).contains("census"),
         "the report does not say why: {}",
@@ -2048,7 +2055,10 @@ fn every_output_the_fixture_writes_is_censused_as_generated() {
         .filter(|output| output.committed && output.path.starts_with("generate/"))
         .map(|output| output.path.as_str())
         .collect();
-    assert!(!inside.is_empty(), "no output lands inside the corpus root, so this proves nothing");
+    assert!(
+        !inside.is_empty(),
+        "no output lands inside the corpus root, so this proves nothing"
+    );
     for path in inside {
         let row = after
             .census

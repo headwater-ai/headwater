@@ -135,7 +135,9 @@
 //! marked one is `generated` (#1344). Every other file under the corpus root,
 //! including every image and every archive, stays `not a document` and unread.
 //! That is sound because the generator refuses a projection declared at any
-//! other extension, so no file this engine writes is in a format left unread.
+//! other extension, and because it writes no output whose marker this step
+//! would not read back: a `graph_export` at a `.yml` path is JSON, and it is
+//! refused rather than written (`Verdict::MarkerUnread` in the generator).
 
 use crate::resolve::{self, Resolution};
 use crate::shelves::Taxonomy;
