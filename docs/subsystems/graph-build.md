@@ -37,9 +37,9 @@ The public Rust API of the crate is not in this spec ([HW-DR-0098](../decisions/
 
 ### One build in four passes
 
-`Graph::build` in `lib.rs` runs four passes in a fixed order. `Index::build` makes the indexes, `edges::build` resolves each `relations:` block, `links::bind` binds each prose link, and `Scope::reach` walks each declared governed scope. Each pass reads the rows of the census and opens no document file. A second read of the corpus could disagree with the census, and coverage is a function of the census and the graph together.
+`Graph::build` in `lib.rs` runs four passes in a fixed order. `Index::build` makes the indexes, `edges::build` resolves each `relations:` block, `links::bind` binds each prose link, and `Scope::reach` walks each declared governed scope. The first three passes read the rows of the census, and the fourth reads the tree through the resolvers. No pass opens a document file. A second read of the corpus could disagree with the census, and coverage is a function of the census and the graph together.
 
-The census decides the node set. A row is a node when `Outcome::node` of the census crate gives it a kind. That set includes a generated document that declares an identifier. Spec 6 excuses a generated file from checks and not from identity. So a projection that other documents cite can be an end of an edge.
+The census decides the node set. A row is a node when `Outcome::node` of the census crate gives it a kind and the row declares an identifier. That set includes a generated document that declares an identifier. Spec 6 excuses a generated file from checks and not from identity. So a projection that other documents cite can be an end of an edge.
 
 `Config` names the front matter key of the identifier (`id`, [HW-DR-0068](../decisions/0068-the-front-matter-key-that-carries-a-minted-identifier-is-id.md)) and of the relation block (`relations`, [Q4](../spec/09-decisions.md#q4--relation-storage)). Both are parameters and not literals, so a change to either declaration changes one default.
 
@@ -75,7 +75,7 @@ The last reason is `Unbound::DocumentByPath` (#1410). A literal path to a docume
 
 `Resolvers::over` gives a run the `source-tree` resolver alone. A caller adds other resolvers with `Resolvers::with`, which refuses a second resolver of one name. The snapshot resolver and the harvest resolver live in the `import` crate, because that crate depends on this one.
 
-`SourceTree` first calls `normalize`, which is lexical. It changes `\` to `/`, removes `.` segments and a trailing `/`, and lets `..` remove the segment before it. It refuses an absolute path, an empty path and a path above the base. A path library that resolves `..` on the disk follows a symbolic link out of the repository. Two strings would then be one node for a reason that the corpus does not state. [HW-OBL-0061](../obligations/0061-an-anchor-resolver-normalizes-and-nothing-states-how.md) is open because no document states these steps as a rule. This paragraph describes the code and does not make it the rule.
+`SourceTree` first calls `normalize`, which is lexical. It trims white space, changes `\` to `/`, removes empty segments, `.` segments and a trailing `/`, and lets `..` remove the segment before it. It refuses an absolute path, an empty path and a path above the base. A path library that resolves `..` on the disk follows a symbolic link out of the repository. Two strings would then be one node for a reason that the corpus does not state. [HW-OBL-0061](../obligations/0061-an-anchor-resolver-normalizes-and-nothing-states-how.md) is open because no document states these steps as a rule. This paragraph describes the code and does not make it the rule.
 
 A literal pattern binds when its path exists. It binds to an excluded file as well, and it carries the exclusion that matched. A pattern with a wildcard walks the subtree under its literal prefix. An excluded entry is not a match there, and a pattern that opens on a wildcard is refused. `SourceTree` walks each prefix once per process and keeps no walk from one run to the next. `tree_revision` gives an anchor a revision, which is a digest of the entries it matched.
 
@@ -87,14 +87,14 @@ A literal pattern binds when its path exists. It binds to an excluded file as we
 
 ### Governed scope
 
-`scope.rs` is the one reader of `anchors.<kind>.scope`. `Scope::contains` tests one path with no walk, `Scope::unmatched` finds each pattern that matches no entry, and `Scope::reach` lists what each pattern admits. The last two go through the resolver of the anchor kind, so a scope and an anchor use one matcher. A scope counts only files that git does not ignore, and a root with no tree beside it counts nothing. `Graph::scope` is empty when the taxonomy declares no scope.
+`scope.rs` is the one reader of `anchors.<kind>.scope`. `Scope::contains` tests one path with no walk, `Scope::unmatched` finds each pattern that matches no entry, and `Scope::reach` lists what each pattern admits. The last two go through the resolver of the anchor kind, so a scope and an anchor use one matcher. `Graph::build` counts a scope with nothing ignored, because spec 12 keeps each version control command off the check loop. `taxonomy audit` then drops the entries that git ignores, with `Reach::retain_unignored`. A root with no tree beside it counts nothing. `Graph::scope` is empty when the taxonomy declares no scope.
 
 ## Invariants
 
 A change to this crate must keep each of these. A test holds each one that names a test, in `engine/crates/graph/tests/fixtures.rs` or in the unit tests of the module.
 
 - **The stage decides identity and nothing about legality.** It writes no severity. Whether a missing target stops a run is the decision of a check.
-- **Every node is a census row that resolved a kind.** The stage does no second walk of the corpus (`every_node_of_the_graph_is_a_row_of_the_census_that_resolved_a_kind`).
+- **Every node is a census row that resolved a kind and declares an identifier.** The stage does no second walk of the corpus (`every_node_of_the_graph_is_a_row_of_the_census_that_resolved_a_kind`).
 - **Two spellings of one anchor are one node** (`two_spellings_of_one_anchor_are_one_node`). `normalize` stays lexical.
 - **Both halves of a reciprocal pair give one triple** (`both_halves_of_a_reciprocal_pair_normalize_to_one_triple`), and each edge half falls in exactly one class (`every_edge_half_falls_in_exactly_one_class`).
 - **A target with no kind and a target that is nothing are two reports** (`an_untyped_target_and_a_target_that_is_nothing_are_two_reports`).

@@ -59,9 +59,9 @@ Headwater parses once, builds one typed graph, and runs every check against it. 
 
 **Resolve** merges the base taxonomy and overlays, validates against the meta-schema, and writes a content-hashed lock. Everything downstream reads the lock, never the sources. Thus a check result depends on a hash that a reviewer can see in a diff.
 
-**Parse** reads each file once: front matter, headings, links, code fences. It does not interpret. Classification assigns a kind by the declared resolution rules and records the derivation for `explain`.
+**Parse** reads each file once: front matter, headings, links, code fences. It does not interpret. Classification assigns a kind by the declared resolution rules and records the derivation for `explain`. Classification emits a **census**: every file under the corpus root and the outcome for each. The census fixes the denominator for coverage before any check runs. Thus a document that failed to classify is visibly unchecked, not silently absent.
 
-**Graph build** resolves relations into edges, indexes identifiers, binds external anchors (code paths, work items, URLs), and reports what it could not resolve. It also emits a **census**: every file under the corpus root and the outcome for each. The census fixes the denominator for coverage before any check runs. Thus a document that failed to classify is visibly unchecked, not silently absent.
+**Graph build** reads the documents through the census and opens no document file itself. It resolves relations into edges, indexes identifiers, binds external anchors (code paths, work items, URLs), and reports what it could not resolve.
 
 **Cache** is content-addressed per file plus taxonomy hash, so incremental runs are proportional to the change, not the corpus. That first sentence is the promise [HW-OBL-0072](../obligations/0072-a-cache-of-check-results-does-not-make-a-run-proportional.md) holds open. The change-scoped mode that CI and hooks use is the same code path over the same corpus, and it narrows nothing. It supplies the version each named document stood at before the change, so the rules that read one reach a verdict rather than a skip. It therefore evaluates more instances than a full-corpus run and never fewer.
 
@@ -71,7 +71,7 @@ Each stage is built by one subsystem, and each subsystem is a group of crates un
 
 | stage | subsystem | crates | why the crates are here |
 |---|---|---|---|
-| resolve | Taxonomy resolution (no spec yet, #1288) | `yaml`, `ref`, `meta`, `resolve`, `lock`, `hash` | Thirteen crates use `hash`. The lock is its first consumer, and one implementation stops two digests from disagreeing. |
+| resolve | Taxonomy resolution (no spec yet, #1288) | `yaml`, `ref`, `meta`, `resolve`, `lock`, `hash` | Eleven other crates use `hash`. The lock is its first consumer, and one implementation stops two digests from disagreeing. |
 | resolve | Taxonomy distribution and audit (no spec yet, #1288) | `fetch`, `compat`, `audit` | These crates move a taxonomy between repositories and measure it against a corpus. None of them builds the lock. |
 | parse | Parse and census (no spec yet, #1288) | `doc`, `census`, `vcs` | `census` and `graph` use `vcs` for the change manifest. The only other crate that uses it is `cli`. |
 | graph build | [Graph build](../subsystems/graph-build.md) | `graph` | |

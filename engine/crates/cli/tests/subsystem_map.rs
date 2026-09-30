@@ -118,8 +118,10 @@ fn spec_six_rows() -> Vec<Row> {
         .collect()
 }
 
-/// The `governs` list of a document's front matter, read for the fixed shape
-/// `headwater new` writes: an inline `[a, b]` list or a block of `- a` lines.
+/// The `governs` list under the `relations:` block of a document's front
+/// matter, read for the fixed shape `headwater new` writes: an inline `[a, b]`
+/// list or a block of `- a` lines. A `governs:` key anywhere else declares no
+/// edge, and `headwater route` reads nothing from it, so it is not read here.
 fn governs(path: &Path) -> Vec<String> {
     let text = std::fs::read_to_string(path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
     let front = text
@@ -127,7 +129,11 @@ fn governs(path: &Path) -> Vec<String> {
         .and_then(|rest| rest.split_once("\n---").map(|(front, _)| front))
         .unwrap_or_else(|| panic!("{}: no front matter", path.display()));
     let unquote = |s: &str| s.trim().trim_matches('"').trim_matches('\'').to_string();
-    let mut lines = front.lines();
+    let mut lines = front
+        .lines()
+        .skip_while(|line| line.trim_end() != "relations:")
+        .skip(1)
+        .take_while(|line| line.starts_with(' '));
     while let Some(line) = lines.next() {
         let Some(value) = line.trim_start().strip_prefix("governs:") else {
             continue;
@@ -146,6 +152,28 @@ fn governs(path: &Path) -> Vec<String> {
             .collect();
     }
     Vec::new()
+}
+
+/// The crate a `governs` pattern names, when it names one under
+/// `engine/crates/`.
+fn crate_of(pattern: &str) -> Option<&str> {
+    pattern.strip_prefix("engine/crates/")?.split('/').next()
+}
+
+/// Every `.md` file under `dir` and its subdirectories except `README.md`,
+/// as a path relative to `dir`.
+fn specs_under(dir: &Path, prefix: &str, out: &mut BTreeSet<String>) {
+    let entries = std::fs::read_dir(dir).unwrap_or_else(|e| panic!("{}: {e}", dir.display()));
+    for entry in entries {
+        let entry = entry.expect("a directory entry reads");
+        let name = entry.file_name().to_string_lossy().into_owned();
+        let path = entry.path();
+        if path.is_dir() {
+            specs_under(&path, &format!("{prefix}{name}/"), out);
+        } else if name.ends_with(".md") && name != "README.md" {
+            out.insert(format!("{prefix}{name}"));
+        }
+    }
 }
 
 /// Every crate directory is in the map, and in one row only.
@@ -190,7 +218,8 @@ fn every_crate_is_in_exactly_one_row_of_spec_6s_subsystem_map() {
 
 /// A row that links a subsystem spec names a file that exists, and that file
 /// governs `engine/crates/<crate>/src/**` for each crate of the row, one
-/// pattern per crate ([HW-DR-0074]).
+/// pattern per crate ([HW-DR-0074]). It governs no crate the row does not
+/// name, because every crate belongs to exactly one subsystem (HW-DR-0098).
 ///
 /// [HW-DR-0074]: ../../../../docs/decisions/0074-a-code-path-anchor-is-a-pattern-over-the-tree-and-it-binds-when-the-pattern-matches-at-least-one-entry.md
 #[test]
@@ -207,6 +236,16 @@ fn a_row_that_links_a_subsystem_spec_is_governed_by_it() {
             row.subsystem
         );
         let governed: BTreeSet<String> = governs(&path).into_iter().collect();
+        let foreign: Vec<&String> = governed
+            .iter()
+            .filter(|pattern| {
+                crate_of(pattern).is_some_and(|krate| !row.crates.iter().any(|c| c == krate))
+            })
+            .collect();
+        assert!(
+            foreign.is_empty(),
+            "{link} governs a crate that its row of spec 6 '{HEADING}' does not name: {foreign:?}"
+        );
         for krate in &row.crates {
             let pattern = format!("engine/crates/{krate}/src/**");
             assert!(
@@ -221,8 +260,9 @@ fn a_row_that_links_a_subsystem_spec_is_governed_by_it() {
     );
 }
 
-/// Every subsystem spec is linked from exactly one row, so no spec on the
-/// shelf claims crates the map does not give it.
+/// Every subsystem spec on the shelf, in a subdirectory too, is linked from
+/// exactly one row. With the case above, no spec on the shelf claims a crate
+/// the map does not give it.
 #[test]
 fn a_subsystem_spec_is_named_by_a_row() {
     let shelf = root().join("docs/subsystems");
@@ -234,12 +274,8 @@ fn a_subsystem_spec_is_named_by_a_row() {
             }
         }
     }
-    let specs: BTreeSet<String> = std::fs::read_dir(&shelf)
-        .unwrap_or_else(|e| panic!("{}: {e}", shelf.display()))
-        .map(|entry| entry.expect("a directory entry reads").file_name())
-        .map(|name| name.to_string_lossy().into_owned())
-        .filter(|name| name.ends_with(".md") && name != "README.md")
-        .collect();
+    let mut specs = BTreeSet::new();
+    specs_under(&shelf, "", &mut specs);
     for spec in &specs {
         let count = linked.get(spec).copied().unwrap_or(0);
         assert_eq!(
