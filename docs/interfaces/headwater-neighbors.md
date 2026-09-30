@@ -34,7 +34,7 @@ Text prints the model, the three digests and the ranked paths with their scores.
 
 ## Preconditions
 
-The repository must carry a readable `.headwater/taxonomy.lock`, consumer declaration and corpus.
+The repository must carry a readable `.headwater/taxonomy.lock`, consumer declaration and corpus. The verb refuses a lock or a consumer declaration that is not a regular file, before it opens it.
 
 `.headwater/embedding.yml` must pin `model.onnx` and `vocab.txt`, each with a `sha256:` digest. The model directory must hold both files, and the bytes of each file must match the pin.
 
