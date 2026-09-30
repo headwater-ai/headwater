@@ -464,17 +464,20 @@ fn derived_names_export_as_the_producer_of_an_uncommitted_graph_export() {
     );
     let stdout = String::from_utf8_lossy(&output.stdout);
 
-    // The block each listed path sits in, keyed by the producer heading above it.
+    // The block each listed path sits in, keyed by the heading above it. A
+    // heading is indented two spaces and a path four, and any other line ends
+    // the block, so a path the shape section lists later is never read as a
+    // producer's.
     let mut blocks: Vec<(String, Vec<String>)> = Vec::new();
     for line in stdout.lines() {
-        if line.starts_with("  headwater ") && line.contains(" — ") {
-            let command = line.trim_start().split(" — ").next().unwrap_or("");
-            blocks.push((command.to_string(), Vec::new()));
-        } else if let Some(path) = line.strip_prefix("    ") {
+        if let Some(path) = line.strip_prefix("    ") {
             if let Some((_, paths)) = blocks.last_mut() {
                 paths.push(path.trim().to_string());
             }
-        } else if line.trim().is_empty() {
+        } else if let Some(heading) = line.strip_prefix("  ") {
+            let command = heading.split(" — ").next().unwrap_or("");
+            blocks.push((command.to_string(), Vec::new()));
+        } else {
             blocks.push((String::new(), Vec::new()));
         }
     }
