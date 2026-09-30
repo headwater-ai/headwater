@@ -108,8 +108,13 @@ impl Root {
     /// Commit a snapshot at [`AT`] with its release record, and return the
     /// digest a pin names it by.
     fn snapshot(&self) -> String {
-        self.write(&format!("{AT}/snapshot.yml"), PAYLOAD);
-        let dir = self.at.join(AT);
+        self.snapshot_at(AT)
+    }
+
+    /// Commit a snapshot at `at`, as [`Root::snapshot`] does at [`AT`].
+    fn snapshot_at(&self, at: &str) -> String {
+        self.write(&format!("{at}/snapshot.yml"), PAYLOAD);
+        let dir = self.at.join(at);
         let manifest = headwater_yaml::load("package: acme/work-items\nversion: \"2026-09-30\"\n")
             .expect("the manifest reads")
             .value
@@ -321,5 +326,40 @@ fn an_absent_snapshot_joins_the_read_set_with_no_digest() {
             .out
             .contains(&format!("{payload} carried no hash when it was read")),
         "{still:?}"
+    );
+}
+
+/// The readings pair with the resolvers by name. The resolver set drops a
+/// declaration that names no resolver, so a reading paired by position would
+/// hand one import's reason to the next. Here an import with no resolver comes
+/// first, an unread one second and one that reads third: exactly one finding,
+/// and it names the second.
+#[test]
+fn each_finding_names_its_own_import_when_one_names_no_resolver() {
+    let root = Root::new("paired", "sha256:0000");
+    let tracker = ".headwater/imports/tracker";
+    let digest = root.snapshot_at(tracker);
+    let consumer = std::fs::read_to_string(repository().join(".headwater/taxonomy.yml"))
+        .expect("the declaration reads");
+    let imports = format!(
+        "\nimports:\n  plain:\n    at: .headwater/imports/plain\n    digest: sha256:1111\n  \
+         upstream:\n    at: {AT}\n    digest: sha256:0000\n    resolver: upstream-snapshot\n  \
+         tracker:\n    at: {tracker}\n    digest: {digest}\n    resolver: tracker-snapshot\n"
+    );
+    root.write(".headwater/taxonomy.yml", &format!("{consumer}{imports}"));
+    let ran = root.run(&["check", "--strict"]);
+    let pins = Root::pins(&ran);
+    assert_eq!(pins.len(), 1, "one finding, for `upstream` alone: {ran:?}");
+    assert!(
+        pins[0].contains(&format!(
+            "`imports.upstream` pins a snapshot at `{AT}` that binds nothing"
+        )),
+        "{}",
+        pins[0]
+    );
+    assert!(
+        !pins[0].contains("`imports.plain`") && !pins[0].contains("`imports.tracker`"),
+        "{}",
+        pins[0]
     );
 }
