@@ -1475,12 +1475,104 @@ printf '%s\n' '{"type":"result","subtype":"success","result":"withheld","total_c
 STUB
     chmod +x "$scratch/bin/claude"
     rm -f "$scratch/claude-args"
+    # One repetition, because the six arms of the campaign tier at its declared
+    # 30 are over its ceiling since #1472, and the ceiling is not this case.
     PATH="$scratch/bin:$PATH" sh "$driver" --probe "HW-PROBE-$tombstone" --session fixture-tier-cap \
-        --tier campaign --category sufficiency --task-file "$scratch/task.md" --workspace "$scratch/ws" \
+        --tier campaign --category sufficiency --repetitions 1 \
+        --task-file "$scratch/task.md" --workspace "$scratch/ws" \
         >/dev/null 2>"$scratch/tier-cap.err"
     same "a campaign session runs under the tier's declared cap" "0" "$?"
     same "and the cap the plan declares reaches the harness" "80" \
         "$(awk 'prev == "--max-turns" { print; exit } { prev = $0 }' "$scratch/claude-args" 2>/dev/null)"
+
+    # The MCP servers and the arm's delta (#1472). Every arm runs with
+    # `--strict-mcp-config`, so no server of the recording host loads. The
+    # `mcp` arm's workspace holds `.mcp.json`, and the driver passes it by
+    # name, because a project server does not load under `claude -p` without
+    # approval. The transcript states the arm's delta and the MCP calls.
+    same "every session runs with --strict-mcp-config" "1" \
+        "$(grep -cx -- '--strict-mcp-config' "$scratch/claude-args" 2>/dev/null)"
+    same "and a workspace with no .mcp.json names no server" "0" \
+        "$(grep -cx -- '--mcp-config' "$scratch/claude-args" 2>/dev/null)"
+    cat > "$scratch/bin/claude" <<STUB
+#!/bin/sh
+printf '%s\n' "\$@" > "$scratch/claude-args"
+printf '%s\n' '{"type":"system","subtype":"init","model":"claude-haiku-4-5","session_id":"s16"}'
+printf '%s\n' '{"type":"assistant","message":{"id":"m1","content":[{"type":"tool_use","id":"t1","name":"mcp__headwater__route","input":{"task":"x"}}]}}'
+printf '%s\n' '{"type":"user","message":{"content":[{"type":"tool_result","tool_use_id":"t1","content":"none"}]}}'
+printf '%s\n' '{"type":"assistant","message":{"id":"m2","content":[{"type":"tool_use","id":"t2","name":"Read","input":{"file_path":"CLAUDE.md"}}]}}'
+printf '%s\n' '{"type":"user","message":{"content":[{"type":"tool_result","tool_use_id":"t2","content":"none"}]}}'
+printf '%s\n' '{"type":"result","subtype":"success","result":"withheld","total_cost_usd":0.01,"modelUsage":{"claude-haiku-4-5-20251001":{"inputTokens":10}}}'
+STUB
+    chmod +x "$scratch/bin/claude"
+    cp "$root/tools/probe/arms/mcp/.mcp.json" "$scratch/ws/.mcp.json"
+    rm -f "$scratch/claude-args"
+    PATH="$scratch/bin:$PATH" sh "$driver" --probe "HW-PROBE-$tombstone" --session fixture-mcp \
+        --tier campaign --arm mcp --category sufficiency --repetitions 1 \
+        --task-file "$scratch/task.md" --workspace "$scratch/ws" \
+        >"$scratch/mcp-arm.md" 2>"$scratch/mcp-arm.err"
+    same "a session of the mcp arm records" "0" "$?"
+    rm -f "$scratch/ws/.mcp.json"
+    same "and the driver passes the workspace's .mcp.json to the harness" \
+        "$(cd "$scratch/ws" && pwd -P)/.mcp.json" \
+        "$(awk 'prev == "--mcp-config" { print; exit } { prev = $0 }' "$scratch/claude-args" 2>/dev/null)"
+    same "and still passes --strict-mcp-config" "1" \
+        "$(grep -cx -- '--strict-mcp-config' "$scratch/claude-args" 2>/dev/null)"
+    # `--mcp-config` takes one or more values, so the token after its path
+    # must be a flag the driver always passes (verify round 1). An optional
+    # one, such as `--model` or `--max-turns`, leaves the task text next to
+    # the path whenever it is not set, and the harness reads the task as a
+    # second config path.
+    same "a flag the driver always passes follows the config path" "--strict-mcp-config" \
+        "$(awk 'prev == "--mcp-config" { getline; print; exit } { prev = $0 }' "$scratch/claude-args" 2>/dev/null)"
+    present "the transcript counts the calls to an MCP tool, and not the Read" \
+        "The session made 1 call to a tool of an MCP server." "$scratch/mcp-arm.md"
+    present "and states the arm's delta from the declaration" \
+        'The `mcp` arm is the present tree with `.mcp.json` added.' "$scratch/mcp-arm.md"
+    PATH="$scratch/bin:$PATH" sh "$driver" --probe "HW-PROBE-$tombstone" --session fixture-no-hook \
+        --tier campaign --arm no-hook --category sufficiency --repetitions 1 \
+        --task-file "$scratch/task.md" --workspace "$scratch/ws" \
+        >"$scratch/no-hook-arm.md" 2>"$scratch/no-hook-arm.err"
+    present "a no-hook transcript states what the arm removed" \
+        'The `no-hook` arm is the present tree less `.claude/hooks/intent.sh`.' "$scratch/no-hook-arm.md"
+    PATH="$scratch/bin:$PATH" sh "$driver" --probe "HW-PROBE-$tombstone" --session fixture-absent-delta \
+        --tier campaign --arm absent --category sufficiency --repetitions 1 \
+        --task-file "$scratch/task.md" --workspace "$scratch/ws" \
+        >"$scratch/absent-arm.md" 2>"$scratch/absent-arm.err"
+    present "an absent transcript states the tier's ablation" \
+        'The `absent` arm is the present tree less `CLAUDE.md`, `.claude`, `.githooks`, `.headwater`.' "$scratch/absent-arm.md"
+
+    # A delta the declaration does not state is said to be unread, and never
+    # printed as the present tree (verify round 1).
+    grep -v '^      no-hook: ' "$root/.headwater/probe.yml" > "$scratch/no-delta.yml"
+    HW_PROBE_YML="$scratch/no-delta.yml" PATH="$scratch/bin:$PATH" sh "$driver" --probe "HW-PROBE-$tombstone" \
+        --session fixture-no-delta --tier campaign --arm no-hook --category sufficiency --repetitions 1 \
+        --task-file "$scratch/task.md" --workspace "$scratch/ws" \
+        >"$scratch/no-delta.md" 2>"$scratch/no-delta.err"
+    present "a transcript whose arm's delta cannot be read says so" \
+        'The delta of the `no-hook` arm of the `campaign` tier could not be read' "$scratch/no-delta.md"
+    absent "and does not call the arm the present tree" "arm is the present tree" "$scratch/no-delta.md"
+
+    # A stream that does not parse is uncounted, never "0 calls": two MCP
+    # calls and a cut last line.
+    cat > "$scratch/bin/claude" <<STUB
+#!/bin/sh
+printf '%s\n' "\$@" > "$scratch/claude-args"
+printf '%s\n' '{"type":"system","subtype":"init","model":"claude-haiku-4-5","session_id":"s17"}'
+printf '%s\n' '{"type":"assistant","message":{"id":"m1","content":[{"type":"tool_use","id":"t1","name":"mcp__headwater__route","input":{"task":"x"}}]}}'
+printf '%s\n' '{"type":"assistant","message":{"id":"m2","content":[{"type":"tool_use","id":"t2","name":"mcp__headwater__explain","input":{"path":"x"}}]}}'
+printf '%s\n' '{"type":"result","subtype":"success","result":"withheld","total_cost_usd":0.01,"modelUsage":{"claude-haiku-4-5-20251001":{"inputTokens":10}}}'
+printf '%s' '{"type":"assistant","message":{"id":"m3","content":[{"type":"tool_'
+STUB
+    chmod +x "$scratch/bin/claude"
+    PATH="$scratch/bin:$PATH" sh "$driver" --probe "HW-PROBE-$tombstone" --session fixture-cut \
+        --tier campaign --arm no-hook --category sufficiency --repetitions 1 \
+        --task-file "$scratch/task.md" --workspace "$scratch/ws" \
+        >"$scratch/cut.md" 2>"$scratch/cut.err"
+    absent "a stream that does not parse is never counted as no MCP call" \
+        "The session made 0 calls to a tool of an MCP server." "$scratch/cut.md"
+    present "and is said to be uncounted" \
+        "were not counted, because its stream did not parse as JSON" "$scratch/cut.md"
 
     # Bash writes (#1384). A write made through `Bash` names no path in its
     # input, so the transform cannot see it in the log, and 22 of 30
@@ -1577,7 +1669,10 @@ STUB
         cp -a "$scratch/bw-base" "$batch/trees/campaign-present"
         git -C "$root" rev-parse HEAD > "$batch/head"
         printf 'claude-haiku-4-5\n' > "$batch/model"
-        : > "$batch/repetitions"
+        # One repetition: the six arms of the campaign tier at its declared
+        # 30 are over its ceiling since #1472, and the ceiling is not what
+        # this case holds.
+        printf '1\n' > "$batch/repetitions"
         : > "$batch/max-turns"
         : > "$batch/cap"
         printf '30000\n' > "$batch/ceiling.campaign"
@@ -1605,7 +1700,7 @@ STUB
             'path: "docs/written-by-bash.md"' "$batch/sessions/L1-campaign-present-p1-r1/record.md"
         sh "$root/tools/probe/campaign.sh" --out "$batch" --assemble >/dev/null 2>"$scratch/batch-assemble.err"
         same "and assembly counts the capped session" "1 sessions, 1 cents, the intent hook live in 0, 1 stopped at the turn cap" \
-            "$(cat "$batch/assembled/campaign-present-sufficiency.summary" 2>/dev/null)"
+            "$(cat "$batch/assembled/L1-campaign-present-sufficiency.summary" 2>/dev/null)"
     else
         printf 'note not a checkout of this repository, so the campaign job case did not run.\n'
     fi
@@ -1826,6 +1921,512 @@ HW_PROBE_YML="$scratch/block-probe.yml" sh "$ablate" documentation "$scratch/abl
     >/dev/null 2>"$scratch/ablate.err"
 same "ablate.sh reads a block-sequence ablation" "0" "$?"
 kept "and removes exactly its entries" CLAUDE.md .githooks .headwater engine -- docs .claude
+
+# ---------------------------------------------------------------------------
+# The leak check (#1472). The status probe's answer is in text the harness
+# loads into every session, and no search by the probe's identifier or slug
+# finds it, because that text names the ruling and never the probe. So the
+# check reads the leak strings each probe declares, over the always-loaded set of a
+# copy of this repository's present tree.
+# ---------------------------------------------------------------------------
+seal="$root/tools/probe/seal.sh"
+status_probe=HW-PROBE-a-session-names-the-status-a-settled-decision-carries-in-its-pull-request
+rm -rf "$scratch/leak-ws"
+mkdir -p "$scratch/leak-ws/.claude"
+cp "$root/CLAUDE.md" "$scratch/leak-ws/CLAUDE.md"
+cp -R "$root/.claude/skills" "$root/.claude/agents" "$scratch/leak-ws/.claude/"
+
+# The probe's own name is nowhere in that text, which is the whole defect: a
+# search by name passes the tree.
+if grep -rqF "$status_probe" "$scratch/leak-ws/CLAUDE.md" "$scratch/leak-ws/.claude/skills/headwater-authoring/SKILL.md"; then
+    fail "the always-loaded text does not name the status probe" "it does, so a search by name would find the leak"
+else
+    pass "the always-loaded text does not name the status probe"
+fi
+
+# THE decisive case: a declaration that keeps no leak string. The check names the
+# authoring skill with the ruling's identifier, and exits 1.
+awk '/^leaks_kept:/ { skip = 1; next } skip && /^[^ #]/ { skip = 0 } !skip' \
+    "$root/.headwater/probe.yml" > "$scratch/leak-probe.yml"
+HW_PROBE_YML="$scratch/leak-probe.yml" sh "$seal" --leak "$scratch/leak-ws" "$status_probe" \
+    > "$scratch/leak.out" 2> "$scratch/leak.err"
+same "the leak check fails the present tree for the status probe" "1" "$?"
+present "and names the authoring skill with the leak string HW-DR-0052" \
+    "leak $status_probe .claude/skills/headwater-authoring/SKILL.md HW-DR-0052" "$scratch/leak.out"
+present "and the leak string \`status: current\` too" \
+    "leak $status_probe .claude/skills/headwater-authoring/SKILL.md status: current" "$scratch/leak.out"
+
+# The committed declaration keeps the leak string on purpose (#1472, outcome b): the
+# probe is reported on its own line and never in a sufficiency rate.
+sh "$seal" --leak "$scratch/leak-ws" "$status_probe" > "$scratch/kept.out" 2> "$scratch/kept.err"
+same "a leak string the declaration keeps does not fail the check" "0" "$?"
+present "and the check still prints it, as kept" \
+    "kept $status_probe .claude/skills/headwater-authoring/SKILL.md HW-DR-0052" "$scratch/kept.out"
+
+# A description is the one line a harness loads. A leak string in the body of a skill
+# is not always loaded, so it is no leak.
+rm -rf "$scratch/leak-body"
+mkdir -p "$scratch/leak-body/.claude/skills/s"
+printf -- '---\nname: s\ndescription: Nothing to see.\n---\n\nThe ruling is HW-DR-0052.\n' \
+    > "$scratch/leak-body/.claude/skills/s/SKILL.md"
+HW_PROBE_YML="$scratch/leak-probe.yml" sh "$seal" --leak "$scratch/leak-body" "$status_probe" \
+    > "$scratch/body.out" 2>&1
+same "a leak string in the body of a skill and not in its description is no leak" "0" "$?"
+# A folded description is read to its end.
+printf -- '---\nname: s\ndescription: >\n  Nothing to see, and\n  the ruling is HW-DR-0052.\n---\n' \
+    > "$scratch/leak-body/.claude/skills/s/SKILL.md"
+HW_PROBE_YML="$scratch/leak-probe.yml" sh "$seal" --leak "$scratch/leak-body" "$status_probe" \
+    > "$scratch/folded.out" 2>&1
+same "a leak string on the second line of a folded description is a leak" "1" "$?"
+# Each channel on its own (verify round 1): an agent definition's description
+# and a command's description are loaded into every session too.
+rm -rf "$scratch/leak-body/.claude/skills"
+mkdir -p "$scratch/leak-body/.claude/agents"
+printf -- '---\nname: a\ndescription: An agent that cites HW-DR-0052.\n---\n' \
+    > "$scratch/leak-body/.claude/agents/a.md"
+HW_PROBE_YML="$scratch/leak-probe.yml" sh "$seal" --leak "$scratch/leak-body" "$status_probe" \
+    > "$scratch/agent.out" 2>&1
+same "a leak string in an agent definition's description alone is a leak" "1" "$?"
+present "and names the agent definition" "leak $status_probe .claude/agents/a.md HW-DR-0052" "$scratch/agent.out"
+rm -rf "$scratch/leak-body/.claude/agents"
+mkdir -p "$scratch/leak-body/.claude/commands"
+printf -- '---\ndescription: A command that says status: current.\n---\n\nBody.\n' \
+    > "$scratch/leak-body/.claude/commands/c.md"
+HW_PROBE_YML="$scratch/leak-probe.yml" sh "$seal" --leak "$scratch/leak-body" "$status_probe" \
+    > "$scratch/command.out" 2>&1
+same "a leak string in a command's description is a leak" "1" "$?"
+present "and names the command" "leak $status_probe .claude/commands/c.md status: current" "$scratch/command.out"
+rm -rf "$scratch/leak-body/.claude/commands"
+
+# Verify round 2: the harness lists a skill or a command as its description
+# followed by its `when_to_use:`, and a command with no description by the
+# first line of its body. Each channel alone, and a namespaced command, and a
+# file with CRLF line endings.
+leak_one() {
+    # $1 name, $2 relative path, $3 file content (printf format), $4 expected exit
+    rm -rf "$scratch/leak-one"
+    mkdir -p "$scratch/leak-one/$(dirname "$2")"
+    # shellcheck disable=SC2059
+    printf -- "$3" > "$scratch/leak-one/$2"
+    HW_PROBE_YML="$scratch/leak-probe.yml" sh "$seal" --leak "$scratch/leak-one" "$status_probe" \
+        > "$scratch/leak-one.out" 2>&1
+    same "$1" "$4" "$?"
+}
+leak_one "a leak string in a skill's when_to_use is a leak" \
+    .claude/skills/s/SKILL.md '---\nname: s\ndescription: Nothing.\nwhen_to_use: When HW-DR-0052 applies.\n---\n' 1
+leak_one "a leak string in a command's when_to_use is a leak" \
+    .claude/commands/c.md '---\ndescription: Nothing.\nwhen_to_use: >\n  When the ruling\n  HW-DR-0052 applies.\n---\n' 1
+leak_one "the first body line of a command with no front matter is a leak" \
+    .claude/commands/c.md 'HW-DR-0052 says it.\n\nMore.\n' 1
+leak_one "the first body line of a command whose front matter holds no description is a leak" \
+    .claude/commands/c.md '---\nargument-hint: <n>\n---\n\n# HW-DR-0052 says it\n' 1
+leak_one "a later body line of a command is not loaded, and is no leak" \
+    .claude/commands/c.md '---\nargument-hint: <n>\n---\n\nNothing here.\n\nHW-DR-0052 later.\n' 0
+leak_one "the body of a command that has a description is not loaded, and is no leak" \
+    .claude/commands/c.md '---\ndescription: Nothing.\n---\n\nHW-DR-0052 says it.\n' 0
+leak_one "a command under a namespace directory is read" \
+    .claude/commands/ns/c.md '---\ndescription: The HW-DR-0052 command.\n---\n' 1
+leak_one "a command with CRLF line endings is read" \
+    .claude/commands/c.md '---\r\ndescription: The HW-DR-0052 command.\r\n---\r\n' 1
+leak_one "a skill with CRLF line endings is read" \
+    .claude/skills/s/SKILL.md '---\r\nname: s\r\ndescription: The HW-DR-0052 skill.\r\n---\r\n' 1
+
+# Verify round 3: eight kinds of always-loaded text a hand-written reader
+# missed, each planted alone and each reported, and each with CRLF line
+# endings too. `leak.py` reads front matter with a YAML parser and the memory
+# set as the harness names it.
+leak_kind() {
+    # $1 name, $2 relative path, $3 file content (printf format), $4 the
+    # `<where>` the hit must name
+    leak_one "$1" "$2" "$3" 1
+    present "and names $4" "leak $status_probe $4 HW-DR-0052" "$scratch/leak-one.out"
+    leak_one "$1, with CRLF line endings" "$2" "$(printf '%s' "$3" | sed 's/\\n/\\r\\n/g')" 1
+    present "and names $4" "leak $status_probe $4 HW-DR-0052" "$scratch/leak-one.out"
+}
+leak_kind "(A) a plain multi-line description whose second line holds the leak string" \
+    .claude/skills/s/SKILL.md '---\nname: s\ndescription: Nothing to see, and\n  the ruling is HW-DR-0052.\n---\n' \
+    .claude/skills/s/SKILL.md
+leak_kind "(B) a double-quoted multi-line description" \
+    .claude/agents/a.md '---\nname: a\ndescription: "Nothing to see, and\n  the ruling is HW-DR-0052."\n---\n' \
+    .claude/agents/a.md
+leak_kind "(C) .claude/CLAUDE.md" .claude/CLAUDE.md 'The ruling is HW-DR-0052.\n' .claude/CLAUDE.md
+leak_kind "(D) CLAUDE.local.md" CLAUDE.local.md 'The ruling is HW-DR-0052.\n' CLAUDE.local.md
+leak_kind "(K) a when-to-use key, with a hyphen" \
+    .claude/agents/a.md '---\nname: a\ndescription: Nothing.\nwhen-to-use: When HW-DR-0052 applies.\n---\n' \
+    .claude/agents/a.md
+leak_kind "(L) AGENTS.md as a regular file" AGENTS.md 'The ruling is HW-DR-0052.\n' AGENTS.md
+leak_kind "(M) a file under .claude/rules/" .claude/rules/zz.md 'The ruling is HW-DR-0052.\n' .claude/rules/zz.md
+leak_kind "(M) a file under a subdirectory of .claude/rules/" \
+    .claude/rules/area/zz.md '---\npaths: ["src/**"]\n---\n\nThe ruling is HW-DR-0052.\n' .claude/rules/area/zz.md
+
+# (E) A file CLAUDE.md imports with `@<path>`, and a file that one imports in
+# turn. An `@` inside a code span is no import.
+leak_import() {
+    # $1 name, $2 CLAUDE.md content, $3 expected exit
+    rm -rf "$scratch/leak-one"
+    mkdir -p "$scratch/leak-one/notes"
+    printf -- "$2" > "$scratch/leak-one/CLAUDE.md"
+    printf 'See @deeper.md for more.\n' > "$scratch/leak-one/notes/extra.md"
+    printf 'The ruling is HW-DR-0052.\n' > "$scratch/leak-one/notes/deeper.md"
+    HW_PROBE_YML="$scratch/leak-probe.yml" sh "$seal" --leak "$scratch/leak-one" "$status_probe" \
+        > "$scratch/leak-one.out" 2>&1
+    same "$1" "$3" "$?"
+}
+leak_import "(E) a file an @ import in CLAUDE.md reaches is read" 'Read @notes/extra.md first.\n' 1
+present "and names the imported file, relative to the file that imports it" \
+    "leak $status_probe notes/deeper.md HW-DR-0052" "$scratch/leak-one.out"
+leak_import "(E) the same import with CRLF line endings" 'Read @notes/extra.md first.\r\n' 1
+# Verify round 4: the harness cuts an import at its first `#`.
+leak_import "an import with a fragment reads the file before the #" 'Read @notes/extra.md#top first.\n' 1
+present "and names the file it reaches" "leak $status_probe notes/deeper.md HW-DR-0052" "$scratch/leak-one.out"
+leak_import "an @ inside a code span is no import" 'Write `see @notes/extra.md now` to import it.\n' 0
+leak_import "an @ inside a fenced code block is no import" '```\nsee @notes/extra.md\n```\n' 0
+
+# AGENTS.md as a link to CLAUDE.md, as in this repository, is one file and
+# one line.
+rm -rf "$scratch/leak-one"
+mkdir -p "$scratch/leak-one"
+printf 'The ruling is HW-DR-0052.\n' > "$scratch/leak-one/CLAUDE.md"
+ln -s CLAUDE.md "$scratch/leak-one/AGENTS.md"
+HW_PROBE_YML="$scratch/leak-probe.yml" sh "$seal" --leak "$scratch/leak-one" "$status_probe" \
+    > "$scratch/leak-one.out" 2>&1
+same "AGENTS.md as a link to CLAUDE.md is read once" "leak $status_probe CLAUDE.md HW-DR-0052" \
+    "$(grep HW-DR-0052 "$scratch/leak-one.out")"
+
+# A leak string that a line break of a literal block splits is still one
+# leak string, because every text is read with its whitespace runs as one space.
+leak_one "a leak string split by a line break of a literal block is a leak" \
+    .claude/skills/s/SKILL.md '---\nname: s\ndescription: |\n  The status:\n  current one.\n---\n' 1
+
+# Front matter that does not parse is read whole, never skipped.
+leak_one "front matter that does not parse is read whole" \
+    .claude/skills/s/SKILL.md '---\nname: s\ndescription: [HW-DR-0052\n---\n' 1
+
+# A probe that declares no leak string is printed as one the check cannot see, and
+# does not pass as clean by saying nothing.
+sh "$seal" --leak "$scratch/leak-ws" HW-PROBE-no-such-probe > "$scratch/undeclared.out" 2>&1
+same "a probe with no leak string does not fail the check" "0" "$?"
+present "and is printed as undeclared" "undeclared HW-PROBE-no-such-probe" "$scratch/undeclared.out"
+
+# The MCP tools. A workspace that declares a server has the descriptions of
+# its tools loaded too, and the check lists them through the engine.
+if [ -x "$engine" ]; then
+    rm -rf "$scratch/leak-mcp"
+    mkdir -p "$scratch/leak-mcp"
+    cp -R "$root/.headwater" "$scratch/leak-mcp/.headwater"
+    printf '{"mcpServers":{}}\n' > "$scratch/leak-mcp/.mcp.json"
+    printf 'leaks:\n  HW-PROBE-x: [Resolve a task description]\n' > "$scratch/mcp-probe.yml"
+    HW_PROBE_YML="$scratch/mcp-probe.yml" sh "$seal" --leak "$scratch/leak-mcp" HW-PROBE-x \
+        > "$scratch/mcp.out" 2> "$scratch/mcp.err"
+    same "a leak string in an MCP tool's description is a leak" "1" "$?"
+    present "and names the tool" "leak HW-PROBE-x mcp:route Resolve a task description" "$scratch/mcp.out"
+    rm -f "$scratch/leak-mcp/.mcp.json"
+    HW_PROBE_YML="$scratch/mcp-probe.yml" sh "$seal" --leak "$scratch/leak-mcp" HW-PROBE-x \
+        > "$scratch/nomcp.out" 2>&1
+    same "and with no server declared the tools are not loaded" "0" "$?"
+else
+    printf 'note no engine, so the MCP leak cases did not run.\n'
+fi
+
+# ---------------------------------------------------------------------------
+# The component arms (#1472). Each is built from the one present tree, and
+# `--diff` prints how it differs from that tree, against the committed
+# declaration.
+# ---------------------------------------------------------------------------
+layer_tree() {
+    rm -rf "$scratch/layer"
+    mkdir -p "$scratch/layer/.claude/hooks" "$scratch/layer/.claude/skills/s" \
+        "$scratch/layer/.claude/agents" "$scratch/layer/.headwater" "$scratch/layer/docs/spec"
+    : > "$scratch/layer/CLAUDE.md"
+    : > "$scratch/layer/.claude/hooks/intent.sh"
+    : > "$scratch/layer/.claude/hooks/write.sh"
+    : > "$scratch/layer/.claude/settings.json"
+    : > "$scratch/layer/.claude/skills/s/SKILL.md"
+    : > "$scratch/layer/.claude/agents/a.md"
+    : > "$scratch/layer/.headwater/taxonomy.lock"
+    : > "$scratch/layer/docs/spec/05.md"
+}
+layer_tree
+sh "$ablate" campaign "$scratch/layer" no-hook > /dev/null 2> "$scratch/layer.err"
+same "ablate.sh builds the no-hook arm" "0" "$?"
+if [ ! -e "$scratch/layer/.claude/hooks/intent.sh" ] && [ -e "$scratch/layer/.claude/settings.json" ] \
+    && [ -e "$scratch/layer/.claude/hooks/write.sh" ] && [ -e "$scratch/layer/CLAUDE.md" ]; then
+    pass "and it removes the intent hook's script and keeps the settings and every other hook"
+else
+    fail "and it removes the intent hook's script and keeps the settings and every other hook" \
+        "$(cd "$scratch/layer" && find . -type f | sort | tr '\n' ' ')"
+fi
+
+layer_tree
+for arm_delta in "no-hook|- .claude/hooks/intent.sh" "no-skills|- .claude/skills" \
+    "no-claude-md|- CLAUDE.md" "mcp|+ .mcp.json"; do
+    arm_name=${arm_delta%%|*}
+    sh "$ablate" --diff campaign "$arm_name" "$scratch/layer" > "$scratch/diff.$arm_name" 2> "$scratch/diff.err"
+    same "ablate.sh --diff campaign $arm_name exits 0" "0" "$?"
+    same "and its delta against present is exactly its component" "${arm_delta#*|}" "$(cat "$scratch/diff.$arm_name")"
+done
+sh "$ablate" --diff campaign absent "$scratch/layer" > "$scratch/diff.absent" 2>&1
+same "ablate.sh --diff campaign absent exits 0" "0" "$?"
+same "and its delta is the ablation the tree holds" \
+    "- .claude
+- .headwater
+- CLAUDE.md" "$(cat "$scratch/diff.absent")"
+if [ -e "$scratch/layer/.claude/hooks/intent.sh" ]; then
+    pass "--diff leaves the present tree as it was"
+else
+    fail "--diff leaves the present tree as it was" "it removed intent.sh from the present tree"
+fi
+
+rm -f "$scratch/layer/CLAUDE.md"
+sh "$ablate" --diff campaign no-claude-md "$scratch/layer" > "$scratch/diff.same" 2> "$scratch/diff.same.err"
+same "an arm whose tree does not differ from present fails --diff" "1" "$?"
+present "and says so" "no different from the present tree" "$scratch/diff.same.err"
+
+# A present tree that already declares a server: the mcp arm changes a file
+# its delta does not add, and `--diff` names the change rather than passing it.
+layer_tree
+printf '{}\n' > "$scratch/layer/.mcp.json"
+sh "$ablate" --diff campaign mcp "$scratch/layer" > "$scratch/diff.changed" 2>&1
+same "an arm that changes a path its delta does not name fails --diff" "1" "$?"
+present "and prints the change as unexpected" "unexpected ? Files" "$scratch/diff.changed"
+
+layer_tree
+mkdir -p "$scratch/layer/docs/probes"
+sh "$ablate" --diff campaign no-hook "$scratch/layer" > /dev/null 2> "$scratch/diff.instrument.err"
+same "--diff refuses a tree that still holds the instrument" "2" "$?"
+
+# A block-sequence delta reads as the flow one does, because the engine reads
+# both (verify round 1), and a delta that is neither names its own field.
+awk '/^      no-hook: / { print "      no-hook:"; print "        - .claude/hooks/intent.sh"; next } { print }' \
+    "$root/.headwater/probe.yml" > "$scratch/block-delta.yml"
+layer_tree
+HW_PROBE_YML="$scratch/block-delta.yml" sh "$ablate" --diff campaign no-hook "$scratch/layer" \
+    > "$scratch/block-delta.out" 2> "$scratch/block-delta.err"
+same "a block-sequence delta builds its arm" "0" "$?"
+same "and its delta is the one path" "- .claude/hooks/intent.sh" "$(cat "$scratch/block-delta.out")"
+# Verify round 2: the other forms the engine reads. Each builds the one path,
+# and never reads as empty or as another arm's delta.
+delta_form() {
+    # $1 name, $2 awk program that rewrites the declaration
+    awk "$2" "$root/.headwater/probe.yml" > "$scratch/form.yml"
+    layer_tree
+    HW_PROBE_YML="$scratch/form.yml" sh "$ablate" --diff campaign no-hook "$scratch/layer" \
+        > "$scratch/form.out" 2> "$scratch/form.err"
+    same "$1 builds its arm" "0" "$?"
+    same "and its delta is the one path" "- .claude/hooks/intent.sh" "$(cat "$scratch/form.out")"
+}
+delta_form "a block-sequence delta at ten spaces" \
+    '/^      no-hook: / { print "      no-hook:"; print "          - .claude/hooks/intent.sh"; next } { print }'
+delta_form "a block-sequence delta at the key's own column" \
+    '/^      no-hook: / { print "      no-hook:"; print "      - .claude/hooks/intent.sh"; next } { print }'
+delta_form "a flow-sequence delta over several lines" \
+    '/^      no-hook: / { print "      no-hook: ["; print "        .claude/hooks/intent.sh"; print "      ]"; next } { print }'
+delta_form "a block-sequence delta followed by another arm's block sequence" \
+    '/^      no-hook: / { print "      no-hook:"; print "        - .claude/hooks/intent.sh"; next }
+     /^      no-skills: / { print "      no-skills:"; print "        - .claude/skills"; next } { print }'
+awk '/^      no-hook: / { print "      no-hook: [.claude/hooks/intent.sh"; next } /^      no-skills: / { next } /^      no-claude-md: / { next } /^      mcp: / { next } { print }' \
+    "$root/.headwater/probe.yml" > "$scratch/open-flow.yml"
+HW_PROBE_YML="$scratch/open-flow.yml" sh "$ablate" --delta campaign no-hook > /dev/null 2> "$scratch/open-flow.err"
+same "a flow sequence that never closes is refused" "2" "$?"
+present "with the engine's reason, not as an empty delta" \
+    "did not parse as YAML" "$scratch/open-flow.err"
+absent "and never as an empty delta" "empty delta" "$scratch/open-flow.err"
+
+# Verify round 3, finding 3: four forms the engine plans and a hand-written
+# reader got wrong. The delta now comes from `headwater probe plan --delta`,
+# so each builds the arm the engine reads. The last one also holds the arm
+# after it: no-skills must still read as its own delta.
+delta_form "a delta under a components key that carries a comment" \
+    '/^    components:/ { print "    components: # the component arms"; next } { print }'
+delta_form "a delta under a quoted key" \
+    '/^      no-hook: / { print "      \"no-hook\": [.claude/hooks/intent.sh]"; next } { print }'
+delta_form "a flow-sequence delta with a trailing comma" \
+    '/^      no-hook: / { print "      no-hook: [.claude/hooks/intent.sh, ]"; next } { print }'
+delta_form "a multi-line flow delta with a comment before its closing bracket" \
+    '/^      no-hook: / { print "      no-hook: ["; print "        .claude/hooks/intent.sh, # the intent hook"; print "        # nothing else"; print "      ]"; next } { print }'
+HW_PROBE_YML="$scratch/form.yml" sh "$ablate" --delta campaign no-skills > "$scratch/form-next.out" 2> "$scratch/form-next.err"
+same "and the arm after it reads as its own delta" "declared - .claude/skills" "$(cat "$scratch/form-next.out")"
+
+sed 's/^      no-hook: .*/      no-hook: .claude\/hooks\/intent.sh/' "$root/.headwater/probe.yml" > "$scratch/scalar-delta.yml"
+HW_PROBE_YML="$scratch/scalar-delta.yml" sh "$ablate" --delta campaign no-hook \
+    > /dev/null 2> "$scratch/scalar-delta.err"
+same "a delta that is not a sequence is refused" "2" "$?"
+present "and the refusal names the delta, not the ablation" \
+    "the \`no-hook\` delta of the \`campaign\` tier in .headwater/probe.yml is not a sequence of paths" "$scratch/scalar-delta.err"
+
+# Verify round 4: a delta entry that holds a line break would print as two
+# lines of `--delta`, and the arm would lose a path nobody declared. The
+# engine refuses the entry, so no tree is built.
+sed 's/^      no-hook: .*/      no-hook: [".claude\/hooks\/intent.sh\\n- CLAUDE.md"]/' "$root/.headwater/probe.yml" > "$scratch/newline-delta.yml"
+layer_tree
+HW_PROBE_YML="$scratch/newline-delta.yml" sh "$ablate" campaign "$scratch/layer" no-hook \
+    > /dev/null 2> "$scratch/newline-delta.err"
+same "a delta entry that holds a line break is refused" "2" "$?"
+present "and the refusal names the control character" "no control character" "$scratch/newline-delta.err"
+if [ -e "$scratch/layer/CLAUDE.md" ] && [ -e "$scratch/layer/.claude/hooks/intent.sh" ]; then
+    pass "and it removes nothing"
+else
+    fail "and it removes nothing" "$(cd "$scratch/layer" && find . -type f | sort | tr '\n' ' ')"
+fi
+
+layer_tree
+sh "$ablate" campaign "$scratch/layer" no-docs > /dev/null 2> "$scratch/undeclared.err"
+same "ablate.sh refuses an arm the tier declares no delta for" "2" "$?"
+present "and names it" "\`--arm no-docs\` names no arm" "$scratch/undeclared.err"
+if [ -e "$scratch/layer/.claude/hooks/intent.sh" ] && [ -e "$scratch/layer/CLAUDE.md" ]; then
+    pass "and it removes nothing"
+else
+    fail "and it removes nothing" "$(cd "$scratch/layer" && find . -type f | sort | tr '\n' ' ')"
+fi
+layer_tree
+sh "$ablate" regression "$scratch/layer" no-hook > /dev/null 2> "$scratch/not-run.err"
+same "ablate.sh refuses a component arm the tier does not run" "2" "$?"
+present "and says the tier does not run it" "does not run the \`no-hook\` arm" "$scratch/not-run.err"
+
+layer_tree
+sh "$ablate" campaign "$scratch/layer" mcp > /dev/null 2> "$scratch/mcp.err"
+same "ablate.sh builds the mcp arm" "0" "$?"
+if cmp -s "$root/tools/probe/arms/mcp/.mcp.json" "$scratch/layer/.mcp.json"; then
+    pass "and it adds the declared server file from tools/probe/arms/mcp/"
+else
+    fail "and it adds the declared server file from tools/probe/arms/mcp/" "the .mcp.json differs or is missing"
+fi
+
+# ---------------------------------------------------------------------------
+# The dry run of the layer campaign (#1472): the committed spec, planned,
+# priced, its trees built and diffed, and the leak check run, with a harness
+# on the path that records any call to it.
+# ---------------------------------------------------------------------------
+if [ -x "$engine" ]; then
+    mkdir -p "$scratch/dry-bin"
+    printf '#!/bin/sh\n: > "%s/claude-called"\nexit 7\n' "$scratch" > "$scratch/dry-bin/claude"
+    chmod +x "$scratch/dry-bin/claude"
+    rm -f "$scratch/claude-called"
+    PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
+        --spec "$root/tools/probe/layer-campaign.spec" > "$scratch/dry.out" 2> "$scratch/dry.err"
+    same "the dry run of the layer campaign exits 0" "0" "$?"
+    if [ -e "$scratch/claude-called" ]; then
+        fail "and it calls no model" "the harness on the path was called"
+    else
+        pass "and it calls no model"
+    fi
+    present "it prints the power calculation, uncorrected and corrected" \
+        "needs 325 sessions per arm, 353 with the Fleiss continuity correction" "$scratch/dry.out"
+    present "and prices a discovery line at the powered repetitions" \
+        "campaign no-hook discovery: 2 probes x 177 repetitions" "$scratch/dry.out"
+    present "and sums each arm" "arm campaign mcp: 564 sessions, \$282.00" "$scratch/dry.out"
+    present "and holds the campaign tier to its ceiling" \
+        "tier campaign: 3384 sessions, \$1692.00 against a ceiling of \$300.00: over by \$1392.00" "$scratch/dry.out"
+    present "and prints the total" "total: 3504 sessions, \$1752.00 against the \$430.00 the tiers declare" "$scratch/dry.out"
+    present "and the delta of the no-hook arm is the hook's script alone" \
+        "tree campaign no-hook: - .claude/hooks/intent.sh" "$scratch/dry.out"
+    present "and the mcp arm adds its server" "tree campaign mcp: + .mcp.json" "$scratch/dry.out"
+    present "and the server starts in the mcp tree and lists its tools" \
+        "lists route explain" "$scratch/dry.out"
+    present "and the leak check reports the status probe as kept" \
+        "leak check, present tree: kept $status_probe .claude/skills/headwater-authoring/SKILL.md HW-DR-0052" "$scratch/dry.out"
+    present "and each leak-kept line on its own" "line 8 holds only leak-kept probes" "$scratch/dry.out"
+
+    # A line that pools a leak-kept probe with one that is not fails the dry run,
+    # and a plan over its ceiling is printed rather than fatal: four
+    # sufficiency probes over six arms at 30 repetitions is 720 sessions.
+    printf 'campaign present sufficiency\n' > "$scratch/pooled.spec"
+    PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
+        --spec "$scratch/pooled.spec" > "$scratch/pooled.out" 2> "$scratch/pooled.err"
+    same "a line that pools a leak-kept probe fails the dry run with 8, not 5" "8" "$?"
+    present "and names the line" "line 1 pools a probe under \`leaks_kept:\`" "$scratch/pooled.out"
+    present "and the ceiling's refusal is printed as a line" \
+        "L1 720 sessions project \$360.00 against a declared ceiling of \$300.00" "$scratch/pooled.out"
+
+    # Any other refusal of a plan is the batch driver's 5.
+    printf 'campaign present discovery\n' > "$scratch/refused.spec"
+    PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
+        --spec "$scratch/refused.spec" > "$scratch/refused.out" 2> "$scratch/refused.err"
+    same "a plan refused for another reason fails the dry run with 5" "5" "$?"
+    printf 'documentation no-hook sufficiency\n' > "$scratch/arm.spec"
+    PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
+        --spec "$scratch/arm.spec" > "$scratch/arm.out" 2> "$scratch/arm.err"
+    same "a line whose tier does not run its arm fails the dry run with 5" "5" "$?"
+    # The other three causes of exit 8 (verify round 1), each on its own.
+    printf 'campaign present sufficiency HW-PROBE-a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer HW-PROBE-a-session-records-an-unmeasured-claim-in-the-shape-this-corpus-checks\n' \
+        > "$scratch/kept.spec"
+    HW_PROBE_YML="$scratch/leak-probe.yml" PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
+        --spec "$scratch/kept.spec" > "$scratch/dry-leak.out" 2> "$scratch/dry-leak.err"
+    same "a leak string no declaration keeps fails the dry run with 8" "8" "$?"
+    present "and the dry run prints the leak" \
+        "leak check, present tree: leak $status_probe .claude/skills/headwater-authoring/SKILL.md HW-DR-0052" "$scratch/dry-leak.out"
+
+    sed 's/^      no-hook: .*/      no-hook: [.claude\/hooks\/no-such-hook.sh]/' "$root/.headwater/probe.yml" > "$scratch/no-such-hook.yml"
+    printf 'campaign no-hook navigability\n' > "$scratch/tree.spec"
+    HW_PROBE_YML="$scratch/no-such-hook.yml" PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
+        --spec "$scratch/tree.spec" > "$scratch/dry-tree.out" 2> "$scratch/dry-tree.err"
+    same "an arm whose tree is not its delta fails the dry run with 8" "8" "$?"
+    present "and the dry run names the arm" "tree campaign no-hook is not its delta" "$scratch/dry-tree.out"
+
+    printf '#!/bin/sh\nexit 0\n' > "$scratch/dry-bin/silent-server"
+    chmod +x "$scratch/dry-bin/silent-server"
+    printf 'campaign mcp navigability\n' > "$scratch/mcp.spec"
+    HW_PROBE_ENGINE="$scratch/dry-bin/silent-server" PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
+        --spec "$scratch/mcp.spec" > "$scratch/dry-mcp.out" 2> "$scratch/dry-mcp.err"
+    same "a server that lists no tool fails the dry run with 8" "8" "$?"
+    present "and the dry run says so" "listed no tool in the mcp tree" "$scratch/dry-mcp.out"
+
+    # Verify round 5: the dry run reads `leaks_kept:` and `power:` with the
+    # parser the leak check uses, so a flow sequence keeps its probes and a
+    # quoted rate is refused rather than read as 0.
+    awk -v a="$status_probe" -v b=HW-PROBE-a-session-names-the-event-that-makes-a-document-accepted '
+        /^leaks_kept:/ { print "leaks_kept: [" a ", " b "]"; skip = 1; next }
+        skip && /^  - / { next }
+        { skip = 0; print }
+    ' "$root/.headwater/probe.yml" > "$scratch/flow-kept.yml"
+    HW_PROBE_YML="$scratch/flow-kept.yml" PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
+        --spec "$root/tools/probe/layer-campaign.spec" > "$scratch/flow-kept.out" 2> "$scratch/flow-kept.err"
+    same "a flow-sequence leaks_kept keeps the committed dry run at 0" "0" "$?"
+    present "and each leak-kept line is still on its own" "line 8 holds only leak-kept probes" "$scratch/flow-kept.out"
+    printf 'campaign present sufficiency %s HW-PROBE-a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer\n' \
+        "$status_probe" > "$scratch/mixed.spec"
+    HW_PROBE_YML="$scratch/flow-kept.yml" PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
+        --spec "$scratch/mixed.spec" > "$scratch/flow-mixed.out" 2> "$scratch/flow-mixed.err"
+    same "a line that pools a flow-kept probe with one that is not fails the dry run with 8" "8" "$?"
+    present "and names the line" "line 1 pools a probe under \`leaks_kept:\`" "$scratch/flow-mixed.out"
+    HW_PROBE_YML="$scratch/leak-probe.yml" PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
+        --spec "$scratch/mixed.spec" > /dev/null 2>&1
+    same "and with no probe kept the same line is a leak, 8" "8" "$?"
+
+    # A `leaks_kept:` that is not a sequence of identifiers is refused, never
+    # read as a list of its characters or as nothing.
+    awk -v a="$status_probe" '
+        /^leaks_kept:/ { print "leaks_kept: " a; skip = 1; next }
+        skip && /^  - / { next }
+        { skip = 0; print }
+    ' "$root/.headwater/probe.yml" > "$scratch/scalar-kept.yml"
+    HW_PROBE_YML="$scratch/scalar-kept.yml" PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
+        --spec "$root/tools/probe/layer-campaign.spec" > /dev/null 2> "$scratch/scalar-kept.err"
+    same "a leaks_kept that is one scalar is refused with 2" "2" "$?"
+    present "and the refusal says why" "is not a sequence of probe identifiers" "$scratch/scalar-kept.err"
+
+    dry_power() {
+        # $1 name, $2 sed program over the power block, $3 text of the refusal
+        sed "$2" "$root/.headwater/probe.yml" > "$scratch/power.yml"
+        HW_PROBE_YML="$scratch/power.yml" PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
+            --spec "$root/tools/probe/layer-campaign.spec" > "$scratch/power.out" 2> "$scratch/power.err"
+        same "$1 is refused with 2" "2" "$?"
+        present "and the refusal says why" "$3" "$scratch/power.err"
+        absent "and nothing is priced" "tier campaign:" "$scratch/power.out"
+    }
+    dry_power "a quoted rate" 's/^  present: 0\.15/  present: "0.15"/' "must be a number"
+    dry_power "a rate that is a word" 's/^  absent: 0\.08/  absent: low/' "must be a number"
+    dry_power "a rate outside (0, 1)" 's/^  present: 0\.15/  present: 15/' "strictly between 0 and 1"
+    dry_power "a power block with no alpha" '/^  alpha: /d' "must be a number"
+
+    if [ -e "$scratch/claude-called" ]; then
+        fail "no refused dry run calls a model" "the harness on the path was called"
+    else
+        pass "no refused dry run calls a model"
+    fi
+else
+    printf 'note no engine, so the dry-run cases did not run.\n'
+fi
 
 present "the driver names the channel and never a file under ~/.claude/projects" \
     "output-format stream-json" "$driver"

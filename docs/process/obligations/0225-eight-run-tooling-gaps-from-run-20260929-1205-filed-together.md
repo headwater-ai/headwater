@@ -12,7 +12,7 @@ waiting_on: build
 
 ## Context
 
-`hw-run-policy` caps what one pass sends to the register as full records. Past the cap, one record lists the rest. Run `20260929-1205` wrote eight intake lines about the build order, its tooling and this repository's CI. The product owner ruled each one RECORD, on the fifth-merge pass, the tenth-merge pass and the end-of-run pass of that run. None names a reader outside this repository. Each item below gives the stage that found it and the issue in hand at the time. Three of the eight items are discharged, and the Discharge section states them. Five items stay open.
+`hw-run-policy` caps what one pass sends to the register as full records. Past the cap, one record lists the rest. Run `20260929-1205` wrote eight intake lines about the build order, its tooling and this repository's CI. The product owner ruled each one RECORD, on the fifth-merge pass, the tenth-merge pass and the end-of-run pass of that run. None names a reader outside this repository. Each item below gives the stage that found it and the issue in hand at the time. Four of the eight items are discharged, and the Discharge section states them. Four items stay open.
 
 ## Obligation
 
@@ -37,7 +37,7 @@ Three items are discharged by #1419, which merged as `16eecca0`:
 
 - The integrator had to load the `hw-run-policy` skill, but its `tools` list had no Skill tool, so the #1389 integrator ran without the policy. The `tools` line of `.claude/agents/hw-integrate.md` now names `Skill`. (integrate, #1389)
 - A worktree-isolated parent passes its isolation to `hw-integrate`, which then cannot move the shared checkout. A detached tree under `.claude/worktrees/` worked for the post-merge rebuild, `generate`, `check --strict` and bless, and no instruction named that route. `.claude/agents/hw-integrate.md` and `hw-run-policy` now name it. HW-OBL-0224 (its second item) and HW-OBL-0221 carry the same gap, and this record does not discharge them. (integrate, #1368)
-- A pull request body that said "Neither closes #1384" made GitHub list #1384 in `closingIssuesReferences`, because the keyword matches inside a negation. No build agent's instructions warned against it. `.claude/agents/hw-build.md` now says that a `Refs` pull request carries no closing keyword, not even in a negated sentence. This repository has no pull request template. (parent, #1384)
+- A pull request body that said "Neither closes #1384" made GitHub list #1384 in `closingIssuesReferences`, because the keyword matches inside a negation. No build agent's instructions warned against it. `.claude/agents/hw-build.md` now says that a `Refs` pull request carries no closing keyword, not even in a negated sentence. This repository has no pull request template. (parent, #1384) Since #1485 the integrator also runs `sh tools/run/gh-issue.sh clause-check <PR>` before it enqueues. So a negated keyword that GitHub reads as a close is refused on the integrator's path unless the body accounts for every clause of that issue. A merge by hand still bypasses the check.
 
 One item is discharged by #1518, the pull request for #1484:
 

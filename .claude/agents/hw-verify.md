@@ -32,7 +32,7 @@ Set `HW_CARGO_SLOT=verify-<N>` for your issue on every `tools/hw-cargo` call. Wh
 
 **Run the suite and the gates**, each redirected to files, never piped, with stdout and stderr apart on an invariant test.
 
-**Run the attacks you were given**, and the ones the bar marks as always. Make the new thing fail by hand, with your own edits rather than the fixtures' documents. Regress the implementation with a different regression from the agent's, and note when a regression will not compile, which is the strongest result there is.
+**Run the attacks you were given**, and the ones the bar marks as always. Make the new thing fail by hand, with your own edits rather than the fixtures' documents. Regress the implementation with a different regression from the agent's, and note when a regression will not compile, which is the strongest result there is. On a `Closes` pull request, attack each clause its body marks `- [x] #<issue>.<k>`: find the evidence it names on the branch, and a clause marked met that the branch does not meet is a `FAIL`.
 
 **When your check contradicts the build note, suspect your check first.** Name the denominator before you report a delta.
 
