@@ -212,6 +212,9 @@ pub(crate) fn emit(
                          naming one of them resolves in this file."
                     ),
                     sources: on_shelf.iter().map(|document| document.path).collect(),
+                    // The same reading as the shelf index: one withdrawn
+                    // section does not withdraw the file that holds it.
+                    state: None,
                 };
                 match crate::identity::front_matter(
                     surface,
