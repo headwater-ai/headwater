@@ -120,6 +120,51 @@ fn the_scope_block_of_spec_12_names_every_flag_scope_declares() {
     );
 }
 
+/// The name in a field declaration's left-hand side, with any visibility
+/// (`pub`, `pub(crate)`, `pub(in path)`) taken off.
+///
+/// Without this, `pub(crate) needs_zz` does not start with `needs_`, and a
+/// public field escapes the case below.
+fn field_name(declared: &str) -> &str {
+    let rest = declared.trim();
+    let Some(after_pub) = rest.strip_prefix("pub") else {
+        return rest;
+    };
+    let after_pub = after_pub.trim_start();
+    let after_vis = match after_pub.strip_prefix('(') {
+        Some(inner) => inner.split_once(')').map_or(inner, |(_, tail)| tail),
+        None => after_pub,
+    };
+    after_vis.trim_start()
+}
+
+/// Visibility never hides a field from [`struct_fields`].
+///
+/// # Watched failing
+///
+/// Replacing the body of [`field_name`] with `declared.trim()` reddens the
+/// `pub` and `pub(crate)` rows.
+#[test]
+fn a_field_name_is_read_through_its_visibility() {
+    let cases = [
+        ("needs_zz", "needs_zz"),
+        ("pub needs_zz", "needs_zz"),
+        ("pub(crate) needs_zz", "needs_zz"),
+        ("pub(super) needs_zz", "needs_zz"),
+        ("pub(in crate::scope) needs_zz", "needs_zz"),
+        ("  pub(crate)   needs_zz  ", "needs_zz"),
+        ("grain", "grain"),
+    ];
+    for (declared, expected) in cases {
+        assert_eq!(
+            field_name(declared),
+            expected,
+            "the field declared as {declared:?} reads as {:?}",
+            field_name(declared)
+        );
+    }
+}
+
 /// The `needs_*` field names of `pub struct Scope`, read from the source of
 /// `engine/crates/check/src/scope.rs`.
 fn struct_fields() -> Vec<String> {
@@ -135,6 +180,7 @@ fn struct_fields() -> Vec<String> {
     let fields: Vec<String> = body
         .lines()
         .filter_map(|line| line.trim().split_once(':').map(|(name, _)| name.trim()))
+        .map(field_name)
         .filter(|name| name.starts_with("needs_"))
         .map(str::to_string)
         .collect();
