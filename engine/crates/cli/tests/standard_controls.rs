@@ -1,20 +1,20 @@
 // SPDX-License-Identifier: Apache-2.0
-//! Six lifecycle rules each reach one obligation of `headwater/standard` (#1212).
+//! Every rule the engine carries reaches one obligation of `headwater/standard`
+//! (#1212, #1492).
 //!
 //! A rule reaches an obligation only through a control of the package that
 //! names it, and nothing tied a new rule to its control. So
 //! `lifecycle.state.not_set_by_edge` landed with #1198 and reached no
-//! obligation, and only a reader of the printed register saw it. This target
+//! obligation, and only a reader of the printed register saw it, and twelve
+//! rules had done the same by the time HW-OBL-0170 counted them. This target
 //! copies the maintained package into a root, runs `headwater check` over it
-//! and reads the register block, so a lifecycle rule that loses its control
-//! fails here and names itself. A new lifecycle rule is held here only once
-//! somebody adds its row.
+//! and reads the register block. The first case below fails on every rule that
+//! reaches no single obligation and names each one, so a new rule that ships
+//! without its control fails here.
 //!
-//! The table holds six of the seven lifecycle rules the engine carries, and
-//! no rule of another family. `lifecycle.state.set_twice` came with #1198 as
-//! well and still reaches no obligation. Other rules reach none over this
-//! repository too (HW-OBL-0170). A row for any of them would be red for a
-//! reason that is not this issue's, so each gets its row with its control.
+//! The lifecycle table holds all seven lifecycle rules the engine carries, and
+//! the second case reads the obligation, posture and promotion each control of
+//! that family declares, which the register counts without naming.
 
 mod common;
 use common::Root;
@@ -22,7 +22,7 @@ use common::Root;
 /// The lifecycle rules that a control of the package names, one row each:
 /// the rule, the one obligation its control discharges, the posture, and the
 /// promotion record that states why the posture stands.
-const LIFECYCLE: [(&str, &str, &str, &str); 6] = [
+const LIFECYCLE: [(&str, &str, &str, &str); 7] = [
     (
         "lifecycle.transition.not_permitted",
         "OB-LIFE-1",
@@ -58,6 +58,11 @@ const LIFECYCLE: [(&str, &str, &str, &str); 6] = [
         "OB-LIFE-6",
         "blocking",
         "final_posture",
+    ),    (
+        "lifecycle.state.set_twice",
+        "OB-LIFE-7",
+        "advisory",
+        "permanently_advisory",
     ),
 ];
 

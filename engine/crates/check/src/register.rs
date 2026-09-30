@@ -153,15 +153,15 @@ pub const MECHANISM: &str = "control.mechanism.unimplemented";
 /// and [`MECHANISM`]: `suppression::declared` reads that list as the closed
 /// set an `headwater allow=` directive may name, and `adoption::read` reads it
 /// the same way for a pending task, so a rule outside it can carry a finding
-/// that nothing can suppress or hold pending. This rule reports a defect in an
-/// input file rather than an invariant a taxonomy author asserts, so no
-/// obligation names it the way [`DISPOSITION`] and [`MECHANISM`] are named by
-/// `OB-REG-1` and `OB-REG-2`: it reports on the corpus's `.headwater/`
-/// directory rather than on a declaration inside the taxonomy, and this
-/// engine's own base package declares no obligation over that directory for
-/// any of its other rules either (the claim-store rules bind to obligations
-/// about the *documents* the store's claims serve, not about the store file
-/// itself). It carries [`SCOPE`], [`VERSION`] and [`EXPORTABLE_AS`] the same
+/// that nothing can suppress or hold pending. The base package binds it to
+/// `OB-REG-3` through `CT-REG-3`, the way [`DISPOSITION`] and [`MECHANISM`]
+/// reach `OB-REG-1` and `OB-REG-2` (HW-OBL-0170, #1492). Until 4.14.0 this
+/// comment argued that no obligation should name it, because it reports on a
+/// file under `.headwater/` rather than on a declaration inside the taxonomy.
+/// 4.14.0 binds the pin rules, which read `.headwater/` too, so that argument
+/// no longer separated this rule from its neighbors, and the register reads
+/// the snapshot when it states what a control observed. It carries [`SCOPE`],
+/// [`VERSION`] and [`EXPORTABLE_AS`] the same
 /// way its two siblings do, so a reader of `served` sees three consistent
 /// entries rather than one shaped differently.
 pub const OBSERVATION: &str = "control.observation.invalid";
