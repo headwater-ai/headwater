@@ -1998,6 +1998,39 @@ same "a leak string in a command's description is a leak" "1" "$?"
 present "and names the command" "leak $status_probe .claude/commands/c.md status: current" "$scratch/command.out"
 rm -rf "$scratch/leak-body/.claude/commands"
 
+# Verify round 2: the harness lists a skill or a command as its description
+# followed by its `when_to_use:`, and a command with no description by the
+# first line of its body. Each channel alone, and a namespaced command, and a
+# file with CRLF line endings.
+leak_one() {
+    # $1 name, $2 relative path, $3 file content (printf format), $4 expected exit
+    rm -rf "$scratch/leak-one"
+    mkdir -p "$scratch/leak-one/$(dirname "$2")"
+    # shellcheck disable=SC2059
+    printf -- "$3" > "$scratch/leak-one/$2"
+    HW_PROBE_YML="$scratch/leak-probe.yml" sh "$seal" --leak "$scratch/leak-one" "$status_probe" \
+        > "$scratch/leak-one.out" 2>&1
+    same "$1" "$4" "$?"
+}
+leak_one "a leak string in a skill's when_to_use is a leak" \
+    .claude/skills/s/SKILL.md '---\nname: s\ndescription: Nothing.\nwhen_to_use: When HW-DR-0052 applies.\n---\n' 1
+leak_one "a leak string in a command's when_to_use is a leak" \
+    .claude/commands/c.md '---\ndescription: Nothing.\nwhen_to_use: >\n  When the ruling\n  HW-DR-0052 applies.\n---\n' 1
+leak_one "the first body line of a command with no front matter is a leak" \
+    .claude/commands/c.md 'HW-DR-0052 says it.\n\nMore.\n' 1
+leak_one "the first body line of a command whose front matter holds no description is a leak" \
+    .claude/commands/c.md '---\nargument-hint: <n>\n---\n\n# HW-DR-0052 says it\n' 1
+leak_one "a later body line of a command is not loaded, and is no leak" \
+    .claude/commands/c.md '---\nargument-hint: <n>\n---\n\nNothing here.\n\nHW-DR-0052 later.\n' 0
+leak_one "the body of a command that has a description is not loaded, and is no leak" \
+    .claude/commands/c.md '---\ndescription: Nothing.\n---\n\nHW-DR-0052 says it.\n' 0
+leak_one "a command under a namespace directory is read" \
+    .claude/commands/ns/c.md '---\ndescription: The HW-DR-0052 command.\n---\n' 1
+leak_one "a command with CRLF line endings is read" \
+    .claude/commands/c.md '---\r\ndescription: The HW-DR-0052 command.\r\n---\r\n' 1
+leak_one "a skill with CRLF line endings is read" \
+    .claude/skills/s/SKILL.md '---\r\nname: s\r\ndescription: The HW-DR-0052 skill.\r\n---\r\n' 1
+
 # A probe that declares no leak string is printed as one the check cannot see, and
 # does not pass as clean by saying nothing.
 sh "$seal" --leak "$scratch/leak-ws" HW-PROBE-no-such-probe > "$scratch/undeclared.out" 2>&1
@@ -2100,6 +2133,33 @@ HW_PROBE_YML="$scratch/block-delta.yml" sh "$ablate" --diff campaign no-hook "$s
     > "$scratch/block-delta.out" 2> "$scratch/block-delta.err"
 same "a block-sequence delta builds its arm" "0" "$?"
 same "and its delta is the one path" "- .claude/hooks/intent.sh" "$(cat "$scratch/block-delta.out")"
+# Verify round 2: the other forms the engine reads. Each builds the one path,
+# and never reads as empty or as another arm's delta.
+delta_form() {
+    # $1 name, $2 awk program that rewrites the declaration
+    awk "$2" "$root/.headwater/probe.yml" > "$scratch/form.yml"
+    layer_tree
+    HW_PROBE_YML="$scratch/form.yml" sh "$ablate" --diff campaign no-hook "$scratch/layer" \
+        > "$scratch/form.out" 2> "$scratch/form.err"
+    same "$1 builds its arm" "0" "$?"
+    same "and its delta is the one path" "- .claude/hooks/intent.sh" "$(cat "$scratch/form.out")"
+}
+delta_form "a block-sequence delta at ten spaces" \
+    '/^      no-hook: / { print "      no-hook:"; print "          - .claude/hooks/intent.sh"; next } { print }'
+delta_form "a block-sequence delta at the key's own column" \
+    '/^      no-hook: / { print "      no-hook:"; print "      - .claude/hooks/intent.sh"; next } { print }'
+delta_form "a flow-sequence delta over several lines" \
+    '/^      no-hook: / { print "      no-hook: ["; print "        .claude/hooks/intent.sh"; print "      ]"; next } { print }'
+delta_form "a block-sequence delta followed by another arm's block sequence" \
+    '/^      no-hook: / { print "      no-hook:"; print "        - .claude/hooks/intent.sh"; next }
+     /^      no-skills: / { print "      no-skills:"; print "        - .claude/skills"; next } { print }'
+awk '/^      no-hook: / { print "      no-hook: [.claude/hooks/intent.sh"; next } /^      no-skills: / { next } /^      no-claude-md: / { next } /^      mcp: / { next } { print }' \
+    "$root/.headwater/probe.yml" > "$scratch/open-flow.yml"
+HW_PROBE_YML="$scratch/open-flow.yml" sh "$ablate" --delta campaign no-hook > /dev/null 2> "$scratch/open-flow.err"
+same "a flow sequence that never closes is refused" "2" "$?"
+present "as a form the script does not read, not as an empty delta" \
+    "is not a sequence of paths in a form this script reads" "$scratch/open-flow.err"
+
 sed 's/^      no-hook: .*/      no-hook: .claude\/hooks\/intent.sh/' "$root/.headwater/probe.yml" > "$scratch/scalar-delta.yml"
 HW_PROBE_YML="$scratch/scalar-delta.yml" sh "$ablate" --delta campaign no-hook \
     > /dev/null 2> "$scratch/scalar-delta.err"

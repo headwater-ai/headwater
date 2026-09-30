@@ -251,11 +251,26 @@ listing=$(awk -v want="$tier" -v arm="$arm" -v component="$component" '
         next
     }
     cur != want { next }
-    # `components`, a mapping of arm to a sequence of paths (#1472): a flow
-    # sequence on the key line, or a block sequence under it, which the
-    # engine reads as the same value (verify round 1).
-    /^    components:[ \t]*$/ { comp = 1; block = 0; cblock = 0; next }
-    comp && cblock && /^(      |        )-[ \t]/ {
+    # `components`, a mapping of arm to a sequence of paths (#1472). The
+    # engine reads any YAML sequence there, so this reads the three forms a
+    # person writes: a flow sequence on the key line, a flow sequence that
+    # runs over several lines, and a block sequence under the key at any
+    # indentation from the key column on (verify rounds 1 and 2). Any other
+    # form is refused as a form this script does not read, never as empty.
+    function flow(s,    n, parts, i) {
+        s = trim(s)
+        s = substr(s, 2, length(s) - 2)
+        n = split(s, parts, ",")
+        if (trim(s) == "") n = 0
+        for (i = 1; i <= n; i++) emit(unquote(parts[i]), "component")
+    }
+    /^    components:[ \t]*$/ { comp = 1; block = 0; cblock = 0; cflow = 0; next }
+    comp && cflow {
+        acc = acc " " uncomment($0)
+        if (acc ~ /\][ \t]*$/) { cflow = 0; flow(acc) }
+        next
+    }
+    comp && cblock && /^       *-([ \t]|$)/ {
         entry = $0; sub(/^[ \t]*-[ \t]*/, "", entry)
         emit(unquote(uncomment(entry)), "component")
         next
@@ -267,14 +282,13 @@ listing=$(awk -v want="$tier" -v arm="$arm" -v component="$component" '
         print "component"
         rest = uncomment(substr($0, index($0, ":") + 1))
         if (rest == "") { cblock = 1; next }
+        if (rest ~ /^\[/ && rest !~ /\]$/) { cflow = 1; acc = rest; next }
         if (rest !~ /^\[.*\]$/) { print "malformed-component"; next }
-        rest = substr(rest, 2, length(rest) - 2)
-        n = split(rest, parts, ",")
-        if (trim(rest) == "") n = 0
-        for (i = 1; i <= n; i++) emit(unquote(parts[i]), "component")
+        flow(rest)
         next
     }
-    /^    [^ ]/ { comp = 0; cblock = 0 }
+    /^    [^ ]/ { comp = 0; cblock = 0; cflow = 0 }
+    END { if (cflow) print "malformed-component" }
     /^    ablation:/ {
         rest = uncomment(substr($0, index($0, ":") + 1))
         if (rest == "") { block = 1; print "declared"; next }
@@ -312,7 +326,7 @@ if [ "$arm" = component ]; then
 fi
 case "$listing" in
     *malformed-component*)
-        echo "ablate: the \`$component\` delta of the \`$tier\` tier is not a sequence of paths" >&2
+        echo "ablate: the \`$component\` delta of the \`$tier\` tier is not a sequence of paths in a form this script reads: a flow sequence, on one line or several, or a block sequence under the key" >&2
         exit 2
         ;;
     *malformed*)

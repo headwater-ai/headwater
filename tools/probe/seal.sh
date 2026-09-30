@@ -275,7 +275,10 @@ fi
 # The always-loaded set is `CLAUDE.md`, the `description:` of each
 # `.claude/skills/*/SKILL.md`, of each `.claude/agents/*.md` and of each
 # command under `.claude/commands/` (verify round 1: the harness lists each
-# command with its description in every session), and, where
+# command with its description in every session), the `when_to_use:` of a
+# skill or a command, which the harness appends to its description, the first
+# body line of a command that has no `description:`, which the harness lists
+# in its place (verify round 2), and, where
 # the workspace declares a project MCP server in `.mcp.json`, the description
 # of each tool that `headwater mcp` lists. One line per hit:
 #
@@ -338,20 +341,38 @@ leak_loaded() {
     for leak_file in "$leak_here"/.claude/skills/*/SKILL.md "$leak_here"/.claude/agents/*.md \
         "$leak_here"/.claude/commands/*.md "$leak_here"/.claude/commands/*/*.md; do
         [ -f "$leak_file" ] || continue
-        # The first `description:` key of the front matter, which is the one a
-        # harness loads, with a folded or literal block read to its end.
-        awk -v where="${leak_file#"$leak_here"/}" '
+        # What the harness lists for the file: the `description:` key of the
+        # front matter and the `when_to_use:` key, which it appends to the
+        # description of a skill or a command, each with a folded or literal
+        # block read to its end. A command with no `description:` is listed
+        # with the first line of its body instead (verify round 2, read from
+        # the installed harness, 2.1.285). Line endings are read with or
+        # without a carriage return.
+        case $leak_file in
+            "$leak_here"/.claude/commands/*) leak_command=1 ;;
+            *) leak_command=0 ;;
+        esac
+        awk -v where="${leak_file#"$leak_here"/}" -v command="$leak_command" '
+            { sub(/\r$/, "") }
             NR == 1 && $0 == "---" { on = 1; next }
-            on && $0 == "---" { exit }
-            on && folded && /^[ \t]/ { sub(/^[ \t]+/, ""); text = text " " $0; next }
-            on && folded { exit }
-            on && /^description:/ {
-                sub(/^description:[ \t]*/, "")
-                if ($0 ~ /^[>|][-+]?$/) { folded = 1; text = ""; next }
-                text = $0
-                exit
+            on && $0 == "---" { on = 0; body = 1; next }
+            on && key != "" && /^[ \t]/ { line = $0; sub(/^[ \t]+/, "", line); field[key] = field[key] " " line; next }
+            on { key = "" }
+            on && /^(description|when_to_use):/ {
+                name = $0; sub(/:.*$/, "", name)
+                value = $0; sub(/^[a-z_]+:[ \t]*/, "", value)
+                if (value ~ /^[>|][-+]?$/) { key = name; field[name] = ""; next }
+                if (!(name in field)) field[name] = value
+                next
             }
-            END { if (text != "") printf "%s\t%s\n", where, text }
+            on { next }
+            first == "" && $0 ~ /[^ \t]/ { first = $0; sub(/^[ \t#]+/, "", first) }
+            END {
+                text = field["description"]
+                if (text == "" && command == 1) text = first
+                if (field["when_to_use"] != "") text = text " - " field["when_to_use"]
+                if (text != "") printf "%s\t%s\n", where, text
+            }
         ' "$leak_file"
     done
     if [ -f "$leak_here/.mcp.json" ]; then
