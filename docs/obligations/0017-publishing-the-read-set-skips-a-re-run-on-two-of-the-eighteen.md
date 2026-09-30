@@ -1,8 +1,8 @@
 ---
 id: HW-OBL-0017
 title: "Publishing the read set skips a re-run on two of the eighteen merges where the question is live"
-status: current
-status_since: 2026-08-11
+status: discharged
+status_since: 2026-10-01
 waiting_on: build
 last_verified: 2026-08-14
 summary: "Q21 claims that a published read set lets a gate skip a full re-run on most merges, and the measurement came out against it."
