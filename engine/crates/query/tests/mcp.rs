@@ -164,6 +164,7 @@ impl Built {
             observations: &self.observations,
             pin: None,
             harvests: &[],
+            imports: &[],
             adoption: None,
             source: "query.taxonomy.yml",
         }

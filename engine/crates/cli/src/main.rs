@@ -3760,6 +3760,11 @@ struct Loaded {
     /// never cached, for the reason `pin` is. See
     /// [`headwater_check::harvest`].
     harvests: Vec<headwater_check::harvest::Harvest>,
+    /// Each declared imports snapshot, as the resolver built for it read it:
+    /// whether it binds, why not, and each file it holds. Read once per load
+    /// beside the resolver set and never cached, for the reason `harvests` is.
+    /// See [`headwater_check::import_pin`].
+    imported: Vec<headwater_check::import_pin::Import>,
     /// The front-matter keys the graph phase reads by name. Held here, and
     /// built once, so the index and the identifier rule read an identifier from
     /// the same key. Two `Config::default()` calls would be two guesses that a
@@ -3844,7 +3849,9 @@ fn load_against(root: &Path, bound: Bound) -> Result<Loaded, ExitCode> {
             return Err(ExitCode::FAILURE);
         }
     };
-    for items in headwater_import::anchors::over(root, &imports) {
+    let snapshots = headwater_import::anchors::over(root, &imports);
+    let imported = headwater_import::anchors::readings(root, &imports, &snapshots);
+    for items in snapshots {
         resolvers = match resolvers.with(Box::new(items)) {
             Ok(resolvers) => resolvers,
             Err(why) => {
@@ -3919,6 +3926,7 @@ fn load_against(root: &Path, bound: Bound) -> Result<Loaded, ExitCode> {
         bound,
         pin,
         harvests: harvested,
+        imported,
         consumer,
         census,
         graph,
@@ -3947,6 +3955,7 @@ impl Loaded {
             observations: &self.observations,
             pin: Some(&self.pin),
             harvests: &self.harvests,
+            imports: &self.imported,
             adoption: self.bound.adoption.as_ref(),
             source: &self.bound.source,
         }
@@ -6110,19 +6119,25 @@ fn gate(root: &Path, read_set: Option<PathBuf>, now: Option<Date>, json: bool) -
             return ExitCode::FAILURE;
         }
     };
-    let verdict = headwater_check::gate::decide(&recorded, &lock.digest, asked, |listed| {
-        // The one input of a published read set that is not a file. The claim
-        // store is a directory, so `read` refuses it and the gate would report
-        // a store that is right there as a path that is gone. Its digest is
-        // over the canonical listing, which is the same value the run that
-        // wrote this read set recorded.
-        if listed == headwater_check::claim::STORE {
-            return Some(headwater_check::claim::Claims::at(root).digest());
-        }
-        std::fs::read(root.join(listed))
-            .ok()
-            .map(|bytes| headwater_hash::digest(&bytes))
-    });
+    // A listed path that resolves outside the root is not this tree's file,
+    // whatever bytes it reaches: `check` refuses the same path at declaration,
+    // so the gate reports it rather than hashing through it (#1345). The test
+    // is the one `check` runs, so the two readers cannot disagree about a path.
+    let escapes = |listed: &str| !headwater_import::contained(root, listed);
+    let verdict =
+        headwater_check::gate::decide_within(&recorded, &lock.digest, asked, escapes, |listed| {
+            // The one input of a published read set that is not a file. The claim
+            // store is a directory, so `read` refuses it and the gate would report
+            // a store that is right there as a path that is gone. Its digest is
+            // over the canonical listing, which is the same value the run that
+            // wrote this read set recorded.
+            if listed == headwater_check::claim::STORE {
+                return Some(headwater_check::claim::Claims::at(root).digest());
+            }
+            std::fs::read(root.join(listed))
+                .ok()
+                .map(|bytes| headwater_hash::digest(&bytes))
+        });
     // The sentence about what a read set cannot say is in both forms: the
     // report ends on it and the document carries it as `limit`, out of the one
     // constant both read.
@@ -6765,6 +6780,7 @@ fn infer(
             observations: &loaded.observations,
             pin: Some(&loaded.pin),
             harvests: &loaded.harvests,
+            imports: &loaded.imported,
             adoption: declared.as_ref(),
             source: headwater_lock::LOCK,
         },

@@ -129,6 +129,7 @@ fn build() -> (Graph, Run) {
             observations: &headwater_check::Observations::empty(),
             pin: None,
             harvests: &[],
+            imports: &[],
             adoption: None,
             source: "engine/crates/check/fixtures/document-path-target.taxonomy.yml",
         },
