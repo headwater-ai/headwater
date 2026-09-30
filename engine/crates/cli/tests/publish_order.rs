@@ -487,7 +487,7 @@ fn the_index_gate_refuses_a_dependency_whose_release_version_is_yanked() {
 fn stale_member_dependency_versions(manifest: &str) -> Vec<String> {
     member_dependency_versions(manifest)
         .into_iter()
-        .filter_map(|(name, path, version, package)| match version {
+        .filter_map(|MemberEntry { name, path, version, package }| match version {
             Some(version) if version == package => None,
             Some(version) => Some(format!(
                 "{name} (path {path}) names version {version}, and [workspace.package] version is {package}"
@@ -499,12 +499,21 @@ fn stale_member_dependency_versions(manifest: &str) -> Vec<String> {
         .collect()
 }
 
-/// Every `[workspace.dependencies]` entry whose `path` names a member, as
-/// `(name, path, version, package version)`, whatever TOML form the entry is
+/// One `[workspace.dependencies]` entry on a member, with the
+/// `[workspace.package] version` it is held against.
+struct MemberEntry {
+    name: String,
+    path: String,
+    version: Option<String>,
+    package: String,
+}
+
+/// Every `[workspace.dependencies]` entry whose `path` names a member,
+/// whatever TOML form the entry is
 /// written in: an inline table with or without spaces, or a
 /// `[workspace.dependencies.<name>]` sub-table. A version that is not a string
 /// reads as `None`, the same as no version.
-fn member_dependency_versions(manifest: &str) -> Vec<(String, String, Option<String>, String)> {
+fn member_dependency_versions(manifest: &str) -> Vec<MemberEntry> {
     let members = member_paths(manifest);
     let workspace = workspace_table(manifest);
     let package = workspace
@@ -531,7 +540,12 @@ fn member_dependency_versions(manifest: &str) -> Vec<(String, String, Option<Str
                 .get("version")
                 .and_then(toml_edit::Item::as_str)
                 .map(str::to_string);
-            Some((name.to_string(), path.to_string(), version, package.clone()))
+            Some(MemberEntry {
+                name: name.to_string(),
+                path: path.to_string(),
+                version,
+                package: package.clone(),
+            })
         })
         .collect()
 }
@@ -624,21 +638,14 @@ fn planted_bump_missing_yaml(rewrite: impl Fn(&str) -> String) -> String {
 /// spelling would pass a stale version in the others.
 #[test]
 fn a_missed_workspace_dependency_is_named_in_every_toml_form_cargo_reads() {
-    let forms: [(&str, Box<dyn Fn(&str) -> String>); 3] = [
-        (
-            "an inline table with no spaces",
-            Box::new(|v| format!("headwater-yaml={{path=\"crates/yaml\",version=\"{v}\"}}")),
-        ),
-        (
-            "an inline table with the keys reversed",
-            Box::new(|v| {
-                format!("headwater-yaml = {{ version = \"{v}\", path = \"crates/yaml\" }}")
-            }),
-        ),
-        (
-            "a sub-table at the end of the manifest",
-            Box::new(|_| String::new()),
-        ),
+    let forms: [(&str, fn(&str) -> String); 3] = [
+        ("an inline table with no spaces", |v| {
+            format!("headwater-yaml={{path=\"crates/yaml\",version=\"{v}\"}}")
+        }),
+        ("an inline table with the keys reversed", |v| {
+            format!("headwater-yaml = {{ version = \"{v}\", path = \"crates/yaml\" }}")
+        }),
+        ("a sub-table at the end of the manifest", |_| String::new()),
     ];
     let version = headwater_resolve::release::ENGINE;
     for (form, rewrite) in forms {
@@ -664,7 +671,7 @@ fn the_judge_reads_every_member_entry_that_a_member_depends_on() {
     let manifest = workspace_manifest();
     let read: Vec<String> = member_dependency_versions(&manifest)
         .into_iter()
-        .map(|(name, ..)| name)
+        .map(|entry| entry.name)
         .collect();
     let members = workspace_members();
     let names: Vec<&String> = members.iter().map(|(name, _)| name).collect();
