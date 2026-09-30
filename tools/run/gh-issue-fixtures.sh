@@ -261,6 +261,12 @@ for k in 6 7 8 9 10 11; do
     check_out "  it names #1315 clause $k" "#1315 clause $k:"
 done
 check_not_out "  it does not name clause 5, which the body marks met" "#1315 clause 5:"
+if grep -qF 'clause-check: #1460 refused' "$scratch/err"; then
+    passed=$((passed + 1)); echo "  ok    the refusal names the pull request, not the issue it read last"
+else
+    failed=$((failed + 1)); echo "  FAIL  the refusal names the pull request, not the issue it read last"
+    echo "        stderr holds: $(cat "$scratch/err")"
+fi
 check_logged "  it reads the pull request body from the pulls endpoint" "repos/headwater-ai/headwater/pulls/1460 --jq .body"
 
 echo "clause-check (a): every clause marked met passes, CRLF line ends included"
