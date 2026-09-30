@@ -1710,6 +1710,45 @@ mod tests {
         assert!(why.contains("does not start `HW-VER-`"), "{why}");
     }
 
+    /// The map of one resolver keys a file by its whole path, so two files
+    /// that share a name in two directories are two entries (#1450). A map
+    /// keyed on less than the path serves the bytes of one file as the
+    /// revision of the other, and a governed edge then ages or stays fresh on
+    /// bytes it does not name. The byte-identity differential cannot see
+    /// that, because a cached run and a `--no-cache` run build the same
+    /// resolver.
+    #[test]
+    fn two_files_with_one_name_are_two_entries_of_one_resolver() {
+        let dir = scratch("digest-one-name");
+        for (sub, body) in [("x", "fn x() {}\n"), ("y", "fn y() { other() }\n")] {
+            std::fs::create_dir_all(dir.join("src").join(sub)).expect("a fixture directory");
+            std::fs::write(dir.join("src").join(sub).join("mod.rs"), body).expect("a fixture file");
+        }
+        let resolver = SourceTree::over(&Corpus::new(dir.to_path_buf(), ""));
+        let revision = |raw: &str| match resolver.resolve(raw) {
+            Binding::Resolved { revision, .. } => revision.get().map(str::to_owned),
+            other => panic!("{raw} resolves, and it bound {other:?}"),
+        };
+        let x = revision("src/x/mod.rs");
+        let y = revision("src/y/mod.rs");
+        let both = revision("src/**/mod.rs");
+
+        assert_eq!(x, tree_revision(&dir, &["src/x/mod.rs".to_owned()]));
+        assert_eq!(
+            y,
+            tree_revision(&dir, &["src/y/mod.rs".to_owned()]),
+            "the second file of one name is read for itself, not served the first"
+        );
+        assert_ne!(x, y, "two files with different bytes have two revisions");
+        assert_eq!(
+            both,
+            tree_revision(
+                &dir,
+                &["src/x/mod.rs".to_owned(), "src/y/mod.rs".to_owned()]
+            )
+        );
+    }
+
     /// One resolver reads a file once, however many anchors it binds that
     /// file under, and a second resolver reads it again (#1450). The first
     /// half is what took a warm `headwater check` from 257 ms toward 200 ms
