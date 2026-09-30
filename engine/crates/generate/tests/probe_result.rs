@@ -422,6 +422,146 @@ expected: [no]
 /// The sentence the result carries when the two selections agree.
 const AGREES: &str = "The selection this transcript names is the selection this corpus composes";
 
+/// The read set this tree composes over the fixture selection.
+fn read_set_over(at: &Path) -> String {
+    let built = Built::over(at);
+    headwater_probe::Plan::over(
+        &built.census,
+        &built.graph,
+        &built.config,
+        &Budgets::read(ENVELOPE).expect("the envelope reads"),
+        LOCK,
+        Tier::Regression,
+        &Narrowing::default(),
+    )
+    .read_set
+}
+
+/// The text of a result from `## The verdicts` to the end: every verdict and
+/// the rate taken over them.
+fn verdicts_of(result: &str) -> &str {
+    let at = result
+        .find("## The verdicts")
+        .unwrap_or_else(|| panic!("the result carries no verdicts:\n{result}"));
+    &result[at..]
+}
+
+/// #1338. An edit to a document the probes read, after an unrelated lock move,
+/// refused the transcript and dropped every verdict it paid for, with no word
+/// from any run. A moved read set is always a document edit, so the verdicts
+/// stand, the result carries one mark, and the run names the result.
+///
+/// Four directions. The gate names the result in its own section. The
+/// regenerated result keeps every verdict. The run over the regenerated result
+/// does not fail. A second edit to the same document leaves the bytes alone,
+/// because the mark names no digest this tree composes.
+#[test]
+fn an_edit_to_a_document_the_probes_read_keeps_every_verdict_and_marks_them() {
+    let at = copied("probe-result-read-set-moved");
+    let composed = read_set_over(&at);
+    assert!(
+        std::fs::read_to_string(at.join(TRANSCRIPT))
+            .expect("the transcript reads")
+            .contains(&format!("read_set: {composed}\n")),
+        "the fixture transcript records the read set this tree composes, so the edit below is \
+         the only thing that moves it"
+    );
+    let (first, _) = result_bytes(&at);
+    write(&at, &first);
+    let graded = std::fs::read_to_string(at.join(RESULT)).expect("the result reads");
+    assert!(
+        !graded.contains("moved since the recording"),
+        "an unmoved read set carries no mark:\n{graded}"
+    );
+    let verdicts = verdicts_of(&graded).to_string();
+    assert!(
+        verdicts.contains("satisfied"),
+        "the unmoved arm grades, so a kept verdict below is a verdict and not an empty section"
+    );
+
+    // The lock moves under an unrelated publish, and a person then edits a
+    // document the opened probe examines.
+    edit(
+        &at,
+        TRANSCRIPT,
+        "lock: sha256:fixture",
+        "lock: sha256:another-taxonomy",
+    );
+    edit(
+        &at,
+        "runs/probes/0002-answered.md",
+        "Say whether the cache may change a verdict.",
+        "Say whether the cache can change a verdict.",
+    );
+    let (moved, marked) = result_bytes(&at);
+
+    // Direction 1: the gate names the result, apart from the refusals.
+    let checked = check(&at, &moved);
+    assert!(
+        checked.refused.is_empty(),
+        "a moved read set is graded and refused by nothing: {}",
+        checked.render(ColorMode::Plain)
+    );
+    match checked.moved_read_sets.as_slice() {
+        [one] => {
+            assert_eq!(one.transcript, TRANSCRIPT);
+            assert_eq!(one.output, RESULT);
+        }
+        other => panic!("the run named {} moved read sets, not one", other.len()),
+    }
+    let rendered = checked.render(ColorMode::Plain);
+    assert!(
+        rendered.contains("results graded over a moved read set"),
+        "{rendered}"
+    );
+    assert!(
+        rendered.contains("keeps every verdict"),
+        "the run tells the author that regeneration keeps the evidence: {rendered}"
+    );
+    assert_eq!(
+        verdict_over_the_result(&checked),
+        &Verdict::Differs,
+        "the mark is new bytes, so the gate asks for one regeneration"
+    );
+
+    // Direction 2: the regenerated result keeps every verdict, with the mark.
+    assert_eq!(
+        verdicts_of(&marked),
+        verdicts,
+        "an edit to a document of the read set dropped or changed a verdict"
+    );
+    assert!(
+        marked.contains("the read set of its probes moved since the recording"),
+        "{marked}"
+    );
+
+    // Direction 3: once regenerated, the run does not fail.
+    write(&at, &moved);
+    let (again, _) = result_bytes(&at);
+    let held = check(&at, &again);
+    assert_eq!(verdict_over_the_result(&held), &Verdict::Unchanged);
+    assert!(
+        !held.has_errors(),
+        "a result graded over a moved read set failed the run:\n{}",
+        held.render(ColorMode::Plain)
+    );
+    assert_eq!(held.moved_read_sets.len(), 1, "the run still names it");
+
+    // Direction 4: a second edit to the same document leaves the bytes alone.
+    edit(
+        &at,
+        "runs/probes/0002-answered.md",
+        "Say whether the cache can change a verdict.",
+        "Say whether a cache can change a verdict.",
+    );
+    let (second, twice) = result_bytes(&at);
+    assert_eq!(
+        twice, marked,
+        "a second edit moved the result, so the mark names something this tree composes"
+    );
+    assert!(!check(&at, &second).has_errors());
+}
+
 /// The comparison a result reports about the selection it was recorded over.
 ///
 /// Three directions, because a comparison that never moves and one that always
@@ -493,7 +633,7 @@ served_version: a-model-20260701
 tree: sha256:fixture-tree
 lock: sha256:fixture
 selection: sha256:c6f58f5bd22dfb4b353528edb188b7de55e447426fd4ad335559d172e000a9f9
-read_set: sha256:e8c65e754bbaffdf1e27684483ca8d23fbca37d804d298d58cb5086c3947dacf
+read_set: sha256:d8b44184b3ae9d52b503c6bdce4e3d6b1ee9d51e45ad91a844429249f9f491e9
 seed: 0
 harness: 0.2.0
 tier: campaign
@@ -543,7 +683,7 @@ served_version: a-model-20260701
 tree: sha256:fixture-tree
 lock: sha256:fixture
 selection: sha256:c6f58f5bd22dfb4b353528edb188b7de55e447426fd4ad335559d172e000a9f9
-read_set: sha256:e8c65e754bbaffdf1e27684483ca8d23fbca37d804d298d58cb5086c3947dacf
+read_set: sha256:d8b44184b3ae9d52b503c6bdce4e3d6b1ee9d51e45ad91a844429249f9f491e9
 seed: 0
 harness: 0.2.0
 tier: campaign
@@ -589,7 +729,7 @@ served_version: a-model-20260701
 tree: sha256:fixture-tree
 lock: sha256:fixture
 selection: sha256:c6f58f5bd22dfb4b353528edb188b7de55e447426fd4ad335559d172e000a9f9
-read_set: sha256:e8c65e754bbaffdf1e27684483ca8d23fbca37d804d298d58cb5086c3947dacf
+read_set: sha256:d8b44184b3ae9d52b503c6bdce4e3d6b1ee9d51e45ad91a844429249f9f491e9
 seed: 0
 harness: 0.2.0
 tier: campaign
@@ -901,7 +1041,7 @@ served_version: a-model-20260701
 tree: sha256:fixture-tree
 lock: sha256:fixture
 selection: sha256:c6f58f5bd22dfb4b353528edb188b7de55e447426fd4ad335559d172e000a9f9
-read_set: sha256:e8c65e754bbaffdf1e27684483ca8d23fbca37d804d298d58cb5086c3947dacf
+read_set: sha256:d8b44184b3ae9d52b503c6bdce4e3d6b1ee9d51e45ad91a844429249f9f491e9
 seed: 1
 harness: 0.2.0
 tier: campaign
@@ -1267,12 +1407,7 @@ fn a_transcript_planned_against_another_taxonomy_fails_the_run() {
     );
 
     let moved = copied("probe-result-lock-moved");
-    edit(
-        &moved,
-        TRANSCRIPT,
-        "lock: sha256:fixture",
-        "lock: sha256:another-taxonomy",
-    );
+    refuse_the_lock(&moved);
     let plan = plan_over(&moved);
     let report = write(&moved, &plan);
 
@@ -1309,6 +1444,27 @@ fn a_transcript_planned_against_another_taxonomy_fails_the_run() {
     );
 }
 
+/// Move the transcript's lock, and its selection to one that is not a part of
+/// this tree's, so that this tree composes no read set over it and the first
+/// confirmation refuses it.
+///
+/// A lock move alone is graded since #1338, marked where the read set moved,
+/// so the selection is what leaves the refusal a producer.
+fn refuse_the_lock(at: &Path) {
+    edit(
+        at,
+        TRANSCRIPT,
+        "lock: sha256:fixture",
+        "lock: sha256:another-taxonomy",
+    );
+    edit(
+        at,
+        TRANSCRIPT,
+        "selection: sha256:c6f58f5bd22dfb4b353528edb188b7de55e447426fd4ad335559d172e000a9f9",
+        "selection: sha256:a-selection-this-tree-does-not-compose",
+    );
+}
+
 /// One tree whose transcript is refused, standing at the state named.
 ///
 /// The lock edit is the one
@@ -1317,12 +1473,7 @@ fn a_transcript_planned_against_another_taxonomy_fails_the_run() {
 /// state is the only thing that differs between them.
 fn refused_at(scratch: &str, state: &str) -> (PathBuf, headwater_generate::Report) {
     let at = copied(scratch);
-    edit(
-        &at,
-        TRANSCRIPT,
-        "lock: sha256:fixture",
-        "lock: sha256:another-taxonomy",
-    );
+    refuse_the_lock(&at);
     if state != "current" {
         edit(
             &at,
@@ -1546,12 +1697,7 @@ fn a_released_refusal_names_every_document_that_reads_it() {
 fn a_refused_recording_with_no_reader_says_that_nothing_reads_it() {
     let at = copied("refused-with-no-reader");
     std::fs::remove_file(at.join(CITING)).expect("the citing note is removed");
-    edit(
-        &at,
-        TRANSCRIPT,
-        "lock: sha256:fixture",
-        "lock: sha256:another-taxonomy",
-    );
+    refuse_the_lock(&at);
     edit(&at, TRANSCRIPT, "status: current", "status: deprecated");
     let report = write(&at, &plan_over(&at));
 
