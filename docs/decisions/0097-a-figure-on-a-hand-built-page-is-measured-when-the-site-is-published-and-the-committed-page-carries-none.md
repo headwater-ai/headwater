@@ -60,7 +60,7 @@ relations:
 
 **The clock partition is removed, not reduced.** The eight figures that read the clock were compared against a committed value. A second engine run at the page's own date excused a difference that the clock alone caused. Nothing committed is compared against a run now, so that comparison has no input.
 
-**The pages are not derived artifacts.** `headwater derived` knows three producers, and none of them claims a page under `site/`. `.gitattributes` declares no page under `site/`. The figures clause of `.githooks/pre-commit` is removed. The site arm of `.githooks/merge-regenerate` is removed, and so is the site-review marker that `.githooks/pre-push` and `.githooks/post-rewrite` read.
+**The pages are not derived artifacts.** No producer that `headwater derived` knows claims a page under `site/`. `.gitattributes` declares no page under `site/`. The figures clause of `.githooks/pre-commit` is removed. The site arm of `.githooks/merge-regenerate` is removed, and so is the site-review marker that `.githooks/pre-push` and `.githooks/post-rewrite` read.
 
 ## Consequences
 

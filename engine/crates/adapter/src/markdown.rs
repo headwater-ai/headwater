@@ -195,6 +195,15 @@ fn scoped_to(scoped: &Scoped) -> String {
          above are over the whole corpus, as they are in a run that names no change.\n",
         named.documents, named.added, named.carried, unreadable
     );
+    // The class the sentence above does not hold, so a reader can add the
+    // classes to the documents named (#1398).
+    if named.verified > 0 {
+        let _ = writeln!(
+            out,
+            "{} stated as re-read by a `verified` line, {} of them named by that line alone.\n",
+            named.verified, named.verified_alone
+        );
+    }
     let _ = writeln!(
         out,
         "{} promoted from `{}` to `{}` in this change. Nothing declares how many promotions in \
