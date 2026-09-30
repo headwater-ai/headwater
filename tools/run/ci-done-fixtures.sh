@@ -1,16 +1,21 @@
 #!/bin/sh
 # What holds `tools/run/ci-done.sh`: a commit with no workflow run, a running
 # workflow, or a check run still going is not finished; a finished commit is
-# reported green or red by name and red still exits 0; a short sha is resolved
-# before the runs endpoint is asked; and the legacy combined-status endpoint,
-# which answers `pending` forever on this repository, is never read.
+# reported green or red by name and red still exits 0; a cancelled run that
+# another run of the same workflow on the same commit superseded is left out,
+# with its check runs, and a lone cancelled run stays red; a short sha is
+# resolved before the runs endpoint is asked; and the legacy combined-status
+# endpoint, which answers `pending` forever on this repository, is never read.
 #
 # Run it from anywhere:
 #     sh tools/run/ci-done-fixtures.sh
 #
 # It needs no network and no token: `gh` is a fake on `PATH` for the length of
 # this suite, which logs its arguments and prints the TSV that the real `gh`
-# would print through the script's own `--jq` filter.
+# would print through the script's own `--jq` filter. A workflow run row is
+# `id, status, conclusion, name, check_suite_id, head_branch`, and a check run
+# row is `status, conclusion, name, check_suite.id`. The cases write them with
+# `|` for a tab, and `tsv` turns each into the real row.
 
 set -u
 
@@ -46,7 +51,9 @@ chmod +x "$fakebin/gh"
 
 runs="$scratch/runs.tsv"
 checks="$scratch/checks.tsv"
-t=$(printf '\t')
+
+# Each argument is one row, with `|` for a tab.
+tsv() { printf '%s\n' "$@" | tr '|' '\t'; }
 
 passed=0
 failed=0
@@ -65,38 +72,72 @@ run "$full"; status=$?
 if [ "$status" -eq 1 ] && grep -q 'no workflow run yet' "$scratch/err"; then ok "no run: exit 1, and the line says a conflicting pull request starts none"; else bad "no run (exit $status)"; fi
 
 echo "a workflow still running is not finished, whatever its check runs say"
-printf '11%sin_progress%s-%sCI\n' "$t" "$t" "$t" > "$runs"
-printf 'completed%ssuccess%sLint\n' "$t" "$t" > "$checks"
+tsv '11|in_progress|-|CI|9011|main' > "$runs"
+tsv 'completed|success|Lint|9011' > "$checks"
 run "$full"; status=$?
 if [ "$status" -eq 1 ] && grep -q '0 of 1 workflow runs and 1 of 1 check runs' "$scratch/err"; then ok "a running workflow behind finished check runs holds the wait"; else bad "running workflow (exit $status)"; fi
 
 echo "a check run from outside Actions still going is not finished"
-printf '11%scompleted%ssuccess%sCI\n' "$t" "$t" "$t" > "$runs"
-printf 'completed%ssuccess%sLint\nin_progress%s-%sWorkers Builds\n' "$t" "$t" "$t" "$t" > "$checks"
+tsv '11|completed|success|CI|9011|main' > "$runs"
+tsv 'completed|success|Lint|9011' 'in_progress|-|Workers Builds|9099' > "$checks"
 run "$full"; status=$?
 if [ "$status" -eq 1 ]; then ok "a pending external check holds the wait"; else bad "external check (exit $status)"; fi
 
 echo "a finished green commit exits 0 and names its run"
-printf '11%scompleted%ssuccess%sCI\n12%scompleted%sskipped%sCI\n' "$t" "$t" "$t" "$t" "$t" "$t" > "$runs"
-printf 'completed%ssuccess%sLint\ncompleted%sskipped%sEngine tests\n' "$t" "$t" "$t" "$t" > "$checks"
+tsv '11|completed|success|CI|9011|main' '12|completed|skipped|CI|9012|main' > "$runs"
+tsv 'completed|success|Lint|9011' 'completed|skipped|Engine tests|9011' > "$checks"
 run "$full"; status=$?
 if [ "$status" -eq 0 ] && grep -q '^run 11 success CI$' "$scratch/out" && grep -q 'ci-done: 01234567 green' "$scratch/out"; then ok "green, with a skipped duplicate run not counted red"; else bad "green (exit $status)"; fi
 
 echo "a finished red commit exits 0 and names what failed"
-printf '11%scompleted%sfailure%sCI\n' "$t" "$t" "$t" > "$runs"
-printf 'completed%ssuccess%sLint\ncompleted%sfailure%sEngine tests\n' "$t" "$t" "$t" "$t" > "$checks"
+tsv '11|completed|failure|CI|9011|main' > "$runs"
+tsv 'completed|success|Lint|9011' 'completed|failure|Engine tests|9011' > "$checks"
 run "$full"; status=$?
 if [ "$status" -eq 0 ] && grep -q 'ci-done: 01234567 red: Engine tests, workflow CI' "$scratch/out"; then ok "red ends the wait and names the check and the workflow"; else bad "red (exit $status)"; fi
 
 echo "a workflow that failed before any job is red"
-printf '11%scompleted%sstartup_failure%sCI\n' "$t" "$t" "$t" > "$runs"
+tsv '11|completed|startup_failure|CI|9011|main' > "$runs"
 : > "$checks"
 run "$full"; status=$?
 if [ "$status" -eq 0 ] && grep -q 'red: workflow CI' "$scratch/out"; then ok "a startup failure with no check run is red"; else bad "startup failure (exit $status)"; fi
 
+# d5aa24bd, run 20260924-0411: the merge commit of main was also the head of
+# fix/809-derived-check-attr, whose CI run was cancelled. The main run passed,
+# and the cancelled run's suite still carried two cancelled check runs.
+echo "a cancelled run that a passed run of the same workflow superseded is not red (d5aa24bd)"
+tsv '11|completed|success|CI|9011|main' '12|completed|cancelled|CI|9012|fix/809-derived-check-attr' > "$runs"
+tsv 'completed|success|Lint|9011' 'completed|success|Engine tests|9011' 'completed|success|headwater check (advisory)|9011' \
+    'completed|cancelled|Engine tests|9012' 'completed|cancelled|headwater check (advisory)|9012' > "$checks"
+run "$full"; status=$?
+if [ "$status" -eq 0 ] && grep -qx 'ci-done: 01234567 green' "$scratch/out" && grep -qx 'run 12 cancelled CI (superseded, fix/809-derived-check-attr)' "$scratch/out"; then ok "d5aa24bd: green, and the dropped run is named as superseded"; else bad "d5aa24bd (exit $status)"; fi
+
+echo "a lone cancelled run stays red"
+tsv '11|completed|cancelled|CI|9011|main' > "$runs"
+tsv 'completed|cancelled|Engine tests|9011' > "$checks"
+run "$full"; status=$?
+if [ "$status" -eq 0 ] && grep -qx 'ci-done: 01234567 red: Engine tests, workflow CI' "$scratch/out" && ! grep -q superseded "$scratch/out"; then ok "a lone cancelled run is red and not called superseded"; else bad "lone cancelled (exit $status)"; fi
+
+echo "two cancelled runs of one workflow supersede neither"
+tsv '11|completed|cancelled|CI|9011|main' '12|completed|cancelled|CI|9012|topic' > "$runs"
+tsv 'completed|cancelled|Engine tests|9011' 'completed|cancelled|Lint|9012' > "$checks"
+run "$full"; status=$?
+if [ "$status" -eq 0 ] && grep -q 'red: Engine tests, Lint, workflow CI, workflow CI' "$scratch/out" && ! grep -q superseded "$scratch/out"; then ok "two cancelled runs stay red"; else bad "two cancelled (exit $status)"; fi
+
+echo "a passed run of another workflow does not supersede a cancelled one"
+tsv '11|completed|success|Docs|9011|main' '12|completed|cancelled|CI|9012|main' > "$runs"
+tsv 'completed|success|Build site|9011' 'completed|cancelled|Engine tests|9012' > "$checks"
+run "$full"; status=$?
+if [ "$status" -eq 0 ] && grep -q 'red: Engine tests, workflow CI' "$scratch/out" && ! grep -q superseded "$scratch/out"; then ok "only a run of the same workflow supersedes"; else bad "other workflow (exit $status)"; fi
+
+echo "a failed run of the same workflow supersedes the cancelled one and stays red"
+tsv '11|completed|failure|CI|9011|main' '12|completed|cancelled|CI|9012|topic' > "$runs"
+tsv 'completed|failure|Engine tests|9011' 'completed|cancelled|Lint|9012' > "$checks"
+run "$full"; status=$?
+if [ "$status" -eq 0 ] && grep -qx 'ci-done: 01234567 red: Engine tests, workflow CI' "$scratch/out"; then ok "the failure is red, the superseded run and its check are not named"; else bad "failed sibling (exit $status)"; fi
+
 echo "a short sha is resolved before the runs endpoint is asked"
-printf '11%scompleted%ssuccess%sCI\n' "$t" "$t" "$t" > "$runs"
-printf 'completed%ssuccess%sLint\n' "$t" "$t" > "$checks"
+tsv '11|completed|success|CI|9011|main' > "$runs"
+tsv 'completed|success|Lint|9011' > "$checks"
 run 0123456; status=$?
 if [ "$status" -eq 0 ] && grep -q "head_sha=$full" "$log"; then ok "the runs endpoint is asked with the full sha"; else bad "short sha (exit $status)"; fi
 
