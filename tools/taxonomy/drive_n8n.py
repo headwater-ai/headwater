@@ -284,30 +284,74 @@ def unheld_problems(rel, text):
             % (rel, n, match, HELD_SECTION) for n, match in unheld_counts(text)]
 
 
-def provoke_unheld(rel, text):
-    """Arm 8. A check-instance count added outside the held section must fail this job naming the file and the line."""
+PROVOKED_HELD = "A held run reads 8 check instances."
+PROVOKED_UNHELD = "A provoked run reads 7 check instances and 9 check instances."
+
+
+def provoked_readme(text):
+    """One README with three counts added, and the line number of the two that must be named.
+
+    A `###` subsection inside the held section carries `8 check instances`, which
+    the guard must leave alone, because a `###` does not end a `##` section. The
+    first section after the held one carries two counts on one line, which the
+    guard must name both of, so the arm also proves that the guard sees where the
+    held section ends. A page whose held section is last gets a new section.
+    """
     lines = text.splitlines()
     held = [i for i, l in enumerate(lines) if l.startswith("## ") and l[3:].strip() == HELD_SECTION]
     if not held:
-        raise Mismatch("%s has no `## %s` section to provoke beside" % (rel, HELD_SECTION))
-    # The first `##` heading after the held section, so the arm also proves the
-    # guard sees where that section ends. A page whose held section is last gets
-    # a new section after it.
+        raise Mismatch("no `## %s` section to provoke beside" % HELD_SECTION)
     after = [i for i, l in enumerate(lines) if i > held[0] and l.startswith("## ")]
     if after:
         at = after[0] + 1
-        lines[at:at] = ["", "A provoked run reads 9 check instances."]
+        lines[at:at] = ["", PROVOKED_UNHELD]
     else:
-        lines += ["", "## A provoked section", "", "A provoked run reads 9 check instances."]
-    line_no = lines.index("A provoked run reads 9 check instances.") + 1
-    named = [p for p in unheld_problems(rel, "\n".join(lines) + "\n")
-             if p.startswith("%s:%d:" % (rel, line_no)) and "9 check instances" in p]
-    if not named:
-        raise Mismatch("a `9 check instances` added at %s:%d, outside `## %s`, did not fail this suite naming the file and the line"
-                       % (rel, line_no, HELD_SECTION))
+        lines += ["", "## A provoked section", "", PROVOKED_UNHELD]
+    at = held[0] + 1
+    lines[at:at] = ["", "### A provoked subsection", "", PROVOKED_HELD]
+    return "\n".join(lines) + "\n", lines.index(PROVOKED_UNHELD) + 1
+
+
+def provoke_unheld(root, corpora, scratch):
+    """Arm 8. Counts added outside the held section must fail this job, run as `main` runs it, naming each file, line and count.
+
+    It copies the three READMEs into a scratch root, provokes each, and runs this
+    file over that root with `--guard-only`, which is `main` up to the point where
+    it needs the engine. So the arm holds how `main` uses the guard's result, and
+    not only the guard.
+    """
+    want = []
+    for _, readme_path in corpora:
+        rel = os.path.relpath(readme_path, root)
+        try:
+            text, line_no = provoked_readme(open(readme_path, encoding="utf-8").read())
+        except Mismatch as e:
+            raise Mismatch("%s: %s" % (rel, e))
+        dest = os.path.join(scratch, rel)
+        os.makedirs(os.path.dirname(dest))
+        open(dest, "w", encoding="utf-8").write(text)
+        want += ["%s:%d: states `%s`" % (rel, line_no, c) for c in ("7 check instances", "9 check instances")]
+    done = subprocess.run([sys.executable, os.path.abspath(__file__), scratch, "--guard-only"],
+                          capture_output=True, text=True)
+    missed = [w for w in want if w not in done.stderr]
+    wrong = [l.strip() for l in done.stderr.splitlines() if "8 check instances" in l]
+    if done.returncode != 1 or missed or wrong:
+        raise Mismatch("three provoked READMEs exit %d under `--guard-only`; unnamed: %r; a held count named: %r"
+                       % (done.returncode, missed, wrong))
+
+
+def report(problems, corpora, green):
+    if problems:
+        print("n8n fixtures: %d claims of %d corpora do not hold" % (len(problems), len(corpora)), file=sys.stderr)
+        for p in problems:
+            print("  " + p, file=sys.stderr)
+        return 1
+    print(green)
+    return 0
 
 
 def main(root, binary):
+    """Check every README against the engine, or with `binary` None check only what needs no engine."""
     corpora = sorted(
         (os.path.basename(os.path.dirname(os.path.dirname(os.path.dirname(p)))), p)
         for p in __import__("glob").glob(os.path.join(root, "docs/taxonomies/*/fixtures/n8n/README.md")))
@@ -322,24 +366,28 @@ def main(root, binary):
         return 1
 
     problems, held = [], 0
+    for name, readme_path in corpora:
+        rel = os.path.relpath(readme_path, root)
+        unheld = unheld_problems(rel, open(readme_path, encoding="utf-8").read())
+        problems += unheld
+        print("n8n fixtures: %s, %d check-instance counts outside `## %s`" % (rel, len(unheld), HELD_SECTION))
+    if binary is None:
+        return report(problems, corpora, "n8n fixtures: no check-instance count outside `## %s` on %d pages"
+                      % (HELD_SECTION, len(corpora)))
+
     scratch = tempfile.mkdtemp(prefix="hw-n8n-")
     try:
+        try:
+            provoke_unheld(root, corpora, os.path.join(scratch, "unheld"))
+            print("n8n fixtures: counts added outside `## %s` fail this job, and one inside it does not" % HELD_SECTION)
+        except Mismatch as e:
+            problems.append("the unheld-count arm: %s" % e)
         for name, readme_path in corpora:
             rel = os.path.relpath(readme_path, root)
-            text = open(readme_path, encoding="utf-8").read()
-            unheld = unheld_problems(rel, text)
-            problems += unheld
             try:
-                provoke_unheld(rel, text)
-            except Mismatch as e:
-                problems.append("the unheld-count arm: %s" % e)
-            else:
-                print("n8n fixtures: %s, %d check-instance counts outside `## %s`, and an added one fails this job"
-                      % (rel, len(unheld), HELD_SECTION))
-            try:
-                stated = stated_figures(text)
-                report, strict = run_recipe(root, readme_path, binary, os.path.join(scratch, name))
-                measured = measured_figures(report, strict)
+                stated = stated_figures(open(readme_path, encoding="utf-8").read())
+                report_text, strict = run_recipe(root, readme_path, binary, os.path.join(scratch, name))
+                measured = measured_figures(report_text, strict)
                 problems += compare(name, rel, stated, measured)
                 provoke_figure(name, rel, stated, measured)
                 held += len(FIGURES)
@@ -355,14 +403,11 @@ def main(root, binary):
     finally:
         shutil.rmtree(scratch, ignore_errors=True)
 
-    if problems:
-        print("n8n fixtures: %d claims of %d corpora do not hold" % (len(problems), len(corpora)), file=sys.stderr)
-        for p in problems:
-            print("  " + p, file=sys.stderr)
-        return 1
-    print("n8n fixtures: %d figures of %d corpora hold, and each was read out of the page that states it" % (held, len(corpora)))
-    return 0
+    return report(problems, corpora, "n8n fixtures: %d figures of %d corpora hold, and each was read out of the page that states it"
+                  % (held, len(corpora)))
 
 
 if __name__ == "__main__":
+    if sys.argv[2:] == ["--guard-only"]:
+        sys.exit(main(sys.argv[1], None))
     sys.exit(main(sys.argv[1], os.environ["HEADWATER_BIN"]))
