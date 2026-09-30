@@ -55,7 +55,7 @@ The public Rust API of the crates is not in this spec ([HW-DR-0098](../decisions
 
 The loader refuses a duplicate key, an anchor, an alias, a merge key and an explicit tag. A `$`-reference is the one reuse mechanism, and an overlay cannot address an alias. `value.rs` has no `Null`, `Bool` or `Int` variant. A scalar keeps its text and its style, because the meta-schema and not the YAML resolver decides a type. `core_schema.rs` gives that type only where a declared type asks for it. So `no` stays the string `no`.
 
-`span.rs` writes each position in the coordinates of an editor: lines and columns from one, and byte offsets into the source. Spec 12 anchors each finding to a line, and this is where that line comes from. `json.rs` holds the JSON writer that three other crates share. Its reader is the loader, because JSON is a subset of the YAML 1.2 core schema.
+`span.rs` writes each position in the coordinates of an editor: lines and columns from one, and byte offsets into the source. Spec 12 anchors each finding to a line, and this is where that line comes from. `json.rs` holds a JSON writer that crates outside this subsystem import. Its reader is the loader, because JSON is a subset of the YAML 1.2 core schema.
 
 ### The `$`-reference sublanguage and the overlay address
 
@@ -101,7 +101,7 @@ Two `add` operations commute when no leaf that one writes is a prefix of a leaf 
 
 `operation.rs` reads an overlay as operations of five kinds: `add`, `override`, `add_to`, `remove_from` and `remove`. It computes the set of leaves that each `add` writes. The addressed path is the wrong input to the confluence predicate. The design-spec bundle adds `kinds.design_spec`, and the adopter overlay adds `kinds.design_spec.identifier`. The two addresses overlap, and the written leaves do not.
 
-`merge.rs` applies each operation and returns a new tree. A failed operation therefore leaves no half-applied tree. An `add` asserts that the base does not declare each leaf. It does not assert that another overlay has not made the parent mapping. Whether a bundle may extend a list with `add_to` is an open question ([HW-OBL-0031](../obligations/0031-list-extension-in-an-add-only-overlay.md)), and this spec states no answer.
+`merge.rs` applies each operation and returns a new tree. A failed operation therefore leaves no half-applied tree. An `add` writes its value leaf by leaf (`graft_leaves`), and each leaf asserts its own absence from the tree that the operation meets. A parent mapping that another overlay made is therefore not a collision. Whether a bundle may extend a list with `add_to` is an open question ([HW-OBL-0031](../obligations/0031-list-extension-in-an-add-only-overlay.md)), and this spec states no answer.
 
 ### References resolve last
 
