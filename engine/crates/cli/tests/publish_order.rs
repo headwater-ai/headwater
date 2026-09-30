@@ -101,19 +101,32 @@ fn workspace_manifest() -> String {
 /// `members = [...]` declares, in its own order.
 ///
 /// It takes the manifest text rather than reading the file, so that a planted
-/// manifest goes through the same parse as the real one.
+/// manifest goes through the same parse as the real one. The parse is TOML's
+/// own, so a form cargo accepts is a form this reads.
 fn member_paths(manifest: &str) -> Vec<String> {
-    let start = manifest
-        .find("members = [")
-        .expect("the workspace declares members");
-    let rest = &manifest[start..];
-    let end = rest.find(']').expect("the members list closes");
-    rest[..end]
-        .lines()
-        .filter_map(|line| line.trim().strip_prefix('"'))
-        .filter_map(|line| line.split('"').next())
-        .map(str::to_string)
+    workspace_table(manifest)
+        .get("members")
+        .and_then(toml_edit::Item::as_array)
+        .expect("the workspace declares members as an array")
+        .iter()
+        .map(|member| {
+            member
+                .as_str()
+                .expect("each workspace member is a string")
+                .to_string()
+        })
         .collect()
+}
+
+/// The `[workspace]` table of a manifest.
+fn workspace_table(manifest: &str) -> toml_edit::Item {
+    let document: toml_edit::DocumentMut = manifest
+        .parse()
+        .unwrap_or_else(|why| panic!("the workspace manifest is not TOML: {why}"));
+    document
+        .get("workspace")
+        .cloned()
+        .expect("the manifest has a [workspace] table")
 }
 
 /// The workflow names every member of the workspace, and no name that is not
@@ -472,52 +485,54 @@ fn the_index_gate_refuses_a_dependency_whose_release_version_is_yanked() {
 /// through the same judge. An entry whose `path` names no member is a
 /// dependency from outside this workspace, and it is not read.
 fn stale_member_dependency_versions(manifest: &str) -> Vec<String> {
-    let members = member_paths(manifest);
-    let quoted = |line: &str, key: &str| -> Option<String> {
-        let at = line.find(&format!("{key} = \""))? + key.len() + " = \"".len();
-        line[at..].split('"').next().map(str::to_string)
-    };
-    let package = section(manifest, "[workspace.package]")
-        .iter()
-        .find_map(|line| line.trim().strip_prefix("version = \""))
-        .and_then(|rest| rest.split('"').next())
-        .expect("[workspace.package] declares a version")
-        .to_string();
-
-    let mut stale = Vec::new();
-    for line in section(manifest, "[workspace.dependencies]") {
-        let line = line.trim();
-        let Some((name, _)) = line.split_once(" = ") else {
-            continue;
-        };
-        let Some(path) = quoted(line, "path") else {
-            continue;
-        };
-        if !members.contains(&path) {
-            continue;
-        }
-        match quoted(line, "version") {
-            Some(version) if version == package => {}
-            Some(version) => stale.push(format!(
+    member_dependency_versions(manifest)
+        .into_iter()
+        .filter_map(|(name, path, version, package)| match version {
+            Some(version) if version == package => None,
+            Some(version) => Some(format!(
                 "{name} (path {path}) names version {version}, and [workspace.package] version is {package}"
             )),
-            None => stale.push(format!(
+            None => Some(format!(
                 "{name} (path {path}) names no version, so it cannot be published; [workspace.package] version is {package}"
             )),
-        }
-    }
-    stale
+        })
+        .collect()
 }
 
-/// The lines of one `[table]` of a manifest, from its header to the next
-/// header, less comments.
-fn section<'a>(manifest: &'a str, header: &str) -> Vec<&'a str> {
-    manifest
-        .lines()
-        .skip_while(|line| line.trim() != header)
-        .skip(1)
-        .take_while(|line| !line.trim_start().starts_with('['))
-        .filter(|line| !line.trim_start().starts_with('#'))
+/// Every `[workspace.dependencies]` entry whose `path` names a member, as
+/// `(name, path, version, package version)`, whatever TOML form the entry is
+/// written in: an inline table with or without spaces, or a
+/// `[workspace.dependencies.<name>]` sub-table. A version that is not a string
+/// reads as `None`, the same as no version.
+fn member_dependency_versions(manifest: &str) -> Vec<(String, String, Option<String>, String)> {
+    let members = member_paths(manifest);
+    let workspace = workspace_table(manifest);
+    let package = workspace
+        .get("package")
+        .and_then(|table| table.get("version"))
+        .and_then(toml_edit::Item::as_str)
+        .expect("[workspace.package] declares a version")
+        .to_string();
+    let Some(dependencies) = workspace
+        .get("dependencies")
+        .and_then(toml_edit::Item::as_table_like)
+    else {
+        return Vec::new();
+    };
+    dependencies
+        .iter()
+        .filter_map(|(name, entry)| {
+            let entry = entry.as_table_like()?;
+            let path = entry.get("path").and_then(toml_edit::Item::as_str)?;
+            if !members.iter().any(|member| member == path) {
+                return None;
+            }
+            let version = entry
+                .get("version")
+                .and_then(toml_edit::Item::as_str)
+                .map(str::to_string);
+            Some((name.to_string(), path.to_string(), version, package.clone()))
+        })
         .collect()
 }
 
@@ -567,6 +582,127 @@ fn a_bump_that_misses_one_workspace_dependency_names_that_dependency() {
         stale.len() == 1 && stale[0].contains("headwater-yaml"),
         "the planted bump left headwater-yaml at {version} and moved the rest to {next}; \
          the judge should name headwater-yaml alone, and it said: {stale:?}"
+    );
+}
+
+/// The manifest planted with a patch bump that missed `headwater-yaml`, with
+/// the `headwater-yaml` entry then rewritten by `rewrite`. The bump moves the
+/// package and every other entry to `99.0.1`.
+fn planted_bump_missing_yaml(rewrite: impl Fn(&str) -> String) -> String {
+    let real = workspace_manifest();
+    let version = headwater_resolve::release::ENGINE;
+    let entry = format!("headwater-yaml = {{ path = \"crates/yaml\", version = \"{version}\" }}");
+    assert!(
+        real.contains(&entry),
+        "engine/Cargo.toml has no `{entry}` line to plant on"
+    );
+    let bumped: String = real
+        .replacen(
+            &format!("\nversion = \"{version}\"\n"),
+            "\nversion = \"99.0.1\"\n",
+            1,
+        )
+        .lines()
+        .map(|line| {
+            if line.starts_with("headwater-") && !line.starts_with("headwater-yaml ") {
+                line.replace(
+                    &format!("version = \"{version}\" }}"),
+                    "version = \"99.0.1\" }",
+                )
+            } else {
+                line.to_string()
+            }
+        })
+        .collect::<Vec<_>>()
+        .join("\n");
+    bumped.replace(&entry, &rewrite(version))
+}
+
+/// The missed entry is caught whatever TOML form it takes. Cargo reads an
+/// inline table without spaces, and a `[workspace.dependencies.<name>]`
+/// sub-table, the same as the form this manifest uses, so a judge that read one
+/// spelling would pass a stale version in the others.
+#[test]
+fn a_missed_workspace_dependency_is_named_in_every_toml_form_cargo_reads() {
+    let forms: [(&str, Box<dyn Fn(&str) -> String>); 3] = [
+        (
+            "an inline table with no spaces",
+            Box::new(|v| format!("headwater-yaml={{path=\"crates/yaml\",version=\"{v}\"}}")),
+        ),
+        (
+            "an inline table with the keys reversed",
+            Box::new(|v| {
+                format!("headwater-yaml = {{ version = \"{v}\", path = \"crates/yaml\" }}")
+            }),
+        ),
+        (
+            "a sub-table at the end of the manifest",
+            Box::new(|_| String::new()),
+        ),
+    ];
+    let version = headwater_resolve::release::ENGINE;
+    for (form, rewrite) in forms {
+        let mut planted = planted_bump_missing_yaml(rewrite);
+        if form.starts_with("a sub-table") {
+            planted.push_str(&format!(
+                "\n\n[workspace.dependencies.headwater-yaml]\npath = \"crates/yaml\"\nversion = \"{version}\"\n"
+            ));
+        }
+        let stale = stale_member_dependency_versions(&planted);
+        assert!(
+            stale.len() == 1 && stale[0].contains("headwater-yaml"),
+            "headwater-yaml was left at {version}, written as {form}; the judge said: {stale:?}"
+        );
+    }
+}
+
+/// The judge reads every member that another member depends on through
+/// `workspace = true`. A form the judge cannot read would drop an entry from
+/// this set, and a case that holds only the entries it read cannot see that.
+#[test]
+fn the_judge_reads_every_member_entry_that_a_member_depends_on() {
+    let manifest = workspace_manifest();
+    let read: Vec<String> = member_dependency_versions(&manifest)
+        .into_iter()
+        .map(|(name, ..)| name)
+        .collect();
+    let members = workspace_members();
+    let names: Vec<&String> = members.iter().map(|(name, _)| name).collect();
+    let mut depended_on: Vec<String> = Vec::new();
+    for (_, text) in &members {
+        let document: toml_edit::DocumentMut = text.parse().expect("a member manifest is TOML");
+        for table in ["dependencies", "dev-dependencies", "build-dependencies"] {
+            let Some(deps) = document.get(table).and_then(toml_edit::Item::as_table_like) else {
+                continue;
+            };
+            for (name, entry) in deps.iter() {
+                let inherits = entry
+                    .as_table_like()
+                    .and_then(|entry| entry.get("workspace"))
+                    .and_then(toml_edit::Item::as_bool)
+                    == Some(true);
+                if inherits
+                    && names.iter().any(|member| *member == name)
+                    && !depended_on.iter().any(|seen| seen == name)
+                {
+                    depended_on.push(name.to_string());
+                }
+            }
+        }
+    }
+    assert!(
+        !depended_on.is_empty(),
+        "no member depends on another through `workspace = true`, so this case measured nothing"
+    );
+    let unread: Vec<&String> = depended_on
+        .iter()
+        .filter(|name| !read.contains(name))
+        .collect();
+    assert!(
+        unread.is_empty(),
+        "members depend on these through `workspace = true`, and the judge read no \
+         [workspace.dependencies] entry for them: {unread:?} (read {} entries)",
+        read.len()
     );
 }
 
