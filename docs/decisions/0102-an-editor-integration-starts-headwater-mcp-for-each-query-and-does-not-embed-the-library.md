@@ -6,11 +6,10 @@ summary: "An editor plugin is a client of headwater mcp: it starts the server fo
 last_verified: 2026-09-30
 title: "An editor integration starts headwater mcp for each query and does not embed the library"
 provenance:
-  warrant: accepted
+  warrant: asserted
   agency: agent
   drafted_by: claude-opus-5
   activity: draft
-  accepted_by: j.baxter
   evidence_basis: evidenced
 relations:
   traces_to:
