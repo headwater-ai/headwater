@@ -1460,7 +1460,10 @@ fn a_component_arm_that_removes_a_probe_s_document_refuses_the_plan() {
     // The refusal names the arm at fault and never the absent arm, which
     // here removes nothing any probe reads.
     let message = plan.refusal.as_ref().expect("refused").to_string();
-    assert!(message.contains("`no-skills` arm removes `corpus/probes`"), "{message}");
+    assert!(
+        message.contains("`no-skills` arm removes `corpus/probes`"),
+        "{message}"
+    );
     assert!(!message.contains("absent arm"), "{message}");
     // An adding arm removes nothing, so the same path under `mcp` passes the
     // rule and the plan reaches its ceiling.

@@ -881,7 +881,11 @@ tiers:
         // The refusal names the arm's delta, and never the ablation, which
         // is not at fault.
         for (line, entry, arm) in [
-            ("      no-hook: [.claude/hooks/intent.sh]\n", "../x", Arm::NoHook),
+            (
+                "      no-hook: [.claude/hooks/intent.sh]\n",
+                "../x",
+                Arm::NoHook,
+            ),
             ("      mcp: [.mcp.json]\n", "/etc/passwd", Arm::Mcp),
         ] {
             let replaced = line.replace(
