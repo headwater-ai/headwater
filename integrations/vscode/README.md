@@ -6,13 +6,13 @@ This extension shows a person who edits a Headwater repository in plain VS Code 
 - **Read.** When you open a file that a document governs, the status bar names that document. Click it to list every document that governs the file.
 - **Write.** When you save a file that a document governs, a notification names the governing documents. The notification comes after the save, so the save never waits for it.
 
-When nothing governs the task or the file, the extension shows nothing. It does not guess.
+When nothing governs the task or the file, the extension shows nothing. It does not guess. The one exception is a route that shows no pointer but held some back: then a message says how many.
 
 ## How it gets its answers
 
 The extension is a client of `headwater mcp`, the corpus MCP server that the engine ships. For each question it starts `headwater mcp --root <workspace folder>`, sends one request and stops the process. It does not look for a server that is already running, because the server reads standard input and walks the corpus once when it starts. A server kept alive across your edits would answer from an old walk. One session takes about 0.16 seconds on this repository.
 
-It calls two tools of the query class, `route` and `governing_docs_for_path`, and no other tool. It never passes `--write`, so the server it starts registers no tool that writes. It reads each answer from the `structuredContent` member, which [the `headwater mcp` interface](../../docs/interfaces/headwater-mcp.md) states as the machine contract of both tools. It takes the path, the name and the summary of each element of `pointers`, and shows the warrant sentence when the element is `unwarranted`. It never reads the text block. A path can hold ` (` and a summary can hold any word, so a pointer read from the text can be wrong. An answer with no `structuredContent` comes from an engine older than this contract, and the extension shows nothing for it.
+It calls two tools of the query class, `route` and `governing_docs_for_path`, and no other tool. It never passes `--write`, so the server it starts registers no tool that writes. It reads each answer from the `structuredContent` member, which [the `headwater mcp` interface](../../docs/interfaces/headwater-mcp.md) states as the machine contract of both tools. It takes the path, the name and the summary of each element of `pointers`, and shows the warrant sentence when the element is `unwarranted`. From a `route` answer it also reads `withheld`, the number of ranked pointers that the budget held back. When that number is more than zero, the pick list shows a line such as `196 more withheld by the budget`, so you can tell three answers from three of fifteen. It never reads the text block. A path can hold ` (` and a summary can hold any word, so a pointer read from the text can be wrong. An answer with no `structuredContent` comes from an engine older than this contract, and the extension shows nothing for it.
 
 ## When it does nothing
 

@@ -17,11 +17,18 @@
 // tools, and never out of the text block. The text is for a person: a path may
 // hold ` (` and a summary any word, so no parse of it is exact.
 //
+// It also reads `withheld` from a `route` answer: how many ranked pointers the
+// budget held back. `route` resolves to `{ pointers, withheld }`, and
+// `withheldNote` is the line the extension shows beside the list, so a reader
+// can tell three answers from three of fifteen. `governing_docs_for_path` has
+// no budget, and `governing` resolves to the pointers alone.
+//
 // It fails open. A spawn error, a non-zero exit, a timeout, `isError: true`, a
 // JSON-RPC error, an answer without `structuredContent` (an engine older than
-// #1248) or output that does not parse all resolve to `[]`. No call
-// throws or rejects, except `ask` with a tool outside the allowlist, which is a
-// defect in the caller and not a state of the workspace.
+// #1248), output past one megabyte or output that does not parse all resolve
+// to no pointers and a withheld count of 0. No call throws or rejects, except
+// `ask` with a tool outside the allowlist, which is a defect in the caller and
+// not a state of the workspace.
 
 'use strict';
 
@@ -64,10 +71,33 @@ function readPointers(structured) {
   return pointers.every((p) => p !== null) ? pointers : [];
 }
 
+/** The answer that carries nothing: no pointers, and nothing withheld. */
+function none() {
+  return { pointers: [], withheld: 0 };
+}
+
+/**
+ * The pointers and the withheld count of one answer's `structuredContent`. A
+ * `withheld` that is not a non-negative safe integer is 0.
+ */
+function readAnswer(structured) {
+  const n = structured ? structured.withheld : undefined;
+  return {
+    pointers: readPointers(structured),
+    withheld: Number.isSafeInteger(n) && n >= 0 ? n : 0,
+  };
+}
+
+/** The line shown beside a route's pointers, or null when nothing was withheld. */
+function withheldNote(answered) {
+  const n = answered ? answered.withheld : 0;
+  return n > 0 ? `${n} more withheld by the budget` : null;
+}
+
 /**
  * One session: spawn, initialize, one `tools/call`, read the answer, stop.
- * Throws synchronously when `tool` is not in `TOOLS`; resolves to the pointers
- * otherwise, and to `[]` on every failure.
+ * Throws synchronously when `tool` is not in `TOOLS`; resolves to
+ * `{ pointers, withheld }` otherwise, and to no pointers and 0 on every failure.
  */
 function ask(tool, args, options = {}) {
   if (!TOOLS.includes(tool)) {
@@ -75,7 +105,7 @@ function ask(tool, args, options = {}) {
   }
   const root = options.root;
   if (typeof root !== 'string' || !fs.existsSync(path.join(root, '.headwater'))) {
-    return Promise.resolve([]);
+    return Promise.resolve(none());
   }
   const bin = options.bin || 'headwater';
   const argv = [...(options.binArgs || []), 'mcp', '--root', root];
@@ -85,12 +115,12 @@ function ask(tool, args, options = {}) {
     let done = false;
     let child;
     let timer;
-    const finish = (pointers) => {
+    const finish = (answered) => {
       if (done) return;
       done = true;
       clearTimeout(timer);
       if (child && child.exitCode === null && child.signalCode === null) child.kill('SIGKILL');
-      resolve(pointers);
+      resolve(answered);
     };
 
     try {
@@ -101,22 +131,22 @@ function ask(tool, args, options = {}) {
         windowsHide: true,
       });
     } catch {
-      finish([]);
+      finish(none());
       return;
     }
-    timer = setTimeout(() => finish([]), timeoutMs);
-    child.on('error', () => finish([]));
+    timer = setTimeout(() => finish(none()), timeoutMs);
+    child.on('error', () => finish(none()));
     child.stdin.on('error', () => {});
 
     let stdout = '';
     child.stdout.setEncoding('utf8');
     child.stdout.on('data', (chunk) => {
       stdout += chunk;
-      if (stdout.length > MAX_OUTPUT) finish([]);
+      if (stdout.length > MAX_OUTPUT) finish(none());
     });
     child.on('close', (code) => {
       if (code !== 0) {
-        finish([]);
+        finish(none());
         return;
       }
       finish(answer(stdout));
@@ -140,7 +170,7 @@ function ask(tool, args, options = {}) {
   });
 }
 
-// The pointers in the response to the `tools/call`, or `[]`.
+// The answer in the response to the `tools/call`, or the empty answer.
 function answer(stdout) {
   for (const line of stdout.split('\n')) {
     let message;
@@ -151,20 +181,23 @@ function answer(stdout) {
     }
     if (!message || message.id !== 2) continue;
     const result = message.result;
-    if (!result || result.isError === true) return [];
-    return readPointers(result.structuredContent);
+    if (!result || result.isError === true) return none();
+    return readAnswer(result.structuredContent);
   }
-  return [];
+  return none();
 }
 
-/** The documents that govern the task the user typed, as pointers. */
+/**
+ * The documents that govern the task the user typed, as `{ pointers, withheld }`:
+ * the pointers the budget let through, and how many more it held back.
+ */
 function route(task, options) {
   return ask('route', { task: String(task) }, options);
 }
 
 /** The documents that govern a workspace-relative path, as pointers. */
-function governing(relativePath, options) {
-  return ask('governing_docs_for_path', { path: String(relativePath) }, options);
+async function governing(relativePath, options) {
+  return (await ask('governing_docs_for_path', { path: String(relativePath) }, options)).pointers;
 }
 
-module.exports = { TOOLS, ask, route, governing, readPointers };
+module.exports = { TOOLS, ask, route, governing, readPointers, readAnswer, withheldNote };
