@@ -48,9 +48,11 @@ headwater-hash = { workspace = true }
 # dialect, one parser, one set of spans in a refusal.
 headwater-yaml = { workspace = true }
 
-# The engine's own release number, named once so a grader and a harness report
-# the same number a `requires_engine` range reads, rather than each reading
-# its own crate's manifest version.
+# The engine's own release number, which the harness reports (`plan.rs`,
+# `headwater_resolve_version`) so that it is the number a `requires_engine`
+# range reads, rather than this crate's manifest version. The grader does not
+# report it: `grade::VERSION` is the grader's own version, which a grading
+# change moves and a release does not (#1317).
 headwater-resolve = { workspace = true }
 
 [lints]
