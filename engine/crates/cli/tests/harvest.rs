@@ -421,6 +421,25 @@ const TYPO: &str = "HW-SOL-chekout";
 /// The export is one the binary wrote and not a hand-written copy, so the case
 /// holds the shape the writer emits against the shape the resolver reads.
 fn filtered(label: &str, grain: &str) -> Root {
+    filtered_with(
+        label,
+        grain,
+        "{exclude: {status: [draft]}}",
+        &[(WITHHELD, "draft")],
+        &[WITHHELD, TYPO],
+    )
+}
+
+/// [`filtered`], with the filter, the notes the scratch root adds as
+/// `(identifier, status)`, and the anchors the checkout note writes into A,
+/// each as it appears in YAML.
+fn filtered_with(
+    label: &str,
+    grain: &str,
+    filter: &str,
+    notes: &[(&str, &str)],
+    anchors: &[&str],
+) -> Root {
     let root = Root::new(label);
     let overlay =
         std::fs::read_to_string(root.at.join(".headwater/overlay.yml")).expect("the overlay reads");
@@ -435,27 +454,31 @@ fn filtered(label: &str, grain: &str) -> Root {
         &overlay.replacen(
             anchor,
             &format!(
-                "{anchor}    - kind: graph_export\n      profile: partner\n      format: json\n      output: exports/partner.json\n      filter: {{exclude: {{status: [draft]}}}}\n      tombstone: {grain}\n\n"
+                "{anchor}    - kind: graph_export\n      profile: partner\n      format: json\n      output: exports/partner.json\n      filter: {filter}\n      tombstone: {grain}\n\n"
             ),
             1,
         ),
     );
     let resolved = root.run(&["taxonomy", "resolve"]);
     assert_eq!(resolved.code, Some(0), "{resolved:?}");
-    root.write(
-        "docs/solution/refund.md",
-        &format!(
-            "---\nid: {WITHHELD}\ntitle: The refund path\nsummary: The refund path is not settled yet.\nstatus: draft\nstatus_since: 2026-09-01\nlast_verified: 2026-09-01\n---\n\n# The refund path\n\nThe refund path is not settled yet.\n"
-        ),
-    );
+    for (id, status) in notes {
+        root.write(
+            &format!("docs/solution/{}.md", id.to_lowercase()),
+            &format!(
+                "---\nid: {id}\ntitle: The note {id}\nsummary: The note {id} is not settled yet.\nstatus: {status}\nstatus_since: 2026-09-01\nlast_verified: 2026-09-01\n---\n\n# The note {id}\n\nThis note is not settled yet.\n"
+            ),
+        );
+    }
 
     let exported = root.run(&["export", "--profile", "partner", "--format", "json"]);
     assert_eq!(exported.code, Some(0), "{exported:?}");
     assert!(exported.out.contains("\"filtered\": true"), "{exported:?}");
-    assert!(
-        !exported.out.contains(WITHHELD),
-        "the withheld identifier reached the export: {exported:?}"
-    );
+    for (id, _) in notes {
+        assert!(
+            !exported.out.contains(id),
+            "the withheld identifier {id} reached the export: {exported:?}"
+        );
+    }
     let pinned = std::fs::read_to_string(root.at.join(".headwater/taxonomy.yml"))
         .expect("the declaration reads");
     let before = root.digest(EXPORT_A);
@@ -468,7 +491,14 @@ fn filtered(label: &str, grain: &str) -> Root {
         "docs/solution/checkout.md",
         &NOTE.replace(
             "  uses_service_in_a:\n    - SVC-1",
-            &format!("  uses_service_in_a:\n    - {WITHHELD}\n    - {TYPO}"),
+            &format!(
+                "  uses_service_in_a:\n{}",
+                anchors
+                    .iter()
+                    .map(|anchor| format!("    - {anchor}\n"))
+                    .collect::<String>()
+                    .trim_end()
+            ),
         ),
     );
     root
@@ -557,6 +587,85 @@ fn a_counted_export_older_than_the_identifier_list_leaves_a_miss_unresolved_and_
     assert!(
         unresolved[0].contains("SVC-2") && unresolved[0].contains("predates"),
         "the reason says the export predates the identifier list: {unresolved:?}"
+    );
+}
+
+/// An anchor is trimmed before it is looked up, and the digest is over the
+/// trimmed string. A quoted anchor with spaces around the withheld identifier
+/// binds as withheld, as the plain identifier does.
+#[test]
+fn a_padded_anchor_to_a_withheld_identifier_binds_withheld() {
+    let padded = format!("\"  {WITHHELD}  \"");
+    let root = filtered_with(
+        "padded",
+        "counted",
+        "{exclude: {status: [draft]}}",
+        &[(WITHHELD, "draft")],
+        &[&padded],
+    );
+    let ran = root.run(&["check", "--strict"]);
+    assert_eq!(unresolved(&ran), Vec::<String>::new(), "{ran:?}");
+    assert!(
+        ran.out
+            .lines()
+            .chain(ran.err.lines())
+            .any(|line| line.trim() == "1 withheld"),
+        "the padded anchor binds as withheld: {ran:?}"
+    );
+}
+
+/// A filter with two rules writes two tombstones, each with its own list. An
+/// identifier withheld under either rule binds as withheld, so the resolver
+/// reads every list and not only one.
+#[test]
+fn an_identifier_withheld_under_either_of_two_rules_binds_withheld() {
+    let other = "HW-SOL-legacy";
+    let root = filtered_with(
+        "two-rules",
+        "counted",
+        "{include: {status: [current, draft]}, exclude: {status: [draft]}}",
+        &[(WITHHELD, "draft"), (other, "deprecated")],
+        &[WITHHELD, other, TYPO],
+    );
+    let exported = std::fs::read_to_string(root.at.join(EXPORT_A)).expect("the export reads");
+    assert_eq!(
+        exported.matches("\"rule\"").count(),
+        2,
+        "the filter withheld one document under each rule: {exported}"
+    );
+    let ran = root.run(&["check", "--strict"]);
+    let unresolved = unresolved(&ran);
+    assert_eq!(unresolved.len(), 1, "{unresolved:?}\n{ran:?}");
+    assert!(unresolved[0].contains(TYPO), "{unresolved:?}");
+    assert!(
+        ran.out
+            .lines()
+            .chain(ran.err.lines())
+            .any(|line| line.trim() == "2 withheld"),
+        "both withheld anchors bind as withheld: {ran:?}"
+    );
+}
+
+/// A 1.3 `counted` export whose filter withheld nothing writes no tombstone,
+/// so no list is there to read. The miss can only be a typo, and the reason
+/// must not say that the export predates the list.
+#[test]
+fn a_counted_export_that_withheld_nothing_reports_a_miss_as_not_withheld() {
+    let root = filtered_with(
+        "none-withheld",
+        "counted",
+        "{exclude: {status: [draft]}}",
+        &[],
+        &[TYPO],
+    );
+    let ran = root.run(&["check", "--strict"]);
+    let unresolved = unresolved(&ran);
+    assert_eq!(unresolved.len(), 1, "{unresolved:?}\n{ran:?}");
+    assert!(
+        unresolved[0].contains(TYPO)
+            && unresolved[0].contains("not one of the identifiers it withheld")
+            && !unresolved[0].contains("predates"),
+        "the reason says the typo is not withheld: {unresolved:?}"
     );
 }
 
