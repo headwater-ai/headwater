@@ -440,7 +440,10 @@ record_misses_check() {
     if [ -z "$1" ]; then
         printf 'no item under ## Intake has the bold lead Record.' ; return
     fi
-    if ! printf '%s\n' "$1" | grep -qiw 'tree'; then
+    # One sentence must both name the tree and say to open, read, confirm or
+    # check: a ruling that meets the tree only where it withdraws a line has
+    # not said to look at it.
+    if ! printf '%s\n' "$1" | sed 's/\. /.\n/g' | grep -iw 'tree' | grep -qiwE 'opens?|reads?|confirms?|checks?'; then
         printf 'the ruling does not check the line against the tree: %s' "$1" ; return
     fi
     if ! printf '%s\n' "$1" | grep -qiw 'file' || ! printf '%s\n' "$1" | grep -qiw 'symbol'; then
@@ -455,7 +458,8 @@ else
     fail 'the Record ruling checks the line against the tree and names the file and symbol' "$why"
 fi
 # The arms, each an Intake section in a scratch file: the ruling as it stood
-# before #1486 is reported, a ruling that checks the tree but names no symbol is
+# before #1486 is reported, a ruling that meets the tree only where it withdraws
+# a line is reported, a ruling that checks the tree but names no symbol is
 # reported, a file with no Record item is reported, and a reworded ruling holds.
 record_arm() {
     printf '## Intake\n\n1. **Fold.** An open issue covers it.\n%s\n\n## Report\n' "$1" > "$scratch/record.md"
@@ -465,6 +469,11 @@ why=$(record_arm '2. **Record.** The line names no reader outside this repositor
 case "$why" in
     *'against the tree'*) pass 'and the ruling as it stood before #1486 is reported' ;;
     *) fail 'the ruling as it stood before #1486 is reported' "reported: \`$why\`" ;;
+esac
+why=$(record_arm '2. **Record.** Name in the Context the file and the symbol. A line that does not hold on the tree is withdrawn.')
+case "$why" in
+    *'against the tree'*) pass 'and a ruling that meets the tree only where it withdraws a line is reported' ;;
+    *) fail 'a ruling that meets the tree only where it withdraws a line is reported' "reported: \`$why\`" ;;
 esac
 why=$(record_arm '2. **Record.** Open the file the line names on the current tree and confirm it, then write the record.')
 case "$why" in
