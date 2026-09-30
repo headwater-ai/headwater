@@ -42,7 +42,7 @@ The repository must load its taxonomy, corpus and projection declarations. A str
 | Option | What it does |
 |---|---|
 | `--profile <name>` | Selects one declared export profile. |
-| `--format <target>` | Emits one artifact to standard output using the target. |
+| `--format json\|jsonschema` | Emits one artifact to standard output in the named format. |
 | `--at <date>` | Adds a generation date to a stream artifact, and to a declared export that states `committed: false`. The command refuses it with `--check`, and it refuses a run that selects a committed export. |
 | `--check` | Checks declared output files without writing, and first checks the emitter set that the committed corpus descriptor records against this engine's. |
 | `--json` | Selects JSON output where the command supports a format choice. |

@@ -126,8 +126,8 @@ fn recipe(root: &Spanned<Value>, what: &str) -> Vec<(String, String)> {
 #[test]
 fn the_recipe_spec_seven_prints_is_the_recipe_this_repository_ships() {
     let source_path = "taxonomy-source/headwater-standard/assemblies/starter/assembly.yml";
-    let shipped = headwater_yaml::load(&read(source_path))
-        .unwrap_or_else(|e| panic!("{source_path}: {e:?}"));
+    let shipped =
+        headwater_yaml::load(&read(source_path)).unwrap_or_else(|e| panic!("{source_path}: {e:?}"));
     let shipped = recipe(&shipped, source_path);
 
     let section = section();

@@ -58,7 +58,19 @@
 //! already on the shelf, and it reads them from `docs/interfaces/` rather than
 //! writing anything. Mixing the two would make one file answer two different
 //! questions about two different trees.
+//!
+//! # Why the flag-set cases at the end joined this file
+//!
+//! [#1487](https://github.com/headwater-ai/headwater/issues/1487) asked for
+//! the second half of HW-OBL-0156: a test that compares the flags the parser
+//! admits with the rows of each Options table. The last two cases are that
+//! test. They read the same shelf as the cases above and write nothing, so
+//! they belong here for the reason the section above gives. They hold the
+//! name and the placeholder of each row, and never its words. On the day they
+//! landed they found two tables that named a `--format` value the parser does
+//! not print: `headwater-capture.md` and `headwater-export.md`.
 
+use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
 
 /// Every document under `docs/interfaces/` this file holds to the sentence, in
@@ -383,5 +395,328 @@ fn hw_dr_0033_states_the_number_of_escape_byte_cases_width_actually_holds() {
         paragraph.contains(&format!("in {spelled} places")),
         "`width.rs` holds {held} `no_escape_byte_*` cases, and the paragraph does not say \
          \"in {spelled} places\":\n{paragraph}"
+    );
+}
+
+// ---------------------------------------------------------------------------
+// The flag set each Options table names, held against the parser
+// ---------------------------------------------------------------------------
+
+/// One flag as a caller types it: the long name, and the placeholder for its
+/// value where it takes one.
+type Flag = (String, Option<String>);
+
+/// Flags keyed by the command line they belong to, `taxonomy publish` for one.
+type FlagsByLine = BTreeMap<String, BTreeSet<Flag>>;
+
+/// The placeholder the parser prints after a flag, or `None` for a flag that
+/// takes no value.
+///
+/// Where the parser carries no value name of its own, `clap` writes the
+/// argument's identifier in capitals. The placeholder a reader needs then is
+/// the list of values the parser accepts, so that list is what a table is held
+/// to: `--view concrete|abstract` rather than `--view VIEW`.
+fn placeholder(argument: &clap::Arg) -> Option<String> {
+    let takes = argument
+        .get_num_args()
+        .is_some_and(|range| range.takes_values());
+    if !takes {
+        return None;
+    }
+    let named = argument
+        .get_value_names()
+        .and_then(|names| names.first())
+        .map(ToString::to_string)
+        .unwrap_or_default();
+    let defaulted = named
+        .chars()
+        .all(|c| c.is_ascii_uppercase() || c == '_' || c.is_ascii_digit());
+    if defaulted {
+        let values: Vec<String> = argument
+            .get_possible_values()
+            .iter()
+            .map(|value| value.get_name().to_string())
+            .collect();
+        if !values.is_empty() {
+            return Some(values.join("|"));
+        }
+    }
+    Some(named)
+}
+
+/// The parser's tree, built, so that every argument carries what `clap` fills
+/// in at build time.
+fn built_command() -> clap::Command {
+    let mut root = headwater_cli::command();
+    root.build();
+    root
+}
+
+/// The long flags that each command line of the parser admits, with the
+/// global flags and `--help` left out.
+///
+/// # Why the global flags are left out
+///
+/// `--root`, `--no-color`, `--no-banner`, `--wide`, `--version` and `--help`
+/// are declared once on the root and admitted on every command line.
+/// `headwater-help.md` is the document that states them, and
+/// [`the_help_document_names_the_global_flags_the_parser_declares`] holds it
+/// to them. A verb's document may restate a global row, and many do. No case
+/// here asks it to, and none refuses it.
+///
+/// The walk is the one `tests/help.rs` makes over the same tree: every
+/// argument of every command line, read from `headwater_cli::command()` and
+/// never from a list written here.
+fn parser_flags() -> FlagsByLine {
+    fn walk(line: &str, command: &clap::Command, out: &mut FlagsByLine) {
+        let flags = out.entry(line.to_string()).or_default();
+        for argument in command.get_arguments() {
+            if argument.is_global_set() || argument.is_positional() {
+                continue;
+            }
+            let Some(long) = argument.get_long() else {
+                continue;
+            };
+            if long == "help" {
+                continue;
+            }
+            flags.insert((format!("--{long}"), placeholder(argument)));
+        }
+        for word in command.get_subcommands() {
+            let next = if line.is_empty() {
+                word.get_name().to_string()
+            } else {
+                format!("{line} {}", word.get_name())
+            };
+            walk(&next, word, out);
+        }
+    }
+
+    let mut out = BTreeMap::new();
+    walk("", &built_command(), &mut out);
+    out
+}
+
+/// The global flags the root declares, less `--help` and `--version`, which
+/// the parser answers before any verb runs. `headwater-help.md` says so in the
+/// sentence under its table.
+fn global_flags() -> BTreeSet<Flag> {
+    built_command()
+        .get_arguments()
+        .filter(|argument| argument.is_global_set())
+        .filter_map(|argument| {
+            let long = argument.get_long()?;
+            if long == "help" || long == "version" {
+                return None;
+            }
+            Some((format!("--{long}"), placeholder(argument)))
+        })
+        .collect()
+}
+
+/// The text of a document's `## Options` section, up to the next heading of
+/// level two.
+fn options_section(text: &str) -> String {
+    let mut lines = Vec::new();
+    let mut inside = false;
+    for line in text.lines() {
+        if line.starts_with("## ") {
+            inside = line == "## Options";
+            continue;
+        }
+        if inside {
+            lines.push(line);
+        }
+    }
+    lines.join("\n")
+}
+
+/// The cells of one table row, split on the pipes a Markdown table reads as
+/// separators. A pipe written `\|` is text inside a cell, and it is kept as a
+/// bare `|`.
+fn cells(row: &str) -> Vec<String> {
+    let mut out = Vec::new();
+    let mut cell = String::new();
+    let mut chars = row.trim().trim_start_matches('|').chars().peekable();
+    while let Some(c) = chars.next() {
+        match c {
+            '\\' if chars.peek() == Some(&'|') => {
+                cell.push('|');
+                chars.next();
+            }
+            '|' => out.push(std::mem::take(&mut cell).trim().to_string()),
+            _ => cell.push(c),
+        }
+    }
+    if !cell.trim().is_empty() {
+        out.push(cell.trim().to_string());
+    }
+    out
+}
+
+/// The code spans of one cell, in order.
+fn code_spans(cell: &str) -> Vec<String> {
+    cell.split('`')
+        .skip(1)
+        .step_by(2)
+        .map(ToString::to_string)
+        .collect()
+}
+
+/// The flags one code span names, each with the placeholder written after it.
+///
+/// A span is one flag, `--change <manifest>`, or a sub-word with its flags in
+/// brackets, `publish [--package <name>] [--check]`. A token that closes a
+/// bracket ends its flag, so `[--check]` takes no placeholder from the token
+/// after it.
+fn flags_in(span: &str) -> Vec<Flag> {
+    let tokens: Vec<&str> = span.split_whitespace().collect();
+    let mut out = Vec::new();
+    for (index, token) in tokens.iter().enumerate() {
+        let bare = token.trim_start_matches('[');
+        if !bare.starts_with("--") {
+            continue;
+        }
+        let closed = bare.ends_with(']');
+        let name = bare.trim_end_matches(']').to_string();
+        let value = if closed {
+            None
+        } else {
+            tokens
+                .get(index + 1)
+                .filter(|next| !next.starts_with('[') && !next.starts_with("--"))
+                .map(|next| {
+                    next.trim_end_matches(']')
+                        .trim_start_matches('<')
+                        .trim_end_matches('>')
+                        .to_string()
+                })
+        };
+        out.push((name, value));
+    }
+    out
+}
+
+/// The flags a document's Options tables name, keyed by the command line each
+/// one belongs to.
+///
+/// A row belongs to the verb unless one of its code spans names a sub-word of
+/// the verb, alone (`plan`, in the probe and sweep tables) or as the first word
+/// of the span (`publish [--package <name>]`, in the taxonomy table). The last
+/// cell of a row is its description and is never read, because a flag named in
+/// a sentence there is prose about the row's flag.
+fn document_flags(verb: &str, words: &BTreeSet<String>, text: &str) -> FlagsByLine {
+    let mut out = FlagsByLine::new();
+    for row in options_section(text).lines() {
+        if !row.trim_start().starts_with('|') {
+            continue;
+        }
+        let mut row_cells = cells(row);
+        row_cells.pop();
+        let spans: Vec<String> = row_cells.iter().flat_map(|cell| code_spans(cell)).collect();
+        let word = spans.iter().find_map(|span| {
+            let first = span.split_whitespace().next()?;
+            words.contains(first).then(|| first.to_string())
+        });
+        let line = match word {
+            Some(word) => format!("{verb} {word}"),
+            None => verb.to_string(),
+        };
+        for span in &spans {
+            for flag in flags_in(span) {
+                out.entry(line.clone()).or_default().insert(flag);
+            }
+        }
+    }
+    out
+}
+
+/// Each Options table under `docs/interfaces/` names exactly the flags the
+/// parser admits on its command line, with the placeholder the parser prints.
+///
+/// # What this holds, and what it does not
+///
+/// It holds a row's existence and its placeholder, in both directions: a flag
+/// the parser admits with no row fails, and so does a row for a flag the
+/// parser refuses. It reads no word of the description column. The table and
+/// the `help` string of one flag say the same thing in different words, `check
+/// --strict` among them, and an equality of words would fail on a table that
+/// was never wrong. HW-OBL-0156 records that the words stay unread.
+///
+/// # Which documents
+///
+/// Every `headwater-<verb>.md` whose `<verb>` is a command line of the parser,
+/// except `headwater-help.md`, which names the global flags and which the next
+/// case holds. A document that states its flags in prose rather than in a
+/// table, `headwater-query.md` among them, names no row. It passes only while
+/// the parser admits no flag of its own on that verb.
+#[test]
+fn every_options_table_names_the_flags_the_parser_admits() {
+    let parser = parser_flags();
+    let globals: BTreeSet<String> = global_flags().into_iter().map(|(name, _)| name).collect();
+    let mut wrong = Vec::new();
+    let mut read_count = 0;
+    for verb in parser
+        .keys()
+        .filter(|line| !line.is_empty() && !line.contains(' ') && *line != "help")
+    {
+        let slug = format!("headwater-{verb}");
+        let Ok(text) = std::fs::read_to_string(interfaces_dir().join(format!("{slug}.md"))) else {
+            continue;
+        };
+        read_count += 1;
+        let prefix = format!("{verb} ");
+        let words: BTreeSet<String> = parser
+            .keys()
+            .filter_map(|line| line.strip_prefix(&prefix))
+            .filter(|rest| !rest.contains(' '))
+            .map(ToString::to_string)
+            .collect();
+        let mut named = document_flags(verb, &words, &text);
+        for flags in named.values_mut() {
+            flags.retain(|(name, _)| !globals.contains(name));
+        }
+        let lines =
+            std::iter::once(verb.clone()).chain(words.iter().map(|word| format!("{verb} {word}")));
+        for line in lines {
+            let admitted = parser.get(&line).cloned().unwrap_or_default();
+            let stated = named.remove(&line).unwrap_or_default();
+            for flag in admitted.difference(&stated) {
+                wrong.push(format!(
+                    "{slug}.md: `headwater {line}` admits {flag:?}, and no row names it"
+                ));
+            }
+            for flag in stated.difference(&admitted) {
+                wrong.push(format!(
+                    "{slug}.md: a row names {flag:?}, and `headwater {line}` does not admit it"
+                ));
+            }
+        }
+    }
+    assert!(
+        read_count > 20,
+        "read {read_count} interface documents, and docs/interfaces/ holds more than twenty"
+    );
+    assert!(
+        wrong.is_empty(),
+        "{} Options rows disagree with the parser:\n{}",
+        wrong.len(),
+        wrong.join("\n")
+    );
+}
+
+/// `headwater-help.md` names the global flags the root declares, with their
+/// placeholders, and no other flag.
+#[test]
+fn the_help_document_names_the_global_flags_the_parser_declares() {
+    let text = read("headwater-help");
+    let stated: BTreeSet<Flag> = document_flags("help", &BTreeSet::new(), &text)
+        .into_values()
+        .flatten()
+        .collect();
+    assert_eq!(
+        stated,
+        global_flags(),
+        "headwater-help.md's Options table and the global flags of the parser differ"
     );
 }
