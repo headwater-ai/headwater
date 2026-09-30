@@ -12,7 +12,7 @@ provenance:
   activity: draft
   accepted_by: j.baxter
   evidence_basis: evidenced
-waiting_on: adopter
+waiting_on: build
 ---
 
 # The CLI crate wires every verb and carries no tests, so two wiring defects passed a green suite

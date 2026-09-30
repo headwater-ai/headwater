@@ -43,7 +43,9 @@ use headwater_census::shelves::Taxonomy;
 use headwater_census::walk::Corpus;
 use headwater_check::paint::ColorMode;
 use headwater_check::Shape;
-use headwater_generate::{check, plan, write, Identity, Projections, Runs, Transcript, Verdict};
+use headwater_generate::{
+    check, plan, write, write_settled, Identity, Projections, Runs, Transcript, Verdict,
+};
 use headwater_graph::anchors::Resolvers;
 use headwater_graph::declarations::Declarations;
 use headwater_graph::{Config, Graph};
@@ -51,6 +53,7 @@ use headwater_probe::plan::Narrowing;
 use headwater_probe::{Budgets, Tier};
 use headwater_query::Surface;
 use headwater_yaml::Mapping;
+use std::convert::Infallible;
 use std::path::{Path, PathBuf};
 
 /// An envelope no run of this selection fits inside.
@@ -319,6 +322,96 @@ fn the_fixture_tree_generates_the_recorded_result() {
         bytes,
         "\nthe result no longer matches {}",
         recorded.display()
+    );
+}
+
+/// The grader version is the grader's own, so a release that bumps the engine
+/// leaves every committed result as it was (#1317).
+///
+/// A comparison of the two values cannot hold this, because the grader version
+/// and the engine version are the same number today. So the test reads the
+/// source of the constant, as the version-flag wiring test does for the same
+/// coincidence. It then ties the recorded result to the constant, so that the
+/// generated line and the constant cannot disagree.
+#[test]
+fn the_result_names_the_grader_by_its_own_version_and_not_the_engine_release() {
+    let source_path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../probe/src/grade.rs");
+    let source = std::fs::read_to_string(&source_path).expect("it reads grade.rs");
+    let declarations: Vec<&str> = source
+        .lines()
+        .filter(|line| line.starts_with("pub const VERSION: &str ="))
+        .collect();
+    assert_eq!(
+        declarations.len(),
+        1,
+        "{} does not declare `pub const VERSION: &str =` exactly once",
+        source_path.display()
+    );
+    let value = declarations[0]
+        .trim_start_matches("pub const VERSION: &str =")
+        .trim();
+    assert!(
+        value.starts_with('"')
+            && !value.contains("ENGINE")
+            && !value.contains("release::")
+            && !value.contains("CARGO_PKG_VERSION"),
+        "the grader version is `{value}`, which is not a literal of its own: a release \
+         that bumps the engine would then rewrite every committed probe result. A grading \
+         change moves the grader version, and a release does not."
+    );
+
+    // The constant alone is not enough: a result takes its grader where
+    // `Results` is built, and that site could read the engine release while the
+    // constant stays a literal. So no code line of the grader reads the engine
+    // version at all, and every `grader:` field it builds is `VERSION`. The
+    // field is private, so no caller outside `grade.rs` can set it after
+    // grading; that half is held by the compiler.
+    let code: Vec<(usize, &str)> = source
+        .lines()
+        .enumerate()
+        .map(|(at, line)| (at + 1, line.trim()))
+        .filter(|(_, line)| !line.starts_with("//"))
+        .collect();
+    for (at, line) in &code {
+        for engine_read in [
+            "headwater_resolve",
+            "release::ENGINE",
+            "CARGO_PKG_VERSION",
+            "env!(",
+        ] {
+            assert!(
+                !line.contains(engine_read),
+                "{}:{at} reads the engine version with `{engine_read}`: `{line}`. The grader \
+                 names its own version, so a release leaves every committed result as it was.",
+                source_path.display()
+            );
+        }
+    }
+    let fields: Vec<&(usize, &str)> = code
+        .iter()
+        .filter(|(_, line)| line.starts_with("grader:") && *line != "grader: &'static str,")
+        .collect();
+    assert!(
+        !fields.is_empty(),
+        "{} builds no `grader:` field, so this test no longer sees where a result takes its grader",
+        source_path.display()
+    );
+    for (at, line) in fields {
+        assert_eq!(
+            *line,
+            "grader: VERSION,",
+            "{}:{at} gives a result a grader other than `VERSION`",
+            source_path.display()
+        );
+    }
+
+    let recorded = std::fs::read_to_string(fixtures_dir().join("probe-result.record"))
+        .expect("it reads the recorded result");
+    let line = format!("Graded by grader {}.", headwater_probe::grade::VERSION);
+    assert_eq!(
+        recorded.lines().filter(|l| *l == line).count(),
+        1,
+        "the recorded result does not hold `{line}` exactly once"
     );
 }
 
@@ -793,6 +886,53 @@ cost_cents: 25
 ```
 ";
 
+/// The absent arm with every key recorded and no session satisfied: nothing
+/// read, and the wrong answer. Against [`CAMPAIGN_PRESENT`] the pair separates.
+const CAMPAIGN_ABSENT_UNSATISFIED: &str = "\
+---
+id: RUN-FIX-campaign-absent-unsatisfied
+status: current
+status_since: 2026-09-20
+summary: One recorded campaign session of the absent arm, in which no session satisfied.
+tier: campaign
+arm: absent
+---
+
+# One recorded campaign session, absent arm
+
+## Run identity
+
+```yaml
+model: a-model
+served_version: a-model-20260701
+tree: sha256:fixture-tree
+lock: sha256:fixture
+selection: sha256:c6f58f5bd22dfb4b353528edb188b7de55e447426fd4ad335559d172e000a9f9
+read_set: sha256:d8b44184b3ae9d52b503c6bdce4e3d6b1ee9d51e45ad91a844429249f9f491e9
+seed: 0
+harness: 0.2.0
+tier: campaign
+arm: absent
+at: 2026-09-20
+cost_cents: 25
+```
+
+## Events
+
+```yaml
+- probe: PROBE-FIX-opened
+  session: watched
+  calls: []
+  produced: []
+  answer: null
+- probe: PROBE-FIX-answered
+  session: watched
+  calls: []
+  produced: []
+  answer: \"yes\"
+```
+";
+
 /// The decisive fixture for the two-arm comparison: two campaign transcripts
 /// that share one selection digest, one model, one served version and one tree,
 /// where the absent arm records a session with no `calls` key.
@@ -894,6 +1034,311 @@ fn two_clean_arms_carry_their_difference_in_each_result() {
         assert!(
             bytes.contains("in a 95% Newcombe interval of"),
             "{path} carries no difference interval:\n{bytes}"
+        );
+    }
+}
+
+/// The two results of the significant pair below, keyed by path, over a copy of
+/// the fixture corpus whose two transcripts stand at `state`. The copy is named
+/// for the state, because the cases run as threads of one process and one
+/// directory shared between two of them is a race.
+fn the_significant_pair_at(state: &str) -> Vec<(&'static str, String)> {
+    the_significant_pair(&format!("significant-pair-{state}"), state, state, None)
+}
+
+/// The same pair with each arm at its own state, and with one more document
+/// written into the copy where `extra` names one as `(path, source)`.
+fn the_significant_pair(
+    name: &str,
+    present: &str,
+    absent: &str,
+    extra: Option<(&str, &str)>,
+) -> Vec<(&'static str, String)> {
+    let at = copied(name);
+    std::fs::write(
+        at.join("runs/probe-runs/campaign-present.md"),
+        CAMPAIGN_PRESENT,
+    )
+    .expect("the present-arm transcript lands");
+    std::fs::write(
+        at.join("runs/probe-runs/campaign-absent.md"),
+        CAMPAIGN_ABSENT_UNSATISFIED,
+    )
+    .expect("the absent-arm transcript lands");
+    for (transcript, state) in [
+        ("runs/probe-runs/campaign-present.md", present),
+        ("runs/probe-runs/campaign-absent.md", absent),
+    ] {
+        match state {
+            "current" => {}
+            UNDECLARED => edit(&at, transcript, "status: current\n", ""),
+            _ => edit(
+                &at,
+                transcript,
+                "status: current",
+                &format!("status: {state}"),
+            ),
+        }
+    }
+    if let Some((path, source)) = extra {
+        std::fs::write(at.join(path), source).expect("the extra document lands");
+    }
+    let plan = plan_over(&at);
+    assert!(plan.defective_arms.is_empty(), "{:?}", plan.defective_arms);
+    assert!(plan.ambiguous_arms.is_empty(), "{:?}", plan.ambiguous_arms);
+    [
+        "runs/probe-results/campaign-present.md",
+        "runs/probe-results/campaign-absent.md",
+    ]
+    .into_iter()
+    .map(|path| {
+        let bytes = plan
+            .outputs
+            .iter()
+            .find(|output| output.path == path)
+            .unwrap_or_else(|| panic!("no result at {path}"))
+            .bytes
+            .clone();
+        (path, bytes)
+    })
+    .collect()
+}
+
+/// The text of a result between its `# The result of` line and its first
+/// `## ` heading, which is what a reader meets before any figure.
+fn opening(bytes: &str) -> &str {
+    let start = bytes
+        .find("# The result of")
+        .expect("the result has its title");
+    let rest = &bytes[start..];
+    let end = rest.find("\n## ").unwrap_or(rest.len());
+    &rest[..end]
+}
+
+/// The state argument that removes the `status` line from a transcript
+/// rather than writing a value into it.
+const UNDECLARED: &str = "(undeclared)";
+
+const SIGNIFICANT: [&str; 2] = [
+    "satisfied more often at the 5% level",
+    "satisfied less often at the 5% level",
+];
+
+/// A result over a withdrawn recording says so before any figure, states no
+/// significance, and takes the recording's state (#1509, HW-DR-0063 as amended
+/// on 2026-10-01).
+///
+/// Before this, 24 of the 35 results in this repository graded a recording
+/// that was not `current`, all 35 were written `current`, and 5 of the 24
+/// printed a direction at the 5% level over a withdrawn run. The control half
+/// comes first: over `current` recordings the same pair does separate, so the
+/// withdrawn half cannot pass for want of a comparison.
+#[test]
+fn a_result_over_a_withdrawn_transcript_says_so_first_and_claims_no_significance() {
+    for (path, bytes) in the_significant_pair_at("current") {
+        assert!(
+            SIGNIFICANT.iter().any(|reading| bytes.contains(reading)),
+            "the control pair does not separate at the 5% level in {path}:\n{bytes}"
+        );
+        assert!(
+            bytes.contains("\nstatus: current\n"),
+            "{path} over a current recording is not current:\n{bytes}"
+        );
+        assert!(
+            !opening(&bytes).contains("`current`"),
+            "{path} over a current recording names its state first:\n{bytes}"
+        );
+    }
+    for (path, bytes) in the_significant_pair_at("deprecated") {
+        let opening = opening(&bytes);
+        let named = opening
+            .find("`deprecated`")
+            .unwrap_or_else(|| panic!("{path} does not name the state first:\n{bytes}"));
+        let inputs = opening
+            .find("A probe result is a function of three committed inputs")
+            .expect("the result states its inputs");
+        assert!(
+            named < inputs,
+            "{path} names the state after its inputs:\n{bytes}"
+        );
+        for reading in SIGNIFICANT {
+            assert!(
+                !bytes.contains(reading),
+                "{path} states a significance over a withdrawn recording:\n{bytes}"
+            );
+        }
+        assert!(
+            bytes.contains("in a 95% Newcombe interval of"),
+            "{path} dropped the interval figures:\n{bytes}"
+        );
+        assert!(
+            bytes.contains("\nstatus: deprecated\n"),
+            "{path} over a deprecated recording does not take its state:\n{bytes}"
+        );
+    }
+}
+
+/// One withdrawn arm is enough. The result over the current arm keeps its own
+/// state and names no state first, and its comparison still states no
+/// direction, because the difference reads the withdrawn arm too.
+#[test]
+fn one_withdrawn_arm_withholds_the_significance_of_both_results() {
+    for (withdrawn, name) in [
+        ("present", "one-withdrawn-present"),
+        ("absent", "one-withdrawn-absent"),
+    ] {
+        let (present, absent) = match withdrawn {
+            "present" => ("deprecated", "current"),
+            _ => ("current", "deprecated"),
+        };
+        for (path, bytes) in the_significant_pair(name, present, absent, None) {
+            for reading in SIGNIFICANT {
+                assert!(
+                    !bytes.contains(reading),
+                    "{path} states a significance with the {withdrawn} arm withdrawn:\n{bytes}"
+                );
+            }
+            let own = match path.contains("present") {
+                true => present,
+                false => absent,
+            };
+            assert!(
+                bytes.contains(&format!("\nstatus: {own}\n")),
+                "{path} does not stand at its own transcript's state `{own}`:\n{bytes}"
+            );
+        }
+    }
+}
+
+/// An edge that sets a result's state wins over the terminal state of the
+/// transcript it grades: the edge is a declaration about the result, and the
+/// transcript's state is not (HW-DR-0063, amended 2026-10-01).
+#[test]
+fn an_edge_that_sets_the_state_wins_over_a_withdrawn_transcript() {
+    const REINSTATING: &str = "\
+---
+id: NOTE-FIX-reinstating
+status: current
+status_since: 2026-09-21
+summary: A note whose edge sets the state of one result, whatever its transcript stands at.
+relations:
+  reinstates:
+    - RESULT-FIX-campaign-present
+---
+
+# The note that reinstates one result
+";
+    let pair = the_significant_pair(
+        "edge-over-withdrawn",
+        "deprecated",
+        "deprecated",
+        Some(("runs/notes/reinstating.md", REINSTATING)),
+    );
+    for (path, bytes) in pair {
+        let expected = match path.contains("present") {
+            true => "current",
+            false => "deprecated",
+        };
+        assert!(
+            bytes.contains(&format!("\nstatus: {expected}\n")),
+            "{path} does not stand at `{expected}`:\n{bytes}"
+        );
+        assert!(
+            opening(&bytes).contains("`deprecated`"),
+            "{path} does not name its transcript's state first:\n{bytes}"
+        );
+    }
+}
+
+/// A recording at the initial state is named first too, and the result stays
+/// at the `live` value: `draft` is the wrong word for a file nobody argues
+/// over (HW-DR-0063).
+#[test]
+fn a_result_over_a_draft_transcript_says_so_first_and_stays_live() {
+    for (path, bytes) in the_significant_pair_at("draft") {
+        assert!(
+            opening(&bytes).contains("`draft`"),
+            "{path} does not name the draft state first:\n{bytes}"
+        );
+        for reading in SIGNIFICANT {
+            assert!(
+                !bytes.contains(reading),
+                "{path} states a significance over a draft recording:\n{bytes}"
+            );
+        }
+        assert!(
+            bytes.contains("\nstatus: current\n"),
+            "{path} over a draft recording left the live value:\n{bytes}"
+        );
+    }
+}
+
+/// A recording whose state has no role this engine folds, one whose state the
+/// facet does not hold, and one that declares no state at all are each named
+/// first. None of the three is terminal, so each result stays at the `live`
+/// value (HW-DR-0063, amended 2026-10-01).
+#[test]
+fn a_result_over_a_transcript_of_unread_state_says_so_first() {
+    for (state, named) in [
+        ("filed", "`filed`"),
+        ("shelved", "`shelved`"),
+        (UNDECLARED, "declares no state this taxonomy reads"),
+    ] {
+        for (path, bytes) in the_significant_pair_at(state) {
+            assert!(
+                opening(&bytes).contains(named),
+                "{path} does not say `{named}` first:\n{bytes}"
+            );
+            for reading in SIGNIFICANT {
+                assert!(
+                    !bytes.contains(reading),
+                    "{path} states a significance over a `{state}` recording:\n{bytes}"
+                );
+            }
+            assert!(
+                bytes.contains("\nstatus: current\n"),
+                "{path} over a `{state}` recording left the live value:\n{bytes}"
+            );
+        }
+    }
+}
+
+/// A terminal state that the result's own regime does not name is refused,
+/// and the refusal names the transcript the state came from, because that is
+/// where the repair is (HW-DR-0063, amended 2026-10-01).
+#[test]
+fn a_terminal_state_the_result_regime_does_not_name_is_refused_with_its_source() {
+    let at = copied("terminal-outside-the-regime");
+    std::fs::write(
+        at.join("runs/probe-runs/campaign-present.md"),
+        CAMPAIGN_PRESENT,
+    )
+    .expect("the present-arm transcript lands");
+    edit(
+        &at,
+        "runs/probe-runs/campaign-present.md",
+        "status: current",
+        "status: archived",
+    );
+    let plan = plan_over(&at);
+    let refused = plan
+        .unwritten
+        .iter()
+        .find(|unwritten| unwritten.at == "runs/probe-results/campaign-present.md")
+        .unwrap_or_else(|| {
+            panic!(
+                "a result over an `archived` transcript was not refused. Unwritten: {:?}",
+                plan.unwritten
+                    .iter()
+                    .map(|u| format!("{}: {}", u.at, u.reason))
+                    .collect::<Vec<_>>()
+            )
+        });
+    for named in ["`archived`", "runs/probe-runs/campaign-present.md"] {
+        assert!(
+            refused.reason.contains(named),
+            "the refusal does not name {named}: {}",
+            refused.reason
         );
     }
 }
@@ -1177,6 +1622,376 @@ fn an_ambiguous_pair_is_reported_rather_than_silently_zipped_by_path_order() {
     assert!(
         report.render(ColorMode::Plain).contains("ambiguous arms"),
         "the run prints the ambiguity where a reader of the run sees it"
+    );
+}
+
+/// Every file under a tree, by path, with its bytes.
+///
+/// The comparison of two of these is the whole claim of #1466: a run that
+/// refuses leaves no file added, removed or rewritten.
+fn snapshot(at: &Path) -> std::collections::BTreeMap<PathBuf, Vec<u8>> {
+    fn walk(dir: &Path, into: &mut std::collections::BTreeMap<PathBuf, Vec<u8>>) {
+        for entry in std::fs::read_dir(dir).expect("a directory of the tree") {
+            let entry = entry.expect("an entry");
+            match entry.file_type().expect("a file type").is_dir() {
+                true => walk(&entry.path(), into),
+                false => {
+                    let bytes = std::fs::read(entry.path()).expect("a file reads");
+                    into.insert(entry.path(), bytes);
+                }
+            }
+        }
+    }
+    let mut files = std::collections::BTreeMap::new();
+    walk(at, &mut files);
+    files
+}
+
+/// The line every output a refusing run did not write carries.
+const WITHHELD: &str = "not written, because the run refused before it wrote this file";
+
+/// The three campaign transcripts under one key, laid into a copied tree.
+fn lay_ambiguous(at: &Path) {
+    for (path, bytes) in [
+        ("runs/probe-runs/campaign-present.md", CAMPAIGN_PRESENT),
+        ("runs/probe-runs/campaign-absent.md", CAMPAIGN_ABSENT),
+        (
+            "runs/probe-runs/campaign-present-again.md",
+            CAMPAIGN_PRESENT_AGAIN,
+        ),
+    ] {
+        std::fs::write(at.join(path), bytes).expect("a campaign transcript lands");
+    }
+}
+
+/// The decisive fixture for #1466: an ambiguous pair refuses the run, and the
+/// run leaves the tree as it found it.
+///
+/// This runs `write_settled`, which is what `headwater generate` calls once its
+/// loader has read the tree, and the loader writes nothing. Before #1466 the
+/// first pass wrote every committed output and only then did the report say the
+/// run refused, so the probe results were new files in the tree and every
+/// projection that a second pass would have settled was left stale.
+#[test]
+fn an_ambiguous_pair_refuses_the_run_before_it_writes_anything() {
+    let at = copied("campaign-arms-ambiguous-settled");
+    lay_ambiguous(&at);
+    let before = snapshot(&at);
+
+    let report = write_settled(&at, || Ok::<_, Infallible>(plan_over(&at)))
+        .unwrap_or_else(|never| match never {});
+    assert!(
+        report.has_errors(),
+        "an ambiguous pairing fails the run: {}",
+        report.render(ColorMode::Plain)
+    );
+    let remedy = report.remedy().expect("a failing run names a remedy");
+    assert!(
+        remedy.contains("Retire the stale or superseded transcript"),
+        "the remedy is the ambiguous-arms sentence: {remedy}"
+    );
+    let after = snapshot(&at);
+    let added: Vec<_> = after.keys().filter(|p| !before.contains_key(*p)).collect();
+    let changed: Vec<_> = before
+        .iter()
+        .filter(|(path, bytes)| after.get(*path) != Some(*bytes))
+        .map(|(path, _)| path)
+        .collect();
+    assert!(
+        added.is_empty() && changed.is_empty(),
+        "a refusing run changed the tree. Added {added:?}, changed or removed {changed:?}"
+    );
+    assert!(
+        remedy.contains("wrote nothing"),
+        "the remedy says that the run wrote nothing: {remedy}"
+    );
+    assert!(
+        report.render(ColorMode::Plain).contains(WITHHELD),
+        "the report says why each output was not written:\n{}",
+        report.render(ColorMode::Plain)
+    );
+}
+
+/// The six refusals that a write run can know before its first write, and for
+/// each one, that the run fails and the tree is unchanged byte for byte.
+///
+/// Three failures can still follow a write, and `write_settled` names them: a
+/// write the operating system refuses, a cycle that more passes do not
+/// settle, and a refusal a later pass finds. None of them is a refusal of the
+/// corpus, and none of them is in this table.
+#[test]
+fn every_refusal_known_before_the_first_write_leaves_the_tree_unchanged() {
+    type Setup = fn(&Path);
+    type Planned = fn(&Path) -> headwater_generate::Plan;
+    type Refused = fn(&headwater_generate::Report) -> bool;
+    fn no_setup(_: &Path) {}
+    let rows: [(&str, Setup, Planned, Refused); 6] = [
+        ("ambiguous", lay_ambiguous, plan_over, |report| {
+            !report.ambiguous_arms.is_empty()
+        }),
+        (
+            "defective",
+            |at| {
+                for (path, bytes) in [
+                    ("runs/probe-runs/campaign-present.md", CAMPAIGN_PRESENT),
+                    ("runs/probe-runs/campaign-absent.md", CAMPAIGN_ABSENT),
+                ] {
+                    std::fs::write(at.join(path), bytes).expect("a transcript lands");
+                }
+            },
+            plan_over,
+            |report| !report.defective_arms.is_empty(),
+        ),
+        ("held", refuse_the_lock, plan_over, |report| {
+            report.refused.iter().any(|refused| refused.held)
+        }),
+        (
+            "orphaned",
+            |at| {
+                // A copy of a file this engine writes, at a path no
+                // declaration names: marked, and written by nothing.
+                let (_, bytes) = result_bytes(at);
+                std::fs::create_dir_all(at.join("runs/probe-results")).expect("a directory");
+                std::fs::write(at.join("runs/probe-results/stray.md"), bytes)
+                    .expect("the stray lands");
+            },
+            plan_over,
+            |report| !report.orphaned.is_empty(),
+        ),
+        (
+            "occupied",
+            |at| {
+                std::fs::create_dir_all(at.join("runs/probe-results")).expect("a directory");
+                std::fs::write(at.join(RESULT), "An authored file, with no marker.\n")
+                    .expect("the authored file lands");
+            },
+            plan_over,
+            |report| {
+                report
+                    .wrote
+                    .iter()
+                    .any(|wrote| wrote.verdict == Verdict::Occupied)
+            },
+        ),
+        (
+            "marker-unread",
+            no_setup,
+            // The result's content is Markdown, and the census reads no
+            // Markdown marker at a `.yml` path. The plan is edited rather than
+            // declared, and `an_output_whose_marker_the_census_would_not_read_is_not_written`
+            // in `fixtures.rs` holds the same refusal over a real declaration.
+            |at| {
+                let mut plan = plan_over(at);
+                let output = plan
+                    .outputs
+                    .iter_mut()
+                    .find(|output| output.path == RESULT)
+                    .expect("the plan writes the result");
+                output.path = RESULT.replace(".md", ".yml");
+                plan
+            },
+            |report| {
+                report
+                    .wrote
+                    .iter()
+                    .any(|wrote| wrote.verdict == Verdict::MarkerUnread)
+            },
+        ),
+    ];
+    for (name, setup, planned, refused) in rows {
+        let at = copied(&format!("refuses-before-writing-{name}"));
+        setup(&at);
+        let before = snapshot(&at);
+        let report = write_settled(&at, || Ok::<_, Infallible>(planned(&at)))
+            .unwrap_or_else(|never| match never {});
+        assert!(
+            refused(&report),
+            "`{name}`: the run did not report the refusal this row plants:\n{}",
+            report.render(ColorMode::Plain)
+        );
+        assert!(
+            report.has_errors(),
+            "`{name}`: a refusal fails the run:\n{}",
+            report.render(ColorMode::Plain)
+        );
+        assert!(
+            report
+                .wrote
+                .iter()
+                .all(|wrote| !matches!(wrote.verdict, Verdict::Written | Verdict::Rewritten)),
+            "`{name}`: the report names a file the run wrote:\n{}",
+            report.render(ColorMode::Plain)
+        );
+        assert!(
+            report.render(ColorMode::Plain).contains(WITHHELD),
+            "`{name}`: no output reports that the refusal withheld it:\n{}",
+            report.render(ColorMode::Plain)
+        );
+        assert!(
+            report
+                .remedy()
+                .is_some_and(|remedy| remedy.contains("wrote nothing")),
+            "`{name}`: the remedy does not say the run wrote nothing: {:?}",
+            report.remedy()
+        );
+        assert!(
+            snapshot(&at) == before,
+            "`{name}`: a refusing run changed the tree"
+        );
+    }
+}
+
+/// A refusal that a later pass finds cannot undo what an earlier pass wrote,
+/// so the report must not say the run wrote nothing.
+///
+/// A transcript that a recorder lands while the run is between passes reaches
+/// this case with no defect in this engine. The first round of verification on
+/// #1466 found the report listing files as `written` beside a remedy that said
+/// the tree was as it was.
+#[test]
+fn a_refusal_on_a_later_pass_does_not_claim_the_run_wrote_nothing() {
+    let at = copied("refused-on-a-later-pass");
+    let mut pass = 0;
+    let report = write_settled(&at, || {
+        pass += 1;
+        if pass == 2 {
+            lay_ambiguous(&at);
+        }
+        Ok::<_, Infallible>(plan_over(&at))
+    })
+    .unwrap_or_else(|never| match never {});
+    assert!(
+        pass >= 2,
+        "the run stopped after pass {pass}, so no later pass refused"
+    );
+    assert!(
+        !report.ambiguous_arms.is_empty(),
+        "the later pass did not report the refusal it met"
+    );
+    let rendered = report.render(ColorMode::Plain);
+    assert!(
+        report
+            .wrote
+            .iter()
+            .any(|wrote| matches!(wrote.verdict, Verdict::Written | Verdict::Rewritten)),
+        "the first pass wrote files and the report does not say so:\n{rendered}"
+    );
+    let remedy = report.remedy().expect("a refusing run names a remedy");
+    assert!(
+        !remedy.contains("wrote nothing"),
+        "the report lists written files and the remedy says the run wrote nothing: {remedy}"
+    );
+    assert!(
+        !rendered.contains("wrote nothing"),
+        "the report lists written files and a line says the run wrote nothing:\n{rendered}"
+    );
+}
+
+/// The case #1466 measured: a refusal over a tree whose committed projections
+/// are stale leaves them stale, and does not rewrite them.
+///
+/// Every other case here refuses over a tree that holds no projection yet, so
+/// each would-be write is a new file. This one first runs green, then makes the
+/// result stale by hand and plants a refusal, so the writes the run would make
+/// are rewrites of marked files.
+#[test]
+fn a_refusal_over_stale_projections_rewrites_none_of_them() {
+    let at = copied("refused-over-stale");
+    let green = write_settled(&at, || Ok::<_, Infallible>(plan_over(&at)))
+        .unwrap_or_else(|never| match never {});
+    assert!(
+        !green.has_errors(),
+        "the fixture tree does not generate green:\n{}",
+        green.render(ColorMode::Plain)
+    );
+    let committed = std::fs::read_to_string(at.join(RESULT)).expect("the result was written");
+    std::fs::write(at.join(RESULT), format!("{committed}\nA stale line.\n"))
+        .expect("the result goes stale");
+    lay_ambiguous(&at);
+    let before = snapshot(&at);
+
+    let report = write_settled(&at, || Ok::<_, Infallible>(plan_over(&at)))
+        .unwrap_or_else(|never| match never {});
+    assert!(
+        !report.ambiguous_arms.is_empty() && report.has_errors(),
+        "the planted refusal did not fail the run:\n{}",
+        report.render(ColorMode::Plain)
+    );
+    let result = report
+        .wrote
+        .iter()
+        .find(|wrote| wrote.path == RESULT)
+        .expect("the result is in the report");
+    assert_eq!(
+        result.verdict,
+        Verdict::Withheld,
+        "the stale result was not withheld:\n{}",
+        report.render(ColorMode::Plain)
+    );
+    assert!(
+        snapshot(&at) == before,
+        "a refusing run rewrote a stale projection"
+    );
+}
+
+/// A later pass that refuses after an earlier pass only rewrote stale files,
+/// and wrote no new one, must not say the run wrote nothing either.
+///
+/// `a_refusal_on_a_later_pass_does_not_claim_the_run_wrote_nothing` starts
+/// from a tree with no projection, so its first pass writes new files alone.
+/// A rule that cleared the claim on a new file and not on a rewrite passed it.
+/// The parent's veto of round 2 on #1466 found that, and this case holds it.
+#[test]
+fn a_refusal_on_a_later_pass_after_a_rewrite_does_not_claim_the_run_wrote_nothing() {
+    let at = copied("refused-on-a-later-pass-after-a-rewrite");
+    let green = write_settled(&at, || Ok::<_, Infallible>(plan_over(&at)))
+        .unwrap_or_else(|never| match never {});
+    assert!(
+        !green.has_errors(),
+        "the fixture tree does not generate green:\n{}",
+        green.render(ColorMode::Plain)
+    );
+    let committed = std::fs::read_to_string(at.join(RESULT)).expect("the result was written");
+    std::fs::write(at.join(RESULT), format!("{committed}\nA stale line.\n"))
+        .expect("the result goes stale");
+
+    let mut pass = 0;
+    let report = write_settled(&at, || {
+        pass += 1;
+        if pass == 2 {
+            lay_ambiguous(&at);
+        }
+        Ok::<_, Infallible>(plan_over(&at))
+    })
+    .unwrap_or_else(|never| match never {});
+    assert!(
+        pass >= 2,
+        "the run stopped after pass {pass}, so no later pass refused"
+    );
+    assert!(
+        !report.ambiguous_arms.is_empty(),
+        "the later pass did not report the refusal it met"
+    );
+    let rendered = report.render(ColorMode::Plain);
+    assert!(
+        report
+            .wrote
+            .iter()
+            .any(|wrote| wrote.verdict == Verdict::Rewritten),
+        "the first pass rewrote the stale result and the report does not say so:\n{rendered}"
+    );
+    assert!(
+        !report
+            .wrote
+            .iter()
+            .any(|wrote| wrote.verdict == Verdict::Written),
+        "the first pass wrote a new file, so this case no longer holds a rewrite alone:\n\
+         {rendered}"
+    );
+    let remedy = report.remedy().expect("a refusing run names a remedy");
+    assert!(
+        !remedy.contains("wrote nothing"),
+        "the report lists a rewritten file and the remedy says the run wrote nothing: {remedy}"
     );
 }
 
@@ -1604,9 +2419,30 @@ fn only_the_role_on_a_state_decides_whether_a_refusal_fails_the_run() {
             report.render(ColorMode::Plain)
         );
 
-        // The result is written either way, and it carries the refusal and no
-        // verdict. A state that released the refusal by writing no file would
-        // take the measurement out of the corpus rather than mark it stale.
+        assert!(
+            report
+                .render(ColorMode::Plain)
+                .contains("refused transcripts"),
+            "the run over a transcript at `{state}` did not report the refusal to a reader"
+        );
+        // A refusal the state holds fails the run before its first write, so
+        // the run writes nothing at all (#1466). The fixture tree holds no
+        // result, so there is still none after the run.
+        assert_eq!(
+            report.withheld, holds,
+            "the run over a transcript at `{state}` withholds its writes {holds}: {why}"
+        );
+        if holds {
+            assert!(
+                !at.join(RESULT).exists(),
+                "a run over a transcript at `{state}` refused and still wrote the result"
+            );
+            continue;
+        }
+        // A refusal the state releases is not a refusal of the run, so the
+        // result is written, and it carries the refusal and no verdict. A
+        // state that released the refusal by writing no file would take the
+        // measurement out of the corpus rather than mark it stale.
         let written = std::fs::read_to_string(at.join(RESULT)).expect("the result reads");
         assert!(
             written.contains("sha256:another-taxonomy"),
@@ -1617,12 +2453,6 @@ fn only_the_role_on_a_state_decides_whether_a_refusal_fails_the_run() {
             !written.contains("## The verdicts"),
             "the result written for a transcript at `{state}` carries verdicts, and a refused \
              transcript reaches no grader:\n{written}"
-        );
-        assert!(
-            report
-                .render(ColorMode::Plain)
-                .contains("refused transcripts"),
-            "the run over a transcript at `{state}` did not report the refusal to a reader"
         );
     }
 }

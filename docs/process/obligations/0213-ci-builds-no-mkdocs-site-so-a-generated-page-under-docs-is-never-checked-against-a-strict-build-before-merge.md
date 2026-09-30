@@ -5,7 +5,7 @@ status_since: 2026-09-26
 summary: "No CI job runs mkdocs build --strict, and this host has neither mkdocs nor rustfmt, so a new generated page and a clippy change reach main unchecked."
 last_verified: 2026-09-24
 title: "CI builds no MkDocs site, so a generated page under docs/ is never checked against a strict build before merge"
-waiting_on: build
+waiting_on: ruling
 ---
 
 # CI builds no MkDocs site, so a generated page under docs/ is never checked against a strict build before merge

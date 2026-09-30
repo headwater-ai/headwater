@@ -12,7 +12,7 @@ provenance:
   activity: draft
   accepted_by: j.baxter
   evidence_basis: evidenced
-waiting_on: adopter
+waiting_on: build
 ---
 
 # The cache-identity test reads the live working tree, so an edit during the run reports the correctness root as violated

@@ -5,7 +5,7 @@ status_since: 2026-09-11
 summary: "The recording thread of this record is narrowed by HW-DR-0078: disclosure, not a compare, closes #601's binary asset. What holds a DIFFERENT committed binary asset against a run, one with no ruling of its own, is still nothing."
 last_verified: 2026-09-20
 title: "No mechanism holds a committed binary asset against a run"
-waiting_on: build
+waiting_on: ruling
 relations:
   traces_to:
     - HW-DR-0061

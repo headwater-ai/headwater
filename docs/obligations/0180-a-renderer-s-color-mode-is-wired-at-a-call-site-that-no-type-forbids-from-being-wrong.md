@@ -5,7 +5,7 @@ status_since: 2026-09-08
 summary: "A caller that passes the plain color mode forever is a defect that no type and no piped test can report."
 last_verified: 2026-09-24
 title: "A renderer's color mode is wired at a call site that no type forbids from being wrong"
-waiting_on: build
+waiting_on: ruling
 provenance:
   warrant: asserted
   agency: agent

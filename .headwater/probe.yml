@@ -73,6 +73,7 @@ folds:
   - integrations/vscode/test/client.test.js
   - integrations/vscode/test/fixtures/route-pointers.jsonl
   - integrations/vscode/test/fixtures/route-text-only.jsonl
+  - tools/probe/layer-campaign.spec
 
 # Answer keys: documents that an earlier session wrote in answer to a probe's
 # task, and that name neither the probe nor its slug, so the seal below would
@@ -90,6 +91,67 @@ folds:
 # block. One probe per line, and a flow sequence of paths relative to the root.
 answer_keys:
   HW-PROBE-a-session-records-an-unmeasured-claim-in-the-shape-this-corpus-checks: [docs/obligations/0198-nothing-states-how-much-of-a-session-s-budget-the-standing-instructions-consume-before-work-starts.md]
+
+# Leak strings (#1472): for each probe, the strings whose presence in text the harness
+# loads into every session gives the probe's answer away. The seal finds an
+# answer by a name, and this leak names none. The description of the
+# authoring skill states the ruling the status probe expects, and it never
+# names the probe. In the #1384 re-run, 30 of 30 present-arm sessions of that
+# probe answered with no tool call.
+#
+# A leak string is never an `expected:` value. The accepted-event probe expects
+# `merge`, a common word that every file holds, so its leak strings are the ruling's
+# identifier and the phrases that state the ruling. HW-DR-0052 is one of them
+# because its title says the merge activates a document.
+#
+# `sh tools/probe/seal.sh --leak <workspace> <probe>...` reads these over the
+# always-loaded set: the memory files (`CLAUDE.md`, `AGENTS.md`,
+# `CLAUDE.local.md`, `.claude/rules/` and each file they import), the front
+# matter each skill, agent definition and command under `.claude/` is listed
+# by, and the description of each MCP tool where the workspace declares a
+# server. `tools/probe/leak.py` names each channel, and it reads this file and
+# the front matter with a YAML parser. It prints one line per hit and exits 1
+# on a leak string that `leaks_kept:` below does not keep. A probe with no
+# entry here is printed as `undeclared`, because the check cannot see it.
+leaks:
+  HW-PROBE-a-session-names-the-status-a-settled-decision-carries-in-its-pull-request: [HW-DR-0052, "status: current"]
+  HW-PROBE-a-session-names-the-event-that-makes-a-document-accepted: [HW-DR-0052, HW-DR-0034, the merge activates, merged to main, merge onto `main`]
+
+# The probes whose leak string stays in the present arm on purpose (#1472, the second
+# outcome the issue offers). The leak string of the status probe is in the
+# description of the authoring skill because #1294 put it there: a skill
+# reaches a session through its description, and `.claude/skills/fixtures.sh`
+# holds the sentence. Removing it would change what the present arm delivers,
+# which is the treatment the campaign measures. So the two probes say in
+# their own documents that they measure the leak string, and a campaign reports each
+# on its own line and never in a rate of its category. Only the owner can
+# choose to remove the leak string instead.
+leaks_kept:
+  - HW-PROBE-a-session-names-the-status-a-settled-decision-carries-in-its-pull-request
+  - HW-PROBE-a-session-names-the-event-that-makes-a-document-accepted
+
+# Power (#1472): the rates a campaign is sized to separate, and the test. The
+# discovery category of the #1384 re-run found 9 of 60 against 5 of 60, and a
+# difference of that size is what the next run must be able to see. So the
+# rates are 0.15 in the present arm against 0.08 in an arm without the layer,
+# at a 5% two-sided level and 80% power. That is 325 sessions per arm without
+# a continuity correction and 353 with the Fleiss correction. The issue's
+# "about 350" is the corrected figure.
+#
+# A category under `pooled` pools its probes into one rate, as a result
+# already does, so each of its k probes runs ceil(353 / k) repetitions: 177
+# for the two discovery probes a campaign can plan. `sh tools/probe/campaign.sh
+# --dry-run` computes the count from these fields and prints the formula
+# beside it. The engine reads none of this block, and the plan still refuses
+# repetitions above the ones a tier declares, so the count is priced by the
+# dry run and not run by anybody until a person raises what the tier may
+# spend.
+power:
+  present: 0.15
+  absent: 0.08
+  alpha: 0.05
+  power: 0.80
+  pooled: [discovery]
 
 tiers:
 
@@ -151,13 +213,52 @@ tiers:
   # 2026-09-28 stopped them. A session the cap stops is recorded as observed,
   # never dropped and never drawn again, so the cap is part of what the rate
   # measures, and both arms and both paired tiers share it.
+  #
+  # **The component arms (#1472).** The absent arm removes the whole layer at
+  # once, so a difference between present and absent cannot say which part
+  # of the layer caused it. Each component arm is the present tree with one
+  # part taken out or put in, and `components` states that delta as data:
+  #
+  # - `no-hook` removes `.claude/hooks/intent.sh`. `.claude/settings.json`
+  #   stays, so the harness still runs the hook's wrapper, which prints `hook
+  #   script not found` and exits 1. A `UserPromptSubmit` hook that exits 1 is
+  #   an error that does not block, so the session runs with no hook. Removing
+  #   `settings.json` instead would remove the other hooks too.
+  # - `no-skills` removes `.claude/skills`, the skills and their descriptions.
+  # - `no-claude-md` removes `CLAUDE.md`, the standing instructions.
+  # - `mcp` adds `.mcp.json`, copied from `tools/probe/arms/mcp/`, which
+  #   declares `headwater mcp` as a project server. A committed `.mcp.json`
+  #   does not load by itself under `claude -p`, because a project server
+  #   needs approval, so `probe-record.sh` passes `--mcp-config` when the
+  #   workspace holds one. It passes `--strict-mcp-config` in every arm, so
+  #   no server of the recording host's own configuration loads into any arm.
+  #
+  # Every component arm is compared with the present arm of the same batch.
+  # `sh tools/probe/ablate.sh campaign <workspace> <arm>` builds the arm from
+  # the present tree, and `--diff campaign <arm> <present-tree>` prints the
+  # delta and fails on any other difference. It takes the delta from
+  # `headwater probe plan --tier campaign --arm <arm> --delta`, so any YAML
+  # form the plan accepts under `components` builds the same tree.
+  #
+  # **What the arms cost.** Six arms is three times the sessions of the pair,
+  # so the plan of any category at 30 repetitions is over the ceiling below,
+  # and the plan refuses it. That refusal is correct: the ceiling is what a
+  # person agreed to spend, and nobody has agreed to spend more. `sh
+  # tools/probe/campaign.sh --dry-run --spec tools/probe/layer-campaign.spec`
+  # prints what each line and arm would cost against the ceiling. The owner
+  # rules on one ceiling for the whole plan before any of it runs (#1472).
   campaign:
     budget_cents: 30000
     session_cost_cents: 50
     repetitions: 30
     max_turns: 80
-    arms: [present, absent]
+    arms: [present, absent, no-hook, no-skills, no-claude-md, mcp]
     ablation: [CLAUDE.md, .claude, .githooks, .headwater]
+    components:
+      no-hook: [.claude/hooks/intent.sh]
+      no-skills: [.claude/skills]
+      no-claude-md: [CLAUDE.md]
+      mcp: [.mcp.json]
 
   # Estimate a difference for a second named claim: that the documents under
   # `docs/` change what an agent builds. Both arms, like the campaign. The

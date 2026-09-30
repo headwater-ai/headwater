@@ -607,6 +607,26 @@ contains "a record that governs ./.github/workflows/ci.yml and is not cited ther
 #   - `deploy-site.yml` checks out `inputs.ref`, so the `ref: main` a caller
 #     passes reaches the checkout, and each caller passes `secrets`, without
 #     which the deploy has no Cloudflare token.
+#   - A step outside `deploy-site.yml` that uses `cloudflare/wrangler-action`
+#     or `cloudflare/pages-action` in any letter case, or runs `wrangler` and
+#     `deploy` or `publish` on one line after backslash continuations are
+#     joined, is a second deploy path, and no workflow but `ci.yml` and
+#     `release.yml` calls `deploy-site.yml` (#1342).
+#   - `deploy-site.yml` declares a `ref` input whose default is empty, so a
+#     push to `main` deploys its own commit, and the `ci.yml` caller passes no
+#     `ref` (#1342).
+#   - Each caller passes `secrets: inherit` and no other value, because
+#     `deploy-site.yml` declares no secrets and a mapping delivers no token
+#     (#1342).
+#   - The `ci.yml` caller `needs` `engine` and `headwater`, and its `if:` is
+#     the push term and the `main` term joined by `&&`, with `success()` at
+#     most besides, inside one `${{ }}` or none, so no `!`, `||`, status
+#     function such as `always()` or always-true string template admits
+#     another event (#1342).
+#   - The deploy job of `deploy-site.yml` has one constant concurrency group
+#     with `cancel-in-progress: false`, a workflow-level concurrency, if any,
+#     is held the same way, and neither caller has a concurrency of its own,
+#     so both calls share one queue (#1342).
 #   - No file that describes the APT route says that a build service of
 #     Cloudflare deploys it, by any of the names that service goes by (#1339,
 #     #1408). HW-DR-0097 moved the deploy into `deploy-site.yml`,
@@ -623,7 +643,20 @@ except ImportError:
     sys.exit(0)
 
 callee = "./.github/workflows/deploy-site.yml"
-runs_deploy = re.compile(r"tools/site/deploy-site\.sh|\bwrangler\s+deploy\b")
+# A step deploys when it runs the script, runs wrangler with deploy later on
+# the same line (`npx wrangler deploy`, `wrangler pages deploy`, or the older
+# `wrangler pages publish`), or uses a Cloudflare action that deploys, in
+# any letter case, as GitHub matches an owner (#1342, verify round 2).
+runs_deploy = re.compile(r"tools/site/deploy-site\.sh|\bwrangler\b[^\n]*\b(?:deploy|publish)\b")
+deploy_actions = ("cloudflare/wrangler-action", "cloudflare/pages-action")
+
+# A backslash continuation is joined first, because the shell runs
+# `npx wrangler \` and `pages deploy site` as one command (#1342 verify
+# round 1, as for release-taxonomy.yml below).
+def is_deploy(step):
+    return isinstance(step, dict) and bool(
+        runs_deploy.search(re.sub(r"\\\n", " ", str(step.get("run", ""))))
+        or str(step.get("uses", "")).lower().startswith(deploy_actions))
 
 def as_list(v):
     if v is None:
@@ -659,16 +692,40 @@ else:
     events = set(on) if isinstance(on, dict) else set(as_list(on))
     if events != {"workflow_call"}:
         out.append("deploy-site.yml is started by %s and not by workflow_call alone" % ", ".join(sorted(map(str, events))))
+    # The ref input exists, so the ref: main of release.yml is accepted, and
+    # it defaults to empty, so a push to main deploys its own commit (#1342).
+    wc = on.get("workflow_call") if isinstance(on, dict) else None
+    inputs = wc.get("inputs") if isinstance(wc, dict) else None
+    ref = inputs.get("ref") if isinstance(inputs, dict) else None
+    if not isinstance(ref, dict):
+        out.append("deploy-site.yml declares no ref input, so the ref: main that release.yml passes reaches no checkout")
+    elif ref.get("default") not in (None, ""):
+        out.append("deploy-site.yml defaults ref to %s, so a push to main deploys that ref and not its own commit" % ref["default"])
+    # Each deploy job queues in one constant group and cancels nothing, so the
+    # ci.yml and release.yml calls share one queue and the last deploy is the
+    # newest one (#1342).
+    # A string is a group with cancel-in-progress false, as GitHub reads it.
+    # A workflow-level concurrency is optional, and when present it is held
+    # the same way, because it wraps every deploy (#1342 verify round 1).
+    queues = [("job %s" % job, body.get("concurrency")) for job, body in sorted(jobs("deploy-site.yml").items())]
+    if isinstance(doc, dict) and doc.get("concurrency") is not None:
+        queues.append(("workflow", doc["concurrency"]))
+    for where, c in queues:
+        group = c.get("group") if isinstance(c, dict) else c
+        if c is None:
+            out.append("deploy-site.yml %s has no concurrency group, so two deploys can run at once and an older one can finish last" % where)
+        elif not isinstance(group, str) or "${{" in group:
+            out.append("deploy-site.yml %s has a concurrency group that is not one constant, so the ci.yml and release.yml deploys do not share one queue" % where)
+        if isinstance(c, dict) and c.get("cancel-in-progress", False) is not False:
+            out.append("deploy-site.yml %s can cancel a deploy in progress, so a release deploy can be cancelled and apt/ serves the previous release" % where)
 
 for name in sorted(docs):
     for job, body in jobs(name).items():
         for step in as_list(body.get("steps")):
-            if isinstance(step, dict) and runs_deploy.search(str(step.get("run", ""))):
-                if name != "deploy-site.yml":
-                    out.append("%s job %s runs the deploy itself, so the site has two deploy paths" % (name, job))
+            if is_deploy(step) and name != "deploy-site.yml":
+                out.append("%s job %s runs the deploy itself, so the site has two deploy paths" % (name, job))
 if "deploy-site.yml" in docs and not any(
-    isinstance(s, dict) and runs_deploy.search(str(s.get("run", "")))
-    for b in jobs("deploy-site.yml").values() for s in as_list(b.get("steps"))
+    is_deploy(s) for b in jobs("deploy-site.yml").values() for s in as_list(b.get("steps"))
 ):
     out.append("deploy-site.yml runs no step of tools/site/deploy-site.sh")
 if "deploy-site.yml" in docs:
@@ -681,11 +738,52 @@ if "deploy-site.yml" in docs:
 
 for name in ("ci.yml", "release.yml"):
     for job, body in sorted(callers(name).items()):
+        # deploy-site.yml declares no secrets, so only inherit delivers the
+        # token; a mapping such as {} passes the key and no token (#1342).
         if "secrets" not in body:
             out.append("%s job %s passes no secrets, so the deploy has no Cloudflare token" % (name, job))
+        elif body["secrets"] != "inherit":
+            out.append("%s job %s passes secrets other than inherit, so the deploy has no Cloudflare token" % (name, job))
+        if "concurrency" in body:
+            out.append("%s job %s has a concurrency of its own, so its deploy does not wait in the one deploy-site queue alone" % (name, job))
+
+# Two workflows call the deploy (HW-DR-0097). A third caller is held by
+# none of the clauses here, so it could deploy any ref (#1342 verify round 2).
+for name in sorted(docs):
+    if name not in ("ci.yml", "release.yml", "deploy-site.yml"):
+        for job in sorted(callers(name)):
+            out.append("%s job %s calls deploy-site.yml, so a third caller deploys a tree that nothing here holds" % (name, job))
 
 if not callers("ci.yml"):
     out.append("ci.yml has no job that calls deploy-site.yml, so a push to main deploys nothing")
+# The ci.yml call runs on a push to main alone, after both gating jobs, and
+# deploys that push (#1342).
+for job, body in sorted(callers("ci.yml").items()):
+    needs = set(map(str, as_list(body.get("needs"))))
+    missing = [n for n in ("engine", "headwater") if n not in needs]
+    if missing:
+        out.append("ci.yml job %s does not need %s, so it can deploy a commit that failed CI" % (job, " and ".join(missing)))
+    # The condition is exactly the two terms joined by &&, in either order. A
+    # substring test passed !(push && main), which runs on every other event,
+    # so any other term, a !, a || or a status function such as always() is
+    # refused (#1342 verify round 1). success() is the default GitHub adds
+    # to an if: with no status function, so it may stand as a third term.
+    # The ${{ }} wrapper is stripped only when it holds the whole value. Text
+    # outside one ${{ }}, or two of them, makes GitHub read the value as a
+    # string template, which is always true, so such a value keeps its
+    # braces and fails the terms test (#1342 verify round 2).
+    cond = re.sub(r"\s+", "", str(body.get("if", "")))
+    whole = re.fullmatch(r"\$\{\{(.*)\}\}", cond)
+    if whole:
+        cond = whole.group(1)
+    terms = cond.split("&&")
+    if "if" not in body:
+        out.append("ci.yml job %s has no if:, so a pull request or a merge group runs the deploy" % job)
+    elif set(terms) - {"success()"} != {"github.event_name==\x27push\x27", "github.ref==\x27refs/heads/main\x27"}:
+        out.append("ci.yml job %s has an if: other than a push to main, so an event other than that push can run the deploy" % job)
+    w = body.get("with")
+    if isinstance(w, dict) and w.get("ref") not in (None, ""):
+        out.append("ci.yml job %s passes ref: %s, so a push to main deploys that ref and not its own commit" % (job, w["ref"]))
 
 rel = callers("release.yml")
 if not rel:
@@ -801,9 +899,10 @@ apt_route() {
     done
 }
 
-# edit_wf DIR FILE PYTHON — loads DIR/.github/workflows/FILE, runs PYTHON on
-# it as `doc`, and writes it back. A copy loses its comments, which no judge
-# here reads.
+# edit_wf DIR FILE PYTHON [VALUE] — loads DIR/.github/workflows/FILE, runs
+# PYTHON on it as `doc`, and writes it back. PYTHON reads VALUE as
+# sys.argv[4], so a value that holds both quotes needs no escaping. A copy
+# loses its comments, which no judge here reads.
 edit_wf() {
     python3 -c '
 import sys, yaml
@@ -813,7 +912,7 @@ with open(path, encoding="utf-8") as f:
 exec(sys.argv[3])
 with open(path, "w", encoding="utf-8") as f:
     yaml.safe_dump(doc, f, sort_keys=False)
-' "$1" "$2" "$3"
+' "$@"
 }
 
 echo
@@ -827,6 +926,19 @@ rel_job=$(python3 -c '
 import sys, yaml
 jobs = yaml.safe_load(open(sys.argv[1] + "/.github/workflows/release.yml", encoding="utf-8"))["jobs"]
 print(" ".join(k for k, v in jobs.items() if isinstance(v, dict) and v.get("uses") == "./.github/workflows/deploy-site.yml"))
+' "$root" 2>/dev/null)
+
+# The same for ci.yml, and the job of deploy-site.yml that deploys, for the
+# arms d17 to d57 (#1342).
+ci_job=$(python3 -c '
+import sys, yaml
+jobs = yaml.safe_load(open(sys.argv[1] + "/.github/workflows/ci.yml", encoding="utf-8"))["jobs"]
+print(" ".join(k for k, v in jobs.items() if isinstance(v, dict) and v.get("uses") == "./.github/workflows/deploy-site.yml"))
+' "$root" 2>/dev/null)
+dep_job=$(python3 -c '
+import sys, yaml
+jobs = yaml.safe_load(open(sys.argv[1] + "/.github/workflows/deploy-site.yml", encoding="utf-8"))["jobs"]
+print(" ".join(k for k, v in jobs.items() if isinstance(v, dict) and "deploy-site.sh" in str(v.get("steps"))))
 ' "$root" 2>/dev/null)
 
 if [ -n "$rel_job" ]; then
@@ -864,9 +976,32 @@ if [ -n "$rel_job" ]; then
     same "a release deploy that passes no secrets is red" \
         "release.yml job $rel_job passes no secrets, so the deploy has no Cloudflare token" \
         "$(deploys "$scratch/d7" | tr '\n' '|' | sed 's/|$//')"
+
+    # d16. The release caller passes an empty secrets mapping. deploy-site.yml
+    # declares no secrets, so no mapping can deliver the token (#1342).
+    copy_tree "$scratch/d16"
+    edit_wf "$scratch/d16" release.yml "doc['jobs']['$rel_job']['secrets'] = {}"
+    same "a release deploy that passes secrets: {} is red" \
+        "release.yml job $rel_job passes secrets other than inherit, so the deploy has no Cloudflare token" \
+        "$(deploys "$scratch/d16" | tr '\n' '|' | sed 's/|$//')"
+
+    # d41. A mapping that names the token is still not inherit: deploy-site.yml
+    # declares no secret, so the call carries none (#1342 verify round 1).
+    copy_tree "$scratch/d41"
+    edit_wf "$scratch/d41" release.yml "doc['jobs']['$rel_job']['secrets'] = {'CLOUDFLARE_API_TOKEN': '\${{ secrets.CLOUDFLARE_API_TOKEN }}'}"
+    same "a release deploy that passes the token as a mapping is red" \
+        "release.yml job $rel_job passes secrets other than inherit, so the deploy has no Cloudflare token" \
+        "$(deploys "$scratch/d41" | tr '\n' '|' | sed 's/|$//')"
+
+    # d43. The release caller with a queue of its own.
+    copy_tree "$scratch/d43"
+    edit_wf "$scratch/d43" release.yml "doc['jobs']['$rel_job']['concurrency'] = {'group': 'release-deploy'}"
+    same "a release deploy with a concurrency of its own is red" \
+        "release.yml job $rel_job has a concurrency of its own, so its deploy does not wait in the one deploy-site queue alone" \
+        "$(deploys "$scratch/d43" | tr '\n' '|' | sed 's/|$//')"
 else
     fail "release.yml has a job that calls deploy-site.yml" \
-        "none, so the arms d1 to d4 have no job to edit"
+        "none, so the arms d1 to d4, d7, d16, d41 and d43 have no job to edit"
 fi
 
 # d12. A taxonomy release created without --latest=false can become GitHub's
@@ -910,6 +1045,287 @@ edit_wf "$scratch/d5" release.yml "doc['jobs']['deploy-copy'] = {'needs': 'publi
 contains "a copy of the deploy steps in release.yml is red" \
     "release.yml job deploy-copy runs the deploy itself, so the site has two deploy paths" \
     "$(deploys "$scratch/d5")"
+
+# d16 to d57 hold what each workflow's own comment states about the one
+# deploy job: its ref input, its token, its one path, the ci.yml gate, and its
+# one queue (#1342). Each arm applies one shape to a copy and names the line.
+
+# d20. A deploy through Cloudflare's action, inlined into release.yml.
+copy_tree "$scratch/d20"
+edit_wf "$scratch/d20" release.yml "doc['jobs']['wa'] = {'needs': 'publish', 'runs-on': 'ubuntu-latest', 'steps': [{'uses': 'cloudflare/wrangler-action@v3', 'with': {'command': 'deploy'}}]}"
+same "a wrangler-action step in release.yml is red" \
+    "release.yml job wa runs the deploy itself, so the site has two deploy paths" \
+    "$(deploys "$scratch/d20" | tr '\n' '|' | sed 's/|$//')"
+
+# d21. A wrangler command with words between it and deploy.
+copy_tree "$scratch/d21"
+edit_wf "$scratch/d21" release.yml "doc['jobs']['wp'] = {'runs-on': 'ubuntu-latest', 'steps': [{'run': 'npx wrangler pages deploy site'}]}"
+same "a wrangler pages deploy step in release.yml is red" \
+    "release.yml job wp runs the deploy itself, so the site has two deploy paths" \
+    "$(deploys "$scratch/d21" | tr '\n' '|' | sed 's/|$//')"
+
+# d42. A deploy through Cloudflare's Pages action.
+copy_tree "$scratch/d42"
+edit_wf "$scratch/d42" release.yml "doc['jobs']['wpa'] = {'runs-on': 'ubuntu-latest', 'steps': [{'uses': 'cloudflare/pages-action@v1'}]}"
+same "a pages-action step in release.yml is red" \
+    "release.yml job wpa runs the deploy itself, so the site has two deploy paths" \
+    "$(deploys "$scratch/d42" | tr '\n' '|' | sed 's/|$//')"
+
+# d55. GitHub matches an action's owner in any letter case (#1342 verify
+# round 2).
+copy_tree "$scratch/d55"
+edit_wf "$scratch/d55" release.yml "doc['jobs']['wcap'] = {'runs-on': 'ubuntu-latest', 'steps': [{'uses': 'Cloudflare/wrangler-action@v3'}]}"
+same "a wrangler-action step whose owner is capitalized is red" \
+    "release.yml job wcap runs the deploy itself, so the site has two deploy paths" \
+    "$(deploys "$scratch/d55" | tr '\n' '|' | sed 's/|$//')"
+
+# d56. `wrangler pages publish` is the older name of `pages deploy`.
+copy_tree "$scratch/d56"
+edit_wf "$scratch/d56" release.yml "doc['jobs']['wpub'] = {'runs-on': 'ubuntu-latest', 'steps': [{'run': 'npx wrangler pages publish site'}]}"
+same "a wrangler pages publish step in release.yml is red" \
+    "release.yml job wpub runs the deploy itself, so the site has two deploy paths" \
+    "$(deploys "$scratch/d56" | tr '\n' '|' | sed 's/|$//')"
+
+# d57. A third workflow that calls the deploy, by hand, with a tag.
+copy_tree "$scratch/d57"
+printf '%s\n' 'name: Redeploy' 'on: workflow_dispatch' 'jobs:' '  redeploy:' \
+    '    uses: ./.github/workflows/deploy-site.yml' '    with:' '      ref: v0.1.0' \
+    '    secrets: inherit' > "$scratch/d57/.github/workflows/redeploy.yml"
+same "a third workflow that calls deploy-site.yml is red" \
+    "redeploy.yml job redeploy calls deploy-site.yml, so a third caller deploys a tree that nothing here holds" \
+    "$(deploys "$scratch/d57" | tr '\n' '|' | sed 's/|$//')"
+
+# d47. The wrangler command continued onto a second line is one command to
+# the shell (#1342 verify round 1).
+copy_tree "$scratch/d47"
+edit_wf "$scratch/d47" release.yml "doc['jobs']['wc'] = {'runs-on': 'ubuntu-latest', 'steps': [{'run': 'npx wrangler \\\\\n  pages deploy site\n'}]}"
+same "a wrangler deploy continued onto a second line in release.yml is red" \
+    "release.yml job wc runs the deploy itself, so the site has two deploy paths" \
+    "$(deploys "$scratch/d47" | tr '\n' '|' | sed 's/|$//')"
+
+# d48. A workflow-level queue keyed on the ref that cancels, beside the one
+# job-level group (#1342 verify round 1).
+copy_tree "$scratch/d48"
+edit_wf "$scratch/d48" deploy-site.yml "doc['concurrency'] = {'group': 'deploy-\${{ github.ref }}', 'cancel-in-progress': True}"
+same "a deploy-site.yml with a workflow queue per ref that cancels is red" \
+    "deploy-site.yml workflow has a concurrency group that is not one constant, so the ci.yml and release.yml deploys do not share one queue|deploy-site.yml workflow can cancel a deploy in progress, so a release deploy can be cancelled and apt/ serves the previous release" \
+    "$(deploys "$scratch/d48" | tr '\n' '|' | sed 's/|$//')"
+
+# d44. A ref default that names a branch is still a default: a push to main
+# deploys the head of that branch, not its own commit.
+copy_tree "$scratch/d44"
+edit_wf "$scratch/d44" deploy-site.yml "k = 'on' if 'on' in doc else True; doc[k]['workflow_call']['inputs']['ref']['default'] = 'main'"
+same "a deploy-site.yml whose ref defaults to main is red" \
+    "deploy-site.yml defaults ref to main, so a push to main deploys that ref and not its own commit" \
+    "$(deploys "$scratch/d44" | tr '\n' '|' | sed 's/|$//')"
+
+# d18. A ref default makes every push to main deploy that ref.
+copy_tree "$scratch/d18"
+edit_wf "$scratch/d18" deploy-site.yml "k = 'on' if 'on' in doc else True; doc[k]['workflow_call']['inputs']['ref']['default'] = 'v0.1.0'"
+same "a deploy-site.yml whose ref defaults to a tag is red" \
+    "deploy-site.yml defaults ref to v0.1.0, so a push to main deploys that ref and not its own commit" \
+    "$(deploys "$scratch/d18" | tr '\n' '|' | sed 's/|$//')"
+
+# d19. With no ref input, the ref: main of release.yml has nowhere to go.
+copy_tree "$scratch/d19"
+edit_wf "$scratch/d19" deploy-site.yml "k = 'on' if 'on' in doc else True; doc[k]['workflow_call']['inputs'].pop('ref')"
+same "a deploy-site.yml with no ref input is red" \
+    "deploy-site.yml declares no ref input, so the ref: main that release.yml passes reaches no checkout" \
+    "$(deploys "$scratch/d19" | tr '\n' '|' | sed 's/|$//')"
+
+if [ -n "$dep_job" ]; then
+    # d25. A deploy that cancels the one in progress.
+    copy_tree "$scratch/d25"
+    edit_wf "$scratch/d25" deploy-site.yml "doc['jobs']['$dep_job']['concurrency']['cancel-in-progress'] = True"
+    same "a deploy with cancel-in-progress: true is red" \
+        "deploy-site.yml job $dep_job can cancel a deploy in progress, so a release deploy can be cancelled and apt/ serves the previous release" \
+        "$(deploys "$scratch/d25" | tr '\n' '|' | sed 's/|$//')"
+
+    # d26. A deploy in no concurrency group.
+    copy_tree "$scratch/d26"
+    edit_wf "$scratch/d26" deploy-site.yml "doc['jobs']['$dep_job'].pop('concurrency')"
+    same "a deploy with no concurrency group is red" \
+        "deploy-site.yml job $dep_job has no concurrency group, so two deploys can run at once and an older one can finish last" \
+        "$(deploys "$scratch/d26" | tr '\n' '|' | sed 's/|$//')"
+
+    # d27. A group keyed on the ref splits the two callers into two queues.
+    copy_tree "$scratch/d27"
+    edit_wf "$scratch/d27" deploy-site.yml "doc['jobs']['$dep_job']['concurrency']['group'] = 'deploy-site-\${{ github.ref }}'"
+    same "a deploy whose group is keyed on the ref is red" \
+        "deploy-site.yml job $dep_job has a concurrency group that is not one constant, so the ci.yml and release.yml deploys do not share one queue" \
+        "$(deploys "$scratch/d27" | tr '\n' '|' | sed 's/|$//')"
+
+    # d32. A concurrency mapping with no group queues nothing.
+    copy_tree "$scratch/d32"
+    edit_wf "$scratch/d32" deploy-site.yml "doc['jobs']['$dep_job']['concurrency'].pop('group')"
+    same "a deploy whose concurrency has no group is red" \
+        "deploy-site.yml job $dep_job has a concurrency group that is not one constant, so the ci.yml and release.yml deploys do not share one queue" \
+        "$(deploys "$scratch/d32" | tr '\n' '|' | sed 's/|$//')"
+
+    # d33. The group written as a string, which cancels nothing, holds.
+    copy_tree "$scratch/d33"
+    edit_wf "$scratch/d33" deploy-site.yml "doc['jobs']['$dep_job']['concurrency'] = 'deploy-site'"
+    same "a deploy whose concurrency is the one group as a string holds" "" \
+        "$(deploys "$scratch/d33" | tr '\n' '|' | sed 's/|$//')"
+
+    # d34. A group with no cancel-in-progress cancels nothing, and holds.
+    copy_tree "$scratch/d34"
+    edit_wf "$scratch/d34" deploy-site.yml "doc['jobs']['$dep_job']['concurrency'].pop('cancel-in-progress')"
+    same "a deploy whose group omits cancel-in-progress holds" "" \
+        "$(deploys "$scratch/d34" | tr '\n' '|' | sed 's/|$//')"
+
+    # d40. cancel-in-progress as an expression cancels on some refs.
+    copy_tree "$scratch/d40"
+    edit_wf "$scratch/d40" deploy-site.yml "doc['jobs']['$dep_job']['concurrency']['cancel-in-progress'] = \"\${{ github.ref != 'refs/heads/main' }}\""
+    same "a deploy whose cancel-in-progress is an expression is red" \
+        "deploy-site.yml job $dep_job can cancel a deploy in progress, so a release deploy can be cancelled and apt/ serves the previous release" \
+        "$(deploys "$scratch/d40" | tr '\n' '|' | sed 's/|$//')"
+else
+    fail "deploy-site.yml has a job that runs tools/site/deploy-site.sh" \
+        "none, so the arms d25 to d27, d32 to d34 and d40 have no job to edit"
+fi
+
+if [ -n "$ci_job" ]; then
+    # d17. The ci.yml caller passes an empty secrets mapping.
+    copy_tree "$scratch/d17"
+    edit_wf "$scratch/d17" ci.yml "doc['jobs']['$ci_job']['secrets'] = {}"
+    same "a ci.yml deploy that passes secrets: {} is red" \
+        "ci.yml job $ci_job passes secrets other than inherit, so the deploy has no Cloudflare token" \
+        "$(deploys "$scratch/d17" | tr '\n' '|' | sed 's/|$//')"
+
+    # d22. With no if:, a pull request and a merge group deploy.
+    copy_tree "$scratch/d22"
+    edit_wf "$scratch/d22" ci.yml "doc['jobs']['$ci_job'].pop('if')"
+    same "a ci.yml deploy with no if: is red" \
+        "ci.yml job $ci_job has no if:, so a pull request or a merge group runs the deploy" \
+        "$(deploys "$scratch/d22" | tr '\n' '|' | sed 's/|$//')"
+
+    # d23. An if: always() deploys on every event.
+    copy_tree "$scratch/d23"
+    edit_wf "$scratch/d23" ci.yml "doc['jobs']['$ci_job']['if'] = 'always()'"
+    same "a ci.yml deploy with if: always() is red" \
+        "ci.yml job $ci_job has an if: other than a push to main, so an event other than that push can run the deploy" \
+        "$(deploys "$scratch/d23" | tr '\n' '|' | sed 's/|$//')"
+
+    # d24. A deploy that does not wait for the engine tests.
+    copy_tree "$scratch/d24"
+    edit_wf "$scratch/d24" ci.yml "doc['jobs']['$ci_job']['needs'] = ['headwater']"
+    same "a ci.yml deploy that does not need engine is red" \
+        "ci.yml job $ci_job does not need engine, so it can deploy a commit that failed CI" \
+        "$(deploys "$scratch/d24" | tr '\n' '|' | sed 's/|$//')"
+
+    # d28. A caller with a queue of its own.
+    copy_tree "$scratch/d28"
+    edit_wf "$scratch/d28" ci.yml "doc['jobs']['$ci_job']['concurrency'] = {'group': 'ci-deploy', 'cancel-in-progress': True}"
+    same "a ci.yml deploy with a concurrency of its own is red" \
+        "ci.yml job $ci_job has a concurrency of its own, so its deploy does not wait in the one deploy-site queue alone" \
+        "$(deploys "$scratch/d28" | tr '\n' '|' | sed 's/|$//')"
+
+    # d29. The ci.yml caller names a ref, so a push to main deploys that ref.
+    copy_tree "$scratch/d29"
+    edit_wf "$scratch/d29" ci.yml "doc['jobs']['$ci_job']['with'] = {'ref': 'v0.1.0'}"
+    same "a ci.yml deploy that passes a ref is red" \
+        "ci.yml job $ci_job passes ref: v0.1.0, so a push to main deploys that ref and not its own commit" \
+        "$(deploys "$scratch/d29" | tr '\n' '|' | sed 's/|$//')"
+
+    # d30. A push to main or a pull request: the condition names both terms
+    # and still admits a second event.
+    copy_tree "$scratch/d30"
+    edit_wf "$scratch/d30" ci.yml "doc['jobs']['$ci_job']['if'] = \"\${{ github.event_name == 'push' && github.ref == 'refs/heads/main' || github.event_name == 'pull_request' }}\""
+    same "a ci.yml deploy whose if: adds || another event is red" \
+        "ci.yml job $ci_job has an if: other than a push to main, so an event other than that push can run the deploy" \
+        "$(deploys "$scratch/d30" | tr '\n' '|' | sed 's/|$//')"
+
+    # d31. always() && the push to main runs the deploy after a gate failed.
+    copy_tree "$scratch/d31"
+    edit_wf "$scratch/d31" ci.yml "doc['jobs']['$ci_job']['if'] = \"\${{ always() && github.event_name == 'push' && github.ref == 'refs/heads/main' }}\""
+    same "a ci.yml deploy whose if: adds always() is red" \
+        "ci.yml job $ci_job has an if: other than a push to main, so an event other than that push can run the deploy" \
+        "$(deploys "$scratch/d31" | tr '\n' '|' | sed 's/|$//')"
+
+    # d35. Main alone: a hand run on main deploys too.
+    copy_tree "$scratch/d35"
+    edit_wf "$scratch/d35" ci.yml "doc['jobs']['$ci_job']['if'] = \"\${{ github.ref == 'refs/heads/main' }}\""
+    same "a ci.yml deploy whose if: drops the push term is red" \
+        "ci.yml job $ci_job has an if: other than a push to main, so an event other than that push can run the deploy" \
+        "$(deploys "$scratch/d35" | tr '\n' '|' | sed 's/|$//')"
+
+    # d36. A push alone: a push to any branch deploys.
+    copy_tree "$scratch/d36"
+    edit_wf "$scratch/d36" ci.yml "doc['jobs']['$ci_job']['if'] = \"\${{ github.event_name == 'push' }}\""
+    same "a ci.yml deploy whose if: drops the main term is red" \
+        "ci.yml job $ci_job has an if: other than a push to main, so an event other than that push can run the deploy" \
+        "$(deploys "$scratch/d36" | tr '\n' '|' | sed 's/|$//')"
+
+    # d37. A deploy that does not wait for the corpus check.
+    copy_tree "$scratch/d37"
+    edit_wf "$scratch/d37" ci.yml "doc['jobs']['$ci_job']['needs'] = ['engine']"
+    same "a ci.yml deploy that does not need headwater is red" \
+        "ci.yml job $ci_job does not need headwater, so it can deploy a commit that failed CI" \
+        "$(deploys "$scratch/d37" | tr '\n' '|' | sed 's/|$//')"
+
+    # d38 and d39. !cancelled() runs the deploy after a gate failed, and
+    # failure() runs it only then.
+    for fn in '!cancelled()' 'failure()'; do
+        case "$fn" in '!'*) arm=d38 ;; *) arm=d39 ;; esac
+        copy_tree "$scratch/$arm"
+        edit_wf "$scratch/$arm" ci.yml "doc['jobs']['$ci_job']['if'] = \"\${{ $fn && github.event_name == 'push' && github.ref == 'refs/heads/main' }}\""
+        same "a ci.yml deploy whose if: adds $fn is red" \
+            "ci.yml job $ci_job has an if: other than a push to main, so an event other than that push can run the deploy" \
+            "$(deploys "$scratch/$arm" | tr '\n' '|' | sed 's/|$//')"
+    done
+
+    # d45. A ci.yml ref that names a branch, not only a tag.
+    copy_tree "$scratch/d45"
+    edit_wf "$scratch/d45" ci.yml "doc['jobs']['$ci_job']['with'] = {'ref': 'develop'}"
+    same "a ci.yml deploy that passes a branch as ref is red" \
+        "ci.yml job $ci_job passes ref: develop, so a push to main deploys that ref and not its own commit" \
+        "$(deploys "$scratch/d45" | tr '\n' '|' | sed 's/|$//')"
+
+    # d46. The negated gate names both terms and runs on every other event
+    # (#1342 verify round 1).
+    copy_tree "$scratch/d46"
+    edit_wf "$scratch/d46" ci.yml "doc['jobs']['$ci_job']['if'] = \"\${{ !(github.event_name == 'push' && github.ref == 'refs/heads/main') }}\""
+    same "a ci.yml deploy whose if: negates the push to main is red" \
+        "ci.yml job $ci_job has an if: other than a push to main, so an event other than that push can run the deploy" \
+        "$(deploys "$scratch/d46" | tr '\n' '|' | sed 's/|$//')"
+
+    # d49. The two terms in the other order hold.
+    copy_tree "$scratch/d49"
+    edit_wf "$scratch/d49" ci.yml "doc['jobs']['$ci_job']['if'] = \"\${{ github.ref == 'refs/heads/main' && github.event_name == 'push' }}\""
+    same "a ci.yml deploy whose if: names the two terms in the other order holds" "" \
+        "$(deploys "$scratch/d49" | tr '\n' '|' | sed 's/|$//')"
+
+    # d50. success() is the default status function, so naming it holds.
+    copy_tree "$scratch/d50"
+    edit_wf "$scratch/d50" ci.yml "doc['jobs']['$ci_job']['if'] = \"\${{ success() && github.event_name == 'push' && github.ref == 'refs/heads/main' }}\""
+    same "a ci.yml deploy whose if: adds success() holds" "" \
+        "$(deploys "$scratch/d50" | tr '\n' '|' | sed 's/|$//')"
+
+    # d51 to d53. Text outside one ${{ }} makes GitHub read the if: as a
+    # string template, which is always true (#1342 verify round 2).
+    for arm in d51 d52 d53; do
+        case "$arm" in
+            d51) cond="\${{ github.event_name == 'push' }} && \${{ github.ref == 'refs/heads/main' }}" ;;
+            d52) cond="\${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }} && success()" ;;
+            d53) cond="github.event_name == 'push' && \${{ github.ref == 'refs/heads/main' }}" ;;
+        esac
+        copy_tree "$scratch/$arm"
+        edit_wf "$scratch/$arm" ci.yml "doc['jobs']['$ci_job']['if'] = sys.argv[4]" "$cond"
+        same "a ci.yml deploy whose if: is a template ($arm) is red" \
+            "ci.yml job $ci_job has an if: other than a push to main, so an event other than that push can run the deploy" \
+            "$(deploys "$scratch/$arm" | tr '\n' '|' | sed 's/|$//')"
+    done
+
+    # d54. The two terms with no ${{ }} at all are an expression, and hold.
+    copy_tree "$scratch/d54"
+    edit_wf "$scratch/d54" ci.yml "doc['jobs']['$ci_job']['if'] = \"github.event_name == 'push' && github.ref == 'refs/heads/main'\""
+    same "a ci.yml deploy whose if: has no \${{ }} holds" "" \
+        "$(deploys "$scratch/d54" | tr '\n' '|' | sed 's/|$//')"
+else
+    fail "ci.yml has a job that calls deploy-site.yml" \
+        "none, so the arms d17, d22 to d24, d28 to d31, d35 to d39, d45, d46 and d49 to d54 have no job to edit"
+fi
 
 # d9. The APT route as each file that describes it states it (#1339).
 same "no file says a build service of Cloudflare deploys the APT repository" "" \

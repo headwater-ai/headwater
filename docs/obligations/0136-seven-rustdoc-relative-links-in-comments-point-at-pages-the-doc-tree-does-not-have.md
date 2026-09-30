@@ -12,7 +12,7 @@ provenance:
   accepted_by: j.baxter
   evidence_basis: evidenced
 last_verified: 2026-08-26
-waiting_on: adopter
+waiting_on: build
 ---
 
 # Seven rustdoc-relative links in comments point at pages the doc tree does not have

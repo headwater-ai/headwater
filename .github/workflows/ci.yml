@@ -2015,7 +2015,9 @@ jobs:
         #
         # It blocks. A guide that stops building is found here and not by an
         # adopter. MkDocs 1.6.1 is the pin the step "The site this corpus's
-        # navigation builds" already installed in this job.
+        # navigation builds" already installed in this job, and the script
+        # fails when the guide's `pip install` line pins another version
+        # (#1370). So the guide's pin and that step's pin move together.
         env:
           MKDOCS: python3 -m mkdocs
         run: sh integrations/site-generator/fixtures/build-site.sh "$RUNNER_TEMP/tutorial-corpus"

@@ -1,10 +1,10 @@
 ---
 id: HW-OBL-0073
 title: "The prior version still owes the key edit that the clock has now made"
-status: current
-status_since: 2026-08-13
+status: discharged
+status_since: 2026-09-30
 waiting_on: build
-last_verified: 2026-08-13
+last_verified: 2026-09-30
 summary: "The cache key covers the injected clock, and nothing forces whoever adds the prior version to write the matching branch."
 provenance:
   warrant: accepted
@@ -31,3 +31,5 @@ The prior version is the other injected value spec 12 names, and nothing forces 
 ## Discharge
 
 The differential of `--no-cache` cannot catch that omission, because both sides of it hold one value of each injected input. So no test in this engine reaches the defect, and a sentence in spec 12 is what would.
+
+**This record is discharged.** `engine/crates/check/src/cache.rs` puts the content hash of the prior version into the cache key. The test `two_prior_versions_are_two_keys_for_a_check_that_reads_one` holds that branch, and spec 12 states the rule under its heading on temporal inputs. The owner accepted the discharge on 2026-09-30, in the roadmap review of that day.

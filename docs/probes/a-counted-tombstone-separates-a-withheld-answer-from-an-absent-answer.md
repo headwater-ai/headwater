@@ -3,7 +3,7 @@ id: HW-PROBE-a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answ
 status: current
 status_since: 2026-09-06
 summary: A session classifies a recovery word as present, withheld, or absent from a served corpus with a counted tombstone.
-last_verified: 2026-08-27
+last_verified: 2026-09-30
 probe_category: sufficiency
 expectation: answered
 oracle: "none"
@@ -44,7 +44,7 @@ answers: [withheld, absent, present]
 expected: [absent]
 ```
 
-**This probe is the control reading, and it exercises no tombstone yet.** The corpus under the top-level `docs/` declares no export profile that filters a document, so it serves no counted tombstone, and in a sealed workspace no document of it states the recovery word. The right answer is therefore `absent`. A session that answers `withheld` or `present` is wrong, and before #1229 the grader passed both, because the set named every word the task offers. The probe exercises a tombstone only when this corpus serves one through an export profile, and [HW-OBL-0013](../obligations/0013-no-probe-tests-whether-a-counted-tombstone-stops-a-confident.md) waits on that.
+**This probe is the control reading, and it exercises no tombstone yet.** The corpus under the top-level `docs/` declares no export profile that filters a document, so it serves no counted tombstone, and in a sealed workspace no document of it states the recovery word. The right answer is therefore `absent`. A session that answers `withheld` or `present` is wrong, and before #1229 the grader passed both, because the set named every word the task offers. Since #1309, the engine binds a withheld identifier from the digests that a `counted` tombstone lists. That does not change this probe, because this corpus still declares no export profile that filters a document. The probe exercises a tombstone only when this corpus serves one through an export profile, and [HW-OBL-0013](../obligations/0013-no-probe-tests-whether-a-counted-tombstone-stops-a-confident.md) waits on that.
 
 An `answered` probe names no document through `examines`. Its answer set defines the predicate domain.
 

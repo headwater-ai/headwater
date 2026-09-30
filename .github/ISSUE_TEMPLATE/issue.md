@@ -10,8 +10,9 @@ assignees: ''
 Before you file: search the open issues for the same file, the same subsystem
 and the same ruling. If one change or one ruling would close both, add your
 clauses to that issue's Done-when instead, and say in a comment where they came
-from. If nobody outside this repository is better off, do not file at all: the
-value rule in `.claude/commands/next-run.md` sends it to an obligation record.
+from. If the work stands on none of the four grounds of the value rule in
+`.claude/commands/next-run.md` (an outside reader, correctness, efficiency,
+documentation), do not file at all: the rule sends it to an obligation record.
 A new issue carries no milestone unless it blocks the statement of the version
 milestone it names. `headwater-product-owner` admits the rest.
 -->

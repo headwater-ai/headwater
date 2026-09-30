@@ -12,7 +12,7 @@ provenance:
   activity: draft
   accepted_by: j.baxter
   evidence_basis: evidenced
-waiting_on: adopter
+waiting_on: build
 ---
 
 # Survey the wiring decisions of main.rs, verb by verb, and cover the quiet ones

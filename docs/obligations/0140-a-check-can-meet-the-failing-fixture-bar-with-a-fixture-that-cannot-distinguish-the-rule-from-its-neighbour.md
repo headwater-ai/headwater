@@ -12,7 +12,7 @@ provenance:
   activity: draft
   accepted_by: j.baxter
   evidence_basis: evidenced
-waiting_on: adopter
+waiting_on: build
 ---
 
 # A check can meet the failing-fixture bar with a fixture that cannot distinguish the rule from its neighbour

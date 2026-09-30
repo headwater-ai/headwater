@@ -2,7 +2,7 @@
 id: HW-OBL-0118
 status: current
 status_since: 2026-08-14
-waiting_on: ruling
+waiting_on: build
 summary: "The read set artifact holds one line per document, so an external anchor is on no line and a gate that compares listed hashes cannot see the target of one leave the tree."
 last_verified: 2026-09-23
 title: "The published read set names no anchor, so a gate decides nothing about one"

@@ -174,6 +174,9 @@ pub(crate) fn emit(
                          of them states."
                     ),
                     sources: on_shelf.iter().map(|document| document.path).collect(),
+                    // An index lists withdrawn documents beside current ones,
+                    // and a withdrawn row does not withdraw the index.
+                    state: None,
                 };
                 match crate::identity::front_matter(
                     surface,

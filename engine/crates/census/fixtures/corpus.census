@@ -264,6 +264,8 @@ docs/evaluations/warrant-and-adjudication.md
   typed: evaluation
 docs/evaluations/what-a-check-can-know.md
   typed: evaluation
+docs/evaluations/what-the-counterfactual-campaign-of-2026-09-30-measured-by-component.md
+  typed: evaluation
 docs/evaluations/why-corpus-counts-are-derived-not-stored.md
   typed: evaluation
 docs/explanations/README.md
@@ -782,6 +784,20 @@ docs/probe-results/campaign-of-2026-09-28-campaign-tier-present-arm-sufficiency.
   generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
 docs/probe-results/campaign-of-2026-09-28-documentation-tier-absent-arm-sufficiency.md
   generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
+docs/probe-results/campaign-of-2026-09-30-campaign-tier-absent-arm-discovery.md
+  generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
+docs/probe-results/campaign-of-2026-09-30-campaign-tier-absent-arm-navigability.md
+  generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
+docs/probe-results/campaign-of-2026-09-30-campaign-tier-absent-arm-sufficiency.md
+  generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
+docs/probe-results/campaign-of-2026-09-30-campaign-tier-present-arm-discovery.md
+  generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
+docs/probe-results/campaign-of-2026-09-30-campaign-tier-present-arm-navigability.md
+  generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
+docs/probe-results/campaign-of-2026-09-30-campaign-tier-present-arm-sufficiency.md
+  generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
+docs/probe-results/campaign-of-2026-09-30-documentation-tier-absent-arm-sufficiency.md
+  generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
 docs/probe-results/campaign-pilot-of-2026-09-28-campaign-tier-absent-arm-discovery.md
   generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
 docs/probe-results/campaign-pilot-of-2026-09-28-campaign-tier-absent-arm-navigability.md
@@ -839,6 +855,20 @@ docs/probe-runs/campaign-of-2026-09-28-campaign-tier-present-arm-navigability.md
 docs/probe-runs/campaign-of-2026-09-28-campaign-tier-present-arm-sufficiency.md
   typed: probe_transcript
 docs/probe-runs/campaign-of-2026-09-28-documentation-tier-absent-arm-sufficiency.md
+  typed: probe_transcript
+docs/probe-runs/campaign-of-2026-09-30-campaign-tier-absent-arm-discovery.md
+  typed: probe_transcript
+docs/probe-runs/campaign-of-2026-09-30-campaign-tier-absent-arm-navigability.md
+  typed: probe_transcript
+docs/probe-runs/campaign-of-2026-09-30-campaign-tier-absent-arm-sufficiency.md
+  typed: probe_transcript
+docs/probe-runs/campaign-of-2026-09-30-campaign-tier-present-arm-discovery.md
+  typed: probe_transcript
+docs/probe-runs/campaign-of-2026-09-30-campaign-tier-present-arm-navigability.md
+  typed: probe_transcript
+docs/probe-runs/campaign-of-2026-09-30-campaign-tier-present-arm-sufficiency.md
+  typed: probe_transcript
+docs/probe-runs/campaign-of-2026-09-30-documentation-tier-absent-arm-sufficiency.md
   typed: probe_transcript
 docs/probe-runs/campaign-pilot-of-2026-09-28-campaign-tier-absent-arm-discovery.md
   typed: probe_transcript
@@ -1063,6 +1093,8 @@ docs/spec/glossary.md
 docs/subsystems/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/subsystems/graph-build.md
+  typed: subsystem_spec
+docs/subsystems/taxonomy-resolution.md
   typed: subsystem_spec
 docs/taxonomies/README.md
   typed: library_doctrine

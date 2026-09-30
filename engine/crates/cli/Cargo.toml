@@ -29,9 +29,17 @@ path = "src/main.rs"
 # opt-out: the binary it builds opens no socket anywhere, and `vendor` refuses a
 # location with one line that names the path form. `release.yml` builds with
 # the default features, so every released binary carries it.
+#
+# `phase-times` is off by default, and it is for measurement alone
+# (#1450). With it, `headwater check` writes the CPU time of each of its stages
+# to standard error, one `phase <name> <microseconds>` line each, and
+# `tools/measure/check-phases.sh` reads those lines. `release.yml` builds the
+# default features, so no released binary carries it, and no environment
+# variable or flag turns it on. `headwater-check`'s `src/phase.rs` says how it counts.
 [features]
 default = ["fetch"]
 fetch = ["dep:headwater-fetch"]
+phase-times = ["headwater-check/phase-times"]
 
 [dependencies]
 # The one crate of this workspace that opens a socket, and this binary is the
