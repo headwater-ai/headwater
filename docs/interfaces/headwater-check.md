@@ -3,7 +3,7 @@ id: HW-IFACE-headwater-check
 status: current
 status_since: 2026-09-06
 summary: "What headwater check reads, what goes to each of its two streams, and the twelve causes behind its one non-zero exit."
-last_verified: 2026-09-29
+last_verified: 2026-10-01
 title: "headwater check"
 provenance:
   warrant: asserted
@@ -15,6 +15,7 @@ relations:
   governs:
     - [engine/crates/cli/src/lib.rs, engine/crates/cli/src/main.rs]
     - engine/crates/check/src/lib.rs
+    - engine/crates/adapter/src/json.rs
 ---
 
 # headwater check
@@ -76,7 +77,7 @@ The program exclusion applies only to a whole bare token, so `mkdocs/build.sh` c
 | `--change <manifest>` | The manifest of a change, which the rules that read a transition use. The flag does not narrow the documents that the run checks. A run with a manifest that names one file reports the findings on every other document too. The first line is `headwater change 1`. A file that opens with anything else is refused rather than read. Each line after it is `added<TAB><path>`, `prior<TAB><path><TAB><file>` or `verified<TAB><path>`. The second form names a file holding the bytes that stood before the change. The third form states that a person re-read the document at `<path>`, and it names no version of that document. A document the manifest omits did not move. Without the flag, every rule that reads a transition reports each of its instances as skipped rather than as passed. [`headwater change`](headwater-change.md) is a producer of this file, and `.githooks/change-manifest` is the one this repository's own hooks call. <!-- headwater allow=surface.local_path.instructed scope=block until=2027-09-30 reason=accepted_deviation note=how this repository produces the manifest --> |
 | `--read-set <path>` | Write the read set of this run to a file as well as into the report. `headwater gate` is the reader. |
 | `--register <path>` | Write the obligation and control register of this run to a file as well as into the report. The content is the content already in the report. The report lays its copy out at the width of the run. This file is written at no width, because nothing reads it back. |
-| `--format text\|json\|sarif\|markdown` | The vocabulary the report is written in. `text` is the default and the one a person reads. `sarif` is what a forge ingests, `markdown` is a job summary or a review comment, and `json` is the finding shape that [spec 4](../spec/04-assurance-model.md) declares. `sarif` writes its own loss set into the artifact. `markdown` declares one in the source and not in the artifact, because nothing it writes is machine-readable. `text` declares one drop there too, the routing of each skip, and carries the census and the graph that no other format holds. `json` declares one there as well, the per-document account of coverage, and writes no loss set of its own. The flag moves no verdict and no exit status. |
+| `--format text\|json\|sarif\|markdown` | The vocabulary the report is written in. `text` is the default and the one a person reads. `sarif` is what a forge ingests, `markdown` is a job summary or a review comment, and `json` is the finding shape that [spec 4](../spec/04-assurance-model.md) declares. [The JSON report, member by member](#the-json-report-member-by-member) names each member of the `json` report, and [Raising the version](#raising-the-version) gives each version of its shape. `sarif` writes its own loss set into the artifact. `markdown` declares one in the source and not in the artifact, because nothing it writes is machine-readable. `text` declares one drop there too, the routing of each skip, and carries the census and the graph that no other format holds. `json` declares one there as well, the per-document account of coverage, and writes no loss set of its own. The flag moves no verdict and no exit status. |
 | `--json` | The same artifact `--format json` writes, byte for byte, on both streams and with the same exit status. A command line that states both is refused, because two names for one target is a question answered twice. |
 | `--root <path>` | The repository to read. It defaults to the working directory. |
 | `--no-color` | Force plain text on both streams: bold and dim weight plus glyphs, no escape sequence. The default already senses whether each stream is a terminal, and renders color only there. |
@@ -142,6 +143,51 @@ A reader who met `HEADWATER_NOW` in a continuous-integration job is reading a sh
 | a document of the corpus | written, and only under `--fix`. |
 
 Without `--fix`, this verb writes no byte of the corpus. The cache is outside the corpus root, so a run that wrote one changes nothing a check reads. The claim store is outside it too, and a claim `--fix` made is read by the next run rather than checked as a document.
+
+### The JSON report, member by member
+
+`headwater check --format json` writes one JSON object to standard output. This table names each member of the object at the top level, and each member of `taxonomy`, `change` and an entry of `rules`. A test holds the table to what the engine writes. A path uses `.` between a key and its parent, and `[]` for each element of an array. [Spec 4](../spec/04-assurance-model.md) declares the members of an entry of `findings`.
+
+| Member | When it is present | What it means |
+|---|---|---|
+| `version` | Always | The version of this shape. [Raising the version](#raising-the-version) gives each version and what it added. |
+| `tool` | Always | The name of the tool that wrote the report, `headwater`. |
+| `taxonomy` | Always | The taxonomy that the run took from the lock. |
+| `taxonomy.package` | Always | The name of the package that the corpus uses. |
+| `taxonomy.version` | Always | The version of that package. |
+| `taxonomy.lock` | Always | The digest of `.headwater/taxonomy.lock`. |
+| `clock` | Always | The date that the run evaluated against, from `--now` or from the clock of the host. |
+| `change` | Only on a run with `--change` | The account of the manifest. A run without `--change` writes no `change`, so its absence says that the run read the whole corpus. |
+| `change.documents` | With `change` | The number of documents that the manifest names. |
+| `change.added` | With `change` | The number of those documents that an `added` line names. |
+| `change.carried` | With `change` | The number of those documents that a row of the census holds and whose prior version the run read. |
+| `change.unreadable` | With `change` | The number of those documents whose prior version does not read. |
+| `change.verified` | With `change` | The number of documents that a `verified` line names and that a row of the census holds. This count overlaps the counts above. |
+| `change.verified_alone` | With `change` | The number of documents that only a `verified` line names. `added`, `carried`, `unreadable`, `verified_alone` and the length of `unmatched` sum to `documents`. |
+| `change.unmatched` | With `change` | Each path of the manifest that no row of the census holds, so that a mistyped path is visible. |
+| `change.promotions` | With `change` | The number of warrants that the change moves from `asserted` to `accepted`. |
+| `coverage` | Always | The census counts, the instances and the account of each skipped instance. |
+| `rules` | Always | One entry for each rule that the run served. |
+| `rules[].rule` | Always | The identifier of the rule. |
+| `rules[].scope` | Always | The grain of each instance of the rule, such as `document`, `edge`, `corpus` or `taxonomy`. |
+| `rules[].version` | Always | The version of the check, as a number. |
+| `rules[].obligations` | Always | The identifiers of the obligations that the rule serves. The array is empty when the rule names none. |
+| `rules[].compared` | Only on the entries for `link.identifier.mismatch` and `link.fragment.unresolved` | The number of links that the rule compared, whether they pass or not. `"compared": 0` says that the rule examined nothing. It is not written on the entry of any other rule. |
+| `findings` | Always | One entry for each finding of the report, in the shape that spec 4 declares. |
+| `read_set` | Always | Each input that the run read, with the digest of its content. An input with no digest carries an empty array in place of the digest. |
+
+### Raising the version
+
+The current version is `1.5`. The version is a constant of the shape, and it is not the version of the engine. Two engines that write one shape write one version, so a reader does not read the shape again. The SARIF report carries `change` and `coverage` in its property bag, so this version also applies to those two members of that report.
+
+Each version added a member, and each addition moved the minor. So an absent member says a different thing at each version. At `1.1` a report with no `change` says that the run read the whole corpus. At `1.0` it says only that the engine had no such member to write.
+
+- `1.0` was the first shape, when `--format json` arrived. It wrote `version`, `tool`, `taxonomy`, `clock`, `coverage`, `rules`, `findings` and `read_set`. An entry of `rules` held `rule`, `scope`, `version` and `obligations`.
+- `1.1` added `change`, for a run with `--change`.
+- `1.2` added the account of skipped instances to `coverage`. So `"skipped": 0` says that each instance of the run reached a verdict ([#233](https://github.com/headwater-ai/headwater/issues/233)).
+- `1.3` added `documents` and `unrouted` to each entry of `coverage.skips`. `documents` names the census rows that the skips of that class fell on, with the rules that skipped each row. `unrouted` counts the skips of that class that fell on no document ([#654](https://github.com/headwater-ai/headwater/pull/654)).
+- `1.4` added `verified` and `verified_alone` to `change`. Before `1.4`, a document that only a `verified` line named was in `documents` and in no other count, so the counts did not sum ([#1398](https://github.com/headwater-ai/headwater/issues/1398)).
+- `1.5` added `compared` to the entries of `rules` for `link.identifier.mismatch` and `link.fragment.unresolved`. A rule that reports nothing is silent over links that all pass. It is also silent over a corpus with none of its links, and `compared` tells the two apart ([#1347](https://github.com/headwater-ai/headwater/issues/1347)).
 
 ## See also
 
