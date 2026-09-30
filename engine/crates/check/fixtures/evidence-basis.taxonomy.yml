@@ -26,6 +26,8 @@ facets:
     role: state_entered
   summary:
     role: scent
+  title:
+    role: name
 
 identifier_schemes:
   note_id: {pattern: "NOTE-{namespace}-{slug}", namespace: FIX, allocation: minted-once}
@@ -37,7 +39,7 @@ relations:
   traces_to:
     family: evidence
     from: [record]
-    to: [record, code_path]
+    to: [record, interface_contract, code_path]
     cardinality: many
     created_by: author
   applied_in:
@@ -99,6 +101,13 @@ kinds:
   record:
     identifier: {scheme: note_id}
     facets: {require: [status]}
+  # As `.headwater/overlay.yml` declares it, less the sections. It has no state
+  # facet, so the one thing `headwater new` writes about what stands behind it
+  # is the provenance block, and `interfaces/scaffolded.md` is that document as
+  # the scaffolder writes it (#1409).
+  interface_contract:
+    identifier: {scheme: note_id}
+    facets: {require: [title]}
 
 shelves:
   claims:
@@ -109,3 +118,7 @@ shelves:
     path: evidence-basis/targets/**
     homogeneous: true
     kind: record
+  interfaces:
+    path: evidence-basis/interfaces/**
+    homogeneous: true
+    kind: interface_contract

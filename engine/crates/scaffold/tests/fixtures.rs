@@ -106,7 +106,10 @@ struct Loaded {
 
 impl Loaded {
     fn over(root: &Path, corpus_root: &str, taxonomy: &Path) -> Self {
-        let resolved = load_map(taxonomy);
+        Self::resolved(root, corpus_root, load_map(taxonomy))
+    }
+
+    fn resolved(root: &Path, corpus_root: &str, resolved: Mapping) -> Self {
         let shelves = Taxonomy::read(&resolved).expect("the shelves read");
         let relations = Declarations::read(&resolved).expect("the relations read");
         let shape = Shape::read(&resolved).expect("the shape reads");
@@ -514,6 +517,95 @@ fn what_the_minter_writes_the_rule_admits() {
         }
     }
     assert!(checked > 0, "no scheme reached this test");
+}
+
+/// The `provenance:` block of a rendered document, from its key to the last
+/// line indented under it.
+fn provenance_block(rendered: &str) -> String {
+    let mut out = String::new();
+    let mut inside = false;
+    for line in rendered.lines() {
+        if line == "provenance:" {
+            inside = true;
+        } else if inside && !line.starts_with("  ") {
+            break;
+        }
+        if inside {
+            out.push_str(line);
+            out.push('\n');
+        }
+    }
+    out
+}
+
+/// Every document `headwater new` writes states `warrant: asserted`, and
+/// nothing more of the provenance block.
+///
+/// A document with no warrant switches off `warrant.evidence.unsupported` on
+/// every edge that points at it, and `warrant.value.not_permitted` and
+/// `warrant.acceptance.unpaired` on the document itself (#1409). The
+/// scaffolder writes `asserted` because nobody has accepted the document yet,
+/// and it writes no `accepted_by`, because spec 3 forbids one at `asserted`.
+///
+/// The second half binds the check side. The target of
+/// `a_target_as_the_scaffolder_writes_it_is_reported_rather_than_skipped` in
+/// `headwater-check` is a committed file, because `headwater-check` cannot
+/// dev-depend on this crate without a cycle. Its provenance block is held here
+/// byte for byte against what this crate renders for an `interface_contract`
+/// under this repository's committed lock.
+#[test]
+fn every_kind_the_scaffolder_writes_states_warrant_asserted() {
+    let loaded = Loaded::over(
+        &fixtures_dir(),
+        "corpus",
+        &fixtures_dir().join("scaffold.taxonomy.yml"),
+    );
+    let sources = loaded.sources();
+    let mut written = 0;
+    for case in cases() {
+        let Ok(plan) = propose(&sources, &request(&case)) else {
+            continue;
+        };
+        let rendered = write::render(&plan);
+        let document = headwater_doc::parse(&rendered)
+            .unwrap_or_else(|errors| panic!("{}: {errors:?}", invocation(&case)));
+        assert_eq!(
+            headwater_doc::warrant(&document.facets),
+            Some("asserted"),
+            "{} writes no `warrant: asserted`:\n{rendered}",
+            invocation(&case)
+        );
+        assert_eq!(
+            provenance_block(&rendered),
+            "provenance:\n  warrant: asserted\n",
+            "{} writes more than the warrant into its provenance block",
+            invocation(&case)
+        );
+        written += 1;
+    }
+    assert!(written > 0, "no case reached a written document");
+
+    let root = repository_root();
+    let repository = Loaded::resolved(
+        &root,
+        "docs",
+        headwater_lock::at(&root)
+            .expect("the committed lock")
+            .taxonomy
+            .clone(),
+    );
+    let contract = case("interface_contract", "A contract the scaffolder writes for a fixture");
+    let plan = propose(&repository.sources(), &request(&contract))
+        .unwrap_or_else(|refusal| panic!("{}: {refusal}", invocation(&contract)));
+    let target = root.join("engine/crates/check/fixtures/evidence-basis/interfaces/scaffolded.md");
+    let committed = std::fs::read_to_string(&target)
+        .unwrap_or_else(|e| panic!("{}: {e}", target.display()));
+    assert_eq!(
+        provenance_block(&committed),
+        provenance_block(&write::render(&plan)),
+        "{} no longer carries the provenance block `headwater new` writes",
+        target.display()
+    );
 }
 
 /// Every branch of `Refusal` is reached by a case of the transcript.
