@@ -97,7 +97,9 @@ impl EdgeCheck for Targets<'_> {
     /// See [`crate::placement::Placement::VERSION`].
     /// 2: the path of a typed document with an identifier, under a relation
     /// that admits a document, binds to nothing (#1410).
-    const VERSION: u32 = 2;
+    /// 3: so does a symlink onto that document, or a path through a symlinked
+    /// directory that reaches it (#1417).
+    const VERSION: u32 = 3;
     /// See the module comment: a pair cannot carry an edge that bound to
     /// nothing, and those are the edges this rule exists for.
     const UNIT: EdgeUnit = EdgeUnit::Entry;

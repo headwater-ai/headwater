@@ -232,7 +232,9 @@ pub enum Unbound {
     /// relation that admits a document. Fix this link: a target is an
     /// identifier ([Q4](../../../../docs/decisions/0004-relation-storage.md)),
     /// and binding the path as an anchor would give one document a second name
-    /// at the target end (#1410). `path` is the normalized path.
+    /// at the target end (#1410). `path` is the document's own path. The
+    /// string written can be a symlink onto it, or a path through a symlinked
+    /// directory, and it still names the document (#1417).
     DocumentByPath { id: String, path: String },
 }
 
@@ -946,9 +948,21 @@ fn bind(
         // portable file name holds `*` or `?`. A wildcard, a list, and a file
         // with no identifier or no kind stay anchors, and so does every path under a relation that admits
         // only anchors.
+        //
+        // A symlink onto the document, or a path through a symlinked
+        // directory, is a second path to the same file. The normalized path
+        // is lexical and misses it, so the path the resolver reaches with
+        // every link followed is compared second (#1417). A real path that
+        // leaves the tree, or a broken link, reaches nothing.
         if admits_a_document && resolver == SOURCE_TREE {
             if let [only] = resolved.as_slice() {
-                if let Some(node) = index.typed_at(&only.normalized) {
+                let node = index.typed_at(&only.normalized).or_else(|| {
+                    resolvers
+                        .get(SOURCE_TREE)
+                        .and_then(|tree| tree.real_path(&only.normalized))
+                        .and_then(|real| index.typed_at(&real))
+                });
+                if let Some(node) = node {
                     return Target::Unbound(Unbound::DocumentByPath {
                         id: node.id.clone(),
                         path: node.path.clone(),
