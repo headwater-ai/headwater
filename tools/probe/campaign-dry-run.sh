@@ -52,7 +52,7 @@ declaration=${HW_PROBE_YML:-$root/.headwater/probe.yml}
 
 [ -n "$spec" ] || { echo "usage: campaign.sh --dry-run --spec <file> [--repetitions <n>]" >&2; exit 2; }
 [ -f "$spec" ] || { echo "campaign: no spec at $spec" >&2; exit 2; }
-for tool in git jq tar awk diff; do
+for tool in git jq tar awk diff python3; do
     command -v "$tool" >/dev/null 2>&1 || { echo "campaign: \`$tool\` is not on the path." >&2; exit 3; }
 done
 [ -x "$engine" ] || { echo "campaign: no engine is built at $root/engine/target." >&2; exit 3; }
@@ -72,30 +72,16 @@ fi
 # ---------------------------------------------------------------------------
 # The power calculation.
 # ---------------------------------------------------------------------------
-power_field() {
-    awk -v want="$1" '
-        /^power:/ { on = 1; next }
-        on && /^[^ #]/ { on = 0 }
-        on && /^  [a-z_]+:/ {
-            key = $1; sub(/:$/, "", key)
-            if (key != want) next
-            value = substr($0, index($0, ":") + 1)
-            sub(/[ \t]+#.*$/, "", value)
-            gsub(/^[ \t\[]+|[ \t\]]+$/, "", value)
-            gsub(/[ \t]*,[ \t]*/, " ", value)
-            print value
-        }
-    ' "$declaration"
-}
+# `power:` is read with PyYAML by `tools/probe/declared.py`, which refuses a
+# rate that is not a number (verify round 5: a hand-written reader read a
+# quoted `"0.15"` as 0 and priced the plan at exit 0).
+python3 "$root/tools/probe/declared.py" "$declaration" power > "$work/power" || finish $?
+power_field() { sed -n "s/^$1 //p" "$work/power"; }
 p1=$(power_field present)
 p2=$(power_field absent)
 alpha=$(power_field alpha)
 power=$(power_field power)
-pooled=$(power_field pooled)
-if [ -z "$p1" ] || [ -z "$p2" ] || [ -z "$alpha" ] || [ -z "$power" ]; then
-    echo "campaign: .headwater/probe.yml declares no whole \`power:\` block (present, absent, alpha, power)." >&2
-    finish 2
-fi
+pooled=$(sed -n 's/^pooled *//p' "$work/power")
 needed=$(awk -v p1="$p1" -v p2="$p2" -v alpha="$alpha" -v power="$power" '
     # The inverse of the standard normal distribution (Acklam), to about 1e-9.
     function qnorm(p,    q, r) {
@@ -124,12 +110,10 @@ n=${needed#* }
 printf 'power: %s against %s at a two-sided level of %s and a power of %s needs %s sessions per arm, %s with the Fleiss continuity correction. A line of %s pools its probes into one rate and runs ceil(%s / k) repetitions of each of its k probes.\n' \
     "$p1" "$p2" "$alpha" "$power" "$n0" "$n" "${pooled:-no category}" "$n"
 
-# The probes kept on their own line (`leaks_kept:`).
-kept_probes=$(awk '
-    /^leaks_kept:/ { on = 1; next }
-    on && /^[^ #]/ { on = 0 }
-    on && /^  - / { e = substr($0, 5); sub(/[ ]+#.*$/, "", e); gsub(/^[ "\047]+|[ "\047]+$/, "", e); print e }
-' "$declaration")
+# The probes kept on their own line (`leaks_kept:`), read with the parser
+# `tools/probe/leak.py` reads them with, so the pooling gate and the leak check
+# agree on every YAML form of the key (verify round 5).
+kept_probes=$(python3 "$root/tools/probe/declared.py" "$declaration" leaks_kept) || finish $?
 
 # ---------------------------------------------------------------------------
 # The plan of every line.
