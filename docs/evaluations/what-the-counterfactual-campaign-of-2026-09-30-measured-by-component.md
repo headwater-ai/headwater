@@ -108,6 +108,8 @@ By that rule, 58 of 658 sessions leaked. By line: present sufficiency 9/119, abs
 
 The rule is narrower than "a path outside the workspace". 118 sessions name such a path. Most of those paths are scratch files under `/tmp` or the harness's own `~/.claude`, which hold no copy of this repository. The transcripts blank every tool result. So a counted session is one whose call names the source, and nothing shows that it read content there.
 
+The count has three more limits. It knows only the four copies above, so a session that read a copy somewhere else on the host is not counted. It reads absolute paths only. Three sessions listed the batch directory through a relative path, such as `find .. -maxdepth 2`, and this page does not count them. With them the count is 61, and no separation changes. Three more sessions walked up out of the workspace with `cd $d` and a filtered listing. Nobody checked what those listings named, so they are not counted either.
+
 Without the 58, the rates that move are these:
 
 - present unmeasured claim 16/20 (58.4-91.9), and absent unmeasured claim 23/24 (79.8-99.3)
