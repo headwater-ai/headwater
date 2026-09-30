@@ -409,6 +409,12 @@ pub struct Record {
     /// and the transcript was graded anyway, because the read set of its
     /// probes did not move (#1292). `None` where the two locks are one.
     pub lock_moved: Option<String>,
+    /// The read set the transcript names, where this tree composes another
+    /// over its probes and the transcript was graded anyway (#1338). A moved
+    /// read set is a document edit, because no lock move changes the bytes of
+    /// a document, so the verdicts stand and carry this mark. `None` where the
+    /// two read sets are one, or where this tree composes none.
+    pub read_set_moved: Option<String>,
 }
 
 impl Record {
@@ -429,6 +435,7 @@ impl Record {
             refusal: None,
             declared: 0,
             lock_moved: None,
+            read_set_moved: None,
         };
 
         let mut known = Vec::new();
@@ -614,6 +621,7 @@ impl Record {
                     refusal: Some(refusal),
                     declared: record.declared,
                     lock_moved: None,
+                    read_set_moved: None,
                 };
             }
         }
