@@ -728,3 +728,25 @@ fn a_pointer_to_an_asserted_document_states_the_warrant() {
     assert!(!pointer.unwarranted);
     assert!(!pointer.render().contains("accepted"));
 }
+
+/// A pointer to a document whose warrant is outside the closed set reads no
+/// acceptance from it, and says what the warrant is rather than calling it
+/// `asserted` (#1438).
+///
+/// `acepted` is one letter from `accepted`, and a test for `asserted` alone
+/// served it as vouched.
+#[test]
+fn a_pointer_to_a_warrant_outside_the_closed_set_reads_no_acceptance() {
+    let built = fixture_tree();
+    let surface = built.surface();
+    let document = surface
+        .find("query/specs/misspelled-notes.md")
+        .expect("the fixture");
+    let pointer = surface.pointer(&document);
+    assert!(pointer.unwarranted, "{pointer:?}");
+    assert_eq!(pointer.outside.as_deref(), Some("acepted"));
+    let rendered = pointer.render();
+    assert!(rendered.contains("`acepted`"), "{rendered}");
+    assert!(rendered.contains("no acceptance is read"), "{rendered}");
+    assert!(!rendered.contains("asserted"), "{rendered}");
+}

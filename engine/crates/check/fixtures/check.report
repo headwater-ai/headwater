@@ -1,5 +1,6 @@
-31 seen, 29 classified, 28 checked, 367 check instances
+31 seen, 29 classified, 28 checked, 425 check instances
       1 generated, held to regeneration by `headwater generate --check`
+     58 skipped: this document declares no warrant, and an absent warrant is not a value outside the closed set
       1 skipped: no `id` facet, which is the key this engine reads an identifier from and which no declaration states
       1 skipped: the `id` facet is a sequence, and an identifier is a word
      22 skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
@@ -34,6 +35,8 @@
       1 instances of link.path.unresolved
       1 instances of link.identifier.mismatch
      29 instances of warrant.promoted
+     29 instances of warrant.value.not_permitted
+     29 instances of warrant.acceptance.unpaired
       1 instances of lifecycle.deletion.not_permitted
 suppressions
   2 findings hidden by 2 directives
@@ -114,6 +117,10 @@ rules, and for each the scope that binds it
     document scope, one document and its front matter, and the version of it that stood before the change
   lifecycle.state.not_admitted
     document scope, one document and its front matter
+  warrant.value.not_permitted
+    document scope, one document and its front matter
+  warrant.acceptance.unpaired
+    document scope, one document and its front matter
   lifecycle.deletion.not_permitted
     corpus scope, every row of the census, and the version of each path the change named that no row of this corpus holds, and it is a barrier
   coverage.document_unchecked
@@ -177,6 +184,8 @@ register
   warrant.promoted reaches no obligation, so it names none
   lifecycle.transition.not_permitted reaches no obligation, so it names none
   lifecycle.state.not_admitted reaches no obligation, so it names none
+  warrant.value.not_permitted reaches no obligation, so it names none
+  warrant.acceptance.unpaired reaches no obligation, so it names none
   lifecycle.deletion.not_permitted reaches no obligation, so it names none
   coverage.document_unchecked reaches no obligation, so it names none
   control.observation.invalid reaches no obligation, so it names none
@@ -358,6 +367,122 @@ instances
     failed
   facet.value.blank check/spec/24-voice-context-section.md
     passed
+  warrant.value.not_permitted check/evaluations/alpha.md
+    skipped: this document declares no warrant, and an absent warrant is not a value outside the closed set
+  warrant.value.not_permitted check/evaluations/beta.md
+    skipped: this document declares no warrant, and an absent warrant is not a value outside the closed set
+  warrant.value.not_permitted check/evaluations/delta.md
+    skipped: this document declares no warrant, and an absent warrant is not a value outside the closed set
+  warrant.value.not_permitted check/evaluations/epsilon.md
+    skipped: this document declares no warrant, and an absent warrant is not a value outside the closed set
+  warrant.value.not_permitted check/evaluations/eta.md
+    skipped: this document declares no warrant, and an absent warrant is not a value outside the closed set
+  warrant.value.not_permitted check/evaluations/gamma.md
+    skipped: this document declares no warrant, and an absent warrant is not a value outside the closed set
+  warrant.value.not_permitted check/evaluations/zeta.md
+    skipped: this document declares no warrant, and an absent warrant is not a value outside the closed set
+  warrant.value.not_permitted check/spec/00-both-halves.md
+    skipped: this document declares no warrant, and an absent warrant is not a value outside the closed set
+  warrant.value.not_permitted check/spec/01-one-half.md
+    skipped: this document declares no warrant, and an absent warrant is not a value outside the closed set
+  warrant.value.not_permitted check/spec/02-cited-only.md
+    skipped: this document declares no warrant, and an absent warrant is not a value outside the closed set
+  warrant.value.not_permitted check/spec/03-no-instance.md
+    skipped: this document declares no warrant, and an absent warrant is not a value outside the closed set
+  warrant.value.not_permitted check/spec/05-no-summary.md
+    skipped: this document declares no warrant, and an absent warrant is not a value outside the closed set
+  warrant.value.not_permitted check/spec/06-retired.md
+    skipped: this document declares no warrant, and an absent warrant is not a value outside the closed set
+  warrant.value.not_permitted check/spec/07-prose-defects.md
+    skipped: this document declares no warrant, and an absent warrant is not a value outside the closed set
+  warrant.value.not_permitted check/spec/08-contract-met.md
+    skipped: this document declares no warrant, and an absent warrant is not a value outside the closed set
+  warrant.value.not_permitted check/spec/09-contract-missing.md
+    skipped: this document declares no warrant, and an absent warrant is not a value outside the closed set
+  warrant.value.not_permitted check/spec/10-suppressed.md
+    skipped: this document declares no warrant, and an absent warrant is not a value outside the closed set
+  warrant.value.not_permitted check/spec/11-identifier-mismatch.md
+    skipped: this document declares no warrant, and an absent warrant is not a value outside the closed set
+  warrant.value.not_permitted check/spec/13-dangling.md
+    skipped: this document declares no warrant, and an absent warrant is not a value outside the closed set
+  warrant.value.not_permitted check/spec/14-relations-not-a-mapping.md
+    skipped: this document declares no warrant, and an absent warrant is not a value outside the closed set
+  warrant.value.not_permitted check/spec/15-unusable-entries.md
+    skipped: this document declares no warrant, and an absent warrant is not a value outside the closed set
+  warrant.value.not_permitted check/spec/16-no-identifier.md
+    skipped: this document declares no warrant, and an absent warrant is not a value outside the closed set
+  warrant.value.not_permitted check/spec/17-identifier-not-a-word.md
+    skipped: this document declares no warrant, and an absent warrant is not a value outside the closed set
+  warrant.value.not_permitted check/spec/18-blank-facets.md
+    skipped: this document declares no warrant, and an absent warrant is not a value outside the closed set
+  warrant.value.not_permitted check/spec/20-fragment-target.md
+    skipped: this document declares no warrant, and an absent warrant is not a value outside the closed set
+  warrant.value.not_permitted check/spec/21-summary-facet-prose.md
+    skipped: this document declares no warrant, and an absent warrant is not a value outside the closed set
+  warrant.value.not_permitted check/spec/22-voice-facet-prose.md
+    skipped: this document declares no warrant, and an absent warrant is not a value outside the closed set
+  warrant.value.not_permitted check/spec/23-voice-empty-population.md
+    skipped: this document declares no warrant, and an absent warrant is not a value outside the closed set
+  warrant.value.not_permitted check/spec/24-voice-context-section.md
+    skipped: this document declares no warrant, and an absent warrant is not a value outside the closed set
+  warrant.acceptance.unpaired check/evaluations/alpha.md
+    skipped: this document declares no warrant, and an absent warrant is not a value outside the closed set
+  warrant.acceptance.unpaired check/evaluations/beta.md
+    skipped: this document declares no warrant, and an absent warrant is not a value outside the closed set
+  warrant.acceptance.unpaired check/evaluations/delta.md
+    skipped: this document declares no warrant, and an absent warrant is not a value outside the closed set
+  warrant.acceptance.unpaired check/evaluations/epsilon.md
+    skipped: this document declares no warrant, and an absent warrant is not a value outside the closed set
+  warrant.acceptance.unpaired check/evaluations/eta.md
+    skipped: this document declares no warrant, and an absent warrant is not a value outside the closed set
+  warrant.acceptance.unpaired check/evaluations/gamma.md
+    skipped: this document declares no warrant, and an absent warrant is not a value outside the closed set
+  warrant.acceptance.unpaired check/evaluations/zeta.md
+    skipped: this document declares no warrant, and an absent warrant is not a value outside the closed set
+  warrant.acceptance.unpaired check/spec/00-both-halves.md
+    skipped: this document declares no warrant, and an absent warrant is not a value outside the closed set
+  warrant.acceptance.unpaired check/spec/01-one-half.md
+    skipped: this document declares no warrant, and an absent warrant is not a value outside the closed set
+  warrant.acceptance.unpaired check/spec/02-cited-only.md
+    skipped: this document declares no warrant, and an absent warrant is not a value outside the closed set
+  warrant.acceptance.unpaired check/spec/03-no-instance.md
+    skipped: this document declares no warrant, and an absent warrant is not a value outside the closed set
+  warrant.acceptance.unpaired check/spec/05-no-summary.md
+    skipped: this document declares no warrant, and an absent warrant is not a value outside the closed set
+  warrant.acceptance.unpaired check/spec/06-retired.md
+    skipped: this document declares no warrant, and an absent warrant is not a value outside the closed set
+  warrant.acceptance.unpaired check/spec/07-prose-defects.md
+    skipped: this document declares no warrant, and an absent warrant is not a value outside the closed set
+  warrant.acceptance.unpaired check/spec/08-contract-met.md
+    skipped: this document declares no warrant, and an absent warrant is not a value outside the closed set
+  warrant.acceptance.unpaired check/spec/09-contract-missing.md
+    skipped: this document declares no warrant, and an absent warrant is not a value outside the closed set
+  warrant.acceptance.unpaired check/spec/10-suppressed.md
+    skipped: this document declares no warrant, and an absent warrant is not a value outside the closed set
+  warrant.acceptance.unpaired check/spec/11-identifier-mismatch.md
+    skipped: this document declares no warrant, and an absent warrant is not a value outside the closed set
+  warrant.acceptance.unpaired check/spec/13-dangling.md
+    skipped: this document declares no warrant, and an absent warrant is not a value outside the closed set
+  warrant.acceptance.unpaired check/spec/14-relations-not-a-mapping.md
+    skipped: this document declares no warrant, and an absent warrant is not a value outside the closed set
+  warrant.acceptance.unpaired check/spec/15-unusable-entries.md
+    skipped: this document declares no warrant, and an absent warrant is not a value outside the closed set
+  warrant.acceptance.unpaired check/spec/16-no-identifier.md
+    skipped: this document declares no warrant, and an absent warrant is not a value outside the closed set
+  warrant.acceptance.unpaired check/spec/17-identifier-not-a-word.md
+    skipped: this document declares no warrant, and an absent warrant is not a value outside the closed set
+  warrant.acceptance.unpaired check/spec/18-blank-facets.md
+    skipped: this document declares no warrant, and an absent warrant is not a value outside the closed set
+  warrant.acceptance.unpaired check/spec/20-fragment-target.md
+    skipped: this document declares no warrant, and an absent warrant is not a value outside the closed set
+  warrant.acceptance.unpaired check/spec/21-summary-facet-prose.md
+    skipped: this document declares no warrant, and an absent warrant is not a value outside the closed set
+  warrant.acceptance.unpaired check/spec/22-voice-facet-prose.md
+    skipped: this document declares no warrant, and an absent warrant is not a value outside the closed set
+  warrant.acceptance.unpaired check/spec/23-voice-empty-population.md
+    skipped: this document declares no warrant, and an absent warrant is not a value outside the closed set
+  warrant.acceptance.unpaired check/spec/24-voice-context-section.md
+    skipped: this document declares no warrant, and an absent warrant is not a value outside the closed set
   identifier.pattern.not_met check/evaluations/alpha.md
     passed
   identifier.pattern.not_met check/evaluations/beta.md
@@ -947,7 +1072,7 @@ check/spec/01-one-half.md:18:151 ▲ warn
   language.controlled.not_met (OB-FIX-8): `ste_house` holds prose to 25 words a sentence, and this one has 34
   fix: split the sentence, or move a clause into its own sentence
 check/spec/03-no-instance.md ▲ warn
-  coverage.document_unchecked: this document is classified and all 2 of its check instances were skipped
+  coverage.document_unchecked: this document is classified and all 4 of its check instances were skipped
   fix: check that the shelf pattern claims the right files, and that the kind declares something a check reads
 check/spec/05-no-summary.md ✗ error
   facet.required.missing (OB-FIX-3): `design_spec` requires the facet `summary`, and it is not declared
