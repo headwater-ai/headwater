@@ -18,6 +18,7 @@ relations:
 
     headwater probe plan [--tier regression|campaign|documentation] [--arm present|absent|no-hook|no-skills|no-claude-md|mcp]
                           [--category name] [--exclude probe]... [--repetitions n] [--seed n]
+    headwater probe plan [--tier regression|campaign|documentation] --arm <arm> --delta
     headwater probe record <path>
     headwater probe grade <path>
     headwater probe stale
@@ -42,6 +43,7 @@ All subcommands require a readable `.headwater/probe.yml`, a readable taxonomy l
 |---|---|---|
 | `plan` | `--tier <regression\|campaign\|documentation>` | Select the tier. The default is `regression`. A paired tier refuses a probe whose predicate names a document that its own ablation removes. Every tier refuses one whose document sits under the `instrument`, which every arm removes. |
 | `plan` | `--arm <arm>` | Narrow the declared arms to one of `present`, `absent`, `no-hook`, `no-skills`, `no-claude-md` or `mcp`. An arm the tier does not declare refuses the run and names the arms it does declare. A paired tier refuses a narrowing to one arm that it declares. |
+| `plan` | `--delta` | Plan nothing, and print the delta of the `--arm` arm against the present tree, as the tier declares it. Each line is `- <path>` for a path that the arm removes, or `+ <path>` for a path that it adds. The option reads `.headwater/probe.yml` and does not load the corpus. It needs `--arm`. A script that builds the tree of an arm reads this output, so that the script does not parse the declaration again. |
 | `plan` | `--category <name>` | Narrow the selection to one declared category. |
 | `plan` | `--exclude <probe>` | Remove one probe from the selection, by its identifier. Repeat the option for more than one probe. The selection digest excludes the probe. An identifier that is not in the selection refuses the run. |
 | `plan` | `--repetitions <n>` | Plan fewer repetitions than the tier declares, for a pilot. A number above the declared count refuses the run, and so does `0`. |
@@ -57,7 +59,7 @@ Global `--root` selects the repository. `--help`, `--version`, `--wide` and `--n
 
 **0** when a subcommand completes, including when a probe refuses a run or a transcript contains findings. An arm, tier or category that a declaration or the corpus does not carry refuses the run at this status. Probe results never gate.
 
-**1** when the command line is invalid, or a required file cannot be read. A tier, arm or category name outside this engine's closed set makes the command line invalid. It is also 1 when the budget declaration is malformed or the corpus cannot load. The message names the refusal.
+**1** when the command line is invalid, or a required file cannot be read. A tier, arm or category name outside this engine's closed set makes the command line invalid. It is also 1 when the budget declaration is malformed or the corpus cannot load. Under `--delta`, an arm that the tier does not run is also 1, because a script builds a tree from the output. The message names the refusal.
 
 **1**, and never 101, when standard output or standard error cannot be written, and one sentence on standard error names a failed standard output.
 

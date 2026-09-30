@@ -341,7 +341,7 @@ headwater taxonomy    validate | resolve [--check]
                     | vendor <dir-or-location> [--expect <digest>]
                     | graph [--view concrete|abstract] [--legend]
 headwater coverage    [--format ...]
-headwater probe       plan [--tier regression|campaign] [--arm present|absent]
+headwater probe       plan [--tier regression|campaign|documentation] [--arm <arm>] [--delta]
                            [--category <name>] [--seed <n>]
                     | record <path>
                     | grade <path>

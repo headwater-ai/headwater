@@ -105,12 +105,14 @@ answer_keys:
 # because its title says the merge activates a document.
 #
 # `sh tools/probe/seal.sh --leak <workspace> <probe>...` reads these over the
-# always-loaded set: `CLAUDE.md`, the `description:` of each skill, agent
-# definition and command under `.claude/`, and the description of each MCP tool where the
-# workspace declares a server. It prints one line per hit and exits 1 on a
-# leak string that `leaks_kept:` below does not keep. A probe with no entry here is printed
-# as `undeclared`, because the check cannot see it. One probe per line, and a flow
-# sequence of leak strings with no comma inside a leak string.
+# always-loaded set: the memory files (`CLAUDE.md`, `AGENTS.md`,
+# `CLAUDE.local.md`, `.claude/rules/` and each file they import), the front
+# matter each skill, agent definition and command under `.claude/` is listed
+# by, and the description of each MCP tool where the workspace declares a
+# server. `tools/probe/leak.py` names each channel, and it reads this file and
+# the front matter with a YAML parser. It prints one line per hit and exits 1
+# on a leak string that `leaks_kept:` below does not keep. A probe with no
+# entry here is printed as `undeclared`, because the check cannot see it.
 leaks:
   HW-PROBE-a-session-names-the-status-a-settled-decision-carries-in-its-pull-request: [HW-DR-0052, "status: current"]
   HW-PROBE-a-session-names-the-event-that-makes-a-document-accepted: [HW-DR-0052, HW-DR-0034, the merge activates, merged to main, merge onto `main`]
@@ -234,7 +236,9 @@ tiers:
   # Every component arm is compared with the present arm of the same batch.
   # `sh tools/probe/ablate.sh campaign <workspace> <arm>` builds the arm from
   # the present tree, and `--diff campaign <arm> <present-tree>` prints the
-  # delta and fails on any other difference.
+  # delta and fails on any other difference. It takes the delta from
+  # `headwater probe plan --tier campaign --arm <arm> --delta`, so any YAML
+  # form the plan accepts under `components` builds the same tree.
   #
   # **What the arms cost.** Six arms is three times the sessions of the pair,
   # so the plan of any category at 30 repetitions is over the ceiling below,
