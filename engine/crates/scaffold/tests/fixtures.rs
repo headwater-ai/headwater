@@ -594,12 +594,15 @@ fn every_kind_the_scaffolder_writes_states_warrant_asserted() {
             .taxonomy
             .clone(),
     );
-    let contract = case("interface_contract", "A contract the scaffolder writes for a fixture");
+    let contract = case(
+        "interface_contract",
+        "A contract the scaffolder writes for a fixture",
+    );
     let plan = propose(&repository.sources(), &request(&contract))
         .unwrap_or_else(|refusal| panic!("{}: {refusal}", invocation(&contract)));
     let target = root.join("engine/crates/check/fixtures/evidence-basis/interfaces/scaffolded.md");
-    let committed = std::fs::read_to_string(&target)
-        .unwrap_or_else(|e| panic!("{}: {e}", target.display()));
+    let committed =
+        std::fs::read_to_string(&target).unwrap_or_else(|e| panic!("{}: {e}", target.display()));
     assert_eq!(
         provenance_block(&committed),
         provenance_block(&write::render(&plan)),
