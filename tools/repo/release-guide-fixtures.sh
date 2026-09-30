@@ -848,7 +848,10 @@ deploys() {
 # the service is a claim, and a sentence with both is a claim too, because
 # "is deployed by", "has deployed" and "deploys apt/ before" are present. The
 # bare phrase "Cloudflare build" is a claim in any tense, as it was before
-# #1408, so the widened reader loses no line the narrow one caught. A sentence
+# #1408, and so is any word it begins, such as "builder": the reader before
+# #1408 matched the phrase as a substring, and #1443 found that ending it at a
+# word boundary let "The Cloudflare builder deploys apt/." pass. So the widened
+# reader loses no line the narrow one caught, and d12k-d12m hold it. A sentence
 # ends at `.`, `!`, `?` or `;` and a space, but not after an initial such as
 # "J." or after "e.g." and "i.e.". The present list is
 # read after the service's own name is removed, so "Workers Builds" is not
@@ -864,7 +867,7 @@ import re, sys
 service = re.compile(r"cloudflare\s+(?:workers\s+|pages\s+)?builds?\b|\bworkers\s+builds?\b|build\s+service\s+of\s+cloudflare", re.I)
 past = re.compile(r"\b(?:ran|deployed|served|built|published|hosted|was|were|had|formerly|previously|used\s+to)\b", re.I)
 present = re.compile(r"\b(?:is|are|am|be|has|have|gets?|getting|still|now|currently|deploys|serves|builds|runs|publishes|hosts|does|will|reaches|handles|uploads|pushes|copies|carries)\b|(?<!\bthe )(?<!\ba )\b(?:deploy|serve|run|publish|host)\b", re.I)
-always = re.compile(r"cloudflare\s+builds?\b", re.I)
+always = re.compile(r"cloudflare\s+build", re.I)
 try:
     text = open(sys.argv[1], encoding="utf-8").read()
 except Exception as err:
@@ -1382,9 +1385,11 @@ same "fetch-apt.sh that says the build service of Cloudflare deploys the reposit
 same "fetch-apt.sh that says Cloudflare Workers Builds deployed the site before is green" "" \
     "$(apt_route_plant d11 '#   Cloudflare Workers Builds deployed the site before; it could not' '#   wait for CI.')"
 
-# d12. Present claims that carry a past word or a passive, each red. The last
-# one names the phrase the check read before #1408, so the widened reader
-# keeps every line the narrow one caught.
+# d12. Present claims that carry a past word or a passive, each red. d12e,
+# d12g, d12h and d12k-d12m name the phrase the check read before #1408, and
+# d12k-d12m name it as the start of a longer word ("builder", "builders",
+# "building"), as the narrow reader's substring match did, so the widened
+# reader keeps every line the narrow one caught.
 same "a claim that the repository is now deployed by Cloudflare Workers Builds is red" "$apt_route_red" \
     "$(apt_route_plant d12a '#   The APT repository is now deployed by Cloudflare Workers' '#   Builds.')"
 same "a claim that the site gets deployed by Cloudflare Workers Builds is red" "$apt_route_red" \
@@ -1406,6 +1411,12 @@ same "a claim that Workers Builds has deployed apt/ since #1316 is red" "$apt_ro
     "$(apt_route_plant d12i '#   Cloudflare Workers Builds has deployed apt/ since' '#   #1316.')"
 same "a claim split by an initial, Workers Builds, which was added by J. Baxter, deploys apt/, is red" "$apt_route_red" \
     "$(apt_route_plant d12j '#   Workers Builds, which was added in #1316 by J.' '#   Baxter, deploys apt/.')"
+same "a claim that the Cloudflare builder deploys apt/ is red" "$apt_route_red" \
+    "$(apt_route_plant d12k '#   The Cloudflare builder deploys apt/' '#   from this tree.')"
+same "a claim that the Cloudflare builders deploy apt/ is red" "$apt_route_red" \
+    "$(apt_route_plant d12l '#   The Cloudflare builders deploy apt/' '#   from this tree.')"
+same "a claim that Cloudflare building deploys apt/ is red" "$apt_route_red" \
+    "$(apt_route_plant d12m '#   Cloudflare building deploys apt/' '#   from this tree.')"
 
 # d13. A file the reader cannot decode is a finding, and not a file that holds.
 mkdir -p "$scratch/d13"
