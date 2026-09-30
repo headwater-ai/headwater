@@ -1373,8 +1373,8 @@ pub enum Verdict {
     MarkerUnread,
     /// The write failed, and this is what the operating system said.
     Failed(String),
-    /// A write only: this run would have written the file, and did not,
-    /// because the run refused before its first write (#1466). Not an error by
+    /// A write only: this pass would have written the file, and did not,
+    /// because the pass refused before its first write (#1466). Not an error by
     /// itself: the refusal is what fails the run, and the report names it.
     Withheld,
 }
@@ -1419,9 +1419,9 @@ impl Verdict {
                  a page is Markdown: name the output with the extension of what the kind writes"
                 .to_string(),
             Verdict::Failed(error) => format!("not written: {error}"),
-            Verdict::Withheld => "not written: this run refused before its first write, and it \
-                 wrote nothing"
-                .to_string(),
+            Verdict::Withheld => {
+                "not written, because the run refused before it wrote this file".to_string()
+            }
         }
     }
 }
@@ -1501,7 +1501,8 @@ pub struct Report {
     /// for a run that settled and for every `--check`.
     pub unsettled: Option<usize>,
     /// A write only: the run found a refusal before its first write, so it
-    /// wrote no file. See [`Report::refuses_before_writing`].
+    /// wrote no file. False where a later pass refused after an earlier one
+    /// wrote, as [`write_settled`] says. See [`Report::refuses_before_writing`].
     pub withheld: bool,
 }
 
@@ -1849,20 +1850,25 @@ pub const PASSES: usize = 4;
 /// # What can still fail after a write
 ///
 /// A pass refuses before its first write wherever the refusal can be known
-/// then, and [`Report::refuses_before_writing`] names those six. The first
-/// pass that refuses therefore writes nothing, and the run stops with the tree
-/// as it found it (#1466). Three failures can still come after a write, and
-/// each is a failure of the disk or of this engine rather than a refusal of the
-/// corpus:
+/// then, and [`Report::refuses_before_writing`] names those six. A pass that
+/// refuses therefore writes nothing. Where that is the first pass, the run
+/// stops with the tree as it found it (#1466). Three failures can still come
+/// after a write:
 ///
 /// - [`Verdict::Failed`]: the operating system refused a write. No check
 ///   before the write can know that the write will fail.
 /// - [`Report::unsettled`]: a cycle between projections. Only the writes of
 ///   each pass show that the next pass writes again.
 /// - an error from `planned`, or a new refusal, on a later pass. The first
-///   pass writes only marked outputs and never a transcript, so what a later
-///   pass reads that the first did not is this engine's own output, and a
-///   refusal of it is a defect in this engine.
+///   pass writes only marked outputs and never a transcript. So a later pass
+///   reads something new only from this engine's own output, which is a
+///   defect in this engine, or from a file another writer landed while the run
+///   was between passes, such as a recorder. Nothing this run can check
+///   before its first write sees a file that is not there yet.
+///
+/// Where a later pass refuses, the report lists what the earlier passes wrote,
+/// and [`Report::withheld`] is false, so the report does not say that the run
+/// wrote nothing.
 ///
 /// The report states each path once, with what the first pass that changed
 /// it did. The remaining sections come from the last pass, which is the one
@@ -1891,6 +1897,16 @@ pub fn write_settled<E>(
         }
         if !changed || report.has_errors() || pass == PASSES {
             report.wrote = seen;
+            // A later pass that refused wrote nothing itself, and an earlier
+            // pass did write, so the run as a whole did not leave the tree as
+            // it found it and must not say it did.
+            if report
+                .wrote
+                .iter()
+                .any(|wrote| matches!(wrote.verdict, Verdict::Written | Verdict::Rewritten))
+            {
+                report.withheld = false;
+            }
             if changed && !report.has_errors() {
                 report.unsettled = Some(pass);
             }

@@ -1206,7 +1206,7 @@ fn snapshot(at: &Path) -> std::collections::BTreeMap<PathBuf, Vec<u8>> {
 }
 
 /// The line every output a refusing run did not write carries.
-const WITHHELD: &str = "not written: this run refused before its first write";
+const WITHHELD: &str = "not written, because the run refused before it wrote this file";
 
 /// The three campaign transcripts under one key, laid into a copied tree.
 fn lay_ambiguous(at: &Path) {

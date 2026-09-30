@@ -933,19 +933,19 @@ projections
   shelf_index generate/decisions/README.md
     a file is there and it carries no generated-file marker, so this engine will not overwrite it
   shelf_index generate/guides/README.md
-    not written: this run refused before its first write, and it wrote nothing
+    not written, because the run refused before it wrote this file
   shelf_sections generate/decisions/SECTIONS.md
-    not written: this run refused before its first write, and it wrote nothing
+    not written, because the run refused before it wrote this file
   shelf_sections generate/archive/RETIRED.md
-    not written: this run refused before its first write, and it wrote nothing
+    not written, because the run refused before it wrote this file
   graph_export exports/native.json
-    not written: this run refused before its first write, and it wrote nothing
+    not written, because the run refused before it wrote this file
   graph_export exports/front-matter.schema.json
-    not written: this run refused before its first write, and it wrote nothing
+    not written, because the run refused before it wrote this file
   graph_export exports/partner.json
-    not written: this run refused before its first write, and it wrote nothing
+    not written, because the run refused before it wrote this file
   corpus_descriptor .headwater/corpus.json
-    not written: this run refused before its first write, and it wrote nothing
+    not written, because the run refused before it wrote this file
 
 what this verb does not write, and why
   shelf_index generate/archive/README.md
