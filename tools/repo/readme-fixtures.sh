@@ -2187,16 +2187,28 @@ for page in $public_pages; do
 done
 same "no public page names a milestone by a retired M label" "" "$bad"
 
-# 5e, provoked: a rail label, a continuation label and a label in running
-#     prose are refused, and an SVG path and a version milestone pass.
+# 5e, provoked: a label in every shape a page writes one is refused — a rail
+#     label, a continuation, running prose, parentheses, a colon, a capital
+#     word, the end of a line and a dash — and an SVG path, whose `M` is
+#     followed by a coordinate, a version milestone and an `M7` inside a longer
+#     token all pass.
 printf '%s\n' \
     '<span>M7 measurement — open</span>' \
     'what it left open continues as M6b.' \
     'the measurement layer, milestone M7, runs.' \
     '<path d="M12 4 L3 12h18"/>' \
-    'The 0.6 milestone, measured evidence, is open.' >"$scratch/labels.html"
-same "  the retired label judge names three labels and leaves a path and a version alone" \
-    "1: a retired milestone label, and HW-PD-0008 made every open milestone a version|2: a retired milestone label, and HW-PD-0008 made every open milestone a version|3: a retired milestone label, and HW-PD-0008 made every open milestone a version|" \
+    'The 0.6 milestone, measured evidence, is open.' \
+    'The measurement layer (M7) is open.' \
+    'Milestone M7: open.' \
+    '<span>M7 Measurement</span>' \
+    'what it left open continues as M6b' \
+    'M7 — open' \
+    '<path d="M12-4 L3,12"/>' \
+    '<path d="M3,12 M4.5 6"/>' \
+    'HM7 open, #M7 open, x_M7 open, M7x open.' >"$scratch/labels.html"
+label_hit=": a retired milestone label, and HW-PD-0008 made every open milestone a version|"
+same "  the retired label judge names eight labels and leaves paths, a version and longer tokens alone" \
+    "1$label_hit""2$label_hit""3$label_hit""6$label_hit""7$label_hit""8$label_hit""9$label_hit""10$label_hit" \
     "$(retired_milestone_judge "$scratch/labels.html" | tr '\n' '|')"
 
 echo "the command the page tells a newcomer to run"
