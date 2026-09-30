@@ -2020,6 +2020,14 @@ sh "$ablate" --diff campaign no-claude-md "$scratch/layer" > "$scratch/diff.same
 same "an arm whose tree does not differ from present fails --diff" "1" "$?"
 present "and says so" "no different from the present tree" "$scratch/diff.same.err"
 
+# A present tree that already declares a server: the mcp arm changes a file
+# its delta does not add, and `--diff` names the change rather than passing it.
+layer_tree
+printf '{}\n' > "$scratch/layer/.mcp.json"
+sh "$ablate" --diff campaign mcp "$scratch/layer" > "$scratch/diff.changed" 2>&1
+same "an arm that changes a path its delta does not name fails --diff" "1" "$?"
+present "and prints the change as unexpected" "unexpected ? Files" "$scratch/diff.changed"
+
 layer_tree
 mkdir -p "$scratch/layer/docs/probes"
 sh "$ablate" --diff campaign no-hook "$scratch/layer" > /dev/null 2> "$scratch/diff.instrument.err"
