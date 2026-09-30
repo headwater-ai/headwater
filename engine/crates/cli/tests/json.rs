@@ -1349,6 +1349,142 @@ fn explain_json_over_a_glob_of_5000_files_states_every_count() {
     );
 }
 
+/// `--paths-at-most` bounds `paths` and leaves every count whole.
+///
+/// [#1346](https://github.com/headwater-ai/headwater/issues/1346). The edit hook
+/// reads the explain document once for each count it needs, and each read
+/// parses the whole document again. Over a glob of 50,000 files that cost the
+/// hook 375 ms against a 200 ms budget. The option cuts `paths` to its first
+/// `n` entries in sorted order, and `matched`, `reach.total` and
+/// `governed_entries` still count every file. The size assertion is what holds
+/// the hook's cost: the bounded document must not grow with the file count.
+#[test]
+fn explain_json_with_paths_at_most_lists_the_first_n_and_counts_every_file() {
+    const FILES: usize = 5000;
+    const BOUND: usize = 20;
+    let at = scratch().join("reach-large-bounded");
+    let _ = std::fs::remove_dir_all(&at);
+    std::fs::create_dir_all(at.join(".headwater")).expect("the declaration directory is there");
+    std::fs::create_dir_all(at.join("docs/interfaces")).expect("the shelf is there");
+    std::fs::create_dir_all(at.join("src/big")).expect("the source tree is there");
+    for name in ["taxonomy.lock", "taxonomy.yml", "overlay.yml"] {
+        std::fs::copy(
+            repository().join(".headwater").join(name),
+            at.join(".headwater").join(name),
+        )
+        .expect("the declaration copies");
+    }
+    for index in 0..FILES {
+        std::fs::write(at.join(format!("src/big/f{index:05}.rs")), "")
+            .expect("the source file is written");
+    }
+    std::fs::write(
+        at.join("docs/interfaces/headwater-large.md"),
+        "---\nid: HW-IFACE-headwater-large\nstatus: current\nstatus_since: 2026-09-29\nsummary: \"An anchor that holds one glob over five thousand files.\"\nlast_verified: 2026-09-29\ntitle: \"headwater large\"\nrelations:\n  governs:\n    - \"src/big/**\"\n---\n\n# headwater large\n\n## Synopsis\n\n    headwater large\n",
+    )
+    .expect("the document is written");
+    let output = Command::new(env!("CARGO_BIN_EXE_headwater"))
+        .args([
+            "explain",
+            "--json",
+            "--paths-at-most",
+            &BOUND.to_string(),
+            "docs/interfaces/headwater-large.md",
+            "--root",
+        ])
+        .arg(&at)
+        .output()
+        .expect("the binary runs");
+    let text = String::from_utf8_lossy(&output.stdout).into_owned();
+    assert_eq!(
+        output.status.code(),
+        Some(0),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert!(
+        text.len() < 8 * 1024,
+        "the bounded document stays small whatever the file count, and it is {} bytes",
+        text.len()
+    );
+    let value = headwater_yaml::load(&text)
+        .unwrap_or_else(|errors| panic!("the explain document parses: {errors:?}"))
+        .value;
+    let governed: usize = member(&value, "governed_entries")
+        .expect("the document writes `governed_entries`")
+        .parse()
+        .expect("`governed_entries` is a number");
+    assert_eq!(governed, FILES, "`governed_entries` counts every file");
+    let reach = value
+        .as_map()
+        .and_then(|map| map.get("related"))
+        .and_then(|spanned| spanned.value.as_seq())
+        .and_then(|elements| {
+            elements.iter().find(|element| {
+                member(&element.value, "relation").as_deref() == Some("governs")
+                    && member(&element.value, "inbound").as_deref() == Some("false")
+            })
+        })
+        .and_then(|edge| edge.value.as_map())
+        .and_then(|map| map.get("reach"))
+        .map(|spanned| &spanned.value)
+        .expect("the governs edge carries `reach`");
+    let total: usize = member(reach, "total")
+        .expect("`reach.total`")
+        .parse()
+        .expect("`total` is a number");
+    assert_eq!(total, FILES, "`reach.total` counts every file");
+    let members = reach
+        .as_map()
+        .and_then(|map| map.get("members"))
+        .and_then(|spanned| spanned.value.as_seq())
+        .expect("`reach.members`");
+    assert_eq!(members.len(), 1, "one pattern, one member");
+    let only = &members[0].value;
+    let matched: usize = member(only, "matched")
+        .expect("`matched`")
+        .parse()
+        .expect("`matched` is a number");
+    assert_eq!(matched, FILES, "`matched` counts every file, not the listed ones");
+    let paths: Vec<&str> = only
+        .as_map()
+        .and_then(|map| map.get("paths"))
+        .and_then(|spanned| spanned.value.as_seq())
+        .expect("the member carries `paths`")
+        .iter()
+        .filter_map(|path| path.value.as_scalar())
+        .map(headwater_yaml::core_schema::as_str)
+        .collect();
+    let first: Vec<String> = (0..BOUND)
+        .map(|index| format!("src/big/f{index:05}.rs"))
+        .collect();
+    assert_eq!(
+        paths, first,
+        "`paths` holds the first `n` files in sorted order and no more"
+    );
+}
+
+/// `--paths-at-most` refuses zero, and a list shorter than the bound is whole.
+///
+/// [#1346](https://github.com/headwater-ai/headwater/issues/1346). A bound of
+/// zero would write a `paths` that says nothing while `matched` says there is
+/// something, so the option takes the same whole number above zero that a
+/// pointer budget does.
+#[test]
+fn explain_json_paths_at_most_refuses_zero() {
+    let output = Command::new(env!("CARGO_BIN_EXE_headwater"))
+        .args(["explain", "--json", "--paths-at-most", "0", "HW-DR-0074", "--root"])
+        .arg(repository())
+        .output()
+        .expect("the binary runs");
+    assert_eq!(output.status.code(), Some(2), "clap refuses the value");
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(
+        stderr.contains("a whole number above zero"),
+        "the refusal names what the option takes: {stderr}"
+    );
+}
+
 /// `governed_entries` counts an entry that two `governs` edges reach once.
 ///
 /// [#1093](https://github.com/headwater-ai/headwater/issues/1093). HW-DR-0037
