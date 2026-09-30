@@ -896,7 +896,7 @@ print(" ".join(k for k, v in jobs.items() if isinstance(v, dict) and v.get("uses
 ' "$root" 2>/dev/null)
 
 # The same for ci.yml, and the job of deploy-site.yml that deploys, for the
-# arms d17 to d34 (#1342).
+# arms d17 to d37 (#1342).
 ci_job=$(python3 -c '
 import sys, yaml
 jobs = yaml.safe_load(open(sys.argv[1] + "/.github/workflows/ci.yml", encoding="utf-8"))["jobs"]
@@ -998,7 +998,7 @@ contains "a copy of the deploy steps in release.yml is red" \
     "release.yml job deploy-copy runs the deploy itself, so the site has two deploy paths" \
     "$(deploys "$scratch/d5")"
 
-# d16 to d34 hold what each workflow's own comment states about the one
+# d16 to d37 hold what each workflow's own comment states about the one
 # deploy job: its ref input, its token, its one path, the ci.yml gate, and its
 # one queue (#1342). Each arm applies one shape to a copy and names the line.
 
@@ -1132,9 +1132,30 @@ if [ -n "$ci_job" ]; then
     same "a ci.yml deploy whose if: adds always() is red" \
         "ci.yml job $ci_job has an if: other than a push to main, so an event other than that push can run the deploy" \
         "$(deploys "$scratch/d31" | tr '\n' '|' | sed 's/|$//')"
+
+    # d35. Main alone: a hand run on main deploys too.
+    copy_tree "$scratch/d35"
+    edit_wf "$scratch/d35" ci.yml "doc['jobs']['$ci_job']['if'] = \"\${{ github.ref == 'refs/heads/main' }}\""
+    same "a ci.yml deploy whose if: drops the push term is red" \
+        "ci.yml job $ci_job has an if: other than a push to main, so an event other than that push can run the deploy" \
+        "$(deploys "$scratch/d35" | tr '\n' '|' | sed 's/|$//')"
+
+    # d36. A push alone: a push to any branch deploys.
+    copy_tree "$scratch/d36"
+    edit_wf "$scratch/d36" ci.yml "doc['jobs']['$ci_job']['if'] = \"\${{ github.event_name == 'push' }}\""
+    same "a ci.yml deploy whose if: drops the main term is red" \
+        "ci.yml job $ci_job has an if: other than a push to main, so an event other than that push can run the deploy" \
+        "$(deploys "$scratch/d36" | tr '\n' '|' | sed 's/|$//')"
+
+    # d37. A deploy that does not wait for the corpus check.
+    copy_tree "$scratch/d37"
+    edit_wf "$scratch/d37" ci.yml "doc['jobs']['$ci_job']['needs'] = ['engine']"
+    same "a ci.yml deploy that does not need headwater is red" \
+        "ci.yml job $ci_job does not need headwater, so it can deploy a commit that failed CI" \
+        "$(deploys "$scratch/d37" | tr '\n' '|' | sed 's/|$//')"
 else
     fail "ci.yml has a job that calls deploy-site.yml" \
-        "none, so the arms d17, d22 to d24 and d28 to d31 have no job to edit"
+        "none, so the arms d17, d22 to d24, d28 to d31 and d35 to d37 have no job to edit"
 fi
 
 # d9. The APT route as each file that describes it states it (#1339).
