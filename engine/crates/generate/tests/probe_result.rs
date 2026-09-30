@@ -325,6 +325,96 @@ fn the_fixture_tree_generates_the_recorded_result() {
     );
 }
 
+/// The grader version is the grader's own, so a release that bumps the engine
+/// leaves every committed result as it was (#1317).
+///
+/// A comparison of the two values cannot hold this, because the grader version
+/// and the engine version are the same number today. So the test reads the
+/// source of the constant, as the version-flag wiring test does for the same
+/// coincidence. It then ties the recorded result to the constant, so that the
+/// generated line and the constant cannot disagree.
+#[test]
+fn the_result_names_the_grader_by_its_own_version_and_not_the_engine_release() {
+    let source_path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../probe/src/grade.rs");
+    let source = std::fs::read_to_string(&source_path).expect("it reads grade.rs");
+    let declarations: Vec<&str> = source
+        .lines()
+        .filter(|line| line.starts_with("pub const VERSION: &str ="))
+        .collect();
+    assert_eq!(
+        declarations.len(),
+        1,
+        "{} does not declare `pub const VERSION: &str =` exactly once",
+        source_path.display()
+    );
+    let value = declarations[0]
+        .trim_start_matches("pub const VERSION: &str =")
+        .trim();
+    assert!(
+        value.starts_with('"')
+            && !value.contains("ENGINE")
+            && !value.contains("release::")
+            && !value.contains("CARGO_PKG_VERSION"),
+        "the grader version is `{value}`, which is not a literal of its own: a release \
+         that bumps the engine would then rewrite every committed probe result. A grading \
+         change moves the grader version, and a release does not."
+    );
+
+    // The constant alone is not enough: a result takes its grader where
+    // `Results` is built, and that site could read the engine release while the
+    // constant stays a literal. So no code line of the grader reads the engine
+    // version at all, and every `grader:` field it builds is `VERSION`. The
+    // field is private, so no caller outside `grade.rs` can set it after
+    // grading; that half is held by the compiler.
+    let code: Vec<(usize, &str)> = source
+        .lines()
+        .enumerate()
+        .map(|(at, line)| (at + 1, line.trim()))
+        .filter(|(_, line)| !line.starts_with("//"))
+        .collect();
+    for (at, line) in &code {
+        for engine_read in [
+            "headwater_resolve",
+            "release::ENGINE",
+            "CARGO_PKG_VERSION",
+            "env!(",
+        ] {
+            assert!(
+                !line.contains(engine_read),
+                "{}:{at} reads the engine version with `{engine_read}`: `{line}`. The grader \
+                 names its own version, so a release leaves every committed result as it was.",
+                source_path.display()
+            );
+        }
+    }
+    let fields: Vec<&(usize, &str)> = code
+        .iter()
+        .filter(|(_, line)| line.starts_with("grader:") && *line != "grader: &'static str,")
+        .collect();
+    assert!(
+        !fields.is_empty(),
+        "{} builds no `grader:` field, so this test no longer sees where a result takes its grader",
+        source_path.display()
+    );
+    for (at, line) in fields {
+        assert_eq!(
+            *line,
+            "grader: VERSION,",
+            "{}:{at} gives a result a grader other than `VERSION`",
+            source_path.display()
+        );
+    }
+
+    let recorded = std::fs::read_to_string(fixtures_dir().join("probe-result.record"))
+        .expect("it reads the recorded result");
+    let line = format!("Graded by grader {}.", headwater_probe::grade::VERSION);
+    assert_eq!(
+        recorded.lines().filter(|l| *l == line).count(),
+        1,
+        "the recorded result does not hold `{line}` exactly once"
+    );
+}
+
 /// The three directions, in one function, in the order that makes the third one
 /// mean something.
 ///
