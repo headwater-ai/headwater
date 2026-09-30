@@ -47,7 +47,7 @@ So subset narrowing, on a facet with no machine and no shelf that discriminates 
 
 **`taxonomy validate` refuses four shapes**, all of them under the `kind inheritance` rule. A narrowing on a facet that declares no value set. A narrowing to the empty list. A narrowing on a facet the kind or an ancestor forbids. A narrowing that names a value the facet does not declare, or a value that a kind above excluded. The resolver rule set identity moves from 1 to 2, because a taxonomy this engine refused before is one it accepts now.
 
-**This record does not decide what a warrant means.** [HW-OBL-0125](../obligations/0125-nine-documents-state-a-warrant-the-closed-set-does-not-hold-and-no-check-reads-one.md) holds nine documents at `warrant: proposed`, which is a value outside the declared set rather than a declared value on the wrong kind. The defect there is a missing reader, and this member does not supply one. Do not reach for a narrowing to close it.
+**This record does not decide what a warrant means.** [HW-OBL-0125](../obligations/0125-nine-documents-state-a-warrant-outside-the-closed-set-and-only-a-person-can-set-the-value.md) holds nine documents at `warrant: proposed`, which is a value outside the declared set rather than a declared value on the wrong kind. The defect there is a missing reader, and this member does not supply one. Do not reach for a narrowing to close it.
 
 [HW-DR-0035](0035-q35-whether-one-requirement-kind-holds-an-imported-requirement-and-an-authored-one.md) defers to this question twice, and its "What reopens this" clause states that a per-kind value set does not reopen Q35. That clause was read, and it stands unchanged.
 

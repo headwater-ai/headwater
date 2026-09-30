@@ -30,4 +30,4 @@ The corpus owes a stated order, so that a target which both resolvers claim has 
 
 ## Discharge
 
-The engine reads the index first, then each anchor kind in declaration order. Where two anchor kinds claim one string, it reports a tie and binds neither. [Spec 2](../spec/02-taxonomy-model.md#kind-resolution) sets that precedent for two shelves of equal specificity. The index matches an identifier and never a path. A path to a typed document with an identifier binds to nothing, and the engine names the identifier to write (#1410).
+The engine reads the index first, then each anchor kind in declaration order. Where two anchor kinds claim one string, it reports a tie and binds neither. [Spec 2](../spec/02-taxonomy-model.md#kind-resolution) sets that precedent for two shelves of equal specificity. The index matches an identifier and never a path. A path to a typed document with an identifier binds to nothing, and the engine names the identifier to write (#1410). A path that reaches such a document through a symbolic link binds to nothing as well, and the engine names the same remedy (#1417).

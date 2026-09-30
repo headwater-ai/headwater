@@ -5,7 +5,7 @@ status_since: 2026-08-15
 waiting_on: ruling
 summary: "Spec 3 closes the warrant at four values. Nine documents here state a fifth, and an adoption task holds them until a human sets each value."
 last_verified: 2026-09-30
-title: "Nine documents state a warrant the closed set does not hold, and no check reads one"
+title: "Nine documents state a warrant outside the closed set, and only a person can set the value"
 provenance:
   warrant: asserted
   agency: agent
@@ -17,7 +17,7 @@ relations:
     - HW-SPEC-authoring-and-lifecycle
 ---
 
-# Nine documents state a warrant the closed set does not hold, and no check reads one
+# Nine documents state a warrant outside the closed set, and only a person can set the value
 
 ## Context
 

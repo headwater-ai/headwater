@@ -24,7 +24,7 @@
 //! Spec 3 also says "an absent value is a finding rather than a default". That
 //! is a separate defect with a separate remedy, and 134 documents of this
 //! repository declare no warrant on the day these rules landed.
-//! [HW-OBL-0125](../../../../docs/obligations/0125-nine-documents-state-a-warrant-the-closed-set-does-not-hold-and-no-check-reads-one.md)
+//! [HW-OBL-0125](../../../../docs/obligations/0125-nine-documents-state-a-warrant-outside-the-closed-set-and-only-a-person-can-set-the-value.md)
 //! holds it. So an absent warrant, and a `warrant:` key with no value, skip
 //! with a reason. A rule that reported them here would make one finding mean
 //! two things.

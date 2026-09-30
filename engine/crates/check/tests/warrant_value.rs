@@ -17,7 +17,7 @@
 //! - **A rule that collapsed an absent warrant into a bad one** reports
 //!   `quiet.md` and `blank.md`. Spec 3's "absent is a finding" is a separate
 //!   rule that no edition of this engine has written yet, and
-//!   [HW-OBL-0125](../../../../docs/obligations/0125-nine-documents-state-a-warrant-the-closed-set-does-not-hold-and-no-check-reads-one.md)
+//!   [HW-OBL-0125](../../../../docs/obligations/0125-nine-documents-state-a-warrant-outside-the-closed-set-and-only-a-person-can-set-the-value.md)
 //!   holds it. These two instances skip and say why.
 //! - **A rule that read the front matter of a generated file** reports
 //!   `generated.md`, whose warrant the engine derives from the marker.
