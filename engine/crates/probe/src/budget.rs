@@ -368,10 +368,14 @@ fn paths(value: &Value) -> Option<Result<Vec<String>, String>> {
 ///
 /// `tools/probe/ablate.sh` hands every entry to `rm -rf` in a copy of the
 /// tree, so an empty entry, an absolute one, or one with a `..` component
-/// would remove the copy itself or something outside it.
+/// would remove the copy itself or something outside it. An entry with a
+/// control character is refused too: `headwater probe plan --delta` prints one
+/// entry per line, so a line break inside one entry would print two, and the
+/// script would remove a path nobody declared (#1472, verify round 4).
 fn ablation_entry_is_safe(entry: &str) -> bool {
     !entry.is_empty()
         && !entry.starts_with('/')
+        && !entry.chars().any(char::is_control)
         && entry
             .split('/')
             .all(|component| component != ".." && component != "." && !component.is_empty())
@@ -503,10 +507,11 @@ impl std::fmt::Display for Unreadable {
             ),
             Unreadable::ComponentUnsafe { tier, arm, entry } => write!(
                 f,
-                "the `{}` delta of the `{tier}` tier names `{entry}`. An entry is a path inside \
-                 the tree, relative to its root, with no `..`, `.` or empty component, because \
-                 the arm's tree is built by removing or writing it",
-                arm.name()
+                "the `{}` delta of the `{tier}` tier names `{}`. An entry is a path inside \
+                 the tree, relative to its root, with no `..`, `.` or empty component and no control \
+                 character, because the arm's tree is built by removing or writing it",
+                arm.name(),
+                entry.escape_debug()
             ),
             Unreadable::AblationUndeclared { tier } => write!(
                 f,
@@ -521,15 +526,17 @@ impl std::fmt::Display for Unreadable {
             ),
             Unreadable::AblationUnsafe { tier, entry } => write!(
                 f,
-                "the `{tier}` tier's ablation names `{entry}`. An entry is a path inside the \
-                 tree, relative to its root, with no `..`, `.` or empty component, because \
-                 the absent arm removes it with `rm -rf`"
+                "the `{tier}` tier's ablation names `{}`. An entry is a path inside the \
+                 tree, relative to its root, with no `..`, `.` or empty component and no \
+                 control character, because the absent arm removes it with `rm -rf`",
+                entry.escape_debug()
             ),
             Unreadable::InstrumentUnsafe { entry } => write!(
                 f,
-                "the `instrument` of {PATH} names `{entry}`. An entry is a path inside the tree, \
-                 relative to its root, with no `..`, `.` or empty component, because every arm \
-                 removes it with `rm -rf`"
+                "the `instrument` of {PATH} names `{}`. An entry is a path inside the tree, \
+                 relative to its root, with no `..`, `.` or empty component and no control \
+                 character, because every arm removes it with `rm -rf`",
+                entry.escape_debug()
             ),
         }
     }
@@ -597,6 +604,54 @@ tiers:
             Err(Unreadable::InstrumentUnsafe {
                 entry: "../x".to_string()
             })
+        );
+    }
+
+    #[test]
+    fn an_entry_with_a_control_character_is_refused_in_every_list() {
+        // `headwater probe plan --delta` prints one entry per line, so an
+        // entry that holds a line break would print as two, and
+        // `tools/probe/ablate.sh` would remove the second one as well
+        // (#1472, verify round 4). YAML's double-quoted `\n` is the line
+        // break, and a tab is a control character too.
+        let instrument = GOOD.replace(
+            "[docs/probes, docs/probe-runs]",
+            "[docs/probes, \"docs/probe-runs\\n- CLAUDE.md\"]",
+        );
+        assert_eq!(
+            Budgets::read(&instrument),
+            Err(Unreadable::InstrumentUnsafe {
+                entry: "docs/probe-runs\n- CLAUDE.md".to_string()
+            })
+        );
+        let ablation = GOOD.replace(
+            "ablation: [CLAUDE.md, .claude, .githooks, .headwater]",
+            "ablation: [CLAUDE.md, \".claude\\t\", .githooks, .headwater]",
+        );
+        assert_eq!(
+            Budgets::read(&ablation),
+            Err(Unreadable::AblationUnsafe {
+                tier: "campaign",
+                entry: ".claude\t".to_string()
+            })
+        );
+        let component = LAYER.replace(
+            "      no-hook: [.claude/hooks/intent.sh]\n",
+            "      no-hook: [\".claude/hooks/intent.sh\\n- CLAUDE.md\"]\n",
+        );
+        let refused = Budgets::read(&component);
+        assert_eq!(
+            refused,
+            Err(Unreadable::ComponentUnsafe {
+                tier: "campaign",
+                arm: Arm::NoHook,
+                entry: ".claude/hooks/intent.sh\n- CLAUDE.md".to_string()
+            })
+        );
+        let message = refused.expect_err("refused").to_string();
+        assert!(
+            !message.contains('\n'),
+            "the refusal prints the entry escaped, on one line: {message}"
         );
     }
 
