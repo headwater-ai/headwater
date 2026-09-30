@@ -1056,6 +1056,10 @@ docs/spec/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/spec/glossary.md
   typed: design_spec
+docs/subsystems/README.md
+  generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
+docs/subsystems/graph-build.md
+  typed: subsystem_spec
 docs/taxonomies/README.md
   typed: library_doctrine
 docs/taxonomies/brd-prd/bundle.yml
