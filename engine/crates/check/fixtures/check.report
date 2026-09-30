@@ -107,10 +107,12 @@ rules, and for each the scope that binds it
     document scope, one document, its front matter and its body
   link.fragment.unresolved
     corpus scope, every row of the census, and it is a barrier
+    3 links compared, 1 of them with a finding
   link.path.unresolved
     corpus scope, every row of the census, and it is a barrier
   link.identifier.mismatch
     corpus scope, every row of the census, and it is a barrier
+    2 links compared, 1 of them with a finding
   warrant.promoted
     document scope, one document and its front matter, and the version of it that stood before the change
   lifecycle.transition.not_permitted

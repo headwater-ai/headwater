@@ -308,7 +308,10 @@ impl Graph {
     /// The fragment-bearing links, by which document a fragment names a heading
     /// of.
     ///
-    /// This is the denominator of `link.fragment.unresolved`. The two arms are
+    /// These are the links `link.fragment.unresolved` can read, before it
+    /// drops a link into a file that carries no parsed document. The rule's
+    /// own count, after that, is `headwater_check::fragment::compared`, which
+    /// needs the heading lists this crate does not build. The two arms are
     /// counted apart because the rule read only the first one until its third
     /// edition, and a reader comparing an old report with a new one should see
     /// which half moved.
@@ -332,13 +335,14 @@ impl Graph {
     }
 
     /// How many prose links carry text that is exactly the identifier of a
-    /// document and reach a document that carries an identifier. That is every
-    /// link `link.identifier.mismatch` compares, whether it agrees or not.
+    /// document and reach a document that carries an identifier, a link into
+    /// the document that wrote it included. That is every link
+    /// `link.identifier.mismatch` compares, whether it agrees or not, because
+    /// both read [`links::Link::named`].
     pub fn identifier_link_count(&self) -> usize {
         self.links
             .iter()
-            .filter(|link| link.names.is_some())
-            .filter(|link| matches!(&link.binding, links::Binding::Corpus { id: Some(_), .. }))
+            .filter(|link| link.named().is_some())
             .count()
     }
 
@@ -405,7 +409,7 @@ impl Graph {
             if named > 0 {
                 let _ = writeln!(
                     out,
-                    "  {named:5} whose text is the identifier of a document, on a path that reaches a document with an identifier"
+                    "  {named:5} whose text is the identifier of a document, on a path that reaches a document with an identifier, its own included"
                 );
             }
         } else {
