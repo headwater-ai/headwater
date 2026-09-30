@@ -365,6 +365,7 @@ same "an annotated bullet for a discharged record still counts as bulleted" \
 mkdir -p "$scratch/proc"
 printf -- '---\nid: HW-OBL-0004\nstatus: current\n---\n\n# Four\n' >"$scratch/proc/0004-four.md"
 printf -- '---\nid: HW-OBL-0005\nstatus: draft\n---\n\n# Five\n' >"$scratch/proc/0005-five.md"
+printf -- '---\nid: HW-OBL-0006\nstatus: discharged\n---\n\n# Six\n' >"$scratch/proc/0006-six.md"
 process_ids "$scratch/proc" >"$scratch/s-process"
 printf '# 13 — Open obligations\n\n## A heading\n\n- [HW-OBL-0001](../obligations/0001-one.md) — One\n- [HW-OBL-0002](../obligations/0002-two.md) — Two\n- [HW-OBL-0004](../process/obligations/0004-four.md) — Four\n' \
     >"$scratch/reg-process.md"
@@ -381,6 +382,18 @@ bulleted_ids "$scratch/reg-process-draft.md" | LC_ALL=C sort -u >"$scratch/s-bul
 same "bulleting a draft process obligation names it as a process record" \
     "spec 13 lists a process obligation: HW-OBL-0005|" \
     "$(membership_judge "$scratch/s-current" "$scratch/s-bulleted-process-draft" "$scratch/s-process" | tr '\n' '|')"
+
+# 2h. A discharged process record is a process record too. `current_ids`
+#     leaves it out, so only the `discharged_ids` half of `process_ids` puts it
+#     in the set. Three of the records #1286 moved to the process shelf were
+#     discharged when they moved, and a bullet for one of them is named as a
+#     process record, not as a bullet that names no current record.
+printf '# 13 — Open obligations\n\n## A heading\n\n- [HW-OBL-0001](../obligations/0001-one.md) — One\n- [HW-OBL-0002](../obligations/0002-two.md) — Two\n- [HW-OBL-0006](../process/obligations/0006-six.md) — Six\n' \
+    >"$scratch/reg-process-discharged.md"
+bulleted_ids "$scratch/reg-process-discharged.md" | LC_ALL=C sort -u >"$scratch/s-bulleted-process-discharged"
+same "bulleting a discharged process obligation names it as a process record" \
+    "spec 13 lists a process obligation: HW-OBL-0006|" \
+    "$(membership_judge "$scratch/s-current" "$scratch/s-bulleted-process-discharged" "$scratch/s-process" | tr '\n' '|')"
 
 # 2f. The reverse direction: a current process record that spec 13 does not
 #     bullet is owed nothing, so the clean register stays green with the
