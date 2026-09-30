@@ -6,7 +6,7 @@
 
 ![The first seven steps of the Headwater tutorial in a terminal: init, taxonomy vendor, taxonomy resolve and check](.github/assets/headwater-demo.gif)
 
-*Recorded on 2026-09-29 with engine 0.4.1. This is a frozen recording, so the output of a later engine can differ from it. `.github/assets/headwater-demo.tape` records it again.*
+*Recorded on 2026-09-30 with engine 0.5.0. This is a frozen recording, so the output of a later engine can differ from it. `.github/assets/headwater-demo.tape` records it again.*
 
 **Start here: [Your first governed corpus](docs/tutorials/your-first-governed-corpus.md).** Sixteen steps from an empty directory to a passing check, and it teaches the model rather than the commands. Every step states what you should now see, and `sh .claude/tutorial/fixtures.sh` runs the page against the engine in CI so that no output block on it can go stale quietly. That page, and the rest of the `docs/` tree, is rendered at <https://headwater.tools/>. The specification itself is indexed at [`docs/spec/README.md`](docs/spec/README.md), which `headwater generate` writes from the documents themselves in the reading order this corpus derives from its own relations.
 
