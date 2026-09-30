@@ -62,7 +62,7 @@ Four judgments are yours, because no validator makes them.
 
 A rule is declared in the taxonomy and implemented in `engine/crates/check/`. Two bars apply and neither is negotiable.
 
-**A check without a failing fixture does not ship.** The fixture is the evidence that the rule can fire at all. A green run over the corpus is not that evidence.
+**A check without a failing fixture does not ship.** The fixture is the evidence that the rule can fire at all. A green run over the corpus is not that evidence. That is the firing condition, and it is the floor. **A check also owes the discriminating condition: an input on which the implemented rule and a plausible neighboring rule disagree.** Name the neighboring rule, and point at the fixture that separates the two. [Spec 12](../../../docs/spec/12-check-layer.md#testing-a-check-without-a-failing-fixture-does-not-ship) states both conditions and carries the worked case, `link.fragment.unresolved` before #209.
 
 **A rule is an error when its remediation is mechanical and total, and advisory otherwise.** A contraction, a British spelling and a hard-wrapped block are errors. A sentence past the word limit, a semicolon and a stock metaphor are advisory, because the remedy for each is a rewrite. A rule that blocks on a judgment is a rule somebody disables.
 

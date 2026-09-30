@@ -208,6 +208,8 @@ docs/decisions/0100-a-counted-tombstone-lists-a-digest-of-each-withheld-identifi
   typed: decision
 docs/decisions/0101-new-writes-no-far-half-of-a-symmetric-relation-and-no-state-on-a-supersedes-target.md
   typed: decision
+docs/decisions/0102-an-editor-integration-starts-headwater-mcp-for-each-query-and-does-not-embed-the-library.md
+  typed: decision
 docs/decisions/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/doctrine/maturity-model.md

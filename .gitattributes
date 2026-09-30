@@ -94,12 +94,15 @@
 # `.githooks/commit-msg` is the other half, and it is the half HW-DR-0049 asks
 # for: a fold "answers to a check on the merged state", and refusal by driver "is
 # a fallback and never the rule". Whenever a merge is in progress it runs
-# `.githooks/merged-fold-check`, which runs `headwater generate --check`,
-# `headwater taxonomy resolve --check` and `sh tools/site/refresh-figures.sh --check`
-# over the tree the merge produced. Those are the three CI already runs against
-# `refs/pull/N/merge`. It needs no `git config` beyond the `core.hooksPath` every
-# hook here needs, and the hook file says why that position and not
-# `pre-merge-commit`.
+# `.githooks/merged-fold-check`, which runs the two producers
+# `headwater generate --check` and `headwater taxonomy resolve --check` over the
+# tree the merge produced. CI runs the same two on the merge-queue group tip.
+# The hook runs no figure check, because no committed page under `site/`
+# carries a measured figure since HW-DR-0097. CI still runs
+# `sh tools/site/refresh-figures.sh --check` on every tree, the group tip
+# included, to check that the figure markers are blank. The hook needs no
+# `git config` beyond the `core.hooksPath` every hook here needs, and the hook
+# file says why that position and not `pre-merge-commit`.
 #
 # # Which derived paths are folds
 #

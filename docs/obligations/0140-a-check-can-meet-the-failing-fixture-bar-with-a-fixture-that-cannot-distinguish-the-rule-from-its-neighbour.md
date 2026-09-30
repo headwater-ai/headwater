@@ -2,7 +2,7 @@
 id: HW-OBL-0140
 status: current
 status_since: 2026-09-06
-last_verified: 2026-08-26
+last_verified: 2026-10-01
 title: "A check can meet the failing-fixture bar with a fixture that cannot distinguish the rule from its neighbour"
 summary: "A fixture set can meet the failing-fixture bar in full and never exercise the choice between a rule and its neighbor."
 provenance:
@@ -12,7 +12,7 @@ provenance:
   activity: draft
   accepted_by: j.baxter
   evidence_basis: evidenced
-waiting_on: build
+waiting_on: ruling
 ---
 
 # A check can meet the failing-fixture bar with a fixture that cannot distinguish the rule from its neighbour
@@ -27,16 +27,12 @@ The implemented rule counted a prior anchor as a repeat when it began with the s
 
 ## Obligation
 
-The corpus owes a sharper statement of the bar in spec 12. Written as "one fixture it fails and one it passes," the bar answers only whether a check can fire. It says nothing about whether any input exercises the choice between the implemented rule and a plausible neighboring rule. A fixture set can meet the floor in full and still never pose that choice.
+[#1487](https://github.com/headwater-ai/headwater/issues/1487) wrote the sharper bar. [Spec 12](../spec/12-check-layer.md#testing-a-check-without-a-failing-fixture-does-not-ship) now states the discriminating condition beside the firing condition. An input must exist on which the implemented rule and a plausible neighboring rule disagree. It carries `link.fragment.unresolved` before #209 as the worked case, with the two candidate rules and the input that separates them. `.claude/skills/headwater-taxonomy/SKILL.md` states the same condition, and the pointer in `.claude/skills/headwater-engine/SKILL.md` names both conditions. `sh .claude/skills/fixtures.sh` holds the sentence in all three files.
 
-Spec 12 owes the discriminating condition, in a form an author can check against fixtures already in hand. The question is whether an input exists where the implemented rule and a plausible neighboring rule disagree. The floor named today remains the floor, and it stops being the entire test.
+One thing is still owed. The owner accepts that wording as the bar that governs every check yet to ship, or rewrites it. The rewrite changes a rule for every future author, so an agent does not accept it.
 
-The statement owes a worked case, so an author can measure a fixture set against a real instance rather than a description. `link.fragment.unresolved` before #209 is that case: the fixture, the two candidate rules, and the input that separates them.
-
-Two skill files repeat the bar for an author outside the spec. `.claude/skills/headwater-taxonomy/SKILL.md` carries it, and so does the line in `.claude/skills/headwater-engine/SKILL.md` that points at it. Both owe the same statement the spec carries, and `sh .claude/skills/fixtures.sh` is what checks that they say it.
-
-Whether every shipped check meets the sharpened bar is a separate survey, and #206 is the only instance measured here. This obligation covers the written bar and the two skill files, and not an audit of every check against it.
+Whether every shipped check meets the sharpened bar is a separate survey, and #206 is the only instance measured here. This record does not cover that audit.
 
 ## Discharge
 
-This closes when spec 12 states the discriminating condition beside the firing condition, and carries the `link.fragment.unresolved` case as the worked example. It also closes when the two skill files say what the spec says, with `sh .claude/skills/fixtures.sh` passing over both. It waits on the adopter accepting that rewrite of a rule that governs every check yet to ship.
+This closes when the owner accepts the wording of the discriminating condition in spec 12. It also closes when the owner replaces that wording, and `sh .claude/skills/fixtures.sh` then holds the new wording in the spec and in the two skill files.

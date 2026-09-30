@@ -693,7 +693,7 @@ The declared structure of a corpus, in thirteen declarations: purposes, facets, 
 
 ### Taxonomy package
 
-The released, versioned unit that a publisher ships: taxonomy, doctrine, templates, plugins, profiles, bundles, an interview, and migrations. The taxonomy is a package, not a copy. See [spec 7](07-distribution-and-federation.md#publishing).
+The released, versioned unit that a publisher ships. Its `contents` declares seven keys: `taxonomy`, `conformance`, `bundles`, `assemblies`, `migrations`, `doctrine` and `templates`. Its manifest also declares `profiles` and an `interview`. The taxonomy is a package, not a copy. See [spec 7](07-distribution-and-federation.md#publishing).
 
 ### TBox
 

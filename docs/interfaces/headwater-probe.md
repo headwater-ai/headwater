@@ -42,7 +42,7 @@ All subcommands require a readable `.headwater/probe.yml`, a readable taxonomy l
 | Subcommand | Options | What it does |
 |---|---|---|
 | `plan` | `--tier <regression\|campaign\|documentation>` | Select the tier. The default is `regression`. A paired tier refuses a probe whose predicate names a document that its own ablation removes. Every tier refuses one whose document sits under the `instrument`, which every arm removes. |
-| `plan` | `--arm <arm>` | Narrow the declared arms to one of `present`, `absent`, `no-hook`, `no-skills`, `no-claude-md` or `mcp`. An arm the tier does not declare refuses the run and names the arms it does declare. A paired tier refuses a narrowing to one arm that it declares. |
+| `plan` | `--arm <present\|absent\|no-hook\|no-skills\|no-claude-md\|mcp>` | Narrow the declared arms to one arm. An arm the tier does not declare refuses the run and names the arms it does declare. A paired tier refuses a narrowing to one arm that it declares. |
 | `plan` | `--delta` | Plan nothing, and print the delta of the `--arm` arm against the present tree, as the tier declares it. Each line is `- <path>` for a path that the arm removes, or `+ <path>` for a path that it adds. The option reads `.headwater/probe.yml` and does not load the corpus. It needs `--arm`. A script that builds the tree of an arm reads this output, so that the script does not parse the declaration again. |
 | `plan` | `--category <name>` | Narrow the selection to one declared category. |
 | `plan` | `--exclude <probe>` | Remove one probe from the selection, by its identifier. Repeat the option for more than one probe. The selection digest excludes the probe. An identifier that is not in the selection refuses the run. |

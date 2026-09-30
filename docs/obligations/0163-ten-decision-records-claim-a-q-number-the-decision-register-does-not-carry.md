@@ -3,7 +3,7 @@ id: HW-OBL-0163
 status: current
 status_since: 2026-09-06
 summary: "Ten decision records name a Q number in their file name that docs/spec/09-decisions.md has no section for, and nothing reads either side of the pair."
-last_verified: 2026-09-06
+last_verified: 2026-10-01
 title: "Ten decision records claim a Q number the decision register does not carry"
 waiting_on: ruling
 provenance:
@@ -18,12 +18,14 @@ provenance:
 
 ## Context
 
-`docs/spec/09-decisions.md` is the decision register of this repository, and its sections are keyed on a question number. It carries 36 of them, and they run Q1 to Q32 and then Q40 to Q43.
+`docs/spec/09-decisions.md` is the decision register of this repository, and its sections are keyed on a question number. On 2026-09-06 it carried 36 of them, and they ran Q1 to Q32 and then Q40 to Q43.
 
 Ten decision records name a question number in their file name that the register has no section for. Enumerated on 2026-09-06 by taking the two sets and comparing them: `Q33 Q34 Q35 Q36 Q37 Q38 Q39 Q44 Q50 Q51`. The reading is a set difference rather than a sample:
 
     comm -13 <(grep -oE '^## Q[0-9]+' docs/spec/09-decisions.md | sed 's/## //' | LC_ALL=C sort -u) \
              <(ls docs/decisions/ | grep -oE '^[0-9]{4}-q[0-9]+' | sed 's/^[0-9]*-q/Q/' | LC_ALL=C sort -u)
+
+**The gap grew by three between 2026-09-06 and 2026-10-01, and it is now 13 of 28.** The same set difference, run again on 2026-10-01, gives `Q33 Q34 Q35 Q36 Q37 Q38 Q39 Q44 Q50 Q51 Q61 Q64 Q66`. The file names under `docs/decisions/` name 28 distinct Q numbers, across 100 records. The register now carries 38 sections: Q1 to Q32, Q40 to Q43, Q65 and Q67. So the register gained two sections and the records gained three Q numbers that it does not carry. The title keeps "Ten", because the file name is the slug of the title at birth, and a rename is one of the answers below.
 
 **The two sides answer to nothing.** A Q number in a file name is not a facet, so no rule reads it. A section heading of the register is prose, and `section.required.missing` reads whether a required heading is there rather than which headings a document owes. So neither half of the pair is a declaration, and a strict run has never had anything to say about the gap.
 
@@ -33,7 +35,9 @@ Ten decision records name a question number in their file name that the register
 
 A reader who follows a Q number out of a decision record file name reaches nothing. That is the cost, and it is small: the file name is a convenience and the identifier is what a relation names.
 
-The larger cost is that the register asserts a shape it does not hold. It reads as the record of every question this repository has ruled, and it is the record of 36 of them.
+The larger cost is that the register asserts a shape it does not hold. It reads as the record of every question this repository has ruled, and it is the record of 38 of them.
+
+What is still owed is a ruling by the owner on the Q key, and `waiting_on: ruling` names it. The three answers the owner can give are under Discharge. An agent gives none of them, because each one is a judgment about who reads the register.
 
 ## Discharge
 
