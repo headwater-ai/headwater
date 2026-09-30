@@ -19,7 +19,7 @@
 //! |---|---|---|
 //! | the transcript | a `probe_transcript` document on `docs/probe-runs/` | the recorder, mechanically |
 //! | the expectations | a `probe` document on `docs/probes/` | a person |
-//! | the grader version | the version of the crate that evaluates them | [`grade::VERSION`] |
+//! | the grader version | the grader's own version, which a grading change moves and a release does not | [`grade::VERSION`] |
 //!
 //! A number is citable when a reader can fetch every input it came from and get
 //! the number again. That is why the transcript is corpus content and the

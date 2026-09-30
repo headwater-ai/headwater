@@ -57,10 +57,12 @@
 //! and that value is a committed input rather than a reading taken here.
 //!
 //! The grader version is the one input that moves without a corpus edit. It is
-//! the version of `headwater-probe`, so a release that bumps the workspace
-//! version makes every committed result stale until it is regenerated. That is
-//! the behavior spec 5 asks for: a result is a function of the grader version,
-//! and a series that averaged over two of them would report a change in the
+//! the grader's own version, `headwater_probe::grade::VERSION`, and a change to
+//! grading moves it. That change makes every committed result stale until it is
+//! regenerated. A release that bumps the workspace version does not move it, so
+//! a release leaves every committed result as it was (#1317). That is the
+//! behavior spec 5 asks for: a result is a function of the grader version, and
+//! a series that averaged over two of them would report a change in the
 //! instrument as a change in the corpus.
 
 use crate::{
