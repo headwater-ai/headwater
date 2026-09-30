@@ -273,7 +273,9 @@ fi
 # expected value such as `merge` is a common word that every file holds.
 #
 # The always-loaded set is `CLAUDE.md`, the `description:` of each
-# `.claude/skills/*/SKILL.md` and of each `.claude/agents/*.md`, and, where
+# `.claude/skills/*/SKILL.md`, of each `.claude/agents/*.md` and of each
+# command under `.claude/commands/` (verify round 1: the harness lists each
+# command with its description in every session), and, where
 # the workspace declares a project MCP server in `.mcp.json`, the description
 # of each tool that `headwater mcp` lists. One line per hit:
 #
@@ -333,7 +335,8 @@ leak_loaded() {
     if [ -f "$leak_here/CLAUDE.md" ]; then
         awk '{ printf "CLAUDE.md\t%s\n", $0 }' "$leak_here/CLAUDE.md"
     fi
-    for leak_file in "$leak_here"/.claude/skills/*/SKILL.md "$leak_here"/.claude/agents/*.md; do
+    for leak_file in "$leak_here"/.claude/skills/*/SKILL.md "$leak_here"/.claude/agents/*.md \
+        "$leak_here"/.claude/commands/*.md "$leak_here"/.claude/commands/*/*.md; do
         [ -f "$leak_file" ] || continue
         # The first `description:` key of the front matter, which is the one a
         # harness loads, with a folded or literal block read to its end.

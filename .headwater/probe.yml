@@ -105,8 +105,8 @@ answer_keys:
 # because its title says the merge activates a document.
 #
 # `sh tools/probe/seal.sh --leak <workspace> <probe>...` reads these over the
-# always-loaded set: `CLAUDE.md`, the `description:` of each skill and agent
-# definition under `.claude/`, and the description of each MCP tool where the
+# always-loaded set: `CLAUDE.md`, the `description:` of each skill, agent
+# definition and command under `.claude/`, and the description of each MCP tool where the
 # workspace declares a server. It prints one line per hit and exits 1 on a
 # leak string that `leaks_kept:` below does not keep. A probe with no entry here is printed
 # as `undeclared`, because the check cannot see it. One probe per line, and a flow

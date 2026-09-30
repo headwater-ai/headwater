@@ -1518,6 +1518,13 @@ STUB
         "$(awk 'prev == "--mcp-config" { print; exit } { prev = $0 }' "$scratch/claude-args" 2>/dev/null)"
     same "and still passes --strict-mcp-config" "1" \
         "$(grep -cx -- '--strict-mcp-config' "$scratch/claude-args" 2>/dev/null)"
+    # `--mcp-config` takes one or more values, so the token after its path
+    # must be a flag the driver always passes (verify round 1). An optional
+    # one, such as `--model` or `--max-turns`, leaves the task text next to
+    # the path whenever it is not set, and the harness reads the task as a
+    # second config path.
+    same "a flag the driver always passes follows the config path" "--strict-mcp-config" \
+        "$(awk 'prev == "--mcp-config" { getline; print; exit } { prev = $0 }' "$scratch/claude-args" 2>/dev/null)"
     present "the transcript counts the calls to an MCP tool, and not the Read" \
         "The session made 1 call to a tool of an MCP server." "$scratch/mcp-arm.md"
     present "and states the arm's delta from the declaration" \
@@ -1534,6 +1541,38 @@ STUB
         >"$scratch/absent-arm.md" 2>"$scratch/absent-arm.err"
     present "an absent transcript states the tier's ablation" \
         'The `absent` arm is the present tree less `CLAUDE.md`, `.claude`, `.githooks`, `.headwater`.' "$scratch/absent-arm.md"
+
+    # A delta the declaration does not state is said to be unread, and never
+    # printed as the present tree (verify round 1).
+    grep -v '^      no-hook: ' "$root/.headwater/probe.yml" > "$scratch/no-delta.yml"
+    HW_PROBE_YML="$scratch/no-delta.yml" PATH="$scratch/bin:$PATH" sh "$driver" --probe "HW-PROBE-$tombstone" \
+        --session fixture-no-delta --tier campaign --arm no-hook --category sufficiency --repetitions 1 \
+        --task-file "$scratch/task.md" --workspace "$scratch/ws" \
+        >"$scratch/no-delta.md" 2>"$scratch/no-delta.err"
+    present "a transcript whose arm's delta cannot be read says so" \
+        'The delta of the `no-hook` arm of the `campaign` tier could not be read' "$scratch/no-delta.md"
+    absent "and does not call the arm the present tree" "arm is the present tree" "$scratch/no-delta.md"
+
+    # A stream that does not parse is uncounted, never "0 calls": two MCP
+    # calls and a cut last line.
+    cat > "$scratch/bin/claude" <<STUB
+#!/bin/sh
+printf '%s\n' "\$@" > "$scratch/claude-args"
+printf '%s\n' '{"type":"system","subtype":"init","model":"claude-haiku-4-5","session_id":"s17"}'
+printf '%s\n' '{"type":"assistant","message":{"id":"m1","content":[{"type":"tool_use","id":"t1","name":"mcp__headwater__route","input":{"task":"x"}}]}}'
+printf '%s\n' '{"type":"assistant","message":{"id":"m2","content":[{"type":"tool_use","id":"t2","name":"mcp__headwater__explain","input":{"path":"x"}}]}}'
+printf '%s\n' '{"type":"result","subtype":"success","result":"withheld","total_cost_usd":0.01,"modelUsage":{"claude-haiku-4-5-20251001":{"inputTokens":10}}}'
+printf '%s' '{"type":"assistant","message":{"id":"m3","content":[{"type":"tool_'
+STUB
+    chmod +x "$scratch/bin/claude"
+    PATH="$scratch/bin:$PATH" sh "$driver" --probe "HW-PROBE-$tombstone" --session fixture-cut \
+        --tier campaign --arm no-hook --category sufficiency --repetitions 1 \
+        --task-file "$scratch/task.md" --workspace "$scratch/ws" \
+        >"$scratch/cut.md" 2>"$scratch/cut.err"
+    absent "a stream that does not parse is never counted as no MCP call" \
+        "The session made 0 calls to a tool of an MCP server." "$scratch/cut.md"
+    present "and is said to be uncounted" \
+        "were not counted, because its stream did not parse as JSON" "$scratch/cut.md"
 
     # Bash writes (#1384). A write made through `Bash` names no path in its
     # input, so the transform cannot see it in the log, and 22 of 30
@@ -1939,6 +1978,25 @@ printf -- '---\nname: s\ndescription: >\n  Nothing to see, and\n  the ruling is 
 HW_PROBE_YML="$scratch/leak-probe.yml" sh "$seal" --leak "$scratch/leak-body" "$status_probe" \
     > "$scratch/folded.out" 2>&1
 same "a leak string on the second line of a folded description is a leak" "1" "$?"
+# Each channel on its own (verify round 1): an agent definition's description
+# and a command's description are loaded into every session too.
+rm -rf "$scratch/leak-body/.claude/skills"
+mkdir -p "$scratch/leak-body/.claude/agents"
+printf -- '---\nname: a\ndescription: An agent that cites HW-DR-0052.\n---\n' \
+    > "$scratch/leak-body/.claude/agents/a.md"
+HW_PROBE_YML="$scratch/leak-probe.yml" sh "$seal" --leak "$scratch/leak-body" "$status_probe" \
+    > "$scratch/agent.out" 2>&1
+same "a leak string in an agent definition's description alone is a leak" "1" "$?"
+present "and names the agent definition" "leak $status_probe .claude/agents/a.md HW-DR-0052" "$scratch/agent.out"
+rm -rf "$scratch/leak-body/.claude/agents"
+mkdir -p "$scratch/leak-body/.claude/commands"
+printf -- '---\ndescription: A command that says status: current.\n---\n\nBody.\n' \
+    > "$scratch/leak-body/.claude/commands/c.md"
+HW_PROBE_YML="$scratch/leak-probe.yml" sh "$seal" --leak "$scratch/leak-body" "$status_probe" \
+    > "$scratch/command.out" 2>&1
+same "a leak string in a command's description is a leak" "1" "$?"
+present "and names the command" "leak $status_probe .claude/commands/c.md status: current" "$scratch/command.out"
+rm -rf "$scratch/leak-body/.claude/commands"
 
 # A probe that declares no leak string is printed as one the check cannot see, and
 # does not pass as clean by saying nothing.
@@ -2033,6 +2091,22 @@ mkdir -p "$scratch/layer/docs/probes"
 sh "$ablate" --diff campaign no-hook "$scratch/layer" > /dev/null 2> "$scratch/diff.instrument.err"
 same "--diff refuses a tree that still holds the instrument" "2" "$?"
 
+# A block-sequence delta reads as the flow one does, because the engine reads
+# both (verify round 1), and a delta that is neither names its own field.
+awk '/^      no-hook: / { print "      no-hook:"; print "        - .claude/hooks/intent.sh"; next } { print }' \
+    "$root/.headwater/probe.yml" > "$scratch/block-delta.yml"
+layer_tree
+HW_PROBE_YML="$scratch/block-delta.yml" sh "$ablate" --diff campaign no-hook "$scratch/layer" \
+    > "$scratch/block-delta.out" 2> "$scratch/block-delta.err"
+same "a block-sequence delta builds its arm" "0" "$?"
+same "and its delta is the one path" "- .claude/hooks/intent.sh" "$(cat "$scratch/block-delta.out")"
+sed 's/^      no-hook: .*/      no-hook: .claude\/hooks\/intent.sh/' "$root/.headwater/probe.yml" > "$scratch/scalar-delta.yml"
+HW_PROBE_YML="$scratch/scalar-delta.yml" sh "$ablate" --delta campaign no-hook \
+    > /dev/null 2> "$scratch/scalar-delta.err"
+same "a delta that is not a sequence is refused" "2" "$?"
+present "and the refusal names the delta, not the ablation" \
+    "the \`no-hook\` delta of the \`campaign\` tier is not a sequence of paths" "$scratch/scalar-delta.err"
+
 layer_tree
 sh "$ablate" campaign "$scratch/layer" no-docs > /dev/null 2> "$scratch/undeclared.err"
 same "ablate.sh refuses an arm the tier declares no delta for" "2" "$?"
@@ -2102,6 +2176,30 @@ if [ -x "$engine" ]; then
     PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
         --spec "$scratch/arm.spec" > "$scratch/arm.out" 2> "$scratch/arm.err"
     same "a line whose tier does not run its arm fails the dry run with 5" "5" "$?"
+    # The other three causes of exit 8 (verify round 1), each on its own.
+    printf 'campaign present sufficiency HW-PROBE-a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer HW-PROBE-a-session-records-an-unmeasured-claim-in-the-shape-this-corpus-checks\n' \
+        > "$scratch/kept.spec"
+    HW_PROBE_YML="$scratch/leak-probe.yml" PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
+        --spec "$scratch/kept.spec" > "$scratch/dry-leak.out" 2> "$scratch/dry-leak.err"
+    same "a leak string no declaration keeps fails the dry run with 8" "8" "$?"
+    present "and the dry run prints the leak" \
+        "leak check, present tree: leak $status_probe .claude/skills/headwater-authoring/SKILL.md HW-DR-0052" "$scratch/dry-leak.out"
+
+    sed 's/^      no-hook: .*/      no-hook: [.claude\/hooks\/no-such-hook.sh]/' "$root/.headwater/probe.yml" > "$scratch/no-such-hook.yml"
+    printf 'campaign no-hook navigability\n' > "$scratch/tree.spec"
+    HW_PROBE_YML="$scratch/no-such-hook.yml" PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
+        --spec "$scratch/tree.spec" > "$scratch/dry-tree.out" 2> "$scratch/dry-tree.err"
+    same "an arm whose tree is not its delta fails the dry run with 8" "8" "$?"
+    present "and the dry run names the arm" "tree campaign no-hook is not its delta" "$scratch/dry-tree.out"
+
+    printf '#!/bin/sh\nexit 0\n' > "$scratch/dry-bin/silent-server"
+    chmod +x "$scratch/dry-bin/silent-server"
+    printf 'campaign mcp navigability\n' > "$scratch/mcp.spec"
+    HW_PROBE_ENGINE="$scratch/dry-bin/silent-server" PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
+        --spec "$scratch/mcp.spec" > "$scratch/dry-mcp.out" 2> "$scratch/dry-mcp.err"
+    same "a server that lists no tool fails the dry run with 8" "8" "$?"
+    present "and the dry run says so" "listed no tool in the mcp tree" "$scratch/dry-mcp.out"
+
     if [ -e "$scratch/claude-called" ]; then
         fail "no refused dry run calls a model" "the harness on the path was called"
     else

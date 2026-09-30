@@ -41,7 +41,14 @@ esac
 root=$(cd "$invoked_from/../.." && pwd -P)
 engine=$root/engine/target/dev-release/headwater
 [ -x "$engine" ] || engine=$root/engine/target/release/headwater
-declaration=$root/.headwater/probe.yml
+# The server the `mcp` arm starts is this engine's, unless `HW_PROBE_ENGINE`
+# names another binary: for the fixtures alone, which need a server that
+# lists nothing. Every plan reads this checkout's engine.
+server=${HW_PROBE_ENGINE:-$engine}
+# `HW_PROBE_YML` names another declaration for the power, the kept leaks,
+# the arms' deltas and the leak strings, as it does for `ablate.sh` and
+# `seal.sh`, for the fixtures alone. The plans read this checkout's.
+declaration=${HW_PROBE_YML:-$root/.headwater/probe.yml}
 
 [ -n "$spec" ] || { echo "usage: campaign.sh --dry-run --spec <file> [--repetitions <n>]" >&2; exit 2; }
 [ -f "$spec" ] || { echo "campaign: no spec at $spec" >&2; exit 2; }
@@ -296,7 +303,7 @@ if grep -q ' mcp$' "$work/arms"; then
         '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05"}}' \
         '{"jsonrpc":"2.0","method":"notifications/initialized"}' \
         '{"jsonrpc":"2.0","id":2,"method":"tools/list"}' \
-        | "$engine" mcp --root "$work/mcp" 2>/dev/null \
+        | "$server" mcp --root "$work/mcp" 2>/dev/null \
         | jq -r 'select(.id == 2) | .result.tools[].name' 2>/dev/null | tr '\n' ' ' | sed 's/ $//')
     if [ -n "$tools" ]; then
         printf 'mcp: `headwater mcp --root <the mcp tree>` lists %s\n' "$tools"

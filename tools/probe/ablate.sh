@@ -251,21 +251,30 @@ listing=$(awk -v want="$tier" -v arm="$arm" -v component="$component" '
         next
     }
     cur != want { next }
-    # `components`, a mapping of arm to a flow sequence of paths (#1472).
-    /^    components:[ \t]*$/ { comp = 1; block = 0; next }
-    comp && /^      [^ #][^:]*:/ {
+    # `components`, a mapping of arm to a sequence of paths (#1472): a flow
+    # sequence on the key line, or a block sequence under it, which the
+    # engine reads as the same value (verify round 1).
+    /^    components:[ \t]*$/ { comp = 1; block = 0; cblock = 0; next }
+    comp && cblock && /^(      |        )-[ \t]/ {
+        entry = $0; sub(/^[ \t]*-[ \t]*/, "", entry)
+        emit(unquote(uncomment(entry)), "component")
+        next
+    }
+    comp && /^      [^ #-][^:]*:/ {
+        cblock = 0
         name = trim(substr($0, 7)); sub(/:.*$/, "", name)
         if (name != component) next
         print "component"
         rest = uncomment(substr($0, index($0, ":") + 1))
-        if (rest !~ /^\[.*\]$/) { print "malformed"; next }
+        if (rest == "") { cblock = 1; next }
+        if (rest !~ /^\[.*\]$/) { print "malformed-component"; next }
         rest = substr(rest, 2, length(rest) - 2)
         n = split(rest, parts, ",")
         if (trim(rest) == "") n = 0
         for (i = 1; i <= n; i++) emit(unquote(parts[i]), "component")
         next
     }
-    /^    [^ ]/ { comp = 0 }
+    /^    [^ ]/ { comp = 0; cblock = 0 }
     /^    ablation:/ {
         rest = uncomment(substr($0, index($0, ":") + 1))
         if (rest == "") { block = 1; print "declared"; next }
@@ -302,6 +311,10 @@ if [ "$arm" = component ]; then
     esac
 fi
 case "$listing" in
+    *malformed-component*)
+        echo "ablate: the \`$component\` delta of the \`$tier\` tier is not a sequence of paths" >&2
+        exit 2
+        ;;
     *malformed*)
         echo "ablate: the \`$tier\` tier's ablation is not a sequence of paths" >&2
         exit 2
