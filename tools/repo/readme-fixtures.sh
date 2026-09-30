@@ -2172,6 +2172,10 @@ same "  the same sentence passes while no result page exists" "" \
     "$(unmeasured_judge "$scratch/blanket.md" "$(result_pages "$scratch/results.none")")"
 same "  a Status that names what was measured passes" "" \
     "$(unmeasured_judge "$scratch/measured.md" "$(result_pages "$scratch/results.one")")"
+printf '%s\n' \
+    '<p>Every page is hand-built. One claim is open. The benchmark row is unmeasured.</p>' >"$scratch/apart.html"
+same "  the three words in three sentences of one line are not one sentence" "" \
+    "$(unmeasured_judge "$scratch/apart.html" "$(result_pages "$scratch/results.one")")"
 
 # 5e. No public page names a milestone by its retired label.
 bad=""
