@@ -215,7 +215,7 @@ The documents on this shelf, in the reading order this corpus derives. Each head
 
 ## Q40 — Whether extends, bundle, requires and an overlay's taxonomy key are a mechanism or a label
 
-[HW-DR-0040](../decisions/0040-q40-whether-extends-bundle-requires-and-an-overlay-s-taxonomy-key-are-a-mechanism-or-a-label.md) — Three keys of the family are a label rather than a mechanism, and `requires` is read for one purpose since HW-DR-0095: an entry may add into the keys of an entry it names there.
+[HW-DR-0040](../decisions/0040-q40-whether-extends-bundle-requires-and-an-overlay-s-taxonomy-key-are-a-mechanism-or-a-label.md) — Three keys of the family are a label rather than a mechanism. HW-DR-0095 made `requires` a mechanism for one purpose, which is an add into the keys of the entry it names.
 
 ## Q41 — Whether Vale becomes a declared regime backend
 
@@ -251,7 +251,7 @@ The documents on this shelf, in the reading order this corpus derives. Each head
 
 ## The consumer surface is what an adopter receives, runs and must have installed, and it is a closed and declared list
 
-[HW-DR-0077](../decisions/0077-the-consumer-surface-is-what-an-adopter-receives-runs-and-must-have-installed-and-it-is-a-closed-and-declared-list.md) — An adopter needs the binary, a data-only package, Git, `sh`, `curl`, `tar`, eight POSIX utilities and, on the APT route, `apt-get`, `sudo`, `install` and `tee`, and nothing else. Every other program reaches Headwater through a verb that the binary configures on request, and no adopter-facing page instructs this repository's own tooling.
+[HW-DR-0077](../decisions/0077-the-consumer-surface-is-what-an-adopter-receives-runs-and-must-have-installed-and-it-is-a-closed-and-declared-list.md) — An adopter needs the binary, a data-only package, Git, `sh`, `curl`, `tar`, eight POSIX utilities and the four APT programs, and nothing else. Every other program reaches Headwater through a verb that the binary configures on request, and no adopter-facing page instructs this repository's own tooling.
 
 ## A corpus-wide fold is derived and never stored
 

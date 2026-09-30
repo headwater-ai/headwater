@@ -2,7 +2,7 @@
 id: HW-DR-0077
 status: current
 status_since: 2026-09-20
-summary: "An adopter needs the binary, a data-only package, Git, `sh`, `curl`, `tar`, eight POSIX utilities and, on the APT route, `apt-get`, `sudo`, `install` and `tee`, and nothing else. Every other program reaches Headwater through a verb that the binary configures on request, and no adopter-facing page instructs this repository's own tooling."
+summary: "An adopter needs the binary, a data-only package, Git, `sh`, `curl`, `tar`, eight POSIX utilities and the four APT programs, and nothing else. Every other program reaches Headwater through a verb that the binary configures on request, and no adopter-facing page instructs this repository's own tooling."
 last_verified: 2026-09-29
 title: "The consumer surface is what an adopter receives, runs and must have installed, and it is a closed and declared list"
 relations:
