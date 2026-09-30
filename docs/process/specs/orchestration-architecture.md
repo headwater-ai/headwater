@@ -26,23 +26,23 @@ relations:
     - HW-PD-0023
   governs:
     - to: .claude/commands/next-run.md
-      verified_revision: sha256:3b23c76457d1bf7816f688d784ee5cca18f7667f789f46cd0e957c3c817bc5fe
+      verified_revision: sha256:3df8b71b341db52c236143673c32f6129ed8b36a61439b0e8dc2854af4870fa0
     - to: .claude/commands/next.md
       verified_revision: sha256:69dd88bcbea169b0f42438d67e4627716f847128982ea38072a6857e4188d530
     - to: .claude/agents/hw-queue.md
       verified_revision: sha256:24ddc87861f3f7bada00eb1f779f41627a40f9f6b1eb7b1411558b0a356eaf22
     - to: .claude/agents/hw-adjudicate.md
-      verified_revision: sha256:caded9e6934bcc2eb7ff2bccbe68f0eb85b4e488a74af0ca9f334efd5bd785c3
+      verified_revision: sha256:2985119fd41fd21f5465d6495a411bd618060a3896e343df474945b17f6d10ee
     - to: .claude/agents/hw-iterate.md
-      verified_revision: sha256:eab71ea73124082fe3c6d53745451efdcf432aabe562bf4f071bdf442aaf1892
+      verified_revision: sha256:d611defd41b37a8039c0ffb5270626e09f71454e7c32ead30d5b53aa5286f7a2
     - to: .claude/agents/hw-build.md
-      verified_revision: sha256:5fc308fd43b3f451280adf595bab809e6e34c44a94087a8e6433dcd54db043a1
+      verified_revision: sha256:1a7b77b125314abe42f56dad699853f4edb315218721aff5968b5cb4343ea67c
     - to: .claude/agents/hw-verify.md
-      verified_revision: sha256:50a652c2244770cf104df9aa07f0ca71ca27f879373035c75c22697814feee6d
+      verified_revision: sha256:c98a5e49c01127218a1a4b3b0e42bd30ede5c729b0c23ca9ee65e471ff5e55f8
     - to: .claude/agents/hw-integrate.md
       verified_revision: sha256:60e02c40d9917aa958909997f7d07f5786b70abaadacb3a250c518149308cadb
     - to: .claude/skills/hw-run-policy/SKILL.md
-      verified_revision: sha256:158de1cd12d2a4be7144962d93ef671dbbaaa66dd0773a3928403d19206f8e2d
+      verified_revision: sha256:ba3723eef1eaa0bd2aa1fc14adcf3ccb663f250c24db266cb4b74918abf7a82f
     - to: .claude/skills/hw-verification-bar/SKILL.md
       verified_revision: sha256:a68ce6b14b5a8d7068aeafd8c7443e0497a55b4e444e2b971daa1da738c2153b
 ---
