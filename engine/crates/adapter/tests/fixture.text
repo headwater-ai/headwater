@@ -230,6 +230,8 @@ checks
       taxonomy scope, the resolved taxonomy, and no document
     harvest.pin.unread
       taxonomy scope, the resolved taxonomy, and no document
+    import.pin.unread
+      taxonomy scope, the resolved taxonomy, and no document
     relation.target.verification.suspect
       edge scope, one relation instance and both endpoints, and the committed
         observation snapshot
@@ -292,6 +294,7 @@ checks
     language.outside_root.refused reaches no obligation, so it names none
     taxonomy.pin.diverged reaches no obligation, so it names none
     harvest.pin.unread reaches no obligation, so it names none
+    import.pin.unread reaches no obligation, so it names none
     relation.target.verification.suspect reaches no obligation, so it names none
   67 findings
        39 ✗ error
@@ -730,6 +733,7 @@ read set
   version language.outside_root.refused 1
   version taxonomy.pin.diverged 1
   version harvest.pin.unread 1
+  version import.pin.unread 1
   version relation.target.verification.suspect 2
   input .headwater/ids sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
   input check/evaluations/alpha.md sha256:e651a58ed6489f388954343391d6321a708a2b7492bb4dc1386699a8bf65cc7b
