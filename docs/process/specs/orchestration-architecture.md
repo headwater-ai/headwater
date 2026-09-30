@@ -53,7 +53,7 @@ One parent, six stages, and a merge decision that never leaves the parent.
 
 ## What this part states, and what the evaluation holds
 
-This part states the architecture of the build order as it stands. [The build order as a multi-agent system](../evaluations/the-build-order-as-a-multi-agent-system.md) is the evidence under it, and the two documents do different work. The evaluation is a point-in-time record. It holds what one twenty-hour run measured about its own orchestrator. It holds the cost model those measurements settle, what the design refused, and the numbers a later run answers to. It stands as written, and nothing edits it to match a definition that moved.
+This part states the architecture of the build order as it stands. [The build order as a multi-agent system](../evaluations/the-build-order-as-a-multi-agent-system.md) is the evidence under it, and the two documents do different work. The evaluation is a point-in-time record. It holds what a twenty-hour run and the runs after it measured about their own orchestrator. It holds the cost model those measurements settle, what the design refused, and the numbers a later run answers to. It stands as written, and nothing edits it to match a definition that moved.
 
 This part carries no run number, no session identifier and no measurement. It states what each participant owns, what each one may never do, and where each decision is taken. An edit to an agent definition is an edit to this part, because a definition is the implementation and this is the statement of it.
 
@@ -114,7 +114,7 @@ flowchart LR
 
 **The parent owns three things: the doctrine, the loop and the veto.** The doctrine is at most ten numbered lines and at most six hundred tokens. A run copies it into the run directory, so that a compacted parent acts from it alone. The loop dispatches the queue, fills the slots, and advances on each report. The veto is the merge decision on a final `PASS`, and it is the one judgment that never leaves the parent.
 
-**The parent never builds, never merges by hand and never reads the board.** It runs no `gh` call and no `cargo build`. Pull request state arrives inside the report of `hw-iterate`, and board state arrives as a queue file. The parent never runs `git show` or `git diff` against a build branch. Every build belongs to the integrator or to a worker's own worktree. [HW-PD-0003](../decisions/0003-a-dispatch-pays-when-it-retires-more-parent-turns-than-it-costs.md) is the rule under each of those refusals.
+**The parent never builds, never merges by hand and never reads the board.** It runs no `gh` call and no `cargo build`. The pull request number arrives inside the report of `hw-iterate`, and merge state arrives inside the report of `hw-integrate`. Board state arrives as a queue file. The parent never runs `git show` or `git diff` against a build branch. Every build belongs to the integrator or to a worker's own worktree. [HW-PD-0003](../decisions/0003-a-dispatch-pays-when-it-retires-more-parent-turns-than-it-costs.md) is the rule under each of those refusals.
 
 **The parent waits by ending its turn.** With agents in flight, an ended turn is the blocking wait, and each report wakes it. A check on a timer buys nothing and costs a turn at the parent's full context. Its prompt cache holds that context for an hour, so a report arrives warm whether or not the parent looked.
 
