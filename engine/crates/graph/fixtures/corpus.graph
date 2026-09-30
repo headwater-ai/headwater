@@ -227,6 +227,8 @@ anchors
     cited by HW-DR-0023
   code_path `engine/README.md` via source-tree
     cited by HW-DR-0029
+  code_path `engine/crates/adapter/src/json.rs` via source-tree
+    cited by HW-IFACE-headwater-check
   code_path `engine/crates/adapter/src/lib.rs` via source-tree
     cited by HW-OBL-0172
   code_path `engine/crates/audit/src/lib.rs` via source-tree
