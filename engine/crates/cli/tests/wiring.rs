@@ -2054,6 +2054,7 @@ fn probe_plan_instrument_prints_the_parsed_instrument() {
     assert_eq!(unsafe_entry.out, "", "a refused instrument prints no path");
 
     // `--instrument` and `--delta` are two outputs, and one run prints one.
+    std::fs::write(root.path(".headwater/probe.yml"), &declared).expect("the declaration writes");
     let both = root.run(&[
         "probe",
         "plan",

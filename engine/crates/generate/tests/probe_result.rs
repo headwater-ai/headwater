@@ -1564,6 +1564,11 @@ fn a_component_arm_is_compared_with_the_campaign_present_arm() {
             )),
             "the `{arm}` comparison does not name the present arm as treated:\n{bytes}"
         );
+        assert!(
+            bytes.contains("- treated, `runs/probe-runs/campaign-present.md`")
+                && bytes.contains(&format!("- control, `{path}`")),
+            "the `{arm}` figures are not the present arm treated and the `{arm}` arm control:\n{bytes}"
+        );
         let present = result_of(&plan, "runs/probe-results/campaign-present.md");
         assert!(
             present.contains(sentence),
@@ -1600,6 +1605,11 @@ fn the_mcp_arm_is_treated_against_the_campaign_present_arm() {
         bytes.contains("The treated arm is the `campaign` `mcp` arm")
             && bytes.contains("and the control is the `campaign` present arm."),
         "the `mcp` comparison does not run from `mcp` to the present arm:\n{bytes}"
+    );
+    assert!(
+        bytes.contains("- treated, `runs/probe-runs/campaign-mcp.md`")
+            && bytes.contains("- control, `runs/probe-runs/campaign-present.md`"),
+        "the `mcp` figures are not the `mcp` arm treated and the present arm control:\n{bytes}"
     );
 }
 

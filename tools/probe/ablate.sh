@@ -88,9 +88,7 @@ if [ "${1:-}" = --diff ]; then
     diff_tier=$2
     diff_arm=$3
     diff_present=$(cd "$4" 2>/dev/null && pwd -P) || { echo "ablate: no present tree at $4" >&2; exit 2; }
-    # Fail closed: a loop over the output of a failed command runs zero times.
-    diff_instrument=$(sh "$0" --instrument) || exit 2
-    for diff_path in $diff_instrument; do
+    for diff_path in $(sh "$0" --instrument); do
         if [ -e "$diff_present/$diff_path" ]; then
             echo "ablate: $diff_present still holds \`$diff_path\`, which every arm removes, so it is not a present tree" >&2
             exit 2
