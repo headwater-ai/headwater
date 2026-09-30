@@ -623,7 +623,16 @@ except ImportError:
     sys.exit(0)
 
 callee = "./.github/workflows/deploy-site.yml"
-runs_deploy = re.compile(r"tools/site/deploy-site\.sh|\bwrangler\s+deploy\b")
+# A step deploys when it runs the script, runs wrangler with deploy later on
+# the same line (`npx wrangler deploy`, `wrangler pages deploy`), or uses a
+# Cloudflare action that deploys (#1342).
+runs_deploy = re.compile(r"tools/site/deploy-site\.sh|\bwrangler\b[^\n]*\bdeploy\b")
+deploy_actions = ("cloudflare/wrangler-action", "cloudflare/pages-action")
+
+def is_deploy(step):
+    return isinstance(step, dict) and bool(
+        runs_deploy.search(str(step.get("run", "")))
+        or str(step.get("uses", "")).startswith(deploy_actions))
 
 def as_list(v):
     if v is None:
@@ -659,16 +668,37 @@ else:
     events = set(on) if isinstance(on, dict) else set(as_list(on))
     if events != {"workflow_call"}:
         out.append("deploy-site.yml is started by %s and not by workflow_call alone" % ", ".join(sorted(map(str, events))))
+    # The ref input exists, so the ref: main of release.yml is accepted, and
+    # it defaults to empty, so a push to main deploys its own commit (#1342).
+    wc = on.get("workflow_call") if isinstance(on, dict) else None
+    inputs = wc.get("inputs") if isinstance(wc, dict) else None
+    ref = inputs.get("ref") if isinstance(inputs, dict) else None
+    if not isinstance(ref, dict):
+        out.append("deploy-site.yml declares no ref input, so the ref: main that release.yml passes reaches no checkout")
+    elif ref.get("default") not in (None, ""):
+        out.append("deploy-site.yml defaults ref to %s, so a push to main deploys that ref and not its own commit" % ref["default"])
+    # Each deploy job queues in one constant group and cancels nothing, so the
+    # ci.yml and release.yml calls share one queue and the last deploy is the
+    # newest one (#1342).
+    for job, body in sorted(jobs("deploy-site.yml").items()):
+        if not any(is_deploy(s) for s in as_list(body.get("steps"))):
+            continue
+        c = body.get("concurrency")
+        group = c.get("group") if isinstance(c, dict) else c
+        if c is None:
+            out.append("deploy-site.yml job %s has no concurrency group, so two deploys can run at once and an older one can finish last" % job)
+        elif not isinstance(group, str) or not group.strip() or "${{" in group:
+            out.append("deploy-site.yml job %s has a concurrency group that is not one constant, so the ci.yml and release.yml deploys do not share one queue" % job)
+        if isinstance(c, dict) and c.get("cancel-in-progress", False) is not False:
+            out.append("deploy-site.yml job %s can cancel a deploy in progress, so a release deploy can be cancelled and apt/ serves the previous release" % job)
 
 for name in sorted(docs):
     for job, body in jobs(name).items():
         for step in as_list(body.get("steps")):
-            if isinstance(step, dict) and runs_deploy.search(str(step.get("run", ""))):
-                if name != "deploy-site.yml":
-                    out.append("%s job %s runs the deploy itself, so the site has two deploy paths" % (name, job))
+            if is_deploy(step) and name != "deploy-site.yml":
+                out.append("%s job %s runs the deploy itself, so the site has two deploy paths" % (name, job))
 if "deploy-site.yml" in docs and not any(
-    isinstance(s, dict) and runs_deploy.search(str(s.get("run", "")))
-    for b in jobs("deploy-site.yml").values() for s in as_list(b.get("steps"))
+    is_deploy(s) for b in jobs("deploy-site.yml").values() for s in as_list(b.get("steps"))
 ):
     out.append("deploy-site.yml runs no step of tools/site/deploy-site.sh")
 if "deploy-site.yml" in docs:
@@ -681,11 +711,33 @@ if "deploy-site.yml" in docs:
 
 for name in ("ci.yml", "release.yml"):
     for job, body in sorted(callers(name).items()):
+        # deploy-site.yml declares no secrets, so only inherit delivers the
+        # token; a mapping such as {} passes the key and no token (#1342).
         if "secrets" not in body:
             out.append("%s job %s passes no secrets, so the deploy has no Cloudflare token" % (name, job))
+        elif body["secrets"] != "inherit":
+            out.append("%s job %s passes secrets other than inherit, so the deploy has no Cloudflare token" % (name, job))
+        if "concurrency" in body:
+            out.append("%s job %s has a concurrency of its own, so its deploy does not wait in the one deploy-site queue alone" % (name, job))
 
 if not callers("ci.yml"):
     out.append("ci.yml has no job that calls deploy-site.yml, so a push to main deploys nothing")
+# The ci.yml call runs on a push to main alone, after both gating jobs, and
+# deploys that push (#1342).
+for job, body in sorted(callers("ci.yml").items()):
+    needs = set(map(str, as_list(body.get("needs"))))
+    missing = [n for n in ("engine", "headwater") if n not in needs]
+    if missing:
+        out.append("ci.yml job %s does not need %s, so it can deploy a commit that failed CI" % (job, " and ".join(missing)))
+    cond = re.sub(r"\s+", "", str(body.get("if", ""))).replace("${{", "").replace("}}", "")
+    if "if" not in body:
+        out.append("ci.yml job %s has no if:, so a pull request or a merge group runs the deploy" % job)
+    elif ("github.event_name==\x27push\x27" not in cond or "github.ref==\x27refs/heads/main\x27" not in cond
+          or any(t in cond for t in ("||", "always()", "cancelled()", "failure()"))):
+        out.append("ci.yml job %s has an if: other than a push to main, so an event other than that push can run the deploy" % job)
+    w = body.get("with")
+    if isinstance(w, dict) and w.get("ref") not in (None, ""):
+        out.append("ci.yml job %s passes ref: %s, so a push to main deploys that ref and not its own commit" % (job, w["ref"]))
 
 rel = callers("release.yml")
 if not rel:
