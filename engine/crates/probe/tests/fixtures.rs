@@ -1379,6 +1379,135 @@ fn a_campaign_narrowed_to_one_arm_is_refused() {
     assert_eq!(plan.refusal, Some(Refusal::CampaignNarrowed));
 }
 
+/// The fixture declaration with the four component arms of #1472 on the
+/// campaign tier, each with its delta. `with` replaces one line of the
+/// component block, so a case changes one delta and keeps the rest.
+fn layer_budgets(with: &[(&str, &str)]) -> Budgets {
+    let source =
+        std::fs::read_to_string(fixtures_dir().join("probe.yml")).expect("the budget declaration");
+    let mut block = String::from(
+        "    components:\n      no-hook: [.claude/hooks/intent.sh]\n      no-skills: [.claude/skills]\n      no-claude-md: [CLAUDE.md]\n      mcp: [.mcp.json]\n",
+    );
+    for (from, to) in with {
+        assert!(block.contains(from), "{from}");
+        block = block.replace(from, to);
+    }
+    let campaign =
+        "    arms: [present, absent]\n    ablation: [CLAUDE.md, .claude, .githooks, .headwater]\n";
+    assert!(source.contains(campaign), "the fixture campaign tier");
+    let source = source.replacen(
+        campaign,
+        &format!(
+            "    arms: [present, absent, no-hook, no-skills, no-claude-md, mcp]\n    ablation: [CLAUDE.md, .claude, .githooks, .headwater]\n{block}"
+        ),
+        1,
+    );
+    Budgets::read(&source).expect("the declaration with component arms reads")
+}
+
+fn layer_plan(budgets: &Budgets, narrowing: &Narrowing) -> Plan {
+    let root = taxonomy_map();
+    let taken = fixture_census(&root);
+    let graph = fixture_graph(&root, &taken);
+    Plan::over(
+        &taken,
+        &graph,
+        &Config::default(),
+        budgets,
+        LOCK,
+        Tier::Campaign,
+        narrowing,
+    )
+}
+
+#[test]
+fn a_campaign_with_component_arms_prices_every_arm() {
+    // Five fixture probes, six arms, 58 repetitions: three times the sessions
+    // of the pair, and the plan is priced before it is refused.
+    let plan = layer_plan(&layer_budgets(&[]), &Narrowing::default());
+    assert_eq!(plan.arms.len(), 6);
+    assert_eq!(
+        plan.refusal,
+        Some(Refusal::OverBudget {
+            sessions: 1740,
+            projected: 43500,
+            budget: 100,
+        })
+    );
+    assert!(plan
+        .render(ColorMode::Plain)
+        .contains("arms: [present, absent, no-hook, no-skills, no-claude-md, mcp]"));
+}
+
+#[test]
+fn a_component_arm_that_removes_a_probe_s_document_refuses_the_plan() {
+    // The absent arm's rule, held for a component arm: `no-skills` here
+    // removes the fixture corpus's probe directory, and a session of that arm
+    // could not open the document four fixture probes name.
+    let plan = layer_plan(
+        &layer_budgets(&[("no-skills: [.claude/skills]", "no-skills: [corpus/probes]")]),
+        &Narrowing::default(),
+    );
+    assert_eq!(
+        plan.refusal,
+        Some(Refusal::ComponentExamined {
+            probe: "PROBE-FIX-cited".into(),
+            path: "corpus/probes/0002-answered.md".into(),
+            entry: "corpus/probes".into(),
+            arm: Arm::NoSkills,
+        })
+    );
+    // The refusal names the arm at fault and never the absent arm, which
+    // here removes nothing any probe reads.
+    let message = plan.refusal.as_ref().expect("refused").to_string();
+    assert!(
+        message.contains("`no-skills` arm removes `corpus/probes`"),
+        "{message}"
+    );
+    assert!(!message.contains("absent arm"), "{message}");
+    // An adding arm removes nothing, so the same path under `mcp` passes the
+    // rule and the plan reaches its ceiling.
+    let plan = layer_plan(
+        &layer_budgets(&[("mcp: [.mcp.json]", "mcp: [corpus/probes]")]),
+        &Narrowing::default(),
+    );
+    assert!(
+        matches!(plan.refusal, Some(Refusal::OverBudget { .. })),
+        "{:?}",
+        plan.refusal
+    );
+}
+
+#[test]
+fn a_campaign_narrowed_to_an_arm_it_does_not_run_names_that_arm() {
+    // The pair without components, asked for a component arm: the refusal
+    // names the arm and what the tier runs, not the narrowing.
+    let plan = plan_at(
+        Tier::Campaign,
+        &Narrowing {
+            arm: Some(Arm::NoHook),
+            ..Narrowing::default()
+        },
+    );
+    assert_eq!(
+        plan.refusal,
+        Some(Refusal::ArmNotDeclared {
+            tier: Tier::Campaign,
+            arm: Arm::NoHook,
+            declared: vec![Arm::Present, Arm::Absent],
+        })
+    );
+    // A declared component arm alone is still a narrowed campaign.
+    let plan = layer_plan(
+        &layer_budgets(&[]),
+        &Narrowing {
+            arm: Some(Arm::NoHook),
+            ..Narrowing::default()
+        },
+    );
+    assert_eq!(plan.refusal, Some(Refusal::CampaignNarrowed));
+}
+
 /// The documentation tier's absent arm removes the fixture corpus's `probes`
 /// directory, and four of the five fixture probes have a predicate over a
 /// document under it. A session in that arm cannot open or cite a document it
