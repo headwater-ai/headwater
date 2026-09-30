@@ -1543,8 +1543,13 @@ STUB
         'The `absent` arm is the present tree less `CLAUDE.md`, `.claude`, `.githooks`, `.headwater`.' "$scratch/absent-arm.md"
 
     # A delta the declaration does not state is said to be unread, and never
-    # printed as the present tree (verify round 1).
-    grep -v '^      no-hook: ' "$root/.headwater/probe.yml" > "$scratch/no-delta.yml"
+    # printed as the present tree (verify round 1). The engine refuses a
+    # declaration whole when a tier runs a component arm with no delta, and
+    # then no instrument is read and the driver refuses before any session
+    # (the case after this one). So here the tier no longer runs the arm, the
+    # file reads, and the delta of the arm alone is refused.
+    grep -v '^      no-hook: ' "$root/.headwater/probe.yml" \
+        | sed 's/^    arms: \[present, absent, no-hook, /    arms: [present, absent, /' > "$scratch/no-delta.yml"
     HW_PROBE_YML="$scratch/no-delta.yml" PATH="$scratch/bin:$PATH" sh "$driver" --probe "HW-PROBE-$tombstone" \
         --session fixture-no-delta --tier campaign --arm no-hook --category sufficiency --repetitions 1 \
         --task-file "$scratch/task.md" --workspace "$scratch/ws" \
@@ -1552,6 +1557,18 @@ STUB
     present "a transcript whose arm's delta cannot be read says so" \
         'The delta of the `no-hook` arm of the `campaign` tier could not be read' "$scratch/no-delta.md"
     absent "and does not call the arm the present tree" "arm is the present tree" "$scratch/no-delta.md"
+
+    # A declaration the engine refuses whole gives no instrument to clear, so
+    # the driver fails closed with 8 before any session (#1472, clause 8).
+    grep -v '^      no-hook: ' "$root/.headwater/probe.yml" > "$scratch/refused-delta.yml"
+    rm -f "$scratch/harness-ran"
+    HW_PROBE_YML="$scratch/refused-delta.yml" PATH="$scratch/bin:$PATH" sh "$driver" --probe "HW-PROBE-$tombstone" \
+        --session fixture-refused-delta --tier campaign --arm no-hook --category sufficiency --repetitions 1 \
+        --task-file "$scratch/task.md" --workspace "$scratch/ws" \
+        >"$scratch/refused-delta.md" 2>"$scratch/refused-delta.err"
+    same "a declaration the engine refuses stops the driver with 8" "8" "$?"
+    present "and it says the instrument could not be read" \
+        "the instrument of the probe declaration could not be read" "$scratch/refused-delta.err"
 
     # A stream that does not parse is uncounted, never "0 calls": two MCP
     # calls and a cut last line.
@@ -1838,10 +1855,46 @@ same "a present arm with no instrument declared exits 0" "0" "$?"
 kept "and removes nothing, and never the workspace itself" \
     CLAUDE.md .claude docs docs/probes engine tools --
 
-printf 'instrument: [docs/probes] # the shelf\ntiers:\n  campaign:\n    arms: [present, absent]\n    ablation: [docs] # the documents\n' \
+# The engine reads a declaration whole or refuses it, so each declaration
+# below is a complete one.
+printf 'instrument: [docs/probes] # the shelf\ntiers:\n  campaign:\n    budget_cents: 100\n    session_cost_cents: 25\n    repetitions: 58\n    arms: [present, absent]\n    ablation: [docs] # the documents\n' \
     > "$scratch/commented.yml"
 same "ablate.sh reads past a trailing YAML comment, as the engine does" "docs/probes" \
     "$(HW_PROBE_YML="$scratch/commented.yml" sh "$ablate" --instrument 2>&1)"
+
+# A block sequence at four spaces is YAML the engine reads. The hand-written
+# reader this script carried matched two spaces alone, printed nothing and
+# exited 0, so every arm kept the answer key (#1472, clause 8).
+printf 'instrument:\n    - docs/probes\n    - docs/probe-runs\ntiers:\n  campaign:\n    budget_cents: 100\n    session_cost_cents: 25\n    repetitions: 58\n    arms: [present, absent]\n    ablation:\n        - docs\n' \
+    > "$scratch/indented.yml"
+same "ablate.sh reads a four-space instrument block, as the engine does" "docs/probes docs/probe-runs" \
+    "$(HW_PROBE_YML="$scratch/indented.yml" sh "$ablate" --instrument | tr '\n' ' ' | sed 's/ $//')"
+fresh_workspace
+HW_PROBE_YML="$scratch/indented.yml" sh "$ablate" campaign "$scratch/ablate-ws" \
+    >/dev/null 2>"$scratch/ablate.err"
+same "ablate.sh produces an absent arm from a four-space declaration" "0" "$?"
+kept "and removes the instrument and the ablation it declares" \
+    CLAUDE.md .claude .headwater engine tools -- docs
+
+# A declaration the engine refuses is not an empty instrument: `--instrument`
+# fails, and a caller that loops over its output fails closed on the status.
+printf 'instrument: [docs/probes, ../outside]\ntiers:\n  campaign:\n    budget_cents: 100\n    session_cost_cents: 25\n    repetitions: 58\n    arms: [present, absent]\n    ablation: [docs]\n' \
+    > "$scratch/refused-instrument.yml"
+HW_PROBE_YML="$scratch/refused-instrument.yml" sh "$ablate" --instrument \
+    >"$scratch/ablate.out" 2>"$scratch/ablate.err"
+same "ablate.sh --instrument fails on a declaration the engine refuses" "2" "$?"
+same "and prints no path" "" "$(cat "$scratch/ablate.out")"
+
+# With no built engine there is nothing to read the declaration with, and the
+# script refuses rather than print an empty instrument. A copy of the script
+# under a root with no `engine/target` stands for a checkout that never built.
+mkdir -p "$scratch/unbuilt/tools/probe"
+cp "$ablate" "$scratch/unbuilt/tools/probe/ablate.sh"
+HW_PROBE_YML="$scratch/commented.yml" sh "$scratch/unbuilt/tools/probe/ablate.sh" --instrument \
+    >"$scratch/ablate.out" 2>"$scratch/ablate.err"
+same "ablate.sh --instrument with no built engine exits nonzero" "2" "$?"
+same "and prints no path" "" "$(cat "$scratch/ablate.out")"
+present "and it names the build" "Build it first" "$scratch/ablate.err"
 
 # The two refusals of the driver below are asserted with a stub harness first
 # on PATH. It records that it ran and exits nonzero, so a refusal that
@@ -1875,7 +1928,7 @@ same "and no session started" "no" "$([ -e "$scratch/harness-ran" ] && echo yes 
 fresh_workspace
 sh "$ablate" regression "$scratch/ablate-ws" >/dev/null 2>"$scratch/ablate.err"
 same "ablate.sh refuses the regression tier, which runs no absent arm" "2" "$?"
-present "and it names the tier" "\`regression\` tier declares no ablation" "$scratch/ablate.err"
+present "and it names the tier" "\`regression\` tier does not run the \`absent\` arm" "$scratch/ablate.err"
 kept "and the refused workspace is untouched" \
     CLAUDE.md .claude .githooks .headwater docs docs/probes engine tools --
 

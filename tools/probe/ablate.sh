@@ -35,11 +35,13 @@
 # the workspace is the tree being ablated and its copy is one of the paths
 # removed. `HW_PROBE_YML` names another declaration, for the fixtures alone.
 #
-# It refuses a tier the declaration does not carry, a tier that declares no
-# ablation (the `regression` tier runs no absent arm), and an entry that is
-# empty, absolute or has a `..` or `.` component, because every entry goes to
-# `rm -rf`. The engine refuses the same entries when it reads the file, so a
-# refusal here means the file was edited past `headwater probe plan`.
+# The ablation, each component delta and the instrument are read from the
+# engine, `headwater probe plan --delta` and `--instrument`, and never parsed
+# here (#1472). So it needs a built engine, and without one it refuses. It
+# refuses a tier the declaration does not carry, a tier that does not run the
+# arm (the `regression` tier runs no absent arm), and an entry that is empty,
+# absolute or has a `..` or `.` component, because every entry goes to
+# `rm -rf`. The engine makes each of those refusals when it reads the file.
 #
 # It refuses a workspace inside this repository's own checkout, the same
 # guard `probe-record.sh` applies to the same argument and for the same
@@ -86,7 +88,9 @@ if [ "${1:-}" = --diff ]; then
     diff_tier=$2
     diff_arm=$3
     diff_present=$(cd "$4" 2>/dev/null && pwd -P) || { echo "ablate: no present tree at $4" >&2; exit 2; }
-    for diff_path in $(sh "$0" --instrument); do
+    # Fail closed: a loop over the output of a failed command runs zero times.
+    diff_instrument=$(sh "$0" --instrument) || exit 2
+    for diff_path in $diff_instrument; do
         if [ -e "$diff_present/$diff_path" ]; then
             echo "ablate: $diff_present still holds \`$diff_path\`, which every arm removes, so it is not a present tree" >&2
             exit 2
@@ -210,126 +214,69 @@ declaration=${HW_PROBE_YML:-$root/.headwater/probe.yml}
     exit 2
 }
 
-# Print `tier` when the tier is declared, then one `entry <path>` line per
-# ablation entry, in declared order. The file is a flat two-level mapping
-# with two-space indentation, which is what the engine reads too; `ablation`
-# is either a one-line flow sequence or a block sequence under the key.
-listing=$(awk -v want="$tier" -v arm="$arm" '
-    function trim(s) { sub(/^[ \t]+/, "", s); sub(/[ \t]+$/, "", s); return s }
-    function emit(e, kind,    n, c, i) {
-        bad = (e == "" || e ~ /^\//)
-        n = split(e, c, "/")
-        for (i = 1; i <= n; i++) if (c[i] == ".." || c[i] == "." || c[i] == "") bad = 1
-        print (bad ? "unsafe " : (kind == "instrument" ? "instrument " : "entry ")) e
-    }
-    # A YAML comment starts at a `#` after whitespace, and the engine reads
-    # past it. So does this, or a comment the plan accepts would make the
-    # sequence malformed here and nowhere else.
-    function uncomment(s) { sub(/(^|[ \t])#.*$/, "", s); return trim(s) }
-    function unquote(s) {
-        s = trim(s)
-        if (s ~ /^".*"$/ || s ~ /^\047.*\047$/) s = substr(s, 2, length(s) - 2)
-        return s
-    }
-    /^instrument:/ {
-        intiers = 0; cur = ""; block = 0
-        rest = uncomment(substr($0, index($0, ":") + 1))
-        if (rest == "") { iblock = 1; next }
-        if (rest !~ /^\[.*\]$/) { print "malformed"; next }
-        rest = substr(rest, 2, length(rest) - 2)
-        n = split(rest, parts, ",")
-        if (trim(rest) == "") n = 0
-        for (i = 1; i <= n; i++) emit(unquote(parts[i]), "instrument")
-        next
-    }
-    iblock && /^  - / { emit(unquote(uncomment(substr($0, 5))), "instrument"); next }
-    /^[^ #]/ { iblock = 0; intiers = ($0 ~ /^tiers:/); cur = ""; block = 0; next }
-    !intiers { next }
-    /^  [^ #][^:]*:[ \t]*$/ {
-        cur = trim(substr($0, 3)); sub(/:$/, "", cur); block = 0
-        if (cur == want && arm == "absent") print "tier"
-        next
-    }
-    cur != want { next }
-    /^    ablation:/ {
-        rest = uncomment(substr($0, index($0, ":") + 1))
-        if (rest == "") { block = 1; print "declared"; next }
-        if (rest !~ /^\[.*\]$/) { print "malformed"; next }
-        print "declared"
-        rest = substr(rest, 2, length(rest) - 2)
-        n = split(rest, parts, ",")
-        if (trim(rest) == "") n = 0
-        for (i = 1; i <= n; i++) emit(unquote(parts[i]))
-        next
-    }
-    block && /^      - / { emit(unquote(uncomment(substr($0, 9)))); next }
-    block && /^      -$/ { emit(""); next }
-    /^    [^ ]/ { block = 0 }
-' "$declaration")
-
-if [ "$arm" = absent ]; then
-    case "$listing" in
-        tier*|*"
-tier"*) ;;
-        *)
-            echo "ablate: \`$tier\` is not a tier $declaration declares" >&2
-            exit 2
-            ;;
-    esac
-fi
-case "$listing" in
-    *malformed*)
-        echo "ablate: the \`$tier\` tier's ablation is not a sequence of paths" >&2
-        exit 2
-        ;;
-esac
-
-# Refuse every unsafe entry before removing anything, so a refusal leaves the
-# workspace as it was.
-unsafe=$(printf '%s\n' "$listing" | awk '/^unsafe/ { printf "%s`%s`", sep, substr($0, 8); sep = ", " }')
-if [ -n "$unsafe" ]; then
-    echo "ablate: the \`$tier\` tier's ablation names $unsafe, and an entry is a path inside the tree with no \`..\`, \`.\` or empty component" >&2
+# The ablation, the delta of each component arm and the instrument are all
+# the engine's parse of the declaration (#1472): `headwater probe plan
+# --delta` prints an arm's delta as `- <path>` for a path the arm removes and
+# `+ <path>` for a path it adds, and `--instrument` prints the instrument one
+# path per line. This script parses no YAML, so every form the engine accepts
+# builds the same tree here. The engine refuses a tier it does not know, a
+# tier that does not run the arm, and an entry that is empty, absolute or has
+# a `..` or `.` component, and each refusal comes before anything is removed.
+#
+# It fails closed. With no built engine it refuses, and it never prints an
+# empty instrument in place of one it could not read.
+engine=$root/engine/target/dev-release/headwater
+[ -x "$engine" ] || engine=$root/engine/target/release/headwater
+[ -x "$engine" ] || {
+    echo "ablate: no engine under $root/engine/target to read $declaration. Build it first: cargo build --profile dev-release -p headwater-cli --manifest-path engine/Cargo.toml --locked" >&2
     exit 2
-fi
-instrument=$(printf '%s\n' "$listing" | awk '/^instrument / { print substr($0, 12) }')
+}
+
+# Run `headwater probe plan` with the arguments given, over the declaration.
+# The engine reads `.headwater/probe.yml` under its `--root`: the checkout
+# itself when `HW_PROBE_YML` is unset, which needs nothing on `PATH`, and a
+# scratch root that holds a copy of the named declaration otherwise.
+plan_print() {
+    if [ -z "${HW_PROBE_YML:-}" ]; then
+        "$engine" probe plan --root "$root" "$@"
+        return
+    fi
+    plan_scratch=$(mktemp -d "${TMPDIR:-/tmp}/headwater-ablate-plan.XXXXXX") || return 2
+    if ! mkdir -p "$plan_scratch/root/.headwater" ||
+        ! cp "$declaration" "$plan_scratch/root/.headwater/probe.yml"; then
+        rm -rf "$plan_scratch"
+        return 2
+    fi
+    plan_status=0
+    "$engine" probe plan --root "$plan_scratch/root" "$@" || plan_status=$?
+    rm -rf "$plan_scratch"
+    return "$plan_status"
+}
+
+instrument=$(plan_print --instrument) || {
+    echo "ablate: the engine did not read the instrument of $declaration, so no arm can be cleared of it" >&2
+    exit 2
+}
 if [ "$arm" = list ]; then
     [ -z "$instrument" ] || printf '%s\n' "$instrument"
     exit 0
 fi
-entries=$(printf '%s\n' "$listing" | awk '/^entry / { print substr($0, 7) }')
+entries=
 additions=
-if [ "$arm" = component ]; then
-    # The delta of a component arm is the engine's parse of the declaration,
-    # printed by `headwater probe plan --delta` as `- <path>` for a path the
-    # arm removes and `+ <path>` for a path it adds. This script parses no
-    # YAML for it, so every form the plan accepts builds the same tree here
-    # (#1472, verify round 3). The engine reads `.headwater/probe.yml` under
-    # its `--root`, so a declaration named by `HW_PROBE_YML` is copied into a
-    # scratch root of its own first. The engine refuses a tier that does not
-    # run the arm, and a delta it cannot read, and so does this script.
-    engine=$root/engine/target/dev-release/headwater
-    [ -x "$engine" ] || engine=$root/engine/target/release/headwater
-    [ -x "$engine" ] || {
-        echo "ablate: no engine under $root/engine/target to read the \`$component\` delta of the \`$tier\` tier. Build it first" >&2
+if [ "$arm" = component ] || [ "$arm" = absent ]; then
+    delta_arm=${component:-absent}
+    delta=$(plan_print --tier "$tier" --arm "$delta_arm" --delta) || {
+        echo "ablate: the engine did not print the \`$delta_arm\` delta of the \`$tier\` tier in $declaration" >&2
         exit 2
     }
-    delta_scratch=$(mktemp -d "${TMPDIR:-/tmp}/headwater-ablate-delta.XXXXXX") || exit 2
-    mkdir -p "$delta_scratch/root/.headwater"
-    cp "$declaration" "$delta_scratch/root/.headwater/probe.yml" || { rm -rf "$delta_scratch"; exit 2; }
-    if ! "$engine" probe plan --root "$delta_scratch/root" --tier "$tier" --arm "$component" --delta \
-        > "$delta_scratch/out" 2> "$delta_scratch/err"; then
-        echo "ablate: the engine did not print the \`$component\` delta of the \`$tier\` tier:" >&2
-        cat "$delta_scratch/err" >&2
-        rm -rf "$delta_scratch"
-        exit 2
-    fi
-    entries=$(sed -n 's/^- //p' "$delta_scratch/out")
-    additions=$(sed -n 's/^+ //p' "$delta_scratch/out")
-    rm -rf "$delta_scratch"
+    entries=$(printf '%s\n' "$delta" | sed -n 's/^- //p')
+    additions=$(printf '%s\n' "$delta" | sed -n 's/^+ //p')
     if [ -z "$entries" ] && [ -z "$additions" ]; then
-        echo "ablate: the engine printed an empty delta for the \`$component\` arm of the \`$tier\` tier" >&2
+        echo "ablate: the engine printed an empty delta for the \`$delta_arm\` arm of the \`$tier\` tier" >&2
         exit 2
     fi
+fi
+if [ "$arm" = component ]; then
     # An added path is copied from `tools/probe/arms/<arm>/` in this checkout.
     for path in $additions; do
         [ -e "$root/tools/probe/arms/$component/$path" ] || {
@@ -345,10 +292,6 @@ elif [ "$arm" = absent ]; then
     printf '%s\n' "$entries" | awk 'NF { print "declared - " $0 }'
 fi
 [ "$dry" = 0 ] || exit 0
-if [ "$arm" = absent ] && [ -z "$entries" ] && [ -z "$additions" ]; then
-    echo "ablate: the \`$tier\` tier declares no ablation, so it runs no absent arm to produce" >&2
-    exit 2
-fi
 if [ "$arm" = present ]; then
     tier=present
     entries=$instrument
