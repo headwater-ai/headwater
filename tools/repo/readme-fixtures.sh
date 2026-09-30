@@ -3755,6 +3755,18 @@ apt_planted "the extractor on a page with no APT paragraph prints nothing and ex
     "0|nonzero" \
     "$(wc -c <"$scratch/apt-job/no-paragraph.out" | tr -d ' ')|$([ "$apt_refused" -ne 0 ] && echo nonzero || echo zero)"
 
+# 12e. The page gives Debian 11 a route that works there: the Debian package
+# from the release page, installed from its file. The block stops on Debian 11
+# at its first install, and no download tool installs there either, so the
+# route is the file. The name the page gives is a name the release uploads,
+# with `<version>` for the release's own `${version}`.
+apt_d11_deb=$(grep '^\*\*Install it with apt' "$readme" |
+    sed -n 's/.*`sudo apt-get install \.\/\(headwater_<version>_[a-z0-9]*\.deb\)`.*/\1/p' |
+    sed 's/<version>/${version}/')
+same "the APT paragraph gives Debian 11 the release's Debian package, installed from its file" \
+    "yes" \
+    "$([ -n "$apt_d11_deb" ] && release_uploaded_debs "$root/.github/workflows/release.yml" | grep -qxF "$apt_d11_deb" && echo yes || echo "no: \`$apt_d11_deb\`")"
+
 echo
 echo "$passed passed, $failed failed"
 [ "$failed" -eq 0 ]
