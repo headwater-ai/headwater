@@ -56,34 +56,23 @@ use headwater_yaml::value::Value;
 
 /// The export format's own version, as `Major.Minor`.
 ///
-/// The rule the corpus descriptor states about its version holds here for the
-/// same reason: a version with no client behavior attached is a string. A major
-/// above what a reader understands is a hard failure, a minor mismatch is a
-/// warning, and a member added later moves the minor.
+/// The rule that decides when this moves, and what a reader does with it, is
+/// stated once, under *Raising the version* in
+/// [`docs/interfaces/headwater-export.md`](../../../../docs/interfaces/headwater-export.md#raising-the-version),
+/// beside the table of every member ([#1308](https://github.com/headwater-ai/headwater/issues/1308)).
+/// A member added, removed or changed here moves this value by that rule, and
+/// the page's table moves with it:
+/// `every_member_the_graph_export_writes_is_named_on_its_page` in
+/// `crates/cli/tests/export.rs` fails on a member the page does not name, and
+/// on a page that states another version.
 ///
-/// # Two keys, one constant, and why the earlier one stays
-///
-/// [`envelope`] writes this value twice, as `version` and as `export_version`.
-/// `version` is the spelling the other nine documents this engine writes use,
-/// and it is the one a consumer should read. `export_version` is the earlier
-/// spelling and it is kept because removing it is a member removed, which the
-/// paragraph above makes a major bump — a hard failure declared at every reader
-/// of the artifact, to buy the removal of a key that duplicates a value. That
-/// is out of proportion, so
-/// [#343](https://github.com/headwater-ai/headwater/issues/343) added the
-/// member and moved the minor, `1.0` to `1.1`, and a reader pinned at `1.0`
-/// gets a warning and continues. Dropping `export_version` stays available as
-/// its own change, at the moment a major bump is worth making.
-///
-/// [#1247](https://github.com/headwater-ai/headwater/issues/1247) added
-/// `patterns` to a list anchor and to an edge onto one, and moved the minor,
-/// `1.1` to `1.2`. See [`list_members`].
-///
-/// [#1309](https://github.com/headwater-ai/headwater/issues/1309) added
-/// `identifiers` to each `counted` tombstone, the digest of each withheld
-/// identifier, and moved the minor, `1.2` to `1.3`. See [HW-DR-0100](../../../../docs/decisions/0100-a-counted-tombstone-lists-a-digest-of-each-withheld-identifier-and-a-sealed-one-lists-nothing.md).
-///
-/// Both keys are written from this constant, so they cannot disagree.
+/// [`envelope`] writes this value twice, as `version` and as `export_version`,
+/// so the two keys cannot disagree. History: `1.0` to `1.1` added `version`
+/// ([#343](https://github.com/headwater-ai/headwater/issues/343)), `1.1` to
+/// `1.2` added `patterns` ([#1247](https://github.com/headwater-ai/headwater/issues/1247),
+/// see [`list_members`]), and `1.2` to `1.3` added `identifiers` to each
+/// `counted` tombstone ([#1309](https://github.com/headwater-ai/headwater/issues/1309),
+/// see [HW-DR-0100](../../../../docs/decisions/0100-a-counted-tombstone-lists-a-digest-of-each-withheld-identifier-and-a-sealed-one-lists-nothing.md)).
 pub const VERSION: &str = "1.3";
 
 /// What a loss is about.
