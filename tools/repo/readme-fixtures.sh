@@ -3948,6 +3948,23 @@ readme_apt_judge() {
     if grep -vE '^[ ]*#' "$2" | grep -qE '\|\|[ ]*(true|:)|continue-on-error|^[ ]+if:'; then
         echo "$(basename "$2") has a step or a job that can pass when the block fails"
     fi
+    # The steps are the three below and nothing else, comments aside. A fourth
+    # step can empty the file between the two, and a line in the run body such
+    # as `exit 0` or `set +e` can end the run before the block fails.
+    if [ "$(sed -n '/^    steps:/,$p' "$2" | grep -vE '^[ ]*(#|$)' | tr '\n' '|')" != \
+        "$(printf '%s\n' '    steps:' '      - uses: actions/checkout@v4' \
+            '      - name: Print the block the page shows' \
+            '        run: sh tools/repo/readme-apt-block.sh README.md > readme-apt-block.sh' \
+            '      - name: Run the block as root on a clean image' \
+            '        run: |' \
+            '          cat readme-apt-block.sh' \
+            '          sh -e readme-apt-block.sh' | tr '\n' '|')" ]; then
+        echo "$(basename "$2") has steps other than checkout, extract, and \`sh -e\` of the block"
+    fi
+    # A matrix `exclude:` or `include:` changes the images the `image:` line names.
+    if grep -vE '^[ ]*#' "$2" | grep -qE '^[ ]+(exclude|include):'; then
+        echo "$(basename "$2") excludes or adds matrix entries, so its image line is not what it runs"
+    fi
     if grep -q 'apt-get install -y headwater' "$2"; then
         echo "$(basename "$2") carries its own copy of the block"
     fi
@@ -4011,7 +4028,7 @@ else
 fi
 apt_planted "a job that inlines the block instead of calling the extractor is red" \
     "$apt_job" "$scratch/apt-job/inline/readme-apt.yml" \
-    "readme-apt.yml does not run tools/repo/readme-apt-block.sh|readme-apt.yml carries its own copy of the block" \
+    "readme-apt.yml does not run tools/repo/readme-apt-block.sh|readme-apt.yml has steps other than checkout, extract, and \`sh -e\` of the block|readme-apt.yml carries its own copy of the block" \
     "$(readme_apt_judge "$readme" "$scratch/apt-job/inline/readme-apt.yml" | tr '\n' '|' | sed 's/|$//')"
 
 # 12c, the job that is present and cannot fail. Each arm is one edit to a copy
@@ -4029,13 +4046,13 @@ readme_apt_provoke() {
 }
 readme_apt_provoke "a job whose run step is \`true\` in place of the block is red" \
     's/^\( *\)sh -e readme-apt-block\.sh$/\1true/' \
-    "readme-apt.yml does not run the printed block under sh -e"
+    "readme-apt.yml does not run the printed block under sh -e|readme-apt.yml has steps other than checkout, extract, and \`sh -e\` of the block"
 readme_apt_provoke "a job that runs the block with \`|| true\` is red" \
     's/^\( *\)sh -e readme-apt-block\.sh$/\1sh -e readme-apt-block.sh || true/' \
-    "readme-apt.yml does not run the printed block under sh -e|readme-apt.yml has a step or a job that can pass when the block fails"
+    "readme-apt.yml does not run the printed block under sh -e|readme-apt.yml has a step or a job that can pass when the block fails|readme-apt.yml has steps other than checkout, extract, and \`sh -e\` of the block"
 readme_apt_provoke "a job that swallows the extractor's refusal with \`|| true\` is red" \
     's/> readme-apt-block\.sh$/> readme-apt-block.sh || true/' \
-    "readme-apt.yml does not run tools/repo/readme-apt-block.sh|readme-apt.yml has a step or a job that can pass when the block fails"
+    "readme-apt.yml does not run tools/repo/readme-apt-block.sh|readme-apt.yml has a step or a job that can pass when the block fails|readme-apt.yml has steps other than checkout, extract, and \`sh -e\` of the block"
 readme_apt_provoke "a job whose container is one image and not the matrix image is red" \
     's/^    container: .*/    container: debian:12/' \
     "readme-apt.yml does not run each matrix image as its container"
@@ -4043,6 +4060,25 @@ readme_apt_provoke "a job marked \`continue-on-error\` is red" \
     's/^    timeout-minutes: \(.*\)/    timeout-minutes: \1\
     continue-on-error: true/' \
     "readme-apt.yml has a step or a job that can pass when the block fails"
+
+readme_apt_provoke "a job whose run body exits 0 before the block is red" \
+    's/^\( *\)sh -e readme-apt-block\.sh$/\1exit 0\
+\1sh -e readme-apt-block.sh/' \
+    "readme-apt.yml has steps other than checkout, extract, and \`sh -e\` of the block"
+readme_apt_provoke "a job with a step that empties the block before the run is red" \
+    's/^      - name: Run the block as root on a clean image$/      - run: : > readme-apt-block.sh\
+&/' \
+    "readme-apt.yml has steps other than checkout, extract, and \`sh -e\` of the block"
+readme_apt_provoke "a job whose matrix excludes ubuntu:20.04 is red" \
+    "s/^\\( *\\)image: \\[.*/&\\
+\\1exclude:\\
+\\1  - image: 'ubuntu:20.04'/" \
+    "readme-apt.yml excludes or adds matrix entries, so its image line is not what it runs"
+readme_apt_provoke "a job whose run body turns off -e and ends on echo is red" \
+    's/^\( *\)sh -e readme-apt-block\.sh$/\1set +e\
+\1sh -e readme-apt-block.sh\
+\1echo done/' \
+    "readme-apt.yml has steps other than checkout, extract, and \`sh -e\` of the block"
 
 # The release job that calls the workflow, with an `if:` that skips it.
 if [ -f "$root/.github/workflows/release.yml" ]; then

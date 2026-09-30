@@ -721,7 +721,11 @@ deploys() {
 # past verb ("ran", "deployed", "was", ...) and no present one ("is", "gets",
 # "still", "now", "deploys", "serves", ...). Every other sentence that names
 # the service is a claim, and a sentence with both is a claim too, because
-# "is deployed by" and "deploys apt/ before" are present. The present list is
+# "is deployed by", "has deployed" and "deploys apt/ before" are present. The
+# bare phrase "Cloudflare build" is a claim in any tense, as it was before
+# #1408, so the widened reader loses no line the narrow one caught. A sentence
+# ends at `.`, `!`, `?` or `;` and a space, but not after an initial such as
+# "J." or after "e.g." and "i.e.". The present list is
 # read after the service's own name is removed, so "Workers Builds" is not
 # the verb "builds", and after a link target is removed, so a slug is not a
 # sentence. d11 holds that the history line passes, and the d10 plants hold
@@ -734,7 +738,8 @@ apt_route_py='
 import re, sys
 service = re.compile(r"cloudflare\s+(?:workers\s+|pages\s+)?builds?\b|\bworkers\s+builds?\b|build\s+service\s+of\s+cloudflare", re.I)
 past = re.compile(r"\b(?:ran|deployed|served|built|published|hosted|was|were|had|formerly|previously|used\s+to)\b", re.I)
-present = re.compile(r"\b(?:is|are|am|be|gets?|getting|still|now|currently|deploys|serves|builds|runs|publishes|hosts|does|will|reaches|handles|uploads|pushes|copies|carries)\b|(?<!\bthe )(?<!\ba )\b(?:deploy|serve|run|publish|host)\b", re.I)
+present = re.compile(r"\b(?:is|are|am|be|has|have|gets?|getting|still|now|currently|deploys|serves|builds|runs|publishes|hosts|does|will|reaches|handles|uploads|pushes|copies|carries)\b|(?<!\bthe )(?<!\ba )\b(?:deploy|serve|run|publish|host)\b", re.I)
+always = re.compile(r"cloudflare\s+builds?\b", re.I)
 try:
     text = open(sys.argv[1], encoding="utf-8").read()
 except Exception as err:
@@ -742,7 +747,9 @@ except Exception as err:
     sys.exit(3)
 text = re.sub(r"\]\([^)]*\)", "]", text).replace("#", " ")
 text = re.sub(r"\s+", " ", text)
-for sentence in re.split(r"(?<=[.!?;])\s", text):
+if always.search(text):
+    sys.exit(0)
+for sentence in re.split(r"(?<=[.!?;])(?<!\b[A-Z]\.)(?<!\be\.g\.)(?<!\bi\.e\.)\s", text):
     if not service.search(sentence):
         continue
     rest = service.sub(" ", sentence)
@@ -921,6 +928,15 @@ same "a claim that the Cloudflare build deploys apt/ before the notes go out is 
     "$(apt_route_plant d12e '#   The Cloudflare build deploys apt/ before the release notes' '#   go out.')"
 same "a claim that Cloudflare Workers Builds deploy the repository is red" "$apt_route_red" \
     "$(apt_route_plant d12f '#   Cloudflare Workers Builds deploy the APT repository from' '#   this tree.')"
+
+same "a claim that the Cloudflare build has deployed apt/ since #1316 is red" "$apt_route_red" \
+    "$(apt_route_plant d12g '#   The Cloudflare build has deployed apt/ since' '#   #1316.')"
+same "a claim that the Cloudflare build ships apt/, as it was set up to, is red" "$apt_route_red" \
+    "$(apt_route_plant d12h '#   The Cloudflare build ships apt/, as it was set up' '#   to do.')"
+same "a claim that Workers Builds has deployed apt/ since #1316 is red" "$apt_route_red" \
+    "$(apt_route_plant d12i '#   Cloudflare Workers Builds has deployed apt/ since' '#   #1316.')"
+same "a claim split by an initial, Workers Builds, which was added by J. Baxter, deploys apt/, is red" "$apt_route_red" \
+    "$(apt_route_plant d12j '#   Workers Builds, which was added in #1316 by J.' '#   Baxter, deploys apt/.')"
 
 # d13. A file the reader cannot decode is a finding, and not a file that holds.
 mkdir -p "$scratch/d13"
