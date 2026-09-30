@@ -43,6 +43,7 @@ case "$*" in
     *"--jq .state"*) printf '%s\n' "${CLOSE_STATE:-closed}" ;;
     *"/pulls/"*"--jq .body"*) cat "$PR_BODY" ;;
     *"--jq .body"*)
+        if [ "${ISSUE_FAIL:-}" = 1 ]; then echo "HTTP 502" >&2; exit 1; fi
         if [ -n "${ISSUE_BODY:-}" ]; then cat "$ISSUE_BODY"; else printf 'the issue body\n'; fi ;;
     *"api graphql"*) printf '%s\n' "${CLOSES_JSON:-[]}" ;;
     *) : ;;
@@ -57,6 +58,7 @@ run() {
     : > "$log"
     PATH="$fakebin:$PATH" LOG="$log" CLOSE_STATE="${CLOSE_STATE:-closed}" \
         ISSUE_BODY="${ISSUE_BODY:-}" PR_BODY="${PR_BODY:-/dev/null}" CLOSES_JSON="${CLOSES_JSON:-[]}" \
+        ISSUE_FAIL="${ISSUE_FAIL:-}" \
         sh "$tool" "$@"
 }
 
@@ -330,6 +332,105 @@ ISSUE_BODY="$scratch/issue-bare.md" PR_BODY="$scratch/pr-all.md" CLOSES_JSON='[1
     run clause-check 1460 > "$scratch/out" 2>"$scratch/err"
 check_status "no clause to account for is not a pass" nonzero $?
 check_out "  it says the issue has no clause" "#1315 has no clause"
+
+# The shapes the first verify of #1485 found. The reader stopped at no h2,
+# and a fixture whose later headings were all h2 or h3 and all said
+# "Folded" held nothing more. So this body has an h1 fold and a later heading
+# that is no fold, a heading in capitals, every task-item marker GitHub
+# renders, a ``` line inside a ~~~ fence, a lone ``` inside a comment, and
+# a clause whose line opens a comment. It has nine clauses, s1 to s9.
+cat > "$scratch/issue-104.md" <<'EOF'
+## DONE WHEN
+
+* [ ] s1 a star bullet
++ [ ] s2 a plus bullet
+1. [ ] s3 an ordered item
+2) [ ] s4 an ordered item with a paren
+
+~~~markdown
+```
+- [ ] a box inside a tilde fence is not a clause
+~~~
+
+- [ ] s5 after the tilde fence <!-- a closed comment --> keeps its tail
+- [ ] s6 opens a comment <!-- a note
+that runs on
+```
+-->
+- [ ] s7 after a comment that held a lone backtick fence
+
+# Folded at h1
+
+- [ ] s8 under an h1 fold
+
+## Review notes
+
+- [ ] s9 under a later heading that is no fold
+EOF
+
+# account104 FILE LAST: a body that marks clauses 1..LAST of #104 met.
+account104() {
+    printf 'Closes #104\n\n' > "$1"
+    k=1
+    while [ "$k" -le "$2" ]; do
+        printf -- '- [x] #104.%s held\n' "$k" >> "$1"
+        k=$((k + 1))
+    done
+}
+
+echo "clauses reads past any later heading, at any level, and every task-item marker"
+ISSUE_BODY="$scratch/issue-104.md" run clauses 104 > "$scratch/out" 2>"$scratch/err"
+if [ "$(grep -c . "$scratch/out")" -eq 9 ]; then
+    passed=$((passed + 1)); echo "  ok    nine clauses"
+else
+    failed=$((failed + 1)); echo "  FAIL  nine clauses (got $(grep -c . "$scratch/out"))"
+    echo "        stdout holds: $(cat "$scratch/out")"
+fi
+check_out "  a heading in capitals opens the section, and a star bullet is clause 1" "1 [ ] s1 a star bullet"
+check_out "  a plus bullet is clause 2" "2 [ ] s2 a plus bullet"
+check_out "  an ordered item is clause 3" "3 [ ] s3 an ordered item"
+check_out "  an ordered item with a paren is clause 4" "4 [ ] s4 an ordered"
+check_out "  a backtick line does not close a tilde fence" "5 [ ] s5 after the tilde fence"
+check_out "  the text after a closed comment stays, and the comment goes" "5 [ ] s5 after the tilde fence  keeps its tail"
+check_out "  a clause whose line opens a comment is read" "6 [ ] s6 opens a comment"
+check_out "  a backtick line in a comment opens no fence" "7 [ ] s7 after a comment"
+check_out "  an h1 fold does not end the section" "8 [ ] s8 under an h1 fold"
+check_out "  a later heading that is no fold does not end it" "9 [ ] s9 under a later heading"
+check_not_out "  no box inside the tilde fence" "inside a tilde fence"
+
+echo "clause-check refuses when only a clause past the h1 fold is left out"
+account104 "$scratch/pr-104-eight.md" 8
+ISSUE_BODY="$scratch/issue-104.md" PR_BODY="$scratch/pr-104-eight.md" CLOSES_JSON='[104]' \
+    run clause-check 1600 > "$scratch/out" 2>"$scratch/err"
+check_status "eight of nine refuses" nonzero $?
+check_out "  it names #104 clause 9" "#104 clause 9:"
+
+echo "clause-check reads an ordered accounting line, and all nine pass"
+account104 "$scratch/pr-104-all.md" 8
+printf -- '9. [x] #104.9 held\n' >> "$scratch/pr-104-all.md"
+ISSUE_BODY="$scratch/issue-104.md" PR_BODY="$scratch/pr-104-all.md" CLOSES_JSON='[104]' \
+    run clause-check 1600 > "$scratch/out" 2>"$scratch/err"
+check_status "nine of nine passes" zero $?
+
+echo "clause-check does not read a met line inside a fence of the pull request body"
+account104 "$scratch/pr-104-fenced.md" 8
+printf -- '```\n- [x] #104.9 quoted, not accounted\n```\n' >> "$scratch/pr-104-fenced.md"
+ISSUE_BODY="$scratch/issue-104.md" PR_BODY="$scratch/pr-104-fenced.md" CLOSES_JSON='[104]' \
+    run clause-check 1600 > "$scratch/out" 2>"$scratch/err"
+check_status "a fenced met line accounts for nothing" nonzero $?
+check_out "  it names #104 clause 9" "#104 clause 9:"
+
+echo "clause-check exits 1 when an issue body cannot be read, and passes nothing"
+ISSUE_FAIL=1 PR_BODY="$scratch/pr-104-all.md" CLOSES_JSON='[104]' \
+    run clause-check 1600 > "$scratch/out" 2>"$scratch/err"
+check_status "a failed read refuses" nonzero $?
+check_not_out "  it prints no pass line" "marked met"
+if grep -qF 'could not read the body of #104' "$scratch/err"; then
+    passed=$((passed + 1)); echo "  ok    it names the issue it could not read"
+else
+    failed=$((failed + 1)); echo "  FAIL  it names the issue it could not read"
+    echo "        stderr holds: $(cat "$scratch/err")"
+fi
 
 echo "$passed passed; $failed failed"
 [ "$failed" -eq 0 ]

@@ -114,24 +114,66 @@ closes() {
     gh api graphql -F "n=$n" -f "query=$q" --jq '[.data.repository.pullRequest.closingIssuesReferences.nodes[].number]'
 }
 
+# visible FILE: the lines of a Markdown body that GitHub renders as text,
+# with carriage returns dropped (a body edited in the web form comes back
+# with CRLF line ends). A fenced block is dropped whole: it closes only on a
+# fence of its own character at least as long as the one that opened it, so
+# a ``` line inside a ~~~ fence stays inside. An HTML comment is cut out of
+# the line it sits on, the text before `<!--` and after `-->` stays, and no
+# fence opens inside a comment.
+visible() {
+    tr -d '\r' < "$1" | awk '
+        function fence_of(s,   t) {
+            t = s
+            sub(/^[ \t]*/, "", t)
+            if (match(t, /^```+/) || match(t, /^~~~+/)) return substr(t, 1, RLENGTH)
+            return ""
+        }
+        {
+            line = $0
+            if (fence != "") {
+                f = fence_of(line)
+                rest = line
+                sub(/^[ \t]*[`~]+/, "", rest)
+                if (f != "" && substr(f, 1, 1) == substr(fence, 1, 1) && length(f) >= length(fence) && rest ~ /^[ \t]*$/) fence = ""
+                next
+            }
+            if (!incomment) {
+                f = fence_of(line)
+                if (f != "") { fence = f; next }
+            }
+            out = ""
+            while (1) {
+                if (incomment) {
+                    i = index(line, "-->")
+                    if (!i) break
+                    line = substr(line, i + 3)
+                    incomment = 0
+                    continue
+                }
+                i = index(line, "<!--")
+                if (!i) { out = out line; break }
+                out = out substr(line, 1, i - 1)
+                line = substr(line, i + 4)
+                incomment = 1
+            }
+            print out
+        }
+    '
+}
+
 # clauses_of FILE: the checkbox clauses of an issue body held in FILE, one
 # per line as `<k> [<mark>] <text>`, numbered from 1 in body order. Reading
-# starts at the first heading of any level whose text opens `Done when` and
-# runs to the end of the body; no later heading ends it. A box in a fenced
-# block or an HTML comment is not a clause. Carriage returns are dropped,
-# because a body edited in the web form comes back with CRLF line ends.
+# starts at the first heading of any level whose text opens `Done when`, in
+# any case, and runs to the end of the body; no later heading of any level
+# ends it. A clause is a task item GitHub renders: a `-`, `*` or `+` bullet,
+# or an ordered `1.` or `1)` item, then `[ ]`, `[x]` or `[X]`. Only what
+# `visible` keeps is read, so a box in a fence or a comment is no clause.
 clauses_of() {
-    tr -d '\r' < "$1" | awk '
-        /^[ \t]*(```|~~~)/ { fence = !fence; next }
-        fence { next }
-        incomment { if (index($0, "-->")) incomment = 0; next }
-        /<!--/ {
-            rest = substr($0, index($0, "<!--") + 4)
-            if (!index(rest, "-->")) { incomment = 1; next }
-        }
+    visible "$1" | awk '
         !started && tolower($0) ~ /^#+[ \t]+done when/ { started = 1; next }
         !started { next }
-        /^[ \t]*[-*+][ \t]+\[[ xX]\]/ {
+        /^[ \t]*([-*+]|[0-9]+[.)])[ \t]+\[[ xX]\]/ {
             i = index($0, "[")
             mark = substr($0, i + 1, 1)
             text = substr($0, i + 3)
@@ -146,11 +188,12 @@ clauses_of() {
 # ISSUE that the pull request body does not mark met, and exit 1 if there is
 # any. A clause is met only when a line of the body reads
 # `- [x] #<issue>.<k> <evidence>` and no line reads `- [ ] #<issue>.<k>`.
+# PR-BODY-FILE is what `visible` kept, so a line in a fence is no accounting.
 account() {
     awk -v n="$1" -v prfile="$3" '
         BEGIN {
             while ((getline line < prfile) > 0) {
-                if (!match(line, /^[ \t]*[-*+][ \t]+\[[ xX]\][ \t]+#[0-9]+\.[0-9]+/)) continue
+                if (!match(line, /^[ \t]*([-*+]|[0-9]+[.)])[ \t]+\[[ xX]\][ \t]+#[0-9]+\.[0-9]+/)) continue
                 head = substr(line, RSTART, RLENGTH)
                 key = substr(head, index(head, "#") + 1)
                 mark = substr(head, index(head, "[") + 1, 1)
@@ -206,6 +249,7 @@ clause_check() {
         echo "gh-issue: could not read the body of pull request #$pr." >&2
         exit 1
     fi
+    visible "$tmp/pr" > "$tmp/pr.visible"
     refused=0
     for i in $issues; do
         need_number "$i" clause-check
@@ -220,7 +264,7 @@ clause_check() {
             refused=1
             continue
         fi
-        account "$i" "$tmp/clauses" "$tmp/pr" || refused=1
+        account "$i" "$tmp/clauses" "$tmp/pr.visible" || refused=1
     done
     rm -rf "$tmp"
     if [ "$refused" -ne 0 ]; then
