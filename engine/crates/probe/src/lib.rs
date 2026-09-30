@@ -280,24 +280,73 @@ impl Tier {
     }
 }
 
-/// Whether a run had the corpus present or absent.
+/// Which tree a run had: the corpus present, the corpus absent, or the present
+/// tree with one component of the Headwater layer taken away or put in.
 ///
 /// Spec 5 removed the counterfactual from the category list because it applies
 /// to every category, and listing it beside them hid that the pair doubles the
 /// cost of whatever it measures.
+///
+/// The four component arms (#1472) separate the parts of the layer that the
+/// absent arm removes together. Each one names its delta against the present
+/// tree in `.headwater/probe.yml`, under `components`, so the name fixes
+/// only the direction of the delta and the declaration fixes its paths.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Arm {
     Present,
     Absent,
+    /// The present tree less the intent hook's script.
+    NoHook,
+    /// The present tree less the skills.
+    NoSkills,
+    /// The present tree less the standing instructions.
+    NoClaudeMd,
+    /// The present tree with a project MCP server declared.
+    Mcp,
 }
 
 impl Arm {
-    pub const ALL: [Arm; 2] = [Arm::Present, Arm::Absent];
+    pub const ALL: [Arm; 6] = [
+        Arm::Present,
+        Arm::Absent,
+        Arm::NoHook,
+        Arm::NoSkills,
+        Arm::NoClaudeMd,
+        Arm::Mcp,
+    ];
 
     pub fn name(self) -> &'static str {
         match self {
             Arm::Present => "present",
             Arm::Absent => "absent",
+            Arm::NoHook => "no-hook",
+            Arm::NoSkills => "no-skills",
+            Arm::NoClaudeMd => "no-claude-md",
+            Arm::Mcp => "mcp",
+        }
+    }
+
+    /// Whether the arm is one component of the layer, declared under
+    /// `components` with its delta, rather than the present or absent tree.
+    pub fn is_component(self) -> bool {
+        !matches!(self, Arm::Present | Arm::Absent)
+    }
+
+    /// Whether the arm's delta puts paths into the present tree rather than
+    /// taking them out of it.
+    pub fn adds(self) -> bool {
+        matches!(self, Arm::Mcp)
+    }
+
+    /// Every arm name, as a reader of a refusal needs them: `a`, `b` and `c`.
+    pub fn listed() -> String {
+        let names: Vec<String> = Arm::ALL
+            .iter()
+            .map(|arm| format!("`{}`", arm.name()))
+            .collect();
+        match names.split_last() {
+            Some((last, rest)) if !rest.is_empty() => format!("{} and {last}", rest.join(", ")),
+            _ => names.join(""),
         }
     }
 

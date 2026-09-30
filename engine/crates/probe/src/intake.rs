@@ -217,7 +217,8 @@ impl std::fmt::Display for Refusal {
             ),
             Refusal::UnknownArm(found) => write!(
                 f,
-                "`{found}` is not an arm. The arms are `present` and `absent`"
+                "`{found}` is not an arm. The arms are {}",
+                Arm::listed()
             ),
             Refusal::CostNotACount(found) => write!(
                 f,

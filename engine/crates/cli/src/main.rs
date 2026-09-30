@@ -5325,7 +5325,8 @@ fn probe_plan(
                 Some(arm) => Some(arm),
                 None => {
                     return refuse(&format!(
-                        "`--arm {name}` names no arm. The arms are `present` and `absent`"
+                        "`--arm {name}` names no arm. The arms are {}",
+                        headwater_probe::Arm::listed()
                     ))
                 }
             },

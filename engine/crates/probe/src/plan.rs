@@ -901,6 +901,20 @@ impl Plan {
         plan.session_cost = envelope.session_cost;
         plan.max_turns = envelope.max_turns;
         plan.arms = arms(envelope, narrowing.arm);
+        // An arm the tier does not declare is named as that, at every tier,
+        // before a paired tier refuses the narrowing itself. With six arms to
+        // name since #1472, `CampaignNarrowed` for a misspelled arm would send
+        // the reader after the wrong mistake.
+        if plan.arms.is_empty() && tier.pairs_arms() {
+            if let Some(arm) = narrowing.arm {
+                plan.refusal = Some(Refusal::ArmNotDeclared {
+                    tier,
+                    arm,
+                    declared: envelope.arms.clone(),
+                });
+                return plan;
+            }
+        }
         if plan.arms.len() < envelope.arms.len() && tier.pairs_arms() {
             plan.refusal = Some(Refusal::CampaignNarrowed);
             return plan;
@@ -934,8 +948,11 @@ impl Plan {
             plan.refusal = Some(Refusal::InstrumentExamined { probe, path, entry });
             return plan;
         }
-        if plan.arms.contains(&Arm::Absent) {
-            if let Some(refusal) = ablated_examined(&plan.selected, &envelope.ablation) {
+        // Every arm that removes paths is held to the same rule as the absent
+        // arm: a component arm that removes a probe's document cannot measure
+        // the probe either (#1472).
+        for arm in &plan.arms {
+            if let Some(refusal) = ablated_examined(&plan.selected, envelope.removes(*arm)) {
                 plan.refusal = Some(refusal);
                 return plan;
             }
