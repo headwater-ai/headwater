@@ -9,6 +9,8 @@ relations:
   governs:
     - [engine/crates/cli/src/lib.rs, engine/crates/cli/src/main.rs]
     - engine/crates/query/src/mcp.rs
+    - engine/crates/query/src/lib.rs
+    - engine/crates/census/src/walk.rs
 ---
 
 # headwater mcp
