@@ -1392,7 +1392,8 @@ fn layer_budgets(with: &[(&str, &str)]) -> Budgets {
         assert!(block.contains(from), "{from}");
         block = block.replace(from, to);
     }
-    let campaign = "    arms: [present, absent]\n    ablation: [CLAUDE.md, .claude, .githooks, .headwater]\n";
+    let campaign =
+        "    arms: [present, absent]\n    ablation: [CLAUDE.md, .claude, .githooks, .headwater]\n";
     assert!(source.contains(campaign), "the fixture campaign tier");
     let source = source.replacen(
         campaign,
@@ -1433,7 +1434,9 @@ fn a_campaign_with_component_arms_prices_every_arm() {
             budget: 100,
         })
     );
-    assert!(plan.render(ColorMode::Plain).contains("arms: [present, absent, no-hook, no-skills, no-claude-md, mcp]"));
+    assert!(plan
+        .render(ColorMode::Plain)
+        .contains("arms: [present, absent, no-hook, no-skills, no-claude-md, mcp]"));
 }
 
 #[test]

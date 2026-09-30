@@ -215,11 +215,9 @@ impl std::fmt::Display for Refusal {
                 f,
                 "`{found}` is not a tier. The tiers are `regression` and `campaign`"
             ),
-            Refusal::UnknownArm(found) => write!(
-                f,
-                "`{found}` is not an arm. The arms are {}",
-                Arm::listed()
-            ),
+            Refusal::UnknownArm(found) => {
+                write!(f, "`{found}` is not an arm. The arms are {}", Arm::listed())
+            }
             Refusal::CostNotACount(found) => write!(
                 f,
                 "`cost_cents` is `{found}`, and the realized cost has to be a whole number of \

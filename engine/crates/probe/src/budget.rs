@@ -786,16 +786,16 @@ tiers:
         );
         let message = refused.expect_err("refused").to_string();
         for arm in Arm::ALL {
-            assert!(
-                message.contains(&format!("`{}`", arm.name())),
-                "{message}"
-            );
+            assert!(message.contains(&format!("`{}`", arm.name())), "{message}");
         }
     }
 
     #[test]
     fn a_delta_for_an_arm_nobody_declared_is_refused() {
-        let source = LAYER.replace("      mcp: [.mcp.json]\n", "      no-docs: [docs]\n      mcp: [.mcp.json]\n");
+        let source = LAYER.replace(
+            "      mcp: [.mcp.json]\n",
+            "      no-docs: [docs]\n      mcp: [.mcp.json]\n",
+        );
         assert_eq!(
             Budgets::read(&source),
             Err(Unreadable::UnknownArm {
@@ -886,8 +886,7 @@ tiers:
     fn a_paired_tier_with_no_present_arm_is_refused() {
         // Every delta is taken against the present tree, so a paired tier
         // without it compares two arms that differ by two deltas.
-        let source = LAYER
-            .replace("[present, absent, no-hook,", "[absent, no-hook,");
+        let source = LAYER.replace("[present, absent, no-hook,", "[absent, no-hook,");
         assert_eq!(
             Budgets::read(&source),
             Err(Unreadable::PairWithoutPresent { tier: "campaign" })
