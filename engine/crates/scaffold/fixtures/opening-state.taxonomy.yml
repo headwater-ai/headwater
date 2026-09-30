@@ -1,10 +1,19 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 # The taxonomy that `tests/opening_state.rs` scaffolds against. Three kinds
-# open at three states through three regimes, and one relation requires both
-# ends. A new document owes its far half at promotion only when it opens at a
-# state whose role is `initial` (HW-DR-0086), so the far half is owed for one
-# kind and written for the other two.
+# open at three states through three regimes. Three relations are declared.
+#
+# `elaborates` requires both ends. A new document owes its far half at
+# promotion only when it opens at a state whose role is `initial`
+# (HW-DR-0086), so the far half is owed for one kind and written for the
+# other two.
+#
+# `supersedes` also requires both ends and declares a state for its target.
+# The scaffold writes the far half as `elaborates` does, and it writes no
+# state onto the target at any opening state (HW-DR-0104).
+#
+# `pairs_with` is symmetric. The scaffold writes no far half for it at any
+# opening state, because one half states a symmetric edge (HW-DR-0104).
 #
 # `proposed` carries no role at all. A reading that deferred on anything but a
 # live state, or on anything but a terminal one, would defer it or `current`,
@@ -87,5 +96,21 @@ relations:
     to:   [governed_document]
     inverse: elaborated_by
     reciprocal: required
+    nuclearity: multinuclear
+    created_by: scaffold
+  supersedes:
+    family: succession
+    from: [governed_document]
+    to:   [governed_document]
+    inverse: superseded_by
+    reciprocal: required
+    nuclearity: multinuclear
+    on_target: {set_state: superseded}
+    created_by: scaffold
+  pairs_with:
+    family: association
+    from: [governed_document]
+    to:   [governed_document]
+    reciprocal: symmetric
     nuclearity: multinuclear
     created_by: scaffold
