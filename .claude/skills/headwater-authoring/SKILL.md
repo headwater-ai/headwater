@@ -77,7 +77,7 @@ Neither is worked around. Hand both to the `headwater-taxonomy` skill, which own
 
 Errors must reach zero, which is what the commit gate holds. `headwater check --fix` writes the corrections the engine derives without judgment — a British spelling, a contraction whose expansion is one word, a retired term that names a replacement, and a missing reciprocal half — and it leaves every finding whose remedy is a rewrite. Read the diff.
 
-Prose under `docs/spec/`, `docs/subsystems/`, `docs/decisions/`, `docs/evaluations/`, `docs/obligations/`, `docs/interfaces/`, `docs/requirements/`, `docs/acceptance-criteria/`, `docs/tutorials/`, `docs/how-to/`, `docs/process/decisions/`, `docs/process/specs/`, `docs/process/evaluations/`, `docs/process/obligations/` and `docs/process/explanations/` answers to the `ste_house` language regime. Invoke the `ste-editor` skill for the rules that no check reads.
+Prose under `docs/spec/`, `docs/subsystems/`, `docs/decisions/`, `docs/evaluations/`, `docs/obligations/`, `docs/interfaces/`, `docs/requirements/`, `docs/acceptance-criteria/`, `docs/tutorials/`, `docs/how-to/` and every shelf under `docs/process/` answers to the `ste_house` language regime. Invoke the `ste-editor` skill for the rules that no check reads.
 
 **An edit to a document that a probe reads marks each result over it.** The next `headwater generate` writes one sentence into each such result under `docs/probe-results/`, and it keeps every verdict. `generate --check` asks for that regeneration once, and `headwater probe stale` names the results the edit reached.
 
