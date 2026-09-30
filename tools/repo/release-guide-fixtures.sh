@@ -618,8 +618,9 @@ contains "a record that governs ./.github/workflows/ci.yml and is not cited ther
 #     `deploy-site.yml` declares no secrets and a mapping delivers no token
 #     (#1342).
 #   - The `ci.yml` caller `needs` `engine` and `headwater`, and its `if:` is
-#     exactly the push term and the `main` term joined by `&&`, so no `!`,
-#     `||` or status function such as `always()` admits another event (#1342).
+#     the push term and the `main` term joined by `&&`, with `success()` at
+#     most besides, so no `!`, `||` or status function such as `always()`
+#     admits another event (#1342).
 #   - The deploy job of `deploy-site.yml` has one constant concurrency group
 #     with `cancel-in-progress: false`, a workflow-level concurrency, if any,
 #     is held the same way, and neither caller has a concurrency of its own,
@@ -755,12 +756,13 @@ for job, body in sorted(callers("ci.yml").items()):
     # The condition is exactly the two terms joined by &&, in either order. A
     # substring test passed !(push && main), which runs on every other event,
     # so any other term, a !, a || or a status function such as always() is
-    # refused (#1342 verify round 1).
+    # refused (#1342 verify round 1). success() is the default GitHub adds
+    # to an if: with no status function, so it may stand as a third term.
     cond = re.sub(r"\s+", "", str(body.get("if", ""))).replace("${{", "").replace("}}", "")
     terms = cond.split("&&")
     if "if" not in body:
         out.append("ci.yml job %s has no if:, so a pull request or a merge group runs the deploy" % job)
-    elif set(terms) != {"github.event_name==\x27push\x27", "github.ref==\x27refs/heads/main\x27"}:
+    elif set(terms) - {"success()"} != {"github.event_name==\x27push\x27", "github.ref==\x27refs/heads/main\x27"}:
         out.append("ci.yml job %s has an if: other than a push to main, so an event other than that push can run the deploy" % job)
     w = body.get("with")
     if isinstance(w, dict) and w.get("ref") not in (None, ""):
@@ -909,7 +911,7 @@ print(" ".join(k for k, v in jobs.items() if isinstance(v, dict) and v.get("uses
 ' "$root" 2>/dev/null)
 
 # The same for ci.yml, and the job of deploy-site.yml that deploys, for the
-# arms d17 to d49 (#1342).
+# arms d17 to d50 (#1342).
 ci_job=$(python3 -c '
 import sys, yaml
 jobs = yaml.safe_load(open(sys.argv[1] + "/.github/workflows/ci.yml", encoding="utf-8"))["jobs"]
@@ -1026,7 +1028,7 @@ contains "a copy of the deploy steps in release.yml is red" \
     "release.yml job deploy-copy runs the deploy itself, so the site has two deploy paths" \
     "$(deploys "$scratch/d5")"
 
-# d16 to d49 hold what each workflow's own comment states about the one
+# d16 to d50 hold what each workflow's own comment states about the one
 # deploy job: its ref input, its token, its one path, the ci.yml gate, and its
 # one queue (#1342). Each arm applies one shape to a copy and names the line.
 
@@ -1251,9 +1253,15 @@ if [ -n "$ci_job" ]; then
     edit_wf "$scratch/d49" ci.yml "doc['jobs']['$ci_job']['if'] = \"\${{ github.ref == 'refs/heads/main' && github.event_name == 'push' }}\""
     same "a ci.yml deploy whose if: names the two terms in the other order holds" "" \
         "$(deploys "$scratch/d49" | tr '\n' '|' | sed 's/|$//')"
+
+    # d50. success() is the default status function, so naming it holds.
+    copy_tree "$scratch/d50"
+    edit_wf "$scratch/d50" ci.yml "doc['jobs']['$ci_job']['if'] = \"\${{ success() && github.event_name == 'push' && github.ref == 'refs/heads/main' }}\""
+    same "a ci.yml deploy whose if: adds success() holds" "" \
+        "$(deploys "$scratch/d50" | tr '\n' '|' | sed 's/|$//')"
 else
     fail "ci.yml has a job that calls deploy-site.yml" \
-        "none, so the arms d17, d22 to d24, d28 to d31, d35 to d39, d45, d46 and d49 have no job to edit"
+        "none, so the arms d17, d22 to d24, d28 to d31, d35 to d39, d45, d46, d49 and d50 have no job to edit"
 fi
 
 # d9. The APT route as each file that describes it states it (#1339).
