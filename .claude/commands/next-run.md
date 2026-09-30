@@ -62,7 +62,7 @@ Composed with `Write` into the issue's scratch directory and passed as a path. N
     footprint:    <artifacts>       (from the adjudication; integrate)
     waits-on:     #<N> or none      (from the claim; iterate, build, integrate)
     ruling:       <your ruling>     (integrate)
-    attacks:      <headings from hw-verification-bar, nothing more>  (verify; iterate chooses them)
+    attacks:      <headings from hw-verification-bar, nothing more>  (build, verify; iterate picks)
     deadline:     <minutes>
     report:       the fixed block your definition names and nothing before it
 
