@@ -110,6 +110,7 @@ The command reads no environment variable.
 | `tombstones` | When the profile is filtered and its grain is `counted` | One element for each filter rule that withheld at least one document. |
 | `tombstones[].rule` | In each element | The filter rule. |
 | `tombstones[].documents` | In each element | How many documents the rule withheld, as a number. |
+| `tombstones[].identifiers` | In each element, from `1.3` | The `sha256:<hex>` digest of the identifier of each document that the rule withheld, sorted, with no duplicates. A withheld document with no identifier is counted in `documents` and is not listed. A tier that already holds an identifier can test it against this list, and a tier that holds none learns only the count ([HW-DR-0100](../decisions/0100-a-counted-tombstone-lists-a-digest-of-each-withheld-identifier-and-a-sealed-one-lists-nothing.md)). |
 | `graph` | Always | The property graph. |
 | `graph.documents` | Always | One element for each document that the profile carries. |
 | `graph.documents[].path` | Always | The path of the document from the repository root. |
@@ -150,7 +151,7 @@ The command reads no environment variable.
 
 ### Raising the version
 
-The current version is `1.2`. `version` and `export_version` carry this one value, from one constant in the engine. Read `version`. `export_version` stays because its removal is a major change, and that change costs every reader more than the duplicate costs.
+The current version is `1.3`. `version` and `export_version` carry this one value, from one constant in the engine. Read `version`. `export_version` stays because its removal is a major change, and that change costs every reader more than the duplicate costs.
 
 These rules decide how a change to the members moves the version. This section is the one statement of them.
 
@@ -158,7 +159,7 @@ These rules decide how a change to the members moves the version. This section i
 - **A member removed or renamed moves the major.** A change to the type or the meaning of a member also moves the major. So does a member that becomes conditional where it was always present, because a reader that relied on it then fails.
 - **A reader that meets a major above the one it understands stops with a message.** A reader that meets a different minor warns and continues.
 
-The history: `1.0` to `1.1` added `version` ([#343](https://github.com/headwater-ai/headwater/issues/343)). `1.1` to `1.2` added `patterns` to a list anchor and to an edge onto one ([#1247](https://github.com/headwater-ai/headwater/issues/1247)).
+The history: `1.0` to `1.1` added `version` ([#343](https://github.com/headwater-ai/headwater/issues/343)). `1.1` to `1.2` added `patterns` to a list anchor and to an edge onto one ([#1247](https://github.com/headwater-ai/headwater/issues/1247)). `1.2` to `1.3` added `identifiers` to each `counted` tombstone ([#1309](https://github.com/headwater-ai/headwater/issues/1309)).
 
 ## See also
 

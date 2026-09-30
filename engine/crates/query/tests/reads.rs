@@ -671,7 +671,7 @@ fn the_withheld_line_is_rendered_and_is_not_shaped_like_a_pointer() {
     let line = route
         .render(PLAIN)
         .lines()
-        .find(|line| line.contains("withheld"))
+        .find(|line| line.contains("the budget withheld"))
         .map(str::to_string)
         .unwrap_or_else(|| panic!("no withheld line\n{}", route.render(PLAIN)));
     assert!(
@@ -694,8 +694,11 @@ fn a_route_within_its_budget_renders_no_withheld_line() {
         Budget { pointers: 512 },
     );
     assert_eq!(route.withheld, 0);
+    // The line a cut writes opens `the budget withheld`. A bare `withheld`
+    // also matches the title of a document this route may point at, such as
+    // HW-DR-0100, which is a pointer and not a cut.
     assert!(
-        !route.render(PLAIN).contains("withheld"),
+        !route.render(PLAIN).contains("the budget withheld"),
         "{}",
         route.render(PLAIN)
     );

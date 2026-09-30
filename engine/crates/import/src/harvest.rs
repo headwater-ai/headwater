@@ -50,15 +50,19 @@
 //! writes. The publisher can state it, and the tier can compute it with any
 //! SHA-256 tool.
 //!
-//! # What this does not do yet
+//! # A withheld document, and a typo
 //!
 //! A filtered export can withhold a document, and spec 7 says that an anchor
 //! into a withheld document resolves to `withheld` rather than to a dangling
-//! reference. An export declares that it is filtered, but it does not say
-//! which identities it withheld, so nothing here can tell a withheld identity
-//! from a typo. Such a string is reported as unresolved, and the reason says
-//! that the export is filtered. [`headwater_graph::anchors::Binding::Withheld`]
-//! still has no producer.
+//! reference. [HW-DR-0100](../../../../docs/decisions/0100-a-counted-tombstone-lists-a-digest-of-each-withheld-identifier-and-a-sealed-one-lists-nothing.md)
+//! states what the export says for this. Under the `counted` grain each
+//! tombstone lists the digest of each identifier it withheld, so a string that
+//! the plain list does not hold is digested and tested against those lists. A
+//! hit is [`headwater_graph::anchors::Binding::Withheld`], under the export's
+//! profile, and this resolver is its one producer. A miss stays unresolved, and
+//! the reason names the case: the export is not filtered, the string is not a
+//! withheld identifier, the grain is `sealed` and the export lists nothing, or
+//! the export predates the list.
 //!
 //! # No socket
 //!
@@ -112,6 +116,8 @@ pub struct Export {
     ids: Vec<String>,
     /// Whether the export declares that a filter acted on it.
     filtered: bool,
+    /// What the export says about what its filter withheld.
+    withheld: Withheld,
     /// Why this resolver holds no documents. Every string is refused with it.
     unavailable: Option<String>,
 }
@@ -125,6 +131,7 @@ impl Export {
             digest: String::new(),
             ids: Vec::new(),
             filtered: false,
+            withheld: Withheld::default(),
             unavailable: Some(why),
         }
     }
@@ -161,15 +168,49 @@ impl Resolver for Export {
                 revision: Some(self.digest.clone()).into(),
             };
         }
-        match self.filtered {
-            true => Binding::Unresolved(format!(
-                "{} holds no document `{id}`. The export is filtered, and it does not say which \
-                 documents it withheld, so this run cannot tell a withheld document from a typo",
-                self.named
+        if !self.filtered {
+            return Binding::Unresolved(format!("{} holds no document `{id}`", self.named));
+        }
+        let named = &self.named;
+        let profile = &self.withheld.profile;
+        match &self.withheld.digests {
+            Some(digests) if digests.contains(&headwater_hash::digest(id.as_bytes())) => {
+                Binding::Withheld {
+                    profile: profile.clone(),
+                }
+            }
+            Some(_) => Binding::Unresolved(format!(
+                "{named} holds no document `{id}`, and `{id}` is not one of the identifiers it \
+                 withheld under the profile `{profile}`"
             )),
-            false => Binding::Unresolved(format!("{} holds no document `{id}`", self.named)),
+            None if self.withheld.grain.as_deref() == Some("sealed") => {
+                Binding::Unresolved(format!(
+                    "{named} holds no document `{id}`. The export is filtered under the `sealed` \
+                     grain, where the existence of a withheld document is the secret, so it lists \
+                     nothing and this run cannot tell a withheld document from a typo"
+                ))
+            }
+            None => Binding::Unresolved(format!(
+                "{named} holds no document `{id}`. The export is filtered, and it predates the \
+                 digest of each withheld identifier in its tombstones (export version 1.3), so \
+                 this run cannot tell a withheld document from a typo"
+            )),
         }
     }
+}
+
+/// What a filtered export says about the documents its filter withheld.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+struct Withheld {
+    /// The name of the profile, `profile.name`. A withheld binding names it.
+    profile: String,
+    /// The grain, `profile.tombstone`, where the export states one.
+    grain: Option<String>,
+    /// The digest of every withheld identifier, over every tombstone. `None`
+    /// where the export states no list: a `sealed` export, and a `counted` one
+    /// older than export version 1.3. A 1.3 `counted` export that withheld
+    /// nothing writes no tombstone, and its list is empty rather than absent.
+    digests: Option<Vec<String>>,
 }
 
 /// Read the committed export one pin names, and build its resolver.
@@ -205,21 +246,22 @@ pub fn open(root: &Path, pin: &Pin) -> Export {
         );
     }
     match documents(&bytes) {
-        Ok((ids, filtered)) => Export {
+        Ok((ids, filtered, withheld)) => Export {
             resolver: pin.resolver.clone(),
             named: pin.named(),
             digest: actual,
             ids,
             filtered,
+            withheld,
             unavailable: None,
         },
         Err(why) => Export::unavailable(pin, format!("{} did not read: {why}", pin.named())),
     }
 }
 
-/// Every document identity a native export holds, and whether it declares a
-/// filter.
-fn documents(bytes: &[u8]) -> Result<(Vec<String>, bool), String> {
+/// Every document identity a native export holds, whether it declares a
+/// filter, and what it says about what the filter withheld.
+fn documents(bytes: &[u8]) -> Result<(Vec<String>, bool, Withheld), String> {
     let text = std::str::from_utf8(bytes).map_err(|_| "it is not UTF-8".to_string())?;
     let root =
         headwater_yaml::load(text).map_err(|errors| headwater_yaml::error::render(&errors))?;
@@ -227,13 +269,55 @@ fn documents(bytes: &[u8]) -> Result<(Vec<String>, bool), String> {
         .value
         .as_map()
         .ok_or_else(|| "it is not a native export: the top level is not an object".to_string())?;
-    let filtered = map
+    let declaration = map
         .get("profile")
-        .and_then(|profile| profile.value.as_map())
-        .and_then(|profile| profile.get("filtered"))
-        .and_then(|node| node.value.as_scalar())
+        .and_then(|profile| profile.value.as_map());
+    let member = |key: &str| {
+        declaration
+            .and_then(|profile| profile.get(key))
+            .and_then(|node| node.value.as_scalar())
+    };
+    let filtered = member("filtered")
         .and_then(headwater_yaml::core_schema::as_bool)
         .unwrap_or(false);
+    let mut digests: Option<Vec<String>> = None;
+    for stone in map
+        .get("tombstones")
+        .and_then(|stones| stones.value.as_seq())
+        .into_iter()
+        .flatten()
+        .filter_map(|stone| stone.value.as_map())
+    {
+        if let Some(listed) = stone
+            .get("identifiers")
+            .and_then(|identifiers| identifiers.value.as_seq())
+        {
+            digests.get_or_insert_with(Vec::new).extend(
+                listed
+                    .iter()
+                    .filter_map(|digest| digest.value.as_scalar())
+                    .map(|digest| digest.text.clone()),
+            );
+        }
+    }
+    let grain = member("tombstone").map(|grain| grain.text.clone());
+    // A `counted` export from 1.3 on states every withheld identifier it holds,
+    // so one with no tombstone withheld nothing, and a miss there is not
+    // withheld. The list is then empty and not absent (HW-DR-0100).
+    let lists = map
+        .get("export_version")
+        .and_then(|version| version.value.as_scalar())
+        .is_some_and(|version| lists_identifiers(&version.text));
+    if lists && grain.as_deref() == Some("counted") {
+        digests.get_or_insert_with(Vec::new);
+    }
+    let withheld = Withheld {
+        profile: member("name")
+            .map(|name| name.text.clone())
+            .unwrap_or_default(),
+        grain,
+        digests,
+    };
     let documents = map
         .get("graph")
         .and_then(|graph| graph.value.as_map())
@@ -249,7 +333,20 @@ fn documents(bytes: &[u8]) -> Result<(Vec<String>, bool), String> {
         .filter_map(|id| id.value.as_scalar())
         .map(|id| id.text.clone())
         .collect();
-    Ok((ids, filtered))
+    Ok((ids, filtered, withheld))
+}
+
+/// Whether an export of this `export_version` lists the digest of each
+/// withheld identifier in a `counted` tombstone: 1.3 and every later version.
+/// A version that does not read as `<major>.<minor>` lists nothing.
+fn lists_identifiers(version: &str) -> bool {
+    let mut parts = version.trim().splitn(3, '.');
+    let major = parts.next().and_then(|part| part.parse::<u64>().ok());
+    let minor = parts.next().and_then(|part| part.parse::<u64>().ok());
+    match (major, minor) {
+        (Some(major), Some(minor)) => (major, minor) >= (1, 3),
+        _ => false,
+    }
 }
 
 /// Every resolver this repository's pinned exports supply, in declaration

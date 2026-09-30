@@ -68,10 +68,12 @@ use headwater_yaml::value::Value;
 ///
 /// [`envelope`] writes this value twice, as `version` and as `export_version`,
 /// so the two keys cannot disagree. History: `1.0` to `1.1` added `version`
-/// ([#343](https://github.com/headwater-ai/headwater/issues/343)), and `1.1` to
+/// ([#343](https://github.com/headwater-ai/headwater/issues/343)), `1.1` to
 /// `1.2` added `patterns` ([#1247](https://github.com/headwater-ai/headwater/issues/1247),
-/// see [`list_members`]).
-pub const VERSION: &str = "1.2";
+/// see [`list_members`]), and `1.2` to `1.3` added `identifiers` to each
+/// `counted` tombstone ([#1309](https://github.com/headwater-ai/headwater/issues/1309),
+/// see [HW-DR-0100](../../../../docs/decisions/0100-a-counted-tombstone-lists-a-digest-of-each-withheld-identifier-and-a-sealed-one-lists-nothing.md)).
+pub const VERSION: &str = "1.3";
 
 /// What a loss is about.
 ///
@@ -333,17 +335,18 @@ pub(crate) fn emit_marked(
         return Err(Refusal::NotBuilt(emitter));
     }
     let graph = surface.graph();
-    let withheld = withhold(surface, profile)?;
+    let withholding = withhold(surface, profile)?;
+    let withheld = &withholding.0;
     let all = nodes(surface, graph);
 
     let body = match emitter {
         Emitter::JsonSchema => schema(surface, &all),
-        _ => native(surface, graph, &all, &withheld),
+        _ => native(surface, graph, &all, withheld),
     };
 
     let census = audit(
         surface,
-        &withheld,
+        withheld,
         &body.carried_nodes,
         &body.carried_edges,
         &body.losses,
@@ -353,7 +356,7 @@ pub(crate) fn emit_marked(
         emitter,
         generated_at,
         built,
-        &withheld,
+        &withholding,
         &census,
         body,
     );
@@ -364,15 +367,22 @@ pub(crate) fn emit_marked(
 }
 
 /// What the profile's filter withheld, by node key, with the rule that withheld
-/// each one.
+/// each one, and beside it the identifier of each withheld document that has
+/// one, as `(rule, identifier)`.
 ///
 /// An empty filter withholds nothing and the map is empty, which is the first
 /// release's one profile. An anchor is never withheld here: a filter is over
 /// facet values, an anchor states no facets, and a filter that reached one would
 /// be filtering on a document that the corpus does not hold.
-fn withhold(surface: &Surface<'_>, profile: &Profile) -> Result<Vec<(String, String)>, Refusal> {
+/// The identifiers are what a `counted` tombstone digests
+/// ([HW-DR-0100](../../../../docs/decisions/0100-a-counted-tombstone-lists-a-digest-of-each-withheld-identifier-and-a-sealed-one-lists-nothing.md)).
+/// A document with no identifier is withheld and counted, and it is not listed,
+/// because an anchor names a document by its identifier and could not name it.
+type Withholding = (Vec<(String, String)>, Vec<(String, String)>);
+
+fn withhold(surface: &Surface<'_>, profile: &Profile) -> Result<Withholding, Refusal> {
     if profile.filter.is_empty() {
-        return Ok(Vec::new());
+        return Ok((Vec::new(), Vec::new()));
     }
     let shape = surface.shape();
     for (direction, clauses) in [
@@ -389,12 +399,16 @@ fn withhold(surface: &Surface<'_>, profile: &Profile) -> Result<Vec<(String, Str
         }
     }
     let mut out = Vec::new();
+    let mut identifiers = Vec::new();
     for document in surface.documents() {
         if let Admission::Withheld(rule) = profile.filter.admits(&profile.name, document.facets) {
+            if let Some(id) = document.id {
+                identifiers.push((rule.clone(), id.to_string()));
+            }
             out.push((document.path.to_string(), rule));
         }
     }
-    Ok(out)
+    Ok((out, identifiers))
 }
 
 fn rule_for(withheld: &[(String, String)], key: &str) -> Option<String> {
@@ -1063,10 +1077,11 @@ fn envelope(
     emitter: Emitter,
     generated_at: Option<&str>,
     built: Built,
-    withheld: &[(String, String)],
+    withholding: &Withholding,
     census: &Census,
     body: Body,
 ) -> Json {
+    let (withheld, identifiers) = withholding;
     let filtered = !profile.filter.is_empty();
     let mut declaration = vec![
         ("name".to_string(), Json::string(profile.name.as_str())),
@@ -1137,9 +1152,25 @@ fn envelope(
                 stones
                     .into_iter()
                     .map(|(rule, count)| {
+                        // HW-DR-0100: under `counted` the existence of a
+                        // withheld document is not the secret, so the tombstone
+                        // lists a digest of each withheld identifier. A tier that
+                        // already holds an identifier can test it against the
+                        // list, and one that does not learns only the count.
+                        let mut digests: Vec<String> = identifiers
+                            .iter()
+                            .filter(|(of, _)| *of == rule)
+                            .map(|(_, id)| headwater_hash::digest(id.as_bytes()))
+                            .collect();
+                        digests.sort();
+                        digests.dedup();
                         Json::object([
                             ("rule", Json::string(rule)),
                             ("documents", Json::Raw(count.to_string())),
+                            (
+                                "identifiers",
+                                Json::Array(digests.into_iter().map(Json::string).collect()),
+                            ),
                         ])
                     })
                     .collect(),

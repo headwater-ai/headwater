@@ -22,7 +22,12 @@ tombstones = filtered.get("tombstones", [])
 assert ANSWER in control_text
 assert ANSWER not in filtered_text
 assert filtered["profile"]["filtered"] is True
-assert tombstones == [{"documents": 1, "rule": "filtered.exclude.status"}]
+# The withheld document declares no identifier, so the tombstone counts it and
+# lists no digest for it (HW-DR-0100). The empty list is written all the same:
+# it states that this export is one that lists withheld identifiers.
+assert tombstones == [
+    {"documents": 1, "identifiers": [], "rule": "filtered.exclude.status"}
+]
 assert "nodes" not in filtered["census"]
 assert "edges" not in filtered["census"]
 assert len(filtered["census"]["accounted for"]) == 1
