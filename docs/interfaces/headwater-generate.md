@@ -26,7 +26,16 @@ Without `--check`, it computes projections and writes marked generated files. Wi
 
 It refuses to overwrite a file that lacks the generated-file marker. A stale projection or a marked file that the plan does not write is an error.
 
-**A run that refuses writes nothing.** The command finds the verdict of every output before its first write. Six refusals are known at that time: an ambiguous pair of transcripts, a defective pair of arms, a refused transcript whose state holds the refusal, a marked file that no declaration writes, an unmarked file at an output path, and an output whose marker the census does not read. When one of them applies, the command writes no file, and it exits 1. The report lists each output that it did not write with the line `not written: this run refused before its first write, and it wrote nothing`. A refused transcript whose state releases the refusal is not a refusal of the run, so the command writes its result and continues.
+**A run that refuses writes nothing.** The command finds the verdict of every output before its first write. When one of these six refusals applies, the command writes no file, and it exits 1:
+
+- more than one transcript on one side of a pair of arms
+- a pair of arms that holds a refused session that the recorder or the probe declaration caused
+- a refused transcript whose state holds the refusal
+- a marked file that no declaration writes
+- an unmarked file at an output path
+- an output whose marker the census does not read
+
+The report lists each output that it did not write with the line `not written: this run refused before its first write, and it wrote nothing`. A refused transcript whose state releases the refusal is not a refusal of the run, so the command writes its result and continues.
 
 Three failures can still come after a write, because no check before the first write can find them. The operating system can refuse a write. A projection can read a value that another projection writes in a cycle, and only a write shows the cycle. A later pass can find a new refusal, and only a defect in this engine causes that, because the first pass writes no transcript. These are failures of the disk or of the engine, and not refusals of the corpus.
 
