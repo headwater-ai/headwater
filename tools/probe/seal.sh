@@ -262,6 +262,157 @@ if [ "${1:-}" = --named ]; then
     exit 0
 fi
 
+# `--leak <workspace> <probe>...` prints each cue of a named probe that the
+# text a harness loads into every session states, and touches nothing (#1472).
+#
+# The seal finds an answer by a name, and the status probe's leak names none:
+# the description of the authoring skill states the ruling the probe expects
+# and never the probe. So each probe declares its **cues** under `cues:` in
+# `.headwater/probe.yml`: the strings whose presence in always-loaded text
+# gives the answer away. A cue is never an `expected:` value, because an
+# expected value such as `merge` is a common word that every file holds.
+#
+# The always-loaded set is `CLAUDE.md`, the `description:` of each
+# `.claude/skills/*/SKILL.md` and of each `.claude/agents/*.md`, and, where
+# the workspace declares a project MCP server in `.mcp.json`, the description
+# of each tool that `headwater mcp` lists. One line per hit:
+#
+#     leak <probe> <where> <cue>      a cue the declaration does not keep
+#     kept <probe> <where> <cue>      a cue kept on purpose, under `cued:`
+#     uncued <probe>                  a probe that declares no cue
+#
+# `<where>` is the path relative to the workspace, or `mcp:<tool>`. A probe
+# listed under `cued:` keeps its cue on purpose: its own document says it
+# measures the cue, and a campaign reports it on its own line and never in a
+# rate of its category. It exits 1 when any `leak` line printed, 0 when none
+# did, 2 on a usage error, and 3 when the workspace declares an MCP server and
+# no engine or no `jq` can list its tools. An `uncued` probe is a probe this
+# check cannot see, and it does not fail the check.
+leak_cues() {
+    declaration=${HW_PROBE_YML:-$root/.headwater/probe.yml}
+    awk -v want="$1" '
+        function trim(s) { sub(/^[ \t]+/, "", s); sub(/[ \t]+$/, "", s); return s }
+        /^cues:/ { on = 1; next }
+        on && /^[^ #]/ { on = 0 }
+        on {
+            line = $0
+            sub(/^[ ]+/, "", line)
+            if (index(line, want ":") != 1) next
+            line = substr(line, length(want) + 2)
+            sub(/^[^[]*\[/, "", line)
+            sub(/\][ \t]*(#.*)?$/, "", line)
+            n = split(line, parts, ",")
+            for (i = 1; i <= n; i++) {
+                cue = trim(parts[i])
+                if (cue ~ /^".*"$/ || cue ~ /^\047.*\047$/) cue = substr(cue, 2, length(cue) - 2)
+                if (cue != "") print cue
+            }
+        }
+    ' "$declaration"
+}
+
+leak_kept() {
+    declaration=${HW_PROBE_YML:-$root/.headwater/probe.yml}
+    awk -v want="$1" '
+        /^cued:/ { on = 1; next }
+        on && /^[^ #]/ { on = 0 }
+        on && /^  - / {
+            entry = substr($0, 5)
+            sub(/[ ]+#.*$/, "", entry)
+            gsub(/^[ "\047]+|[ "\047]+$/, "", entry)
+            if (entry == want) found = 1
+        }
+        END { exit found ? 0 : 1 }
+    ' "$declaration"
+}
+
+# The always-loaded text of a workspace, one record per line as
+# `<where><TAB><text>`, with every line of `CLAUDE.md` its own record.
+leak_loaded() {
+    leak_here=$1
+    if [ -f "$leak_here/CLAUDE.md" ]; then
+        awk '{ printf "CLAUDE.md\t%s\n", $0 }' "$leak_here/CLAUDE.md"
+    fi
+    for leak_file in "$leak_here"/.claude/skills/*/SKILL.md "$leak_here"/.claude/agents/*.md; do
+        [ -f "$leak_file" ] || continue
+        # The first `description:` key of the front matter, which is the one a
+        # harness loads, with a folded or literal block read to its end.
+        awk -v where="${leak_file#"$leak_here"/}" '
+            NR == 1 && $0 == "---" { on = 1; next }
+            on && $0 == "---" { exit }
+            on && folded && /^[ \t]/ { sub(/^[ \t]+/, ""); text = text " " $0; next }
+            on && folded { exit }
+            on && /^description:/ {
+                sub(/^description:[ \t]*/, "")
+                if ($0 ~ /^[>|][-+]?$/) { folded = 1; text = ""; next }
+                text = $0
+                exit
+            }
+            END { if (text != "") printf "%s\t%s\n", where, text }
+        ' "$leak_file"
+    done
+    if [ -f "$leak_here/.mcp.json" ]; then
+        leak_engine=$root/engine/target/dev-release/headwater
+        [ -x "$leak_engine" ] || leak_engine=$root/engine/target/release/headwater
+        [ -x "$leak_engine" ] || return 3
+        command -v jq >/dev/null 2>&1 || return 3
+        leak_listed=$(printf '%s\n' \
+            '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05"}}' \
+            '{"jsonrpc":"2.0","method":"notifications/initialized"}' \
+            '{"jsonrpc":"2.0","id":2,"method":"tools/list"}' \
+            | "$leak_engine" mcp --root "$leak_here" 2>/dev/null \
+            | jq -r 'select(.id == 2) | .result.tools[] | "mcp:" + .name + "\t" + (.description | gsub("[\n\t]"; " "))' 2>/dev/null) || return 3
+        [ -n "$leak_listed" ] || return 3
+        printf '%s\n' "$leak_listed"
+    fi
+    return 0
+}
+
+if [ "${1:-}" = --leak ]; then
+    [ -n "${2:-}" ] && [ -n "${3:-}" ] || { echo "usage: sh tools/probe/seal.sh --leak <workspace> <probe-id>..." >&2; exit 2; }
+    leak_dir=$(cd "$2" 2>/dev/null && pwd -P) || { echo "seal: no workspace directory at $2" >&2; exit 2; }
+    shift 2
+    leak_text=$(leak_loaded "$leak_dir") || {
+        echo "seal: $leak_dir declares an MCP server, and no engine or no \`jq\` listed its tools, so the always-loaded text is not whole." >&2
+        exit 3
+    }
+    leak_found=0
+    for leak_probe in "$@"; do
+        leak_list=$(leak_cues "$leak_probe")
+        if [ -z "$leak_list" ]; then
+            printf 'uncued %s\n' "$leak_probe"
+            continue
+        fi
+        leak_verdict=leak
+        leak_kept "$leak_probe" && leak_verdict=kept
+        leak_hits=$(printf '%s\n' "$leak_list" | HW_LEAK_TEXT="$leak_text" awk -v probe="$leak_probe" -v verdict="$leak_verdict" '
+            BEGIN {
+                n = split(ENVIRON["HW_LEAK_TEXT"], rows, "\n")
+                for (i = 1; i <= n; i++) {
+                    tab = index(rows[i], "\t")
+                    if (tab == 0) continue
+                    where[i] = substr(rows[i], 1, tab - 1)
+                    text[i] = substr(rows[i], tab + 1)
+                }
+            }
+            $0 != "" {
+                for (i = 1; i <= n; i++) {
+                    if (!(i in where)) continue
+                    key = where[i] SUBSEP $0
+                    if (index(text[i], $0) > 0 && !(key in seen)) {
+                        seen[key] = 1
+                        printf "%s %s %s %s\n", verdict, probe, where[i], $0
+                    }
+                }
+            }')
+        if [ -n "$leak_hits" ]; then
+            printf '%s\n' "$leak_hits"
+            [ "$leak_verdict" = kept ] || leak_found=1
+        fi
+    done
+    exit "$leak_found"
+fi
+
 workspace=${1:-}
 [ -n "$workspace" ] && [ "$#" -ge 2 ] || {
     echo "usage: sh tools/probe/seal.sh <workspace> <probe-id>..." >&2
