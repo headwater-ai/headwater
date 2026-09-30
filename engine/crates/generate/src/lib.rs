@@ -932,6 +932,38 @@ pub struct AmbiguousArms {
 impl AmbiguousArms {
     /// The line a run prints under the key.
     pub fn line(&self) -> String {
+        if !self.components.is_empty() {
+            // A component arm is not a side of a present/absent pair, so the
+            // line names every arm the key holds and no pair (#1472).
+            let arms: Vec<(&str, &Vec<String>)> =
+                [("present", &self.present), ("absent", &self.absent)]
+                    .into_iter()
+                    .filter(|(_, paths)| !paths.is_empty())
+                    .chain(
+                        self.components
+                            .iter()
+                            .map(|(arm, paths)| (arm.as_str(), paths)),
+                    )
+                    .collect();
+            let counts: Vec<String> = arms
+                .iter()
+                .map(|(arm, paths)| count(paths.len(), &format!("`{arm}`-arm transcript")))
+                .collect();
+            let listed: Vec<String> = arms
+                .iter()
+                .map(|(arm, paths)| format!("{arm} [{}]", paths.join(", ")))
+                .collect();
+            return format!(
+                "selection `{}` on `{}` at `{}` carries {}, and more than one transcript of one \
+                 arm is not a comparison this run can make without guessing which transcript a \
+                 reader means: {}",
+                self.selection,
+                self.model,
+                self.served_version,
+                counts.join(" and "),
+                listed.join(", "),
+            );
+        }
         format!(
             "selection `{}` on `{}` at `{}` carries {} and {}, and more than one transcript on \
              either side is not a pair this run can compare without guessing which present \
@@ -1585,7 +1617,7 @@ impl Report {
         // pairing this run did manage to choose.
         if let Some(ambiguous) = self.ambiguous_arms.first() {
             return Some(format!(
-                "{}. Retire the stale or superseded transcript on whichever side carries more \
+                "{}. Retire the stale or superseded transcript on whichever arm carries more \
                  than one, so a pair this run can compare is the only one left",
                 ambiguous.line()
             ));

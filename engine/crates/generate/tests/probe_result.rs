@@ -1528,7 +1528,7 @@ fn a_component_arm_is_compared_with_the_campaign_present_arm() {
         ("no-skills", "What the skills change."),
         ("no-claude-md", "What `CLAUDE.md` changes."),
     ] {
-        let at = copied("absent-arms");
+        let at = copied(&format!("component-arm-{arm}"));
         std::fs::write(
             at.join("runs/probe-runs/campaign-present.md"),
             CAMPAIGN_PRESENT,
@@ -1568,7 +1568,7 @@ fn a_component_arm_is_compared_with_the_campaign_present_arm() {
 /// way: the treated arm is `mcp` and the control is the present arm.
 #[test]
 fn the_mcp_arm_is_treated_against_the_campaign_present_arm() {
-    let at = copied("absent-arms");
+    let at = copied("component-arm-mcp");
     std::fs::write(
         at.join("runs/probe-runs/campaign-present.md"),
         CAMPAIGN_PRESENT,
@@ -1589,10 +1589,8 @@ fn the_mcp_arm_is_treated_against_the_campaign_present_arm() {
         "the `mcp` arm was not compared with the present arm:\n{bytes}"
     );
     assert!(
-        bytes.contains(
-            "The treated arm is the `campaign` `mcp` arm and the control is the `campaign` \
-             present arm"
-        ),
+        bytes.contains("The treated arm is the `campaign` `mcp` arm")
+            && bytes.contains("and the control is the `campaign` present arm."),
         "the `mcp` comparison does not run from `mcp` to the present arm:\n{bytes}"
     );
 }
@@ -1602,7 +1600,7 @@ fn the_mcp_arm_is_treated_against_the_campaign_present_arm() {
 /// nothing and the run names the `no-hook` arm, not a present/absent pair.
 #[test]
 fn two_transcripts_of_one_component_arm_are_ambiguous() {
-    let at = copied("absent-arms");
+    let at = copied("component-arm-ambiguous");
     std::fs::write(
         at.join("runs/probe-runs/campaign-present.md"),
         CAMPAIGN_PRESENT,

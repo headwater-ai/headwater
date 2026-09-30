@@ -386,6 +386,10 @@ enum Claim {
     Documents,
     /// A present arm against `documentation` absent.
     Both,
+    /// One component arm (#1472) against the `campaign` present arm. A
+    /// component that removes a part is the control, and `mcp`, which adds
+    /// one, is the treated arm.
+    Component(Arm),
 }
 
 impl Claim {
@@ -405,6 +409,30 @@ impl Claim {
             Claim::Both => {
                 "What the documents and the governance change together. The treated arm is a \
                  present arm and the control is the `documentation` absent arm."
+            }
+            Claim::Component(Arm::NoHook) => {
+                "What the intent hook changes. The treated arm is the `campaign` present arm and \
+                 the control is the `campaign` `no-hook` arm, which removed the paths the \
+                 `no-hook` component's delta names. The documents are in both arms (spec 5)."
+            }
+            Claim::Component(Arm::NoSkills) => {
+                "What the skills change. The treated arm is the `campaign` present arm and the \
+                 control is the `campaign` `no-skills` arm, which removed the paths the \
+                 `no-skills` component's delta names. The documents are in both arms (spec 5)."
+            }
+            Claim::Component(Arm::NoClaudeMd) => {
+                "What `CLAUDE.md` changes. The treated arm is the `campaign` present arm and the \
+                 control is the `campaign` `no-claude-md` arm, which removed the paths the \
+                 `no-claude-md` component's delta names. The documents are in both arms \
+                 (spec 5)."
+            }
+            Claim::Component(Arm::Mcp) => {
+                "What the MCP server adds. The treated arm is the `campaign` `mcp` arm, which \
+                 added the paths the `mcp` component's delta names, and the control is the \
+                 `campaign` present arm. The documents are in both arms (spec 5)."
+            }
+            Claim::Component(Arm::Present | Arm::Absent) => {
+                unreachable!("the present and absent arms are not components")
             }
         }
     }
@@ -548,6 +576,11 @@ impl Comparison {
 ///   which spec 5 names as the only reading of that claim.
 /// - a present arm against `documentation` absent, both together.
 ///
+/// Each component arm (#1472) is one more role of the `campaign` tier, and it
+/// is compared with the `campaign` present arm alone: the present arm is
+/// treated against a component that removes a part, and `mcp`, which adds
+/// one, is treated against the present arm (spec 5).
+///
 /// # One present arm serves both tiers
 ///
 /// A present arm removes the instrument and the seal and nothing else, at every
@@ -612,18 +645,24 @@ fn pair_arms(graded: &[Graded], plan: &mut Plan) -> Vec<Comparison> {
             found.sort_by(|a, b| a.path.cmp(&b.path));
             found
         };
-        // The component arms of #1472 (`no-hook`, `no-skills`,
-        // `no-claude-md`, `mcp`) have no role here yet. A transcript of one is
-        // graded and compares nothing, because the claim each one measures
-        // against the present arm is not written as a `Claim` until a run
-        // records one. The design of that run is on #1472.
         let roles = [
             role(Tier::Campaign, Arm::Present),
             role(Tier::Campaign, Arm::Absent),
             role(Tier::Documentation, Arm::Present),
             role(Tier::Documentation, Arm::Absent),
         ];
-        if roles.iter().any(|holders| holders.len() > 1) {
+        // Each component arm of #1472 is one more role, compared with the
+        // `campaign` present arm alone (spec 5).
+        let components: Vec<(Arm, Vec<&Graded>)> = Arm::ALL
+            .into_iter()
+            .filter(|arm| arm.is_component())
+            .map(|arm| (arm, role(Tier::Campaign, arm)))
+            .collect();
+        if roles
+            .iter()
+            .chain(components.iter().map(|(_, holders)| holders))
+            .any(|holders| holders.len() > 1)
+        {
             let of_arm = |arm: Arm| {
                 let mut paths: Vec<String> = under
                     .iter()
@@ -639,7 +678,11 @@ fn pair_arms(graded: &[Graded], plan: &mut Plan) -> Vec<Comparison> {
                 served_version: served_version.to_string(),
                 present: of_arm(Arm::Present),
                 absent: of_arm(Arm::Absent),
-                components: Vec::new(),
+                components: components
+                    .iter()
+                    .map(|(arm, _)| (arm.name().to_string(), of_arm(*arm)))
+                    .filter(|(_, paths)| !paths.is_empty())
+                    .collect(),
             });
             continue;
         }
@@ -659,6 +702,15 @@ fn pair_arms(graded: &[Graded], plan: &mut Plan) -> Vec<Comparison> {
             documentation_absent,
         ) {
             chosen.push((Claim::Both, treated, control));
+        }
+        for (arm, holders) in &components {
+            if let (Some(present), Some(component)) = (campaign_present, holders.first().copied()) {
+                if arm.adds() {
+                    chosen.push((Claim::Component(*arm), component, present));
+                } else {
+                    chosen.push((Claim::Component(*arm), present, component));
+                }
+            }
         }
         for (claim, treated, control) in chosen {
             let (treated_defects, control_defects) =
