@@ -1069,13 +1069,15 @@ fn the_significant_pair(
         ("runs/probe-runs/campaign-present.md", present),
         ("runs/probe-runs/campaign-absent.md", absent),
     ] {
-        if state != "current" {
-            edit(
+        match state {
+            "current" => {}
+            UNDECLARED => edit(&at, transcript, "status: current\n", ""),
+            _ => edit(
                 &at,
                 transcript,
                 "status: current",
                 &format!("status: {state}"),
-            );
+            ),
         }
     }
     if let Some((path, source)) = extra {
@@ -1112,6 +1114,10 @@ fn opening(bytes: &str) -> &str {
     let end = rest.find("\n## ").unwrap_or(rest.len());
     &rest[..end]
 }
+
+/// The state argument that removes the `status` line from a transcript
+/// rather than writing a value into it.
+const UNDECLARED: &str = "(undeclared)";
 
 const SIGNIFICANT: [&str; 2] = [
     "satisfied more often at the 5% level",
@@ -1267,15 +1273,21 @@ fn a_result_over_a_draft_transcript_says_so_first_and_stays_live() {
     }
 }
 
-/// A recording whose state has no role this engine folds, and one whose state
-/// the facet does not hold, are both named first as a state nothing here reads.
+/// A recording whose state has no role this engine folds, one whose state the
+/// facet does not hold, and one that declares no state at all are each named
+/// first. None of the three is terminal, so each result stays at the `live`
+/// value (HW-DR-0063, amended 2026-10-01).
 #[test]
 fn a_result_over_a_transcript_of_unread_state_says_so_first() {
-    for state in ["filed", "shelved"] {
+    for (state, named) in [
+        ("filed", "`filed`"),
+        ("shelved", "`shelved`"),
+        (UNDECLARED, "declares no state this taxonomy reads"),
+    ] {
         for (path, bytes) in the_significant_pair_at(state) {
             assert!(
-                opening(&bytes).contains(&format!("`{state}`")),
-                "{path} does not name the state `{state}` first:\n{bytes}"
+                opening(&bytes).contains(named),
+                "{path} does not say `{named}` first:\n{bytes}"
             );
             for reading in SIGNIFICANT {
                 assert!(
@@ -1283,7 +1295,51 @@ fn a_result_over_a_transcript_of_unread_state_says_so_first() {
                     "{path} states a significance over a `{state}` recording:\n{bytes}"
                 );
             }
+            assert!(
+                bytes.contains("\nstatus: current\n"),
+                "{path} over a `{state}` recording left the live value:\n{bytes}"
+            );
         }
+    }
+}
+
+/// A terminal state that the result's own regime does not name is refused,
+/// and the refusal names the transcript the state came from, because that is
+/// where the repair is (HW-DR-0063, amended 2026-10-01).
+#[test]
+fn a_terminal_state_the_result_regime_does_not_name_is_refused_with_its_source() {
+    let at = copied("terminal-outside-the-regime");
+    std::fs::write(
+        at.join("runs/probe-runs/campaign-present.md"),
+        CAMPAIGN_PRESENT,
+    )
+    .expect("the present-arm transcript lands");
+    edit(
+        &at,
+        "runs/probe-runs/campaign-present.md",
+        "status: current",
+        "status: archived",
+    );
+    let plan = plan_over(&at);
+    let refused = plan
+        .unwritten
+        .iter()
+        .find(|unwritten| unwritten.at == "runs/probe-results/campaign-present.md")
+        .unwrap_or_else(|| {
+            panic!(
+                "a result over an `archived` transcript was not refused. Unwritten: {:?}",
+                plan.unwritten
+                    .iter()
+                    .map(|u| format!("{}: {}", u.at, u.reason))
+                    .collect::<Vec<_>>()
+            )
+        });
+    for named in ["`archived`", "runs/probe-runs/campaign-present.md"] {
+        assert!(
+            refused.reason.contains(named),
+            "the refusal does not name {named}: {}",
+            refused.reason
+        );
     }
 }
 

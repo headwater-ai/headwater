@@ -28,6 +28,11 @@ facets:
       # list does not hold at all, and the case writes one.
       - {value: deprecated, role: terminal-retained}
       - {value: filed}
+      # A second terminal value that the `results` regime below does not
+      # name, so a result over a transcript at it is refused, and the refusal
+      # names the transcript it took the state from (HW-DR-0063, amended
+      # 2026-10-01).
+      - {value: archived, role: terminal-retained}
 
   status_since:
     role: state_entered
@@ -62,6 +67,15 @@ identifier_schemes:
   result_id: {pattern: "RESULT-{namespace}-{slug}", namespace: FIX, allocation: minted-once}
   note_id:   {pattern: "NOTE-{namespace}-{slug}",   namespace: FIX, allocation: minted-once}
 
+regimes:
+  lifecycle:
+    # The regime a result binds. It names `deprecated` and not `archived`, so
+    # a result can take the first terminal state of its transcript and is
+    # refused the second.
+    results:
+      initial: draft
+      transitions: {draft: [current], current: [deprecated]}
+
 kinds:
   governed_document:
     abstract: true
@@ -85,6 +99,7 @@ kinds:
   probe_result:
     is_a: governed_document
     identifier: {scheme: result_id}
+    lifecycle: results
 
   note:
     is_a: governed_document
