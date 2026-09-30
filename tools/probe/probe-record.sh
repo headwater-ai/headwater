@@ -570,9 +570,18 @@ task=$(cat "$task_file")
 # The subshell cannot return 7 for its own `cd` and let a harness return 7
 # too, so it leaves a marker instead and the status below is the harness's.
 rm -f "$raw.nocd"
+# The MCP servers a session may load (#1472). `--strict-mcp-config` in every
+# arm, so a server of the recording host's own configuration, such as a
+# connector of the person who runs the batch, loads into no arm. The `mcp`
+# arm's workspace holds `.mcp.json`, and a project server there does not load
+# under `claude -p` without approval, so the file is passed by name. In
+# every other arm no server loads at all.
+mcp_config=
+[ -f "$here/.mcp.json" ] && mcp_config=$here/.mcp.json
 (
     cd "$here" || { : > "$raw.nocd"; exit 1; }
     claude -p --output-format stream-json --verbose \
+        --strict-mcp-config ${mcp_config:+--mcp-config "$mcp_config"} \
         ${model:+--model "$model"} \
         ${max_turns:+--max-turns "$max_turns"} \
         "$task"
@@ -647,6 +656,30 @@ else
         "$session"
 fi
 printf '\n'
+
+# What the arm holds, read from the declaration (#1472). The identity block
+# names the arm, and this sentence names its delta against the present tree,
+# so a reader of one transcript knows what the session could not read, or
+# could read in addition, without opening `.headwater/probe.yml`.
+arm_delta=$(sh "$root/tools/probe/ablate.sh" --delta "${tier:-regression}" "${arm:-present}" 2>/dev/null) || arm_delta=
+arm_less=$(printf '%s\n' "$arm_delta" | sed -n 's/^declared - //p' | awk 'NF { printf "%s`%s`", sep, $0; sep = ", " }')
+arm_plus=$(printf '%s\n' "$arm_delta" | sed -n 's/^declared + //p' | awk 'NF { printf "%s`%s`", sep, $0; sep = ", " }')
+if [ -n "$arm_less" ]; then
+    printf 'The `%s` arm is the present tree less %s.\n\n' "${arm:-present}" "$arm_less"
+elif [ -n "$arm_plus" ]; then
+    printf 'The `%s` arm is the present tree with %s added.\n\n' "${arm:-present}" "$arm_plus"
+else
+    printf 'The `%s` arm is the present tree: this repository less the probe instrument.\n\n' "${arm:-present}"
+fi
+
+# How many calls the session made to a tool of an MCP server (#1472). The
+# harness names each such tool `mcp__<server>__<tool>`. The #1384 re-run
+# recorded none in 658 sessions, and no arm of it loaded a server.
+mcp_calls=$(jq -s '[.[] | select(.type == "assistant") | .message.content[]?
+    | select(.type == "tool_use") | select((.name // "") | startswith("mcp__"))] | length' < "$raw" 2>/dev/null) || mcp_calls=0
+printf 'The session made %s %s to a tool of an MCP server.\n\n' "${mcp_calls:-0}" \
+    "$([ "${mcp_calls:-0}" = 1 ] && echo call || echo calls)"
+
 if [ "$capped" = 1 ]; then
     printf 'The session stopped at the turn cap of %s.\n\n' "${max_turns:-the harness}"
 fi

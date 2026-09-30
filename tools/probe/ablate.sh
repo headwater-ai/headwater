@@ -152,6 +152,17 @@ if [ "${1:-}" = --diff ]; then
     exit "$diff_status"
 fi
 
+# `--delta <tier> <arm>` prints the arm's declared delta as `declared - <path>`
+# and `declared + <path>` lines and touches nothing. `probe-record.sh` reads it
+# to state in a transcript what the arm holds (#1472).
+dry=0
+if [ "${1:-}" = --delta ]; then
+    [ -n "${2:-}" ] && [ -n "${3:-}" ] || { echo "$usage" >&2; exit 2; }
+    dry=1
+    set -- "$2" "" "$3"
+    [ "$3" != present ] || exit 0
+fi
+
 tier=${1:-}
 workspace=${2:-}
 arm=absent
@@ -169,7 +180,7 @@ case "${3:-}" in
     present) arm=present ;;
     *) arm=component; component=$3 ;;
 esac
-if [ "$arm" = list ]; then
+if [ "$arm" = list ] || [ "$dry" = 1 ]; then
     here=""
 else
     [ -n "$tier" ] && [ -n "$workspace" ] || {
@@ -341,6 +352,7 @@ if [ "$arm" = component ]; then
 elif [ "$arm" = absent ]; then
     printf '%s\n' "$entries" | awk 'NF { print "declared - " $0 }'
 fi
+[ "$dry" = 0 ] || exit 0
 if [ "$arm" = absent ] && [ -z "$entries" ] && [ -z "$additions" ]; then
     echo "ablate: the \`$tier\` tier declares no ablation, so it runs no absent arm to produce" >&2
     exit 2

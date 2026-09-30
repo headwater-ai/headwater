@@ -1485,6 +1485,56 @@ STUB
     same "and the cap the plan declares reaches the harness" "80" \
         "$(awk 'prev == "--max-turns" { print; exit } { prev = $0 }' "$scratch/claude-args" 2>/dev/null)"
 
+    # The MCP servers and the arm's delta (#1472). Every arm runs with
+    # `--strict-mcp-config`, so no server of the recording host loads. The
+    # `mcp` arm's workspace holds `.mcp.json`, and the driver passes it by
+    # name, because a project server does not load under `claude -p` without
+    # approval. The transcript states the arm's delta and the MCP calls.
+    same "every session runs with --strict-mcp-config" "1" \
+        "$(grep -cx -- '--strict-mcp-config' "$scratch/claude-args" 2>/dev/null)"
+    same "and a workspace with no .mcp.json names no server" "0" \
+        "$(grep -cx -- '--mcp-config' "$scratch/claude-args" 2>/dev/null)"
+    cat > "$scratch/bin/claude" <<STUB
+#!/bin/sh
+printf '%s\n' "\$@" > "$scratch/claude-args"
+printf '%s\n' '{"type":"system","subtype":"init","model":"claude-haiku-4-5","session_id":"s16"}'
+printf '%s\n' '{"type":"assistant","message":{"id":"m1","content":[{"type":"tool_use","id":"t1","name":"mcp__headwater__route","input":{"task":"x"}}]}}'
+printf '%s\n' '{"type":"user","message":{"content":[{"type":"tool_result","tool_use_id":"t1","content":"none"}]}}'
+printf '%s\n' '{"type":"assistant","message":{"id":"m2","content":[{"type":"tool_use","id":"t2","name":"Read","input":{"file_path":"CLAUDE.md"}}]}}'
+printf '%s\n' '{"type":"user","message":{"content":[{"type":"tool_result","tool_use_id":"t2","content":"none"}]}}'
+printf '%s\n' '{"type":"result","subtype":"success","result":"withheld","total_cost_usd":0.01,"modelUsage":{"claude-haiku-4-5-20251001":{"inputTokens":10}}}'
+STUB
+    chmod +x "$scratch/bin/claude"
+    cp "$root/tools/probe/arms/mcp/.mcp.json" "$scratch/ws/.mcp.json"
+    rm -f "$scratch/claude-args"
+    PATH="$scratch/bin:$PATH" sh "$driver" --probe "HW-PROBE-$tombstone" --session fixture-mcp \
+        --tier campaign --arm mcp --category sufficiency --repetitions 1 \
+        --task-file "$scratch/task.md" --workspace "$scratch/ws" \
+        >"$scratch/mcp-arm.md" 2>"$scratch/mcp-arm.err"
+    same "a session of the mcp arm records" "0" "$?"
+    rm -f "$scratch/ws/.mcp.json"
+    same "and the driver passes the workspace's .mcp.json to the harness" \
+        "$(cd "$scratch/ws" && pwd -P)/.mcp.json" \
+        "$(awk 'prev == "--mcp-config" { print; exit } { prev = $0 }' "$scratch/claude-args" 2>/dev/null)"
+    same "and still passes --strict-mcp-config" "1" \
+        "$(grep -cx -- '--strict-mcp-config' "$scratch/claude-args" 2>/dev/null)"
+    present "the transcript counts the calls to an MCP tool, and not the Read" \
+        "The session made 1 call to a tool of an MCP server." "$scratch/mcp-arm.md"
+    present "and states the arm's delta from the declaration" \
+        'The `mcp` arm is the present tree with `.mcp.json` added.' "$scratch/mcp-arm.md"
+    PATH="$scratch/bin:$PATH" sh "$driver" --probe "HW-PROBE-$tombstone" --session fixture-no-hook \
+        --tier campaign --arm no-hook --category sufficiency --repetitions 1 \
+        --task-file "$scratch/task.md" --workspace "$scratch/ws" \
+        >"$scratch/no-hook-arm.md" 2>"$scratch/no-hook-arm.err"
+    present "a no-hook transcript states what the arm removed" \
+        'The `no-hook` arm is the present tree less `.claude/hooks/intent.sh`.' "$scratch/no-hook-arm.md"
+    PATH="$scratch/bin:$PATH" sh "$driver" --probe "HW-PROBE-$tombstone" --session fixture-absent-delta \
+        --tier campaign --arm absent --category sufficiency --repetitions 1 \
+        --task-file "$scratch/task.md" --workspace "$scratch/ws" \
+        >"$scratch/absent-arm.md" 2>"$scratch/absent-arm.err"
+    present "an absent transcript states the tier's ablation" \
+        'The `absent` arm is the present tree less `CLAUDE.md`, `.claude`, `.githooks`, `.headwater`.' "$scratch/absent-arm.md"
+
     # Bash writes (#1384). A write made through `Bash` names no path in its
     # input, so the transform cannot see it in the log, and 22 of 30
     # present-arm sessions of the `cited` probe on 2026-09-28 recorded
