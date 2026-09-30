@@ -23,7 +23,7 @@ The verb takes the read-set path. It holds that artifact against the current tre
 
 `headwater gate` reads the artifact that `headwater check --read-set` writes. It compares the recorded lock, clock rules, barriers, change-scoped rules and listed file hashes with the tree in front of it.
 
-A verdict carries when the lock and every listed input still agree. No barrier or change-scoped rule may block it. Every windowed rule uses the recorded date. A moved lock, file, date, barrier, change-scoped rule, missing file or unhashed input voids the verdict.
+A verdict carries when the lock and every listed input still agree. No barrier or change-scoped rule may block it. Every windowed rule uses the recorded date. A moved lock, file, date, barrier, change-scoped rule, missing file or unhashed input voids the verdict. A listed path that resolves outside the repository root, for example through a symlink, also voids the verdict. The gate does not read that path, and it reports the path with the reason `escaped`.
 
 The read set lists what the earlier run read. It never states that those were all documents in the earlier corpus. A new document can therefore escape this comparison, and every report states that limit.
 

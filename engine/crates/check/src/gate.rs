@@ -191,6 +191,11 @@ pub enum Reason {
     },
     /// A listed input is not in the tree at all.
     Gone { path: String },
+    /// A listed input resolves to a location outside the repository root, so
+    /// the bytes a gate would hash are not this tree's. It counts as not found
+    /// whatever those bytes are: `headwater check` refuses the same path, and a
+    /// gate that hashed through it would carry a verdict the run never gave.
+    Escaped { path: String },
     /// A listed input carried no hash when it was read, so there is nothing to
     /// compare it against.
     Unhashed { path: String },
@@ -211,6 +216,7 @@ impl Reason {
             Reason::DayMoved { .. } => "day_moved",
             Reason::Moved { .. } => "moved",
             Reason::Gone { .. } => "gone",
+            Reason::Escaped { .. } => "escaped",
             Reason::Unhashed { .. } => "unhashed",
         }
     }
@@ -253,7 +259,9 @@ impl Reason {
                 ("recorded", text(recorded)),
                 ("found", text(found)),
             ]),
-            Reason::Gone { path } | Reason::Unhashed { path } => members.push(("path", text(path))),
+            Reason::Gone { path } | Reason::Escaped { path } | Reason::Unhashed { path } => {
+                members.push(("path", text(path)));
+            }
         }
         Json::object(members)
     }
@@ -291,6 +299,10 @@ impl Reason {
             Reason::Gone { path } => {
                 format!("{} is not in this tree", paint(Role::Path, path, mode))
             }
+            Reason::Escaped { path } => format!(
+                "{} resolves outside the repository root, so it is not read",
+                paint(Role::Path, path, mode)
+            ),
             Reason::Unhashed { path } => {
                 format!(
                     "{} carried no hash when it was read, so nothing compares",
@@ -412,6 +424,23 @@ pub fn decide(
     asked: Date,
     digest_of: impl Fn(&str) -> Option<String>,
 ) -> Verdict {
+    decide_within(recorded, lock, asked, |_| false, digest_of)
+}
+
+/// [`decide`], over a tree where `escapes` names each listed path that resolves
+/// outside the repository root.
+///
+/// Such a path is [`Reason::Escaped`] and `digest_of` is never asked about it,
+/// so a symlink that takes a listed path out of the tree cannot carry a verdict
+/// over bytes the tree does not hold. `escapes` is asked first, for every
+/// listed input, whether or not the run recorded a digest for it.
+pub fn decide_within(
+    recorded: &Recorded,
+    lock: &str,
+    asked: Date,
+    escapes: impl Fn(&str) -> bool,
+    digest_of: impl Fn(&str) -> Option<String>,
+) -> Verdict {
     let mut reasons = Vec::new();
 
     if recorded.lock != lock {
@@ -444,6 +473,12 @@ pub fn decide(
     }
 
     for input in &recorded.inputs {
+        if escapes(&input.path) {
+            reasons.push(Reason::Escaped {
+                path: input.path.clone(),
+            });
+            continue;
+        }
         match (&input.digest, digest_of(&input.path)) {
             (None, _) => reasons.push(Reason::Unhashed {
                 path: input.path.clone(),
@@ -599,6 +634,40 @@ mod tests {
                 path: "docs/a.md".to_string()
             }]
         );
+    }
+
+    /// A listed input that resolves outside the root voids the verdict even
+    /// where the bytes it reaches hash to the recorded digest, and the tree is
+    /// never asked for them.
+    #[test]
+    fn an_input_that_escapes_the_root_voids_the_verdict_unread() {
+        let verdict = decide_within(
+            &plain(),
+            "sha256:lock",
+            day("2026-08-13"),
+            |path| path == "docs/a.md",
+            |_| panic!("an escaped path is never read"),
+        );
+        assert!(!verdict.carries());
+        assert_eq!(
+            verdict.reasons,
+            vec![Reason::Escaped {
+                path: "docs/a.md".to_string()
+            }]
+        );
+        assert_eq!(verdict.reasons[0].token(), "escaped");
+        assert_eq!(
+            verdict.reasons[0].render(ColorMode::Plain),
+            "docs/a.md resolves outside the repository root, so it is not read"
+        );
+        let carried = decide_within(
+            &plain(),
+            "sha256:lock",
+            day("2026-08-13"),
+            |_| false,
+            tree(&[("docs/a.md", "sha256:a")]),
+        );
+        assert!(carried.carries(), "{carried:?}");
     }
 
     /// A lock that moved voids every result at once, because the lock digest is

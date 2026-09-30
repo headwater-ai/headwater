@@ -102,6 +102,7 @@ fn run_with(ctx: &Context) -> Run {
             observations: &headwater_check::Observations::empty(),
             pin: None,
             harvests: &[],
+            imports: &[],
             adoption: None,
             source: "engine/crates/check/fixtures/transition.taxonomy.yml",
         },

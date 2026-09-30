@@ -92,6 +92,7 @@ fn checked_at(at: &Path, listed: Option<&[&str]>) -> (Census, Run) {
             observations: &headwater_check::Observations::empty(),
             pin: None,
             harvests: &[],
+            imports: &[],
             adoption: None,
             source: &source,
         },

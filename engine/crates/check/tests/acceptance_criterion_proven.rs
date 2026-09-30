@@ -82,6 +82,7 @@ fn run() -> Run {
             observations: &headwater_check::Observations::empty(),
             pin: None,
             harvests: &[],
+            imports: &[],
             source: "engine/crates/check/fixtures/acceptance-criterion-proven.taxonomy.yml",
         },
         &headwater_check::claim::Claims::empty(),

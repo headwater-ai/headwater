@@ -84,6 +84,7 @@ fn run_over(root: &Path) -> Run {
             observations: &observations,
             pin: None,
             harvests: &[],
+            imports: &[],
             adoption: None,
             source: "engine/crates/check/tests/observation_read_set.rs",
         },
