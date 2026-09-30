@@ -43,7 +43,9 @@ use headwater_census::shelves::Taxonomy;
 use headwater_census::walk::Corpus;
 use headwater_check::paint::ColorMode;
 use headwater_check::Shape;
-use headwater_generate::{check, plan, write, Identity, Projections, Runs, Transcript, Verdict};
+use headwater_generate::{
+    check, plan, write, write_settled, Identity, Projections, Runs, Transcript, Verdict,
+};
 use headwater_graph::anchors::Resolvers;
 use headwater_graph::declarations::Declarations;
 use headwater_graph::{Config, Graph};
@@ -51,6 +53,7 @@ use headwater_probe::plan::Narrowing;
 use headwater_probe::{Budgets, Tier};
 use headwater_query::Surface;
 use headwater_yaml::Mapping;
+use std::convert::Infallible;
 use std::path::{Path, PathBuf};
 
 /// An envelope no run of this selection fits inside.
@@ -1178,6 +1181,225 @@ fn an_ambiguous_pair_is_reported_rather_than_silently_zipped_by_path_order() {
         report.render(ColorMode::Plain).contains("ambiguous arms"),
         "the run prints the ambiguity where a reader of the run sees it"
     );
+}
+
+/// Every file under a tree, by path, with its bytes.
+///
+/// The comparison of two of these is the whole claim of #1466: a run that
+/// refuses leaves no file added, removed or rewritten.
+fn snapshot(at: &Path) -> std::collections::BTreeMap<PathBuf, Vec<u8>> {
+    fn walk(dir: &Path, into: &mut std::collections::BTreeMap<PathBuf, Vec<u8>>) {
+        for entry in std::fs::read_dir(dir).expect("a directory of the tree") {
+            let entry = entry.expect("an entry");
+            match entry.file_type().expect("a file type").is_dir() {
+                true => walk(&entry.path(), into),
+                false => {
+                    let bytes = std::fs::read(entry.path()).expect("a file reads");
+                    into.insert(entry.path(), bytes);
+                }
+            }
+        }
+    }
+    let mut files = std::collections::BTreeMap::new();
+    walk(at, &mut files);
+    files
+}
+
+/// The line every output a refusing run did not write carries.
+const WITHHELD: &str = "not written: this run refused before its first write";
+
+/// The three campaign transcripts under one key, laid into a copied tree.
+fn lay_ambiguous(at: &Path) {
+    for (path, bytes) in [
+        ("runs/probe-runs/campaign-present.md", CAMPAIGN_PRESENT),
+        ("runs/probe-runs/campaign-absent.md", CAMPAIGN_ABSENT),
+        (
+            "runs/probe-runs/campaign-present-again.md",
+            CAMPAIGN_PRESENT_AGAIN,
+        ),
+    ] {
+        std::fs::write(at.join(path), bytes).expect("a campaign transcript lands");
+    }
+}
+
+/// The decisive fixture for #1466: an ambiguous pair refuses the run, and the
+/// run leaves the tree as it found it.
+///
+/// This runs `write_settled`, which is what `headwater generate` calls once its
+/// loader has read the tree, and the loader writes nothing. Before #1466 the
+/// first pass wrote every committed output and only then did the report say the
+/// run refused, so the probe results were new files in the tree and every
+/// projection that a second pass would have settled was left stale.
+#[test]
+fn an_ambiguous_pair_refuses_the_run_before_it_writes_anything() {
+    let at = copied("campaign-arms-ambiguous-settled");
+    lay_ambiguous(&at);
+    let before = snapshot(&at);
+
+    let report = write_settled(&at, || Ok::<_, Infallible>(plan_over(&at)))
+        .unwrap_or_else(|never| match never {});
+    assert!(
+        report.has_errors(),
+        "an ambiguous pairing fails the run: {}",
+        report.render(ColorMode::Plain)
+    );
+    let remedy = report.remedy().expect("a failing run names a remedy");
+    assert!(
+        remedy.contains("Retire the stale or superseded transcript"),
+        "the remedy is the ambiguous-arms sentence: {remedy}"
+    );
+    let after = snapshot(&at);
+    let added: Vec<_> = after.keys().filter(|p| !before.contains_key(*p)).collect();
+    let changed: Vec<_> = before
+        .iter()
+        .filter(|(path, bytes)| after.get(*path) != Some(*bytes))
+        .map(|(path, _)| path)
+        .collect();
+    assert!(
+        added.is_empty() && changed.is_empty(),
+        "a refusing run changed the tree. Added {added:?}, changed or removed {changed:?}"
+    );
+    assert!(
+        remedy.contains("wrote nothing"),
+        "the remedy says that the run wrote nothing: {remedy}"
+    );
+    assert!(
+        report.render(ColorMode::Plain).contains(WITHHELD),
+        "the report says why each output was not written:\n{}",
+        report.render(ColorMode::Plain)
+    );
+}
+
+/// The six refusals that a write run can know before its first write, and for
+/// each one, that the run fails and the tree is unchanged byte for byte.
+///
+/// Three failures can still follow a write, and `write_settled` names them: a
+/// write the operating system refuses, a cycle that more passes do not
+/// settle, and a refusal a later pass finds. None of them is a refusal of the
+/// corpus, and none of them is in this table.
+#[test]
+fn every_refusal_known_before_the_first_write_leaves_the_tree_unchanged() {
+    type Setup = fn(&Path);
+    type Planned = fn(&Path) -> headwater_generate::Plan;
+    type Refused = fn(&headwater_generate::Report) -> bool;
+    fn no_setup(_: &Path) {}
+    let rows: [(&str, Setup, Planned, Refused); 6] = [
+        (
+            "ambiguous",
+            lay_ambiguous,
+            plan_over,
+            |report| !report.ambiguous_arms.is_empty(),
+        ),
+        (
+            "defective",
+            |at| {
+                for (path, bytes) in [
+                    ("runs/probe-runs/campaign-present.md", CAMPAIGN_PRESENT),
+                    ("runs/probe-runs/campaign-absent.md", CAMPAIGN_ABSENT),
+                ] {
+                    std::fs::write(at.join(path), bytes).expect("a transcript lands");
+                }
+            },
+            plan_over,
+            |report| !report.defective_arms.is_empty(),
+        ),
+        (
+            "held",
+            refuse_the_lock,
+            plan_over,
+            |report| report.refused.iter().any(|refused| refused.held),
+        ),
+        (
+            "orphaned",
+            |at| {
+                // A copy of a file this engine writes, at a path no
+                // declaration names: marked, and written by nothing.
+                let (_, bytes) = result_bytes(at);
+                std::fs::write(at.join("runs/probe-results/stray.md"), bytes)
+                    .expect("the stray lands");
+            },
+            plan_over,
+            |report| !report.orphaned.is_empty(),
+        ),
+        (
+            "occupied",
+            |at| {
+                std::fs::create_dir_all(at.join("runs/probe-results")).expect("a directory");
+                std::fs::write(at.join(RESULT), "An authored file, with no marker.\n")
+                    .expect("the authored file lands");
+            },
+            plan_over,
+            |report| {
+                report
+                    .wrote
+                    .iter()
+                    .any(|wrote| wrote.verdict == Verdict::Occupied)
+            },
+        ),
+        (
+            "marker-unread",
+            no_setup,
+            // The result's content is Markdown, and the census reads no
+            // Markdown marker at a `.json` path.
+            |at| {
+                let mut plan = plan_over(at);
+                let output = plan
+                    .outputs
+                    .iter_mut()
+                    .find(|output| output.path == RESULT)
+                    .expect("the plan writes the result");
+                output.path = RESULT.replace(".md", ".json");
+                plan
+            },
+            |report| {
+                report
+                    .wrote
+                    .iter()
+                    .any(|wrote| wrote.verdict == Verdict::MarkerUnread)
+            },
+        ),
+    ];
+    for (name, setup, planned, refused) in rows {
+        let at = copied(&format!("refuses-before-writing-{name}"));
+        setup(&at);
+        let before = snapshot(&at);
+        let report = write_settled(&at, || Ok::<_, Infallible>(planned(&at)))
+            .unwrap_or_else(|never| match never {});
+        assert!(
+            refused(&report),
+            "`{name}`: the run did not report the refusal this row plants:\n{}",
+            report.render(ColorMode::Plain)
+        );
+        assert!(
+            report.has_errors(),
+            "`{name}`: a refusal fails the run:\n{}",
+            report.render(ColorMode::Plain)
+        );
+        assert!(
+            report
+                .wrote
+                .iter()
+                .all(|wrote| !matches!(wrote.verdict, Verdict::Written | Verdict::Rewritten)),
+            "`{name}`: the report names a file the run wrote:\n{}",
+            report.render(ColorMode::Plain)
+        );
+        assert!(
+            report.render(ColorMode::Plain).contains(WITHHELD),
+            "`{name}`: no output reports that the refusal withheld it:\n{}",
+            report.render(ColorMode::Plain)
+        );
+        assert!(
+            report
+                .remedy()
+                .is_some_and(|remedy| remedy.contains("wrote nothing")),
+            "`{name}`: the remedy does not say the run wrote nothing: {:?}",
+            report.remedy()
+        );
+        assert!(
+            snapshot(&at) == before,
+            "`{name}`: a refusing run changed the tree"
+        );
+    }
 }
 
 /// A corpus with no transcript writes no result, and the plan says why.

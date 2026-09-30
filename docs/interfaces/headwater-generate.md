@@ -3,7 +3,7 @@ id: HW-IFACE-headwater-generate
 status: current
 status_since: 2026-09-06
 summary: "How to write the projections declared by the taxonomy and detect stale generated files."
-last_verified: 2026-09-12
+last_verified: 2026-09-30
 title: "headwater generate"
 relations:
   governs:
@@ -25,6 +25,10 @@ The command writes every generated projection that the resolved taxonomy declare
 Without `--check`, it computes projections and writes marked generated files. With `--check`, it writes nothing and compares committed projections with the same plan.
 
 It refuses to overwrite a file that lacks the generated-file marker. A stale projection or a marked file that the plan does not write is an error.
+
+**A run that refuses writes nothing.** The command finds the verdict of every output before its first write. Six refusals are known at that time: an ambiguous pair of transcripts, a defective pair of arms, a refused transcript whose state holds the refusal, a marked file that no declaration writes, an unmarked file at an output path, and an output whose marker the census does not read. When one of them applies, the command writes no file, and it exits 1. The report lists each output that it did not write with the line `not written: this run refused before its first write, and it wrote nothing`. A refused transcript whose state releases the refusal is not a refusal of the run, so the command writes its result and continues.
+
+Three failures can still come after a write, because no check before the first write can find them. The operating system can refuse a write. A projection can read a value that another projection writes in a cycle, and only a write shows the cycle. A later pass can find a new refusal, and only a defect in this engine causes that, because the first pass writes no transcript. These are failures of the disk or of the engine, and not refusals of the corpus.
 
 **A `graph_export` that declares `committed: false` is not written and not compared.** The tree does not hold that file, because `headwater export` builds it at publish time. The run names the path with the line `built at publish time by headwater export, and not written or compared here`, and that line is not an error. The command does not read a copy that a local export left at the path, and it does not report that copy as orphaned.
 
@@ -59,7 +63,7 @@ The repository must have a readable consumer declaration, taxonomy lock, corpus 
 
 **0** means that all declared projections match or were written.
 
-**1** means that loading, planning or writing failed, that `--check` found drift, or that `--check` found a producer difference. The two `--check` failures print different sentences, because only one of them has a remedy this command can name.
+**1** means that loading, planning or writing failed, that `--check` found drift, or that `--check` found a producer difference. The two `--check` failures print different sentences, because only one of them has a remedy this command can name. Without `--check`, a refusal leaves the tree as the command found it.
 
 **1**, and never 101, when standard output or standard error cannot be written, and one sentence on standard error names a failed standard output.
 
@@ -75,7 +79,7 @@ The command reads no environment variable.
 | `.headwater/imports/` | Read where `.headwater/taxonomy.yml` declares an import, for the anchors that an imported snapshot supplies. An `imports` entry that does not read stops the verb with exit 1, and so does an `at` path outside the repository root. |
 | the path each `harvests.<name>.at` names | Read where `.headwater/taxonomy.yml` declares a pinned corpus export, for the anchors that export supplies. A `harvests` entry that does not read stops the verb with exit 1, and so does an `at` path outside the repository root. A pin with no digest binds no anchor. An absent file binds no anchor, and neither does a file that fails the pinned digest or is not an export. |
 | `.headwater/corpus.json` | Read under `--check` for the emitter set it records, before any projection is compared. Written like any other projection. |
-| Generated projection files | Written without `--check` when their marker permits it. A `graph_export` output that declares `committed: false` is not written and not read. |
+| Generated projection files | Written without `--check` when their marker permits it and the run refuses nothing. A `graph_export` output that declares `committed: false` is not written and not read. |
 
 ## See also
 
