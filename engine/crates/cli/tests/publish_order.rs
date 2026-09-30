@@ -607,8 +607,7 @@ fn next_patch(version: &str) -> String {
 fn planted_bump(next: &str, missed: &[&str]) -> String {
     let real = workspace_manifest();
     let members = member_paths(&real);
-    let document =
-        toml_edit::Document::parse(real.as_str()).expect("engine/Cargo.toml is TOML");
+    let document = toml_edit::Document::parse(real.as_str()).expect("engine/Cargo.toml is TOML");
     let workspace = document
         .get("workspace")
         .and_then(toml_edit::Item::as_table_like)
