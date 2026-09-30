@@ -505,8 +505,12 @@ anchors
     cited by HW-HOW-wire-headwater-check-into-your-own-workflow
   code_path `integrations/headwater-upkeep/**` via source-tree
     cited by HW-HOW-wire-headwater-check-into-your-own-workflow
+  code_path `integrations/jetbrains/src/main/java/ai/headwater/jetbrains/Client.java` via source-tree
+    cited by HW-DR-0102
   code_path `integrations/site-generator/**` via source-tree
     cited by HW-HOW-publish-your-corpus-as-a-site
+  code_path `integrations/vscode/client.js` via source-tree
+    cited by HW-DR-0102
   code_path `mkdocs.yml` via source-tree
     cited by HW-DR-0036
   code_path `mkdocs/hooks/site_tokens.py` via source-tree

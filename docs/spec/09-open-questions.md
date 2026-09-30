@@ -416,3 +416,7 @@ The documents on this shelf, in the reading order this corpus derives. Each head
 ## A counted tombstone lists a digest of each withheld identifier, and a sealed one lists nothing
 
 [HW-DR-0100](../decisions/0100-a-counted-tombstone-lists-a-digest-of-each-withheld-identifier-and-a-sealed-one-lists-nothing.md) — Under the counted grain, each tombstone of a filtered export lists the SHA-256 digest of each identifier it withheld. A tier that pins the export then binds an anchor to a withheld document as withheld, and it reports a typo as unresolved. Under sealed the export lists nothing, and both stay unresolved. An export older than version 1.3 lists nothing either. (asserted, and no human has accepted it)
+
+## An editor integration starts headwater mcp for each query and does not embed the library
+
+[HW-DR-0102](../decisions/0102-an-editor-integration-starts-headwater-mcp-for-each-query-and-does-not-embed-the-library.md) — An editor plugin is a client of headwater mcp: it starts the server for each query, sends one read request and stops it. The library stays embeddable, but no editor host embeds it. (asserted, and no human has accepted it)
