@@ -846,7 +846,7 @@ deploys() {
 # #1408, and so is any word it begins, such as "builder": the reader before
 # #1408 matched the phrase as a substring, and #1443 found that ending it at a
 # word boundary let "The Cloudflare builder deploys apt/." pass. So the widened
-# reader loses no line the narrow one caught, and d12k holds it. A sentence
+# reader loses no line the narrow one caught, and d12k-d12m hold it. A sentence
 # ends at `.`, `!`, `?` or `;` and a space, but not after an initial such as
 # "J." or after "e.g." and "i.e.". The present list is
 # read after the service's own name is removed, so "Workers Builds" is not
@@ -1381,9 +1381,10 @@ same "fetch-apt.sh that says Cloudflare Workers Builds deployed the site before 
     "$(apt_route_plant d11 '#   Cloudflare Workers Builds deployed the site before; it could not' '#   wait for CI.')"
 
 # d12. Present claims that carry a past word or a passive, each red. d12e,
-# d12g, d12h and d12k name the phrase the check read before #1408, and d12k
-# names it as the start of a longer word, as the narrow reader's substring
-# match did, so the widened reader keeps every line the narrow one caught.
+# d12g, d12h and d12k-d12m name the phrase the check read before #1408, and
+# d12k-d12m name it as the start of a longer word ("builder", "builders",
+# "building"), as the narrow reader's substring match did, so the widened
+# reader keeps every line the narrow one caught.
 same "a claim that the repository is now deployed by Cloudflare Workers Builds is red" "$apt_route_red" \
     "$(apt_route_plant d12a '#   The APT repository is now deployed by Cloudflare Workers' '#   Builds.')"
 same "a claim that the site gets deployed by Cloudflare Workers Builds is red" "$apt_route_red" \
@@ -1407,6 +1408,10 @@ same "a claim split by an initial, Workers Builds, which was added by J. Baxter,
     "$(apt_route_plant d12j '#   Workers Builds, which was added in #1316 by J.' '#   Baxter, deploys apt/.')"
 same "a claim that the Cloudflare builder deploys apt/ is red" "$apt_route_red" \
     "$(apt_route_plant d12k '#   The Cloudflare builder deploys apt/' '#   from this tree.')"
+same "a claim that the Cloudflare builders deploy apt/ is red" "$apt_route_red" \
+    "$(apt_route_plant d12l '#   The Cloudflare builders deploy apt/' '#   from this tree.')"
+same "a claim that Cloudflare building deploys apt/ is red" "$apt_route_red" \
+    "$(apt_route_plant d12m '#   Cloudflare building deploys apt/' '#   from this tree.')"
 
 # d13. A file the reader cannot decode is a finding, and not a file that holds.
 mkdir -p "$scratch/d13"

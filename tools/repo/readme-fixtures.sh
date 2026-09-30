@@ -3432,19 +3432,23 @@ release_version_of() {
     ' "$1"
 }
 
-# standard_record_judge NEWEST RECORD_VERSION — `ok` when the vendored record
-# is the newest release's, or a sentence naming both versions.
+# standard_record_judge NEWEST RECORD — `ok` when the release record at RECORD
+# is the newest release's, or a sentence naming both versions. It takes the
+# record and not a version, so the arms below go through the same read as the
+# real case, and a read that returned the newest tag in place of the record's
+# own version goes red there (#1444, round 1 verify).
 standard_record_judge() {
-    if [ -z "$2" ]; then
+    srj_version=$(release_version_of "$2")
+    if [ -z "$srj_version" ]; then
         echo "the vendored release record states no \`release.version\`, so nothing says which release its digest belongs to"
-    elif [ "$1" != "$2" ]; then
-        echo "the vendored release record is v$2 and the newest tag is v${1:-none}, so the pages would be compared with an older release's digest"
+    elif [ "$1" != "$srj_version" ]; then
+        echo "the vendored release record is v$srj_version and the newest tag is v${1:-none}, so the pages would be compared with an older release's digest"
     else
         echo ok
     fi
 }
 
-standard_record_version=$(release_version_of "$root/.headwater/packages/headwater-standard/release.yml")
+standard_record="$root/.headwater/packages/headwater-standard/release.yml"
 standard_digest_paths=
 standard_digest_present=0
 for f in $standard_digest_files; do
@@ -3457,13 +3461,18 @@ same "the four files that name the headwater/standard digest are all on disk" 4 
 
 # 8p. The record the digest is read from is the newest release's record.
 same "the vendored release record is the newest tag's release (v${standard_newest:-none})" ok \
-    "$(standard_record_judge "$standard_newest" "$standard_record_version")"
+    "$(standard_record_judge "$standard_newest" "$standard_record")"
+# The arms are scratch copies of the real record with its `release.version`
+# line rewritten or removed, so each is read by the same anchor as the real one.
+mkdir -p "$scratch/record"
+sed '/^  version:/s/.*/  version: 4.12.0/' "$standard_record" >"$scratch/record/behind.yml"
+sed '/^  version:/d' "$standard_record" >"$scratch/record/unversioned.yml"
 same "  a record one release behind the newest tag fails, and names both" \
     "the vendored release record is v4.12.0 and the newest tag is v4.13.0, so the pages would be compared with an older release's digest" \
-    "$(standard_record_judge 4.13.0 4.12.0)"
+    "$(standard_record_judge 4.13.0 "$scratch/record/behind.yml")"
 same "  a record with no version fails" \
     "the vendored release record states no \`release.version\`, so nothing says which release its digest belongs to" \
-    "$(standard_record_judge 4.13.0 "")"
+    "$(standard_record_judge 4.13.0 "$scratch/record/unversioned.yml")"
 
 # 8q. THE DECISIVE CASE: the four files name the record's digest and no other.
 # shellcheck disable=SC2086
@@ -3510,6 +3519,10 @@ printf '%s\n' "--expect ${good_digest%?}" >"$scratch/digest/short.md"
 same "  a digest cut one character short fails" \
     "$scratch/digest/short.md:1: ${good_digest%?}" \
     "$(standard_digest_judge "$good_digest" "$scratch/digest/short.md")"
+printf '%s\n' "--expect ${good_digest}f" >"$scratch/digest/long.md"
+same "  a digest with a character added fails" \
+    "$scratch/digest/long.md:1: ${good_digest}f" \
+    "$(standard_digest_judge "$good_digest" "$scratch/digest/long.md")"
 same "  a record with no digest fails, and is not a judge that compares with nothing" \
     "the vendored release record states no top-level \`release.digest\`, so the pages have nothing to be compared with" \
     "$(standard_digest_judge "" "$scratch/digest/both.md")"
