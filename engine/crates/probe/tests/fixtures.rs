@@ -1947,7 +1947,7 @@ fn a_transcript_planned_against_another_taxonomy_is_refused_whole() {
     assert!(
         matches!(
             record_of(&source).refusal,
-            Some(headwater_probe::intake::Refusal::TaxonomyMoved { composed: None, .. })
+            Some(headwater_probe::intake::Refusal::TaxonomyMoved { .. })
         ),
         "with no selection in hand nothing shows that the move left the probes alone, so a \
          rate over documents another taxonomy typed is a rate about another corpus"

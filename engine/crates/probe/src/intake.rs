@@ -165,15 +165,11 @@ pub enum Refusal {
         permitted: &'static [&'static str],
     },
     Missing(&'static str),
-    TaxonomyMoved {
-        claimed: String,
-        tree: String,
-        /// The read set this tree composes for the transcript's probes, where
-        /// it composed one. It differs from the recorded one, or it is `None`
-        /// because no selection was in hand or the recorded one is not a part
-        /// of it.
-        composed: Option<String>,
-    },
+    /// The lock moved and this tree composes no read set over the
+    /// transcript's probes, because no selection was in hand or the recorded
+    /// selection is not a part of it. A lock move where a read set is composed
+    /// is graded, and marked where the read set moved (#1292, #1338).
+    TaxonomyMoved { claimed: String, tree: String },
     UnknownTier(String),
     UnknownArm(String),
     CostNotACount(String),
@@ -207,20 +203,7 @@ impl std::fmt::Display for Refusal {
                 "the run identity carries no `{what}`, and an incomplete identity is a measurement \
                  nobody can locate again"
             ),
-            Refusal::TaxonomyMoved {
-                claimed,
-                tree,
-                composed: Some(composed),
-            } => write!(
-                f,
-                "it was planned against taxonomy {claimed} and this tree carries {tree}, and \
-                 the read set of its probes moved with it: this tree composes {composed}"
-            ),
-            Refusal::TaxonomyMoved {
-                claimed,
-                tree,
-                composed: None,
-            } => write!(
+            Refusal::TaxonomyMoved { claimed, tree } => write!(
                 f,
                 "it was planned against taxonomy {claimed} and this tree carries {tree}, and no \
                  read set was composed over its probes to show that the move left them alone"
@@ -596,34 +579,41 @@ impl Record {
 
         // The first confirmation, decided last because it needs the probes the
         // events name. A lock move is harmless where the read set of those
-        // probes did not move, and refused where it did (#1292).
+        // probes did not move (#1292). A moved read set is a document edit,
+        // because no lock move changes the bytes of a document, so it keeps
+        // every verdict and marks them, whether or not the lock moved too
+        // (#1338). What stays refused is a lock move where this tree composes
+        // no read set at all, because nothing then shows what the move reached.
         let identity = record.identity.as_ref().expect("read above");
-        if identity.lock != tree.lock {
-            let composed = composed_read_set(identity, &record.probes, tree);
-            if composed.as_deref() == Some(identity.read_set.as_str()) {
-                record.lock_moved = Some(identity.lock.clone());
-            } else {
-                let refusal = Refusal::TaxonomyMoved {
-                    claimed: identity.lock.clone(),
-                    tree: tree.lock.to_string(),
-                    composed,
-                };
-                // A refused transcript reports nothing but its refusal, which
-                // is what every other refusal of the identity leaves.
-                return Record {
-                    identity: None,
-                    read: 0,
-                    probes: Vec::new(),
-                    sessions: 0,
-                    calls: 0,
-                    events: Vec::new(),
-                    rejected: Vec::new(),
-                    refusal: Some(refusal),
-                    declared: record.declared,
-                    lock_moved: None,
-                    read_set_moved: None,
-                };
+        let lock_moved = identity.lock != tree.lock;
+        let composed = composed_read_set(identity, &record.probes, tree);
+        if let Some(composed) = &composed {
+            if *composed != identity.read_set {
+                record.read_set_moved = Some(identity.read_set.clone());
             }
+            if lock_moved {
+                record.lock_moved = Some(identity.lock.clone());
+            }
+        } else if lock_moved {
+            let refusal = Refusal::TaxonomyMoved {
+                claimed: identity.lock.clone(),
+                tree: tree.lock.to_string(),
+            };
+            // A refused transcript reports nothing but its refusal, which is
+            // what every other refusal of the identity leaves.
+            return Record {
+                identity: None,
+                read: 0,
+                probes: Vec::new(),
+                sessions: 0,
+                calls: 0,
+                events: Vec::new(),
+                rejected: Vec::new(),
+                refusal: Some(refusal),
+                declared: record.declared,
+                lock_moved: None,
+                read_set_moved: None,
+            };
         }
         record
     }
@@ -670,13 +660,37 @@ impl Record {
             "realized cost {}, which the adaptive layer reads as the cost of its own instrument.",
             crate::dollars(identity.cost)
         );
-        if let Some(claimed) = &self.lock_moved {
-            let _ = writeln!(
-                out,
-                "It was planned against taxonomy {claimed}, and this tree carries another. The \
-                 read set of its probes is the one this tree composes, so the move reaches no \
-                 document a verdict reads, and the transcript is read over this tree."
-            );
+        // The mark names no digest this tree composes, so a second edit to a
+        // document of the read set leaves these bytes alone (#1338).
+        let graded_as_now = "Each verdict below is what the session did over the documents it \
+                             met, graded against the expectations this tree declares now, which \
+                             can differ from the ones the session ran under. `headwater probe \
+                             stale` names what moved.";
+        match (&self.lock_moved, &self.read_set_moved) {
+            (Some(claimed), None) => {
+                let _ = writeln!(
+                    out,
+                    "It was planned against taxonomy {claimed}, and this tree carries another. \
+                     The read set of its probes is the one this tree composes, so the move \
+                     reaches no document a verdict reads, and the transcript is read over this \
+                     tree."
+                );
+            }
+            (Some(claimed), Some(_)) => {
+                let _ = writeln!(
+                    out,
+                    "It was planned against taxonomy {claimed}, and this tree carries another, \
+                     and the read set of its probes moved since the recording. {graded_as_now}"
+                );
+            }
+            (None, Some(_)) => {
+                let _ = writeln!(
+                    out,
+                    "It is read over this tree, and the read set of its probes moved since the \
+                     recording. {graded_as_now}"
+                );
+            }
+            (None, None) => {}
         }
         let _ = writeln!(out);
 
@@ -710,8 +724,8 @@ impl Record {
              present, the membership of every probe named, that no key outside the closed set \
              appears, and that a realized cost was recorded. Present is not confirmed: of the \
              six members a plan fixes before a run, the lock is the one compared here. A lock \
-             that differs refuses the file unless the read set of its probes is the one this \
-             tree composes. `{}` compares the read set against the tree in \
+             that differs refuses the file only where this tree composes no read set over its \
+             probes, and a read set that differs marks the verdicts and keeps them. `{}` compares the read set against the tree in \
              front of it. It graded nothing: a verdict is a function of this transcript, the \
              expectations these probes declare and a grader version, and `{}` \
              is the verb that holds all three.",
