@@ -2,13 +2,15 @@
 "headwater:generated": "probe_result. `headwater generate` writes this file, and `headwater generate --check` holds it. Edit the corpus, not this file."
 id: HW-RESULT-regression-probe-transcript-for-2026-09-17
 title: Probe result for regression-probe-transcript-for-2026-09-17
-status: current
+status: deprecated
 status_since: 2026-09-19
 summary: "The grade of the transcript `regression-probe-transcript-for-2026-09-17`, taken over the probes this corpus declares and the version of the grader that evaluated them."
 last_verified: 2026-09-16
 ---
 
 # The result of docs/probe-runs/regression-probe-transcript-for-2026-09-17.md
+
+The transcript this result grades stands at `deprecated`, a state that ends its lifecycle, so the run it recorded is withdrawn. No figure below is a current finding, and this result states no direction at the 5% level.
 
 A probe result is a function of three committed inputs and of nothing else: the transcript at `docs/probe-runs/regression-probe-transcript-for-2026-09-17.md`, the expectations the probes of this corpus declare, and the version of the grader that evaluated them. Fetch the three and this file comes back.
 

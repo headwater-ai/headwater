@@ -376,6 +376,26 @@ $out" ;;
     esac
 }
 
+# --- headwater-authoring, the conventions an obligation record keeps ----------
+
+# A sentence claim with no engine behavior behind it: no rule reads a line
+# reference or a gap count in a record, and a check that did would be a new rule
+# with its own issue (#1486). So this half holds only that the skill still says
+# each convention, and it runs no command.
+printf '\n# headwater-authoring, the conventions an obligation record keeps\n'
+for sentence in \
+    'The Discharge section states the closing condition, what must become true, and not a description of the present state.' \
+    'A record names a function, a job key or another stable symbol, never a line number or a count' \
+    'A record that bundles gaps is split when it passes five gaps.'
+do
+    name="the authoring skill states an obligation-record convention: $sentence"
+    if grep -qF "$sentence" "$skills/headwater-authoring/SKILL.md"; then
+        pass "$name"
+    else
+        fail "$name" "the skill no longer says: $sentence"
+    fi
+done
+
 if [ -x "$engine" ]; then
     printf '\n# headwater-authoring, against the verb it calls\n'
 

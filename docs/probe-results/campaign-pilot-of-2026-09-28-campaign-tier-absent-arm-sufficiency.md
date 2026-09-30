@@ -2,13 +2,15 @@
 "headwater:generated": "probe_result. `headwater generate` writes this file, and `headwater generate --check` holds it. Edit the corpus, not this file."
 id: HW-RESULT-campaign-pilot-of-2026-09-28-campaign-tier-absent-arm-sufficiency
 title: Probe result for campaign-pilot-of-2026-09-28-campaign-tier-absent-arm-sufficiency
-status: current
+status: deprecated
 status_since: 2026-09-28
 summary: "The grade of the transcript `campaign-pilot-of-2026-09-28-campaign-tier-absent-arm-sufficiency`, taken over the probes this corpus declares and the version of the grader that evaluated them."
 last_verified: 2026-09-28
 ---
 
 # The result of docs/probe-runs/campaign-pilot-of-2026-09-28-campaign-tier-absent-arm-sufficiency.md
+
+The transcript this result grades stands at `deprecated`, a state that ends its lifecycle, so the run it recorded is withdrawn. No figure below is a current finding, and this result states no direction at the 5% level.
 
 A probe result is a function of three committed inputs and of nothing else: the transcript at `docs/probe-runs/campaign-pilot-of-2026-09-28-campaign-tier-absent-arm-sufficiency.md`, the expectations the probes of this corpus declare, and the version of the grader that evaluated them. Fetch the three and this file comes back.
 
@@ -63,11 +65,11 @@ What the governance changes. The treated arm is the `campaign` present arm and t
 - treated, `docs/probe-runs/campaign-pilot-of-2026-09-28-campaign-tier-present-arm-sufficiency.md`: 0 of 12 graded sessions satisfied their expectation, 0.0%, in a 95% interval of 0.0% to 24.2%. 0 sessions refused by the session itself.
 - control, `docs/probe-runs/campaign-pilot-of-2026-09-28-campaign-tier-absent-arm-sufficiency.md`: 4 of 12 graded sessions satisfied their expectation, 33.3%, in a 95% interval of 13.8% to 60.9%. 0 sessions refused by the session itself.
 
-The difference is -33.3 points, in a 95% Newcombe interval of -60.9 points to -2.2 points. The interval is below zero, so the treated arm satisfied less often at the 5% level.
+The difference is -33.3 points, in a 95% Newcombe interval of -60.9 points to -2.2 points. The transcript of at least one arm is not current, so this page states no direction at the 5% level.
 
 What the documents change. The treated arm is the `campaign` absent arm and the control is the `documentation` absent arm. Both removed the governance, and only the control removed `docs/`, so this is the effect of the documents alone (spec 5).
 
 - treated, `docs/probe-runs/campaign-pilot-of-2026-09-28-campaign-tier-absent-arm-sufficiency.md`: 4 of 12 graded sessions satisfied their expectation, 33.3%, in a 95% interval of 13.8% to 60.9%. 0 sessions refused by the session itself.
 - control, `docs/probe-runs/campaign-pilot-of-2026-09-28-documentation-tier-absent-arm-sufficiency.md`: 1 of 12 graded sessions satisfied their expectation, 8.3%, in a 95% interval of 1.5% to 35.4%. 0 sessions refused by the session itself.
 
-The difference is +25.0 points, in a 95% Newcombe interval of -8.4 points to +53.4 points. The interval contains zero, so this run does not separate the two arms at the 5% level.
+The difference is +25.0 points, in a 95% Newcombe interval of -8.4 points to +53.4 points. The transcript of at least one arm is not current, so this page states no direction at the 5% level.

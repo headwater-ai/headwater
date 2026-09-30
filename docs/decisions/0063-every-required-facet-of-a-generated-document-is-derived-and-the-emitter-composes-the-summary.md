@@ -3,7 +3,7 @@ id: HW-DR-0063
 status: current
 status_since: 2026-09-11
 summary: "Nine required facets went unwritten on two generated documents. The engine derives seven from committed bytes, the emitter composes the summary, and the declaration block stays closed at three scalars."
-last_verified: 2026-09-27
+last_verified: 2026-10-01
 title: "Every required facet of a generated document is derived, and the emitter composes the summary"
 provenance:
   warrant: asserted
@@ -16,7 +16,7 @@ relations:
     - HW-SPEC-engine-architecture
   governs:
     - to: engine/crates/generate/src/derived.rs
-      verified_revision: sha256:df3fe720e5c546530ce4ee6dca826bafc78acea352450581e4513f9a900cd171
+      verified_revision: sha256:a6468fa333c53d996544e176099a80b804799d13bc12b0609f773f44ddd90244
 ---
 
 # Every required facet of a generated document is derived, and the emitter composes the summary
@@ -39,7 +39,7 @@ Nothing reported those nine. The reason is a gap between two mechanisms rather t
 
 | role | the value, and where it comes from |
 |---|---|
-| `state` | the state that an incoming edge sets through `on_target.set_state`, and otherwise the state whose own role is `live` |
+| `state` | the state that an incoming edge sets through `on_target.set_state`. Then the terminal state of a source the emitter names, and otherwise the state whose own role is `live` |
 | `state_entered` | the stalest date on the documents that set the state, or the newest date on the documents this projection read |
 | `freshness` | the stalest date on the documents this projection read |
 | `scent` | composed by the emitter, which is the one value here that nothing derives |
@@ -52,6 +52,20 @@ Nothing reported those nine. The reason is a gap between two mechanisms rather t
 **For freshness, and for a state that an edge sets, the stalest date answers rather than the freshest.** A file assembled from other documents is only as fresh as the oldest thing it carries. The freshest date would state a confidence that no source supports.
 
 **Amended 2026-09-25: when no edge sets the state, the date the state was entered is the newest date on the documents this projection read.** The first text took the stalest date for that case too. The owner ruled on [#820](https://github.com/headwater-ai/headwater/issues/820) that a page is no fresher than its newest input. The page changes each time one of its inputs changes, so it entered its state with its newest input. This record is not superseded. The `state`, `freshness`, `scent` and no-role rows do not change. The `state_entered` date of a state that an edge sets is still the stalest date on the documents that set it.
+
+**Amended 2026-10-01: a probe result over a transcript at a terminal state takes the state of that transcript.** This rules the judgment that the first text left open under *Consequences*. [#1509](https://github.com/headwater-ai/headwater/issues/1509) measured it at `4aaebb4f`. All 35 results under `docs/probe-results/` stood at `current`. 24 of the 35 graded a transcript that was not `current`: 23 at `deprecated` and 1 at `draft`. 5 of those 24 pages printed 6 sentences that stated a direction at the 5% level over a withdrawn run. The declaration route needs a hand-written edge on each transcript when an author withdraws it. None of the 23 edges existed, and nothing reported the gap.
+
+The rule has three parts, in this order:
+
+- An incoming edge that sets a state still wins, because it is a declaration about the result itself.
+- Otherwise, a transcript whose state has a terminal role gives the result that state value. `engine/crates/generate/src/derived.rs` reads it from `Composed::state`, and `admitted` refuses it where the kind's regime does not name it.
+- Otherwise, the result stands at the `live` value. A transcript at `draft` keeps the result there, because `draft` is the wrong word for a file that no author argues over.
+
+The date the state was entered follows the rule for the case with no edge. It is the newest date on the documents this projection read, which is the date of the transcript. The rule reads the role of a state, and it names no state value. A shelf index and a sections file pass no source state, because one withdrawn row does not withdraw the file that lists it.
+
+The body carries the rest. A result whose transcript is not at a `live` state names that state in its first paragraph, before any figure. It says that no figure is a current finding. Each comparison in it keeps the interval and states no direction at the 5% level. This covers the `draft` transcript too.
+
+**This amendment opens again on one condition.** 13 documents outside `docs/probe-results/` name a result over a transcript that is not `current`, by its path or by its `HW-RESULT-` identifier. They are this record, 2 specification parts, 7 obligation records, 1 evaluation and 2 transcripts under `docs/probe-runs/`. The condition is that the terminal state raises findings on them that a prose edit cannot clear. The fallback is then a recorded decision that every result stays `current`, and the first paragraph of its body says why. Over `4aaebb4f` the change raised no `lifecycle` finding. `headwater check` reported none before the change and none after it.
 
 **A facet outside all of that is refused rather than defaulted.** The refusal in `identity::front_matter` now reads the whole required set against everything written into the file. What it guards is a taxonomy that requires a facet in no role this engine reads and in no shelf layout. No author can add such a facet, because a generated document's only writer is this engine. No check reads one either, because of the exemption above. An invented value is worse than a refusal, because somebody will cite it.
 
@@ -67,13 +81,13 @@ Nothing reported those nine. The reason is a gap between two mechanisms rather t
 
 **A projection now reads another projection's front matter, so the verb reaches a fixed point in two passes.** The shelf index carries the summary of every document on its shelf, and one of those documents is generated. The first pass writes the summary and the second pass carries it into the index. This is not new with this change, because the name that [#627](https://github.com/headwater-ai/headwater/issues/627) admitted had the same property. A committed corpus holds the fixed point, and `generate --check` reproduces a fixed point in one pass. That is why the gate never saw it. Since [#842](https://github.com/headwater-ai/headwater/issues/842), one `headwater generate` does both passes. It reads the tree again after each write and stops at the first pass that writes nothing. A run that still writes on its fourth pass exits non-zero and says that it did not settle.
 
-**One judgment could go the other way.** Each probe result is written as `current` over a transcript that is not. One transcript stands at `draft` and the other at `deprecated`, so the gap is two states wide rather than one. The result is an accurate statement of what the corpus derives now, and its own body says the run was refused. The alternative couples a projection's state to the state of its inputs. `draft` is also the wrong word for a file that no author argues over. The taxonomy already holds the mechanism for the other answer: a relation from the transcript that declares `on_target.set_state` is honored by this change. So the general question is a declaration rather than a behavior of the engine, and this record does not rule on it.
+**One judgment could go the other way.** Each probe result is written as `current` over a transcript that is not. One transcript stands at `draft` and the other at `deprecated`, so the gap is two states wide rather than one. The result is an accurate statement of what the corpus derives now, and its own body says the run was refused. The alternative couples a projection's state to the state of its inputs. `draft` is also the wrong word for a file that no author argues over. The taxonomy already holds the mechanism for the other answer: a relation from the transcript that declares `on_target.set_state` is honored by this change. So the general question is a declaration rather than a behavior of the engine, and this record does not rule on it. The amendment of 2026-10-01 under *Decision* rules it for the probe result.
 
 **One adjacent gap stays open and this change does not reach it.** `corpus.checks` still records one skip over the same document. `warrant.evidence.unsupported` cannot say whether an evidenced claim rests on it, because the document declares no warrant. [Spec 3](../spec/03-authoring-and-lifecycle.md#lifecycle) rules that the engine derives `regenerated` from the marker and never from a declaration. So the warrant of a generated document is known, and the rule reads the declaration instead of the derivation.
 
 **Ten of the eighteen kinds in this repository's lock declare `sections.require`, and neither generated kind is one of them.** So the section refusal reports nothing here, and `engine/crates/generate/fixtures/unheld.taxonomy.yml` is the whole of the evidence for it. That is the standing that `unrolled.taxonomy.yml` already has. `every_identity_this_repository_declares_supplies_what_this_refusal_reads` is the guard, and it prints its numerator and its denominator. A kind that gains a section contract and a generated member fails it.
 
-**One clause of the same question is [#945](https://github.com/headwater-ai/headwater/issues/945).** Whether a derived state is one that the kind's own lifecycle regime admits was unmeasured, and this change did not measure it.
+**One clause of the same question is [#945](https://github.com/headwater-ai/headwater/issues/945).** Whether a derived state is one that the kind's own lifecycle regime admits was unmeasured, and this change did not measure it. The state that the amendment of 2026-10-01 reads from a source goes through the same `admitted` refusal. `probe_result` binds the `standard` regime, which names `deprecated`.
 
 **Two documents of the specification series now state sequence 9.** They are `docs/spec/09-decisions.md` and the generated `docs/spec/09-open-questions.md`. Both file names carry that number, so the derived value is true of the path it was read from. The tombstone carried no sequence at all before this change, so the pair is newly visible rather than newly wrong. No rule reads a shelf layout after birth, which [HW-OBL-0106](../obligations/0106-a-shelf-layout-names-a-file-at-birth-and-no-rule-reads-it.md) already records, so nothing reports the collision.
 

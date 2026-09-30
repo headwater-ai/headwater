@@ -99,11 +99,19 @@ pub(crate) fn emit(
     // what the state it declares claims about it. The claim decides whether a
     // refusal fails the run: see `RefusedTranscript::held`.
     let state = StateFacet::of(surface.shape());
-    let committed: Vec<(&str, bool)> = census
+    // The same reading also decides what the result says first and which
+    // state it takes: see `Recorded`.
+    let committed: Vec<(&str, bool, Recorded)> = census
         .rows
         .iter()
         .filter(|row| matches!(&row.outcome, Outcome::Typed { kind, .. } if kind == TRANSCRIPT))
-        .map(|row| (row.path.as_str(), holds_a_refusal(&state, row)))
+        .map(|row| {
+            (
+                row.path.as_str(),
+                holds_a_refusal(&state, row),
+                Recorded::of(&state, row),
+            )
+        })
         .collect();
 
     // Every file this engine writes, which is the population `readers` takes
@@ -141,7 +149,7 @@ pub(crate) fn emit(
     // written rather than against the pattern, so that the run names the file
     // whose bytes are now what an earlier corpus derived.
     if let Some(refusal) = &runs.refusal {
-        for (path, _) in &committed {
+        for (path, _, _) in &committed {
             plan.unwritten.push(Unwritten {
                 at: declaration.output.replace(RUN, &stem(path)),
                 kind: Kind::ProbeResult,
@@ -204,7 +212,7 @@ pub(crate) fn emit(
     // refused whole takes part in no comparison: `RefusedTranscript` already
     // fails the run over it.
     let mut graded: Vec<Graded> = Vec::new();
-    for (path, promoted) in committed {
+    for (path, promoted, recorded) in committed {
         let stem = stem(path);
         let output = declaration.output.replace(RUN, &stem);
         let Some(transcript) = runs
@@ -244,6 +252,11 @@ pub(crate) fn emit(
                          declares and the version of the grader that evaluated them."
                     ),
                     sources: vec![path],
+                    // A result over a withdrawn transcript is withdrawn with
+                    // it (HW-DR-0063, amended 2026-10-01). A draft transcript
+                    // leaves the result at the `live` value, and the first
+                    // paragraph of the body says why no figure is current.
+                    state: recorded.terminal().map(str::to_string),
                 };
                 match crate::identity::front_matter(
                     surface,
@@ -315,6 +328,7 @@ pub(crate) fn emit(
             composed: runs.selection.clone(),
             part,
             read_by,
+            recorded,
         });
     }
 
@@ -357,6 +371,9 @@ struct Graded {
     /// many probes the part holds, and how many the whole selection holds.
     part: Option<(usize, usize)>,
     read_by: Vec<String>,
+    /// The state the transcript stands at, which decides whether any figure
+    /// of this result is a current finding.
+    recorded: Recorded,
 }
 
 /// Which claim a comparison measures, named by what the two arms differ by.
@@ -405,6 +422,10 @@ struct Comparison {
     control_graded: usize,
     treated_session_refused: usize,
     control_session_refused: usize,
+    /// Whether both arms' transcripts stand at a `live` state. A difference
+    /// between two runs that are not both current is a figure, and a
+    /// direction read off it is a claim nobody stands behind (#1509).
+    current: bool,
 }
 
 impl Comparison {
@@ -419,6 +440,7 @@ impl Comparison {
             control_graded: control.results.graded(),
             treated_session_refused: treated.results.session_refusals(),
             control_session_refused: control.results.session_refusals(),
+            current: treated.recorded == Recorded::Live && control.recorded == Recorded::Live,
         }
     }
 
@@ -470,6 +492,10 @@ impl Comparison {
             (Some(treated), Some(control)) => {
                 let difference = treated.minus(control);
                 let reading = match (difference.low > 0.0, difference.high < 0.0) {
+                    _ if !self.current => {
+                        "The transcript of at least one arm is not current, so this page states \
+                         no direction at the 5% level."
+                    }
                     (true, _) => {
                         "The interval is above zero, so the treated arm satisfied more often at \
                          the 5% level."
@@ -778,6 +804,81 @@ fn holds_a_refusal(state: &StateFacet, row: &headwater_census::census::Row) -> b
     }
 }
 
+/// The state a transcript stands at, in the terms the role beside it gives.
+///
+/// [`holds_a_refusal`] asks one question of the same reading, whether a refusal
+/// fails the run. This asks what a reader of the result is owed before any
+/// figure: a result over a transcript that is not at a `live` state reports a
+/// run nobody stands behind, and until #1509 it said so nowhere. It names no
+/// state value. The values are the taxonomy's, and the answer is the role.
+#[derive(Clone, Debug, PartialEq, Eq)]
+enum Recorded {
+    /// A state whose role is `live`. The result is a current finding.
+    Live,
+    /// A state the vocabulary holds with another answer: terminal, initial,
+    /// or none of the three.
+    At(String, Standing),
+    /// The transcript declares no state, or a value the state facet does not
+    /// hold, so nothing this taxonomy reads says what the run stands at.
+    Unread(Option<String>),
+}
+
+impl Recorded {
+    fn of(state: &StateFacet, row: &headwater_census::census::Row) -> Recorded {
+        let Some(document) = row.document.as_ref() else {
+            return Recorded::Unread(None);
+        };
+        match state.stood(&document.facets) {
+            Stood::At(value) => match state.standing(value) {
+                Standing::Live => Recorded::Live,
+                standing => Recorded::At(value.to_string(), standing),
+            },
+            Stood::Undeclared => Recorded::Unread(None),
+            Stood::NotAState(value) => Recorded::Unread(Some(value.to_string())),
+        }
+    }
+
+    /// The state value, where its role is terminal. This is the one answer a
+    /// result takes as its own state.
+    fn terminal(&self) -> Option<&str> {
+        match self {
+            Recorded::At(value, Standing::Terminal) => Some(value),
+            _ => None,
+        }
+    }
+
+    /// The paragraph a result opens with when its transcript is not current,
+    /// and `None` when it is.
+    fn opening(&self) -> Option<String> {
+        const OWED: &str = "No figure below is a current finding, and this result states no \
+                            direction at the 5% level.";
+        let said = match self {
+            Recorded::Live => return None,
+            Recorded::At(value, Standing::Terminal) => format!(
+                "The transcript this result grades stands at `{value}`, a state that ends its \
+                 lifecycle, so the run it recorded is withdrawn."
+            ),
+            Recorded::At(value, Standing::Initial) => format!(
+                "The transcript this result grades stands at `{value}`, the state a document \
+                 holds before anything promotes it, so nothing relies on the run it recorded yet."
+            ),
+            Recorded::At(value, _) => format!(
+                "The transcript this result grades stands at `{value}`, a state whose role this \
+                 taxonomy does not read as live, terminal or initial."
+            ),
+            Recorded::Unread(Some(value)) => format!(
+                "The transcript this result grades declares the state `{value}`, and the state \
+                 facet of this taxonomy holds no such value, so it declares no state this \
+                 taxonomy reads."
+            ),
+            Recorded::Unread(None) => "The transcript this result grades declares no state this \
+                                       taxonomy reads."
+                .to_string(),
+        };
+        Some(format!("{said} {OWED}"))
+    }
+}
+
 /// The whole file: the front matter, the marker where there is no front matter,
 /// and the report.
 fn body(graded: &Graded, comparisons: &[&Comparison]) -> String {
@@ -803,6 +904,12 @@ fn body(graded: &Graded, comparisons: &[&Comparison]) -> String {
 
     let _ = writeln!(out, "# The result of {transcript}");
     let _ = writeln!(out);
+    // Before any figure, because a reader who stops at the first paragraph
+    // must not leave with a withdrawn run's numbers as a finding (#1509).
+    if let Some(opening) = graded.recorded.opening() {
+        let _ = writeln!(out, "{opening}");
+        let _ = writeln!(out);
+    }
     let _ = writeln!(
         out,
         "A probe result is a function of three committed inputs and of nothing else: the \
