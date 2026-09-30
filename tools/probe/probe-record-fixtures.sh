@@ -1827,6 +1827,89 @@ HW_PROBE_YML="$scratch/block-probe.yml" sh "$ablate" documentation "$scratch/abl
 same "ablate.sh reads a block-sequence ablation" "0" "$?"
 kept "and removes exactly its entries" CLAUDE.md .githooks .headwater engine -- docs .claude
 
+# ---------------------------------------------------------------------------
+# The leak check (#1472). The status probe's answer is in text the harness
+# loads into every session, and no search by the probe's identifier or slug
+# finds it, because that text names the ruling and never the probe. So the
+# check reads the cues each probe declares, over the always-loaded set of a
+# copy of this repository's present tree.
+# ---------------------------------------------------------------------------
+seal="$root/tools/probe/seal.sh"
+status_probe=HW-PROBE-a-session-names-the-status-a-settled-decision-carries-in-its-pull-request
+rm -rf "$scratch/leak-ws"
+mkdir -p "$scratch/leak-ws/.claude"
+cp "$root/CLAUDE.md" "$scratch/leak-ws/CLAUDE.md"
+cp -R "$root/.claude/skills" "$root/.claude/agents" "$scratch/leak-ws/.claude/"
+
+# The probe's own name is nowhere in that text, which is the whole defect: a
+# search by name passes the tree.
+if grep -rqF "$status_probe" "$scratch/leak-ws/CLAUDE.md" "$scratch/leak-ws/.claude/skills/headwater-authoring/SKILL.md"; then
+    fail "the always-loaded text does not name the status probe" "it does, so a search by name would find the leak"
+else
+    pass "the always-loaded text does not name the status probe"
+fi
+
+# THE decisive case: a declaration that keeps no cue. The check names the
+# authoring skill with the ruling's identifier, and exits 1.
+awk '/^cued:/ { skip = 1; next } skip && /^[^ #]/ { skip = 0 } !skip' \
+    "$root/.headwater/probe.yml" > "$scratch/leak-probe.yml"
+HW_PROBE_YML="$scratch/leak-probe.yml" sh "$seal" --leak "$scratch/leak-ws" "$status_probe" \
+    > "$scratch/leak.out" 2> "$scratch/leak.err"
+same "the leak check fails the present tree for the status probe" "1" "$?"
+present "and names the authoring skill with the cue HW-DR-0052" \
+    "leak $status_probe .claude/skills/headwater-authoring/SKILL.md HW-DR-0052" "$scratch/leak.out"
+present "and the cue \`status: current\` too" \
+    "leak $status_probe .claude/skills/headwater-authoring/SKILL.md status: current" "$scratch/leak.out"
+
+# The committed declaration keeps the cue on purpose (#1472, outcome b): the
+# probe is reported on its own line and never in a sufficiency rate.
+sh "$seal" --leak "$scratch/leak-ws" "$status_probe" > "$scratch/kept.out" 2> "$scratch/kept.err"
+same "a cue the declaration keeps does not fail the check" "0" "$?"
+present "and the check still prints it, as kept" \
+    "kept $status_probe .claude/skills/headwater-authoring/SKILL.md HW-DR-0052" "$scratch/kept.out"
+
+# A description is the one line a harness loads. A cue in the body of a skill
+# is not always loaded, so it is no leak.
+rm -rf "$scratch/leak-body"
+mkdir -p "$scratch/leak-body/.claude/skills/s"
+printf -- '---\nname: s\ndescription: Nothing to see.\n---\n\nThe ruling is HW-DR-0052.\n' \
+    > "$scratch/leak-body/.claude/skills/s/SKILL.md"
+HW_PROBE_YML="$scratch/leak-probe.yml" sh "$seal" --leak "$scratch/leak-body" "$status_probe" \
+    > "$scratch/body.out" 2>&1
+same "a cue in the body of a skill and not in its description is no leak" "0" "$?"
+# A folded description is read to its end.
+printf -- '---\nname: s\ndescription: >\n  Nothing to see, and\n  the ruling is HW-DR-0052.\n---\n' \
+    > "$scratch/leak-body/.claude/skills/s/SKILL.md"
+HW_PROBE_YML="$scratch/leak-probe.yml" sh "$seal" --leak "$scratch/leak-body" "$status_probe" \
+    > "$scratch/folded.out" 2>&1
+same "a cue on the second line of a folded description is a leak" "1" "$?"
+
+# A probe that declares no cue is printed as one the check cannot see, and
+# does not pass as clean by saying nothing.
+sh "$seal" --leak "$scratch/leak-ws" HW-PROBE-no-such-probe > "$scratch/uncued.out" 2>&1
+same "a probe with no cue does not fail the check" "0" "$?"
+present "and is printed as uncued" "uncued HW-PROBE-no-such-probe" "$scratch/uncued.out"
+
+# The MCP tools. A workspace that declares a server has the descriptions of
+# its tools loaded too, and the check lists them through the engine.
+if [ -x "$engine" ]; then
+    rm -rf "$scratch/leak-mcp"
+    mkdir -p "$scratch/leak-mcp"
+    cp -R "$root/.headwater" "$scratch/leak-mcp/.headwater"
+    printf '{"mcpServers":{}}\n' > "$scratch/leak-mcp/.mcp.json"
+    printf 'cues:\n  HW-PROBE-x: [Resolve a task description]\n' > "$scratch/mcp-probe.yml"
+    HW_PROBE_YML="$scratch/mcp-probe.yml" sh "$seal" --leak "$scratch/leak-mcp" HW-PROBE-x \
+        > "$scratch/mcp.out" 2> "$scratch/mcp.err"
+    same "a cue in an MCP tool's description is a leak" "1" "$?"
+    present "and names the tool" "leak HW-PROBE-x mcp:route Resolve a task description" "$scratch/mcp.out"
+    rm -f "$scratch/leak-mcp/.mcp.json"
+    HW_PROBE_YML="$scratch/mcp-probe.yml" sh "$seal" --leak "$scratch/leak-mcp" HW-PROBE-x \
+        > "$scratch/nomcp.out" 2>&1
+    same "and with no server declared the tools are not loaded" "0" "$?"
+else
+    printf 'note no engine, so the MCP leak cases did not run.\n'
+fi
+
 present "the driver names the channel and never a file under ~/.claude/projects" \
     "output-format stream-json" "$driver"
 present "the driver requires --verbose, which the harness requires" \
