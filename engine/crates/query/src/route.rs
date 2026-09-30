@@ -1288,6 +1288,7 @@ mod tests {
                 purpose: Some("rationale".to_string()),
                 summary: Some("what colors, and where the banner goes".to_string()),
                 unwarranted: false,
+                outside: None,
             }],
             evidence: vec![Evidence::Ranked {
                 terms: vec!["rate".to_string()],

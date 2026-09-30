@@ -92,7 +92,9 @@
 //!    not UTF-8);
 //! 2. a declared exclusion claims the path, and the corpus's own statement about
 //!    a file outranks anything the engine would work out about it;
-//! 3. the file is not Markdown, so it is not a document;
+//! 3. the file is not Markdown, so it is not a document, unless it is in a
+//!    format a projection writes and it carries the marker, which makes it
+//!    generated;
 //! 4. the bytes will not read as text;
 //! 5. the first line marks the file as this engine's own output;
 //! 6. the front matter will not load — a defect in the file, and it outranks
@@ -124,12 +126,18 @@
 //! fail to load. The order is fixed anyway, because a row has one outcome and a
 //! reader should not have to derive which.
 //!
-//! **Step 3 sits above step 5, and that is a boundary rather than an oversight.**
-//! A generated file in a format that is not Markdown is already accounted for as
-//! `not a document`, which is true of it and reports nothing against it. Moving
-//! the marker test above the extension test would mean reading every file under
-//! the corpus root — including every image and every archive — to ask a question
-//! whose answer changes no verdict.
+//! **Step 3 asks step 5's question of a few formats, and of no others.** A
+//! projection writes JSON, YAML and TOML as well as Markdown, and a
+//! `graph_export` can sit inside the corpus root. When its declaration moves or
+//! goes away, the file it wrote is an orphan, and the orphan rule reads only a
+//! `generated` row. So a file in a format the emitters write is read and tested
+//! for the marker (`headwater_mark::marks_format` names the formats), and a
+//! marked one is `generated` (#1344). Every other file under the corpus root,
+//! including every image and every archive, stays `not a document` and unread.
+//! That is sound because the generator refuses a projection declared at any
+//! other extension, and because it writes no output whose marker this step
+//! would not read back: a `graph_export` at a `.yml` path is JSON, and it is
+//! refused rather than written (`Verdict::MarkerUnread` in the generator).
 
 use crate::resolve::{self, Resolution};
 use crate::shelves::Taxonomy;
@@ -217,8 +225,9 @@ pub enum Outcome {
     Unreadable(Unreadable),
     /// A declared exclusion claims the path, and states why.
     Excluded { pattern: String, reason: String },
-    /// Not a Markdown file. A document is a Markdown file that opens with a
-    /// block of facets, so this file is not one.
+    /// Not a Markdown file, and not a marked file in a format a projection
+    /// writes. A document is a Markdown file that opens with a block of
+    /// facets, so this file is not one.
     NotADocument,
     /// The walk reached the name and could not turn it into a file to read.
     Unwalkable(Unwalkable),
@@ -340,7 +349,7 @@ fn outcome_of(entry: &walk::Entry, taxonomy: &Taxonomy) -> Read {
     // filesystems, and the census would then disagree with itself across
     // machines.
     if !entry.path.ends_with(".md") {
-        return unread(Outcome::NotADocument);
+        return not_a_document(entry);
     }
 
     let bytes = match std::fs::read(&entry.on_disk) {
@@ -447,6 +456,38 @@ fn marked_in_front_matter(source: &str) -> bool {
     // path admits both positions. The name is fixed here rather than taken,
     // because the answer is about the first line and not about the file.
     !headwater_mark::carries_marker("a.md", source.lines().next().unwrap_or_default())
+}
+
+/// Step 3: a file that is not a Markdown document, and the one question the
+/// census still asks of it.
+///
+/// A projection can write JSON, YAML or TOML inside the corpus root, and a
+/// `graph_export` whose declaration moved leaves such a file behind with the
+/// marker on it. So a file in a format the emitters write is read and tested
+/// for the marker, and a marked one is `Generated`, which is the row the
+/// orphan rule reads (#1344). Every other file stays unread, and an unmarked
+/// file in a marked format is `not a document` with no digest, as before. A
+/// file that will not read or is not text is `not a document` too: it is not a
+/// document either way, and this step only looks for a claim.
+fn not_a_document(entry: &walk::Entry) -> Read {
+    if !headwater_mark::marks_format(&entry.path) {
+        return unread(Outcome::NotADocument);
+    }
+    let Ok(bytes) = std::fs::read(&entry.on_disk) else {
+        return unread(Outcome::NotADocument);
+    };
+    let digest = headwater_hash::digest(&bytes);
+    match String::from_utf8(bytes) {
+        Ok(source) if headwater_mark::carries_marker(&entry.path, &source) => hashed(
+            Outcome::Generated {
+                projection: headwater_mark::kind_named(&entry.path, &source),
+                kind: None,
+                derivation: None,
+            },
+            digest,
+        ),
+        _ => unread(Outcome::NotADocument),
+    }
 }
 
 /// An outcome the walk reached without reading a byte of the file.

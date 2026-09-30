@@ -56,14 +56,18 @@
 //! entry, which is what [`crate::scope::EdgeView::ends`] normalizes once for
 //! every edge-grained rule.
 //!
-//! # Three values that are not `asserted`, and one that is not `evidenced`
+//! # A value outside the closed set supports nothing
 //!
 //! `proposed` is a warrant this corpus writes and spec 3's closed set does not
 //! name;
 //! [HW-OBL-0125](../../../../docs/obligations/0125-nine-documents-state-a-warrant-the-closed-set-does-not-hold-and-no-check-reads-one.md)
-//! holds the nine documents that do. It is not `asserted`, so this rule passes
-//! it, and that is a decision rather than an accident: the defect there is the
-//! value itself, and this rule is not the one that reports it.
+//! holds the nine documents that do. An earlier edition passed it, because it
+//! is not `asserted` and the defect was the value, which another rule would
+//! report. No rule did, so a misspelling such as `acepted` read as support
+//! (#1438). [`crate::warrant`] now reports the value, and this rule reads a
+//! value outside the set as what it is: nothing in it says a person read the
+//! target. So the pointer is reported, with a message that names the value as
+//! written and does not call it `asserted`.
 //!
 //! A target that declares **no** warrant is a different answer again, and it
 //! skips. A rule that collapsed the absence into "not `asserted`" would return
@@ -142,8 +146,10 @@ pub const FAMILY: &str = "evidence";
 /// The claim on the source side that spec 3's sentence is about.
 pub const CLAIMED: &str = "evidenced";
 
-/// The warrant on the target side that does not support it.
-pub const UNSUPPORTING: &str = "asserted";
+/// The warrant on the target side that does not support it. A value outside
+/// [`headwater_doc::WARRANTS`] supports nothing either, and is reported with
+/// its own message.
+pub const UNSUPPORTING: &str = headwater_doc::ASSERTED;
 
 /// The group carried no half at all, which the instantiation never produces.
 /// Recorded rather than panicked on, for [`crate::target`]'s reason.
@@ -180,7 +186,11 @@ impl EdgeCheck for Basis<'_> {
     /// derived warrant of a generated target, so the verdict over a pair that
     /// version 1 skipped is now a pass and a warm cache would serve the skip
     /// forever at the version it was written under.
-    const VERSION: u32 = 2;
+    ///
+    /// Version 3 reads a target warrant outside the closed set as supporting
+    /// nothing, so the verdict over such a pair moves from a pass to a
+    /// finding, and a warm cache would serve version 2's pass.
+    const VERSION: u32 = 3;
     /// The Q4 pair. See the module comment: both ends have to be documents,
     /// because the rule reads a provenance member at each of them.
     const UNIT: EdgeUnit = EdgeUnit::Pair;
@@ -236,11 +246,33 @@ impl EdgeCheck for Basis<'_> {
                 target.id
             ));
         };
+        let (line, column) = at(Some(half.span));
+        if !headwater_doc::is_warrant(warrant) {
+            return Outcome::failed_with(Finding {
+                rule: self::RULE,
+                severity: Severity::Warn,
+                obligation: None,
+                path: half.source.path.clone(),
+                line,
+                column,
+                message: format!(
+                    "`{}` claims `{CLAIMED}` and declares `{}` to `{}`, whose warrant is \
+                     `{warrant}`, which is not a value of spec 3's closed set: it says nothing \
+                     about who read the target, so a pointer at it does not support the claim",
+                    source.id, relation.name, target.id
+                ),
+                remediation: format!(
+                    "correct the warrant of {} to one of the four values, point `{}` in {} at an \
+                     artifact somebody can audit, or write `evidence_basis: reconstructed` in {}",
+                    target.path, half.name, half.source.path, source.path
+                ),
+                patch: None,
+            });
+        }
         if warrant != UNSUPPORTING {
             return Outcome::Passed;
         }
 
-        let (line, column) = at(Some(half.span));
         Outcome::failed_with(Finding {
             rule: self::RULE,
             severity: Severity::Warn,

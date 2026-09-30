@@ -1,0 +1,49 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The taxonomy the warrant-value tree is checked against. Nothing here declares
+# a warrant or an acceptor, because nothing can: the provenance block belongs to
+# the engine, and spec 3 closes its warrant set at four values that no taxonomy
+# extends. `warrant.value.not_permitted` and `warrant.acceptance.unpaired` read
+# both members through `headwater_doc` and never through a declaration.
+#
+# `traces_to` is here so that the tree also holds the other reader of a
+# warrant: `warrant.evidence.unsupported`, over an evidenced claim that rests on
+# a document whose warrant is misspelled.
+
+facets:
+  status:
+    role: state
+    values:
+      - {value: draft, role: initial}
+      - {value: current, role: live}
+  status_since:
+    role: state_entered
+  summary:
+    role: scent
+
+identifier_schemes:
+  note_id: {pattern: "NOTE-{namespace}-{slug}", namespace: FIX, allocation: minted-once}
+
+relations:
+  traces_to:
+    family: evidence
+    from: [record]
+    to: [record]
+    cardinality: many
+    created_by: author
+
+core:
+  requires:
+    - facet_role: state
+    - relation_family: evidence
+
+kinds:
+  record:
+    identifier: {scheme: note_id}
+    facets: {require: [status]}
+
+shelves:
+  records:
+    path: warrant-value/**
+    homogeneous: true
+    kind: record
