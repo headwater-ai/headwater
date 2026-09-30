@@ -1284,12 +1284,9 @@ fn every_refusal_known_before_the_first_write_leaves_the_tree_unchanged() {
     type Refused = fn(&headwater_generate::Report) -> bool;
     fn no_setup(_: &Path) {}
     let rows: [(&str, Setup, Planned, Refused); 6] = [
-        (
-            "ambiguous",
-            lay_ambiguous,
-            plan_over,
-            |report| !report.ambiguous_arms.is_empty(),
-        ),
+        ("ambiguous", lay_ambiguous, plan_over, |report| {
+            !report.ambiguous_arms.is_empty()
+        }),
         (
             "defective",
             |at| {
@@ -1303,18 +1300,16 @@ fn every_refusal_known_before_the_first_write_leaves_the_tree_unchanged() {
             plan_over,
             |report| !report.defective_arms.is_empty(),
         ),
-        (
-            "held",
-            refuse_the_lock,
-            plan_over,
-            |report| report.refused.iter().any(|refused| refused.held),
-        ),
+        ("held", refuse_the_lock, plan_over, |report| {
+            report.refused.iter().any(|refused| refused.held)
+        }),
         (
             "orphaned",
             |at| {
                 // A copy of a file this engine writes, at a path no
                 // declaration names: marked, and written by nothing.
                 let (_, bytes) = result_bytes(at);
+                std::fs::create_dir_all(at.join("runs/probe-results")).expect("a directory");
                 std::fs::write(at.join("runs/probe-results/stray.md"), bytes)
                     .expect("the stray lands");
             },
@@ -1340,7 +1335,9 @@ fn every_refusal_known_before_the_first_write_leaves_the_tree_unchanged() {
             "marker-unread",
             no_setup,
             // The result's content is Markdown, and the census reads no
-            // Markdown marker at a `.json` path.
+            // Markdown marker at a `.yml` path. The plan is edited rather than
+            // declared, and `an_output_whose_marker_the_census_would_not_read_is_not_written`
+            // in `fixtures.rs` holds the same refusal over a real declaration.
             |at| {
                 let mut plan = plan_over(at);
                 let output = plan
@@ -1348,7 +1345,7 @@ fn every_refusal_known_before_the_first_write_leaves_the_tree_unchanged() {
                     .iter_mut()
                     .find(|output| output.path == RESULT)
                     .expect("the plan writes the result");
-                output.path = RESULT.replace(".md", ".json");
+                output.path = RESULT.replace(".md", ".yml");
                 plan
             },
             |report| {
@@ -1826,9 +1823,30 @@ fn only_the_role_on_a_state_decides_whether_a_refusal_fails_the_run() {
             report.render(ColorMode::Plain)
         );
 
-        // The result is written either way, and it carries the refusal and no
-        // verdict. A state that released the refusal by writing no file would
-        // take the measurement out of the corpus rather than mark it stale.
+        assert!(
+            report
+                .render(ColorMode::Plain)
+                .contains("refused transcripts"),
+            "the run over a transcript at `{state}` did not report the refusal to a reader"
+        );
+        // A refusal the state holds fails the run before its first write, so
+        // the run writes nothing at all (#1466). The fixture tree holds no
+        // result, so there is still none after the run.
+        assert_eq!(
+            report.withheld, holds,
+            "the run over a transcript at `{state}` withholds its writes {holds}: {why}"
+        );
+        if holds {
+            assert!(
+                !at.join(RESULT).exists(),
+                "a run over a transcript at `{state}` refused and still wrote the result"
+            );
+            continue;
+        }
+        // A refusal the state releases is not a refusal of the run, so the
+        // result is written, and it carries the refusal and no verdict. A
+        // state that released the refusal by writing no file would take the
+        // measurement out of the corpus rather than mark it stale.
         let written = std::fs::read_to_string(at.join(RESULT)).expect("the result reads");
         assert!(
             written.contains("sha256:another-taxonomy"),
@@ -1839,12 +1857,6 @@ fn only_the_role_on_a_state_decides_whether_a_refusal_fails_the_run() {
             !written.contains("## The verdicts"),
             "the result written for a transcript at `{state}` carries verdicts, and a refused \
              transcript reaches no grader:\n{written}"
-        );
-        assert!(
-            report
-                .render(ColorMode::Plain)
-                .contains("refused transcripts"),
-            "the run over a transcript at `{state}` did not report the refusal to a reader"
         );
     }
 }

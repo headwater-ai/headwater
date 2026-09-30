@@ -954,9 +954,11 @@ fn count(how_many: usize, noun: &str) -> String {
 pub struct Plan {
     pub outputs: Vec<Output>,
     pub unwritten: Vec<Unwritten>,
-    /// Committed transcripts a confirmation refused. The file is still written,
-    /// because the refusal is what the file says; this is the run saying it
-    /// too.
+    /// Committed transcripts a confirmation refused. Where the state of the
+    /// transcript holds the refusal, a write run refuses before its first
+    /// write and writes nothing (#1466). Where the state releases it, the file
+    /// is written, because the refusal is what the file says, and this is the
+    /// run saying it too.
     pub refused: Vec<RefusedTranscript>,
     /// Committed transcripts graded over a read set that moved since the
     /// recording. See [`MovedReadSet`].
@@ -1368,6 +1370,10 @@ pub enum Verdict {
     MarkerUnread,
     /// The write failed, and this is what the operating system said.
     Failed(String),
+    /// A write only: this run would have written the file, and did not,
+    /// because the run refused before its first write (#1466). Not an error by
+    /// itself: the refusal is what fails the run, and the report names it.
+    Withheld,
 }
 
 impl Verdict {
@@ -1410,6 +1416,9 @@ impl Verdict {
                  a page is Markdown: name the output with the extension of what the kind writes"
                 .to_string(),
             Verdict::Failed(error) => format!("not written: {error}"),
+            Verdict::Withheld => "not written: this run refused before its first write, and it \
+                 wrote nothing"
+                .to_string(),
         }
     }
 }
@@ -1488,6 +1497,9 @@ pub struct Report {
     /// one of them wrote a file and the last therefore proves nothing. `None`
     /// for a run that settled and for every `--check`.
     pub unsettled: Option<usize>,
+    /// A write only: the run found a refusal before its first write, so it
+    /// wrote no file. See [`Report::refuses_before_writing`].
+    pub withheld: bool,
 }
 
 impl Report {
@@ -1501,6 +1513,25 @@ impl Report {
             || !self.ambiguous_arms.is_empty()
     }
 
+    /// Whether a write run refuses before its first write (#1466).
+    ///
+    /// These are the six terms of [`Report::has_errors`] that a run knows
+    /// before it writes a file. The other six are not here: `producer`,
+    /// `Differs` and `Missing` are `--check` only, and a `Failed` write, an
+    /// unsettled run and a refusal on a later pass can only follow a write, as
+    /// [`write_settled`] says. A refusal whose state releases it is not a
+    /// refusal of the run, so it does not stop the write.
+    pub fn refuses_before_writing(&self) -> bool {
+        !self.ambiguous_arms.is_empty()
+            || !self.defective_arms.is_empty()
+            || self.refused.iter().any(|refused| refused.held)
+            || !self.orphaned.is_empty()
+            || self
+                .wrote
+                .iter()
+                .any(|wrote| matches!(wrote.verdict, Verdict::Occupied | Verdict::MarkerUnread))
+    }
+
     /// The one sentence a failing run ends with, or `None` where it did not
     /// fail.
     ///
@@ -1512,6 +1543,19 @@ impl Report {
     /// could go wrong, and the fixture that holds the bar could only reach one
     /// of them.
     pub fn remedy(&self) -> Option<String> {
+        let sentence = self.sentence()?;
+        Some(match self.withheld {
+            true => format!(
+                "{sentence}. This run refused before its first write, so it wrote nothing and the \
+                 tree is as it was"
+            ),
+            false => sentence,
+        })
+    }
+
+    /// The remedy for the failure, before [`Report::remedy`] says whether the
+    /// run wrote anything.
+    fn sentence(&self) -> Option<String> {
         if let Some(producer) = &self.producer {
             return Some(producer.line());
         }
@@ -1556,10 +1600,9 @@ impl Report {
         // regenerate here would be telling them to rewrite the refusal.
         if let Some(refused) = self.refused.iter().find(|refused| refused.held) {
             return Some(format!(
-                "`{}` is refused by {}, so the result this run wrote for it holds no verdict. \
-                 Regenerating writes the refusal again. Record the session again against this \
-                 tree, or retire the transcript to a state whose role is terminal until \
-                 somebody does",
+                "`{}` is refused by {}, so a result for it can hold no verdict. Regenerating \
+                 refuses again. Record the session again against this tree, or retire the \
+                 transcript to a state whose role is terminal until somebody does",
                 refused.transcript, refused.confirmation
             ));
         }
@@ -1800,6 +1843,24 @@ pub const PASSES: usize = 4;
 /// own. A pass whose write failed stops the run, since a later plan would read
 /// a tree that the failure left part written.
 ///
+/// # What can still fail after a write
+///
+/// A pass refuses before its first write wherever the refusal can be known
+/// then, and [`Report::refuses_before_writing`] names those six. The first
+/// pass that refuses therefore writes nothing, and the run stops with the tree
+/// as it found it (#1466). Three failures can still come after a write, and
+/// each is a failure of the disk or of this engine rather than a refusal of the
+/// corpus:
+///
+/// - [`Verdict::Failed`]: the operating system refused a write. No check
+///   before the write can know that the write will fail.
+/// - [`Report::unsettled`]: a cycle between projections. Only the writes of
+///   each pass show that the next pass writes again.
+/// - an error from `planned`, or a new refusal, on a later pass. The first
+///   pass writes only marked outputs and never a transcript, so what a later
+///   pass reads that the first did not is this engine's own output, and a
+///   refusal of it is a defect in this engine.
+///
 /// The report states each path once, with what the first pass that changed
 /// it did. The remaining sections come from the last pass, which is the one
 /// that read the settled tree.
@@ -1876,6 +1937,10 @@ fn run(root: &Path, plan: &Plan, mode: Mode) -> Report {
         producer,
         ..Report::default()
     };
+    // Each output this run would write, by its line in the report. Nothing is
+    // written until every verdict is known, so that a refusal a later output
+    // raises cannot follow a write an earlier one made (#1466).
+    let mut pending: Vec<(usize, std::path::PathBuf, &str)> = Vec::new();
     for output in &plan.outputs {
         // Neither written nor compared, and the file is not read: a copy that
         // a local `headwater export` left there is the publish step's output,
@@ -1915,14 +1980,27 @@ fn run(root: &Path, plan: &Plan, mode: Mode) -> Report {
             }
             (Some(_), true) => Verdict::Differs,
             (None, true) => Verdict::Missing,
-            (Some(_), false) => put(&path, &output.bytes, Verdict::Rewritten),
-            (None, false) => put(&path, &output.bytes, Verdict::Written),
+            (Some(_), false) => Verdict::Rewritten,
+            (None, false) => Verdict::Written,
         };
+        if matches!(verdict, Verdict::Written | Verdict::Rewritten) {
+            pending.push((report.wrote.len(), path, &output.bytes));
+        }
         report.wrote.push(Wrote {
             path: output.path.clone(),
             kind: output.kind,
             verdict,
         });
+    }
+    // `generate` alone. `headwater export` keeps its old order until the same
+    // question is settled for it, and `--check` writes nothing either way.
+    report.withheld = mode == Mode::Write && report.refuses_before_writing();
+    for (line, path, bytes) in pending {
+        let verdict = &mut report.wrote[line].verdict;
+        *verdict = match report.withheld {
+            true => Verdict::Withheld,
+            false => put(&path, bytes, verdict.clone()),
+        };
     }
     report
 }
@@ -2224,6 +2302,7 @@ mod paint_tests {
                 current: 2,
             }),
             unsettled: None,
+            withheld: false,
         }
     }
 
