@@ -3,7 +3,7 @@ id: HW-OBL-0224
 status: current
 status_since: 2026-09-29
 summary: "Run 20260928-1109 surfaced thirteen findings about its own agents, hooks, run scripts and CI, none with a reader outside this repository. This record files them together under the intake cap."
-last_verified: 2026-09-29
+last_verified: 2026-09-30
 title: "Thirteen run-tooling gaps from run 20260928-1109, filed together"
 waiting_on: build
 ---
@@ -19,7 +19,6 @@ waiting_on: build
 **The agents of the build order.**
 
 - `hw-queue` cannot write `queue.md` into the run directory from a worktree-isolated session, because the harness refuses the path under the common directory. `tools/run/run-dir.sh` has no `queue <dir> <file>` verb, so the parent copied the file with a script. (parent, no issue)
-- `CLAUDE.md` tells every session to call `EnterWorktree`. A worktree-isolated parent passes that isolation to `hw-integrate`, and the harness then refuses its commands in the shared checkout. So the move, rebuild, regenerate and bless step of `.claude/agents/hw-integrate.md` cannot run in a `/next-run` session. The fix is either an exemption in `CLAUDE.md`, which is the owner's file, or a post-merge step on the integrator's own worktree at `origin/main`. (parent, #764, seen on #1299)
 - `.claude/agents/hw-build.md` ("Before you open the pull request") tells a builder to rebase onto `origin/main`. After a push, the rebased branch cannot land without the force-push that the same definition forbids. #1311 merged `origin/main` instead. (build, #1311)
 - `hw-adjudicate` switched the parent worktree to `origin/main` and back, and left `HEAD` detached. An adjudicator must not move a checkout that it did not make. (adjudicate, #978)
 - The mergeable wait in `.claude/agents/hw-verify.md`, `[ "$(gh pr view <N> --json mergeable -q .mergeable)" != UNKNOWN ]`, is met on an error. `gh pr view 1364` failed on this repository with "Could not resolve to a PullRequest", and the empty string is not `UNKNOWN`. `gh pr list --head <branch> --json mergeable,mergeStateStatus` works. (hw-verify, #1357)
@@ -41,3 +40,7 @@ waiting_on: build
 ## Discharge
 
 Each item discharges alone, when the file it names says or does what the item asks, or when a change records why it stays. The record discharges when every item has. An item that grows a reader outside this repository leaves this record for an issue, and the record says where it went.
+
+One item is discharged by #1419, which merged as `16eecca0`:
+
+- `CLAUDE.md` tells every session to call `EnterWorktree`. A worktree-isolated parent passes that isolation to `hw-integrate`, and the harness then refuses its commands in the shared checkout. So the move, rebuild, regenerate and bless step of `.claude/agents/hw-integrate.md` could not run in a `/next-run` session. The item named two fixes, and #1419 took the second. The integrator now does the rebuild, regenerate, check and bless in a detached tree of its own under `.claude/worktrees/` at `origin/main`. It names the fast-forward of the shared checkout in its `LEFT` line for the owner. The shared checkout still does not move, and [HW-OBL-0221](0221-subagents-read-skills-from-the-shared-checkout-and-a-worktree-isolated-integrator-cannot-fast-forward-it-after-a-merge.md) holds that half. (parent, #764, seen on #1299)

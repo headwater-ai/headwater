@@ -3,7 +3,7 @@ id: HW-OBL-0221
 status: current
 status_since: 2026-09-27
 summary: "Every agent of a run reads its skill text from the shared checkout. The integrator is told to fast-forward that checkout after each merge, but under worktree isolation nothing does, so later agents read stale skills."
-last_verified: 2026-09-27
+last_verified: 2026-09-30
 title: "Subagents read skills from the shared checkout, and a worktree-isolated integrator cannot fast-forward it after a merge"
 waiting_on: build
 ---
@@ -25,3 +25,5 @@ So an agent can act on a rule that `main` has already changed. Nothing tells the
 ## Discharge
 
 This record discharges in one of two ways. A stage that can reach the shared checkout fast-forwards it after each merge, and the integrator or `tools/run/run-dir.sh` reports the commit it moved to. Or a run refuses to start when no stage can fast-forward the shared checkout, and a case shows the refusal.
+
+**#1419, which merged as `16eecca0`, meets part of the first way and not the whole of it.** A worktree-isolated integrator now names the fast-forward of the shared checkout in its `LEFT` line for the owner. It does the rebuild, regenerate, check and bless in a detached tree under `.claude/worktrees/`. So the parent learns that the shared checkout did not move. No stage moves it, so later agents still read skill text from an old commit, and this record stays open.

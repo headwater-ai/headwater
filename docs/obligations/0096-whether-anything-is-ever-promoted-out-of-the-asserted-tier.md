@@ -5,7 +5,7 @@ status: current
 status_since: 2026-08-10
 waiting_on: measurement
 last_verified: 2026-08-13
-summary: "Q15 leaves open whether any asserted content is ever promoted, and this repository has no asserted content to watch."
+summary: "Q15 leaves open whether asserted content is promoted as fast as it arrives, and one promotion in this repository cannot answer it."
 provenance:
   warrant: accepted
   agency: mixed
@@ -30,4 +30,4 @@ The corpus owes an observation of promotions against the asserted count.
 
 ## Discharge
 
-This entry and [the unmeasured claim under Q15](0011-nothing-has-been-promoted-out-of-the-synthesized-tier.md) are one debt recorded in two of the register's lists. That record carries the instrument, which is the promotion rate against the asserted count. The denominator now has a value. `taxonomy audit` reports it under the warrant reading on every run, and this record states no copy of the figure. The numerator runs too. A promotion is a lifecycle transition, and `warrant.promoted` declares the `needs_prior` input that spec 12 designs for one. What neither half answers yet is the claim, because no change of this repository has moved a warrant.
+This entry and [the unmeasured claim under Q15](0011-one-document-has-been-promoted-out-of-the-synthesized-tier-and-no-rate-says-whether-the-tier-drains.md) are one debt recorded in two of the register's lists. That record carries the instrument, which is the promotion rate against the asserted count. The denominator now has a value. `taxonomy audit` reports it under the warrant reading on every run, and this record states no copy of the figure. The numerator runs too. A promotion is a lifecycle transition, and `warrant.promoted` declares the `needs_prior` input that spec 12 designs for one. What neither half answers yet is the claim. One change has moved a warrant, [#1425](https://github.com/headwater-ai/headwater/pull/1425), and one promotion is not a rate.
