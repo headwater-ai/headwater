@@ -80,7 +80,19 @@ pub fn pointers_value(pointers: &[Pointer]) -> Json {
 
 /// One explanation as JSON.
 pub fn explain(explanation: &Explanation) -> String {
-    of_explanation(explanation).render_pretty()
+    explain_bounded(explanation, None)
+}
+
+/// One explanation as JSON, with each `reach.members[i].paths` cut to its
+/// first `paths_at_most` entries.
+///
+/// `None` writes every entry, which is what [`explain`] writes. The bound
+/// cuts the list and never a count: `matched`, `total` and `governed_entries`
+/// still count every entry the pattern reached. The edit hook passes the
+/// bound it lists up to, because it reads the document once for each count
+/// it needs and each read parses all of it again (#1346).
+pub fn explain_bounded(explanation: &Explanation, paths_at_most: Option<usize>) -> String {
+    of_explanation(explanation, paths_at_most).render_pretty()
 }
 
 /// The route document.
@@ -288,7 +300,7 @@ fn of_pointer(pointer: &Pointer) -> Json {
 /// case this verb most exists for: `derivation` then carries the step that
 /// stopped, and `facets`, `sections`, `permitted` and `related` are empty
 /// because nothing is required of a document that is not one.
-fn of_explanation(explanation: &Explanation) -> Json {
+fn of_explanation(explanation: &Explanation, paths_at_most: Option<usize>) -> Json {
     let Explanation {
         path,
         id,
@@ -338,7 +350,12 @@ fn of_explanation(explanation: &Explanation) -> Json {
         ),
         (
             "related",
-            Json::Array(related.iter().map(of_neighbour).collect()),
+            Json::Array(
+                related
+                    .iter()
+                    .map(|neighbour| of_neighbour(neighbour, paths_at_most))
+                    .collect(),
+            ),
         ),
     ]);
     if let Some(entries) = governed_entries(related) {
@@ -399,7 +416,7 @@ fn of_permitted(permitted: &Permitted) -> Json {
 /// states. `neither` is written rather than omitted, so a consumer never has to
 /// decide whether an absent member means "no reading order" or "this producer
 /// does not report one".
-fn of_neighbour(neighbour: &Neighbour) -> Json {
+fn of_neighbour(neighbour: &Neighbour, paths_at_most: Option<usize>) -> Json {
     let Neighbour {
         relation,
         inbound,
@@ -436,7 +453,7 @@ fn of_neighbour(neighbour: &Neighbour) -> Json {
         }),
     ));
     if let Some(reach) = reach {
-        members.push(("reach", of_reach(reach)));
+        members.push(("reach", of_reach(reach, paths_at_most)));
     }
     Json::object(members)
 }
@@ -444,7 +461,11 @@ fn of_neighbour(neighbour: &Neighbour) -> Json {
 /// How many entries an anchor reaches, in total and per pattern —
 /// [HW-DR-0074](../../../../docs/decisions/0074-a-code-path-anchor-is-a-pattern-over-the-tree-and-it-binds-when-the-pattern-matches-at-least-one-entry.md)'s
 /// denominator, so a client reads the same count a terminal renders.
-fn of_reach(reach: &headwater_graph::Reach) -> Json {
+///
+/// `paths_at_most` cuts `paths` to its first entries, and `matched` still
+/// counts every entry, so `matched` is the length of `paths` only where no
+/// bound applies.
+fn of_reach(reach: &headwater_graph::Reach, paths_at_most: Option<usize>) -> Json {
     Json::object([
         ("total", number(reach.total)),
         (
@@ -457,7 +478,13 @@ fn of_reach(reach: &headwater_graph::Reach) -> Json {
                         Json::object([
                             ("pattern", Json::string(pattern.clone())),
                             ("matched", number(paths.len())),
-                            ("paths", strings(paths)),
+                            (
+                                "paths",
+                                strings(
+                                    &paths[..paths_at_most
+                                        .map_or(paths.len(), |at_most| at_most.min(paths.len()))],
+                                ),
+                            ),
                         ])
                     })
                     .collect(),
