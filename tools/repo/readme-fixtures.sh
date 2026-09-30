@@ -3227,8 +3227,48 @@ site/tutorial/index.html"
 
 # standard_digest_judge WANT FILE... — `ok`, or one line per `sha256:<hex>` in
 # FILE that is not WANT, and one line per file that names no digest at all.
+# Every match on a line is read, so the right digest beside a stale one is no
+# cover for it. The hex run is read to its end, so a digest cut short, or one
+# with a character added, is not WANT and is reported. An empty WANT is red:
+# a judge handed nothing to compare with would otherwise report every digest
+# it found and no reason why.
 standard_digest_judge() {
-    echo ok
+    sdj_want=$1
+    shift
+    if [ -z "$sdj_want" ]; then
+        echo "the vendored release record states no top-level \`release.digest\`, so the pages have nothing to be compared with"
+        return 0
+    fi
+    awk -v want="$sdj_want" '
+        {
+            s = $0
+            while (match(s, /sha256:[0-9A-Fa-f]+/)) {
+                m = substr(s, RSTART, RLENGTH)
+                s = substr(s, RSTART + RLENGTH)
+                if (m != want) print FILENAME ":" FNR ": " m
+                named[FILENAME] = 1
+            }
+        }
+        # An empty file yields no record, so the floor walks ARGV rather
+        # than the files a record came from.
+        END {
+            for (i = 1; i < ARGC; i++) {
+                if (!(ARGV[i] in named)) print ARGV[i] ": names no sha256 digest"
+            }
+        }
+    ' "$@" >"$scratch/standard-digest.out" 2>"$scratch/standard-digest.err"
+    sdj_status=$?
+    # A file awk cannot open is a judge that read nothing, and an empty output
+    # from it would read as `ok`. So a non-zero exit is the finding.
+    if [ "$sdj_status" -ne 0 ]; then
+        echo "awk exited $sdj_status reading the files, so the judge could not read them: $(head -n 1 "$scratch/standard-digest.err")"
+        return 0
+    fi
+    if [ -s "$scratch/standard-digest.out" ]; then
+        sed "s|^$root/||" "$scratch/standard-digest.out"
+    else
+        echo ok
+    fi
 }
 
 # release_version_of RECORD — the `release.version` of a release record, read
@@ -3315,6 +3355,13 @@ same "  the right digest beside a stale one on one line fails on the stale one" 
 same "  a file that names no digest fails, and names the file" \
     "$scratch/digest/empty.tape: names no sha256 digest" \
     "$(standard_digest_judge "$good_digest" "$scratch/digest/empty.tape")"
+printf '%s\n' "--expect ${good_digest%?}" >"$scratch/digest/short.md"
+same "  a digest cut one character short fails" \
+    "$scratch/digest/short.md:1: ${good_digest%?}" \
+    "$(standard_digest_judge "$good_digest" "$scratch/digest/short.md")"
+same "  a record with no digest fails, and is not a judge that compares with nothing" \
+    "the vendored release record states no top-level \`release.digest\`, so the pages have nothing to be compared with" \
+    "$(standard_digest_judge "" "$scratch/digest/both.md")"
 got=$(standard_digest_judge "$good_digest" "$scratch/digest/both.md" "$scratch/digest/absent.md")
 case $got in
     "awk exited "*)
