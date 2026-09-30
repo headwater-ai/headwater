@@ -707,9 +707,18 @@ creates = [(job, s) for job, b in sorted(jobs("release-taxonomy.yml").items()) f
            if isinstance(s, dict) and re.search(r"\bgh\s+release\s+create\b", str(s.get("run", "")))]
 if "release-taxonomy.yml" in docs and not creates:
     out.append("release-taxonomy.yml creates no release, so nothing here can hold that it passes --latest=false")
+# The line is read as the shell reads it, so a flag behind a `#`, or inside a
+# quoted argument, is no flag (#1449 verify round 1): a backslash continuation
+# is joined, and shlex drops a comment and keeps a quoted argument whole.
+import shlex
 for job, s in creates:
-    for line in str(s.get("run", "")).splitlines():
-        if re.search(r"\bgh\s+release\s+create\b", line) and not re.search(r"--latest=false\b", line):
+    for line in re.sub(r"\\\n", " ", str(s.get("run", ""))).splitlines():
+        try:
+            words = shlex.split(line, comments=True)
+        except ValueError:
+            words = []
+        calls = [i for i in range(len(words) - 2) if words[i:i + 3] == ["gh", "release", "create"]]
+        if re.search(r"\bgh\s+release\s+create\b", line) and not (calls and "--latest=false" in words[calls[0]:]):
             out.append("release-taxonomy.yml job %s creates a release without --latest=false, so a taxonomy release can become releases/latest and the site serves no apt/" % job)
 
 for line in out:
@@ -866,6 +875,25 @@ copy_tree "$scratch/d12"
 edit_wf "$scratch/d12" release-taxonomy.yml "[s.__setitem__('run', s['run'].replace(' --latest=false', '')) for j in doc['jobs'].values() for s in j.get('steps', []) if 'gh release create' in str(s.get('run', ''))]"
 contains "a taxonomy release created without --latest=false is red" \
     "release-taxonomy.yml job artifact creates a release without --latest=false" "$(deploys "$scratch/d12")"
+
+# d13. The flag behind a shell comment reaches no `gh`: the line still reads
+# "--latest=false", and the shell never passes it.
+copy_tree "$scratch/d13"
+edit_wf "$scratch/d13" release-taxonomy.yml "[s.__setitem__('run', s['run'].replace(' --latest=false', ' # --latest=false')) for j in doc['jobs'].values() for s in j.get('steps', []) if 'gh release create' in str(s.get('run', ''))]"
+contains "a --latest=false behind a shell comment is red" \
+    "release-taxonomy.yml job artifact creates a release without --latest=false" "$(deploys "$scratch/d13")"
+
+# d14. The flag inside a quoted argument is text of that argument, not a flag.
+copy_tree "$scratch/d14"
+edit_wf "$scratch/d14" release-taxonomy.yml "[s.__setitem__('run', s['run'].replace('--notes \"\$notes\" --latest=false', '--notes \"\$notes --latest=false\"')) for j in doc['jobs'].values() for s in j.get('steps', []) if 'gh release create' in str(s.get('run', ''))]"
+contains "a --latest=false inside a quoted argument is red" \
+    "release-taxonomy.yml job artifact creates a release without --latest=false" "$(deploys "$scratch/d14")"
+
+# d15. A create call split over lines with a backslash still passes the flag.
+copy_tree "$scratch/d15"
+edit_wf "$scratch/d15" release-taxonomy.yml "[s.__setitem__('run', s['run'].replace(' --latest=false', ' \\\\\n              --latest=false')) for j in doc['jobs'].values() for s in j.get('steps', []) if 'gh release create' in str(s.get('run', ''))]"
+same "a create call continued onto a second line that carries the flag holds" "" \
+    "$(deploys "$scratch/d15" | grep -F 'latest=false' | tr '\n' '|' | sed 's/|$//')"
 
 # d8. The called workflow checks out its caller's ref, whatever the input, so
 # a release deploys its tag.
