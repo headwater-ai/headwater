@@ -596,14 +596,14 @@ fn every_output_carries_its_own_marker() {
     }
 }
 
-/// This repository generates its fifty-two artifacts, and it says why for
+/// This repository generates its fifty-nine artifacts, and it says why for
 /// everything else.
 ///
 /// A property and not a recording, for the reason the query crate states about
 /// its own repository run: the corpus is prose somebody edits. What is asserted
 /// is what a prose edit must not change.
 ///
-/// **Nineteen of the fifty-two are shelf indexes, one per shelf that holds a
+/// **Nineteen of the fifty-nine are shelf indexes, one per shelf that holds a
 /// document.** The first is the decisions shelf, which the package has declared
 /// since the first-run walkthrough and which produced a reason rather than a
 /// file until #124 filled that shelf. The other eighteen are the overlay's own
@@ -624,7 +624,7 @@ fn every_output_carries_its_own_marker() {
 /// list from the change that declared them (#1286), because that change moved
 /// documents onto each of them.
 ///
-/// **Five of the other thirty-three are one each, and twenty-eight are one per
+/// **Five of the other forty are one each, and thirty-five are one per
 /// committed transcript.** The count in the name of this test therefore moves when a
 /// transcript lands on `docs/probe-runs/`, and this paragraph is the only
 /// thing that says so. The redirect map that the open-questions
@@ -635,10 +635,11 @@ fn every_output_carries_its_own_marker() {
 /// HW-DR-0036 and #418 name: MkDocs's `nav:` over the reading order
 /// `by_precedence` derives. The descriptor, at the path Q14 fixes. And one
 /// probe result for each transcript the corpus holds, which is the
-/// twenty-eight: five regression recordings of 2026-09-09 to 2026-09-17, the
+/// thirty-five: five regression recordings of 2026-09-09 to 2026-09-17, the
 /// seven transcripts of each of the two #980 pilots of 2026-09-28, the five
 /// of the #980 campaign of the same day, the two of the #1294 pilot of
-/// 2026-09-29, and the two of the #1384 pilot of the same day.
+/// 2026-09-29, the two of the #1384 pilot of the same day, and the seven of
+/// the #1384 full re-run of 2026-09-30.
 ///
 /// Three declarations produce a reason rather than a file. The package declares
 /// an index for one shelf this tree holds no document on, the overlay declares
@@ -654,7 +655,7 @@ fn every_output_carries_its_own_marker() {
 /// compares bytes, so a contributor who edits a `summary` and does not
 /// regenerate fails this test before CI runs.
 #[test]
-fn this_repository_generates_its_fifty_two_artifacts_and_accounts_for_the_rest() {
+fn this_repository_generates_its_fifty_nine_artifacts_and_accounts_for_the_rest() {
     let root = repository_root();
     let resolved = headwater_resolve::repository(&root)
         .unwrap_or_else(|errors| panic!("{}", headwater_resolve::render_errors(&errors)));
@@ -740,6 +741,13 @@ fn this_repository_generates_its_fifty_two_artifacts_and_accounts_for_the_rest()
             "docs/probe-results/campaign-of-2026-09-28-campaign-tier-present-arm-navigability.md",
             "docs/probe-results/campaign-of-2026-09-28-campaign-tier-present-arm-sufficiency.md",
             "docs/probe-results/campaign-of-2026-09-28-documentation-tier-absent-arm-sufficiency.md",
+            "docs/probe-results/campaign-of-2026-09-30-campaign-tier-absent-arm-discovery.md",
+            "docs/probe-results/campaign-of-2026-09-30-campaign-tier-absent-arm-navigability.md",
+            "docs/probe-results/campaign-of-2026-09-30-campaign-tier-absent-arm-sufficiency.md",
+            "docs/probe-results/campaign-of-2026-09-30-campaign-tier-present-arm-discovery.md",
+            "docs/probe-results/campaign-of-2026-09-30-campaign-tier-present-arm-navigability.md",
+            "docs/probe-results/campaign-of-2026-09-30-campaign-tier-present-arm-sufficiency.md",
+            "docs/probe-results/campaign-of-2026-09-30-documentation-tier-absent-arm-sufficiency.md",
             "docs/probe-results/campaign-pilot-of-2026-09-28-campaign-tier-absent-arm-discovery.md",
             "docs/probe-results/campaign-pilot-of-2026-09-28-campaign-tier-absent-arm-navigability.md",
             "docs/probe-results/campaign-pilot-of-2026-09-28-campaign-tier-absent-arm-sufficiency.md",
