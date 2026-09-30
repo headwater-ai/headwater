@@ -3933,8 +3933,20 @@ readme_apt_judge() {
             echo "$img is the page's floor and not an image of $(basename "$2")"
         fi
     done
-    if ! grep -q 'run:.*sh tools/repo/readme-apt-block\.sh' "$2"; then
+    # The steps are read line for line, because a step that is present and
+    # cannot fail holds nothing: `|| true`, `continue-on-error`, an `if:`, or a
+    # container that is not the matrix image each leaves the job green.
+    if ! grep -qE '^ +run: sh tools/repo/readme-apt-block\.sh README\.md > readme-apt-block\.sh$' "$2"; then
         echo "$(basename "$2") does not run tools/repo/readme-apt-block.sh"
+    fi
+    if ! grep -qE '^ +sh -e readme-apt-block\.sh$' "$2"; then
+        echo "$(basename "$2") does not run the printed block under sh -e"
+    fi
+    if ! grep -qE '^    container: \$\{\{ matrix\.image \}\}$' "$2"; then
+        echo "$(basename "$2") does not run each matrix image as its container"
+    fi
+    if grep -vE '^[ ]*#' "$2" | grep -qE '\|\|[ ]*(true|:)|continue-on-error|^[ ]+if:'; then
+        echo "$(basename "$2") has a step or a job that can pass when the block fails"
     fi
     if grep -q 'apt-get install -y headwater' "$2"; then
         echo "$(basename "$2") carries its own copy of the block"
@@ -3945,17 +3957,20 @@ readme_apt_judge() {
 }
 
 # readme_apt_caller RELEASE — the `needs:` of the job of RELEASE that calls
-# readme-apt.yml, or nothing when no job calls it.
+# readme-apt.yml, then ` if: <condition>` when that job carries one, or
+# nothing when no job calls it. An `if:` could skip the job on every release.
 readme_apt_caller() {
     awk '
-        /^  [A-Za-z0-9_-]+:[ \t]*$/ { if (calls) { print needs; exit } needs = ""; calls = 0; next }
+        function out() { printf "%s", needs; if (cond != "") printf " if: %s", cond; print "" }
+        /^  [A-Za-z0-9_-]+:[ \t]*$/ { if (calls) { out(); calls = 0; done = 1; exit } needs = ""; cond = ""; next }
         /^    needs:/ { needs = $0; sub(/^    needs:[ \t]*/, "", needs) }
+        /^    if:/ { cond = $0; sub(/^    if:[ \t]*/, "", cond) }
         /^    uses:[ \t]*\.\/\.github\/workflows\/readme-apt\.yml/ { calls = 1 }
-        END { if (calls) print needs }
-    ' "$1" | head -n 1
+        END { if (calls && !done) out() }
+    ' "$1"
 }
 
-mkdir -p "$scratch/apt-job"
+mkdir -p "$scratch/apt-job/provoked"
 
 # 12a. The real page against the real job.
 same "the page's APT floor is each an image of readme-apt.yml, and the job runs the page" "" \
@@ -3998,6 +4013,45 @@ apt_planted "a job that inlines the block instead of calling the extractor is re
     "$apt_job" "$scratch/apt-job/inline/readme-apt.yml" \
     "readme-apt.yml does not run tools/repo/readme-apt-block.sh|readme-apt.yml carries its own copy of the block" \
     "$(readme_apt_judge "$readme" "$scratch/apt-job/inline/readme-apt.yml" | tr '\n' '|' | sed 's/|$//')"
+
+# 12c, the job that is present and cannot fail. Each arm is one edit to a copy
+# of the real job, and each would leave the job green with the block broken.
+# readme_apt_provoke NAME SED EXPECTED — the judge on the real page and a copy
+# of the job that SED wrote.
+readme_apt_provoke() {
+    if [ -f "$apt_job" ]; then
+        sed "$2" "$apt_job" >"$scratch/apt-job/provoked/readme-apt.yml"
+    else
+        : >"$scratch/apt-job/provoked/readme-apt.yml"
+    fi
+    apt_planted "$1" "$apt_job" "$scratch/apt-job/provoked/readme-apt.yml" "$3" \
+        "$(readme_apt_judge "$readme" "$scratch/apt-job/provoked/readme-apt.yml" | tr '\n' '|' | sed 's/|$//')"
+}
+readme_apt_provoke "a job whose run step is \`true\` in place of the block is red" \
+    's/^\( *\)sh -e readme-apt-block\.sh$/\1true/' \
+    "readme-apt.yml does not run the printed block under sh -e"
+readme_apt_provoke "a job that runs the block with \`|| true\` is red" \
+    's/^\( *\)sh -e readme-apt-block\.sh$/\1sh -e readme-apt-block.sh || true/' \
+    "readme-apt.yml does not run the printed block under sh -e|readme-apt.yml has a step or a job that can pass when the block fails"
+readme_apt_provoke "a job that swallows the extractor's refusal with \`|| true\` is red" \
+    's/> readme-apt-block\.sh$/> readme-apt-block.sh || true/' \
+    "readme-apt.yml does not run tools/repo/readme-apt-block.sh|readme-apt.yml has a step or a job that can pass when the block fails"
+readme_apt_provoke "a job whose container is one image and not the matrix image is red" \
+    's/^    container: .*/    container: debian:12/' \
+    "readme-apt.yml does not run each matrix image as its container"
+readme_apt_provoke "a job marked \`continue-on-error\` is red" \
+    's/^    timeout-minutes: \(.*\)/    timeout-minutes: \1\
+    continue-on-error: true/' \
+    "readme-apt.yml has a step or a job that can pass when the block fails"
+
+# The release job that calls the workflow, with an `if:` that skips it.
+if [ -f "$root/.github/workflows/release.yml" ]; then
+    sed 's|^    uses: \./\.github/workflows/readme-apt\.yml|    if: false\
+&|' "$root/.github/workflows/release.yml" >"$scratch/apt-job/release.yml"
+fi
+apt_planted "a release.yml whose readme-apt job carries \`if: false\` is red" \
+    "$root/.github/workflows/release.yml" "$scratch/apt-job/release.yml" \
+    "deploy-site if: false" "$(readme_apt_caller "$scratch/apt-job/release.yml")"
 
 # 12d. The extractor prints the block the page shows, less `sudo`, and refuses
 # a page whose paragraph is gone.
