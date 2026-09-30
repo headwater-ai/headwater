@@ -171,6 +171,17 @@ fn patterns_of(entry: &str) -> Vec<String> {
         .collect()
 }
 
+/// Every pattern the `governs` list of the spec at `path` holds, each entry
+/// normalized through `patterns_of`. The corpus case reads a spec through this
+/// function and nothing else, so the case below holds what the corpus case
+/// sees.
+fn governed_patterns(path: &Path) -> BTreeSet<String> {
+    governs(path)
+        .iter()
+        .flat_map(|entry| patterns_of(entry))
+        .collect()
+}
+
 /// Each crate of `crates` outside `row` that `pattern` can reach: some path
 /// under `engine/crates/<crate>/` that the pattern admits. So `engine/**`,
 /// `engine/crates/**` and `./engine/crates/check/src/**` each reach `check`,
@@ -261,10 +272,7 @@ fn a_row_that_links_a_subsystem_spec_is_governed_by_it() {
             "spec 6 '{HEADING}' row {} links {link}, which does not exist",
             row.subsystem
         );
-        let governed: BTreeSet<String> = governs(&path)
-            .iter()
-            .flat_map(|entry| patterns_of(entry))
-            .collect();
+        let governed = governed_patterns(&path);
         let foreign: Vec<String> = governed
             .iter()
             .flat_map(|pattern| {
@@ -311,8 +319,11 @@ fn a_governs_pattern_that_reaches_outside_its_row_is_foreign() {
             .into_iter()
             .collect()
     };
-    let cases: [(&str, &[&str]); 10] = [
+    let cases: [(&str, &[&str]); 13] = [
         ("engine/crates/graph/src/**", &[]),
+        ("engine/crates/check/tests/**", &["check"]),
+        ("engine/crates/check/src/main.rs", &["check"]),
+        ("engine/crates/hash/src/deep/mod.rs", &["hash"]),
         ("./engine/crates/graph/src/**", &[]),
         ("engine/crates/graph/tests/**", &[]),
         ("engine/crates/check/../graph/src/**", &[]),
@@ -331,6 +342,47 @@ fn a_governs_pattern_that_reaches_outside_its_row_is_foreign() {
             reach(entry),
             expected,
             "the crates `{entry}` reaches outside its row"
+        );
+    }
+}
+
+/// The corpus case reads a spec's `governs` through `governed_patterns`, so a
+/// spelling the resolver normalizes and a member of a list anchor each reach
+/// the crate they would govern. The spec here is a temporary file written in
+/// the shape `headwater new` writes, so the case holds the read path of the
+/// corpus case and not a copy of it.
+#[test]
+fn a_spec_read_through_governed_patterns_reaches_the_crates_it_names() {
+    static SEQ: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+    let dir = std::env::temp_dir().join(format!(
+        "subsystem_map-governed_patterns-{}-{:?}-{}",
+        std::process::id(),
+        std::thread::current().id(),
+        SEQ.fetch_add(1, std::sync::atomic::Ordering::SeqCst)
+    ));
+    std::fs::create_dir_all(&dir).expect("the temp dir is written");
+    let spec = dir.join("spec.md");
+    std::fs::write(
+        &spec,
+        "---\nid: HW-SPEC-temp\nrelations:\n  governs:\n    - ./engine/crates/check/src/**\n    - [engine/crates/graph/src/lib.rs, engine/crates/check/src/lib.rs]\n  traces_to:\n    - HW-SPEC-engine-architecture\n---\n\n# Temp\n",
+    )
+    .expect("the temp spec is written");
+    let governed = governed_patterns(&spec);
+    std::fs::remove_dir_all(&dir).expect("the temp dir is removed");
+    let row = vec!["graph".to_string()];
+    let crates: BTreeSet<String> = ["check", "graph", "hash"]
+        .into_iter()
+        .map(str::to_string)
+        .collect();
+    for pattern in ["engine/crates/check/src/**", "engine/crates/check/src/lib.rs"] {
+        assert!(
+            governed.contains(pattern),
+            "governed_patterns does not hold {pattern} (it holds {governed:?})"
+        );
+        assert_eq!(
+            foreign_crates(pattern, &row, &crates),
+            ["check"],
+            "the crates `{pattern}` reaches outside its row"
         );
     }
 }
