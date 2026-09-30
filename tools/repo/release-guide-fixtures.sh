@@ -83,6 +83,11 @@
 # prose. The asset names are held against `release.yml` by group 7 of
 # `tools/repo/readme-fixtures.sh`, and the guide cites that group rather than
 # copying the names a third time. A missing guide is red, never skipped.
+#
+# One step is held here: the search in step 9. The last group below takes it
+# out of the guide and runs it over the four install pages, and it must find
+# each line that names the release that README.md checks out (#1315). Which
+# of the lines it finds a person must change is still prose.
 
 set -u
 
@@ -1420,6 +1425,203 @@ if [ -f "$scratch/d6/.github/workflows/deploy-site.yml" ]; then
 fi
 contains "a deploy-site.yml with a trigger of its own is red" \
     "deploy-site.yml is started by" "$(deploys "$scratch/d6")"
+
+# ---------------------------------------------------------------------------
+# Step 9's search finds every install line (#1315, clause 10). Step 9 of the
+# guide gives one `git grep -nE` search that finds each line to move at a
+# release. In #1348 a search narrowed to `v<previous>` missed the tutorial's
+# "This installs version X" line, which names the version with no `v`. So this
+# group takes the search out of the guide text, and never copies the pattern,
+# and runs it over the four install pages.
+#
+# The expected set is built without the guide's pattern: each line of the
+# four pages that names the tag `v<version>` as a fixed string, and each line
+# that says `version <version>`, which covers "This installs version X" and
+# `--version X`. <version> is the tag that README.md checks out. The search must find every line of that set. It can find more,
+# because step 9 says that it also finds lines that you must not change.
+# `grep -E` reads the same POSIX extended expression that `git grep -E` reads,
+# so the scratch copies need no git repository.
+# ---------------------------------------------------------------------------
+step9_pages="README.md
+docs/tutorials/your-first-governed-corpus.md
+site/tutorial/index.html
+site/index.html"
+
+# step9_search ROOT — prints the extended pattern of step 9's search, with
+# <previous> replaced by the escaped version that ROOT's README.md checks
+# out. Prints nothing when the guide or README.md carries no such line.
+step9_search() {
+    ver=$(sed -n 's/^git checkout v\([0-9][0-9.]*\)[[:space:]]*$/\1/p' "$1/README.md" 2>/dev/null | head -n 1)
+    [ -n "$ver" ] || return 0
+    esc=$(printf '%s' "$ver" | sed 's/\./\\./g')
+    line=$(awk '/^9\. /{s=1; next} /^[0-9]+\. |^#/{s=0} s' "$1/$guide_rel" 2>/dev/null |
+        sed -n "s/^[[:space:]]*git grep -nE '\\(.*\\)'[[:space:]]*\$/\\1/p" |
+        head -n 1)
+    # Replace each <previous> by shell expansion, which keeps the backslashes
+    # that `awk -v` and a sed replacement would each read as escapes.
+    while :; do
+        case "$line" in
+            *"<previous>"*) line="${line%%<previous>*}$esc${line#*<previous>}" ;;
+            *) break ;;
+        esac
+    done
+    printf '%s' "$line"
+}
+
+# step9_found ROOT PAGE — prints each line of PAGE that step 9's search finds.
+step9_found() {
+    pat=$(step9_search "$1")
+    [ -n "$pat" ] || return 0
+    grep -nE -e "$pat" "$1/$2" 2>/dev/null
+}
+
+# step9_expected ROOT — prints `<page>:<line>` for each install line of the
+# four pages, the expected set above. The judge and the count in s1 both read
+# it, so the count is the population the judge holds.
+step9_expected() {
+    ver=$(sed -n 's/^git checkout v\([0-9][0-9.]*\)[[:space:]]*$/\1/p' "$1/README.md" 2>/dev/null | head -n 1)
+    [ -n "$ver" ] || return 0
+    for page in $step9_pages; do
+        { grep -nF -e "v$ver" "$1/$page"; grep -nF -e "version $ver" "$1/$page"; } 2>/dev/null |
+            cut -d: -f1 | LC_ALL=C sort -un | sed "s|^|$page:|"
+    done
+}
+
+# step9_misses ROOT — prints one finding for each install line the search
+# does not find, and one when there is no search or no version to look for.
+# Prints nothing when every install line is found.
+step9_misses() {
+    ver=$(sed -n 's/^git checkout v\([0-9][0-9.]*\)[[:space:]]*$/\1/p' "$1/README.md" 2>/dev/null | head -n 1)
+    if [ -z "$ver" ]; then
+        echo "README.md has no \`git checkout v<version>\` line, so no install line can be named"
+        return 0
+    fi
+    pat=$(step9_search "$1")
+    if [ -z "$pat" ]; then
+        echo "step 9 of $guide_rel carries no \`git grep -nE '...'\` search"
+        return 0
+    fi
+    step9_expected "$1" | while IFS= read -r at; do
+        page=${at%:*}
+        n=${at##*:}
+        if ! sed -n "${n}p" "$1/$page" | grep -qE -e "$pat"; then
+            echo "$at names release $ver and step 9's search does not find it"
+        fi
+    done
+    # The set is never empty: the README.md line that gives the version names
+    # `v<version>` itself, so the search is always held against that line.
+}
+
+# step9_copy DIR — a scratch copy of the guide and the four install pages.
+step9_copy() {
+    rm -rf "$1"
+    for f in "$guide_rel" $step9_pages; do
+        mkdir -p "$1/$(dirname "$f")"
+        cp "$root/$f" "$1/$f"
+    done
+}
+
+echo
+echo "step 9's search finds every install line"
+
+# s1. The real tree: every install line is found, over a population that is
+# not empty.
+same "step 9's search finds every line of the four pages that names the release" "" \
+    "$(step9_misses "$root" | tr '\n' '|' | sed 's/|$//')"
+s1_ver=$(sed -n 's/^git checkout v\([0-9][0-9.]*\)[[:space:]]*$/\1/p' "$root/README.md" | head -n 1)
+s1_count=$(step9_expected "$root" | wc -l | tr -d ' ')
+if [ -n "$s1_ver" ] && [ "$s1_count" -gt 0 ]; then
+    pass "the search is held against $s1_count install lines that name v$s1_ver"
+else
+    fail "the search is held against a population that is not empty" \
+        "README.md checks out \`v$s1_ver\` and $s1_count lines of the four pages name it"
+fi
+
+# s1p. Each of the four pages is in the population. A line that only a
+# bare-version search finds is planted on one page at a time, under a guide
+# narrowed to `v<previous>`, and the finding must name that page. A check that
+# dropped a page would pass that page's arm. The arms name the four pages
+# themselves, and do not read `step9_pages`, so a page dropped from that list
+# does not drop its arm too.
+for page in README.md docs/tutorials/your-first-governed-corpus.md site/tutorial/index.html site/index.html; do
+    step9_copy "$scratch/s1p"
+    sed "/git grep -nE/s/v?<previous>/v<previous>/" "$root/$guide_rel" > "$scratch/s1p/$guide_rel"
+    printf '%s\n' "This installs version $s1_ver of the engine." >> "$scratch/s1p/$page"
+    contains "a bare-version install line on $page is in the population" \
+        "$page:$(wc -l < "$scratch/s1p/$page" | tr -d ' ') names release $s1_ver" \
+        "$(step9_misses "$scratch/s1p" | tr '\n' '|')"
+done
+
+# s2. The #1348 search: narrowed to `v<previous>`, it misses the tutorial's
+# "This installs version X" line, and the group is red.
+step9_copy "$scratch/s2"
+sed "/git grep -nE/s/v?<previous>/v<previous>/" "$root/$guide_rel" > "$scratch/s2/$guide_rel"
+if cmp -s "$root/$guide_rel" "$scratch/s2/$guide_rel"; then
+    fail "a search narrowed to v<previous> is red" "the plant changed nothing in the guide"
+else
+    contains "a search narrowed to v<previous> misses the tutorial's \"This installs version\" line and is red" \
+        "docs/tutorials/your-first-governed-corpus.md:" "$(step9_misses "$scratch/s2" | tr '\n' '|')"
+fi
+
+# s3. A guide with no step-9 search is red, never skipped.
+step9_copy "$scratch/s3"
+grep -v "^[[:space:]]*git grep -nE '" "$root/$guide_rel" > "$scratch/s3/$guide_rel"
+same "a guide with no step-9 search is red" \
+    "step 9 of $guide_rel carries no \`git grep -nE '...'\` search" \
+    "$(step9_misses "$scratch/s3" | tr '\n' '|' | sed 's/|$//')"
+
+# s4. An install line in a new form is found by the search, and the group
+# stays green with it.
+step9_copy "$scratch/s4"
+printf '%s\n' "cargo install headwater-cli --git https://github.com/headwater-ai/headwater --tag v$s1_ver --locked" \
+    "wget https://github.com/headwater-ai/headwater/releases/download/v$s1_ver/SHA256SUMS" \
+    >> "$scratch/s4/docs/tutorials/your-first-governed-corpus.md"
+contains "an install line planted as \`--tag v<version>\` is found by the search" \
+    "--tag v$s1_ver --locked" \
+    "$(step9_found "$scratch/s4" docs/tutorials/your-first-governed-corpus.md | tr '\n' '|')"
+contains "an install line planted as \`/download/v<version>/\` is found by the search" \
+    "/download/v$s1_ver/SHA256SUMS" \
+    "$(step9_found "$scratch/s4" docs/tutorials/your-first-governed-corpus.md | tr '\n' '|')"
+same "the tree with both planted lines is green" "" \
+    "$(step9_misses "$scratch/s4" | tr '\n' '|' | sed 's/|$//')"
+
+# s4v. `cargo install headwater-cli --version X` names the release with no `v`.
+# It is in the population, so a guide narrowed to `v<previous>` is red on it.
+step9_copy "$scratch/s4v"
+sed "/git grep -nE/s/v?<previous>/v<previous>/" "$root/$guide_rel" > "$scratch/s4v/$guide_rel"
+printf '%s\n' "cargo install headwater-cli --version $s1_ver --locked" >> "$scratch/s4v/README.md"
+contains "an install line planted as \`--version <version>\` is in the population" \
+    "README.md:$(wc -l < "$scratch/s4v/README.md" | tr -d ' ') names release $s1_ver" \
+    "$(step9_misses "$scratch/s4v" | tr '\n' '|')"
+
+# s5. README.md with no `git checkout v<version>` line names no release, and
+# that is red too.
+step9_copy "$scratch/s5"
+grep -v '^git checkout v' "$root/README.md" > "$scratch/s5/README.md"
+same "a README.md with no checkout line is red" \
+    "README.md has no \`git checkout v<version>\` line, so no install line can be named" \
+    "$(step9_misses "$scratch/s5" | tr '\n' '|' | sed 's/|$//')"
+
+# s6. The search is read from step 9 alone. A guide that moves it under a
+# later heading, out of step 9, is red, as a guide with no search is.
+step9_copy "$scratch/s6"
+{
+    grep -v "^[[:space:]]*git grep -nE '" "$root/$guide_rel"
+    printf '\n## Moved\n\n'
+    grep "^[[:space:]]*git grep -nE '" "$root/$guide_rel"
+} > "$scratch/s6/$guide_rel"
+same "a guide whose search is outside step 9 is red" \
+    "step 9 of $guide_rel carries no \`git grep -nE '...'\` search" \
+    "$(step9_misses "$scratch/s6" | tr '\n' '|' | sed 's/|$//')"
+
+# s7. A new numbered step ends step 9 too, and not only a heading. A step 10
+# inserted before the search line puts the search in step 10, which is red.
+step9_copy "$scratch/s7"
+awk '/^[[:space:]]*git grep -nE '"'"'/ && !done { print "10. **A new step.**"; print ""; done = 1 } { print }' \
+    "$root/$guide_rel" > "$scratch/s7/$guide_rel"
+same "a guide whose search follows a new step 10 is red" \
+    "step 9 of $guide_rel carries no \`git grep -nE '...'\` search" \
+    "$(step9_misses "$scratch/s7" | tr '\n' '|' | sed 's/|$//')"
 
 echo
 echo "$passed passed, $failed failed"
