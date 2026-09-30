@@ -65,6 +65,42 @@ pub struct Envelope {
     /// measures and both arms share it. It is the one optional field: a
     /// regression tier watches one session and declares none.
     pub max_turns: Option<u32>,
+    /// The delta of each component arm the tier runs, against the present
+    /// tree, in declared order (#1472). A removing arm's paths are taken out of
+    /// the present tree, and an adding arm's paths are put in. Empty for a tier
+    /// that runs no component arm.
+    pub components: Vec<(Arm, Vec<String>)>,
+}
+
+impl Envelope {
+    /// The paths an arm's tree lacks against the present tree: the ablation
+    /// for the absent arm, the delta of a removing component arm, and nothing
+    /// for the present arm or an adding one.
+    pub fn removes(&self, arm: Arm) -> &[String] {
+        match arm {
+            Arm::Present => &[],
+            Arm::Absent => &self.ablation,
+            _ if arm.adds() => &[],
+            _ => self.delta(arm),
+        }
+    }
+
+    /// The paths an arm's tree holds and the present tree does not.
+    pub fn adds(&self, arm: Arm) -> &[String] {
+        if arm.adds() {
+            self.delta(arm)
+        } else {
+            &[]
+        }
+    }
+
+    fn delta(&self, arm: Arm) -> &[String] {
+        self.components
+            .iter()
+            .find(|(declared, _)| *declared == arm)
+            .map(|(_, paths)| paths.as_slice())
+            .unwrap_or(&[])
+    }
 }
 
 /// Every declared tier.
@@ -199,8 +235,15 @@ fn envelope(tier: Tier, fields: &Mapping) -> Result<Envelope, Unreadable> {
     // the pair is what an efficacy claim rests on. A campaign declaring one arm
     // is a campaign that estimates nothing, which is the regression tier under
     // a name that would let a published claim cite it.
-    if tier.pairs_arms() && arms.len() != Arm::ALL.len() {
+    //
+    // A paired tier may run more than two arms since #1472, and every arm past
+    // the present one is compared with the present one. So the present arm is
+    // required, and one arm alone is still refused.
+    if tier.pairs_arms() && arms.len() < 2 {
         return Err(Unreadable::PairHasOneArm { tier: name });
+    }
+    if tier.pairs_arms() && !arms.contains(&Arm::Present) {
+        return Err(Unreadable::PairWithoutPresent { tier: name });
     }
 
     // Spec 5: the absent arm names a declared ablation. An absent arm with
@@ -222,6 +265,54 @@ fn envelope(tier: Tier, fields: &Mapping) -> Result<Envelope, Unreadable> {
     }
     if !absent && !ablation.is_empty() {
         return Err(Unreadable::AblationWithoutAbsent { tier: name });
+    }
+
+    // #1472: each component arm names its delta against the present tree, as
+    // the absent arm names its ablation, and each delta names an arm the tier
+    // runs. The present arm has no delta, and the absent arm's is `ablation`.
+    let mut components: Vec<(Arm, Vec<String>)> = Vec::new();
+    if let Some(listed) = fields.get("components") {
+        let Some(block) = listed.value.as_map() else {
+            return Err(Unreadable::Malformed(format!(
+                "`components` of the `{name}` tier in {PATH} is not a mapping of arm to paths"
+            )));
+        };
+        for entry in block {
+            let found = entry.key.value.as_str();
+            let arm = Arm::read(found).ok_or_else(|| Unreadable::UnknownArm {
+                tier: name,
+                found: found.to_string(),
+            })?;
+            if !arm.is_component() {
+                return Err(Unreadable::ComponentOnBaseArm { tier: name, arm });
+            }
+            if !arms.contains(&arm) {
+                return Err(Unreadable::ComponentWithoutArm { tier: name, arm });
+            }
+            let delta = paths(&entry.value.value)
+                .ok_or_else(|| {
+                    Unreadable::Malformed(format!(
+                        "the `{found}` delta of the `{name}` tier in {PATH} is not a sequence of \
+                         paths"
+                    ))
+                })?
+                .map_err(|entry| Unreadable::ComponentUnsafe {
+                    tier: name,
+                    arm,
+                    entry,
+                })?;
+            if !delta.is_empty() {
+                components.push((arm, delta));
+            }
+        }
+    }
+    if let Some(arm) = arms
+        .iter()
+        .copied()
+        .filter(|arm| arm.is_component())
+        .find(|arm| !components.iter().any(|(declared, _)| declared == arm))
+    {
+        return Err(Unreadable::ComponentUndeclared { tier: name, arm });
     }
 
     let max_turns = match text(fields, "max_turns") {
@@ -246,6 +337,7 @@ fn envelope(tier: Tier, fields: &Mapping) -> Result<Envelope, Unreadable> {
         arms,
         ablation,
         max_turns,
+        components,
     })
 }
 
@@ -276,10 +368,14 @@ fn paths(value: &Value) -> Option<Result<Vec<String>, String>> {
 ///
 /// `tools/probe/ablate.sh` hands every entry to `rm -rf` in a copy of the
 /// tree, so an empty entry, an absolute one, or one with a `..` component
-/// would remove the copy itself or something outside it.
+/// would remove the copy itself or something outside it. An entry with a
+/// control character is refused too: `headwater probe plan --delta` prints one
+/// entry per line, so a line break inside one entry would print two, and the
+/// script would remove a path nobody declared (#1472, verify round 4).
 fn ablation_entry_is_safe(entry: &str) -> bool {
     !entry.is_empty()
         && !entry.starts_with('/')
+        && !entry.chars().any(char::is_control)
         && entry
             .split('/')
             .all(|component| component != ".." && component != "." && !component.is_empty())
@@ -310,6 +406,26 @@ pub enum Unreadable {
     },
     PairHasOneArm {
         tier: &'static str,
+    },
+    PairWithoutPresent {
+        tier: &'static str,
+    },
+    ComponentUndeclared {
+        tier: &'static str,
+        arm: Arm,
+    },
+    ComponentWithoutArm {
+        tier: &'static str,
+        arm: Arm,
+    },
+    ComponentOnBaseArm {
+        tier: &'static str,
+        arm: Arm,
+    },
+    ComponentUnsafe {
+        tier: &'static str,
+        arm: Arm,
+        entry: String,
     },
     AblationUndeclared {
         tier: &'static str,
@@ -354,13 +470,48 @@ impl std::fmt::Display for Unreadable {
             ),
             Unreadable::UnknownArm { tier, found } => write!(
                 f,
-                "the `{tier}` tier names the arm `{found}`. The arms are `present` and `absent`"
+                "the `{tier}` tier names the arm `{found}`. The arms are {}",
+                Arm::listed()
             ),
             Unreadable::PairHasOneArm { tier } => write!(
                 f,
                 "the `{tier}` tier names one arm. It estimates a difference, so it runs the \
                  pair, and with one arm it is the regression tier under a name a published \
                  claim would cite"
+            ),
+            Unreadable::PairWithoutPresent { tier } => write!(
+                f,
+                "the `{tier}` tier runs no `present` arm. Every other arm is compared with the \
+                 present tree, so without it two arms differ by two deltas and neither is \
+                 measured"
+            ),
+            Unreadable::ComponentUndeclared { tier, arm } => write!(
+                f,
+                "the `{tier}` tier runs the `{}` arm and declares no delta for it under \
+                 `components`. A component arm names what it removes or adds, or the claim it \
+                 measures is whatever a script did",
+                arm.name()
+            ),
+            Unreadable::ComponentWithoutArm { tier, arm } => write!(
+                f,
+                "the `{tier}` tier declares a delta for the `{}` arm under `components` and \
+                 does not run that arm, so the delta is declared and never applied",
+                arm.name()
+            ),
+            Unreadable::ComponentOnBaseArm { tier, arm } => write!(
+                f,
+                "the `{tier}` tier declares a delta for the `{}` arm under `components`. The \
+                 present arm is the tree every delta is taken from, and the absent arm's delta \
+                 is `ablation`",
+                arm.name()
+            ),
+            Unreadable::ComponentUnsafe { tier, arm, entry } => write!(
+                f,
+                "the `{}` delta of the `{tier}` tier names `{}`. An entry is a path inside \
+                 the tree, relative to its root, with no `..`, `.` or empty component and no control \
+                 character, because the arm's tree is built by removing or writing it",
+                arm.name(),
+                entry.escape_debug()
             ),
             Unreadable::AblationUndeclared { tier } => write!(
                 f,
@@ -375,15 +526,17 @@ impl std::fmt::Display for Unreadable {
             ),
             Unreadable::AblationUnsafe { tier, entry } => write!(
                 f,
-                "the `{tier}` tier's ablation names `{entry}`. An entry is a path inside the \
-                 tree, relative to its root, with no `..`, `.` or empty component, because \
-                 the absent arm removes it with `rm -rf`"
+                "the `{tier}` tier's ablation names `{}`. An entry is a path inside the \
+                 tree, relative to its root, with no `..`, `.` or empty component and no \
+                 control character, because the absent arm removes it with `rm -rf`",
+                entry.escape_debug()
             ),
             Unreadable::InstrumentUnsafe { entry } => write!(
                 f,
-                "the `instrument` of {PATH} names `{entry}`. An entry is a path inside the tree, \
-                 relative to its root, with no `..`, `.` or empty component, because every arm \
-                 removes it with `rm -rf`"
+                "the `instrument` of {PATH} names `{}`. An entry is a path inside the tree, \
+                 relative to its root, with no `..`, `.` or empty component and no control \
+                 character, because every arm removes it with `rm -rf`",
+                entry.escape_debug()
             ),
         }
     }
@@ -451,6 +604,54 @@ tiers:
             Err(Unreadable::InstrumentUnsafe {
                 entry: "../x".to_string()
             })
+        );
+    }
+
+    #[test]
+    fn an_entry_with_a_control_character_is_refused_in_every_list() {
+        // `headwater probe plan --delta` prints one entry per line, so an
+        // entry that holds a line break would print as two, and
+        // `tools/probe/ablate.sh` would remove the second one as well
+        // (#1472, verify round 4). YAML's double-quoted `\n` is the line
+        // break, and a tab is a control character too.
+        let instrument = GOOD.replace(
+            "[docs/probes, docs/probe-runs]",
+            "[docs/probes, \"docs/probe-runs\\n- CLAUDE.md\"]",
+        );
+        assert_eq!(
+            Budgets::read(&instrument),
+            Err(Unreadable::InstrumentUnsafe {
+                entry: "docs/probe-runs\n- CLAUDE.md".to_string()
+            })
+        );
+        let ablation = GOOD.replace(
+            "ablation: [CLAUDE.md, .claude, .githooks, .headwater]",
+            "ablation: [CLAUDE.md, \".claude\\t\", .githooks, .headwater]",
+        );
+        assert_eq!(
+            Budgets::read(&ablation),
+            Err(Unreadable::AblationUnsafe {
+                tier: "campaign",
+                entry: ".claude\t".to_string()
+            })
+        );
+        let component = LAYER.replace(
+            "      no-hook: [.claude/hooks/intent.sh]\n",
+            "      no-hook: [\".claude/hooks/intent.sh\\n- CLAUDE.md\"]\n",
+        );
+        let refused = Budgets::read(&component);
+        assert_eq!(
+            refused,
+            Err(Unreadable::ComponentUnsafe {
+                tier: "campaign",
+                arm: Arm::NoHook,
+                entry: ".claude/hooks/intent.sh\n- CLAUDE.md".to_string()
+            })
+        );
+        let message = refused.expect_err("refused").to_string();
+        assert!(
+            !message.contains('\n'),
+            "the refusal prints the entry escaped, on one line: {message}"
         );
     }
 
@@ -589,6 +790,231 @@ tiers:
                     found: found.to_string(),
                 })
             );
+        }
+    }
+
+    // --- the component arms of #1472 -----------------------------------------
+    //
+    // Each component arm is the present tree with one part of the Headwater
+    // layer taken away or put in. Its delta is data in the declaration, the
+    // way the absent arm's `ablation` is, so what an arm removed is a recorded
+    // fact and not whatever a script did.
+
+    const LAYER: &str = "\
+tiers:
+  campaign:
+    budget_cents: 40000
+    session_cost_cents: 4
+    repetitions: 58
+    arms: [present, absent, no-hook, no-skills, no-claude-md, mcp]
+    ablation: [CLAUDE.md, .claude, .githooks, .headwater]
+    components:
+      no-hook: [.claude/hooks/intent.sh]
+      no-skills: [.claude/skills]
+      no-claude-md: [CLAUDE.md]
+      mcp: [.mcp.json]
+";
+
+    #[test]
+    fn a_campaign_reads_each_component_arm_with_its_delta() {
+        let budgets = Budgets::read(LAYER).expect("reads");
+        let campaign = budgets.of(Tier::Campaign).expect("campaign");
+        assert_eq!(
+            campaign.arms,
+            vec![
+                Arm::Present,
+                Arm::Absent,
+                Arm::NoHook,
+                Arm::NoSkills,
+                Arm::NoClaudeMd,
+                Arm::Mcp
+            ]
+        );
+        assert_eq!(campaign.removes(Arm::NoHook), [".claude/hooks/intent.sh"]);
+        assert_eq!(campaign.removes(Arm::NoSkills), [".claude/skills"]);
+        assert_eq!(campaign.removes(Arm::NoClaudeMd), ["CLAUDE.md"]);
+        assert_eq!(
+            campaign.removes(Arm::Absent),
+            ["CLAUDE.md", ".claude", ".githooks", ".headwater"],
+            "the absent arm's delta is its ablation"
+        );
+        assert!(campaign.removes(Arm::Mcp).is_empty(), "mcp removes nothing");
+        assert!(campaign.removes(Arm::Present).is_empty());
+        assert_eq!(campaign.adds(Arm::Mcp), [".mcp.json"]);
+        assert!(campaign.adds(Arm::NoSkills).is_empty());
+    }
+
+    #[test]
+    fn an_arm_nobody_declared_is_refused_and_the_refusal_names_every_arm() {
+        let source = LAYER.replace("no-claude-md, mcp]", "no-claude-md, mcp, no-docs]");
+        let refused = Budgets::read(&source);
+        assert_eq!(
+            refused,
+            Err(Unreadable::UnknownArm {
+                tier: "campaign",
+                found: "no-docs".into()
+            })
+        );
+        let message = refused.expect_err("refused").to_string();
+        for arm in Arm::ALL {
+            assert!(message.contains(&format!("`{}`", arm.name())), "{message}");
+        }
+    }
+
+    #[test]
+    fn a_delta_for_an_arm_nobody_declared_is_refused() {
+        let source = LAYER.replace(
+            "      mcp: [.mcp.json]\n",
+            "      no-docs: [docs]\n      mcp: [.mcp.json]\n",
+        );
+        assert_eq!(
+            Budgets::read(&source),
+            Err(Unreadable::UnknownArm {
+                tier: "campaign",
+                found: "no-docs".into()
+            })
+        );
+    }
+
+    #[test]
+    fn a_component_arm_with_no_delta_is_refused() {
+        // The component arm's version of `AblationUndeclared`: an arm that
+        // names no delta is whatever a script happens to remove.
+        for delta in ["      no-skills: [.claude/skills]\n", ""] {
+            let source = LAYER.replace(
+                "      no-skills: [.claude/skills]\n",
+                &delta.replace("[.claude/skills]", "[]"),
+            );
+            assert_eq!(
+                Budgets::read(&source),
+                Err(Unreadable::ComponentUndeclared {
+                    tier: "campaign",
+                    arm: Arm::NoSkills
+                }),
+                "{delta:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn a_delta_for_an_arm_the_tier_does_not_run_is_refused() {
+        let source = LAYER.replace(", mcp]", "]");
+        assert_eq!(
+            Budgets::read(&source),
+            Err(Unreadable::ComponentWithoutArm {
+                tier: "campaign",
+                arm: Arm::Mcp
+            }),
+            "a delta no arm applies is declared and never read"
+        );
+    }
+
+    #[test]
+    fn a_delta_on_the_present_or_the_absent_arm_is_refused() {
+        // The present arm is what every delta is taken against, and the absent
+        // arm's delta is `ablation`. A second place for either is a second
+        // declaration of one fact.
+        for arm in [Arm::Present, Arm::Absent] {
+            let source = LAYER.replace(
+                "      mcp: [.mcp.json]\n",
+                &format!("      mcp: [.mcp.json]\n      {}: [docs]\n", arm.name()),
+            );
+            assert_eq!(
+                Budgets::read(&source),
+                Err(Unreadable::ComponentOnBaseArm {
+                    tier: "campaign",
+                    arm
+                })
+            );
+        }
+    }
+
+    #[test]
+    fn a_component_delta_that_leaves_the_tree_is_refused() {
+        // `tools/probe/ablate.sh` hands a removing delta to `rm -rf` and
+        // writes an adding one, so both stay inside the tree.
+        // The refusal names the arm's delta, and never the ablation, which
+        // is not at fault.
+        for (line, entry, arm) in [
+            (
+                "      no-hook: [.claude/hooks/intent.sh]\n",
+                "../x",
+                Arm::NoHook,
+            ),
+            ("      mcp: [.mcp.json]\n", "/etc/passwd", Arm::Mcp),
+        ] {
+            let replaced = line.replace(
+                &line[line.find('[').expect("[") + 1..line.find(']').expect("]")],
+                entry,
+            );
+            let source = LAYER.replace(line, &replaced);
+            let refused = Budgets::read(&source);
+            assert_eq!(
+                refused,
+                Err(Unreadable::ComponentUnsafe {
+                    tier: "campaign",
+                    arm,
+                    entry: entry.to_string()
+                }),
+                "{entry}"
+            );
+            let message = refused.expect_err("refused").to_string();
+            assert!(
+                message.contains(&format!("`{}` delta", arm.name())),
+                "{message}"
+            );
+            assert!(!message.contains("ablation"), "{message}");
+        }
+    }
+
+    #[test]
+    fn a_paired_tier_with_no_present_arm_is_refused() {
+        // Every delta is taken against the present tree, so a paired tier
+        // without it compares two arms that differ by two deltas.
+        let source = LAYER.replace("[present, absent, no-hook,", "[absent, no-hook,");
+        assert_eq!(
+            Budgets::read(&source),
+            Err(Unreadable::PairWithoutPresent { tier: "campaign" })
+        );
+    }
+
+    #[test]
+    fn a_campaign_with_one_arm_and_its_components_is_still_refused() {
+        let source = LAYER
+            .replace(
+                "[present, absent, no-hook, no-skills, no-claude-md, mcp]",
+                "[present]",
+            )
+            .replace("    ablation: [CLAUDE.md, .claude, .githooks, .headwater]\n", "")
+            .replace(
+                "    components:\n      no-hook: [.claude/hooks/intent.sh]\n      no-skills: [.claude/skills]\n      no-claude-md: [CLAUDE.md]\n      mcp: [.mcp.json]\n",
+                "",
+            );
+        assert_eq!(
+            Budgets::read(&source),
+            Err(Unreadable::PairHasOneArm { tier: "campaign" })
+        );
+    }
+
+    #[test]
+    fn every_refusal_of_a_component_arm_reads_as_a_sentence() {
+        for refusal in [
+            Unreadable::ComponentUndeclared {
+                tier: "campaign",
+                arm: Arm::NoHook,
+            },
+            Unreadable::ComponentWithoutArm {
+                tier: "campaign",
+                arm: Arm::Mcp,
+            },
+            Unreadable::ComponentOnBaseArm {
+                tier: "campaign",
+                arm: Arm::Absent,
+            },
+            Unreadable::PairWithoutPresent { tier: "campaign" },
+        ] {
+            let message = refusal.to_string();
+            assert!(message.contains("`campaign`"), "{message}");
         }
     }
 }

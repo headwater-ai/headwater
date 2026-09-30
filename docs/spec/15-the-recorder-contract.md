@@ -86,7 +86,7 @@ The blocks carry four closed key sets. A key outside a set refuses the whole fil
 | `seed` | the rotation seed the caller stated |
 | `harness` | the harness version the plan printed |
 | `tier` | `regression`, `campaign` or `documentation` |
-| `arm` | `present` or `absent` |
+| `arm` | `present`, `absent`, or a component arm: `no-hook`, `no-skills`, `no-claude-md` or `mcp` |
 | `at` | the wall-clock time of the run |
 | `cost_cents` | the realized cost, as a whole number of cents |
 
