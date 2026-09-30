@@ -120,39 +120,54 @@ fn spec_six_rows() -> Vec<Row> {
 }
 
 /// The `governs` list under the `relations:` block of a document's front
-/// matter, read for the fixed shape `headwater new` writes: an inline `[a, b]`
-/// list or a block of `- a` lines. A `governs:` key anywhere else declares no
-/// edge, and `headwater route` reads nothing from it, so it is not read here.
+/// matter, read with the YAML loader the engine reads it with, so a comment, a
+/// blank line or a flow list reads as the engine reads it. Each entry comes
+/// back as text: a scalar as written, and a list anchor (`- [a, b]`) as
+/// `[a, b]` for `patterns_of`. A `governs:` key anywhere else declares no edge,
+/// and `headwater route` reads nothing from it, so it is not read here.
 fn governs(path: &Path) -> Vec<String> {
     let text = std::fs::read_to_string(path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
     let front = text
         .strip_prefix("---\n")
         .and_then(|rest| rest.split_once("\n---").map(|(front, _)| front))
         .unwrap_or_else(|| panic!("{}: no front matter", path.display()));
-    let unquote = |s: &str| s.trim().trim_matches('"').trim_matches('\'').to_string();
-    let mut lines = front
-        .lines()
-        .skip_while(|line| line.trim_end() != "relations:")
-        .skip(1)
-        .take_while(|line| line.starts_with(' '));
-    while let Some(line) = lines.next() {
-        let Some(value) = line.trim_start().strip_prefix("governs:") else {
-            continue;
-        };
-        let value = value.trim();
-        if let Some(inline) = value.strip_prefix('[') {
-            return inline
-                .trim_end_matches(']')
-                .split(',')
-                .map(unquote)
-                .filter(|s| !s.is_empty())
-                .collect();
+    let root = headwater_yaml::load(front)
+        .unwrap_or_else(|e| panic!("{}: the front matter does not load: {e:?}", path.display()));
+    let Some(list) = root
+        .value
+        .as_map()
+        .and_then(|front| front.get("relations"))
+        .and_then(|relations| relations.value.as_map())
+        .and_then(|relations| relations.get("governs"))
+    else {
+        return Vec::new();
+    };
+    let entry = |node: &headwater_yaml::Spanned<headwater_yaml::Value>| -> String {
+        if let Some(scalar) = node.value.as_scalar() {
+            return scalar.text.clone();
         }
-        return lines
-            .map_while(|line| line.trim_start().strip_prefix("- ").map(unquote))
+        let members: Vec<String> = node
+            .value
+            .as_seq()
+            .unwrap_or_else(|| panic!("{}: a `governs` entry is a mapping", path.display()))
+            .iter()
+            .map(|member| {
+                member
+                    .value
+                    .as_scalar()
+                    .unwrap_or_else(|| {
+                        panic!("{}: a list anchor member is not a scalar", path.display())
+                    })
+                    .text
+                    .clone()
+            })
             .collect();
+        format!("[{}]", members.join(", "))
+    };
+    match list.value.as_seq() {
+        Some(entries) => entries.iter().map(entry).collect(),
+        None => vec![entry(list)],
     }
-    Vec::new()
 }
 
 /// The patterns of one `governs` entry, normalized the way the `source-tree`
@@ -378,6 +393,11 @@ fn governed_patterns_of_text(text: &str) -> BTreeSet<String> {
 /// keys of `relations:`, hides no entry. The engine reads the front matter as
 /// YAML and binds every entry after either one, so a reader that stopped
 /// there would pass a spec that governs a crate outside its row.
+///
+/// Watched failing before it passed (#1288, verify round 2): over the line
+/// reader that `governs` replaced, which stopped at the comment line and
+/// dropped the graph entry. With the loader, a comment and the graph entry in
+/// the Taxonomy resolution spec turned the corpus case red, as it must.
 #[test]
 fn a_comment_or_a_blank_line_in_the_governs_list_hides_no_entry() {
     let cases = [
