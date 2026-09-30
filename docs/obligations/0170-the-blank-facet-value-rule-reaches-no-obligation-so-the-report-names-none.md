@@ -1,9 +1,9 @@
 ---
 id: HW-OBL-0170
-status: current
-status_since: 2026-09-07
+status: discharged
+status_since: 2026-10-01
 summary: "Every other rule this engine carries reaches one obligation. `facet.value.blank` reaches none, because the control that would bind it sits in the vendored package and the edit moves the pin digest."
-last_verified: 2026-09-07
+last_verified: 2026-10-01
 title: "The blank facet value rule reaches no obligation so the report names none"
 waiting_on: build
 provenance:
@@ -39,3 +39,7 @@ The order of the edit is fixed by [the package contract](../spec/07-distribution
 ## Discharge
 
 The register section of a report over this corpus lists no rule as reaching no obligation. The exception is the three rules that are about the taxonomy rather than about a document. A finding of `facet.value.blank` carries an obligation identifier beside the rule name, in the way a finding of `facet.required.missing` carries `OB-FACET-1`.
+
+**[#1492](https://github.com/headwater-ai/headwater/issues/1492) met that condition, and this record is discharged.** On the day of the change, twelve rules reached no obligation, and `facet.value.blank` was one of them. `headwater/standard` 4.14.0 adds ten obligations and twelve controls. Each control names one of the twelve rules and discharges one obligation. `CT-FACET-3` binds `facet.value.blank` to `OB-FACET-3`, whose statement is the one this record asked for: a facet that a document declares carries a value. The register section of a report over this corpus now reads "every rule this engine carries reaches one obligation". The change needed no exception for a rule about the taxonomy, because `control.observation.invalid` reaches `OB-REG-3`.
+
+A finding of `facet.value.blank` now prints `(OB-FACET-3)` beside the rule name, and `engine/crates/cli/tests/blank_facet.rs` asserts it. The case `every_rule_reaches_one_obligation_of_the_standard_package` in `engine/crates/cli/tests/standard_controls.rs` fails on each rule that reaches no single obligation, and it names each one. So the next rule that ships without a control fails that case.
