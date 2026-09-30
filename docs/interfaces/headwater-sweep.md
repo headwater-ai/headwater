@@ -119,6 +119,8 @@ There is no variable that names a model, a key or an endpoint, and there is nowh
 | `.headwater/taxonomy.lock` | read, by both halves. |
 | `.headwater/taxonomy.yml` | read, by both halves. |
 | the corpus | read, by both halves. |
+| `.headwater/imports/` | read, by both halves, where `.headwater/taxonomy.yml` declares an import, for the anchors that an imported snapshot supplies. An `imports` entry that does not read stops the verb with exit 1, and so does an `at` path outside the repository root. |
+| the path each `harvests.<name>.at` names | read, by both halves, where `.headwater/taxonomy.yml` declares a pinned corpus export, for the anchors that export supplies. A `harvests` entry that does not read stops the verb with exit 1, and so does an `at` path outside the repository root. A pin with no digest binds no anchor. An absent file binds no anchor, and neither does a file that fails the pinned digest or is not an export. |
 | the path `report` is handed | read. |
 
 **Neither half writes a file.** The briefing and the report both go to standard output, and standard error carries nothing on a run that reaches a report. There is no cache, so two runs of `plan` over one tree do the same work twice and write the same bytes.

@@ -71,6 +71,8 @@ The command reads no environment variable.
 | Path | How this verb treats it |
 |---|---|
 | `.headwater/taxonomy.lock`, corpus and projections | Read to build the export. |
+| `.headwater/imports/` | Read where `.headwater/taxonomy.yml` declares an import, for the anchors that an imported snapshot supplies. An `imports` entry that does not read stops the verb with exit 1, and so does an `at` path outside the repository root. |
+| the path each `harvests.<name>.at` names | Read where `.headwater/taxonomy.yml` declares a pinned corpus export, for the anchors that export supplies. A `harvests` entry that does not read stops the verb with exit 1, and so does an `at` path outside the repository root. A pin with no digest binds no anchor. An absent file binds no anchor, and neither does a file that fails the pinned digest or is not an export. |
 | `.headwater/corpus.json` | Read under `--check` for the emitter set it records, before any declared export is compared. This verb never writes it. |
 | Declared export paths | Written without `--format` and `--check`, and an export that declares `committed: false` too. Under `--at`, only an export that declares `committed: false` is written, and it states the date. Under `--check`, an export that declares `committed: false` is not read. |
 | Standard output | Receives a stream artifact with `--format`. |
