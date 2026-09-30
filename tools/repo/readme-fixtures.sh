@@ -4245,6 +4245,10 @@ sed "s/headwater-$engine_tag-aarch64/headwater-v0.0.1-aarch64/" "$tutorial_md" >
 same "  a tutorial whose macOS archive name alone names another release is refused" \
     "$scratch/engine-tag/mac.md names v0.0.1 $engine_tag and the page downloads \`$engine_tag\`" \
     "$(tutorial_tag_judge "$scratch/engine-tag/mac.md" "$readme")"
+sed "s|releases/tag/$engine_tag|releases/tag/v0.0.1|" "$tutorial_md" >"$scratch/engine-tag/page.md"
+same "  a tutorial whose release-page link alone names another release is refused" \
+    "$scratch/engine-tag/page.md names v0.0.1 $engine_tag and the page downloads \`$engine_tag\`" \
+    "$(tutorial_tag_judge "$scratch/engine-tag/page.md" "$readme")"
 sed "s/v$engine_esc/v0.0.1/g; s/installs version $engine_esc/installs version 0.0.1/" \
     "$tutorial_html" >"$scratch/engine-tag/back.html"
 same "  a rendered tutorial moved back to another release is refused" \
