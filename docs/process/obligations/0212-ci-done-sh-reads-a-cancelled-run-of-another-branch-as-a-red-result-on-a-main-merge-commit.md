@@ -1,9 +1,9 @@
 ---
 id: HW-OBL-0212
-status: current
-status_since: 2026-09-26
+status: discharged
+status_since: 2026-10-01
 summary: "The CI wait script counts every run that shares a commit, so a cancelled push run of a feature branch turns a green main merge red."
-last_verified: 2026-09-24
+last_verified: 2026-10-01
 title: "ci-done.sh reads a cancelled run of another branch as a red result on a main merge commit"
 waiting_on: build
 ---
@@ -21,3 +21,5 @@ The integrator of #848 in run `20260924-0411` found this gap. The product owner 
 ## Discharge
 
 This record discharges when the script reads only runs whose `head_branch` is the branch it waits on, or ignores a cancelled run that another branch superseded, and a case holds the `d5aa24bd` shape.
+
+The pull request #1518 for #1484 discharges this record by the second route. `tools/run/ci-done.sh` leaves out a cancelled run when another run of the same workflow on the same commit completed and ran. It also leaves out every check run of that run's check suite. It prints the run as `(superseded, <branch>)`, and a lone cancelled run stays red. No caller changes, because the script needs no branch name. The `d5aa24bd` case in `tools/run/ci-done-fixtures.sh` holds the shape, and `sh tools/run/ci-done.sh d5aa24bd` now reads green against GitHub. The merge commit is the squash commit of #1518 on `main`, which was not known when this was written.

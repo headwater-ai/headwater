@@ -25,8 +25,6 @@ waiting_on: build
 
 **The run scripts and hooks.**
 
-- `tools/run/queue-done.sh` printed `UNMERGEABLE` for #1328 for about nine minutes before the merge queue ejected it with `merge_conflict`. At the same time `gh pr view` showed CLEAN and green. Nothing records `UNMERGEABLE` as a sign of a coming ejection. (hw-iterate, #1348)
-- `tools/run/queue-done.sh` printed "ejected: merged" for PR #1353, which merged as `284e056b`. An integrator that trusts it reports a false ejection. (integrate, #1334)
 - `.claude/hooks/write.sh` (about lines 227-232) refuses a raw `Write` only on the "no document written there yet" answer of `headwater explain`. After #1367, a path through a dangling link out of the root gets the outside answer, so the hook advises there and does not refuse. No document says whether that is intended. (build, #1367)
 - `tools/site/render-tutorial.py` and `tools/site/render-tutorial-fixtures.sh` are in the governed scope, `headwater route` says that nothing governs them, and no document names them. (hw-build, #1348)
 
@@ -44,3 +42,8 @@ Each item discharges alone, when the file it names says or does what the item as
 One item is discharged by #1419, which merged as `16eecca0`:
 
 - `CLAUDE.md` tells every session to call `EnterWorktree`. A worktree-isolated parent passes that isolation to `hw-integrate`, and the harness then refuses its commands in the shared checkout. So the move, rebuild, regenerate and bless step of `.claude/agents/hw-integrate.md` could not run in a `/next-run` session. The item named two fixes, and #1419 took the second. The integrator now does the rebuild, regenerate, check and bless in a detached tree of its own under `.claude/worktrees/` at `origin/main`. It names the fast-forward of the shared checkout in its `LEFT` line for the owner. The shared checkout still does not move, and [HW-OBL-0221](0221-subagents-read-skills-from-the-shared-checkout-and-a-worktree-isolated-integrator-cannot-fast-forward-it-after-a-merge.md) holds that half. (parent, #764, seen on #1299)
+
+Two items are discharged by #1518, the pull request for #1484:
+
+- `tools/run/queue-done.sh` printed `UNMERGEABLE` for #1328 for about nine minutes before the merge queue ejected it with `merge_conflict`. At the same time `gh pr view` showed CLEAN and green. Nothing recorded `UNMERGEABLE` as a sign of a coming ejection. The script now ends at once on an `UNMERGEABLE` entry with `unmergeable: the queue will eject it with merge_conflict`, and `.claude/agents/hw-integrate.md` reads that line as an ejection. (hw-iterate, #1348)
+- `tools/run/queue-done.sh` printed "ejected: merged" for PR #1353, which merged as `284e056b`. An integrator that trusts it reports a false ejection. The script now reads the last queue event on the timeline, and a removal with reason `merged` holds the wait until the merge is recorded. (integrate, #1334)
