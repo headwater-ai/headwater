@@ -64,16 +64,9 @@ fn published_order() -> Vec<String> {
 /// `cargo publish` takes.
 fn workspace_members() -> Vec<(String, String)> {
     let root = repository_root().join("engine");
-    let text = std::fs::read_to_string(root.join("Cargo.toml")).expect("the workspace manifest");
-    let start = text
-        .find("members = [")
-        .expect("the workspace declares members");
-    let rest = &text[start..];
-    let end = rest.find(']').expect("the members list closes");
-    rest[..end]
-        .lines()
-        .filter_map(|line| line.trim().strip_prefix('"'))
-        .filter_map(|line| line.split('"').next())
+    let text = workspace_manifest();
+    member_paths(&text)
+        .into_iter()
         .map(|relative| {
             let manifest = root.join(relative).join("Cargo.toml");
             let member = std::fs::read_to_string(&manifest)
@@ -86,6 +79,31 @@ fn workspace_members() -> Vec<(String, String)> {
                 .to_string();
             (name, member)
         })
+        .collect()
+}
+
+/// The text of `engine/Cargo.toml`, the workspace manifest.
+fn workspace_manifest() -> String {
+    std::fs::read_to_string(repository_root().join("engine/Cargo.toml"))
+        .expect("the workspace manifest")
+}
+
+/// The relative path of every member that a workspace manifest's
+/// `members = [...]` declares, in its own order.
+///
+/// It takes the manifest text rather than reading the file, so that a planted
+/// manifest goes through the same parse as the real one.
+fn member_paths(manifest: &str) -> Vec<String> {
+    let start = manifest
+        .find("members = [")
+        .expect("the workspace declares members");
+    let rest = &manifest[start..];
+    let end = rest.find(']').expect("the members list closes");
+    rest[..end]
+        .lines()
+        .filter_map(|line| line.trim().strip_prefix('"'))
+        .filter_map(|line| line.split('"').next())
+        .map(str::to_string)
         .collect()
 }
 
@@ -422,5 +440,99 @@ fn the_index_gate_refuses_a_dependency_whose_release_version_is_yanked() {
     assert!(
         !out.status.success() && said.contains("headwater-scaffold"),
         "the gate passed headwater-scaffold {version} though the index marks it yanked: {said}"
+    );
+}
+
+// The version every internal dependency names.
+//
+// `[workspace.dependencies]` in `engine/Cargo.toml` carries one entry for each
+// member, with a path and a version, and the version is a literal: nothing in
+// cargo derives it from `[workspace.package] version`. A release bump that moves
+// the package version and misses one entry builds and tests green, because a
+// path dependency resolves by path. It fails only at the publish, on a tag, when
+// the crate that names the stale entry asks crates.io for a version that was
+// published a release ago (#1315). This is the same shape as the publish order
+// above, a hand-kept list that nothing held against the declaration, and it is
+// recorded against HW-OBL-0172 for the same reason.
+
+/// Every `[workspace.dependencies]` entry on a workspace member whose `version`
+/// differs from `[workspace.package] version` or is missing, as one line per
+/// entry that names it.
+///
+/// It takes the manifest text, so that the real manifest and a planted one go
+/// through the same judge. An entry whose `path` names no member is a
+/// dependency from outside this workspace, and it is not read.
+fn stale_member_dependency_versions(manifest: &str) -> Vec<String> {
+    let _ = manifest;
+    Vec::new()
+}
+
+/// The real manifest names the workspace version on every internal
+/// dependency.
+#[test]
+fn every_workspace_dependency_on_a_member_names_the_workspace_version() {
+    let stale = stale_member_dependency_versions(&workspace_manifest());
+    assert!(
+        stale.is_empty(),
+        "engine/Cargo.toml: a [workspace.dependencies] entry on a member does not name \
+         [workspace.package] version. A bump moves both; a stale entry builds green and \
+         fails at the crates.io publish.\n{}",
+        stale.join("\n")
+    );
+}
+
+/// A bump that moves `[workspace.package] version` and misses one entry is
+/// caught, and the finding names the entry it missed.
+#[test]
+fn a_bump_that_misses_one_workspace_dependency_names_that_dependency() {
+    let real = workspace_manifest();
+    let version = headwater_resolve::release::ENGINE;
+    let package = format!("\nversion = \"{version}\"\n");
+    assert!(
+        real.contains(&package),
+        "engine/Cargo.toml carries no `version = \"{version}\"` line to plant a bump on"
+    );
+    // Move the package version and every entry but `headwater-yaml` to a new
+    // version, which is the bump that missed one line.
+    let next = "99.0.1";
+    let entry = format!("version = \"{version}\" }}");
+    let planted: String = real
+        .replacen(&package, &format!("\nversion = \"{next}\"\n"), 1)
+        .lines()
+        .map(|line| {
+            if line.starts_with("headwater-") && !line.starts_with("headwater-yaml ") {
+                line.replace(&entry, &format!("version = \"{next}\" }}"))
+            } else {
+                line.to_string()
+            }
+        })
+        .collect::<Vec<_>>()
+        .join("\n");
+    let stale = stale_member_dependency_versions(&planted);
+    assert!(
+        stale.len() == 1 && stale[0].contains("headwater-yaml"),
+        "the planted bump left headwater-yaml at {version} and moved the rest to {next}; \
+         the judge should name headwater-yaml alone, and it said: {stale:?}"
+    );
+}
+
+/// Every member inherits its version from `[workspace.package]`, so the one
+/// number the dependency entries are held against is the number each crate
+/// publishes under.
+#[test]
+fn every_member_takes_its_version_from_the_workspace() {
+    let own: Vec<String> = workspace_members()
+        .into_iter()
+        .filter(|(_, manifest)| {
+            !manifest
+                .lines()
+                .any(|line| line.trim() == "version.workspace = true")
+        })
+        .map(|(name, _)| name)
+        .collect();
+    assert!(
+        own.is_empty(),
+        "these members do not write `version.workspace = true`, so a workspace bump \
+         does not move them: {own:?}"
     );
 }
