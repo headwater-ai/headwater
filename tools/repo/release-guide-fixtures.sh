@@ -1540,8 +1540,10 @@ fi
 # s1p. Each of the four pages is in the population. A line that only a
 # bare-version search finds is planted on one page at a time, under a guide
 # narrowed to `v<previous>`, and the finding must name that page. A check that
-# dropped a page would pass that page's arm.
-for page in $step9_pages; do
+# dropped a page would pass that page's arm. The arms name the four pages
+# themselves, and do not read `step9_pages`, so a page dropped from that list
+# does not drop its arm too.
+for page in README.md docs/tutorials/your-first-governed-corpus.md site/tutorial/index.html site/index.html; do
     step9_copy "$scratch/s1p"
     sed "/git grep -nE/s/v?<previous>/v<previous>/" "$root/$guide_rel" > "$scratch/s1p/$guide_rel"
     printf '%s\n' "This installs version $s1_ver of the engine." >> "$scratch/s1p/$page"
