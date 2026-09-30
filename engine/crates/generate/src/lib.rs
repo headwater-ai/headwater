@@ -686,7 +686,9 @@ impl Orphaned {
 }
 
 /// A committed transcript that one of the five confirmations refused, and the
-/// result this run wrote for it therefore carries no verdict at all.
+/// result derived for it therefore carries no verdict at all. A write run
+/// writes that result only where the state of the transcript releases the
+/// refusal. Where the state holds it, the run writes nothing (#1466).
 ///
 /// **This is reported by the run and not only by the file.** The refusal text
 /// *is* the derived output, so `generate --check` regenerates it faithfully and
@@ -703,8 +705,9 @@ impl Orphaned {
 pub struct RefusedTranscript {
     /// The transcript, relative to the corpus root, in census order.
     pub transcript: String,
-    /// The result this run wrote for it, which holds the refusal and no
-    /// verdict.
+    /// The path of the result derived for it, which holds the refusal and no
+    /// verdict. A write run writes it only where [`RefusedTranscript::held`]
+    /// is false.
     pub output: String,
     /// Which of the five confirmations refused it, from
     /// [`headwater_probe::intake::CONFIRMATIONS`] rather than from a literal
