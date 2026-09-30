@@ -2031,6 +2031,68 @@ leak_one "a command with CRLF line endings is read" \
 leak_one "a skill with CRLF line endings is read" \
     .claude/skills/s/SKILL.md '---\r\nname: s\r\ndescription: The HW-DR-0052 skill.\r\n---\r\n' 1
 
+# Verify round 3: eight kinds of always-loaded text a hand-written reader
+# missed, each planted alone and each reported, and each with CRLF line
+# endings too. `leak.py` reads front matter with a YAML parser and the memory
+# set as the harness names it.
+leak_kind() {
+    # $1 name, $2 relative path, $3 file content (printf format), $4 the
+    # `<where>` the hit must name
+    leak_one "$1" "$2" "$3" 1
+    present "and names $4" "leak $status_probe $4 HW-DR-0052" "$scratch/leak-one.out"
+    leak_one "$1, with CRLF line endings" "$2" "$(printf '%s' "$3" | sed 's/\\n/\\r\\n/g')" 1
+    present "and names $4" "leak $status_probe $4 HW-DR-0052" "$scratch/leak-one.out"
+}
+leak_kind "(A) a plain multi-line description whose second line holds the leak string" \
+    .claude/skills/s/SKILL.md '---\nname: s\ndescription: Nothing to see, and\n  the ruling is HW-DR-0052.\n---\n' \
+    .claude/skills/s/SKILL.md
+leak_kind "(B) a double-quoted multi-line description" \
+    .claude/agents/a.md '---\nname: a\ndescription: "Nothing to see, and\n  the ruling is HW-DR-0052."\n---\n' \
+    .claude/agents/a.md
+leak_kind "(C) .claude/CLAUDE.md" .claude/CLAUDE.md 'The ruling is HW-DR-0052.\n' .claude/CLAUDE.md
+leak_kind "(D) CLAUDE.local.md" CLAUDE.local.md 'The ruling is HW-DR-0052.\n' CLAUDE.local.md
+leak_kind "(K) a when-to-use key, with a hyphen" \
+    .claude/agents/a.md '---\nname: a\ndescription: Nothing.\nwhen-to-use: When HW-DR-0052 applies.\n---\n' \
+    .claude/agents/a.md
+leak_kind "(L) AGENTS.md as a regular file" AGENTS.md 'The ruling is HW-DR-0052.\n' AGENTS.md
+leak_kind "(M) a file under .claude/rules/" .claude/rules/zz.md 'The ruling is HW-DR-0052.\n' .claude/rules/zz.md
+leak_kind "(M) a file under a subdirectory of .claude/rules/" \
+    .claude/rules/area/zz.md '---\npaths: ["src/**"]\n---\n\nThe ruling is HW-DR-0052.\n' .claude/rules/area/zz.md
+
+# (E) A file CLAUDE.md imports with `@<path>`, and a file that one imports in
+# turn. An `@` inside a code span is no import.
+leak_import() {
+    # $1 name, $2 CLAUDE.md content, $3 expected exit
+    rm -rf "$scratch/leak-one"
+    mkdir -p "$scratch/leak-one/notes"
+    printf -- "$2" > "$scratch/leak-one/CLAUDE.md"
+    printf 'See @deeper.md for more.\n' > "$scratch/leak-one/notes/extra.md"
+    printf 'The ruling is HW-DR-0052.\n' > "$scratch/leak-one/notes/deeper.md"
+    HW_PROBE_YML="$scratch/leak-probe.yml" sh "$seal" --leak "$scratch/leak-one" "$status_probe" \
+        > "$scratch/leak-one.out" 2>&1
+    same "$1" "$3" "$?"
+}
+leak_import "(E) a file an @ import in CLAUDE.md reaches is read" 'Read @notes/extra.md first.\n' 1
+present "and names the imported file, relative to the file that imports it" \
+    "leak $status_probe notes/deeper.md HW-DR-0052" "$scratch/leak-one.out"
+leak_import "(E) the same import with CRLF line endings" 'Read @notes/extra.md first.\r\n' 1
+leak_import "an @ inside a code span is no import" 'Write `@notes/extra.md` to import it.\n' 0
+
+# AGENTS.md as a link to CLAUDE.md, as in this repository, is one file and
+# one line.
+rm -rf "$scratch/leak-one"
+mkdir -p "$scratch/leak-one"
+printf 'The ruling is HW-DR-0052.\n' > "$scratch/leak-one/CLAUDE.md"
+ln -s CLAUDE.md "$scratch/leak-one/AGENTS.md"
+HW_PROBE_YML="$scratch/leak-probe.yml" sh "$seal" --leak "$scratch/leak-one" "$status_probe" \
+    > "$scratch/leak-one.out" 2>&1
+same "AGENTS.md as a link to CLAUDE.md is read once" "leak $status_probe CLAUDE.md HW-DR-0052" \
+    "$(grep HW-DR-0052 "$scratch/leak-one.out")"
+
+# Front matter that does not parse is read whole, never skipped.
+leak_one "front matter that does not parse is read whole" \
+    .claude/skills/s/SKILL.md '---\nname: s\ndescription: [HW-DR-0052\n---\n' 1
+
 # A probe that declares no leak string is printed as one the check cannot see, and
 # does not pass as clean by saying nothing.
 sh "$seal" --leak "$scratch/leak-ws" HW-PROBE-no-such-probe > "$scratch/undeclared.out" 2>&1
