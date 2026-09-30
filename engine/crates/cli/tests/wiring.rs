@@ -430,8 +430,21 @@ fn a_stated_re_verification_records_the_digest_through_the_verbs() {
         }
         let produced = root.run(&arguments);
         assert_eq!(produced.code, Some(0), "{}{}", produced.out, produced.err);
+        // Every `--verified` reaches the manifest, the first and the last
+        // alike. The stamp below reads one path only, so it holds neither a
+        // verb that kept the first argument nor one that kept the last; this
+        // holds both (#1398).
+        let written = std::fs::read_to_string(out.join("manifest")).expect("the manifest reads");
+        let mut stated: Vec<&str> = written
+            .lines()
+            .filter_map(|line| line.strip_prefix("verified\t"))
+            .collect();
+        let mut asked = verified.to_vec();
+        asked.sort_unstable();
+        stated.sort_unstable();
+        assert_eq!(stated, asked, "{label}: the manifest's verified lines");
         let manifest = out.join("manifest").display().to_string();
-        let ran = root.run(&["check", "--no-cache", "--fix", "--change", &manifest]);
+        let ran =root.run(&["check", "--no-cache", "--fix", "--change", &manifest]);
         assert_eq!(ran.code, Some(0), "{label}: {}{}", ran.out, ran.err);
         ran
     };
