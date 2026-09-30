@@ -11,6 +11,4 @@ provenance:
 
 # The proposed record
 
-`proposed` is not one of spec 3's four values, and HW-OBL-0125 holds the nine
-documents of this repository that write it. It is not `asserted`, so this rule
-says nothing about it, and that silence is a decision rather than an accident.
+`proposed` is not one of spec 3's four values, and HW-OBL-0125 holds the nine documents of this repository that write it. Nothing in it says a person read this record, so a pointer at it supports no evidenced claim.

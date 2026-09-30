@@ -125,8 +125,9 @@ warrants, over the closed set spec 3 declares
   second figure is a population and never a default. The census reported 0 of these rows
   as generated, and the engine reads the warrant of a generated document off the marker
   rather than out of a declaration.
-  Values the closed set does not hold, each with the count that states it. No
-  check of this engine reads a warrant value, so this is the only line that reports one:
+  Values the closed set does not hold, each with the count that states it.
+  `headwater check` reports each document that states one, under
+  `warrant.value.not_permitted`:
         1 `pending`
   The `asserted` population is 0, which is the denominator a promotion rate divides
   by. The numerator is a count per change, which `headwater check --change` reports under

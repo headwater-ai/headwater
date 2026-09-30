@@ -365,8 +365,13 @@ fn render(shelf: &str, output: &str, sections: &[Section], front: Option<&str>) 
         }
         // Spec 6 rules that an emitter which cannot carry the warrant does not
         // carry the content. Markdown carries it, so the section says it.
-        if section.pointer.unwarranted {
-            out.push_str(" (asserted, and no human has accepted it)");
+        match (&section.pointer.outside, section.pointer.unwarranted) {
+            (Some(warrant), _) => out.push_str(&format!(
+                " (warrant `{warrant}` is not one of the four values, so no acceptance is read \
+                 from it)"
+            )),
+            (None, true) => out.push_str(" (asserted, and no human has accepted it)"),
+            (None, false) => {}
         }
         out.push('\n');
     }
@@ -386,6 +391,7 @@ mod tests {
             purpose: None,
             summary: Some("a summary".to_string()),
             unwarranted: false,
+            outside: None,
         }
     }
 
@@ -413,6 +419,30 @@ mod tests {
             "{out}"
         );
         assert_eq!(out.matches("\n## ").count(), 2, "{out}");
+    }
+
+    /// A warrant outside spec 3's closed set is stated as what it is, and is
+    /// not called `asserted` (#1438). An `asserted` one keeps its sentence.
+    #[test]
+    fn a_warrant_outside_the_closed_set_is_stated_and_not_called_asserted() {
+        let mut outside = section("d/0001.md", "DR-1", "Q1");
+        outside.pointer.unwarranted = true;
+        outside.pointer.outside = Some("proposed".to_string());
+        let mut asserted = section("d/0002.md", "DR-2", "Q2");
+        asserted.pointer.unwarranted = true;
+        let out = render("decisions", "d/README.md", &[outside, asserted], None);
+        assert!(
+            out.contains(
+                "a summary (warrant `proposed` is not one of the four values, so no acceptance \
+                 is read from it)\n"
+            ),
+            "{out}"
+        );
+        assert!(
+            out.contains("a summary (asserted, and no human has accepted it)\n"),
+            "{out}"
+        );
+        assert_eq!(out.matches("asserted").count(), 1, "{out}");
     }
 
     /// The body under a heading is exactly the row that the shelf index

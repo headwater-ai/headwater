@@ -82,10 +82,19 @@ use std::collections::HashSet;
 /// member beside it, and a consumer that added the members found the sum short
 /// with nothing to say why (#1398).
 ///
+/// `1.5` added `compared` to the entries of `rules` for
+/// `link.identifier.mismatch` and `link.fragment.unresolved`, and to no other
+/// entry: how many links the rule compared, whether they pass or not. Each rule
+/// is silent over a corpus whose links all pass, and it is silent over a
+/// corpus that has none of the links it reads, and the member is what tells
+/// the two apart. A `1.5` document that writes `"compared": 0` says the rule
+/// examined nothing. The same entry in a `1.4` document says only that this
+/// producer had no member for the count (#1347).
+///
 /// Two of the shapes here have a second reader: [`change`] and [`coverage`] are
 /// what the SARIF property bag carries, so this constant versions them for that
 /// artifact too and [`crate::sarif`] writes it there.
-pub const VERSION: &str = "1.4";
+pub const VERSION: &str = "1.5";
 
 /// What a run carries that these bytes do not write.
 ///
@@ -392,7 +401,7 @@ fn document(run: &Run, subject: &Subject<'_>) -> Json {
 }
 
 fn rule(served: &headwater_check::Serves) -> Json {
-    Json::object([
+    let mut members: Vec<(&'static str, Json)> = vec![
         ("rule", Json::string(served.rule)),
         ("scope", Json::string(served.scope.grain().name())),
         ("version", number(served.version as usize)),
@@ -406,7 +415,13 @@ fn rule(served: &headwater_check::Serves) -> Json {
                 Bound::Unnamed => Json::Array(Vec::new()),
             },
         ),
-    ])
+    ];
+    // Written for the two rules that carry it, and absent on every other
+    // entry: see [`VERSION`] at `1.5`.
+    if let Some(compared) = served.compared {
+        members.push(("compared", number(compared)));
+    }
+    Json::object(members)
 }
 
 fn finding(entry: &Reported<'_>) -> Json {

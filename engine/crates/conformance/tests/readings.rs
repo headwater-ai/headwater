@@ -784,12 +784,15 @@ fn a_shelf_claimed_gap_names_the_shelf_and_kind_and_points_at_headwater_new() {
 fn a_projection_that_is_not_what_the_plan_produces_is_a_gap() {
     let root = scratch("projection-drift");
     std::fs::write(root.join("index.md"), "what somebody typed\n").expect("the committed file");
+    // The plan's bytes carry the marker, as every emitter's do: `generate`
+    // neither writes nor compares an output the census would not read back as
+    // generated (#1344).
     let plan = headwater_generate::Plan {
         outputs: vec![headwater_generate::Output {
             path: "index.md".to_string(),
             kind: headwater_generate::Kind::ShelfIndex,
             committed: true,
-            bytes: "what the plan produces\n".to_string(),
+            bytes: "<!-- headwater:generated shelf_index -->\nwhat the plan produces\n".to_string(),
         }],
         ..Default::default()
     };
@@ -797,8 +800,11 @@ fn a_projection_that_is_not_what_the_plan_produces_is_a_gap() {
     assert!(detail.contains("index.md"));
 
     // The met arm, over the same plan and the bytes it produces.
-    std::fs::write(root.join("index.md"), "what the plan produces\n")
-        .expect("the regenerated file");
+    std::fs::write(
+        root.join("index.md"),
+        "<!-- headwater:generated shelf_index -->\nwhat the plan produces\n",
+    )
+    .expect("the regenerated file");
     assert_eq!(projections_current(&root, &plan), Verdict::Met);
     let _ = std::fs::remove_dir_all(&root);
 }

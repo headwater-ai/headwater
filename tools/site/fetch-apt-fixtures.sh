@@ -113,6 +113,11 @@ mix package-of-a deb
 mkdir -p "$scratch/rel/unsigned"
 cp "$scratch/rel/B/"* "$scratch/rel/unsigned/"
 rm "$scratch/rel/unsigned/InRelease"
+# The shape of a taxonomy release: one zip and none of the APT files. When
+# one of these became GitHub's "latest" release, `releases/latest/download`
+# answered 404 for every APT file, and a deploy served no `apt/` (#1449).
+mkdir -p "$scratch/rel/taxonomy-only"
+echo "a taxonomy archive" >"$scratch/rel/taxonomy-only/headwater-standard-4.13.0.zip"
 mkdir -p "$scratch/rel/no-release"
 cp "$scratch/rel/B/"* "$scratch/rel/no-release/"
 rm "$scratch/rel/no-release/Release"
@@ -193,7 +198,8 @@ cmp -s "$scratch/out-a committed keyring is served beside the release/apt/headwa
     { passed=$((passed + 1)); echo "  ok      at apt/headwater-archive-keyring.asc, unchanged"; } ||
     { failed=$((failed + 1)); echo "  FAIL    at apt/headwater-archive-keyring.asc, unchanged"; }
 rm -rf "$tree/site"
-case_ "a release with no InRelease serves nothing and passes" "$base/unsigned" 0 none "carries no InRelease"
+case_ "a newest release with no InRelease stops the build and serves nothing" "$base/unsigned" 1 none "the newest release carries no InRelease, so this build stops"
+case_ "a taxonomy release as the newest release stops the build" "$base/taxonomy-only" 1 none "the newest release carries no InRelease, so this build stops"
 case_ "InRelease of one release with the rest of another stops the build" "$base/inrelease-of-a" 1 none "the signed text of InRelease is not Release"
 case_ "Packages of one release with the rest of another stops the build" "$base/packages-of-a" 1 none "Release does not carry the SHA-256 of Packages"
 case_ "a package of one release with the rest of another stops the build" "$base/package-of-a" 1 none "Packages does not carry the SHA-256"

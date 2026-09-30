@@ -70,9 +70,12 @@ STUB
 cat > "$tree/tools/site/fetch-apt.sh" <<'STUB'
 #!/bin/sh
 set -eu
-mkdir -p "$1/apt"
+mkdir -p "$1/apt/dists/stable"
+echo "a planted Release" >"$1/apt/dists/stable/Release"
+echo "a planted InRelease" >"$1/apt/dists/stable/InRelease"
 echo "the planted fetch-apt: $1/apt"
 STUB
+cp "$tree/tools/site/fetch-apt.sh" "$scratch/fetch-apt.planted"
 cp -R "$tree/site" "$scratch/site.pristine"
 
 pass=0
@@ -196,6 +199,30 @@ touch "$tree/engine/target/dev-release/headwater"
 # 8. No mode writes a measured figure into site/.
 out=$(figures); status=$?
 judge 'a bare run names the modes and writes nothing' 2 "$status" 'name a mode' "$out"
+
+# 9. A fetch-apt.sh that exits 0 and writes no APT repository, as it did when
+#    a taxonomy release was GitHub's "latest" release (#1449). The deploy
+#    stops before wrangler, so the live site keeps its apt/.
+reset
+cat > "$tree/tools/site/fetch-apt.sh" <<'STUB'
+#!/bin/sh
+echo "the planted fetch-apt: nothing to serve"
+STUB
+out=$(deploy); status=$?
+judge 'a served tree with no apt/dists/stable/Release stops the deploy' 1 "$status" 'has no apt/dists/stable/Release' "$out"
+judge 'and wrangler is never called' 0 "$(calls)" '' ''
+
+#    A Release with no InRelease is not a repository apt accepts either.
+reset
+cat > "$tree/tools/site/fetch-apt.sh" <<'STUB'
+#!/bin/sh
+mkdir -p "$1/apt/dists/stable"
+echo "a planted Release" >"$1/apt/dists/stable/Release"
+STUB
+out=$(deploy); status=$?
+judge 'a served tree with Release and no InRelease stops the deploy' 1 "$status" 'has no apt/dists/stable/Release or InRelease' "$out"
+judge 'and wrangler is never called' 0 "$(calls)" '' ''
+cp "$scratch/fetch-apt.planted" "$tree/tools/site/fetch-apt.sh"
 
 echo
 echo "$pass passed, $fail failed"
