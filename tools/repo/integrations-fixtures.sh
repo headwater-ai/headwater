@@ -363,5 +363,41 @@ else
     fail 'integrations/dashboard: its unit tests pass' "$(tail -n 20 "$scratch/dashboard.out")"
 fi
 
+printf '\n# integrations/site-generator: the guide'"'"'s MkDocs pin, and the temporary directory (#1370)\n'
+
+# `build-site.sh` reads the MkDocs pin from the guide's `pip install` line and
+# compares it with the version `$MKDOCS --version` reports. A stub stands in
+# for both MkDocs and the engine, so neither case needs a build or a network.
+# Each case gets a TMPDIR of its own, which must be empty after the run.
+site_fixture="$root/integrations/site-generator/fixtures/build-site.sh"
+site_guide="$root/docs/how-to/publish-your-corpus-as-a-site.md"
+site_stub="$scratch/site-stub"
+printf '#!/bin/sh\necho "mkdocs, version 1.6.1 from /stub (Python 3)"\n' >"$site_stub"
+chmod +x "$site_stub"
+sed 's/mkdocs==1\.6\.1/mkdocs==9.9.9/' "$site_guide" >"$scratch/site-guide-9.9.9.md"
+
+mkdir "$scratch/site-tmp-a"
+TMPDIR="$scratch/site-tmp-a" MKDOCS="sh $site_stub" HEADWATER_BIN="$site_stub" \
+    HEADWATER_SITE_GUIDE="$scratch/site-guide-9.9.9.md" \
+    sh "$site_fixture" "$scratch/no-such-corpus" >"$scratch/site-a.out" 2>"$scratch/site-a.err"
+status=$?
+if [ "$status" -ne 0 ] && grep -q '9\.9\.9' "$scratch/site-a.err" && grep -q '1\.6\.1' "$scratch/site-a.err"; then
+    pass 'site fixture: a guide pin that differs from the MkDocs it runs fails, and names both versions'
+else
+    fail 'site fixture: a guide pin that differs from the MkDocs it runs fails, and names both versions' "exit $status; $(tail -n 5 "$scratch/site-a.err")"
+fi
+same 'site fixture: a failed pin check leaves nothing in TMPDIR' '' "$(ls -A "$scratch/site-tmp-a")"
+
+mkdir "$scratch/site-tmp-b"
+TMPDIR="$scratch/site-tmp-b" MKDOCS="sh $site_stub" HEADWATER_BIN="$site_stub" \
+    sh "$site_fixture" "$scratch/no-such-corpus" >"$scratch/site-b.out" 2>"$scratch/site-b.err"
+status=$?
+if [ "$status" -ne 0 ] && grep -q 'no \.headwater/overlay\.yml' "$scratch/site-b.err" && ! grep -q '9\.9\.9' "$scratch/site-b.err"; then
+    pass 'site fixture: a matching pin passes the check, and a later failure names the missing overlay'
+else
+    fail 'site fixture: a matching pin passes the check, and a later failure names the missing overlay' "exit $status; $(tail -n 5 "$scratch/site-b.err")"
+fi
+same 'site fixture: a failure after the pin check leaves nothing in TMPDIR' '' "$(ls -A "$scratch/site-tmp-b")"
+
 printf '\n%s passed, %s failed\n' "$passed" "$failed"
 [ "$failed" -eq 0 ]
