@@ -5,7 +5,7 @@ status_since: 2026-09-07
 summary: "Nine constants named ALL type the variant list of an enum by hand, the array length is part of the type, and no assertion compares either against the exhaustive match beside it."
 last_verified: 2026-09-07
 title: "Nine hand-kept constants enumerate an enum and nothing holds one against the variants"
-waiting_on: adopter
+waiting_on: build
 provenance:
   warrant: asserted
   agency: agent

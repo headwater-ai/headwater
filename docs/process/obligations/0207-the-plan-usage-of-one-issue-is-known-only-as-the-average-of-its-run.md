@@ -5,7 +5,7 @@ status_since: 2026-09-23
 summary: "A build-order run reports the points of the owner's 5-hour and 7-day plan windows that it spent, divided by the issues it closed. A figure for one issue needs each dispatch priced by model and token type, then matched to the issue its pull request closes."
 last_verified: 2026-09-23
 title: "The plan usage of one issue is known only as the average of its run"
-waiting_on: measurement
+waiting_on: ruling
 ---
 
 # The plan usage of one issue is known only as the average of its run

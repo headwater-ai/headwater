@@ -12,7 +12,7 @@ provenance:
   evidence_basis: evidenced
 last_verified: 2026-08-26
 title: "The skills fixture suite passes on an empty input set, and always fails in a clone that has not built the engine"
-waiting_on: adopter
+waiting_on: build
 ---
 
 # The skills fixture suite passes on an empty input set, and always fails in a clone that has not built the engine

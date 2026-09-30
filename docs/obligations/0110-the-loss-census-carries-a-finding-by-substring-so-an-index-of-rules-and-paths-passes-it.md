@@ -1,10 +1,10 @@
 ---
 id: HW-OBL-0110
 title: "The loss census carries a finding by substring, so an index of rules and paths passes it"
-status: current
-status_since: 2026-08-14
+status: discharged
+status_since: 2026-09-30
 waiting_on: build
-last_verified: 2026-08-14
+last_verified: 2026-09-30
 summary: "The audit that holds a format to its loss set asks whether the bytes contain a rule name and a path, and a text report with no findings block at all carried 39 of 45."
 provenance:
   warrant: accepted
@@ -44,3 +44,5 @@ A finding is carried when its rule and its path appear **in one place a reader c
 The bar for closing this record is a probe rather than an argument. Take an artifact of each format, remove its findings, and leave every other block intact. The audit must then report **every** finding of the run as unaccounted. That probe is what measured the number above, and it belongs beside the audit rather than in a scratch directory.
 
 **Nothing here says the four formats drop a finding today.** Each of them carries every finding of the fixture run, and the recorded artifacts show it. What this record holds is that the audit would not say so if one of them stopped.
+
+**This record is discharged.** `census_with` in `engine/crates/adapter/src/lib.rs` matches each finding to one record of the artifact. The test `an_artifact_emptied_of_its_records_carries_no_finding` is the probe that this section asks for, and it runs over all four formats. The owner accepted the discharge on 2026-09-30, in the roadmap review of that day.

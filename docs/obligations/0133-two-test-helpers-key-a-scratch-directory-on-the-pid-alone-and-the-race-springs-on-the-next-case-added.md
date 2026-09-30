@@ -12,7 +12,7 @@ provenance:
   activity: draft
   accepted_by: j.baxter
   evidence_basis: evidenced
-waiting_on: adopter
+waiting_on: build
 ---
 
 # Two test helpers key a scratch directory on the pid alone, and the race springs on the next case added

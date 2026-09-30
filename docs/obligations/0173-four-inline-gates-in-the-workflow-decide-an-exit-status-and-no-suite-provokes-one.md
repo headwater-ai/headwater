@@ -5,7 +5,7 @@ status_since: 2026-09-07
 summary: "Four named steps of ci.yml carry a shell decision procedure that ends in exit 1, no fixture suite drives any of them over a scratch input, and no shell of this repository is parsed or linted at all."
 last_verified: 2026-09-07
 title: "Four inline gates in the workflow decide an exit status and no suite provokes one"
-waiting_on: adopter
+waiting_on: build
 provenance:
   warrant: asserted
   agency: agent

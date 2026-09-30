@@ -3,7 +3,7 @@ id: HW-OBL-0002
 title: "Declarative voice is called detectable at useful precision, and the sample is unreachable"
 status: current
 status_since: 2026-08-11
-waiting_on: adopter
+waiting_on: ruling
 last_verified: 2026-09-27
 summary: "The three voice categories run over this corpus, and no category reaches the adjudicated sample bar of 50 findings."
 provenance:

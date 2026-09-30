@@ -5,7 +5,7 @@ status_since: 2026-09-06
 summary: "The CI step that holds every rendered page to a corpus pointer exits 0 over a served directory with no page in it"
 last_verified: 2026-09-06
 title: "A rendered-page gate greps for a string it requires and states no denominator, so an empty build passes it"
-waiting_on: adopter
+waiting_on: build
 ---
 
 # A rendered-page gate greps for a string it requires and states no denominator, so an empty build passes it

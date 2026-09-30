@@ -5,7 +5,7 @@ status_since: 2026-09-07
 summary: "The value rule prescribes waiting_on=adopter on every self-audit record, HW-DR-0030 defines that value as waiting on an outside corpus, and almost none of those records does."
 last_verified: 2026-09-07
 title: "The value rule writes adopter on every self-audit record and most of them wait on a build"
-waiting_on: adopter
+waiting_on: build
 provenance:
   warrant: asserted
   agency: agent

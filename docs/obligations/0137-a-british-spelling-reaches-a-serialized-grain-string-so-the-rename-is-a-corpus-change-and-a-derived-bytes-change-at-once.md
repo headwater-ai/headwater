@@ -12,7 +12,7 @@ provenance:
   activity: draft
   accepted_by: j.baxter
   evidence_basis: evidenced
-waiting_on: adopter
+waiting_on: build
 ---
 
 # A British spelling reaches a serialized grain string, so the rename is a corpus change and a derived-bytes change at once

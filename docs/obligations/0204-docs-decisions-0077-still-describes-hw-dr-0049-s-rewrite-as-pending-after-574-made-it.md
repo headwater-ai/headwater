@@ -1,9 +1,9 @@
 ---
 id: HW-OBL-0204
-status: current
-status_since: 2026-09-24
+status: discharged
+status_since: 2026-09-30
 summary: "Decision 0077 called HW-DR-0049's rewrite pending after #574 made it. #1070 rewrote that sentence, and the record waits only for its move to discharged."
-last_verified: 2026-09-24
+last_verified: 2026-09-30
 title: "docs/decisions/0077 still describes HW-DR-0049's rewrite as pending, after #574 made it"
 waiting_on: build
 ---
@@ -23,3 +23,5 @@ HW-DR-0077's Consequences section states, about HW-DR-0049, a future event as st
 This discharges when a session next touches HW-DR-0077 and rewrites the sentence to describe HW-DR-0049's acceptance and rewrite as done, or when a reader confirms HW-DR-0049's current text already covers what the sentence promised and HW-DR-0077 is corrected to say so.
 
 [#1070](https://github.com/headwater-ai/headwater/issues/1070) amended HW-DR-0077 and rewrote the sentence. It now says that #574 accepted HW-DR-0049 on 2026-09-23 and rewrote its sentence about an adopter. So the work that this record owes is done. The `obligation` lifecycle admits `discharged` only from `current`, and this record stood at `draft`. So #1070 moves it to `current`, and the next change that touches this record moves it to `discharged`.
+
+**This record is discharged.** The paragraph above states that the work is done, and this change makes the move that it names. The owner accepted the discharge on 2026-09-30, in the roadmap review of that day.
