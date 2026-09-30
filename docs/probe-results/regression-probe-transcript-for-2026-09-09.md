@@ -10,6 +10,8 @@ last_verified: 2026-09-09
 
 # The result of docs/probe-runs/regression-probe-transcript-for-2026-09-09.md
 
+The transcript this result grades stands at `draft`, the state a document holds before anything promotes it, so nothing relies on the run it recorded yet. No figure below is a current finding, and this result states no direction at the 5% level.
+
 A probe result is a function of three committed inputs and of nothing else: the transcript at `docs/probe-runs/regression-probe-transcript-for-2026-09-09.md`, the expectations the probes of this corpus declare, and the version of the grader that evaluated them. Fetch the three and this file comes back.
 
 ## The run this transcript recorded
