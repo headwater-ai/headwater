@@ -1,5 +1,5 @@
 {
-  "version": "1.4",
+  "version": "1.5",
   "tool": "headwater",
   "taxonomy": {
     "package": "headwater/fixture",
@@ -779,7 +779,8 @@
       "version": 4,
       "obligations": [
         "OB-FIX-10"
-      ]
+      ],
+      "compared": 3
     },
     {
       "rule": "link.path.unresolved",
@@ -793,7 +794,8 @@
       "version": 1,
       "obligations": [
         "OB-FIX-28"
-      ]
+      ],
+      "compared": 2
     },
     {
       "rule": "warrant.promoted",

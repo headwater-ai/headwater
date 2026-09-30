@@ -90,6 +90,46 @@ pub struct Link {
     pub binding: Binding,
 }
 
+/// The two identifiers `link.identifier.mismatch` compares on one link, and
+/// the path of the document the link reaches.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Named<'a> {
+    /// The identifier the link text names.
+    pub named: &'a str,
+    /// The path of the document the link reaches.
+    pub path: &'a str,
+    /// The identifier of that document.
+    pub reached: &'a str,
+}
+
+impl Link {
+    /// The identifier this link's text names and the identifier its path
+    /// reaches, when it has both. A link into the same document reaches the
+    /// document that wrote it, so it reaches that document's own identifier.
+    ///
+    /// This is the one statement of the population `link.identifier.mismatch`
+    /// compares. The rule reads it, and [`crate::Graph::identifier_link_count`]
+    /// counts it, so the count a run prints is the population the rule read
+    /// (#1347).
+    pub fn named(&self) -> Option<Named<'_>> {
+        let named = self.names.as_deref()?;
+        let (path, reached) = match &self.binding {
+            Binding::Corpus {
+                path,
+                id: Some(reached),
+                ..
+            } => (path.as_str(), reached.as_str()),
+            Binding::SameDocument => (self.source_path.as_str(), self.source_id.as_deref()?),
+            _ => return None,
+        };
+        Some(Named {
+            named,
+            path,
+            reached,
+        })
+    }
+}
+
 /// What a prose link resolved to.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Binding {

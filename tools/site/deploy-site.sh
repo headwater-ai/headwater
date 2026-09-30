@@ -29,12 +29,17 @@
 #      repository of the newest release. `tools/site/cloudflare-build.sh` ran
 #      this step before, and a deploy that dropped it would take the APT
 #      repository off the live site.
-#   5. A last look at the assembled directory: an empty `data-figure` element
+#   5. A look for `apt/dists/stable/Release` and `InRelease` in the assembled
+#      directory: a tree without them refuses the deploy, whatever step 4
+#      returned. A taxonomy release that became GitHub's "latest" release
+#      once made step 4 exit 0 with no `apt/`, and every deploy then took
+#      the APT repository off the live site (#1449).
+#   6. A last look at the assembled directory: an empty `data-figure` element
 #      there refuses the deploy.
-#   6. `npx wrangler deploy`, at the pinned version below.
+#   7. `npx wrangler deploy`, at the pinned version below.
 #
 #   Each step runs under `set -eu`. A step that fails ends the script before
-#   step 6, so a failing measurement, an unknown key, a figure on no page or
+#   step 7, so a failing measurement, an unknown key, a figure on no page or
 #   a blank marker publishes nothing, and the live site goes on serving the
 #   last good deploy. `tools/site/figures-fixtures.sh` holds that with
 #   `wrangler` stubbed.
@@ -63,6 +68,12 @@ sh tools/site/refresh-figures.sh --into "$out"
 
 echo "deploy-site.sh: adding the signed APT repository of the newest release"
 sh tools/site/fetch-apt.sh "$out"
+
+echo "deploy-site.sh: refusing an assembled directory with no APT repository"
+if [ ! -f "$out/apt/dists/stable/Release" ] || [ ! -f "$out/apt/dists/stable/InRelease" ]; then
+    echo "deploy-site.sh: the served tree has no apt/dists/stable/Release or InRelease, so this deploy stops and the site keeps its APT repository" >&2
+    exit 1
+fi
 
 echo "deploy-site.sh: refusing a blank figure in the assembled directory"
 sh tools/site/check-site-figures.sh "$out"

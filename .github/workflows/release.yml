@@ -555,8 +555,9 @@ jobs:
         # Only where the owner's signing subkey is a secret (HW-DR-0094). The
         # key is imported into a directory this step makes and removes, and it
         # is never echoed, written to the tree or uploaded. Without the secret
-        # the release carries the package and no metadata, and the site then
-        # serves no APT repository.
+        # the release carries the package and no metadata, and
+        # `tools/site/fetch-apt.sh` then stops each deploy of the site, so the
+        # site keeps the APT repository of the last signed release (#1449).
         env:
           TAG: ${{ needs.tag.outputs.tag }}
           APT_SIGNING_KEY: ${{ secrets.APT_SIGNING_KEY }}
