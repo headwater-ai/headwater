@@ -3194,6 +3194,135 @@ case $got in
         fail "  a clone with no tags fails, and says to fetch them" "got \`$got\`" ;;
 esac
 
+# 8p-8r. The digest a newcomer is told to pin is the newest release's digest.
+#
+# 8j-8o hold the version a page names, and a version is only half of a pin: a
+# reader copies the digest beside it into `--expect`. #1444 put the v4.12.0
+# digest in place of the v4.13.0 digest in each of four files, left the version
+# alone, and the whole suite stayed green for three of them. The fourth,
+# `README.md`, was held by `digest_route_judge` alone, and only in part: that
+# judge reads the one paragraph that names `release.digest`, and it asks
+# whether the right digest is IN it. So a stale digest beside the right one
+# passed, and a stale digest in any other paragraph or fence of the page was
+# never read.
+#
+# The population is every `sha256:<hex>` in the four files below. On the day
+# this was written the only such value in them was the standard's digest, so
+# every digest and the digest beside the version are the same set. A page that
+# comes to quote a second, unrelated digest is red here, and the remedy is to
+# scope this judge to the lines that name the standard, and say so in this
+# comment. `.claude/tutorial/drive.py` reads the page it drives and names no
+# digest, so it is not in the population.
+#
+# The digest compared against is the one in the vendored release record,
+# `good_digest` above, and never a literal here. The record can only stand in
+# for the newest tag if it IS the newest tag's record, so 8p holds that its
+# `release.version` is the newest version 8j read. Without it, a branch that
+# vendored an older release would compare every page with that release's
+# digest and pass.
+standard_digest_files=".github/assets/headwater-demo.tape
+README.md
+docs/tutorials/your-first-governed-corpus.md
+site/tutorial/index.html"
+
+# standard_digest_judge WANT FILE... — `ok`, or one line per `sha256:<hex>` in
+# FILE that is not WANT, and one line per file that names no digest at all.
+standard_digest_judge() {
+    echo ok
+}
+
+# release_version_of RECORD — the `release.version` of a release record, read
+# with the same anchor as `release_digest_of`.
+release_version_of() {
+    awk '
+        /^release:/ { block = 1; next }
+        /^[^ \t#]/ { block = 0 }
+        block && /^  version:/ { print $2; exit }
+    ' "$1"
+}
+
+# standard_record_judge NEWEST RECORD_VERSION — `ok` when the vendored record
+# is the newest release's, or a sentence naming both versions.
+standard_record_judge() {
+    if [ -z "$2" ]; then
+        echo "the vendored release record states no \`release.version\`, so nothing says which release its digest belongs to"
+    elif [ "$1" != "$2" ]; then
+        echo "the vendored release record is v$2 and the newest tag is v${1:-none}, so the pages would be compared with an older release's digest"
+    else
+        echo ok
+    fi
+}
+
+standard_record_version=$(release_version_of "$root/.headwater/packages/headwater-standard/release.yml")
+standard_digest_paths=
+standard_digest_present=0
+for f in $standard_digest_files; do
+    standard_digest_paths="$standard_digest_paths $root/$f"
+    if [ -f "$root/$f" ]; then
+        standard_digest_present=$((standard_digest_present + 1))
+    fi
+done
+same "the four files that name the headwater/standard digest are all on disk" 4 "$standard_digest_present"
+
+# 8p. The record the digest is read from is the newest release's record.
+same "the vendored release record is the newest tag's release (v${standard_newest:-none})" ok \
+    "$(standard_record_judge "$standard_newest" "$standard_record_version")"
+same "  a record one release behind the newest tag fails, and names both" \
+    "the vendored release record is v4.12.0 and the newest tag is v4.13.0, so the pages would be compared with an older release's digest" \
+    "$(standard_record_judge 4.13.0 4.12.0)"
+same "  a record with no version fails" \
+    "the vendored release record states no \`release.version\`, so nothing says which release its digest belongs to" \
+    "$(standard_record_judge 4.13.0 "")"
+
+# 8q. THE DECISIVE CASE: the four files name the record's digest and no other.
+# shellcheck disable=SC2086
+same "the tutorial, its site page, this page and the demo tape name the newest headwater/standard digest" ok \
+    "$(standard_digest_judge "$good_digest" $standard_digest_paths | tr '\n' '|' | sed 's/|$//')"
+
+# 8r. Provoked, one file at a time: a scratch copy of each real file with the
+#     record's digest replaced by another well-formed digest, and the version
+#     left alone, fails on every line that carried the digest. The copy keeps
+#     the real file's name, so a judge that skipped a file by name goes red.
+if [ -n "$good_digest" ] && [ "$good_digest" != "$bad_digest" ]; then
+    for f in $standard_digest_files; do
+        sd_copy="$scratch/digest/$f"
+        mkdir -p "$(dirname "$sd_copy")"
+        sed "s/$good_digest/$bad_digest/g" "$root/$f" >"$sd_copy"
+        sd_want=$(grep -n -o -F "$good_digest" "$root/$f" | sed "s|^\([0-9]*\):.*|$sd_copy:\1: $bad_digest|")
+        if [ -z "$sd_want" ]; then
+            fail "  a copy of \`$f\` with a stale digest fails on each line" "the real file names no digest to replace"
+            continue
+        fi
+        same "  a copy of \`$f\` with a stale digest and the same version fails on each line" \
+            "$(printf '%s' "$sd_want" | tr '\n' '|')" \
+            "$(standard_digest_judge "$good_digest" "$sd_copy" | tr '\n' '|' | sed 's/|$//')"
+    done
+else
+    fail "  a copy of each file with a stale digest fails" \
+        "the arms did not run: the vendored record gives digest \`${good_digest:-none}\`"
+fi
+
+# 8r, continued. The gap `digest_route_judge` leaves: the right digest beside
+#     a stale one on one line is read to the end, not stopped at the first.
+#     A file that names no digest is not a file that names the right one. And a
+#     file the judge cannot open is not read as `ok`.
+mkdir -p "$scratch/digest"
+printf '%s\n' "--expect $good_digest, or $bad_digest" >"$scratch/digest/both.md"
+: >"$scratch/digest/empty.tape"
+same "  the right digest beside a stale one on one line fails on the stale one" \
+    "$scratch/digest/both.md:1: $bad_digest" \
+    "$(standard_digest_judge "$good_digest" "$scratch/digest/both.md")"
+same "  a file that names no digest fails, and names the file" \
+    "$scratch/digest/empty.tape: names no sha256 digest" \
+    "$(standard_digest_judge "$good_digest" "$scratch/digest/empty.tape")"
+got=$(standard_digest_judge "$good_digest" "$scratch/digest/both.md" "$scratch/digest/absent.md")
+case $got in
+    "awk exited "*)
+        pass "  a file the digest judge cannot open fails, and is not read as ok" ;;
+    *)
+        fail "  a file the digest judge cannot open fails, and is not read as ok" "got \`$got\`" ;;
+esac
+
 echo
 echo "the recorded terminal demonstration, and its frozen-snapshot marker"
 
