@@ -311,6 +311,20 @@ pub trait Resolver {
         let _ = normalized;
         false
     }
+
+    /// The path a normalized literal reaches once every symlink on it is
+    /// followed, relative to the store and joined with `/`, and `None` where
+    /// the entry does not exist, where its real path leaves the store, or
+    /// where the resolver has no such notion.
+    ///
+    /// [`normalize`] stays lexical, so two strings never become one node for
+    /// a reason the corpus does not state. This is a separate lookup, and one
+    /// comparison alone reads it: whether a path under a relation that admits
+    /// a document reaches a typed document by a second name (#1417).
+    fn real_path(&self, normalized: &str) -> Option<String> {
+        let _ = normalized;
+        None
+    }
 }
 
 /// Every resolver a run has, by name.
@@ -408,6 +422,17 @@ impl Resolver for SourceTree {
 
     fn names_directory(&self, normalized: &str) -> bool {
         self.base.join(normalized).is_dir()
+    }
+
+    fn real_path(&self, normalized: &str) -> Option<String> {
+        let base = std::fs::canonicalize(&self.base).ok()?;
+        let real = std::fs::canonicalize(self.base.join(normalized)).ok()?;
+        let inside = real.strip_prefix(&base).ok()?;
+        let parts: Option<Vec<&str>> = inside
+            .components()
+            .map(|component| component.as_os_str().to_str())
+            .collect();
+        Some(parts?.join("/"))
     }
 
     fn resolve(&self, raw: &str) -> Binding {
@@ -1401,6 +1426,58 @@ mod tests {
         let outcome = resolver.resolve_for("link.rs", "HW-VER-0001");
 
         assert!(matches!(outcome, Binding::Resolved { .. }), "{outcome:?}");
+    }
+
+    /// The real path of a literal follows a file link and a directory link,
+    /// and reaches nothing where the link leaves the tree or is broken
+    /// (#1417). A path with no link on it is its own real path.
+    #[cfg(unix)]
+    #[test]
+    fn a_real_path_follows_links_inside_the_tree_and_nothing_outside_it() {
+        let outside = scratch("real-path-outside");
+        std::fs::write(outside.join("far.md"), "far\n").expect("a file outside the tree");
+        let dir = scratch("real-path");
+        std::fs::create_dir_all(dir.join("notes")).expect("a notes directory");
+        std::fs::write(dir.join("notes/b.md"), "b\n").expect("a fixture file");
+        std::os::unix::fs::symlink("notes/b.md", dir.join("alias.md")).expect("a file link");
+        std::os::unix::fs::symlink("notes", dir.join("linked")).expect("a directory link");
+        std::os::unix::fs::symlink(outside.join("far.md"), dir.join("far.md"))
+            .expect("a link out of the tree");
+        std::os::unix::fs::symlink("notes/gone.md", dir.join("broken.md")).expect("a broken link");
+
+        let resolver = SourceTree {
+            base: dir.to_path_buf(),
+            exclusions: Vec::new(),
+            walked: RefCell::new(HashMap::new()),
+        };
+
+        assert_eq!(
+            resolver.real_path("notes/b.md").as_deref(),
+            Some("notes/b.md")
+        );
+        assert_eq!(
+            resolver.real_path("alias.md").as_deref(),
+            Some("notes/b.md")
+        );
+        assert_eq!(
+            resolver.real_path("linked/b.md").as_deref(),
+            Some("notes/b.md")
+        );
+        assert_eq!(resolver.real_path("far.md"), None);
+        assert_eq!(resolver.real_path("broken.md"), None);
+        assert_eq!(resolver.real_path("notes/none.md"), None);
+
+        // A root reached through a link of its own, as `/tmp` is on some
+        // hosts, still holds its entries: the base is followed too.
+        let via = scratch("real-path-via");
+        std::fs::remove_dir(&*via).expect("the name is free for a link");
+        std::os::unix::fs::symlink(&*dir, &*via).expect("a link onto the root");
+        let through = SourceTree {
+            base: via.to_path_buf(),
+            exclusions: Vec::new(),
+            walked: RefCell::new(HashMap::new()),
+        };
+        assert_eq!(through.real_path("alias.md").as_deref(), Some("notes/b.md"));
     }
 
     #[test]
