@@ -1399,6 +1399,99 @@ fn every_refusal_known_before_the_first_write_leaves_the_tree_unchanged() {
     }
 }
 
+/// A refusal that a later pass finds cannot undo what an earlier pass wrote,
+/// so the report must not say the run wrote nothing.
+///
+/// A transcript that a recorder lands while the run is between passes reaches
+/// this case with no defect in this engine. The first round of verification on
+/// #1466 found the report listing files as `written` beside a remedy that said
+/// the tree was as it was.
+#[test]
+fn a_refusal_on_a_later_pass_does_not_claim_the_run_wrote_nothing() {
+    let at = copied("refused-on-a-later-pass");
+    let mut pass = 0;
+    let report = write_settled(&at, || {
+        pass += 1;
+        if pass == 2 {
+            lay_ambiguous(&at);
+        }
+        Ok::<_, Infallible>(plan_over(&at))
+    })
+    .unwrap_or_else(|never| match never {});
+    assert!(
+        pass >= 2,
+        "the run stopped after pass {pass}, so no later pass refused"
+    );
+    assert!(
+        !report.ambiguous_arms.is_empty(),
+        "the later pass did not report the refusal it met"
+    );
+    let rendered = report.render(ColorMode::Plain);
+    assert!(
+        report
+            .wrote
+            .iter()
+            .any(|wrote| matches!(wrote.verdict, Verdict::Written | Verdict::Rewritten)),
+        "the first pass wrote files and the report does not say so:\n{rendered}"
+    );
+    let remedy = report.remedy().expect("a refusing run names a remedy");
+    assert!(
+        !remedy.contains("wrote nothing"),
+        "the report lists written files and the remedy says the run wrote nothing: {remedy}"
+    );
+    assert!(
+        !rendered.contains("wrote nothing"),
+        "the report lists written files and a line says the run wrote nothing:\n{rendered}"
+    );
+}
+
+/// The case #1466 measured: a refusal over a tree whose committed projections
+/// are stale leaves them stale, and does not rewrite them.
+///
+/// Every other case here refuses over a tree that holds no projection yet, so
+/// each would-be write is a new file. This one first runs green, then makes the
+/// result stale by hand and plants a refusal, so the writes the run would make
+/// are rewrites of marked files.
+#[test]
+fn a_refusal_over_stale_projections_rewrites_none_of_them() {
+    let at = copied("refused-over-stale");
+    let green = write_settled(&at, || Ok::<_, Infallible>(plan_over(&at)))
+        .unwrap_or_else(|never| match never {});
+    assert!(
+        !green.has_errors(),
+        "the fixture tree does not generate green:\n{}",
+        green.render(ColorMode::Plain)
+    );
+    let committed = std::fs::read_to_string(at.join(RESULT)).expect("the result was written");
+    std::fs::write(at.join(RESULT), format!("{committed}\nA stale line.\n"))
+        .expect("the result goes stale");
+    lay_ambiguous(&at);
+    let before = snapshot(&at);
+
+    let report = write_settled(&at, || Ok::<_, Infallible>(plan_over(&at)))
+        .unwrap_or_else(|never| match never {});
+    assert!(
+        !report.ambiguous_arms.is_empty() && report.has_errors(),
+        "the planted refusal did not fail the run:\n{}",
+        report.render(ColorMode::Plain)
+    );
+    let result = report
+        .wrote
+        .iter()
+        .find(|wrote| wrote.path == RESULT)
+        .expect("the result is in the report");
+    assert_eq!(
+        result.verdict,
+        Verdict::Withheld,
+        "the stale result was not withheld:\n{}",
+        report.render(ColorMode::Plain)
+    );
+    assert!(
+        snapshot(&at) == before,
+        "a refusing run rewrote a stale projection"
+    );
+}
+
 /// A corpus with no transcript writes no result, and the plan says why.
 ///
 /// This is the state of this repository, and the reason the reason is a
