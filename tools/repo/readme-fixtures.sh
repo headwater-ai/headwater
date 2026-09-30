@@ -1285,10 +1285,17 @@ release_notes_judge() {
 # digest. Where the workflow states none, the README's claim is true and the
 # judge has nothing to refuse. #1336 found the claim on the README after
 # HW-DR-0090 made it false.
+#
+# The claim is read in the three shapes a negation takes in English: "states
+# no digest" in either number ("releases state no"), "does not state a
+# digest", and "no engine release states a digest". A sentence that says the
+# release states the digest carries none of the three and passes (#1406).
 engine_digest_claim_judge() {
     [ "$(release_notes_judge "$2")" = ok ] || { echo ok; return 0; }
+    edc_verb='(states?|carr(y|ies)|ha(s|ve))'
+    edc_what='(`release\.digest`|digest)'
     edc_claim=$(awk '/^```/{f=!f; next} !f' "$1" \
-        | grep -oiE '[^.]*engine release[^.]*(states|carries|has) no (`release\.digest`|digest)[^.]*\.' \
+        | grep -oiE "[^.]*engine releases?[^.]*($edc_verb no|(does|do) not (state|carry|have)( a| any)?) $edc_what[^.]*\\.|[^.]*no engine releases? $edc_verb( a| any)? $edc_what[^.]*\\." \
         | head -1 | sed 's/^ *//')
     if [ -z "$edc_claim" ]; then
         echo ok
@@ -1306,17 +1313,46 @@ engine_digest_claim_judge() {
 # metadata and the site serves no repository. Where the step has that early
 # exit, the apt row of the route table must name the secret (#1336). Where the
 # step signs unconditionally, the row may state the signature alone.
+#
+# The row is one of three places a reader meets the condition. The bold lead
+# of the numbered item on the APT signature is what a reader who skims reads,
+# and the front-matter summary is what `headwater explain` and a search show,
+# so each of those states the condition too (#1406). A step the judge cannot
+# find is a refusal: an empty read is not a step that signs unconditionally.
 apt_condition_judge() {
     workflow_step_run "$2" "Sign the APT metadata" >"$scratch/apt-step.sh"
-    if ! grep -q -- '-z "$APT_SIGNING_KEY"' "$scratch/apt-step.sh"; then
+    if ! [ -s "$scratch/apt-step.sh" ]; then
+        echo "no step named \"Sign the APT metadata\" with a \`run: |\` block in the engine workflow, so nothing says whether the APT signature has a condition"
+        return 0
+    fi
+    if ! grep -qE -- '-z "\$\{?APT_SIGNING_KEY\}?"' "$scratch/apt-step.sh"; then
         echo ok
         return 0
     fi
     acj_row=$(grep '^| the `headwater` binary in a Debian package |' "$1" | head -1)
     case $acj_row in
-        '') echo "the page has no apt row in its route table, so it states nothing an adopter can check the condition against" ;;
-        *APT_SIGNING_KEY*) echo ok ;;
-        *) echo "the apt row of the route table states the signature and not the \`APT_SIGNING_KEY\` secret, but the step \"Sign the APT metadata\" exits 0 and signs nothing when that secret is empty" ;;
+        '') echo "the page has no apt row in its route table, so it states nothing an adopter can check the condition against"; return 0 ;;
+        *APT_SIGNING_KEY*) ;;
+        *) echo "the apt row of the route table states the signature and not the \`APT_SIGNING_KEY\` secret, but the step \"Sign the APT metadata\" exits 0 and signs nothing when that secret is empty"; return 0 ;;
+    esac
+    # The lead: the bold text that opens a numbered item and names the APT
+    # repository or its metadata together with signing.
+    acj_lead=$(sed -n 's/^[0-9][0-9]*\. \*\*\([^*]*\)\*\*.*/\1/p' "$1" \
+        | grep 'APT' | grep -i 'sign' | head -1)
+    case $acj_lead in
+        '') echo "the page has no numbered item whose bold lead states the APT signature, so its reader meets the condition in the route table alone"; return 0 ;;
+        *[Ww]hen*|*secret*|*APT_SIGNING_KEY*) ;;
+        *) echo "the lead \"$acj_lead\" states the APT signature and not its condition, but the step \"Sign the APT metadata\" exits 0 and signs nothing when \`APT_SIGNING_KEY\` is empty"; return 0 ;;
+    esac
+    # The summary: the sentence of the front-matter summary that names the
+    # APT repository.
+    acj_summary=$(sed -n '1,/^---$/{/^summary:/p;}' "$1" | head -1 \
+        | sed 's/^summary: *"\{0,1\}//; s/"$//' | tr '.' '\n' \
+        | grep 'APT' | head -1 | sed 's/^ *//')
+    case $acj_summary in
+        '') echo ok ;;
+        *[Ww]hen*|*secret*|*APT_SIGNING_KEY*) echo ok ;;
+        *) echo "the summary says \"$acj_summary.\" and not when the repository exists, but the step \"Sign the APT metadata\" exits 0 and signs nothing when \`APT_SIGNING_KEY\` is empty" ;;
     esac
 }
 
@@ -2901,6 +2937,8 @@ newest_standard_version() {
 # a line is read, not the first alone, because a vendor URL carries the tag
 # path and the zip name on one line and either can be the stale half. A file
 # whose path ends in `/$standard_pin_unversioned` is exempt from the floor.
+# The `0.0.0` that `headwater init` writes is the placeholder for a version,
+# so it is never stale and never counts as naming one (#1406).
 standard_pin_judge() {
     spj_newest=$1
     shift
@@ -2917,7 +2955,8 @@ standard_pin_judge() {
                 v = m
                 sub(/^headwater-standard\/v|^headwater-standard-|^headwater\/standard v?/, "", v)
                 sub(/\.zip$/, "", v)
-                if (v != want && v != "0.0.0") print FILENAME ":" FNR ": " m
+                if (v == "0.0.0") continue
+                if (v != want) print FILENAME ":" FNR ": " m
                 named[FILENAME] = 1
             }
         }
@@ -3186,6 +3225,58 @@ got=$(recording_judge "$scratch/recording-html.md" | sed '$d' | tr '\n' '|')
 same "  and an HTML img embed with no marker fails" \
     "1: demo.gif  no \`recorded on YYYY-MM-DD\` marker within two lines|" \
     "$got"
+
+# headwater_verbs — on standard input, one command per line; on standard
+# output, the verb of each `headwater` call in it, such as `init` or
+# `taxonomy resolve`: the words after `headwater` up to the first that is not
+# a bare lower-case word, so a URL, a flag or a pipe ends the verb.
+headwater_verbs() {
+    awk '{
+        gsub(/["`]/, "")
+        for (i = 1; i <= NF; i++) {
+            if ($i != "headwater") continue
+            verb = ""
+            for (j = i + 1; j <= NF && $j ~ /^[a-z][a-z-]*$/; j++)
+                verb = verb (verb == "" ? "" : " ") $j
+            if (verb != "") print verb
+        }
+    }'
+}
+
+# tutorial_step_verbs TUTORIAL — the distinct `headwater` verbs the tutorial
+# runs in steps 1 to 7, in the order it first runs each. A command is a line
+# of a ```sh block between the `### Step 1` and `### Step 8` headings, so the
+# output blocks that quote a verb in a sentence are not read.
+tutorial_step_verbs() {
+    awk '
+        /^### Step 1 / { on = 1 }
+        /^### Step 8 / { on = 0 }
+        /^```/ { insh = (!insh && $0 ~ /^```sh[ \t]*$/); next }
+        on && insh { print }
+    ' "$1" | headwater_verbs | awk '!seen[$0]++'
+}
+
+# tape_verbs_judge TUTORIAL TAPE — `ok`, or the sentence that names each verb
+# of `tutorial_step_verbs` that the tape's `Type` lines do not type in the
+# tutorial's order. The tape may type more; it may not type fewer.
+tape_verbs_judge() {
+    tutorial_step_verbs "$1" >"$scratch/tvj-want.txt"
+    if ! [ -s "$scratch/tvj-want.txt" ]; then
+        echo "the tutorial runs no \`headwater\` verb between \`### Step 1\` and \`### Step 8\`, so there is nothing to hold the tape to"
+        return 0
+    fi
+    sed -n 's/^Type[ \t]*//p' "$2" | headwater_verbs >"$scratch/tvj-got.txt"
+    tvj_missing=$(awk '
+        NR == FNR { want[++n] = $0; next }
+        k < n && $0 == want[k + 1] { k++ }
+        END { for (i = k + 1; i <= n; i++) print "`headwater " want[i] "`" }
+    ' "$scratch/tvj-want.txt" "$scratch/tvj-got.txt" | paste -sd, - | sed 's/,/, /g')
+    if [ -z "$tvj_missing" ]; then
+        echo ok
+    else
+        echo "the tape does not type, in the tutorial's order, $tvj_missing, which the tutorial runs in steps 1 to 7"
+    fi
+}
 
 # 9f. What the recording runs. The tape's header says it "runs the commands of
 #     docs/tutorials/your-first-governed-corpus.md, steps 1 to 7", and the
