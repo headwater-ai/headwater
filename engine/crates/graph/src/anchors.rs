@@ -1742,7 +1742,10 @@ mod tests {
         // bytes this resolver already read.
         std::fs::write(dir.join("src/a.rs"), "fn a() { moved() }\n").expect("the edit");
         let edited = tree_revision(&dir, &both_files);
-        assert_ne!(unedited, edited, "the edit moves the revision of a fresh read");
+        assert_ne!(
+            unedited, edited,
+            "the edit moves the revision of a fresh read"
+        );
         assert_eq!(
             both.get().map(str::to_owned),
             unedited,
