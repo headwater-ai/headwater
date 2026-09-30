@@ -66,7 +66,7 @@ The tutorial installs from the same release download as the first block above, a
 
 ## Status
 
-> **The engine runs, and two of its layers are unfinished.** This repository types its own corpus, checks it on every commit, and scaffolds, explains, routes, generates and exports it. Distribution and the measurement layer are the unfinished layers, and the canonical taxonomy library, ecosystem tooling, taxonomy expressiveness and this first release are the rest of what is still open. Every efficacy claim in this repository is still marked unmeasured.
+> **The engine runs, and one campaign has measured part of what it claims.** This repository types its own corpus, checks it on every commit, and scaffolds, explains, routes, generates and exports it. [The counterfactual campaign of 2026-09-30](docs/evaluations/what-the-counterfactual-campaign-of-2026-09-30-measured-by-component.md) measured it by component. The documents under `docs/` have a large effect: with the governance layer removed and the documents kept, 114 of 119 graded sessions gave a sufficient answer, and with the documents removed too, 46 of 120 did, +57.5 points. The hooks and skills showed no detectable gain: on navigability the campaign excludes a gain of more than about 13 points, and on sufficiency both arms were at the ceiling. No arm measured the MCP server or the quality of governance itself, and the efficacy claims stay open until one does. The work still open is on [the milestones page](https://github.com/headwater-ai/headwater/milestones).
 
 ## What problem this solves
 
