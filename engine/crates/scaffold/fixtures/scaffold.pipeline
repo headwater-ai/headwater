@@ -96,6 +96,7 @@ rules, and for each the scope that binds it
     corpus scope, every row of the census, and it is a barrier
   link.identifier.mismatch
     corpus scope, every row of the census, and it is a barrier
+    0 links compared, 0 findings
   warrant.promoted
     document scope, one document and its front matter, and the version of it that stood before the change
   lifecycle.transition.not_permitted
