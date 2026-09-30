@@ -599,10 +599,22 @@ fn a_bump_that_misses_one_workspace_dependency_names_that_dependency() {
     );
 }
 
-/// The manifest planted with a patch bump that missed `headwater-yaml`, with
-/// the `headwater-yaml` entry then rewritten by `rewrite`. The bump moves the
-/// package and every other entry to `99.0.1`.
-fn planted_bump_missing_yaml(rewrite: impl Fn(&str) -> String) -> String {
+/// One way to write the `headwater-yaml` entry, given the version it names.
+type Rewrite = fn(&str) -> String;
+
+/// The version one patch release after `version`: `0.5.0` gives `0.5.1`.
+fn next_patch(version: &str) -> String {
+    let (head, patch) = version
+        .rsplit_once('.')
+        .expect("the engine version has a patch component");
+    let patch: u64 = patch.parse().expect("the patch component is a number");
+    format!("{head}.{}", patch + 1)
+}
+
+/// The manifest planted with a bump to `next` that missed `headwater-yaml`,
+/// with the `headwater-yaml` entry then rewritten by `rewrite`. The bump moves
+/// the package and every other entry to `next`.
+fn planted_bump_missing_yaml(next: &str, rewrite: impl Fn(&str) -> String) -> String {
     let real = workspace_manifest();
     let version = headwater_resolve::release::ENGINE;
     let entry = format!("headwater-yaml = {{ path = \"crates/yaml\", version = \"{version}\" }}");
@@ -613,7 +625,7 @@ fn planted_bump_missing_yaml(rewrite: impl Fn(&str) -> String) -> String {
     let bumped: String = real
         .replacen(
             &format!("\nversion = \"{version}\"\n"),
-            "\nversion = \"99.0.1\"\n",
+            &format!("\nversion = \"{next}\"\n"),
             1,
         )
         .lines()
@@ -621,7 +633,7 @@ fn planted_bump_missing_yaml(rewrite: impl Fn(&str) -> String) -> String {
             if line.starts_with("headwater-") && !line.starts_with("headwater-yaml ") {
                 line.replace(
                     &format!("version = \"{version}\" }}"),
-                    "version = \"99.0.1\" }",
+                    &format!("version = \"{next}\" }}"),
                 )
             } else {
                 line.to_string()
@@ -638,7 +650,7 @@ fn planted_bump_missing_yaml(rewrite: impl Fn(&str) -> String) -> String {
 /// spelling would pass a stale version in the others.
 #[test]
 fn a_missed_workspace_dependency_is_named_in_every_toml_form_cargo_reads() {
-    let forms: [(&str, fn(&str) -> String); 3] = [
+    let forms: [(&str, Rewrite); 3] = [
         ("an inline table with no spaces", |v| {
             format!("headwater-yaml={{path=\"crates/yaml\",version=\"{v}\"}}")
         }),
@@ -649,18 +661,51 @@ fn a_missed_workspace_dependency_is_named_in_every_toml_form_cargo_reads() {
     ];
     let version = headwater_resolve::release::ENGINE;
     for (form, rewrite) in forms {
-        let mut planted = planted_bump_missing_yaml(rewrite);
+        let mut planted = planted_bump_missing_yaml("99.0.1", rewrite);
         if form.starts_with("a sub-table") {
             planted.push_str(&format!(
                 "\n\n[workspace.dependencies.headwater-yaml]\npath = \"crates/yaml\"\nversion = \"{version}\"\n"
             ));
         }
         let stale = stale_member_dependency_versions(&planted);
+        // The finding names the stale version itself, so a judge that read
+        // this form's version as missing ("names no version") does not pass.
+        let stale_version = format!("names version {version},");
         assert!(
-            stale.len() == 1 && stale[0].contains("headwater-yaml"),
-            "headwater-yaml was left at {version}, written as {form}; the judge said: {stale:?}"
+            stale.len() == 1
+                && stale[0].contains("headwater-yaml")
+                && stale[0].contains(&stale_version),
+            "headwater-yaml was left at {version}, written as {form}; the judge should say it \
+             `{stale_version}`, and it said: {stale:?}"
         );
     }
+}
+
+/// A patch bump that misses one entry is caught. This is the bump that builds
+/// green: the caret requirement `^0.5.0` accepts the `0.5.1` path crate, so
+/// only the crates.io publish fails. A judge that compared major and minor
+/// alone would pass every planted case at `99.0.1` and pass this one too.
+#[test]
+fn a_patch_bump_that_misses_one_workspace_dependency_names_it() {
+    let version = headwater_resolve::release::ENGINE;
+    let next = next_patch(version);
+    let planted = planted_bump_missing_yaml(&next, |v| {
+        format!("headwater-yaml = {{ path = \"crates/yaml\", version = \"{v}\" }}")
+    });
+    assert!(
+        planted.contains(&format!("\nversion = \"{next}\"\n")),
+        "the plant did not move [workspace.package] version to {next}"
+    );
+    let stale = stale_member_dependency_versions(&planted);
+    let stale_version = format!("names version {version},");
+    assert!(
+        stale.len() == 1
+            && stale[0].contains("headwater-yaml")
+            && stale[0].contains(&stale_version),
+        "the patch bump moved the package and every other entry to {next} and left \
+         headwater-yaml at {version}; the judge should name headwater-yaml alone and say it \
+         `{stale_version}`, and it said: {stale:?}"
+    );
 }
 
 /// The judge reads every member that another member depends on through
