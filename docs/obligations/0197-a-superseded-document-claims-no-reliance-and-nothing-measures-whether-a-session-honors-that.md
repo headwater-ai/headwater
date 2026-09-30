@@ -1,9 +1,9 @@
 ---
 id: HW-OBL-0197
-status: current
-status_since: 2026-09-11
+status: discharged
+status_since: 2026-09-30
 summary: "A supersession says that nobody may rely on the document that lost, and every mechanism here acts on a relation rather than on a reading."
-last_verified: 2026-09-11
+last_verified: 2026-09-30
 title: "A superseded document claims no reliance, and nothing measures whether a session honors that"
 waiting_on: measurement
 provenance:
@@ -16,6 +16,8 @@ relations:
   traces_to:
     - HW-DR-0026
     - HW-DR-0062
+    - HW-RUN-campaign-of-2026-09-30-campaign-tier-present-arm-navigability
+    - HW-RUN-campaign-of-2026-09-30-campaign-tier-absent-arm-navigability
 ---
 
 # A superseded document claims no reliance, and nothing measures whether a session honors that
@@ -40,6 +42,10 @@ What it measures is avoidance rather than correctness: whether the pointers a se
 
 A graded run of that probe in both arms, with a rate and the denominator it came from.
 
-**The instrument exists and no run has taken a reading with it.** The probe is [HW-PROBE-a-session-answers-from-the-register-without-opening-the-question-it-replaced](../probes/a-session-answers-from-the-register-without-opening-the-question-it-replaced.md). It states in its own body why a session that recovers counts against it there.
+**The instrument is a probe.** It is [HW-PROBE-a-session-answers-from-the-register-without-opening-the-question-it-replaced](../probes/a-session-answers-from-the-register-without-opening-the-question-it-replaced.md). It states in its own body why a session that recovers counts against it there.
 
 **A rule of the check layer is the other candidate answer, and this record does not ask for one.** A rule reads a corpus and never a session. It can report that a document of this corpus cites a superseded one, and it cannot report that a session read one. The gap named here is on the session side alone.
+
+**This record is discharged.** The batch of 2026-09-30 graded that probe in both arms of the `campaign` tier, 30 sessions in each ([#1384](https://github.com/headwater-ai/headwater/issues/1384)). The present arm satisfied `not_opened` in 28 of 30, 78.7% to 98.2% in a 95% Wilson interval. The absent arm satisfied it in 26 of 30, 70.3% to 94.7%. The two intervals overlap, so the governance layer did not measurably steer sessions away from the superseded document.
+
+**The grade reads avoidance, as the Obligation section asks.** The expectation is `not_opened` over the superseded register, so a session that opened it and recovered is a miss. The grader counts a read made through Bash since #1396. The present arm made 34 Bash read calls in 26 sessions and 39 `Read` calls. The absent arm made 33 Bash read calls in 27 sessions and 45 `Read` calls. The corpus was not frozen between the two arms' sessions, and `docs/spec/09-open-questions.md` changed after the recording. So [the present-arm result](../probe-results/campaign-of-2026-09-30-campaign-tier-present-arm-navigability.md) grades each verdict over a moved read set. [The evaluation of that batch](../evaluations/what-the-counterfactual-campaign-of-2026-09-30-measured-by-component.md) states the limits of the whole batch.
