@@ -280,6 +280,30 @@ test('readAnswer takes withheld only when it is a non-negative safe integer', ()
   }
   assert.deepEqual(client.readAnswer({ pointers }).withheld, 0);
   assert.deepEqual(client.readAnswer(undefined), { pointers: [], withheld: 0 });
+  // An empty list is a heard answer, and its count stands.
+  assert.deepEqual(client.readAnswer({ pointers: [], withheld: 9 }), { pointers: [], withheld: 9 });
+});
+
+test('an answer readPointers refuses withholds nothing either', () => {
+  // As `Client.read` in the JetBrains suite: an untrusted answer is none, and
+  // its count is not shown for pointers nobody could read.
+  assert.deepEqual(client.readAnswer({}), EMPTY);
+  assert.deepEqual(client.readAnswer({ withheld: 3 }), EMPTY);
+  assert.deepEqual(client.readAnswer({ pointers: 'docs/a.md', withheld: 3 }), EMPTY);
+  // One element that is not a pointer makes the whole answer untrusted.
+  assert.deepEqual(client.readAnswer({ pointers: [{ path: 'docs/a.md' }, { name: 'no path' }], withheld: 3 }), EMPTY);
+});
+
+test('a route that gets no answer to its call withholds nothing', async () => {
+  // `initialize-only.jsonl` is the first line of `route-paren-path.jsonl`: the
+  // server answers `initialize`, never answers the call, and exits 0.
+  assert.deepEqual(await client.route('x', fake('initialize-only.jsonl').options), EMPTY);
+});
+
+test('a spawn that throws before it starts is no pointers and nothing withheld', async () => {
+  // A NUL in the program name makes `spawn` throw synchronously.
+  const { options } = fake('route-pointers.jsonl', { bin: 'head\0water', binArgs: [] });
+  assert.deepEqual(await client.route('x', options), EMPTY);
 });
 
 test('a pointer whose path holds a space is kept whole', async () => {
