@@ -11,6 +11,8 @@
 //   FAKE_RECORD   a file this server appends to, one JSON object per line: first
 //                 `{"argv": [...]}`, then `{"message": ...}` for each line read.
 //   FAKE_EXIT     the status to exit with once standard input closes (default 0).
+//   FAKE_FLOOD    a count of bytes: one line of that many `x` is written before
+//                 the first answer, which is how the output cap is reached.
 
 'use strict';
 
@@ -20,6 +22,7 @@ const readline = require('node:readline');
 const fixture = process.env.FAKE_FIXTURE;
 const record = process.env.FAKE_RECORD;
 const status = Number(process.env.FAKE_EXIT || 0);
+const flood = Number(process.env.FAKE_FLOOD || 0);
 
 function note(entry) {
   if (record) fs.appendFileSync(record, JSON.stringify(entry) + '\n');
@@ -54,6 +57,7 @@ input.on('line', (line) => {
   note({ message });
   if (silent || message.id === undefined) return;
   if (!answered) {
+    if (flood > 0) process.stdout.write('x'.repeat(flood) + '\n');
     for (const g of garbage) process.stdout.write(g + '\n');
     answered = true;
   }

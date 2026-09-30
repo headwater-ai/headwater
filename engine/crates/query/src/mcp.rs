@@ -376,6 +376,24 @@ impl Tool {
     }
 }
 
+/// The spellings of a path that `explain`, `related` and
+/// `governing_docs_for_path` answer, as their argument descriptions state
+/// them. All three read a path through `headwater_census::walk::within`, so
+/// one sentence describes all three, and it is written once so that the three
+/// cannot drift apart
+/// ([#1314](https://github.com/headwater-ai/headwater/issues/1314)).
+/// `docs/interfaces/headwater-mcp.md` is the contract this text follows.
+macro_rules! path_spellings {
+    () => {
+        "A path relative to the repository root, not to the working directory of the \
+         server. `./x`, a path whose `.` and `..` segments stay inside the repository \
+         (such as `d/../x`), and the absolute path under the repository root each get \
+         the answer that `x` gets. A path that leaves the repository, by `..`, as an \
+         absolute path elsewhere, or through a symlink that leads out, gets the one \
+         answer that it is outside this repository."
+    };
+}
+
 /// Spec 5's query class: it changes nothing, and it is always registered.
 pub const QUERY_CLASS: [Tool; 6] = [
     Tool {
@@ -395,7 +413,10 @@ pub const QUERY_CLASS: [Tool; 6] = [
                       fired, the purpose it serves, and what is consequently required of it.",
         arguments: &[Argument::required(
             "target",
-            "A path in the corpus, or an identifier.",
+            concat!(
+                "An identifier as a document declares it, or a path. ",
+                path_spellings!()
+            ),
         )],
         writes: false,
     },
@@ -405,7 +426,10 @@ pub const QUERY_CLASS: [Tool; 6] = [
                       edge and which end governs the reading.",
         arguments: &[Argument::required(
             "target",
-            "A path in the corpus, or an identifier.",
+            concat!(
+                "An identifier as a document declares it, or a path. ",
+                path_spellings!()
+            ),
         )],
         writes: false,
     },
@@ -423,10 +447,7 @@ pub const QUERY_CLASS: [Tool; 6] = [
         name: "governing_docs_for_path",
         description: "The documents that govern a path in the repository, through a declared \
                       governance edge onto that path.",
-        arguments: &[Argument::required(
-            "path",
-            "A path in the repository, relative to its root.",
-        )],
+        arguments: &[Argument::required("path", path_spellings!())],
         writes: false,
     },
     Tool {
