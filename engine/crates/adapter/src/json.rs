@@ -94,6 +94,10 @@ use std::collections::HashSet;
 /// Two of the shapes here have a second reader: [`change`] and [`coverage`] are
 /// what the SARIF property bag carries, so this constant versions them for that
 /// artifact too and [`crate::sarif`] writes it there.
+///
+/// `docs/interfaces/headwater-check.md` states this history for a reader who
+/// holds no clone, and `tests/interface_page.rs` fails when this constant
+/// names a version the page does not (#1451). Raise both together.
 pub const VERSION: &str = "1.5";
 
 /// What a run carries that these bytes do not write.
