@@ -886,6 +886,53 @@ cost_cents: 25
 ```
 ";
 
+/// The absent arm with every key recorded and no session satisfied: nothing
+/// read, and the wrong answer. Against [`CAMPAIGN_PRESENT`] the pair separates.
+const CAMPAIGN_ABSENT_UNSATISFIED: &str = "\
+---
+id: RUN-FIX-campaign-absent-unsatisfied
+status: current
+status_since: 2026-09-20
+summary: One recorded campaign session of the absent arm, in which no session satisfied.
+tier: campaign
+arm: absent
+---
+
+# One recorded campaign session, absent arm
+
+## Run identity
+
+```yaml
+model: a-model
+served_version: a-model-20260701
+tree: sha256:fixture-tree
+lock: sha256:fixture
+selection: sha256:c6f58f5bd22dfb4b353528edb188b7de55e447426fd4ad335559d172e000a9f9
+read_set: sha256:d8b44184b3ae9d52b503c6bdce4e3d6b1ee9d51e45ad91a844429249f9f491e9
+seed: 0
+harness: 0.2.0
+tier: campaign
+arm: absent
+at: 2026-09-20
+cost_cents: 25
+```
+
+## Events
+
+```yaml
+- probe: PROBE-FIX-opened
+  session: watched
+  calls: []
+  produced: []
+  answer: null
+- probe: PROBE-FIX-answered
+  session: watched
+  calls: []
+  produced: []
+  answer: \"yes\"
+```
+";
+
 /// The decisive fixture for the two-arm comparison: two campaign transcripts
 /// that share one selection digest, one model, one served version and one tree,
 /// where the absent arm records a session with no `calls` key.
@@ -987,6 +1034,311 @@ fn two_clean_arms_carry_their_difference_in_each_result() {
         assert!(
             bytes.contains("in a 95% Newcombe interval of"),
             "{path} carries no difference interval:\n{bytes}"
+        );
+    }
+}
+
+/// The two results of the significant pair below, keyed by path, over a copy of
+/// the fixture corpus whose two transcripts stand at `state`. The copy is named
+/// for the state, because the cases run as threads of one process and one
+/// directory shared between two of them is a race.
+fn the_significant_pair_at(state: &str) -> Vec<(&'static str, String)> {
+    the_significant_pair(&format!("significant-pair-{state}"), state, state, None)
+}
+
+/// The same pair with each arm at its own state, and with one more document
+/// written into the copy where `extra` names one as `(path, source)`.
+fn the_significant_pair(
+    name: &str,
+    present: &str,
+    absent: &str,
+    extra: Option<(&str, &str)>,
+) -> Vec<(&'static str, String)> {
+    let at = copied(name);
+    std::fs::write(
+        at.join("runs/probe-runs/campaign-present.md"),
+        CAMPAIGN_PRESENT,
+    )
+    .expect("the present-arm transcript lands");
+    std::fs::write(
+        at.join("runs/probe-runs/campaign-absent.md"),
+        CAMPAIGN_ABSENT_UNSATISFIED,
+    )
+    .expect("the absent-arm transcript lands");
+    for (transcript, state) in [
+        ("runs/probe-runs/campaign-present.md", present),
+        ("runs/probe-runs/campaign-absent.md", absent),
+    ] {
+        match state {
+            "current" => {}
+            UNDECLARED => edit(&at, transcript, "status: current\n", ""),
+            _ => edit(
+                &at,
+                transcript,
+                "status: current",
+                &format!("status: {state}"),
+            ),
+        }
+    }
+    if let Some((path, source)) = extra {
+        std::fs::write(at.join(path), source).expect("the extra document lands");
+    }
+    let plan = plan_over(&at);
+    assert!(plan.defective_arms.is_empty(), "{:?}", plan.defective_arms);
+    assert!(plan.ambiguous_arms.is_empty(), "{:?}", plan.ambiguous_arms);
+    [
+        "runs/probe-results/campaign-present.md",
+        "runs/probe-results/campaign-absent.md",
+    ]
+    .into_iter()
+    .map(|path| {
+        let bytes = plan
+            .outputs
+            .iter()
+            .find(|output| output.path == path)
+            .unwrap_or_else(|| panic!("no result at {path}"))
+            .bytes
+            .clone();
+        (path, bytes)
+    })
+    .collect()
+}
+
+/// The text of a result between its `# The result of` line and its first
+/// `## ` heading, which is what a reader meets before any figure.
+fn opening(bytes: &str) -> &str {
+    let start = bytes
+        .find("# The result of")
+        .expect("the result has its title");
+    let rest = &bytes[start..];
+    let end = rest.find("\n## ").unwrap_or(rest.len());
+    &rest[..end]
+}
+
+/// The state argument that removes the `status` line from a transcript
+/// rather than writing a value into it.
+const UNDECLARED: &str = "(undeclared)";
+
+const SIGNIFICANT: [&str; 2] = [
+    "satisfied more often at the 5% level",
+    "satisfied less often at the 5% level",
+];
+
+/// A result over a withdrawn recording says so before any figure, states no
+/// significance, and takes the recording's state (#1509, HW-DR-0063 as amended
+/// on 2026-10-01).
+///
+/// Before this, 24 of the 35 results in this repository graded a recording
+/// that was not `current`, all 35 were written `current`, and 5 of the 24
+/// printed a direction at the 5% level over a withdrawn run. The control half
+/// comes first: over `current` recordings the same pair does separate, so the
+/// withdrawn half cannot pass for want of a comparison.
+#[test]
+fn a_result_over_a_withdrawn_transcript_says_so_first_and_claims_no_significance() {
+    for (path, bytes) in the_significant_pair_at("current") {
+        assert!(
+            SIGNIFICANT.iter().any(|reading| bytes.contains(reading)),
+            "the control pair does not separate at the 5% level in {path}:\n{bytes}"
+        );
+        assert!(
+            bytes.contains("\nstatus: current\n"),
+            "{path} over a current recording is not current:\n{bytes}"
+        );
+        assert!(
+            !opening(&bytes).contains("`current`"),
+            "{path} over a current recording names its state first:\n{bytes}"
+        );
+    }
+    for (path, bytes) in the_significant_pair_at("deprecated") {
+        let opening = opening(&bytes);
+        let named = opening
+            .find("`deprecated`")
+            .unwrap_or_else(|| panic!("{path} does not name the state first:\n{bytes}"));
+        let inputs = opening
+            .find("A probe result is a function of three committed inputs")
+            .expect("the result states its inputs");
+        assert!(
+            named < inputs,
+            "{path} names the state after its inputs:\n{bytes}"
+        );
+        for reading in SIGNIFICANT {
+            assert!(
+                !bytes.contains(reading),
+                "{path} states a significance over a withdrawn recording:\n{bytes}"
+            );
+        }
+        assert!(
+            bytes.contains("in a 95% Newcombe interval of"),
+            "{path} dropped the interval figures:\n{bytes}"
+        );
+        assert!(
+            bytes.contains("\nstatus: deprecated\n"),
+            "{path} over a deprecated recording does not take its state:\n{bytes}"
+        );
+    }
+}
+
+/// One withdrawn arm is enough. The result over the current arm keeps its own
+/// state and names no state first, and its comparison still states no
+/// direction, because the difference reads the withdrawn arm too.
+#[test]
+fn one_withdrawn_arm_withholds_the_significance_of_both_results() {
+    for (withdrawn, name) in [
+        ("present", "one-withdrawn-present"),
+        ("absent", "one-withdrawn-absent"),
+    ] {
+        let (present, absent) = match withdrawn {
+            "present" => ("deprecated", "current"),
+            _ => ("current", "deprecated"),
+        };
+        for (path, bytes) in the_significant_pair(name, present, absent, None) {
+            for reading in SIGNIFICANT {
+                assert!(
+                    !bytes.contains(reading),
+                    "{path} states a significance with the {withdrawn} arm withdrawn:\n{bytes}"
+                );
+            }
+            let own = match path.contains("present") {
+                true => present,
+                false => absent,
+            };
+            assert!(
+                bytes.contains(&format!("\nstatus: {own}\n")),
+                "{path} does not stand at its own transcript's state `{own}`:\n{bytes}"
+            );
+        }
+    }
+}
+
+/// An edge that sets a result's state wins over the terminal state of the
+/// transcript it grades: the edge is a declaration about the result, and the
+/// transcript's state is not (HW-DR-0063, amended 2026-10-01).
+#[test]
+fn an_edge_that_sets_the_state_wins_over_a_withdrawn_transcript() {
+    const REINSTATING: &str = "\
+---
+id: NOTE-FIX-reinstating
+status: current
+status_since: 2026-09-21
+summary: A note whose edge sets the state of one result, whatever its transcript stands at.
+relations:
+  reinstates:
+    - RESULT-FIX-campaign-present
+---
+
+# The note that reinstates one result
+";
+    let pair = the_significant_pair(
+        "edge-over-withdrawn",
+        "deprecated",
+        "deprecated",
+        Some(("runs/notes/reinstating.md", REINSTATING)),
+    );
+    for (path, bytes) in pair {
+        let expected = match path.contains("present") {
+            true => "current",
+            false => "deprecated",
+        };
+        assert!(
+            bytes.contains(&format!("\nstatus: {expected}\n")),
+            "{path} does not stand at `{expected}`:\n{bytes}"
+        );
+        assert!(
+            opening(&bytes).contains("`deprecated`"),
+            "{path} does not name its transcript's state first:\n{bytes}"
+        );
+    }
+}
+
+/// A recording at the initial state is named first too, and the result stays
+/// at the `live` value: `draft` is the wrong word for a file nobody argues
+/// over (HW-DR-0063).
+#[test]
+fn a_result_over_a_draft_transcript_says_so_first_and_stays_live() {
+    for (path, bytes) in the_significant_pair_at("draft") {
+        assert!(
+            opening(&bytes).contains("`draft`"),
+            "{path} does not name the draft state first:\n{bytes}"
+        );
+        for reading in SIGNIFICANT {
+            assert!(
+                !bytes.contains(reading),
+                "{path} states a significance over a draft recording:\n{bytes}"
+            );
+        }
+        assert!(
+            bytes.contains("\nstatus: current\n"),
+            "{path} over a draft recording left the live value:\n{bytes}"
+        );
+    }
+}
+
+/// A recording whose state has no role this engine folds, one whose state the
+/// facet does not hold, and one that declares no state at all are each named
+/// first. None of the three is terminal, so each result stays at the `live`
+/// value (HW-DR-0063, amended 2026-10-01).
+#[test]
+fn a_result_over_a_transcript_of_unread_state_says_so_first() {
+    for (state, named) in [
+        ("filed", "`filed`"),
+        ("shelved", "`shelved`"),
+        (UNDECLARED, "declares no state this taxonomy reads"),
+    ] {
+        for (path, bytes) in the_significant_pair_at(state) {
+            assert!(
+                opening(&bytes).contains(named),
+                "{path} does not say `{named}` first:\n{bytes}"
+            );
+            for reading in SIGNIFICANT {
+                assert!(
+                    !bytes.contains(reading),
+                    "{path} states a significance over a `{state}` recording:\n{bytes}"
+                );
+            }
+            assert!(
+                bytes.contains("\nstatus: current\n"),
+                "{path} over a `{state}` recording left the live value:\n{bytes}"
+            );
+        }
+    }
+}
+
+/// A terminal state that the result's own regime does not name is refused,
+/// and the refusal names the transcript the state came from, because that is
+/// where the repair is (HW-DR-0063, amended 2026-10-01).
+#[test]
+fn a_terminal_state_the_result_regime_does_not_name_is_refused_with_its_source() {
+    let at = copied("terminal-outside-the-regime");
+    std::fs::write(
+        at.join("runs/probe-runs/campaign-present.md"),
+        CAMPAIGN_PRESENT,
+    )
+    .expect("the present-arm transcript lands");
+    edit(
+        &at,
+        "runs/probe-runs/campaign-present.md",
+        "status: current",
+        "status: archived",
+    );
+    let plan = plan_over(&at);
+    let refused = plan
+        .unwritten
+        .iter()
+        .find(|unwritten| unwritten.at == "runs/probe-results/campaign-present.md")
+        .unwrap_or_else(|| {
+            panic!(
+                "a result over an `archived` transcript was not refused. Unwritten: {:?}",
+                plan.unwritten
+                    .iter()
+                    .map(|u| format!("{}: {}", u.at, u.reason))
+                    .collect::<Vec<_>>()
+            )
+        });
+    for named in ["`archived`", "runs/probe-runs/campaign-present.md"] {
+        assert!(
+            refused.reason.contains(named),
+            "the refusal does not name {named}: {}",
+            refused.reason
         );
     }
 }
