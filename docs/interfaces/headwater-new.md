@@ -79,6 +79,8 @@ The command reads the system date when `--now` is absent. It reads no other envi
 |---|---|
 | `.headwater/taxonomy.lock` and corpus configuration | Read to derive the artifact. |
 | Documents and graph indexes | Read to validate identifiers and relations. |
+| `.headwater/imports/` | Read where `.headwater/taxonomy.yml` declares an import, for the anchors that an imported snapshot supplies. An `imports` entry that does not read stops the verb with exit 1, and so does an `at` path outside the repository root. |
+| the path each `harvests.<name>.at` names | Read where `.headwater/taxonomy.yml` declares a pinned corpus export, for the anchors that export supplies. A `harvests` entry that does not read stops the verb with exit 1, and so does an `at` path outside the repository root. A pin with no digest binds no anchor. An absent file binds no anchor, and neither does a file that fails the pinned digest or is not an export. |
 | The selected document path | Written when it does not already exist. |
 | The target document of a scaffold-created relation | Written with the far half of a symmetric relation, or of a required relation when the new document does not open at an initial state. Not written while the far half is owed. |
 | `.headwater/ids/<scheme>/<identifier>` | Written before the document, for a scheme that allocates `reconcile-first`. It holds the path of the document, it is never written twice, and it is never modified. |

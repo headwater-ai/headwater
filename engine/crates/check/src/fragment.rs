@@ -73,11 +73,14 @@
 //! [`crate::link_path`]'s `NO_LINKS` and [`crate::duplicate`]'s `NO_REPORT` at
 //! the same grain.
 //!
-//! The population itself is stated by the graph report, which counts the
-//! fragment-bearing links by arm beside the bindings it already prints. It is
-//! there rather than here because a passing outcome carries no sentence, and a
-//! reader who wants to know how much of the corpus this rule reads should not
-//! have to break it to find out.
+//! The graph report counts the fragment-bearing links by arm beside the
+//! bindings it already prints. That report reaches only its fullest render, so
+//! a passing `headwater check` also says how many links this rule compared:
+//! [`compared`] counts the population [`examined`] states, and the run prints
+//! it under this rule beside the rule's finding count, and writes it as
+//! `compared` in the JSON (#1347). A passing outcome carries no sentence, and
+//! a reader who wants to know how much of the corpus this rule reads should
+//! not have to break it to find out.
 //!
 //! # What is not this rule
 //!
@@ -148,9 +151,21 @@ impl CorpusCheck for Fragments {
     }
 }
 
-/// One finding per fragment that names no heading of the document it points at,
-/// and nothing for every other link.
-fn finding(link: &Link, anchors: &Anchors) -> Option<Finding> {
+/// How many links this rule compares: every link [`examined`] answers for,
+/// whether its fragment resolves or not. [`crate::run`] sets
+/// [`crate::Serves::compared`] from it, so a clean run says whether any
+/// fragment was read at all (#1347).
+pub fn compared(links: &[Link], anchors: &Anchors) -> usize {
+    links
+        .iter()
+        .filter(|link| examined(link, anchors).is_some())
+        .count()
+}
+
+/// The document a link's fragment names a heading of, and the fragment, when
+/// this rule compares the two. This is the one statement of the population:
+/// [`finding`] reads it, and [`compared`] counts it.
+fn examined<'a>(link: &'a Link, anchors: &Anchors) -> Option<(&'a str, &'a str)> {
     let fragment = link.fragment.as_deref().filter(|it| !it.is_empty())?;
     // The two arms this rule reads. Every other binding is somebody else's, and
     // the module comment enumerates which.
@@ -164,6 +179,13 @@ fn finding(link: &Link, anchors: &Anchors) -> Option<Finding> {
     };
     // A corpus path the census walked and parsed no document out of. There is
     // no heading list, so there is no verdict, and a finding would be a guess.
+    anchors.holds(target).then_some((target, fragment))
+}
+
+/// One finding per fragment that names no heading of the document it points at,
+/// and nothing for every other link.
+fn finding(link: &Link, anchors: &Anchors) -> Option<Finding> {
+    let (target, fragment) = examined(link, anchors)?;
     if anchors.resolves(target, fragment)? {
         return None;
     }
@@ -260,6 +282,14 @@ impl Anchors {
         // answer `None` for a path it holds.
         by_path.sort();
         Anchors { by_path }
+    }
+
+    /// Whether this corpus holds a heading list for `path` at all. Where it
+    /// does not, [`Anchors::resolves`] answers `None`.
+    fn holds(&self, path: &str) -> bool {
+        self.by_path
+            .binary_search_by(|(known, _)| known.as_str().cmp(path))
+            .is_ok()
     }
 
     fn resolves(&self, path: &str, fragment: &str) -> Option<bool> {

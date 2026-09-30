@@ -77,7 +77,7 @@ use headwater_probe::Arm;
 use headwater_probe::Tier;
 use headwater_query::Surface;
 
-use crate::RefusedTranscript;
+use crate::{MovedReadSet, RefusedTranscript};
 
 /// The placeholder an output path and a declared identity may carry.
 const RUN: &str = "{run}";
@@ -293,6 +293,15 @@ pub(crate) fn emit(
                 why: refusal.to_string(),
                 held: promoted,
                 readers: read_by.clone(),
+            });
+        }
+        // A read set that moved is graded and marked, and the run names it so
+        // that the author of the edit meets it (#1338). It fails nothing.
+        if let Some(recorded) = &record.read_set_moved {
+            plan.moved_read_sets.push(MovedReadSet {
+                transcript: path.to_string(),
+                output: output.clone(),
+                recorded: recorded.clone(),
             });
         }
         graded.push(Graded {
@@ -919,6 +928,15 @@ fn read_set_of_this_result(read_by: &[String]) -> String {
 /// claim the run was taken over a state it was never taken over, so the honest
 /// value here is the recorded one and nothing else.
 ///
+/// # One mark, which moves the bytes once
+///
+/// Since #1338 the intake grades a transcript whose read set moved and marks
+/// it, because refusing it dropped every verdict on the first edit after an
+/// unrelated lock move. The mark is one sentence in the section above, and it
+/// names no digest this tree composes. So it moves these bytes on the first
+/// edit that moves the read set, and on no edit after it: the gate asks for
+/// one regeneration, the run names the result, and the verdicts stand.
+///
 /// The `selection` comparison stays because the value it compares against moves
 /// only when somebody adds, removes or renames a probe. That is a deliberate
 /// act, it is rare, and a regeneration after it states something true.
@@ -926,9 +944,10 @@ fn read_set_of_this_result(read_by: &[String]) -> String {
 /// `headwater probe stale` is where the read set meets the tree, and no exit
 /// status of that verb carries the answer.
 const READ_SET: &str = "The `read_set` digest above covers every probe of the selection and every \
-     document one of them examines, by path and content. It is recorded here and compared nowhere \
-     in this file. A comparison against the tree in front of a reader would move these bytes on \
-     every edit to a document the selection points at, and `generate --check` holds this file to \
+     document one of them examines, by path and content. It is recorded here, and this file names \
+     no digest the tree in front of a reader composes. Where that tree composes another one, a \
+     single sentence above says that the read set moved, and it moves these bytes once. A digest \
+     from that tree would move these bytes on every edit to a document the selection points at, and `generate --check` holds this file to \
      its bytes, so the staleness of a measurement would stop a merge. `headwater probe stale` \
      takes the digest and reports which recorded results a change voided.\n";
 

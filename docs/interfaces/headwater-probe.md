@@ -73,6 +73,8 @@ No environment variable reaches a probe subcommand. The tier, repository and see
 | `.headwater/taxonomy.lock` | read by every subcommand through the corpus loader |
 | `.headwater/taxonomy.yml` | read by every subcommand through the corpus loader |
 | the corpus | read to select probes and to rebuild transcript read sets |
+| `.headwater/imports/` | read by every subcommand where `.headwater/taxonomy.yml` declares an import, for the anchors that an imported snapshot supplies. An `imports` entry that does not read stops the verb with exit 1, and so does an `at` path outside the repository root. |
+| the path each `harvests.<name>.at` names | read by every subcommand where `.headwater/taxonomy.yml` declares a pinned corpus export, for the anchors that export supplies. A `harvests` entry that does not read stops the verb with exit 1, and so does an `at` path outside the repository root. A pin with no digest binds no anchor. An absent file binds no anchor, and neither does a file that fails the pinned digest or is not an export. |
 | the transcript path | read by `record` and `grade` |
 | committed probe transcripts | read by `stale` |
 

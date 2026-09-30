@@ -3,7 +3,7 @@ id: HW-IFACE-headwater-route
 status: current
 status_since: 2026-09-06
 summary: "How a task description becomes ranked document pointers, when routing stays silent, and what the budget limits."
-last_verified: 2026-08-25
+last_verified: 2026-09-30
 title: "headwater route"
 relations:
   governs:
@@ -26,6 +26,8 @@ Every word after `route` forms the task description. The verb takes no separate 
 `headwater route` matches a task description to declared purposes, then ranks document pointers under those purposes. It reads summaries, facet values, paths and governance anchors. It does not search document bodies.
 
 A task that names a governed source path receives the documents that govern that path before lexical ranking. Other tasks first match terms against declared purposes, then require a separating term to reach a document. This confidence gate prevents a common term from producing a guessed pointer.
+
+Route does not follow a call or an import. A document that governs only a file which calls or imports the named path gets no pointer through that call. To reach that document from the named path, its author declares `governs` over the called file too. Route reads summaries, facets, relations and code-path anchors, which is the read set of [spec 5](../spec/05-ai-integration.md#intent-time-routing), so it holds no call graph.
 
 The default budget is five ranked pointers. Anchored pointers are never removed by the budget. The report states how many ranked pointers the budget withheld.
 
@@ -82,6 +84,8 @@ No environment variable reaches this verb. The task, budget and repository come 
 | `.headwater/taxonomy.lock` | Read for the taxonomy and graph declarations. |
 | `.headwater/taxonomy.yml` | Read through the consumer loader. |
 | The corpus | Read for typed documents, summaries, facets, paths and edges. |
+| `.headwater/imports/` | Read where `.headwater/taxonomy.yml` declares an import, for the anchors that an imported snapshot supplies. An `imports` entry that does not read stops the verb with exit 1, and so does an `at` path outside the repository root. |
+| the path each `harvests.<name>.at` names | Read where `.headwater/taxonomy.yml` declares a pinned corpus export, for the anchors that export supplies. A `harvests` entry that does not read stops the verb with exit 1, and so does an `at` path outside the repository root. A pin with no digest binds no anchor. An absent file binds no anchor, and neither does a file that fails the pinned digest or is not an export. |
 
 The verb writes no file.
 
