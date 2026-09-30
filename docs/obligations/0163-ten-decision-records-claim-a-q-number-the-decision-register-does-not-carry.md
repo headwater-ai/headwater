@@ -18,7 +18,7 @@ provenance:
 
 ## Context
 
-`docs/spec/09-decisions.md` is the decision register of this repository, and its sections are keyed on a question number. It carries 36 of them, and they run Q1 to Q32 and then Q40 to Q43.
+`docs/spec/09-decisions.md` is the decision register of this repository, and its sections are keyed on a question number. On 2026-09-06 it carried 36 of them, and they ran Q1 to Q32 and then Q40 to Q43.
 
 Ten decision records name a question number in their file name that the register has no section for. Enumerated on 2026-09-06 by taking the two sets and comparing them: `Q33 Q34 Q35 Q36 Q37 Q38 Q39 Q44 Q50 Q51`. The reading is a set difference rather than a sample:
 
@@ -35,7 +35,9 @@ Ten decision records name a question number in their file name that the register
 
 A reader who follows a Q number out of a decision record file name reaches nothing. That is the cost, and it is small: the file name is a convenience and the identifier is what a relation names.
 
-The larger cost is that the register asserts a shape it does not hold. It reads as the record of every question this repository has ruled, and it is the record of 36 of them.
+The larger cost is that the register asserts a shape it does not hold. It reads as the record of every question this repository has ruled, and it is the record of 38 of them.
+
+What is still owed is a ruling by the owner on the Q key, and `waiting_on: ruling` names it. The three answers the owner can give are under Discharge. An agent gives none of them, because each one is a judgment about who reads the register.
 
 ## Discharge
 
