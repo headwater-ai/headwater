@@ -456,6 +456,9 @@ class AListWithADeadMemberIsShownRefused(unittest.TestCase):
         self.assertLess(page.index('id="warrant"'), refused)
         self.assertLess(page.index('id="coverage"'), refused)
         self.assertLess(refused, positions[0])
+        # It is an <h3> under the coverage <h2>, with no other <h2> between them.
+        self.assertIn('<h3 id="refused">', page)
+        self.assertNotIn("<h2", page[page.index('id="coverage"'):refused])
 
 
 class TheCommandLine(unittest.TestCase):
