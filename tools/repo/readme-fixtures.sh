@@ -63,7 +63,9 @@
 # hold is that `https://headwater.tools/apt` serves anything. The `smoke-apt`
 # job in `release.yml` installs the package from a repository it signs itself,
 # so it holds the package and not the site. Only a run of the block in a clean
-# container holds the site.
+# container holds the site, and `.github/workflows/readme-apt.yml` is that run:
+# daily, and after each release deploys the site. Group 12 holds that the job
+# runs the page's block on the floor the page names (#1408).
 #
 # Group 11 reads the install panel on the front page of the site,
 # `site/index.html`, against the page. The panel opens with the page's download
@@ -3359,8 +3361,9 @@ echo "the APT route the page offers, and the repository the release publishes"
 #
 # What this group cannot hold is that `https://headwater.tools/apt` serves
 # anything. That needs a socket, which no case here opens. The `smoke-apt` job
-# in `release.yml` signs a local repository, so it does not hold it either, and
-# only a run of the block in a clean container does.
+# in `release.yml` signs a local repository, so it does not hold it either.
+# `.github/workflows/readme-apt.yml` runs the block in a clean container against
+# the site, and group 12 holds that job against the page.
 
 apt_fetch="$root/tools/site/fetch-apt.sh"
 apt_sign_step="Sign the APT metadata"
@@ -3867,6 +3870,255 @@ printf '%s\n' '<div class="install">' \
 same "  the extraction reads the prompt lines of the panel alone, decoded" \
     '```|echo "a & b"|```' \
     "$(site_panel_of "$scratch/site/shape.html" | tr '\n' '|' | sed 's/|$//')"
+
+echo
+echo "the APT block the page offers, against the job that runs it"
+
+# Group 10 holds what the APT block names and fetches nothing. What holds the
+# block itself is `.github/workflows/readme-apt.yml`: it runs the block on a
+# clean container of each distribution the page names as its floor, against
+# the published repository at `https://headwater.tools/apt`, every day and after
+# each release deploys the site (#1408). That job cannot run on a pull request,
+# because it depends on networks this repository does not own. So this group
+# holds, on every push, the two things that would let the job pass while it
+# held nothing:
+#
+#   - the page names a floor the matrix does not run. The page says "Debian N
+#     or later and Ubuntu X.Y or later", and each of those two is an `image`
+#     of the matrix. A page that raises or lowers its floor without the job,
+#     or a job that drops an image, is red.
+#   - the job runs something other than the page. Its run step calls
+#     `tools/repo/readme-apt-block.sh`, which prints the page's block, and it
+#     carries no copy of the block. A copy would stay green after the page
+#     changed.
+#
+# The extractor refuses a page whose paragraph or fence is gone, because
+# `sh -e` of an empty script exits 0, and 12d holds that refusal.
+
+apt_block="$root/tools/repo/readme-apt-block.sh"
+apt_job="$root/.github/workflows/readme-apt.yml"
+
+# readme_apt_floor README — the oldest Debian and the oldest Ubuntu the page
+# names, one per line, as `debian:N` and `ubuntu:X.Y`. Nothing when the
+# sentence is gone.
+readme_apt_floor() {
+    sed -n 's/.*The block below runs on Debian \([0-9][0-9]*\) or later and Ubuntu \([0-9][0-9]*\.[0-9][0-9]*\) or later.*/debian:\1\
+ubuntu:\2/p' "$1" | head -n 2
+}
+
+# readme_apt_images WORKFLOW — every image of a flow-style `image: [...]`
+# matrix line, one per line, without quotes.
+readme_apt_images() {
+    sed -n 's/^[ \t]*image:[ \t]*\[\(.*\)\][ \t]*$/\1/p' "$1" |
+        tr ',' '\n' | tr -d "\"' \t" | sed '/^$/d'
+}
+
+# readme_apt_judge README WORKFLOW — one line for each defect, and nothing for
+# a pair that holds.
+readme_apt_judge() {
+    if [ ! -f "$2" ]; then
+        echo "no workflow runs the APT block: $(basename "$2") is missing"
+        return
+    fi
+    floor=$(readme_apt_floor "$1")
+    if [ -z "$floor" ]; then
+        echo "the page names no Debian and Ubuntu floor for the APT block"
+    fi
+    images=$(readme_apt_images "$2")
+    if [ -z "$images" ]; then
+        echo "$(basename "$2") names no image in a matrix"
+    fi
+    for img in $floor; do
+        if ! printf '%s\n' "$images" | grep -qxF "$img"; then
+            echo "$img is the page's floor and not an image of $(basename "$2")"
+        fi
+    done
+    # The steps are read line for line, because a step that is present and
+    # cannot fail holds nothing: `|| true`, `continue-on-error`, an `if:`, or a
+    # container that is not the matrix image each leaves the job green.
+    if ! grep -qE '^ +run: sh tools/repo/readme-apt-block\.sh README\.md > readme-apt-block\.sh$' "$2"; then
+        echo "$(basename "$2") does not run tools/repo/readme-apt-block.sh"
+    fi
+    if ! grep -qE '^ +sh -e readme-apt-block\.sh$' "$2"; then
+        echo "$(basename "$2") does not run the printed block under sh -e"
+    fi
+    if ! grep -qE '^    container: \$\{\{ matrix\.image \}\}$' "$2"; then
+        echo "$(basename "$2") does not run each matrix image as its container"
+    fi
+    if grep -vE '^[ ]*#' "$2" | grep -qE '\|\|[ ]*(true|:)|continue-on-error|^[ ]+if:'; then
+        echo "$(basename "$2") has a step or a job that can pass when the block fails"
+    fi
+    # The steps are the three below and nothing else, comments aside. A fourth
+    # step can empty the file between the two, and a line in the run body such
+    # as `exit 0` or `set +e` can end the run before the block fails.
+    if [ "$(sed -n '/^    steps:/,$p' "$2" | grep -vE '^[ ]*(#|$)' | tr '\n' '|')" != \
+        "$(printf '%s\n' '    steps:' '      - uses: actions/checkout@v4' \
+            '      - name: Print the block the page shows' \
+            '        run: sh tools/repo/readme-apt-block.sh README.md > readme-apt-block.sh' \
+            '      - name: Run the block as root on a clean image' \
+            '        run: |' \
+            '          cat readme-apt-block.sh' \
+            '          sh -e readme-apt-block.sh' | tr '\n' '|')" ]; then
+        echo "$(basename "$2") has steps other than checkout, extract, and \`sh -e\` of the block"
+    fi
+    # A matrix `exclude:` or `include:` changes the images the `image:` line names.
+    if grep -vE '^[ ]*#' "$2" | grep -qE '^[ ]+(exclude|include):'; then
+        echo "$(basename "$2") excludes or adds matrix entries, so its image line is not what it runs"
+    fi
+    if grep -q 'apt-get install -y headwater' "$2"; then
+        echo "$(basename "$2") carries its own copy of the block"
+    fi
+    if ! grep -qE '^[ ]{2}schedule:' "$2"; then
+        echo "$(basename "$2") runs on no schedule, so nothing finds a distribution that moved"
+    fi
+}
+
+# readme_apt_caller RELEASE — the `needs:` of the job of RELEASE that calls
+# readme-apt.yml, then ` if: <condition>` when that job carries one, or
+# nothing when no job calls it. An `if:` could skip the job on every release.
+readme_apt_caller() {
+    awk '
+        function out() { printf "%s", needs; if (cond != "") printf " if: %s", cond; print "" }
+        /^  [A-Za-z0-9_-]+:[ \t]*$/ { if (calls) { out(); calls = 0; done = 1; exit } needs = ""; cond = ""; next }
+        /^    needs:/ { needs = $0; sub(/^    needs:[ \t]*/, "", needs) }
+        /^    if:/ { cond = $0; sub(/^    if:[ \t]*/, "", cond) }
+        /^    uses:[ \t]*\.\/\.github\/workflows\/readme-apt\.yml/ { calls = 1 }
+        END { if (calls && !done) out() }
+    ' "$1"
+}
+
+mkdir -p "$scratch/apt-job/provoked"
+
+# 12a. The real page against the real job.
+same "the page's APT floor is each an image of readme-apt.yml, and the job runs the page" "" \
+    "$(readme_apt_judge "$readme" "$apt_job" | tr '\n' '|' | sed 's/|$//')"
+same "  the page names a floor of two, one Debian and one Ubuntu" "2" \
+    "$(readme_apt_floor "$readme" | grep -cE '^(debian:[0-9]+|ubuntu:[0-9]+\.[0-9]+)$')"
+same "  release.yml calls readme-apt.yml after deploy-site, so each release runs the block against the site it deployed" \
+    "deploy-site" "$(readme_apt_caller "$root/.github/workflows/release.yml")"
+
+# 12b. THE DECISIVE CASE. The page raises its Debian floor, and the job does
+# not follow.
+sed 's/runs on Debian [0-9][0-9]* or later/runs on Debian 13 or later/' "$readme" >"$scratch/apt-job/raised.md"
+apt_planted "a page whose floor is Debian 13 and a job that does not run it is red" \
+    "$readme" "$scratch/apt-job/raised.md" \
+    "debian:13 is the page's floor and not an image of readme-apt.yml" \
+    "$(readme_apt_judge "$scratch/apt-job/raised.md" "$apt_job" | tr '\n' '|' | sed 's/|$//')"
+
+# 12b, the other way. The job drops the page's Ubuntu floor.
+if [ -f "$apt_job" ]; then
+    sed "/^[ \t]*image:[ \t]*\[/s/[\"']ubuntu:20\.04[\"'][ \t]*,\{0,1\}[ \t]*//" "$apt_job" >"$scratch/apt-job/readme-apt.yml"
+else
+    : >"$scratch/apt-job/readme-apt.yml"
+fi
+apt_planted "a job that drops ubuntu:20.04 from its matrix is red" \
+    "$apt_job" "$scratch/apt-job/readme-apt.yml" \
+    "ubuntu:20.04 is the page's floor and not an image of readme-apt.yml" \
+    "$(readme_apt_judge "$readme" "$scratch/apt-job/readme-apt.yml" | tr '\n' '|' | sed 's/|$//')"
+
+# 12c. The job inlines the block instead of calling the extractor.
+mkdir -p "$scratch/apt-job/inline"
+if [ -f "$apt_job" ]; then
+    awk -v block="$(sh "$apt_block" "$readme" 2>/dev/null | sed 's/^/          /')" '
+        /run:.*sh tools\/repo\/readme-apt-block\.sh/ { sub(/run:.*/, "run: |"); print; print block; next }
+        { print }
+    ' "$apt_job" >"$scratch/apt-job/inline/readme-apt.yml"
+else
+    : >"$scratch/apt-job/inline/readme-apt.yml"
+fi
+apt_planted "a job that inlines the block instead of calling the extractor is red" \
+    "$apt_job" "$scratch/apt-job/inline/readme-apt.yml" \
+    "readme-apt.yml does not run tools/repo/readme-apt-block.sh|readme-apt.yml has steps other than checkout, extract, and \`sh -e\` of the block|readme-apt.yml carries its own copy of the block" \
+    "$(readme_apt_judge "$readme" "$scratch/apt-job/inline/readme-apt.yml" | tr '\n' '|' | sed 's/|$//')"
+
+# 12c, the job that is present and cannot fail. Each arm is one edit to a copy
+# of the real job, and each would leave the job green with the block broken.
+# readme_apt_provoke NAME SED EXPECTED — the judge on the real page and a copy
+# of the job that SED wrote.
+readme_apt_provoke() {
+    if [ -f "$apt_job" ]; then
+        sed "$2" "$apt_job" >"$scratch/apt-job/provoked/readme-apt.yml"
+    else
+        : >"$scratch/apt-job/provoked/readme-apt.yml"
+    fi
+    apt_planted "$1" "$apt_job" "$scratch/apt-job/provoked/readme-apt.yml" "$3" \
+        "$(readme_apt_judge "$readme" "$scratch/apt-job/provoked/readme-apt.yml" | tr '\n' '|' | sed 's/|$//')"
+}
+readme_apt_provoke "a job whose run step is \`true\` in place of the block is red" \
+    's/^\( *\)sh -e readme-apt-block\.sh$/\1true/' \
+    "readme-apt.yml does not run the printed block under sh -e|readme-apt.yml has steps other than checkout, extract, and \`sh -e\` of the block"
+readme_apt_provoke "a job that runs the block with \`|| true\` is red" \
+    's/^\( *\)sh -e readme-apt-block\.sh$/\1sh -e readme-apt-block.sh || true/' \
+    "readme-apt.yml does not run the printed block under sh -e|readme-apt.yml has a step or a job that can pass when the block fails|readme-apt.yml has steps other than checkout, extract, and \`sh -e\` of the block"
+readme_apt_provoke "a job that swallows the extractor's refusal with \`|| true\` is red" \
+    's/> readme-apt-block\.sh$/> readme-apt-block.sh || true/' \
+    "readme-apt.yml does not run tools/repo/readme-apt-block.sh|readme-apt.yml has a step or a job that can pass when the block fails|readme-apt.yml has steps other than checkout, extract, and \`sh -e\` of the block"
+readme_apt_provoke "a job whose container is one image and not the matrix image is red" \
+    's/^    container: .*/    container: debian:12/' \
+    "readme-apt.yml does not run each matrix image as its container"
+readme_apt_provoke "a job marked \`continue-on-error\` is red" \
+    's/^    timeout-minutes: \(.*\)/    timeout-minutes: \1\
+    continue-on-error: true/' \
+    "readme-apt.yml has a step or a job that can pass when the block fails"
+
+readme_apt_provoke "a job whose run body exits 0 before the block is red" \
+    's/^\( *\)sh -e readme-apt-block\.sh$/\1exit 0\
+\1sh -e readme-apt-block.sh/' \
+    "readme-apt.yml has steps other than checkout, extract, and \`sh -e\` of the block"
+readme_apt_provoke "a job with a step that empties the block before the run is red" \
+    's/^      - name: Run the block as root on a clean image$/      - run: : > readme-apt-block.sh\
+&/' \
+    "readme-apt.yml has steps other than checkout, extract, and \`sh -e\` of the block"
+readme_apt_provoke "a job whose matrix excludes ubuntu:20.04 is red" \
+    "s/^\\( *\\)image: \\[.*/&\\
+\\1exclude:\\
+\\1  - image: 'ubuntu:20.04'/" \
+    "readme-apt.yml excludes or adds matrix entries, so its image line is not what it runs"
+readme_apt_provoke "a job whose run body turns off -e and ends on echo is red" \
+    's/^\( *\)sh -e readme-apt-block\.sh$/\1set +e\
+\1sh -e readme-apt-block.sh\
+\1echo done/' \
+    "readme-apt.yml has steps other than checkout, extract, and \`sh -e\` of the block"
+
+# The release job that calls the workflow, with an `if:` that skips it.
+if [ -f "$root/.github/workflows/release.yml" ]; then
+    sed 's|^    uses: \./\.github/workflows/readme-apt\.yml|    if: false\
+&|' "$root/.github/workflows/release.yml" >"$scratch/apt-job/release.yml"
+fi
+apt_planted "a release.yml whose readme-apt job carries \`if: false\` is red" \
+    "$root/.github/workflows/release.yml" "$scratch/apt-job/release.yml" \
+    "deploy-site if: false" "$(readme_apt_caller "$scratch/apt-job/release.yml")"
+
+# 12d. The extractor prints the block the page shows, less `sudo`, and refuses
+# a page whose paragraph is gone.
+apt_printed=$(sh "$apt_block" "$readme" 2>/dev/null)
+same "the extractor prints the page's eight APT lines, first and last as the page has them" \
+    "8|apt-get update|headwater --version|0" \
+    "$(printf '%s\n' "$apt_printed" | sed -n '$=')|$(printf '%s\n' "$apt_printed" | sed -n 1p)|$(printf '%s\n' "$apt_printed" | sed -n '$p')|$(printf '%s\n' "$apt_printed" | grep -c 'sudo')"
+grep -v '^\*\*Install it with apt' "$readme" >"$scratch/apt-job/no-paragraph.md"
+if [ -f "$apt_block" ]; then
+    sh "$apt_block" "$scratch/apt-job/no-paragraph.md" >"$scratch/apt-job/no-paragraph.out" 2>/dev/null
+    apt_refused=$?
+else
+    : >"$scratch/apt-job/no-paragraph.out"
+    apt_refused=0
+fi
+apt_planted "the extractor on a page with no APT paragraph prints nothing and exits nonzero" \
+    "$readme" "$scratch/apt-job/no-paragraph.md" \
+    "0|nonzero" \
+    "$(wc -c <"$scratch/apt-job/no-paragraph.out" | tr -d ' ')|$([ "$apt_refused" -ne 0 ] && echo nonzero || echo zero)"
+
+# 12e. The page gives Debian 11 a route that works there: the Debian package
+# from the release page, installed from its file. The block stops on Debian 11
+# at its first install, and no download tool installs there either, so the
+# route is the file. The name the page gives is a name the release uploads,
+# with `<version>` for the release's own `${version}`.
+apt_d11_deb=$(grep '^\*\*Install it with apt' "$readme" |
+    sed -n 's/.*`sudo apt-get install \.\/\(headwater_<version>_[a-z0-9]*\.deb\)`.*/\1/p' |
+    sed 's/<version>/${version}/')
+same "the APT paragraph gives Debian 11 the release's Debian package, installed from its file" \
+    "yes" \
+    "$([ -n "$apt_d11_deb" ] && release_uploaded_debs "$root/.github/workflows/release.yml" | grep -qxF "$apt_d11_deb" && echo yes || echo "no: \`$apt_d11_deb\`")"
 
 echo
 echo "$passed passed, $failed failed"
