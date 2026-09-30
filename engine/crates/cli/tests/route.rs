@@ -617,3 +617,61 @@ fn the_mcp_route_tool_reads_an_ignore_rule_written_after_the_session_started() {
     drop(input);
     assert!(child.wait().expect("the server ends").success());
 }
+
+/// Route does not follow a caller or an import to the document that governs
+/// it (#1358). `docs/interfaces/headwater-route.md` states this in its
+/// Description: a document that governs a file which calls the named path is
+/// not reached through that call, and its author declares `governs` over the
+/// called file as well. Spec 5 fixes the read set as summaries, facets,
+/// relations and code-path anchors, so route holds no call graph. The case
+/// passes on the day it lands, because the engine already behaves as the
+/// contract says. If route learns to follow callers, it fails, and the
+/// contract changes with it.
+#[test]
+fn route_does_not_follow_a_caller_to_the_document_that_governs_it() {
+    let root = Root::shaped("route-caller", |at| {
+        std::fs::write(at.join("tools/callee.sh"), "").expect("the callee writes");
+        std::fs::write(at.join("tools/caller.sh"), ". tools/callee.sh\n")
+            .expect("the caller writes");
+        for (number, title, target) in [
+            ("0002", "the callee", "tools/callee.sh"),
+            ("0003", "the caller", "tools/caller.sh"),
+        ] {
+            let slug = title.replace(' ', "-");
+            std::fs::write(
+                at.join(format!(
+                    "docs/decisions/{number}-the-decision-that-governs-{slug}.md"
+                )),
+                format!(
+                    "---\nid: HW-DR-{number}\ntitle: The decision that governs {title}\n\
+                     status: current\nstatus_since: 2026-08-01\nlast_verified: 2026-08-01\n\
+                     summary: One decision that governs one file under the tools \
+                     directory.\nprovenance:\n  warrant: asserted\n  agency: human\n  \
+                     evidence_basis: unevidenced\nrelations:\n  governs:\n    - {target}\n\
+                     ---\n\n# The decision that governs {title}\n\n## Context\n\nA \
+                     fixture.\n\n## Decision\n\nIt governs one file.\n\n## \
+                     Consequences\n\nThe route names it.\n"
+                ),
+            )
+            .expect("the decision writes");
+        }
+    });
+
+    let ran = root.run(&["route", "edit", "tools/callee.sh", "--json"]);
+    assert_eq!(ran.code, Some(0), "{ran:?}");
+    assert!(
+        ran.out.contains("\"id\": \"HW-DR-0002\""),
+        "the decision that governs the callee is offered: {}",
+        ran.out
+    );
+    assert!(
+        ran.out.contains("\"by\": \"anchor\""),
+        "the callee's decision is reached through its anchor: {}",
+        ran.out
+    );
+    assert!(
+        !ran.out.contains("HW-DR-0003"),
+        "the decision that governs only the caller is not reached through the call: {}",
+        ran.out
+    );
+}
