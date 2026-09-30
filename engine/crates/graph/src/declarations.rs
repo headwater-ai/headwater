@@ -92,6 +92,15 @@ pub struct Relation {
     /// It is the declaration that separates a target this relation *put* in a
     /// state from one that some other history left there.
     pub sets_target_state: Option<String>,
+    /// The condition under which an instance of this relation is incoherent,
+    /// from `invalid_when.both`: each `(facet, value)` pair must hold at both
+    /// ends, in declaration order.
+    ///
+    /// [Spec 2](../../../../docs/spec/02-taxonomy-model.md) declares
+    /// `invalid_when: {both: {status: current}}` on `conflicts_with`, and the
+    /// meta-schema admits `both` alone. Empty where the relation declares no
+    /// condition. `headwater_check::invalid_pair` is the reader.
+    pub invalid_when: Vec<(String, String)>,
     /// `nuclearity`, and `nucleus` beside it: which end stands alone.
     pub nuclearity: Option<String>,
     pub nucleus: Option<String>,
@@ -366,6 +375,24 @@ fn read_relation(name: &str, value: &Value, span: Span) -> Result<Relation, Decl
             .and_then(|on_target| on_target.get("set_state"))
             .and_then(|value| value.value.as_scalar())
             .map(|scalar| scalar.text.clone()),
+        invalid_when: map
+            .get("invalid_when")
+            .and_then(|value| value.value.as_map())
+            .and_then(|condition| condition.get("both"))
+            .and_then(|value| value.value.as_map())
+            .map(|both| {
+                both.entries()
+                    .iter()
+                    .filter_map(|entry| {
+                        entry
+                            .value
+                            .value
+                            .as_scalar()
+                            .map(|scalar| (entry.key.value.clone(), scalar.text.clone()))
+                    })
+                    .collect()
+            })
+            .unwrap_or_default(),
         nuclearity: scalar("nuclearity"),
         nucleus: scalar("nucleus"),
         created_by: scalar("created_by"),
@@ -560,6 +587,7 @@ anchors:
             Some("superseded")
         );
         assert_eq!(marked.relations[1].sets_target_state, None);
+        assert!(marked.relations.iter().all(|r| r.invalid_when.is_empty()));
 
         // The same relations, with the requirement stating nothing about the
         // lifecycle. Nothing is sensitive, and the inverse name reads the same
@@ -570,6 +598,26 @@ anchors:
         // And with no `core` block at all.
         let none = read(SOURCE).expect("reads");
         assert!(none.relations.iter().all(|r| !r.lifecycle_sensitive));
+    }
+
+    /// `invalid_when.both` reads as its `(facet, value)` pairs in declaration
+    /// order, and a relation that declares no condition reads as none.
+    #[test]
+    fn invalid_when_reads_every_pair_of_its_both_condition() {
+        let source = concat!(
+            "relations:\n",
+            "  conflicts_with: {to: [d], invalid_when: {both: {status: current, lifecycle: live}}}\n",
+            "  constrains:     {to: [d]}\n",
+        );
+        let read = read(source).expect("the declarations read");
+        assert_eq!(
+            read.relations[0].invalid_when,
+            vec![
+                ("status".to_string(), "current".to_string()),
+                ("lifecycle".to_string(), "live".to_string()),
+            ]
+        );
+        assert!(read.relations[1].invalid_when.is_empty());
     }
 
     /// A relation declares the word for itself, and the two readings union.

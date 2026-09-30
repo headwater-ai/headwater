@@ -155,7 +155,7 @@ fn two_current_decisions_joined_by_conflicts_with_are_reported_on_both_files() {
             finding.message
         );
         // The anchor is the entry the author wrote, under `conflicts_with:`.
-        assert_eq!(finding.line, 7, "{finding:?}");
+        assert_eq!(finding.line, 6, "{finding:?}");
     }
 }
 

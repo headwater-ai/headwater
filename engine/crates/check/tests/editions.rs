@@ -234,6 +234,21 @@ fn recorded() -> Vec<Recorded> {
             full: false,
             inputs: fixtures_dir().join("state-not-set-by-edge"),
         },
+        // The corpus of `relation.pair.invalid`: a conflict both ends declare,
+        // a one-sided one, a superseded end, a relation with no condition, a
+        // condition over a facet other than the state facet, and one over two
+        // facets that holds at one end alone (HW-OBL-0042, #1491).
+        Recorded {
+            label: "conflicting-pair",
+            base: fixtures_dir(),
+            name: "conflicting-pair",
+            taxonomy: "conflicting-pair.taxonomy.yml",
+            lock: "sha256:conflicting-pair-fixture".to_string(),
+            clock: "2026-08-12",
+            observations: Observations::empty(),
+            full: false,
+            inputs: fixtures_dir().join("conflicting-pair"),
+        },
         // The corpus of `relation.target.is_source`: an entry that names its
         // own document through either half, a control that names another
         // document, and a self-path that binds to nothing (#1232). Five

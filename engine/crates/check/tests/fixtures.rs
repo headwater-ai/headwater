@@ -1864,6 +1864,8 @@ fn the_scope_of_every_rule_comes_from_the_trait_that_binds_it() {
             Grain::Edge,
             // An authored target an edge declares retired (#1198).
             Grain::Edge,
+            // A pair whose declared `invalid_when` holds at both ends (#1491).
+            Grain::Edge,
             Grain::Neighbourhood { depth: 1 },
             // Two relations telling one generated document two states. A
             // neighbourhood centers on a typed document and a generated one is
@@ -2005,7 +2007,7 @@ fn the_scope_of_every_rule_comes_from_the_trait_that_binds_it() {
     assert!(!run.served[3].scope.needs_body());
     assert_eq!(run.served[3].rule, headwater_check::identifier::RULE);
 
-    // The nine edge-grained Graph-origin rules are consecutive, and the target
+    // The ten edge-grained Graph-origin rules are consecutive, and the target
     // rule is the first of them. Whether a target resolved is prior to every
     // other question an edge rule asks about it. Whether a resolved target is
     // the document that declares it is the second, and whether the upstream
@@ -2021,7 +2023,8 @@ fn the_scope_of_every_rule_comes_from_the_trait_that_binds_it() {
             run.served[10].rule,
             run.served[11].rule,
             run.served[12].rule,
-            run.served[13].rule
+            run.served[13].rule,
+            run.served[14].rule
         ],
         [
             target::RULE,
@@ -2032,6 +2035,7 @@ fn the_scope_of_every_rule_comes_from_the_trait_that_binds_it() {
             headwater_check::dependency::RULE,
             headwater_check::initial_dependency::RULE,
             headwater_check::state_not_set_by_edge::RULE,
+            headwater_check::invalid_pair::RULE,
             headwater_check::basis::RULE
         ]
     );
@@ -2088,15 +2092,15 @@ fn the_scope_of_every_rule_comes_from_the_trait_that_binds_it() {
         )
     );
     assert_eq!(
-        run.served[16].scope.render(),
+        run.served[17].scope.render(),
         "document scope, one document and its front matter, and what phase A could not make of it"
     );
     // The same declaration at the other grain, and the sentence says what the
     // difference is: one document's news against the identity of every
     // document. A reader counting the barriers finds the word here.
-    assert_eq!(run.served[18].rule, duplicate::RULE);
+    assert_eq!(run.served[19].rule, duplicate::RULE);
     assert_eq!(
-        run.served[18].scope.render(),
+        run.served[19].scope.render(),
         "corpus scope, every row of the census, and what phase A could not make of each \
          document's identity, and it is a barrier"
     );
@@ -2120,9 +2124,9 @@ fn the_scope_of_every_rule_comes_from_the_trait_that_binds_it() {
         .map(|served| served.rule)
         .collect();
     assert_eq!(restated, [headwater_check::suspect::RULE]);
-    assert_eq!(run.served[14].rule, participation::RULE);
+    assert_eq!(run.served[15].rule, participation::RULE);
     assert_eq!(
-        run.served[14].scope.render(),
+        run.served[15].scope.render(),
         "neighbourhood scope, one document and the documents one relation away from it, \
          and the injected clock"
     );
