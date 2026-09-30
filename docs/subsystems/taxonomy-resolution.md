@@ -2,7 +2,7 @@
 id: HW-SPEC-taxonomy-resolution
 status: current
 status_since: 2026-09-30
-summary: "How six crates load taxonomy sources on the Q2 dialect, check that overlays commute, merge them, resolve references last, and write the content-hashed lock that every later stage reads."
+summary: "How six crates load taxonomy sources, prove that overlays commute, merge them, resolve references last, and write the content-hashed lock."
 last_verified: 2026-09-30
 title: "Taxonomy resolution"
 provenance:
@@ -18,6 +18,7 @@ relations:
     - engine/crates/meta/src/**
     - engine/crates/resolve/src/**
     - engine/crates/lock/src/**
+    - engine/crates/hash/src/**
   traces_to:
     - HW-SPEC-engine-architecture
     - HW-SPEC-taxonomy-model
@@ -25,7 +26,6 @@ relations:
     - HW-SPEC-check-layer
     - HW-DR-0002
     - HW-IFACE-headwater-taxonomy
-    - HW-DR-0022
     - HW-DR-0040
 ---
 
@@ -67,7 +67,7 @@ The loader refuses a duplicate key, an anchor, an alias, a merge key and an expl
 
 `meta` reads `meta-schema.yml`, which ships with the engine. The meta-schema is a YAML source on the Q2 dialect, and `yaml` loads it as it loads a taxonomy source. JSON Schema cannot resolve a `$`-reference, and a second schema language would drift from the first.
 
-`shape.rs` reads the shape language: eight forms and two modifiers. `schema.rs` turns an overlay address into the shape at the node that the address names. `validate.rs` runs the checks that one source can decide: structural conformance, reference well-formedness, the reserved `package` root, and the rule that an address never reaches into a list. `validate::skipped` names each check that needs a resolved tree, so a caller never reports a pass that it did not run.
+`shape.rs` reads the shape language: eight forms and two modifiers. `schema.rs` turns an overlay address into the shape at the node that the address names. `validate.rs` runs the four checks that one source can decide. They are structural conformance, reference well-formedness, the reserved `package` root, and the rule that an address never reaches into a list. `validate::skipped` names each check that needs a resolved tree, so a caller never reports a pass that it did not run.
 
 Two error types exist, because two different persons read them. A `SchemaError` is a defect of `meta-schema.yml`. A `MetaError` is a finding about the source of an adopter, with a span.
 
@@ -145,7 +145,7 @@ The `adoption` block is the one authored part of the lock. `taxonomy resolve` ca
 
 ## Invariants
 
-A change to these crates must keep each of these. The test that holds each one is named, and it is in the `tests/` directory of the crate or in the unit tests of the module.
+A change to these crates must keep each of these. Each item names the test that holds it. That test is in the `tests/` directory of the crate or in the unit tests of the module.
 
 - **The loader keeps the Q2 dialect.** Each accepted source loads to its recorded tree (`accepted_sources_load_to_the_recorded_tree`), and each rejected source reports its recorded errors (`rejected_sources_report_the_recorded_errors`). The sources of this repository load (`this_repositorys_own_sources_load`).
 - **One grammar reads every address and every reference** (`addresses_parse_to_the_recorded_segments`, `references_parse_to_the_recorded_root_and_address`, `scalars_classify_to_the_recorded_reading`). Disjointness is recorded for each pair (`address_pairs_record_which_subtrees_overlap`).
