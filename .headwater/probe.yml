@@ -127,6 +127,29 @@ cued:
   - HW-PROBE-a-session-names-the-status-a-settled-decision-carries-in-its-pull-request
   - HW-PROBE-a-session-names-the-event-that-makes-a-document-accepted
 
+# Power (#1472): the rates a campaign is sized to separate, and the test. The
+# discovery category of the #1384 re-run found 9 of 60 against 5 of 60, and a
+# difference of that size is what the next run must be able to see. So the
+# rates are 0.15 in the present arm against 0.08 in an arm without the layer,
+# at a 5% two-sided level and 80% power. That is 325 sessions per arm without
+# a continuity correction and 353 with the Fleiss correction. The issue's
+# "about 350" is the corrected figure.
+#
+# A category under `pooled` pools its probes into one rate, as a result
+# already does, so each of its k probes runs ceil(353 / k) repetitions: 177
+# for the two discovery probes a campaign can plan. `sh tools/probe/campaign.sh
+# --dry-run` computes the count from these fields and prints the formula
+# beside it. The engine reads none of this block, and the plan still refuses
+# repetitions above the ones a tier declares, so the count is priced by the
+# dry run and not run by anybody until a person raises what the tier may
+# spend.
+power:
+  present: 0.15
+  absent: 0.08
+  alpha: 0.05
+  power: 0.80
+  pooled: [discovery]
+
 tiers:
 
   # Detect that something moved. One arm, one repetition, against a recorded

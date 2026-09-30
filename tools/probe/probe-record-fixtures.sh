@@ -1661,7 +1661,7 @@ STUB
             'path: "docs/written-by-bash.md"' "$batch/sessions/L1-campaign-present-p1-r1/record.md"
         sh "$root/tools/probe/campaign.sh" --out "$batch" --assemble >/dev/null 2>"$scratch/batch-assemble.err"
         same "and assembly counts the capped session" "1 sessions, 1 cents, the intent hook live in 0, 1 stopped at the turn cap" \
-            "$(cat "$batch/assembled/campaign-present-sufficiency.summary" 2>/dev/null)"
+            "$(cat "$batch/assembled/L1-campaign-present-sufficiency.summary" 2>/dev/null)"
     else
         printf 'note not a checkout of this repository, so the campaign job case did not run.\n'
     fi
@@ -2037,6 +2037,70 @@ if cmp -s "$root/tools/probe/arms/mcp/.mcp.json" "$scratch/layer/.mcp.json"; the
     pass "and it adds the declared server file from tools/probe/arms/mcp/"
 else
     fail "and it adds the declared server file from tools/probe/arms/mcp/" "the .mcp.json differs or is missing"
+fi
+
+# ---------------------------------------------------------------------------
+# The dry run of the layer campaign (#1472): the committed spec, planned,
+# priced, its trees built and diffed, and the leak check run, with a harness
+# on the path that records any call to it.
+# ---------------------------------------------------------------------------
+if [ -x "$engine" ]; then
+    mkdir -p "$scratch/dry-bin"
+    printf '#!/bin/sh\n: > "%s/claude-called"\nexit 7\n' "$scratch" > "$scratch/dry-bin/claude"
+    chmod +x "$scratch/dry-bin/claude"
+    rm -f "$scratch/claude-called"
+    PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
+        --spec "$root/tools/probe/layer-campaign.spec" > "$scratch/dry.out" 2> "$scratch/dry.err"
+    same "the dry run of the layer campaign exits 0" "0" "$?"
+    if [ -e "$scratch/claude-called" ]; then
+        fail "and it calls no model" "the harness on the path was called"
+    else
+        pass "and it calls no model"
+    fi
+    present "it prints the power calculation, uncorrected and corrected" \
+        "needs 325 sessions per arm, 353 with the Fleiss continuity correction" "$scratch/dry.out"
+    present "and prices a discovery line at the powered repetitions" \
+        "campaign no-hook discovery: 2 probes x 177 repetitions" "$scratch/dry.out"
+    present "and sums each arm" "arm campaign mcp: 564 sessions, \$282.00" "$scratch/dry.out"
+    present "and holds the campaign tier to its ceiling" \
+        "tier campaign: 3384 sessions, \$1692.00 against a ceiling of \$300.00: over by \$1392.00" "$scratch/dry.out"
+    present "and prints the total" "total: 3504 sessions, \$1752.00 against the \$430.00 the tiers declare" "$scratch/dry.out"
+    present "and the delta of the no-hook arm is the hook's script alone" \
+        "tree campaign no-hook: - .claude/hooks/intent.sh" "$scratch/dry.out"
+    present "and the mcp arm adds its server" "tree campaign mcp: + .mcp.json" "$scratch/dry.out"
+    present "and the server starts in the mcp tree and lists its tools" \
+        "lists route explain" "$scratch/dry.out"
+    present "and the leak check reports the status probe as kept" \
+        "leak check, present tree: kept $status_probe .claude/skills/headwater-authoring/SKILL.md HW-DR-0052" "$scratch/dry.out"
+    present "and each cued line on its own" "line 8 holds only cued probes" "$scratch/dry.out"
+
+    # A line that pools a cued probe with one that is not fails the dry run,
+    # and a plan over its ceiling is printed rather than fatal: four
+    # sufficiency probes over six arms at 30 repetitions is 720 sessions.
+    printf 'campaign present sufficiency\n' > "$scratch/pooled.spec"
+    PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
+        --spec "$scratch/pooled.spec" > "$scratch/pooled.out" 2> "$scratch/pooled.err"
+    same "a line that pools a cued probe fails the dry run with 8, not 5" "8" "$?"
+    present "and names the line" "line 1 pools a probe under \`cued:\`" "$scratch/pooled.out"
+    present "and the ceiling's refusal is printed as a line" \
+        "L1 720 sessions project \$360.00 against a declared ceiling of \$300.00" "$scratch/pooled.out"
+
+    # Any other refusal of a plan is the batch driver's 5.
+    printf 'campaign present discovery\n' > "$scratch/refused.spec"
+    PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
+        --spec "$scratch/refused.spec" > "$scratch/refused.out" 2> "$scratch/refused.err"
+    same "a plan refused for another reason fails the dry run with 5" "5" "$?"
+    printf 'documentation no-hook sufficiency\n' > "$scratch/arm.spec"
+    PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
+        --spec "$scratch/arm.spec" > "$scratch/arm.out" 2> "$scratch/arm.err"
+    same "a line whose tier does not run its arm fails the dry run with 5" "5" "$?"
+    if [ -e "$scratch/claude-called" ]; then
+        fail "no refused dry run calls a model" "the harness on the path was called"
+    else
+        pass "no refused dry run calls a model"
+    fi
+else
+    printf 'note no engine, so the dry-run cases did not run.\n'
 fi
 
 present "the driver names the channel and never a file under ~/.claude/projects" \
