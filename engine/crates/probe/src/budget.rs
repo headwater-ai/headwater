@@ -296,7 +296,11 @@ fn envelope(tier: Tier, fields: &Mapping) -> Result<Envelope, Unreadable> {
                          paths"
                     ))
                 })?
-                .map_err(|entry| Unreadable::AblationUnsafe { tier: name, entry })?;
+                .map_err(|entry| Unreadable::ComponentUnsafe {
+                    tier: name,
+                    arm,
+                    entry,
+                })?;
             if !delta.is_empty() {
                 components.push((arm, delta));
             }
@@ -414,6 +418,11 @@ pub enum Unreadable {
         tier: &'static str,
         arm: Arm,
     },
+    ComponentUnsafe {
+        tier: &'static str,
+        arm: Arm,
+        entry: String,
+    },
     AblationUndeclared {
         tier: &'static str,
     },
@@ -490,6 +499,13 @@ impl std::fmt::Display for Unreadable {
                 "the `{tier}` tier declares a delta for the `{}` arm under `components`. The \
                  present arm is the tree every delta is taken from, and the absent arm's delta \
                  is `ablation`",
+                arm.name()
+            ),
+            Unreadable::ComponentUnsafe { tier, arm, entry } => write!(
+                f,
+                "the `{}` delta of the `{tier}` tier names `{entry}`. An entry is a path inside \
+                 the tree, relative to its root, with no `..`, `.` or empty component, because \
+                 the arm's tree is built by removing or writing it",
                 arm.name()
             ),
             Unreadable::AblationUndeclared { tier } => write!(
@@ -862,23 +878,33 @@ tiers:
     fn a_component_delta_that_leaves_the_tree_is_refused() {
         // `tools/probe/ablate.sh` hands a removing delta to `rm -rf` and
         // writes an adding one, so both stay inside the tree.
-        for (line, entry) in [
-            ("      no-hook: [.claude/hooks/intent.sh]\n", "../x"),
-            ("      mcp: [.mcp.json]\n", "/etc/passwd"),
+        // The refusal names the arm's delta, and never the ablation, which
+        // is not at fault.
+        for (line, entry, arm) in [
+            ("      no-hook: [.claude/hooks/intent.sh]\n", "../x", Arm::NoHook),
+            ("      mcp: [.mcp.json]\n", "/etc/passwd", Arm::Mcp),
         ] {
             let replaced = line.replace(
                 &line[line.find('[').expect("[") + 1..line.find(']').expect("]")],
                 entry,
             );
             let source = LAYER.replace(line, &replaced);
+            let refused = Budgets::read(&source);
             assert_eq!(
-                Budgets::read(&source),
-                Err(Unreadable::AblationUnsafe {
+                refused,
+                Err(Unreadable::ComponentUnsafe {
                     tier: "campaign",
+                    arm,
                     entry: entry.to_string()
                 }),
                 "{entry}"
             );
+            let message = refused.expect_err("refused").to_string();
+            assert!(
+                message.contains(&format!("`{}` delta", arm.name())),
+                "{message}"
+            );
+            assert!(!message.contains("ablation"), "{message}");
         }
     }
 
