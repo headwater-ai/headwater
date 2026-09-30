@@ -253,6 +253,58 @@ def provoke_figure(name, readme_path, stated, measured):
                        % (label, readme_path, problems))
 
 
+HELD_SECTION = "What a run reports"
+AGGREGATE_COUNT = re.compile(r"\b\d+ check instances\b")
+
+
+def unheld_counts(text):
+    """Every aggregate check-instance count outside the held section, as (line number, match).
+
+    The count moves with every rule a release adds, and this job diffs it only
+    inside *What a run reports*. A copy anywhere else goes stale unseen, which is
+    how the shelf-removed and narrow-pattern arms came to read 6 and 26 when a
+    run reported 7 and 31 (#1452). So the page states the count once, where this
+    job holds it, and states each probe arm without it.
+    """
+    found, heading = [], None
+    for n, line in enumerate(text.splitlines(), 1):
+        if line.startswith("## "):
+            heading = line[3:].strip()
+            continue
+        if heading == HELD_SECTION:
+            continue
+        found += [(n, m.group(0)) for m in AGGREGATE_COUNT.finditer(line)]
+    return found
+
+
+def unheld_problems(rel, text):
+    return ["%s:%d: states `%s` outside `## %s`, where no job holds it; state it without the number"
+            % (rel, n, match, HELD_SECTION) for n, match in unheld_counts(text)]
+
+
+def provoke_unheld(rel, text):
+    """Arm 8. A check-instance count added outside the held section must fail this job naming the file and the line."""
+    lines = text.splitlines()
+    held = [i for i, l in enumerate(lines) if l.startswith("## ") and l[3:].strip() == HELD_SECTION]
+    if not held:
+        raise Mismatch("%s has no `## %s` section to provoke beside" % (rel, HELD_SECTION))
+    # The first `##` heading after the held section, so the arm also proves the
+    # guard sees where that section ends. A page whose held section is last gets
+    # a new section after it.
+    after = [i for i, l in enumerate(lines) if i > held[0] and l.startswith("## ")]
+    if after:
+        at = after[0] + 1
+        lines[at:at] = ["", "A provoked run reads 9 check instances."]
+    else:
+        lines += ["", "## A provoked section", "", "A provoked run reads 9 check instances."]
+    line_no = lines.index("A provoked run reads 9 check instances.") + 1
+    named = [p for p in unheld_problems(rel, "\n".join(lines) + "\n")
+             if p.startswith("%s:%d:" % (rel, line_no)) and "9 check instances" in p]
+    if not named:
+        raise Mismatch("a `9 check instances` added at %s:%d, outside `## %s`, did not fail this suite naming the file and the line"
+                       % (rel, line_no, HELD_SECTION))
+
+
 def main(root, binary):
     corpora = sorted(
         (os.path.basename(os.path.dirname(os.path.dirname(os.path.dirname(p)))), p)
@@ -272,8 +324,18 @@ def main(root, binary):
     try:
         for name, readme_path in corpora:
             rel = os.path.relpath(readme_path, root)
+            text = open(readme_path, encoding="utf-8").read()
+            unheld = unheld_problems(rel, text)
+            problems += unheld
             try:
-                stated = stated_figures(open(readme_path, encoding="utf-8").read())
+                provoke_unheld(rel, text)
+            except Mismatch as e:
+                problems.append("the unheld-count arm: %s" % e)
+            else:
+                print("n8n fixtures: %s, %d check-instance counts outside `## %s`, and an added one fails this job"
+                      % (rel, len(unheld), HELD_SECTION))
+            try:
+                stated = stated_figures(text)
                 report, strict = run_recipe(root, readme_path, binary, os.path.join(scratch, name))
                 measured = measured_figures(report, strict)
                 problems += compare(name, rel, stated, measured)
