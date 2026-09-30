@@ -1791,9 +1791,9 @@ projections:
     let bytes = std::fs::read_to_string(tree.join(AT)).expect("`headwater export` wrote it");
 
     // (b) A marked copy that no longer matches is not compared, and nothing
-    // reports it orphaned. The census reads a JSON file as no document, so the
-    // orphan rule cannot reach this path today. The plan claims it all the same
-    // (asserted above), so an emitter that writes a page would not change that.
+    // reports it orphaned. The census reads the marker on a JSON file, so the
+    // copy is a `generated` row the orphan rule sees (#1344). The plan claims
+    // the path (asserted above), and that claim is what keeps it unreported.
     std::fs::write(tree.join(AT), format!("{bytes}\n")).expect("the stale copy");
     let after = Built::over(&Corpus::new(&tree, "generate"), &root);
     let second = planned(&after);

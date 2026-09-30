@@ -1,10 +1,10 @@
-29 files under the corpus root
+31 files under the corpus root
       3 typed
-      2 generated
+      3 generated
      12 untyped
       3 unreadable
       2 excluded
-      3 not a document
+      4 not a document
       4 unwalkable
       2 typed design_spec
       1 typed evaluation
@@ -34,6 +34,10 @@ walk/excluded/unterminated.md
   excluded: walk/excluded/**
 walk/excluded/well-formed.md
   excluded: walk/excluded/**
+walk/exports/authored.json
+  not a document: not a Markdown file
+walk/exports/site.json
+  generated: `graph_export`, and `headwater generate --check` holds it rather than this census
 walk/invalid-utf8.md
   unreadable: the bytes are not UTF-8
 walk/link-outside.md
