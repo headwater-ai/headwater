@@ -47,7 +47,7 @@ The source is the batch of #1384, recorded in PR #1465. It ran on 2026-09-30 at 
 
 The instrument is the prompt before the first turn. The first assistant event of a log carries it as `input_tokens + cache_creation_input_tokens + cache_read_input_tokens`. The harness repeats that usage on each streamed part of one message, so the first line is the whole prompt. For each probe, the median of the present arm minus the median of the absent arm is the difference.
 
-The absent arm removes `CLAUDE.md`, `.claude/`, `.githooks/` and `.headwater/`. In the init event of each log, the present arm shows 42 skills and 14 agents. The absent arm shows 33 skills and 5 agents. So the difference is the project `CLAUDE.md`, 9 skill descriptions, 9 agent descriptions and the output of the intent hook on the first prompt. The log does not divide the difference among these four parts.
+The absent arm removes `CLAUDE.md`, `.claude/`, `.githooks/` and `.headwater/`. In the init event of each log, the present arm shows 42 skills and 14 agents. The absent arm shows 33 skills and 5 agents. The present arm lists 12 more slash commands: the 9 skills and the 3 commands `next`, `next-run` and `product-owner`. So the difference is the project `CLAUDE.md` and the output of the intent hook on the first prompt. It also holds the descriptions of 9 skills, 3 commands and 9 agents. The log does not divide the difference among these five parts.
 
 This command, run as written, printed the table that follows it:
 
