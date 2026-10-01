@@ -28,11 +28,13 @@ The report ends with this block:
 
 **Your own worktree, detached at the branch.** The agent that dispatched you passes `isolation: "worktree"`, so the harness gives you a tree of your own: never the build agent's and never the shared checkout. Do not run `new-worktree.sh`, because a tree made by hand is not one your isolation allows. Run `git fetch origin`, then `git switch --detach origin/<branch>`, one call each, and build the engine there with `sh tools/hw-cargo` and a `timeout` of 600000.
 
-Set `HW_CARGO_SLOT=verify-<N>` for your issue on every `tools/hw-cargo` call. When you report, remove that slot's target directory and its `.root` file under `~/.cache/headwater/cargo-pool/`, as `hw-run-policy` says. Leave the tree with nothing uncommitted.
+Set `HW_CARGO_SLOT=verify-<N>` for your issue on every `tools/hw-cargo` call. Before your first build makes a fresh `target-verify-<N>`, run `df -h /`. When less than 40G is free, stop and report `FAIL` with `disk: <the reading>` as the first line of `FIRED`, because the build would fill the host. When you report, remove that slot's target directory and its `.root` file under `~/.cache/headwater/cargo-pool/`, as `hw-run-policy` says. Leave the tree with nothing uncommitted.
 
 **Run the suite and the gates**, each redirected to files, never piped, with stdout and stderr apart on an invariant test.
 
 **Run the attacks you were given**, and the ones the bar marks as always. Make the new thing fail by hand, with your own edits rather than the fixtures' documents. Regress the implementation with a different regression from the agent's, and note when a regression will not compile, which is the strongest result there is. On a `Closes` pull request, attack each clause its body marks `- [x] #<issue>.<k>`: find the evidence it names on the branch, and a clause marked met that the branch does not meet is a `FAIL`.
+
+**Run main's clause check on the body.** Take the script from `main`, not from the branch: after `git fetch origin`, run `git show origin/main:tools/run/gh-issue.sh > <scratch>/gh-issue-main.sh`, then `sh <scratch>/gh-issue-main.sh clause-check <PR>`. A `PASS` requires exit 0. When the title says `Closes #N` and the body says `Refs #N`, or the reverse, that is a `FAIL` of the body and not of the code.
 
 **When your check contradicts the build note, suspect your check first.** Name the denominator before you report a delta.
 
