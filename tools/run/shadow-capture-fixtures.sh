@@ -20,6 +20,9 @@
 #      in a checkout with no engine and one whose checkout is gone are out.
 #   f  a log line that does not parse does not end the read of its file.
 #   g  a miss whose text the session logged under another prompt id.
+#   h  both tests at p between 0.025 and 0.05, ids that sort against time
+#      order, and a line with a skip reason: a threshold moved to 0.05, a sort
+#      that ignores time and a dropped skip count each fail here.
 #
 # Run it from anywhere:
 #     sh tools/run/shadow-capture-fixtures.sh
@@ -190,6 +193,36 @@ logline g W another-id "other"
 run g
 has g "$scratch/g.out" "missed prompts: 2"
 has g "$scratch/g.out" "missed prompts whose text the session logged under another id: 1"
+
+# h: both tests land between the per-test threshold and 0.05, so a threshold
+# moved to 0.05 on either one rejects here. Session S logs its first three
+# prompts and misses its last three (two runs); its ids sort against time
+# order, so a sort that ignores time reads H M M M H H (three runs). Session T
+# logs all seven, one of them with a skip reason.
+start h S "$scratch/co"
+prompt h S 2026-09-30T06:00:00Z h-f "s0"
+prompt h S 2026-09-30T06:01:00Z h-a "s1"
+prompt h S 2026-09-30T06:02:00Z h-e "s2"
+prompt h S 2026-09-30T06:03:00Z h-b "s3"
+prompt h S 2026-09-30T06:04:00Z h-d "s4"
+prompt h S 2026-09-30T06:05:00Z h-c "s5"
+logline h S h-f s0
+logline h S h-a s1
+logline h S h-e s2
+start h T "$scratch/co"
+for _i in 0 1 2 3 4 5; do
+    prompt h T "2026-09-30T07:0$_i:00Z" "h-t$_i" "t$_i"
+    logline h T "h-t$_i" "t$_i"
+done
+prompt h T 2026-09-30T07:06:00Z h-t6 t6
+printf '{"at":"2026-09-30T07:06:00Z","session":"T","prompt_id":"h-t6","injected":false,"skip":"no route","route":null,"task":"t6"}\n' >> "$scratch/h/log/T.jsonl"
+run h
+has h "$scratch/h.out" "person prompts (N): 13"
+has h "$scratch/h.out" "joined distinct prompts (J): 10"
+has h "$scratch/h.out" "joined lines with a skip reason: 1"
+has h "$scratch/h.out" "sessions test: chi-square 4.5500, df 1, p 0.0329, not rejected"
+has h "$scratch/h.out" "runs test: runs 3, expected 5.0000, variance 1.2000, z -1.8257, p 0.0339 (lower tail), not rejected"
+has h "$scratch/h.out" "randomness: not rejected"
 
 # The arguments, over case a's inputs so that only the argument is wrong: an
 # empty date, and a date that does not exist.
