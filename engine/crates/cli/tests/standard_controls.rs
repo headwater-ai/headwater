@@ -150,32 +150,79 @@ fn the_register_reader_names_the_rule_whose_control_is_removed() {
 }
 
 /// The rules the register of one `headwater check` run names as reaching no
-/// single obligation, sorted and each once. The register wraps a line at the
-/// report's width, so the output is read with each run of whitespace folded to
-/// one space. Each such line opens with the rule, and the next word is
-/// `reaches`.
+/// single obligation, sorted and each once.
 fn unbound_rules(root: &Root) -> Vec<String> {
     let ran = root.run(&["check"]);
-    let flat = ran.out.split_whitespace().collect::<Vec<_>>().join(" ");
     assert!(
-        flat.contains("so it names none")
-            || flat.contains("every rule this engine carries reaches one obligation"),
+        ran.out.contains("so it names none")
+            || ran
+                .out
+                .split_whitespace()
+                .collect::<Vec<_>>()
+                .join(" ")
+                .contains("every rule this engine carries reaches one obligation"),
         "the register block is not in the output, so this case reads nothing: {ran:?}"
     );
-    let words: Vec<&str> = flat.split(' ').collect();
-    let mut unbound: Vec<String> = words
-        .windows(2)
-        .filter(|pair| pair[1] == "reaches" && pair[0].contains('.'))
-        .map(|pair| pair[0])
-        .filter(|rule| {
-            rule.chars()
-                .all(|c| c.is_ascii_lowercase() || c == '.' || c == '_')
-        })
-        .map(str::to_owned)
+    unbound_in(&ran.out, &headwater_check::RULES)
+}
+
+/// The rules that the text of a report names as reaching no single
+/// obligation. The register wraps a line at the report's width, so the text
+/// is read with each run of whitespace folded to one space. Each such line
+/// opens with the rule, and the next word is `reaches`.
+///
+/// Two readings are joined, and neither filters a rule by its characters. The
+/// first takes each rule the engine carries, `rules`, whose name stands before
+/// `reaches`. The second takes every dotted word before `reaches`, so a name
+/// that `rules` does not list is seen too. Before round 1 of the verify of
+/// #1492 the reader kept a word only where every character was a lower-case
+/// letter, a dot or an underscore, and a rule whose name held a digit or a
+/// hyphen passed unseen.
+fn unbound_in(out: &str, rules: &[&str]) -> Vec<String> {
+    let flat = format!(" {} ", out.split_whitespace().collect::<Vec<_>>().join(" "));
+    let mut unbound: Vec<String> = rules
+        .iter()
+        .filter(|rule| flat.contains(&format!(" {rule} reaches ")))
+        .map(|rule| (*rule).to_owned())
         .collect();
+    let words: Vec<&str> = flat.split(' ').collect();
+    unbound.extend(
+        words
+            .windows(2)
+            .filter(|pair| pair[1] == "reaches" && pair[0].contains('.'))
+            .map(|pair| pair[0].to_owned()),
+    );
     unbound.sort_unstable();
     unbound.dedup();
     unbound
+}
+
+/// The reader keeps a rule whose name holds a digit or a hyphen, both when the
+/// engine lists the rule and when it does not, and it keeps a line the report
+/// wrapped. This is the mutant that survived round 1 of the verify of #1492:
+/// `language.outside_root2.refused` and `language.outside-root.refused`.
+#[test]
+fn the_register_reader_keeps_a_rule_named_with_a_digit_or_a_hyphen() {
+    let out = "  register\n    language.outside_root2.refused reaches no obligation, so it\n      names none\n    language.outside-root.refused reaches no obligation, so it names none\n    every rule this engine carries reaches one obligation\n";
+    assert_eq!(
+        unbound_in(out, &["language.outside_root2.refused"]),
+        [
+            "language.outside-root.refused",
+            "language.outside_root2.refused"
+        ]
+    );
+    assert_eq!(
+        unbound_in(out, &[]),
+        [
+            "language.outside-root.refused",
+            "language.outside_root2.refused"
+        ]
+    );
+    assert!(unbound_in(
+        "    every rule this engine carries reaches one obligation\n",
+        &["facet.value.blank"]
+    )
+    .is_empty());
 }
 
 /// The rules outside the lifecycle family that 4.14.0 bound, one row each in
