@@ -73,6 +73,15 @@ const FAMILY: [&str; 8] = [
     "verified_by",
 ];
 
+/// The member of [`FAMILY`] whose evidence is the document at the source end.
+///
+/// The fixture taxonomy declares `evidence_at: from` on it, as this
+/// repository's `decision-record` bundle does: an evaluation that discharges an
+/// obligation is the evidence for that obligation (#1511). So the edge that
+/// `claims/every-evidence-relation.md` declares under it reads the claim of
+/// `NOTE-FIX-asserted` and the warrant of the evidenced source, and passes.
+const EVIDENCE_AT_SOURCE: &str = "discharges";
+
 fn fixtures_dir() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("fixtures")
 }
@@ -223,27 +232,94 @@ fn the_same_edge_onto_an_accepted_document_is_silent() {
 ///
 /// The rule reads `family: evidence` and never a relation name, and this is the
 /// assertion that says so. One document declares one edge of each of the eight,
-/// every one of them onto the same asserted record, and all eight are reported
-/// with the relation named.
+/// every one of them onto the same asserted record. The seven whose evidence is
+/// the target are reported with the relation named. The one whose evidence is
+/// the source, [`EVIDENCE_AT_SOURCE`], reads the asserted record as the
+/// claimant, and that record claims nothing.
 #[test]
 fn every_relation_of_the_evidence_family_is_read_and_not_traces_to_alone() {
     let run = run();
     let reported = about(&run, "NOTE-FIX-every-evidence-relation");
     assert_eq!(
         reported.len(),
-        FAMILY.len(),
-        "the family is {} relations and {} were reported: {reported:?}",
+        FAMILY.len() - 1,
+        "the family is {} relations, one of them reads the other way, and {} were reported: \
+         {reported:?}",
         FAMILY.len(),
         reported.len()
     );
     for relation in FAMILY {
-        assert!(
-            reported
-                .iter()
-                .any(|message| message.contains(&format!("`{relation}`"))),
-            "`{relation}` reached no finding: {reported:?}"
-        );
+        let reached = reported
+            .iter()
+            .any(|message| message.contains(&format!("`{relation}`")));
+        if relation == EVIDENCE_AT_SOURCE {
+            assert!(
+                !reached,
+                "`{relation}` was read the wrong way round: {reported:?}"
+            );
+        } else {
+            assert!(reached, "`{relation}` reached no finding: {reported:?}");
+        }
     }
+}
+
+/// The decisive case of #1511: an evidenced document that discharges an asserted
+/// one is not reported.
+///
+/// `discharges` declares `evidence_at: from`, so the document at the source end
+/// is the evidence and the document at the target end makes the claim. Spec 1
+/// says so: "An asserted document does not discharge an evidence obligation."
+/// `NOTE-FIX-asserted` claims no evidence, and the evidenced source is what
+/// substantiates it, so the pair passes. An earlier edition read the source's
+/// claim against the target's warrant and reported it.
+#[test]
+fn a_discharges_edge_from_an_evidenced_source_onto_an_asserted_target_is_not_reported() {
+    let run = run();
+    let reported: Vec<&str> = about(&run, "NOTE-FIX-every-evidence-relation")
+        .into_iter()
+        .filter(|message| message.contains("`discharges`"))
+        .collect();
+    assert!(reported.is_empty(), "{reported:?}");
+    // It passed, and it did not skip: the rule read both ends.
+    assert!(
+        !skips(&run).iter().any(|(reads, _)| reads
+            .contains(&"evidence-basis/claims/every-evidence-relation.md")),
+        "an instance over the family document skipped: {:?}",
+        skips(&run)
+    );
+}
+
+/// The pair of the decisive case, which proves that the swap is a reading and
+/// not a silence.
+///
+/// `claims/asserted-discharges-evidenced.md` is `asserted` and claims nothing
+/// itself. It declares `discharges` onto `NOTE-FIX-evidenced-obligation`, which
+/// claims `evidenced`. The claim is the target's and the evidence is the
+/// source, which nobody has read, so the pair is reported. A rule that read
+/// `evidence_at: from` as "skip this relation" passes it, and so does a rule
+/// that read the claim at the source.
+#[test]
+fn a_discharges_edge_onto_an_evidenced_target_from_an_asserted_source_is_reported() {
+    let run = run();
+    let reported = about(&run, "NOTE-FIX-evidenced-obligation");
+    assert_eq!(reported.len(), 1, "{:?}", refusals(&run));
+    let message = reported[0];
+    assert!(
+        message.starts_with("`NOTE-FIX-evidenced-obligation` claims `evidenced`"),
+        "the target is the claimant: {message}"
+    );
+    assert!(
+        message.contains("`NOTE-FIX-asserted-discharges-evidenced`"),
+        "the source is the evidence: {message}"
+    );
+    assert!(message.contains("`discharges`"), "the relation: {message}");
+    assert!(message.contains("`asserted`"), "the warrant: {message}");
+
+    let paths: Vec<&str> = refusals(&run).into_iter().map(|(path, _)| path).collect();
+    assert!(
+        paths.contains(&"evidence-basis/claims/asserted-discharges-evidenced.md"),
+        "the finding anchors at the entry that declares the edge: {paths:?}"
+    );
 }
 
 /// A relation outside the family reaches no instance at all.
@@ -503,11 +579,12 @@ fn an_edge_onto_an_anchor_reaches_no_instance_and_does_not_panic() {
 /// The whole corpus, in one assertion, so a case that stops being reported
 /// cannot hide behind a test that names only its own document.
 #[test]
-fn the_tree_reports_five_documents_and_twelve_edges() {
+fn the_tree_reports_six_documents_and_twelve_edges() {
     let run = run();
     let mut reported: Vec<&str> = refusals(&run).into_iter().map(|(path, _)| path).collect();
     reported.sort_unstable();
     let mut expected = vec![
+        "evidence-basis/claims/asserted-discharges-evidenced.md",
         "evidence-basis/claims/onto-scaffolded-contract.md",
         "evidence-basis/claims/rests-on-asserted.md",
         "evidence-basis/claims/rests-on-misspelled.md",
@@ -515,7 +592,7 @@ fn the_tree_reports_five_documents_and_twelve_edges() {
     ];
     expected.extend(std::iter::repeat_n(
         "evidence-basis/claims/every-evidence-relation.md",
-        FAMILY.len(),
+        FAMILY.len() - 1,
     ));
     expected.sort_unstable();
     assert_eq!(reported, expected);

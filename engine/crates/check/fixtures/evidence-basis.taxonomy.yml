@@ -60,12 +60,17 @@ relations:
     to: [record]
     cardinality: many
     created_by: author
+  # The evaluation at the source end substantiates the obligation at the
+  # target, so the evidence is the source (#1511). The rule reads the claim at
+  # the target and the warrant at the source for this relation alone, because
+  # this relation alone declares it.
   discharges:
     family: evidence
     from: [record]
     to: [record]
     cardinality: many
     created_by: author
+    evidence_at: from
   examines:
     family: evidence
     from: [record]
