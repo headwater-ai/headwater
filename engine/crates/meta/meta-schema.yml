@@ -82,12 +82,18 @@ meta_schema: headwater/taxonomy
 # so a declared `graph_export` had to be committed and current. It is a minor,
 # because a source that wrote none declares the default, which is committed.
 #
+# 0.9.0 adds `relation.evidence_at`, an optional `from` or `to` that names which
+# end of an `evidence` relation is the evidence (#1511). `discharges` points from
+# the evaluation that substantiates to the obligation it substantiates, and the
+# family alone could not say so. It is a minor, because a source that wrote none
+# declares `to`, which is the reading every evidence relation already had.
+#
 # No consumer compares this value against anything. `fixtures/schema.record`
 # carries it, so a bump shows up in a diff, and nothing refuses a source for
 # the version it was written against. So the position of a digit here is a
 # statement to a reader and never a gate: the removal above is refused at the
 # member and never at the version.
-version: 0.8.0
+version: 0.9.0
 
 # --- the root of a taxonomy source ------------------------------------------
 #
@@ -326,6 +332,11 @@ definitions:
       reciprocal: {enum: [required, symmetric, optional]}
       nuclearity: {enum: [multinuclear, nucleus-satellite]}
       nucleus: {enum: [from, to]}
+      # Which end of an `evidence` relation is the evidence. Absent is `to`,
+      # the reading of every evidence relation before 0.9.0. The family cannot
+      # supply it for the reason it cannot supply `nucleus`: the direction of a
+      # relation is its author's choice (spec 2, Nuclearity).
+      evidence_at: {enum: [from, to]}
       inherits: {seq: {scalar: string}}
       # guess: spec 2 writes `many` and states no default. This corpus refutes
       # `one`, because `applied_in` declares no cardinality and one review

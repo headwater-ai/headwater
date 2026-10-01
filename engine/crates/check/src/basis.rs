@@ -37,24 +37,41 @@
 //! two warrant values: the vocabulary is the engine's, and a taxonomy that
 //! renames its relations is read by this rule unchanged.
 //!
-//! This repository's own lock resolves that family to eight relations —
-//! `traces_to`, `applied_in`, `assesses`, `cites_evidence`, `discharges`,
-//! `examines`, `records` and `verified_by`. A rule that held `traces_to` alone
-//! would read one of the eight, which is the mistake that halves the
-//! population, and `tests/evidence_basis.rs` writes one edge of each so that no
-//! later change can make it quietly.
+//! This repository's own lock resolves that family to eleven relations —
+//! `traces_to`, `applied_in`, `assesses`, `cites_evidence`, `cited_in`,
+//! `discharges`, `draws_on`, `examines`, `proven_by`, `records` and
+//! `verified_by`. A rule that held `traces_to` alone would read one of the
+//! eleven, which is the mistake that shrinks the population, and
+//! `tests/evidence_basis.rs` writes one edge of each of eight so that no later
+//! change can make it quietly.
 //!
 //! # Which end carries which question
 //!
-//! The claim is the **source's**: `evidence_basis` says what the citing
-//! document rests on. The warrant is the **target's**: it says whether anybody
-//! has read the thing being rested on. A rule that took either question to the
-//! wrong end reads a corpus that is almost always green, because most documents
-//! are `accepted` and most claim `evidenced`.
+//! One end makes the claim and the other is the evidence. The claim is the
+//! claimant's `evidence_basis`, which says what that document rests on. The
+//! warrant is the evidence's, which says whether anybody has read the thing
+//! being rested on. A rule that took either question to the wrong end reads a
+//! corpus that is almost always green, because most documents are `accepted`
+//! and most claim `evidenced`.
+//!
+//! Which end is which is the relation's declaration, `evidence_at`, and never
+//! this rule's guess. Spec 2 leaves the direction of a relation to its author,
+//! so the family cannot supply it. For most relations the evidence is the
+//! **target**: `traces_to` points from the claim to what it rests on, and that
+//! is the reading when a relation declares `to` or nothing. `discharges`
+//! points the other way. The evaluation at the source end substantiates the
+//! obligation at the target end, so it declares `evidence_at: from`, and the
+//! rule reads the claim at the target and the warrant at the source. Spec 1
+//! says why: "An asserted document does not discharge an evidence obligation."
+//! An edition that read every relation one way reported an evidenced evaluation
+//! for discharging an asserted obligation, and passed an asserted evaluation
+//! that discharged an evidenced one (#1511).
 //!
 //! The direction comes from the relation and never from the file that wrote the
 //! entry, which is what [`crate::scope::EdgeView::ends`] normalizes once for
-//! every edge-grained rule.
+//! every edge-grained rule. The finding still anchors at the declared half
+//! whichever end is the claimant, because that is the entry an author is
+//! looking at.
 //!
 //! # A value outside the closed set supports nothing
 //!
@@ -190,7 +207,11 @@ impl EdgeCheck for Basis<'_> {
     /// Version 3 reads a target warrant outside the closed set as supporting
     /// nothing, so the verdict over such a pair moves from a pass to a
     /// finding, and a warm cache would serve version 2's pass.
-    const VERSION: u32 = 3;
+    ///
+    /// Version 4 reads a relation that declares `evidence_at: from` the other
+    /// way round, so the verdict over a `discharges` pair moves in both
+    /// directions, and a warm cache would serve version 3's reading (#1511).
+    const VERSION: u32 = 4;
     /// The Q4 pair. See the module comment: both ends have to be documents,
     /// because the rule reads a provenance member at each of them.
     const UNIT: EdgeUnit = EdgeUnit::Pair;
@@ -218,10 +239,20 @@ impl EdgeCheck for Basis<'_> {
         let Some((source, target)) = view.ends() else {
             return Outcome::Skipped(NO_PAIR.to_string());
         };
+        // Which end makes the claim and which end is the evidence is the
+        // relation's declaration, and never this rule's guess (#1511).
+        let at_source = relation.evidence_at_source();
+        let (claimant, evidence) = if at_source {
+            (target, source)
+        } else {
+            (source, target)
+        };
 
         // A document the census parsed nothing for is not a document that
         // declared nothing, and the two are kept apart at both ends.
-        let (Some(source_facets), Some(target_facets)) = (source.facets(), target.facets()) else {
+        let (Some(claimant_facets), Some(evidence_facets)) =
+            (claimant.facets(), evidence.facets())
+        else {
             return Outcome::Skipped(
                 "the census parsed no document at one end of this edge, so there is no provenance \
                  to read there"
@@ -229,49 +260,103 @@ impl EdgeCheck for Basis<'_> {
             );
         };
 
-        // The source made no claim this rule can refuse. A pass rather than a
+        // The claimant made no claim this rule can refuse. A pass rather than a
         // skip: the rule looked at both ends and found nothing to report.
-        if headwater_doc::evidence_basis(source_facets) != Some(CLAIMED) {
+        if headwater_doc::evidence_basis(claimant_facets) != Some(CLAIMED) {
             return Outcome::Passed;
         }
 
         // An absent warrant is not a warrant read as supporting. A rule that
         // collapsed the two returns green over a corpus that lost every one.
-        // A generated target is the one absence that is not one: the engine
-        // derives its warrant from the marker, and the census already read it.
-        let Some(warrant) = headwater_doc::warrant_of(target_facets, target.generated()) else {
+        // A generated evidence document is the one absence that is not one: the
+        // engine derives its warrant from the marker, and the census already
+        // read it.
+        let Some(warrant) = headwater_doc::warrant_of(evidence_facets, evidence.generated()) else {
             return Outcome::Skipped(format!(
-                "the document at the target end, `{}`, declares no warrant, so there is nothing \
-                 there to say whether it supports an evidenced claim",
-                target.id
+                "the document at the {} end, `{}`, is the evidence and declares no warrant, so \
+                 there is nothing there to say whether it supports an evidenced claim",
+                if at_source { "source" } else { "target" },
+                evidence.id
             ));
         };
+        if warrant != UNSUPPORTING && headwater_doc::is_warrant(warrant) {
+            return Outcome::Passed;
+        }
         let (line, column) = at(Some(half.span));
-        if !headwater_doc::is_warrant(warrant) {
-            return Outcome::failed_with(Finding {
-                rule: self::RULE,
-                severity: Severity::Warn,
-                obligation: None,
-                path: half.source.path.clone(),
-                line,
-                column,
-                message: format!(
+        let closed = headwater_doc::is_warrant(warrant);
+
+        // The words of the two directions. The `to` reading is the one this
+        // rule had before a relation could declare `evidence_at`, and its
+        // message and remediation are unchanged, so no finding over a
+        // `traces_to` edge moves.
+        let (message, remediation) = match (at_source, closed) {
+            (false, false) => (
+                format!(
                     "`{}` claims `{CLAIMED}` and declares `{}` to `{}`, whose warrant is \
                      `{warrant}`, which is not a value of spec 3's closed set: it says nothing \
                      about who read the target, so a pointer at it does not support the claim",
-                    source.id, relation.name, target.id
+                    claimant.id, relation.name, evidence.id
                 ),
-                remediation: format!(
+                format!(
                     "correct the warrant of {} to one of the four values, point `{}` in {} at an \
                      artifact somebody can audit, or write `evidence_basis: reconstructed` in {}",
-                    target.path, half.name, half.source.path, source.path
+                    evidence.path, half.name, half.source.path, claimant.path
                 ),
-                patch: None,
-            });
-        }
-        if warrant != UNSUPPORTING {
-            return Outcome::Passed;
-        }
+            ),
+            (false, true) => (
+                format!(
+                    "`{}` claims `{CLAIMED}` and declares `{}` to `{}`, whose warrant is \
+                     `{UNSUPPORTING}`: a document nobody has read is neither external nor \
+                     auditable, so a pointer at it does not support the claim",
+                    claimant.id, relation.name, evidence.id
+                ),
+                format!(
+                    "point `{}` in {} at an artifact somebody can audit, have a person read {} \
+                     and set its warrant, or write `evidence_basis: reconstructed` in {} and say \
+                     what it was reconstructed from",
+                    half.name, half.source.path, evidence.path, claimant.path
+                ),
+            ),
+            (true, false) => (
+                format!(
+                    "`{}` claims `{CLAIMED}`, and `{}`, which `{}` makes its evidence, has the \
+                     warrant `{warrant}`, which is not a value of spec 3's closed set: it says \
+                     nothing about who read the evidence, so the edge does not support the claim",
+                    claimant.id, evidence.id, relation.name
+                ),
+                format!(
+                    "correct the warrant of {} to one of the four values, let an artifact \
+                     somebody can audit declare `{}` to `{}` in place of `{}` in {}, or write \
+                     `evidence_basis: reconstructed` in {}",
+                    evidence.path,
+                    relation.name,
+                    claimant.id,
+                    half.name,
+                    half.source.path,
+                    claimant.path
+                ),
+            ),
+            (true, true) => (
+                format!(
+                    "`{}` claims `{CLAIMED}`, and `{}`, which `{}` makes its evidence, has the \
+                     warrant `{UNSUPPORTING}`: a document nobody has read is neither external \
+                     nor auditable, so the edge does not support the claim",
+                    claimant.id, evidence.id, relation.name
+                ),
+                format!(
+                    "have a person read {} and set its warrant, let an artifact somebody can \
+                     audit declare `{}` to `{}` in place of `{}` in {}, or write \
+                     `evidence_basis: reconstructed` in {} and say what it was reconstructed \
+                     from",
+                    evidence.path,
+                    relation.name,
+                    claimant.id,
+                    half.name,
+                    half.source.path,
+                    claimant.path
+                ),
+            ),
+        };
 
         Outcome::failed_with(Finding {
             rule: self::RULE,
@@ -280,20 +365,10 @@ impl EdgeCheck for Basis<'_> {
             path: half.source.path.clone(),
             line,
             column,
-            message: format!(
-                "`{}` claims `{CLAIMED}` and declares `{}` to `{}`, whose warrant is \
-                 `{UNSUPPORTING}`: a document nobody has read is neither external nor auditable, \
-                 so a pointer at it does not support the claim",
-                source.id, relation.name, target.id
-            ),
-            remediation: format!(
-                "point `{}` in {} at an artifact somebody can audit, have a person read {} and \
-                 set its warrant, or write `evidence_basis: reconstructed` in {} and say what it \
-                 was reconstructed from",
-                half.name, half.source.path, target.path, source.path
-            ),
-            // No patch. Which of the three repairs is right is a statement
-            // about the evidence that only an author can make.
+            message,
+            remediation,
+            // No patch. Which of the repairs is right is a statement about the
+            // evidence that only an author can make.
             patch: None,
         })
     }
