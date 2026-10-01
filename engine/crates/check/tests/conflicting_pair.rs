@@ -27,7 +27,9 @@
 use headwater_census::census;
 use headwater_census::shelves::Taxonomy;
 use headwater_census::walk::Corpus;
-use headwater_check::{Cache, Context, Date, Declared, Finding, Outcome, Register, Run, Severity, Shape};
+use headwater_check::{
+    Cache, Context, Date, Declared, Finding, Outcome, Register, Run, Severity, Shape,
+};
 use headwater_graph::anchors::Resolvers;
 use headwater_graph::declarations::Declarations;
 use headwater_graph::{Config, Graph};
