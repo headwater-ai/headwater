@@ -632,6 +632,92 @@ fn a_root_that_does_not_resolve_is_a_gap_and_not_a_met() {
     );
 }
 
+/// Copy the tree at `from` to `to`, files and directories alone.
+fn copy_tree(from: &Path, to: &Path) {
+    std::fs::create_dir_all(to).expect("the directory is made");
+    for entry in std::fs::read_dir(from).expect("the directory reads") {
+        let entry = entry.expect("the entry reads");
+        let target = to.join(entry.file_name());
+        match entry.file_type().expect("the file type reads").is_dir() {
+            true => copy_tree(&entry.path(), &target),
+            false => {
+                std::fs::copy(entry.path(), &target).expect("the file copies");
+            }
+        }
+    }
+}
+
+/// `lock_current` takes a lock its caller already read, and then reads the
+/// committed lock file again to compare it with what the sources resolve to.
+/// A library caller can hand it a root whose lock is a named pipe or a socket
+/// by then, so that second read refuses a file that is not regular before it
+/// opens it, and the verdict is a gap that names the lock (#1366, clause 12).
+/// A pipe would block the read, and a socket fails it, so a guard narrowed to
+/// `is_fifo` reads the socket as an empty lock and says nothing about it.
+#[cfg(unix)]
+#[test]
+fn a_lock_that_is_not_a_regular_file_is_a_gap_and_the_reading_ends() {
+    for kind in ["pipe", "socket"] {
+        lock_that_is_not_a_regular_file(kind);
+    }
+}
+
+#[cfg(unix)]
+fn lock_that_is_not_a_regular_file(kind: &str) {
+    // A socket path must be shorter than 108 bytes, and a runner's temporary
+    // directory can be longer than that by itself.
+    let root = Scratch(PathBuf::from(format!(
+        "/tmp/hw-lock-{}-{kind}",
+        std::process::id()
+    )));
+    let _ = std::fs::remove_dir_all(&root);
+    let repository = repository_root();
+    std::fs::create_dir_all(root.join(".headwater")).expect("the directory is made");
+    for name in ["taxonomy.yml", "taxonomy.lock", "overlay.yml"] {
+        std::fs::copy(
+            repository.join(".headwater").join(name),
+            root.join(".headwater").join(name),
+        )
+        .expect("the declaration copies");
+    }
+    for tree in [".headwater/packages", "docs/taxonomies"] {
+        copy_tree(&repository.join(tree), &root.join(tree));
+    }
+    let lock = headwater_lock::at(&root).expect("the copied lock reads");
+    assert_eq!(
+        lock_current(&root, &lock),
+        Verdict::Met,
+        "the copied root resolves to its own lock before the lock is replaced"
+    );
+
+    let at = root.join(".headwater/taxonomy.lock");
+    std::fs::remove_file(&at).expect("the lock is there to replace");
+    match kind {
+        "pipe" => {
+            let made = std::process::Command::new("mkfifo")
+                .arg(&at)
+                .status()
+                .expect("mkfifo runs");
+            assert!(made.success(), "the named pipe is made");
+        }
+        _ => drop(std::os::unix::net::UnixListener::bind(&at).expect("the socket is bound")),
+    }
+
+    let (sent, received) = std::sync::mpsc::channel();
+    let reading = root.to_path_buf();
+    std::thread::spawn(move || {
+        let _ = sent.send(lock_current(&reading, &lock));
+    });
+    let verdict = received
+        .recv_timeout(std::time::Duration::from_secs(60))
+        .unwrap_or_else(|_| panic!("lock_current opened the {kind} at the lock, and waited on it"));
+    let detail = gap(&verdict);
+    assert!(
+        detail.contains("taxonomy.lock is not a regular file"),
+        "the gap names the {kind} at the lock: {detail}"
+    );
+}
+
 fn repository_root() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("../../..")

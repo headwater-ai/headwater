@@ -884,4 +884,171 @@ fn every_verb_finishes_when_a_named_pipe_takes_a_file_of_a_pinned_package() {
         flat(&err).contains("headwater-standard/conformance.yml is not a regular file"),
         "{err}"
     );
+
+    // The device half: a device is not a named pipe, so a guard narrowed to
+    // `is_fifo` opens it, and `/dev/zero` never ends a read (#1366, verify of
+    // PR #1502). The link names `/dev/null`, which the guard refuses for the
+    // same reason. A guard narrowed to `is_fifo` then reads it as an empty
+    // file and says nothing about a device, so this case fails on the words
+    // and not on the deadline, and a mutant run never fills the host's memory
+    // from `/dev/zero`.
+    let root = pinned("pinned-device");
+    let package = root.at.join(".headwater/packages/headwater-standard");
+    let device = |name: &str| {
+        std::fs::remove_file(package.join(name)).expect("the vendored file is there to replace");
+        std::os::unix::fs::symlink("/dev/null", package.join(name)).expect("the link is made");
+    };
+    device("taxonomy.yml");
+    let (_, out, _) = ended(
+        &root,
+        &["check", "--no-cache"],
+        "check read the device at the vendored taxonomy.yml",
+    );
+    assert!(
+        flat(&out).contains("headwater-standard/taxonomy.yml is not a regular file"),
+        "check names the device in the pinned package: {out}"
+    );
+    device("conformance.yml");
+    let (status, _, err) = ended(
+        &root,
+        &["conformance"],
+        "conformance read the device at conformance.yml",
+    );
+    assert_eq!(
+        status.code(),
+        Some(1),
+        "conformance refuses the device: {err}"
+    );
+    assert!(
+        flat(&err).contains("headwater-standard/conformance.yml is not a regular file"),
+        "{err}"
+    );
+}
+
+/// A root at a short path under `/tmp`, because a socket path must be shorter
+/// than 108 bytes and a runner's temporary directory can be longer than that
+/// by itself. It carries the declaration and the vendored package that
+/// [`pinned`] carries, the maintained package source at
+/// `taxonomy-source/headwater-standard`, and the bundle library that source
+/// names at `docs/taxonomies`. Cargo runs a target's cases as threads of one
+/// process, so `label` and not the pid alone keys the directory.
+fn publishing(label: &str) -> Root {
+    let at = std::path::PathBuf::from(format!("/tmp/hw-pub-{}-{label}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&at);
+    let repository = common::repository();
+    std::fs::create_dir_all(at.join(".headwater")).expect("the directory is made");
+    for name in ["taxonomy.yml", "taxonomy.lock", "overlay.yml"] {
+        std::fs::copy(
+            repository.join(".headwater").join(name),
+            at.join(".headwater").join(name),
+        )
+        .expect("the declaration copies");
+    }
+    for tree in [
+        ".headwater/packages",
+        "taxonomy-source/headwater-standard",
+        "docs/taxonomies",
+    ] {
+        common::copy(&repository.join(tree), &at.join(tree));
+    }
+    Root { at }
+}
+
+/// Make a member that is not a regular file at `at`: a named pipe, or a
+/// socket, whose file stays after its listener is dropped.
+fn special(kind: &str, at: &std::path::Path) {
+    match kind {
+        "pipe" => fifo(at),
+        _ => drop(std::os::unix::net::UnixListener::bind(at).expect("the socket is bound")),
+    }
+}
+
+/// `publish` reads every file under the package source, whether a manifest
+/// key names it or not, and `vendor` and `diff` read every member of the
+/// artifact they are given. A named pipe or a socket in either place is
+/// refused before it is opened: the verb ends with exit 1 and names the
+/// member, and `publish` writes nothing at `--out` (#1366, clause 12).
+#[test]
+fn taxonomy_publish_vendor_and_diff_finish_when_a_named_pipe_or_socket_is_a_member() {
+    for kind in ["pipe", "socket"] {
+        let root = publishing(&format!("refuse-{kind}"));
+        let source = root.at.join("taxonomy-source/headwater-standard");
+        let member = source.join("notes.md");
+        special(kind, &member);
+        let out = root.at.join("out");
+        let publish = [
+            "taxonomy",
+            "publish",
+            "--from",
+            source.to_str().expect("utf-8"),
+            "--out",
+            out.to_str().expect("utf-8"),
+        ];
+        let (status, _, err) = ended(
+            &root,
+            &publish,
+            &format!("taxonomy publish opened the {kind} at notes.md, and waited on it"),
+        );
+        assert_eq!(status.code(), Some(1), "publish refuses the {kind}: {err}");
+        assert!(
+            flat(&err).contains(&format!("{} is not a regular file", member.display())),
+            "publish names the {kind}: {err}"
+        );
+        assert!(
+            !out.exists(),
+            "publish writes nothing at --out for a {kind}"
+        );
+
+        // The guard follows a link, so a link to a regular file inside the
+        // package publishes as the file it names.
+        std::fs::remove_file(&member).expect("the member is there to take out");
+        std::os::unix::fs::symlink(source.join("package.yml"), &member).expect("the link is made");
+        let linked = root.at.join("linked");
+        let (status, _, err) = ended(
+            &root,
+            &[
+                "taxonomy",
+                "publish",
+                "--from",
+                source.to_str().expect("utf-8"),
+                "--out",
+                linked.to_str().expect("utf-8"),
+            ],
+            "taxonomy publish did not end on a link to a regular file",
+        );
+        assert_eq!(status.code(), Some(0), "a linked member publishes: {err}");
+        assert_eq!(
+            std::fs::read(linked.join("notes.md")).expect("the linked member is published"),
+            std::fs::read(source.join("package.yml")).expect("the manifest reads"),
+            "a link to a regular file inside the package publishes as that file"
+        );
+
+        // A clean publish, whose digest is the pin, then the same member
+        // planted inside the artifact.
+        std::fs::remove_file(&member).expect("the link is there to take out");
+        let (status, _, err) = ended(
+            &root,
+            &publish,
+            "taxonomy publish did not end on a clean source",
+        );
+        assert_eq!(status.code(), Some(0), "the clean source publishes: {err}");
+        special(kind, &out.join("notes.md"));
+        let artifact = out.to_str().expect("utf-8");
+        for args in [
+            vec!["taxonomy", "vendor", artifact],
+            vec!["taxonomy", "diff", artifact, "--now", "2026-08-01"],
+        ] {
+            let verb = args.join(" ");
+            let (status, _, err) = ended(
+                &root,
+                &args,
+                &format!("{verb} opened the {kind} in the artifact, and waited on it"),
+            );
+            assert_eq!(status.code(), Some(1), "{verb} refuses the {kind}: {err}");
+            assert!(
+                flat(&err).contains("notes.md is not a regular file"),
+                "{verb} names the {kind}: {err}"
+            );
+        }
+    }
 }

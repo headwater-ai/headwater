@@ -1062,7 +1062,14 @@ pub fn lock_current(root: &Path, lock: &Lock) -> Verdict {
         }
     };
 
-    let committed = std::fs::read_to_string(root.join(headwater_lock::LOCK)).unwrap_or_default();
+    // The committed lock is read a second time here, after the caller read it,
+    // and a named pipe, a socket or a device put there in between is refused
+    // before it is opened, as the rule set is above (#1366).
+    let at = root.join(headwater_lock::LOCK);
+    if std::fs::metadata(&at).is_ok_and(|meta| !meta.is_file()) {
+        return Verdict::Gap(format!("{} is not a regular file", at.display()));
+    }
+    let committed = std::fs::read_to_string(&at).unwrap_or_default();
     match headwater_lock::diverged(&committed, &text) {
         headwater_lock::Divergence::Same => Verdict::Met,
         // The generated half moved. Which source moved is the line an author
