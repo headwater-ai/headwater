@@ -63,12 +63,12 @@ The public Rust API of each crate is not in this spec ([HW-DR-0098](../decisions
 
 No code in the three crates reaches a model. A probe run and a sweep each need a model in the middle. The engine does the parts before and after the middle part, and a recorder or an agent does the middle part. So no build waits for a model. A model that nobody can reach means only that no file came back.
 
-Each of the three crates names `headwater-check` in its `Cargo.toml`. `probe` and `sweep` name it for the rule set and the finding shape. `conformance` names it for `Date` and for the `fill` and `paint` modules of its text renderer. So `headwater-check` can name none of them, because the compiler refuses a cycle. No rule reads a measurement, and `check --strict` cannot see one.
+Each of the three crates names `headwater-check` in its `Cargo.toml`, and the source of each one uses items of it, `headwater_check::paint` among them. So `headwater-check` can name none of them, because the compiler refuses a cycle. No rule reads a measurement, and `check --strict` cannot see one.
 
 Two crates outside this subsystem name one of these crates as a dependency, and the `Cargo.toml` of each one states why:
 
 - `cli` links all three, because the verbs are there.
-- `generate` links `probe`. A probe result is a projection over a committed transcript. So each `generate` run and each `generate --check` gate calls the intake and the grader.
+- `generate` links `probe`. A probe result is a projection over a committed transcript. So each `generate` run and each `generate --check` gate calls the intake and the grader. `generate` also uses items of `plan` and `budget`.
 
 `conformance` links `generate`, because the `projections.current` reading calls `headwater_generate::check`. So `conformance` reaches `probe` through `generate`, and `compat` does the same, because it links `generate` too.
 
