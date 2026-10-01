@@ -227,6 +227,8 @@ anchors
     cited by HW-DR-0023
   code_path `engine/README.md` via source-tree
     cited by HW-DR-0029
+  code_path `engine/crates/adapter/src/**` via source-tree
+    cited by HW-SPEC-checks-and-cache
   code_path `engine/crates/adapter/src/json.rs` via source-tree
     cited by HW-IFACE-headwater-check
   code_path `engine/crates/adapter/src/lib.rs` via source-tree
@@ -245,6 +247,8 @@ anchors
     cited by HW-IFACE-headwater-mcp
   code_path `engine/crates/census/src/walk.rs` via source-tree
     cited by HW-IFACE-headwater-show
+  code_path `engine/crates/check/src/**` via source-tree
+    cited by HW-SPEC-checks-and-cache
   code_path `engine/crates/check/src/claim.rs` via source-tree
     cited by HW-IFACE-headwater-check
   code_path `engine/crates/check/src/dependency.rs` via source-tree
