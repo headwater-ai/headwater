@@ -22,6 +22,8 @@ relations:
                           [--category name] [--exclude probe]... [--repetitions n] [--seed n]
     headwater probe plan [--tier regression|campaign|documentation] --arm <arm> --delta
     headwater probe plan --instrument
+    headwater probe plan --folds
+    headwater probe plan --answer-keys <probe>
     headwater probe record <path>
     headwater probe grade <path>
     headwater probe stale
@@ -48,6 +50,8 @@ All subcommands require a readable `.headwater/probe.yml`, a readable taxonomy l
 | `plan` | `--arm <present\|absent\|no-hook\|no-skills\|no-claude-md\|mcp>` | Narrow the declared arms to one arm. An arm the tier does not declare refuses the run and names the arms it does declare. A paired tier refuses a narrowing to one arm that it declares. |
 | `plan` | `--delta` | Plan nothing, and print the delta of the `--arm` arm against the present tree, as the tier declares it. Each line is `- <path>` for a path that the arm removes, or `+ <path>` for a path that it adds. The option reads `.headwater/probe.yml` and does not load the corpus. It needs `--arm`. A script that builds the tree of an arm reads this output, so that the script does not parse the declaration again. |
 | `plan` | `--instrument` | Plan nothing, and print each path of the `instrument` sequence of `.headwater/probe.yml` on its own line. Every arm of every tier removes these paths. The option reads `.headwater/probe.yml` and does not load the corpus. It cannot be used with `--delta`. A script that removes the instrument from a tree reads this output, so that the script does not parse the declaration. A declaration with no `instrument` prints nothing. |
+| `plan` | `--folds` | Plan nothing, and print each path of the `folds` sequence of `.headwater/probe.yml` on its own line. A fold is a file outside `docs/` that names a probe and does not state its answer. The seal keeps these files. The option reads `.headwater/probe.yml` and does not load the corpus. It cannot be used with `--delta`, `--instrument` or `--answer-keys`. A script that seals a workspace reads this output, so that the script does not parse the declaration. A declaration with no `folds` prints nothing. |
+| `plan` | `--answer-keys <probe>` | Plan nothing, and print each path that the `answer_keys` mapping of `.headwater/probe.yml` declares for the probe, on its own line. An answer key is a document that an earlier session wrote in answer to the task of the probe. The seal removes these documents. The option reads `.headwater/probe.yml` and does not load the corpus. It cannot be used with `--delta`, `--instrument` or `--folds`. A script that seals a workspace reads this output. A probe with no answer key prints nothing. |
 | `plan` | `--category <name>` | Narrow the selection to one declared category. |
 | `plan` | `--exclude <probe>` | Remove one probe from the selection, by its identifier. Repeat the option for more than one probe. The selection digest excludes the probe. An identifier that is not in the selection refuses the run. |
 | `plan` | `--repetitions <n>` | Plan fewer repetitions than the tier declares, for a pilot. A number above the declared count refuses the run, and so does `0`. |
@@ -63,7 +67,7 @@ Global `--root` selects the repository. `--help`, `--version`, `--wide` and `--n
 
 **0** when a subcommand completes, including when a probe refuses a run or a transcript contains findings. An arm, tier or category that a declaration or the corpus does not carry refuses the run at this status. Probe results never gate.
 
-**1** when the command line is invalid, or a required file cannot be read. A tier, arm or category name outside this engine's closed set makes the command line invalid. It is also 1 when the budget declaration is malformed or the corpus cannot load. Under `--delta`, an arm that the tier does not run is also 1, because a script builds a tree from the output. Under `--instrument`, a malformed or unsafe declaration is 1, and nothing is printed on standard output. The message names the refusal.
+**1** when the command line is invalid, or a required file cannot be read. A tier, arm or category name outside this engine's closed set makes the command line invalid. It is also 1 when the budget declaration is malformed or the corpus cannot load. Under `--delta`, an arm that the tier does not run is also 1, because a script builds a tree from the output. Under `--instrument`, `--folds` or `--answer-keys`, a malformed or unsafe declaration is 1, and nothing is printed on standard output. The message names the refusal.
 
 **1**, and never 101, when standard output or standard error cannot be written, and one sentence on standard error names a failed standard output.
 

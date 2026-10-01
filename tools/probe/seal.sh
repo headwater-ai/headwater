@@ -17,7 +17,8 @@
 #   which restates each probe's expectation and target;
 # - every document under the workspace's `docs/` whose bytes contain a named
 #   probe's identifier or its slug, the file name the probe has on the shelf;
-# - every answer key `.headwater/probe.yml` declares for a named probe;
+# - every answer key `.headwater/probe.yml` declares for a named probe, as
+#   `headwater probe plan --answer-keys <probe>` prints it;
 # - for each document it deletes, named or key, the identifier claim under
 #   `.headwater/ids/`, and every line anywhere in the workspace that holds
 #   the document's identifier as a whole name or its file name `<slug>.md`
@@ -29,7 +30,7 @@
 #
 # - every file outside `docs/` and the instrument that names a probe by its
 #   identifier or slug, unless `folds:` in `.headwater/probe.yml` declares it
-#   (#1384). A fold names a probe by path or title and states no answer: the
+#   (#1384), as `headwater probe plan --folds` prints it. A fold names a probe by path or title and states no answer: the
 #   derived `.headwater/nav.yml`, `.headwater/corpus.json` and
 #   `.headwater/capture-cost.jsonl`, the census and graph fixtures under
 #   `engine/`, the hand-written overlay and probe declaration, and the route
@@ -47,7 +48,10 @@
 # search: `.headwater/probe.yml` states that limit beside `folds:`.
 #
 # It refuses a workspace inside this checkout (exit 6), the guard `ablate.sh`
-# applies for the same reason, and an instrument it cannot read (exit 8). It
+# applies for the same reason, and an instrument, a list of answer keys or a
+# list of folds that the engine does not read (exit 8). With no built engine
+# it refuses and names the build. This script reads no key of the
+# declaration itself (#1472, clause 8). It
 # stops at exit 3 when a JSON file names a deleted document and no `jq` is on
 # the path, or when `jq` cannot read that file. It is idempotent: the slug is read from this checkout's shelf, so a second run
 # over a sealed tree finds the same names and nothing left to delete.
@@ -62,29 +66,52 @@ case $0 in
 esac
 root=$(cd "$invoked_from/../.." && pwd -P)
 
+# The answer keys and the folds are the engine's parse of the declaration
+# (#1472, clause 8): `headwater probe plan --answer-keys <probe>` and
+# `--folds` print each list one path per line. This script parses no YAML, so
+# every form the engine accepts seals the same tree here. The engine refuses
+# a file whose entry is empty, absolute, or has a `..` or `.` component, and
+# each refusal comes before anything is removed. With no built engine the
+# script refuses, and it never reads a list it could not read as an empty one.
+#
+# Run `headwater probe plan` with the arguments given, over the declaration.
+# The engine reads `.headwater/probe.yml` under its `--root`: the checkout
+# itself when `HW_PROBE_YML` is unset, which needs nothing on `PATH`, and a
+# scratch root that holds a copy of the named declaration otherwise, which
+# needs `mktemp`, `mkdir`, `cp` and `rm` on `PATH`.
+plan_print() {
+    plan_engine=$root/engine/target/dev-release/headwater
+    [ -x "$plan_engine" ] || plan_engine=$root/engine/target/release/headwater
+    [ -x "$plan_engine" ] || {
+        echo "seal: no engine under $root/engine/target to read the probe declaration. Build it first: cargo build --profile dev-release -p headwater-cli --manifest-path engine/Cargo.toml --locked" >&2
+        return 2
+    }
+    if [ -z "${HW_PROBE_YML:-}" ]; then
+        "$plan_engine" probe plan --root "$root" "$@"
+        return
+    fi
+    plan_scratch=$(mktemp -d "${TMPDIR:-/tmp}/headwater-seal-plan.XXXXXX") || return 2
+    if ! mkdir -p "$plan_scratch/root/.headwater" ||
+        ! cp "$HW_PROBE_YML" "$plan_scratch/root/.headwater/probe.yml"; then
+        rm -rf "$plan_scratch"
+        return 2
+    fi
+    plan_status=0
+    "$plan_engine" probe plan --root "$plan_scratch/root" "$@" || plan_status=$?
+    rm -rf "$plan_scratch"
+    return "$plan_status"
+}
+
 # The answer keys `.headwater/probe.yml` declares for one probe, one per line
 # as `<identifier> <path>`. The declaration and the key's identifier are read
 # from this checkout and never from the workspace, which is the tree being
 # sealed. A key whose document carries no `id:` is printed with its slug as
-# the identifier, so the line removal below still has a name to match.
+# the identifier, so the line removal below still has a name to match. It
+# fails when the engine does not read the declaration, and prints nothing.
 answer_keys() {
-    declaration=${HW_PROBE_YML:-$root/.headwater/probe.yml}
-    awk -v want="$1" '
-        /^answer_keys:/ { on = 1; next }
-        on && /^[^ #]/ { on = 0 }
-        on {
-            line = $0
-            sub(/^[ ]+/, "", line)
-            if (index(line, want ":") != 1) next
-            sub(/^[^[]*\[/, "", line)
-            sub(/\].*$/, "", line)
-            n = split(line, paths, ",")
-            for (i = 1; i <= n; i++) {
-                gsub(/^[ ]+|[ ]+$/, "", paths[i])
-                if (paths[i] != "") print paths[i]
-            }
-        }
-    ' "$declaration" | while IFS= read -r path; do
+    keys_paths=$(plan_print --answer-keys "$1") || return 8
+    [ -n "$keys_paths" ] || return 0
+    printf '%s\n' "$keys_paths" | while IFS= read -r path; do
         id=$(sed -n 's/^id: *//p' "$root/$path" 2>/dev/null | head -1)
         if [ -z "$id" ]; then
             id=${path##*/}
@@ -96,21 +123,11 @@ answer_keys() {
 
 # The folds `.headwater/probe.yml` declares, one path per line: the files
 # outside `docs/` that name a probe and state no answer, which the seal keeps
-# and the guard passes (#1384). A declaration with no `folds:` block lists
-# none, so every file outside `docs/` that names a sealed probe goes. `awk`
-# alone, because the guard runs it on the smallest `PATH` the fixtures give.
+# and the guard passes (#1384). A declaration with no `folds` lists none, so
+# every file outside `docs/` that names a sealed probe goes. A declaration the
+# engine refuses fails, and prints nothing.
 folds() {
-    declaration=${HW_PROBE_YML:-$root/.headwater/probe.yml}
-    awk '
-        /^folds:/ { on = 1; next }
-        on && /^[^ #]/ { on = 0 }
-        on && /^  - / {
-            entry = substr($0, 5)
-            sub(/[ ]+#.*$/, "", entry)
-            gsub(/^[ "'\'']+|[ "'\'']+$/, "", entry)
-            if (entry != "") print entry
-        }
-    ' "$declaration"
+    plan_print --folds
 }
 
 # Every file of a workspace that names a probe by its identifier or its slug,
@@ -179,10 +196,17 @@ if [ "${1:-}" = --naming ]; then
 fi
 
 # `--keys <probe>` prints the answer keys of one probe and touches nothing.
-# `probe-record.sh` reads it to refuse a workspace that still names one.
+# `probe-record.sh` reads it to refuse a workspace that still names one. A
+# declaration the engine does not read exits 8 and prints no key.
 if [ "${1:-}" = --keys ]; then
     [ -n "${2:-}" ] || { echo "usage: sh tools/probe/seal.sh --keys <probe-id>" >&2; exit 2; }
-    answer_keys "$2"
+    keys_status=0
+    keys_listed=$(answer_keys "$2") || keys_status=$?
+    if [ "$keys_status" -ne 0 ]; then
+        echo "seal: the answer keys of $2 could not be read from the probe declaration." >&2
+        exit 8
+    fi
+    [ -z "$keys_listed" ] || printf '%s\n' "$keys_listed"
     exit 0
 fi
 
@@ -518,7 +542,10 @@ for probe in "$@"; do
 
     # The answer keys of the probe (#980). The key is removed whole, and
     # `strip_document` removes its claim and the lines that name it.
-    keys=$(answer_keys "$probe")
+    keys=$(answer_keys "$probe") || {
+        echo "seal: the answer keys of $probe could not be read from the probe declaration, so the key cannot be removed." >&2
+        exit 8
+    }
     old_ifs=$IFS
     IFS='
 '
