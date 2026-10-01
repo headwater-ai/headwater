@@ -527,20 +527,33 @@ fi
 # stated once, in the definition of the stage that obeys it ([HW-PD-0001]). A
 # rule that is dropped from its owner, or copied into a second file, is a rule
 # that a stage reads in a form its owner no longer states. Each row is the
-# owner's path under .claude/ and a phrase of its defining sentence. The case
-# reports a phrase that its owner lost, and a phrase that another Markdown file
-# under .claude/agents, .claude/commands or .claude/skills states too.
-printf '\n# each throughput rule of 2026-10-01 is stated by one definition\n'
-throughput_rules='agents/hw-build.md|that the branch meets, folds included
-agents/hw-build.md|make the pull request `Refs #N` in its title and in its body
+# owner's path under .claude/ and a phrase of its defining sentence. A phrase
+# carries the operative words of its rule: the condition, the stop, the source
+# of a script, the exception. So an edit that inverts or weakens a rule inside
+# its sentence breaks the phrase. An edit that adds a new sentence after it does
+# not, and nothing here reads meaning. The case reports a phrase that its owner
+# lost, a phrase that another Markdown file under .claude/agents,
+# .claude/commands or .claude/skills states too in any case of letters, and a
+# corpus fold on the FOOTPRINT paragraph of hw-adjudicate, which the parent
+# claims.
+printf '\n# the operative words of each throughput rule of 2026-10-01 are in one definition\n'
+throughput_rules='agents/hw-build.md|When you open the pull request, and each time you update it, write one line `- [x] #N.<k> <evidence>` in its body for each clause of `sh tools/run/gh-issue.sh clauses <N>` that the branch meets, folds included.
+agents/hw-build.md|When the branch does not meet a clause, make the pull request `Refs #N` in its title and in its body.
 agents/hw-build.md|**Run the verifier'"'"'s attacks before you report.**
-agents/hw-build.md|apply each mutant you can, revert it, and list in `build.md` each one that survived
-agents/hw-verify.md|A `PASS` requires exit 0
-agents/hw-verify.md|that is a `FAIL` of the body and not of the code
-agents/hw-verify.md|When less than 40G is free
-agents/hw-iterate.md|name them on the builder'"'"'s `attacks:` line
-agents/hw-adjudicate.md|an overlap on a derived fold alone is not a `WAITS-ON`
-agents/headwater-product-owner.md|A fold never adds a clause to an issue that an open pull request says `Closes`'
+agents/hw-build.md|Run each one on your own branch: apply each mutant you can, revert it, and list in `build.md` each one that survived.
+agents/hw-build.md|Hold a survivor with a test before you report, where you can.
+agents/hw-verify.md|Take the script from `main`, not from the branch: after `git fetch origin`, run `git show origin/main:tools/run/gh-issue.sh > <scratch>/gh-issue-main.sh`
+agents/hw-verify.md|A `PASS` requires exit 0. When the title says
+agents/hw-verify.md|When the title says `Closes #N` and the body says `Refs #N`, or the reverse, that is a `FAIL` of the body and not of the code.
+agents/hw-verify.md|Before your first build makes a fresh `target-verify-<N>`, run `df -h /`.
+agents/hw-verify.md|When less than 40G is free, stop and report `FAIL` with `disk: <the reading>` as the first line of `FIRED`
+agents/hw-iterate.md|name them on the builder'"'"'s `attacks:` line as well, so that the builder runs them first.
+agents/hw-adjudicate.md|`FOOTPRINT` is what the parent claims: the paths the change edits by hand, and the recorded fixtures it moves
+agents/hw-adjudicate.md|So an overlap on a derived fold alone is not a `WAITS-ON`, and an overlap on a hand-edited path still is.
+agents/hw-adjudicate.md|The cause decides the line: a fixture that the corpus moves is `DERIVED`, and one that the change'"'"'s own engine code moves is on `FOOTPRINT`.
+agents/headwater-product-owner.md|**A fold never adds a clause to an issue that an open pull request says `Closes`.** Write the clause as a follow-up instead
+skills/hw-run-policy/SKILL.md|A claim takes the `FOOTPRINT` line of an adjudication and never its `DERIVED` line'
+throughput_count=$(printf '%s\n' "$throughput_rules" | wc -l | tr -d ' ')
 # Prints why the tree under the given .claude directory fails, or nothing.
 throughput_owners() {
     dot=$1
@@ -551,17 +564,21 @@ throughput_owners() {
             grep -qF -- "$phrase" "$dot/$owner" 2>/dev/null || why="$why; $owner no longer states: $phrase"
             for f in $list; do
                 [ "$f" = "$dot/$owner" ] && continue
-                grep -qF -- "$phrase" "$f" && why="$why; ${f#"$dot"/} states it too: $phrase"
+                grep -qiF -- "$phrase" "$f" && why="$why; ${f#"$dot"/} states it too: $phrase"
             done
+        done
+        for fold in .headwater/corpus.json .headwater/nav.yml 'README.md` index'; do
+            grep -F -- '`FOOTPRINT` is what the parent claims' "$dot/agents/hw-adjudicate.md" 2>/dev/null | grep -qF -- "$fold" &&
+                why="$why; hw-adjudicate.md names a corpus fold on FOOTPRINT: $fold"
         done
         printf '%s' "${why#; }"
     }
 }
 why=$(throughput_owners "$root/.claude")
 if [ -z "$why" ]; then
-    pass 'each of the 10 phrases of the throughput rules is in its owner and in no other file'
+    pass "the $throughput_count operative phrases of the throughput rules are each in their owner and in no other file"
 else
-    fail 'each throughput rule is stated by one definition' "$why"
+    fail 'the operative words of each throughput rule are in its owner alone' "$why"
 fi
 # The refusal arms, on a scratch copy of the Markdown under .claude/.
 mkdir -p "$scratch/dot"
@@ -575,12 +592,25 @@ case "$why" in
     *'hw-verify.md no longer states'*) pass 'and a rule dropped from its owner is reported' ;;
     *) fail 'a rule dropped from its owner is reported' "reported: \`$why\`" ;;
 esac
+sed 's/When less than 40G is free, stop and report `FAIL`/When less than 40G is free, note it and build anyway, or report `FAIL`/' "$root/.claude/agents/hw-verify.md" > "$scratch/dot/agents/hw-verify.md"
+why=$(throughput_owners "$scratch/dot")
+case "$why" in
+    *'hw-verify.md no longer states: When less than 40G'*) pass 'and a rule weakened inside its own sentence is reported' ;;
+    *) fail 'a rule weakened inside its own sentence is reported' "reported: \`$why\`" ;;
+esac
 cp "$root/.claude/agents/hw-verify.md" "$scratch/dot/agents/hw-verify.md"
-printf 'Note: an overlap on a derived fold alone is not a `WAITS-ON`.\n' >> "$scratch/dot/skills/hw-run-policy/SKILL.md"
+printf 'Note: so an overlap on a derived fold alone is not a `WAITS-ON`, and an overlap on a hand-edited path still is.\n' >> "$scratch/dot/skills/hw-run-policy/SKILL.md"
 why=$(throughput_owners "$scratch/dot")
 case "$why" in
     *'skills/hw-run-policy/SKILL.md states it too'*) pass 'and a rule copied into a second file is reported' ;;
     *) fail 'a rule copied into a second file is reported' "reported: \`$why\`" ;;
+esac
+cp "$root/.claude/skills/hw-run-policy/SKILL.md" "$scratch/dot/skills/hw-run-policy/SKILL.md"
+sed 's/`docs\/probe-results\/`, and the `package.yml`/`docs\/probe-results\/`, `.headwater\/corpus.json`, and the `package.yml`/' "$root/.claude/agents/hw-adjudicate.md" > "$scratch/dot/agents/hw-adjudicate.md"
+why=$(throughput_owners "$scratch/dot")
+case "$why" in
+    *'names a corpus fold on FOOTPRINT: .headwater/corpus.json'*) pass 'and a corpus fold put back on FOOTPRINT is reported' ;;
+    *) fail 'a corpus fold put back on FOOTPRINT is reported' "reported: \`$why\`" ;;
 esac
 
 printf '\n%s passed, %s failed\n' "$passed" "$failed"
