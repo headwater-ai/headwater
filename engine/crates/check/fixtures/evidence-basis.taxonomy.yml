@@ -74,6 +74,10 @@ relations:
     cardinality: many
     created_by: author
     evidence_at: from
+    # The obligation can write the half, as this repository's bundle lets it,
+    # so a finding can anchor at the target end and the remediation names the
+    # entry by the name the obligation wrote it under.
+    inverse: discharged_by
   examines:
     family: evidence
     from: [record]

@@ -342,6 +342,10 @@ fn a_discharges_edge_onto_an_evidenced_target_from_an_asserted_source_is_reporte
         fixes[0],
         "evidence-basis/claims/asserted-discharges-evidenced.md",
         "evidence-basis/targets/evidenced-obligation.md",
+        (
+            "discharges",
+            "evidence-basis/claims/asserted-discharges-evidenced.md",
+        ),
     );
     assert!(
         fixes[0].starts_with(
@@ -355,10 +359,26 @@ fn a_discharges_edge_onto_an_evidenced_target_from_an_asserted_source_is_reporte
 /// A swapped remediation names the claimant as the end an auditable artifact
 /// points at and as the end that can write `reconstructed`, and never the
 /// evidence in either place.
-fn assert_remediation_ends(fix: &str, evidence: &str, claimant: &str) {
+///
+/// It also names the entry an author replaces, by the name that entry was
+/// written under and in the file that wrote it. A `discharges` half is written
+/// in the evaluation and a `discharged_by` half in the obligation, so the two
+/// differ in both, and a remediation that named the relation or the claimant
+/// in their place points at an entry that does not exist.
+fn assert_remediation_ends(fix: &str, evidence: &str, claimant: &str, entry: (&str, &str)) {
+    let claimant_id = std::fs::read_to_string(fixtures_dir().join(claimant))
+        .expect("the claimant fixture")
+        .lines()
+        .find_map(|line| line.strip_prefix("id: ").map(str::to_string))
+        .expect("the claimant declares an id");
     assert!(
-        fix.contains("declare `discharges` to `NOTE-FIX-evidenced-obligation`"),
+        fix.contains(&format!("declare `discharges` to `{claimant_id}`")),
         "an auditable artifact discharges the claimant: {fix}"
+    );
+    let (name, path) = entry;
+    assert!(
+        fix.contains(&format!("in place of the `{name}` entry in {path},")),
+        "the entry to replace, by its declared name and file: {fix}"
     );
     assert!(
         fix.contains(&format!("`evidence_basis: reconstructed` in {claimant}")),
@@ -367,6 +387,56 @@ fn assert_remediation_ends(fix: &str, evidence: &str, claimant: &str) {
     assert!(
         !fix.contains(&format!("`evidence_basis: reconstructed` in {evidence}")),
         "the evidence was told to write reconstructed: {fix}"
+    );
+}
+
+/// A `discharges` edge that the obligation wrote, as `discharged_by`.
+///
+/// `targets/obligation-by-inverse.md` claims `evidenced` and names
+/// `NOTE-FIX-evaluation-by-inverse`, which is `asserted` and declares nothing.
+/// The direction comes from the relation and not from the file that wrote the
+/// entry, so the obligation is still the claimant and the evaluation still the
+/// evidence. The finding anchors at the obligation, which is the file with the
+/// entry. The remediation names that entry as `discharged_by`, in that file. A
+/// remediation that named the relation, `discharges`, or the evaluation's file
+/// would point at an entry that nobody wrote.
+#[test]
+fn a_discharges_edge_written_as_its_inverse_is_reported_at_the_entry_that_wrote_it() {
+    let run = run();
+    let reported = about(&run, "NOTE-FIX-evaluation-by-inverse");
+    assert_eq!(reported.len(), 1, "{:?}", refusals(&run));
+    assert!(
+        reported[0].starts_with("`NOTE-FIX-obligation-by-inverse` claims `evidenced`"),
+        "the obligation is the claimant whichever end wrote the entry: {}",
+        reported[0]
+    );
+
+    let paths: Vec<&str> = refusals(&run)
+        .into_iter()
+        .filter(|(_, message)| message.contains("NOTE-FIX-evaluation-by-inverse"))
+        .map(|(path, _)| path)
+        .collect();
+    assert_eq!(
+        paths,
+        vec!["evidence-basis/targets/obligation-by-inverse.md"],
+        "the finding anchors at the entry that declares the edge"
+    );
+
+    let fixes = remediations(&run, "NOTE-FIX-evaluation-by-inverse");
+    assert_eq!(fixes.len(), 1, "{fixes:?}");
+    assert_remediation_ends(
+        fixes[0],
+        "evidence-basis/claims/evaluation-by-inverse.md",
+        "evidence-basis/targets/obligation-by-inverse.md",
+        (
+            "discharged_by",
+            "evidence-basis/targets/obligation-by-inverse.md",
+        ),
+    );
+    assert!(
+        fixes[0].starts_with("have a person read evidence-basis/claims/evaluation-by-inverse.md"),
+        "the evidence is the document to read: {}",
+        fixes[0]
     );
 }
 
@@ -401,6 +471,10 @@ fn a_discharges_edge_from_a_warrant_outside_the_closed_set_is_reported() {
         fixes[0],
         "evidence-basis/claims/misspelled-discharges-evidenced.md",
         "evidence-basis/targets/evidenced-obligation.md",
+        (
+            "discharges",
+            "evidence-basis/claims/misspelled-discharges-evidenced.md",
+        ),
     );
     assert!(
         fixes[0].starts_with(
@@ -701,11 +775,12 @@ fn an_edge_onto_an_anchor_reaches_no_instance_and_does_not_panic() {
 /// The whole corpus, in one assertion, so a case that stops being reported
 /// cannot hide behind a test that names only its own document.
 #[test]
-fn the_tree_reports_seven_documents_and_thirteen_edges() {
+fn the_tree_reports_eight_documents_and_fourteen_edges() {
     let run = run();
     let mut reported: Vec<&str> = refusals(&run).into_iter().map(|(path, _)| path).collect();
     reported.sort_unstable();
     let mut expected = vec![
+        "evidence-basis/targets/obligation-by-inverse.md",
         "evidence-basis/claims/asserted-discharges-evidenced.md",
         "evidence-basis/claims/misspelled-discharges-evidenced.md",
         "evidence-basis/claims/onto-scaffolded-contract.md",

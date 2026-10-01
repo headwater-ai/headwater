@@ -288,6 +288,17 @@ impl EdgeCheck for Basis<'_> {
         // rule had before a relation could declare `evidence_at`, and its
         // message and remediation are unchanged, so no finding over a
         // `traces_to` edge moves.
+        //
+        // The two repairs that the `from` reading shares, written once, so that
+        // the entry an author replaces is named the same way in both: by the
+        // name it was declared under and in the file that declared it, which
+        // is the obligation's file when the obligation wrote `discharged_by`.
+        let rewire = format!(
+            "let an artifact somebody can audit declare `{}` to `{}` in place of the `{}` entry \
+             in {}",
+            relation.name, claimant.id, half.name, half.source.path
+        );
+        let demote = format!("write `evidence_basis: reconstructed` in {}", claimant.path);
         let (message, remediation) = match (at_source, closed) {
             (false, false) => (
                 format!(
@@ -324,15 +335,8 @@ impl EdgeCheck for Basis<'_> {
                     claimant.id, evidence.id, relation.name
                 ),
                 format!(
-                    "correct the warrant of {} to one of the four values, let an artifact \
-                     somebody can audit declare `{}` to `{}` in place of the `{}` entry in {}, \
-                     or write `evidence_basis: reconstructed` in {}",
-                    evidence.path,
-                    relation.name,
-                    claimant.id,
-                    half.name,
-                    half.source.path,
-                    claimant.path
+                    "correct the warrant of {} to one of the four values, {rewire}, or {demote}",
+                    evidence.path
                 ),
             ),
             (true, true) => (
@@ -343,16 +347,9 @@ impl EdgeCheck for Basis<'_> {
                     claimant.id, evidence.id, relation.name
                 ),
                 format!(
-                    "have a person read {} and set its warrant, let an artifact somebody can \
-                     audit declare `{}` to `{}` in place of the `{}` entry in {}, or \
-                     write `evidence_basis: reconstructed` in {} and say what it was \
-                     reconstructed from",
-                    evidence.path,
-                    relation.name,
-                    claimant.id,
-                    half.name,
-                    half.source.path,
-                    claimant.path
+                    "have a person read {} and set its warrant, {rewire}, or {demote} and say \
+                     what it was reconstructed from",
+                    evidence.path
                 ),
             ),
         };
