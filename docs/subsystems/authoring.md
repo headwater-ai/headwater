@@ -2,7 +2,7 @@
 id: HW-SPEC-authoring
 status: current
 status_since: 2026-10-01
-summary: "How two crates write a document, a corrections patch, a migration step and an imported edge, each through one all-or-none put on the tree and one reciprocal splice."
+summary: "How two crates write a new document, a fix, a migration step and an imported edge through one all-or-none put and one reciprocal splice."
 last_verified: 2026-10-01
 title: "Authoring"
 provenance:
@@ -14,6 +14,7 @@ provenance:
 relations:
   governs:
     - engine/crates/scaffold/src/**
+    - engine/crates/import/src/**
   traces_to:
     - HW-SPEC-engine-architecture
     - HW-SPEC-authoring-and-lifecycle
@@ -47,7 +48,7 @@ The subsystem has four writers. Each writer puts bytes into a document that the 
 - `headwater taxonomy migrate --apply` writes the mechanical steps of a migration payload into front matter and into the overlay.
 - `headwater import --write` writes edges from a committed snapshot of an external system of record.
 
-The inputs are the resolved taxonomy, the census, the graph index, the identifier claim store and, for an import, a pinned snapshot. The outputs are files on the tree, one claim file for each identifier that a scheme mints, and one capture-cost reading for each document that `new` writes.
+The inputs are the resolved taxonomy, the census, the graph index, the identifier claim store and, for an import, a pinned snapshot. The outputs are files on the tree. `new` also writes one claim file for each identifier that it mints, and one capture-cost reading for each document.
 
 The bodies of the `new`, `capture`, `import`, `taxonomy migrate` and `check` verbs are in `engine/crates/cli/src/main.rs`. They belong to the Command surface row of spec 6. This spec describes the library that those verbs call.
 
@@ -69,7 +70,7 @@ The public Rust API of each crate is not in this spec ([HW-DR-0098](../decisions
 
 The scaffolder writes what the taxonomy determines and asks for what it does not. Each `Field` of a plan carries an `Origin`. `Origin::Scaffolded` names the declaration that decided the value. `Origin::HandEntry` marks a prompt for a value that a person owes. No template file exists. Spec 3 makes the template a function of the kind declaration, and a file under a package would be prose that no census row covers.
 
-The scaffolder is a correctness root. Spec 12 says that nobody reviews a scaffolded edge one at a time, so a defect here makes wrong edges at the scale of the corpus. For this reason, `propose` refuses before it writes a document that a rule would report. The module comment of `lib.rs` has a table that pairs each refusal with the rule that it stands in front of. `Refusal` is a closed set, so that a test names the refusal that it expects.
+The scaffolder is a correctness root. Spec 12 says that nobody reviews a scaffolded edge one at a time. Thus a defect here makes wrong edges at the scale of the corpus. For this reason, `propose` refuses before it writes a document that a rule would report. The module comment of `lib.rs` has a table that pairs each refusal with the rule that it stands in front of. `Refusal` is a closed set, so that a test names the refusal that it expects.
 
 The minting step runs before the placement step, because a shelf layout can name the sequence of the identifier. `Minting` records the highest value that the run found on the tree. Spec 3 asks for every value that was ever allocated, and a tree holds no history, so this value is a lower bound. After the placement, `propose` asks the census classifier which shelf the path is on. A path that the classifier reads differently is a defect of this crate, and the run refuses.
 
@@ -81,7 +82,7 @@ The scaffolder writes no far half while the new document is at its initial state
 
 ### Three lock members that only the scaffolder reads
 
-`declared.rs` reads three members of the resolved taxonomy that no typed reader carries: the `allocation` of a scheme, the `created_by` of a relation and the `type` of a facet. Each member moves into a typed reader when a check reads it. Until then, a second reader would be a second copy of one declaration. The module comment records two members that already moved.
+`declared.rs` reads three members of the resolved taxonomy that no typed reader carries. They are the `allocation` of a scheme, the `created_by` of a relation and the `type` of a facet. Each member moves into a typed reader when a check reads it. Until then, a second reader would be a second copy of one declaration. The module comment records two members that already moved.
 
 ### The reciprocal splice
 
@@ -119,9 +120,9 @@ Neither writer touches the disk. Each one gives `tree::Composed` files. The verb
 
 ### The capture-cost store
 
-`reading.rs` holds the capture-cost store of spec 3, at `.headwater/capture-cost.jsonl`. `headwater new` appends one `Reading` for each document that it writes. The run is the only moment that the counts are known, because Q4 keeps `created_by` on the relation type, and a committed corpus does not show which edges the scaffolder wrote.
+`reading.rs` holds the capture-cost store of spec 3, at `.headwater/capture-cost.jsonl`. `headwater new` appends one `Reading` for each document that it writes. The run is the only moment that the counts are known. Q4 keeps `created_by` on the relation type, so a committed corpus does not show which edges the scaffolder wrote.
 
-A reading holds the lock digest, the date, the `Surface` that called the verb, the kind, the path, the identifier and the four counts of `Assisted`. It holds no person, no duration, no prose and no refused run. The module comment states why each member is in the reading and why each other value is not. `total`, `by_kind`, `by_surface` and `reach` derive each aggregate from the store, so a reader of the repository can compute each number again. [HW-OBL-0111](../obligations/0111-the-capture-cost-surface-names-an-entry-point-and-never-the-caller.md) records that a surface names an entry point and never the caller behind it.
+A reading holds the lock digest, the date, the `Surface` that called the verb, the kind, the path and the identifier. It also holds the four counts of `Assisted`. It holds no person, no duration, no prose and no refused run. The module comment states why each member is in the reading and why each other value is not. `total`, `by_kind`, `by_surface` and `reach` derive each aggregate from the store, so a reader of the repository can compute each number again. [HW-OBL-0111](../obligations/0111-the-capture-cost-surface-names-an-entry-point-and-never-the-caller.md) records that a surface names an entry point and never the caller behind it.
 
 `json.rs` writes the store as the JSON document of `headwater capture --json`. It is in this crate and not in `cli`, because each JSON emitter of this engine is in the crate that owns its data. The text report for a person stays in `cli`.
 
@@ -131,7 +132,7 @@ A reading holds the lock digest, the date, the `Surface` that called the verb, t
 
 A `Declaration` is one entry under `imports` in `.headwater/taxonomy.yml`. A person writes it, and no verb writes it. It names the path, the digest, the channel that carried the digest, and the anchor resolver. `plan` refuses a declaration with no digest, no channel or no resolver. The module comment of `lib.rs` lists the refusals in the order that they fire. A digest proves that the bytes are the pinned bytes, and it does not prove who published them ([HW-OBL-0115](../obligations/0115-a-pinned-digest-authenticates-the-pin-and-never-the-publisher.md)). The channel is the sentence that a person wrote beside the digest.
 
-`snapshot.rs` reads the payload, `snapshot.yml`. The pin over the snapshot is `headwater_resolve::release`, unchanged. Spec 7 says that a taxonomy pin and a snapshot pin work the same way, and a second implementation would read one artifact in two ways. A snapshot carries its fetch time and the identity and revision of each item, and a missing one is a refusal.
+`snapshot.rs` reads the payload, `snapshot.yml`. The pin over the snapshot is `headwater_resolve::release`, unchanged. Spec 7 says that a taxonomy pin and a snapshot pin work the same way. A second implementation would read one artifact in two ways. A snapshot carries its fetch time and the identity and revision of each item, and a missing one is a refusal.
 
 `import/src/write.rs` decides whether a document already declares an edge at the pinned revision, and it names the attribute that carries the revision. A second import over one snapshot thus writes nothing. The splice is `headwater_scaffold::write::splice`, and the put is `Reserved`. An import creates nothing, so it uses `over` and `commit` and no create step.
 
@@ -139,7 +140,7 @@ A `Declaration` is one entry under `imports` in `.headwater/taxonomy.yml`. A per
 
 ### Two anchor resolvers, one for each anchor kind
 
-Spec 2 says that exactly one resolver owns each anchor kind, and that a resolver reads repository content or a committed snapshot and never a live service. `anchors.rs` resolves an item identity against a committed snapshot. `harvest.rs` resolves a document identity against the pinned export of another repository, which is the third class of resolver that spec 2 names. Both resolvers have the same shape:
+Spec 2 says that exactly one resolver owns each anchor kind. A resolver reads repository content or a committed snapshot, and never a live service. `anchors.rs` resolves an item identity against a committed snapshot. `harvest.rs` resolves a document identity against the pinned export of another repository, which is the third class of resolver that spec 2 names. Both resolvers have the same shape:
 
 - Each resolver checks the digest before it reads an item. Bytes that are not the pinned bytes bind nothing.
 - A pin that did not open still supplies its resolver. That resolver refuses every string with a reason that names the pin. An absent resolver would send a reader to look for a missing feature instead of a moved byte.
@@ -153,4 +154,18 @@ Neither crate opens a socket. Each verb takes a path that the caller already fet
 
 A change to these crates must keep each of these. A test holds each one that names a test.
 
-- INVARIANTS
+- **A scaffolded document passes the checks of the engine** (`what_the_scaffolder_wrote_passes_the_engines_own_checks` in `engine/crates/scaffold/tests/pipeline.rs`).
+- **A far half that the splice cannot write leaves the new document absent** (`a_reciprocal_that_cannot_be_opened_leaves_the_new_document_absent` in `engine/crates/scaffold/tests/writing.rs`).
+- **A target that does not open stops the put before a file moves** (`a_target_that_will_not_open_stops_the_run_before_any_file_moves` in `engine/crates/scaffold/src/tree.rs`).
+- **A commit that fails removes the file that the run made** (`a_commit_that_fails_removes_the_document_this_run_created` in `engine/crates/scaffold/src/tree.rs`).
+- **A claim that exists refuses the second claimant** (`a_claim_that_is_already_there_refuses_and_the_first_claimant_stands` in `engine/crates/scaffold/tests/writing.rs`).
+- **A patch whose expected bytes are not in the file is refused** (`a_patch_that_names_bytes_the_file_does_not_hold_is_refused` in `engine/crates/scaffold/tests/fixing.rs`).
+- **A migration step refuses a key whose value is not the old value** (`a_key_that_no_longer_holds_the_value_is_refused_with_nothing_composed` in `engine/crates/scaffold/src/migrate.rs`).
+- **An overlay step moves each address under it and no value** (`every_address_under_the_step_moves_and_no_value_does` in `engine/crates/scaffold/src/overlay.rs`).
+- **A document that opens at an initial state owes its far half** (`a_document_that_opens_at_an_initial_state_owes_its_far_half` in `engine/crates/scaffold/tests/opening_state.rs`), **and writes no far half of a symmetric relation** (`a_draft_writes_no_far_half_of_a_symmetric_relation`).
+- **The reading on disk is the fraction that the plan derives** (`the_reading_on_disk_is_the_fraction_the_plan_derives` in `engine/crates/scaffold/tests/telemetry.rs`).
+- **Each refusal of an import has a fixture** (`engine/crates/import/tests/fixtures.rs`), **and an edge half that does not open leaves every other document as it was** (`an_edge_half_that_cannot_be_opened_leaves_every_other_document_as_it_was`).
+- **A second import over an unchanged snapshot writes nothing** (`a_reimport_over_an_unchanged_snapshot_writes_nothing` in `engine/crates/import/tests/reimport.rs`).
+- **A snapshot that is not the pinned artifact binds nothing and names the pin** (`a_snapshot_that_is_not_the_pinned_artifact_binds_nothing_and_names_the_pin` in `engine/crates/import/tests/resolution.rs`).
+- **An identity is trimmed and not changed in another way** (`surrounding_space_is_trimmed_and_nothing_else_is` in `engine/crates/import/src/anchors.rs`).
+- **An identifier that only a second export holds stays unresolved** (`an_identifier_only_the_other_export_holds_is_unresolved` in `engine/crates/cli/tests/harvest.rs`), **and a withheld identifier binds `withheld` while a typo stays unresolved** (`a_withheld_identifier_binds_withheld_and_a_typo_stays_unresolved`).
