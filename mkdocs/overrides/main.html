@@ -83,7 +83,8 @@
     The header of the hand-built half, copied as it stands (#529 landed the
     footer, and this is the nav row above it). The four links are absolute
     because they point at the other half of the same site, which MkDocs knows
-    nothing about and cannot make a relative path to.
+    nothing about and cannot make a relative path to. `base.html` wraps this
+    block in `header.hw-header`, which is what `css/headwater.css` sets.
   #}
   <a class="hw-brand" href="/"><span class="hw-glyph">&#128772;</span>Headwater</a>
   <div class="hw-navlinks">
@@ -170,25 +171,40 @@
 
 {% block footer %}
   {#
-    The hand-built footer as #529 landed it: the repository, the license, and
-    the nine links. It replaces the theme's `Documentation built with MkDocs`
-    line, which stood on 325 of 325 generated pages and named a tool rather
-    than a project.
+    The same footer every hand-built page carries. `tools/site/site-footer.html`
+    is the one copy, and `tools/site/refresh-site-tokens.sh` writes it between
+    the two markers below, so this block is never edited here. `--check` fails
+    when it disagrees with that file. It replaces the theme's
+    `Documentation built with MkDocs` line, which named a tool rather than a
+    project.
   #}
-  <div class="hw-foot">
+    <!-- headwater:footer -->
     <p>The source of this project is <a href="https://github.com/headwater-ai/headwater">github.com/headwater-ai/headwater</a>, under Apache-2.0. The engine, the taxonomy library and the corpus these pages describe are all in it.</p>
-    <div class="hw-footlinks">
-      <a href="/">Home</a>
-      <a href="/spec/">Specification</a>
-      <a href="/decisions/">Decisions</a>
-      <a href="/compare/">Compare</a>
-      <a href="/proof/">Proof</a>
-      <a href="/tutorial/">Tutorial</a>
-      <a href="/glossary/">Glossary</a>
-      <a href="/ns/">Namespace</a>
-      <a href="/changelog/">Changelog</a>
+    <div class="footgroups">
+      <div class="footgroup">
+        <div class="footlabel">The corpus — generated from the repository</div>
+        <div class="footlinks">
+          <a href="/spec/">Specification</a>
+          <a href="/decisions/">Decisions</a>
+          <a href="/obligations/">Obligations</a>
+          <a href="/corpus.json">Descriptor</a>
+        </div>
+      </div>
+      <div class="footgroup">
+        <div class="footlabel">This site — hand-built</div>
+        <div class="footlinks">
+          <a href="/">Home</a>
+          <a href="/how-it-works/">How it works</a>
+          <a href="/compare/">Compare</a>
+          <a href="/proof/">Proof</a>
+          <a href="/tutorial/">Tutorial</a>
+          <a href="/glossary/">Glossary</a>
+          <a href="/ns/">Namespace</a>
+          <a href="/changelog/">Changelog</a>
+        </div>
+      </div>
     </div>
-  </div>
+    <!-- headwater:footer end -->
 {% endblock %}
 
 {% block scripts %}

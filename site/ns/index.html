@@ -104,6 +104,7 @@
   @media (max-width: 62rem) {
     .bar { padding-left: 1.5rem; padding-right: 1.5rem; }
   }
+  /* headwater:footer */
   footer { border-top: 1px solid var(--rule); }
   .foot {
     padding-top: 1.5rem; padding-bottom: 2.5rem;
@@ -111,7 +112,18 @@
     color: var(--muted);
   }
   .foot p { margin: 0 0 1rem; max-width: 46rem; }
-  .footlinks { display: flex; gap: 1.25rem; flex-wrap: wrap; }
+  .footgroups { display: flex; gap: 2.5rem; flex-wrap: wrap; margin-top: 0.4rem; }
+  .footgroup { flex: 1 1 14rem; min-width: 0; }
+  .footlabel {
+    font-family: var(--sans); font-size: 0.72rem; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--muted); margin-bottom: 0.7rem;
+  }
+  .footlinks { display: flex; gap: 0.5rem 1.25rem; flex-wrap: wrap; }
+  @media (max-width: 62rem) {
+    .footlinks { flex-direction: column; gap: 0.75rem; }
+    .footlinks a { display: block; }
+  }
+  /* headwater:footer end */
 </style>
 </head>
 <body>
@@ -168,18 +180,33 @@
 
 <footer>
   <div class="bar foot">
+    <!-- headwater:footer -->
     <p>The source of this project is <a href="https://github.com/headwater-ai/headwater">github.com/headwater-ai/headwater</a>, under Apache-2.0. The engine, the taxonomy library and the corpus these pages describe are all in it.</p>
-    <div class="footlinks">
-      <a href="/">Home</a>
-      <a href="/spec/">Specification</a>
-      <a href="/decisions/">Decisions</a>
-      <a href="/how-it-works/">How it works</a>
-      <a href="/compare/">Compare</a>
-      <a href="/proof/">Proof</a>
-      <a href="/tutorial/">Tutorial</a>
-      <a href="/glossary/">Glossary</a>
-      <a href="/changelog/">Changelog</a>
+    <div class="footgroups">
+      <div class="footgroup">
+        <div class="footlabel">The corpus — generated from the repository</div>
+        <div class="footlinks">
+          <a href="/spec/">Specification</a>
+          <a href="/decisions/">Decisions</a>
+          <a href="/obligations/">Obligations</a>
+          <a href="/corpus.json">Descriptor</a>
+        </div>
+      </div>
+      <div class="footgroup">
+        <div class="footlabel">This site — hand-built</div>
+        <div class="footlinks">
+          <a href="/">Home</a>
+          <a href="/how-it-works/">How it works</a>
+          <a href="/compare/">Compare</a>
+          <a href="/proof/">Proof</a>
+          <a href="/tutorial/">Tutorial</a>
+          <a href="/glossary/">Glossary</a>
+          <a href="/ns/">Namespace</a>
+          <a href="/changelog/">Changelog</a>
+        </div>
+      </div>
     </div>
+    <!-- headwater:footer end -->
   </div>
 </footer>
 
