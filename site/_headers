@@ -86,6 +86,13 @@
 /install/*
   Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
 
+# The install script that `curl -fsSL https://headwater.tools/install.sh | sh`
+# runs. Served as text, so a reader who opens the link reads the script in the
+# browser rather than downloading it.
+/install.sh
+  Content-Type: text/plain; charset=utf-8
+  X-Content-Type-Options: nosniff
+
 /ns/*
   Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
   Access-Control-Allow-Origin: *

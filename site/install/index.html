@@ -147,7 +147,12 @@
   <h1>Install Headwater</h1>
   <p class="uri">version 0.5.0</p>
 
-  <p>Headwater is one binary, <code>headwater</code>. You need no Rust toolchain to run it. Pick one route:</p>
+  <p>Headwater is one binary, <code>headwater</code>. You need no Rust toolchain to run it. On Linux x86_64 or macOS on Apple silicon, one line installs it:</p>
+  <div class="install oneliner">
+    <div><span class="dim">$</span> curl -fsSL https://headwater.tools/install.sh | sh</div>
+  </div>
+  <p class="small"><a href="/install.sh">The script</a> downloads the release archive for your machine, checks it against the checksum published beside it, and unpacks the binary into <code>~/.local/bin</code>. It needs <code>sh</code>, <code>curl</code>, <code>tar</code> and <code>uname</code>, and never asks for root. Set <code>HEADWATER_VERSION</code> to install another release, or <code>HEADWATER_INSTALL_DIR</code> to install somewhere else. To read the script before you run it, open the link above.</p>
+  <p>Or pick a route by hand:</p>
   <ul class="toc">
     <li><a href="#download">Download the binary</a>, for Linux x86_64 and macOS on Apple silicon</li>
     <li><a href="#apt">Install with apt</a>, on Debian or Ubuntu</li>
@@ -155,7 +160,10 @@
     <li><a href="#source">Build from source</a>, at a fixed tag</li>
   </ul>
 
-  <!-- #975 and #1348. These panels are the README's download block and its
+  <!-- The one-liner panel above is class `install oneliner`, and group 11
+       holds it to the front page's line. The panels below are class
+       `install` alone.
+       #975 and #1348. These panels are the README's download block and its
        APT block, in that order. Group 11 of tools/repo/readme-fixtures.sh
        reads the prompt lines of every `install` panel on this page and holds
        its download lines, line for line, and its sources line, keyring URL,

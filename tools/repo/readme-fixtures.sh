@@ -71,9 +71,12 @@
 # `site/install/index.html`, against the page. The panels open with the page's
 # download block, line for line, they download the release the page checks out,
 # and their APT sources line, keyring URL, keyring path and package are the
-# page's. The front page, `site/index.html`, keeps the download block alone,
-# and the group holds that copy line for line too. Step 9 of `docs/how-to/cut-a-release.md` moves both
-# files, and v0.4.1 was cut with both still on v0.4.0 (#1348). The group does
+# page's. The front page, `site/index.html`, and the top of the install page
+# carry one line that pipes `site/install.sh` to `sh`. The group holds both
+# pages to that line, holds the script's default release to the page's, and
+# runs the script against a planted release. Step 9 of
+# `docs/how-to/cut-a-release.md` moves the tag in each of these files, and
+# v0.4.1 was cut with the README and the site still on v0.4.0 (#1348). The group does
 # not ask whether the tag is the newest one, because that case would turn
 # `main` red from the push of a tag until the install text moves. Group 13 asks
 # the clone's tags a weaker question that stays green in that window: the page's
@@ -4002,7 +4005,7 @@ echo "the site's install panel, against the page"
 
 # The site carries its own copy of the install block, and a stranger meets it
 # before the README. The install page carries every route, and the front page
-# carries the download block alone. A release moves the README's tag and
+# carries one line that runs `site/install.sh`. A release moves the README's tag and
 # the site's tag in one step of `docs/how-to/cut-a-release.md`, and nothing
 # compared the two, so v0.4.1 was cut and both still said v0.4.0 (#1348). A
 # half move is worse: the README says one release and the site another, and
@@ -4015,16 +4018,18 @@ echo "the site's install panel, against the page"
 site_index="$root/site/install/index.html"
 site_home="$root/site/index.html"
 
-# site_panel_of HTML — the commands of every `<div class="install">` panel, in
-# page order, one per line inside one fence, as a README fence would carry
-# them. A command is a
+# site_panel_of HTML [CLASS] — the commands of every `<div class="CLASS">`
+# panel, in page order, one per line inside one fence, as a README fence would
+# carry them. CLASS is `install` when it is not named, and it is matched as the
+# whole attribute, so `install` does not read an `install oneliner` panel. A
+# command is a
 # line that carries the `$` prompt span. The tags, the prompt and the cursor
 # are stripped and the entities a command can need are decoded, so the APT
 # readers of group 10 read the panel as they read the page.
 site_panel_of() {
     echo '```'
-    awk '
-        /<div class="install">/ { on = 1; next }
+    awk -v open="<div class=\"${2:-install}\">" '
+        index($0, open) { on = 1; next }
         on && /^[ \t]*<\/div>[ \t]*$/ { on = 0; next }
         on {
             s = $0
@@ -4273,21 +4278,132 @@ same "  and it reads every panel of a page, in page order" \
     '```|first|second|```' \
     "$(site_panel_of "$scratch/site/two-panels.html" | tr '\n' '|' | sed 's/|$//')"
 
-# 11f. The front page keeps the download block alone, and a release moves it
-#      in the same step as the install page. So it is held as the install
-#      page is: the release it downloads, and its lines, line for line.
+# 11f. The front page's panel is one line that pipes `site/install.sh` to
+#      `sh`, and the install page leads with the same line in its
+#      `install oneliner` panel. The line is written once, here, and each
+#      page is held to it, so the two pages cannot name two scripts.
+install_line='curl -fsSL https://headwater.tools/install.sh | sh'
+install_script="$root/site/install.sh"
+
+# oneliner_judge PANEL — ok when the panel runs the install line and nothing
+# else.
+oneliner_judge() {
+    oj_got=$(apt_fence_lines "$1" | tr '\n' ';' | sed 's/;$//')
+    if [ "$oj_got" = "$install_line" ]; then
+        echo ok
+    else
+        echo "the panel runs \`$oj_got\`, and the install line is \`$install_line\`"
+    fi
+}
+
 site_panel_of "$site_home" >"$scratch/site/home.md"
-more_than "the front page's install panel yields its commands" 0 \
-    "$(apt_fence_lines "$scratch/site/home.md" | wc -l | tr -d ' ')"
-same "  and it downloads the release the page downloads and checks out" ok \
-    "$(site_tag_judge "$scratch/site/home.md" "$readme")"
-same "  and its download lines are the page's download block, line for line" ok \
-    "$(site_download_judge "$scratch/site/home.md" "$readme")"
-sed "s|releases/download/$site_tag/headwater-$site_tag-|releases/download/v0.0.0/headwater-v0.0.0-|" "$site_home" >"$scratch/site/home-old.html"
-site_panel_of "$scratch/site/home-old.html" >"$scratch/site/home-old.md"
-apt_planted "  a front page left on another release is refused" "$scratch/site/home.md" "$scratch/site/home-old.md" \
-    "the panel downloads \`v0.0.0\`, and the page downloads \`$site_tag\` and checks out \`$site_tag\`" \
-    "$(site_tag_judge "$scratch/site/home-old.md" "$readme")"
+same "the front page's install panel is the install line alone" ok \
+    "$(oneliner_judge "$scratch/site/home.md")"
+site_panel_of "$site_index" "install oneliner" >"$scratch/site/page-line.md"
+same "  and the install page leads with the same line" ok \
+    "$(oneliner_judge "$scratch/site/page-line.md")"
+install_path=$(printf '%s' "$install_line" | sed -n 's|.*https://headwater\.tools/\([^ ]*\).*|\1|p')
+same "  and the script that line fetches is site/$install_path in this tree" yes \
+    "$([ -f "$root/site/$install_path" ] && echo yes || echo no)"
+sed 's|headwater.tools/install.sh|headwater.tools/install.bash|' "$site_home" >"$scratch/site/home-url.html"
+site_panel_of "$scratch/site/home-url.html" >"$scratch/site/home-url.md"
+apt_planted "  a front page that fetches another script is refused" "$scratch/site/home.md" "$scratch/site/home-url.md" \
+    "the panel runs \`curl -fsSL https://headwater.tools/install.bash | sh\`, and the install line is \`$install_line\`" \
+    "$(oneliner_judge "$scratch/site/home-url.md")"
+
+# 11g. The script installs the release the page installs. Step 9 of the
+#      release guide moves its default tag with the README's, and this is
+#      the case that refuses a release that moved one and not the other.
+script_tag_of() {
+    sed -n 's/^[[:space:]]*version=\${HEADWATER_VERSION:-\(v[0-9][0-9.]*\)}[[:space:]]*$/\1/p' "$1" | head -n 1
+}
+same "the install script's default release is the release the page checks out" "$site_tag" \
+    "$(script_tag_of "$install_script")"
+sed 's/HEADWATER_VERSION:-v[0-9][0-9.]*}/HEADWATER_VERSION:-v0.0.0}/' "$install_script" >"$scratch/site/install-old.sh"
+apt_planted "  a script left on another release is refused" "$install_script" "$scratch/site/install-old.sh" \
+    "v0.0.0" "$(script_tag_of "$scratch/site/install-old.sh")"
+
+# 11h. The script itself, run against a planted release. `uname` and `curl`
+#      are stubs on PATH: `uname` answers what the case names, and `curl`
+#      serves files from a directory laid out as the release download URLs
+#      are, and logs each URL. The archive holds a planted binary that prints
+#      a version, so a case reads whether the script unpacked it and ran it.
+#      Nothing here reaches the network.
+ih="$scratch/install"
+mkdir -p "$ih/stub" "$ih/rel/$site_tag" "$ih/bin"
+printf '#!/bin/sh\necho 9.9.9-planted\n' >"$ih/bin/headwater"
+chmod +x "$ih/bin/headwater"
+for target in x86_64-unknown-linux-musl aarch64-apple-darwin; do
+    ih_archive="headwater-$site_tag-$target.tar.gz"
+    tar -czf "$ih/rel/$site_tag/$ih_archive" -C "$ih/bin" headwater
+    (cd "$ih/rel/$site_tag" && sha256sum "$ih_archive" >"$ih_archive.sha256")
+done
+printf '#!/bin/sh\ncase "$1" in -s) echo "$STUB_OS" ;; -m) echo "$STUB_ARCH" ;; esac\n' >"$ih/stub/uname"
+cat >"$ih/stub/curl" <<'STUB'
+#!/bin/sh
+out=
+while [ $# -gt 1 ]; do
+    case "$1" in -o) out=$2; shift ;; esac
+    shift
+done
+echo "$1" >>"$STUB_LOG"
+src="$STUB_REL/${1#https://github.com/headwater-ai/headwater/releases/download/}"
+[ -f "$src" ] || exit 22
+cp "$src" "$out"
+STUB
+chmod +x "$ih/stub/uname" "$ih/stub/curl"
+
+# install_run OS ARCH [VERSION] — runs the script in a fresh home and prints
+# `<status>|<binary present: yes or no>|<temp dirs left>|<curl calls>|<output>`.
+install_run() {
+    rm -rf "$ih/home" "$ih/tmp" "$ih/log"
+    mkdir -p "$ih/home" "$ih/tmp"
+    : >"$ih/log"
+    ir_out=$(HOME="$ih/home" TMPDIR="$ih/tmp" PATH="$ih/stub:$PATH" \
+        STUB_OS="$1" STUB_ARCH="$2" STUB_LOG="$ih/log" STUB_REL="$ih/rel" \
+        HEADWATER_VERSION="${3:-}" sh "$install_script" 2>&1)
+    ir_status=$?
+    ir_bin=no
+    [ -x "$ih/home/.local/bin/headwater" ] && ir_bin=yes
+    printf '%s|%s|%s|%s|%s\n' "$ir_status" "$ir_bin" "$(ls "$ih/tmp" | wc -l | tr -d ' ')" \
+        "$(tr '\n' ' ' <"$ih/log" | sed 's/ $//')" "$(printf '%s' "$ir_out" | tr '\n' ' ')"
+}
+# The script reads an empty HEADWATER_VERSION as unset, as `${:-}` does, so
+# install_run passes one always.
+ih_base="https://github.com/headwater-ai/headwater/releases/download/$site_tag"
+ih_linux="$ih_base/headwater-$site_tag-x86_64-unknown-linux-musl.tar.gz"
+ih_mac="$ih_base/headwater-$site_tag-aarch64-apple-darwin.tar.gz"
+
+r=$(install_run Linux x86_64)
+same "the install script on Linux x86_64 unpacks the musl archive into ~/.local/bin and runs it" \
+    "0|yes|0|$ih_linux $ih_linux.sha256" "$(printf '%s' "$r" | cut -d'|' -f1-4)"
+same "  and it says which version it installed" yes \
+    "$(printf '%s' "$r" | grep -q 'installed 9.9.9-planted at' && echo yes || echo no)"
+r=$(install_run Darwin arm64)
+same "  and on macOS arm64 it unpacks the Apple silicon archive" \
+    "0|yes|0|$ih_mac $ih_mac.sha256" "$(printf '%s' "$r" | cut -d'|' -f1-4)"
+r=$(install_run Linux aarch64)
+same "  and on a platform no archive is built for it downloads nothing and installs nothing" \
+    "1|no|0|" "$(printf '%s' "$r" | cut -d'|' -f1-4)"
+same "  and names the platform and the page with every other route" yes \
+    "$(printf '%s' "$r" | grep -q 'no release archive is built for Linux aarch64.*headwater.tools/install/' && echo yes || echo no)"
+r=$(install_run Linux x86_64 v0.0.1)
+same "  and HEADWATER_VERSION names the release, and one that does not exist installs nothing" \
+    "1|no|0|https://github.com/headwater-ai/headwater/releases/download/v0.0.1/headwater-v0.0.1-x86_64-unknown-linux-musl.tar.gz" \
+    "$(printf '%s' "$r" | cut -d'|' -f1-4)"
+ih_sum="$ih/rel/$site_tag/headwater-$site_tag-x86_64-unknown-linux-musl.tar.gz.sha256"
+cp "$ih_sum" "$ih/sum.saved"
+awk '{ print "0000000000000000000000000000000000000000000000000000000000000000  " $2 }' "$ih/sum.saved" >"$ih_sum"
+r=$(install_run Linux x86_64)
+cp "$ih/sum.saved" "$ih_sum"
+same "  and an archive that does not match its checksum is refused and installs nothing" \
+    "1|no|0" "$(printf '%s' "$r" | cut -d'|' -f1-3)"
+same "  and the refusal says so" yes \
+    "$(printf '%s' "$r" | grep -q 'does not match its published checksum' && echo yes || echo no)"
+# A download cut off part way must run nothing, so the body is one function
+# and the call is the last line.
+same "  and the script's last line is the one call to its body" 'main "$@"' \
+    "$(grep -v '^[[:space:]]*$' "$install_script" | tail -n 1)"
 
 echo
 echo "the APT block the page offers, against the job that runs it"

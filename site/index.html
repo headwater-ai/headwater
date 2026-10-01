@@ -118,7 +118,7 @@
   }
   .herogrid {
     display: grid; grid-template-columns: repeat(auto-fit, minmax(min(24rem, 100%), 1fr));
-    gap: 4rem; align-items: start; position: relative;
+    gap: 4rem; align-items: center; position: relative;
   }
   .eyebrow {
     font-family: var(--sans); font-size: 0.78rem;
@@ -381,18 +381,18 @@
           <a class="sans" href="/how-it-works/">How it works</a>
         </div>
         <div class="install">
-          <div><span class="dim">$</span> mkdir -p ~/.local/bin</div>
-          <div><span class="dim">$</span> curl -fsSLO https://github.com/headwater-ai/headwater/releases/download/v0.5.0/headwater-v0.5.0-x86_64-unknown-linux-musl.tar.gz</div>
-          <div><span class="dim">$</span> tar -xzf headwater-v0.5.0-x86_64-unknown-linux-musl.tar.gz -C ~/.local/bin headwater <span class="cursor" aria-hidden="true">▍</span></div>
-          <!-- #975. The release download leads, because HW-DR-0077 makes no
-               Rust toolchain mandatory. These three lines are the
-               tutorial's install block, and they were run against the
-               v0.5.0 release on 2026-09-29: the archive unpacked, the
-               binary printed 0.5.0, and `sha256sum -c` read the checksum
-               beside it as OK. Group 11 of tools/repo/readme-fixtures.sh
-               holds them, line for line, against the README's download
-               block. Every other route lives on /install/. -->
-          <div class="note">Linux x86_64. For macOS, apt and cargo, see <a href="/install/">all install options →</a></div>
+          <div><span class="dim">$</span> curl -fsSL https://headwater.tools/install.sh | sh <span class="cursor" aria-hidden="true">▍</span></div>
+          <!-- The release download leads, because HW-DR-0077 makes no Rust
+               toolchain mandatory. site/install.sh is the script this line
+               fetches. It downloads the release archive for Linux x86_64 or
+               macOS arm64, checks its published checksum, and unpacks the
+               binary into ~/.local/bin. It was run piped from this line's
+               shape against the v0.5.0 release on 2026-10-01 and installed
+               a binary that printed 0.5.0. Group 11 of
+               tools/repo/readme-fixtures.sh holds this panel to that one
+               line and the script to the README's release. Every other route
+               lives on /install/. -->
+          <div class="note">Linux x86_64 and macOS on Apple silicon. <a href="/install/" style="white-space: nowrap">All install options →</a></div>
         </div>
       </div>
       <div class="cards">
