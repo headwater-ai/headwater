@@ -172,6 +172,9 @@ printf '{"at":"2026-09-30T04:00:0\n' > "$scratch/f/log/S.jsonl"
 logline f S f1 one
 run f
 has f "$scratch/f.out" "joined distinct prompts (J): 1"
+# The torn line is skipped, not reported: a `fromjson` without `?` gives the
+# same figures and an error on standard error for each torn line.
+if [ ! -s "$scratch/f.err" ]; then pass "f: a torn line writes nothing to standard error"; else fail "f: a torn line writes nothing to standard error" "got: $(tr '\n' '|' < "$scratch/f.err")"; fi
 
 # g: the prompt's text was logged under the id of what it queued behind.
 start g S "$scratch/co"
