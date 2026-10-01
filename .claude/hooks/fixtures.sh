@@ -428,29 +428,16 @@ if [ -x "$engine" ]; then
         write.sh 0 'docs/interfaces/headwater-sweep.md' \
         '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"engine/crates/cli/src/main.rs"}}'
 
-    # A made-up file beside `main.rs` of the cli crate, which
-    # `docs/interfaces/headwater-sweep.md` governs by a literal, one-file
-    # anchor. HW-DR-0074 lets an author widen that anchor to a pattern; this
-    # contract has not been rewritten to one, so the edge still answers for no
-    # file beside the one it names. Since #953 the path is named as ungoverned
-    # in scope instead of meeting silence. A name with no file behind it, so no
-    # later edge on a real file moves it. The contract can still appear among
-    # the documents a term route reached, so the case refutes the governing
-    # header rather than the contract's path.
-    #
-    # The example was `engine/crates/check/src/` until #1288's Checks and cache
-    # spec governed `engine/crates/check/src/**`, and `engine/crates/sweep/src/`
-    # until its Measurement spec governed `engine/crates/sweep/src/**`. The cli
-    # crate belongs to the Command surface row of spec 6, which has no
-    # subsystem spec yet. When that spec governs `engine/crates/cli/src/**`,
-    # move the example to a crate that no subsystem spec governs, or retire the
-    # case if none is left.
-    refute 'a file beside a governed crate file is governed by no contract, until its contract adopts a pattern' \
-        write.sh 'a document in this corpus declares that it governs' \
-        '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"engine/crates/cli/src/nothing-governs-this.rs"}}'
-    expect 'the same file is named as in the governed scope with nothing governing it' \
-        write.sh 0 'engine/crates/cli/src/nothing-governs-this.rs is in the governed scope, and nothing governs it' \
-        '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"engine/crates/cli/src/nothing-governs-this.rs"}}'
+    # Two cases retired here with #1288's last slice. They held that a
+    # contract's literal, one-file anchor on a file of a crate answers for no
+    # file beside it, over a made-up file beside a governed crate file. The
+    # example moved from `check/src/` to `sweep/src/` to `cli/src/` as each
+    # subsystem spec came to govern `engine/crates/<crate>/src/**`. The
+    # Command surface spec now governs `engine/crates/cli/src/**`, so every
+    # crate under `engine/crates/` is governed, and no real crate is left to
+    # hold the example. A path under `engine/crates/no-such-crate/src/` keeps
+    # the ungoverned-in-scope cases above, but no contract governs a file
+    # beside it, so it cannot hold the literal-anchor point.
 
     # #953: the advisory is heard before the edit, and it says so. Until then
     # this branch exited at once for a path that exists, so the case above on
