@@ -76,7 +76,7 @@ Each stage is built by one subsystem, and each subsystem is a group of crates un
 | parse | [Parse and census](../subsystems/parse-and-census.md) | `doc`, `census`, `vcs` | `census` and `graph` use `vcs` for the change manifest. The only other crate that uses it is `cli`. |
 | graph build | [Graph build](../subsystems/graph-build.md) | `graph` | |
 | cache, checks | [Checks and cache](../subsystems/checks-and-cache.md) | `check`, `adapter` | `adapter` renders one run of the check layer for a CI platform. |
-| queries, explain | Queries and explain (no spec yet, #1288) | `query`, `embed` | `embed` is the offline embedding path that routing reads ([HW-DR-0064](../decisions/0064-q64-whether-intent-time-routing-gains-an-offline-embedding-path-in-shadow-mode.md)). |
+| queries, explain | [Queries and explain](../subsystems/queries-and-explain.md) | `query`, `embed` | `embed` is the offline embedding path that routing reads ([HW-DR-0064](../decisions/0064-q64-whether-intent-time-routing-gains-an-offline-embedding-path-in-shadow-mode.md)). |
 | projections, export | [Projections and export](../subsystems/projections-and-export.md) | `generate`, `mark` | `generate` writes the marker, and the census reads it. |
 | authoring | Authoring (no spec yet, #1288) | `scaffold`, `import` | |
 | measurement | Measurement (no spec yet, #1288) | `probe`, `conformance`, `sweep` | |
