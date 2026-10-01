@@ -1618,7 +1618,11 @@ add:
     # package manager and the tools that add a repository to it.
     # `.claude/tutorial/adopter_interface.py` holds each one to the shape
     # that block runs.
-    commands: [headwater, git, sh, curl, tar, cd, echo, grep, mkdir, printf, rm, wc, xargs, python3, mkdocs, apt-get, sudo, install, tee]
+    # `uname` is the one program the install script needs beyond `sh`, `curl`
+    # and `tar`: `curl -fsSL https://headwater.tools/install.sh | sh` asks it
+    # which archive the machine takes. HW-DR-0077 clause 1 names it, and that
+    # URL, by the owner's ruling of 2026-10-01 (#1545).
+    commands: [headwater, git, sh, curl, tar, cd, echo, grep, mkdir, printf, rm, wc, xargs, uname, python3, mkdocs, apt-get, sudo, install, tee]
 
 # --- projections ------------------------------------------------------------
 # `projections` is a list in the base, so an `add` cannot reach it, and this is

@@ -34,8 +34,12 @@
 # A `.claude/rules/` file with a `paths:` key loads only when the session
 # touches a matching path. The check reads it anyway, because a check that
 # guessed the session's paths could miss a leak, and a false leak costs one
-# line of review. Text under `~/.claude` of the host is not read: that is
-# confining a session to its workspace (#1467).
+# line of review. Text under `~/.claude` of the host is not read, because a
+# recorded session runs under a configuration directory of its own (#1467).
+# `--config <dir>` names that directory, and the check then reads its
+# `CLAUDE.md` and the name and description of each `skills/*/SKILL.md` too,
+# under `<where>` = `config:<path>`. A campaign's directory is empty by
+# construction, so the check finds nothing there unless something was planted.
 #
 # Every text is compared with its whitespace runs, line breaks included, read
 # as one space, and so is every leak string. A literal block and a folded one
@@ -102,12 +106,17 @@ def imports(text):
 
 
 class Loaded:
-    def __init__(self, workspace):
+    def __init__(self, workspace, config=None):
         self.workspace = workspace
+        self.config = config
         self.records = []
         self.seen = set()
 
     def where(self, path):
+        if self.config is not None:
+            in_config = os.path.relpath(path, self.config)
+            if not in_config.startswith(".."):
+                return f"config:{in_config}"
         relative = os.path.relpath(path, self.workspace)
         return path if relative.startswith("..") else relative
 
@@ -215,14 +224,24 @@ def mcp_tools(checkout, workspace):
 
 
 def main(argv):
+    usage = "usage: sh tools/probe/seal.sh --leak [--config <dir>] <workspace> <probe-id>..."
+    config = None
+    if len(argv) >= 3 and argv[1] == "--config":
+        config = argv[2]
+        argv = [argv[0]] + argv[3:]
     if len(argv) < 3:
-        print("usage: sh tools/probe/seal.sh --leak <workspace> <probe-id>...", file=sys.stderr)
+        print(usage, file=sys.stderr)
         return 2
     checkout, workspace, probes = argv[0], argv[1], argv[2:]
     workspace = os.path.realpath(workspace)
     if not os.path.isdir(workspace):
         print(f"seal: no workspace directory at {argv[1]}", file=sys.stderr)
         return 2
+    if config is not None:
+        config = os.path.realpath(config)
+        if not os.path.isdir(config):
+            print(f"seal: no configuration directory at {config}", file=sys.stderr)
+            return 2
     declaration = os.environ.get("HW_PROBE_YML") or os.path.join(checkout, ".headwater/probe.yml")
     try:
         declared = yaml.safe_load(read_text(declaration)) or {}
@@ -238,9 +257,21 @@ def main(argv):
         print(f"seal: `leaks` in {declaration} is not a mapping, or `leaks_kept` is not a sequence", file=sys.stderr)
         return 2
 
-    loaded = Loaded(workspace)
+    loaded = Loaded(workspace, config)
     for name in MEMORY:
         loaded.memory(os.path.join(workspace, name), 0)
+    # The host level (#1467, clause 7): the configuration directory the
+    # session runs under, which the harness reads as the user's `~/.claude`.
+    # Its `CLAUDE.md` loads into every session, and so do the name and
+    # description of each of its skills.
+    if config is not None:
+        loaded.memory(os.path.join(config, "CLAUDE.md"), 0)
+        config_skills = os.path.join(config, "skills")
+        if os.path.isdir(config_skills):
+            for name in sorted(os.listdir(config_skills)):
+                path = os.path.join(config_skills, name, "SKILL.md")
+                if os.path.isfile(path):
+                    loaded.listed(path, fallback=True)
     for path in markdown_under(os.path.join(workspace, ".claude/rules")):
         loaded.memory(path, 0)
     skills = os.path.join(workspace, ".claude/skills")

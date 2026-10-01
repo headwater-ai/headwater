@@ -577,6 +577,7 @@ nav:
       - "Glossary": "spec/glossary.md"
   - "Engine subsystems":
       - "Engine subsystems": "subsystems/README.md"
+      - "Checks and cache": "subsystems/checks-and-cache.md"
       - "Graph build": "subsystems/graph-build.md"
       - "Projections and export": "subsystems/projections-and-export.md"
       - "Taxonomy resolution": "subsystems/taxonomy-resolution.md"

@@ -1955,6 +1955,7 @@ surface:
     - rm
     - wc
     - xargs
+    - uname
     - python3
     - mkdocs
     - apt-get

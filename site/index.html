@@ -118,7 +118,7 @@
   }
   .herogrid {
     display: grid; grid-template-columns: repeat(auto-fit, minmax(min(24rem, 100%), 1fr));
-    gap: 4rem; align-items: start; position: relative;
+    gap: 4rem; align-items: center; position: relative;
   }
   .eyebrow {
     font-family: var(--sans); font-size: 0.78rem;
@@ -147,14 +147,27 @@
     background: var(--code-bg); padding: 0.7rem 1.1rem; max-width: 32rem;
   }
   .install div { overflow-wrap: anywhere; }
-  .install .label {
-    font-family: var(--sans); font-size: 0.75rem;
-    color: var(--muted); margin-top: 0.5rem;
-  }
   .install .note {
     font-family: var(--sans); font-size: 0.75rem;
     color: var(--muted); margin-top: 0.3rem;
   }
+  /* The copy button. It ships hidden and the site script shows it, so a
+     browser that runs no script never shows a button that does nothing. */
+  .install { position: relative; }
+  .install:has(> .copy) { padding-right: 3rem; max-width: 34rem; }
+  .copy {
+    position: absolute; top: 0.5rem; right: 0.5rem;
+    width: 2.1rem; height: 2.1rem; padding: 0;
+    display: inline-flex; align-items: center; justify-content: center;
+    border: 1px solid var(--rule); border-radius: 3px;
+    background: var(--bg); color: var(--muted); cursor: pointer;
+  }
+  .copy[hidden] { display: none; }
+  .copy:hover, .copy:focus-visible { color: var(--accent); border-color: var(--accent); }
+  .copy .icon-done { display: none; }
+  .copy[data-state="copied"] { color: var(--accent); border-color: var(--accent); }
+  .copy[data-state="copied"] .icon-copy { display: none; }
+  .copy[data-state="copied"] .icon-done { display: inline; }
   .cursor { color: var(--accent); animation: hw-blink 1.1s steps(1) infinite; }
   @keyframes hw-blink { 50% { opacity: 0; } }
 
@@ -340,6 +353,9 @@
     .install div {
       word-break: break-all;
     }
+    .install .note {
+      word-break: normal;
+    }
     .pad {
       padding-top: 2.5rem;
       padding-bottom: 2.5rem;
@@ -382,30 +398,19 @@
           <a class="sans" href="/how-it-works/">How it works</a>
         </div>
         <div class="install">
-          <div><span class="dim">$</span> mkdir -p ~/.local/bin</div>
-          <div><span class="dim">$</span> curl -fsSLO https://github.com/headwater-ai/headwater/releases/download/v0.5.0/headwater-v0.5.0-x86_64-unknown-linux-musl.tar.gz</div>
-          <div><span class="dim">$</span> tar -xzf headwater-v0.5.0-x86_64-unknown-linux-musl.tar.gz -C ~/.local/bin headwater</div>
-          <!-- #975. The release download leads, because HW-DR-0077 makes no
-               Rust toolchain mandatory. These three lines are the
-               tutorial's install block, and they were run against the
-               v0.5.0 release on 2026-09-29: the archive unpacked, the
-               binary printed 0.5.0, and `sha256sum -c` read the checksum
-               beside it as OK. -->
-          <div class="label">Or, on Debian or Ubuntu (amd64):</div>
-          <div><span class="dim">$</span> sudo install -d -m 0755 /etc/apt/keyrings</div>
-          <div><span class="dim">$</span> sudo curl -fsSL -o /etc/apt/keyrings/headwater-archive-keyring.asc https://headwater.tools/apt/headwater-archive-keyring.asc</div>
-          <div><span class="dim">$</span> echo &quot;deb [signed-by=/etc/apt/keyrings/headwater-archive-keyring.asc] https://headwater.tools/apt stable main&quot; | sudo tee /etc/apt/sources.list.d/headwater.list</div>
-          <div><span class="dim">$</span> sudo apt-get update</div>
-          <div><span class="dim">$</span> sudo apt-get install -y headwater <span class="cursor" aria-hidden="true">▍</span></div>
-          <!-- #1348. These lines are the README's APT block less its first
-               two lines, which install ca-certificates and curl on a
-               minimal image. Group 11 of tools/repo/readme-fixtures.sh
-               holds the panel's download lines, line for line, and its
-               sources line, keyring URL, keyring path and package against
-               the README, so a release that moves one
-               and not the other is refused. Nobody has run these apt lines
-               from this page. The README says which images they install on. -->
-          <div class="note">On Apple silicon macOS, use <code>aarch64-apple-darwin</code> in the download lines. The <a href="/tutorial/">tutorial</a> then fetches the taxonomy package.</div>
+          <div><span class="dim">$</span> curl -fsSL https://headwater.tools/install.sh | sh <span class="cursor" aria-hidden="true">▍</span></div>
+          <button class="copy" type="button" aria-label="Copy the install command" title="Copy" hidden><svg class="icon-copy" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg><svg class="icon-done" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button>
+          <!-- The release download leads, because HW-DR-0077 makes no Rust
+               toolchain mandatory. site/install.sh is the script this line
+               fetches. It downloads the release archive for Linux x86_64 or
+               macOS arm64, checks its published checksum, and unpacks the
+               binary into ~/.local/bin. It was run piped from this line's
+               shape against the v0.5.0 release on 2026-10-01 and installed
+               a binary that printed 0.5.0. Group 11 of
+               tools/repo/readme-fixtures.sh holds this panel to that one
+               line and the script to the README's release. Every other route
+               lives on /install/. -->
+          <div class="note">Linux x86_64 and macOS on Apple silicon. <a href="/install/" style="white-space: nowrap">All install options →</a></div>
         </div>
       </div>
       <div class="cards">
@@ -653,6 +658,7 @@ owes `superseded_by`
           <a href="/how-it-works/">How it works</a>
           <a href="/compare/">Compare</a>
           <a href="/proof/">Proof</a>
+          <a href="/install/">Install</a>
           <a href="/tutorial/">Tutorial</a>
           <a href="/glossary/">Glossary</a>
           <a href="/ns/">Namespace</a>
@@ -664,13 +670,35 @@ owes `superseded_by`
   </div>
 </footer>
 
-<script>
+<script data-headwater="site-script">
 document.querySelector('.nav-toggle')?.addEventListener('click', () => {
   const navlinks = document.querySelector('.navlinks');
   const toggle = document.querySelector('.nav-toggle');
   navlinks.classList.toggle('open');
   toggle.setAttribute('aria-expanded', toggle.getAttribute('aria-expanded') === 'false' ? 'true' : 'false');
 });
+for (const button of document.querySelectorAll('button.copy')) {
+  const line = button.parentElement.querySelector('div');
+  const label = button.getAttribute('aria-label');
+  button.hidden = false;
+  button.addEventListener('click', async () => {
+    const text = line.textContent.replace('▍', '').replace(/^\s*\$\s*/, '').trim();
+    try {
+      await navigator.clipboard.writeText(text);
+      button.dataset.state = 'copied';
+      button.setAttribute('aria-label', 'Copied');
+    } catch {
+      const range = document.createRange();
+      range.selectNodeContents(line);
+      getSelection().removeAllRanges();
+      getSelection().addRange(range);
+    }
+    setTimeout(() => {
+      delete button.dataset.state;
+      button.setAttribute('aria-label', label);
+    }, 1600);
+  });
+}
 </script>
 
 </body>

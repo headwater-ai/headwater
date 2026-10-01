@@ -22,7 +22,7 @@
       "taxonomy": {
         "package": "headwater/standard",
         "version": "4.14.0",
-        "lock": "sha256:3162375907c80857a45a498ccb0c5993fbcfad6a30d1320ca2b538a7cb9ed678"
+        "lock": "sha256:7d16d29043a9ce7682a5e19cb6f174a9db79cb1891a5dda924f0f887e68efb03"
       },
       "entry_points": [
         {
@@ -127,8 +127,8 @@
         },
         {
           "shelf": "subsystems",
-          "path": "docs/subsystems/graph-build.md",
-          "id": "HW-SPEC-graph-build"
+          "path": "docs/subsystems/checks-and-cache.md",
+          "id": "HW-SPEC-checks-and-cache"
         },
         {
           "shelf": "tutorials",
