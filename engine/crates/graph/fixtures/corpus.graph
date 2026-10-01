@@ -237,6 +237,8 @@ anchors
     cited by HW-IFACE-headwater-taxonomy
   code_path `engine/crates/audit/src/reading.rs` via source-tree
     cited by HW-IFACE-headwater-taxonomy
+  code_path `engine/crates/census/src/**` via source-tree
+    cited by HW-SPEC-parse-and-census
   code_path `engine/crates/census/src/census.rs` via source-tree
     cited by HW-DR-0049
   code_path `engine/crates/census/src/derived.rs` via source-tree
@@ -411,6 +413,8 @@ anchors
     cited by HW-IFACE-headwater-conformance
   code_path `engine/crates/conformance/tests/render.rs` via source-tree
     cited by HW-OBL-0176
+  code_path `engine/crates/doc/src/**` via source-tree
+    cited by HW-SPEC-parse-and-census
   code_path `engine/crates/doc/src/sentences.rs` via source-tree
     cited by HW-OBL-0159
   code_path `engine/crates/embed/src/lib.rs` via source-tree
@@ -555,6 +559,8 @@ anchors
     cited by HW-DR-0024
   code_path `engine/crates/sweep/src/lib.rs` via source-tree
     cited by HW-IFACE-headwater-sweep
+  code_path `engine/crates/vcs/src/**` via source-tree
+    cited by HW-SPEC-parse-and-census
   code_path `engine/crates/vcs/src/lib.rs` via source-tree
     cited by HW-IFACE-headwater-change
   code_path `engine/crates/verbs/src/lib.rs` via source-tree

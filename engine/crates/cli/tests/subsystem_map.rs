@@ -121,10 +121,15 @@ fn spec_six_rows() -> Vec<Row> {
 
 /// The `governs` list under the `relations:` block of a document's front
 /// matter, read with the YAML loader the engine reads it with, so a comment, a
-/// blank line or a flow list reads as the engine reads it. Each entry comes
-/// back as text: a scalar as written, and a list anchor (`- [a, b]`) as
-/// `[a, b]` for `patterns_of`. A `governs:` key anywhere else declares no edge,
-/// and `headwater route` reads nothing from it, so it is not read here.
+/// blank line or a flow list reads as the engine reads it. It reads the three
+/// forms of an entry that the engine binds (`engine/crates/graph/src/edges.rs`):
+/// a scalar, a list anchor (`- [a, b]`), and a mapping whose `to` key is a
+/// scalar or a list anchor, with every other key an attribute. A `governs`
+/// that is one value and not a list is one entry. Each entry comes back as
+/// text: a scalar as written, and a list anchor as `[a, b]` for `patterns_of`.
+/// A mapping with no `to` binds no edge in the engine, so it gives no entry.
+/// A `governs:` key anywhere else declares no edge, and `headwater route`
+/// reads nothing from it, so it is not read here.
 fn governs(path: &Path) -> Vec<String> {
     let text = std::fs::read_to_string(path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
     let front = text
@@ -142,31 +147,41 @@ fn governs(path: &Path) -> Vec<String> {
     else {
         return Vec::new();
     };
-    let entry = |node: &headwater_yaml::Spanned<headwater_yaml::Value>| -> String {
-        if let Some(scalar) = node.value.as_scalar() {
-            return scalar.text.clone();
-        }
-        let members: Vec<String> = node
-            .value
-            .as_seq()
-            .unwrap_or_else(|| panic!("{}: a `governs` entry is a mapping", path.display()))
+    // A list anchor as text, or `None` where a member is not a scalar or the
+    // list is empty: the engine binds no edge from either.
+    let anchor = |members: &[headwater_yaml::Spanned<headwater_yaml::Value>]| -> Option<String> {
+        let members: Option<Vec<String>> = members
             .iter()
-            .map(|member| {
-                member
-                    .value
-                    .as_scalar()
-                    .unwrap_or_else(|| {
-                        panic!("{}: a list anchor member is not a scalar", path.display())
-                    })
-                    .text
-                    .clone()
-            })
+            .map(|member| member.value.as_scalar().map(|scalar| scalar.text.clone()))
             .collect();
-        format!("[{}]", members.join(", "))
+        members
+            .filter(|members| !members.is_empty())
+            .map(|members| format!("[{}]", members.join(", ")))
+    };
+    let entry = |node: &headwater_yaml::Spanned<headwater_yaml::Value>| -> Option<String> {
+        if let Some(scalar) = node.value.as_scalar() {
+            return Some(scalar.text.clone());
+        }
+        if let Some(members) = node.value.as_seq() {
+            return Some(anchor(members).unwrap_or_else(|| {
+                panic!(
+                    "{}: a list anchor is empty or has a member that is not a scalar",
+                    path.display()
+                )
+            }));
+        }
+        // The mapping form: the engine binds the `to` key, a scalar or a list
+        // anchor, and reads every other key as an attribute. A mapping with no
+        // usable `to` binds nothing.
+        let to = node.value.as_map()?.get("to")?;
+        match to.value.as_scalar() {
+            Some(scalar) => Some(scalar.text.clone()),
+            None => anchor(to.value.as_seq()?),
+        }
     };
     match list.value.as_seq() {
-        Some(entries) => entries.iter().map(entry).collect(),
-        None => vec![entry(list)],
+        Some(entries) => entries.iter().filter_map(entry).collect(),
+        None => entry(list).into_iter().collect(),
     }
 }
 
@@ -275,6 +290,9 @@ fn every_crate_is_in_exactly_one_row_of_spec_6s_subsystem_map() {
 /// Watched failing two ways over the Taxonomy resolution row before it passed
 /// (#1288): with the row linked and no spec on disk, and with the spec's
 /// `governs` missing `engine/crates/hash/src/**` (the message named `hash`).
+/// Watched failing the same two ways over the Parse and census row: with the
+/// row linked and no spec on disk, and with the spec's `governs` missing
+/// `engine/crates/vcs/src/**` (the message named `vcs`).
 ///
 /// [HW-DR-0074]: ../../../../docs/decisions/0074-a-code-path-anchor-is-a-pattern-over-the-tree-and-it-binds-when-the-pattern-matches-at-least-one-entry.md
 #[test]
@@ -456,6 +474,70 @@ fn a_spec_read_through_governed_patterns_reaches_the_crates_it_names() {
             "the crates `{pattern}` reaches outside its row"
         );
     }
+}
+
+/// A `governs` entry in the mapping form, `- to: <pattern>` or `- to: [a, b]`
+/// with other keys beside `to`, binds its `to` as the engine binds it
+/// (`target_of` in `engine/crates/graph/src/edges.rs`), and the other keys are
+/// attributes that bind nothing. A mapping with no `to` binds nothing, because
+/// the engine reports it and binds no edge. The `note` key comes before `to`,
+/// so a reader that took the first value of the mapping reads `x`, which
+/// reaches no crate. The mapping with no `to` comes first, so a reader that
+/// stopped at the first entry that binds nothing would drop every entry after
+/// it.
+///
+/// Watched failing before it passed (#1288 clause 8): over the reader that
+/// read only a scalar or a list anchor, it panicked with "a `governs` entry is
+/// a mapping". Watched failing again (verify round 1) with `filter_map`
+/// changed to `map_while`, once the mapping with no `to` moved first.
+#[test]
+fn a_governs_entry_in_the_mapping_form_binds_its_to() {
+    let governed = governed_patterns_of_text(
+        "---\nid: HW-SPEC-temp\nrelations:\n  governs:\n    - note: a mapping with no to\n    - note: x\n      to: engine/crates/check/src/**\n    - note: x\n      to: [engine/crates/graph/src/lib.rs, engine/crates/hash/src/lib.rs]\n---\n\n# Temp\n",
+    );
+    for pattern in [
+        "engine/crates/check/src/**",
+        "engine/crates/graph/src/lib.rs",
+        "engine/crates/hash/src/lib.rs",
+    ] {
+        assert!(
+            governed.contains(pattern),
+            "governed_patterns does not hold {pattern} (it holds {governed:?})"
+        );
+    }
+    assert_eq!(
+        governed.len(),
+        3,
+        "governed_patterns holds an entry that no `to` names: {governed:?}"
+    );
+    let row = vec!["graph".to_string(), "hash".to_string()];
+    let crates: BTreeSet<String> = ["check", "graph", "hash"]
+        .into_iter()
+        .map(str::to_string)
+        .collect();
+    assert_eq!(
+        foreign_crates("engine/crates/check/src/**", &row, &crates),
+        ["check"],
+        "the crates the mapping entry's `to` reaches outside its row"
+    );
+}
+
+/// A `governs` whose value is one scalar, not a list, is one entry. The engine
+/// reads a value that is not a sequence as one item, so a spec that wrote
+/// `governs: engine/crates/check/src/**` governs that crate.
+///
+/// Watched failing before it passed (#1288 clause 8, mutant M1 of verify round
+/// 3): with the non-list arm of `governs` returning no entry, the set was
+/// empty.
+#[test]
+fn a_governs_that_is_one_scalar_is_one_entry() {
+    let governed = governed_patterns_of_text(
+        "---\nid: HW-SPEC-temp\nrelations:\n  governs: engine/crates/check/src/**\n---\n\n# Temp\n",
+    );
+    assert!(
+        governed.contains("engine/crates/check/src/**"),
+        "governed_patterns does not hold engine/crates/check/src/** (it holds {governed:?})"
+    );
 }
 
 /// Every subsystem spec on the shelf, in a subdirectory too, is linked from
