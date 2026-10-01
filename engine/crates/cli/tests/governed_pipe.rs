@@ -910,7 +910,11 @@ fn every_verb_finishes_when_a_named_pipe_takes_a_file_of_a_pinned_package() {
         &["conformance"],
         "conformance read the device at conformance.yml",
     );
-    assert_eq!(status.code(), Some(1), "conformance refuses the device: {err}");
+    assert_eq!(
+        status.code(),
+        Some(1),
+        "conformance refuses the device: {err}"
+    );
     assert!(
         flat(&err).contains("headwater-standard/conformance.yml is not a regular file"),
         "{err}"
