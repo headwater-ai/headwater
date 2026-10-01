@@ -32,7 +32,7 @@ relations:
     - to: .claude/agents/hw-queue.md
       verified_revision: sha256:24ddc87861f3f7bada00eb1f779f41627a40f9f6b1eb7b1411558b0a356eaf22
     - to: .claude/agents/hw-adjudicate.md
-      verified_revision: sha256:2985119fd41fd21f5465d6495a411bd618060a3896e343df474945b17f6d10ee
+      verified_revision: sha256:d33ccaa7b073f82caccf0a48b66fb933a96d518b9e4ab78a5c63c85190dd3045
     - to: .claude/agents/hw-iterate.md
       verified_revision: sha256:d611defd41b37a8039c0ffb5270626e09f71454e7c32ead30d5b53aa5286f7a2
     - to: .claude/agents/hw-build.md
