@@ -13,6 +13,7 @@ relations:
     - engine/crates/query/src/json.rs
     - engine/crates/graph/src/edges.rs
     - engine/crates/census/src/walk.rs
+    - engine/crates/cli/tests/show.rs
 ---
 
 # headwater explain
