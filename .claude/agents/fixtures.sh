@@ -10,7 +10,7 @@
 # definition's instructions, and a skill name nobody matches never loads. This
 # suite is what reports the drift.
 #
-# Twelve cases, and the ceilings are the reason two of them exist. The parent's
+# Thirteen cases, and the ceilings are the reason two of them exist. The parent's
 # context is the unit of cost ([HW-PD-0003]), so the command and the doctrine
 # carry a byte ceiling declared here, once, and CLAUDE.md carries one because
 # every agent pays for it on every dispatch ([HW-PD-0001]).
@@ -520,6 +520,68 @@ if [ -z "$why" ]; then
 else
     fail 'a reworded ruling with both requirements holds' "$why"
 fi
+
+# --- 13. each throughput rule of 2026-10-01 has one owner ----------------------
+
+# The owner ruled five throughput rules in run 20260930-1333, and each one is
+# stated once, in the definition of the stage that obeys it ([HW-PD-0001]). A
+# rule that is dropped from its owner, or copied into a second file, is a rule
+# that a stage reads in a form its owner no longer states. Each row is the
+# owner's path under .claude/ and a phrase of its defining sentence. The case
+# reports a phrase that its owner lost, and a phrase that another Markdown file
+# under .claude/agents, .claude/commands or .claude/skills states too.
+printf '\n# each throughput rule of 2026-10-01 is stated by one definition\n'
+throughput_rules='agents/hw-build.md|that the branch meets, folds included
+agents/hw-build.md|make the pull request `Refs #N` in its title and in its body
+agents/hw-build.md|**Run the verifier'"'"'s attacks before you report.**
+agents/hw-build.md|apply each mutant you can, revert it, and list in `build.md` each one that survived
+agents/hw-verify.md|A `PASS` requires exit 0
+agents/hw-verify.md|that is a `FAIL` of the body and not of the code
+agents/hw-verify.md|When less than 40G is free
+agents/hw-iterate.md|name them on the builder'"'"'s `attacks:` line
+agents/hw-adjudicate.md|an overlap on a derived fold alone is not a `WAITS-ON`
+agents/headwater-product-owner.md|A fold never adds a clause to an issue that an open pull request says `Closes`'
+# Prints why the tree under the given .claude directory fails, or nothing.
+throughput_owners() {
+    dot=$1
+    why=''
+    list=$(find "$dot/agents" "$dot/commands" "$dot/skills" -name '*.md' -type f | sort)
+    printf '%s\n' "$throughput_rules" | {
+        while IFS='|' read -r owner phrase; do
+            grep -qF -- "$phrase" "$dot/$owner" 2>/dev/null || why="$why; $owner no longer states: $phrase"
+            for f in $list; do
+                [ "$f" = "$dot/$owner" ] && continue
+                grep -qF -- "$phrase" "$f" && why="$why; ${f#"$dot"/} states it too: $phrase"
+            done
+        done
+        printf '%s' "${why#; }"
+    }
+}
+why=$(throughput_owners "$root/.claude")
+if [ -z "$why" ]; then
+    pass 'each of the 10 phrases of the throughput rules is in its owner and in no other file'
+else
+    fail 'each throughput rule is stated by one definition' "$why"
+fi
+# The refusal arms, on a scratch copy of the Markdown under .claude/.
+mkdir -p "$scratch/dot"
+(cd "$root/.claude" && find agents commands skills -name '*.md' -type f) | while read -r f; do
+    mkdir -p "$scratch/dot/$(dirname "$f")"
+    cp "$root/.claude/$f" "$scratch/dot/$f"
+done
+grep -vF 'A `PASS` requires exit 0' "$root/.claude/agents/hw-verify.md" > "$scratch/dot/agents/hw-verify.md"
+why=$(throughput_owners "$scratch/dot")
+case "$why" in
+    *'hw-verify.md no longer states'*) pass 'and a rule dropped from its owner is reported' ;;
+    *) fail 'a rule dropped from its owner is reported' "reported: \`$why\`" ;;
+esac
+cp "$root/.claude/agents/hw-verify.md" "$scratch/dot/agents/hw-verify.md"
+printf 'Note: an overlap on a derived fold alone is not a `WAITS-ON`.\n' >> "$scratch/dot/skills/hw-run-policy/SKILL.md"
+why=$(throughput_owners "$scratch/dot")
+case "$why" in
+    *'skills/hw-run-policy/SKILL.md states it too'*) pass 'and a rule copied into a second file is reported' ;;
+    *) fail 'a rule copied into a second file is reported' "reported: \`$why\`" ;;
+esac
 
 printf '\n%s passed, %s failed\n' "$passed" "$failed"
 [ "$failed" -eq 0 ]
