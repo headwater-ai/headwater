@@ -129,6 +129,12 @@ Several agent sessions build this repository at the same time, each in its own w
 
 **What that check holds is the name of each gate, and not the flags printed beside it.** The commands below are written as CI writes them so that you can copy a line and run it, but no case compares a flag: `--check` deleted from a line here moves nothing, and `--check` deleted from the workflow moves nothing either. The reason is that the flags on these commands are a pinned clock, a change manifest, an output shape and a check-versus-write switch, and a suite that compared them would redden on a reordering that changed no gate. `--locked` is the one flag anything in this repository holds, and `sh tools/engine/build-declaration-fixtures.sh` is what holds it.
 
+Each job that builds the engine first installs current stable Rust:
+
+    sh tools/ci/toolchain.sh
+
+It is a setup step and not a gate, and you never run it by hand. When `rustup update` fails, it uninstalls stable and installs it again, because the self-hosted runner's image holds the old toolchain in a layer that refuses the rename an update makes. Its header has the measurement.
+
 The cargo commands. The `engine` job runs the first six. The `headwater` job runs the build, because it needs the binary before it can run a verb over the corpus:
 
     cargo --version

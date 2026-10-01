@@ -80,8 +80,10 @@ jobs:
           key: cargo-${{ runner.os }}-headwater-${{ hashFiles('engine/Cargo.lock') }}
           restore-keys: cargo-${{ runner.os }}-headwater-
       - name: The toolchain this build needs
+        # `tools/ci/toolchain.sh` inline, because the ref this job checks out
+        # can predate that script. Its header says why the fallback exists.
         run: |
-          rustup update --no-self-update stable
+          rustup update --no-self-update stable || { rustup toolchain uninstall stable && rustup toolchain install --no-self-update --profile default stable; }
           rustup default stable
       - name: Build the engine
         run: cargo build --release -p headwater-cli --locked

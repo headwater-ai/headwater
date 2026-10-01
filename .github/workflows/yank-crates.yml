@@ -43,9 +43,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: The toolchain this build needs
-        run: |
-          rustup update --no-self-update stable
-          rustup default stable
+        run: sh tools/ci/toolchain.sh
       - name: Yank
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
