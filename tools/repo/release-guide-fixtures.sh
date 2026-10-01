@@ -85,7 +85,7 @@
 # copying the names a third time. A missing guide is red, never skipped.
 #
 # One step is held here: the search in step 9. The last group below takes it
-# out of the guide and runs it over the four install pages, and it must find
+# out of the guide and runs it over the five install pages, and it must find
 # each line that names the release that README.md checks out (#1315). Which
 # of the lines it finds a person must change is still prose.
 
@@ -1443,10 +1443,10 @@ contains "a deploy-site.yml with a trigger of its own is red" \
 # release. In #1348 a search narrowed to `v<previous>` missed the tutorial's
 # "This installs version X" line, which names the version with no `v`. So this
 # group takes the search out of the guide text, and never copies the pattern,
-# and runs it over the four install pages.
+# and runs it over the five install pages.
 #
 # The expected set is built without the guide's pattern: each line of the
-# four pages that names the tag `v<version>` as a fixed string, and each line
+# five pages that names the tag `v<version>` as a fixed string, and each line
 # that says `version <version>`, which covers "This installs version X" and
 # `--version X`. <version> is the tag that README.md checks out. The search must find every line of that set. It can find more,
 # because step 9 says that it also finds lines that you must not change.
@@ -1456,7 +1456,8 @@ contains "a deploy-site.yml with a trigger of its own is red" \
 step9_pages="README.md
 docs/tutorials/your-first-governed-corpus.md
 site/tutorial/index.html
-site/index.html"
+site/index.html
+site/install/index.html"
 
 # step9_search ROOT — prints the extended pattern of step 9's search, with
 # <previous> replaced by the escaped version that ROOT's README.md checks
@@ -1487,7 +1488,7 @@ step9_found() {
 }
 
 # step9_expected ROOT — prints `<page>:<line>` for each install line of the
-# four pages, the expected set above. The judge and the count in s1 both read
+# five pages, the expected set above. The judge and the count in s1 both read
 # it, so the count is the population the judge holds.
 step9_expected() {
     ver=$(sed -n 's/^git checkout v\([0-9][0-9.]*\)[[:space:]]*$/\1/p' "$1/README.md" 2>/dev/null | head -n 1)
@@ -1523,7 +1524,7 @@ step9_misses() {
     # `v<version>` itself, so the search is always held against that line.
 }
 
-# step9_copy DIR — a scratch copy of the guide and the four install pages.
+# step9_copy DIR — a scratch copy of the guide and the five install pages.
 step9_copy() {
     rm -rf "$1"
     for f in "$guide_rel" $step9_pages; do
@@ -1537,7 +1538,7 @@ echo "step 9's search finds every install line"
 
 # s1. The real tree: every install line is found, over a population that is
 # not empty.
-same "step 9's search finds every line of the four pages that names the release" "" \
+same "step 9's search finds every line of the five pages that names the release" "" \
     "$(step9_misses "$root" | tr '\n' '|' | sed 's/|$//')"
 s1_ver=$(sed -n 's/^git checkout v\([0-9][0-9.]*\)[[:space:]]*$/\1/p' "$root/README.md" | head -n 1)
 s1_count=$(step9_expected "$root" | wc -l | tr -d ' ')
@@ -1545,16 +1546,16 @@ if [ -n "$s1_ver" ] && [ "$s1_count" -gt 0 ]; then
     pass "the search is held against $s1_count install lines that name v$s1_ver"
 else
     fail "the search is held against a population that is not empty" \
-        "README.md checks out \`v$s1_ver\` and $s1_count lines of the four pages name it"
+        "README.md checks out \`v$s1_ver\` and $s1_count lines of the five pages name it"
 fi
 
-# s1p. Each of the four pages is in the population. A line that only a
+# s1p. Each of the five pages is in the population. A line that only a
 # bare-version search finds is planted on one page at a time, under a guide
 # narrowed to `v<previous>`, and the finding must name that page. A check that
-# dropped a page would pass that page's arm. The arms name the four pages
+# dropped a page would pass that page's arm. The arms name the five pages
 # themselves, and do not read `step9_pages`, so a page dropped from that list
 # does not drop its arm too.
-for page in README.md docs/tutorials/your-first-governed-corpus.md site/tutorial/index.html site/index.html; do
+for page in README.md docs/tutorials/your-first-governed-corpus.md site/tutorial/index.html site/index.html site/install/index.html; do
     step9_copy "$scratch/s1p"
     sed "/git grep -nE/s/v?<previous>/v<previous>/" "$root/$guide_rel" > "$scratch/s1p/$guide_rel"
     printf '%s\n' "This installs version $s1_ver of the engine." >> "$scratch/s1p/$page"

@@ -67,10 +67,12 @@
 # daily, and after each release deploys the site. Group 12 holds that the job
 # runs the page's block on the floor the page names (#1408).
 #
-# Group 11 reads the install panel on the front page of the site,
-# `site/index.html`, against the page. The panel opens with the page's download
-# block, line for line, it downloads the release the page checks out, and its
-# APT sources line, keyring URL, keyring path and package are the page's. Step 9 of `docs/how-to/cut-a-release.md` moves both
+# Group 11 reads the install panels of the site's install page,
+# `site/install/index.html`, against the page. The panels open with the page's
+# download block, line for line, they download the release the page checks out,
+# and their APT sources line, keyring URL, keyring path and package are the
+# page's. The front page, `site/index.html`, keeps the download block alone,
+# and the group holds that copy line for line too. Step 9 of `docs/how-to/cut-a-release.md` moves both
 # files, and v0.4.1 was cut with both still on v0.4.0 (#1348). The group does
 # not ask whether the tag is the newest one, because that case would turn
 # `main` red from the push of a tag until the install text moves. Group 13 asks
@@ -3956,8 +3958,9 @@ apt_planted "  a package the release does not build is refused" "$readme" "$scra
 echo
 echo "the site's install panel, against the page"
 
-# The front page of the site carries its own copy of the install block, and a
-# stranger meets it before the README. A release moves the README's tag and
+# The site carries its own copy of the install block, and a stranger meets it
+# before the README. The install page carries every route, and the front page
+# carries the download block alone. A release moves the README's tag and
 # the site's tag in one step of `docs/how-to/cut-a-release.md`, and nothing
 # compared the two, so v0.4.1 was cut and both still said v0.4.0 (#1348). A
 # half move is worse: the README says one release and the site another, and
@@ -3967,10 +3970,12 @@ echo "the site's install panel, against the page"
 # and a case that asked it would turn `main` red from the moment a tag is
 # pushed until the install text moves, which the release procedure forbids
 # doing earlier.
-site_index="$root/site/index.html"
+site_index="$root/site/install/index.html"
+site_home="$root/site/index.html"
 
-# site_panel_of HTML — the commands of the `<div class="install">` panel, one
-# per line inside a fence, as a README fence would carry them. A command is a
+# site_panel_of HTML — the commands of every `<div class="install">` panel, in
+# page order, one per line inside one fence, as a README fence would carry
+# them. A command is a
 # line that carries the `$` prompt span. The tags, the prompt and the cursor
 # are stripped and the entities a command can need are decoded, so the APT
 # readers of group 10 read the panel as they read the page.
@@ -3978,7 +3983,7 @@ site_panel_of() {
     echo '```'
     awk '
         /<div class="install">/ { on = 1; next }
-        on && /^[ \t]*<\/div>[ \t]*$/ { exit }
+        on && /^[ \t]*<\/div>[ \t]*$/ { on = 0; next }
         on {
             s = $0
             if (incom) {
@@ -4213,6 +4218,34 @@ printf '%s\n' '<div class="install">' \
 same "  the extraction reads the prompt lines of the panel alone, decoded" \
     '```|echo "a & b"|```' \
     "$(site_panel_of "$scratch/site/shape.html" | tr '\n' '|' | sed 's/|$//')"
+# The install page carries one panel per route, so a second panel is read
+# after the first, and a prompt line between them is not.
+printf '%s\n' '<div class="install">' \
+    '  <div><span class="dim">$</span> first</div>' \
+    '</div>' \
+    '<p><span class="dim">$</span> between the panels</p>' \
+    '<div class="install">' \
+    '  <div><span class="dim">$</span> second</div>' \
+    '</div>' >"$scratch/site/two-panels.html"
+same "  and it reads every panel of a page, in page order" \
+    '```|first|second|```' \
+    "$(site_panel_of "$scratch/site/two-panels.html" | tr '\n' '|' | sed 's/|$//')"
+
+# 11f. The front page keeps the download block alone, and a release moves it
+#      in the same step as the install page. So it is held as the install
+#      page is: the release it downloads, and its lines, line for line.
+site_panel_of "$site_home" >"$scratch/site/home.md"
+more_than "the front page's install panel yields its commands" 0 \
+    "$(apt_fence_lines "$scratch/site/home.md" | wc -l | tr -d ' ')"
+same "  and it downloads the release the page downloads and checks out" ok \
+    "$(site_tag_judge "$scratch/site/home.md" "$readme")"
+same "  and its download lines are the page's download block, line for line" ok \
+    "$(site_download_judge "$scratch/site/home.md" "$readme")"
+sed "s|releases/download/$site_tag/headwater-$site_tag-|releases/download/v0.0.0/headwater-v0.0.0-|" "$site_home" >"$scratch/site/home-old.html"
+site_panel_of "$scratch/site/home-old.html" >"$scratch/site/home-old.md"
+apt_planted "  a front page left on another release is refused" "$scratch/site/home.md" "$scratch/site/home-old.md" \
+    "the panel downloads \`v0.0.0\`, and the page downloads \`$site_tag\` and checks out \`$site_tag\`" \
+    "$(site_tag_judge "$scratch/site/home-old.md" "$readme")"
 
 echo
 echo "the APT block the page offers, against the job that runs it"
