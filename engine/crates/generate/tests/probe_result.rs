@@ -1786,6 +1786,24 @@ fn an_ambiguous_pair_is_reported_rather_than_silently_zipped_by_path_order() {
         ambiguous.absent,
         vec!["runs/probe-runs/campaign-absent.md".to_string()]
     );
+    // A key that holds only the present and absent arms keeps the pair
+    // wording: no component arm is named, and the line speaks of the two
+    // sides of the pair rather than of each arm (#1472).
+    assert!(
+        ambiguous.components.is_empty(),
+        "a present/absent key carries no component arm: {:?}",
+        ambiguous.components
+    );
+    let line = ambiguous.line();
+    assert!(
+        line.contains("2 present-arm transcripts and 1 absent-arm transcript")
+            && line.contains("on either side"),
+        "a present/absent key keeps the pair wording: {line}"
+    );
+    assert!(
+        !line.contains("`-arm transcript") && !line.contains("of one arm"),
+        "a present/absent key does not take the component wording: {line}"
+    );
 
     let report = write(&at, &plan);
     assert!(
