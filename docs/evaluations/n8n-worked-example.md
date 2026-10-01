@@ -168,7 +168,7 @@ Not one pattern reaches `packages/@n8n/instance-ai/`, `packages/@n8n/expression-
 | Of those, written by `headwater check --fix` | 0 | 1 |
 | Of those, needing a human rewrite or a declaration change | 12 | 165 |
 
-The second column is a probe and not a declaration, on the precedent the [brd-prd fixtures](../taxonomies/brd-prd/fixtures/README.md#what-the-bases-voice-regime-would-have-reported) set. It binds `regimes.language.ste_house` from this repository's own overlay onto `kinds.design_spec`, changes nothing else, and touches no document. The [fixture README](../taxonomies/design-spec/fixtures/n8n/README.md#what-this-repositorys-own-house-regime-would-have-reported) carries it per rule and per document.
+The second column is a probe and not a declaration, on the precedent the [brd-prd fixtures](../taxonomies/brd-prd/fixtures/README.md#what-the-bases-voice-regime-would-have-reported) set. It binds `regimes.language.ste_house` from this repository's own overlay onto `kinds.design_spec`, changes nothing else, and touches no document. The [fixture README](../taxonomies/design-spec/fixtures/n8n/README.md#what-this-repositorys-own-house-regime-would-have-reported) names the rules it fires. The counts in the second column and in the paragraphs under it are one past reading, and not a current claim. The probe reads this repository's own house regime. Each edit to that regime changes these counts, and no job holds them. A run today gives other totals.
 
 **Three things about that second column matter more than its total.**
 
@@ -257,6 +257,8 @@ This is the fourth Done-when bullet of #508, and it is a `headwater sweep` job r
 | Caught by none of the three | 21 | 143 |
 | Of those, written by `headwater check --fix` | 0 | 6 |
 | Of those, needing a human rewrite or a declaration change | 21 | 137 |
+
+The second column is one past reading, for the reason given under the design-spec table. A run today gives other totals.
 
 **Two things in that second column correct what the design-spec run recorded.**
 

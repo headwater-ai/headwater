@@ -5,7 +5,7 @@ Three READMEs under `docs/taxonomies/*/fixtures/n8n/` each carry a *How to run t
 
 Nothing here carries a second copy of a figure. Every expected value is parsed out of the README, so a number this file holds is a number a reader reads.
 
-It holds one thing more: no README states an aggregate check-instance count outside *What a run reports*, the one section it diffs, and the evaluation `docs/evaluations/n8n-worked-example.md`, which has no such section, states none at all. That count moves with every rule a release adds. Two copies of it in the design-spec probe arms read 6 and 26 when a run reported 7 and 31, and five of the seven on the evaluation were wrong when this guard first read it (#1452).
+It holds one thing more: no README states an aggregate check-instance count outside *What a run reports*, the one section it diffs, and the evaluation `docs/evaluations/n8n-worked-example.md`, which has no such section, states none at all. That count moves with every rule a release adds. Two copies of it in the design-spec probe arms read 6 and 26 when a run reported 7 and 31, and all seven on the evaluation were wrong when this guard first read it (#1452).
 """
 
 import os
@@ -256,8 +256,10 @@ def provoke_figure(name, readme_path, stated, measured):
 
 
 HELD_SECTION = "What a run reports"
-# The singular too: an arm of one instance is a count that moves like any other.
-AGGREGATE_COUNT = re.compile(r"\b\d+ check instances?\b")
+# The singular too, because an arm of one instance is a count that moves like
+# any other, and a count with a thousands separator whole, so that the finding
+# names the number the page states.
+AGGREGATE_COUNT = re.compile(r"\b\d(?:[\d,]*\d)? check instances?\b")
 
 
 # The one page outside the three READMEs that restates their counts. It has no
@@ -294,7 +296,7 @@ def unheld_problems(rel, text, held=HELD_SECTION):
 
 
 PROVOKED_HELD = "A held run reads 8 check instances."
-PROVOKED_COUNTS = ("7 check instances", "1 check instance")
+PROVOKED_COUNTS = ("1,055 check instances", "1 check instance")
 PROVOKED_UNHELD = "A provoked run reads %s and %s." % PROVOKED_COUNTS
 
 
