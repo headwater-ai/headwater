@@ -6,6 +6,7 @@ The documents on this shelf, in the reading order this corpus derives.
 
 - [Authoring](authoring.md) — How two crates write a new document, a fix, a migration step and an imported edge through one all-or-none put and one reciprocal splice. (asserted, and no human has accepted it)
 - [Checks and cache](checks-and-cache.md) — How two crates instantiate each rule through one scope trait, key a content-addressed cache, publish the read set, and render one run in four formats. (asserted, and no human has accepted it)
+- [Command surface](command-surface.md) — One list of verbs that every reader takes, a parser that dispatches, help folded at a width no terminal decides, and one palette. (asserted, and no human has accepted it)
 - [Graph build](graph-build.md) — How the graph crate indexes identifiers and paths, turns relation blocks into edges, binds links and anchors, and reports each miss without a severity. (asserted, and no human has accepted it)
 - [Measurement](measurement.md) — How probe, conformance and sweep plan and grade a probe run, evaluate a consumer rule set, and verify a sweep return file with no model. (asserted, and no human has accepted it)
 - [Parse and census](parse-and-census.md) — How three crates parse each document, walk the corpus root, resolve each kind with its derivation, give each file one census outcome, and run git. (asserted, and no human has accepted it)

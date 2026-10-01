@@ -580,6 +580,7 @@ nav:
       - "Engine subsystems": "subsystems/README.md"
       - "Authoring": "subsystems/authoring.md"
       - "Checks and cache": "subsystems/checks-and-cache.md"
+      - "Command surface": "subsystems/command-surface.md"
       - "Graph build": "subsystems/graph-build.md"
       - "Measurement": "subsystems/measurement.md"
       - "Parse and census": "subsystems/parse-and-census.md"
