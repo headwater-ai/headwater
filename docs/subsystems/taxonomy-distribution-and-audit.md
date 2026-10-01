@@ -81,10 +81,11 @@ Two caps stop a wrong URL from filling the disk. `LIMIT` caps the bytes that the
 
 | dimension | the input it compares |
 |---|---|
-| `classification`, `addressability` | the census |
+| `classification` | the census |
 | `instance_validity`, `consequence` | the check `Run` |
 | `projection` | the generate `Plan` |
 | `identifier` | the graph |
+| `addressability` | the founding records of each resolution |
 
 The corpus is the same tree in both runs, so a difference comes from the taxonomy. A dimension that computed a kind or a verdict again would report on a reading that no run made.
 
