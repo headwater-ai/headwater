@@ -2802,11 +2802,22 @@ fn read_tree(
             read_tree(&entry, &path, boundary, into)?;
             continue;
         }
+        // A named pipe, a socket or a device is refused before it is opened,
+        // because a pipe with no writer blocks its reader for ever and a device
+        // can be read for ever (#1366). `metadata` follows a link, so a link to
+        // a regular file inside the boundary still publishes.
+        let meta = std::fs::metadata(&entry)
+            .map_err(|error| format!("cannot read {}: {error}", entry.display()))?;
+        if !meta.is_file() {
+            return Err(format!(
+                "{} is not a regular file, and a publish carries only regular files. Take it \
+                 out of the package",
+                entry.display()
+            ));
+        }
         let bytes = std::fs::read(&entry)
             .map_err(|error| format!("cannot read {}: {error}", entry.display()))?;
-        let mode = std::fs::metadata(&entry)
-            .map_err(|error| format!("cannot read {}: {error}", entry.display()))?
-            .permissions();
+        let mode = meta.permissions();
         into.push(Staged { path, bytes, mode });
     }
     Ok(())
