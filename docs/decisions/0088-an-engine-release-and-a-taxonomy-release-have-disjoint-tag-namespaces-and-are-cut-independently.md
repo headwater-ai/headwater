@@ -18,7 +18,7 @@ relations:
     - to: .github/workflows/release-taxonomy.yml
       verified_revision: sha256:cc62f8db1425466922c618475983155ec51572a77c846a4634a730e18a804ae4
     - to: .github/workflows/publish-crates.yml
-      verified_revision: sha256:f77729188a8b0bffa908fa2b0166cf36a5379a130649855992e3f4844bc7174e
+      verified_revision: sha256:7cd391c5765c05030db6ff23f9957c6f7b9bbca73a0c8a2c8faed3651a0cad52
 ---
 
 # An engine release and a taxonomy release have disjoint tag namespaces and are cut independently

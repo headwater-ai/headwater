@@ -14,7 +14,7 @@ provenance:
 relations:
   governs:
     - to: .github/workflows/release.yml
-      verified_revision: sha256:8cea15616685636e280524a654bf6303543920806bb9a2c77e801a195de1c845
+      verified_revision: sha256:deccc73da70d0e1d1e96b1089f048a5f2a385f1fd113639306d11d8513462bf2
     - to: tools/site/fetch-apt.sh
       verified_revision: sha256:cb44a3ed11960c738f0e4d9352565c03a0246544c35fa54fb805ef827a1dfd4c
 ---
