@@ -151,6 +151,16 @@ fn about<'a>(run: &'a Run, id: &str) -> Vec<&'a str> {
         .collect()
 }
 
+/// The remediation of every finding of this rule whose message names a
+/// document.
+fn remediations<'a>(run: &'a Run, id: &str) -> Vec<&'a str> {
+    run.findings
+        .iter()
+        .filter(|finding| finding.rule == RULE && finding.message.contains(id))
+        .map(|finding| finding.remediation.as_str())
+        .collect()
+}
+
 /// The skip reasons this rule recorded, with the documents each instance read.
 fn skips(run: &Run) -> Vec<(Vec<&str>, &String)> {
     run.instances
@@ -321,6 +331,43 @@ fn a_discharges_edge_onto_an_evidenced_target_from_an_asserted_source_is_reporte
         paths.contains(&"evidence-basis/claims/asserted-discharges-evidenced.md"),
         "the finding anchors at the entry that declares the edge: {paths:?}"
     );
+
+    // The remediation takes each repair to the right end: the evidence is the
+    // document a person reads, and the claimant is the document that is
+    // pointed at and that can write `reconstructed`. A remediation that took
+    // either to the wrong end repeats the defect this case exists for.
+    let fixes = remediations(&run, "NOTE-FIX-asserted-discharges-evidenced");
+    assert_eq!(fixes.len(), 1, "{fixes:?}");
+    assert_remediation_ends(
+        fixes[0],
+        "evidence-basis/claims/asserted-discharges-evidenced.md",
+        "evidence-basis/targets/evidenced-obligation.md",
+    );
+    assert!(
+        fixes[0].starts_with(
+            "have a person read evidence-basis/claims/asserted-discharges-evidenced.md"
+        ),
+        "the evidence is the document to read: {}",
+        fixes[0]
+    );
+}
+
+/// A swapped remediation names the claimant as the end an auditable artifact
+/// points at and as the end that can write `reconstructed`, and never the
+/// evidence in either place.
+fn assert_remediation_ends(fix: &str, evidence: &str, claimant: &str) {
+    assert!(
+        fix.contains("declare `discharges` to `NOTE-FIX-evidenced-obligation`"),
+        "an auditable artifact discharges the claimant: {fix}"
+    );
+    assert!(
+        fix.contains(&format!("`evidence_basis: reconstructed` in {claimant}")),
+        "the claimant writes reconstructed: {fix}"
+    );
+    assert!(
+        !fix.contains(&format!("`evidence_basis: reconstructed` in {evidence}")),
+        "the evidence was told to write reconstructed: {fix}"
+    );
 }
 
 /// The swapped reading also holds a warrant outside the closed set.
@@ -346,6 +393,21 @@ fn a_discharges_edge_from_a_warrant_outside_the_closed_set_is_reported() {
     assert!(
         !message.contains("`asserted`"),
         "the value is not called asserted: {message}"
+    );
+
+    let fixes = remediations(&run, "NOTE-FIX-misspelled-discharges-evidenced");
+    assert_eq!(fixes.len(), 1, "{fixes:?}");
+    assert_remediation_ends(
+        fixes[0],
+        "evidence-basis/claims/misspelled-discharges-evidenced.md",
+        "evidence-basis/targets/evidenced-obligation.md",
+    );
+    assert!(
+        fixes[0].starts_with(
+            "correct the warrant of evidence-basis/claims/misspelled-discharges-evidenced.md"
+        ),
+        "the evidence is the document whose warrant is corrected: {}",
+        fixes[0]
     );
 }
 
@@ -458,6 +520,39 @@ fn a_target_that_declares_no_warrant_skips_rather_than_passing() {
     assert!(
         mine[0].1.contains("target end"),
         "the skip does not say which end had nothing to read: {}",
+        mine[0].1
+    );
+}
+
+/// The same absence at the source end of a `discharges` edge, where the source
+/// is the evidence.
+///
+/// `claims/quiet-discharges-evidenced.md` writes no provenance block and
+/// discharges an evidenced obligation. The instance skips, and the reason names
+/// the source end and the source document. A reason that still said "target
+/// end" sends the author to the obligation, which is the wrong document.
+#[test]
+fn an_evidence_source_that_declares_no_warrant_skips_and_names_the_source_end() {
+    let run = run();
+    assert!(
+        about(&run, "NOTE-FIX-quiet-discharges-evidenced").is_empty(),
+        "an absent warrant at the evidence end was reported: {:?}",
+        refusals(&run)
+    );
+    let skips = skips(&run);
+    let mine: Vec<&(Vec<&str>, &String)> = skips
+        .iter()
+        .filter(|(reads, _)| reads.contains(&"evidence-basis/claims/quiet-discharges-evidenced.md"))
+        .collect();
+    assert_eq!(mine.len(), 1, "{skips:?}");
+    assert!(
+        mine[0].1.contains("`NOTE-FIX-quiet-discharges-evidenced`"),
+        "{}",
+        mine[0].1
+    );
+    assert!(
+        mine[0].1.contains("source end"),
+        "the skip does not name the end that is the evidence: {}",
         mine[0].1
     );
 }
