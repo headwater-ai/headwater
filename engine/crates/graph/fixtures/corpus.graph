@@ -465,6 +465,8 @@ anchors
     cited by HW-DR-0068
   code_path `engine/crates/hash/src/**` via source-tree
     cited by HW-SPEC-taxonomy-resolution
+  code_path `engine/crates/import/src/**` via source-tree
+    cited by HW-SPEC-authoring
   code_path `engine/crates/import/src/anchors.rs` via source-tree
     cited by HW-IFACE-headwater-import
   code_path `engine/crates/import/src/harvest.rs` via source-tree
@@ -555,6 +557,8 @@ anchors
     cited by HW-DR-0066
   code_path `engine/crates/resolve/tests/publish.rs` via source-tree
     cited by HW-DR-0022
+  code_path `engine/crates/scaffold/src/**` via source-tree
+    cited by HW-SPEC-authoring
   code_path `engine/crates/scaffold/src/lib.rs` via source-tree
     cited by HW-IFACE-headwater-new
   code_path `engine/crates/scaffold/src/reading.rs` via source-tree
