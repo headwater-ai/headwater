@@ -11,6 +11,9 @@ provenance:
   drafted_by: claude-opus-5
   activity: measure+draft
   evidence_basis: evidenced
+relations:
+  governs:
+    - engine/crates/import/src/harvest.rs
 ---
 
 # A counted tombstone lists a digest of each withheld identifier, and a sealed one lists nothing

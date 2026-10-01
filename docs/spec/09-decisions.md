@@ -15,6 +15,8 @@ provenance:
   accepted_by: j.baxter
   evidence_basis: evidenced
 relations:
+  governs:
+    - tools/repo/decision-register-fixtures.sh
   cites_evidence:
     - HW-EVAL-adjacent-work
     - HW-EVAL-default-taxonomy-first-run
