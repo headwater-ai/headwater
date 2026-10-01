@@ -14,6 +14,7 @@ provenance:
 relations:
   governs:
     - engine/crates/generate/src/**
+    - engine/crates/mark/src/**
   traces_to:
     - HW-SPEC-engine-architecture
     - HW-IFACE-headwater-generate
