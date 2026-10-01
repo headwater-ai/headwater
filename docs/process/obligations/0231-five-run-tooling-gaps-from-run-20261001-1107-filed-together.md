@@ -2,13 +2,13 @@
 id: HW-OBL-0231
 status: current
 status_since: 2026-10-01
-summary: "Run 20261001-1107 surfaced four findings about its CI toolchain step, the n8n fixture scripts and a wedged verifier. None has a reader outside this repository, so this record files them together."
+summary: "Run 20261001-1107 surfaced five findings about its CI toolchain step, the n8n fixture scripts and a wedged verifier. None has a reader outside this repository, so this record files them together."
 last_verified: 2026-10-01
-title: "Four run-tooling gaps from run 20261001-1107, filed together"
+title: "Five run-tooling gaps from run 20261001-1107, filed together"
 waiting_on: build
 ---
 
-# Four run-tooling gaps from run 20261001-1107, filed together
+# Five run-tooling gaps from run 20261001-1107, filed together
 
 ## Context
 
