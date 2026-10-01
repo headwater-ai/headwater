@@ -613,7 +613,7 @@ The end of a nucleus–satellite relation that cannot stand alone. It inherits d
 
 ### Scaffolding
 
-`headwater new` creates a document with correct placement, front matter, sections, and identifier, and prints the relations that the document is expected to declare. It also proposes an edge that the taxonomy assigns to a scaffold, and writes the reciprocal half into the document at the far end. What it writes is authored rather than generated, so every check reads it. See [spec 3](03-authoring-and-lifecycle.md#templates-and-scaffolding).
+`headwater new` creates a document with correct placement, front matter, sections, and identifier, and prints the relations that the document is expected to declare. It also proposes an edge that the taxonomy assigns to a scaffold. For a required relation, it writes the far half into the target document. It does this only when the new document does not open at its initial state ([HW-DR-0086](../decisions/0086-a-reciprocal-half-is-owed-once-its-writer-leaves-its-initial-state.md)). It writes no far half of a symmetric relation and no state on a target ([HW-DR-0101](../decisions/0101-new-writes-no-far-half-of-a-symmetric-relation-and-no-state-on-a-supersedes-target.md)). What it writes is authored rather than generated, so every check reads it. See [spec 3](03-authoring-and-lifecycle.md#templates-and-scaffolding).
 
 ### Scent
 
