@@ -78,7 +78,7 @@ Each stage is built by one subsystem, and each subsystem is a group of crates un
 | cache, checks | [Checks and cache](../subsystems/checks-and-cache.md) | `check`, `adapter` | `adapter` renders one run of the check layer for a CI platform. |
 | queries, explain | [Queries and explain](../subsystems/queries-and-explain.md) | `query`, `embed` | `embed` is the offline embedding path that routing reads ([HW-DR-0064](../decisions/0064-q64-whether-intent-time-routing-gains-an-offline-embedding-path-in-shadow-mode.md)). |
 | projections, export | [Projections and export](../subsystems/projections-and-export.md) | `generate`, `mark` | `generate` writes the marker, and the census reads it. |
-| authoring | [Authoring](../subsystems/authoring.md) | `scaffold`, `import` | Each writer of this engine puts its files on the tree through `scaffold`, so `scaffold` also holds the writers of `check --fix` and `migrate --apply`. `import` uses the reciprocal splice of `scaffold` and keeps no second one. |
+| authoring | [Authoring](../subsystems/authoring.md) | `scaffold`, `import` | Each writer of an authored document puts its files on the tree through `scaffold`, so `scaffold` also holds the writers of `check --fix` and `taxonomy migrate --apply`. `import` uses the reciprocal splice of `scaffold` and keeps no second one. |
 | measurement | Measurement (no spec yet, #1288) | `probe`, `conformance`, `sweep` | |
 | every stage | Command surface (no spec yet, #1288) | `cli`, `verbs`, `paint` | These crates run no stage. `verbs` is the dispatch list, and `paint` is the palette that every renderer applies ([HW-DR-0045](../decisions/0045-coloring-the-cli-and-where-the-banner-goes.md)). |
 
