@@ -73,7 +73,7 @@ flowchart LR
     parent -->|"every ruling so far"| integrate["hw-integrate"]
 
     queue -->|"queue.md, ordered"| parent
-    adjudicate -->|"BUILD or REFUSE<br/>FOOTPRINT, FIXTURE"| parent
+    adjudicate -->|"BUILD or REFUSE<br/>FOOTPRINT, DERIVED, FIXTURE"| parent
     build -->|"BRANCH, PR<br/>FIXTURE, PUSHED, EXPLORE"| iterate
     verify -->|"PASS or FAIL<br/>RAN, FIRED, UNCHECKED"| iterate
     iterate -->|"PASS or STOP<br/>ROUNDS, UNCHECKED, EXPLORE"| parent
@@ -104,7 +104,7 @@ flowchart LR
 
 **Every stage is an agent definition, and each one loads fresh on every dispatch.** The parent dispatches by name and pastes nothing a definition already states. Each definition declares its own model in its own front matter, so a per-stage model choice is one line rather than a paragraph of prose. Each stage returns a fixed report block, so a parent that has compacted acts by matching a block rather than by recalling a rule.
 
-**Two skills carry what more than one stage obeys.** [`hw-run-policy`](../../../.claude/skills/hw-run-policy/SKILL.md) holds the standing rulings and the environment of a run, and every stage invokes it before it begins. [`hw-verification-bar`](../../../.claude/skills/hw-verification-bar/SKILL.md) holds the adversarial checks and the review questions behind them. `hw-iterate` chooses attacks from the bar, and the verifier runs them.
+**Two skills carry what more than one stage obeys.** [`hw-run-policy`](../../../.claude/skills/hw-run-policy/SKILL.md) holds the standing rulings and the environment of a run, and every stage invokes it before it begins. [`hw-verification-bar`](../../../.claude/skills/hw-verification-bar/SKILL.md) holds the adversarial checks and the review questions behind them. `hw-iterate` chooses attacks from the bar. The builder runs them first, and the verifier runs them again.
 
 ## Roles and responsibilities
 
@@ -215,7 +215,7 @@ The front matter of this part declares a `governs` edge onto each `.claude/` fil
 | [`.claude/commands/next-run.md`](../../../.claude/commands/next-run.md) | The entrypoint: the value rule, the doctrine block, the loop, the veto, the resume form and the dispatch template |
 | [`.claude/commands/next.md`](../../../.claude/commands/next.md) | The single-iteration form over the same definitions and skills, with the merge left to a person |
 | [`.claude/agents/hw-queue.md`](../../../.claude/agents/hw-queue.md) | The queue stage: the eligible population, the selection order and the collision marks |
-| [`.claude/agents/hw-adjudicate.md`](../../../.claude/agents/hw-adjudicate.md) | The adjudication stage: the premise, the footprint, the decisive fixture and the three kinds of refusal |
+| [`.claude/agents/hw-adjudicate.md`](../../../.claude/agents/hw-adjudicate.md) | The adjudication stage: the premise, the claimed footprint and the derived folds, the decisive fixture and the three kinds of refusal |
 | [`.claude/agents/hw-iterate.md`](../../../.claude/agents/hw-iterate.md) | The loop stage: the dispatch of the builder and each verifier, the rework by resume, the checkpoint at each stage boundary, the stop at the third FAIL and the report |
 | [`.claude/agents/hw-build.md`](../../../.claude/agents/hw-build.md) | The construction stage: the worktree, the contract-first order, the pull request and the write boundary |
 | [`.claude/agents/hw-verify.md`](../../../.claude/agents/hw-verify.md) | The verification stage: its own worktree, the suite, the chosen attacks and the verdict block |
