@@ -2,7 +2,7 @@
 id: HW-SPEC-command-surface
 status: current
 status_since: 2026-10-01
-summary: "One list of verbs that every reader takes, a parser that dispatches, help folded at a width no terminal decides, and one palette."
+summary: "A verb list that the help and the verb index read, a parser that dispatches, help folded at a fixed width, and one palette."
 last_verified: 2026-10-01
 title: "Command surface"
 provenance:
@@ -58,11 +58,11 @@ Most verbs have their body in `engine/crates/cli/src/main.rs`, and that body cal
 
 `headwater_verbs::VERBS` is a constant array of `Verb`. Each `Verb` carries a name, a group, a summary, a description and a slice of `Word`. A `Word` carries the same three texts for a second word. A verb with second words names one command line for each word and no bare one, so `headwater sweep` is refused and `headwater sweep plan` runs. `Verb::forms` gives these command lines.
 
-The array is the copy of the list that every other reader takes. `command_in` in `cli/src/lib.rs` puts its summaries and descriptions on the `clap` command tree. `first_screen` prints its groups in the order that `headwater_verbs::groups` reads off the array. The refusals in `main.rs` name the legal words through `headwater_verbs::listed` and `headwater_verbs::words_of`. The verb index of `headwater generate` takes the array as an argument. One edit to the array thus moves the first help screen, the page of one verb and a committed artifact together.
+The help, the refusals and the verb index read the list from this array. `command_in` in `cli/src/lib.rs` puts its summaries and descriptions on the `clap` command tree. `first_screen` prints its groups in the order that `headwater_verbs::groups` reads off the array. The refusals in `main.rs` name the legal words through `headwater_verbs::listed` and `headwater_verbs::words_of`. The verb index of `headwater generate` takes the array as an argument. One edit to the array thus moves the first help screen, the page of one verb and a committed artifact together.
 
 The array does not decide which verb runs. The `clap` derive in `cli/src/lib.rs` declares `Cli`, the `Verb` enum and four enums of second words: `JsonWord`, `SweepWord`, `ProbeWord` and `TaxonomyWord`. `clap` builds the command tree from that derive, and `dispatch` in `main.rs` matches the parsed `Verb` exhaustively. A variant with no arm does not compile. `engine/crates/cli/tests/verbs.rs` walks the tree to its leaves and holds it against the array in both directions. Thus the list and the parser are two declarations, and a test, not a lookup, keeps them equal.
 
-The list is a crate of its own because two crates read it. `headwater-generate` writes the verb index, and `headwater-cli` depends on `headwater-generate`. So the list cannot be in the binary, and a crate below both is the one position that serves both. `verbs` depends on no crate. The module comment of `verbs/src/lib.rs` records the four copies of the list that disagreed before this crate existed.
+The list is a crate of its own because two crates read it. `headwater-generate` writes the verb index, and `headwater-cli` depends on `headwater-generate`. So the list cannot be in the binary, and a crate below both is the one position that serves both. The `Cargo.toml` of `verbs` declares no dependency. The module comment of `verbs/src/lib.rs` records the four copies of the list that disagreed before this crate existed.
 
 ### The parse, and the words a caller reads
 
@@ -102,11 +102,11 @@ The help gets its mode from `command_at`, which reads standard output. `command_
 
 `paint` is a leaf crate, and its `Cargo.toml` declares no dependency. `headwater-census`, `headwater-check` and `headwater-resolve` depend on it directly. `headwater-check` depends on `headwater-census`, `headwater-resolve` and `headwater-lock`, so a palette in `headwater-check` was out of reach of a renderer in any of those three crates. The module comment of `paint/src/lib.rs` records that move. `headwater-check` keeps the functions that read its `Severity` type and re-exports the rest as `headwater_check::paint`. `cli/src/paint.rs` re-exports the palette from `headwater_check::paint`, and `headwater-cli` declares no direct dependency on `headwater-paint`.
 
-Each function in `paint` takes a `ColorMode` and returns bytes. It opens no stream and reads no environment variable. `ColorMode::Plain` writes the text back with no escape sequence. This purity lets a case table test each renderer with no terminal. It also lets a call site pass `Plain` where it should pass the mode of its stream, and no headless test sees that defect. [HW-OBL-0180](../obligations/0180-a-renderer-s-color-mode-is-wired-at-a-call-site-that-no-type-forbids-from-being-wrong.md) records it. `tools/engine/color-fixtures.sh` attaches a pseudo-terminal and counts escape bytes, which is the one check that sees it.
+Each function in `paint` takes a `ColorMode` and returns bytes. It opens no stream and reads no environment variable. `ColorMode::Plain` writes the text back with no escape sequence. This purity lets a case table test each renderer with no terminal. It also lets a call site pass `Plain` where it should pass the mode of its stream, and no headless test sees that defect. [HW-OBL-0180](../obligations/0180-a-renderer-s-color-mode-is-wired-at-a-call-site-that-no-type-forbids-from-being-wrong.md) records it. `tools/engine/color-fixtures.sh` attaches a pseudo-terminal and counts escape bytes. The module comment of `paint/src/lib.rs` names it as the one check that sees this defect.
 
 ### The drawing of the taxonomy
 
-`cli/src/taxonomy_graph.rs` renders the resolved taxonomy as a Mermaid flowchart for `headwater taxonomy graph`. [HW-DR-0082](../decisions/0082-the-resolved-taxonomy-is-drawn-by-a-verb-that-prints-mermaid-and-writes-no-file.md) rules that a verb prints it and that no projection writes it. `render` reads the `resolved` block of the lock and nothing else. The file names no kind, purpose or relation, so a release that adds a kind moves the drawing with no edit here.
+`cli/src/taxonomy_graph.rs` renders the resolved taxonomy as a Mermaid flowchart for `headwater taxonomy graph`. [HW-DR-0082](../decisions/0082-the-resolved-taxonomy-is-drawn-by-a-verb-that-prints-mermaid-and-writes-no-file.md) rules that a verb prints it and that no projection writes it. `render` takes the `resolved` block of the lock, and the package name and version of the lock for the title. The file names no kind, purpose or relation, so a release that adds a kind moves the drawing with no edit here.
 
 `View` selects one of two drawings. The concrete view answers which kind can relate to which, and it draws no edge with an abstract kind at either end. The abstract view answers what an abstract kind gives to the kinds under it. `split_loops` takes each relation from a kind to itself out of the edges, and the view writes it on the node. Mermaid draws such an edge as a long detour. `PALETTE` holds eight stroke colors. The renderer gives them to the families in sorted order, and a ninth family takes the first color again. The output is sorted and carries no clock and no digest, so two runs over one lock write the same bytes.
 
