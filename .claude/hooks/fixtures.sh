@@ -377,21 +377,23 @@ if [ -x "$engine" ]; then
     # silence. The engine states the fact and the front-matter lines that
     # would declare the edge, and the hook writes neither. Both paths below
     # are names with no file, so a later `governs` edge on a real file cannot
-    # move either case.
+    # move either case. The governed one is in a crate that does not exist:
+    # a subsystem spec governs `engine/crates/<crate>/src/**` for each real
+    # crate (#1288), so a name under a real crate's `src` is governed.
     expect 'an edit to a path in the governed scope that nothing governs says so' \
-        write.sh 0 'engine/crates/query/src/unrelated.rs is in the governed scope, and nothing governs it' \
-        '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"engine/crates/query/src/unrelated.rs"}}'
+        write.sh 0 'engine/crates/no-such-crate/src/unrelated.rs is in the governed scope, and nothing governs it' \
+        '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"engine/crates/no-such-crate/src/unrelated.rs"}}'
     expect 'the same advisory prints the front-matter lines that declare the edge' \
-        write.sh 0 '      governs:\n        - engine/crates/query/src/unrelated.rs' \
-        '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"engine/crates/query/src/unrelated.rs"}}'
+        write.sh 0 '      governs:\n        - engine/crates/no-such-crate/src/unrelated.rs' \
+        '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"engine/crates/no-such-crate/src/unrelated.rs"}}'
     # An advisory that names no document to read does not tell the agent to
     # read each one (#953, verify finding 3).
     refute 'the ungoverned advisory with no document to name asks for no reading' \
         write.sh 'Read each one' \
-        '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"engine/crates/query/src/unrelated.rs"}}'
+        '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"engine/crates/no-such-crate/src/unrelated.rs"}}'
     expect 'the ungoverned advisory still says it blocks nothing and writes nothing' \
         write.sh 0 'Nothing here blocks the edit, and nothing here writes the edge' \
-        '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"engine/crates/query/src/unrelated.rs"}}'
+        '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"engine/crates/no-such-crate/src/unrelated.rs"}}'
     expect 'an edit to a path outside the governed scope that nothing governs is silent' \
         write.sh 0 '' \
         '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"engine/crates/query/tests/unrelated.rs"}}'
@@ -698,7 +700,7 @@ if [ -x "$engine" ]; then
         '{"hook_event_name":"PreToolUse","tool_name":"Read","tool_input":{"file_path":"engine/crates/check/src/lib.rs"}}'
     expect 'a read of a path nothing governs is silent' \
         read.sh 0 '' \
-        '{"hook_event_name":"PreToolUse","tool_name":"Read","tool_input":{"file_path":"engine/crates/query/src/unrelated.rs"}}'
+        '{"hook_event_name":"PreToolUse","tool_name":"Read","tool_input":{"file_path":"engine/crates/no-such-crate/src/unrelated.rs"}}'
     expect 'a read of an absolute path inside the root names what governs it' \
         read.sh 0 'docs/spec/05-ai-integration.md' \
         "{\"hook_event_name\":\"PreToolUse\",\"tool_name\":\"Read\",\"tool_input\":{\"file_path\":\"$root/.claude/hooks/write.sh\"}}"

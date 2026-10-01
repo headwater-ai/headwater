@@ -147,7 +147,9 @@ public class ClientTest {
             Options options = Options.of(REPO, bin);
 
             List<Pointer> governed = Client.governing("engine/crates/query/src/mcp.rs", options);
-            equal(paths(governed), List.of("docs/interfaces/headwater-mcp.md"));
+            // Two documents govern the file: the contract of the verb, and the
+            // subsystem spec that governs `engine/crates/query/src/**` (#1288).
+            equal(paths(governed), List.of("docs/interfaces/headwater-mcp.md", "docs/subsystems/queries-and-explain.md"));
             equal(governed.get(0).name(), "headwater mcp");
             equal(governed.get(0).kind(), "interface_contract");
 
