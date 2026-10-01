@@ -824,6 +824,49 @@ for job, s in creates:
         if re.search(r"\bgh\s+release\s+create\b", line) and not (calls and "--latest=false" in words[calls[0]:]):
             out.append("release-taxonomy.yml job %s creates a release without --latest=false, so a taxonomy release can become releases/latest and the site serves no apt/" % job)
 
+# The preview of a labelled pull request (preview-site.yml) uploads a
+# version that takes no traffic, so it is not a deploy, and the clauses above
+# let it stand. These hold what makes that true: it starts on pull_request
+# alone, never pull_request_target, which hands secrets to a fork`s code; its
+# job runs only for a branch of this repository that carries the label, on a
+# hosted runner; and neither script it runs reaches a deploy. The condition is
+# read as the ci.yml caller`s is, as a set of terms, so an extra `|| true` or
+# a dropped term is refused.
+pv = "preview-site.yml"
+preview_terms = {
+    "github.event.pull_request.head.repo.full_name==github.repository",
+    "contains(github.event.pull_request.labels.*.name,\x27site-preview\x27)",
+    "(github.event.action!=\x27labeled\x27||github.event.label.name==\x27site-preview\x27)",
+}
+if pv in docs:
+    doc = docs[pv]
+    on = doc.get("on", doc.get(True)) if isinstance(doc, dict) else None
+    events = set(on) if isinstance(on, dict) else set(as_list(on))
+    if events != {"pull_request"}:
+        out.append("preview-site.yml is started by %s and not by pull_request alone, so a preview can run with secrets on code nobody labelled" % ", ".join(sorted(map(str, events))))
+    for job, body in sorted(jobs(pv).items()):
+        cond = re.sub(r"\s+", "", str(body.get("if", "")))
+        whole = re.fullmatch(r"\$\{\{(.*)\}\}", cond)
+        if whole:
+            cond = whole.group(1)
+        if set(cond.split("&&")) != preview_terms:
+            out.append("preview-site.yml job %s has an if: other than a labelled pull request from a branch of this repository, so an unlabelled or forked pull request can build a preview" % job)
+        if body.get("runs-on") != "ubuntu-latest":
+            out.append("preview-site.yml job %s runs on %s and not ubuntu-latest, so a pull request reaches the self-hosted pool" % (job, body.get("runs-on")))
+# A script reaches a deploy when a line that is not a comment runs wrangler
+# with deploy or publish, `wrangler versions deploy` among them, or runs
+# deploy-site.sh. preview-site.sh reads the wrangler pin out of deploy-site.sh
+# with sed, which runs nothing, so only `sh` before the path counts.
+script_deploy = re.compile(r"\bwrangler\b[^\n]*\b(?:deploy|publish)\b|\bsh\s+tools/site/deploy-site\.sh")
+for script in ("tools/site/preview-site.sh", "tools/site/build-site.sh"):
+    path = os.path.join(sys.argv[1], script)
+    if not os.path.isfile(path):
+        continue
+    with open(path, encoding="utf-8") as f:
+        code = "\n".join(l for l in re.sub(r"\\\n", " ", f.read()).splitlines() if not l.lstrip().startswith("#"))
+    if script_deploy.search(code):
+        out.append("%s runs a deploy, so a preview can move the live site" % script)
+
 for line in out:
     print(line)
 '
@@ -1436,6 +1479,67 @@ if [ -f "$scratch/d6/.github/workflows/deploy-site.yml" ]; then
 fi
 contains "a deploy-site.yml with a trigger of its own is red" \
     "deploy-site.yml is started by" "$(deploys "$scratch/d6")"
+
+# p1 to p7. The preview of a labelled pull request uploads a version and
+# deploys nothing. Each arm applies one shape to a copy and names the line.
+pv_job=$(python3 -c '
+import sys, yaml
+jobs = yaml.safe_load(open(sys.argv[1] + "/.github/workflows/preview-site.yml", encoding="utf-8"))["jobs"]
+print(" ".join(k for k, v in jobs.items() if isinstance(v, dict) and "preview-site.sh" in str(v.get("steps"))))
+' "$root" 2>/dev/null)
+if [ -n "$pv_job" ]; then
+    # p1. pull_request_target, which runs with secrets on a fork's pull request.
+    copy_tree "$scratch/p1"
+    edit_wf "$scratch/p1" preview-site.yml "k = 'on' if 'on' in doc else True; doc[k] = {'pull_request_target': {'types': ['labeled']}}"
+    contains "a preview started by pull_request_target is red" \
+        "preview-site.yml is started by pull_request_target and not by pull_request alone" "$(deploys "$scratch/p1")"
+
+    # p2. The label term dropped, so every pull request builds a preview.
+    copy_tree "$scratch/p2"
+    edit_wf "$scratch/p2" preview-site.yml "doc['jobs']['$pv_job']['if'] = 'github.event.pull_request.head.repo.full_name == github.repository'"
+    contains "a preview that does not ask for the label is red" \
+        "preview-site.yml job $pv_job has an if: other than a labelled pull request" "$(deploys "$scratch/p2")"
+
+    # p3. Every term kept, and an `|| true` that makes the whole always true.
+    copy_tree "$scratch/p3"
+    edit_wf "$scratch/p3" preview-site.yml "doc['jobs']['$pv_job']['if'] = doc['jobs']['$pv_job']['if'] + ' || true'"
+    contains "a preview condition widened by || true is red" \
+        "preview-site.yml job $pv_job has an if: other than a labelled pull request" "$(deploys "$scratch/p3")"
+
+    # p4. The self-hosted pool, which no pull request job may reach.
+    copy_tree "$scratch/p4"
+    edit_wf "$scratch/p4" preview-site.yml "doc['jobs']['$pv_job']['runs-on'] = 'self-hosted'"
+    contains "a preview on the self-hosted pool is red" \
+        "preview-site.yml job $pv_job runs on self-hosted and not ubuntu-latest" "$(deploys "$scratch/p4")"
+
+    # p5. The preview job runs the production deploy script itself.
+    copy_tree "$scratch/p5"
+    edit_wf "$scratch/p5" preview-site.yml "doc['jobs']['$pv_job']['steps'].append({'run': 'sh tools/site/deploy-site.sh'})"
+    contains "a preview job that runs deploy-site.sh is red" \
+        "preview-site.yml job $pv_job runs the deploy itself, so the site has two deploy paths" "$(deploys "$scratch/p5")"
+fi
+
+# p6. The preview script gains a deploy, once by wrangler across a backslash
+# continuation and once by the production script.
+p6_arm() {
+    copy_tree "$scratch/p6"
+    mkdir -p "$scratch/p6/tools/site"
+    cp "$root/tools/site/preview-site.sh" "$scratch/p6/tools/site/"
+    printf '%s\n' "$2" >> "$scratch/p6/tools/site/preview-site.sh"
+    contains "$1" \
+        "tools/site/preview-site.sh runs a deploy, so a preview can move the live site" "$(deploys "$scratch/p6")"
+}
+p6_arm "a preview script that runs wrangler versions deploy across a continuation is red" 'npx wrangler \
+    versions deploy'
+p6_arm "a preview script that runs deploy-site.sh is red" 'sh tools/site/deploy-site.sh'
+
+# p7. The scripts as committed, comments naming `wrangler deploy` and the sed
+# that reads the pin out of deploy-site.sh included, reach no deploy.
+copy_tree "$scratch/p7"
+mkdir -p "$scratch/p7/tools/site"
+cp "$root/tools/site/preview-site.sh" "$root/tools/site/build-site.sh" "$scratch/p7/tools/site/"
+same "the committed preview and build scripts reach no deploy" "" \
+    "$(deploys "$scratch/p7" | grep 'runs a deploy' | tr '\n' '|' | sed 's/|$//')"
 
 # ---------------------------------------------------------------------------
 # Step 9's search finds every install line (#1315, clause 10). Step 9 of the
