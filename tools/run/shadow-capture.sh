@@ -136,8 +136,10 @@ trap 'rm -rf "$scratch"' EXIT HUP INT TERM
 
 # Every line of the log: its prompt id, whether it carried a `skip`, its
 # session, and its text as a JSON string so a tab or a newline in it cannot
-# split a field. `fromjson?` skips a line that does not parse; `jq` without it
-# stops at the first one and drops the rest of the file.
+# split a field. Each line is read as a string and parsed on its own, so a line
+# that does not parse is skipped. `jq` reading the file as one JSON stream
+# stops at the first such line and drops the rest of the file, which is how a
+# first reading of this join lost every id after a torn line.
 : > "$scratch/log.tsv"
 for f in "$log"/*.jsonl; do
     [ -f "$f" ] || continue

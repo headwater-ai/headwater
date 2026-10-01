@@ -128,6 +128,10 @@ prompt c S 2026-09-30T02:02:00Z c3 three
 logline c S c1 one
 logline c S c1 one
 logline c S c2 two
+# The transcript can carry one prompt twice as well, as a resumed session
+# copies the records it resumes. That is still one prompt.
+start c R "$scratch/co"
+prompt c R 2026-09-30T02:03:00Z c3 three
 run c
 has c "$scratch/c.out" "person prompts (N): 3"
 has c "$scratch/c.out" "joined distinct prompts (J): 2"
@@ -173,8 +177,15 @@ has f "$scratch/f.out" "joined distinct prompts (J): 1"
 start g S "$scratch/co"
 prompt g S 2026-09-30T05:00:00Z g1 "which PRs"
 logline g S notification-id "which PRs"
+# The same text logged by another session is not this prompt.
+start g V "$scratch/co"
+prompt g V 2026-09-30T05:01:00Z g2 "other"
+start g W "$scratch/co"
+prompt g W 2026-09-30T05:02:00Z g3 "unrelated"
+logline g W g3 "unrelated"
+logline g W another-id "other"
 run g
-has g "$scratch/g.out" "missed prompts: 1"
+has g "$scratch/g.out" "missed prompts: 2"
 has g "$scratch/g.out" "missed prompts whose text the session logged under another id: 1"
 
 # The arguments, over case a's inputs so that only the argument is wrong: an
