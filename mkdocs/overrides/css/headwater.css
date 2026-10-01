@@ -73,17 +73,22 @@ table th { font-family: var(--sans); font-size: 0.85rem; text-align: left; }
 
 /* THE HEADER
  *
- * `base.html` emits the `.navbar` wrapper outside every block, so it cannot be
- * removed from a template that extends rather than replaces. It is restyled
- * into the flat top bar the hand-built pages carry instead, and the accent
- * rule above it is the `.topbar` of those pages. */
-.navbar {
-  background: var(--bg) !important;
+ * `base.html` in this directory replaces the theme's and wraps the brand and
+ * the links in `header.hw-header`. This is the flat top bar the hand-built
+ * pages carry, and the accent rule above it is the `.topbar` of those pages.
+ * These rules were written on the theme's `.navbar`. They matched nothing
+ * from the day that wrapper was removed (#566) until they were re-pointed. */
+.hw-header {
+  background: var(--bg);
   border-bottom: 1px solid var(--rule);
   border-top: 4px solid var(--accent);
-  padding: 0.9rem 0;
+  padding: 1.2rem 0;
+  margin-bottom: 1.4rem;
 }
-.navbar > .container { align-items: center; gap: 1.5rem; }
+.hw-header > .container {
+  display: flex; justify-content: space-between; align-items: center;
+  gap: 1.5rem; flex-wrap: wrap;
+}
 .hw-brand {
   font-family: var(--serif); font-weight: 600; font-size: 1.1rem;
   display: flex; align-items: center; gap: 0.5rem;
@@ -96,8 +101,6 @@ table th { font-family: var(--sans); font-size: 0.85rem; text-align: left; }
 }
 .hw-navlinks a { color: var(--muted); text-decoration: none; }
 .hw-navlinks a:hover { color: var(--accent); }
-.navbar .nav-link { color: var(--muted) !important; font-family: var(--sans); font-size: 0.82rem; }
-.navbar .nav-link:hover { color: var(--accent) !important; }
 .navbar-toggler { border-color: var(--rule); }
 
 /* THE SHELF SWITCHER
@@ -146,17 +149,33 @@ table th { font-family: var(--sans); font-size: 0.85rem; text-align: left; }
   font-family: var(--sans); font-size: 0.85rem;
 }
 
-/* THE FOOTER, as the hand-built half carries it. */
-footer {
-  border-top: 1px solid var(--rule);
-  font-weight: 400; margin-top: 3rem; text-align: left;
-}
-.hw-foot {
-  padding: 1.5rem 0 2.5rem;
-  font-family: var(--sans); font-size: 0.87rem; color: var(--muted);
-}
-.hw-foot p { margin: 0 0 1rem; max-width: 46rem; }
-.hw-footlinks { display: flex; gap: 1.25rem; flex-wrap: wrap; }
+/* THE FOOTER
+ *
+ * The block between the markers is `tools/site/site-footer.css`, the one copy
+ * of the footer's styles, written here by `tools/site/refresh-site-tokens.sh`
+ * and never by hand. The rule under it is this half's own: it undoes what the
+ * theme's `css/base.css` sets on `footer`. */
+  /* headwater:footer */
+  footer { border-top: 1px solid var(--rule); }
+  .foot {
+    padding-top: 1.5rem; padding-bottom: 2.5rem;
+    font-family: var(--sans); font-size: 0.87rem;
+    color: var(--muted);
+  }
+  .foot p { margin: 0 0 1rem; max-width: 46rem; }
+  .footgroups { display: flex; gap: 2.5rem; flex-wrap: wrap; margin-top: 0.4rem; }
+  .footgroup { flex: 1 1 14rem; min-width: 0; }
+  .footlabel {
+    font-family: var(--sans); font-size: 0.72rem; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--muted); margin-bottom: 0.7rem;
+  }
+  .footlinks { display: flex; gap: 0.5rem 1.25rem; flex-wrap: wrap; }
+  @media (max-width: 62rem) {
+    .footlinks { flex-direction: column; gap: 0.75rem; }
+    .footlinks a { display: block; }
+  }
+  /* headwater:footer end */
+footer { font-weight: 400; margin-top: 3rem; margin-bottom: 0; text-align: left; }
 
 @media (max-width: 62rem) {
   .hw-side { border-right: 0; }

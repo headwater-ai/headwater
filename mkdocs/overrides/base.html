@@ -17,6 +17,9 @@
   - Removed the entire <div class="navbar fixed-top"> wrapper and its contents
   - Removed the search, previous/next, and repo links from the navbar
   - Kept the <div class="container"> content area
+  - Wrapped the site_name block in <header class="hw-header">, which is the
+    element css/headwater.css sets as the top bar
+  - Gave the footer a <div class="container foot"> wrapper inside <footer>
   - Kept all head content and scripts
 
   The navbar's functions are replaced in main.html:
@@ -98,10 +101,22 @@
     <body{% if page and page.is_homepage %} class="homepage"{% endif %}>
         {# NAVBAR REMOVED — #566 requires no Bootstrap navbar #}
         {# Custom header is provided by main.html override via site_name block #}
+        {#
+          The wrapper is what `css/headwater.css` sets as the top bar: the
+          accent rule, the padding, the row with the brand at one end and the
+          links at the other, and the bottom rule. Removing the navbar took the
+          only wrapper those rules matched, so the brand and the links were
+          served as bare children of `body` with none of it. `.container` gives
+          the row the same width as the content under it.
+        #}
+        <header class="hw-header">
+          <div class="container">
         {% block site_name %}
           {# Default: stock theme's brand, replaced by main.html #}
           <a href="{{ nav.homepage.url|url }}">{{ config.site_name }}</a>
         {% endblock %}
+          </div>
+        </header>
 
         <div class="container">
             <div class="row">
@@ -112,7 +127,14 @@
             </div>
         </div>
 
-        <footer class="col-md-12">
+        {#
+          The footer has the shape the hand-built pages give it: a full-width
+          `footer` that carries the rule, and a width wrapper inside it. The
+          stock `col-md-12` sat outside every `.container`, so its content ran
+          to the edge of the window.
+        #}
+        <footer>
+          <div class="container foot">
           {%- block footer %}
             <hr>
             {%- if config.copyright %}
@@ -120,6 +142,7 @@
             {%- endif %}
             <p>{% trans mkdocs_link='<a href="https://www.mkdocs.org/">MkDocs</a>' %}Documentation built with {{ mkdocs_link }}.{% endtrans %}</p>
           {%- endblock %}
+          </div>
         </footer>
 
       {%- block scripts %}

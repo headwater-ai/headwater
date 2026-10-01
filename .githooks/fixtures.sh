@@ -480,6 +480,31 @@ sed -i 's|--accent: #1d5c54|--accent: #b30000|' "$scratch/site/proof/index.html"
 out=$(cd "$scratch" && HEADWATER_SKIP_TOKEN_CHECK=1 sh .githooks/pre-commit 2>&1); status=$?
 judge 'and the named variable releases that one clause' 0 "$status" '' "$out"
 
+# The footer, which the same clause holds. `tools/site/site-footer.html` is the
+# one copy of the footer every page of the site carries. Before it the landing
+# page split its links into the generated corpus and the hand-built site, seven
+# pages carried a flat list and the generated half a third, and nothing compared
+# them. The first case removes a link from one hand-built page. The second
+# removes one from the generated template, which is the half the first arm of
+# the script never reads.
+reset
+sed -i '/<a href="\/glossary\/">Glossary<\/a>/d' "$scratch/site/proof/index.html"
+out=$(gate); status=$?
+judge 'a page whose footer was edited by hand is refused' 1 "$status" \
+    'stale site/proof/index.html (its footer block disagrees with tools/site/site-footer.html)' "$out"
+
+reset
+sed -i '/<a href="\/glossary\/">Glossary<\/a>/d' "$scratch/mkdocs/overrides/main.html"
+out=$(gate); status=$?
+judge 'and so is the generated template, which carries the same footer' 1 "$status" \
+    'stale mkdocs/overrides/main.html (its footer block disagrees with tools/site/site-footer.html)' "$out"
+
+reset
+sed -i 's|  .footgroups { display: flex; gap: 2.5rem;|  .footgroups { display: flex; gap: 9rem;|' "$scratch/mkdocs/overrides/css/headwater.css"
+out=$(gate); status=$?
+judge 'and so are the styles of the footer, which have one copy of their own' 1 "$status" \
+    'stale mkdocs/overrides/css/headwater.css (its footer block disagrees with tools/site/site-footer.css)' "$out"
+
 # A finding whose location line lands on the width boundary, printed whole.
 #
 # #340 lays the report out at 80 columns, and the fill leaves a line alone when
