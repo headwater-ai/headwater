@@ -38,6 +38,10 @@
 //! file, and an instance cannot see the other triple to de-duplicate against
 //! it without reading outside the read set that keys it.
 //!
+//! A relation that declares an inverse groups both halves into one instance.
+//! That instance reports once, on the declared half where the source end wrote
+//! one, and on the inverse half where only the target end did.
+//!
 //! # The severity is advisory, and the finding carries no patch
 //!
 //! The remedy is a judgment.
@@ -46,6 +50,12 @@
 //! `overrides` or `supersedes` one side, and which side loses is not a thing
 //! this engine can derive. A finding whose remedy is a rewrite is advisory in
 //! this repository's rule, so the severity is a warning.
+//!
+//! The remediation names only the edits that clear the finding: an end moved
+//! off the condition, by supersession where the facet is its status or by a
+//! changed facet. It does not name `overrides`. Under Q18 an overridden
+//! decision stays `current`, so the condition still holds and the finding
+//! stays, and a taxonomy can declare no `overrides` relation at all.
 
 use crate::finding::{at, Finding, Severity};
 use crate::instance::Outcome;
@@ -163,8 +173,9 @@ impl EdgeCheck for InvalidPair<'_> {
                 source.id, relation.name, target.id
             ),
             remediation: format!(
-                "settle it in a decision that `overrides` or `supersedes` one of {} and {}, or \
-                 change the facet at one end if the two no longer conflict",
+                "decide which of {} and {} stands, then move the other off {condition}: \
+                 supersede it where the facet is its status, or change the facet at one end if \
+                 the two no longer conflict",
                 source.path, target.path
             ),
             // No patch. Which side loses is a judgment only an author can
