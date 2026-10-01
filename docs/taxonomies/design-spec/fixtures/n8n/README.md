@@ -58,17 +58,17 @@ Unlike the [Beacon fixtures](../../../brd-prd/fixtures/README.md#how-to-run-this
 
 ### What that job holds, and what it does not
 
-It holds the fourteen figures of *What a run reports* on all three n8n corpora, and it holds the version pin, which is the scalar that broke every one of these recipes for four minor versions of `headwater/standard`. It holds none of the probe arms below: the shelf-removed run, the narrow-pattern run, the three homogeneity rows and the house-regime probe each change a declaration before running, and no job reassembles them. So the job holds one more thing: none of the three pages states a check-instance count outside *What a run reports*. That count moves with every rule a release adds, so a probe arm below states its other figures and leaves that one out. **It holds no figure outside these three pages, and there are two such copies.** [The evaluation](../../../../evaluations/n8n-worked-example.md) restates the totals of all three n8n corpora in its own prose, and is the copy a reader outside this repository is most likely to meet. [The diataxis-site fixtures index](../../../diataxis-site/fixtures/README.md#a-second-external-corpus-n8ns-skills) carries a seven-row table of that corpus's readings. The job reads this page and the two beside it, and nothing re-derives either of those two. Every figure in this paragraph is hand-measured, each is stated with the release that produced it, and a reader should re-run one rather than cite it.
+It holds the fourteen figures of *What a run reports* on all three n8n corpora, and it holds the version pin, which is the scalar that broke every one of these recipes for four minor versions of `headwater/standard`. It holds none of the probe arms below: the shelf-removed run, the narrow-pattern run, the three homogeneity rows and the house-regime probe each change a declaration before running, and no job reassembles them. So the job holds one more thing: none of the three pages states a check-instance count outside *What a run reports*. That count moves with every rule a release adds, so a probe arm below states its other figures and leaves that one out. **It holds no figure outside these three pages, and there are two such copies.** [The evaluation](../../../../evaluations/n8n-worked-example.md) restates the finding totals of all three n8n corpora in its own prose, and is the copy a reader outside this repository is most likely to meet. The job reads it for one thing only: it must state no check-instance count, because it has no section that the job diffs. [The diataxis-site fixtures index](../../../diataxis-site/fixtures/README.md#a-second-external-corpus-n8ns-skills) carries a seven-row table of that corpus's readings. The job reads this page and the two beside it, and nothing re-derives either of those two. Every figure in this paragraph is hand-measured, each is stated with the release that produced it, and a reader should re-run one rather than cite it.
 
 ## What the taxonomy needed before it could read one file
 
-**The design-spec entry, exactly as it ships, types none of these documents.** Its one shelf is `spec_series` at `docs/spec/**`. Not one file of this corpus is under `docs/`. Run the assembly above with the shelf removed from `overlay.yml` and the run reports **4 files under the corpus root, 4 untyped, 0 excluded, 0 checked, 1 finding**, and `headwater check --strict` exits **1**. The first and third of those read 42 and 38 until [HW-DR-0067](../../../../decisions/0067-the-vendored-package-root-moves-under-headwater-and-the-old-root-is-named-in-a-refusal.md) moved the vendored package out of this corpus root.
+**The design-spec entry, exactly as it ships, types none of these documents.** Its one shelf is `spec_series` at `docs/spec/**`. Not one file of this corpus is under `docs/`. Run the assembly above with the shelf removed from `overlay.yml` and the run reports **4 files under the corpus root, 4 untyped, 0 excluded, 0 checked**, and `headwater check --strict` exits **1** on one finding, a broken prose link. The first and third of those read 42 and 38 until [HW-DR-0067](../../../../decisions/0067-the-vendored-package-root-moves-under-headwater-and-the-old-root-is-named-in-a-refusal.md) moved the vendored package out of this corpus root.
 
 **That arm was green until 4.3.0, and the one finding that ends it is not about the four documents being unread.** Until 4.2.0 the arm reported 0 findings and exited 0, which is the shape of failure the census crate names *systematically green*: four real governing documents that no rule read, and a passing run. At 4.3.0 `link.path.unresolved` runs over the corpus rather than over the typed set, so the broken prose link below is reported whether or not a shelf claims the file that carries it. The strict exit is now 1 for a reason that has nothing to do with the four documents going unchecked, and the original point stands undiminished: the engine still reports the four as rows saying `no shelf pattern claims this path`, and no finding anywhere says the corpus went unchecked.
 
 **n8n does have a `docs/` directory, and it is not a counter-example.** It holds 272 files at the pin. 271 of them sit under `docs/generated/` and are `tbls` output produced from the database migrations. The 272nd is `docs/db.md`, an authored page whose subject is how that output is generated and where to read it. No architecture document, no review rule and no skill is under `docs/`. The governed prose is elsewhere, one document per package, which is the claim this fixture tests.
 
-**A path pattern is the wrong instrument for a corpus that carries its signal in the filename.** The four documents share no directory. What they share is a name: `architecture.md`, `ARCHITECTURE.md`, `ARCHITECTURE.md`, `ARCHITECTURE_CONNECTION_VS_SETTINGS.md`. The pattern language admits `**` as a whole segment, so `packages/**/ARCHITECTURE.md` is legal. It claims **2 of the 4**: the run reports 2 typed, 2 untyped and 7 findings, and the two it misses report nothing a rule of the entry can see. The pattern that reaches all four is `packages/**`, which fixes one segment out of a corpus of 27,688 files and would claim every Markdown file in the monorepo if the corpus held them.
+**A path pattern is the wrong instrument for a corpus that carries its signal in the filename.** The four documents share no directory. What they share is a name: `architecture.md`, `ARCHITECTURE.md`, `ARCHITECTURE.md`, `ARCHITECTURE_CONNECTION_VS_SETTINGS.md`. The pattern language admits `**` as a whole segment, so `packages/**/ARCHITECTURE.md` is legal. It claims **2 of the 4**: the run reports 2 typed and 2 untyped, and the two it misses report nothing a rule of the entry can see. The pattern that reaches all four is `packages/**`, which fixes one segment out of a corpus of 27,688 files and would claim every Markdown file in the monorepo if the corpus held them.
 
 **The shelf has to be heterogeneous with one admitted kind, and that reads as a contradiction.** `kinds.design_spec` requires the facet `doc_type`, because this entry's own shelf is heterogeneous and needs a discriminator. A homogeneous shelf refuses a document that restates the kind its placement already states. So a `design_spec` on a homogeneous shelf reports an error whichever way the front matter is written, and both arms were run:
 
@@ -130,32 +130,24 @@ Twelve of the thirteen findings are about the metadata the typing added and the 
 
 The measurement below is a probe and not a declaration, on the precedent the [brd-prd fixtures](../../../brd-prd/fixtures/README.md#what-the-bases-voice-regime-would-have-reported) set. Append `regimes.language.ste_house` from `.headwater/overlay.yml` of this repository to the fixture overlay, add `kinds.design_spec.language: ste_house`, and change nothing else. That is one regime and one line, and no line of any document.
 
-The run reports **167 findings, 150 error and 17 warn**, against 13 findings and 13 errors before it. The 154 extra findings are:
+This page states no count for this probe. The probe reads this repository's own `.headwater/overlay.yml`, so its counts move each time this repository edits its house regime, and no job assembles the probe to hold them. Run it to read them. The findings it adds come from these rules:
 
-| Rule | Count | Severity |
-|---|---|---|
-| `language.source_form.not_met` | 136 | error |
-| `language.controlled.not_met`, a contraction (`doesn't`) | 1 | error |
-| `language.controlled.not_met`, a semicolon in running prose | 9 | warn |
-| `language.controlled.not_met`, a sentence past 25 words | 8 | warn |
-| `language.retired_term.used` | 0 | — |
+| Rule | Severity |
+|---|---|
+| `language.source_form.not_met` | error |
+| `language.controlled.not_met`, a contraction (`doesn't`) | error |
+| `language.controlled.not_met`, a semicolon in running prose | warn |
+| `language.controlled.not_met`, a sentence past 25 words | warn |
 
-Per document:
+`language.retired_term.used` runs and reports nothing.
 
-| Document | Under the entry alone | Under the entry plus `ste_house` |
-|---|---|---|
-| `packages/@n8n/instance-ai/docs/architecture.md` | 3 | 123 |
-| `packages/@n8n/instance-ai/evaluations/ARCHITECTURE.md` | 3 | 34 |
-| `packages/@n8n/expression-runtime/ARCHITECTURE.md` | 4 | 5 |
-| `packages/@n8n/local-gateway/docs/ARCHITECTURE_CONNECTION_VS_SETTINGS.md` | 3 | 5 |
+**Three things in that run are worth more than the total.**
 
-**Three things in that table are worth more than the total.**
+**Nearly all the hard-wrap findings come from two documents and not four.** `instance-ai/docs/architecture.md` and `instance-ai/evaluations/ARCHITECTURE.md` carry them. The other two documents carry almost none, because they are written one line per paragraph already. A house rule that reads as a verdict on a project turns out to be a verdict on the editor two of its authors used.
 
-**The 136 hard-wrap findings come from two documents and not four.** `instance-ai/docs/architecture.md` carries 108 and `instance-ai/evaluations/ARCHITECTURE.md` carries 27. The other two documents carry one between them, because they are written one line per paragraph already. A house rule that reads as a verdict on a project turns out to be a verdict on the editor two of its authors used.
+**There is no British spelling anywhere in the four documents.** The rule that catches one ran on every document and found nothing. n8n writes `organisation` and `behavioural` elsewhere in the repository, and not here. **The [standards-spec corpus](../../../standards-spec/fixtures/n8n/README.md#what-this-repositorys-own-house-regime-would-have-reported) at the same pin carries four of them, and the rule reports only `behaviour`**, because the engine's spelling table is a closed list. Read the two together: this sentence is a fact about four documents, and that one separates a corpus count from a rule count.
 
-**There is no British spelling anywhere in the four documents.** The rule that catches one ran on every document and found nothing. n8n writes `organisation` and `behavioural` elsewhere in the repository, and not here. **The [standards-spec corpus](../../../standards-spec/fixtures/n8n/README.md#what-this-repositorys-own-house-regime-would-have-reported) at the same pin carries four of them, and the rule reports one of the four**, because the engine's spelling table is closed at 24 words. Read the two together: this sentence is a fact about four documents, and that one separates a corpus count from a rule count.
-
-**One finding of 167 is mechanically fixable, and it is the contraction.** `headwater check --fix` writes a British spelling, a contraction whose expansion is one word, a retired term that names a replacement, and a missing reciprocal link. Of the 167, exactly one is in that set, and the report marks it: it is the only line that reads `fix (mechanical)`. The 136 hard wraps are mechanical to a reader and carry no patch, and `engine/crates/check/src/source_form.rs` states why in its own comment. Nothing here was ever run with `--fix`.
+**The contraction is the one finding that is mechanically fixable.** `headwater check --fix` writes a British spelling, a contraction whose expansion is one word, a retired term that names a replacement, and a missing reciprocal link. The contraction alone is in that set, and the report marks it: it is the only line that reads `fix (mechanical)`. The hard wraps are mechanical to a reader and carry no patch, and `engine/crates/check/src/source_form.rs` states why in its own comment. Nothing here was ever run with `--fix`.
 
 ## What ages, and what does not
 

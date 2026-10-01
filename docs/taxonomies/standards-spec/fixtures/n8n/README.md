@@ -61,7 +61,7 @@ The entry sits outside the corpus root on purpose, the same reason the Beacon fi
 
 ## What the taxonomy needed before it could read one file
 
-**This entry, exactly as it ships, types none of these documents.** Its shelf for `kinds.standard` is `standards` at `docs/standards/**`, and n8n keeps these files at `.agents/review-rules/`. Run the assembly above with the shelf removed from `overlay.yml` and the run reports **7 files under the corpus root, 0 typed, 7 untyped, 0 findings**, every row reading `no shelf pattern claims this path`, and `headwater check --strict` exits **0**. That is the design-spec fixture's first result arriving a second time from a second kind of the same repository.
+**This entry, exactly as it ships, types none of these documents.** Its shelf for `kinds.standard` is `standards` at `docs/standards/**`, and n8n keeps these files at `.agents/review-rules/`. Run the assembly above with the shelf removed from `overlay.yml` and the run reports **7 files under the corpus root, 0 typed, 7 untyped**, and no finding, every row reading `no shelf pattern claims this path`, and `headwater check --strict` exits **0**. That is the design-spec fixture's first result arriving a second time from a second kind of the same repository.
 
 **A leading-dot corpus root walks like any other.** `corpus.root: .agents` was the one plausible blocker before the run and it is not one: the census walker uses a plain directory read with no hidden-directory filter. Shelf patterns are matched against paths that carry the corpus root segment, so the shelf writes `.agents/review-rules/**` and not `review-rules/**`.
 
@@ -71,9 +71,9 @@ The entry sits outside the corpus root on purpose, the same reason the Beacon fi
 
 | The shelf, and the front matter | Result |
 |---|---|
-| `homogeneous: true`, `kind: standard` | 7 typed, 21 findings. This is what the fixture commits |
-| `homogeneous: false`, `discriminator: spec_layer`, `spec_layer: standard` declared | 7 typed, 21 findings, identical |
-| `homogeneous: false`, `discriminator: spec_layer`, the facet omitted | 0 typed, 7 untyped, 0 findings, strict exits 0 |
+| `homogeneous: true`, `kind: standard` | 7 typed. This is what the fixture commits, and *What a run reports* holds its findings |
+| `homogeneous: false`, `discriminator: spec_layer`, `spec_layer: standard` declared | 7 typed, the same findings as the first row |
+| `homogeneous: false`, `discriminator: spec_layer`, the facet omitted | 0 typed, 7 untyped, no finding, strict exits 0 |
 
 **The second row is worth a sentence, because the value it declares is illegal twice over and no rule says so.** `spec_layer` admits `functional_spec` and `technical_spec` and the arm writes `standard`, and `kinds.standard` forbids the facet outright. `facet.value.not_permitted` and `facet.required.missing` both instantiate seven times and report nothing — not because the run skips them, but because both pass silently, for two distinct reasons. `facet_value.rs` filters a forbidden facet out of the kind's admitted set before generation runs at all, so `facet.value.not_permitted` never sees the value. `shape.rs`'s required-facet computation removes a forbidden facet from what a kind owes, so `facet.required.missing` never owes one either. (`shelf.placement_is_primary` is the rule that instantiates seven times with the *"the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it"* reason — a third, unrelated rule, not either facet rule.) The engine states both rulings deliberately, and a stronger fact follows from them: **no rule in this engine reports a forbidden facet's mere presence at all.** A heterogeneous shelf's discriminator answers to no facet declaration, `forbid` included, and there is no check anywhere for a forbidden facet showing up regardless of shelf shape.
 
@@ -141,36 +141,25 @@ So a sweep proposes an edge that the gate then refuses, and nothing between the 
 
 The measurement below is a probe and not a declaration, on the precedent the [brd-prd fixtures](../../../brd-prd/fixtures/README.md#what-the-bases-voice-regime-would-have-reported) set. Append `regimes.language.ste_house` from `.headwater/overlay.yml` of this repository to the fixture overlay, add `kinds.standard.language: ste_house`, and change nothing else.
 
-The run reports **143 findings, 114 error and 29 warn**, against 21 findings and 21 errors before it. The 122 extra findings are:
+This page states no count for this probe, for the reason the [design-spec README](../../../design-spec/fixtures/n8n/README.md#what-this-repositorys-own-house-regime-would-have-reported) gives: the probe reads this repository's own house regime, and its counts move each time that regime changes. The findings it adds come from these rules:
 
-| Rule | Count | Severity |
-|---|---|---|
-| `language.source_form.not_met` | 87 | error |
-| `language.controlled.not_met`, a contraction | 5 | error |
-| `language.controlled.not_met`, a British spelling | 1 | error |
-| `language.controlled.not_met`, a semicolon in running prose | 19 | warn |
-| `language.controlled.not_met`, a sentence past 25 words | 10 | warn |
-| `language.retired_term.used` | 0 | — |
+| Rule | Severity |
+|---|---|
+| `language.source_form.not_met` | error |
+| `language.controlled.not_met`, a contraction | error |
+| `language.controlled.not_met`, a British spelling | error |
+| `language.controlled.not_met`, a semicolon in running prose | warn |
+| `language.controlled.not_met`, a sentence past 25 words | warn |
 
-Per document:
+`language.retired_term.used` runs and reports nothing.
 
-| Document | Under the entry alone | Under the entry plus `ste_house` |
-|---|---|---|
-| `.agents/review-rules/README.md` | 3 | 58 |
-| `.agents/review-rules/qa-dx/workflow-safety.md` | 3 | 25 |
-| `.agents/review-rules/db-migrations/conventions-and-tests.md` | 3 | 19 |
-| `.agents/review-rules/db-migrations/data-safety.md` | 3 | 17 |
-| `.agents/review-rules/frontend/design-system.md` | 3 | 10 |
-| `.agents/review-rules/security/credentials-and-secrets.md` | 3 | 7 |
-| `.agents/review-rules/testing/coverage.md` | 3 | 7 |
+**Three things in that run are worth more than the total.**
 
-**Three things in that table are worth more than the total.**
+**The hard wraps are spread across all seven documents, and in the design-spec corpus they were not.** There, nearly all came from two documents of four, and the other two were written one line per paragraph already — a house rule that read as a verdict on a project turned out to be a verdict on the editor two of its authors used. Here every rule file is hard-wrapped at about 80 columns and every one of the seven reports hard-wrap findings. Same repository, same pin, one editorial convention per corpus.
 
-**The hard wraps are spread across all seven documents, and in the design-spec corpus they were not.** There, 136 of 136 came from two documents of four, and the other two were written one line per paragraph already — a house rule that read as a verdict on a project turned out to be a verdict on the editor two of its authors used. Here every rule file is hard-wrapped at about 80 columns and every one of the seven reports between 2 and 42. Same repository, same pin, one editorial convention per corpus.
+**This is a direct correction to what the design-spec fixture recorded about British spelling, in both directions.** That fixture reported "there is no British spelling anywhere in the four documents". There are four in this one — `behaviour`, `defence`, `colours` and `denormalised` — and three of them are in the typed set. **The rule reports only `behaviour`.** The engine's spelling table is a closed list that holds `behaviour` and not `defence`, `colour` or `denormalise`. So the corpus-level claim and the rule-level claim differ, and only the second is what a run measures.
 
-**This is a direct correction to what the design-spec fixture recorded about British spelling, in both directions.** That fixture reported "there is no British spelling anywhere in the four documents". There are four in this one — `behaviour`, `defence`, `colours` and `denormalised` — and three of them are in the typed set. **The rule reports one.** The engine's spelling table is closed at 24 words and holds `behaviour` and not `defence`, `colour` or `denormalise`. So the corpus-level claim and the rule-level claim differ by a factor of three, and only the second is what a run measures.
-
-**Six findings of 143 are mechanically fixable, against one of 166 in the design-spec corpus.** `headwater check --fix` writes a British spelling, a contraction whose expansion is one word, a retired term that names a replacement, and a missing reciprocal link. Five contractions and one spelling are in that set, and the report marks each with `fix (mechanical)`. The 87 hard wraps are mechanical to a reader and carry no patch. **Nothing here was ever run with `--fix`.**
+**The contractions and the spelling are mechanically fixable, against the one contraction in the design-spec corpus.** `headwater check --fix` writes a British spelling, a contraction whose expansion is one word, a retired term that names a replacement, and a missing reciprocal link. The contractions and the spelling are in that set, and the report marks each with `fix (mechanical)`. The hard wraps are mechanical to a reader and carry no patch. **Nothing here was ever run with `--fix`.**
 
 ## What ages, and what does not
 

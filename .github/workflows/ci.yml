@@ -2072,10 +2072,12 @@ jobs:
         # this repository's own corpus, so no check read either scalar and the
         # published pages named commands a reader could not run.
         #
-        # It blocks, and it carries three arms a green run cannot show you: it
+        # It blocks, and it carries these arms a green run cannot show you: it
         # fails if it does not find three corpora, it fails if an edited figure
-        # would not have been caught, and it fails if a pin the vendored package
-        # does not carry would have run green.
+        # would not have been caught, it fails if a pin the vendored package
+        # does not carry would have run green, and it fails if a check-instance
+        # count added outside a README's *What a run reports*, or anywhere on
+        # `docs/evaluations/n8n-worked-example.md`, would not have been named.
         #
         # It writes nothing inside the checkout: every scratch root is under a
         # temporary directory, removed at the end.

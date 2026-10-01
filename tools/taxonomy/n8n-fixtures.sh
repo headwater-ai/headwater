@@ -21,7 +21,9 @@
 # count of corpora it found, an edited figure that must fail it naming the file
 # and both values, a version pin the vendored package does not carry, and a
 # check-instance count stated outside *What a run reports*, where nothing diffs
-# it, which must fail it naming the file and the line (#1452).
+# it, which must fail it naming the file and the line (#1452). The last arm also
+# covers `docs/evaluations/n8n-worked-example.md`, which restates the three
+# corpora and has no section this job diffs, so any count on it fails the job.
 #
 # It writes nothing inside this checkout: every scratch root is under a
 # temporary directory, and the directory is removed at the end.
