@@ -108,35 +108,18 @@ const EXCEPTIONS: &[(&str, &str)] = &[];
 #[test]
 fn every_rule_reaches_one_obligation_of_the_standard_package() {
     let root = Root::shaped("standard-controls-every-rule", |_| {});
-    let ran = root.run(&["check"]);
-    let flat = ran.out.split_whitespace().collect::<Vec<_>>().join(" ");
-    assert!(
-        flat.contains("so it names none")
-            || flat.contains("every rule this engine carries reaches one obligation"),
-        "the register block is not in the output, so this case reads nothing: {ran:?}"
-    );
-    let words: Vec<&str> = flat.split(' ').collect();
-    let mut unbound: Vec<&str> = words
-        .windows(2)
-        .filter(|pair| pair[1] == "reaches" && pair[0].contains('.'))
-        .map(|pair| pair[0])
-        .filter(|rule| {
-            rule.chars()
-                .all(|c| c.is_ascii_lowercase() || c == '.' || c == '_')
-        })
-        .collect();
-    unbound.sort_unstable();
-    unbound.dedup();
-    let mut expected: Vec<&str> = EXCEPTIONS.iter().map(|(rule, _)| *rule).collect();
-    expected.sort_unstable();
-    let unexpected: Vec<&str> = unbound
+    let unbound = unbound_rules(&root);
+    let mut expected: Vec<String> = EXCEPTIONS
         .iter()
-        .copied()
+        .map(|(rule, _)| (*rule).to_owned())
+        .collect();
+    expected.sort_unstable();
+    let unexpected: Vec<&String> = unbound
+        .iter()
         .filter(|rule| !expected.contains(rule))
         .collect();
-    let stale: Vec<&str> = expected
+    let stale: Vec<&String> = expected
         .iter()
-        .copied()
         .filter(|rule| !unbound.contains(rule))
         .collect();
     assert!(
@@ -147,6 +130,52 @@ fn every_rule_reaches_one_obligation_of_the_standard_package() {
         stale.is_empty(),
         "these exceptions now reach one obligation, so remove them from EXCEPTIONS: {stale:?}"
     );
+}
+
+/// The case above passes when [`unbound_rules`] reads nothing, so this case
+/// removes one control from the package copy and holds that the reader names
+/// its rule and no other. A reader that matched the wrong word, or none, goes
+/// red here rather than passing the case above vacuously.
+#[test]
+fn the_register_reader_names_the_rule_whose_control_is_removed() {
+    let root = Root::shaped("standard-controls-one-removed", |at| {
+        let path = at.join(".headwater/packages/headwater-standard/taxonomy.yml");
+        let taxonomy = std::fs::read_to_string(&path).expect("the package copy reads");
+        let block = control_of(&taxonomy, "facet.value.blank");
+        let without = taxonomy.replacen(block, "", 1);
+        assert_ne!(without, taxonomy, "the control is removed");
+        std::fs::write(&path, without).expect("the package copy writes");
+    });
+    assert_eq!(unbound_rules(&root), ["facet.value.blank"]);
+}
+
+/// The rules the register of one `headwater check` run names as reaching no
+/// single obligation, sorted and each once. The register wraps a line at the
+/// report's width, so the output is read with each run of whitespace folded to
+/// one space. Each such line opens with the rule, and the next word is
+/// `reaches`.
+fn unbound_rules(root: &Root) -> Vec<String> {
+    let ran = root.run(&["check"]);
+    let flat = ran.out.split_whitespace().collect::<Vec<_>>().join(" ");
+    assert!(
+        flat.contains("so it names none")
+            || flat.contains("every rule this engine carries reaches one obligation"),
+        "the register block is not in the output, so this case reads nothing: {ran:?}"
+    );
+    let words: Vec<&str> = flat.split(' ').collect();
+    let mut unbound: Vec<String> = words
+        .windows(2)
+        .filter(|pair| pair[1] == "reaches" && pair[0].contains('.'))
+        .map(|pair| pair[0])
+        .filter(|rule| {
+            rule.chars()
+                .all(|c| c.is_ascii_lowercase() || c == '.' || c == '_')
+        })
+        .map(str::to_owned)
+        .collect();
+    unbound.sort_unstable();
+    unbound.dedup();
+    unbound
 }
 
 /// The rules outside the lifecycle family that 4.14.0 bound, one row each in
