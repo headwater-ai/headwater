@@ -1244,7 +1244,20 @@ jobs:
         # also holds spec 15's three-state rule, where `calls: []` for a
         # stream nobody watched turns an unobserved run into a clean result.
         # It needs `jq` and skips with a warning without it.
+        #
+        # It also needs `bwrap` with unprivileged user namespaces, because the
+        # recorder confines every session to its workspace and refuses to run
+        # one it cannot confine (#1467). The cases run the real confinement
+        # with a stub harness, so they never skip: a runner without `bwrap`
+        # gets it installed here, and one whose AppArmor refuses the namespace
+        # is told to allow it.
         run: |
+          if ! command -v bwrap >/dev/null 2>&1; then
+            sudo apt-get update -q && sudo apt-get install -y -q bubblewrap
+          fi
+          if ! bwrap --unshare-user --ro-bind / / true 2>/dev/null; then
+            sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+          fi
           status=0
           sh tools/probe/probe-record-fixtures.sh || status=$?
           if [ "$status" = 3 ]; then

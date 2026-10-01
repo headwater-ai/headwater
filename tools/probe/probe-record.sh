@@ -133,6 +133,15 @@
 #       its status is on stderr
 #   11  the plan refuses the run, or it does not select the probe. It runs
 #       before any harness call, so it spends nothing
+#   12  the session cannot be confined, or it loaded the host's
+#       configuration (#1467). No `bwrap` on the path, or a `bwrap` that
+#       cannot create a namespace, refuses before any harness call, so it
+#       spends nothing. An init line that shows `bypassPermissions`, a
+#       plugin that is not built in, an MCP server the workspace does not
+#       declare, a skill of the host's own or of a plugin, or a memory path
+#       outside the session's configuration directory refuses the
+#       transcript after the session ran, so that refusal has spent. So does
+#       a stream with no init line, because it does not say what loaded
 #
 # ## The plan's refusal is this script's refusal
 #
@@ -561,6 +570,121 @@ probe_log=${HEADWATER_PROBE_LOG_DIR:-$(mktemp -d "${TMPDIR:-/tmp}/headwater-prob
 HEADWATER_PROBE_SESSION=$session
 HEADWATER_SHADOW_LOG_DIR=$probe_log
 export HEADWATER_PROBE_SESSION HEADWATER_SHADOW_LOG_DIR
+mkdir -p "$probe_log" || { echo "probe-record: no log directory at $probe_log" >&2; exit 2; }
+probe_log=$(cd "$probe_log" && pwd -P)
+
+# The confinement (#1467). Until #1467 a session ran in a subshell that only
+# `cd`ed into its workspace, so it could read every file its user can: four
+# copies of this repository on the recording host, the oracle and the other
+# arms' trees beside the workspace in the batch directory, and the host's own
+# configuration. The 2026-09-30 re-run found 51 of 658 sessions that named a
+# path outside the workspace, and 16 of 658 that named a checkout. An init
+# line of 2026-09-28 showed `bypassPermissions`, 41 skills of which 5 were the
+# user's own, 6 connector MCP servers and the user's auto-memory.
+#
+# So the harness runs under `bwrap`, and the session's file system holds only
+# what is bound below: `/usr` and `/etc` read-only (with `/bin`, `/lib` and
+# their siblings as the host has them), a private `/proc`, `/dev` and `/tmp`,
+# the workspace read-write at its own path, the harness binary read-only, this
+# run's log directory read-write (the intent hook writes there), and a
+# configuration directory of the session's own read-write. Nothing else of
+# `$HOME`, no other tree of the batch and no copy of this repository is in it.
+# The network is shared, because the session needs the API, and that is the
+# one channel this does not close (spec 15 names it).
+#
+# It fails closed. No `bwrap`, or one that cannot create a namespace, is exit
+# 12 before any harness call, and no variable turns the confinement off,
+# because such a switch would be the hole #1467 exists to close.
+#
+# The configuration directory is `HEADWATER_PROBE_CONFIG_DIR`, or a fresh
+# temporary one. It must be empty, and it receives a copy of the host's
+# `.credentials.json` alone, read from `HEADWATER_PROBE_HOST_CONFIG` (the
+# host's `~/.claude` by default), and that copy is removed when the session
+# ends. `HOME` and `CLAUDE_CONFIG_DIR` both name it, so no user `CLAUDE.md`,
+# skill, plugin, setting or auto-memory of the host loads, and the
+# environment is cleared, so no token of the host's, such as `GH_TOKEN`,
+# reaches the session either.
+command -v bwrap >/dev/null 2>&1 || {
+    echo "probe-record: no \`bwrap\` on the path, so the session cannot be confined to its workspace (#1467). Install bubblewrap; nothing was spent." >&2
+    exit 12
+}
+harness=$(command -v claude)
+harness=$(readlink -f "$harness" 2>/dev/null) || harness=$(command -v claude)
+# The harness is bound at a path of its own rather than at its path on the
+# host, which is under `$HOME` on a host that installed it there. Bound at its
+# own path, it made `/home/<user>/.local/...` a directory of the session's file
+# system, empty but named.
+harness_at=/opt/headwater-harness/claude
+host_config=${HEADWATER_PROBE_HOST_CONFIG:-${HOME:-/nonexistent}/.claude}
+config=${HEADWATER_PROBE_CONFIG_DIR:-}
+if [ -n "$config" ]; then
+    mkdir -p "$config" || { echo "probe-record: no configuration directory at $config" >&2; exit 2; }
+    if [ -n "$(ls -A "$config" 2>/dev/null)" ]; then
+        echo "probe-record: the configuration directory $config is not empty, and a session's configuration starts empty (#1467)." >&2
+        exit 2
+    fi
+else
+    config=$(mktemp -d "${TMPDIR:-/tmp}/headwater-probe-config.XXXXXX") || exit 1
+fi
+config=$(cd "$config" && pwd -P)
+here_real=$(cd "$here" && pwd -P)
+# What the workspace declares and what the host holds are read before the
+# session, which could change the first.
+declared_servers='[]'
+if [ -f "$here/.mcp.json" ]; then
+    declared_servers=$(jq -c '[(.mcpServers // {}) | keys[]]' "$here/.mcp.json" 2>/dev/null) || declared_servers='[]'
+fi
+host_skills=$( (ls -A "$host_config/skills" 2>/dev/null || true) | jq -Rsc 'split("\n") | map(select(length > 0))')
+# The same tools in every arm, and the web tools denied in every arm (#1467,
+# clause 5). `dontAsk` refuses a tool that is not listed without asking, and
+# it is not `bypassPermissions`, which the batches of 2026-09-28 and 2026-09-30
+# ran under. `mcp__headwater` allows the `mcp` arm's declared server, and no
+# other arm loads one.
+allowed_tools=Bash,Read,Grep,Glob,Edit,Write,NotebookEdit,TodoWrite,Skill,Agent,ToolSearch,EnterWorktree,ExitWorktree,mcp__headwater
+permission_mode=dontAsk
+
+set -- --unshare-user --unshare-pid --unshare-ipc --unshare-uts --unshare-cgroup-try \
+    --die-with-parent --new-session \
+    --ro-bind /usr /usr --ro-bind /etc /etc
+for top in bin sbin lib lib32 lib64 libx32; do
+    if [ -L "/$top" ]; then
+        set -- "$@" --symlink "$(readlink "/$top")" "/$top"
+    elif [ -d "/$top" ]; then
+        set -- "$@" --ro-bind "/$top" "/$top"
+    fi
+done
+# A resolver configuration that links out of `/etc`, as systemd-resolved's
+# does, is bound by its target, or the session reaches no host by name.
+resolver=$(readlink -f /etc/resolv.conf 2>/dev/null) || resolver=
+case $resolver in
+    ''|/etc/*|/usr/*) ;;
+    *) [ -f "$resolver" ] && set -- "$@" --ro-bind "$resolver" "$resolver" ;;
+esac
+set -- "$@" --proc /proc --dev /dev --tmpfs /tmp \
+    --bind "$here" "$here" \
+    --bind "$probe_log" "$probe_log" \
+    --bind "$config" "$config" \
+    --ro-bind "$harness" "$harness_at" \
+    --chdir "$here" \
+    --clearenv \
+    --setenv PATH /usr/local/bin:/usr/bin:/bin \
+    --setenv HOME "$config" \
+    --setenv CLAUDE_CONFIG_DIR "$config" \
+    --setenv TMPDIR /tmp \
+    --setenv HEADWATER_PROBE_SESSION "$session" \
+    --setenv HEADWATER_SHADOW_LOG_DIR "$probe_log"
+[ -n "${LANG:-}" ] && set -- "$@" --setenv LANG "$LANG"
+[ -n "${ANTHROPIC_API_KEY:-}" ] && set -- "$@" --setenv ANTHROPIC_API_KEY "$ANTHROPIC_API_KEY"
+if ! bwrap "$@" -- true 2>"$raw.bwrap"; then
+    echo "probe-record: \`bwrap\` could not confine the session to its workspace, so nothing ran and nothing was spent (#1467). It said:" >&2
+    tail -5 "$raw.bwrap" >&2
+    rm -f "$raw.bwrap"
+    exit 12
+fi
+rm -f "$raw.bwrap"
+if [ -f "$host_config/.credentials.json" ]; then
+    cp "$host_config/.credentials.json" "$config/.credentials.json" && chmod 600 "$config/.credentials.json"
+fi
 
 # The channel. Standard output of the harness process, read by this script.
 # Never a file under `~/.claude/projects/`. The session runs in the workspace
@@ -583,13 +707,23 @@ mcp_config=
     # `--mcp-config` takes one or more values, so the option after it must be
     # a flag that is always there. Before the task text, it would read the
     # task as a second config path (verify round 1).
-    claude -p ${mcp_config:+--mcp-config "$mcp_config"} --strict-mcp-config \
+    # The confinement's own options are the positional parameters set above.
+    # `--allowedTools` and `--disallowedTools` take one or more values too, so
+    # each is one comma-separated value with a flag after it.
+    bwrap "$@" -- "$harness_at" -p ${mcp_config:+--mcp-config "$mcp_config"} --strict-mcp-config \
+        --setting-sources project,local \
+        --permission-mode "$permission_mode" \
+        --allowedTools "$allowed_tools" \
+        --disallowedTools WebSearch,WebFetch \
         --output-format stream-json --verbose \
         ${model:+--model "$model"} \
         ${max_turns:+--max-turns "$max_turns"} \
         "$task"
 ) > "$raw" 2>"$raw.err"
 status=$?
+# The copy of the credentials leaves with the session. The directory stays,
+# because what the harness wrote there is this session's and no other's.
+rm -f "$config/.credentials.json"
 if [ -e "$raw.nocd" ]; then
     rm -f "$raw.nocd"
     echo "probe-record: the session could not enter the workspace at $here." >&2
@@ -616,6 +750,40 @@ if [ "$status" != 0 ]; then
         tail -5 "$raw.err" >&2
         exit 10
     fi
+fi
+
+# What the session loaded, read from its init line (#1467, clause 4). The
+# confinement should leave nothing of the host's configuration to load, and
+# this is the check that it did: a transcript whose init line shows any of
+# the host's configuration is refused with 12, after the session has spent.
+# Each reason is one line on stderr. A stream with no init line does not say
+# what loaded, so it is refused too. The stream is read value by value, so a
+# cut last line does not hide the init line before it.
+init_line=$(jq -c 'select(type == "object" and .type == "system" and .subtype == "init")' < "$raw" 2>/dev/null | head -n 1)
+[ -n "$init_line" ] || init_line=null
+init_refusals=$(jq -n -r \
+    --arg config "$config" \
+    --argjson i "$init_line" \
+    --argjson declared "$declared_servers" \
+    --argjson host_skills "$host_skills" '
+    if $i == null then "the stream carries no init line, so what the session loaded cannot be read"
+      else
+        (if ($i.permissionMode // "") == "bypassPermissions" then "permissionMode bypassPermissions" else empty end),
+        (($i.plugins // [])[] | select((.path // "") != "builtin") | "plugin \(.name // "?") at \(.path // "?")"),
+        (($i.mcp_servers // [])[] | .name as $n | select(any($declared[]; . == $n) | not)
+            | "MCP server \($n), which the workspace does not declare in .mcp.json"),
+        (($i.skills // [])[] | . as $s
+            | select(any($host_skills[]; . == $s) or ($s | test(":")))
+            | "skill \($s), which is the host'"'"'s own or a plugin'"'"'s"),
+        (($i.memory_paths // {}) | to_entries[] | (.value | tostring) as $p
+            | select(($p == $config or ($p | startswith($config + "/"))) | not)
+            | "memory path \(.key) \($p), outside the configuration directory")
+      end
+' 2>/dev/null) || init_refusals="the init line could not be read"
+if [ -n "$init_refusals" ]; then
+    echo "probe-record: the session loaded configuration of the host, so its transcript is refused (#1467):" >&2
+    printf '%s\n' "$init_refusals" | sed 's/^/  /' >&2
+    exit 12
 fi
 
 
@@ -697,6 +865,41 @@ if mcp_calls=$(jq -s '[.[] | select(.type == "assistant") | .message.content[]?
         "$([ "$mcp_calls" = 1 ] && echo call || echo calls)"
 else
     printf 'The calls this session made to a tool of an MCP server were not counted, because its stream did not parse as JSON.\n\n'
+fi
+
+# The confinement and the configuration, stated (#1467). A rate of a batch
+# recorded under them does not compare with one of a batch before them, so the
+# transcript says so where a reader of one session meets it.
+printf 'The session ran confined to its workspace. The confinement bound the workspace read-write, `/usr` and `/etc` read-only, the harness, the log directory of this run and the configuration directory below, and nothing else of the host'"'"'s file system, so no copy of this repository, no other tree of its batch and no configuration of the host was readable.\n\n'
+printf 'The session ran under the configuration directory `%s`, which held a copy of the host'"'"'s credentials and nothing else, in the permission mode `%s`, with the tools `%s` allowed and `WebSearch` and `WebFetch` denied. The batches of 2026-09-28 and 2026-09-30 ran under `bypassPermissions` and the host'"'"'s configuration, so a rate of this session does not compare with a rate of theirs.\n\n' \
+    "$config" "$permission_mode" "$allowed_tools"
+
+# The paths outside the workspace the session named (#1467, clause 2). A
+# session cannot see a refusal from outside, so this counts what it tried:
+# each absolute path in the input of a call that reads or writes a file, and
+# each one in the text of a `Bash` command, that the confinement does not
+# bind. None of them is mounted from the host, so the count is of tries, not
+# of reads. A stream that does not parse is said to be uncounted.
+if outside=$(jq -s -r \
+    --arg here "$here" --arg here_real "$here_real" --arg config "$config" \
+    --arg log "$probe_log" --arg harness_dir "${harness_at%/*}" '
+    def under($p; $b): $p == $b or ($p | startswith($b + "/"));
+    def bound($p): $p == "/" or under($p; $harness_dir)
+        or any(($here, $here_real, $config, $log, "/usr", "/etc", "/bin", "/sbin", "/lib",
+                 "/lib32", "/lib64", "/libx32", "/proc", "/dev"); under($p; .));
+    [ .[] | select(.type == "assistant") | .message.content[]? | select(.type == "tool_use")
+      | (.input // {}) as $in
+      | if (.name == "Bash") then
+            (($in.command // "") | tostring | [scan("(?:^|[\\s\"\\x27=:(<>|;,`])(/[^\\s\"\\x27<>|;,)`]*)") | .[0]] | .[])
+        else
+            ($in.file_path, $in.notebook_path, $in.path) | select(type == "string")
+        end ]
+    | map(select(startswith("/") and (startswith("//") | not)) | sub("/+$"; "") | if . == "" then "/" else . end)
+    | unique | map(select(bound(.) | not)) | length' < "$raw" 2>/dev/null) && [ -n "$outside" ]; then
+    printf 'The session named %s %s outside its workspace that the confinement does not bind, so no file of the host at any of them was readable.\n\n' \
+        "$outside" "$([ "$outside" = 1 ] && echo path || echo paths)"
+else
+    printf 'The paths outside its workspace this session named were not counted, because its stream did not parse as JSON.\n\n'
 fi
 
 if [ "$capped" = 1 ]; then
