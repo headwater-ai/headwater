@@ -18,6 +18,10 @@
 #
 # `contradicts` names two facets, and the condition holds only where every one
 # of them holds at both ends.
+#
+# `outranks` declares an inverse, `outranked_by`, so one instance can be
+# written from either end or from both. The finding anchors on the half the
+# source end wrote, and on the inverse half only where the source wrote none.
 
 facets:
   status:
@@ -58,6 +62,13 @@ relations:
     from: [decision]
     to:   [decision]
     invalid_when: {both: {status: current, lifecycle: live}}
+    created_by: author
+  outranks:
+    family: association
+    from: [decision]
+    to:   [decision]
+    inverse: outranked_by
+    invalid_when: {both: {status: current}}
     created_by: author
 
 kinds:

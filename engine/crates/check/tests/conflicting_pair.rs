@@ -188,8 +188,78 @@ fn the_count_is_one_per_declared_entry() {
             path("mutual-a.md"),
             path("mutual-b.md"),
             path("one-sided-z.md"),
+            path("outranks-both-source.md"),
+            path("outranks-inverse-target.md"),
         ]
     );
+}
+
+/// The remedy names only edits that clear the finding. Superseding one end
+/// moves its `status` off `current`, and the condition no longer holds. An
+/// `overrides` edge leaves the loser `current` (Q18), so the rule still fires,
+/// and a taxonomy may not declare `overrides` at all.
+#[test]
+fn the_remedy_names_only_edits_that_clear_the_finding() {
+    let run = run();
+    for finding in findings(&run) {
+        assert!(
+            !finding.remediation.contains("overrides"),
+            "an `overrides` edge leaves both ends current: {}",
+            finding.remediation
+        );
+        assert!(
+            finding.remediation.contains("supersede"),
+            "the remedy names supersession: {}",
+            finding.remediation
+        );
+    }
+    let found = against(&run, "clash-source.md");
+    assert!(
+        found[0].remediation.contains("`lifecycle: live`"),
+        "the remedy names the condition to move off: {}",
+        found[0].remediation
+    );
+}
+
+/// A facet one end does not declare is a condition that does not hold there.
+/// `unfaceted-source.md` is `lifecycle: live` and its far end declares no
+/// `lifecycle`, so the instance passes and nothing is reported.
+#[test]
+fn a_facet_the_far_end_does_not_declare_is_a_pass() {
+    let run = run();
+    assert!(against(&run, "unfaceted-source.md").is_empty());
+    let outcomes = outcomes_reading(&run, "unfaceted-target.md");
+    assert_eq!(outcomes.len(), 1, "{outcomes:?}");
+    assert!(matches!(outcomes[0], Outcome::Passed), "{outcomes:?}");
+}
+
+/// A relation with an inverse, written from both ends, is one instance and one
+/// finding, on the file that wrote the declared half.
+#[test]
+fn an_instance_written_from_both_ends_anchors_on_the_declared_half() {
+    let run = run();
+    let found = against(&run, "outranks-both-source.md");
+    assert_eq!(found.len(), 1, "{found:?}");
+    assert_eq!(found[0].line, 6, "{:?}", found[0]);
+    assert!(against(&run, "outranks-both-target.md").is_empty());
+    let outcomes = outcomes_reading(&run, "outranks-both-target.md");
+    assert_eq!(outcomes.len(), 1, "one instance for both halves: {outcomes:?}");
+}
+
+/// The same relation written only as its inverse reports on the file that
+/// wrote the inverse, because no other file carries an entry to anchor on.
+#[test]
+fn an_instance_written_only_as_the_inverse_anchors_on_the_inverse_half() {
+    let run = run();
+    let found = against(&run, "outranks-inverse-target.md");
+    assert_eq!(found.len(), 1, "{found:?}");
+    assert_eq!(found[0].line, 6, "{:?}", found[0]);
+    assert!(
+        found[0].message.contains("`DEC-FIX-outranks-inverse-source` declares `outranks` to `DEC-FIX-outranks-inverse-target`"),
+        "the message names the ends in the declared direction: {}",
+        found[0].message
+    );
+    assert!(against(&run, "outranks-inverse-source.md").is_empty());
 }
 
 /// A pair with one end superseded does not hold the condition.
