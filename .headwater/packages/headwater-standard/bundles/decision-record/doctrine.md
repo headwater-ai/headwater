@@ -127,7 +127,10 @@ relations.discharges:
   inverse: discharged_by
   reciprocal: required
   created_by: author
+  evidence_at: from
 ```
+
+**The evaluation is the evidence, so the relation declares `evidence_at: from`.** The edge points from the evaluation that substantiates to the obligation that it substantiates. The `evidence` family cannot say which end that is. Without the member, the rule that reads an evidenced claim against the warrant of its evidence read this relation the other way ([HW-DR-0103](https://github.com/headwater-ai/headwater/blob/main/docs/decisions/0103-an-evidence-relation-declares-which-end-is-the-evidence-and-discharges-declares-the-source.md)).
 
 The creator is the author, for the reason the design-spec entry gives for `cites_evidence`. A person types the front-matter line, and no verb, hook or agent proposes it. The owner ruled `author` on 2026-09-26, and HW-DR-0083 records the ruling. No verb, hook or agent writes a `discharges` edge, so the value `hook` would name an actor that nothing plays (HW-OBL-0105).
 

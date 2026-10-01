@@ -349,6 +349,8 @@ Every relation belongs to exactly one of six families:
 | `composition` | One artifact is part of another | nucleus–satellite | yes |
 | `association` | Related, with no stronger claim | multinuclear | no |
 
+The `evidence` family cannot say which end substantiates the other, for the reason it cannot name a nucleus below. So a relation of the family declares `evidence_at: from` when the source is the evidence, as `discharges` does. A relation that declares nothing reads as `to` ([HW-DR-0103](../decisions/0103-an-evidence-relation-declares-which-end-is-the-evidence-and-discharges-declares-the-source.md)).
+
 The fixed family set is deliberate. Open relation vocabularies sprawl, and readers apply them inconsistently once the list passes about a dozen entries. Decades of discourse annotation agree on that finding. A family supplies default semantics, so a new relation type inherits sensible checking without a declaration of its own. The validator can also flag a taxonomy that grew five near-synonymous relations inside one family.
 
 ### Nuclearity
