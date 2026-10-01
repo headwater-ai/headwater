@@ -1429,6 +1429,40 @@ else
 fi
 same "and prints no path" "" "$(cat "$scratch/refused-folds.out")"
 
+# The guard of `probe-record.sh` names no declaration, so the seal reads the
+# checkout's own through `--root`, and that path refuses too. A copy of the
+# script under a scratch root, with the built engine linked in and an unsafe
+# declaration in place, stands for a checkout whose declaration the engine
+# refuses. `HW_PROBE_YML` is unset for both runs.
+seal_engine=$root/engine/target/dev-release/headwater
+[ -x "$seal_engine" ] || seal_engine=$root/engine/target/release/headwater
+if [ -x "$seal_engine" ]; then
+    mkdir -p "$scratch/refusing-root/tools/probe" "$scratch/refusing-root/.headwater" \
+        "$scratch/refusing-root/engine/target/dev-release"
+    cp "$root/tools/probe/seal.sh" "$scratch/refusing-root/tools/probe/seal.sh"
+    ln -s "$seal_engine" "$scratch/refusing-root/engine/target/dev-release/headwater"
+    cp "$scratch/refused-keys.yml" "$scratch/refusing-root/.headwater/probe.yml"
+    for word in --folds "--keys $patched"; do
+        # shellcheck disable=SC2086
+        env -u HW_PROBE_YML sh "$scratch/refusing-root/tools/probe/seal.sh" $word \
+            >"$scratch/refusing-root.out" 2>"$scratch/refusing-root.err"
+        refusing_status=$?
+        case "$word" in
+            --keys*) same "seal.sh --keys exits 8 on a checkout declaration the engine refuses" "8" "$refusing_status" ;;
+            *)
+                if [ "$refusing_status" -ne 0 ]; then
+                    pass "seal.sh --folds fails on a checkout declaration the engine refuses"
+                else
+                    fail "seal.sh --folds fails on a checkout declaration the engine refuses" "exit 0"
+                fi
+                ;;
+        esac
+        same "and prints no path" "" "$(cat "$scratch/refusing-root.out")"
+    done
+else
+    echo "skip the checkout-declaration refusal: no built engine under $root/engine/target"
+fi
+
 # With no built engine there is nothing to read the declaration with, and the
 # seal refuses rather than print an empty list. A copy of the script under a
 # root with no `engine/target` stands for a checkout that never built.

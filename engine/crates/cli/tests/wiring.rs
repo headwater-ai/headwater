@@ -2181,6 +2181,11 @@ fn probe_plan_folds_and_answer_keys_print_the_parsed_lists() {
         let none = root.run(&["probe", "plan", "--answer-keys", "PROBE-FIX-unkeyed"]);
         assert_eq!(none.code, Some(0), "{form}: {}{}", none.out, none.err);
         assert_eq!(none.out, "", "{form}: a probe with no key prints nothing");
+        // A prefix of a declared probe is a probe with no key, so the seal
+        // never removes the key of another probe.
+        let prefix = root.run(&["probe", "plan", "--answer-keys", "PROBE-FIX-key"]);
+        assert_eq!(prefix.code, Some(0), "{form}: {}{}", prefix.out, prefix.err);
+        assert_eq!(prefix.out, "", "{form}: a prefix of a probe matches no key");
     }
 
     // An unsafe entry in either list refuses the whole declaration at status

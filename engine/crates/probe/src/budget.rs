@@ -719,6 +719,10 @@ tiers:
             );
             assert_eq!(budgets.answer_keys("P-2"), ["docs/c.md".to_string()]);
             assert!(budgets.answer_keys("P-3").is_empty(), "{form}");
+            // A prefix of a declared probe is another probe, and the seal
+            // must not remove a key that belongs to the longer one.
+            assert!(budgets.answer_keys("P").is_empty(), "{form}");
+            assert!(budgets.answer_keys("P-").is_empty(), "{form}");
         }
     }
 
