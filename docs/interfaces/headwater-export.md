@@ -9,6 +9,8 @@ relations:
   governs:
     - [engine/crates/cli/src/lib.rs, engine/crates/cli/src/main.rs]
     - engine/crates/generate/src/export.rs
+    - engine/crates/generate/src/lib.rs
+    - engine/crates/cli/tests/export.rs
 ---
 
 # headwater export

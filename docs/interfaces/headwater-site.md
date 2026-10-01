@@ -8,6 +8,7 @@ title: "headwater site"
 relations:
   governs:
     - engine/crates/generate/src/site.rs
+    - engine/crates/generate/src/site_nav.rs
     - [engine/crates/cli/src/lib.rs, engine/crates/cli/src/main.rs]
 ---
 
