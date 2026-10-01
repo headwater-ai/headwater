@@ -29,7 +29,7 @@ relations:
     - to: tools/site/figures-fixtures.sh
       verified_revision: sha256:17601803a83d702cfd5334ac29bb651a4f3064f8ff61d86cfe1a0283f2c35705
     - to: .github/workflows/deploy-site.yml
-      verified_revision: sha256:7f7297d1663af5be42847dd0c619033a52e5d99d11531090258d278fe6a4042d
+      verified_revision: sha256:c950d1a2863a05d888d81c7ea6bfac412b3cf2c341585825dcf4db19ff52f5a9
 ---
 
 # A figure on a hand-built page is measured when the site is published, and the committed page carries none

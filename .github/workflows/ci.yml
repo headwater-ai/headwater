@@ -240,8 +240,7 @@ jobs:
         # `engine/README.md` are the only place it is, and they are the place it
         # broke unnoticed for twelve days.
         run: |
-          rustup update --no-self-update stable
-          rustup default stable
+          sh tools/ci/toolchain.sh
           cargo --version
       - name: Format
         # No `--locked` here, and it is not an omission: `cargo fmt` rejects
@@ -544,9 +543,7 @@ jobs:
           key: pip-${{ runner.os }}-${{ hashFiles('.github/workflows/ci.yml') }}
           restore-keys: pip-${{ runner.os }}-
       - name: The toolchain this build needs
-        run: |
-          rustup update --no-self-update stable
-          rustup default stable
+        run: sh tools/ci/toolchain.sh
       - name: Build the engine
         run: cargo build --release -p headwater-cli --locked
         working-directory: engine
@@ -2148,9 +2145,7 @@ jobs:
             cargo-${{ runner.os }}-recorder-
             cargo-${{ runner.os }}-headwater-
       - name: The toolchain this build needs
-        run: |
-          rustup update --no-self-update stable
-          rustup default stable
+        run: sh tools/ci/toolchain.sh
       - name: Build the engine
         # The recorder's driver refuses a session with no engine, so the
         # confinement cases need the one the `headwater` job builds.
