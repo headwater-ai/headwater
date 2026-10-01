@@ -77,7 +77,7 @@ Each stage is built by one subsystem, and each subsystem is a group of crates un
 | graph build | [Graph build](../subsystems/graph-build.md) | `graph` | |
 | cache, checks | Checks and cache (no spec yet, #1288) | `check`, `adapter` | `adapter` renders one run of the check layer for a CI platform. |
 | queries, explain | Queries and explain (no spec yet, #1288) | `query`, `embed` | `embed` is the offline embedding path that routing reads ([HW-DR-0064](../decisions/0064-q64-whether-intent-time-routing-gains-an-offline-embedding-path-in-shadow-mode.md)). |
-| projections, export | Projections and export (no spec yet, #1288) | `generate`, `mark` | `generate` writes the marker, and the census reads it. |
+| projections, export | [Projections and export](../subsystems/projections-and-export.md) | `generate`, `mark` | `generate` writes the marker, and the census reads it. |
 | authoring | Authoring (no spec yet, #1288) | `scaffold`, `import` | |
 | measurement | Measurement (no spec yet, #1288) | `probe`, `conformance`, `sweep` | |
 | every stage | Command surface (no spec yet, #1288) | `cli`, `verbs`, `paint` | These crates run no stage. `verbs` is the dispatch list, and `paint` is the palette that every renderer applies ([HW-DR-0045](../decisions/0045-coloring-the-cli-and-where-the-banner-goes.md)). |
