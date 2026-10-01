@@ -1248,15 +1248,45 @@ jobs:
         # It also needs `bwrap` with unprivileged user namespaces, because the
         # recorder confines every session to its workspace and refuses to run
         # one it cannot confine (#1467). The cases run the real confinement
-        # with a stub harness, so they never skip: a runner without `bwrap`
-        # gets it installed here, and one whose AppArmor refuses the namespace
-        # is told to allow it.
+        # with a stub harness. A runner with `sudo` and no `bwrap` gets it
+        # installed here, and one whose AppArmor refuses the namespace is told
+        # to allow it.
+        #
+        # The self-hosted runner's container has neither, and cannot get them:
+        # measured 2026-10-01 on `mediaserver3-slot1`, it has no `bwrap` and
+        # no `sudo`, and `unshare --user true` exits 1 with "Operation not
+        # permitted", because Docker's default seccomp profile refuses the
+        # namespace. Installing `bwrap` in the image would not change that.
+        # So a self-hosted runner that cannot confine skips the whole suite
+        # with one warning that names the runner and what it lacks, and the
+        # `pull_request` run on `ubuntu-latest` runs every case. A hosted
+        # runner that cannot confine fails the step, so no case passes there
+        # without having run. The skip is decided on what the runner can do,
+        # not on its name: a self-hosted runner that can confine runs the
+        # cases.
+        env:
+          RUNNER_KIND: ${{ runner.environment }}
         run: |
-          if ! command -v bwrap >/dev/null 2>&1; then
+          if ! command -v bwrap >/dev/null 2>&1 && command -v sudo >/dev/null 2>&1; then
             sudo apt-get update -q && sudo apt-get install -y -q bubblewrap
           fi
-          if ! bwrap --unshare-user --ro-bind / / true 2>/dev/null; then
+          if command -v bwrap >/dev/null 2>&1 && ! bwrap --unshare-user --ro-bind / / true 2>/dev/null \
+              && command -v sudo >/dev/null 2>&1; then
             sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+          fi
+          missing=
+          if ! command -v bwrap >/dev/null 2>&1; then
+            missing="no \`bwrap\` and no \`sudo\` to install it"
+          elif ! said=$(bwrap --unshare-user --ro-bind / / true 2>&1); then
+            missing="a \`bwrap\` that cannot create a user namespace ($(printf '%s' "$said" | tail -1))"
+          fi
+          if [ -n "$missing" ]; then
+            if [ "$RUNNER_KIND" = self-hosted ]; then
+              echo "::warning title=Recorder fixtures skipped::The self-hosted runner ${RUNNER_NAME:-unnamed} has $missing, so none of these cases ran here. The pull_request run on ubuntu-latest runs them."
+              exit 0
+            fi
+            echo "::error title=Recorder fixtures cannot run::The $RUNNER_KIND runner ${RUNNER_NAME:-unnamed} has $missing, and the recorder refuses a session it cannot confine (#1467)."
+            exit 1
           fi
           status=0
           sh tools/probe/probe-record-fixtures.sh || status=$?
