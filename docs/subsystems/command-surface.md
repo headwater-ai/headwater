@@ -72,7 +72,7 @@ A flag is the opposite case. HW-DR-0033 rules that a flag belongs to the verb th
 
 `parsed` builds the tree through `command` and parses the process arguments with it. `Cli::parse` would build a second tree from the derive alone, with no words on it. One entry point keeps the tree that parses and the tree that prints help the same. `parsed` also refuses `--wide` on a run that lays out no text, because the flag would do nothing there.
 
-Each level of the tree declares an external subcommand. These are `Verb::Other` at the root and an `Other` variant in each enum of second words. An unknown word thus reaches `dispatch`, and its refusal names every word that the binary carries. A refusal from `clap` names one near miss at most. `headwater help` is a variant of `Verb`, and the derive sets `disable_help_subcommand`. The subcommand that `clap` injects would add a copy of the whole tree under `help`, and `tests/verbs.rs` would report each copy.
+Each level of the tree declares an external subcommand. These are `Verb::Other` at the root and an `Other` variant in each enum of second words. An unknown word thus reaches `dispatch`, and its refusal names every word that the binary carries. A refusal from `clap` would name only the subcommands whose spelling is close to the word. `headwater help` is a variant of `Verb`, and the derive sets `disable_help_subcommand`. The subcommand that `clap` injects would add a copy of the whole tree under `help`, and `tests/verbs.rs` would report each copy.
 
 `chosen` in `main.rs` turns `--json` into the value `json` of `--format`, so no verb body can tell which spelling a caller typed. `typed` carries the spelling past that substitution, for a refusal that names the flag.
 
