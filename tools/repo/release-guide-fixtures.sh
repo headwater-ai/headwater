@@ -858,7 +858,7 @@ if pv in docs:
 # deploy-site.sh. preview-site.sh reads the wrangler pin out of deploy-site.sh
 # with sed, which runs nothing, so only `sh` before the path counts.
 script_deploy = re.compile(r"\bwrangler\b[^\n]*\b(?:deploy|publish)\b|\bsh\s+tools/site/deploy-site\.sh")
-for script in ("tools/site/preview-site.sh", "tools/site/build-site.sh"):
+for script in ("tools/site/preview-site.sh", "tools/site/build-site.sh", "tools/site/unpreview-site.sh"):
     path = os.path.join(sys.argv[1], script)
     if not os.path.isfile(path):
         continue
@@ -866,6 +866,27 @@ for script in ("tools/site/preview-site.sh", "tools/site/build-site.sh"):
         code = "\n".join(l for l in re.sub(r"\\\n", " ", f.read()).splitlines() if not l.lstrip().startswith("#"))
     if script_deploy.search(code):
         out.append("%s runs a deploy, so a preview can move the live site" % script)
+
+# The end of a preview (unpreview-site.yml) runs with the secrets on a
+# closed pull request, so it holds the three things that keep those secrets
+# away from a pull request`s code: it starts on pull_request and by hand,
+# never pull_request_target; it runs on a hosted runner; and every checkout
+# names the default branch, never the pull request`s head or merge ref.
+upv = "unpreview-site.yml"
+if upv in docs:
+    doc = docs[upv]
+    on = doc.get("on", doc.get(True)) if isinstance(doc, dict) else None
+    events = set(on) if isinstance(on, dict) else set(as_list(on))
+    if not events <= {"pull_request", "workflow_dispatch"} or "pull_request" not in events:
+        out.append("unpreview-site.yml is started by %s and not by pull_request and workflow_dispatch alone, so a removal can run with secrets on code nobody reviewed" % ", ".join(sorted(map(str, events))))
+    for job, body in sorted(jobs(upv).items()):
+        if body.get("runs-on") != "ubuntu-latest":
+            out.append("unpreview-site.yml job %s runs on %s and not ubuntu-latest, so a pull request reaches the self-hosted pool" % (job, body.get("runs-on")))
+        for step in as_list(body.get("steps")):
+            if isinstance(step, dict) and str(step.get("uses", "")).startswith("actions/checkout"):
+                ref = (step.get("with") or {}).get("ref")
+                if ref != "${{ github.event.repository.default_branch }}":
+                    out.append("unpreview-site.yml job %s checks out %s and not the default branch, so the pull request`s code runs with the secrets" % (job, ref))
 
 for line in out:
     print(line)
@@ -1537,9 +1558,43 @@ p6_arm "a preview script that runs deploy-site.sh is red" 'sh tools/site/deploy-
 # that reads the pin out of deploy-site.sh included, reach no deploy.
 copy_tree "$scratch/p7"
 mkdir -p "$scratch/p7/tools/site"
-cp "$root/tools/site/preview-site.sh" "$root/tools/site/build-site.sh" "$scratch/p7/tools/site/"
-same "the committed preview and build scripts reach no deploy" "" \
+cp "$root/tools/site/preview-site.sh" "$root/tools/site/build-site.sh" "$root/tools/site/unpreview-site.sh" "$scratch/p7/tools/site/"
+same "the committed preview, unpreview and build scripts reach no deploy" "" \
     "$(deploys "$scratch/p7" | grep 'runs a deploy' | tr '\n' '|' | sed 's/|$//')"
+
+# u1 to u4. The end of a preview runs with the secrets on a closed pull
+# request and checks out the default branch. Each arm applies one shape.
+if [ -f "$root/.github/workflows/unpreview-site.yml" ]; then
+    # u1. pull_request_target, which hands the secrets to a fork's run.
+    copy_tree "$scratch/u1"
+    edit_wf "$scratch/u1" unpreview-site.yml "k = 'on' if 'on' in doc else True; doc[k] = {'pull_request_target': {'types': ['closed']}}"
+    contains "a preview removal started by pull_request_target is red" \
+        "unpreview-site.yml is started by pull_request_target and not by pull_request and workflow_dispatch alone" "$(deploys "$scratch/u1")"
+
+    # u2. The checkout moved to the pull request's head.
+    copy_tree "$scratch/u2"
+    edit_wf "$scratch/u2" unpreview-site.yml "[s.setdefault('with', {}).update(ref='\${{ github.event.pull_request.head.sha }}') for s in doc['jobs']['unpreview']['steps'] if str(s.get('uses', '')).startswith('actions/checkout')]"
+    contains "a preview removal that checks out the pull request is red" \
+        "unpreview-site.yml job unpreview checks out \${{ github.event.pull_request.head.sha }} and not the default branch" "$(deploys "$scratch/u2")"
+
+    # u3. The self-hosted pool.
+    copy_tree "$scratch/u3"
+    edit_wf "$scratch/u3" unpreview-site.yml "doc['jobs']['unpreview']['runs-on'] = 'self-hosted'"
+    contains "a preview removal on the self-hosted pool is red" \
+        "unpreview-site.yml job unpreview runs on self-hosted and not ubuntu-latest" "$(deploys "$scratch/u3")"
+
+    # u4. The workflow as committed.
+    same "the committed preview removal raises nothing" "" \
+        "$(deploys "$root" | grep 'unpreview' | tr '\n' '|' | sed 's/|$//')"
+fi
+
+# u5. The removal script refuses an alias that is not a pull request number,
+# before it reads a pin or reaches wrangler.
+for bad in '' 'pr-1545' '0' '01' '15a'; do
+    rc=0
+    sh "$root/tools/site/unpreview-site.sh" "$bad" >/dev/null 2>&1 || rc=$?
+    same "unpreview-site.sh refuses '$bad'" "2" "$rc"
+done
 
 # ---------------------------------------------------------------------------
 # Step 9's search finds every install line (#1315, clause 10). Step 9 of the

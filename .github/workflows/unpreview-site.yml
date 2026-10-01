@@ -1,0 +1,94 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The end of a pull request's site preview, which `preview-site.yml` starts.
+#
+# When a pull request that carries the `site-preview` label closes, merged or
+# not, this job runs `tools/site/unpreview-site.sh <number>`. Cloudflare
+# deletes no preview alias, so the script uploads a version under the same
+# alias, `pr-<number>`, that answers 410 Gone on every path. The live site does
+# not move. The job then edits the one comment `preview-site.yml` keeps on the
+# pull request to say so.
+#
+# A maintainer can also run it from the Actions tab with a pull request
+# number, for a preview whose pull request closed before this workflow
+# existed.
+#
+# Three conditions, and each one only takes work away:
+#
+#   - The pull request carries the label, so a pull request that never had a
+#     preview gets no tombstone alias either.
+#   - The branch is in this repository, as for the preview itself. A fork's
+#     pull request had no preview and gets no secrets here.
+#   - The checkout is the default branch and never the pull request's code, so
+#     the script that runs with the secrets is one that was reviewed and
+#     merged.
+#
+# `tools/repo/release-guide-fixtures.sh` holds these, and that no step here
+# runs `wrangler deploy` or `tools/site/deploy-site.sh`.
+name: Remove the site preview
+
+on:
+  pull_request:
+    types: [closed]
+  workflow_dispatch:
+    inputs:
+      number:
+        description: The number of the pull request whose preview to remove
+        type: string
+        required: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  unpreview:
+    name: Remove the site preview
+    if: >-
+      github.event_name == 'workflow_dispatch'
+      || (github.event.pull_request.head.repo.full_name == github.repository
+      && contains(github.event.pull_request.labels.*.name, 'site-preview'))
+    runs-on: ubuntu-latest
+    # The group `preview-site.yml` uses for the same pull request, so a closing
+    # pull request cancels a preview still uploading, and that upload cannot
+    # land after the tombstone and bring the pages back.
+    concurrency:
+      group: preview-site-${{ github.event.pull_request.number || inputs.number }}
+      cancel-in-progress: true
+    env:
+      PR: ${{ github.event.pull_request.number || inputs.number }}
+    steps:
+      - name: The two Cloudflare secrets are set
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "::error::The preview of #$PR is not removed: set both repository secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID."
+            exit 1
+          fi
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+      - name: Upload the tombstone
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: sh tools/site/unpreview-site.sh "$PR"
+      - name: Say so on the pull request
+        # The comment `preview-site.yml` keeps, found by its first line and
+        # edited in place. A pull request with no such comment gets none.
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          marker='<!-- headwater:site-preview -->'
+          url=$(cat .headwater/site-preview-url)
+          body="$marker
+          **Site preview:** removed. $url now answers 410 Gone. The live site is https://headwater.tools/."
+          id=$(gh api --paginate "repos/$REPO/issues/$PR/comments" \
+            -q ".[] | select(.user.login == \"github-actions[bot]\" and (.body | startswith(\"$marker\"))) | .id" | head -n 1)
+          if [ -n "$id" ]; then
+            gh api -X PATCH "repos/$REPO/issues/comments/$id" -f body="$body" > /dev/null
+          fi
+          echo "Removed: $url" >> "$GITHUB_STEP_SUMMARY"
