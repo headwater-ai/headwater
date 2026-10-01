@@ -610,6 +610,11 @@ command -v bwrap >/dev/null 2>&1 || {
 }
 harness=$(command -v claude)
 harness=$(readlink -f "$harness" 2>/dev/null) || harness=$(command -v claude)
+# The harness is bound at a path of its own rather than at its path on the
+# host, which is under `$HOME` on a host that installed it there. Bound at its
+# own path, it made `/home/<user>/.local/...` a directory of the session's file
+# system, empty but named.
+harness_at=/opt/headwater-harness/claude
 host_config=${HEADWATER_PROBE_HOST_CONFIG:-${HOME:-/nonexistent}/.claude}
 config=${HEADWATER_PROBE_CONFIG_DIR:-}
 if [ -n "$config" ]; then
@@ -659,7 +664,7 @@ set -- "$@" --proc /proc --dev /dev --tmpfs /tmp \
     --bind "$here" "$here" \
     --bind "$probe_log" "$probe_log" \
     --bind "$config" "$config" \
-    --ro-bind "$harness" "$harness" \
+    --ro-bind "$harness" "$harness_at" \
     --chdir "$here" \
     --clearenv \
     --setenv PATH /usr/local/bin:/usr/bin:/bin \
@@ -705,7 +710,7 @@ mcp_config=
     # The confinement's own options are the positional parameters set above.
     # `--allowedTools` and `--disallowedTools` take one or more values too, so
     # each is one comma-separated value with a flag after it.
-    bwrap "$@" -- "$harness" -p ${mcp_config:+--mcp-config "$mcp_config"} --strict-mcp-config \
+    bwrap "$@" -- "$harness_at" -p ${mcp_config:+--mcp-config "$mcp_config"} --strict-mcp-config \
         --setting-sources project,local \
         --permission-mode "$permission_mode" \
         --allowedTools "$allowed_tools" \
@@ -877,9 +882,9 @@ printf 'The session ran under the configuration directory `%s`, which held a cop
 # of reads. A stream that does not parse is said to be uncounted.
 if outside=$(jq -s -r \
     --arg here "$here" --arg here_real "$here_real" --arg config "$config" \
-    --arg log "$probe_log" --arg harness "$harness" '
+    --arg log "$probe_log" --arg harness_dir "${harness_at%/*}" '
     def under($p; $b): $p == $b or ($p | startswith($b + "/"));
-    def bound($p): $p == "/" or $p == $harness
+    def bound($p): $p == "/" or under($p; $harness_dir)
         or any(($here, $here_real, $config, $log, "/usr", "/etc", "/bin", "/sbin", "/lib",
                  "/lib32", "/lib64", "/libx32", "/proc", "/dev"); under($p; .));
     [ .[] | select(.type == "assistant") | .message.content[]? | select(.type == "tool_use")

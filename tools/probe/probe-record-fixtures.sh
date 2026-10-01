@@ -1711,6 +1711,8 @@ printf '%s\n' "$@" > "$HEADWATER_SHADOW_LOG_DIR/claude-args"
     printf 'GH_TOKEN=%s\n' "${GH_TOKEN:-unset}"
     printf 'held=%s\n' "$(ls -A "$CLAUDE_CONFIG_DIR" | tr '\n' ' ')"
     printf 'credentials=%s\n' "$(cat "$CLAUDE_CONFIG_DIR/.credentials.json")"
+    printf 'self=%s\n' "$0"
+    printf 'root=%s\n' "$(ls / | tr '\n' ' ')"
 } > "$HEADWATER_SHADOW_LOG_DIR/seen"
 cat "$HEADWATER_SHADOW_LOG_DIR/init.jsonl"
 printf '%s\n' '{"type":"result","subtype":"success","result":"withheld","total_cost_usd":0.01,"modelUsage":{"claude-haiku-4-5-20251001":{"inputTokens":10}}}'
@@ -1730,6 +1732,10 @@ STUB
         present "that directory holds the credentials and nothing else" "held=.credentials.json " "$scratch/probe-log/seen"
         present "and the credentials are the host's" 'credentials={"fixture":"credentials"}' "$scratch/probe-log/seen"
         present "no variable of the host's environment reaches the session" "GH_TOKEN=unset" "$scratch/probe-log/seen"
+        present "the harness runs from a path of its own, so its host path names no directory of the session" \
+            "self=/opt/headwater-harness/claude" "$scratch/probe-log/seen"
+        same "and the session's root holds no /home and no /mnt" "" \
+            "$(sed -n 's/^root=//p' "$scratch/probe-log/seen" | tr ' ' '\n' | grep -x -e home -e mnt)"
         same "the copy of the credentials is removed when the session ends" "no" \
             "$([ -e "$conf/cfg-clean/.credentials.json" ] && echo yes || echo no)"
         present "the transcript names that configuration directory" "$conf/cfg-clean" "$scratch/clean-init.md"
