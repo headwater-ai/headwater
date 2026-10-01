@@ -23,6 +23,14 @@
 //!
 //! **A rule that de-duplicated a symmetric pair** reports one of `mutual-a.md`
 //! and `mutual-b.md`, and the author of the other file never learns of it.
+//!
+//! **A rule that read a missing facet as held** reports `unfaceted-source.md`,
+//! whose far end declares no `lifecycle`.
+//!
+//! **A rule that anchored on the inverse half first** reports
+//! `outranks-both-target.md` in place of `outranks-both-source.md`, and **a
+//! rule that read the declared half alone** misses
+//! `outranks-inverse-target.md`, which wrote only the inverse.
 
 use headwater_census::census;
 use headwater_census::shelves::Taxonomy;
