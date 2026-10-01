@@ -127,8 +127,8 @@
         },
         {
           "shelf": "subsystems",
-          "path": "docs/subsystems/graph-build.md",
-          "id": "HW-SPEC-graph-build"
+          "path": "docs/subsystems/checks-and-cache.md",
+          "id": "HW-SPEC-checks-and-cache"
         },
         {
           "shelf": "tutorials",
