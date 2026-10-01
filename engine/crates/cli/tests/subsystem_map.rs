@@ -630,9 +630,7 @@ fn first_source_file(krate: &str) -> String {
 /// `engine/crates/cli/src/lib.rs` and the spec it did not reach.
 #[test]
 fn route_names_the_spec_of_each_row_for_a_file_of_its_crates() {
-    let repository = root()
-        .canonicalize()
-        .expect("the repository root resolves");
+    let repository = root().canonicalize().expect("the repository root resolves");
     for row in spec_six_rows() {
         let Some(link) = row.link else { continue };
         let spec = format!(
@@ -662,8 +660,18 @@ fn route_names_the_spec_of_each_row_for_a_file_of_its_crates() {
         let named = out
             .find(&format!("{spec} ("))
             .unwrap_or_else(|| panic!("route over {file} does not name {spec}:\n{out}"));
+        // The spec's own entry: its first line and the lines indented under
+        // it, so a `governs` line of a later entry cannot answer for it.
+        let entry: Vec<&str> = out[named..]
+            .lines()
+            .enumerate()
+            .take_while(|(at, line)| *at == 0 || line.starts_with("    "))
+            .map(|(_, line)| line)
+            .collect();
         assert!(
-            out[named..].contains(&format!("governs {file}")),
+            entry
+                .iter()
+                .any(|line| line.trim() == format!("governs {file}")),
             "route over {file} names {spec} but not as governing {file}:\n{out}"
         );
     }
