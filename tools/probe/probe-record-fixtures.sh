@@ -1142,6 +1142,62 @@ PATH="$scratch/no-harness" "$shell" "$driver" --probe "$patched" --session x \
     >/dev/null 2>"$scratch/answered2.err"
 same "and the driver passes the guard over the sealed tree" "3" "$?"
 
+# The answer keys are the engine's parse of the declaration (#1472, clause 8).
+# The hand-written reader this script carried took the flow form alone, so a
+# block sequence printed nothing and exited 0, and the seal kept the key in
+# every arm. Each declaration below is the checkout's own, with the answer
+# keys rewritten.
+key_doc=docs/obligations/0198-nothing-states-how-much-of-a-session-s-budget-the-standing-instructions-consume-before-work-starts.md
+awk -v probe="$patched" -v key="$key_doc" '
+    /^answer_keys:/ { print; print "  " probe ":"; print "    - " key; skip = 1; next }
+    skip && !/^ / { skip = 0 }
+    !skip { print }' "$root/.headwater/probe.yml" > "$scratch/block-keys.yml"
+same "seal.sh --keys reads a four-space block of answer keys, as the engine does" \
+    "HW-OBL-0198 $key_doc" \
+    "$(HW_PROBE_YML="$scratch/block-keys.yml" sh "$root/tools/probe/seal.sh" --keys "$patched")"
+mkdir -p "$scratch/answered-block/docs/obligations" "$scratch/answered-block/.headwater/ids/obligation_record_id"
+cp "$root/$key_doc" "$scratch/answered-block/$key_doc"
+printf '%s\n' "$key_doc" > "$scratch/answered-block/.headwater/ids/obligation_record_id/HW-OBL-0198"
+HW_PROBE_YML="$scratch/block-keys.yml" sh "$root/tools/probe/seal.sh" "$scratch/answered-block" "$patched" \
+    >/dev/null 2>"$scratch/answered-block.err"
+same "seal.sh seals an answer key declared as a four-space block" "0" "$?"
+if [ -e "$scratch/answered-block/$key_doc" ] || [ -e "$scratch/answered-block/.headwater/ids/obligation_record_id/HW-OBL-0198" ]; then
+    fail "and it removes the key and its identifier claim" "$(ls -aR "$scratch/answered-block")"
+else
+    pass "and it removes the key and its identifier claim"
+fi
+
+# A declaration the engine refuses is not a probe with no key. The seal runs
+# `rm` on each key, so a key that leaves the tree refuses the whole file, and
+# every reader of it fails and prints no path.
+awk -v probe="$patched" '
+    /^answer_keys:/ { print; print "  " probe ": [../outside]"; skip = 1; next }
+    skip && !/^ / { skip = 0 }
+    !skip { print }' "$root/.headwater/probe.yml" > "$scratch/refused-keys.yml"
+HW_PROBE_YML="$scratch/refused-keys.yml" sh "$root/tools/probe/seal.sh" --keys "$patched" \
+    >"$scratch/refused-keys.out" 2>"$scratch/refused-keys.err"
+keys_status=$?
+if [ "$keys_status" -ne 0 ]; then
+    pass "seal.sh --keys fails on a declaration the engine refuses"
+else
+    fail "seal.sh --keys fails on a declaration the engine refuses" "exit 0"
+fi
+same "and prints no path" "" "$(cat "$scratch/refused-keys.out")"
+HW_PROBE_YML="$scratch/refused-keys.yml" sh "$root/tools/probe/seal.sh" --folds \
+    >"$scratch/refused-keys.out" 2>"$scratch/refused-keys.err"
+keys_status=$?
+if [ "$keys_status" -ne 0 ]; then
+    pass "and seal.sh --folds fails on the same declaration"
+else
+    fail "and seal.sh --folds fails on the same declaration" "exit 0"
+fi
+same "and prints no path" "" "$(cat "$scratch/refused-keys.out")"
+mkdir -p "$scratch/answered-refused/docs/obligations"
+cp "$root/$key_doc" "$scratch/answered-refused/$key_doc"
+HW_PROBE_YML="$scratch/refused-keys.yml" sh "$root/tools/probe/seal.sh" "$scratch/answered-refused" "$patched" \
+    >/dev/null 2>"$scratch/answered-refused.err"
+same "and the seal stops at 8 on the same declaration" "8" "$?"
+
 # Named documents (#1384). The seal deletes a record under `docs/` that names
 # the probe, and every line that links that record (#1293). A workspace where
 # the record is gone and a register line still links it states the record's
@@ -1339,9 +1395,93 @@ for answer in .claude/skills/fixtures.sh tools/probe/probe-record-fixtures.sh; d
     fi
 done
 same "and no file that states a probe's answer is on it" "" "$answering"
-printf '%s\n' 'instrument:' '  - docs/probes' '' 'tiers: {}' > "$scratch/no-folds.yml"
-same "a declaration with no folds lists none, so the guard refuses every file outside docs/ that names the probe" \
-    "" "$(HW_PROBE_YML="$scratch/no-folds.yml" sh "$root/tools/probe/seal.sh" --folds)"
+# The engine reads a declaration whole or refuses it, so this one declares a
+# tier.
+printf '%s\n' 'instrument:' '  - docs/probes' '' 'tiers:' '  regression:' '    budget_cents: 1' \
+    '    session_cost_cents: 1' '    repetitions: 1' '    arms: [present]' > "$scratch/no-folds.yml"
+HW_PROBE_YML="$scratch/no-folds.yml" sh "$root/tools/probe/seal.sh" --folds \
+    >"$scratch/no-folds.out" 2>"$scratch/no-folds.err"
+same "a declaration with no folds reads" "0" "$?"
+same "and it lists none, so the guard refuses every file outside docs/ that names the probe" \
+    "" "$(cat "$scratch/no-folds.out")"
+
+# The folds are the engine's parse of the declaration too (#1472, clause 8).
+# The hand-written reader matched two spaces alone, so a block at four spaces
+# printed nothing, the seal removed every fold, and the guard refused every
+# workspace.
+awk '
+    /^folds:/ { on = 1; print; next }
+    on && /^  - / { print "  " $0; next }
+    on && !/^ / { on = 0 }
+    { print }' "$root/.headwater/probe.yml" > "$scratch/indented-folds.yml"
+same "seal.sh --folds reads a four-space block of folds, as the engine does" \
+    "$folds" "$(HW_PROBE_YML="$scratch/indented-folds.yml" sh "$root/tools/probe/seal.sh" --folds)"
+awk '
+    /^folds:/ { print; print "  - ../outside"; next }
+    { print }' "$root/.headwater/probe.yml" > "$scratch/refused-folds.yml"
+HW_PROBE_YML="$scratch/refused-folds.yml" sh "$root/tools/probe/seal.sh" --folds \
+    >"$scratch/refused-folds.out" 2>"$scratch/refused-folds.err"
+folds_status=$?
+if [ "$folds_status" -ne 0 ]; then
+    pass "seal.sh --folds fails on a fold that leaves the tree"
+else
+    fail "seal.sh --folds fails on a fold that leaves the tree" "exit 0"
+fi
+same "and prints no path" "" "$(cat "$scratch/refused-folds.out")"
+
+# The guard of `probe-record.sh` names no declaration, so the seal reads the
+# checkout's own through `--root`, and that path refuses too. A copy of the
+# script under a scratch root, with the built engine linked in and an unsafe
+# declaration in place, stands for a checkout whose declaration the engine
+# refuses. `HW_PROBE_YML` is unset for both runs.
+seal_engine=$root/engine/target/dev-release/headwater
+[ -x "$seal_engine" ] || seal_engine=$root/engine/target/release/headwater
+if [ -x "$seal_engine" ]; then
+    mkdir -p "$scratch/refusing-root/tools/probe" "$scratch/refusing-root/.headwater" \
+        "$scratch/refusing-root/engine/target/dev-release"
+    cp "$root/tools/probe/seal.sh" "$scratch/refusing-root/tools/probe/seal.sh"
+    ln -s "$seal_engine" "$scratch/refusing-root/engine/target/dev-release/headwater"
+    cp "$scratch/refused-keys.yml" "$scratch/refusing-root/.headwater/probe.yml"
+    for word in --folds "--keys $patched"; do
+        # shellcheck disable=SC2086
+        env -u HW_PROBE_YML sh "$scratch/refusing-root/tools/probe/seal.sh" $word \
+            >"$scratch/refusing-root.out" 2>"$scratch/refusing-root.err"
+        refusing_status=$?
+        case "$word" in
+            --keys*) same "seal.sh --keys exits 8 on a checkout declaration the engine refuses" "8" "$refusing_status" ;;
+            *)
+                if [ "$refusing_status" -ne 0 ]; then
+                    pass "seal.sh --folds fails on a checkout declaration the engine refuses"
+                else
+                    fail "seal.sh --folds fails on a checkout declaration the engine refuses" "exit 0"
+                fi
+                ;;
+        esac
+        same "and prints no path" "" "$(cat "$scratch/refusing-root.out")"
+    done
+else
+    echo "skip the checkout-declaration refusal: no built engine under $root/engine/target"
+fi
+
+# With no built engine there is nothing to read the declaration with, and the
+# seal refuses rather than print an empty list. A copy of the script under a
+# root with no `engine/target` stands for a checkout that never built.
+mkdir -p "$scratch/unbuilt-seal/tools/probe"
+cp "$root/tools/probe/seal.sh" "$scratch/unbuilt-seal/tools/probe/seal.sh"
+cp "$root/.headwater/probe.yml" "$scratch/unbuilt-seal.yml"
+for word in --folds "--keys $patched"; do
+    # shellcheck disable=SC2086
+    HW_PROBE_YML="$scratch/unbuilt-seal.yml" sh "$scratch/unbuilt-seal/tools/probe/seal.sh" $word \
+        >"$scratch/unbuilt-seal.out" 2>"$scratch/unbuilt-seal.err"
+    unbuilt_status=$?
+    if [ "$unbuilt_status" -ne 0 ]; then
+        pass "seal.sh ${word%% *} with no built engine exits nonzero"
+    else
+        fail "seal.sh ${word%% *} with no built engine exits nonzero" "exit 0"
+    fi
+    same "and prints no path" "" "$(cat "$scratch/unbuilt-seal.out")"
+    present "and it names the build" "Build it first" "$scratch/unbuilt-seal.err"
+done
 
 # ---------------------------------------------------------------------------
 # Step 3 of #819: the recorder names its session, and says whether the hook ran.

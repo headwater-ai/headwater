@@ -431,6 +431,8 @@ fn dispatch(root: &Path, verb: Verb) -> ExitCode {
                 arm,
                 delta,
                 instrument,
+                folds,
+                answer_keys,
                 category,
                 seed,
                 exclude,
@@ -455,6 +457,12 @@ fn dispatch(root: &Path, verb: Verb) -> ExitCode {
                 // `--instrument` prints the parsed `instrument` sequence, so
                 // a script that removes it parses no YAML either (#1472).
                 Ok((_, _, budgets)) if instrument => probe_instrument(&budgets),
+                // `--folds` and `--answer-keys` print the two lists
+                // `tools/probe/seal.sh` reads, for the same reason (#1472).
+                Ok((_, _, budgets)) if folds => probe_folds(&budgets),
+                Ok((_, _, budgets)) if answer_keys.is_some() => {
+                    probe_answer_keys(&budgets, answer_keys.as_deref().unwrap_or_default())
+                }
                 Ok((tier, narrowing, budgets)) => probe_plan(root, &budgets, tier, &narrowing),
             },
             Some(ProbeWord::Record { path }) => match path {
@@ -5439,6 +5447,31 @@ fn probe_plan(
 /// `instrument` prints nothing and exits 0.
 fn probe_instrument(budgets: &headwater_probe::Budgets) -> ExitCode {
     for path in &budgets.instrument {
+        println!("{path}");
+    }
+    ExitCode::SUCCESS
+}
+
+/// `headwater probe plan --folds`: the files outside `docs/` that name a probe
+/// and state no answer, one per line.
+///
+/// `Budgets::read` refused an unsafe entry before anything reached here. A
+/// declaration with no `folds` prints nothing and exits 0.
+fn probe_folds(budgets: &headwater_probe::Budgets) -> ExitCode {
+    for path in &budgets.folds {
+        println!("{path}");
+    }
+    ExitCode::SUCCESS
+}
+
+/// `headwater probe plan --answer-keys <probe>`: the documents the seal
+/// removes for one probe, one per line.
+///
+/// `Budgets::read` refused an unsafe entry before anything reached here, so a
+/// caller that removes each line removes only a path inside the tree. A probe
+/// with no key prints nothing and exits 0.
+fn probe_answer_keys(budgets: &headwater_probe::Budgets, probe: &str) -> ExitCode {
+    for path in budgets.answer_keys(probe) {
         println!("{path}");
     }
     ExitCode::SUCCESS

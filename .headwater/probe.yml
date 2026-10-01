@@ -44,7 +44,9 @@ instrument:
 # committed files are not folds and are removed, because each states an
 # answer: `.claude/skills/fixtures.sh` asserts the answer of the status probe,
 # and `tools/probe/probe-record-fixtures.sh` names the tombstone probe with
-# its record (#1384). An entry is a path relative to the root, one per line.
+# its record (#1384). An entry is a path relative to the root, in the block
+# form or the flow form. The engine reads this block, and `headwater probe
+# plan --folds` prints it, which is what the seal and the guard read.
 # A new file that names a probe is refused until it is declared here, so the
 # list fails closed.
 #
@@ -87,8 +89,11 @@ folds:
 # `.headwater/ids/`, and removes every line of any other file that names the
 # key's identifier or slug. A shelf index, spec 13's register and a paragraph
 # that cites the key each lose that line and keep the rest. `probe-record.sh`
-# refuses a workspace that still names a key. The engine reads no key of this
-# block. One probe per line, and a flow sequence of paths relative to the root.
+# refuses a workspace that still names a key. The engine reads this block,
+# and `headwater probe plan --answer-keys <probe>` prints the keys of one
+# probe, which is what the seal reads. Each probe maps to a sequence of paths
+# relative to the root, in the block form or the flow form. An entry that
+# leaves the tree refuses the whole file.
 answer_keys:
   HW-PROBE-a-session-records-an-unmeasured-claim-in-the-shape-this-corpus-checks: [docs/obligations/0198-nothing-states-how-much-of-a-session-s-budget-the-standing-instructions-consume-before-work-starts.md]
 

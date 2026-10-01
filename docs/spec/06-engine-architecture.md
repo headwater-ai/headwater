@@ -344,6 +344,8 @@ headwater coverage    [--format ...]
 headwater probe       plan [--tier regression|campaign|documentation] [--arm <arm>] [--delta]
                            [--category <name>] [--seed <n>]
                     | plan --instrument
+                    | plan --folds
+                    | plan --answer-keys <probe>
                     | record <path>
                     | grade <path>
                     | stale
