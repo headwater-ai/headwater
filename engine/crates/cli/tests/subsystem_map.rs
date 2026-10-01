@@ -333,7 +333,29 @@ fn a_row_that_links_a_subsystem_spec_is_governed_by_it() {
                 "{link} is the spec of the row that names `{krate}`, and its `governs` does not hold {pattern} (it holds {governed:?})"
             );
         }
+        // One pattern per crate and nothing else: a pattern that stays inside
+        // the row's crates but outside `src/`, such as
+        // `engine/crates/audit/fixtures/**`, passes the two assertions above.
+        let expected: BTreeSet<String> = row
+            .crates
+            .iter()
+            .map(|krate| format!("engine/crates/{krate}/src/**"))
+            .collect();
+        let extra: Vec<&String> = governed.difference(&expected).collect();
+        assert!(
+            extra.is_empty(),
+            "{link} governs more than `engine/crates/<crate>/src/**` for the crates of its row of spec 6 '{HEADING}': {extra:?}"
+        );
     }
+    let unlinked: Vec<String> = spec_six_rows()
+        .into_iter()
+        .filter(|row| row.link.is_none())
+        .map(|row| row.subsystem)
+        .collect();
+    assert!(
+        unlinked.is_empty(),
+        "every row of spec 6 '{HEADING}' links its subsystem spec, and these do not: {unlinked:?}"
+    );
     assert!(
         linked > 0,
         "no row of spec 6 '{HEADING}' links a subsystem spec"
