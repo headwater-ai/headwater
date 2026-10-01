@@ -885,14 +885,18 @@ fn every_verb_finishes_when_a_named_pipe_takes_a_file_of_a_pinned_package() {
         "{err}"
     );
 
-    // The device half: a link to `/dev/zero` never ends a read either, and it
-    // is not a named pipe, so a guard narrowed to `is_fifo` would read it for
-    // ever (#1366, verify of PR #1502).
+    // The device half: a device is not a named pipe, so a guard narrowed to
+    // `is_fifo` opens it, and `/dev/zero` never ends a read (#1366, verify of
+    // PR #1502). The link names `/dev/null`, which the guard refuses for the
+    // same reason. A guard narrowed to `is_fifo` then reads it as an empty
+    // file and says nothing about a device, so this case fails on the words
+    // and not on the deadline, and a mutant run never fills the host's memory
+    // from `/dev/zero`.
     let root = pinned("pinned-device");
     let package = root.at.join(".headwater/packages/headwater-standard");
     let device = |name: &str| {
         std::fs::remove_file(package.join(name)).expect("the vendored file is there to replace");
-        std::os::unix::fs::symlink("/dev/zero", package.join(name)).expect("the link is made");
+        std::os::unix::fs::symlink("/dev/null", package.join(name)).expect("the link is made");
     };
     device("taxonomy.yml");
     let (_, out, _) = ended(

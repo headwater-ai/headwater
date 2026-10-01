@@ -649,13 +649,28 @@ fn copy_tree(from: &Path, to: &Path) {
 
 /// `lock_current` takes a lock its caller already read, and then reads the
 /// committed lock file again to compare it with what the sources resolve to.
-/// A library caller can hand it a root whose lock is a named pipe by then, so
-/// that second read refuses a file that is not regular before it opens it,
-/// and the verdict is a gap that names the lock (#1366, clause 12).
+/// A library caller can hand it a root whose lock is a named pipe or a socket
+/// by then, so that second read refuses a file that is not regular before it
+/// opens it, and the verdict is a gap that names the lock (#1366, clause 12).
+/// A pipe would block the read, and a socket fails it, so a guard narrowed to
+/// `is_fifo` reads the socket as an empty lock and says nothing about it.
 #[cfg(unix)]
 #[test]
 fn a_lock_that_is_not_a_regular_file_is_a_gap_and_the_reading_ends() {
-    let root = scratch("lock-pipe");
+    for kind in ["pipe", "socket"] {
+        lock_that_is_not_a_regular_file(kind);
+    }
+}
+
+#[cfg(unix)]
+fn lock_that_is_not_a_regular_file(kind: &str) {
+    // A socket path must be shorter than 108 bytes, and a runner's temporary
+    // directory can be longer than that by itself.
+    let root = Scratch(PathBuf::from(format!(
+        "/tmp/hw-lock-{}-{kind}",
+        std::process::id()
+    )));
+    let _ = std::fs::remove_dir_all(&root);
     let repository = repository_root();
     std::fs::create_dir_all(root.join(".headwater")).expect("the directory is made");
     for name in ["taxonomy.yml", "taxonomy.lock", "overlay.yml"] {
@@ -677,11 +692,16 @@ fn a_lock_that_is_not_a_regular_file_is_a_gap_and_the_reading_ends() {
 
     let at = root.join(".headwater/taxonomy.lock");
     std::fs::remove_file(&at).expect("the lock is there to replace");
-    let made = std::process::Command::new("mkfifo")
-        .arg(&at)
-        .status()
-        .expect("mkfifo runs");
-    assert!(made.success(), "the named pipe is made");
+    match kind {
+        "pipe" => {
+            let made = std::process::Command::new("mkfifo")
+                .arg(&at)
+                .status()
+                .expect("mkfifo runs");
+            assert!(made.success(), "the named pipe is made");
+        }
+        _ => drop(std::os::unix::net::UnixListener::bind(&at).expect("the socket is bound")),
+    }
 
     let (sent, received) = std::sync::mpsc::channel();
     let reading = root.to_path_buf();
@@ -690,11 +710,11 @@ fn a_lock_that_is_not_a_regular_file_is_a_gap_and_the_reading_ends() {
     });
     let verdict = received
         .recv_timeout(std::time::Duration::from_secs(60))
-        .expect("lock_current opened the named pipe at the lock, and waited on it");
+        .unwrap_or_else(|_| panic!("lock_current opened the {kind} at the lock, and waited on it"));
     let detail = gap(&verdict);
     assert!(
         detail.contains("taxonomy.lock is not a regular file"),
-        "the gap names the lock: {detail}"
+        "the gap names the {kind} at the lock: {detail}"
     );
 }
 
