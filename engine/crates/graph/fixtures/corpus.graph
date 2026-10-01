@@ -421,6 +421,8 @@ anchors
     cited by HW-SPEC-parse-and-census
   code_path `engine/crates/doc/src/sentences.rs` via source-tree
     cited by HW-OBL-0159
+  code_path `engine/crates/embed/src/**` via source-tree
+    cited by HW-SPEC-queries-and-explain
   code_path `engine/crates/embed/src/lib.rs` via source-tree
     cited by HW-IFACE-headwater-neighbors
   code_path `engine/crates/embed/src/wordpiece.rs` via source-tree
@@ -497,6 +499,8 @@ anchors
     cited by HW-IFACE-headwater-probe
   code_path `engine/crates/probe/src/plan.rs` via source-tree
     cited by HW-IFACE-headwater-probe
+  code_path `engine/crates/query/src/**` via source-tree
+    cited by HW-SPEC-queries-and-explain
   code_path `engine/crates/query/src/explain.rs` via source-tree
     cited by HW-IFACE-headwater-explain
   code_path `engine/crates/query/src/explain.rs` via source-tree

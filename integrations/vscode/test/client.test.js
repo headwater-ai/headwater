@@ -58,8 +58,12 @@ test('governing answers the contract\'s pointers, silence for an ungoverned path
   const options = { root: REPO, bin };
 
   const governed = await client.governing('engine/crates/query/src/mcp.rs', options);
-  assert.equal(governed.length, 1);
-  assert.equal(governed[0].path, 'docs/interfaces/headwater-mcp.md');
+  // Two documents govern the file: the contract of the verb, and the
+  // subsystem spec that governs `engine/crates/query/src/**` (#1288).
+  assert.deepEqual(governed.map((pointer) => pointer.path), [
+    'docs/interfaces/headwater-mcp.md',
+    'docs/subsystems/queries-and-explain.md',
+  ]);
   assert.equal(governed[0].name, 'headwater mcp');
 
   // The server answers the sentence `no document governs <path>`, and a
