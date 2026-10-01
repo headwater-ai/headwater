@@ -1102,6 +1102,8 @@ docs/subsystems/authoring.md
   typed: subsystem_spec
 docs/subsystems/checks-and-cache.md
   typed: subsystem_spec
+docs/subsystems/command-surface.md
+  typed: subsystem_spec
 docs/subsystems/graph-build.md
   typed: subsystem_spec
 docs/subsystems/measurement.md

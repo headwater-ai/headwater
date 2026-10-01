@@ -282,10 +282,18 @@ fn every_crate_is_in_exactly_one_row_of_spec_6s_subsystem_map() {
     );
 }
 
-/// A row that links a subsystem spec names a file that exists, and that file
-/// governs `engine/crates/<crate>/src/**` for each crate of the row, one
-/// pattern per crate ([HW-DR-0074]). It governs no crate the row does not
-/// name, because every crate belongs to exactly one subsystem (HW-DR-0098).
+/// Every row links a subsystem spec that exists, and that file governs
+/// exactly `engine/crates/<crate>/src/**` for each crate of the row, one
+/// pattern per crate and nothing else ([HW-DR-0074]). It governs no crate the
+/// row does not name, because every crate belongs to exactly one subsystem
+/// (HW-DR-0098).
+///
+/// Watched failing two ways over the Command surface row before it passed
+/// (#1288): with the spec on disk and the row not linked yet (the message
+/// named "Command surface (no spec yet, #1288)"), and with
+/// `engine/crates/audit/fixtures/**` added to the Taxonomy distribution and
+/// audit spec, which the earlier `contains` loop let through (the message
+/// named that pattern).
 ///
 /// Watched failing two ways over the Taxonomy resolution row before it passed
 /// (#1288): with the row linked and no spec on disk, and with the spec's
@@ -333,7 +341,29 @@ fn a_row_that_links_a_subsystem_spec_is_governed_by_it() {
                 "{link} is the spec of the row that names `{krate}`, and its `governs` does not hold {pattern} (it holds {governed:?})"
             );
         }
+        // One pattern per crate and nothing else: a pattern that stays inside
+        // the row's crates but outside `src/`, such as
+        // `engine/crates/audit/fixtures/**`, passes the two assertions above.
+        let expected: BTreeSet<String> = row
+            .crates
+            .iter()
+            .map(|krate| format!("engine/crates/{krate}/src/**"))
+            .collect();
+        let extra: Vec<&String> = governed.difference(&expected).collect();
+        assert!(
+            extra.is_empty(),
+            "{link} governs more than `engine/crates/<crate>/src/**` for the crates of its row of spec 6 '{HEADING}': {extra:?}"
+        );
     }
+    let unlinked: Vec<String> = spec_six_rows()
+        .into_iter()
+        .filter(|row| row.link.is_none())
+        .map(|row| row.subsystem)
+        .collect();
+    assert!(
+        unlinked.is_empty(),
+        "every row of spec 6 '{HEADING}' links its subsystem spec, and these do not: {unlinked:?}"
+    );
     assert!(
         linked > 0,
         "no row of spec 6 '{HEADING}' links a subsystem spec"
@@ -564,6 +594,85 @@ fn a_subsystem_spec_is_named_by_a_row() {
         assert_eq!(
             count, 1,
             "docs/subsystems/{spec} is linked from {count} rows of spec 6 '{HEADING}', not one"
+        );
+    }
+}
+
+/// The first `.rs` file, by sorted name, directly under `engine/crates/<krate>/src/`.
+fn first_source_file(krate: &str) -> String {
+    let dir = root().join(format!("engine/crates/{krate}/src"));
+    let mut files: Vec<String> = std::fs::read_dir(&dir)
+        .unwrap_or_else(|e| panic!("{}: {e}", dir.display()))
+        .map(|entry| entry.expect("a directory entry reads").path())
+        .filter(|path| path.is_file() && path.extension().is_some_and(|ext| ext == "rs"))
+        .map(|path| {
+            path.file_name()
+                .expect("a file has a name")
+                .to_string_lossy()
+                .into_owned()
+        })
+        .collect();
+    files.sort();
+    let first = files
+        .first()
+        .unwrap_or_else(|| panic!("{} holds no .rs file", dir.display()));
+    format!("engine/crates/{krate}/src/{first}")
+}
+
+/// `headwater route` over one source file of each row names the row's spec as
+/// a document that governs that file (#1288, Done-when 5).
+///
+/// It runs the built binary over this repository, one file per row: the first
+/// `.rs` file by name under the `src/` of the row's first crate. A row with no
+/// link fails `a_row_that_links_a_subsystem_spec_is_governed_by_it` and is
+/// skipped here. Watched failing before it passed: with the Command surface
+/// spec's `engine/crates/cli/src/**` misspelled, the message named
+/// `engine/crates/cli/src/lib.rs` and the spec it did not reach.
+#[test]
+fn route_names_the_spec_of_each_row_for_a_file_of_its_crates() {
+    let repository = root().canonicalize().expect("the repository root resolves");
+    for row in spec_six_rows() {
+        let Some(link) = row.link else { continue };
+        let spec = format!(
+            "docs/{}",
+            link.strip_prefix("../").unwrap_or_else(|| panic!(
+                "row {} links {link}, which is not on a sibling shelf of docs/spec",
+                row.subsystem
+            ))
+        );
+        let krate = row
+            .crates
+            .first()
+            .unwrap_or_else(|| panic!("row {} names no crate", row.subsystem));
+        let file = first_source_file(krate);
+        let ran = std::process::Command::new(env!("CARGO_BIN_EXE_headwater"))
+            .args(["route", "edit", &file, "--root"])
+            .arg(&repository)
+            .output()
+            .expect("the binary runs");
+        let out = String::from_utf8_lossy(&ran.stdout);
+        assert!(
+            ran.status.success(),
+            "route over {file} exited {:?}: {}",
+            ran.status.code(),
+            String::from_utf8_lossy(&ran.stderr)
+        );
+        let named = out
+            .find(&format!("{spec} ("))
+            .unwrap_or_else(|| panic!("route over {file} does not name {spec}:\n{out}"));
+        // The spec's own entry: its first line and the lines indented under
+        // it, so a `governs` line of a later entry cannot answer for it.
+        let entry: Vec<&str> = out[named..]
+            .lines()
+            .enumerate()
+            .take_while(|(at, line)| *at == 0 || line.starts_with("    "))
+            .map(|(_, line)| line)
+            .collect();
+        assert!(
+            entry
+                .iter()
+                .any(|line| line.trim() == format!("governs {file}")),
+            "route over {file} names {spec} but not as governing {file}:\n{out}"
         );
     }
 }
