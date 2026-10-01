@@ -832,6 +832,12 @@
       "obligations": []
     },
     {
+      "rule": "relation.pair.invalid",
+      "scope": "edge",
+      "version": 1,
+      "obligations": []
+    },
+    {
       "rule": "warrant.evidence.unsupported",
       "scope": "edge",
       "version": 3,

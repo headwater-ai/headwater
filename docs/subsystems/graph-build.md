@@ -61,7 +61,7 @@ The identifier index has two parts. `Index::typed` is the node set. `Index::unty
 
 `declarations.rs` reads the `relations` and `anchors` declarations of the lock. It reads only the fields that edge resolution needs, and it validates nothing, because the meta-schema owns the shape. It refuses a relation that declares no `to`, once, against the declaration. Otherwise every target of that relation reports the same defect.
 
-It reads `inverse` because an author can write either half of a pair. It carries `from`, `reciprocal` and `sets_target_state` for the checks, and resolution never reads them. A relation is lifecycle-sensitive when its own declaration says so or when `core.requires` marks its family. The crate reads `core.requires` through `headwater_resolve::core` and does not read it a second time.
+It reads `inverse` because an author can write either half of a pair. It carries `from`, `reciprocal`, `sets_target_state` and `invalid_when` for the checks, and resolution never reads them. A relation is lifecycle-sensitive when its own declaration says so or when `core.requires` marks its family. The crate reads `core.requires` through `headwater_resolve::core` and does not read it a second time.
 
 ### Edges
 

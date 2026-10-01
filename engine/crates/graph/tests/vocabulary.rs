@@ -81,7 +81,7 @@ fn admitted(declarations: &Declarations) -> Vec<String> {
             // The two that are names.
             name,
             inverse,
-            // The ten that are not. `reciprocal: symmetric` coins no word: a
+            // The rest are not. `reciprocal: symmetric` coins no word: a
             // symmetric relation is its own inverse.
             from: _,
             to: _,
@@ -89,6 +89,7 @@ fn admitted(declarations: &Declarations) -> Vec<String> {
             family: _,
             lifecycle_sensitive: _,
             sets_target_state: _,
+            invalid_when: _,
             nuclearity: _,
             nucleus: _,
             created_by: _,

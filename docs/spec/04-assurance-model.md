@@ -276,7 +276,7 @@ The scaffolder and an importer are the two components of this class. Their instr
 
 To name a coherence class is easy. To discharge it is the hard part, and structural checks cannot do it. The mechanism is a periodic **LLM-assisted coherence sweep**. An agent reads a bounded slice of the corpus and reports what no linter can see:
 
-- pages that contradict each other while both remain current *and neither declares it*. A declared conflict is already a deterministic check, and the sweep's value is fully in the contradictions that nobody noticed yet
+- pages that contradict each other while both remain current *and neither declares it*. A declared conflict is already a deterministic check, `relation.pair.invalid`, and the sweep's value is fully in the contradictions that nobody noticed yet
 - claims that a newer source quietly superseded
 - concepts that are referenced throughout and defined nowhere
 - documents whose declared audience cannot actually use them
