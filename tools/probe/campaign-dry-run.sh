@@ -298,10 +298,15 @@ if grep -q ' mcp$' "$work/arms"; then
     leak_trees="$leak_trees $work/mcp"
 fi
 
-# The leak check, over the present tree and the mcp arm's tree.
+# The leak check, over the present tree and the mcp arm's tree. Each session
+# of a batch runs under a configuration directory of its own, made empty by
+# `campaign.sh` and holding only a copy of the credentials while the session
+# runs (#1467). The check reads one made the same way, so it reads the host
+# level a session meets, and that is nothing.
+mkdir -p "$work/config"
 for tree in $leak_trees; do
     # shellcheck disable=SC2086
-    sh "$root/tools/probe/seal.sh" --leak "$tree" $all_probes > "$work/leak" 2>&1
+    sh "$root/tools/probe/seal.sh" --leak --config "$work/config" "$tree" $all_probes > "$work/leak" 2>&1
     leak_status=$?
     label=present
     [ "$tree" = "$work/mcp" ] && label=mcp

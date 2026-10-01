@@ -1,0 +1,17 @@
+{
+  // The tombstone that `tools/site/unpreview-site.sh` uploads over a closed
+  // pull request's preview alias. It is the Worker of the root
+  // `wrangler.jsonc`, `headwater`, uploaded as one more version with a script
+  // and no assets. No deploy ever names it, so production never serves it.
+  //
+  // It has a file of its own because Cloudflare deletes no preview alias: an
+  // alias exists only from a version upload, and the only way to take a
+  // preview's pages off its URL is to upload another version under the same
+  // alias. Reading the root file would upload the site again.
+  "name": "headwater",
+  "main": "worker.js",
+  "compatibility_date": "2026-08-11",
+  // The root file keeps this on for the same reason: a version uploaded
+  // without it would turn every preview URL off.
+  "preview_urls": true
+}

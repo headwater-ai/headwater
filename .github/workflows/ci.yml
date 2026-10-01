@@ -1244,14 +1244,31 @@ jobs:
         # also holds spec 15's three-state rule, where `calls: []` for a
         # stream nobody watched turns an unobserved run into a clean result.
         # It needs `jq` and skips with a warning without it.
-        run: |
-          status=0
-          sh tools/probe/probe-record-fixtures.sh || status=$?
-          if [ "$status" = 3 ]; then
-            echo "::warning title=Recorder fixtures skipped::No jq on this runner, so none of these cases ran."
-            exit 0
-          fi
-          exit "$status"
+        #
+        # It also needs `bwrap` with unprivileged user namespaces, because the
+        # recorder confines every session to its workspace and refuses to run
+        # one it cannot confine (#1467). The cases run the real confinement
+        # with a stub harness. `tools/probe/ci-confine.sh` gets `bwrap` and the
+        # namespace where `sudo` can, never calls `sudo` where there is none,
+        # and then runs the cases, or skips them with one warning on a
+        # self-hosted runner that cannot confine, or fails on any other.
+        #
+        # The self-hosted runner's container cannot (measured 2026-10-01: no
+        # `bwrap`, no `sudo`, and Docker's seccomp profile refuses the
+        # namespace), so there this step skips. A same-repo `pull_request` run
+        # skips this whole job, so the job `recorder` below runs the cases on
+        # `ubuntu-latest` in every run where this job is self-hosted.
+        env:
+          RUNNER_KIND: ${{ runner.environment }}
+        run: sh tools/probe/ci-confine.sh
+      - name: The recorder's confinement gate runs, skips or fails where it should
+        # `tools/probe/ci-confine.sh` decides above whether a case of the
+        # recorder runs at all, and its first version turned `main` red by
+        # calling `sudo` on the self-hosted runner (#1467). Its fixtures run
+        # it with stub `bwrap`, `sudo` and suite on a `PATH` without the real
+        # two, and hold every branch: install, `sysctl`, skip, fail, and the
+        # suite's own status. It needs only `sh`.
+        run: sh tools/probe/ci-confine-fixtures.sh
       - name: The run census counts a turn once per message and a call by what it is for
         # `tools/run/run-census.sh` is the measurement behind HW-PD-0003 as a
         # tool: one usage record per message id, because a response is
@@ -2093,6 +2110,59 @@ jobs:
         # `sha256sum`, opens no socket, and writes only under a temporary
         # directory.
         run: sh tools/repo/decision-record-fixtures.sh
+
+  recorder:
+    # The recorder's fixtures need `bwrap` and a user namespace (#1467), and
+    # the self-hosted runner's container has neither, so the step of the
+    # `headwater` job that runs them skips there with a warning that names
+    # this job. This job runs the same step on `ubuntu-latest` in exactly the
+    # runs where the `headwater` job is self-hosted: a `push` or a
+    # `merge_group` that `route` did not move and that `CI_RUNNER` opts in. In
+    # every other run that job is hosted and runs the cases itself, and a
+    # same-repo `pull_request` runs neither, because the `push` of the same
+    # commit does.
+    #
+    # It is not a required check until the `Protect main` ruleset names it,
+    # so a red here shows on the run and does not yet hold a merge group.
+    name: Recorder confinement (hosted)
+    if: ${{ !cancelled() && (github.event_name == 'push' || github.event_name == 'merge_group') && needs.route.outputs.overflow != 'true' && vars.CI_RUNNER != '' }}
+    needs: route
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The `headwater` job's checkout, for the same reasons: the suite
+          # reads this checkout as a corpus, as that job does.
+          fetch-depth: 0
+          fetch-tags: true
+      - name: The cargo cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
+            engine/target
+          key: cargo-${{ runner.os }}-recorder-${{ hashFiles('engine/Cargo.lock') }}
+          restore-keys: |
+            cargo-${{ runner.os }}-recorder-
+            cargo-${{ runner.os }}-headwater-
+      - name: The toolchain this build needs
+        run: |
+          rustup update --no-self-update stable
+          rustup default stable
+      - name: Build the engine
+        # The recorder's driver refuses a session with no engine, so the
+        # confinement cases need the one the `headwater` job builds.
+        run: cargo build --release -p headwater-cli --locked
+        working-directory: engine
+      - name: A recorder's transform drops every block the harness did not tag as a call
+        # The `headwater` job's step of this name carries what the suite
+        # holds. Here the runner is hosted, so a runner that cannot confine
+        # fails this step rather than skipping it.
+        env:
+          RUNNER_KIND: ${{ runner.environment }}
+        run: sh tools/probe/ci-confine.sh
 
   deploy:
     # The one deploy path of https://headwater.tools/ since #1273. The job

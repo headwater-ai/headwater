@@ -85,7 +85,7 @@
 # copying the names a third time. A missing guide is red, never skipped.
 #
 # One step is held here: the search in step 9. The last group below takes it
-# out of the guide and runs it over the four install pages, and it must find
+# out of the guide and runs it over the six install files, and it must find
 # each line that names the release that README.md checks out (#1315). Which
 # of the lines it finds a person must change is still prose.
 
@@ -824,6 +824,70 @@ for job, s in creates:
         if re.search(r"\bgh\s+release\s+create\b", line) and not (calls and "--latest=false" in words[calls[0]:]):
             out.append("release-taxonomy.yml job %s creates a release without --latest=false, so a taxonomy release can become releases/latest and the site serves no apt/" % job)
 
+# The preview of a labelled pull request (preview-site.yml) uploads a
+# version that takes no traffic, so it is not a deploy, and the clauses above
+# let it stand. These hold what makes that true: it starts on pull_request
+# alone, never pull_request_target, which hands secrets to a fork`s code; its
+# job runs only for a branch of this repository that carries the label, on a
+# hosted runner; and neither script it runs reaches a deploy. The condition is
+# read as the ci.yml caller`s is, as a set of terms, so an extra `|| true` or
+# a dropped term is refused.
+pv = "preview-site.yml"
+preview_terms = {
+    "github.event.pull_request.head.repo.full_name==github.repository",
+    "contains(github.event.pull_request.labels.*.name,\x27site-preview\x27)",
+    "(github.event.action!=\x27labeled\x27||github.event.label.name==\x27site-preview\x27)",
+}
+if pv in docs:
+    doc = docs[pv]
+    on = doc.get("on", doc.get(True)) if isinstance(doc, dict) else None
+    events = set(on) if isinstance(on, dict) else set(as_list(on))
+    if events != {"pull_request"}:
+        out.append("preview-site.yml is started by %s and not by pull_request alone, so a preview can run with secrets on code nobody labelled" % ", ".join(sorted(map(str, events))))
+    for job, body in sorted(jobs(pv).items()):
+        cond = re.sub(r"\s+", "", str(body.get("if", "")))
+        whole = re.fullmatch(r"\$\{\{(.*)\}\}", cond)
+        if whole:
+            cond = whole.group(1)
+        if set(cond.split("&&")) != preview_terms:
+            out.append("preview-site.yml job %s has an if: other than a labelled pull request from a branch of this repository, so an unlabelled or forked pull request can build a preview" % job)
+        if body.get("runs-on") != "ubuntu-latest":
+            out.append("preview-site.yml job %s runs on %s and not ubuntu-latest, so a pull request reaches the self-hosted pool" % (job, body.get("runs-on")))
+# A script reaches a deploy when a line that is not a comment runs wrangler
+# with deploy or publish, `wrangler versions deploy` among them, or runs
+# deploy-site.sh. preview-site.sh reads the wrangler pin out of deploy-site.sh
+# with sed, which runs nothing, so only `sh` before the path counts.
+script_deploy = re.compile(r"\bwrangler\b[^\n]*\b(?:deploy|publish)\b|\bsh\s+tools/site/deploy-site\.sh")
+for script in ("tools/site/preview-site.sh", "tools/site/build-site.sh", "tools/site/unpreview-site.sh"):
+    path = os.path.join(sys.argv[1], script)
+    if not os.path.isfile(path):
+        continue
+    with open(path, encoding="utf-8") as f:
+        code = "\n".join(l for l in re.sub(r"\\\n", " ", f.read()).splitlines() if not l.lstrip().startswith("#"))
+    if script_deploy.search(code):
+        out.append("%s runs a deploy, so a preview can move the live site" % script)
+
+# The end of a preview (unpreview-site.yml) runs with the secrets on a
+# closed pull request, so it holds the three things that keep those secrets
+# away from a pull request`s code: it starts on pull_request and by hand,
+# never pull_request_target; it runs on a hosted runner; and every checkout
+# names the default branch, never the pull request`s head or merge ref.
+upv = "unpreview-site.yml"
+if upv in docs:
+    doc = docs[upv]
+    on = doc.get("on", doc.get(True)) if isinstance(doc, dict) else None
+    events = set(on) if isinstance(on, dict) else set(as_list(on))
+    if not events <= {"pull_request", "workflow_dispatch"} or "pull_request" not in events:
+        out.append("unpreview-site.yml is started by %s and not by pull_request and workflow_dispatch alone, so a removal can run with secrets on code nobody reviewed" % ", ".join(sorted(map(str, events))))
+    for job, body in sorted(jobs(upv).items()):
+        if body.get("runs-on") != "ubuntu-latest":
+            out.append("unpreview-site.yml job %s runs on %s and not ubuntu-latest, so a pull request reaches the self-hosted pool" % (job, body.get("runs-on")))
+        for step in as_list(body.get("steps")):
+            if isinstance(step, dict) and str(step.get("uses", "")).startswith("actions/checkout"):
+                ref = (step.get("with") or {}).get("ref")
+                if ref != "${{ github.event.repository.default_branch }}":
+                    out.append("unpreview-site.yml job %s checks out %s and not the default branch, so the pull request`s code runs with the secrets" % (job, ref))
+
 for line in out:
     print(line)
 '
@@ -1437,16 +1501,111 @@ fi
 contains "a deploy-site.yml with a trigger of its own is red" \
     "deploy-site.yml is started by" "$(deploys "$scratch/d6")"
 
+# p1 to p7. The preview of a labelled pull request uploads a version and
+# deploys nothing. Each arm applies one shape to a copy and names the line.
+pv_job=$(python3 -c '
+import sys, yaml
+jobs = yaml.safe_load(open(sys.argv[1] + "/.github/workflows/preview-site.yml", encoding="utf-8"))["jobs"]
+print(" ".join(k for k, v in jobs.items() if isinstance(v, dict) and "preview-site.sh" in str(v.get("steps"))))
+' "$root" 2>/dev/null)
+if [ -n "$pv_job" ]; then
+    # p1. pull_request_target, which runs with secrets on a fork's pull request.
+    copy_tree "$scratch/p1"
+    edit_wf "$scratch/p1" preview-site.yml "k = 'on' if 'on' in doc else True; doc[k] = {'pull_request_target': {'types': ['labeled']}}"
+    contains "a preview started by pull_request_target is red" \
+        "preview-site.yml is started by pull_request_target and not by pull_request alone" "$(deploys "$scratch/p1")"
+
+    # p2. The label term dropped, so every pull request builds a preview.
+    copy_tree "$scratch/p2"
+    edit_wf "$scratch/p2" preview-site.yml "doc['jobs']['$pv_job']['if'] = 'github.event.pull_request.head.repo.full_name == github.repository'"
+    contains "a preview that does not ask for the label is red" \
+        "preview-site.yml job $pv_job has an if: other than a labelled pull request" "$(deploys "$scratch/p2")"
+
+    # p3. Every term kept, and an `|| true` that makes the whole always true.
+    copy_tree "$scratch/p3"
+    edit_wf "$scratch/p3" preview-site.yml "doc['jobs']['$pv_job']['if'] = doc['jobs']['$pv_job']['if'] + ' || true'"
+    contains "a preview condition widened by || true is red" \
+        "preview-site.yml job $pv_job has an if: other than a labelled pull request" "$(deploys "$scratch/p3")"
+
+    # p4. The self-hosted pool, which no pull request job may reach.
+    copy_tree "$scratch/p4"
+    edit_wf "$scratch/p4" preview-site.yml "doc['jobs']['$pv_job']['runs-on'] = 'self-hosted'"
+    contains "a preview on the self-hosted pool is red" \
+        "preview-site.yml job $pv_job runs on self-hosted and not ubuntu-latest" "$(deploys "$scratch/p4")"
+
+    # p5. The preview job runs the production deploy script itself.
+    copy_tree "$scratch/p5"
+    edit_wf "$scratch/p5" preview-site.yml "doc['jobs']['$pv_job']['steps'].append({'run': 'sh tools/site/deploy-site.sh'})"
+    contains "a preview job that runs deploy-site.sh is red" \
+        "preview-site.yml job $pv_job runs the deploy itself, so the site has two deploy paths" "$(deploys "$scratch/p5")"
+fi
+
+# p6. The preview script gains a deploy, once by wrangler across a backslash
+# continuation and once by the production script.
+p6_arm() {
+    copy_tree "$scratch/p6"
+    mkdir -p "$scratch/p6/tools/site"
+    cp "$root/tools/site/preview-site.sh" "$scratch/p6/tools/site/"
+    printf '%s\n' "$2" >> "$scratch/p6/tools/site/preview-site.sh"
+    contains "$1" \
+        "tools/site/preview-site.sh runs a deploy, so a preview can move the live site" "$(deploys "$scratch/p6")"
+}
+p6_arm "a preview script that runs wrangler versions deploy across a continuation is red" 'npx wrangler \
+    versions deploy'
+p6_arm "a preview script that runs deploy-site.sh is red" 'sh tools/site/deploy-site.sh'
+
+# p7. The scripts as committed, comments naming `wrangler deploy` and the sed
+# that reads the pin out of deploy-site.sh included, reach no deploy.
+copy_tree "$scratch/p7"
+mkdir -p "$scratch/p7/tools/site"
+cp "$root/tools/site/preview-site.sh" "$root/tools/site/build-site.sh" "$root/tools/site/unpreview-site.sh" "$scratch/p7/tools/site/"
+same "the committed preview, unpreview and build scripts reach no deploy" "" \
+    "$(deploys "$scratch/p7" | grep 'runs a deploy' | tr '\n' '|' | sed 's/|$//')"
+
+# u1 to u4. The end of a preview runs with the secrets on a closed pull
+# request and checks out the default branch. Each arm applies one shape.
+if [ -f "$root/.github/workflows/unpreview-site.yml" ]; then
+    # u1. pull_request_target, which hands the secrets to a fork's run.
+    copy_tree "$scratch/u1"
+    edit_wf "$scratch/u1" unpreview-site.yml "k = 'on' if 'on' in doc else True; doc[k] = {'pull_request_target': {'types': ['closed']}}"
+    contains "a preview removal started by pull_request_target is red" \
+        "unpreview-site.yml is started by pull_request_target and not by pull_request and workflow_dispatch alone" "$(deploys "$scratch/u1")"
+
+    # u2. The checkout moved to the pull request's head.
+    copy_tree "$scratch/u2"
+    edit_wf "$scratch/u2" unpreview-site.yml "[s.setdefault('with', {}).update(ref='\${{ github.event.pull_request.head.sha }}') for s in doc['jobs']['unpreview']['steps'] if str(s.get('uses', '')).startswith('actions/checkout')]"
+    contains "a preview removal that checks out the pull request is red" \
+        "unpreview-site.yml job unpreview checks out \${{ github.event.pull_request.head.sha }} and not the default branch" "$(deploys "$scratch/u2")"
+
+    # u3. The self-hosted pool.
+    copy_tree "$scratch/u3"
+    edit_wf "$scratch/u3" unpreview-site.yml "doc['jobs']['unpreview']['runs-on'] = 'self-hosted'"
+    contains "a preview removal on the self-hosted pool is red" \
+        "unpreview-site.yml job unpreview runs on self-hosted and not ubuntu-latest" "$(deploys "$scratch/u3")"
+
+    # u4. The workflow as committed.
+    same "the committed preview removal raises nothing" "" \
+        "$(deploys "$root" | grep 'unpreview' | tr '\n' '|' | sed 's/|$//')"
+fi
+
+# u5. The removal script refuses an alias that is not a pull request number,
+# before it reads a pin or reaches wrangler.
+for bad in '' 'pr-1545' '0' '01' '15a'; do
+    rc=0
+    sh "$root/tools/site/unpreview-site.sh" "$bad" >/dev/null 2>&1 || rc=$?
+    same "unpreview-site.sh refuses '$bad'" "2" "$rc"
+done
+
 # ---------------------------------------------------------------------------
 # Step 9's search finds every install line (#1315, clause 10). Step 9 of the
 # guide gives one `git grep -nE` search that finds each line to move at a
 # release. In #1348 a search narrowed to `v<previous>` missed the tutorial's
 # "This installs version X" line, which names the version with no `v`. So this
 # group takes the search out of the guide text, and never copies the pattern,
-# and runs it over the four install pages.
+# and runs it over the six install files.
 #
 # The expected set is built without the guide's pattern: each line of the
-# four pages that names the tag `v<version>` as a fixed string, and each line
+# six files that names the tag `v<version>` as a fixed string, and each line
 # that says `version <version>`, which covers "This installs version X" and
 # `--version X`. <version> is the tag that README.md checks out. The search must find every line of that set. It can find more,
 # because step 9 says that it also finds lines that you must not change.
@@ -1456,7 +1615,9 @@ contains "a deploy-site.yml with a trigger of its own is red" \
 step9_pages="README.md
 docs/tutorials/your-first-governed-corpus.md
 site/tutorial/index.html
-site/index.html"
+site/index.html
+site/install/index.html
+site/install.sh"
 
 # step9_search ROOT — prints the extended pattern of step 9's search, with
 # <previous> replaced by the escaped version that ROOT's README.md checks
@@ -1487,7 +1648,7 @@ step9_found() {
 }
 
 # step9_expected ROOT — prints `<page>:<line>` for each install line of the
-# four pages, the expected set above. The judge and the count in s1 both read
+# six files, the expected set above. The judge and the count in s1 both read
 # it, so the count is the population the judge holds.
 step9_expected() {
     ver=$(sed -n 's/^git checkout v\([0-9][0-9.]*\)[[:space:]]*$/\1/p' "$1/README.md" 2>/dev/null | head -n 1)
@@ -1523,7 +1684,7 @@ step9_misses() {
     # `v<version>` itself, so the search is always held against that line.
 }
 
-# step9_copy DIR — a scratch copy of the guide and the four install pages.
+# step9_copy DIR — a scratch copy of the guide and the six install files.
 step9_copy() {
     rm -rf "$1"
     for f in "$guide_rel" $step9_pages; do
@@ -1537,7 +1698,7 @@ echo "step 9's search finds every install line"
 
 # s1. The real tree: every install line is found, over a population that is
 # not empty.
-same "step 9's search finds every line of the four pages that names the release" "" \
+same "step 9's search finds every line of the six files that names the release" "" \
     "$(step9_misses "$root" | tr '\n' '|' | sed 's/|$//')"
 s1_ver=$(sed -n 's/^git checkout v\([0-9][0-9.]*\)[[:space:]]*$/\1/p' "$root/README.md" | head -n 1)
 s1_count=$(step9_expected "$root" | wc -l | tr -d ' ')
@@ -1545,16 +1706,16 @@ if [ -n "$s1_ver" ] && [ "$s1_count" -gt 0 ]; then
     pass "the search is held against $s1_count install lines that name v$s1_ver"
 else
     fail "the search is held against a population that is not empty" \
-        "README.md checks out \`v$s1_ver\` and $s1_count lines of the four pages name it"
+        "README.md checks out \`v$s1_ver\` and $s1_count lines of the six files name it"
 fi
 
-# s1p. Each of the four pages is in the population. A line that only a
+# s1p. Each of the six files is in the population. A line that only a
 # bare-version search finds is planted on one page at a time, under a guide
 # narrowed to `v<previous>`, and the finding must name that page. A check that
-# dropped a page would pass that page's arm. The arms name the four pages
+# dropped a page would pass that page's arm. The arms name the six files
 # themselves, and do not read `step9_pages`, so a page dropped from that list
 # does not drop its arm too.
-for page in README.md docs/tutorials/your-first-governed-corpus.md site/tutorial/index.html site/index.html; do
+for page in README.md docs/tutorials/your-first-governed-corpus.md site/tutorial/index.html site/index.html site/install/index.html site/install.sh; do
     step9_copy "$scratch/s1p"
     sed "/git grep -nE/s/v?<previous>/v<previous>/" "$root/$guide_rel" > "$scratch/s1p/$guide_rel"
     printf '%s\n' "This installs version $s1_ver of the engine." >> "$scratch/s1p/$page"

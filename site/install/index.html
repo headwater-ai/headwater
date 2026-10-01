@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-4DJ9K52SWZ"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-4DJ9K52SWZ');
+</script>
+<title>Install — Headwater</title>
+<meta name="description" content="Every way to install the headwater binary: a release download for Linux and macOS, an APT repository for Debian and Ubuntu, cargo, and a build from source.">
+<link rel="canonical" href="https://headwater.tools/install/">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🜄</text></svg>">
+<style>
+  /* headwater:tokens */
+  :root {
+    --bg: #fbfaf8; --fg: #1a1917; --muted: #5f5b54;
+    --rule: #e2ddd4; --accent: #1d5c54; --code-bg: #f1eee8;
+    --accent-on-ink: #6fb3a6;
+    --serif: ui-serif, Charter, "Iowan Old Style", Georgia, serif;
+    --sans: ui-sans-serif, system-ui, sans-serif;
+    --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #14161a; --fg: #e6e3dd; --muted: #9b968c;
+      --rule: #2a2e35; --accent: #6fb3a6; --code-bg: #1c1f25;
+      --accent-on-ink: #1d5c54;
+    }
+  }
+  .sans { font-family: var(--sans); }
+  .mono { font-family: var(--mono); }
+  /* headwater:tokens end */
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--fg);
+    font: 17px/1.65 var(--serif);
+    -webkit-text-size-adjust: 100%;
+  }
+  .wrap { max-width: 46rem; margin: 0 auto; padding: 2.5rem 1.5rem 4rem; }
+  h1 {
+    font-size: 1.75rem; line-height: 1.2; letter-spacing: -0.015em;
+    margin: 0 0 0.4rem; font-weight: 600;
+  }
+  .uri {
+    font-family: var(--mono);
+    font-size: 0.95rem; color: var(--accent); margin: 0 0 2rem;
+  }
+  h2 {
+    font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.09em;
+    font-family: var(--sans); font-weight: 650;
+    color: var(--muted); margin: 2.75rem 0 0.85rem;
+    padding-bottom: 0.5rem; border-bottom: 1px solid var(--rule);
+  }
+  p { margin: 0 0 1.1rem; }
+  a { color: var(--accent); text-underline-offset: 2px; }
+  code {
+    font-family: var(--mono);
+    font-size: 0.87em; background: var(--code-bg);
+    padding: 0.12em 0.36em; border-radius: 3px;
+  }
+  .toc { font-family: var(--sans); font-size: 0.9rem; margin: 0 0 1rem; padding-left: 1.2rem; }
+  .toc li { margin: 0 0 0.3rem; }
+  .install, pre.block {
+    font-family: var(--mono);
+    font-size: 0.84rem; line-height: 1.7; border-left: 3px solid var(--accent);
+    background: var(--code-bg); padding: 0.7rem 1.1rem; margin: 0 0 1.1rem;
+  }
+  .install div { overflow-wrap: anywhere; }
+  /* The copy button. It ships hidden and the site script shows it, so a
+     browser that runs no script never shows a button that does nothing. */
+  .install { position: relative; }
+  .install:has(> .copy) { padding-right: 3.4rem; }
+  .copy {
+    position: absolute; top: 0.45rem; right: 0.55rem;
+    width: 2.25rem; height: 2.25rem; padding: 0;
+    display: inline-flex; align-items: center; justify-content: center;
+    border: 1px solid var(--rule); border-radius: 3px;
+    background: var(--bg); color: var(--muted); cursor: pointer;
+  }
+  .copy[hidden] { display: none; }
+  .copy:hover, .copy:focus-visible { color: var(--accent); border-color: var(--accent); }
+  .copy .icon-done { display: none; }
+  .copy[data-state="copied"] { color: var(--accent); border-color: var(--accent); }
+  .copy[data-state="copied"] .icon-copy { display: none; }
+  .copy[data-state="copied"] .icon-done { display: inline; }
+  pre.block { white-space: pre-wrap; overflow-wrap: anywhere; }
+  .platform {
+    font-family: var(--sans); font-size: 0.78rem; font-weight: 650;
+    color: var(--muted); margin: 0 0 0.4rem;
+  }
+  .dim { color: var(--muted); }
+  .small { font-size: 0.92rem; color: var(--muted); }
+  .topbar { height: 4px; background: var(--accent); }
+  .bar { max-width: 78rem; margin: 0 auto; padding: 0 3rem; }
+  nav.top {
+    display: flex; justify-content: space-between; align-items: center;
+    gap: 1.5rem; flex-wrap: wrap; padding: 1.2rem 0;
+    border-bottom: 1px solid var(--rule);
+  }
+  .brand {
+    font-weight: 600; font-size: 1.1rem; display: flex; align-items: center;
+    gap: 0.5rem; color: var(--fg); text-decoration: none;
+  }
+  .brand .glyph { color: var(--accent); font-size: 1.3rem; }
+  .navlinks {
+    display: flex; gap: 1.7rem; flex-wrap: wrap;
+    font-family: var(--sans); font-size: 0.82rem;
+  }
+  .navlinks a { color: var(--muted); text-decoration: none; margin: 0; }
+  .navlinks a:hover { color: var(--accent); }
+  .navlinks a.here { color: var(--fg); border-bottom: 2px solid var(--accent); }
+  @media (max-width: 62rem) {
+    .bar { padding-left: 1.5rem; padding-right: 1.5rem; }
+  }
+  @media (max-width: 34rem) {
+    .install, pre.block { font-size: 0.76rem; padding: 0.8rem 1rem; }
+    .install div { word-break: break-all; }
+  }
+  /* headwater:footer */
+  footer { border-top: 1px solid var(--rule); }
+  .foot {
+    padding-top: 1.5rem; padding-bottom: 2.5rem;
+    font-family: var(--sans); font-size: 0.87rem;
+    color: var(--muted);
+  }
+  .foot p { margin: 0 0 1rem; max-width: 46rem; }
+  .footgroups { display: flex; gap: 2.5rem; flex-wrap: wrap; margin-top: 0.4rem; }
+  .footgroup { flex: 1 1 14rem; min-width: 0; }
+  .footlabel {
+    font-family: var(--sans); font-size: 0.72rem; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--muted); margin-bottom: 0.7rem;
+  }
+  .footlinks { display: flex; gap: 0.5rem 1.25rem; flex-wrap: wrap; }
+  @media (max-width: 62rem) {
+    .footlinks { flex-direction: column; gap: 0.75rem; }
+    .footlinks a { display: block; }
+  }
+  /* headwater:footer end */
+</style>
+</head>
+<body>
+
+<div class="topbar"></div>
+<div class="bar">
+  <nav class="top">
+    <a class="brand" href="/"><span class="glyph">🜄</span>Headwater</a>
+    <div class="navlinks">
+      <a href="/how-it-works/">How it works</a>
+      <a href="/compare/">Compare</a>
+      <a href="/proof/">Proof</a>
+      <a href="/tutorial/">Tutorial</a>
+    </div>
+  </nav>
+</div>
+
+<div class="wrap">
+
+  <h1>Install Headwater</h1>
+  <p class="uri">version 0.5.0</p>
+
+  <p>Headwater is one binary, <code>headwater</code>. You need no Rust toolchain to run it. On Linux x86_64 or macOS on Apple silicon, one line installs it:</p>
+  <div class="install oneliner">
+    <div><span class="dim">$</span> curl -fsSL https://headwater.tools/install.sh | sh</div>
+    <button class="copy" type="button" aria-label="Copy the install command" title="Copy" hidden><svg class="icon-copy" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg><svg class="icon-done" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button>
+  </div>
+  <p class="small"><a href="/install.sh">The script</a> downloads the release archive for your machine, checks it against the checksum published beside it, and unpacks the binary into <code>~/.local/bin</code>. It needs <code>sh</code>, <code>curl</code>, <code>tar</code> and <code>uname</code>, and never asks for root. Set <code>HEADWATER_VERSION</code> to install another release, or <code>HEADWATER_INSTALL_DIR</code> to install somewhere else. To read the script before you run it, open the link above.</p>
+  <p>Or pick a route by hand:</p>
+  <ul class="toc">
+    <li><a href="#download">Download the binary</a>, for Linux x86_64 and macOS on Apple silicon</li>
+    <li><a href="#apt">Install with apt</a>, on Debian or Ubuntu</li>
+    <li><a href="#cargo">Install with cargo</a>, if you already have a Rust toolchain</li>
+    <li><a href="#source">Build from source</a>, at a fixed tag</li>
+  </ul>
+
+  <!-- The one-liner panel above is class `install oneliner`, and group 11
+       holds it to the front page's line. The panels below are class
+       `install` alone.
+       #975 and #1348. These panels are the README's download block and its
+       APT block, in that order. Group 11 of tools/repo/readme-fixtures.sh
+       reads the prompt lines of every `install` panel on this page and holds
+       its download lines, line for line, and its sources line, keyring URL,
+       keyring path and package against the README, so a release that moves
+       one and not the other is refused. The download lines were run against
+       the v0.5.0 release on 2026-09-29. Nobody has run the apt lines from
+       this page; the README says which images they install on. -->
+
+  <h2 id="download">Download the binary</h2>
+  <p>Every engine release carries a static Linux x86_64 archive and a macOS archive for Apple silicon. Each holds the <code>headwater</code> binary and the license, and nothing else. These lines install it into <code>~/.local/bin</code>.</p>
+  <p class="platform">Linux x86_64</p>
+  <div class="install">
+    <div><span class="dim">$</span> mkdir -p ~/.local/bin</div>
+    <div><span class="dim">$</span> curl -fsSLO https://github.com/headwater-ai/headwater/releases/download/v0.5.0/headwater-v0.5.0-x86_64-unknown-linux-musl.tar.gz</div>
+    <div><span class="dim">$</span> tar -xzf headwater-v0.5.0-x86_64-unknown-linux-musl.tar.gz -C ~/.local/bin headwater</div>
+  </div>
+  <p class="platform">macOS on Apple silicon</p>
+  <div class="install">
+    <div><span class="dim">$</span> mkdir -p ~/.local/bin</div>
+    <div><span class="dim">$</span> curl -fsSLO https://github.com/headwater-ai/headwater/releases/download/v0.5.0/headwater-v0.5.0-aarch64-apple-darwin.tar.gz</div>
+    <div><span class="dim">$</span> tar -xzf headwater-v0.5.0-aarch64-apple-darwin.tar.gz -C ~/.local/bin headwater</div>
+  </div>
+  <p>Then <code>headwater --version</code> prints <code>0.5.0</code>. If your shell says it cannot find <code>headwater</code>, <code>~/.local/bin</code> is not on your <code>PATH</code>: add it, or run <code>~/.local/bin/headwater</code> by its full path.</p>
+  <p class="small">Each archive has a <code>.sha256</code> file beside it on <a href="https://github.com/headwater-ai/headwater/releases/tag/v0.5.0">the release page</a>, which <code>sha256sum -c</code> reads on Linux and <code>shasum -a 256 -c</code> reads on macOS. The release also carries <code>headwater-v0.5.0-x86_64-unknown-linux-gnu.tar.gz</code>, an x86_64 Linux build that needs glibc 2.39 or later. The musl archive above needs no particular C library, so prefer it.</p>
+
+  <h2 id="apt">Install with apt on Debian or Ubuntu</h2>
+  <p>Every engine release builds the <code>headwater</code> package and publishes it to a signed APT repository at <code>https://headwater.tools/apt</code>. It is for <code>amd64</code> only. These lines run on Debian 12 or later and Ubuntu 20.04 or later, and after them <code>apt upgrade</code> brings each new release.</p>
+  <div class="install">
+    <div><span class="dim">$</span> sudo apt-get update</div>
+    <div><span class="dim">$</span> sudo apt-get install -y ca-certificates curl</div>
+    <div><span class="dim">$</span> sudo install -d -m 0755 /etc/apt/keyrings</div>
+    <div><span class="dim">$</span> sudo curl -fsSL -o /etc/apt/keyrings/headwater-archive-keyring.asc https://headwater.tools/apt/headwater-archive-keyring.asc</div>
+    <div><span class="dim">$</span> echo &quot;deb [signed-by=/etc/apt/keyrings/headwater-archive-keyring.asc] https://headwater.tools/apt stable main&quot; | sudo tee /etc/apt/sources.list.d/headwater.list</div>
+    <div><span class="dim">$</span> sudo apt-get update</div>
+    <div><span class="dim">$</span> sudo apt-get install -y headwater</div>
+    <div><span class="dim">$</span> headwater --version</div>
+  </div>
+  <p>The package installs the static Linux binary at <code>/usr/bin/headwater</code>, with the license and shell completions for bash, zsh and fish. Where you are already root and have no <code>sudo</code>, as in a container, remove <code>sudo</code> from each line.</p>
+  <p class="small">On Debian 11 the lines above stop at <code>ca-certificates curl</code>, because the Debian 11 security archive no longer serves those packages. The package itself still installs there. Download <code>headwater_0.5.0_amd64.deb</code> from <a href="https://github.com/headwater-ai/headwater/releases/tag/v0.5.0">the release page</a> on another machine, copy it across, and run <code>sudo apt-get install ./headwater_0.5.0_amd64.deb</code>. That needs no network, and a package installed this way gets no update from <code>apt upgrade</code>.</p>
+
+  <h2 id="cargo">Install with cargo</h2>
+  <p>If you already have a Rust toolchain, every crate of the engine is on crates.io. This gets you the binary alone, at the newest published version, and needs no clone.</p>
+  <pre class="block"><span class="dim">$</span> cargo install headwater-cli</pre>
+
+  <h2 id="source">Build from source</h2>
+  <p>This builds the tagged release from a clone. It needs a Rust toolchain at 1.91 or later.</p>
+  <pre class="block"><span class="dim">$</span> git clone https://github.com/headwater-ai/headwater.git
+<span class="dim">$</span> cd headwater
+<span class="dim">$</span> git checkout v0.5.0
+<span class="dim">$</span> cargo build --release -p headwater-cli --manifest-path engine/Cargo.toml --locked</pre>
+  <p>The binary lands at <code>engine/target/release/headwater</code>.</p>
+
+  <h2>Next</h2>
+  <p>The binary carries no taxonomy. <a href="/tutorial/">The tutorial</a> fetches the taxonomy package in its third step, and takes you from an empty directory to a passing check. Every release, with its notes and archives, is on <a href="https://github.com/headwater-ai/headwater/releases">the releases page</a>.</p>
+
+</div>
+
+<footer>
+  <div class="bar foot">
+    <!-- headwater:footer -->
+    <p>The source of this project is <a href="https://github.com/headwater-ai/headwater">github.com/headwater-ai/headwater</a>, under Apache-2.0. The engine, the taxonomy library and the corpus these pages describe are all in it.</p>
+    <div class="footgroups">
+      <div class="footgroup">
+        <div class="footlabel">The corpus — generated from the repository</div>
+        <div class="footlinks">
+          <a href="/spec/">Specification</a>
+          <a href="/decisions/">Decisions</a>
+          <a href="/obligations/">Obligations</a>
+          <a href="/corpus.json">Descriptor</a>
+        </div>
+      </div>
+      <div class="footgroup">
+        <div class="footlabel">This site — hand-built</div>
+        <div class="footlinks">
+          <a href="/">Home</a>
+          <a href="/how-it-works/">How it works</a>
+          <a href="/compare/">Compare</a>
+          <a href="/proof/">Proof</a>
+          <a href="/install/">Install</a>
+          <a href="/tutorial/">Tutorial</a>
+          <a href="/glossary/">Glossary</a>
+          <a href="/ns/">Namespace</a>
+          <a href="/changelog/">Changelog</a>
+        </div>
+      </div>
+    </div>
+    <!-- headwater:footer end -->
+  </div>
+</footer>
+
+<script data-headwater="site-script">
+document.querySelector('.nav-toggle')?.addEventListener('click', () => {
+  const navlinks = document.querySelector('.navlinks');
+  const toggle = document.querySelector('.nav-toggle');
+  navlinks.classList.toggle('open');
+  toggle.setAttribute('aria-expanded', toggle.getAttribute('aria-expanded') === 'false' ? 'true' : 'false');
+});
+for (const button of document.querySelectorAll('button.copy')) {
+  const line = button.parentElement.querySelector('div');
+  const label = button.getAttribute('aria-label');
+  button.hidden = false;
+  button.addEventListener('click', async () => {
+    const text = line.textContent.replace('▍', '').replace(/^\s*\$\s*/, '').trim();
+    try {
+      await navigator.clipboard.writeText(text);
+      button.dataset.state = 'copied';
+      button.setAttribute('aria-label', 'Copied');
+    } catch {
+      const range = document.createRange();
+      range.selectNodeContents(line);
+      getSelection().removeAllRanges();
+      getSelection().addRange(range);
+    }
+    setTimeout(() => {
+      delete button.dataset.state;
+      button.setAttribute('aria-label', label);
+    }, 1600);
+  });
+}
+</script>
+
+</body>
+</html>

@@ -210,7 +210,7 @@ Two more inputs are not about time. Each one is a file outside the census, so no
 
 **The observation snapshot** (`needs_observations`) is an input at edge grain. An edge-scoped check that declares it receives the committed observation snapshot. The snapshot is neither endpoint of the edge, so no endpoint digest moves when only the snapshot changes. The flag joins the cache key, and the digest of the snapshot joins the read set. [#937](https://github.com/headwater-ai/headwater/issues/937) found the failure that this prevents. A rule read the snapshot from its own field. The engine then cached its verdict against a key that could not see an edit to that file. `relation.target.verification.suspect` is the one rule that reads it.
 
-The corpus-scoped view carries four more `NEEDS_` constants: `NEEDS_LINKS`, `NEEDS_ANCHORS`, `NEEDS_GRAPH` and `NEEDS_ORPHANED`. They are not `Scope` flags. The first three join no cache key, because each one is a reading of documents that the instance already reads. `NEEDS_ORPHANED` joins the key as a value that the caller injects, and not as a file of the read set. The doc comment of each constant in `engine/crates/check/src/scope.rs` says why.
+The corpus-scoped view carries four more `NEEDS_` constants that are not `Scope` flags. The [Checks and cache](../subsystems/checks-and-cache.md#the-four-corpus-view-constants-that-are-not-scope-flags) spec says which of them join the cache key.
 
 ## Instances, and why coverage needs them
 

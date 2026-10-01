@@ -1,0 +1,114 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# A preview of https://headwater.tools/ for a pull request that asks for one.
+#
+# A maintainer adds the `site-preview` label to a pull request. This job then
+# builds the site from the head of the branch, exactly as `deploy-site.yml`
+# builds it, and uploads it as a preview version of the Worker with
+# `tools/site/preview-site.sh`. An uploaded version takes no traffic, so the
+# live site does not move. Each later push to the branch uploads again under
+# the same alias, `pr-<number>`, and the one comment this job keeps on the
+# pull request names the URL and the commit it shows. Remove the label to
+# stop.
+#
+# Three conditions on the job, and each one only takes work away:
+#
+#   - The label is on the pull request. On a `labeled` event the label just
+#     added must be this one, so adding an unrelated label does not rebuild.
+#   - The branch is in this repository. A fork's pull request gets no secrets
+#     on `pull_request`, and this workflow never uses `pull_request_target`,
+#     which would hand them to code from the fork.
+#   - The event is `pull_request`, so it runs on a hosted runner, as every
+#     pull request job here does (HW-PD-0013).
+#
+# `tools/repo/release-guide-fixtures.sh` holds all three, and that no step here
+# runs `wrangler deploy` or `tools/site/deploy-site.sh`: `deploy-site.yml` stays
+# the one deploy of the live site.
+name: Preview the site
+
+on:
+  pull_request:
+    types: [labeled, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  preview:
+    name: Preview the site
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository
+      && contains(github.event.pull_request.labels.*.name, 'site-preview')
+      && (github.event.action != 'labeled' || github.event.label.name == 'site-preview')
+    runs-on: ubuntu-latest
+    # A newer push to the same pull request supersedes an older preview.
+    concurrency:
+      group: preview-site-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
+    steps:
+      - name: The two Cloudflare secrets are set
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "::error::No preview: set both repository secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID."
+            exit 1
+          fi
+      - uses: actions/checkout@v4
+        with:
+          # The branch as pushed, not the merge with main, so the preview shows
+          # what the pull request carries.
+          ref: ${{ github.event.pull_request.head.sha }}
+      - name: The cargo cache
+        # The key `deploy-site.yml` and the `headwater` job of `ci.yml` use.
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
+            engine/target
+          key: cargo-${{ runner.os }}-headwater-${{ hashFiles('engine/Cargo.lock') }}
+          restore-keys: cargo-${{ runner.os }}-headwater-
+      - name: The toolchain this build needs
+        run: |
+          rustup update --no-self-update stable
+          rustup default stable
+      - name: Build the engine
+        run: cargo build --release -p headwater-cli --locked
+        working-directory: engine
+      - name: The site toolchain
+        # The pins of `deploy-site.yml`.
+        run: |
+          python3 -m pip install --user --break-system-packages \
+            mkdocs==1.6.1 pymdown-extensions==10.11.2 PyYAML
+      - name: Upload the preview
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: sh tools/site/preview-site.sh "pr-${{ github.event.pull_request.number }}"
+      - name: Name the preview on the pull request
+        # One comment per pull request, found by its first line and edited in
+        # place, so a branch pushed ten times carries one comment and not ten.
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          marker='<!-- headwater:site-preview -->'
+          url=$(cat .headwater/site-preview-url)
+          body="$marker
+          **Site preview:** $url
+
+          Built from ${SHA:0:8}. Each push to this branch updates it while the \`site-preview\` label is on. The live site is unchanged."
+          id=$(gh api --paginate "repos/$REPO/issues/$PR/comments" \
+            -q ".[] | select(.user.login == \"github-actions[bot]\" and (.body | startswith(\"$marker\"))) | .id" | head -n 1)
+          if [ -n "$id" ]; then
+            gh api -X PATCH "repos/$REPO/issues/comments/$id" -f body="$body" > /dev/null
+          else
+            gh pr comment "$PR" --repo "$REPO" --body "$body"
+          fi
+          echo "Preview: $url" >> "$GITHUB_STEP_SUMMARY"

@@ -50,6 +50,55 @@ A harness log carries the calls and not the rest of the contract below. Each val
 - The six identity members are `lock`, `tree`, `selection`, `read_set`, `seed` and `harness`, copied from the plan.
 - `served_version` and `cost_cents` are derived from the provider metadata of the run, because a usage record carries token counts and not cents.
 
+## A session reads its workspace and nothing else of the host
+
+A probe measures what the workspace gives a session. A session that can read outside its workspace measures the host instead. In the 2026-09-30 batch, 51 of 658 sessions named a path outside the workspace. 16 of 658 named a checkout of this repository. So the driver confines each session, and it refuses a session that it cannot confine.
+
+### What the session can read
+
+`tools/probe/probe-record.sh` runs the harness under `bwrap`. The file system of the session holds these items and no other:
+
+- `/usr` and `/etc`, read-only, with `/bin`, `/lib` and their siblings as the host has them.
+- A private `/proc`, `/dev` and `/tmp`.
+- The workspace, read-write, at its own path.
+- The harness binary, read-only, at a path of its own.
+- The log directory of the run, read-write, because the intent hook writes there.
+- A configuration directory of the session, read-write.
+
+So the session cannot read a copy of this repository, another tree of its batch, or the home directory of the host. The driver also clears the environment, so no token of the host reaches the session.
+
+### The configuration the session runs under
+
+The configuration directory starts empty. The driver copies the credentials of the host into it, and it removes that copy when the session ends. `HOME` and `CLAUDE_CONFIG_DIR` both name this directory. So no user `CLAUDE.md`, skill, plugin, setting or auto-memory of the host loads.
+
+The driver also passes `--setting-sources project,local`. The present arm still loads the hooks and skills of the workspace, because they are what a campaign measures. Every arm runs in the permission mode `dontAsk`, with one list of allowed tools, and with `WebSearch` and `WebFetch` denied.
+
+The batches of 2026-09-28 and 2026-09-30 ran under `bypassPermissions` and the configuration of the host. A rate from a batch under this contract does not compare with a rate from those batches. Each transcript states this in its prose.
+
+### The init line is the check
+
+The first `system` line of the session log, with subtype `init`, states what the session loaded. The driver refuses the transcript with exit 12 when that line shows one of these items:
+
+- The permission mode `bypassPermissions`.
+- A plugin whose `path` is not `builtin`.
+- An MCP server that the `.mcp.json` of the workspace does not declare.
+- A skill whose name is a skill directory of the host, or a skill that carries a plugin namespace.
+- A memory path outside the configuration directory.
+
+A log with no init line is refused too, because it does not state what loaded. This refusal comes after the session, so that session has spent. The transcript also counts the paths outside the workspace that the session named, because a session cannot see a refusal from outside.
+
+### What a host must provide
+
+A recording host must provide these three items:
+
+- `bwrap`, with user namespaces that an unprivileged user can create. Without them, the driver exits 12 before any harness call, so nothing is spent. No variable turns the confinement off.
+- Credentials for the harness, in `.credentials.json` of the user configuration of the host.
+- A batch directory outside `$HOME`. `tools/probe/campaign.sh` refuses an output directory under it.
+
+### The channel that stays open
+
+The confinement shares the network of the host, because the session needs the provider API. So a `Bash` call can still reach the public repository with `curl`, `gh api` or `git clone`. Only an egress proxy that allows one host, or a network namespace with one route, closes this channel. That is a provision of the host, and no recorder of this repository has it yet.
+
 ## The prompt is the task section, and the answer is the final line
 
 Two values cross the boundary between a probe document and a session. The driver sends one in and it reads one out. This part fixes both, and `tools/probe/probe-record.sh` is the recorder of this repository that implements them.
