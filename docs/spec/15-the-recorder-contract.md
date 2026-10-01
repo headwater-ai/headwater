@@ -16,6 +16,9 @@ provenance:
 relations:
   governs:
     - tools/probe/probe-record.sh
+    - engine/crates/probe/src/intake.rs
+    - engine/crates/probe/src/grade.rs
+    - engine/crates/generate/src/probe_result.rs
   traces_to:
     - HW-SPEC-ai-integration
 ---

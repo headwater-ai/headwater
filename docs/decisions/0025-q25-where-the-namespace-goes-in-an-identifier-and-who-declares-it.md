@@ -18,6 +18,7 @@ relations:
     - docs/taxonomies/decision-record/bundle.yml
     - engine/crates/meta/meta-schema.yml
     - engine/crates/resolve/src/rules.rs
+    - engine/crates/meta/src/identifier.rs
 ---
 
 # Q25 — Where the namespace goes in an identifier, and who declares it

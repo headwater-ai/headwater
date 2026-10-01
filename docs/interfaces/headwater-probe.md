@@ -9,6 +9,8 @@ relations:
   governs:
     - [engine/crates/cli/src/lib.rs, engine/crates/cli/src/main.rs]
     - engine/crates/probe/src/lib.rs
+    - engine/crates/probe/src/plan.rs
+    - engine/crates/probe/src/budget.rs
     - .headwater/probe.yml
 ---
 
