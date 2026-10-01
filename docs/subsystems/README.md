@@ -5,4 +5,5 @@
 The documents on this shelf, in the reading order this corpus derives.
 
 - [Graph build](graph-build.md) — How the graph crate indexes identifiers and paths, turns relation blocks into edges, binds links and anchors, and reports each miss without a severity. (asserted, and no human has accepted it)
+- [Parse and census](parse-and-census.md) — How three crates parse each document, walk the corpus root, resolve each kind with its derivation, give each file one census outcome, and run git. (asserted, and no human has accepted it)
 - [Taxonomy resolution](taxonomy-resolution.md) — How six crates load taxonomy sources, prove that overlays commute, merge them, resolve references last, and write the content-hashed lock. (asserted, and no human has accepted it)

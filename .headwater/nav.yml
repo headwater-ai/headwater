@@ -578,6 +578,7 @@ nav:
   - "Engine subsystems":
       - "Engine subsystems": "subsystems/README.md"
       - "Graph build": "subsystems/graph-build.md"
+      - "Parse and census": "subsystems/parse-and-census.md"
       - "Taxonomy resolution": "subsystems/taxonomy-resolution.md"
   - "Tutorials":
       - "Tutorials": "tutorials/README.md"
