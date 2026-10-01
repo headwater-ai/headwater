@@ -63,13 +63,14 @@ The public Rust API of each crate is not in this spec ([HW-DR-0098](../decisions
 
 No code in the three crates reaches a model. A probe run and a sweep each need a model in the middle. The engine does the parts before and after the middle part, and a recorder or an agent does the middle part. So no build waits for a model. A model that nobody can reach means only that no file came back.
 
-Each of the three crates names `headwater-check` in its `Cargo.toml`. `probe` and `sweep` name it for the rule set and the finding shape, and `conformance` names it for `Date`. So `headwater-check` can name none of them, because the compiler refuses a cycle. No rule reads a measurement, and `check --strict` cannot see one.
+Each of the three crates names `headwater-check` in its `Cargo.toml`. `probe` and `sweep` name it for the rule set and the finding shape. `conformance` names it for `Date` and for the `fill` and `paint` modules of its text renderer. So `headwater-check` can name none of them, because the compiler refuses a cycle. No rule reads a measurement, and `check --strict` cannot see one.
 
-Three crates link these crates, and the `Cargo.toml` of each one states why:
+Two crates outside this subsystem name one of these crates as a dependency, and the `Cargo.toml` of each one states why:
 
 - `cli` links all three, because the verbs are there.
-- `generate` links `probe`. A probe result is a projection over a committed transcript, so `generate` calls the intake and the grader to write it.
-- `conformance` links `generate`, because the `projections.current` reading calls `headwater_generate::check`.
+- `generate` links `probe`. A probe result is a projection over a committed transcript. So each `generate` run and each `generate --check` gate calls the intake and the grader.
+
+`conformance` links `generate`, because the `projections.current` reading calls `headwater_generate::check`. So `conformance` reaches `probe` through `generate`, and `compat` does the same, because it links `generate` too.
 
 None of the three links `headwater-fetch`, which is the crate that holds the HTTP client. `cli` links it under an optional feature, and `engine/crates/cli/tests/network_boundary.rs` holds the crate graph to that ([HW-DR-0075](../decisions/0075-the-vendor-verb-may-take-a-location-and-the-fetch-lives-only-in-a-crate-the-checking-loop-never-links.md)).
 
@@ -171,7 +172,7 @@ The waivers live in the consumer declaration and not in the package. `taxonomy v
 
 ### The sweep JSON is the finding shape with two more members
 
-`json.rs` writes one sweep in the finding shape of spec 4, with `provenance` and `evidence` on each finding. `headwater_adapter::json` writes the same members for a run of the checks. The two are separate functions over separate types, because `headwater-check` cannot name this crate and so a `Run` cannot hold a sweep finding. The `sample` member states in the artifact that the set is a sample, so a consumer that counts findings meets the warning.
+`json.rs` writes one sweep in the finding shape of spec 4, with `provenance` and `evidence` on each finding. `headwater_adapter::json` writes the same finding shape for a run of the checks, without those two members. The two are separate functions over separate types, because `headwater-check` cannot name this crate and so a `Run` cannot hold a sweep finding. The `sample` member states in the artifact that the set is a sample, so a consumer that counts findings meets the warning.
 
 ## Invariants
 
