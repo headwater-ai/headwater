@@ -116,8 +116,10 @@
 # wraps them in a transcript with `headwater new`, because a transcript is an
 # authored document of this corpus and this script writes nothing inside it.
 #
-# It needs `git`, `jq`, `tar`, `awk` and the `claude` harness, and it spends
-# real money.
+# It needs `git`, `jq`, `tar`, `awk`, `bwrap` and the `claude` harness, and it
+# spends real money. Each session runs confined to its workspace, under a
+# configuration directory of its own at `<out>/config/<session>`, as
+# `probe-record.sh` describes (#1467).
 #
 # ## Exit status
 #
@@ -127,7 +129,8 @@
 #   3   a tool is missing, or no engine is built
 #   4   the checkout is dirty, or `HEAD` moved during the batch
 #   5   the plan refuses a line of the spec
-#   6   the output directory is inside this checkout
+#   6   the output directory is inside this checkout, or a batch's output
+#       directory is under `$HOME` (#1467)
 #   7   a session of the batch did not record, or a line's sessions disagree on
 #       their identity at assembly
 
@@ -183,6 +186,18 @@ case "$out" in
         exit 6
         ;;
 esac
+# A session runs confined to its workspace (#1467), and a batch directory
+# under `$HOME` would sit beside the host's own configuration and copies of
+# this repository. Assembly of a batch already recorded there still runs.
+home_real=$(cd "${HOME:-/nonexistent}" 2>/dev/null && pwd -P) || home_real=
+if [ "$assemble" = 0 ] && [ -n "$home_real" ]; then
+    case "$out" in
+        "$home_real"|"$home_real"/*)
+            echo "campaign: the output directory is under \$HOME ($home_real). Put the batch outside it, such as under /mnt or /var/tmp (#1467)." >&2
+            exit 6
+            ;;
+    esac
+fi
 
 # ---------------------------------------------------------------------------
 # One job, run by a worker. The line is the job's row of `<out>/jobs`.
@@ -245,9 +260,15 @@ run_job() {
     rm -f "$dir/status" "$dir/cost"
     ws=$out/ws/$name
     rm -rf "$ws"
+    # The session's own configuration directory, outside every tree (#1467).
+    # The driver requires it empty, and copies the host's credentials into it
+    # for the session alone.
+    rm -rf "$out/config/$name"
+    mkdir -p "$out/config/$name"
     cp -a "$out/trees/$tier-$arm" "$ws" || { echo 2 > "$dir/status"; return 0; }
     # shellcheck disable=SC2086
-    sh "$root/tools/probe/probe-record.sh" --probe "$probe" --session "$name" \
+    HEADWATER_PROBE_CONFIG_DIR=$out/config/$name \
+        sh "$root/tools/probe/probe-record.sh" --probe "$probe" --session "$name" \
         --task-file "$out/tasks/$probe.md" --workspace "$ws" --model "$model" \
         --tier "$tier" --arm "$arm" --category "$category" $excludes \
         ${repetitions:+--repetitions "$repetitions"} \
@@ -345,7 +366,7 @@ fi
     exit 2
 }
 [ -f "$spec" ] || { echo "campaign: no spec at $spec" >&2; exit 2; }
-for tool in git jq tar awk cargo claude; do
+for tool in git jq tar awk cargo claude bwrap; do
     command -v "$tool" >/dev/null 2>&1 || { echo "campaign: \`$tool\` is not on the path." >&2; exit 3; }
 done
 [ -x "$engine" ] || { echo "campaign: no engine is built at $root/engine/target." >&2; exit 3; }

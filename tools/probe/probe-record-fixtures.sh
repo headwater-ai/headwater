@@ -1362,22 +1362,35 @@ same "a declaration with no folds lists none, so the guard refuses every file ou
 if [ -x "$engine" ] && [ -f "$root/.headwater/taxonomy.lock" ]; then
     mkdir -p "$scratch/ws" "$scratch/nomodel" "$scratch/probe-log"
     printf 'answer the question\n' > "$scratch/task.md"
+    # Every stub below runs inside the driver's confinement (#1467), so it can
+    # write only under the workspace and the probe log directory. A stub that
+    # records its arguments writes them to the log directory, which the driver
+    # binds read-write and names in `HEADWATER_SHADOW_LOG_DIR`.
+    HEADWATER_PROBE_LOG_DIR=$scratch/probe-log
+    export HEADWATER_PROBE_LOG_DIR
+    args=$scratch/probe-log/claude-args
 
-    cat > "$scratch/bin/claude" <<STUB
+    # The confinement hides this checkout from the session, so the live case
+    # runs the hook from a workspace that carries its own engine, as
+    # `campaign.sh` builds one.
+    mkdir -p "$scratch/live-ws/.claude" "$scratch/live-ws/engine/target/dev-release"
+    cp -a "$root/.claude/hooks" "$scratch/live-ws/.claude/hooks"
+    cp "$engine" "$scratch/live-ws/engine/target/dev-release/headwater"
+    cat > "$scratch/bin/claude" <<'STUB'
 #!/bin/sh
 # A stub harness. It submits one prompt through the real intent hook, then
 # writes the two stream lines the driver's derivations read.
-printf '{"hook_event_name":"UserPromptSubmit","session_id":"stub-session","cwd":"%s","user_input":"what does a check know about the front matter of a document"}' "$root" \\
-    | CLAUDE_PROJECT_DIR="$root" sh "$root/.claude/hooks/intent.sh" >/dev/null 2>&1
+printf '{"hook_event_name":"UserPromptSubmit","session_id":"stub-session","cwd":"%s","user_input":"what does a check know about the front matter of a document"}' "$PWD" \
+    | CLAUDE_PROJECT_DIR="$PWD" sh "$PWD/.claude/hooks/intent.sh" >/dev/null 2>&1
 printf '%s\n' '{"type":"system","subtype":"init","model":"claude-haiku-4-5","session_id":"s9"}'
 printf '%s\n' '{"type":"result","subtype":"success","total_cost_usd":0.01,"modelUsage":{"claude-haiku-4-5-20251001":{"inputTokens":10}}}'
 STUB
     chmod +x "$scratch/bin/claude"
 
-    HEADWATER_PROBE_LOG_DIR="$scratch/probe-log" HEADWATER_MODEL_DIR="$scratch/nomodel" \
+    HEADWATER_MODEL_DIR="$scratch/nomodel" \
         PATH="$scratch/bin:$PATH" sh "$driver" --probe "HW-PROBE-$tombstone" \
         --session fixture-live --task-file "$scratch/task.md" \
-        --workspace "$scratch/ws" > "$scratch/live-run.md" 2>"$scratch/live-run.err"
+        --workspace "$scratch/live-ws" > "$scratch/live-run.md" 2>"$scratch/live-run.err"
     same "the driver runs a session through the stub harness" "0" "$?"
     present "the transcript states that the hook was live" \
         "The intent hook was live in this session." "$scratch/live-run.md"
@@ -1432,7 +1445,7 @@ STUB
     # holds that the cap reaches the harness.
     cat > "$scratch/bin/claude" <<STUB
 #!/bin/sh
-printf '%s\n' "\$@" > "$scratch/claude-args"
+printf '%s\n' "\$@" > "\$HEADWATER_SHADOW_LOG_DIR/claude-args"
 printf '%s\n' '{"type":"system","subtype":"init","model":"claude-haiku-4-5","session_id":"s11"}'
 printf '%s\n' '{"type":"assistant","message":{"content":[{"type":"tool_use","id":"t1","name":"Read","input":{"file_path":"docs/x.md"}}]}}'
 printf '%s\n' '{"type":"result","subtype":"error_max_turns","is_error":true,"num_turns":81,"result":"withheld","total_cost_usd":0.02,"modelUsage":{"claude-haiku-4-5-20251001":{"inputTokens":10}}}'
@@ -1449,7 +1462,7 @@ STUB
     present "and the answer is null, because a capped session gave none" \
         "answer: null" "$scratch/capped-run.md"
     same "the cap reaches the harness" "80" \
-        "$(awk 'prev == "--max-turns" { print; exit } { prev = $0 }' "$scratch/claude-args")"
+        "$(awk 'prev == "--max-turns" { print; exit } { prev = $0 }' "$args")"
 
     # Any other nonzero exit is still a failure, even with a `result` line.
     cat > "$scratch/bin/claude" <<'STUB'
@@ -1469,12 +1482,12 @@ STUB
     # the plan prints it in its cost section.
     cat > "$scratch/bin/claude" <<STUB
 #!/bin/sh
-printf '%s\n' "\$@" > "$scratch/claude-args"
+printf '%s\n' "\$@" > "\$HEADWATER_SHADOW_LOG_DIR/claude-args"
 printf '%s\n' '{"type":"system","subtype":"init","model":"claude-haiku-4-5","session_id":"s13"}'
 printf '%s\n' '{"type":"result","subtype":"success","result":"withheld","total_cost_usd":0.01,"modelUsage":{"claude-haiku-4-5-20251001":{"inputTokens":10}}}'
 STUB
     chmod +x "$scratch/bin/claude"
-    rm -f "$scratch/claude-args"
+    rm -f "$args"
     # One repetition, because the six arms of the campaign tier at its declared
     # 30 are over its ceiling since #1472, and the ceiling is not this case.
     PATH="$scratch/bin:$PATH" sh "$driver" --probe "HW-PROBE-$tombstone" --session fixture-tier-cap \
@@ -1483,7 +1496,7 @@ STUB
         >/dev/null 2>"$scratch/tier-cap.err"
     same "a campaign session runs under the tier's declared cap" "0" "$?"
     same "and the cap the plan declares reaches the harness" "80" \
-        "$(awk 'prev == "--max-turns" { print; exit } { prev = $0 }' "$scratch/claude-args" 2>/dev/null)"
+        "$(awk 'prev == "--max-turns" { print; exit } { prev = $0 }' "$args" 2>/dev/null)"
 
     # The MCP servers and the arm's delta (#1472). Every arm runs with
     # `--strict-mcp-config`, so no server of the recording host loads. The
@@ -1491,12 +1504,12 @@ STUB
     # name, because a project server does not load under `claude -p` without
     # approval. The transcript states the arm's delta and the MCP calls.
     same "every session runs with --strict-mcp-config" "1" \
-        "$(grep -cx -- '--strict-mcp-config' "$scratch/claude-args" 2>/dev/null)"
+        "$(grep -cx -- '--strict-mcp-config' "$args" 2>/dev/null)"
     same "and a workspace with no .mcp.json names no server" "0" \
-        "$(grep -cx -- '--mcp-config' "$scratch/claude-args" 2>/dev/null)"
+        "$(grep -cx -- '--mcp-config' "$args" 2>/dev/null)"
     cat > "$scratch/bin/claude" <<STUB
 #!/bin/sh
-printf '%s\n' "\$@" > "$scratch/claude-args"
+printf '%s\n' "\$@" > "\$HEADWATER_SHADOW_LOG_DIR/claude-args"
 printf '%s\n' '{"type":"system","subtype":"init","model":"claude-haiku-4-5","session_id":"s16"}'
 printf '%s\n' '{"type":"assistant","message":{"id":"m1","content":[{"type":"tool_use","id":"t1","name":"mcp__headwater__route","input":{"task":"x"}}]}}'
 printf '%s\n' '{"type":"user","message":{"content":[{"type":"tool_result","tool_use_id":"t1","content":"none"}]}}'
@@ -1506,7 +1519,7 @@ printf '%s\n' '{"type":"result","subtype":"success","result":"withheld","total_c
 STUB
     chmod +x "$scratch/bin/claude"
     cp "$root/tools/probe/arms/mcp/.mcp.json" "$scratch/ws/.mcp.json"
-    rm -f "$scratch/claude-args"
+    rm -f "$args"
     PATH="$scratch/bin:$PATH" sh "$driver" --probe "HW-PROBE-$tombstone" --session fixture-mcp \
         --tier campaign --arm mcp --category sufficiency --repetitions 1 \
         --task-file "$scratch/task.md" --workspace "$scratch/ws" \
@@ -1515,16 +1528,16 @@ STUB
     rm -f "$scratch/ws/.mcp.json"
     same "and the driver passes the workspace's .mcp.json to the harness" \
         "$(cd "$scratch/ws" && pwd -P)/.mcp.json" \
-        "$(awk 'prev == "--mcp-config" { print; exit } { prev = $0 }' "$scratch/claude-args" 2>/dev/null)"
+        "$(awk 'prev == "--mcp-config" { print; exit } { prev = $0 }' "$args" 2>/dev/null)"
     same "and still passes --strict-mcp-config" "1" \
-        "$(grep -cx -- '--strict-mcp-config' "$scratch/claude-args" 2>/dev/null)"
+        "$(grep -cx -- '--strict-mcp-config' "$args" 2>/dev/null)"
     # `--mcp-config` takes one or more values, so the token after its path
     # must be a flag the driver always passes (verify round 1). An optional
     # one, such as `--model` or `--max-turns`, leaves the task text next to
     # the path whenever it is not set, and the harness reads the task as a
     # second config path.
     same "a flag the driver always passes follows the config path" "--strict-mcp-config" \
-        "$(awk 'prev == "--mcp-config" { getline; print; exit } { prev = $0 }' "$scratch/claude-args" 2>/dev/null)"
+        "$(awk 'prev == "--mcp-config" { getline; print; exit } { prev = $0 }' "$args" 2>/dev/null)"
     present "the transcript counts the calls to an MCP tool, and not the Read" \
         "The session made 1 call to a tool of an MCP server." "$scratch/mcp-arm.md"
     present "and states the arm's delta from the declaration" \
@@ -1574,7 +1587,7 @@ STUB
     # calls and a cut last line.
     cat > "$scratch/bin/claude" <<STUB
 #!/bin/sh
-printf '%s\n' "\$@" > "$scratch/claude-args"
+printf '%s\n' "\$@" > "\$HEADWATER_SHADOW_LOG_DIR/claude-args"
 printf '%s\n' '{"type":"system","subtype":"init","model":"claude-haiku-4-5","session_id":"s17"}'
 printf '%s\n' '{"type":"assistant","message":{"id":"m1","content":[{"type":"tool_use","id":"t1","name":"mcp__headwater__route","input":{"task":"x"}}]}}'
 printf '%s\n' '{"type":"assistant","message":{"id":"m2","content":[{"type":"tool_use","id":"t2","name":"mcp__headwater__explain","input":{"path":"x"}}]}}'
@@ -1590,6 +1603,193 @@ STUB
         "The session made 0 calls to a tool of an MCP server." "$scratch/cut.md"
     present "and is said to be uncounted" \
         "were not counted, because its stream did not parse as JSON" "$scratch/cut.md"
+
+    # THE decisive case of #1467: a session reads only its workspace. A file
+    # outside it holds a marker, and so does a sibling tree of the kind
+    # `campaign.sh` keeps next to every workspace (the oracle). The stub runs
+    # inside the driver's real confinement and tries each road to them: the
+    # absolute path, the relative path to the sibling, a search of the whole
+    # file system, a process's root under `/proc`, and this checkout. It
+    # writes what it got into its own workspace. With the confinement
+    # removed, the marker reaches `found.txt`.
+    if command -v bwrap >/dev/null 2>&1; then
+        conf=$(cd "$scratch" && pwd -P)
+        rm -rf "$conf/outside" "$conf/trees" "$conf/conf-ws"
+        mkdir -p "$conf/outside" "$conf/trees/oracle" "$conf/conf-ws"
+        printf 'HW-LEAK-MARKER-1467\n' > "$conf/outside/secret.md"
+        printf 'HW-LEAK-MARKER-1467\n' > "$conf/trees/oracle/secret.md"
+        cat > "$scratch/bin/claude" <<STUB
+#!/bin/sh
+{
+    cat "$conf/outside/secret.md"
+    cat ../trees/oracle/secret.md
+    find / -name secret.md
+    for p in /proc/[0-9]*/root$conf/outside/secret.md; do cat "\$p"; done
+    head -1 "$root/CLAUDE.md"
+    ls /home /mnt
+} > found.txt 2>/dev/null
+printf '%s\n' '{"type":"system","subtype":"init","model":"claude-haiku-4-5","session_id":"s20"}'
+printf '%s\n' '{"type":"assistant","message":{"id":"m1","content":[{"type":"tool_use","id":"t1","name":"Read","input":{"file_path":"$conf/outside/secret.md"}}]}}'
+printf '%s\n' '{"type":"assistant","message":{"id":"m2","content":[{"type":"tool_use","id":"t2","name":"Bash","input":{"command":"cat $conf/outside/secret.md ../trees/oracle/secret.md; find / -name secret.md 2>/dev/null; ls /home /mnt"}}]}}'
+printf '%s\n' '{"type":"assistant","message":{"id":"m3","content":[{"type":"tool_use","id":"t3","name":"Grep","input":{"pattern":"x","path":"$conf/conf-ws/docs"}}]}}'
+printf '%s\n' '{"type":"result","subtype":"success","result":"withheld","total_cost_usd":0.01,"modelUsage":{"claude-haiku-4-5-20251001":{"inputTokens":10}}}'
+STUB
+        chmod +x "$scratch/bin/claude"
+        PATH="$scratch/bin:$PATH" sh "$driver" --probe "HW-PROBE-$tombstone" --session fixture-confined \
+            --task-file "$scratch/task.md" --workspace "$conf/conf-ws" \
+            >"$scratch/confined.md" 2>"$scratch/confined.err"
+        same "a confined session records" "0" "$?"
+        same "and the stub ran inside its workspace" "yes" \
+            "$([ -f "$conf/conf-ws/found.txt" ] && echo yes || echo no)"
+        absent "a file outside the workspace is not readable from the session" \
+            "HW-LEAK-MARKER-1467" "$conf/conf-ws/found.txt"
+        absent "and no search of the file system finds it, in a sibling tree either" \
+            "secret.md" "$conf/conf-ws/found.txt"
+        absent "and this checkout is not readable" "Headwater authoring conventions" "$conf/conf-ws/found.txt"
+        same "and nothing else outside it reached the session: what it found is empty" "" \
+            "$(cat "$conf/conf-ws/found.txt" 2>/dev/null)"
+        present "the transcript says the session ran confined to its workspace" \
+            "The session ran confined to its workspace" "$scratch/confined.md"
+        present "and names the configuration directory it ran under" \
+            "The session ran under the configuration directory" "$scratch/confined.md"
+        present "and counts the paths outside the workspace it named, none of them readable" \
+            "The session named 3 paths outside its workspace that the confinement does not bind, so no file of the host at any of them was readable." \
+            "$scratch/confined.md"
+
+        # No confinement, no session (#1467). A host with no `bwrap`, or one
+        # that cannot create a namespace, refuses with 12 before any harness
+        # call, so a refusal spends nothing. No variable turns this off.
+        cat > "$scratch/bin/claude" <<'STUB'
+#!/bin/sh
+: > harness-ran
+printf '%s\n' '{"type":"system","subtype":"init","model":"claude-haiku-4-5","session_id":"s21"}'
+printf '%s\n' '{"type":"result","subtype":"success","result":"withheld","total_cost_usd":0.01,"modelUsage":{"claude-haiku-4-5-20251001":{"inputTokens":10}}}'
+STUB
+        chmod +x "$scratch/bin/claude"
+        rm -rf "$scratch/nobwrap"
+        mkdir -p "$scratch/nobwrap"
+        for dir in /usr/local/bin /usr/bin /bin; do
+            [ -d "$dir" ] || continue
+            for tool in "$dir"/*; do
+                name=${tool##*/}
+                [ "$name" = bwrap ] && continue
+                [ -e "$scratch/nobwrap/$name" ] || [ -L "$scratch/nobwrap/$name" ] \
+                    || ln -s "$tool" "$scratch/nobwrap/$name" 2>/dev/null
+            done
+        done
+        rm -f "$conf/conf-ws/harness-ran"
+        PATH="$scratch/bin:$scratch/nobwrap" sh "$driver" --probe "HW-PROBE-$tombstone" --session fixture-no-bwrap \
+            --task-file "$scratch/task.md" --workspace "$conf/conf-ws" \
+            >/dev/null 2>"$scratch/no-bwrap.err"
+        same "a host with no bwrap refuses with 12" "12" "$?"
+        present "and names what is missing" "no \`bwrap\`" "$scratch/no-bwrap.err"
+        same "and the harness never ran" "no" "$([ -e "$conf/conf-ws/harness-ran" ] && echo yes || echo no)"
+        mkdir -p "$scratch/bad-bwrap"
+        printf '#!/bin/sh\necho "bwrap: setting up uid map: Permission denied" >&2\nexit 1\n' > "$scratch/bad-bwrap/bwrap"
+        chmod +x "$scratch/bad-bwrap/bwrap"
+        PATH="$scratch/bad-bwrap:$scratch/bin:$PATH" sh "$driver" --probe "HW-PROBE-$tombstone" --session fixture-bad-bwrap \
+            --task-file "$scratch/task.md" --workspace "$conf/conf-ws" \
+            >/dev/null 2>"$scratch/bad-bwrap.err"
+        same "a bwrap that cannot create a namespace refuses with 12" "12" "$?"
+        present "and prints what bwrap said" "setting up uid map" "$scratch/bad-bwrap.err"
+        same "and the harness never ran" "no" "$([ -e "$conf/conf-ws/harness-ran" ] && echo yes || echo no)"
+
+        # The host's configuration reaches no session (#1467). The session
+        # runs under a fresh configuration directory that holds a copy of the
+        # host's credentials and nothing else, and no variable of the host's
+        # environment. The stub reports what it sees into the log directory.
+        mkdir -p "$conf/host-config/skills/obsidian"
+        printf -- '---\nname: obsidian\ndescription: x\n---\n' > "$conf/host-config/skills/obsidian/SKILL.md"
+        printf '{"fixture":"credentials"}\n' > "$conf/host-config/.credentials.json"
+        printf '# the host CLAUDE.md\n' > "$conf/host-config/CLAUDE.md"
+        cat > "$scratch/bin/claude" <<'STUB'
+#!/bin/sh
+printf '%s\n' "$@" > "$HEADWATER_SHADOW_LOG_DIR/claude-args"
+{
+    printf 'HOME=%s\n' "$HOME"
+    printf 'CLAUDE_CONFIG_DIR=%s\n' "$CLAUDE_CONFIG_DIR"
+    printf 'GH_TOKEN=%s\n' "${GH_TOKEN:-unset}"
+    printf 'held=%s\n' "$(ls -A "$CLAUDE_CONFIG_DIR" | tr '\n' ' ')"
+    printf 'credentials=%s\n' "$(cat "$CLAUDE_CONFIG_DIR/.credentials.json")"
+} > "$HEADWATER_SHADOW_LOG_DIR/seen"
+cat "$HEADWATER_SHADOW_LOG_DIR/init.jsonl"
+printf '%s\n' '{"type":"result","subtype":"success","result":"withheld","total_cost_usd":0.01,"modelUsage":{"claude-haiku-4-5-20251001":{"inputTokens":10}}}'
+STUB
+        chmod +x "$scratch/bin/claude"
+        rm -rf "$conf/cfg-clean"
+        printf '{"type":"system","subtype":"init","model":"claude-haiku-4-5","permissionMode":"dontAsk","plugins":[{"name":"telemetry","path":"builtin"}],"mcp_servers":[],"skills":["headwater-engine","init"],"memory_paths":{"auto":"%s/cfg-clean/projects/x/memory/"},"session_id":"s22"}\n' \
+            "$conf" > "$scratch/probe-log/init.jsonl"
+        rm -f "$args"
+        GH_TOKEN=fixture-token HEADWATER_PROBE_HOST_CONFIG="$conf/host-config" HEADWATER_PROBE_CONFIG_DIR="$conf/cfg-clean" \
+            PATH="$scratch/bin:$PATH" sh "$driver" --probe "HW-PROBE-$tombstone" --session fixture-clean-init \
+            --task-file "$scratch/task.md" --workspace "$conf/conf-ws" \
+            >"$scratch/clean-init.md" 2>"$scratch/clean-init.err"
+        same "a session whose init line shows no host configuration records" "0" "$?"
+        present "its HOME is the configuration directory" "HOME=$conf/cfg-clean" "$scratch/probe-log/seen"
+        present "and so is CLAUDE_CONFIG_DIR" "CLAUDE_CONFIG_DIR=$conf/cfg-clean" "$scratch/probe-log/seen"
+        present "that directory holds the credentials and nothing else" "held=.credentials.json " "$scratch/probe-log/seen"
+        present "and the credentials are the host's" 'credentials={"fixture":"credentials"}' "$scratch/probe-log/seen"
+        present "no variable of the host's environment reaches the session" "GH_TOKEN=unset" "$scratch/probe-log/seen"
+        same "the copy of the credentials is removed when the session ends" "no" \
+            "$([ -e "$conf/cfg-clean/.credentials.json" ] && echo yes || echo no)"
+        present "the transcript names that configuration directory" "$conf/cfg-clean" "$scratch/clean-init.md"
+        same "the session loads project and local settings only" "project,local" \
+            "$(awk 'prev == "--setting-sources" { print; exit } { prev = $0 }' "$args" 2>/dev/null)"
+        same "and runs in a permission mode that asks nothing and bypasses nothing" "dontAsk" \
+            "$(awk 'prev == "--permission-mode" { print; exit } { prev = $0 }' "$args" 2>/dev/null)"
+        same "and names the tools it may use" "1" "$(grep -cx -- '--allowedTools' "$args" 2>/dev/null)"
+        same "and denies the web tools" "WebSearch,WebFetch" \
+            "$(awk 'prev == "--disallowedTools" { print; exit } { prev = $0 }' "$args" 2>/dev/null)"
+        same "and bypassPermissions is nowhere in its arguments" "0" "$(grep -c bypassPermissions "$args" 2>/dev/null)"
+        mkdir -p "$conf/cfg-clean"
+        printf 'x\n' > "$conf/cfg-clean/left-over"
+        same "a configuration directory that is not empty refuses with 2 before the harness" "2" \
+            "$(HEADWATER_PROBE_HOST_CONFIG="$conf/host-config" HEADWATER_PROBE_CONFIG_DIR="$conf/cfg-clean" \
+                PATH="$scratch/bin:$PATH" sh "$driver" --probe "HW-PROBE-$tombstone" --session fixture-used-config \
+                --task-file "$scratch/task.md" --workspace "$conf/conf-ws" >/dev/null 2>&1; echo $?)"
+
+        # The init line says what configuration the session loaded, and the
+        # driver refuses a session that loaded any of the host's (#1467,
+        # clause 4). One case per kind of leak, and one with no init line.
+        for refused in \
+            'bypass|"permissionMode":"bypassPermissions"|bypassPermissions' \
+            'plugin|"plugins":[{"name":"x","path":"/elsewhere/plugins/x"}]|plugin x' \
+            'mcp|"mcp_servers":[{"name":"claude.ai Gmail","status":"connected"}]|claude.ai Gmail' \
+            'host-skill|"skills":["headwater-engine","obsidian"]|skill obsidian' \
+            'namespaced|"skills":["anthropic-skills:docx"]|skill anthropic-skills:docx' \
+            'memory|"memory_paths":{"auto":"/elsewhere/memory/"}|/elsewhere/memory/'; do
+            kind=${refused%%|*}
+            rest=${refused#*|}
+            member=${rest%|*}
+            named=${rest##*|}
+            printf '{"type":"system","subtype":"init","model":"claude-haiku-4-5",%s,"session_id":"s23"}\n' \
+                "$member" > "$scratch/probe-log/init.jsonl"
+            HEADWATER_PROBE_HOST_CONFIG="$conf/host-config" PATH="$scratch/bin:$PATH" sh "$driver" \
+                --probe "HW-PROBE-$tombstone" --session "fixture-init-$kind" \
+                --task-file "$scratch/task.md" --workspace "$conf/conf-ws" \
+                >"$scratch/init-$kind.md" 2>"$scratch/init-$kind.err"
+            same "an init line with host configuration ($kind) refuses with 12" "12" "$?"
+            present "and names it ($kind)" "$named" "$scratch/init-$kind.err"
+        done
+        printf '{"type":"system","subtype":"api_retry"}\n' > "$scratch/probe-log/init.jsonl"
+        HEADWATER_PROBE_HOST_CONFIG="$conf/host-config" PATH="$scratch/bin:$PATH" sh "$driver" \
+            --probe "HW-PROBE-$tombstone" --session fixture-init-none \
+            --task-file "$scratch/task.md" --workspace "$conf/conf-ws" \
+            >/dev/null 2>"$scratch/init-none.err"
+        same "a stream with no init line refuses with 12, because its configuration cannot be read" "12" "$?"
+        # The mcp arm declares its server in the workspace, so that one loads.
+        cp "$root/tools/probe/arms/mcp/.mcp.json" "$conf/conf-ws/.mcp.json"
+        printf '{"type":"system","subtype":"init","model":"claude-haiku-4-5","mcp_servers":[{"name":"headwater","status":"connected"}],"session_id":"s24"}\n' \
+            > "$scratch/probe-log/init.jsonl"
+        HEADWATER_PROBE_HOST_CONFIG="$conf/host-config" PATH="$scratch/bin:$PATH" sh "$driver" \
+            --probe "HW-PROBE-$tombstone" --session fixture-init-declared \
+            --task-file "$scratch/task.md" --workspace "$conf/conf-ws" \
+            >/dev/null 2>"$scratch/init-declared.err"
+        same "a server the workspace declares in .mcp.json is not a leak" "0" "$?"
+        rm -f "$conf/conf-ws/.mcp.json" "$scratch/probe-log/init.jsonl" "$scratch/probe-log/seen"
+    else
+        fail "the confinement cases need bwrap" "no \`bwrap\` on the path, and a recorder without one records nothing (#1467)"
+    fi
 
     # Bash writes (#1384). A write made through `Bash` names no path in its
     # input, so the transform cannot see it in the log, and 22 of 30
@@ -1698,29 +1898,42 @@ STUB
         cp "$scratch/task.md" "$batch/tasks/HW-PROBE-$tombstone.md"
         cat > "$scratch/bin/claude" <<STUB
 #!/bin/sh
-printf '%s\n' "\$@" > "$scratch/claude-args"
+printf '%s\n' "\$@" > "\$HEADWATER_SHADOW_LOG_DIR/claude-args"
 printf 'new\n' > docs/written-by-bash.md
 printf '%s\n' '{"type":"system","subtype":"init","model":"claude-haiku-4-5","session_id":"s15"}'
 printf '%s\n' '{"type":"result","subtype":"error_max_turns","is_error":true,"total_cost_usd":0.01,"modelUsage":{"claude-haiku-4-5-20251001":{"inputTokens":10}}}'
 exit 1
 STUB
         chmod +x "$scratch/bin/claude"
-        rm -f "$scratch/claude-args"
+        rm -f "$args"
         job="L1-campaign-present-p1-r1 1 campaign present sufficiency HW-PROBE-$tombstone"
         PATH="$scratch/bin:$PATH" sh "$root/tools/probe/campaign.sh" --out "$batch" --job "$job" \
             >/dev/null 2>"$scratch/batch-job.err"
         same "a campaign job stopped by the cap records with status 0" "0" \
             "$(cat "$batch/sessions/L1-campaign-present-p1-r1/status" 2>/dev/null)"
         same "and the tier's cap reaches the harness" "80" \
-            "$(awk 'prev == "--max-turns" { print; exit } { prev = $0 }' "$scratch/claude-args" 2>/dev/null)"
+            "$(awk 'prev == "--max-turns" { print; exit } { prev = $0 }' "$args" 2>/dev/null)"
         present "and the file it wrote through the shell is produced, against the tier's tree" \
             'path: "docs/written-by-bash.md"' "$batch/sessions/L1-campaign-present-p1-r1/record.md"
         sh "$root/tools/probe/campaign.sh" --out "$batch" --assemble >/dev/null 2>"$scratch/batch-assemble.err"
         same "and assembly counts the capped session" "1 sessions, 1 cents, the intent hook live in 0, 1 stopped at the turn cap" \
             "$(cat "$batch/assembled/L1-campaign-present-sufficiency.summary" 2>/dev/null)"
+        same "the job ran under a configuration directory of the batch, outside every tree (#1467)" "yes" \
+            "$([ -d "$batch/config/L1-campaign-present-p1-r1" ] && echo yes || echo no)"
+        present "and the record names it" "$batch/config/L1-campaign-present-p1-r1" \
+            "$batch/sessions/L1-campaign-present-p1-r1/record.md"
     else
         printf 'note not a checkout of this repository, so the campaign job case did not run.\n'
     fi
+
+    # A batch directory under `$HOME` is refused (#1467): the session must
+    # not sit beside the host's own configuration and copies of this
+    # repository. Assembly of an old batch there still runs.
+    mkdir -p "$scratch/fake-home"
+    HOME="$scratch/fake-home" sh "$root/tools/probe/campaign.sh" --out "$scratch/fake-home/batch" \
+        --model claude-haiku-4-5 --spec "$scratch/task.md" >/dev/null 2>"$scratch/home-out.err"
+    same "a batch directory under \$HOME refuses with 6" "6" "$?"
+    present "and says why" "under \$HOME" "$scratch/home-out.err"
 
     # A batch over a tier that declares no turn cap, with no `--max-turns`,
     # refuses with 2 before it builds a tree (#1384). The regression tier
@@ -1765,6 +1978,7 @@ STUB
     present "and the driver names the probe" \
         "the plan does not select PROBE-FIX-opened" "$scratch/unselected.err"
     rm -f "$scratch/bin/claude"
+    unset HEADWATER_PROBE_LOG_DIR
 else
     printf 'note no engine or no lock, so the liveness cases did not run.\n'
 fi
@@ -2160,6 +2374,28 @@ leak_one "front matter that does not parse is read whole" \
 sh "$seal" --leak "$scratch/leak-ws" HW-PROBE-no-such-probe > "$scratch/undeclared.out" 2>&1
 same "a probe with no leak string does not fail the check" "0" "$?"
 present "and is printed as undeclared" "undeclared HW-PROBE-no-such-probe" "$scratch/undeclared.out"
+
+# The host-level text (#1467, clause 7). A session loads the `CLAUDE.md` and
+# the skills of its configuration directory too, so `--config <dir>` reads
+# them under `config:<path>`. A campaign's directory is empty by
+# construction, and this case shows the check would read a planted answer.
+rm -rf "$scratch/leak-bare" "$scratch/leak-config"
+mkdir -p "$scratch/leak-bare" "$scratch/leak-config/skills/planted"
+printf 'Settle it under HW-DR-0052.\n' > "$scratch/leak-config/CLAUDE.md"
+printf -- '---\nname: planted\ndescription: A settled decision goes in at status: current.\n---\n' \
+    > "$scratch/leak-config/skills/planted/SKILL.md"
+HW_PROBE_YML="$scratch/leak-probe.yml" sh "$seal" --leak --config "$scratch/leak-config" "$scratch/leak-bare" "$status_probe" \
+    > "$scratch/leak-config.out" 2> "$scratch/leak-config.err"
+same "a leak string in the configuration directory's CLAUDE.md fails the check" "1" "$?"
+present "and is named under config:CLAUDE.md" \
+    "leak $status_probe config:CLAUDE.md HW-DR-0052" "$scratch/leak-config.out"
+present "and a skill there is read as always-loaded text" \
+    "leak $status_probe config:skills/planted/SKILL.md status: current" "$scratch/leak-config.out"
+rm -rf "$scratch/leak-config"
+mkdir -p "$scratch/leak-config"
+HW_PROBE_YML="$scratch/leak-probe.yml" sh "$seal" --leak --config "$scratch/leak-config" "$scratch/leak-bare" "$status_probe" \
+    > "$scratch/leak-config.out" 2> "$scratch/leak-config.err"
+same "an empty configuration directory leaks nothing" "0" "$?"
 
 # The MCP tools. A workspace that declares a server has the descriptions of
 # its tools loaded too, and the check lists them through the engine.
