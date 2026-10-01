@@ -482,15 +482,18 @@ fn a_spec_read_through_governed_patterns_reaches_the_crates_it_names() {
 /// attributes that bind nothing. A mapping with no `to` binds nothing, because
 /// the engine reports it and binds no edge. The `note` key comes before `to`,
 /// so a reader that took the first value of the mapping reads `x`, which
-/// reaches no crate.
+/// reaches no crate. The mapping with no `to` comes first, so a reader that
+/// stopped at the first entry that binds nothing would drop every entry after
+/// it.
 ///
 /// Watched failing before it passed (#1288 clause 8): over the reader that
 /// read only a scalar or a list anchor, it panicked with "a `governs` entry is
-/// a mapping".
+/// a mapping". Watched failing again (verify round 1) with `filter_map`
+/// changed to `map_while`, once the mapping with no `to` moved first.
 #[test]
 fn a_governs_entry_in_the_mapping_form_binds_its_to() {
     let governed = governed_patterns_of_text(
-        "---\nid: HW-SPEC-temp\nrelations:\n  governs:\n    - note: x\n      to: engine/crates/check/src/**\n    - note: x\n      to: [engine/crates/graph/src/lib.rs, engine/crates/hash/src/lib.rs]\n    - note: a mapping with no to\n---\n\n# Temp\n",
+        "---\nid: HW-SPEC-temp\nrelations:\n  governs:\n    - note: a mapping with no to\n    - note: x\n      to: engine/crates/check/src/**\n    - note: x\n      to: [engine/crates/graph/src/lib.rs, engine/crates/hash/src/lib.rs]\n---\n\n# Temp\n",
     );
     for pattern in [
         "engine/crates/check/src/**",
