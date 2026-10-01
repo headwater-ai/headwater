@@ -1609,9 +1609,9 @@ STUB
     # `campaign.sh` keeps next to every workspace (the oracle). The stub runs
     # inside the driver's real confinement and tries each road to them: the
     # absolute path, the relative path to the sibling, a search of the whole
-    # file system, a process's root under `/proc`, and this checkout. It
-    # writes what it got into its own workspace. With the confinement
-    # removed, the marker reaches `found.txt`.
+    # file system, a process's root and command line under `/proc`, and
+    # this checkout. It writes what it got into its own workspace. With the
+    # confinement removed, the marker reaches `found.txt`.
     if command -v bwrap >/dev/null 2>&1; then
         conf=$(cd "$scratch" && pwd -P)
         rm -rf "$conf/outside" "$conf/trees" "$conf/conf-ws"
@@ -1625,6 +1625,7 @@ STUB
     cat ../trees/oracle/secret.md
     find / -name secret.md
     for p in /proc/[0-9]*/root$conf/outside/secret.md; do cat "\$p"; done
+    cat /proc/[0-9]*/cmdline | tr '\\0' ' ' | grep -o 'probe-record-fixtures[.]sh'
     head -1 "$root/CLAUDE.md"
     ls /home /mnt
 } > found.txt 2>/dev/null
