@@ -72,6 +72,23 @@
     background: var(--code-bg); padding: 0.7rem 1.1rem; margin: 0 0 1.1rem;
   }
   .install div { overflow-wrap: anywhere; }
+  /* The copy button. It ships hidden and the site script shows it, so a
+     browser that runs no script never shows a button that does nothing. */
+  .install { position: relative; }
+  .install:has(> .copy) { padding-right: 3.4rem; }
+  .copy {
+    position: absolute; top: 0.45rem; right: 0.55rem;
+    width: 2.25rem; height: 2.25rem; padding: 0;
+    display: inline-flex; align-items: center; justify-content: center;
+    border: 1px solid var(--rule); border-radius: 3px;
+    background: var(--bg); color: var(--muted); cursor: pointer;
+  }
+  .copy[hidden] { display: none; }
+  .copy:hover, .copy:focus-visible { color: var(--accent); border-color: var(--accent); }
+  .copy .icon-done { display: none; }
+  .copy[data-state="copied"] { color: var(--accent); border-color: var(--accent); }
+  .copy[data-state="copied"] .icon-copy { display: none; }
+  .copy[data-state="copied"] .icon-done { display: inline; }
   pre.block { white-space: pre-wrap; overflow-wrap: anywhere; }
   .platform {
     font-family: var(--sans); font-size: 0.78rem; font-weight: 650;
@@ -150,6 +167,7 @@
   <p>Headwater is one binary, <code>headwater</code>. You need no Rust toolchain to run it. On Linux x86_64 or macOS on Apple silicon, one line installs it:</p>
   <div class="install oneliner">
     <div><span class="dim">$</span> curl -fsSL https://headwater.tools/install.sh | sh</div>
+    <button class="copy" type="button" aria-label="Copy the install command" title="Copy" hidden><svg class="icon-copy" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg><svg class="icon-done" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button>
   </div>
   <p class="small"><a href="/install.sh">The script</a> downloads the release archive for your machine, checks it against the checksum published beside it, and unpacks the binary into <code>~/.local/bin</code>. It needs <code>sh</code>, <code>curl</code>, <code>tar</code> and <code>uname</code>, and never asks for root. Set <code>HEADWATER_VERSION</code> to install another release, or <code>HEADWATER_INSTALL_DIR</code> to install somewhere else. To read the script before you run it, open the link above.</p>
   <p>Or pick a route by hand:</p>
@@ -253,6 +271,37 @@
     <!-- headwater:footer end -->
   </div>
 </footer>
+
+<script data-headwater="site-script">
+document.querySelector('.nav-toggle')?.addEventListener('click', () => {
+  const navlinks = document.querySelector('.navlinks');
+  const toggle = document.querySelector('.nav-toggle');
+  navlinks.classList.toggle('open');
+  toggle.setAttribute('aria-expanded', toggle.getAttribute('aria-expanded') === 'false' ? 'true' : 'false');
+});
+for (const button of document.querySelectorAll('button.copy')) {
+  const line = button.parentElement.querySelector('div');
+  const label = button.getAttribute('aria-label');
+  button.hidden = false;
+  button.addEventListener('click', async () => {
+    const text = line.textContent.replace('▍', '').replace(/^\s*\$\s*/, '').trim();
+    try {
+      await navigator.clipboard.writeText(text);
+      button.dataset.state = 'copied';
+      button.setAttribute('aria-label', 'Copied');
+    } catch {
+      const range = document.createRange();
+      range.selectNodeContents(line);
+      getSelection().removeAllRanges();
+      getSelection().addRange(range);
+    }
+    setTimeout(() => {
+      delete button.dataset.state;
+      button.setAttribute('aria-label', label);
+    }, 1600);
+  });
+}
+</script>
 
 </body>
 </html>

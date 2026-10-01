@@ -62,8 +62,16 @@
 # The hand-built half, which HW-DR-0037 governs by name. Each path re-asserts
 # the policy that half has always carried, unchanged from what it served
 # before the generated half shared the host.
+#
+# `/` and `/install/*` also admit one inline script by its hash: the
+# `<script data-headwater="site-script">` block, the same bytes on both pages,
+# which opens the phone menu and shows the copy button beside the install
+# line. A hash admits those bytes and nothing else, and the script fetches
+# nothing, so the page still reaches nothing at read time. Every other script
+# on those pages stays blocked. Group 11 of `tools/repo/readme-fixtures.sh`
+# recomputes the hash from each page and refuses a rule that does not carry it.
 /
-  Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
+  Content-Security-Policy: default-src 'none'; script-src 'sha256-01oNP2IsO630bR2PZWPuE0GQslT5KwkEz+Gv7tk7xMQ='; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
 
 /how-it-works/*
   Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
@@ -84,7 +92,7 @@
   Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
 
 /install/*
-  Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
+  Content-Security-Policy: default-src 'none'; script-src 'sha256-01oNP2IsO630bR2PZWPuE0GQslT5KwkEz+Gv7tk7xMQ='; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
 
 # The install script that `curl -fsSL https://headwater.tools/install.sh | sh`
 # runs. Served as text, so a reader who opens the link reads the script in the

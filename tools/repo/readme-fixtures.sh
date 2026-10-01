@@ -4405,6 +4405,68 @@ same "  and the refusal says so" yes \
 same "  and the script's last line is the one call to its body" 'main "$@"' \
     "$(grep -v '^[[:space:]]*$' "$install_script" | tail -n 1)"
 
+# 11i. The copy button beside the install line runs in the browser only if the
+#      page's content policy admits its script, and a policy that does not
+#      admit it blocks it in silence: the phone menu of the front page was dead
+#      that way, with no build to say so. Each page that carries the
+#      `site-script` block must carry the same bytes, and its rule in
+#      `site/_headers` must name the sha256 of those bytes, which is the value
+#      a browser computes over the text between the tags.
+#
+# site_script_judge HEADERS PATH PAGE... — ok when every PAGE carries one
+# site-script block, all of them are the same bytes, and the rule for each
+# PATH (in order) names their hash.
+site_script_judge() {
+    python3 - "$@" <<'PY'
+import base64, hashlib, re, sys
+headers, rest = sys.argv[1], sys.argv[2:]
+paths, pages = rest[: len(rest) // 2], rest[len(rest) // 2:]
+rules, current = {}, None
+for line in open(headers, encoding="utf-8"):
+    if line.startswith("/"):
+        current = line.strip()
+    elif current and line.strip().lower().startswith("content-security-policy:"):
+        rules[current] = line.split(":", 1)[1]
+open_tag = "<script data-headwater=\"site-script\">"
+bodies = []
+for page in pages:
+    found = re.findall(re.escape(open_tag) + r"(.*?)</script>", open(page, encoding="utf-8").read(), re.S)
+    if len(found) != 1:
+        print("%s carries %d site-script blocks, not one" % (page, len(found)))
+        sys.exit()
+    bodies.append(found[0])
+if len(set(bodies)) != 1:
+    print("the site-script blocks differ between %s, so one hash cannot admit both" % " and ".join(pages))
+    sys.exit()
+digest = "sha256-" + base64.b64encode(hashlib.sha256(bodies[0].encode("utf-8")).digest()).decode()
+for path in paths:
+    if "\x27%s\x27" % digest not in rules.get(path, ""):
+        print("the %s rule does not name %s, so the browser blocks the site script there" % (path, digest))
+        sys.exit()
+print("ok")
+PY
+}
+same "the site script on the front page and the install page is admitted by each page's content policy" ok \
+    "$(site_script_judge "$root/site/_headers" / /install/\* "$site_home" "$site_index")"
+same "  and each page's install line carries the copy button, hidden until that script shows it" "yes yes" \
+    "$(for p in "$site_home" "$site_index"; do grep -q '<button class="copy" type="button" aria-label="Copy the install command" title="Copy" hidden>' "$p" && printf 'yes ' || printf 'no '; done | sed 's/ $//')"
+mkdir -p "$scratch/site/script"
+sed 's/const label = button.getAttribute/const label =  button.getAttribute/' "$site_home" >"$scratch/site/script/home.html"
+cp "$site_index" "$scratch/site/script/install.html"
+apt_planted "  a site script edited on one page and not the other is refused" "$site_home" "$scratch/site/script/home.html" \
+    "the site-script blocks differ between $scratch/site/script/home.html and $scratch/site/script/install.html, so one hash cannot admit both" \
+    "$(site_script_judge "$root/site/_headers" / /install/\* "$scratch/site/script/home.html" "$scratch/site/script/install.html")"
+sed 's/const label = button.getAttribute/const label =  button.getAttribute/' "$site_index" >"$scratch/site/script/install2.html"
+ss_new=$(python3 -c '
+import base64, hashlib, re, sys
+t = open(sys.argv[1], encoding="utf-8").read()
+b = re.search(r"<script data-headwater=\"site-script\">(.*?)</script>", t, re.S).group(1)
+print("sha256-" + base64.b64encode(hashlib.sha256(b.encode("utf-8")).digest()).decode())
+' "$scratch/site/script/home.html")
+apt_planted "  a site script edited on both pages with the old hash left in the policy is refused" "$site_index" "$scratch/site/script/install2.html" \
+    "the / rule does not name $ss_new, so the browser blocks the site script there" \
+    "$(site_script_judge "$root/site/_headers" / /install/\* "$scratch/site/script/home.html" "$scratch/site/script/install2.html")"
+
 echo
 echo "the APT block the page offers, against the job that runs it"
 
