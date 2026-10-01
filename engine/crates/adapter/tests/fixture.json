@@ -840,7 +840,7 @@
     {
       "rule": "warrant.evidence.unsupported",
       "scope": "edge",
-      "version": 3,
+      "version": 4,
       "obligations": []
     },
     {

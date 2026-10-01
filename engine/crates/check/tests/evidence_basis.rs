@@ -73,6 +73,15 @@ const FAMILY: [&str; 8] = [
     "verified_by",
 ];
 
+/// The member of [`FAMILY`] whose evidence is the document at the source end.
+///
+/// The fixture taxonomy declares `evidence_at: from` on it, as this
+/// repository's `decision-record` bundle does: an evaluation that discharges an
+/// obligation is the evidence for that obligation (#1511). So the edge that
+/// `claims/every-evidence-relation.md` declares under it reads the claim of
+/// `NOTE-FIX-asserted` and the warrant of the evidenced source, and passes.
+const EVIDENCE_AT_SOURCE: &str = "discharges";
+
 fn fixtures_dir() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("fixtures")
 }
@@ -139,6 +148,16 @@ fn about<'a>(run: &'a Run, id: &str) -> Vec<&'a str> {
         .into_iter()
         .map(|(_, message)| message)
         .filter(|message| message.contains(id))
+        .collect()
+}
+
+/// The remediation of every finding of this rule whose message names a
+/// document.
+fn remediations<'a>(run: &'a Run, id: &str) -> Vec<&'a str> {
+    run.findings
+        .iter()
+        .filter(|finding| finding.rule == RULE && finding.message.contains(id))
+        .map(|finding| finding.remediation.as_str())
         .collect()
 }
 
@@ -223,27 +242,247 @@ fn the_same_edge_onto_an_accepted_document_is_silent() {
 ///
 /// The rule reads `family: evidence` and never a relation name, and this is the
 /// assertion that says so. One document declares one edge of each of the eight,
-/// every one of them onto the same asserted record, and all eight are reported
-/// with the relation named.
+/// every one of them onto the same asserted record. The seven whose evidence is
+/// the target are reported with the relation named. The one whose evidence is
+/// the source, [`EVIDENCE_AT_SOURCE`], reads the asserted record as the
+/// claimant, and that record claims nothing.
 #[test]
 fn every_relation_of_the_evidence_family_is_read_and_not_traces_to_alone() {
     let run = run();
     let reported = about(&run, "NOTE-FIX-every-evidence-relation");
     assert_eq!(
         reported.len(),
-        FAMILY.len(),
-        "the family is {} relations and {} were reported: {reported:?}",
+        FAMILY.len() - 1,
+        "the family is {} relations, one of them reads the other way, and {} were reported: \
+         {reported:?}",
         FAMILY.len(),
         reported.len()
     );
     for relation in FAMILY {
-        assert!(
-            reported
-                .iter()
-                .any(|message| message.contains(&format!("`{relation}`"))),
-            "`{relation}` reached no finding: {reported:?}"
-        );
+        let reached = reported
+            .iter()
+            .any(|message| message.contains(&format!("`{relation}`")));
+        if relation == EVIDENCE_AT_SOURCE {
+            assert!(
+                !reached,
+                "`{relation}` was read the wrong way round: {reported:?}"
+            );
+        } else {
+            assert!(reached, "`{relation}` reached no finding: {reported:?}");
+        }
     }
+}
+
+/// The decisive case of #1511: an evidenced document that discharges an asserted
+/// one is not reported.
+///
+/// `discharges` declares `evidence_at: from`, so the document at the source end
+/// is the evidence and the document at the target end makes the claim. Spec 1
+/// says so: "An asserted document does not discharge an evidence obligation."
+/// `NOTE-FIX-asserted` claims no evidence, and the evidenced source is what
+/// substantiates it, so the pair passes. An earlier edition read the source's
+/// claim against the target's warrant and reported it.
+#[test]
+fn a_discharges_edge_from_an_evidenced_source_onto_an_asserted_target_is_not_reported() {
+    let run = run();
+    let reported: Vec<&str> = about(&run, "NOTE-FIX-every-evidence-relation")
+        .into_iter()
+        .filter(|message| message.contains("`discharges`"))
+        .collect();
+    assert!(reported.is_empty(), "{reported:?}");
+    // It passed, and it did not skip: the rule read both ends.
+    assert!(
+        !skips(&run)
+            .iter()
+            .any(|(reads, _)| reads.contains(&"evidence-basis/claims/every-evidence-relation.md")),
+        "an instance over the family document skipped: {:?}",
+        skips(&run)
+    );
+}
+
+/// The pair of the decisive case, which proves that the swap is a reading and
+/// not a silence.
+///
+/// `claims/asserted-discharges-evidenced.md` is `asserted` and claims nothing
+/// itself. It declares `discharges` onto `NOTE-FIX-evidenced-obligation`, which
+/// claims `evidenced`. The claim is the target's and the evidence is the
+/// source, which nobody has read, so the pair is reported. A rule that read
+/// `evidence_at: from` as "skip this relation" passes it, and so does a rule
+/// that read the claim at the source.
+#[test]
+fn a_discharges_edge_onto_an_evidenced_target_from_an_asserted_source_is_reported() {
+    let run = run();
+    let reported = about(&run, "NOTE-FIX-asserted-discharges-evidenced");
+    assert_eq!(reported.len(), 1, "{:?}", refusals(&run));
+    let message = reported[0];
+    assert!(
+        message.starts_with("`NOTE-FIX-evidenced-obligation` claims `evidenced`"),
+        "the target is the claimant: {message}"
+    );
+    assert!(
+        message.contains("`NOTE-FIX-asserted-discharges-evidenced`"),
+        "the source is the evidence: {message}"
+    );
+    assert!(message.contains("`discharges`"), "the relation: {message}");
+    assert!(message.contains("`asserted`"), "the warrant: {message}");
+
+    let paths: Vec<&str> = refusals(&run).into_iter().map(|(path, _)| path).collect();
+    assert!(
+        paths.contains(&"evidence-basis/claims/asserted-discharges-evidenced.md"),
+        "the finding anchors at the entry that declares the edge: {paths:?}"
+    );
+
+    // The remediation takes each repair to the right end: the evidence is the
+    // document a person reads, and the claimant is the document that is
+    // pointed at and that can write `reconstructed`. A remediation that took
+    // either to the wrong end repeats the defect this case exists for.
+    let fixes = remediations(&run, "NOTE-FIX-asserted-discharges-evidenced");
+    assert_eq!(fixes.len(), 1, "{fixes:?}");
+    assert_remediation_ends(
+        fixes[0],
+        "evidence-basis/claims/asserted-discharges-evidenced.md",
+        "evidence-basis/targets/evidenced-obligation.md",
+        (
+            "discharges",
+            "evidence-basis/claims/asserted-discharges-evidenced.md",
+        ),
+    );
+    assert!(
+        fixes[0].starts_with(
+            "have a person read evidence-basis/claims/asserted-discharges-evidenced.md"
+        ),
+        "the evidence is the document to read: {}",
+        fixes[0]
+    );
+}
+
+/// A swapped remediation names the claimant as the end an auditable artifact
+/// points at and as the end that can write `reconstructed`, and never the
+/// evidence in either place.
+///
+/// It also names the entry an author replaces, by the name that entry was
+/// written under and in the file that wrote it. A `discharges` half is written
+/// in the evaluation and a `discharged_by` half in the obligation, so the two
+/// differ in both, and a remediation that named the relation or the claimant
+/// in their place points at an entry that does not exist.
+fn assert_remediation_ends(fix: &str, evidence: &str, claimant: &str, entry: (&str, &str)) {
+    let claimant_id = std::fs::read_to_string(fixtures_dir().join(claimant))
+        .expect("the claimant fixture")
+        .lines()
+        .find_map(|line| line.strip_prefix("id: ").map(str::to_string))
+        .expect("the claimant declares an id");
+    assert!(
+        fix.contains(&format!("declare `discharges` to `{claimant_id}`")),
+        "an auditable artifact discharges the claimant: {fix}"
+    );
+    let (name, path) = entry;
+    assert!(
+        fix.contains(&format!("in place of the `{name}` entry in {path},")),
+        "the entry to replace, by its declared name and file: {fix}"
+    );
+    assert!(
+        fix.contains(&format!("`evidence_basis: reconstructed` in {claimant}")),
+        "the claimant writes reconstructed: {fix}"
+    );
+    assert!(
+        !fix.contains(&format!("`evidence_basis: reconstructed` in {evidence}")),
+        "the evidence was told to write reconstructed: {fix}"
+    );
+}
+
+/// A `discharges` edge that the obligation wrote, as `discharged_by`.
+///
+/// `targets/obligation-by-inverse.md` claims `evidenced` and names
+/// `NOTE-FIX-evaluation-by-inverse`, which is `asserted` and declares nothing.
+/// The direction comes from the relation and not from the file that wrote the
+/// entry, so the obligation is still the claimant and the evaluation still the
+/// evidence. The finding anchors at the obligation, which is the file with the
+/// entry. The remediation names that entry as `discharged_by`, in that file. A
+/// remediation that named the relation, `discharges`, or the evaluation's file
+/// would point at an entry that nobody wrote.
+#[test]
+fn a_discharges_edge_written_as_its_inverse_is_reported_at_the_entry_that_wrote_it() {
+    let run = run();
+    let reported = about(&run, "NOTE-FIX-evaluation-by-inverse");
+    assert_eq!(reported.len(), 1, "{:?}", refusals(&run));
+    assert!(
+        reported[0].starts_with("`NOTE-FIX-obligation-by-inverse` claims `evidenced`"),
+        "the obligation is the claimant whichever end wrote the entry: {}",
+        reported[0]
+    );
+
+    let paths: Vec<&str> = refusals(&run)
+        .into_iter()
+        .filter(|(_, message)| message.contains("NOTE-FIX-evaluation-by-inverse"))
+        .map(|(path, _)| path)
+        .collect();
+    assert_eq!(
+        paths,
+        vec!["evidence-basis/targets/obligation-by-inverse.md"],
+        "the finding anchors at the entry that declares the edge"
+    );
+
+    let fixes = remediations(&run, "NOTE-FIX-evaluation-by-inverse");
+    assert_eq!(fixes.len(), 1, "{fixes:?}");
+    assert_remediation_ends(
+        fixes[0],
+        "evidence-basis/claims/evaluation-by-inverse.md",
+        "evidence-basis/targets/obligation-by-inverse.md",
+        (
+            "discharged_by",
+            "evidence-basis/targets/obligation-by-inverse.md",
+        ),
+    );
+    assert!(
+        fixes[0].starts_with("have a person read evidence-basis/claims/evaluation-by-inverse.md"),
+        "the evidence is the document to read: {}",
+        fixes[0]
+    );
+}
+
+/// The swapped reading also holds a warrant outside the closed set.
+///
+/// `claims/misspelled-discharges-evidenced.md` writes `acepted` and discharges
+/// the same evidenced obligation. The value is at the evidence end, so the pair
+/// is reported with the value as written and the obligation as the claimant. A
+/// rule that swapped the ends for `asserted` alone passes it.
+#[test]
+fn a_discharges_edge_from_a_warrant_outside_the_closed_set_is_reported() {
+    let run = run();
+    let reported = about(&run, "NOTE-FIX-misspelled-discharges-evidenced");
+    assert_eq!(reported.len(), 1, "{:?}", refusals(&run));
+    let message = reported[0];
+    assert!(
+        message.starts_with("`NOTE-FIX-evidenced-obligation` claims `evidenced`"),
+        "the target is the claimant: {message}"
+    );
+    assert!(
+        message.contains("`acepted`"),
+        "the value as written: {message}"
+    );
+    assert!(
+        !message.contains("`asserted`"),
+        "the value is not called asserted: {message}"
+    );
+
+    let fixes = remediations(&run, "NOTE-FIX-misspelled-discharges-evidenced");
+    assert_eq!(fixes.len(), 1, "{fixes:?}");
+    assert_remediation_ends(
+        fixes[0],
+        "evidence-basis/claims/misspelled-discharges-evidenced.md",
+        "evidence-basis/targets/evidenced-obligation.md",
+        (
+            "discharges",
+            "evidence-basis/claims/misspelled-discharges-evidenced.md",
+        ),
+    );
+    assert!(
+        fixes[0].starts_with(
+            "correct the warrant of evidence-basis/claims/misspelled-discharges-evidenced.md"
+        ),
+        "the evidence is the document whose warrant is corrected: {}",
+        fixes[0]
+    );
 }
 
 /// A relation outside the family reaches no instance at all.
@@ -355,6 +594,39 @@ fn a_target_that_declares_no_warrant_skips_rather_than_passing() {
     assert!(
         mine[0].1.contains("target end"),
         "the skip does not say which end had nothing to read: {}",
+        mine[0].1
+    );
+}
+
+/// The same absence at the source end of a `discharges` edge, where the source
+/// is the evidence.
+///
+/// `claims/quiet-discharges-evidenced.md` writes no provenance block and
+/// discharges an evidenced obligation. The instance skips, and the reason names
+/// the source end and the source document. A reason that still said "target
+/// end" sends the author to the obligation, which is the wrong document.
+#[test]
+fn an_evidence_source_that_declares_no_warrant_skips_and_names_the_source_end() {
+    let run = run();
+    assert!(
+        about(&run, "NOTE-FIX-quiet-discharges-evidenced").is_empty(),
+        "an absent warrant at the evidence end was reported: {:?}",
+        refusals(&run)
+    );
+    let skips = skips(&run);
+    let mine: Vec<&(Vec<&str>, &String)> = skips
+        .iter()
+        .filter(|(reads, _)| reads.contains(&"evidence-basis/claims/quiet-discharges-evidenced.md"))
+        .collect();
+    assert_eq!(mine.len(), 1, "{skips:?}");
+    assert!(
+        mine[0].1.contains("`NOTE-FIX-quiet-discharges-evidenced`"),
+        "{}",
+        mine[0].1
+    );
+    assert!(
+        mine[0].1.contains("source end"),
+        "the skip does not name the end that is the evidence: {}",
         mine[0].1
     );
 }
@@ -503,11 +775,14 @@ fn an_edge_onto_an_anchor_reaches_no_instance_and_does_not_panic() {
 /// The whole corpus, in one assertion, so a case that stops being reported
 /// cannot hide behind a test that names only its own document.
 #[test]
-fn the_tree_reports_five_documents_and_twelve_edges() {
+fn the_tree_reports_eight_documents_and_fourteen_edges() {
     let run = run();
     let mut reported: Vec<&str> = refusals(&run).into_iter().map(|(path, _)| path).collect();
     reported.sort_unstable();
     let mut expected = vec![
+        "evidence-basis/targets/obligation-by-inverse.md",
+        "evidence-basis/claims/asserted-discharges-evidenced.md",
+        "evidence-basis/claims/misspelled-discharges-evidenced.md",
         "evidence-basis/claims/onto-scaffolded-contract.md",
         "evidence-basis/claims/rests-on-asserted.md",
         "evidence-basis/claims/rests-on-misspelled.md",
@@ -515,7 +790,7 @@ fn the_tree_reports_five_documents_and_twelve_edges() {
     ];
     expected.extend(std::iter::repeat_n(
         "evidence-basis/claims/every-evidence-relation.md",
-        FAMILY.len(),
+        FAMILY.len() - 1,
     ));
     expected.sort_unstable();
     assert_eq!(reported, expected);

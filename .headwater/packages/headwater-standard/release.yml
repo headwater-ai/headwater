@@ -24,12 +24,12 @@
 release:
   format: 1
   package: headwater/standard
-  version: 4.14.0
+  version: 4.15.0
   requires_engine: ">=0.1 <2"
-  digest: sha256:65266c5d264775c770f66a3e5bf9de8de44919d6bfc28f6ab5ce9a62d7417f40
+  digest: sha256:b31c3f4c04b1ce662bb35dbcb0c299f6cd587b0b7dcbbf5ac9755bc9d58d1d39
   members:
     - path: assemblies/starter/assembly.yml
-      digest: sha256:d442dff4f9871342c250b07a659a686621d725cb14a1dadb7c4310c1cb594933
+      digest: sha256:49ebc079575e6e88766c6574bb8c8975526aa47feb32966ed0d8eac642574034
     - path: bundles/README.md
       digest: sha256:4baa3cc1019fc8ca6365a0e372578a35c66e45e68b99c46f0c033b963f8514f4
     - path: bundles/brd-prd/bundle.yml
@@ -41,9 +41,9 @@ release:
     - path: bundles/brd-prd/templates/prd.md
       digest: sha256:30779e8b59e168d2bafb522d3b9341dde18706493670004962f4d9c444df77d9
     - path: bundles/decision-record/bundle.yml
-      digest: sha256:d2e1dd60f5adf97dcefd3aa46b0f377ed5e7eca533f82fad8a3d90224f79673f
+      digest: sha256:4c04556b5c3a779f70d97fc2caa661cc3541ff3d735ea28fb2c7497d0327212e
     - path: bundles/decision-record/doctrine.md
-      digest: sha256:efaba00f09d1aadcde8eaf5c39c25917dfbe1cf43f69059bb3afddd0a7aa1606
+      digest: sha256:79b577cf86ec558a21057ff7aa9a86281c6281aca699f46cfe45b85ad608add2
     - path: bundles/decision-record/templates/decision.md
       digest: sha256:92472c6e54d089e648bea5c738dd08bfdd0d27aff369aff17703b7f8b33894e8
     - path: bundles/decision-record/templates/obligation_record.md
@@ -99,6 +99,6 @@ release:
     - path: doctrine/starter.md
       digest: sha256:0fa70c1338a7e24ec5a3e0f8202cceffb1ea53182ce2ba91341a8ecf8d1e104a
     - path: package.yml
-      digest: sha256:0e74379708478b3ebc40f98f36518ef66a2f5c0d200204fb23e40a1a84eb6c76
+      digest: sha256:2a21b71d46d9886577251aa6c471d3463d83bac2c16690dd12116e98448a3e29
     - path: taxonomy.yml
-      digest: sha256:778bea10b52f7cd2d5a6000220d7f446e802834ea024de11181c2c4bfeefc1b5
+      digest: sha256:03d6531a090a6e81cbc0ea6a4b87dd9c7df8db54f04151f58d9b671aa69994e4
