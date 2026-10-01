@@ -146,7 +146,9 @@ EOF
 # block above gives.
 printf '# read.sh latency, per read, on this corpus\n'
 if date +%s%N | grep -q '^[0-9][0-9]*$'; then
-    for rel in engine/crates/check/src/lib.rs .claude/hooks/write.sh engine/crates/query/src/unrelated.rs; do
+    # The third path is a read that nothing governs. It names a crate that
+    # does not exist, because each real crate's `src/**` is governed (#1288).
+    for rel in engine/crates/check/src/lib.rs .claude/hooks/write.sh engine/crates/no-such-crate/src/unrelated.rs; do
         payload="{\"hook_event_name\":\"PreToolUse\",\"tool_name\":\"Read\",\"tool_input\":{\"file_path\":\"$rel\"}}"
         times=
         for n in 1 2 3 4 5 6; do
