@@ -78,7 +78,7 @@ No environment variable reaches this verb. The package, taxonomy, repository and
 
 | Path | How this verb treats it |
 |---|---|
-| `.headwater/taxonomy.lock` | Read for the resolved taxonomy and lock digest. |
+| `.headwater/taxonomy.lock` | Read for the resolved taxonomy and lock digest. A lock that is not a regular file is refused before the verb opens it, at each read. |
 | `.headwater/taxonomy.yml` | Read through the consumer loader. |
 | `.headwater/packages/` and the selected package directory | Read for the package manifest, release record and conformance rules. A release record, a member or a conformance file that is not a regular file is refused before the verb opens it. A named pipe is one example. |
 | The corpus | Read for classification and projection checks. |
