@@ -112,6 +112,11 @@ add:
   # record reaches the decision that produced it the same way. Neither needs a
   # declaration here. What has no form is the event that closes an obligation:
   # an instrument ran, and the debt is paid.
+  #
+  # The evaluation at the source end is the evidence, and the obligation at the
+  # target end is what it substantiates, so the relation declares
+  # `evidence_at: from` (#1511). Without it, `warrant.evidence.unsupported`
+  # reads the evaluation's own claim against the obligation's warrant.
 
   relations.discharges:
     family: evidence
@@ -121,6 +126,7 @@ add:
     reciprocal: required
     cardinality: many
     created_by: author
+    evidence_at: from
 
   # --- shelves --------------------------------------------------------------
   # Decisions sit on the base shelf, which is homogeneous and already declares

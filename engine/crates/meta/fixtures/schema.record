@@ -1,4 +1,4 @@
-headwater/taxonomy 0.8.0
+headwater/taxonomy 0.9.0
 
 declarations
   taxonomy (required) scalar:string
@@ -46,6 +46,7 @@ declarations
       reciprocal enum[required symmetric optional]
       nuclearity enum[multinuclear nucleus-satellite]
       nucleus enum[from to]
+      evidence_at enum[from to]
       inherits seq of scalar:string
       cardinality enum[one many]
       created_by (required) enum[author scaffold generator hook agent import]

@@ -104,6 +104,17 @@ pub struct Relation {
     /// `nuclearity`, and `nucleus` beside it: which end stands alone.
     pub nuclearity: Option<String>,
     pub nucleus: Option<String>,
+    /// `evidence_at`: which end of an `evidence`-family relation is the
+    /// evidence, `from` or `to`, as written. Absent means `to`, which is the
+    /// reading every evidence relation had before the member existed.
+    ///
+    /// Spec 2 leaves the direction of a relation to its author, so the family
+    /// cannot say which end substantiates the other. `discharges` points from
+    /// the evaluation that is the evidence to the obligation it substantiates,
+    /// and `traces_to` points from the claim to its evidence (#1511).
+    /// `headwater_check::basis` is the reader, through
+    /// [`Relation::evidence_at_source`].
+    pub evidence_at: Option<String>,
     /// The actor the taxonomy expects to pay for edges of this type, from spec
     /// 2's closed set: `author`, `scaffold`, `generator`, `hook`, `agent`,
     /// `import`. The meta-schema requires it and closes the set, so a relation
@@ -127,6 +138,15 @@ pub struct Relation {
     /// The span of the relation's name, which a finding about the
     /// *declaration* points at.
     pub span: Span,
+}
+
+impl Relation {
+    /// Whether the relation declares `evidence_at: from`, so that the document
+    /// at the source end is the evidence and the target makes the claim. Every
+    /// other value, and the absence of one, keeps the reading `to`.
+    pub fn evidence_at_source(&self) -> bool {
+        self.evidence_at.as_deref() == Some("from")
+    }
 }
 
 /// Which end of an edge governs the reading of the pair.
@@ -395,6 +415,7 @@ fn read_relation(name: &str, value: &Value, span: Span) -> Result<Relation, Decl
             .unwrap_or_default(),
         nuclearity: scalar("nuclearity"),
         nucleus: scalar("nucleus"),
+        evidence_at: scalar("evidence_at"),
         created_by: scalar("created_by"),
         attributes: map
             .get("attributes")

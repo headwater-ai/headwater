@@ -210,6 +210,8 @@ docs/decisions/0101-new-writes-no-far-half-of-a-symmetric-relation-and-no-state-
   typed: decision
 docs/decisions/0102-an-editor-integration-starts-headwater-mcp-for-each-query-and-does-not-embed-the-library.md
   typed: decision
+docs/decisions/0103-an-evidence-relation-declares-which-end-is-the-evidence-and-discharges-declares-the-source.md
+  typed: decision
 docs/decisions/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/doctrine/maturity-model.md
@@ -1103,6 +1105,8 @@ docs/subsystems/graph-build.md
 docs/subsystems/parse-and-census.md
   typed: subsystem_spec
 docs/subsystems/projections-and-export.md
+  typed: subsystem_spec
+docs/subsystems/queries-and-explain.md
   typed: subsystem_spec
 docs/subsystems/taxonomy-distribution-and-audit.md
   typed: subsystem_spec

@@ -149,6 +149,12 @@ taxonomy: headwater/standard
 # on load where they differ, and it names both files and both numbers. A bump
 # moves both or neither. `package.yml` states why the value is declared twice.
 #
+# 4.15.0 declares `evidence_at: from` on `relations.discharges` in the
+# `decision-record` bundle, which meta-schema 0.9.0 admits: the evaluation at
+# the source end is the evidence for the obligation at the target end
+# (HW-DR-0103, #1511). A relation that declares nothing reads as before, so it
+# is a minor. It follows 4.14.0.
+#
 # 4.14.0 adds eleven obligations and thirteen controls, one control for each
 # rule that reached no obligation: `OB-FACET-3`, `OB-WARRANT-3`,
 # `OB-WARRANT-4`, `OB-LIFE-7`, `OB-REL-8`, `OB-REL-9`, `OB-PIN-1`,
@@ -285,7 +291,7 @@ taxonomy: headwater/standard
 # each carries a recipe rather than a bare instruction. One package version
 # covers every content file it publishes, this one included, so the number
 # here moves with a change to either.
-version: 4.14.0
+version: 4.15.0
 
 purposes:
   rationale:

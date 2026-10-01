@@ -105,6 +105,7 @@ nav:
       - "An engine subsystem is described by a technical design spec on a shelf of its own, and its behavior stays where it is already written": "decisions/0098-an-engine-subsystem-is-described-by-a-technical-design-spec-on-a-shelf-of-its-own-and-its-behavior-stays-where-it-is-already-written.md"
       - "A counted tombstone lists a digest of each withheld identifier, and a sealed one lists nothing": "decisions/0100-a-counted-tombstone-lists-a-digest-of-each-withheld-identifier-and-a-sealed-one-lists-nothing.md"
       - "An editor integration starts headwater mcp for each query and does not embed the library": "decisions/0102-an-editor-integration-starts-headwater-mcp-for-each-query-and-does-not-embed-the-library.md"
+      - "An evidence relation declares which end is the evidence, and discharges declares the source": "decisions/0103-an-evidence-relation-declares-which-end-is-the-evidence-and-discharges-declares-the-source.md"
   - "Acceptance criteria":
       - "Acceptance criteria": "acceptance-criteria/README.md"
       - "No engine source outside the fetch crate names a network API and no crate of the checking loop reaches a network package": "acceptance-criteria/0001-no-engine-source-outside-the-fetch-crate-names-a-network-api-and-no-crate-of-the-checking-loop-reaches-a-network-package.md"
@@ -581,6 +582,7 @@ nav:
       - "Graph build": "subsystems/graph-build.md"
       - "Parse and census": "subsystems/parse-and-census.md"
       - "Projections and export": "subsystems/projections-and-export.md"
+      - "Queries and explain": "subsystems/queries-and-explain.md"
       - "Taxonomy distribution and audit": "subsystems/taxonomy-distribution-and-audit.md"
       - "Taxonomy resolution": "subsystems/taxonomy-resolution.md"
   - "Tutorials":

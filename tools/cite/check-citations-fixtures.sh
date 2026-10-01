@@ -14,8 +14,9 @@
 #
 # Case 3 plants a citation of spec 5 at `engine/crates/query/src/mcp.rs`. The
 # identifier resolves and the file is governed, so both halves a naive checker
-# looks at are clean; what is wrong is the pair, because the document that
-# governs that file is `docs/interfaces/headwater-mcp.md` and not spec 5. That
+# looks at are clean; what is wrong is the pair, because the documents that
+# govern that file are `docs/interfaces/headwater-mcp.md` and
+# `docs/subsystems/queries-and-explain.md`, and not spec 5. That
 # is a citation that was true and went stale, which is what issue #500 was
 # filed about. Case 6 is the assertion that matters beside it: the stale class
 # and the invented class are reported under different rule identifiers, so a
@@ -185,7 +186,7 @@ status=$(run text engine/crates/query/src/mcp.rs)
 same "a citation that went stale fails the run" 1 "$status"
 holds "  under the stale rule" "citation.governance.stale" "$scratch/out"
 holds "  saying which document does govern the file" \
-    "\`docs/interfaces/headwater-mcp.md\` does" "$scratch/out"
+    "\`docs/interfaces/headwater-mcp.md\`, \`docs/subsystems/queries-and-explain.md\` does" "$scratch/out"
 absent "  and not under the unresolved rule, because the identifier is real" \
     "citation.identifier.unresolved" "$scratch/out"
 holds "  and the report states the limit of the class it just reported" \

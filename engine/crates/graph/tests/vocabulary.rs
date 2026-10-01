@@ -92,6 +92,7 @@ fn admitted(declarations: &Declarations) -> Vec<String> {
             invalid_when: _,
             nuclearity: _,
             nucleus: _,
+            evidence_at: _,
             created_by: _,
             attributes: _,
             span: _,

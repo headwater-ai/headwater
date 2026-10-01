@@ -424,3 +424,7 @@ The documents on this shelf, in the reading order this corpus derives. Each head
 ## An editor integration starts headwater mcp for each query and does not embed the library
 
 [HW-DR-0102](../decisions/0102-an-editor-integration-starts-headwater-mcp-for-each-query-and-does-not-embed-the-library.md) — An editor plugin is a client of headwater mcp: it starts the server for each query, sends one read request and stops it. The library stays embeddable, but no editor host embeds it. (asserted, and no human has accepted it)
+
+## An evidence relation declares which end is the evidence, and discharges declares the source
+
+[HW-DR-0103](../decisions/0103-an-evidence-relation-declares-which-end-is-the-evidence-and-discharges-declares-the-source.md) — A relation of the evidence family declares evidence_at, from or to, because the family cannot say which end substantiates the other. Absent is to. discharges declares from, so an evaluation is the evidence for its obligation. (asserted, and no human has accepted it)
