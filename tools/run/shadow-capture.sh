@@ -93,8 +93,9 @@ if ! command -v jq >/dev/null 2>&1; then
 fi
 
 # The day's bounds as epoch seconds, from jq rather than `date -d`, which is
-# not portable. A day that does not exist fails here.
-start=$(jq -n --arg d "$day" '"\($d)T00:00:00Z" | fromdateiso8601') || {
+# not portable. `fromdateiso8601` reads 2026-02-30 as 2026-03-02, so the day
+# is printed back and compared, and a day that does not exist fails here.
+start=$(jq -n -e --arg d "$day" '"\($d)T00:00:00Z" | fromdateiso8601 | select(todate == "\($d)T00:00:00Z")' 2>/dev/null) || {
     echo "shadow-capture: not a date: $day" >&2
     exit 2
 }

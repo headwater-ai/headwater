@@ -1262,6 +1262,22 @@ jobs:
             exit 0
           fi
           exit "$status"
+      - name: The shadow-log capture rate joins on distinct prompt ids and tests where the losses sit
+        # `tools/run/shadow-capture.sh` is the join #917 stated in its
+        # comments, as a tool: person prompts in the harness transcripts of one
+        # UTC day against distinct prompt ids in the shadow log, and two tests
+        # that the misses are random. This suite plants transcripts and a log
+        # whose answer was worked by hand, so a stub test, a raw line count or
+        # a window one second wide on either side each fails a case. It needs
+        # `jq` and skips with a warning without it.
+        run: |
+          status=0
+          sh tools/run/shadow-capture-fixtures.sh || status=$?
+          if [ "$status" = 3 ]; then
+            echo "::warning title=Shadow capture fixtures skipped::No jq on this runner, so none of these cases ran."
+            exit 0
+          fi
+          exit "$status"
       - name: The tools a build-order stage calls behave as their agent definitions say
         # Seven scripts that every stage of a run calls in place of a command
         # it once retyped: the CI-finished condition, the queue-finished
