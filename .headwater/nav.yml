@@ -578,6 +578,7 @@ nav:
       - "Glossary": "spec/glossary.md"
   - "Engine subsystems":
       - "Engine subsystems": "subsystems/README.md"
+      - "Authoring": "subsystems/authoring.md"
       - "Checks and cache": "subsystems/checks-and-cache.md"
       - "Graph build": "subsystems/graph-build.md"
       - "Parse and census": "subsystems/parse-and-census.md"

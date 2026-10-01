@@ -1098,6 +1098,8 @@ docs/spec/glossary.md
   typed: design_spec
 docs/subsystems/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
+docs/subsystems/authoring.md
+  typed: subsystem_spec
 docs/subsystems/checks-and-cache.md
   typed: subsystem_spec
 docs/subsystems/graph-build.md

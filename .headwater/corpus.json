@@ -127,8 +127,8 @@
         },
         {
           "shelf": "subsystems",
-          "path": "docs/subsystems/checks-and-cache.md",
-          "id": "HW-SPEC-checks-and-cache"
+          "path": "docs/subsystems/authoring.md",
+          "id": "HW-SPEC-authoring"
         },
         {
           "shelf": "tutorials",
