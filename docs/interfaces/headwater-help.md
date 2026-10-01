@@ -9,6 +9,7 @@ relations:
   governs:
     - [engine/crates/cli/src/lib.rs, engine/crates/cli/src/main.rs]
     - engine/crates/cli/src/paint.rs
+    - engine/crates/verbs/src/lib.rs
   traces_to:
     - HW-DR-0045
 ---

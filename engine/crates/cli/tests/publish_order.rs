@@ -27,6 +27,15 @@
 //! graph decides that. This file holds the set exactly, and holds the order
 //! only where a member's manifest declares a dependency on another member —
 //! which is the part a wrong order actually breaks.
+//!
+//! # The version each internal dependency names
+//!
+//! The last cases hold a second hand-kept list in the same manifest: the
+//! `version` of every `[workspace.dependencies]` entry on a member, against
+//! `[workspace.package] version`. A release bump that misses one entry is green
+//! in every job until the publish ([#1315](https://github.com/headwater-ai/headwater/issues/1315)).
+//! The members come from the same `members = [...]` parse as above, never from
+//! a list written here, which is what HW-OBL-0172 asks for.
 
 use std::path::{Path, PathBuf};
 
@@ -64,16 +73,9 @@ fn published_order() -> Vec<String> {
 /// `cargo publish` takes.
 fn workspace_members() -> Vec<(String, String)> {
     let root = repository_root().join("engine");
-    let text = std::fs::read_to_string(root.join("Cargo.toml")).expect("the workspace manifest");
-    let start = text
-        .find("members = [")
-        .expect("the workspace declares members");
-    let rest = &text[start..];
-    let end = rest.find(']').expect("the members list closes");
-    rest[..end]
-        .lines()
-        .filter_map(|line| line.trim().strip_prefix('"'))
-        .filter_map(|line| line.split('"').next())
+    let text = workspace_manifest();
+    member_paths(&text)
+        .into_iter()
         .map(|relative| {
             let manifest = root.join(relative).join("Cargo.toml");
             let member = std::fs::read_to_string(&manifest)
@@ -87,6 +89,44 @@ fn workspace_members() -> Vec<(String, String)> {
             (name, member)
         })
         .collect()
+}
+
+/// The text of `engine/Cargo.toml`, the workspace manifest.
+fn workspace_manifest() -> String {
+    std::fs::read_to_string(repository_root().join("engine/Cargo.toml"))
+        .expect("the workspace manifest")
+}
+
+/// The relative path of every member that a workspace manifest's
+/// `members = [...]` declares, in its own order.
+///
+/// It takes the manifest text rather than reading the file, so that a planted
+/// manifest goes through the same parse as the real one. The parse is TOML's
+/// own, so a form cargo accepts is a form this reads.
+fn member_paths(manifest: &str) -> Vec<String> {
+    workspace_table(manifest)
+        .get("members")
+        .and_then(toml_edit::Item::as_array)
+        .expect("the workspace declares members as an array")
+        .iter()
+        .map(|member| {
+            member
+                .as_str()
+                .expect("each workspace member is a string")
+                .to_string()
+        })
+        .collect()
+}
+
+/// The `[workspace]` table of a manifest.
+fn workspace_table(manifest: &str) -> toml_edit::Item {
+    let document: toml_edit::DocumentMut = manifest
+        .parse()
+        .unwrap_or_else(|why| panic!("the workspace manifest is not TOML: {why}"));
+    document
+        .get("workspace")
+        .cloned()
+        .expect("the manifest has a [workspace] table")
 }
 
 /// The workflow names every member of the workspace, and no name that is not
@@ -422,5 +462,458 @@ fn the_index_gate_refuses_a_dependency_whose_release_version_is_yanked() {
     assert!(
         !out.status.success() && said.contains("headwater-scaffold"),
         "the gate passed headwater-scaffold {version} though the index marks it yanked: {said}"
+    );
+}
+
+// The version every internal dependency names.
+//
+// `[workspace.dependencies]` in `engine/Cargo.toml` carries one entry for each
+// member, with a path and a version, and the version is a literal: nothing in
+// cargo derives it from `[workspace.package] version`. A release bump that moves
+// the package version and misses one entry builds and tests green, because a
+// path dependency resolves by path. It fails only at the publish, on a tag, when
+// the crate that names the stale entry asks crates.io for a version that was
+// published a release ago (#1315). This is the same shape as the publish order
+// above, a hand-kept list that nothing held against the declaration, and it is
+// recorded against HW-OBL-0172 for the same reason.
+
+/// Every `[workspace.dependencies]` entry on a workspace member whose `version`
+/// differs from `[workspace.package] version` or is missing, as one line per
+/// entry that names it.
+///
+/// It takes the manifest text, so that the real manifest and a planted one go
+/// through the same judge. An entry whose `path` names no member is a
+/// dependency from outside this workspace, and it is not read.
+fn stale_member_dependency_versions(manifest: &str) -> Vec<String> {
+    member_dependency_versions(manifest)
+        .into_iter()
+        .filter_map(|MemberEntry { name, path, version, package }| match version {
+            Some(version) if version == package => None,
+            Some(version) => Some(format!(
+                "{name} (path {path}) names version {version}, and [workspace.package] version is {package}"
+            )),
+            None => Some(format!(
+                "{name} (path {path}) names no version, so it cannot be published; [workspace.package] version is {package}"
+            )),
+        })
+        .collect()
+}
+
+/// One `[workspace.dependencies]` entry on a member, with the
+/// `[workspace.package] version` it is held against.
+struct MemberEntry {
+    name: String,
+    path: String,
+    version: Option<String>,
+    package: String,
+}
+
+/// Every `[workspace.dependencies]` entry whose `path` names a member,
+/// whatever TOML form the entry is
+/// written in: an inline table with or without spaces, or a
+/// `[workspace.dependencies.<name>]` sub-table. A version that is not a string
+/// reads as `None`, the same as no version.
+fn member_dependency_versions(manifest: &str) -> Vec<MemberEntry> {
+    let members = member_paths(manifest);
+    let workspace = workspace_table(manifest);
+    let package = workspace
+        .get("package")
+        .and_then(|table| table.get("version"))
+        .and_then(toml_edit::Item::as_str)
+        .expect("[workspace.package] declares a version")
+        .to_string();
+    let Some(dependencies) = workspace
+        .get("dependencies")
+        .and_then(toml_edit::Item::as_table_like)
+    else {
+        return Vec::new();
+    };
+    dependencies
+        .iter()
+        .filter_map(|(name, entry)| {
+            let entry = entry.as_table_like()?;
+            let path = entry.get("path").and_then(toml_edit::Item::as_str)?;
+            if !members.iter().any(|member| member == path) {
+                return None;
+            }
+            let version = entry
+                .get("version")
+                .and_then(toml_edit::Item::as_str)
+                .map(str::to_string);
+            Some(MemberEntry {
+                name: name.to_string(),
+                path: path.to_string(),
+                version,
+                package: package.clone(),
+            })
+        })
+        .collect()
+}
+
+/// The real manifest names the workspace version on every internal
+/// dependency.
+#[test]
+fn every_workspace_dependency_on_a_member_names_the_workspace_version() {
+    let stale = stale_member_dependency_versions(&workspace_manifest());
+    assert!(
+        stale.is_empty(),
+        "engine/Cargo.toml: a [workspace.dependencies] entry on a member does not name \
+         [workspace.package] version. A bump moves both; a stale entry builds green and \
+         fails at the crates.io publish.\n{}",
+        stale.join("\n")
+    );
+}
+
+/// A bump that moves `[workspace.package] version` and misses one entry is
+/// caught, and the finding names the entry it missed.
+#[test]
+fn a_bump_that_misses_one_workspace_dependency_names_that_dependency() {
+    let version = headwater_resolve::release::ENGINE;
+    // Move the package version and every entry but `headwater-yaml` to a new
+    // version, which is the bump that missed one line.
+    let next = "99.0.1";
+    let planted = planted_bump(next, &["headwater-yaml"]);
+    let stale = stale_member_dependency_versions(&planted);
+    assert!(
+        stale.len() == 1 && stale[0].contains("headwater-yaml"),
+        "the planted bump left headwater-yaml at {version} and moved the rest to {next}; \
+         the judge should name headwater-yaml alone, and it said: {stale:?}"
+    );
+}
+
+/// One way to write the `headwater-yaml` entry, given the version it names.
+type Rewrite = fn(&str) -> String;
+
+/// The version one patch release after `version`: `0.5.0` gives `0.5.1`.
+fn next_patch(version: &str) -> String {
+    let (head, patch) = version
+        .rsplit_once('.')
+        .expect("the engine version has a patch component");
+    let patch: u64 = patch.parse().expect("the patch component is a number");
+    format!("{head}.{}", patch + 1)
+}
+
+/// The real manifest with `[workspace.package] version` moved to `next`, and
+/// the version of every `[workspace.dependencies]` entry on a member moved to
+/// `next` as well, except the entries named in `missed`.
+///
+/// It finds each version through the parsed document and replaces the bytes
+/// of that value alone. A replacement of text such as `version = "<v>" }`
+/// matches one spelling of an entry, so an ordinary edit to another entry,
+/// such as `default-features = false` after its version or its keys in another
+/// order, left that entry out of the bump. Each case that plants on it then
+/// named that entry beside the one it missed, and blamed the judge for the
+/// plant.
+fn planted_bump(next: &str, missed: &[&str]) -> String {
+    let real = workspace_manifest();
+    let members = member_paths(&real);
+    let document = toml_edit::Document::parse(real.as_str()).expect("engine/Cargo.toml is TOML");
+    let workspace = document
+        .get("workspace")
+        .and_then(toml_edit::Item::as_table_like)
+        .expect("engine/Cargo.toml has a [workspace] table");
+    let mut spans: Vec<std::ops::Range<usize>> = Vec::new();
+    spans.push(
+        workspace
+            .get("package")
+            .and_then(|package| package.get("version"))
+            .and_then(toml_edit::Item::span)
+            .expect("[workspace.package] declares a version, and the parse keeps its span"),
+    );
+    let dependencies = workspace
+        .get("dependencies")
+        .and_then(toml_edit::Item::as_table_like)
+        .expect("engine/Cargo.toml has a [workspace.dependencies] table");
+    for (name, entry) in dependencies.iter() {
+        if missed.contains(&name) {
+            continue;
+        }
+        let Some(entry) = entry.as_table_like() else {
+            continue;
+        };
+        let on_member = entry
+            .get("path")
+            .and_then(toml_edit::Item::as_str)
+            .is_some_and(|path| members.iter().any(|member| member == path));
+        if let (true, Some(version)) = (on_member, entry.get("version")) {
+            spans.push(
+                version
+                    .span()
+                    .expect("the parse keeps the span of each version"),
+            );
+        }
+    }
+    spans.sort_by_key(|span| std::cmp::Reverse(span.start));
+    let mut planted = real.clone();
+    for span in spans {
+        planted.replace_range(span, &format!("\"{next}\""));
+    }
+    planted
+}
+
+/// The manifest planted with a bump to `next` that missed `headwater-yaml`,
+/// with the `headwater-yaml` entry then rewritten by `rewrite`. The bump moves
+/// the package and every other entry to `next`.
+///
+/// The entry is found through the parse, from the first byte of its key to the
+/// last byte of its value, so a comment or another spelling of the entry does
+/// not stop the plant.
+fn planted_bump_missing_yaml(next: &str, rewrite: impl Fn(&str) -> String) -> String {
+    let version = headwater_resolve::release::ENGINE;
+    replace_entry(
+        &planted_bump(next, &["headwater-yaml"]),
+        "headwater-yaml",
+        &rewrite(version),
+    )
+}
+
+/// The byte range of the `[workspace.dependencies]` entry `name` in
+/// `manifest`, from the first byte of its key to the last byte of its value,
+/// found through the parse. A comment after the entry, or its keys in another
+/// order, does not move it.
+fn entry_span(manifest: &str, name: &str) -> std::ops::Range<usize> {
+    let document = toml_edit::Document::parse(manifest).expect("the manifest is TOML");
+    let dependencies = document
+        .get("workspace")
+        .and_then(|workspace| workspace.get("dependencies"))
+        .and_then(toml_edit::Item::as_table_like)
+        .expect("the manifest has a [workspace.dependencies] table");
+    let key = dependencies
+        .key(name)
+        .and_then(toml_edit::Key::span)
+        .unwrap_or_else(|| panic!("[workspace.dependencies] has no {name} entry to plant on"));
+    let value = dependencies
+        .get(name)
+        .and_then(toml_edit::Item::span)
+        .unwrap_or_else(|| panic!("the parse keeps no span for the {name} entry"));
+    key.start..value.end
+}
+
+/// `manifest` with the `[workspace.dependencies]` entry `name` replaced by
+/// `text`.
+fn replace_entry(manifest: &str, name: &str, text: &str) -> String {
+    let mut planted = manifest.to_string();
+    planted.replace_range(entry_span(manifest, name), text);
+    planted
+}
+
+/// The `[workspace.package] version` of a manifest, read through the parse.
+fn package_version(manifest: &str) -> String {
+    workspace_table(manifest)
+        .get("package")
+        .and_then(|package| package.get("version"))
+        .and_then(toml_edit::Item::as_str)
+        .expect("[workspace.package] declares a version")
+        .to_string()
+}
+
+/// The missed entry is caught whatever TOML form it takes. Cargo reads an
+/// inline table without spaces, and a `[workspace.dependencies.<name>]`
+/// sub-table, the same as the form this manifest uses, so a judge that read one
+/// spelling would pass a stale version in the others.
+#[test]
+fn a_missed_workspace_dependency_is_named_in_every_toml_form_cargo_reads() {
+    let forms: [(&str, Rewrite); 3] = [
+        ("an inline table with no spaces", |v| {
+            format!("headwater-yaml={{path=\"crates/yaml\",version=\"{v}\"}}")
+        }),
+        ("an inline table with the keys reversed", |v| {
+            format!("headwater-yaml = {{ version = \"{v}\", path = \"crates/yaml\" }}")
+        }),
+        ("a sub-table at the end of the manifest", |_| String::new()),
+    ];
+    let version = headwater_resolve::release::ENGINE;
+    for (form, rewrite) in forms {
+        let mut planted = planted_bump_missing_yaml("99.0.1", rewrite);
+        if form.starts_with("a sub-table") {
+            planted.push_str(&format!(
+                "\n\n[workspace.dependencies.headwater-yaml]\npath = \"crates/yaml\"\nversion = \"{version}\"\n"
+            ));
+        }
+        let stale = stale_member_dependency_versions(&planted);
+        // The finding names the stale version itself, so a judge that read
+        // this form's version as missing ("names no version") does not pass.
+        let stale_version = format!("names version {version},");
+        assert!(
+            stale.len() == 1
+                && stale[0].contains("headwater-yaml")
+                && stale[0].contains(&stale_version),
+            "headwater-yaml was left at {version}, written as {form}; the judge should say it \
+             `{stale_version}`, and it said: {stale:?}"
+        );
+    }
+}
+
+/// A patch bump that misses one entry is caught. This is the bump that builds
+/// green: the caret requirement `^0.5.0` accepts the `0.5.1` path crate, so
+/// only the crates.io publish fails. A judge that compared major and minor
+/// alone would pass every planted case at `99.0.1` and pass this one too.
+#[test]
+fn a_patch_bump_that_misses_one_workspace_dependency_names_it() {
+    let version = headwater_resolve::release::ENGINE;
+    let next = next_patch(version);
+    let planted = planted_bump(&next, &["headwater-yaml"]);
+    let package = package_version(&planted);
+    assert!(
+        package == next,
+        "the plant did not move [workspace.package] version to {next}; the parse reads {package}"
+    );
+    let stale = stale_member_dependency_versions(&planted);
+    let stale_version = format!("names version {version},");
+    assert!(
+        stale.len() == 1
+            && stale[0].contains("headwater-yaml")
+            && stale[0].contains(&stale_version),
+        "the patch bump moved the package and every other entry to {next} and left \
+         headwater-yaml at {version}; the judge should name headwater-yaml alone and say it \
+         `{stale_version}`, and it said: {stale:?}"
+    );
+}
+
+/// A bump that moves only `[workspace.package] version` leaves every member
+/// entry behind, and the judge names each one. So the judge holds each entry
+/// against the package version, and not against another entry: a judge that
+/// compared the entries with each other would find them all equal here.
+#[test]
+fn a_bump_of_the_package_version_alone_names_every_member_entry() {
+    let real = workspace_manifest();
+    let version = headwater_resolve::release::ENGINE;
+    let entries: Vec<String> = member_dependency_versions(&real)
+        .into_iter()
+        .map(|entry| entry.name)
+        .collect();
+    assert!(
+        !entries.is_empty(),
+        "engine/Cargo.toml has no [workspace.dependencies] entry on a member to hold"
+    );
+    let missed: Vec<&str> = entries.iter().map(String::as_str).collect();
+    let next = next_patch(version);
+    let stale = stale_member_dependency_versions(&planted_bump(&next, &missed));
+    let stale_version = format!("names version {version},");
+    let unnamed: Vec<&String> = entries
+        .iter()
+        .filter(|name| {
+            !stale
+                .iter()
+                .any(|line| line.starts_with(&format!("{name} ")) && line.contains(&stale_version))
+        })
+        .collect();
+    assert!(
+        stale.len() == entries.len() && unnamed.is_empty(),
+        "the package moved to {next} and all {} member entries stayed at {version}; the judge \
+         should name each of them, and it named {} and missed {unnamed:?}",
+        entries.len(),
+        stale.len()
+    );
+}
+
+/// The judge reads every member that another member depends on through
+/// `workspace = true`. A form the judge cannot read would drop an entry from
+/// this set, and a case that holds only the entries it read cannot see that.
+#[test]
+fn the_judge_reads_every_member_entry_that_a_member_depends_on() {
+    let manifest = workspace_manifest();
+    let read: Vec<String> = member_dependency_versions(&manifest)
+        .into_iter()
+        .map(|entry| entry.name)
+        .collect();
+    let members = workspace_members();
+    let names: Vec<&String> = members.iter().map(|(name, _)| name).collect();
+    let mut depended_on: Vec<String> = Vec::new();
+    for (_, text) in &members {
+        let document: toml_edit::DocumentMut = text.parse().expect("a member manifest is TOML");
+        for table in ["dependencies", "dev-dependencies", "build-dependencies"] {
+            let Some(deps) = document.get(table).and_then(toml_edit::Item::as_table_like) else {
+                continue;
+            };
+            for (name, entry) in deps.iter() {
+                let inherits = entry
+                    .as_table_like()
+                    .and_then(|entry| entry.get("workspace"))
+                    .and_then(toml_edit::Item::as_bool)
+                    == Some(true);
+                if inherits
+                    && names.iter().any(|member| *member == name)
+                    && !depended_on.iter().any(|seen| seen == name)
+                {
+                    depended_on.push(name.to_string());
+                }
+            }
+        }
+    }
+    assert!(
+        !depended_on.is_empty(),
+        "no member depends on another through `workspace = true`, so this case measured nothing"
+    );
+    let unread: Vec<&String> = depended_on
+        .iter()
+        .filter(|name| !read.contains(name))
+        .collect();
+    assert!(
+        unread.is_empty(),
+        "members depend on these through `workspace = true`, and the judge read no \
+         [workspace.dependencies] entry for them: {unread:?} (read {} entries)",
+        read.len()
+    );
+}
+
+/// An internal dependency with a path and no version is named too: cargo
+/// refuses to publish a crate that depends on one.
+#[test]
+fn a_workspace_dependency_on_a_member_with_no_version_is_named() {
+    let planted = replace_entry(
+        &workspace_manifest(),
+        "headwater-yaml",
+        "headwater-yaml = { path = \"crates/yaml\" }",
+    );
+    let stale = stale_member_dependency_versions(&planted);
+    assert!(
+        stale.len() == 1 && stale[0].contains("headwater-yaml") && stale[0].contains("no version"),
+        "headwater-yaml was planted with no version; the judge said: {stale:?}"
+    );
+}
+
+/// An entry whose path names no member is not this workspace's to hold, so a
+/// different version on it is not a finding.
+#[test]
+fn a_workspace_dependency_outside_the_members_is_not_read() {
+    // The entry goes in front of the headwater-yaml entry, found through the
+    // parse, so it lands inside [workspace.dependencies] whatever the table's
+    // header line carries.
+    let real = workspace_manifest();
+    let mut planted = real.clone();
+    planted.insert_str(
+        entry_span(&real, "headwater-yaml").start,
+        "elsewhere = { path = \"../elsewhere\", version = \"0.0.1\" }\n",
+    );
+    assert!(
+        member_dependency_versions(&planted).len() == member_dependency_versions(&real).len(),
+        "the plant changed the member entries, so it did not plant a non-member one"
+    );
+    let stale = stale_member_dependency_versions(&planted);
+    assert!(
+        stale.is_empty(),
+        "the judge read a non-member entry: {stale:?}"
+    );
+}
+
+/// Every member inherits its version from `[workspace.package]`, so the one
+/// number the dependency entries are held against is the number each crate
+/// publishes under.
+#[test]
+fn every_member_takes_its_version_from_the_workspace() {
+    let own: Vec<String> = workspace_members()
+        .into_iter()
+        .filter(|(_, manifest)| {
+            !manifest
+                .lines()
+                .any(|line| line.trim() == "version.workspace = true")
+        })
+        .map(|(name, _)| name)
+        .collect();
+    assert!(
+        own.is_empty(),
+        "these members do not write `version.workspace = true`, so a workspace bump \
+         does not move them: {own:?}"
     );
 }

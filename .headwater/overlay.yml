@@ -1298,6 +1298,11 @@ add:
   # commit, an issue or another document still resolves. The reconcile-first
   # allocator reads the whole corpus and the claim store, so the next
   # `HW-OBL-` minted on either shelf counts past a number the other holds.
+  # HW-PD-0024 declares no `governs` edge onto this file, and this comment is
+  # the link in its place. A `code_path` anchor binds a whole file, and this
+  # file takes about two commits a day, so the edge would go suspect on each
+  # edit that never touched these kinds. The edge becomes worth its cost when
+  # a `code_path` anchor can name one block or key of a file (#1286).
   #
   # **Each kind mirrors its product kind clause for clause**, which is the
   # shape `process_decision` and `process_explanation` have. An `is_a` of the

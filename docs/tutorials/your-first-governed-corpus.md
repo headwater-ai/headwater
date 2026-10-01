@@ -3,7 +3,7 @@ id: HW-TUT-your-first-governed-corpus
 status: current
 status_since: 2026-09-06
 summary: "An untyped repository reaches a passing strict check in sixteen steps, and the reader leaves holding shelf, kind, facet, overlay and obligation."
-last_verified: 2026-09-09
+last_verified: 2026-09-30
 title: "Your first governed corpus"
 provenance:
   warrant: accepted

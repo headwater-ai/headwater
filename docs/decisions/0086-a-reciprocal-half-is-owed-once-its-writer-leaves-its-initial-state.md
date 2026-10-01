@@ -53,6 +53,6 @@ This record changes what HW-DR-0004 and spec 3 mean when they say that both docu
 
 **A promotion now has a second step.** The author moves the state and then runs `headwater check --fix`, or writes the far half by hand. Until then, the rule reports an error on the promoted document. That error is what makes the far half visible, and the remedy is mechanical.
 
-**A symmetric relation is unchanged.** `headwater new` still writes the far half of a `reciprocal: symmetric` relation, because no check reads a symmetric pair. The base declares one symmetric relation, `conflicts_with`, and `new` refuses it because an agent creates it.
+**A symmetric relation is not in the scope of this record.** [HW-DR-0101](0101-new-writes-no-far-half-of-a-symmetric-relation-and-no-state-on-a-supersedes-target.md) rules on it: `headwater new` writes no far half of a `reciprocal: symmetric` relation, at any opening state.
 
 **What reopens this.** Two cases are a reason to revisit the rule. The first is a regime whose initial state other documents must rely on. The second is a relation whose far half must exist before promotion.

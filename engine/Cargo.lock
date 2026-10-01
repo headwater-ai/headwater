@@ -591,6 +591,7 @@ dependencies = [
  "headwater-vcs",
  "headwater-verbs",
  "headwater-yaml",
+ "toml_edit",
  "zip",
 ]
 

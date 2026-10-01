@@ -4,6 +4,8 @@
 Three READMEs under `docs/taxonomies/*/fixtures/n8n/` each carry a *How to run this corpus* block and a *What a run reports* paragraph. The block is the recipe a reader types; the paragraph is a claim about this engine. Neither re-derives, and both went stale unseen: all three recipes refused at `headwater taxonomy resolve` for four minor versions of the vendored package before anything ran them.
 
 Nothing here carries a second copy of a figure. Every expected value is parsed out of the README, so a number this file holds is a number a reader reads.
+
+It holds one thing more: no README states an aggregate check-instance count outside *What a run reports*, the one section it diffs. That count moves with every rule a release adds, and two copies of it in the design-spec probe arms read 6 and 26 when a run reported 7 and 31 (#1452).
 """
 
 import os
@@ -253,7 +255,103 @@ def provoke_figure(name, readme_path, stated, measured):
                        % (label, readme_path, problems))
 
 
+HELD_SECTION = "What a run reports"
+AGGREGATE_COUNT = re.compile(r"\b\d+ check instances\b")
+
+
+def unheld_counts(text):
+    """Every aggregate check-instance count outside the held section, as (line number, match).
+
+    The count moves with every rule a release adds, and this job diffs it only
+    inside *What a run reports*. A copy anywhere else goes stale unseen, which is
+    how the shelf-removed and narrow-pattern arms came to read 6 and 26 when a
+    run reported 7 and 31 (#1452). So the page states the count once, where this
+    job holds it, and states each probe arm without it.
+    """
+    found, heading = [], None
+    for n, line in enumerate(text.splitlines(), 1):
+        if line.startswith("## "):
+            heading = line[3:].strip()
+            continue
+        if heading == HELD_SECTION:
+            continue
+        found += [(n, m.group(0)) for m in AGGREGATE_COUNT.finditer(line)]
+    return found
+
+
+def unheld_problems(rel, text):
+    return ["%s:%d: states `%s` outside `## %s`, where no job holds it; state it without the number"
+            % (rel, n, match, HELD_SECTION) for n, match in unheld_counts(text)]
+
+
+PROVOKED_HELD = "A held run reads 8 check instances."
+PROVOKED_UNHELD = "A provoked run reads 7 check instances and 9 check instances."
+
+
+def provoked_readme(text):
+    """One README with three counts added, and the line number of the two that must be named.
+
+    A `###` subsection inside the held section carries `8 check instances`, which
+    the guard must leave alone, because a `###` does not end a `##` section. The
+    first section after the held one carries two counts on one line, which the
+    guard must name both of, so the arm also proves that the guard sees where the
+    held section ends. A page whose held section is last gets a new section.
+    """
+    lines = text.splitlines()
+    held = [i for i, l in enumerate(lines) if l.startswith("## ") and l[3:].strip() == HELD_SECTION]
+    if not held:
+        raise Mismatch("no `## %s` section to provoke beside" % HELD_SECTION)
+    after = [i for i, l in enumerate(lines) if i > held[0] and l.startswith("## ")]
+    if after:
+        at = after[0] + 1
+        lines[at:at] = ["", PROVOKED_UNHELD]
+    else:
+        lines += ["", "## A provoked section", "", PROVOKED_UNHELD]
+    at = held[0] + 1
+    lines[at:at] = ["", "### A provoked subsection", "", PROVOKED_HELD]
+    return "\n".join(lines) + "\n", lines.index(PROVOKED_UNHELD) + 1
+
+
+def provoke_unheld(root, corpora, scratch):
+    """Arm 8. Counts added outside the held section must fail this job, run as `main` runs it, naming each file, line and count.
+
+    It copies the three READMEs into a scratch root, provokes each, and runs this
+    file over that root with `--guard-only`, which is `main` up to the point where
+    it needs the engine. So the arm holds how `main` uses the guard's result, and
+    not only the guard.
+    """
+    want = []
+    for _, readme_path in corpora:
+        rel = os.path.relpath(readme_path, root)
+        try:
+            text, line_no = provoked_readme(open(readme_path, encoding="utf-8").read())
+        except Mismatch as e:
+            raise Mismatch("%s: %s" % (rel, e))
+        dest = os.path.join(scratch, rel)
+        os.makedirs(os.path.dirname(dest))
+        open(dest, "w", encoding="utf-8").write(text)
+        want += ["%s:%d: states `%s`" % (rel, line_no, c) for c in ("7 check instances", "9 check instances")]
+    done = subprocess.run([sys.executable, os.path.abspath(__file__), scratch, "--guard-only"],
+                          capture_output=True, text=True)
+    missed = [w for w in want if w not in done.stderr]
+    wrong = [l.strip() for l in done.stderr.splitlines() if "8 check instances" in l]
+    if done.returncode != 1 or missed or wrong:
+        raise Mismatch("three provoked READMEs exit %d under `--guard-only`; unnamed: %r; a held count named: %r"
+                       % (done.returncode, missed, wrong))
+
+
+def report(problems, corpora, green):
+    if problems:
+        print("n8n fixtures: %d claims of %d corpora do not hold" % (len(problems), len(corpora)), file=sys.stderr)
+        for p in problems:
+            print("  " + p, file=sys.stderr)
+        return 1
+    print(green)
+    return 0
+
+
 def main(root, binary):
+    """Check every README against the engine, or with `binary` None check only what needs no engine."""
     corpora = sorted(
         (os.path.basename(os.path.dirname(os.path.dirname(os.path.dirname(p)))), p)
         for p in __import__("glob").glob(os.path.join(root, "docs/taxonomies/*/fixtures/n8n/README.md")))
@@ -268,14 +366,28 @@ def main(root, binary):
         return 1
 
     problems, held = [], 0
+    for name, readme_path in corpora:
+        rel = os.path.relpath(readme_path, root)
+        unheld = unheld_problems(rel, open(readme_path, encoding="utf-8").read())
+        problems += unheld
+        print("n8n fixtures: %s, %d check-instance counts outside `## %s`" % (rel, len(unheld), HELD_SECTION))
+    if binary is None:
+        return report(problems, corpora, "n8n fixtures: no check-instance count outside `## %s` on %d pages"
+                      % (HELD_SECTION, len(corpora)))
+
     scratch = tempfile.mkdtemp(prefix="hw-n8n-")
     try:
+        try:
+            provoke_unheld(root, corpora, os.path.join(scratch, "unheld"))
+            print("n8n fixtures: counts added outside `## %s` fail this job, and one inside it does not" % HELD_SECTION)
+        except Mismatch as e:
+            problems.append("the unheld-count arm: %s" % e)
         for name, readme_path in corpora:
             rel = os.path.relpath(readme_path, root)
             try:
                 stated = stated_figures(open(readme_path, encoding="utf-8").read())
-                report, strict = run_recipe(root, readme_path, binary, os.path.join(scratch, name))
-                measured = measured_figures(report, strict)
+                report_text, strict = run_recipe(root, readme_path, binary, os.path.join(scratch, name))
+                measured = measured_figures(report_text, strict)
                 problems += compare(name, rel, stated, measured)
                 provoke_figure(name, rel, stated, measured)
                 held += len(FIGURES)
@@ -291,14 +403,11 @@ def main(root, binary):
     finally:
         shutil.rmtree(scratch, ignore_errors=True)
 
-    if problems:
-        print("n8n fixtures: %d claims of %d corpora do not hold" % (len(problems), len(corpora)), file=sys.stderr)
-        for p in problems:
-            print("  " + p, file=sys.stderr)
-        return 1
-    print("n8n fixtures: %d figures of %d corpora hold, and each was read out of the page that states it" % (held, len(corpora)))
-    return 0
+    return report(problems, corpora, "n8n fixtures: %d figures of %d corpora hold, and each was read out of the page that states it"
+                  % (held, len(corpora)))
 
 
 if __name__ == "__main__":
+    if sys.argv[2:] == ["--guard-only"]:
+        sys.exit(main(sys.argv[1], None))
     sys.exit(main(sys.argv[1], os.environ["HEADWATER_BIN"]))

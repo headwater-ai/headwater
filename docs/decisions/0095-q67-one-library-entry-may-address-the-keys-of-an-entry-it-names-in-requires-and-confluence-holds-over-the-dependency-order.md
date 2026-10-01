@@ -12,6 +12,9 @@ provenance:
   activity: draft
   evidence_basis: evidenced
 relations:
+  governs:
+    - engine/crates/resolve/src/order.rs
+    - engine/crates/resolve/src/confluence.rs
   traces_to:
     - HW-OBL-0040
     - HW-DR-0040

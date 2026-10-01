@@ -60,9 +60,12 @@
 //!
 //! **It writes no facet of another document.** `supersedes` declares
 //! `on_target: {set_state: superseded}`, and this crate writes no state onto
-//! the target. A state transition is a lifecycle event, no rule in this engine
-//! reads a transition, and a scaffolder that moved a state nothing validates
-//! would be manufacturing the fact spec 12 warns about.
+//! the target at any opening state
+//! ([HW-DR-0101](../../../../docs/decisions/0101-new-writes-no-far-half-of-a-symmetric-relation-and-no-state-on-a-supersedes-target.md)).
+//! `lifecycle.state.not_set_by_edge` reads that transition, and its patch,
+//! which `headwater check --fix` writes, carries the state and its stamp. So
+//! the rule stays the one writer of the state, and this crate does not
+//! duplicate it.
 //!
 //! **It writes no required far half while the new document is a draft.** A
 //! document opens at the initial state of its regime, and a reciprocal half is
@@ -74,8 +77,14 @@
 //! promoted, and `headwater check --fix` writes it through the same splice.
 //! Whether the opening state is initial is read through
 //! [`headwater_check::lifecycle_state::StateFacet::standing`], the predicate the
-//! check reads, so the two never disagree. A symmetric relation still gets its
-//! far half, because no check reads a symmetric pair.
+//! check reads, so the two never disagree.
+//!
+//! **It writes no far half of a symmetric relation, at any opening state.** A
+//! symmetric relation is its own inverse, so the half in the new document
+//! states the edge, and the graph shows it from both ends. A far half written
+//! into a live target is not free: `lifecycle.dependency.on_initial` reads it
+//! as a live document that depends on a draft
+//! ([HW-DR-0101](../../../../docs/decisions/0101-new-writes-no-far-half-of-a-symmetric-relation-and-no-state-on-a-supersedes-target.md)).
 //!
 //! **Allocation sees the corpus and never the history.** Spec 3 says a deleted
 //! document does not free its number. This engine reads a tree, so the highest
@@ -229,12 +238,21 @@ pub struct Proposed {
     pub target: String,
     pub target_path: String,
     /// The half written into the target document by this run. `None` where the
-    /// relation asks for none, and where the half is [`Proposed::owed`].
+    /// relation asks for none, where the relation is symmetric, and where the
+    /// half is [`Proposed::owed`].
     pub reciprocal: Option<Half>,
     /// The required half this run does not write, because the new document
     /// opens at an initial state. The far document owes it once the new one is
     /// promoted.
     pub owed: Option<Owed>,
+    /// Whether the relation is symmetric. This run writes no far half of one
+    /// (HW-DR-0101), and the report says why.
+    pub symmetric: bool,
+    /// The state the relation's `on_target` declares for the target, where the
+    /// edge is written as declared. This run does not write it (HW-DR-0101).
+    /// `lifecycle.state.not_set_by_edge` reports it once this document leaves
+    /// its initial state, and `headwater check --fix` writes it.
+    pub sets_target_state: Option<String>,
     /// The creator the taxonomy assigns, which is `scaffold` on every edge that
     /// reaches this far.
     pub created_by: String,
@@ -1799,8 +1817,10 @@ fn propose_edges(
         }
 
         // The far half, for a relation that requires one. It is written under
-        // the name the far document reads: the inverse of what this document
-        // wrote, and the same name again for a symmetric relation.
+        // the name the far document reads, which is the inverse of what this
+        // document wrote. A symmetric relation gets none (HW-DR-0101): the
+        // near half states the edge, and a far half in a live target is read
+        // by `lifecycle.dependency.on_initial`.
         let reciprocal = match (&relation.reciprocal, minting) {
             (Reciprocal::Required, Some(minting)) => {
                 let name = match named.direction {
@@ -1816,12 +1836,6 @@ fn propose_edges(
                     attributes: Vec::new(),
                 })
             }
-            (Reciprocal::Symmetric, Some(minting)) => Some(Half {
-                relation: relation.name.clone(),
-                path: node.path.clone(),
-                id: minting.id.clone(),
-                attributes: Vec::new(),
-            }),
             _ => None,
         };
 
@@ -1844,6 +1858,11 @@ fn propose_edges(
             target_path: node.path.clone(),
             reciprocal,
             owed,
+            symmetric: matches!(relation.reciprocal, Reciprocal::Symmetric),
+            sets_target_state: match named.direction {
+                Direction::AsDeclared => relation.sets_target_state.clone(),
+                Direction::Inverse => None,
+            },
             created_by: created_by.to_string(),
         });
     }

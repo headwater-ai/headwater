@@ -2,7 +2,7 @@
 id: HW-EVAL-the-build-order-as-a-multi-agent-system
 status: current
 status_since: 2026-09-07
-summary: "What one 20-hour run of the build order measured about its own orchestrator, the cost model those measurements settle, and the architecture that follows. What was rejected, and the numbers the next run is held against."
+summary: "What a 20-hour run of the build order and the runs after it measured about their own orchestrator, the cost model those measurements settle, and the architecture that follows. What was rejected, and the numbers the next run is held against."
 last_verified: 2026-09-29
 title: "The build order as a multi-agent system"
 provenance:
@@ -189,4 +189,4 @@ Four more measurements spend the same unit of cost, a turn at full context. Each
 
 ## What this evaluation cannot show
 
-One run measured the orchestrator, and one run reported the refusals. The width comparison is confounded and is recorded as such. The claim that a compaction preserves a short numbered list and not a long narrative is plausible and untested. The doctrine sizing rests on it. The integrator's net saving of about five parent turns per merge is arithmetic from the measured turn classes. It is not a measurement of the new shape. The saving that a bound on the length of a builder can make is also arithmetic, because no run has tried a planned handoff. Each of these is a thing the next measurement can settle.
+More than one run measured the orchestrator, and each section above names the run it reads. No two of those runs had the same shape, so no number above is a trend. One run reported the refusals. The width comparison is confounded and is recorded as such. The claim that a compaction preserves a short numbered list and not a long narrative is plausible and untested. The doctrine sizing rests on it. The integrator's net saving of about five parent turns per merge is arithmetic from the measured turn classes. It is not a measurement of the new shape. The saving that a bound on the length of a builder can make is also arithmetic, because no run has tried a planned handoff. Each of these is a thing the next measurement can settle.

@@ -29,6 +29,10 @@ The documents on this shelf, in the reading order this corpus derives. Each head
 
 [HW-DR-0003](../decisions/0003-how-much-of-the-default-taxonomy-ships-in-the-box.md) — The base package is minimal and derived from the core, and optional content ships as add-only bundles.
 
+## new writes no far half of a symmetric relation and no state on a supersedes target
+
+[HW-DR-0101](../decisions/0101-new-writes-no-far-half-of-a-symmetric-relation-and-no-state-on-a-supersedes-target.md) — A scaffold edits no target of a symmetric relation. A far half in a live target reads as a live document that rests on a draft. It sets no supersedes state, which check --fix writes. (asserted, and no human has accepted it)
+
 ## A reciprocal half is owed once its writer leaves its initial state
 
 [HW-DR-0086](../decisions/0086-a-reciprocal-half-is-owed-once-its-writer-leaves-its-initial-state.md) — While a draft holds the only half of a required pair, nothing is owed. The far document owes its half once the draft is promoted. (asserted, and no human has accepted it)
