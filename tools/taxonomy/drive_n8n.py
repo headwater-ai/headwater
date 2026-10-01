@@ -256,7 +256,8 @@ def provoke_figure(name, readme_path, stated, measured):
 
 
 HELD_SECTION = "What a run reports"
-AGGREGATE_COUNT = re.compile(r"\b\d+ check instances\b")
+# The singular too: an arm of one instance is a count that moves like any other.
+AGGREGATE_COUNT = re.compile(r"\b\d+ check instances?\b")
 
 
 # The one page outside the three READMEs that restates their counts. It has no
@@ -293,7 +294,8 @@ def unheld_problems(rel, text, held=HELD_SECTION):
 
 
 PROVOKED_HELD = "A held run reads 8 check instances."
-PROVOKED_UNHELD = "A provoked run reads 7 check instances and 9 check instances."
+PROVOKED_COUNTS = ("7 check instances", "1 check instance")
+PROVOKED_UNHELD = "A provoked run reads %s and %s." % PROVOKED_COUNTS
 
 
 def provoked_readme(text):
@@ -321,17 +323,20 @@ def provoked_readme(text):
 
 
 def provoked_evaluation(text):
-    """The evaluation with two counts added under its last `##` heading, and their line number.
+    """The evaluation with counts added in two places, and the line numbers that must be named.
 
-    The page has no held section, so a count under any heading must be named.
+    The page has no held section, so a count anywhere on it must be named. One
+    line goes before the first `##` heading, where no section has opened yet. The
+    other goes under a new `## What a run reports`, the heading a README's held
+    section carries, because on this page that heading must hold nothing.
     """
     lines = text.splitlines()
-    last = [i for i, l in enumerate(lines) if l.startswith("## ")]
-    if not last:
-        raise Mismatch("no `##` section to provoke under")
-    at = last[-1] + 1
-    lines[at:at] = ["", PROVOKED_UNHELD]
-    return "\n".join(lines) + "\n", at + 2
+    first = [i for i, l in enumerate(lines) if l.startswith("## ")]
+    if not first:
+        raise Mismatch("no `##` section to provoke before")
+    lines[first[0]:first[0]] = [PROVOKED_UNHELD, ""]
+    lines += ["", "## " + HELD_SECTION, "", PROVOKED_UNHELD]
+    return "\n".join(lines) + "\n", [first[0] + 1, len(lines)]
 
 
 def provoke_unheld(root, corpora, scratch):
@@ -345,13 +350,13 @@ def provoke_unheld(root, corpora, scratch):
     want = []
     rel = EVALUATION
     try:
-        text, line_no = provoked_evaluation(open(os.path.join(root, rel), encoding="utf-8").read())
+        text, line_nos = provoked_evaluation(open(os.path.join(root, rel), encoding="utf-8").read())
     except (Mismatch, OSError) as e:
         raise Mismatch("%s: %s" % (rel, e))
     dest = os.path.join(scratch, rel)
     os.makedirs(os.path.dirname(dest))
     open(dest, "w", encoding="utf-8").write(text)
-    want += ["%s:%d: states `%s`" % (rel, line_no, c) for c in ("7 check instances", "9 check instances")]
+    want += ["%s:%d: states `%s`" % (rel, n, c) for n in line_nos for c in PROVOKED_COUNTS]
     for _, readme_path in corpora:
         rel = os.path.relpath(readme_path, root)
         try:
@@ -361,7 +366,7 @@ def provoke_unheld(root, corpora, scratch):
         dest = os.path.join(scratch, rel)
         os.makedirs(os.path.dirname(dest))
         open(dest, "w", encoding="utf-8").write(text)
-        want += ["%s:%d: states `%s`" % (rel, line_no, c) for c in ("7 check instances", "9 check instances")]
+        want += ["%s:%d: states `%s`" % (rel, line_no, c) for c in PROVOKED_COUNTS]
     done = subprocess.run([sys.executable, os.path.abspath(__file__), scratch, "--guard-only"],
                           capture_output=True, text=True)
     missed = [w for w in want if w not in done.stderr]
@@ -369,6 +374,14 @@ def provoke_unheld(root, corpora, scratch):
     if done.returncode != 1 or missed or wrong:
         raise Mismatch("three provoked READMEs and the provoked evaluation exit %d under `--guard-only`; unnamed: %r; a held count named: %r"
                        % (done.returncode, missed, wrong))
+    # The evaluation's denominator: the same run with the page gone must fail
+    # naming it, rather than pass over a page it never read.
+    os.remove(os.path.join(scratch, EVALUATION))
+    gone = subprocess.run([sys.executable, os.path.abspath(__file__), scratch, "--guard-only"],
+                          capture_output=True, text=True)
+    if gone.returncode != 1 or "%s: this job holds this page and cannot read it" % EVALUATION not in gone.stderr:
+        raise Mismatch("a scratch root without %s exits %d under `--guard-only` and does not name the page"
+                       % (EVALUATION, gone.returncode))
 
 
 def report(problems, corpora, green):
