@@ -2,7 +2,7 @@
 id: HW-SPEC-checks-and-cache
 status: current
 status_since: 2026-10-01
-summary: "How the check crate instantiates each rule through one scope trait, keys a content-addressed cache, publishes the read set, and how the adapter crate renders one run in four formats."
+summary: "How two crates instantiate each rule through one scope trait, key a content-addressed cache, publish the read set, and render one run in four formats."
 last_verified: 2026-10-01
 title: "Checks and cache"
 provenance:
@@ -14,6 +14,7 @@ provenance:
 relations:
   governs:
     - engine/crates/check/src/**
+    - engine/crates/adapter/src/**
   traces_to:
     - HW-SPEC-engine-architecture
     - HW-SPEC-check-layer
@@ -22,7 +23,6 @@ relations:
     - HW-IFACE-headwater-check
     - HW-IFACE-headwater-gate
     - HW-IFACE-headwater-json
-    - HW-DR-0054
 ---
 
 # Checks and cache
@@ -83,7 +83,7 @@ A trait can also carry the inputs that a check declares: `NEEDS_BODY`, `NEEDS_PH
 
 The corpus-scoped view carries four more `NEEDS_` constants: `NEEDS_LINKS`, `NEEDS_ANCHORS`, `NEEDS_GRAPH` and `NEEDS_ORPHANED`. They are not `Scope` flags.
 
-The first three join no cache key. Each one is a reading of documents that the instance already reads, and the read set names those documents already. A key component would hash the same bytes twice, and it would make every cache of every adopter cold for a fact that changes no verdict. `link_path` carries the one case where this argument does not apply: a link whose target is not a document of this corpus.
+The first three join no cache key. Each one is a reading of documents that the instance already reads, and the read set names those documents already. A key component would hash the same bytes twice. It would also make every cache of every adopter cold for a fact that changes no verdict. `link_path` carries the one case where this argument does not apply: a link whose target is not a document of this corpus.
 
 `NEEDS_ORPHANED` joins the key as a value that the caller injects, and not as a file of the read set. `headwater generate` computes the set of orphaned marked files from the lock and the tree, and the `check` crate cannot repeat that computation. The value goes into the key as a `resolution` line, on the terms of an anchor target. The doc comment of each constant in `engine/crates/check/src/scope.rs` gives the full reason.
 
@@ -115,7 +115,11 @@ The cache serves the instances that nothing touched, and every instance still ha
 - A `windowed` line, for a rule that reads the clock. The verdict is about one day.
 - An input with no content hash. The gate cannot decide that such an input stayed the same.
 
-The union loses which instance read which input, so a gate answers one question about the whole run. Three questions about the read set are open: which instances must run again ([HW-OBL-0081](../obligations/0081-a-published-read-set-never-says-which-instances-must-run-again.md)), whether a real read set is small enough ([HW-OBL-0101](../obligations/0101-whether-the-read-set-of-a-real-corpus-is-small-enough.md)), and how a gate decides about an anchor ([HW-OBL-0118](../obligations/0118-the-published-read-set-names-no-anchor-so-a-gate-decides-nothing-about-one.md)).
+The union loses which instance read which input, so a gate answers one question about the whole run. Three questions about the read set are open:
+
+- Which instances must run again ([HW-OBL-0081](../obligations/0081-a-published-read-set-never-says-which-instances-must-run-again.md)).
+- Whether the read set of a real corpus is small enough ([HW-OBL-0101](../obligations/0101-whether-the-read-set-of-a-real-corpus-is-small-enough.md)).
+- How a gate decides about an anchor ([HW-OBL-0118](../obligations/0118-the-published-read-set-names-no-anchor-so-a-gate-decides-nothing-about-one.md)).
 
 ### A change is a named set of inputs
 
