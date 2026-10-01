@@ -999,8 +999,33 @@ fn taxonomy_publish_vendor_and_diff_finish_when_a_named_pipe_or_socket_is_a_memb
             "publish writes nothing at --out for a {kind}"
         );
 
-        // A clean publish, then the same member planted inside the artifact.
+        // The guard follows a link, so a link to a regular file inside the
+        // package publishes as the file it names.
         std::fs::remove_file(&member).expect("the member is there to take out");
+        std::os::unix::fs::symlink(source.join("package.yml"), &member).expect("the link is made");
+        let linked = root.at.join("linked");
+        let (status, _, err) = ended(
+            &root,
+            &[
+                "taxonomy",
+                "publish",
+                "--from",
+                source.to_str().expect("utf-8"),
+                "--out",
+                linked.to_str().expect("utf-8"),
+            ],
+            "taxonomy publish did not end on a link to a regular file",
+        );
+        assert_eq!(status.code(), Some(0), "a linked member publishes: {err}");
+        assert_eq!(
+            std::fs::read(linked.join("notes.md")).expect("the linked member is published"),
+            std::fs::read(source.join("package.yml")).expect("the manifest reads"),
+            "a link to a regular file inside the package publishes as that file"
+        );
+
+        // A clean publish, whose digest is the pin, then the same member
+        // planted inside the artifact.
+        std::fs::remove_file(&member).expect("the link is there to take out");
         let (status, _, err) = ended(
             &root,
             &publish,
