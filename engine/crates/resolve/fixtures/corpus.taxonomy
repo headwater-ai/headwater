@@ -1,5 +1,5 @@
 taxonomy: headwater/standard
-version: 4.13.0
+version: 4.14.0
 purposes:
   rationale:
     intent: "explain why a choice was made and what it forecloses"
@@ -1345,6 +1345,66 @@ obligations:
     class: cohesion
     prevents: process.traceability
     severity: high
+  OB-FACET-3:
+    statement: "A facet that a document declares carries a value"
+    rationale: "A key written with nothing after it passes the rule that reads for an absent key and the rule that reads a closed set, so the blank reaches a rendered index as the parser's null and every reader of the page sees a document with no name"
+    class: cohesion
+    prevents: content.incomplete
+    severity: high
+  OB-WARRANT-3:
+    statement: "The warrant of a document carries one of the values of the closed set that spec 3 declares"
+    rationale: "A misspelled warrant is a fifth state that no reader and no rule knows, and a reader that tests for one value alone serves the misspelling as a document somebody vouched for"
+    class: cohesion
+    prevents: content.inconsistent
+    severity: medium
+  OB-WARRANT-4:
+    statement: "A document that names who accepted it declares the warrant that an acceptance requires, and a document at that warrant names who accepted it"
+    rationale: "Each value of the warrant requires a different part of the provenance block. An acceptor beside the wrong warrant, or an acceptance with nobody named, is a claim of review that no reader can trace to a person"
+    class: cohesion
+    prevents: process.traceability
+    severity: medium
+  OB-LIFE-7:
+    statement: "A generated document does not receive two different states from the relations that write a state onto it"
+    rationale: "A page can carry one state, so where two edges write two states the generator takes the first in a fixed order, and the page then states one of two answers with nothing that tells its author a second one was dropped"
+    class: cohesion
+    prevents: content.inconsistent
+    severity: medium
+  OB-REL-8:
+    statement: "A verification is observed again after the acceptance criterion it proves changes"
+    rationale: "A verification observed against a criterion that changed since proves the old criterion and not the one a reader finds today. HW-DR-0073 names that state suspect, and a verification that nobody marks suspect reads as a proof of text it never saw"
+    class: cohesion
+    prevents: process.traceability
+    severity: medium
+  OB-PIN-1:
+    statement: "A pin that the corpus commits reads as the bytes it pins, or a finding names the pin"
+    rationale: "A digest pin, an imports snapshot and a harvested export each tell a reader what the corpus rests on. A pin that no longer reads as what it names, and that no anchor happens to cite, reaches nobody, so a corpus that rests on a moved or edited artifact reads the same as one that rests on the artifact it pinned"
+    class: cohesion
+    prevents: process.traceability
+    severity: high
+  OB-LANG-4:
+    statement: "A path that a language regime lists outside the corpus root reads one file that no other regime lists"
+    rationale: "A listed path that reads nothing is a regime that governs nothing and reports nothing, so a mistyped or deleted entry turns off a language rule on front-door prose without a line that says so"
+    class: cohesion
+    prevents: content.inconsistent
+    severity: medium
+  OB-SURF-1:
+    statement: "A page for an adopter instructs only programs that the consumer surface declares"
+    rationale: "HW-DR-0077 rules that the consumer surface is a closed list of what an adopter must have installed. A page that tells an adopter to run a program the list does not name is a prerequisite the adopter meets only when the command fails"
+    class: cohesion
+    prevents: content.inconsistent
+    severity: medium
+  OB-SURF-2:
+    statement: "A page for an adopter does not instruct a file that only the repository that wrote the page holds"
+    rationale: "HW-DR-0077 rules that no page for an adopter instructs a file of this population. The adopter receives the page and not the file, so the instruction reads as a step and fails as one"
+    class: cohesion
+    prevents: content.incomplete
+    severity: medium
+  OB-REG-3:
+    statement: "The committed observation snapshot reads, and it names only controls that this taxonomy declares, each one once"
+    rationale: "The snapshot is what the register reads when it states that a control ran and when a verification was observed. A snapshot that does not read, or that names a control nobody declares, makes the register state an observation that no control made"
+    class: cohesion
+    prevents: process.traceability
+    severity: high
   OB-DR-1:
     class: cohesion
     disposition:
@@ -1724,6 +1784,136 @@ controls:
       criteria:
         window: "one release of the taxonomy over an adopting corpus"
         threshold: "no false positive, because the rule reports a date comparison between a task's own declared `until` and the injected clock, deriving nothing else"
+        sample: "every finding of one run over the adopting corpus, adjudicated once"
+  CT-FACET-3:
+    mechanism: "check:facet.value.blank"
+    discharges:
+      - OB-FACET-3
+    trigger: pull_request
+    posture: advisory
+    acts: detective
+    promotion:
+      criteria:
+        window: "one release of the taxonomy over an adopting corpus"
+        threshold: "no false positive, because the rule reads the core schema's own null resolver and an empty scalar rather than deciding what blank means"
+        sample: "every finding of one run over the adopting corpus, adjudicated once"
+  CT-WARRANT-3:
+    mechanism: "check:warrant.value.not_permitted"
+    discharges:
+      - OB-WARRANT-3
+    trigger: pull_request
+    posture: advisory
+    acts: detective
+    promotion:
+      criteria:
+        window: "one release of the taxonomy over an adopting corpus"
+        threshold: "no false positive, because the rule compares one declared value against the four values the engine carries and reports nothing where the value is absent"
+        sample: "every finding of one run over the adopting corpus, adjudicated once"
+  CT-WARRANT-4:
+    mechanism: "check:warrant.acceptance.unpaired"
+    discharges:
+      - OB-WARRANT-4
+    trigger: pull_request
+    posture: advisory
+    acts: detective
+    promotion:
+      criteria:
+        window: "one release of the taxonomy over an adopting corpus"
+        threshold: "no false positive, because the rule reads two members of one provenance block and the pairing that spec 3 states between them"
+        sample: "every finding of one run over the adopting corpus, adjudicated once"
+  CT-LIFE-7:
+    mechanism: "check:lifecycle.state.set_twice"
+    discharges:
+      - OB-LIFE-7
+    trigger: pull_request
+    posture: advisory
+    acts: detective
+    promotion:
+      permanently_advisory:
+        reasoning: "The reading CT-LIFE-3 takes. The rule sees two edges that write two states and cannot say which one the page should carry. The remedy is to remove one edge, to change the state one relation declares, or to accept the state the generator chose, and only the author can pick among the three, so a posture that stopped a merge would stop it on a question the engine cannot settle"
+  CT-REL-8:
+    mechanism: "check:relation.target.verification.suspect"
+    discharges:
+      - OB-REL-8
+    trigger: pull_request
+    posture: advisory
+    acts: detective
+    promotion:
+      permanently_advisory:
+        reasoning: "The remedy is to run the verification again and commit the new observation, which is an act of the process that writes the snapshot and not an edit the engine can derive. A criterion changes in the same change that states it, before anybody can observe it again, so a posture that stopped a merge would stop every change to a criterion"
+  CT-PIN-1:
+    mechanism: "check:taxonomy.pin.diverged"
+    discharges:
+      - OB-PIN-1
+    trigger: pull_request
+    posture: blocking
+    acts: detective
+    promotion:
+      final_posture:
+        reasoning: "The rule makes the comparison that `headwater taxonomy vendor` makes when it installs an artifact, through the one copy of that comparison, so an advisory period would measure a false-positive rate that the construction fixes at zero. The remedy is mechanical and total, because vendoring the pinned artifact again, or moving the pin to the bytes the corpus means, restores the agreement, and the finding already stops a strict run"
+  CT-PIN-2:
+    mechanism: "check:import.pin.unread"
+    discharges:
+      - OB-PIN-1
+    trigger: pull_request
+    posture: blocking
+    acts: detective
+    promotion:
+      final_posture:
+        reasoning: "The reading CT-PIN-1 takes, over an imports snapshot. The rule reports what the import reader already failed to read, and derives no second answer, so an advisory period would measure a false-positive rate that the construction fixes at zero. The remedy is mechanical and total, because committing the snapshot at the path and digest the declaration names restores the pin, and the finding already stops a strict run"
+  CT-PIN-3:
+    mechanism: "check:harvest.pin.unread"
+    discharges:
+      - OB-PIN-1
+    trigger: pull_request
+    posture: blocking
+    acts: detective
+    promotion:
+      final_posture:
+        reasoning: "The reading CT-PIN-2 takes, over a pinned corpus export. The rule reports what the harvest reader already failed to read, so an advisory period would measure a false-positive rate that the construction fixes at zero. The remedy is mechanical and total, because committing the export at the path and digest the declaration names restores the pin, and the finding already stops a strict run"
+  CT-LANG-4:
+    mechanism: "check:language.outside_root.refused"
+    discharges:
+      - OB-LANG-4
+    trigger: pull_request
+    posture: advisory
+    acts: detective
+    promotion:
+      criteria:
+        window: "one release of the taxonomy over an adopting corpus"
+        threshold: "no false positive, because the rule reports what the census already found when it read each listed path rather than reading the tree a second time"
+        sample: "every finding of one run over the adopting corpus, adjudicated once"
+  CT-SURF-1:
+    mechanism: "check:surface.command.undeclared"
+    discharges:
+      - OB-SURF-1
+    trigger: pull_request
+    posture: advisory
+    acts: detective
+    promotion:
+      permanently_advisory:
+        reasoning: "The remedy is to declare the program on the consumer surface or to rewrite the page so that it does not instruct the program. Which one is right is a judgment about what an adopter must have installed, and the engine cannot make it, so a posture that stopped a merge would stop it on a question only an author can settle"
+  CT-SURF-2:
+    mechanism: "check:surface.local_path.instructed"
+    discharges:
+      - OB-SURF-2
+    trigger: pull_request
+    posture: advisory
+    acts: detective
+    promotion:
+      permanently_advisory:
+        reasoning: "The reading CT-SURF-1 takes. HW-DR-0077 lets a page cite such a file in a passage that says it is how this repository does a thing, so the remedy is a rewrite of the passage or a change to what the surface declares, and the engine cannot pick between the two"
+  CT-REG-3:
+    mechanism: "check:control.observation.invalid"
+    discharges:
+      - OB-REG-3
+    trigger: pull_request
+    posture: advisory
+    acts: detective
+    promotion:
+      criteria:
+        window: "one release of the taxonomy over an adopting corpus"
+        threshold: "no false positive, because the rule reports what the snapshot reader refused and compares the controls it names against the controls this taxonomy declares"
         sample: "every finding of one run over the adopting corpus, adjudicated once"
 surface:
   adopter_documents:
