@@ -23,6 +23,7 @@
 #   h  both tests at p between 0.025 and 0.05, ids that sort against time
 #      order, and a line with a skip reason: a threshold moved to 0.05, a sort
 #      that ignores time and a dropped skip count each fail here.
+#   i  a session whose first prompt is a miss: its first run is counted.
 #
 # Run it from anywhere:
 #     sh tools/run/shadow-capture-fixtures.sh
@@ -223,6 +224,18 @@ has h "$scratch/h.out" "joined lines with a skip reason: 1"
 has h "$scratch/h.out" "sessions test: chi-square 4.5500, df 1, p 0.0329, not rejected"
 has h "$scratch/h.out" "runs test: runs 3, expected 5.0000, variance 1.2000, z -1.8257, p 0.0339 (lower tail), not rejected"
 has h "$scratch/h.out" "randomness: not rejected"
+
+# i: a session whose first prompt is a miss. It misses three and then logs
+# three, which is two runs. A run count that starts from "hit" rather than
+# from no state reads one run, and z -2.7386 rejects.
+start i S "$scratch/co"
+for _i in 0 1 2 3 4 5; do
+    prompt i S "2026-09-30T08:0$_i:00Z" "i-$_i" "i$_i"
+done
+for _i in 3 4 5; do logline i S "i-$_i" "i$_i"; done
+run i
+has i "$scratch/i.out" "runs test: runs 2, expected 4.0000, variance 1.2000, z -1.8257, p 0.0339 (lower tail), not rejected"
+has i "$scratch/i.out" "randomness: not rejected"
 
 # The arguments, over case a's inputs so that only the argument is wrong: an
 # empty date, and a date that does not exist.
