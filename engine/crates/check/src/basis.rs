@@ -325,8 +325,8 @@ impl EdgeCheck for Basis<'_> {
                 ),
                 format!(
                     "correct the warrant of {} to one of the four values, let an artifact \
-                     somebody can audit declare `{}` to `{}` in place of `{}` in {}, or write \
-                     `evidence_basis: reconstructed` in {}",
+                     somebody can audit declare `{}` to `{}` in place of the `{}` entry in {}, \
+                     or write `evidence_basis: reconstructed` in {}",
                     evidence.path,
                     relation.name,
                     claimant.id,
@@ -344,9 +344,9 @@ impl EdgeCheck for Basis<'_> {
                 ),
                 format!(
                     "have a person read {} and set its warrant, let an artifact somebody can \
-                     audit declare `{}` to `{}` in place of `{}` in {}, or write \
-                     `evidence_basis: reconstructed` in {} and say what it was reconstructed \
-                     from",
+                     audit declare `{}` to `{}` in place of the `{}` entry in {}, or \
+                     write `evidence_basis: reconstructed` in {} and say what it was \
+                     reconstructed from",
                     evidence.path,
                     relation.name,
                     claimant.id,

@@ -339,7 +339,10 @@ fn a_discharges_edge_from_a_warrant_outside_the_closed_set_is_reported() {
         message.starts_with("`NOTE-FIX-evidenced-obligation` claims `evidenced`"),
         "the target is the claimant: {message}"
     );
-    assert!(message.contains("`acepted`"), "the value as written: {message}");
+    assert!(
+        message.contains("`acepted`"),
+        "the value as written: {message}"
+    );
     assert!(
         !message.contains("`asserted`"),
         "the value is not called asserted: {message}"
