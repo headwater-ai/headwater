@@ -282,8 +282,9 @@ fn a_discharges_edge_from_an_evidenced_source_onto_an_asserted_target_is_not_rep
     assert!(reported.is_empty(), "{reported:?}");
     // It passed, and it did not skip: the rule read both ends.
     assert!(
-        !skips(&run).iter().any(|(reads, _)| reads
-            .contains(&"evidence-basis/claims/every-evidence-relation.md")),
+        !skips(&run)
+            .iter()
+            .any(|(reads, _)| reads.contains(&"evidence-basis/claims/every-evidence-relation.md")),
         "an instance over the family document skipped: {:?}",
         skips(&run)
     );

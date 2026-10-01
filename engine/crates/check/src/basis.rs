@@ -250,8 +250,7 @@ impl EdgeCheck for Basis<'_> {
 
         // A document the census parsed nothing for is not a document that
         // declared nothing, and the two are kept apart at both ends.
-        let (Some(claimant_facets), Some(evidence_facets)) =
-            (claimant.facets(), evidence.facets())
+        let (Some(claimant_facets), Some(evidence_facets)) = (claimant.facets(), evidence.facets())
         else {
             return Outcome::Skipped(
                 "the census parsed no document at one end of this edge, so there is no provenance \
