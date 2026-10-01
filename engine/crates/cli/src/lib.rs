@@ -1096,6 +1096,15 @@ pub enum ProbeWord {
         delta: bool,
         #[arg(
             long,
+            conflicts_with = "delta",
+            help = "plan nothing, and print each path of the `instrument` sequence of \
+                    `.headwater/probe.yml`, one per line: the paths every arm of every tier \
+                    removes. It reads `.headwater/probe.yml` alone and loads no corpus. A \
+                    declaration it cannot read is refused with status 1 and prints no path"
+        )]
+        instrument: bool,
+        #[arg(
+            long,
             value_name = "name",
             help = "narrow the selection to one probe category, by the name this engine declares \
                     for it. Every category by default, a name outside the closed set is refused \
