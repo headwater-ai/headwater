@@ -417,6 +417,8 @@ anchors
     cited by HW-IFACE-headwater-neighbors
   code_path `engine/crates/embed/src/wordpiece.rs` via source-tree
     cited by HW-IFACE-headwater-neighbors
+  code_path `engine/crates/generate/src/**` via source-tree
+    cited by HW-SPEC-projections-and-export
   code_path `engine/crates/generate/src/derived.rs` via source-tree
     cited by HW-DR-0063
   code_path `engine/crates/generate/src/export.rs` via source-tree
@@ -459,6 +461,8 @@ anchors
     cited by HW-IFACE-headwater-import
   code_path `engine/crates/lock/src/**` via source-tree
     cited by HW-SPEC-taxonomy-resolution
+  code_path `engine/crates/mark/src/**` via source-tree
+    cited by HW-SPEC-projections-and-export
   code_path `engine/crates/mark/src/lib.rs` via source-tree
     cited by HW-IFACE-headwater-derived
   code_path `engine/crates/meta/meta-schema.yml` via source-tree
