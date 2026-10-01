@@ -29,9 +29,9 @@
 //! which is the distinction the two lists have always drawn: the origin is what
 //! a rule reads a declaration from, and the grain is what one instance covers.
 //!
-//! The ten Graph-origin rules span all four grains. [`target`],
-//! [`reciprocity`], [`endpoint`], [`dependency`], [`initial_dependency`] and
-//! [`basis`] are edge-grained,
+//! The Graph-origin rules span all four grains. [`target`],
+//! [`reciprocity`], [`endpoint`], [`dependency`], [`initial_dependency`],
+//! [`invalid_pair`] and [`basis`] are among the edge-grained ones,
 //! [`participation`] is neighbourhood-grained, [`duplicate`] is corpus-grained,
 //! and [`declaration`] and [`identity`] are **document-grained**. The last two
 //! are the ones worth stating: they route the phase-A defects that stop an edge
@@ -158,6 +158,7 @@ pub mod identity;
 pub mod import_pin;
 pub mod initial_dependency;
 pub mod instance;
+pub mod invalid_pair;
 pub mod language;
 pub mod lifecycle_state;
 pub mod link_identifier;
@@ -219,16 +220,17 @@ use headwater_graph::{Declarations, Graph};
 
 /// The rules this runner carries, in the order a report lists them.
 ///
-/// Twenty-seven are generated from the taxonomy, three read no declaration, one
-/// is the coverage guarantee itself, and the last four are about the taxonomy
-/// rather than about the corpus. A rule that is generated has no entry of its
+/// Most are generated from the taxonomy, a few read no declaration, one is the
+/// coverage guarantee itself, and the rest are about the taxonomy or its pins
+/// rather than about the corpus. The length of the array is the count, and no
+/// prose here restates it. A rule that is generated has no entry of its
 /// own anywhere: the list is the *templates*, and the instance count is what a
 /// taxonomy decides.
 ///
 /// The order is the five origins of
 /// [spec 12](../../../../docs/spec/12-check-layer.md#the-five-origins-of-a-check),
 /// which is Shape, then Graph, then the runner's own accounting.
-pub const RULES: [&str; 47] = [
+pub const RULES: [&str; 48] = [
     facet_required::RULE,
     facet_value::RULE,
     facet_blank::RULE,
@@ -242,6 +244,7 @@ pub const RULES: [&str; 47] = [
     dependency::RULE,
     initial_dependency::RULE,
     state_not_set_by_edge::RULE,
+    invalid_pair::RULE,
     basis::RULE,
     participation::RULE,
     state_set_twice::RULE,
@@ -508,6 +511,12 @@ fn registry() -> [(&'static str, Scope, u32, scope::ExportTargets); RULES.len()]
             scope::edge_scope::<state_not_set_by_edge::NotSetByEdge<'_>>(),
             scope::edge_version::<state_not_set_by_edge::NotSetByEdge<'_>>(),
             scope::edge_exports::<state_not_set_by_edge::NotSetByEdge<'_>>(),
+        ),
+        (
+            invalid_pair::RULE,
+            scope::edge_scope::<invalid_pair::InvalidPair<'_>>(),
+            scope::edge_version::<invalid_pair::InvalidPair<'_>>(),
+            scope::edge_exports::<invalid_pair::InvalidPair<'_>>(),
         ),
         (
             basis::RULE,
@@ -796,6 +805,10 @@ pub fn run(
     // Edge-scoped for [`dependency`]'s reason. See [`state_not_set_by_edge`].
     let not_set_by_edge =
         state_not_set_by_edge::NotSetByEdge::over(declared.relations, declared.shape);
+    // Two documents joined by a relation whose declared `invalid_when`
+    // condition holds at both ends, over the relations that declare one.
+    // Edge-scoped for [`dependency`]'s reason. See [`invalid_pair`].
+    let invalid_pair = invalid_pair::InvalidPair::over(declared.relations);
     // An evidenced claim resting on a document nobody read, over the relations
     // whose declared family is `evidence`. Edge-scoped because the unit is the
     // pair: the claim is at one end and the warrant is at the other. See
@@ -955,6 +968,15 @@ pub fn run(
     ));
     instances.extend(scope::over_edges(
         &not_set_by_edge,
+        census,
+        graph,
+        &digests,
+        declared.observations,
+        ctx,
+        cache,
+    ));
+    instances.extend(scope::over_edges(
+        &invalid_pair,
         census,
         graph,
         &digests,

@@ -291,6 +291,11 @@ fi
 # no `'self'`, so the copy happens before the commit and the committed bytes
 # are what Cloudflare serves.
 #
+# The same script holds the footer, which is one block of markup and one block
+# of styles between `headwater:footer` markers. `tools/site/site-footer.html`
+# and `tools/site/site-footer.css` are the one copy of each, and every
+# hand-built page and the generated template carry both.
+#
 # WHY IT SITS HERE. The same reason as the clause above. A page deleted or
 # added under `site/` moves this too, and an engine finding outranks a
 # regenerable one, so this runs only once the engine has passed.
@@ -301,12 +306,14 @@ fi
 if [ "$status" -eq 0 ] && [ -z "${HEADWATER_SKIP_TOKEN_CHECK:-}" ]; then
     if command -v python3 >/dev/null 2>&1; then
         if ! tokens=$(sh "$root/tools/site/refresh-site-tokens.sh" --check 2>&1); then
-            echo "headwater: a hand-built page under \`site/\` carries a visual register"
-            echo "  that disagrees with \`tools/site/site-tokens.css\`, which is the one copy"
-            echo "  of it. The block between the \`headwater:tokens\` markers is written"
-            echo "  by \`tools/site/refresh-site-tokens.sh\` and never by hand."
+            echo "headwater: a page of the site carries a visual register or a footer"
+            echo "  that disagrees with the one copy of it: \`tools/site/site-tokens.css\`"
+            echo "  for the register, \`tools/site/site-footer.html\` and"
+            echo "  \`tools/site/site-footer.css\` for the footer. A block between"
+            echo "  \`headwater:tokens\` or \`headwater:footer\` markers is written by"
+            echo "  \`tools/site/refresh-site-tokens.sh\` and never by hand."
             printf '%s\n' "$tokens" | sed 's/^/    /'
-            echo "  Edit \`tools/site/site-tokens.css\`, regenerate, and stage the result:"
+            echo "  Edit the one copy the lines above name, regenerate, and stage the result:"
             echo "        sh tools/site/refresh-site-tokens.sh"
             echo "  Or skip this one clause for one commit:"
             echo "        HEADWATER_SKIP_TOKEN_CHECK=1 git commit ..."

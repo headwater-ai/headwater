@@ -359,6 +359,40 @@ fn a_target_that_declares_no_warrant_skips_rather_than_passing() {
     );
 }
 
+/// A target exactly as `headwater new` writes it is decided, and not skipped.
+///
+/// `interfaces/scaffolded.md` carries the front matter the scaffolder writes
+/// for an `interface_contract`: an identifier, a title and `warrant: asserted`.
+/// Before #1409 the scaffolder wrote no provenance block, so every evidence
+/// edge onto a new document skipped as the edge onto `quiet.md` does above,
+/// and the rule said nothing about it. `headwater-scaffold`'s
+/// `every_kind_the_scaffolder_writes_states_warrant_asserted` holds the
+/// target's provenance block to the bytes the scaffolder renders, because this
+/// crate cannot dev-depend on the scaffolder without a cycle.
+#[test]
+fn a_target_as_the_scaffolder_writes_it_is_reported_rather_than_skipped() {
+    let run = run();
+    let reported = about(&run, "NOTE-FIX-scaffolded-contract");
+    assert_eq!(reported.len(), 1, "{:?}", refusals(&run));
+    assert!(
+        reported[0].contains("`asserted`"),
+        "the warrant: {}",
+        reported[0]
+    );
+    let paths: Vec<&str> = refusals(&run).into_iter().map(|(path, _)| path).collect();
+    assert!(
+        paths.contains(&"evidence-basis/claims/onto-scaffolded-contract.md"),
+        "the finding anchors at the entry that declares the edge: {paths:?}"
+    );
+    let skips = skips(&run);
+    assert!(
+        !skips
+            .iter()
+            .any(|(reads, _)| reads.contains(&"evidence-basis/interfaces/scaffolded.md")),
+        "an edge onto a scaffolded document skipped: {skips:?}"
+    );
+}
+
 /// A warrant key with no value is an absence, and not a value outside the set.
 ///
 /// The parser hands `warrant:` back as the plain scalar `~`, which the core
@@ -469,11 +503,12 @@ fn an_edge_onto_an_anchor_reaches_no_instance_and_does_not_panic() {
 /// The whole corpus, in one assertion, so a case that stops being reported
 /// cannot hide behind a test that names only its own document.
 #[test]
-fn the_tree_reports_four_documents_and_eleven_edges() {
+fn the_tree_reports_five_documents_and_twelve_edges() {
     let run = run();
     let mut reported: Vec<&str> = refusals(&run).into_iter().map(|(path, _)| path).collect();
     reported.sort_unstable();
     let mut expected = vec![
+        "evidence-basis/claims/onto-scaffolded-contract.md",
         "evidence-basis/claims/rests-on-asserted.md",
         "evidence-basis/claims/rests-on-misspelled.md",
         "evidence-basis/claims/rests-on-proposed.md",

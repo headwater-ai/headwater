@@ -430,6 +430,7 @@ fn dispatch(root: &Path, verb: Verb) -> ExitCode {
                 tier,
                 arm,
                 delta,
+                instrument,
                 category,
                 seed,
                 exclude,
@@ -451,6 +452,9 @@ fn dispatch(root: &Path, verb: Verb) -> ExitCode {
                 Ok((tier, narrowing, budgets)) if delta => {
                     probe_delta(&budgets, tier, narrowing.arm)
                 }
+                // `--instrument` prints the parsed `instrument` sequence, so
+                // a script that removes it parses no YAML either (#1472).
+                Ok((_, _, budgets)) if instrument => probe_instrument(&budgets),
                 Ok((tier, narrowing, budgets)) => probe_plan(root, &budgets, tier, &narrowing),
             },
             Some(ProbeWord::Record { path }) => match path {
@@ -4809,16 +4813,29 @@ fn scaffold_report(
                         owed.until
                     );
                 }
+                (None, None) if edge.symmetric => {
+                    let _ = writeln!(
+                        out,
+                        "    the relation is symmetric, so this half states the edge from both \
+                         ends and {} is not edited",
+                        paint(Role::Path, &edge.target_path, mode)
+                    );
+                }
                 (None, None) => {
                     let _ = writeln!(out, "    the relation asks for no far half");
                 }
             }
+            if let Some(state) = &edge.sets_target_state {
+                let _ = writeln!(
+                    out,
+                    "    the relation sets `{state}` on {}, and this run does not: \
+                     `lifecycle.state.not_set_by_edge` reports it once this document has \
+                     left its initial state, and `headwater check --fix` writes it",
+                    paint(Role::Path, &edge.target_path, mode)
+                );
+            }
         }
-        let _ = writeln!(
-            out,
-            "  no facet of another document moved. `on_target` is a lifecycle event, and no \
-             rule of this engine reads a transition"
-        );
+        let _ = writeln!(out, "  no facet of another document moved");
     }
 
     if !plan.expected.is_empty() {
@@ -5410,6 +5427,20 @@ fn probe_plan(
         narrowing,
     );
     print!("{}", plan.render(headwater_cli::paint::stdout_color()));
+    ExitCode::SUCCESS
+}
+
+/// `headwater probe plan --instrument`: the paths every arm of every tier
+/// removes, one per line.
+///
+/// It prints the parse `Budgets::read` already made, which refused an unsafe
+/// entry before anything reached here, so a caller that removes each line
+/// with `rm -rf` removes only a path inside the tree. A declaration with no
+/// `instrument` prints nothing and exits 0.
+fn probe_instrument(budgets: &headwater_probe::Budgets) -> ExitCode {
+    for path in &budgets.instrument {
+        println!("{path}");
+    }
     ExitCode::SUCCESS
 }
 

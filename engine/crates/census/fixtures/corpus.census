@@ -206,6 +206,8 @@ docs/decisions/0099-a-namespace-does-not-keep-two-corpora-apart-and-no-rule-comp
   typed: decision
 docs/decisions/0100-a-counted-tombstone-lists-a-digest-of-each-withheld-identifier-and-a-sealed-one-lists-nothing.md
   typed: decision
+docs/decisions/0101-new-writes-no-far-half-of-a-symmetric-relation-and-no-state-on-a-supersedes-target.md
+  typed: decision
 docs/decisions/0102-an-editor-integration-starts-headwater-mcp-for-each-query-and-does-not-embed-the-library.md
   typed: decision
 docs/decisions/README.md

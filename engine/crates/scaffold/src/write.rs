@@ -64,6 +64,13 @@ pub fn render(plan: &Plan) -> String {
             false => out.push_str(&format!("{}: {}\n", field.key, field.value)),
         }
     }
+    // Nobody has accepted a document this run writes, so it is `asserted`, and
+    // an edge onto it is decided rather than skipped (#1409). Nothing else of
+    // the block: `accepted_by` is forbidden at `asserted` by spec 3, the engine
+    // does not know who ran the verb, and HW-OBL-0030 records why a member no
+    // check reads is not written. The block is not a `Field`, so
+    // `Plan::assisted` does not count it.
+    out.push_str("provenance:\n  warrant: asserted\n");
     if !plan.edges.is_empty() {
         out.push_str("relations:\n");
         for edge in &plan.edges {

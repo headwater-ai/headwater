@@ -279,6 +279,8 @@ status: draft
 status_since: 2026-09-09
 summary: "The queue keeps every delivery attempt in Postgres."
 last_verified: 2026-09-09
+provenance:
+  warrant: asserted
 ---
 
 # Store attempts in Postgres
@@ -303,6 +305,8 @@ A **shelf** is a region of the tree that carries a purpose, and `docs/decisions/
 A **kind** is what a document permanently is. The `decisions` shelf holds one kind, so placement alone settled that this file is a `decision`. A kind names the facets a document must declare, the sections it must carry, and the relations it may declare.
 
 A **facet** is a property of one document, declared in the front matter. `status`, `status_since`, `summary` and `last_verified` are the four that `decision` requires. Three of them were filled by a role rather than by a guess. `status` came from the lifecycle regime, and two dates came from the run's clock. `summary` carries no role of its own. `--summary <text>` states it directly, exactly as `--title` states the name. Left unstated, the field carries a prompt for a person to answer.
+
+The `provenance` block states what stands behind the document. The verb writes `warrant: asserted` in it, because nobody has accepted the decision yet.
 
 ### Step 9 — Check again, and read the difference
 
@@ -387,7 +391,7 @@ Trimmed to the findings block:
   1 findings
         1 ✗ error
 
-  docs/decisions/0002-deliver-at-least-once.md:9:7 ✗ error
+  docs/decisions/0002-deliver-at-least-once.md:11:7 ✗ error
     relation.reciprocity.missing (OB-REL-1): `ACME-DR-0002` declares
       `supersedes: ACME-DR-0001`, and `supersedes` requires both ends, so
       docs/decisions/0001-store-attempts-in-postgres.md owes `superseded_by`
@@ -461,6 +465,7 @@ docs/decisions/0002-deliver-at-least-once.md
     `decisions` is homogeneous, so placement carries the kind `decision`
   purpose rationale, to explain why a choice was made and what it forecloses
   summary Retrying a delivery is safe, so the queue may send one attempt twice.
+  warrant asserted
   requires the facets status, status_since, summary, last_verified
   requires the sections Context, Decision, Consequences
   may declare supersedes to governed_document, and the other end writes
@@ -493,13 +498,15 @@ route "why do we keep attempts in postgres"
   purpose behavior 3
   purpose rationale 3
   docs/decisions/0001-store-attempts-in-postgres.md — The queue keeps every
-    delivery attempt in Postgres.
+    delivery attempt in Postgres. [asserted: nobody accepted this document]
     matched attempts in postgres, rank 1 of 1
 ```
 
 **Check.** The pointer line names `docs/decisions/0001-store-attempts-in-postgres.md`. The line under it names the words of your question that reached that document.
 
 A **purpose** is the reader intent that a kind exists to serve. The base package declares two, `rationale` and `behavior`, and the route scored your question against both before it looked at any prose. That is why the `summary` facet deserves the most care in any document. Routing serves it as the only pointer a reader gets.
+
+The pointer ends in `[asserted: nobody accepted this document]`, because the decision still states the warrant that `headwater new` wrote. When a person accepts the decision, they change `warrant: asserted` to `warrant: accepted` and add their name in `accepted_by`. Then the mark goes away.
 
 ### Step 16 — Ask what you have not wired up
 

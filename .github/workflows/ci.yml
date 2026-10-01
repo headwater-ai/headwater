@@ -825,6 +825,13 @@ jobs:
         # A page under `site/` with no marker pair fails this step too. That is
         # deliberate: a ninth page opting out of the shared register would do it
         # by carrying no marker, and a silent skip is what would let it.
+        #
+        # The same run holds the footer. `tools/site/site-footer.html` and
+        # `tools/site/site-footer.css` are the one copy of it, and every
+        # hand-built page, `mkdocs/overrides/main.html` and
+        # `mkdocs/overrides/css/headwater.css` carry that copy between
+        # `headwater:footer` markers. Before it the landing page, seven other
+        # pages and the generated half carried three different footers.
         run: sh tools/site/refresh-site-tokens.sh --check
       - name: The committed pages carry no figure, and every figure is measured
         # HW-DR-0039's successor (#1273) rules that a figure on a hand-built

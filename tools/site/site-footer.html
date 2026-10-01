@@ -1,0 +1,57 @@
+<!--
+  site-footer.html — the one copy of the footer that every page of
+  https://headwater.tools/ carries: the eight hand-built pages under `site/`
+  and every page `mkdocs build` renders through `mkdocs/overrides/main.html`.
+
+  `tools/site/refresh-site-tokens.sh` writes the block below between the two
+  `headwater:footer` markers of each of those files. Edit this file, run that
+  script, and read the diff. `--check` fails on a copy that disagrees and on a
+  file that carries no marker pair. `tools/site/site-footer.css` holds the
+  styles, and the same script copies them.
+
+  WHY A COPY RATHER THAN AN INCLUDE
+
+    A hand-built page is a committed file with no build step, and its content
+    policy admits nothing fetched at read time (HW-DR-0037). The generated
+    half could include a file, and it takes the same copy instead so that one
+    check reads both halves the same way.
+
+  WHAT IS BETWEEN THE MARKERS
+
+    The source line and the two link groups. The links are absolute, because
+    the generated half cannot make a relative path to a hand-built page. A
+    page that says something of its own in its footer says it outside the
+    markers: the landing page carries one paragraph above them.
+
+  A NEW PAGE
+
+    A ninth hand-built page takes a link in the second group here. A new
+    shelf that should be reachable from every footer takes one in the first.
+-->
+    <!-- headwater:footer -->
+    <p>The source of this project is <a href="https://github.com/headwater-ai/headwater">github.com/headwater-ai/headwater</a>, under Apache-2.0. The engine, the taxonomy library and the corpus these pages describe are all in it.</p>
+    <div class="footgroups">
+      <div class="footgroup">
+        <div class="footlabel">The corpus — generated from the repository</div>
+        <div class="footlinks">
+          <a href="/spec/">Specification</a>
+          <a href="/decisions/">Decisions</a>
+          <a href="/obligations/">Obligations</a>
+          <a href="/corpus.json">Descriptor</a>
+        </div>
+      </div>
+      <div class="footgroup">
+        <div class="footlabel">This site — hand-built</div>
+        <div class="footlinks">
+          <a href="/">Home</a>
+          <a href="/how-it-works/">How it works</a>
+          <a href="/compare/">Compare</a>
+          <a href="/proof/">Proof</a>
+          <a href="/tutorial/">Tutorial</a>
+          <a href="/glossary/">Glossary</a>
+          <a href="/ns/">Namespace</a>
+          <a href="/changelog/">Changelog</a>
+        </div>
+      </div>
+    </div>
+    <!-- headwater:footer end -->

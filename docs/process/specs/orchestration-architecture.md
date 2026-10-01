@@ -3,7 +3,7 @@ id: HW-SPEC-orchestration-architecture
 status: current
 status_since: 2026-09-22
 summary: "The six stages of a build-order run, what each one owns and never does, where the veto sits, and how claims order the merges."
-last_verified: 2026-09-30
+last_verified: 2026-10-01
 title: "Orchestration architecture"
 provenance:
   warrant: asserted
@@ -26,23 +26,23 @@ relations:
     - HW-PD-0023
   governs:
     - to: .claude/commands/next-run.md
-      verified_revision: sha256:3b23c76457d1bf7816f688d784ee5cca18f7667f789f46cd0e957c3c817bc5fe
+      verified_revision: sha256:3df8b71b341db52c236143673c32f6129ed8b36a61439b0e8dc2854af4870fa0
     - to: .claude/commands/next.md
       verified_revision: sha256:69dd88bcbea169b0f42438d67e4627716f847128982ea38072a6857e4188d530
     - to: .claude/agents/hw-queue.md
       verified_revision: sha256:24ddc87861f3f7bada00eb1f779f41627a40f9f6b1eb7b1411558b0a356eaf22
     - to: .claude/agents/hw-adjudicate.md
-      verified_revision: sha256:caded9e6934bcc2eb7ff2bccbe68f0eb85b4e488a74af0ca9f334efd5bd785c3
+      verified_revision: sha256:d33ccaa7b073f82caccf0a48b66fb933a96d518b9e4ab78a5c63c85190dd3045
     - to: .claude/agents/hw-iterate.md
-      verified_revision: sha256:eab71ea73124082fe3c6d53745451efdcf432aabe562bf4f071bdf442aaf1892
+      verified_revision: sha256:d611defd41b37a8039c0ffb5270626e09f71454e7c32ead30d5b53aa5286f7a2
     - to: .claude/agents/hw-build.md
-      verified_revision: sha256:5fc308fd43b3f451280adf595bab809e6e34c44a94087a8e6433dcd54db043a1
+      verified_revision: sha256:1a7b77b125314abe42f56dad699853f4edb315218721aff5968b5cb4343ea67c
     - to: .claude/agents/hw-verify.md
-      verified_revision: sha256:50a652c2244770cf104df9aa07f0ca71ca27f879373035c75c22697814feee6d
+      verified_revision: sha256:c98a5e49c01127218a1a4b3b0e42bd30ede5c729b0c23ca9ee65e471ff5e55f8
     - to: .claude/agents/hw-integrate.md
       verified_revision: sha256:60e02c40d9917aa958909997f7d07f5786b70abaadacb3a250c518149308cadb
     - to: .claude/skills/hw-run-policy/SKILL.md
-      verified_revision: sha256:158de1cd12d2a4be7144962d93ef671dbbaaa66dd0773a3928403d19206f8e2d
+      verified_revision: sha256:ba3723eef1eaa0bd2aa1fc14adcf3ccb663f250c24db266cb4b74918abf7a82f
     - to: .claude/skills/hw-verification-bar/SKILL.md
       verified_revision: sha256:a68ce6b14b5a8d7068aeafd8c7443e0497a55b4e444e2b971daa1da738c2153b
 ---
@@ -73,7 +73,7 @@ flowchart LR
     parent -->|"every ruling so far"| integrate["hw-integrate"]
 
     queue -->|"queue.md, ordered"| parent
-    adjudicate -->|"BUILD or REFUSE<br/>FOOTPRINT, FIXTURE"| parent
+    adjudicate -->|"BUILD or REFUSE<br/>FOOTPRINT, DERIVED, FIXTURE"| parent
     build -->|"BRANCH, PR<br/>FIXTURE, PUSHED, EXPLORE"| iterate
     verify -->|"PASS or FAIL<br/>RAN, FIRED, UNCHECKED"| iterate
     iterate -->|"PASS or STOP<br/>ROUNDS, UNCHECKED, EXPLORE"| parent
@@ -104,7 +104,7 @@ flowchart LR
 
 **Every stage is an agent definition, and each one loads fresh on every dispatch.** The parent dispatches by name and pastes nothing a definition already states. Each definition declares its own model in its own front matter, so a per-stage model choice is one line rather than a paragraph of prose. Each stage returns a fixed report block, so a parent that has compacted acts by matching a block rather than by recalling a rule.
 
-**Two skills carry what more than one stage obeys.** [`hw-run-policy`](../../../.claude/skills/hw-run-policy/SKILL.md) holds the standing rulings and the environment of a run, and every stage invokes it before it begins. [`hw-verification-bar`](../../../.claude/skills/hw-verification-bar/SKILL.md) holds the adversarial checks and the review questions behind them. `hw-iterate` chooses attacks from the bar, and the verifier runs them.
+**Two skills carry what more than one stage obeys.** [`hw-run-policy`](../../../.claude/skills/hw-run-policy/SKILL.md) holds the standing rulings and the environment of a run, and every stage invokes it before it begins. [`hw-verification-bar`](../../../.claude/skills/hw-verification-bar/SKILL.md) holds the adversarial checks and the review questions behind them. `hw-iterate` chooses attacks from the bar. The builder runs them first, and the verifier runs them again.
 
 ## Roles and responsibilities
 
@@ -134,7 +134,7 @@ flowchart LR
 
 [`.claude/agents/hw-adjudicate.md`](../../../.claude/agents/hw-adjudicate.md) settles whether one issue's premise still holds, before anything is built.
 
-**It owns the premise, the footprint and the decisive fixture.** It writes a note for the construction stage, which starts near an empty context and reads nothing the adjudicator saw unless the note carries it. Its report is a fixed block of three lines: the verdict, the derived artifacts the change regenerates, and the decisive fixture. That fixture is the one test that would catch the thing the issue exists to prevent.
+**It owns the premise, the footprint and the decisive fixture.** It writes a note for the construction stage, which starts near an empty context and reads nothing the adjudicator saw unless the note carries it. Its report is a fixed block of four lines. They are the verdict, the paths the parent claims, the derived folds that nobody claims, and the decisive fixture. That fixture is the one test that would catch the thing the issue exists to prevent.
 
 **Refusal is licensed in words, and a refusal is a completion rather than a failure.** [HW-PD-0002](../decisions/0002-adjudication-is-a-separate-stage-and-refusal-is-licensed.md) settles that this stage stands alone for exactly that reason. An agent handed a prescribed remedy implements the remedy and cannot find the error in it. An agent that first settles whether the premise holds can. A refusal has three kinds, and the parent rules on the kind rather than on the prose.
 
@@ -215,7 +215,7 @@ The front matter of this part declares a `governs` edge onto each `.claude/` fil
 | [`.claude/commands/next-run.md`](../../../.claude/commands/next-run.md) | The entrypoint: the value rule, the doctrine block, the loop, the veto, the resume form and the dispatch template |
 | [`.claude/commands/next.md`](../../../.claude/commands/next.md) | The single-iteration form over the same definitions and skills, with the merge left to a person |
 | [`.claude/agents/hw-queue.md`](../../../.claude/agents/hw-queue.md) | The queue stage: the eligible population, the selection order and the collision marks |
-| [`.claude/agents/hw-adjudicate.md`](../../../.claude/agents/hw-adjudicate.md) | The adjudication stage: the premise, the footprint, the decisive fixture and the three kinds of refusal |
+| [`.claude/agents/hw-adjudicate.md`](../../../.claude/agents/hw-adjudicate.md) | The adjudication stage: the premise, the claimed footprint and the derived folds, the decisive fixture and the three kinds of refusal |
 | [`.claude/agents/hw-iterate.md`](../../../.claude/agents/hw-iterate.md) | The loop stage: the dispatch of the builder and each verifier, the rework by resume, the checkpoint at each stage boundary, the stop at the third FAIL and the report |
 | [`.claude/agents/hw-build.md`](../../../.claude/agents/hw-build.md) | The construction stage: the worktree, the contract-first order, the pull request and the write boundary |
 | [`.claude/agents/hw-verify.md`](../../../.claude/agents/hw-verify.md) | The verification stage: its own worktree, the suite, the chosen attacks and the verdict block |

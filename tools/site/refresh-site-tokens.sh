@@ -28,12 +28,32 @@
 #   opted out of the shared register would do it by carrying no marker, which
 #   is exactly the drift this refuses.
 #
+# THE FOOTER, WHICH IS THE SAME COPY MADE TWICE MORE
+#
+#   `tools/site/site-footer.html` is the one copy of the footer every page of
+#   the site carries, and `tools/site/site-footer.css` is the one copy of its
+#   styles. Each has a `headwater:footer` marker pair, as an HTML comment in
+#   the first and a CSS comment in the second. This script writes the markup
+#   between the same pair in every page under `site/` and in
+#   `mkdocs/overrides/main.html`, and the styles between the same pair in
+#   every page's `<style>` element and in `mkdocs/overrides/css/headwater.css`.
+#
+#   It is here rather than in a script of its own because it is the same move
+#   on the same pages, and the gates that hold the register already run this
+#   file. Before it, the landing page split its footer in two groups, seven
+#   pages carried a flat list, and the generated half carried a third.
+#
+#   The generated half takes a copy too, where it links the register. A
+#   template cannot link markup, and one check that reads both halves the same
+#   way is worth more than an include only one half could use.
+#
 # THE DISCIPLINE
 #
 #   `--check` runs in `.githooks/pre-commit` and in CI, so a page edited by
 #   hand is a refused commit and a red build rather than something a person had
-#   to remember. Run the write form after editing `tools/site/site-tokens.css`, and
-#   read the diff before committing it.
+#   to remember. Run the write form after editing `tools/site/site-tokens.css`,
+#   `tools/site/site-footer.html` or `tools/site/site-footer.css`, and read the
+#   diff before committing it.
 #
 # USAGE
 #
@@ -148,20 +168,81 @@ for name in unlinked:
           % name, file=sys.stderr)
     print("  served with no visual register at all.", file=sys.stderr)
 
+# THE THIRD ARM: ONE FOOTER, ON BOTH HALVES.
+#
+# Two sources, each with its own marker pair, and each copied into every
+# hand-built page and into the one file of the generated half that carries it.
+# A file with no pair is an error and not a skip, for the reason the first arm
+# gives: a page that opted out of the shared footer would do it by carrying no
+# marker.
+#
+# A file under `mkdocs/overrides/` that is absent is reported as unmarked. The
+# second arm skips a missing theme directory. This one does not, because a
+# generated half with no footer copy is the drift this arm exists to refuse.
+FOOTER = [
+    ("tools/site/site-footer.html",
+     "    <!-- headwater:footer -->", "    <!-- headwater:footer end -->",
+     "mkdocs/overrides/main.html"),
+    ("tools/site/site-footer.css",
+     "  /* headwater:footer */", "  /* headwater:footer end */",
+     "mkdocs/overrides/css/headwater.css"),
+]
+foot_read = 0
+foot_unmarked, foot_stale = [], []
+for src, f_open, f_close, generated in FOOTER:
+    src_text = (root / src).read_text() if (root / src).is_file() else ""
+    try:
+        f_body = src_text.split(f_open + "\n", 1)[1].split(f_close + "\n", 1)[0]
+    except IndexError:
+        sys.exit("refresh-site-tokens.sh: no marker pair in %s" % src)
+    f_block = f_open + "\n" + f_body + f_close + "\n"
+    for target in pages + [root / generated]:
+        name = target.relative_to(root).as_posix()
+        foot_read += 1
+        current = target.read_text() if target.is_file() else ""
+        start = current.find(f_open + "\n")
+        end = current.find(f_close + "\n")
+        if start < 0 or end < 0 or end < start:
+            foot_unmarked.append((name, src, f_open, f_close))
+            continue
+        if current[start:end + len(f_close) + 1] == f_block:
+            continue
+        foot_stale.append((name, src))
+        if MODE == "write":
+            target.write_text(current[:start] + f_block + current[end + len(f_close) + 1:])
+
+for name, src, f_open, f_close in foot_unmarked:
+    print("no footer marker pair in %s" % name, file=sys.stderr)
+    print("  every page carries the block of %s. Paste these two lines" % src,
+          file=sys.stderr)
+    print("  where that block belongs and run this script again:",
+          file=sys.stderr)
+    print("      %s\n      %s" % (f_open.strip(), f_close.strip()), file=sys.stderr)
+
 if MODE == "check":
     for name in stale:
         print("stale %s (its block disagrees with tools/site/site-tokens.css)" % name,
+              file=sys.stderr)
+    for name, src in foot_stale:
+        print("stale %s (its footer block disagrees with %s)" % (name, src),
               file=sys.stderr)
     print("%d page(s) read, %d unmarked, %d stale"
           % (len(pages), len(unmarked), len(stale)))
     print("%d token(s) declared, %d restated under `mkdocs/overrides/`, "
           "%d file(s) that must link the register and do not"
           % (len(declared), len(copied), len(unlinked)))
-    raise SystemExit(1 if (unmarked or stale or copied or unlinked) else 0)
+    print("%d footer block(s) read, %d unmarked, %d stale"
+          % (foot_read, len(foot_unmarked), len(foot_stale)))
+    raise SystemExit(1 if (unmarked or stale or copied or unlinked
+                           or foot_unmarked or foot_stale) else 0)
 
 for name in stale:
     print("wrote %s" % name, file=sys.stderr)
+for name, src in foot_stale:
+    print("wrote %s (footer, from %s)" % (name, src), file=sys.stderr)
 print("%d page(s) read, %d unmarked, %d written"
       % (len(pages), len(unmarked), len(stale)))
-raise SystemExit(1 if unmarked else 0)
+print("%d footer block(s) read, %d unmarked, %d written"
+      % (foot_read, len(foot_unmarked), len(foot_stale)))
+raise SystemExit(1 if (unmarked or foot_unmarked) else 0)
 PY

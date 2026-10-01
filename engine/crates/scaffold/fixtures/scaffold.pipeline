@@ -3,7 +3,7 @@ touched corpus/decisions/a-scaffolded-successor.md
 touched corpus/decisions/a-second-successor.md
 
 9 seen, 9 classified, 9 checked, 150 check instances
-     18 skipped: this document declares no warrant, and an absent warrant is not a value outside the closed set
+     12 skipped: this document declares no warrant, and an absent warrant is not a value outside the closed set
       4 skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
      19 skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
 10 documents in the read set, and 7 barriers that no gate carries across a merge
@@ -62,6 +62,8 @@ rules, and for each the scope that binds it
   lifecycle.dependency.on_initial
     edge scope, one relation instance and both endpoints
   lifecycle.state.not_set_by_edge
+    edge scope, one relation instance and both endpoints
+  relation.pair.invalid
     edge scope, one relation instance and both endpoints
   warrant.evidence.unsupported
     edge scope, one relation instance and both endpoints
@@ -155,6 +157,7 @@ register
   lifecycle.dependency.on_terminal reaches no obligation, so it names none
   lifecycle.dependency.on_initial reaches no obligation, so it names none
   lifecycle.state.not_set_by_edge reaches no obligation, so it names none
+  relation.pair.invalid reaches no obligation, so it names none
   warrant.evidence.unsupported reaches no obligation, so it names none
   relation.participation.overdue reaches no obligation, so it names none
   lifecycle.state.set_twice reaches no obligation, so it names none
@@ -247,9 +250,9 @@ instances
   facet.value.blank corpus/standards/a-standard.md
     passed
   warrant.value.not_permitted corpus/decisions/a-scaffolded-successor.md
-    skipped: this document declares no warrant, and an absent warrant is not a value outside the closed set
+    passed
   warrant.value.not_permitted corpus/decisions/a-second-successor.md
-    skipped: this document declares no warrant, and an absent warrant is not a value outside the closed set
+    passed
   warrant.value.not_permitted corpus/decisions/an-earlier-decision.md
     skipped: this document declares no warrant, and an absent warrant is not a value outside the closed set
   warrant.value.not_permitted corpus/exhausted/the-last-one.md
@@ -261,13 +264,13 @@ instances
   warrant.value.not_permitted corpus/spec/03-the-third-part.md
     skipped: this document declares no warrant, and an absent warrant is not a value outside the closed set
   warrant.value.not_permitted corpus/spec/04-a-scaffolded-fourth-part.md
-    skipped: this document declares no warrant, and an absent warrant is not a value outside the closed set
+    passed
   warrant.value.not_permitted corpus/standards/a-standard.md
     skipped: this document declares no warrant, and an absent warrant is not a value outside the closed set
   warrant.acceptance.unpaired corpus/decisions/a-scaffolded-successor.md
-    skipped: this document declares no warrant, and an absent warrant is not a value outside the closed set
+    passed
   warrant.acceptance.unpaired corpus/decisions/a-second-successor.md
-    skipped: this document declares no warrant, and an absent warrant is not a value outside the closed set
+    passed
   warrant.acceptance.unpaired corpus/decisions/an-earlier-decision.md
     skipped: this document declares no warrant, and an absent warrant is not a value outside the closed set
   warrant.acceptance.unpaired corpus/exhausted/the-last-one.md
@@ -279,7 +282,7 @@ instances
   warrant.acceptance.unpaired corpus/spec/03-the-third-part.md
     skipped: this document declares no warrant, and an absent warrant is not a value outside the closed set
   warrant.acceptance.unpaired corpus/spec/04-a-scaffolded-fourth-part.md
-    skipped: this document declares no warrant, and an absent warrant is not a value outside the closed set
+    passed
   warrant.acceptance.unpaired corpus/standards/a-standard.md
     skipped: this document declares no warrant, and an absent warrant is not a value outside the closed set
   identifier.pattern.not_met corpus/decisions/a-scaffolded-successor.md

@@ -405,8 +405,16 @@ fn the_result_names_the_grader_by_its_own_version_and_not_the_engine_release() {
         );
     }
 
-    let recorded = std::fs::read_to_string(fixtures_dir().join("probe-result.record"))
-        .expect("it reads the recorded result");
+    // Under `HEADWATER_BLESS`, the fixture-tree case rewrites the record on
+    // another thread of this process, and a read here can land between its
+    // truncate and its write and find the file empty. So a blessed run reads
+    // the bytes it is about to record instead, and a plain run reads the file.
+    let recorded = if std::env::var_os("HEADWATER_BLESS").is_some() {
+        result_bytes(&fixtures_dir()).1
+    } else {
+        std::fs::read_to_string(fixtures_dir().join("probe-result.record"))
+            .expect("it reads the recorded result")
+    };
     let line = format!("Graded by grader {}.", headwater_probe::grade::VERSION);
     assert_eq!(
         recorded.lines().filter(|l| *l == line).count(),
@@ -1497,6 +1505,171 @@ fn the_two_absent_arms_measure_the_documents() {
     );
 }
 
+/// [`CAMPAIGN_ABSENT_CLEAN`] recorded as one component arm of the `campaign`
+/// tier: the arm is replaced in the front matter and in the run identity, and
+/// the identifier is renamed so that two transcripts never share one.
+fn component_transcript(arm: &str, id: &str) -> String {
+    CAMPAIGN_ABSENT_CLEAN
+        .replace("arm: absent", &format!("arm: {arm}"))
+        .replace("RUN-FIX-campaign-absent-clean", id)
+}
+
+/// The result written for one transcript, by its path.
+fn result_of<'a>(plan: &'a headwater_generate::Plan, path: &str) -> &'a str {
+    &plan
+        .outputs
+        .iter()
+        .find(|output| output.path == path)
+        .unwrap_or_else(|| panic!("{path} is written"))
+        .bytes
+}
+
+/// Each component arm of #1472 against the `campaign` present arm measures
+/// one part of the layer, and spec 5 names it as a claim. A `no-hook`
+/// transcript beside a present one is compared, and the comparison names the
+/// intent hook. Before the component arms had a role, the transcript was
+/// graded and compared with nothing.
+#[test]
+fn a_component_arm_is_compared_with_the_campaign_present_arm() {
+    for (arm, sentence) in [
+        ("no-hook", "What the intent hook changes."),
+        ("no-skills", "What the skills change."),
+        ("no-claude-md", "What `CLAUDE.md` changes."),
+    ] {
+        let at = copied(&format!("component-arm-{arm}"));
+        std::fs::write(
+            at.join("runs/probe-runs/campaign-present.md"),
+            CAMPAIGN_PRESENT,
+        )
+        .expect("the campaign present transcript lands");
+        let path = format!("runs/probe-runs/campaign-{arm}.md");
+        std::fs::write(
+            at.join(&path),
+            component_transcript(arm, &format!("RUN-FIX-campaign-{arm}")),
+        )
+        .expect("the component transcript lands");
+
+        let plan = plan_over(&at);
+        assert!(plan.defective_arms.is_empty(), "{:?}", plan.defective_arms);
+        assert!(plan.ambiguous_arms.is_empty(), "{:?}", plan.ambiguous_arms);
+        let bytes = result_of(&plan, &format!("runs/probe-results/campaign-{arm}.md"));
+        assert!(
+            bytes.contains(sentence),
+            "the `{arm}` arm was not compared with the present arm:\n{bytes}"
+        );
+        assert!(
+            bytes.contains(&format!(
+                "The treated arm is the `campaign` present arm and the control is the \
+                 `campaign` `{arm}` arm"
+            )),
+            "the `{arm}` comparison does not name the present arm as treated:\n{bytes}"
+        );
+        assert!(
+            bytes.contains("- treated, `runs/probe-runs/campaign-present.md`")
+                && bytes.contains(&format!("- control, `{path}`")),
+            "the `{arm}` figures are not the present arm treated and the `{arm}` arm control:\n{bytes}"
+        );
+        let present = result_of(&plan, "runs/probe-results/campaign-present.md");
+        assert!(
+            present.contains(sentence),
+            "the present arm's result does not carry the `{arm}` comparison:\n{present}"
+        );
+    }
+}
+
+/// The `mcp` arm adds to the present tree, so its comparison runs the other
+/// way: the treated arm is `mcp` and the control is the present arm.
+#[test]
+fn the_mcp_arm_is_treated_against_the_campaign_present_arm() {
+    let at = copied("component-arm-mcp");
+    std::fs::write(
+        at.join("runs/probe-runs/campaign-present.md"),
+        CAMPAIGN_PRESENT,
+    )
+    .expect("the campaign present transcript lands");
+    std::fs::write(
+        at.join("runs/probe-runs/campaign-mcp.md"),
+        component_transcript("mcp", "RUN-FIX-campaign-mcp"),
+    )
+    .expect("the mcp transcript lands");
+
+    let plan = plan_over(&at);
+    assert!(plan.defective_arms.is_empty(), "{:?}", plan.defective_arms);
+    assert!(plan.ambiguous_arms.is_empty(), "{:?}", plan.ambiguous_arms);
+    let bytes = result_of(&plan, "runs/probe-results/campaign-mcp.md");
+    assert!(
+        bytes.contains("What the MCP server adds."),
+        "the `mcp` arm was not compared with the present arm:\n{bytes}"
+    );
+    assert!(
+        bytes.contains("The treated arm is the `campaign` `mcp` arm")
+            && bytes.contains("and the control is the `campaign` present arm."),
+        "the `mcp` comparison does not run from `mcp` to the present arm:\n{bytes}"
+    );
+    assert!(
+        bytes.contains("- treated, `runs/probe-runs/campaign-mcp.md`")
+            && bytes.contains("- control, `runs/probe-runs/campaign-present.md`"),
+        "the `mcp` figures are not the `mcp` arm treated and the present arm control:\n{bytes}"
+    );
+}
+
+/// Two `no-hook` transcripts under one key are the same ambiguity as two
+/// present ones: nothing says which one a reader means, so the key compares
+/// nothing and the run names the `no-hook` arm, not a present/absent pair.
+#[test]
+fn two_transcripts_of_one_component_arm_are_ambiguous() {
+    let at = copied("component-arm-ambiguous");
+    std::fs::write(
+        at.join("runs/probe-runs/campaign-present.md"),
+        CAMPAIGN_PRESENT,
+    )
+    .expect("the campaign present transcript lands");
+    std::fs::write(
+        at.join("runs/probe-runs/campaign-no-hook.md"),
+        component_transcript("no-hook", "RUN-FIX-campaign-no-hook"),
+    )
+    .expect("the first no-hook transcript lands");
+    std::fs::write(
+        at.join("runs/probe-runs/campaign-no-hook-again.md"),
+        component_transcript("no-hook", "RUN-FIX-campaign-no-hook-again"),
+    )
+    .expect("the second no-hook transcript lands");
+
+    let plan = plan_over(&at);
+    let ambiguous = match plan.ambiguous_arms.as_slice() {
+        [one] => one,
+        other => panic!(
+            "the plan reported {} ambiguous groups, not one: {:?}",
+            other.len(),
+            other
+        ),
+    };
+    assert_eq!(
+        ambiguous.components,
+        vec![(
+            "no-hook".to_string(),
+            vec![
+                "runs/probe-runs/campaign-no-hook-again.md".to_string(),
+                "runs/probe-runs/campaign-no-hook.md".to_string(),
+            ]
+        )]
+    );
+    let line = ambiguous.line();
+    assert!(
+        line.contains("2 `no-hook`-arm transcripts"),
+        "the line does not name the arm that is ambiguous: {line}"
+    );
+    assert!(
+        !line.contains("absent-arm"),
+        "the line speaks of an absent arm the key does not hold: {line}"
+    );
+    let present = result_of(&plan, "runs/probe-results/campaign-present.md");
+    assert!(
+        !present.contains("What the intent hook changes."),
+        "an ambiguous key compared a `no-hook` transcript anyway:\n{present}"
+    );
+}
+
 /// A second present-arm transcript under the same key as
 /// [`CAMPAIGN_PRESENT`], sharing its identity and carrying the same refused
 /// count as [`CAMPAIGN_ABSENT`] (one) — the shape that let the old
@@ -1612,6 +1785,24 @@ fn an_ambiguous_pair_is_reported_rather_than_silently_zipped_by_path_order() {
     assert_eq!(
         ambiguous.absent,
         vec!["runs/probe-runs/campaign-absent.md".to_string()]
+    );
+    // A key that holds only the present and absent arms keeps the pair
+    // wording: no component arm is named, and the line speaks of the two
+    // sides of the pair rather than of each arm (#1472).
+    assert!(
+        ambiguous.components.is_empty(),
+        "a present/absent key carries no component arm: {:?}",
+        ambiguous.components
+    );
+    let line = ambiguous.line();
+    assert!(
+        line.contains("2 present-arm transcripts and 1 absent-arm transcript")
+            && line.contains("on either side"),
+        "a present/absent key keeps the pair wording: {line}"
+    );
+    assert!(
+        !line.contains("`-arm transcript") && !line.contains("of one arm"),
+        "a present/absent key does not take the component wording: {line}"
     );
 
     let report = write(&at, &plan);

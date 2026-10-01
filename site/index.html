@@ -286,6 +286,7 @@
     font-size: 0.87em; background: var(--code-bg);
     padding: 0.12em 0.36em; border-radius: 3px;
   }
+  /* headwater:footer */
   footer { border-top: 1px solid var(--rule); }
   .foot {
     padding-top: 1.5rem; padding-bottom: 2.5rem;
@@ -299,7 +300,12 @@
     font-family: var(--sans); font-size: 0.72rem; text-transform: uppercase;
     letter-spacing: 0.08em; color: var(--muted); margin-bottom: 0.7rem;
   }
-  .footlinks { display: flex; gap: 1.25rem; flex-wrap: wrap; }
+  .footlinks { display: flex; gap: 0.5rem 1.25rem; flex-wrap: wrap; }
+  @media (max-width: 62rem) {
+    .footlinks { flex-direction: column; gap: 0.75rem; }
+    .footlinks a { display: block; }
+  }
+  /* headwater:footer end */
 
   @media (max-width: 62rem) {
     .bar { padding-left: 1.5rem; padding-right: 1.5rem; }
@@ -326,13 +332,6 @@
     pre.block, pre.wrapped, .install {
       font-size: 0.72rem;
       padding: 0.8rem 1rem;
-    }
-    .footlinks {
-      flex-direction: column;
-      gap: 0.75rem;
-    }
-    .footlinks a {
-      display: block;
     }
     .install {
       max-width: 100%;
@@ -635,6 +634,7 @@ owes `superseded_by`
 <footer>
   <div class="bar foot">
     <p>The corpus of this project is served here, rendered from the repository on every push to the default branch: <a href="/spec/">the specification</a>, <a href="/decisions/">the decisions</a>, <a href="/obligations/">the obligation records</a>, and <a href="/corpus.json">the descriptor</a> that each of those pages names as the machine-readable account of itself.</p>
+    <!-- headwater:footer -->
     <p>The source of this project is <a href="https://github.com/headwater-ai/headwater">github.com/headwater-ai/headwater</a>, under Apache-2.0. The engine, the taxonomy library and the corpus these pages describe are all in it.</p>
     <div class="footgroups">
       <div class="footgroup">
@@ -649,6 +649,7 @@ owes `superseded_by`
       <div class="footgroup">
         <div class="footlabel">This site — hand-built</div>
         <div class="footlinks">
+          <a href="/">Home</a>
           <a href="/how-it-works/">How it works</a>
           <a href="/compare/">Compare</a>
           <a href="/proof/">Proof</a>
@@ -659,6 +660,7 @@ owes `superseded_by`
         </div>
       </div>
     </div>
+    <!-- headwater:footer end -->
   </div>
 </footer>
 
