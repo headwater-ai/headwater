@@ -302,7 +302,7 @@ fn a_discharges_edge_from_an_evidenced_source_onto_an_asserted_target_is_not_rep
 #[test]
 fn a_discharges_edge_onto_an_evidenced_target_from_an_asserted_source_is_reported() {
     let run = run();
-    let reported = about(&run, "NOTE-FIX-evidenced-obligation");
+    let reported = about(&run, "NOTE-FIX-asserted-discharges-evidenced");
     assert_eq!(reported.len(), 1, "{:?}", refusals(&run));
     let message = reported[0];
     assert!(
@@ -320,6 +320,29 @@ fn a_discharges_edge_onto_an_evidenced_target_from_an_asserted_source_is_reporte
     assert!(
         paths.contains(&"evidence-basis/claims/asserted-discharges-evidenced.md"),
         "the finding anchors at the entry that declares the edge: {paths:?}"
+    );
+}
+
+/// The swapped reading also holds a warrant outside the closed set.
+///
+/// `claims/misspelled-discharges-evidenced.md` writes `acepted` and discharges
+/// the same evidenced obligation. The value is at the evidence end, so the pair
+/// is reported with the value as written and the obligation as the claimant. A
+/// rule that swapped the ends for `asserted` alone passes it.
+#[test]
+fn a_discharges_edge_from_a_warrant_outside_the_closed_set_is_reported() {
+    let run = run();
+    let reported = about(&run, "NOTE-FIX-misspelled-discharges-evidenced");
+    assert_eq!(reported.len(), 1, "{:?}", refusals(&run));
+    let message = reported[0];
+    assert!(
+        message.starts_with("`NOTE-FIX-evidenced-obligation` claims `evidenced`"),
+        "the target is the claimant: {message}"
+    );
+    assert!(message.contains("`acepted`"), "the value as written: {message}");
+    assert!(
+        !message.contains("`asserted`"),
+        "the value is not called asserted: {message}"
     );
 }
 
@@ -580,12 +603,13 @@ fn an_edge_onto_an_anchor_reaches_no_instance_and_does_not_panic() {
 /// The whole corpus, in one assertion, so a case that stops being reported
 /// cannot hide behind a test that names only its own document.
 #[test]
-fn the_tree_reports_six_documents_and_twelve_edges() {
+fn the_tree_reports_seven_documents_and_thirteen_edges() {
     let run = run();
     let mut reported: Vec<&str> = refusals(&run).into_iter().map(|(path, _)| path).collect();
     reported.sort_unstable();
     let mut expected = vec![
         "evidence-basis/claims/asserted-discharges-evidenced.md",
+        "evidence-basis/claims/misspelled-discharges-evidenced.md",
         "evidence-basis/claims/onto-scaffolded-contract.md",
         "evidence-basis/claims/rests-on-asserted.md",
         "evidence-basis/claims/rests-on-misspelled.md",
