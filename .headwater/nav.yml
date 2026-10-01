@@ -581,6 +581,7 @@ nav:
       - "Authoring": "subsystems/authoring.md"
       - "Checks and cache": "subsystems/checks-and-cache.md"
       - "Graph build": "subsystems/graph-build.md"
+      - "Measurement": "subsystems/measurement.md"
       - "Parse and census": "subsystems/parse-and-census.md"
       - "Projections and export": "subsystems/projections-and-export.md"
       - "Queries and explain": "subsystems/queries-and-explain.md"

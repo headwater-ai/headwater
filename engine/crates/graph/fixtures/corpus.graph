@@ -409,6 +409,8 @@ anchors
     cited by HW-SPEC-taxonomy-distribution-and-audit
   code_path `engine/crates/compat/src/lib.rs` via source-tree
     cited by HW-IFACE-headwater-taxonomy
+  code_path `engine/crates/conformance/src/**` via source-tree
+    cited by HW-SPEC-measurement
   code_path `engine/crates/conformance/src/json.rs` via source-tree
     cited by HW-IFACE-headwater-conformance
   code_path `engine/crates/conformance/src/lib.rs` via source-tree
@@ -491,6 +493,8 @@ anchors
     cited by HW-DR-0074
   code_path `engine/crates/paint/src/lib.rs` via source-tree
     cited by HW-OBL-0180
+  code_path `engine/crates/probe/src/**` via source-tree
+    cited by HW-SPEC-measurement
   code_path `engine/crates/probe/src/budget.rs` via source-tree
     cited by HW-IFACE-headwater-probe
   code_path `engine/crates/probe/src/grade.rs` via source-tree
@@ -567,6 +571,8 @@ anchors
     cited by HW-OBL-0111
   code_path `engine/crates/scaffold/src/reading.rs` via source-tree
     cited by HW-OBL-0112
+  code_path `engine/crates/sweep/src/**` via source-tree
+    cited by HW-SPEC-measurement
   code_path `engine/crates/sweep/src/intake.rs` via source-tree
     cited by HW-DR-0024
   code_path `engine/crates/sweep/src/lib.rs` via source-tree

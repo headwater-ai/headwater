@@ -428,7 +428,7 @@ if [ -x "$engine" ]; then
         write.sh 0 'docs/interfaces/headwater-sweep.md' \
         '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"engine/crates/cli/src/main.rs"}}'
 
-    # A made-up file beside `lib.rs` of the sweep crate, which
+    # A made-up file beside `main.rs` of the cli crate, which
     # `docs/interfaces/headwater-sweep.md` governs by a literal, one-file
     # anchor. HW-DR-0074 lets an author widen that anchor to a pattern; this
     # contract has not been rewritten to one, so the edge still answers for no
@@ -439,16 +439,18 @@ if [ -x "$engine" ]; then
     # header rather than the contract's path.
     #
     # The example was `engine/crates/check/src/` until #1288's Checks and cache
-    # spec governed `engine/crates/check/src/**`. The sweep crate belongs to
-    # the Measurement row of spec 6, which has no subsystem spec yet. When that
-    # spec governs `engine/crates/sweep/src/**`, move the example again, to a
-    # crate that no subsystem spec governs, or retire the case if none is left.
+    # spec governed `engine/crates/check/src/**`, and `engine/crates/sweep/src/`
+    # until its Measurement spec governed `engine/crates/sweep/src/**`. The cli
+    # crate belongs to the Command surface row of spec 6, which has no
+    # subsystem spec yet. When that spec governs `engine/crates/cli/src/**`,
+    # move the example to a crate that no subsystem spec governs, or retire the
+    # case if none is left.
     refute 'a file beside a governed crate file is governed by no contract, until its contract adopts a pattern' \
         write.sh 'a document in this corpus declares that it governs' \
-        '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"engine/crates/sweep/src/nothing-governs-this.rs"}}'
+        '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"engine/crates/cli/src/nothing-governs-this.rs"}}'
     expect 'the same file is named as in the governed scope with nothing governing it' \
-        write.sh 0 'engine/crates/sweep/src/nothing-governs-this.rs is in the governed scope, and nothing governs it' \
-        '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"engine/crates/sweep/src/nothing-governs-this.rs"}}'
+        write.sh 0 'engine/crates/cli/src/nothing-governs-this.rs is in the governed scope, and nothing governs it' \
+        '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"engine/crates/cli/src/nothing-governs-this.rs"}}'
 
     # #953: the advisory is heard before the edit, and it says so. Until then
     # this branch exited at once for a path that exists, so the case above on
