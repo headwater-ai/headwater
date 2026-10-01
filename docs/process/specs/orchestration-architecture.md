@@ -134,7 +134,7 @@ flowchart LR
 
 [`.claude/agents/hw-adjudicate.md`](../../../.claude/agents/hw-adjudicate.md) settles whether one issue's premise still holds, before anything is built.
 
-**It owns the premise, the footprint and the decisive fixture.** It writes a note for the construction stage, which starts near an empty context and reads nothing the adjudicator saw unless the note carries it. Its report is a fixed block of four lines: the verdict, the paths the parent claims, the derived folds that a merge regenerates and nobody claims, and the decisive fixture. That fixture is the one test that would catch the thing the issue exists to prevent.
+**It owns the premise, the footprint and the decisive fixture.** It writes a note for the construction stage, which starts near an empty context and reads nothing the adjudicator saw unless the note carries it. Its report is a fixed block of four lines. They are the verdict, the paths the parent claims, the derived folds that nobody claims, and the decisive fixture. That fixture is the one test that would catch the thing the issue exists to prevent.
 
 **Refusal is licensed in words, and a refusal is a completion rather than a failure.** [HW-PD-0002](../decisions/0002-adjudication-is-a-separate-stage-and-refusal-is-licensed.md) settles that this stage stands alone for exactly that reason. An agent handed a prescribed remedy implements the remedy and cannot find the error in it. An agent that first settles whether the premise holds can. A refusal has three kinds, and the parent rules on the kind rather than on the prose.
 
