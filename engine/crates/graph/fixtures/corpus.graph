@@ -233,6 +233,8 @@ anchors
     cited by HW-IFACE-headwater-check
   code_path `engine/crates/adapter/src/lib.rs` via source-tree
     cited by HW-OBL-0172
+  code_path `engine/crates/audit/src/**` via source-tree
+    cited by HW-SPEC-taxonomy-distribution-and-audit
   code_path `engine/crates/audit/src/lib.rs` via source-tree
     cited by HW-IFACE-headwater-taxonomy
   code_path `engine/crates/audit/src/reading.rs` via source-tree
@@ -403,6 +405,8 @@ anchors
     cited by HW-DR-0033
   code_path `engine/crates/cli/tests/wiring.rs` via source-tree
     cited by HW-REV-the-sixty-four-restored-help-strings-checked-against-the-binary
+  code_path `engine/crates/compat/src/**` via source-tree
+    cited by HW-SPEC-taxonomy-distribution-and-audit
   code_path `engine/crates/compat/src/lib.rs` via source-tree
     cited by HW-IFACE-headwater-taxonomy
   code_path `engine/crates/conformance/src/json.rs` via source-tree
@@ -421,6 +425,8 @@ anchors
     cited by HW-IFACE-headwater-neighbors
   code_path `engine/crates/embed/src/wordpiece.rs` via source-tree
     cited by HW-IFACE-headwater-neighbors
+  code_path `engine/crates/fetch/src/**` via source-tree
+    cited by HW-SPEC-taxonomy-distribution-and-audit
   code_path `engine/crates/generate/src/**` via source-tree
     cited by HW-SPEC-projections-and-export
   code_path `engine/crates/generate/src/derived.rs` via source-tree

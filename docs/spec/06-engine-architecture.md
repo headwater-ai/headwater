@@ -72,7 +72,7 @@ Each stage is built by one subsystem, and each subsystem is a group of crates un
 | stage | subsystem | crates | why the crates are here |
 |---|---|---|---|
 | resolve | [Taxonomy resolution](../subsystems/taxonomy-resolution.md) | `yaml`, `ref`, `meta`, `resolve`, `lock`, `hash` | Eleven other crates use `hash`. The lock is its first consumer, and one implementation stops two digests from disagreeing. |
-| resolve | Taxonomy distribution and audit (no spec yet, #1288) | `fetch`, `compat`, `audit` | These crates move a taxonomy between repositories and measure it against a corpus. None of them builds the lock. |
+| resolve | [Taxonomy distribution and audit](../subsystems/taxonomy-distribution-and-audit.md) | `fetch`, `compat`, `audit` | These crates move a taxonomy between repositories and measure it against a corpus. None of them builds the lock. |
 | parse | [Parse and census](../subsystems/parse-and-census.md) | `doc`, `census`, `vcs` | `census` and `graph` use `vcs` for the change manifest. The only other crate that uses it is `cli`. |
 | graph build | [Graph build](../subsystems/graph-build.md) | `graph` | |
 | cache, checks | [Checks and cache](../subsystems/checks-and-cache.md) | `check`, `adapter` | `adapter` renders one run of the check layer for a CI platform. |
@@ -406,7 +406,7 @@ There are two commands because there are two kinds of question. The distinction 
 
 Two of the readings this section named do not run. The report evaluates the wait of each one against the corpus in front of it, so a wait that a corpus has ended says so. Each prerequisite that a run does not find states where the absence lives. That matters because a declaration, an authoring pass and a decision are three different acts. Transition continuity waits on a facet in a role that spec 2's closed registry does not hold. Its absence is therefore a column rather than a row. Scent quality waits on a cue that nobody has authored on an edge instance ([HW-OBL-0023](../obligations/0023-no-corpus-has-authored-enough-cues-to-grade.md)). The promotion rate of [Q15](09-decisions.md#q15--a-synthesized-content-tier) is neither of the two, and it is not a wait. This verb reads one working tree, so it holds the denominator and it can never reach the numerator. `warrant.promoted` counts a promotion in the change that makes one, and the warrant reading names that rule beside the population it reports.
 
-**A wait that a string literal states is a claim that no run re-derives.** The three readings above were three such literals until 2026-08-15. One of them said that no document of this corpus carried `warrant: asserted`, six already did, and the verb printed the sentence anyway. A reading that this verb does not take is now a list of prerequisites, and a run evaluates every one of them.
+**A wait that a string literal states is a claim that no run re-derives.** So each wait is a list of prerequisites that a run evaluates, and [Taxonomy distribution and audit](../subsystems/taxonomy-distribution-and-audit.md#audit-a-measurement-that-gates-nothing) states how.
 
 **A count copied into prose is the same defect at a smaller grain.** The change that built the reading above went on to commit its own count into five documents. Every one of them was false before the branch merged, because the change added a document to the population it counted. So a document that needs one of these figures names the verb that produces it. This specification states none of them.
 

@@ -582,6 +582,7 @@ nav:
       - "Graph build": "subsystems/graph-build.md"
       - "Parse and census": "subsystems/parse-and-census.md"
       - "Projections and export": "subsystems/projections-and-export.md"
+      - "Taxonomy distribution and audit": "subsystems/taxonomy-distribution-and-audit.md"
       - "Taxonomy resolution": "subsystems/taxonomy-resolution.md"
   - "Tutorials":
       - "Tutorials": "tutorials/README.md"
