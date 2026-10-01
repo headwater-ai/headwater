@@ -197,13 +197,9 @@ fn refuses(label: &str, line: &str, complaint: &str) {
         ran.err
     );
     let named = root.named();
-    let reported = ran
-        .out
-        .split(&named)
-        .skip(1)
-        .any(|after| {
-            after.contains(&format!("facet.value.blank ({OBLIGATION})")) && after.contains(complaint)
-        });
+    let reported = ran.out.split(&named).skip(1).any(|after| {
+        after.contains(&format!("facet.value.blank ({OBLIGATION})")) && after.contains(complaint)
+    });
     assert!(
         reported,
         "no `facet.value.blank ({OBLIGATION})` finding on {named} saying {complaint}\n{}",

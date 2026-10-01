@@ -58,7 +58,8 @@ const LIFECYCLE: [(&str, &str, &str, &str); 7] = [
         "OB-LIFE-6",
         "blocking",
         "final_posture",
-    ),    (
+    ),
+    (
         "lifecycle.state.set_twice",
         "OB-LIFE-7",
         "advisory",
@@ -119,7 +120,10 @@ fn every_rule_reaches_one_obligation_of_the_standard_package() {
         .windows(2)
         .filter(|pair| pair[1] == "reaches" && pair[0].contains('.'))
         .map(|pair| pair[0])
-        .filter(|rule| rule.chars().all(|c| c.is_ascii_lowercase() || c == '.' || c == '_'))
+        .filter(|rule| {
+            rule.chars()
+                .all(|c| c.is_ascii_lowercase() || c == '.' || c == '_')
+        })
         .collect();
     unbound.sort_unstable();
     unbound.dedup();
