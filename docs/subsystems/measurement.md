@@ -15,6 +15,7 @@ relations:
   governs:
     - engine/crates/probe/src/**
     - engine/crates/conformance/src/**
+    - engine/crates/sweep/src/**
   traces_to:
     - HW-SPEC-engine-architecture
     - HW-SPEC-ai-integration

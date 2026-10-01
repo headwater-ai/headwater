@@ -1104,6 +1104,8 @@ docs/subsystems/checks-and-cache.md
   typed: subsystem_spec
 docs/subsystems/graph-build.md
   typed: subsystem_spec
+docs/subsystems/measurement.md
+  typed: subsystem_spec
 docs/subsystems/parse-and-census.md
   typed: subsystem_spec
 docs/subsystems/projections-and-export.md

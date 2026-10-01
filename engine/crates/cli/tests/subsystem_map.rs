@@ -293,6 +293,9 @@ fn every_crate_is_in_exactly_one_row_of_spec_6s_subsystem_map() {
 /// Watched failing the same two ways over the Parse and census row: with the
 /// row linked and no spec on disk, and with the spec's `governs` missing
 /// `engine/crates/vcs/src/**` (the message named `vcs`).
+/// Watched failing the same two ways over the Measurement row: with the row
+/// linked and no spec on disk, and with the spec's `governs` missing
+/// `engine/crates/sweep/src/**` (the message named `sweep`).
 ///
 /// [HW-DR-0074]: ../../../../docs/decisions/0074-a-code-path-anchor-is-a-pattern-over-the-tree-and-it-binds-when-the-pattern-matches-at-least-one-entry.md
 #[test]
