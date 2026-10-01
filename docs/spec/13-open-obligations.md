@@ -333,6 +333,9 @@ This class dates from 2026-08-26. Before that date, such a finding was filed as 
 - [HW-OBL-0214](../obligations/0214-the-commit-gate-does-not-see-docs-taxonomies-readme-md-drift-from-its-vendored-copy.md) — The commit gate does not see docs/taxonomies/README.md drift from its vendored copy
 - [HW-OBL-0222](../obligations/0222-ten-rules-of-the-editions-ledger-have-one-recorded-corpus-so-a-rule-change-blessed-with-an-edit-to-that-corpus-passes.md) — Ten rules of the editions ledger have one recorded corpus, so a rule change blessed with an edit to that corpus passes
 - [HW-OBL-0226](../obligations/0226-six-corpus-gaps-from-run-20260929-1205-filed-together.md) — Six corpus gaps from run 20260929-1205, filed together
+- [HW-OBL-0228](../obligations/0228-the-subsystem-specs-claim-evidence-their-targets-do-not-carry-and-two-rules-of-the-shelf-live-only-in-a-test.md) — The subsystem specs claim evidence their targets do not carry, and two rules of the shelf live only in a test
+- [HW-OBL-0229](../obligations/0229-the-counterfactual-campaign-evaluation-withholds-its-discharges-edge-until-a-person-promotes-it.md) — The counterfactual campaign evaluation withholds its discharges edge until a person promotes it
+- [HW-OBL-0230](../obligations/0230-comments-in-the-command-surface-crates-and-their-subsystem-spec-state-eight-stale-facts.md) — Comments in the command-surface crates and their subsystem spec state eight stale facts
 
 ## What the first typing of this corpus found
 
