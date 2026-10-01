@@ -1104,6 +1104,8 @@ docs/subsystems/parse-and-census.md
   typed: subsystem_spec
 docs/subsystems/projections-and-export.md
   typed: subsystem_spec
+docs/subsystems/queries-and-explain.md
+  typed: subsystem_spec
 docs/subsystems/taxonomy-distribution-and-audit.md
   typed: subsystem_spec
 docs/subsystems/taxonomy-resolution.md
