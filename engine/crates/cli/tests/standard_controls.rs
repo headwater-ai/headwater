@@ -149,6 +149,69 @@ fn every_rule_reaches_one_obligation_of_the_standard_package() {
     );
 }
 
+/// The rules outside the lifecycle family that 4.14.0 bound, one row each in
+/// the shape of [`LIFECYCLE`] (#1492). The case above sees a rule that reaches
+/// no obligation. It does not see a control that moved to another obligation
+/// or another posture, so the case below holds what each control promises.
+const BOUND_IN_4_14: [(&str, &str, &str, &str); 11] = [
+    ("facet.value.blank", "OB-FACET-3", "advisory", "criteria"),
+    (
+        "warrant.value.not_permitted",
+        "OB-WARRANT-3",
+        "advisory",
+        "criteria",
+    ),
+    (
+        "warrant.acceptance.unpaired",
+        "OB-WARRANT-4",
+        "advisory",
+        "criteria",
+    ),
+    (
+        "relation.target.verification.suspect",
+        "OB-REL-8",
+        "advisory",
+        "permanently_advisory",
+    ),
+    (
+        "taxonomy.pin.diverged",
+        "OB-PIN-1",
+        "blocking",
+        "final_posture",
+    ),
+    ("import.pin.unread", "OB-PIN-1", "blocking", "final_posture"),
+    (
+        "harvest.pin.unread",
+        "OB-PIN-1",
+        "blocking",
+        "final_posture",
+    ),
+    (
+        "language.outside_root.refused",
+        "OB-LANG-4",
+        "advisory",
+        "criteria",
+    ),
+    (
+        "surface.command.undeclared",
+        "OB-SURF-1",
+        "advisory",
+        "permanently_advisory",
+    ),
+    (
+        "surface.local_path.instructed",
+        "OB-SURF-2",
+        "advisory",
+        "permanently_advisory",
+    ),
+    (
+        "control.observation.invalid",
+        "OB-REG-3",
+        "advisory",
+        "criteria",
+    ),
+];
+
 /// The declaration of the one control of the maintained package whose
 /// mechanism is `check:<rule>`. Controls sit one to a block, a blank line
 /// separates two blocks, and each block opens with its identifier.
@@ -168,13 +231,13 @@ fn control_of<'a>(taxonomy: &'a str, rule: &str) -> &'a str {
 /// The posture a merge meets is part of what the package promises, and the
 /// register counts postures without naming the control, so a control moved
 /// from `blocking` to `advisory` changed no line the case above reads (the
-/// verifier's finding on #1212). This case reads each lifecycle control where
-/// the maintained package declares it.
+/// verifier's finding on #1212). This case reads each lifecycle control, and
+/// each control that 4.14.0 added, where the maintained package declares it.
 #[test]
 fn each_lifecycle_control_declares_its_obligation_posture_and_promotion() {
     let source = common::repository().join("taxonomy-source/headwater-standard/taxonomy.yml");
     let taxonomy = std::fs::read_to_string(&source).expect("the maintained package reads");
-    for (rule, obligation, posture, promotion) in LIFECYCLE {
+    for (rule, obligation, posture, promotion) in LIFECYCLE.into_iter().chain(BOUND_IN_4_14) {
         let control = control_of(&taxonomy, rule);
         for line in [
             format!("    discharges: [{obligation}]\n"),
