@@ -112,11 +112,29 @@ pub struct Budgets {
     /// probe expects. They are the instrument and not the treatment, so no
     /// arm holds them. Empty where the file declares none.
     pub instrument: Vec<String>,
+    /// The `folds` sequence: the files outside `docs/` that name a probe and
+    /// state no answer, which `tools/probe/seal.sh` keeps and the guard of
+    /// `probe-record.sh` passes. Empty where the file declares none.
+    pub folds: Vec<String>,
+    /// The `answer_keys` mapping, in declared order: for each probe, the
+    /// documents an earlier session wrote in answer to its task, which the
+    /// seal removes. Empty where the file declares none.
+    pub answer_keys: Vec<(String, Vec<String>)>,
 }
 
 impl Budgets {
     pub fn of(&self, tier: Tier) -> Option<&Envelope> {
         self.tiers.iter().find(|envelope| envelope.tier == tier)
+    }
+
+    /// The answer keys one probe declares, empty for a probe that declares
+    /// none.
+    pub fn answer_keys(&self, probe: &str) -> &[String] {
+        self.answer_keys
+            .iter()
+            .find(|(declared, _)| declared == probe)
+            .map(|(_, paths)| paths.as_slice())
+            .unwrap_or(&[])
     }
 
     /// Read the declaration.
@@ -154,6 +172,38 @@ impl Budgets {
                 .map_err(|entry| Unreadable::InstrumentUnsafe { entry })?,
         };
 
+        let folds = match root.get("folds") {
+            None => Vec::new(),
+            Some(listed) => paths(&listed.value)
+                .ok_or_else(|| {
+                    Unreadable::Malformed(format!("`folds` in {PATH} is not a sequence of paths"))
+                })?
+                .map_err(|entry| Unreadable::FoldUnsafe { entry })?,
+        };
+
+        let mut answer_keys: Vec<(String, Vec<String>)> = Vec::new();
+        if let Some(declared) = root.get("answer_keys") {
+            let Some(by_probe) = declared.value.as_map() else {
+                return Err(Unreadable::Malformed(format!(
+                    "`answer_keys` in {PATH} is not a mapping of probe to a sequence of paths"
+                )));
+            };
+            for entry in by_probe {
+                let probe = entry.key.value.as_str().to_string();
+                let keys = paths(&entry.value.value)
+                    .ok_or_else(|| {
+                        Unreadable::Malformed(format!(
+                            "the answer keys of `{probe}` in {PATH} are not a sequence of paths"
+                        ))
+                    })?
+                    .map_err(|entry| Unreadable::AnswerKeyUnsafe {
+                        probe: probe.clone(),
+                        entry,
+                    })?;
+                answer_keys.push((probe, keys));
+            }
+        }
+
         let mut tiers = Vec::new();
         for entry in block {
             let name = entry.key.value.as_str();
@@ -172,7 +222,12 @@ impl Budgets {
                 "{PATH} declares no tier, and a run at a tier with no envelope cannot fail closed"
             )));
         }
-        Ok(Budgets { tiers, instrument })
+        Ok(Budgets {
+            tiers,
+            instrument,
+            folds,
+            answer_keys,
+        })
     }
 }
 
@@ -440,6 +495,13 @@ pub enum Unreadable {
     InstrumentUnsafe {
         entry: String,
     },
+    FoldUnsafe {
+        entry: String,
+    },
+    AnswerKeyUnsafe {
+        probe: String,
+        entry: String,
+    },
 }
 
 impl std::fmt::Display for Unreadable {
@@ -538,6 +600,22 @@ impl std::fmt::Display for Unreadable {
                  character, because every arm removes it with `rm -rf`",
                 entry.escape_debug()
             ),
+            Unreadable::FoldUnsafe { entry } => write!(
+                f,
+                "the `folds` of {PATH} name `{}`. An entry is a path inside the tree, \
+                 relative to its root, with no `..`, `.` or empty component and no control \
+                 character, because the seal and the guard compare it with a file of the \
+                 workspace",
+                entry.escape_debug()
+            ),
+            Unreadable::AnswerKeyUnsafe { probe, entry } => write!(
+                f,
+                "the answer keys of `{}` in {PATH} name `{}`. An entry is a path inside the \
+                 tree, relative to its root, with no `..`, `.` or empty component and no \
+                 control character, because the seal removes it with `rm`",
+                probe.escape_debug(),
+                entry.escape_debug()
+            ),
         }
     }
 }
@@ -605,6 +683,89 @@ tiers:
                 entry: "../x".to_string()
             })
         );
+    }
+
+    #[test]
+    fn the_folds_and_the_answer_keys_read_in_every_sequence_form() {
+        // `tools/probe/seal.sh` reads both lists from here (#1472, clause
+        // 8). Its hand-written readers took a two-space block of folds and a
+        // flow sequence of keys alone, so any other form read as no list.
+        for (form, written) in [
+            (
+                "block",
+                "folds:\n  - .headwater/nav.yml\n  - tools/x.spec\nanswer_keys:\n  P-1:\n  - docs/a.md\n  - docs/b.md\n  P-2: [docs/c.md]\n",
+            ),
+            (
+                "four-space block",
+                "folds:\n    - .headwater/nav.yml\n    - tools/x.spec\nanswer_keys:\n    P-1:\n        - docs/a.md\n        - docs/b.md\n    P-2:\n        - docs/c.md\n",
+            ),
+            (
+                "flow",
+                "folds: [.headwater/nav.yml, \"tools/x.spec\"] # the folds\nanswer_keys: {P-1: [docs/a.md, docs/b.md], P-2: [docs/c.md]}\n",
+            ),
+        ] {
+            let budgets = Budgets::read(&format!("{written}{GOOD}")).expect(form);
+            assert_eq!(budgets.folds, vec![".headwater/nav.yml", "tools/x.spec"], "{form}");
+            assert_eq!(
+                budgets.answer_keys,
+                vec![
+                    (
+                        "P-1".to_string(),
+                        vec!["docs/a.md".to_string(), "docs/b.md".to_string()]
+                    ),
+                    ("P-2".to_string(), vec!["docs/c.md".to_string()]),
+                ],
+                "{form}"
+            );
+            assert_eq!(budgets.answer_keys("P-2"), ["docs/c.md".to_string()]);
+            assert!(budgets.answer_keys("P-3").is_empty(), "{form}");
+        }
+    }
+
+    #[test]
+    fn a_file_with_no_folds_and_no_answer_keys_reads_as_two_empty_lists() {
+        let budgets = Budgets::read(GOOD).expect("reads");
+        assert!(budgets.folds.is_empty());
+        assert!(budgets.answer_keys.is_empty());
+    }
+
+    #[test]
+    fn a_fold_or_an_answer_key_that_leaves_the_tree_is_refused() {
+        // The seal runs `rm` on each answer key in a workspace, and a fold is
+        // a path the guard compares. Either refuses the whole file.
+        assert_eq!(
+            Budgets::read(&format!("folds: [tools/x.spec, ../x]\n{GOOD}")),
+            Err(Unreadable::FoldUnsafe {
+                entry: "../x".to_string()
+            })
+        );
+        assert_eq!(
+            Budgets::read(&format!(
+                "answer_keys:\n  P-1: [docs/a.md, /etc/passwd]\n{GOOD}"
+            )),
+            Err(Unreadable::AnswerKeyUnsafe {
+                probe: "P-1".to_string(),
+                entry: "/etc/passwd".to_string()
+            })
+        );
+    }
+
+    #[test]
+    fn folds_and_answer_keys_of_the_wrong_shape_are_refused() {
+        for written in [
+            "folds: tools/x.spec\n",
+            "folds: {a: b}\n",
+            "answer_keys: [docs/a.md]\n",
+            "answer_keys:\n  P-1: docs/a.md\n",
+        ] {
+            assert!(
+                matches!(
+                    Budgets::read(&format!("{written}{GOOD}")),
+                    Err(Unreadable::Malformed(_))
+                ),
+                "{written}"
+            );
+        }
     }
 
     #[test]

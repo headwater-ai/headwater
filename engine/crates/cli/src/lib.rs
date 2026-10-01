@@ -1105,6 +1105,27 @@ pub enum ProbeWord {
         instrument: bool,
         #[arg(
             long,
+            conflicts_with_all = ["delta", "instrument", "answer_keys"],
+            help = "plan nothing, and print each path of the `folds` sequence of \
+                    `.headwater/probe.yml`, one per line: the files outside `docs/` that name a \
+                    probe and state no answer, which the seal keeps. It reads \
+                    `.headwater/probe.yml` alone and loads no corpus. A declaration it cannot \
+                    read is refused with status 1 and prints no path"
+        )]
+        folds: bool,
+        #[arg(
+            long,
+            value_name = "probe",
+            conflicts_with_all = ["delta", "instrument"],
+            help = "plan nothing, and print each answer key that the `answer_keys` mapping of \
+                    `.headwater/probe.yml` declares for the probe, one path per line: the \
+                    documents the seal removes. A probe with no key prints nothing. It reads \
+                    `.headwater/probe.yml` alone and loads no corpus. A declaration it cannot \
+                    read is refused with status 1 and prints no path"
+        )]
+        answer_keys: Option<String>,
+        #[arg(
+            long,
             value_name = "name",
             help = "narrow the selection to one probe category, by the name this engine declares \
                     for it. Every category by default, a name outside the closed set is refused \

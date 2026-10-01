@@ -2067,3 +2067,175 @@ fn probe_plan_instrument_prints_the_parsed_instrument() {
     ]);
     assert_ne!(both.code, Some(0), "{}{}", both.out, both.err);
 }
+
+/// `probe plan --folds` and `probe plan --answer-keys <probe>` print the two
+/// lists `tools/probe/seal.sh` reads, one path per line, in every form the
+/// engine accepts, so that the seal parses no YAML itself (#1472, clause 8).
+/// Its hand-written readers took a two-space block of folds and a flow
+/// sequence of keys alone. A block of keys printed nothing, so the seal kept
+/// the key in every arm.
+#[test]
+fn probe_plan_folds_and_answer_keys_print_the_parsed_lists() {
+    let at = std::env::temp_dir().join(format!(
+        "headwater-cli-wiring-{}-probe-folds-keys",
+        std::process::id()
+    ));
+    let _ = std::fs::remove_dir_all(&at);
+    std::fs::create_dir_all(at.join(".headwater")).expect("the declaration directory is there");
+    let root = Root { at };
+    let declared = std::fs::read_to_string(repository().join(".headwater/probe.yml"))
+        .expect("this repository declares its probes");
+    let start = declared
+        .find("\nfolds:\n")
+        .expect("this repository declares its folds")
+        + 1;
+    let end = start
+        + declared[start..]
+            .find("\n\n")
+            .expect("the folds block ends at a blank line")
+        + 1;
+    let block = &declared[start..end];
+    let expected: String = block
+        .lines()
+        .skip(1)
+        .map(|line| format!("{}\n", line.trim_start_matches("  - ")))
+        .collect();
+    assert!(expected.contains(".headwater/probe.yml\n"), "{expected}");
+    let four_space: String = block
+        .lines()
+        .map(|line| match line.strip_prefix("  - ") {
+            Some(path) => format!("    - {path}\n"),
+            None => format!("{line}\n"),
+        })
+        .collect();
+    let flow = format!(
+        "folds: [{}] # the folds\n",
+        expected.lines().collect::<Vec<_>>().join(", ")
+    );
+    for (form, written) in [
+        ("block", block.to_string()),
+        ("four-space block", four_space),
+        ("flow", flow),
+    ] {
+        std::fs::write(
+            root.path(".headwater/probe.yml"),
+            declared.replace(block, &written),
+        )
+        .expect("the declaration writes");
+        let printed = root.run(&["probe", "plan", "--folds"]);
+        assert_eq!(
+            printed.code,
+            Some(0),
+            "{form}: {}{}",
+            printed.out,
+            printed.err
+        );
+        assert_eq!(printed.out, expected, "{form}: {}", printed.err);
+    }
+
+    // The answer keys, in the same three forms. A probe that declares no key
+    // prints nothing and exits 0.
+    let keys_at = declared
+        .find("\nanswer_keys:\n")
+        .expect("this repository declares answer keys")
+        + 1;
+    let keys_end = keys_at
+        + declared[keys_at..]
+            .find("\n\n")
+            .expect("the answer keys end at a blank line")
+        + 1;
+    let keys = &declared[keys_at..keys_end];
+    let probe = "PROBE-FIX-keyed";
+    for (form, written) in [
+        (
+            "block",
+            format!("answer_keys:\n  {probe}:\n  - docs/a.md\n  - docs/b.md\n"),
+        ),
+        (
+            "four-space block",
+            format!("answer_keys:\n    {probe}:\n        - docs/a.md\n        - docs/b.md\n"),
+        ),
+        (
+            "flow",
+            format!("answer_keys:\n  {probe}: [docs/a.md, \"docs/b.md\"] # the keys\n"),
+        ),
+    ] {
+        std::fs::write(
+            root.path(".headwater/probe.yml"),
+            declared.replace(keys, &written),
+        )
+        .expect("the declaration writes");
+        let printed = root.run(&["probe", "plan", "--answer-keys", probe]);
+        assert_eq!(
+            printed.code,
+            Some(0),
+            "{form}: {}{}",
+            printed.out,
+            printed.err
+        );
+        assert_eq!(
+            printed.out, "docs/a.md\ndocs/b.md\n",
+            "{form}: {}",
+            printed.err
+        );
+        let none = root.run(&["probe", "plan", "--answer-keys", "PROBE-FIX-unkeyed"]);
+        assert_eq!(none.code, Some(0), "{form}: {}{}", none.out, none.err);
+        assert_eq!(none.out, "", "{form}: a probe with no key prints nothing");
+    }
+
+    // An unsafe entry in either list refuses the whole declaration at status
+    // 1, and neither flag prints a path, because the seal removes each key
+    // with `rm`.
+    for (list, written) in [
+        (
+            "folds",
+            declared.replace(block, "folds:\n  - tools/x.spec\n  - ../outside\n"),
+        ),
+        (
+            "answer keys",
+            declared.replace(
+                keys,
+                &format!("answer_keys:\n  {probe}: [docs/a.md, ../outside]\n"),
+            ),
+        ),
+    ] {
+        std::fs::write(root.path(".headwater/probe.yml"), written).expect("the declaration writes");
+        for flags in [vec!["--folds"], vec!["--answer-keys", probe]] {
+            let mut args = vec!["probe", "plan"];
+            args.extend(flags.iter().copied());
+            let refused = root.run(&args);
+            assert_eq!(
+                refused.code,
+                Some(1),
+                "{list} {flags:?}: {}{}",
+                refused.out,
+                refused.err
+            );
+            assert_eq!(
+                refused.out, "",
+                "{list} {flags:?}: a refused declaration prints no path"
+            );
+        }
+    }
+
+    // Each of the four printing flags is one output, and one run prints one.
+    std::fs::write(root.path(".headwater/probe.yml"), &declared).expect("the declaration writes");
+    for pair in [
+        ["--folds", "--instrument"],
+        ["--folds", "--delta"],
+        ["--answer-keys", "--instrument"],
+        ["--answer-keys", "--delta"],
+        ["--answer-keys", "--folds"],
+    ] {
+        let mut args = vec!["probe", "plan", "--tier", "campaign", "--arm", "absent"];
+        for flag in pair {
+            args.push(flag);
+            if flag == "--answer-keys" {
+                args.push(probe);
+            }
+        }
+        let both = root.run(&args);
+        assert_ne!(both.code, Some(0), "{pair:?}: {}{}", both.out, both.err);
+        assert_eq!(both.out, "", "{pair:?}");
+    }
+}
