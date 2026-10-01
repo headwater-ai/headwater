@@ -256,10 +256,12 @@ def provoke_figure(name, readme_path, stated, measured):
 
 
 HELD_SECTION = "What a run reports"
-# The singular too, because an arm of one instance is a count that moves like
-# any other, and a count with a thousands separator whole, so that the finding
-# names the number the page states.
-AGGREGATE_COUNT = re.compile(r"\b\d(?:[\d,]*\d)? check instances?\b")
+# Every form a page writes the count in: the singular, because an arm of one
+# instance is a count that moves like any other; a number with a thousands
+# separator, read whole so the finding names the number the page states; a
+# number in bold or italic, which this corpus writes; and a hyphen or a run of
+# spaces between the words.
+AGGREGATE_COUNT = re.compile(r"(?<![\w,])[*_]*\d(?:[\d,]*\d)?[*_]*\s+check[\s-]+instances?\b")
 
 
 # The one page outside the three READMEs that restates their counts. It has no
@@ -296,8 +298,8 @@ def unheld_problems(rel, text, held=HELD_SECTION):
 
 
 PROVOKED_HELD = "A held run reads 8 check instances."
-PROVOKED_COUNTS = ("1,055 check instances", "1 check instance")
-PROVOKED_UNHELD = "A provoked run reads %s and %s." % PROVOKED_COUNTS
+PROVOKED_COUNTS = ("1,055 check instances", "1 check instance", "**12** check-instances", "_3_  check instances")
+PROVOKED_UNHELD = "A provoked run reads %s." % ", ".join(PROVOKED_COUNTS)
 
 
 def provoked_readme(text):

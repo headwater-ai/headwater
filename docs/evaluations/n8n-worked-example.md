@@ -258,7 +258,7 @@ This is the fourth Done-when bullet of #508, and it is a `headwater sweep` job r
 | Of those, written by `headwater check --fix` | 0 | 6 |
 | Of those, needing a human rewrite or a declaration change | 21 | 137 |
 
-The second column is one past reading, for the reason given under the design-spec table. A run today gives other totals.
+The counts in the second column and in the paragraphs under it are one past reading, for the reason given under the design-spec table. A run today gives other totals.
 
 **Two things in that second column correct what the design-spec run recorded.**
 
@@ -419,7 +419,7 @@ The two runs and the sweep put 38 findings and facts into this document. This is
 
 **34 of the 38 were reported by one of the two `headwater check` runs, and 33 of those 34 are in the artifact bucket.** 13 came from the design-spec corpus, over 4 typed documents. Those 4 documents are the whole of that root now that the vendored package is not under it. 21 came from the standards-spec corpus, over 7 typed documents of 7 files. All 34 are errors. The 34th is the broken link. It sits in the genuine-defect bucket, and a rule started to report it at headwater/standard 4.3.0. The other 33 are about the distance between an admitted entry and n8n's shape. That distance shows in four places. The first two are a `sequence` facet that a package has no number for and a `title` facet that upstream does not write. The last two are an identifier scheme that the entry never declares and three headings that this tradition writes as labeled paragraphs. Not one is about n8n's prose, [for the reason recorded above](#not-one-finding-is-about-n8ns-writing).
 
-The 143-finding run under this repository's own house regime stays out of the denominator on purpose. A house regime is not an admitted library entry. Holding somebody else's corpus to this repository's line breaks and contractions produces nothing that n8n would call a defect.
+The past run under this repository's own house regime, which reported 143 findings, stays out of the denominator on purpose. A house regime is not an admitted library entry. Holding somebody else's corpus to this repository's line breaks and contractions produces nothing that n8n would call a defect.
 
 **1 of the 3 genuine defects is reported by a `headwater check` rule, and 0 of them were when this evaluation was recorded.** [The broken link](#the-broken-link-that-no-rule-reported-until-430) reached the 4.0.0 run as a fact in the graph section and never as a finding, and `link.path.unresolved` reports it from 4.3.0. One [reaches no run at all](#what-this-taxonomy-would-report-and-what-it-does-not), because no admitted entry declares a procedure-shaped kind and no run reads `.agents/skills/`. One came out of `headwater sweep`, which is a sampler and not a check. That inversion was the sharpest result here, and it is one third smaller than it was. The library, pointed at eleven real governing documents, raised 33 errors that say nothing n8n would act on. It stays silent on 2 of the 3 things n8n would fix.
 
