@@ -3368,12 +3368,13 @@ esac
 # comment. `.claude/tutorial/drive.py` reads the page it drives and names no
 # digest, so it is not in the population.
 #
-# The digest compared against is the one in the vendored release record,
-# `good_digest` above, and never a literal here. The record can only stand in
-# for the newest tag if it IS the newest tag's record, so 8p holds that its
-# `release.version` is the newest version 8j read. Without it, a branch that
-# vendored an older release would compare every page with that release's
-# digest and pass.
+# The digest compared against is `page_digest`: the one in the release record
+# that the newest tag committed, read from git, and never a literal here. The
+# pages follow the newest tag, and the vendored record is that tag's record
+# only until a branch republishes the package. A branch that does so vendors a
+# release nobody has tagged yet, and its pages still name the tagged one (#1492).
+# 8p holds that the vendored `release.version` is not older than the newest
+# version 8j read, so a branch that vendored an older release is red.
 standard_digest_files=".github/assets/headwater-demo.tape
 README.md
 docs/tutorials/your-first-governed-corpus.md
@@ -3436,19 +3437,35 @@ release_version_of() {
 }
 
 # standard_record_judge NEWEST RECORD — `ok` when the release record at RECORD
-# is the newest release's, or a sentence naming both versions. It takes the
-# record and not a version, so the arms below go through the same read as the
-# real case, and a read that returned the newest tag in place of the record's
-# own version goes red there (#1444, round 1 verify).
+# is the newest release's or a later one, or a sentence naming both versions.
+# It takes the record and not a version, so the arms below go through the same
+# read as the real case, and a read that returned the newest tag in place of
+# the record's own version goes red there (#1444, round 1 verify).
+#
+# A later record is the state between a pull request that republishes the
+# package and the owner's tag of that release: the branch vendors the release
+# it builds, and the tag is cut only after it merges. Until #1492 this judge
+# refused that state, so no release of the package could pass it. The pages
+# follow the newest TAG, so 8q reads their digest from the tag's own record
+# and not from the vendored one.
 standard_record_judge() {
     srj_version=$(release_version_of "$2")
     if [ -z "$srj_version" ]; then
         echo "the vendored release record states no \`release.version\`, so nothing says which release its digest belongs to"
-    elif [ "$1" != "$srj_version" ]; then
-        echo "the vendored release record is v$srj_version and the newest tag is v${1:-none}, so the pages would be compared with an older release's digest"
+    elif [ -z "$1" ]; then
+        echo "no \`taxonomy/headwater-standard/v*\` tag in this clone, so nothing says which release is newest"
+    elif [ "$1" != "$srj_version" ] &&
+        [ "$(printf '%s\n%s\n' "$1" "$srj_version" | sort -t. -k1,1n -k2,2n -k3,3n | tail -n 1)" = "$1" ]; then
+        echo "the vendored release record is v$srj_version and the newest tag is v$1, so the vendored package is older than the release a newcomer is sent to"
     else
         echo ok
     fi
+}
+
+# tag_record_of NEWEST — the release record as the tag of release NEWEST
+# committed it, read from git, or nothing.
+tag_record_of() {
+    git -C "$root" show "taxonomy/headwater-standard/v$1:.headwater/packages/headwater-standard/release.yml" 2>/dev/null
 }
 
 standard_record="$root/.headwater/packages/headwater-standard/release.yml"
@@ -3463,16 +3480,41 @@ done
 same "the four files that name the headwater/standard digest are all on disk" 4 "$standard_digest_present"
 
 # 8p. The record the digest is read from is the newest release's record.
-same "the vendored release record is the newest tag's release (v${standard_newest:-none})" ok \
+same "the vendored release record is the newest tag's release or a later one (v${standard_newest:-none})" ok \
     "$(standard_record_judge "$standard_newest" "$standard_record")"
 # The arms are scratch copies of the real record with its `release.version`
 # line rewritten or removed, so each is read by the same anchor as the real one.
 mkdir -p "$scratch/record"
 sed '/^  version:/s/.*/  version: 4.12.0/' "$standard_record" >"$scratch/record/behind.yml"
 sed '/^  version:/d' "$standard_record" >"$scratch/record/unversioned.yml"
+sed '/^  version:/s/.*/  version: 4.13.1/' "$standard_record" >"$scratch/record/ahead.yml"
+sed '/^  version:/s/.*/  version: 4.10.0/' "$standard_record" >"$scratch/record/ten.yml"
 same "  a record one release behind the newest tag fails, and names both" \
-    "the vendored release record is v4.12.0 and the newest tag is v4.13.0, so the pages would be compared with an older release's digest" \
+    "the vendored release record is v4.12.0 and the newest tag is v4.13.0, so the vendored package is older than the release a newcomer is sent to" \
     "$(standard_record_judge 4.13.0 "$scratch/record/behind.yml")"
+same "  a record one release ahead of the newest tag passes, because the tag follows the merge" ok \
+    "$(standard_record_judge 4.13.0 "$scratch/record/ahead.yml")"
+sed '/^  version:/s/.*/  version: 4.9.1/' "$standard_record" >"$scratch/record/nine.yml"
+same "  versions compare by number and not as text, so 4.9.1 is behind 4.10.0" \
+    "the vendored release record is v4.9.1 and the newest tag is v4.10.0, so the vendored package is older than the release a newcomer is sent to" \
+    "$(standard_record_judge 4.10.0 "$scratch/record/nine.yml")"
+same "  and a record of 4.10.0 under a newest tag of 4.9.1 passes" ok \
+    "$(standard_record_judge 4.9.1 "$scratch/record/ten.yml")"
+
+# 8p, continued. The digest the pages carry is the newest tag's own digest,
+# read from the record that tag committed. Where the vendored record is that
+# release's, the two are one value.
+page_digest=$(tag_record_of "$standard_newest" | release_digest_of /dev/stdin)
+if [ -n "$page_digest" ]; then
+    pass "  the newest tag's own release record reads, and states a digest"
+else
+    fail "  the newest tag's own release record reads, and states a digest" \
+        "\`git show taxonomy/headwater-standard/v${standard_newest:-none}:.headwater/packages/headwater-standard/release.yml\` gave no \`release.digest\`"
+fi
+if [ "$(release_version_of "$standard_record")" = "$standard_newest" ]; then
+    same "  and where the vendored record is that release, the two digests agree" \
+        "$good_digest" "$page_digest"
+fi
 same "  a record with no version fails" \
     "the vendored release record states no \`release.version\`, so nothing says which release its digest belongs to" \
     "$(standard_record_judge 4.13.0 "$scratch/record/unversioned.yml")"
@@ -3480,29 +3522,29 @@ same "  a record with no version fails" \
 # 8q. THE DECISIVE CASE: the four files name the record's digest and no other.
 # shellcheck disable=SC2086
 same "the tutorial, its site page, this page and the demo tape name the newest headwater/standard digest" ok \
-    "$(standard_digest_judge "$good_digest" $standard_digest_paths | tr '\n' '|' | sed 's/|$//')"
+    "$(standard_digest_judge "$page_digest" $standard_digest_paths | tr '\n' '|' | sed 's/|$//')"
 
 # 8r. Provoked, one file at a time: a scratch copy of each real file with the
 #     record's digest replaced by another well-formed digest, and the version
 #     left alone, fails on every line that carried the digest. The copy keeps
 #     the real file's name, so a judge that skipped a file by name goes red.
-if [ -n "$good_digest" ] && [ "$good_digest" != "$bad_digest" ]; then
+if [ -n "$page_digest" ] && [ "$page_digest" != "$bad_digest" ]; then
     for f in $standard_digest_files; do
         sd_copy="$scratch/digest/$f"
         mkdir -p "$(dirname "$sd_copy")"
-        sed "s/$good_digest/$bad_digest/g" "$root/$f" >"$sd_copy"
-        sd_want=$(grep -n -o -F "$good_digest" "$root/$f" | sed "s|^\([0-9]*\):.*|$sd_copy:\1: $bad_digest|")
+        sed "s/$page_digest/$bad_digest/g" "$root/$f" >"$sd_copy"
+        sd_want=$(grep -n -o -F "$page_digest" "$root/$f" | sed "s|^\([0-9]*\):.*|$sd_copy:\1: $bad_digest|")
         if [ -z "$sd_want" ]; then
             fail "  a copy of \`$f\` with a stale digest fails on each line" "the real file names no digest to replace"
             continue
         fi
         same "  a copy of \`$f\` with a stale digest and the same version fails on each line" \
             "$(printf '%s' "$sd_want" | tr '\n' '|')" \
-            "$(standard_digest_judge "$good_digest" "$sd_copy" | tr '\n' '|' | sed 's/|$//')"
+            "$(standard_digest_judge "$page_digest" "$sd_copy" | tr '\n' '|' | sed 's/|$//')"
     done
 else
     fail "  a copy of each file with a stale digest fails" \
-        "the arms did not run: the vendored record gives digest \`${good_digest:-none}\`"
+        "the arms did not run: the newest tag's record gives digest \`${page_digest:-none}\`"
 fi
 
 # 8r, continued. The gap `digest_route_judge` leaves: the right digest beside
@@ -3510,26 +3552,26 @@ fi
 #     A file that names no digest is not a file that names the right one. And a
 #     file the judge cannot open is not read as `ok`.
 mkdir -p "$scratch/digest"
-printf '%s\n' "--expect $good_digest, or $bad_digest" >"$scratch/digest/both.md"
+printf '%s\n' "--expect $page_digest, or $bad_digest" >"$scratch/digest/both.md"
 : >"$scratch/digest/empty.tape"
 same "  the right digest beside a stale one on one line fails on the stale one" \
     "$scratch/digest/both.md:1: $bad_digest" \
-    "$(standard_digest_judge "$good_digest" "$scratch/digest/both.md")"
+    "$(standard_digest_judge "$page_digest" "$scratch/digest/both.md")"
 same "  a file that names no digest fails, and names the file" \
     "$scratch/digest/empty.tape: names no sha256 digest" \
-    "$(standard_digest_judge "$good_digest" "$scratch/digest/empty.tape")"
-printf '%s\n' "--expect ${good_digest%?}" >"$scratch/digest/short.md"
+    "$(standard_digest_judge "$page_digest" "$scratch/digest/empty.tape")"
+printf '%s\n' "--expect ${page_digest%?}" >"$scratch/digest/short.md"
 same "  a digest cut one character short fails" \
-    "$scratch/digest/short.md:1: ${good_digest%?}" \
-    "$(standard_digest_judge "$good_digest" "$scratch/digest/short.md")"
-printf '%s\n' "--expect ${good_digest}f" >"$scratch/digest/long.md"
+    "$scratch/digest/short.md:1: ${page_digest%?}" \
+    "$(standard_digest_judge "$page_digest" "$scratch/digest/short.md")"
+printf '%s\n' "--expect ${page_digest}f" >"$scratch/digest/long.md"
 same "  a digest with a character added fails" \
-    "$scratch/digest/long.md:1: ${good_digest}f" \
-    "$(standard_digest_judge "$good_digest" "$scratch/digest/long.md")"
+    "$scratch/digest/long.md:1: ${page_digest}f" \
+    "$(standard_digest_judge "$page_digest" "$scratch/digest/long.md")"
 same "  a record with no digest fails, and is not a judge that compares with nothing" \
     "the vendored release record states no top-level \`release.digest\`, so the pages have nothing to be compared with" \
     "$(standard_digest_judge "" "$scratch/digest/both.md")"
-got=$(standard_digest_judge "$good_digest" "$scratch/digest/both.md" "$scratch/digest/absent.md")
+got=$(standard_digest_judge "$page_digest" "$scratch/digest/both.md" "$scratch/digest/absent.md")
 case $got in
     "awk exited "*)
         pass "  a file the digest judge cannot open fails, and is not read as ok" ;;

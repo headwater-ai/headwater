@@ -1,20 +1,20 @@
 // SPDX-License-Identifier: Apache-2.0
-//! Six lifecycle rules each reach one obligation of `headwater/standard` (#1212).
+//! Every rule the engine carries reaches one obligation of `headwater/standard`
+//! (#1212, #1492).
 //!
 //! A rule reaches an obligation only through a control of the package that
 //! names it, and nothing tied a new rule to its control. So
 //! `lifecycle.state.not_set_by_edge` landed with #1198 and reached no
-//! obligation, and only a reader of the printed register saw it. This target
+//! obligation, and only a reader of the printed register saw it, and twelve
+//! rules had done the same by the time HW-OBL-0170 counted them. This target
 //! copies the maintained package into a root, runs `headwater check` over it
-//! and reads the register block, so a lifecycle rule that loses its control
-//! fails here and names itself. A new lifecycle rule is held here only once
-//! somebody adds its row.
+//! and reads the register block. The first case below fails on every rule that
+//! reaches no single obligation and names each one, so a new rule that ships
+//! without its control fails here.
 //!
-//! The table holds six of the seven lifecycle rules the engine carries, and
-//! no rule of another family. `lifecycle.state.set_twice` came with #1198 as
-//! well and still reaches no obligation. Other rules reach none over this
-//! repository too (HW-OBL-0170). A row for any of them would be red for a
-//! reason that is not this issue's, so each gets its row with its control.
+//! The lifecycle table holds all seven lifecycle rules the engine carries, and
+//! the second case reads the obligation, posture and promotion each control of
+//! that family declares, which the register counts without naming.
 
 mod common;
 use common::Root;
@@ -22,7 +22,7 @@ use common::Root;
 /// The lifecycle rules that a control of the package names, one row each:
 /// the rule, the one obligation its control discharges, the posture, and the
 /// promotion record that states why the posture stands.
-const LIFECYCLE: [(&str, &str, &str, &str); 6] = [
+const LIFECYCLE: [(&str, &str, &str, &str); 7] = [
     (
         "lifecycle.transition.not_permitted",
         "OB-LIFE-1",
@@ -59,6 +59,12 @@ const LIFECYCLE: [(&str, &str, &str, &str); 6] = [
         "blocking",
         "final_posture",
     ),
+    (
+        "lifecycle.state.set_twice",
+        "OB-LIFE-7",
+        "advisory",
+        "permanently_advisory",
+    ),
 ];
 
 #[test]
@@ -87,6 +93,207 @@ fn every_lifecycle_rule_reaches_one_obligation_of_the_standard_package() {
     );
 }
 
+/// The rules that may reach no single obligation of `headwater/standard`, each
+/// with the reason it stands outside the package. A rule is named here one at
+/// a time and never by a pattern, so a new rule that ships without a control
+/// fails the case below and names itself (#1492).
+const EXCEPTIONS: &[(&str, &str)] = &[];
+
+/// Every rule the engine carries reaches exactly one obligation of the
+/// maintained package, except the rules [`EXCEPTIONS`] names (#1492,
+/// HW-OBL-0170). The register prints a line for each rule that reaches none
+/// or several, so the set of rules on those lines is the set this case holds.
+/// A register-line count would not name the rule, and a list of the bound
+/// rules would not see a new one.
+#[test]
+fn every_rule_reaches_one_obligation_of_the_standard_package() {
+    let root = Root::shaped("standard-controls-every-rule", |_| {});
+    let unbound = unbound_rules(&root);
+    let mut expected: Vec<String> = EXCEPTIONS
+        .iter()
+        .map(|(rule, _)| (*rule).to_owned())
+        .collect();
+    expected.sort_unstable();
+    let unexpected: Vec<&String> = unbound
+        .iter()
+        .filter(|rule| !expected.contains(rule))
+        .collect();
+    let stale: Vec<&String> = expected
+        .iter()
+        .filter(|rule| !unbound.contains(rule))
+        .collect();
+    assert!(
+        unexpected.is_empty(),
+        "these rules reach no single obligation of headwater/standard, so the register names none for each: {unexpected:?}"
+    );
+    assert!(
+        stale.is_empty(),
+        "these exceptions now reach one obligation, so remove them from EXCEPTIONS: {stale:?}"
+    );
+}
+
+/// The case above passes when [`unbound_rules`] reads nothing, so this case
+/// removes one control from the package copy and holds that the reader names
+/// its rule and no other. A reader that matched the wrong word, or none, goes
+/// red here rather than passing the case above vacuously.
+#[test]
+fn the_register_reader_names_the_rule_whose_control_is_removed() {
+    let root = Root::shaped("standard-controls-one-removed", |at| {
+        let path = at.join(".headwater/packages/headwater-standard/taxonomy.yml");
+        let taxonomy = std::fs::read_to_string(&path).expect("the package copy reads");
+        let block = control_of(&taxonomy, "facet.value.blank");
+        let without = taxonomy.replacen(block, "", 1);
+        assert_ne!(without, taxonomy, "the control is removed");
+        std::fs::write(&path, without).expect("the package copy writes");
+    });
+    assert_eq!(unbound_rules(&root), ["facet.value.blank"]);
+}
+
+/// The rules the register of one `headwater check` run names as reaching no
+/// single obligation, sorted and each once.
+fn unbound_rules(root: &Root) -> Vec<String> {
+    let ran = root.run(&["check"]);
+    assert!(
+        ran.out.contains("so it names none")
+            || ran
+                .out
+                .split_whitespace()
+                .collect::<Vec<_>>()
+                .join(" ")
+                .contains("every rule this engine carries reaches one obligation"),
+        "the register block is not in the output, so this case reads nothing: {ran:?}"
+    );
+    unbound_in(&ran.out, &headwater_check::RULES)
+}
+
+/// The rules that the text of a report names as reaching no single
+/// obligation. The register wraps a line at the report's width, so the text
+/// is read with each run of whitespace folded to one space. Each such line
+/// opens with the rule, and the next word is `reaches`.
+///
+/// Two readings are joined, and neither filters a rule by its characters. The
+/// first takes each rule the engine carries, `rules`, whose name stands before
+/// `reaches`. The second takes every dotted word before `reaches`, so a name
+/// that `rules` does not list is seen too. Before round 1 of the verify of
+/// #1492 the reader kept a word only where every character was a lower-case
+/// letter, a dot or an underscore, and a rule whose name held a digit or a
+/// hyphen passed unseen.
+fn unbound_in(out: &str, rules: &[&str]) -> Vec<String> {
+    let flat = format!(" {} ", out.split_whitespace().collect::<Vec<_>>().join(" "));
+    let mut unbound: Vec<String> = rules
+        .iter()
+        .filter(|rule| flat.contains(&format!(" {rule} reaches ")))
+        .map(|rule| (*rule).to_owned())
+        .collect();
+    let words: Vec<&str> = flat.split(' ').collect();
+    unbound.extend(
+        words
+            .windows(2)
+            .filter(|pair| pair[1] == "reaches" && pair[0].contains('.'))
+            .map(|pair| pair[0].to_owned()),
+    );
+    unbound.sort_unstable();
+    unbound.dedup();
+    unbound
+}
+
+/// The reader keeps a rule whose name holds a digit or a hyphen, both when the
+/// engine lists the rule and when it does not, and it keeps a line the report
+/// wrapped. This is the mutant that survived round 1 of the verify of #1492:
+/// `language.outside_root2.refused` and `language.outside-root.refused`.
+#[test]
+fn the_register_reader_keeps_a_rule_named_with_a_digit_or_a_hyphen() {
+    let out = "  register\n    language.outside_root2.refused reaches no obligation, so it\n      names none\n    language.outside-root.refused reaches no obligation, so it names none\n    every rule this engine carries reaches one obligation\n";
+    assert_eq!(
+        unbound_in(out, &["language.outside_root2.refused"]),
+        [
+            "language.outside-root.refused",
+            "language.outside_root2.refused"
+        ]
+    );
+    assert_eq!(
+        unbound_in(out, &[]),
+        [
+            "language.outside-root.refused",
+            "language.outside_root2.refused"
+        ]
+    );
+    assert!(unbound_in(
+        "    every rule this engine carries reaches one obligation\n",
+        &["facet.value.blank"]
+    )
+    .is_empty());
+}
+
+/// The rules outside the lifecycle family that 4.14.0 bound, one row each in
+/// the shape of [`LIFECYCLE`] (#1492). The case above sees a rule that reaches
+/// no obligation. It does not see a control that moved to another obligation
+/// or another posture, so the case below holds what each control promises.
+const BOUND_IN_4_14: [(&str, &str, &str, &str); 12] = [
+    ("facet.value.blank", "OB-FACET-3", "advisory", "criteria"),
+    (
+        "warrant.value.not_permitted",
+        "OB-WARRANT-3",
+        "advisory",
+        "criteria",
+    ),
+    (
+        "warrant.acceptance.unpaired",
+        "OB-WARRANT-4",
+        "advisory",
+        "criteria",
+    ),
+    (
+        "relation.target.verification.suspect",
+        "OB-REL-8",
+        "advisory",
+        "permanently_advisory",
+    ),
+    (
+        "relation.pair.invalid",
+        "OB-REL-9",
+        "advisory",
+        "permanently_advisory",
+    ),
+    (
+        "taxonomy.pin.diverged",
+        "OB-PIN-1",
+        "blocking",
+        "final_posture",
+    ),
+    ("import.pin.unread", "OB-PIN-1", "blocking", "final_posture"),
+    (
+        "harvest.pin.unread",
+        "OB-PIN-1",
+        "blocking",
+        "final_posture",
+    ),
+    (
+        "language.outside_root.refused",
+        "OB-LANG-4",
+        "advisory",
+        "criteria",
+    ),
+    (
+        "surface.command.undeclared",
+        "OB-SURF-1",
+        "advisory",
+        "permanently_advisory",
+    ),
+    (
+        "surface.local_path.instructed",
+        "OB-SURF-2",
+        "advisory",
+        "permanently_advisory",
+    ),
+    (
+        "control.observation.invalid",
+        "OB-REG-3",
+        "advisory",
+        "criteria",
+    ),
+];
+
 /// The declaration of the one control of the maintained package whose
 /// mechanism is `check:<rule>`. Controls sit one to a block, a blank line
 /// separates two blocks, and each block opens with its identifier.
@@ -106,13 +313,13 @@ fn control_of<'a>(taxonomy: &'a str, rule: &str) -> &'a str {
 /// The posture a merge meets is part of what the package promises, and the
 /// register counts postures without naming the control, so a control moved
 /// from `blocking` to `advisory` changed no line the case above reads (the
-/// verifier's finding on #1212). This case reads each lifecycle control where
-/// the maintained package declares it.
+/// verifier's finding on #1212). This case reads each lifecycle control, and
+/// each control that 4.14.0 added, where the maintained package declares it.
 #[test]
 fn each_lifecycle_control_declares_its_obligation_posture_and_promotion() {
     let source = common::repository().join("taxonomy-source/headwater-standard/taxonomy.yml");
     let taxonomy = std::fs::read_to_string(&source).expect("the maintained package reads");
-    for (rule, obligation, posture, promotion) in LIFECYCLE {
+    for (rule, obligation, posture, promotion) in LIFECYCLE.into_iter().chain(BOUND_IN_4_14) {
         let control = control_of(&taxonomy, rule);
         for line in [
             format!("    discharges: [{obligation}]\n"),
