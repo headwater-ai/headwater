@@ -251,7 +251,11 @@ fn an_instance_written_from_both_ends_anchors_on_the_declared_half() {
     assert_eq!(found[0].line, 6, "{:?}", found[0]);
     assert!(against(&run, "outranks-both-target.md").is_empty());
     let outcomes = outcomes_reading(&run, "outranks-both-target.md");
-    assert_eq!(outcomes.len(), 1, "one instance for both halves: {outcomes:?}");
+    assert_eq!(
+        outcomes.len(),
+        1,
+        "one instance for both halves: {outcomes:?}"
+    );
 }
 
 /// The same relation written only as its inverse reports on the file that
