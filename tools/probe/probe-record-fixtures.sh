@@ -1850,6 +1850,7 @@ printf '%s\n' "$@" > "$HEADWATER_SHADOW_LOG_DIR/claude-args"
     printf 'HOME=%s\n' "$HOME"
     printf 'CLAUDE_CONFIG_DIR=%s\n' "$CLAUDE_CONFIG_DIR"
     printf 'GH_TOKEN=%s\n' "${GH_TOKEN:-unset}"
+    printf 'ANTHROPIC_API_KEY=%s\n' "${ANTHROPIC_API_KEY:-unset}"
     printf 'held=%s\n' "$(ls -A "$CLAUDE_CONFIG_DIR" | tr '\n' ' ')"
     printf 'credentials=%s\n' "$(cat "$CLAUDE_CONFIG_DIR/.credentials.json")"
     printf 'self=%s\n' "$0"
@@ -1863,7 +1864,7 @@ STUB
         printf '{"type":"system","subtype":"init","model":"claude-haiku-4-5","permissionMode":"dontAsk","plugins":[{"name":"telemetry","path":"builtin"}],"mcp_servers":[],"skills":["headwater-engine","init"],"memory_paths":{"auto":"%s/cfg-clean/projects/x/memory/"},"session_id":"s22"}\n' \
             "$conf" > "$scratch/probe-log/init.jsonl"
         rm -f "$args"
-        GH_TOKEN=fixture-token HEADWATER_PROBE_HOST_CONFIG="$conf/host-config" HEADWATER_PROBE_CONFIG_DIR="$conf/cfg-clean" \
+        GH_TOKEN=fixture-token ANTHROPIC_API_KEY=fixture-api-key HEADWATER_PROBE_HOST_CONFIG="$conf/host-config" HEADWATER_PROBE_CONFIG_DIR="$conf/cfg-clean" \
             PATH="$scratch/bin:$PATH" sh "$driver" --probe "HW-PROBE-$tombstone" --session fixture-clean-init \
             --task-file "$scratch/task.md" --workspace "$conf/conf-ws" \
             >"$scratch/clean-init.md" 2>"$scratch/clean-init.err"
@@ -1873,6 +1874,8 @@ STUB
         present "that directory holds the credentials and nothing else" "held=.credentials.json " "$scratch/probe-log/seen"
         present "and the credentials are the host's" 'credentials={"fixture":"credentials"}' "$scratch/probe-log/seen"
         present "no variable of the host's environment reaches the session" "GH_TOKEN=unset" "$scratch/probe-log/seen"
+        present "except the provider key, which a host without OAuth credentials logs in with" \
+            "ANTHROPIC_API_KEY=fixture-api-key" "$scratch/probe-log/seen"
         present "the harness runs from a path of its own, so its host path names no directory of the session" \
             "self=/opt/headwater-harness/claude" "$scratch/probe-log/seen"
         same "and the session's root holds no /home and no /mnt" "" \
@@ -2053,6 +2056,10 @@ exit 1
 STUB
         chmod +x "$scratch/bin/claude"
         rm -f "$args"
+        # A resumed job finds the directory its last attempt left. The batch
+        # empties it, because the driver refuses one that is not empty.
+        mkdir -p "$batch/config/L1-campaign-present-p1-r1"
+        printf 'x\n' > "$batch/config/L1-campaign-present-p1-r1/left-by-a-failed-attempt"
         job="L1-campaign-present-p1-r1 1 campaign present sufficiency HW-PROBE-$tombstone"
         PATH="$scratch/bin:$PATH" sh "$root/tools/probe/campaign.sh" --out "$batch" --job "$job" \
             >/dev/null 2>"$scratch/batch-job.err"
