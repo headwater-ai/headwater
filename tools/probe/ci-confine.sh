@@ -7,9 +7,11 @@
 # `tools/probe/probe-record.sh` confines every session to its workspace under
 # `bwrap` and refuses a session it cannot confine, so the cases of
 # `tools/probe/probe-record-fixtures.sh` need `bwrap` and a user namespace.
-# This script gets them where it can: with `sudo`, it installs `bubblewrap`
-# and lifts the AppArmor restriction on unprivileged user namespaces. It
-# never calls `sudo` where there is none.
+# This script gets them where it can: under CI (`GITHUB_ACTIONS=true`) and
+# with `sudo`, it installs `bubblewrap` and lifts the AppArmor restriction on
+# unprivileged user namespaces. It never calls `sudo` where there is none, and
+# never outside CI, because on a contributor's machine both are host-wide
+# changes nobody asked for (round 2 verify of #1550).
 #
 # Then it asks `bwrap` for a namespace and acts on the answer:
 #
@@ -36,16 +38,17 @@ runner="${RUNNER_KIND:-unknown} runner ${RUNNER_NAME:-unnamed}"
 
 has() { command -v "$1" >/dev/null 2>&1; }
 confines() { bwrap --unshare-user --ro-bind / / true 2>"$1"; }
+may_sudo() { [ "${GITHUB_ACTIONS:-}" = true ] && has sudo; }
 
 said=$(mktemp) || exit 1
 install=
-if ! has bwrap && has sudo; then
+if ! has bwrap && may_sudo; then
     # `apt-get update` exits nonzero when any one source fails, even one this
     # step never reads, so only the install decides.
     sudo apt-get update -q || true
     sudo apt-get install -y -q bubblewrap || install=failed
 fi
-if has bwrap && ! confines "$said" && has sudo; then
+if has bwrap && ! confines "$said" && may_sudo; then
     sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
 fi
 
@@ -53,11 +56,15 @@ missing=
 if ! has bwrap; then
     if [ "$install" = failed ]; then
         missing="no \`bwrap\`, and \`sudo apt-get install bubblewrap\` failed"
-    else
+    elif [ "${GITHUB_ACTIONS:-}" = true ]; then
         missing="no \`bwrap\` and no \`sudo\` to install it"
+    else
+        missing="no \`bwrap\`, which this script installs only under CI"
     fi
 elif ! confines "$said"; then
     missing="a \`bwrap\` that cannot create a user namespace ($(tail -1 "$said"))"
+    [ "${GITHUB_ACTIONS:-}" = true ] \
+        || missing="$missing, and outside CI this script does not lift the AppArmor restriction"
 fi
 rm -f "$said"
 
