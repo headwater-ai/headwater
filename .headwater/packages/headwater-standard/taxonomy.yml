@@ -149,12 +149,13 @@ taxonomy: headwater/standard
 # on load where they differ, and it names both files and both numbers. A bump
 # moves both or neither. `package.yml` states why the value is declared twice.
 #
-# 4.14.0 adds ten obligations and twelve controls, one control for each rule
-# that reached no obligation: `OB-FACET-3`, `OB-WARRANT-3`, `OB-WARRANT-4`,
-# `OB-LIFE-7`, `OB-REL-8`, `OB-PIN-1`, `OB-LANG-4`, `OB-SURF-1`, `OB-SURF-2`
-# and `OB-REG-3`, and the controls that name the rules behind them. The three
-# pin controls are blocking at a final posture, and the other nine are
-# advisory. Nothing is removed, so it is a minor (HW-OBL-0170, #1492). It
+# 4.14.0 adds eleven obligations and thirteen controls, one control for each
+# rule that reached no obligation: `OB-FACET-3`, `OB-WARRANT-3`,
+# `OB-WARRANT-4`, `OB-LIFE-7`, `OB-REL-8`, `OB-REL-9`, `OB-PIN-1`,
+# `OB-LANG-4`, `OB-SURF-1`, `OB-SURF-2` and `OB-REG-3`, and the controls that
+# name the rules behind them. `OB-REL-9` binds `relation.pair.invalid`, which
+# #1491 added. The three pin controls are blocking at a final posture, and the
+# other ten are advisory. Nothing is removed, so it is a minor (HW-OBL-0170, #1492). It
 # follows 4.13.0.
 #
 # 4.13.0 changes doctrine and comments and no declaration. The library pages
@@ -797,8 +798,8 @@ obligations:
     prevents: process.traceability
     severity: high
 
-  # 4.14.0 binds the twelve rules that reached no obligation (HW-OBL-0170,
-  # #1492). Each obligation below states the claim that one rule, or one small
+  # 4.14.0 binds the thirteen rules that reached no obligation (HW-OBL-0170,
+  # #1492, and `relation.pair.invalid` from #1491). Each obligation below states the claim that one rule, or one small
   # family of rules, already enforces, and each control that discharges it
   # names one rule and one obligation, because a control that discharged two
   # would leave its rule reaching several and naming none. The three pin rules
@@ -841,6 +842,13 @@ obligations:
     rationale: A verification observed against a criterion that changed since proves the old criterion and not the one a reader finds today. HW-DR-0073 names that state suspect, and a verification that nobody marks suspect reads as a proof of text it never saw
     class: cohesion
     prevents: process.traceability
+    severity: medium
+
+  OB-REL-9:
+    statement: Two documents that a relation joins do not both meet the condition that the relation declares as invalid at both ends
+    rationale: Spec 2 declares two current decisions joined by `conflicts_with` an incoherent state. Where both stay current, a reader who meets either one acts on a ruling that the other contradicts, and nothing tells either author that the disagreement is still open
+    class: cohesion
+    prevents: content.inconsistent
     severity: medium
 
   OB-PIN-1:
@@ -1315,6 +1323,16 @@ controls:
     promotion:
       permanently_advisory:
         reasoning: The remedy is to run the verification again and commit the new observation, which is an act of the process that writes the snapshot and not an edit the engine can derive. A criterion changes in the same change that states it, before anybody can observe it again, so a posture that stopped a merge would stop every change to a criterion
+
+  CT-REL-9:
+    mechanism: check:relation.pair.invalid
+    discharges: [OB-REL-9]
+    trigger: pull_request
+    posture: advisory
+    acts: detective
+    promotion:
+      permanently_advisory:
+        reasoning: Q18 rules that a person settles a live disagreement with a decision that overrides or supersedes one side, and which side loses is a judgment the engine cannot derive. The finding carries no patch, so a posture that stopped a merge would stop it on a question only the authors can settle
 
   CT-PIN-1:
     mechanism: check:taxonomy.pin.diverged

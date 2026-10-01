@@ -22,13 +22,13 @@
 
 lock:
   format: 3
-  digest: sha256:4259e0ec28a7641ebebd0fb832a6b87d75535282d9d0e321834ec920a2b4707b
+  digest: sha256:3162375907c80857a45a498ccb0c5993fbcfad6a30d1320ca2b538a7cb9ed678
   rules: 2
   package: headwater/standard
   version: 4.14.0
   sources:
     - path: .headwater/packages/headwater-standard/taxonomy.yml
-      digest: sha256:a8752c5a11348024a80e2446b93e6572db542ddfcf1dcc3bc7d50765b04952e2
+      digest: sha256:778bea10b52f7cd2d5a6000220d7f446e802834ea024de11181c2c4bfeefc1b5
     - path: .headwater/packages/headwater-standard/bundles/evidence-and-obligation/bundle.yml
       digest: sha256:1092c56eb53e4f4d439e6e15c932087ee84b256eb0fd27cc3edbafb1abb3202f
     - path: .headwater/packages/headwater-standard/bundles/design-spec/bundle.yml
@@ -1461,6 +1461,12 @@ resolved:
       class: cohesion
       prevents: process.traceability
       severity: medium
+    OB-REL-9:
+      statement: "Two documents that a relation joins do not both meet the condition that the relation declares as invalid at both ends"
+      rationale: "Spec 2 declares two current decisions joined by `conflicts_with` an incoherent state. Where both stay current, a reader who meets either one acts on a ruling that the other contradicts, and nothing tells either author that the disagreement is still open"
+      class: cohesion
+      prevents: content.inconsistent
+      severity: medium
     OB-PIN-1:
       statement: "A pin that the corpus commits reads as the bytes it pins, or a finding names the pin"
       rationale: "A digest pin, an imports snapshot and a harvested export each tell a reader what the corpus rests on. A pin that no longer reads as what it names, and that no anchor happens to cite, reaches nobody, so a corpus that rests on a moved or edited artifact reads the same as one that rests on the artifact it pinned"
@@ -1927,6 +1933,16 @@ resolved:
       promotion:
         permanently_advisory:
           reasoning: "The remedy is to run the verification again and commit the new observation, which is an act of the process that writes the snapshot and not an edit the engine can derive. A criterion changes in the same change that states it, before anybody can observe it again, so a posture that stopped a merge would stop every change to a criterion"
+    CT-REL-9:
+      mechanism: "check:relation.pair.invalid"
+      discharges:
+        - OB-REL-9
+      trigger: pull_request
+      posture: advisory
+      acts: detective
+      promotion:
+        permanently_advisory:
+          reasoning: "Q18 rules that a person settles a live disagreement with a decision that overrides or supersedes one side, and which side loses is a judgment the engine cannot derive. The finding carries no patch, so a posture that stopped a merge would stop it on a question only the authors can settle"
     CT-PIN-1:
       mechanism: "check:taxonomy.pin.diverged"
       discharges:

@@ -182,7 +182,7 @@ fn unbound_rules(root: &Root) -> Vec<String> {
 /// the shape of [`LIFECYCLE`] (#1492). The case above sees a rule that reaches
 /// no obligation. It does not see a control that moved to another obligation
 /// or another posture, so the case below holds what each control promises.
-const BOUND_IN_4_14: [(&str, &str, &str, &str); 11] = [
+const BOUND_IN_4_14: [(&str, &str, &str, &str); 12] = [
     ("facet.value.blank", "OB-FACET-3", "advisory", "criteria"),
     (
         "warrant.value.not_permitted",
@@ -199,6 +199,12 @@ const BOUND_IN_4_14: [(&str, &str, &str, &str); 11] = [
     (
         "relation.target.verification.suspect",
         "OB-REL-8",
+        "advisory",
+        "permanently_advisory",
+    ),
+    (
+        "relation.pair.invalid",
+        "OB-REL-9",
         "advisory",
         "permanently_advisory",
     ),
