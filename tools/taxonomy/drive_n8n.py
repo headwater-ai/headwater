@@ -5,7 +5,7 @@ Three READMEs under `docs/taxonomies/*/fixtures/n8n/` each carry a *How to run t
 
 Nothing here carries a second copy of a figure. Every expected value is parsed out of the README, so a number this file holds is a number a reader reads.
 
-It holds one thing more: no README states an aggregate check-instance count outside *What a run reports*, the one section it diffs. That count moves with every rule a release adds, and two copies of it in the design-spec probe arms read 6 and 26 when a run reported 7 and 31 (#1452).
+It holds one thing more: no README states an aggregate check-instance count outside *What a run reports*, the one section it diffs, and the evaluation `docs/evaluations/n8n-worked-example.md`, which has no such section, states none at all. That count moves with every rule a release adds. Two copies of it in the design-spec probe arms read 6 and 26 when a run reported 7 and 31, and all seven on the evaluation were wrong when this guard first read it (#1452).
 """
 
 import os
@@ -256,11 +256,23 @@ def provoke_figure(name, readme_path, stated, measured):
 
 
 HELD_SECTION = "What a run reports"
-AGGREGATE_COUNT = re.compile(r"\b\d+ check instances\b")
+# Every form a page writes the count in: the singular, because an arm of one
+# instance is a count that moves like any other; a number with a thousands
+# separator, read whole so the finding names the number the page states; a
+# number in bold or italic, which this corpus writes; and a hyphen or a run of
+# spaces between the words.
+AGGREGATE_COUNT = re.compile(r"(?<![\w,])[*_]*\d(?:[\d,]*\d)?[*_]*\s+check[\s-]+instances?\b")
 
 
-def unheld_counts(text):
+# The one page outside the three READMEs that restates their counts. It has no
+# held section, so every count on it is unheld.
+EVALUATION = "docs/evaluations/n8n-worked-example.md"
+
+
+def unheld_counts(text, held=HELD_SECTION):
     """Every aggregate check-instance count outside the held section, as (line number, match).
+
+    With `held` None the page has no held section, and every count on it is unheld.
 
     The count moves with every rule a release adds, and this job diffs it only
     inside *What a run reports*. A copy anywhere else goes stale unseen, which is
@@ -273,19 +285,21 @@ def unheld_counts(text):
         if line.startswith("## "):
             heading = line[3:].strip()
             continue
-        if heading == HELD_SECTION:
+        if held is not None and heading == held:
             continue
         found += [(n, m.group(0)) for m in AGGREGATE_COUNT.finditer(line)]
     return found
 
 
-def unheld_problems(rel, text):
-    return ["%s:%d: states `%s` outside `## %s`, where no job holds it; state it without the number"
-            % (rel, n, match, HELD_SECTION) for n, match in unheld_counts(text)]
+def unheld_problems(rel, text, held=HELD_SECTION):
+    where = "outside `## %s`, where" % held if held is not None else "on a page where"
+    return ["%s:%d: states `%s` %s no job holds it; state it without the number"
+            % (rel, n, match, where) for n, match in unheld_counts(text, held)]
 
 
 PROVOKED_HELD = "A held run reads 8 check instances."
-PROVOKED_UNHELD = "A provoked run reads 7 check instances and 9 check instances."
+PROVOKED_COUNTS = ("1,055 check instances", "1 check instance", "**12** check-instances", "_3_  check instances")
+PROVOKED_UNHELD = "A provoked run reads %s." % ", ".join(PROVOKED_COUNTS)
 
 
 def provoked_readme(text):
@@ -312,15 +326,41 @@ def provoked_readme(text):
     return "\n".join(lines) + "\n", lines.index(PROVOKED_UNHELD) + 1
 
 
+def provoked_evaluation(text):
+    """The evaluation with counts added in two places, and the line numbers that must be named.
+
+    The page has no held section, so a count anywhere on it must be named. One
+    line goes before the first `##` heading, where no section has opened yet. The
+    other goes under a new `## What a run reports`, the heading a README's held
+    section carries, because on this page that heading must hold nothing.
+    """
+    lines = text.splitlines()
+    first = [i for i, l in enumerate(lines) if l.startswith("## ")]
+    if not first:
+        raise Mismatch("no `##` section to provoke before")
+    lines[first[0]:first[0]] = [PROVOKED_UNHELD, ""]
+    lines += ["", "## " + HELD_SECTION, "", PROVOKED_UNHELD]
+    return "\n".join(lines) + "\n", [first[0] + 1, len(lines)]
+
+
 def provoke_unheld(root, corpora, scratch):
     """Arm 8. Counts added outside the held section must fail this job, run as `main` runs it, naming each file, line and count.
 
-    It copies the three READMEs into a scratch root, provokes each, and runs this
-    file over that root with `--guard-only`, which is `main` up to the point where
-    it needs the engine. So the arm holds how `main` uses the guard's result, and
-    not only the guard.
+    It copies the three READMEs and the evaluation into a scratch root, provokes
+    each, and runs this file over that root with `--guard-only`, which is `main` up
+    to the point where it needs the engine. So the arm holds how `main` uses the
+    guard's result, and not only the guard.
     """
     want = []
+    rel = EVALUATION
+    try:
+        text, line_nos = provoked_evaluation(open(os.path.join(root, rel), encoding="utf-8").read())
+    except (Mismatch, OSError) as e:
+        raise Mismatch("%s: %s" % (rel, e))
+    dest = os.path.join(scratch, rel)
+    os.makedirs(os.path.dirname(dest))
+    open(dest, "w", encoding="utf-8").write(text)
+    want += ["%s:%d: states `%s`" % (rel, n, c) for n in line_nos for c in PROVOKED_COUNTS]
     for _, readme_path in corpora:
         rel = os.path.relpath(readme_path, root)
         try:
@@ -330,14 +370,22 @@ def provoke_unheld(root, corpora, scratch):
         dest = os.path.join(scratch, rel)
         os.makedirs(os.path.dirname(dest))
         open(dest, "w", encoding="utf-8").write(text)
-        want += ["%s:%d: states `%s`" % (rel, line_no, c) for c in ("7 check instances", "9 check instances")]
+        want += ["%s:%d: states `%s`" % (rel, line_no, c) for c in PROVOKED_COUNTS]
     done = subprocess.run([sys.executable, os.path.abspath(__file__), scratch, "--guard-only"],
                           capture_output=True, text=True)
     missed = [w for w in want if w not in done.stderr]
     wrong = [l.strip() for l in done.stderr.splitlines() if "8 check instances" in l]
     if done.returncode != 1 or missed or wrong:
-        raise Mismatch("three provoked READMEs exit %d under `--guard-only`; unnamed: %r; a held count named: %r"
+        raise Mismatch("three provoked READMEs and the provoked evaluation exit %d under `--guard-only`; unnamed: %r; a held count named: %r"
                        % (done.returncode, missed, wrong))
+    # The evaluation's denominator: the same run with the page gone must fail
+    # naming it, rather than pass over a page it never read.
+    os.remove(os.path.join(scratch, EVALUATION))
+    gone = subprocess.run([sys.executable, os.path.abspath(__file__), scratch, "--guard-only"],
+                          capture_output=True, text=True)
+    if gone.returncode != 1 or "%s: this job holds this page and cannot read it" % EVALUATION not in gone.stderr:
+        raise Mismatch("a scratch root without %s exits %d under `--guard-only` and does not name the page"
+                       % (EVALUATION, gone.returncode))
 
 
 def report(problems, corpora, green):
@@ -371,15 +419,25 @@ def main(root, binary):
         unheld = unheld_problems(rel, open(readme_path, encoding="utf-8").read())
         problems += unheld
         print("n8n fixtures: %s, %d check-instance counts outside `## %s`" % (rel, len(unheld), HELD_SECTION))
+    # The evaluation's own denominator: a page this guard cannot find fails the
+    # job, rather than leaving it green over a page it never read.
+    try:
+        evaluation = open(os.path.join(root, EVALUATION), encoding="utf-8").read()
+    except OSError as e:
+        problems.append("%s: this job holds this page and cannot read it: %s" % (EVALUATION, e))
+    else:
+        unheld = unheld_problems(EVALUATION, evaluation, None)
+        problems += unheld
+        print("n8n fixtures: %s, %d check-instance counts on a page with no held section" % (EVALUATION, len(unheld)))
     if binary is None:
-        return report(problems, corpora, "n8n fixtures: no check-instance count outside `## %s` on %d pages"
-                      % (HELD_SECTION, len(corpora)))
+        return report(problems, corpora, "n8n fixtures: no check-instance count outside `## %s` on %d pages, and none on %s"
+                      % (HELD_SECTION, len(corpora), EVALUATION))
 
     scratch = tempfile.mkdtemp(prefix="hw-n8n-")
     try:
         try:
             provoke_unheld(root, corpora, os.path.join(scratch, "unheld"))
-            print("n8n fixtures: counts added outside `## %s` fail this job, and one inside it does not" % HELD_SECTION)
+            print("n8n fixtures: counts added outside `## %s` or to %s fail this job, and one inside it does not" % (HELD_SECTION, EVALUATION))
         except Mismatch as e:
             problems.append("the unheld-count arm: %s" % e)
         for name, readme_path in corpora:

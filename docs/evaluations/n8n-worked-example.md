@@ -67,7 +67,7 @@ The entry assumed that a design specification belongs to a numbered series. A mo
 
 The [fixture README](../taxonomies/design-spec/fixtures/n8n/README.md#what-a-run-reports) carries the run in full, with the assembly that reproduces it. The summary:
 
-**4 files under the corpus root, 4 typed, 0 excluded, 4 checked, 46 check instances, 13 findings, all 13 of them errors.** `headwater check --strict` exits 1. The first and third read 42 and 38 until [HW-DR-0067](../decisions/0067-the-vendored-package-root-moves-under-headwater-and-the-old-root-is-named-in-a-refusal.md). The 38 were the vendored taxonomy package, which sat inside this corpus root and had to be excluded from it.
+**4 files under the corpus root, 4 typed, 0 excluded, 4 checked, 13 findings, all 13 of them errors.** `headwater check --strict` exits 1. This page does not give the count of check instances, because each rule that a release adds changes it. The fixture README states that count, and the n8n fixture job compares it with each run. The first and third read 42 and 38 until [HW-DR-0067](../decisions/0067-the-vendored-package-root-moves-under-headwater-and-the-old-root-is-named-in-a-refusal.md). The 38 were the vendored taxonomy package, which sat inside this corpus root and had to be excluded from it.
 
 Three findings per document, and the same three on each one.
 
@@ -101,7 +101,7 @@ This is the third Done-when bullet of [#492](https://github.com/headwater-ai/hea
 
 **First, a correction to how the issue states it.** n8n does have a root `docs/` directory, and it holds 272 files at the pin. 271 of them sit under `docs/generated/` and are `tbls` output produced from the database migrations. The 272nd is `docs/db.md`. It is an authored page, and its subject is how that output is generated and where to read it. No architecture document, no review rule and no skill is under `docs/`. The issue's claim is right in substance and wrong as literally written. The accurate statement is narrower. n8n has a `docs/` directory that carries generated output and one index page for it. Its governed prose lives elsewhere, scattered.
 
-**The design-spec entry as it ships types none of these documents.** Its one shelf is `spec_series` at `docs/spec/**`, and not one file of this corpus is under `docs/`. Run the same assembly with that shelf alone and the run reports **4 files, 4 untyped, 0 excluded, 0 checked, 6 check instances, 1 finding**. The first and third read 42 and 38 until [HW-DR-0067](../decisions/0067-the-vendored-package-root-moves-under-headwater-and-the-old-root-is-named-in-a-refusal.md) moved the vendored package out of this corpus root. `headwater check --strict` exits **1**, and the one finding is a broken prose link rather than anything about the four documents going unread.
+**The design-spec entry as it ships types none of these documents.** Its one shelf is `spec_series` at `docs/spec/**`, and not one file of this corpus is under `docs/`. Run the same assembly with that shelf alone and the run reports **4 files, 4 untyped, 0 excluded, 0 checked, 1 finding**. The first and third read 42 and 38 until [HW-DR-0067](../decisions/0067-the-vendored-package-root-moves-under-headwater-and-the-old-root-is-named-in-a-refusal.md) moved the vendored package out of this corpus root. `headwater check --strict` exits **1**, and the one finding is a broken prose link rather than anything about the four documents going unread.
 
 That arm reported 0 findings and exited 0 until headwater/standard 4.3.0. A green strict run over four real governing documents that no rule read is what the census crate calls *systematically green*. That was the result this arm recorded. At 4.3.0 the one finding is `link.path.unresolved`. That rule reads the corpus rather than the typed set, and it catches a broken prose link in one of the four. Nothing about the four going unread changed. The engine is honest about that in the census, which carries four rows saying `no shelf pattern claims this path`. No finding anywhere says the corpus went unchecked.
 
@@ -111,7 +111,7 @@ Three properties, and each one was measured rather than assumed.
 
 **The corpus root is `packages` and not `docs`.** That forced an exclusion until [HW-DR-0067](../decisions/0067-the-vendored-package-root-moves-under-headwater-and-the-old-root-is-named-in-a-refusal.md), because a taxonomy package was found under `packages/` and n8n's prose is under `packages/` too. A corpus root that reached the second reached the first. The three earlier fixtures of this library never met it, because each of them roots its corpus at `docs`. **This corpus is the measurement that priced the old root.** The move took the exclusion with it: the package now lands under `.headwater/packages/`, which no corpus root an adopter can name reaches.
 
-**The path pattern has to be `packages/**`, which fixes one segment out of 27,688 files.** The four documents share no directory. What they share is a filename, and the pattern language reads a path rather than a name. `packages/**/ARCHITECTURE.md` is legal and it claims **2 of the 4**, because the other two are named `architecture.md` and `ARCHITECTURE_CONNECTION_VS_SETTINGS.md`. That run reports 2 typed, 2 untyped, 22 check instances and 6 findings, and the two documents it misses report nothing at all.
+**The path pattern has to be `packages/**`, which fixes one segment out of 27,688 files.** The four documents share no directory. What they share is a filename, and the pattern language reads a path rather than a name. `packages/**/ARCHITECTURE.md` is legal and it claims **2 of the 4**, because the other two are named `architecture.md` and `ARCHITECTURE_CONNECTION_VS_SETTINGS.md`. That run reports 2 typed and 2 untyped, and the two documents it misses report nothing at all.
 
 **The shelf has to be heterogeneous with one admitted kind, and that reads as a contradiction.** `kinds.design_spec` requires `doc_type`, because the entry's own shelf is heterogeneous and needs a discriminator. A homogeneous shelf refuses a document that restates the kind its placement already states. So a `design_spec` on a homogeneous shelf reports an error whichever way the front matter is written:
 
@@ -168,7 +168,7 @@ Not one pattern reaches `packages/@n8n/instance-ai/`, `packages/@n8n/expression-
 | Of those, written by `headwater check --fix` | 0 | 1 |
 | Of those, needing a human rewrite or a declaration change | 12 | 165 |
 
-The second column is a probe and not a declaration, on the precedent the [brd-prd fixtures](../taxonomies/brd-prd/fixtures/README.md#what-the-bases-voice-regime-would-have-reported) set. It binds `regimes.language.ste_house` from this repository's own overlay onto `kinds.design_spec`, changes nothing else, and touches no document. The [fixture README](../taxonomies/design-spec/fixtures/n8n/README.md#what-this-repositorys-own-house-regime-would-have-reported) carries it per rule and per document.
+The second column is a probe and not a declaration, on the precedent the [brd-prd fixtures](../taxonomies/brd-prd/fixtures/README.md#what-the-bases-voice-regime-would-have-reported) set. It binds `regimes.language.ste_house` from this repository's own overlay onto `kinds.design_spec`, changes nothing else, and touches no document. The [fixture README](../taxonomies/design-spec/fixtures/n8n/README.md#what-this-repositorys-own-house-regime-would-have-reported) names the rules it fires. The counts in the second column and in the paragraphs under it are one past reading, and not a current claim. The probe reads this repository's own house regime. Each edit to that regime changes these counts, and no job holds them. A run today gives other totals.
 
 **Three things about that second column matter more than its total.**
 
@@ -202,7 +202,7 @@ The [fixture directory](../taxonomies/standards-spec/fixtures/n8n/) carries its 
 
 The [fixture README](../taxonomies/standards-spec/fixtures/n8n/README.md#what-a-run-reports) carries the run in full. The summary:
 
-**7 files under the corpus root, 7 typed, 0 excluded, 7 checked, 97 check instances, 21 findings, all 21 of them errors.** `headwater check --strict` exits 1. The graph reads 7 nodes and 0 declared edge halves.
+**7 files under the corpus root, 7 typed, 0 excluded, 7 checked, 21 findings, all 21 of them errors.** `headwater check --strict` exits 1. The fixture README states the count of check instances, and the n8n fixture job compares it with each run. The graph reads 7 nodes and 0 declared edge halves.
 
 Three findings per document, and the same three on every one. `section.required.missing`, an error, under `OB-SECT-1`, once each for `Scope`, `Requirements` and `Conformance`.
 
@@ -257,6 +257,8 @@ This is the fourth Done-when bullet of #508, and it is a `headwater sweep` job r
 | Caught by none of the three | 21 | 143 |
 | Of those, written by `headwater check --fix` | 0 | 6 |
 | Of those, needing a human rewrite or a declaration change | 21 | 137 |
+
+The counts in the second column and in the paragraphs under it are one past reading, for the reason given under the design-spec table. A run today gives other totals.
 
 **Two things in that second column correct what the design-spec run recorded.**
 
@@ -353,7 +355,7 @@ The section above reports one finding in `.agents/skills/` and types none of it.
 
 **What the pin holds, re-measured.** `.agents/skills/` holds 22 skill directories, 34 files inside them, and one top-level `AGENTS.md` of 1,952 bytes. That is 35 files and 425,316 bytes of upstream body. #492 and #509 each write "22 skill directories and 35 files". Neither one names `AGENTS.md`, so a reader of either issue puts all 35 files inside the 22 directories. The files that are not a `SKILL.md` number 12 and not the ten that #509 enumerates.
 
-**Every file is typed, and that is the result this corpus was vendored for.** One homogeneous shelf at `.agents/skills/**` carries `how_to`. The run reports **35 files under the corpus root, 35 typed, 0 excluded, 35 checked, 426 check instances, 136 findings**. The census reads 35 `how_to`. The graph reads 35 nodes and 0 declared edge halves. Nothing is untyped, and `headwater check --strict` exits 1.
+**Every file is typed, and that is the result this corpus was vendored for.** One homogeneous shelf at `.agents/skills/**` carries `how_to`. The run reports **35 files under the corpus root, 35 typed, 0 excluded, 35 checked, 136 findings**. The [fixture README](../taxonomies/diataxis-site/fixtures/n8n/README.md#what-a-run-reports) states the count of check instances, and the n8n fixture job compares it with each run. The census reads 35 `how_to`. The graph reads 35 nodes and 0 declared edge halves. Nothing is untyped, and `headwater check --strict` exits 1.
 
 | Rule | Count | Severity |
 |---|---|---|
@@ -415,9 +417,9 @@ The two runs and the sweep put 38 findings and facts into this document. This is
 | An artifact of this library's vocabulary | 33 | 87% |
 | Contestable, and this document adjudicates neither | 2 | 5% |
 
-**34 of the 38 were reported by one of the two `headwater check` runs, and 33 of those 34 are in the artifact bucket.** 13 came from the design-spec corpus, out of 46 check instances over 4 typed documents. Those 4 documents are the whole of that root now that the vendored package is not under it. 21 came from the standards-spec corpus, out of 97 check instances over 7 typed documents of 7 files. All 34 are errors. The 34th is the broken link. It sits in the genuine-defect bucket, and a rule started to report it at headwater/standard 4.3.0. The other 33 are about the distance between an admitted entry and n8n's shape. That distance shows in four places. The first two are a `sequence` facet that a package has no number for and a `title` facet that upstream does not write. The last two are an identifier scheme that the entry never declares and three headings that this tradition writes as labeled paragraphs. Not one is about n8n's prose, [for the reason recorded above](#not-one-finding-is-about-n8ns-writing).
+**34 of the 38 were reported by one of the two `headwater check` runs, and 33 of those 34 are in the artifact bucket.** 13 came from the design-spec corpus, over 4 typed documents. Those 4 documents are the whole of that root now that the vendored package is not under it. 21 came from the standards-spec corpus, over 7 typed documents of 7 files. All 34 are errors. The 34th is the broken link. It sits in the genuine-defect bucket, and a rule started to report it at headwater/standard 4.3.0. The other 33 are about the distance between an admitted entry and n8n's shape. That distance shows in four places. The first two are a `sequence` facet that a package has no number for and a `title` facet that upstream does not write. The last two are an identifier scheme that the entry never declares and three headings that this tradition writes as labeled paragraphs. Not one is about n8n's prose, [for the reason recorded above](#not-one-finding-is-about-n8ns-writing).
 
-The 143-finding run under this repository's own house regime stays out of the denominator on purpose. A house regime is not an admitted library entry. Holding somebody else's corpus to this repository's line breaks and contractions produces nothing that n8n would call a defect.
+The past run under this repository's own house regime, which reported 143 findings, stays out of the denominator on purpose. A house regime is not an admitted library entry. Holding somebody else's corpus to this repository's line breaks and contractions produces nothing that n8n would call a defect.
 
 **1 of the 3 genuine defects is reported by a `headwater check` rule, and 0 of them were when this evaluation was recorded.** [The broken link](#the-broken-link-that-no-rule-reported-until-430) reached the 4.0.0 run as a fact in the graph section and never as a finding, and `link.path.unresolved` reports it from 4.3.0. One [reaches no run at all](#what-this-taxonomy-would-report-and-what-it-does-not), because no admitted entry declares a procedure-shaped kind and no run reads `.agents/skills/`. One came out of `headwater sweep`, which is a sampler and not a check. That inversion was the sharpest result here, and it is one third smaller than it was. The library, pointed at eleven real governing documents, raised 33 errors that say nothing n8n would act on. It stays silent on 2 of the 3 things n8n would fix.
 
