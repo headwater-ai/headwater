@@ -260,6 +260,92 @@ fn the_coverage_report_reason_of_spec_6_is_the_reason_the_verb_prints() {
     );
 }
 
+/// The `headwater generate` contract, which carries the projection rules that
+/// spec 6 moved to it under #1572.
+fn generate_contract() -> PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../docs/interfaces/headwater-generate.md")
+}
+
+/// The value of a count as prose writes it: a number word from one to twenty,
+/// or digits.
+fn count_word(word: &str) -> Option<usize> {
+    const WORDS: [&str; 20] = [
+        "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve",
+        "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen", "twenty",
+    ];
+    let word = word.trim_matches(|c: char| !c.is_ascii_alphanumeric()).to_ascii_lowercase();
+    word.parse().ok().or_else(|| WORDS.iter().position(|w| *w == word).map(|i| i + 1))
+}
+
+/// Every `(N, M)` that a sentence of the form `<N> of the <M> are declarable`
+/// states in `text`, matched without regard to case or to emphasis markup.
+fn declarable_counts(text: &str) -> Vec<(usize, usize)> {
+    let lower = text.to_ascii_lowercase();
+    let mut counts = Vec::new();
+    for (at, _) in lower.match_indices(" are declarable") {
+        let before: Vec<&str> = lower[..at].split_whitespace().collect();
+        let [.., n, of, the, m] = before.as_slice() else { continue };
+        if *of != "of" || *the != "the" {
+            continue;
+        }
+        if let (Some(n), Some(m)) = (count_word(n), count_word(m)) {
+            counts.push((n, m));
+        }
+    }
+    counts
+}
+
+/// The declarable count that spec 6 and the `headwater generate` contract
+/// state is the count this engine declares.
+///
+/// Spec 6 stated "Ten of the twelve are declarable" after `verb_index` and
+/// `consumer_surface` had made the sets eleven and thirteen
+/// ([#1572](https://github.com/headwater-ai/headwater/issues/1572)). Nothing
+/// read the sentence, so the hand count drifted twice and every suite stayed
+/// green. This reads every sentence of that form in both documents and holds
+/// each to [`Kind::DECLARABLE`] and [`Kind::ALL`]. Spec 6 must state the count
+/// at least once, so an emptied statement does not pass. The contract need not
+/// state one, and where it does it is held the same way.
+///
+/// # Watched failing
+///
+/// Against spec 6 as it stood at `bdf2761f`, this failed on `(10, 12)`.
+#[test]
+fn the_declarable_count_spec_6_and_the_generate_contract_state_is_the_count_the_engine_declares() {
+    let expected = (Kind::DECLARABLE.len(), Kind::ALL.len());
+    for (path, must_state) in [(spec_six(), true), (generate_contract(), false)] {
+        let text = std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
+        let counts = declarable_counts(&text);
+        assert!(
+            !must_state || !counts.is_empty(),
+            "{} states no sentence of the form `<N> of the <M> are declarable`",
+            path.display()
+        );
+        for count in counts {
+            assert_eq!(
+                count,
+                expected,
+                "{} states `{} of the {} are declarable`, and the engine declares {} of {}",
+                path.display(),
+                count.0,
+                count.1,
+                expected.0,
+                expected.1
+            );
+        }
+    }
+}
+
+/// The parser of the case above reads each shape it claims to read, and
+/// ignores a sentence of another shape.
+#[test]
+fn a_declarable_count_is_read_from_words_digits_and_emphasis() {
+    assert_eq!(declarable_counts("**Ten of the twelve are declarable, and two are not.**"), vec![(10, 12)]);
+    assert_eq!(declarable_counts("Eleven of the 13 are declarable."), vec![(11, 13)]);
+    assert_eq!(declarable_counts("The other four are declarable."), Vec::<(usize, usize)>::new());
+    assert_eq!(declarable_counts("Nine of those are declarable."), Vec::<(usize, usize)>::new());
+}
+
 /// The report of one run over an empty tree, under the given declarations.
 ///
 /// Everything a [`Surface`] borrows is owned here, so a case states the
