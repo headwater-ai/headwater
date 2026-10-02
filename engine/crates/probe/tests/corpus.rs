@@ -433,8 +433,12 @@ const HARDER: &[Harder] = &[
         examines: &[],
         words: &[],
         statuses: &[],
-        // `headwater check` over each patch, run by hand and quoted in the
-        // probe: the asked file alone carries the oracle's finding.
+        // What `probe-transform.sh --oracle-tree` derives over each patch, the
+        // derivation a campaign runs. The asked file alone carries the
+        // oracle's finding, and the two halves together carry none. The
+        // `--oracle-tree` case of `tools/probe/probe-record-fixtures.sh` runs
+        // both patches through that script and holds the oracle's place in
+        // these lists to the engine, with the oracle read from the probe.
         shallow: Session::Produced(&[(
             ASKED_EVALUATION,
             &["relation.reciprocity.missing", "warrant.evidence.unsupported"],
@@ -497,13 +501,20 @@ fn selected(row: &Harder) -> headwater_probe::plan::Selected {
             )
         });
     let (_, document) = front_matter(&root.join(&probe.path));
+    // The grader reads the document's list, so the table holds that list and no
+    // other. A target the document adds and the table omits is one the shallow
+    // session may read, and a subset check would let it pass unseen.
     let declared = examines_of(&document);
+    let mut tabled: Vec<&str> = row.examines.iter().map(|(id, _)| *id).collect();
+    let mut written: Vec<&str> = declared.iter().map(String::as_str).collect();
+    tabled.sort_unstable();
+    written.sort_unstable();
+    assert_eq!(
+        tabled, written,
+        "{}: this table and the document's `examines` list name different targets",
+        row.id
+    );
     for (id, path) in row.examines {
-        assert!(
-            declared.iter().any(|it| it == id),
-            "{} names `{id}` in this table and not in its `examines` list: {declared:?}",
-            row.id
-        );
         let (_, target) = front_matter(&root.join(path));
         assert_eq!(
             scalar(&target, "id").as_deref(),
@@ -609,7 +620,10 @@ fn grade(selected: &headwater_probe::plan::Selected, session: &Session) -> Verdi
 use headwater_probe::grade::Verdict;
 
 /// Each harder probe of the shelf fails the shallow session and passes the
-/// sound one, through the grader a campaign uses (#1472, clause 2).
+/// sound one, through the grader a campaign uses (#1472, clause 2). The
+/// findings of the change task are the ones a campaign's `--oracle-tree`
+/// derivation writes, and the case of that flag in
+/// `tools/probe/probe-record-fixtures.sh` holds them to the engine.
 ///
 /// A probe that a name search or a one-document read passes measures nothing
 /// about the documents, which is how the absent arm of the #1384 re-run sat at

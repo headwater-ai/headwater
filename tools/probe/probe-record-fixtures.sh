@@ -543,6 +543,55 @@ if [ -x "$engine" ] && [ -n "${reported:-}" ]; then
 fi
 
 # ---------------------------------------------------------------------------
+# `--oracle-tree` checks the session's whole patch, not one artifact (#1472).
+#
+# A campaign derives `findings` in a copy of the sealed present-arm tree. The
+# first version wrote one artifact into each copy, so a change task whose two
+# files must agree could not pass: each half alone reports
+# `relation.reciprocity.missing`. The probe that asks for this change is
+# `a-session-records-which-obligation-an-evaluation-discharged`, and this case
+# runs its two sessions through the transform a campaign calls. The oracle rule
+# is read from the probe, so a probe that names a rule its sound session still
+# carries goes red here.
+# ---------------------------------------------------------------------------
+oprobe=$root/docs/probes/a-session-records-which-obligation-an-evaluation-discharged.md
+oeval=docs/evaluations/governs-edges-what-an-anchor-reaches-what-covers-it-when-it-ages-and-where-a-session-meets-it.md
+oobl=docs/obligations/0104-a-governs-edge-reaches-the-path-it-names-and-nothing.md
+if [ -x "$engine" ] && [ -f "$oprobe" ]; then
+    orule=$(sed -n 's/^oracle: *//p' "$oprobe" | tr -d "\"'" | sed -n 1p)
+    oeid=$(sed -n 's/^id: *//p' "$root/$oeval" | sed -n 1p)
+    rm -rf "$scratch/otree" "$scratch/ows-one" "$scratch/ows-both"
+    mkdir -p "$scratch/otree" "$scratch/engine-only/engine/target/dev-release"
+    [ -e "$scratch/engine-only/engine/target/dev-release/headwater" ] ||
+        ln -s "$engine" "$scratch/engine-only/engine/target/dev-release/headwater"
+    cp -a "$root/docs" "$root/.headwater" "$root/CLAUDE.md" "$scratch/otree/"
+    cp -a "$scratch/otree" "$scratch/ows-one"
+    awk '{print} /^relations:$/ && !x {print "  discharges:"; print "    - HW-OBL-0104"; x=1}' \
+        "$root/$oeval" > "$scratch/ows-one/$oeval"
+    cp -a "$scratch/ows-one" "$scratch/ows-both"
+    awk -v id="$oeid" '{print} /^relations:$/ && !x {print "  discharged_by:"; print "    - " id; x=1}' \
+        "$root/$oobl" > "$scratch/ows-both/$oobl"
+    "$engine" check --root "$scratch/otree" --format json > "$scratch/otree.json" 2>/dev/null
+    same "the probe's oracle is not reported over the asked file before any patch" "0" \
+        "$(jq -r --arg p "$oeval" --arg r "$orule" '[.findings[] | select(.path == $p and .rule == $r)] | length' < "$scratch/otree.json")"
+    sh "$transform" --probe HW-PROBE-a-session-records-which-obligation-an-evaluation-discharged \
+        --session one-half --root "$scratch/engine-only" --workspace "$scratch/ows-one" \
+        --oracle-tree "$scratch/otree" --produced "$oeval" \
+        < "$scratch/watched-nothing.jsonl" > "$scratch/ows-one.yaml" 2>"$scratch/ows-one.err"
+    same "a session that patched one half derives its findings through the oracle tree" "0" "$?"
+    present "and the oracle reports over the half that stands alone" \
+        "        - \"$orule\"" "$scratch/ows-one.yaml"
+    sh "$transform" --probe HW-PROBE-a-session-records-which-obligation-an-evaluation-discharged \
+        --session both-halves --root "$scratch/engine-only" --workspace "$scratch/ows-both" \
+        --oracle-tree "$scratch/otree" --produced "$oeval" --produced "$oobl" \
+        < "$scratch/watched-nothing.jsonl" > "$scratch/ows-both.yaml" 2>"$scratch/ows-both.err"
+    same "a session that patched both halves derives its findings through the oracle tree" "0" "$?"
+    same "and both halves are in \`produced\`" "2" "$(grep -c '^    - path:' "$scratch/ows-both.yaml")"
+    absent "and the oracle reports over neither, because the copy holds the whole patch" \
+        "        - \"$orule\"" "$scratch/ows-both.yaml"
+fi
+
+# ---------------------------------------------------------------------------
 # A real stream, recorded from the channel rather than written by hand.
 #
 # `tools/probe/fixtures/live-haiku-session.jsonl` is the standard output
