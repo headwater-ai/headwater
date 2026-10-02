@@ -310,8 +310,15 @@ fn the_draft_line_is_one_headwater_new_parses() {
         .output()
         .expect("the binary runs");
     let err = String::from_utf8_lossy(&output.stderr);
-    for refused in ["unexpected argument", "Usage:", "required arguments were not provided"] {
-        assert!(!err.contains(refused), "the parser refused the draft line: {err}");
+    for refused in [
+        "unexpected argument",
+        "Usage:",
+        "required arguments were not provided",
+    ] {
+        assert!(
+            !err.contains(refused),
+            "the parser refused the draft line: {err}"
+        );
     }
     let _ = std::fs::remove_dir_all(&at);
 }
@@ -359,8 +366,14 @@ fn json_is_the_same_content_as_one_document() {
         discriminators,
         vec![
             // JSON `null`, which this loader reads as the plain scalar.
-            (Some("widget_incidents".to_string()), Some("null".to_string())),
-            (Some("widget_mixed".to_string()), Some("doc_type".to_string())),
+            (
+                Some("widget_incidents".to_string()),
+                Some("null".to_string())
+            ),
+            (
+                Some("widget_mixed".to_string()),
+                Some("doc_type".to_string())
+            ),
         ]
     );
     let _ = std::fs::remove_dir_all(&at);
