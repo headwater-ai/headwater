@@ -256,7 +256,7 @@ pub const VERBS: &[Verb] = &[
         name: "new",
         group: "Writing a corpus",
         summary: "scaffold a document of a kind",
-        description: "Scaffold a document of a kind: the placement its shelf dictates, the front matter its facets require, the sections its contract requires, an identifier under its scheme, and the edges the taxonomy assigns to a scaffold. It writes no generated-file marker, because what it writes is an authored document from the moment it lands and every check reads it. It decides everything before it writes anything, and it never overwrites a document. Every run that writes a document appends one capture-cost reading to the store, and a run whose reading did not land exits non-zero.",
+        description: "Scaffold a document of a kind: the placement its shelf dictates, the front matter its facets require, the sections its contract requires, an identifier under its scheme, and the edges the taxonomy assigns to a scaffold or an agent. An edge an agent writes is accepted by the review of the pull request that carries it, and not by this verb. A target that binds to nothing is refused, by the resolvers the check binds it with. It writes no generated-file marker, because what it writes is an authored document from the moment it lands and every check reads it. It decides everything before it writes anything, and it never overwrites a document. Every run that writes a document appends one capture-cost reading to the store, and a run whose reading did not land exits non-zero.",
         words: &[],
     },
     Verb {

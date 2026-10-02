@@ -3812,6 +3812,10 @@ struct Loaded {
     /// would be two answers that a mint between them could pull apart. See
     /// [`headwater_check::claim`].
     claims: headwater_check::claim::Claims,
+    /// The resolver set the graph was built with. Held so that `headwater new`
+    /// binds an anchor target through the same resolvers the check binds it
+    /// with, and the two agree on what a pattern reaches (#1560).
+    resolvers: Resolvers,
 }
 
 fn load(root: &Path) -> Result<Loaded, ExitCode> {
@@ -3973,6 +3977,7 @@ fn load_against(root: &Path, bound: Bound) -> Result<Loaded, ExitCode> {
         observations: headwater_check::Observations::at(root),
         config,
         claims: headwater_check::claim::Claims::at(root),
+        resolvers,
     })
 }
 
@@ -4673,6 +4678,7 @@ fn scaffold(
         index: &index,
         config: &loaded.config,
         claims: &loaded.claims,
+        resolvers: &loaded.resolvers,
     };
     let request = headwater_scaffold::Request {
         kind,
@@ -4797,11 +4803,33 @@ fn scaffold_report(
             paint(Role::Heading, "the edges it proposed", mode)
         );
         for edge in &plan.edges {
+            let payer = match edge.created_by.as_str() {
+                "agent" => {
+                    "so an agent pays for it, and the review of the pull request that carries it \
+                     accepts it"
+                }
+                _ => "so a scaffold pays for it",
+            };
             let _ = writeln!(
                 out,
-                "  {} {} — `created_by: {}`, so a scaffold pays for it",
+                "  {} {} — `created_by: {}`, {payer}",
                 edge.relation, edge.target, edge.created_by
             );
+            if let Some(anchor) = &edge.anchor {
+                let reach = match anchor.matched {
+                    Some(1) => "1 entry".to_string(),
+                    Some(count) => format!("{count} entries"),
+                    None => "what its source withholds".to_string(),
+                };
+                let _ = writeln!(
+                    out,
+                    "    the target binds as the anchor `{}`, and it reaches {reach}",
+                    anchor.anchor_kind
+                );
+                if let Some(owes) = &anchor.owes {
+                    let _ = writeln!(out, "    {owes}");
+                }
+            }
             match (&edge.reciprocal, &edge.owed) {
                 (Some(half), _) => {
                     let _ = writeln!(

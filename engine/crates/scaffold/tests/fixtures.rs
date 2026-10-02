@@ -277,6 +277,11 @@ fn cases() -> Vec<Case> {
             .relating("governs", "corpus/code/*.txt"),
         case("decision_record", "A citation the file still owes")
             .relating("cited_in", "corpus/code/widget.txt"),
+        // Two edges of one relation are two items under one key, and a
+        // path that opens with `@` is quoted, so the front matter loads.
+        case("decision_record", TWO_PATTERNS)
+            .relating("governs", "corpus/code/*.txt")
+            .relating("governs", "@scoped/widget.txt"),
         // What it refuses. One case per branch of `Refusal`.
         case("nonesuch", "A kind nobody declared"),
         case("governed_document", "An abstract kind"),
@@ -340,6 +345,49 @@ fn cases() -> Vec<Case> {
         case("index_page", "A single file with a directory").within("corpus"),
         case("decision_record", "A directory shelf with a directory").within("corpus/decisions"),
     ]
+}
+
+/// The title of the case that names one relation twice.
+const TWO_PATTERNS: &str = "Two patterns under one key";
+
+/// The document `new` writes for two edges of one relation loads, and holds
+/// both targets under one key with the strings the caller wrote.
+///
+/// A transcript records the bytes and does not parse them. A second key of
+/// one name, or a plain path that opens with `@`, which YAML reserves, is a
+/// document the next command refuses, and only a parse shows it (#1560).
+#[test]
+fn two_edges_of_one_relation_load_as_one_key_with_both_targets() {
+    let loaded = Loaded::over(
+        &fixtures_dir(),
+        "corpus",
+        &fixtures_dir().join("scaffold.taxonomy.yml"),
+    );
+    let case = cases()
+        .into_iter()
+        .find(|case| case.title == TWO_PATTERNS)
+        .expect("the case is in the table");
+    let plan = propose(&loaded.sources(), &request(&case)).expect("both patterns bind");
+    let rendered = write::render(&plan);
+    let front = rendered
+        .strip_prefix("---\n")
+        .and_then(|rest| rest.split("\n---\n").next())
+        .expect("a front-matter block");
+    let document = headwater_yaml::load(front)
+        .unwrap_or_else(|errors| panic!("the front matter does not load: {errors:?}\n{front}"))
+        .value;
+    let governs: Vec<String> = document
+        .as_map()
+        .and_then(|map| map.get("relations"))
+        .and_then(|relations| relations.value.as_map())
+        .and_then(|relations| relations.get("governs"))
+        .and_then(|governs| governs.value.as_seq())
+        .expect("one `governs` key holding a sequence")
+        .iter()
+        .filter_map(|item| item.value.as_scalar())
+        .map(|scalar| headwater_yaml::core_schema::as_str(scalar).to_string())
+        .collect();
+    assert_eq!(governs, vec!["corpus/code/*.txt", "@scoped/widget.txt"]);
 }
 
 /// Every case over the fixture corpus, recorded whole.
