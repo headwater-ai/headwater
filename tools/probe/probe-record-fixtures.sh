@@ -1900,6 +1900,9 @@ STUB
         present "and says the file system held no copy of this repository on the host, and no more" \
             "no copy of this repository on the host, no other tree of its batch and no configuration of the host was readable through the session's file system." \
             "$scratch/no-network.md"
+        present "and names every bind of the confinement, the egress proxy and its socket included" \
+            "The confinement bound the workspace read-write, \`/usr\` and \`/etc\` read-only, the harness, the egress proxy and the directory of its socket read-only, the log directory of this run and the configuration directory below, and nothing else of the host's file system" \
+            "$scratch/no-network.md"
 
         # The proxy alone (#1467, clause 5). It tunnels a `CONNECT` to a
         # listed host on 443 and nothing else: a listed host on another port,
