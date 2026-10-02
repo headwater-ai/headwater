@@ -3,7 +3,7 @@ id: HW-PD-0020
 status: current
 status_since: 2026-09-27
 summary: "The integrator hands each ruled pull request to the GitHub merge queue. The queue tests up to five at once on the group tip, and lands one squash commit per pull request."
-last_verified: 2026-10-02
+last_verified: 2026-10-01
 title: "Merges go through the GitHub merge queue, one squash commit per pull request"
 provenance:
   warrant: accepted
@@ -15,7 +15,7 @@ provenance:
 relations:
   governs:
     - to: .github/workflows/ci.yml
-      verified_revision: sha256:3fcd842feb024c0759b93d91a5e14bea4be88917357796fd1a139ffc8efc6111
+      verified_revision: sha256:5f93740a98eb9b2dc3943e391f8c87246aff2a2e14bfd37e21aaf05e9cfe240b
     - to: tools/run/queue-done.sh
       verified_revision: sha256:8f78819c2ec10471c380efa02b1804325f7b91f1ae43c486f7117a6277183858
     - to: tools/run/queue-done-fixtures.sh
