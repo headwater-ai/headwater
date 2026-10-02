@@ -153,6 +153,16 @@ fn change(entries: &[(&str, Option<String>)]) -> Change {
 /// states that its author re-read that document, whether or not it carries it
 /// (#1376).
 fn stated(entries: &[(&str, Option<String>)], verified: &[&str]) -> Change {
+    edges(entries, verified, &[])
+}
+
+/// [`stated`], and a `verified\t<document>\t<target>` line for each pair in
+/// `edges`: the change states that its author re-read that one edge (#1520).
+fn edges(
+    entries: &[(&str, Option<String>)],
+    verified: &[&str],
+    edges: &[(&str, &str)],
+) -> Change {
     let mut manifest = String::from("headwater change 1\n");
     for (path, prior) in entries {
         match prior {
@@ -162,6 +172,9 @@ fn stated(entries: &[(&str, Option<String>)], verified: &[&str]) -> Change {
     }
     for path in verified {
         manifest.push_str(&format!("verified\t{path}\n"));
+    }
+    for (document, target) in edges {
+        manifest.push_str(&format!("verified\t{document}\t{target}\n"));
     }
     let priors: Vec<(String, String)> = entries
         .iter()
@@ -595,6 +608,82 @@ fn a_stamp_is_offered_only_on_the_document_the_change_re_verified() {
             .iter()
             .filter(|finding| finding.patch.is_some())
             .map(|finding| finding.path.as_str())
+            .collect();
+        assert_eq!(patched, stamped, "{label}");
+    }
+}
+
+/// The decisive fixture for #1520. One document governs two hooks, both hooks
+/// change, and so both edges go suspect. A re-verification of the document
+/// stamps only the edge whose target the person re-read: the change names
+/// the target with an `added` or a `prior` line, or a `verified` line names
+/// the edge. Before the fix a moved `last_verified` stamped both edges, which
+/// is how HW-PD-0020 was stamped onto a `ci.yml` its author never read (#1484).
+#[test]
+fn a_re_verified_document_stamps_only_the_edge_whose_target_the_change_names() {
+    const LIB: &str = ".claude/hooks/lib.sh";
+    const WRITE: &str = ".claude/hooks/write.sh";
+    let root = scratch("named-target");
+    let entries: Vec<String> = recorded(&root)
+        .into_iter()
+        .filter(|entry| entry.contains(LIB) || entry.contains(WRITE))
+        .collect();
+    assert_eq!(entries.len(), 2);
+    document(&root, TODAY, &entries);
+    let lib_before = std::fs::read_to_string(root.join(LIB)).expect("the hook reads");
+    write(&root, LIB, "refuse() { :; }\n");
+    write(&root, WRITE, "#!/bin/sh\nexit 0\n");
+    let moved = || (DOCUMENT, Some(yesterday("hooks", &entries)));
+    // Each change is made inside the loop, so that a row the manifest reader
+    // refuses fails as that row and not before the first one runs.
+    let rows: [(&str, &dyn Fn() -> Change, Vec<&str>); 7] = [
+        (
+            "the change carries one target",
+            &|| change(&[moved(), (LIB, Some(lib_before.clone()))]),
+            vec![LIB],
+        ),
+        (
+            "the change adds one target",
+            &|| change(&[moved(), (LIB, None)]),
+            vec![LIB],
+        ),
+        (
+            "a verified line names one edge",
+            &|| edges(&[], &[], &[(DOCUMENT, WRITE)]),
+            vec![WRITE],
+        ),
+        (
+            "a moved facet names no target",
+            &|| change(&[moved()]),
+            vec![],
+        ),
+        (
+            "a stated document names no target",
+            &|| stated(&[], &[DOCUMENT]),
+            vec![],
+        ),
+        (
+            "a named target on a document nobody re-read",
+            &|| change(&[(LIB, Some(lib_before.clone()))]),
+            vec![],
+        ),
+        (
+            "a verified line names the edge of another document",
+            &|| edges(&[], &[], &[(OTHER, WRITE)]),
+            vec![],
+        ),
+    ];
+    for (label, change, stamped) in rows {
+        let ctx = at(TODAY).scoped_to(change());
+        let ran = run_in(&root, &ctx, &mut Cache::disabled(), &taxonomy());
+        let reported = suspect(&ran);
+        assert_eq!(reported.len(), 2, "{label}: {reported:?}");
+        let patched: Vec<&str> = reported
+            .iter()
+            .filter_map(|finding| match &finding.patch {
+                Some(Patch::Half { id, .. }) => Some(id.as_str()),
+                _ => None,
+            })
             .collect();
         assert_eq!(patched, stamped, "{label}");
     }
