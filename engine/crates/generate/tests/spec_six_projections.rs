@@ -344,6 +344,8 @@ fn a_declarable_count_is_read_from_words_digits_and_emphasis() {
     assert_eq!(declarable_counts("Eleven of the 13 are declarable."), vec![(11, 13)]);
     assert_eq!(declarable_counts("The other four are declarable."), Vec::<(usize, usize)>::new());
     assert_eq!(declarable_counts("Nine of those are declarable."), Vec::<(usize, usize)>::new());
+    assert_eq!(declarable_counts("Two of these four are declarable."), Vec::<(usize, usize)>::new());
+    assert_eq!(declarable_counts("ELEVEN OF THE THIRTEEN ARE DECLARABLE."), vec![(11, 13)]);
 }
 
 /// The report of one run over an empty tree, under the given declarations.
