@@ -22,7 +22,7 @@ relations:
 
 ## Context
 
-The census excuses a marked file from every document check, and [`generate --check`](../spec/06-engine-architecture.md#projections) tests the claim. The two verbs are separate, so a corpus can run `headwater check` alone and never reach that test.
+The census excuses a marked file from every document check, and [`generate --check`](../interfaces/headwater-generate.md#the-generated-file-marker) tests the claim. The two verbs are separate, so a corpus can run `headwater check` alone and never reach that test.
 
 ## Obligation
 
