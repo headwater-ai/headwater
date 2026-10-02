@@ -606,7 +606,10 @@ answered_issues() {
 # out. It is ruled out when its last `RULED` line says gated, deferred or
 # refused, or when its queue line is marked `ruling` and neither an `OWNER`
 # line nor a `RULED ... open` line answers it (hw-run-policy: an unanswered
-# ruling waits, and a deferral skips the issue for the run). A RULED line
+# ruling waits, and a deferral skips the issue for the run). A line marked
+# `blocked` has an open `blocked by` link on GitHub, and it waits until the
+# parent writes `RULED ... open`. An OWNER line does not release it, because
+# the owner answered a question and not the order. A RULED line
 # binds only the run that wrote it, and an OWNER line binds every run. `DRAIN` when the
 # run is draining, and `EMPTY` when nothing is left.
 next() {
@@ -620,8 +623,8 @@ next() {
     logged=$(logged_issues "$dir")
     ruled=$(ruled_issues "$dir")
     answered=$(answered_issues "$dir")
-    # `<issue> ruling` or `<issue> -`, from the last `|` field of the line.
-    sed -n 's/^[0-9][0-9]*\. #\([0-9][0-9]*\) .*|[[:space:]]*\(ruling\).*$/\1 \2/p; t; s/^[0-9][0-9]*\. #\([0-9][0-9]*\).*/\1 -/p' "$dir/queue.md" > "$dir/.next.$$"
+    # `<issue> ruling`, `<issue> blocked` or `<issue> -`, from the last `|` field of the line.
+    sed -n 's/^[0-9][0-9]*\. #\([0-9][0-9]*\) .*|[[:space:]]*\(ruling\|blocked\).*$/\1 \2/p; t; s/^[0-9][0-9]*\. #\([0-9][0-9]*\).*/\1 -/p' "$dir/queue.md" > "$dir/.next.$$"
     while read -r issue mark; do
         [ -e "$dir/claims/issues/$issue" ] && continue
         [ -e "$dir/handover/$issue" ] && continue
@@ -631,6 +634,7 @@ next() {
         if [ "$mark" = ruling ] && [ "$kind" != open ]; then
             case " $answered " in *" $issue "*) ;; *) continue ;; esac
         fi
+        [ "$mark" = blocked ] && [ "$kind" != open ] && continue
         rm -f "$dir/.next.$$"
         echo "$issue"
         return 0
