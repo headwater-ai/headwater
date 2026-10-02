@@ -117,9 +117,9 @@ Three properties, and each one was measured rather than assumed.
 
 | The shelf, and the front matter | Findings |
 |---|---|
-| `homogeneous: true`, with `doc_type: design_spec` | 16, adding `shelf.placement_is_primary` on all four |
-| `homogeneous: true`, with `doc_type` removed | 16, adding `facet.required.missing` for `doc_type` on all four |
-| `homogeneous: false`, `discriminator: doc_type`, `kinds: [design_spec]` | 12 |
+| `homogeneous: true`, with `doc_type: design_spec` | 17, adding `shelf.placement_is_primary` on all four |
+| `homogeneous: true`, with `doc_type` removed | 17, adding `facet.required.missing` for `doc_type` on all four |
+| `homogeneous: false`, `discriminator: doc_type`, `kinds: [design_spec]` | 13 |
 
 The third row is what the fixture commits. A one-kind heterogeneous shelf makes the discriminator carry no information at all. Every document writes the one value the shelf admits, and the key exists to satisfy a facet requirement rather than to tell two kinds apart.
 
@@ -155,30 +155,36 @@ The counterfactual is worth one line, because it bounds the overlap. Run prettie
 
 Not one pattern reaches `packages/@n8n/instance-ai/`, `packages/@n8n/expression-runtime/` or `packages/@n8n/local-gateway/`. Two further facts point the same way. Cubic reviews only the lines a pull request adds or modifies, and its `custom_instructions` block states the bar in terms of code rather than prose.
 
-**So cubic catches 0 of the 12.**
+**So cubic catches 0 of the 13.**
 
 ### The count itself
 
-| | Under the entry alone | Under the entry plus this repository's house regime |
-|---|---|---|
-| Findings raised | 12 | 166 |
-| Already caught by `prettier` | 0 | 0 |
-| Already caught by `cubic` | 0 | 0 |
-| Caught by neither | 12 | 166 |
-| Of those, written by `headwater check --fix` | 0 | 1 |
-| Of those, needing a human rewrite or a declaration change | 12 | 165 |
+| | Under the entry alone |
+|---|---|
+| Findings raised | 13 |
+| Already caught by `prettier` | 0 |
+| Already caught by `cubic` | 0 |
+| Caught by neither | 13 |
+| Of those, written by `headwater check --fix` | 0 |
+| Of those, needing a declaration change or a human edit upstream | 13 |
 
-The second column is a probe and not a declaration, on the precedent the [brd-prd fixtures](../taxonomies/brd-prd/fixtures/README.md#what-the-bases-voice-regime-would-have-reported) set. It binds `regimes.language.ste_house` from this repository's own overlay onto `kinds.design_spec`, changes nothing else, and touches no document. The [fixture README](../taxonomies/design-spec/fixtures/n8n/README.md#what-this-repositorys-own-house-regime-would-have-reported) names the rules it fires. The counts in the second column and in the paragraphs under it are one past reading, and not a current claim. The probe reads this repository's own house regime. Each edit to that regime changes these counts, and no job holds them. A run today gives other totals.
+The n8n fixture job holds each figure in this table against the [fixture README](../taxonomies/design-spec/fixtures/n8n/README.md#what-a-run-reports), and it holds the README against a run.
 
-**Three things about that second column matter more than its total.**
+### What this repository's house regime adds
 
-136 of the 154 extra findings are hard wraps, and they come from two documents rather than four. One carries 108 and one carries 27. The other two carry one between them, because they are already written one line per paragraph. A house rule that reads as a verdict on a project is a verdict on one editor setting.
+A second reading binds `regimes.language.ste_house` from this repository's own overlay onto `kinds.design_spec`. It changes nothing else and touches no document. It is a probe and not a declaration, on the precedent the [brd-prd fixtures](../taxonomies/brd-prd/fixtures/README.md#what-the-bases-voice-regime-would-have-reported) set. The [fixture README](../taxonomies/design-spec/fixtures/n8n/README.md#what-this-repositorys-own-house-regime-would-have-reported) names the rules it fires.
+
+This page states no count for the probe. The probe reads this repository's own house regime, so each edit to that regime changes its counts, and no job holds them. Run the probe to read them.
+
+**Three things about the probe matter more than its total.**
+
+**Most of the findings the probe adds are hard wraps, and they come from two documents rather than four.** The other two documents carry almost none, because they are already written one line per paragraph. A house rule that reads as a verdict on a project is a verdict on one editor setting.
 
 **There is no British spelling anywhere in the four documents.** The rule that catches one ran on every document and found nothing. That contradicts what this work expected to find, and it is worth recording as a correction rather than quietly dropping.
 
-**Exactly one finding of the 166 is mechanically fixable.** `headwater check --fix` writes a British spelling, a contraction whose expansion is one word, a retired term that names a replacement, and a missing reciprocal link. One contraction, `doesn't`, is the whole of the intersection, and the report marks it as the only `fix (mechanical)` line. The 136 hard wraps are mechanical to a reader and carry no patch, and `engine/crates/check/src/source_form.rs` states why in its own comment. `headwater check --fix` was never run over this corpus.
+**Exactly one finding that the probe adds is mechanically fixable.** `headwater check --fix` writes a British spelling, a contraction whose expansion is one word, a retired term that names a replacement, and a missing reciprocal link. One contraction, `doesn't`, is the whole of the intersection, and the report marks it as the only `fix (mechanical)` line. The hard wraps are mechanical to a reader and carry no patch, and `engine/crates/check/src/source_form.rs` states why in its own comment. `headwater check --fix` was never run over this corpus.
 
-**What the count says.** Under the canonical library alone the honest total is 12. Every one of the 12 is about a declaration rather than about n8n, and every one is invisible to both of n8n's tools. Under a house language regime the total is 166, of which one is mechanically fixable and 136 are one editor's line-wrapping habit. Neither number is a claim that Headwater found 12 or 166 problems in n8n. The 12 are what a taxonomy learns about itself by meeting a corpus it did not author.
+**What the count says.** Under the canonical library alone the honest total is 13. Twelve of the 13 are about a declaration rather than about n8n. The thirteenth is the broken link in `expression-runtime/ARCHITECTURE.md`, which is a real defect in n8n. All 13 are invisible to both of n8n's tools. Under a house language regime the total grows, almost all of it from one editor's line-wrapping habit, and one added finding is mechanically fixable. So Headwater found one problem in n8n's four documents under the entry alone. The other 12 findings are what a taxonomy learns about itself by meeting a corpus it did not author.
 
 ## The review rules, a second corpus of the same repository
 
@@ -258,15 +264,15 @@ This is the fourth Done-when bullet of #508, and it is a `headwater sweep` job r
 | Of those, written by `headwater check --fix` | 0 | 6 |
 | Of those, needing a human rewrite or a declaration change | 21 | 137 |
 
-The counts in the second column and in the paragraphs under it are one past reading, for the reason given under the design-spec table. A run today gives other totals.
+The counts in the second column and in the paragraphs under it are one past reading, for the reason given under [the design-spec probe](#what-this-repositorys-house-regime-adds). A run today gives other totals.
 
 **Two things in that second column correct what the design-spec run recorded.**
 
-**The hard wraps are spread across all seven documents, and there they were not.** 87 of the 122 extra findings are `language.source_form.not_met`, and every one of the seven documents carries between 2 and 42. In the architecture corpus 136 of 136 came from two documents of four, and the other two were already written one line per paragraph. Same repository, same pin, one editorial convention per corpus.
+**The hard wraps are spread across all seven documents, and there they were not.** 87 of the 122 extra findings are `language.source_form.not_met`, and every one of the seven documents carries between 2 and 42. In the architecture corpus almost all of them came from two documents of four, and the other two were already written one line per paragraph. Same repository, same pin, one editorial convention per corpus.
 
 **The British-spelling claim was wrong in both directions.** The design-spec run recorded that there is no British spelling anywhere in its four documents. There are four in this corpus: `behaviour`, `defence`, `colours` and `denormalised`. Three of them are in the typed set. **The rule reports one.** The engine's spelling table is closed at 24 words and holds `behaviour` and not `defence`, `colour` or `denormalise`. So a corpus-level count and a rule-level count differ here by a factor of three, and only the second is what a run measures.
 
-**Six findings of 143 are mechanically fixable, against one of 166 before.** Five contractions and one spelling are the whole intersection, and the report marks each with `fix (mechanical)`. The 87 hard wraps are mechanical to a reader and carry no patch. `headwater check --fix` was never run over this corpus.
+**Six findings of 143 are mechanically fixable, against one in the architecture corpus.** Five contractions and one spelling are the whole intersection, and the report marks each with `fix (mechanical)`. The 87 hard wraps are mechanical to a reader and carry no patch. `headwater check --fix` was never run over this corpus.
 
 ## What this adds to criterion 4
 
