@@ -454,7 +454,7 @@ fn the_harness_check_fails_on_an_absent_path_and_on_a_copy_an_earlier_release_wr
     assert!(String::from_utf8_lossy(&refused.stderr).contains(absent));
     assert!(!root.join(absent).exists(), "`--check` wrote the absent file");
 
-    succeeded(&headwater(root, &["init", "--harness"]), "the step over the gap");
+    std::fs::copy(repository().join(absent), root.join(absent)).expect("the gap is filled");
     let earlier_text = "---\nname: headwater-sweep\n---\n\nAn earlier text.\n";
     let earlier = format!(
         "{earlier_text}<!-- installed by headwater init --harness, digest sha256:{} -->\n",

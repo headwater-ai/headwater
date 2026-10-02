@@ -214,6 +214,7 @@ impl Root {
         // stands in for the code the copy does not carry.
         for entry in [
             "engine/crates/stub/src/lib.rs",
+            "engine/crates/cli/harness/stub",
             ".githooks/stub",
             ".claude/hooks/stub",
             ".claude/agents/stub",
