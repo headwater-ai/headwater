@@ -24,7 +24,7 @@ repository.workspace = true
 # below is a path dependency inside the workspace.
 [dependencies]
 # The rule set, which the `patched` expectation names an oracle from, and
-# `headwater_check::paint`, which colors the reports of `intake` and `read_set`.
+# `headwater_check::paint`, which colors the reports that this crate renders.
 headwater-check = { workspace = true }
 
 # The classification. A probe is a classified document of this corpus or it is
