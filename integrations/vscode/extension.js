@@ -2,12 +2,19 @@
 //
 // Glue between VS Code and `client.js`. Every decision about what to ask the
 // server and what counts as an answer is in `client.js`, where `node --test`
-// holds it. This file only shows what the client returns: the pointers, and the
-// line `client.withheldNote` gives when the route budget held pointers back. It
-// shows nothing when the client returns neither.
+// holds it. This file only shows what the client returns: the pointers, the
+// line `client.withheldNote` gives when the route budget held pointers back, and
+// the engine's silence when a route the user asked for found nothing. It shows
+// nothing when the client returns none of these.
+//
+// It also hands the same answers to Copilot Chat (#1583), in three ways: an MCP
+// server definition that runs `relay.js`, two language model tools, and the
+// `@headwater` chat participant. What each of them says is decided in
+// `client.js`. This file only places it.
 
 'use strict';
 
+const fs = require('node:fs');
 const path = require('node:path');
 const vscode = require('vscode');
 const client = require('./client.js');
@@ -26,6 +33,22 @@ function locate(document) {
   const relative = path.relative(folder.uri.fsPath, document.uri.fsPath).split(path.sep).join('/');
   if (relative === '' || relative.startsWith('..')) return null;
   return { folder, relative };
+}
+
+// The workspace folders that hold a `.headwater/` directory, in order.
+function headwaterFolders() {
+  return (vscode.workspace.workspaceFolders || []).filter((folder) =>
+    fs.existsSync(path.join(folder.uri.fsPath, '.headwater')),
+  );
+}
+
+// A file named by a tool's input, relative to the first Headwater folder or
+// absolute, as the folder and the path inside it, or null.
+function locateInput(input) {
+  const folders = headwaterFolders();
+  if (folders.length === 0 || typeof input !== 'string' || input === '') return null;
+  const uri = path.isAbsolute(input) ? vscode.Uri.file(input) : vscode.Uri.joinPath(folders[0].uri, input);
+  return locate({ uri });
 }
 
 function describe(pointer) {
@@ -85,7 +108,8 @@ function activate(context) {
       const answered = await client.route(task, options(folder));
       const note = client.withheldNote(answered);
       if (answered.pointers.length === 0) {
-        if (note) vscode.window.showInformationMessage(`Headwater: no document shown; ${note}`);
+        const said = [answered.silence, note].filter(Boolean).join('; ');
+        if (said) vscode.window.showInformationMessage(`Headwater: no document shown; ${said}`);
         return;
       }
       await pick(answered.pointers, folder, `Documents that govern this task${note ? ` (${note})` : ''}`);
@@ -108,6 +132,127 @@ function activate(context) {
   );
 
   refresh(vscode.window.activeTextEditor);
+  registerCopilot(context);
+}
+
+// The Copilot Chat surfaces: an MCP server for each Headwater folder, two
+// language model tools and the `@headwater` participant.
+function registerCopilot(context) {
+  // The provider registers nothing when it finds no engine, and says so only
+  // here: View > Output > Headwater. A fail-open extension shows no pop-up,
+  // and without this line a person cannot tell why no server is listed.
+  const log = vscode.window.createOutputChannel('Headwater', { log: true });
+  const changed = new vscode.EventEmitter();
+  context.subscriptions.push(
+    log,
+    changed,
+    vscode.lm.registerMcpServerDefinitionProvider('headwater', {
+      onDidChangeMcpServerDefinitions: changed.event,
+      provideMcpServerDefinitions() {
+        const configured = vscode.workspace.getConfiguration('headwater').get('path') || 'headwater';
+        const bin = client.resolveBin(configured);
+        const folders = headwaterFolders();
+        if (!bin) {
+          log.warn(`MCP: no server registered, because \`${configured}\` names no binary on PATH or on disk. Set headwater.path to the engine.`);
+          return [];
+        }
+        if (folders.length === 0) {
+          log.info('MCP: no server registered, because no workspace folder holds `.headwater/`.');
+          return [];
+        }
+        log.info(`MCP: registering ${folders.map((f) => f.uri.fsPath).join(', ')} with engine ${bin}.`);
+        const relay = path.join(context.extensionPath, 'relay.js');
+        return folders.map((folder) => {
+          const server = new vscode.McpStdioServerDefinition(
+            `Headwater (${folder.name})`,
+            process.execPath,
+            [relay, '--bin', bin, '--root', folder.uri.fsPath],
+            { ELECTRON_RUN_AS_NODE: '1' },
+            context.extension.packageJSON.version,
+          );
+          server.cwd = folder.uri;
+          return server;
+        });
+      },
+    }),
+    vscode.workspace.onDidChangeWorkspaceFolders(() => changed.fire()),
+    vscode.workspace.onDidChangeConfiguration((event) => {
+      if (event.affectsConfiguration('headwater.path')) changed.fire();
+    }),
+    vscode.lm.registerTool('headwater_route', {
+      prepareInvocation: () => ({ invocationMessage: 'Asking Headwater which documents govern the task' }),
+      async invoke(call) {
+        const folder = headwaterFolders()[0];
+        const task = String((call.input && call.input.task) || '');
+        const answered = folder ? await client.route(task, options(folder)) : { pointers: [], withheld: 0 };
+        return textResult(client.toolText(answered, 'this task'));
+      },
+    }),
+    vscode.lm.registerTool('headwater_governing', {
+      prepareInvocation: (call) => ({
+        invocationMessage: `Asking Headwater which documents govern ${(call.input && call.input.path) || 'the file'}`,
+      }),
+      async invoke(call) {
+        const place = locateInput(call.input && call.input.path);
+        if (!place) return textResult('That path is not a file in a Headwater workspace folder.');
+        const pointers = await client.governing(place.relative, options(place.folder));
+        return textResult(client.toolText(pointers, place.relative));
+      },
+    }),
+    vscode.chat.createChatParticipant('headwater.chat', async (request, _chat, stream) => {
+      const folder = headwaterFolders()[0];
+      if (!folder) {
+        stream.markdown('This workspace has no folder with a `.headwater/` directory, so Headwater has no corpus to read.');
+        return;
+      }
+      if (request.command === 'file') {
+        const place = locate({ uri: referencedUri(request) || activeUri() });
+        if (!place) {
+          stream.markdown('Open a file in this workspace, or attach one, and ask again.');
+          return;
+        }
+        const pointers = await client.governing(place.relative, options(place.folder));
+        render(stream, place.folder, client.present(pointers, `\`${place.relative}\``));
+        return;
+      }
+      const answered = await client.route(request.prompt, options(folder));
+      render(stream, folder, client.present(answered, 'this task'));
+    }),
+  );
+}
+
+function textResult(text) {
+  return new vscode.LanguageModelToolResult([new vscode.LanguageModelTextPart(text)]);
+}
+
+function activeUri() {
+  const editor = vscode.window.activeTextEditor;
+  return editor ? editor.document.uri : undefined;
+}
+
+// The first file a chat message references with `#file` or an attachment.
+function referencedUri(request) {
+  for (const reference of request.references || []) {
+    const value = reference.value;
+    if (value instanceof vscode.Uri) return value;
+    if (value instanceof vscode.Location) return value.uri;
+  }
+  return undefined;
+}
+
+// `client.present` as chat output: a link to each document, then its summary
+// as plain text, so no character of a summary is read as Markdown.
+function render(stream, folder, presented) {
+  stream.markdown(new vscode.MarkdownString().appendText(presented.lead));
+  for (const entry of presented.entries) {
+    stream.markdown('\n\n- ');
+    stream.anchor(vscode.Uri.joinPath(folder.uri, entry.path), entry.label);
+    if (entry.detail) stream.markdown(new vscode.MarkdownString().appendText(` — ${entry.detail}`));
+  }
+  if (presented.tail) {
+    stream.markdown('\n\n');
+    stream.markdown(new vscode.MarkdownString().appendText(presented.tail));
+  }
 }
 
 function deactivate() {}

@@ -1,8 +1,8 @@
 {
   "name": "headwater-vscode",
   "displayName": "Headwater",
-  "description": "Shows the documents that govern a task, an open file and a saved file, from headwater mcp.",
-  "version": "0.1.0",
+  "description": "Shows the documents that govern a task, an open file and a saved file, from headwater mcp, to a person and to Copilot Chat.",
+  "version": "0.2.0",
   "publisher": "headwater-ai",
   "license": "Apache-2.0",
   "private": true,
@@ -12,11 +12,17 @@
     "directory": "integrations/vscode"
   },
   "engines": {
-    "vscode": "^1.80.0"
+    "vscode": "^1.101.0"
   },
-  "categories": ["Other"],
+  "categories": [
+    "Other",
+    "AI",
+    "Chat"
+  ],
   "main": "./extension.js",
-  "activationEvents": ["workspaceContains:.headwater"],
+  "activationEvents": [
+    "workspaceContains:.headwater"
+  ],
   "contributes": {
     "commands": [
       {
@@ -37,9 +43,74 @@
           "description": "The headwater binary to run. The extension spawns `<path> mcp --root <workspace folder>` once per query."
         }
       }
-    }
+    },
+    "mcpServerDefinitionProviders": [
+      {
+        "id": "headwater",
+        "label": "Headwater"
+      }
+    ],
+    "languageModelTools": [
+      {
+        "name": "headwater_route",
+        "displayName": "Headwater: what governs this task",
+        "toolReferenceName": "headwaterRoute",
+        "canBeReferencedInPrompt": true,
+        "icon": "$(book)",
+        "userDescription": "List the documents of this Headwater repository that govern a task.",
+        "modelDescription": "Lists the documents of this Headwater repository that govern a task, ranked, each with its path, name and one-line summary. Call it before you change code or documents, with the task in plain words. It returns pointers, not document content: open a listed path to read the document.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "task": {
+              "type": "string",
+              "description": "The task in plain words, for example 'add rate limiting to the MCP server'."
+            }
+          },
+          "required": [
+            "task"
+          ]
+        }
+      },
+      {
+        "name": "headwater_governing",
+        "displayName": "Headwater: what governs this file",
+        "toolReferenceName": "headwaterGoverning",
+        "canBeReferencedInPrompt": true,
+        "icon": "$(book)",
+        "userDescription": "List the documents of this Headwater repository that govern a file.",
+        "modelDescription": "Lists the documents of this Headwater repository that govern one file, each with its path, name and one-line summary. Call it before you edit a file. The path is relative to the workspace folder, or absolute. It returns pointers, not document content: open a listed path to read the document.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": "string",
+              "description": "The file, relative to the workspace folder or absolute."
+            }
+          },
+          "required": [
+            "path"
+          ]
+        }
+      }
+    ],
+    "chatParticipants": [
+      {
+        "id": "headwater.chat",
+        "name": "headwater",
+        "fullName": "Headwater",
+        "description": "Ask which documents govern a task, or /file for a file",
+        "isSticky": false,
+        "commands": [
+          {
+            "name": "file",
+            "description": "Which documents govern the active file, or a file you attach"
+          }
+        ]
+      }
+    ]
   },
   "scripts": {
-    "test": "node --test test/client.test.js"
+    "test": "node --test test/client.test.js test/relay.test.js"
   }
 }
