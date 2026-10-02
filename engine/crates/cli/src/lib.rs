@@ -507,7 +507,7 @@ pub enum Verb {
                     `verified_revision` on that entry if it is suspect. Each entry carries its \
                     own `verified_revision`, so this is how you stamp an entry whose target \
                     this change does not carry. <target> is the target as the entry writes it, \
-                    or a path it reaches. Neither path need be in the diff"
+                    or a path its pattern matches. Neither path need be in the diff"
         )]
         verified_edge: Vec<String>,
     },

@@ -122,7 +122,8 @@
 //!   in a `verified` line, adds it, or moves its freshness facet
 //!   (`last_verified` in the standard package) off the value it held before.
 //!   The target is named when an `added` or a `prior` line names the target
-//!   as the entry writes it, or a path the target reaches.
+//!   as the entry writes it, or a path that a pattern of the target matches.
+//!   That path may be a file the change deleted.
 //! - A `verified\t<document>\t<target>` line names the edge. That states the
 //!   re-reading of this one edge, whatever the change says about the rest of
 //!   the document.

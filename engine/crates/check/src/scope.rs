@@ -1019,6 +1019,21 @@ pub struct EdgeView<'a> {
     resolution: String,
 }
 
+/// What `change` states about `edge`, which the document at its source path
+/// declares. The target is named by any spelling [`target_names`] lists, or by
+/// a path one of its patterns matches, which covers a file the change deleted
+/// from under a pattern (#1520).
+fn stated(change: &crate::change::Change, edge: &Edge) -> Stated {
+    let patterns: Vec<headwater_meta::Pattern> = match &edge.target {
+        Target::Anchor { patterns, .. } => patterns
+            .iter()
+            .map(|member| headwater_meta::Pattern::new(&member.pattern))
+            .collect(),
+        _ => Vec::new(),
+    };
+    Stated::of(change, &edge.source.path, &target_names(edge), &patterns)
+}
+
 /// Every spelling of what `edge` targets that a change can name: the target as
 /// the entry writes it, each list member, and for an anchor each normalized
 /// pattern and each path it reaches. Sorted, with no duplicate. A change names
@@ -1120,7 +1135,7 @@ impl<'a> EdgeView<'a> {
         digests: &Digests,
         clock: Option<Date>,
         prior_of: impl Fn(&str) -> Option<Prior<'a>>,
-        stated_of: impl Fn(&str, &[&str]) -> Stated,
+        stated_of: impl Fn(&Edge) -> Stated,
     ) -> Option<Self> {
         let declared = halves
             .iter()
@@ -1185,7 +1200,7 @@ impl<'a> EdgeView<'a> {
             ends,
             declarer: read_at(census, &anchor.source.path).0,
             declarer_prior: prior_of(&anchor.source.path),
-            stated: stated_of(&anchor.source.path, &target_names(anchor)),
+            stated: stated_of(anchor),
             clock,
             reads,
             resolution: anchor.target.resolution(),
@@ -1276,7 +1291,7 @@ impl<'a> EdgeView<'a> {
     }
 
     /// Whether an `added` or a `prior` line of the change names this edge's
-    /// target, or a path the target reaches, and only for a check that
+    /// target, or a path the target's pattern matches, and only for a check that
     /// declared `NEEDS_DECLARER_PRIOR`. A re-verified document stamps an edge
     /// only where the person re-read what it reaches, because each edge
     /// carries its own `verified_revision` (#1520). False in a run that
@@ -1901,9 +1916,8 @@ pub fn over_edges<C: EdgeCheck>(
             (true, Some(change)) => change.prior_of(path).ok(),
             _ => None,
         };
-        let stated = |path: &str, names: &[&str]| match (scope.needs_declarer_prior(), ctx.change())
-        {
-            (true, Some(change)) => Stated::of(change, path, names),
+        let stated = |edge: &Edge| match (scope.needs_declarer_prior(), ctx.change()) {
+            (true, Some(change)) => stated(change, edge),
             _ => Stated::NONE,
         };
         let Some(view) = EdgeView::over(halves, census, digests, clock, declarer_prior, stated)

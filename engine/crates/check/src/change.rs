@@ -94,7 +94,7 @@
 //! edge carries its own `verified_revision`, so a stamp also needs the edge's
 //! target named, and this line is how an author names it without carrying
 //! the target in the change (#1520). `<target>` is the target as the entry
-//! writes it, or a path it reaches. It is not held against the corpus,
+//! writes it, or a path its pattern matches. It is not held against the corpus,
 //! because a governed source file is no corpus document. `<path>` is held, as
 //! a two-field line's path is.
 //!
@@ -158,7 +158,7 @@ pub(crate) struct Stated {
     /// A `verified` line names the declaring document (#1376).
     pub(crate) document: bool,
     /// An `added` or a `prior` line names the edge's target, or a path the
-    /// target reaches (#1520).
+    /// target's pattern matches, a deleted file included (#1520).
     pub(crate) target: bool,
     /// A `verified\t<document>\t<target>` line names this edge (#1520).
     pub(crate) edge: bool,
@@ -175,14 +175,26 @@ impl Stated {
 
     /// What `change` states about the edge that the document at `document`
     /// declares, whose target `names` spell: the target as written and every
-    /// path it reaches.
-    pub(crate) fn of(change: &Change, document: &str, names: &[&str]) -> Stated {
+    /// path it reaches. `patterns` are the target's normalized patterns, and a
+    /// path one of them matches names the target too, though the tree no
+    /// longer holds it: a change that deletes a file under a pattern carries
+    /// the file in a `prior` line, and the author read the edge to delete it.
+    pub(crate) fn of(
+        change: &Change,
+        document: &str,
+        names: &[&str],
+        patterns: &[headwater_meta::Pattern],
+    ) -> Stated {
+        let reaches = |path: &str| {
+            names.contains(&path) || patterns.iter().any(|pattern| pattern.matches(path))
+        };
         Stated {
             document: change.verified(document),
-            target: names.iter().any(|name| change.names(name)),
-            edge: names
+            target: change.entries.iter().any(|(path, _)| reaches(path)),
+            edge: change
+                .edges
                 .iter()
-                .any(|name| change.verified_edge(document, name)),
+                .any(|(known, target)| known == document && reaches(target)),
         }
     }
 }
@@ -567,24 +579,6 @@ impl Change {
             .is_ok()
     }
 
-    /// Whether an `added` or a `prior` line of this change names `path`,
-    /// whether or not a row of the corpus holds it. A governed source file is
-    /// held by no row, and a change that edits one names it, so this is how
-    /// a rule asks whether the person re-read what an edge reaches (#1520).
-    pub(crate) fn names(&self, path: &str) -> bool {
-        self.entries
-            .binary_search_by(|(known, _)| known.as_str().cmp(path))
-            .is_ok()
-    }
-
-    /// Whether a `verified\t<document>\t<target>` line of this change names
-    /// the edge from `document` to `target`. See the module comment.
-    pub(crate) fn verified_edge(&self, document: &str, target: &str) -> bool {
-        self.edges
-            .binary_search_by(|(known, to)| (known.as_str(), to.as_str()).cmp(&(document, target)))
-            .is_ok()
-    }
-
     /// Every path this change named that no row of this corpus holds, and
     /// whose prior version this run read, in path order.
     ///
@@ -894,23 +888,36 @@ mod tests {
         assert_eq!(unbound.verified(), vec!["docs/a.md"]);
         let change = unbound.bind(|path| path == "docs/a.md" || path == "docs/c.md");
 
-        assert!(change.verified_edge("docs/a.md", "tools/x.sh"));
-        assert!(change.verified_edge("docs/a.md", "src/**"));
-        assert!(change.verified_edge("docs/c.md", "tools/x.sh"));
-        assert!(!change.verified_edge("docs/c.md", "src/**"));
+        // What the change states about an edge whose target is written as
+        // `target`, with no pattern.
+        let stated = |document: &str, target: &str| Stated::of(&change, document, &[target], &[]);
+        assert!(stated("docs/a.md", "tools/x.sh").edge);
+        assert!(stated("docs/a.md", "src/**").edge);
+        assert!(stated("docs/c.md", "tools/x.sh").edge);
+        assert!(!stated("docs/c.md", "src/**").edge);
         assert!(
-            !change.verified_edge("docs/typo.md", "tools/x.sh"),
+            !stated("docs/typo.md", "tools/x.sh").edge,
             "no row holds it"
         );
         // An edge line re-verifies the one edge and not the document.
         assert!(change.verified("docs/a.md"), "its own two-field line");
         assert!(!change.verified("docs/c.md"));
+        assert!(!stated("docs/c.md", "tools/x.sh").document);
         // A governed file the change carries is named though no row holds it.
-        assert!(change.names("tools/y.sh"));
+        assert!(stated("docs/c.md", "tools/y.sh").target);
         assert!(
-            !change.names("tools/x.sh"),
+            !stated("docs/c.md", "tools/x.sh").target,
             "a verified line carries nothing"
         );
+        // A pattern names a path it matches, and a path the tree no longer
+        // holds is still one it matches.
+        let tools = [headwater_meta::Pattern::new("tools/*.sh")];
+        let by_pattern = Stated::of(&change, "docs/c.md", &["tools/*.sh"], &tools);
+        assert!(by_pattern.target, "tools/y.sh is under tools/*.sh");
+        assert!(by_pattern.edge, "the edge line names tools/x.sh");
+        let elsewhere = [headwater_meta::Pattern::new("src/*.rs")];
+        let unnamed = Stated::of(&change, "docs/c.md", &["src/*.rs"], &elsewhere);
+        assert!(!unnamed.target && !unnamed.edge, "{unnamed:?}");
         assert_eq!(change.unmatched(), vec!["docs/typo.md", "tools/y.sh"]);
         let named = change.named();
         assert_eq!(named.verified, 2, "{named:?}");

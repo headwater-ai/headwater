@@ -912,7 +912,11 @@ fn a_deleted_file_under_a_pattern_names_the_target() {
     std::fs::remove_file(root.join(LIB)).expect("the hook deletes");
     let moved = || (DOCUMENT, Some(yesterday("hooks", &entries)));
     for (label, change, fixable) in [
-        ("the change deletes a matched file", change(&[moved(), lib()]), true),
+        (
+            "the change deletes a matched file",
+            change(&[moved(), lib()]),
+            true,
+        ),
         (
             "a verified line names the deleted file",
             edges(&[], &[], &[(DOCUMENT, LIB)]),
