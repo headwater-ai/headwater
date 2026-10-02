@@ -94,6 +94,8 @@ meta_schema: headwater/taxonomy
 # not named `when`, because `relations.expect[].when` already means a status
 # condition one level down in the same block. It is a minor, because a source
 # that wrote none declares none, and the verb then prints the gap it printed.
+# `taxonomy validate` refuses a blank sentence under `purpose completeness`,
+# because absent and blank are two states, as they are for a namespace.
 #
 # No consumer compares this value against anything. `fixtures/schema.record`
 # carries it, so a bump shows up in a diff, and nothing refuses a source for

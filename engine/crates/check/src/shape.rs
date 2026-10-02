@@ -932,7 +932,11 @@ fn read_kind(name: &str, value: &Value, span: Span) -> Result<Kind, DeclarationE
         name: name.to_string(),
         is_a: scalar(map, "is_a"),
         purpose: scalar(map, "purpose"),
-        write_when: scalar(map, "write_when"),
+        // A blank sentence is no sentence. `taxonomy validate` refuses one in
+        // a source, and a lock that carries one anyway reads as a kind that
+        // declares none, so it neither prints an empty line nor hides an
+        // ancestor's sentence.
+        write_when: scalar(map, "write_when").filter(|sentence| !sentence.trim().is_empty()),
         require: facets
             .map(|map| sequence(map, "require"))
             .unwrap_or_default(),

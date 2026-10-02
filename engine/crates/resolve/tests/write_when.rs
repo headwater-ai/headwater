@@ -103,14 +103,18 @@ fn a_blank_sentence_on_an_abstract_kind_is_refused() {
         "    write_when: a reader needs a page\n",
         "    write_when: \"\"\n",
     );
-    let source = Source::from_text("write-when.yml", Role::Taxonomy, &text.replace(
-        "{kinds}\n",
-        "  note:
+    let source = Source::from_text(
+        "write-when.yml",
+        Role::Taxonomy,
+        &text.replace(
+            "{kinds}\n",
+            "  note:
     is_a: page
     purpose: guide
     identifier: {scheme: note_id}
 ",
-    ))
+        ),
+    )
     .expect("the source loads");
     let refusals: Vec<String> = resolve(&[source])
         .expect("the source resolves")
@@ -119,5 +123,8 @@ fn a_blank_sentence_on_an_abstract_kind_is_refused() {
         .map(|error| headwater_resolve::render_errors(std::slice::from_ref(error)))
         .collect();
     assert_eq!(refusals.len(), 1, "{refusals:#?}");
-    assert!(refusals[0].contains("kinds.page.write_when"), "{refusals:#?}");
+    assert!(
+        refusals[0].contains("kinds.page.write_when"),
+        "{refusals:#?}"
+    );
 }
