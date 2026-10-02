@@ -72,9 +72,12 @@
 //! That sentence used to say *composes every file before it writes any*, which
 //! was a claim about the phase that cannot fail standing in for the phase that
 //! can: composition finished, and the write beneath it was a loop that stopped
-//! on its first error. Both writers now go through [`crate::tree::Reserved`],
-//! and [`apply`] here calls [`crate::tree::Reserved::over`] alone because a fix
-//! creates nothing.
+//! on its first error. Both writers now go through [`crate::tree::Reserved`].
+//! [`apply`] here calls [`crate::tree::Reserved::over`] for the edits to files
+//! that exist, and for nothing else. A fix also creates files: [`make`] creates
+//! each one [`compose`] planned, claim files of
+//! [`headwater_check::claim`]'s store included, with `create_new` and never
+//! over a file that is there. The caller runs it after [`apply`].
 
 use crate::write::splice;
 use crate::{Half, Refusal};
