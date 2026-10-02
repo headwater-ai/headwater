@@ -86,6 +86,8 @@ resolved:
       required: false
     severity:
       required: false
+    doc_type:
+      required: false
   kinds:
     widget_page:
       abstract: true
@@ -113,6 +115,12 @@ resolved:
       path: ops/incidents/**
       homogeneous: true
       kind: incident_widget
+    widget_mixed:
+      discriminator: doc_type
+      homogeneous: false
+      kinds:
+        - incident_widget
+      path: ops/mixed/**
 ";
 
 /// The committed lock's header, as another package, over [`FOREIGN`].
@@ -212,10 +220,14 @@ fn a_foreign_lock_prints_its_own_kinds_and_none_of_this_repository() {
     ] {
         assert!(runbook.contains(line), "`{line}` in {runbook}");
     }
+    // A heterogeneous shelf that does not list the kind does not carry it.
+    assert!(!runbook.contains("widget_mixed"), "{runbook}");
     let incident = block(&report, "incident_widget");
     for line in [
         "  purpose   evidence: record what happened and what it showed\n",
         "  shelf     widget_incidents (ops/incidents/**)\n",
+        // A heterogeneous shelf names the facet that selects the kind.
+        "  shelf     widget_mixed (ops/mixed/**, where `doc_type` names it)\n",
         // The parent's facet first, then the kind's own.
         "  facets    owner, severity\n",
         "  sections  (none)\n",
