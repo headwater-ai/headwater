@@ -1818,8 +1818,10 @@ STUB
         rm -f "$conf/port"
         python3 -c '
 import functools, http.server, sys
-handler = functools.partial(http.server.SimpleHTTPRequestHandler, directory=sys.argv[1])
-handler.log_message = lambda *a: None
+class Quiet(http.server.SimpleHTTPRequestHandler):
+    def log_message(self, *args):
+        pass
+handler = functools.partial(Quiet, directory=sys.argv[1])
 server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), handler)
 open(sys.argv[2] + ".tmp", "w").write(str(server.server_address[1]))
 __import__("os").rename(sys.argv[2] + ".tmp", sys.argv[2])
@@ -1857,7 +1859,7 @@ STUB
             "$([ -f "$conf/net-ws/found.txt" ] && echo yes || echo no)"
         absent "no road from the session reaches a server on the host" \
             "HW-LEAK-MARKER-1467-NET" "$conf/net-ws/found.txt"
-        absent "and git cloned nothing from it" "HW-LEAK-MARKER" "$conf/net-ws/cloned/secret.md"
+        same "and git cloned nothing from it" "" "$(cat "$conf/net-ws/cloned/secret.md" 2>/dev/null)"
         present "the session was handed its proxy" "http://127.0.0.1:" "$conf/net-ws/proxy.txt"
         present "the transcript says the session had no network but the proxy" \
             "The session ran with no network of its own." "$scratch/no-network.md"
@@ -1905,6 +1907,46 @@ STUB
         same "a bwrap that cannot create a namespace refuses with 12" "12" "$?"
         present "and prints what bwrap said" "setting up uid map" "$scratch/bad-bwrap.err"
         same "and the harness never ran" "no" "$([ -e "$conf/conf-ws/harness-ran" ] && echo yes || echo no)"
+
+        # No route that can be stated, no session (#1467, clause 5). A host
+        # with no `python3` has no proxy, and a proxy that does not start
+        # leaves the session no network at all, so both refuse with 12 before
+        # any harness call. The second `python3` names its hosts and then
+        # dies, which is a proxy that cannot listen.
+        rm -rf "$scratch/nopython"
+        mkdir -p "$scratch/nopython"
+        for dir in /usr/local/bin /usr/bin /bin; do
+            [ -d "$dir" ] || continue
+            for tool in "$dir"/*; do
+                name=${tool##*/}
+                case $name in python3|python3.*) continue ;; esac
+                [ -e "$scratch/nopython/$name" ] || [ -L "$scratch/nopython/$name" ] \
+                    || ln -s "$tool" "$scratch/nopython/$name" 2>/dev/null
+            done
+        done
+        PATH="$scratch/bin:$scratch/nopython" sh "$driver" --probe "HW-PROBE-$tombstone" --session fixture-no-python \
+            --task-file "$scratch/task.md" --workspace "$conf/conf-ws" \
+            >/dev/null 2>"$scratch/no-python.err"
+        same "a host with no python3 refuses with 12" "12" "$?"
+        present "and names what is missing" "no \`python3\`" "$scratch/no-python.err"
+        same "and the harness never ran" "no" "$([ -e "$conf/conf-ws/harness-ran" ] && echo yes || echo no)"
+        mkdir -p "$scratch/dead-proxy"
+        real_python=$(command -v python3)
+        printf '#!/bin/sh\ncase $2 in hosts) exec %s "$@" ;; serve) echo "OSError: the fixture refuses to listen" >&2; exit 1 ;; esac\nexec %s "$@"\n' \
+            "$real_python" "$real_python" > "$scratch/dead-proxy/python3"
+        chmod +x "$scratch/dead-proxy/python3"
+        rm -f "$conf/conf-ws/harness-ran"
+        rm -rf "$scratch/dead-proxy-tmp"
+        mkdir -p "$scratch/dead-proxy-tmp"
+        TMPDIR="$scratch/dead-proxy-tmp" PATH="$scratch/dead-proxy:$scratch/bin:$PATH" sh "$driver" --probe "HW-PROBE-$tombstone" --session fixture-dead-proxy \
+            --task-file "$scratch/task.md" --workspace "$conf/conf-ws" \
+            >/dev/null 2>"$scratch/dead-proxy.err"
+        same "an egress proxy that does not start refuses with 12" "12" "$?"
+        present "and says the proxy did not start" "the egress proxy that is the session's one route to the network did not start" "$scratch/dead-proxy.err"
+        present "and prints what the proxy said" "the fixture refuses to listen" "$scratch/dead-proxy.err"
+        same "and the harness never ran" "no" "$([ -e "$conf/conf-ws/harness-ran" ] && echo yes || echo no)"
+        same "and no proxy directory is left behind" "" \
+            "$(find "$scratch/dead-proxy-tmp" -maxdepth 1 -name 'headwater-egress.*' 2>/dev/null)"
 
         # The host's configuration reaches no session (#1467). The session
         # runs under a fresh configuration directory that holds a copy of the
