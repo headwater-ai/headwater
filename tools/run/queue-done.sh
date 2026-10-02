@@ -12,6 +12,7 @@
 #     queue-done: #<PR> merged <sha>
 #     queue-done: #<PR> ejected: <the reason GitHub recorded>
 #     queue-done: #<PR> unmergeable: the queue will eject it with merge_conflict
+#     queue-done: #<PR> stalled: every check of its merge group is green and it has not merged in <m> minutes
 #     queue-done: #<PR> closed
 #     queue-done: #<PR> not queued: open, in no queue, and never removed from one
 #
@@ -42,8 +43,31 @@
 # answer is final at once, so it exits 0 then. An integrator reads it as an
 # ejection with reason `merge_conflict (unmergeable)`.
 #
-# An ejected or unmergeable pull request stays out: nothing here enqueues it
-# again, because that is a new ruling and the parent's.
+# Stalled means the entry is first in the queue (`position` 1, which counts
+# from one), its state is `AWAITING_CHECKS`, the status rollup of its
+# `headCommit` is `SUCCESS`, and the latest check of that commit completed
+# fifteen minutes ago or more. The `headCommit` of an entry is the tip of
+# its merge group, the commit of the `gh-readonly-queue/` branch that the
+# group's CI runs on (read from the live queue on 2026-10-02). In #1548 the
+# group was green and the entry stayed in `AWAITING_CHECKS` for 84 minutes
+# or more, up to the integrator's deadline, because nothing here could tell
+# a group that is still running from one that will not merge. A green group
+# at the head of the queue merges within seconds, and the ruleset's check
+# timeout is 90 minutes. Fifteen minutes is far past the first and well
+# short of the second. A job behind `needs:` has no check run until the job
+# before it finishes, so a group can read green for the moment between the
+# two. That moment begins at the latest completion, which is why the
+# interval counts from it and not from the time the entry joined the queue.
+# The rollup counts every check of the group, not only the checks the
+# ruleset requires, so a failed optional check withholds `stalled`; that is
+# stricter than "every required check is green", and reading the ruleset's
+# list is not done here. A commit status counts as completed when it was
+# created. The clock is `QUEUE_DONE_NOW` in epoch seconds when it is set,
+# and the time of day when it is not. A stalled entry is final: it exits 0.
+#
+# An ejected, unmergeable or stalled pull request stays where it is: nothing
+# here enqueues it again or removes it, because that is a new ruling and the
+# parent's.
 #
 # Before the `Protect main` ruleset carries a `merge_queue` rule, `gh pr
 # merge --squash` merges at once, and this reports `merged` on its first
@@ -55,6 +79,9 @@
 
 set -u
 
+# The stall interval, in seconds. The header says why fifteen minutes.
+stall=900
+
 pr=${1:-}
 case $pr in
     ''|*[!0-9]*)
@@ -63,14 +90,17 @@ case $pr in
         ;;
 esac
 
-query='query($owner:String!,$name:String!,$n:Int!){repository(owner:$owner,name:$name){pullRequest(number:$n){state mergeCommit{oid} mergeQueueEntry{state} autoMergeRequest{enabledAt} timelineItems(itemTypes:[ADDED_TO_MERGE_QUEUE_EVENT,REMOVED_FROM_MERGE_QUEUE_EVENT],last:1){nodes{__typename ... on RemovedFromMergeQueueEvent{reason}}}}}}'
+query='query($owner:String!,$name:String!,$n:Int!){repository(owner:$owner,name:$name){pullRequest(number:$n){state mergeCommit{oid} mergeQueueEntry{state position headCommit{statusCheckRollup{state contexts(last:100){nodes{... on CheckRun{completedAt} ... on StatusContext{createdAt}}}}}} autoMergeRequest{enabledAt} timelineItems(itemTypes:[ADDED_TO_MERGE_QUEUE_EVENT,REMOVED_FROM_MERGE_QUEUE_EVENT],last:1){nodes{__typename ... on RemovedFromMergeQueueEvent{reason}}}}}}'
 
-# One line of TSV: state, merge commit, queue entry state, auto-merge, and
-# the last queue event on the timeline, packed into one field: `added`,
-# `removed:<reason>`, or `-` when there is none. A missing value is `-`, so
-# no field is ever empty and a split never shifts a column.
+# One line of TSV: state, merge commit, queue entry state, auto-merge, the
+# last queue event on the timeline packed into one field (`added`,
+# `removed:<reason>`, or `-` when there is none), the entry's position, the
+# rollup state of its group's head commit, and the latest completion of a
+# check of that commit in epoch seconds. A missing value is `-`, so no field
+# is ever empty and a split never shifts a column. The clock is not read in
+# the filter, so that the fixtures can set it.
 row=$(gh api graphql -F owner='{owner}' -F name='{repo}' -F n="$pr" -f query="$query" \
-    --jq '.data.repository.pullRequest | [.state, (.mergeCommit.oid // "-"), (.mergeQueueEntry.state // "-"), (if .autoMergeRequest then "auto" else "-" end), (.timelineItems.nodes[-1] | if . == null then "-" elif .__typename == "AddedToMergeQueueEvent" then "added" elif .__typename == "RemovedFromMergeQueueEvent" then "removed:" + ((.reason // "-") | gsub("[\t\n]"; " ")) else .__typename end)] | @tsv') || {
+    --jq '.data.repository.pullRequest | [.state, (.mergeCommit.oid // "-"), (.mergeQueueEntry.state // "-"), (if .autoMergeRequest then "auto" else "-" end), (.timelineItems.nodes[-1] | if . == null then "-" elif .__typename == "AddedToMergeQueueEvent" then "added" elif .__typename == "RemovedFromMergeQueueEvent" then "removed:" + ((.reason // "-") | gsub("[\t\n]"; " ")) else .__typename end), (.mergeQueueEntry.position // "-"), (.mergeQueueEntry.headCommit.statusCheckRollup.state // "-"), ([.mergeQueueEntry.headCommit.statusCheckRollup.contexts.nodes[]? | (.completedAt // .createdAt) | select(. != null) | fromdateiso8601] | max // "-")] | @tsv') || {
     echo "queue-done: #$pr: the query failed; asking again next time" >&2
     exit 1
 }
@@ -82,12 +112,12 @@ IFS=$tab
 set -- $row
 IFS=$old_ifs
 
-if [ "$#" -ne 5 ]; then
-    echo "queue-done: #$pr: the answer read '$row', not five fields" >&2
+if [ "$#" -ne 8 ]; then
+    echo "queue-done: #$pr: the answer read '$row', not eight fields" >&2
     exit 1
 fi
 
-state=$1 oid=$2 entry=$3 auto=$4 event=$5
+state=$1 oid=$2 entry=$3 auto=$4 event=$5 position=$6 rollup=$7 latest=$8
 
 case $state in
     MERGED)
@@ -111,6 +141,22 @@ esac
 if [ "$entry" = "UNMERGEABLE" ]; then
     echo "queue-done: #$pr unmergeable: the queue will eject it with merge_conflict"
     exit 0
+fi
+# A green group at the head of the queue that has not merged for the stall
+# interval will not merge on its own (#1548). The header says why each part
+# of the test is there.
+if [ "$entry" = "AWAITING_CHECKS" ] && [ "$position" = "1" ] && [ "$rollup" = "SUCCESS" ]; then
+    case $latest in
+        ''|*[!0-9]*) ;;
+        *)
+            now=${QUEUE_DONE_NOW:-$(date -u +%s)}
+            age=$((now - latest))
+            if [ "$age" -ge "$stall" ]; then
+                echo "queue-done: #$pr stalled: every check of its merge group is green and it has not merged in $((age / 60)) minutes"
+                exit 0
+            fi
+            ;;
+    esac
 fi
 if [ "$entry" != "-" ]; then
     echo "queue-done: #$pr is in the queue, $entry" >&2
