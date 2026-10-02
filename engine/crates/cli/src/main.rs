@@ -609,6 +609,7 @@ fn dispatch(root: &Path, verb: Verb) -> ExitCode {
                 Some(path) => migrate(root, Path::new(&path), to.as_deref(), now, apply),
             },
             Some(TaxonomyWord::Graph { view, legend }) => taxonomy_graph(root, view, legend),
+            Some(TaxonomyWord::Kinds { json }) => taxonomy_kinds(root, json),
             Some(TaxonomyWord::Other(words)) => fail(&format!(
                 "`taxonomy {}` is not a verb this binary carries yet. It carries {}",
                 words.first().map(String::as_str).unwrap_or_default(),
@@ -1515,6 +1516,35 @@ fn taxonomy_graph(
             legend
         )
     );
+    ExitCode::SUCCESS
+}
+
+/// `headwater taxonomy kinds`.
+///
+/// The lock alone, as `graph` reads it, so a repository whose documents do
+/// not yet check still lists its kinds. [`headwater_query::kinds`] is the one
+/// renderer, which the MCP `kinds` tool calls too (#1580).
+fn taxonomy_kinds(root: &Path, json: bool) -> ExitCode {
+    let lock = match headwater_lock::at(root) {
+        Ok(lock) => lock,
+        Err(error) => {
+            eprintln!("headwater: {}", err(&format!("{error}")));
+            return ExitCode::FAILURE;
+        }
+    };
+    let taxonomy = match Taxonomy::read(&lock.taxonomy) {
+        Ok(taxonomy) => taxonomy,
+        Err(errors) => return refused("the taxonomy", &errors),
+    };
+    let shape = match Shape::read(&lock.taxonomy) {
+        Ok(shape) => shape,
+        Err(errors) => return refused("the facet and kind declarations", &errors),
+    };
+    let kinds = headwater_query::kinds::Kinds::of(&lock.package, &lock.version, &shape, &taxonomy);
+    match json {
+        true => println!("{}", kinds.json().render_pretty()),
+        false => print!("{}", kinds.text()),
+    }
     ExitCode::SUCCESS
 }
 

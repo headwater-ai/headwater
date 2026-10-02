@@ -36,7 +36,7 @@
 //! promise, and each is asserted in `tests/mcp.rs`.
 //!
 //! 1. **A server with no switch is the server that was here before.** With
-//!    [`Server::writing`] at `None`, [`registered`] returns the six reads, and
+//!    [`Server::writing`] at `None`, [`registered`] returns the seven reads, and
 //!    no handler that writes exists to reach. The old property holds verbatim
 //!    for the default shape, which is the shape a client reaches by connecting
 //!    to a checkout nobody meant to change.
@@ -91,7 +91,7 @@
 //! # `check` runs the check layer, and its three inputs arrive rather than
 //! being chosen here
 //!
-//! `check` is the one tool of the six that runs the check layer rather than
+//! `check` is the one tool of the seven that runs the check layer rather than
 //! reading the graph, so it needs a clock, a cache and a corpus walk. Every one
 //! of those is a decision, and a tool that took them again would put a second
 //! set of defaults behind a protocol. So none of the three is taken here.
@@ -115,7 +115,8 @@
 //!
 //! **There is no corpus walk.** The corpus is walked once, before the server
 //! starts, and [`Server::census`] and [`Server::graph`] are what that walk
-//! produced. Every one of the six tools answers from it, so `check` costs no
+//! produced. Every one of the seven tools answers from it, or from the lock it
+//! was read under, so `check` costs no
 //! walk that `route` does not. What it costs is one run of the check layer over
 //! two structures already in memory.
 //!
@@ -200,7 +201,7 @@ const PROTOCOL: &str = "2024-11-05";
 /// module comment refuses. Nothing here is mutable, which is why two calls in
 /// one session answer the same bytes.
 pub struct Server<'a> {
-    /// The graph reads: five of the six tools are a projection of this.
+    /// The graph reads: five of the seven tools are a projection of this.
     pub surface: Surface<'a>,
     /// What the walk before start-up produced. The surface reads it too, and it
     /// is here as well because a check run takes it as its denominator.
@@ -395,7 +396,7 @@ macro_rules! path_spellings {
 }
 
 /// Spec 5's query class: it changes nothing, and it is always registered.
-pub const QUERY_CLASS: [Tool; 6] = [
+pub const QUERY_CLASS: [Tool; 7] = [
     Tool {
         name: "route",
         description: "Resolve a task description to the documents that govern it, as pointers: \
@@ -463,6 +464,23 @@ pub const QUERY_CLASS: [Tool; 6] = [
              engine's own words, `markdown` is the findings as a job summary, `sarif` is a check \
              run, and `json` is the finding shape itself. There is no default: the vocabulary is \
              the caller's to choose.",
+        )],
+        writes: false,
+    },
+    Tool {
+        name: "kinds",
+        description: "The kinds of document this repository's taxonomy keeps, read from its \
+                      lock: for each kind a document can be, its parent, its purpose and the \
+                      questions that purpose answers, the shelf that carries it, the facets and \
+                      sections it requires after inheritance, and the `headwater new` command for \
+                      it, which can still refuse and name what it needs. An abstract kind gets no entry of its own. No taxonomy declares \
+                      when to write a kind, and each entry says so. The bytes are those of \
+                      `headwater taxonomy kinds` over the same lock. It writes nothing.",
+        arguments: &[Argument::required(
+            "format",
+            "One of `text`, `json`. `text` is the report in the engine's own words, and `json` \
+             is the same content as one document, which also arrives as structuredContent. \
+             There is no default: the vocabulary is the caller's to choose.",
         )],
         writes: false,
     },
@@ -912,6 +930,28 @@ fn call(server: &Server<'_>, message: &Mapping) -> Result<Answer, Failure> {
             }
         }
         "check" => check(server, &argument)?,
+        // The taxonomy alone, through the one renderer the verb calls, so the
+        // tool and `headwater taxonomy kinds` answer the same bytes (#1580).
+        "kinds" => {
+            let kinds = crate::kinds::Kinds::of(
+                server.package,
+                server.version,
+                server.declared.shape,
+                server.declared.taxonomy,
+            );
+            let text = match argument.as_str() {
+                "text" => kinds.text(),
+                "json" => kinds.json().render_pretty(),
+                _ => {
+                    return Err(Failure {
+                        code: -32602,
+                        message: "`kinds` takes a format, one of text, json".to_string(),
+                    })
+                }
+            };
+            structured = Some(kinds.json());
+            text
+        }
         // Unreachable: `tool` came out of `registered`. Answered rather than
         // panicked, because a panic inside a server is a dropped connection and
         // this is a sentence.

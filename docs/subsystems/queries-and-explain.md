@@ -59,7 +59,7 @@ The public Rust API of each crate is not in this spec ([HW-DR-0098](../decisions
 
 `Surface` borrows the census, the graph, the resolved taxonomy and the relation declarations. It does not own a copy of them. A surface that copied them could answer about a corpus that no run evaluated.
 
-Spec 5 names the tools of the query class: `route`, `governing_docs_for_path`, `resolve_identifier`, `related`, `explain` and `check`. The first five are reads in this crate. `check` is the runner of the check layer, and this crate calls the runner and does not implement it again.
+Spec 5 names the tools of the query class: `route`, `governing_docs_for_path`, `resolve_identifier`, `related`, `explain`, `check` and `kinds`. The first five are reads in this crate. `check` is the runner of the check layer, and this crate calls the runner and does not implement it again. `kinds` reads the resolved taxonomy and not the graph. The `kinds` module holds its one renderer, and `headwater taxonomy kinds` calls the same renderer. So the tool and the verb give the same bytes for one lock.
 
 Spec 6 also lists `headwater query <expression>`, and no document states what an expression is. Thus the crate has no `query` function. [HW-OBL-0029](../obligations/0029-what-headwater-query-takes.md) carries that gap, and the [`headwater query`](../interfaces/headwater-query.md) contract states the refusal.
 

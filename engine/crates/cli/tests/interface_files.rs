@@ -105,6 +105,7 @@ const CASES: &[Case] = &[
         "the lock already takes the artifact's version, so it refuses before the load; `audit` and `diff` hold the page",
     ),
     stops(&["taxonomy", "graph"], "it reads the lock and no graph"),
+    stops(&["taxonomy", "kinds"], "it reads the lock and no graph"),
     stops(&["json", "field", "x"], "it reads standard input alone"),
     stops(&["json", "count"], "it reads standard input alone"),
     stops(&["json", "quote"], "it reads standard input alone"),
