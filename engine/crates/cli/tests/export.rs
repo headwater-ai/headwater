@@ -300,6 +300,21 @@ fn a_refused_export_writes_no_declared_output() {
         stderr.contains("wrote nothing and the tree is as it was"),
         "the refusal does not say the run wrote nothing\n{said}"
     );
+
+    // `--check` writes nothing in any state, so it withholds nothing, and its
+    // sentence stays the drift sentence rather than the publish remedy.
+    let (code, said) = status(&run(&root, &["export", "--check"]));
+    assert_eq!(code, Some(1), "`export --check` accepted the authored file\n{said}");
+    let stderr = said.split("\nstderr:\n").nth(1).expect("the stderr part");
+    assert!(
+        stderr.contains("a declared export is not what this corpus and this lock produce")
+            && !stderr.contains("wrote nothing"),
+        "`export --check` did not end on the drift sentence\n{said}"
+    );
+    assert!(
+        !said.contains("not written, because the run refused"),
+        "`export --check` reports a withheld write\n{said}"
+    );
 }
 
 /// The answered-export fixture with its `control` export declared
