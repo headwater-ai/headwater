@@ -473,8 +473,9 @@ pub const QUERY_CLASS: [Tool; 7] = [
                       lock: for each kind a document can be, its parent, its purpose and the \
                       questions that purpose answers, the shelf that carries it, the facets and \
                       sections it requires after inheritance, and the `headwater new` command for \
-                      it, which can still refuse and name what it needs. An abstract kind gets no entry of its own. No taxonomy declares \
-                      when to write a kind, and each entry says so. The bytes are those of \
+                      it, which can still refuse and name what it needs. An abstract kind gets no entry of its own. Each entry says when \
+                      to write one, as the kind or its nearest ancestor declares it in \
+                      `write_when`, or says that the taxonomy declares nothing. The bytes are those of \
                       `headwater taxonomy kinds` over the same lock. It writes nothing.",
         arguments: &[Argument::required(
             "format",

@@ -22,6 +22,7 @@ relations:
     - HW-IFACE-headwater-completions
     - HW-IFACE-headwater-json
     - HW-IFACE-headwater-merge-driver
+    - HW-IFACE-headwater-init
     - HW-DR-0029
     - HW-DR-0033
     - HW-DR-0042
@@ -112,6 +113,12 @@ The help gets its mode from `command_at`, which reads standard output. `command_
 
 The body of `headwater taxonomy kinds` is in `main.rs`, and it reads the lock alone, as `graph` does. It renders nothing itself. It calls the `kinds` module of `headwater-query`, which the MCP `kinds` tool also calls, so the two cannot disagree ([Queries and explain](queries-and-explain.md)).
 
+### The harness set
+
+`headwater init --harness` writes the skills and the agent that Headwater ships for an agent harness ([the harness step](../interfaces/headwater-init.md#the-harness-step)). Their texts are the files under `engine/crates/cli/harness/`. `include_str!` compiles each text into `SET` in `cli/src/harness.rs`, so a release of the binary and its set are one version. `files` gives each path that the step writes and the bytes for it. Those bytes are the text and a last line that records the digest of the text.
+
+`classify` decides one path from the bytes already there: absent, this release, an earlier release, or a file that the step did not write. It reads each `\r\n` as `\n` before it decides, because git checks out a file with `\r\n` under `core.autocrlf=true`. The body of the step is `init_harness` in `main.rs`. It calls `classify` for every path before it writes one, and it writes no file of the set when one path is foreign. Under `--check` it writes nothing. The set holds no hook ([HW-OBL-0232](../obligations/0232-headwater-init-harness-ships-no-hook-and-no-hook-configuration-for-any-harness.md)).
+
 ### The body of each verb
 
 `dispatch` sends each `Verb` to a function in `main.rs`. That function reads what its verb needs, calls the library crates that do the work, and writes the result through `emit`. [HW-OBL-0138](../obligations/0138-the-rest-of-the-editorial-pass-with-cli-src-main-rs-at-the-head-of-the-distribution.md) records that `main.rs` is the file at the head of the editorial pass that the corpus still owes.
@@ -132,3 +139,5 @@ A change to these crates must keep each of these. A test holds each one that nam
 - **`Plain` writes no escape sequence for any role** (`plain_writes_no_escape_sequence_for_any_role` in `engine/crates/paint/src/lib.rs`).
 - **A completion script does not move with the terminal of the caller** (`the_script_does_not_move_with_the_terminal_of_whoever_asked_for_it` in `engine/crates/cli/tests/completions.rs`).
 - **Two runs of `taxonomy graph` over one lock write the same bytes** (`two_runs_over_one_lock_write_the_same_bytes` in `engine/crates/cli/tests/taxonomy_graph.rs`).
+- **`init --harness --check` passes on this repository and fails on one changed byte** (`the_harness_check_passes_on_this_repository_and_fails_on_one_changed_byte` in `engine/crates/cli/tests/init_harness.rs`).
+- **A copy of the harness set with `\r\n` line endings is the step's own, and one changed byte in it is not** (`a_copy_git_checked_out_with_crlf_line_endings_is_the_steps_own` in `engine/crates/cli/src/harness.rs`, and `a_set_git_checked_out_with_crlf_line_endings_passes_the_check_and_a_rerun_writes_nothing` in `engine/crates/cli/tests/init_harness.rs`).

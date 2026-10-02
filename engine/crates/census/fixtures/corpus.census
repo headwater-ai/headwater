@@ -778,6 +778,8 @@ docs/obligations/0229-the-counterfactual-campaign-evaluation-withholds-its-disch
   typed: obligation_record
 docs/obligations/0230-comments-in-the-command-surface-crates-and-their-subsystem-spec-state-eight-stale-facts.md
   typed: obligation_record
+docs/obligations/0232-headwater-init-harness-ships-no-hook-and-no-hook-configuration-for-any-harness.md
+  typed: obligation_record
 docs/obligations/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/probe-results/README.md

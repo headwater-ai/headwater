@@ -63,6 +63,7 @@ add:
   kinds.design_spec:
     is_a: governed_document
     purpose: behavior
+    write_when: a change to the design moved what one part of the specification series states
     voice: declarative
     lifecycle: standard
     facets:
@@ -71,6 +72,7 @@ add:
   kinds.decision_register:
     is_a: governed_document
     purpose: rationale
+    write_when: the specification series made a choice, and its register of decisions does not list it
     voice: declarative
     lifecycle: standard
     facets:
@@ -79,6 +81,7 @@ add:
   kinds.obligation_register:
     is_a: governed_document
     purpose: obligation
+    write_when: the specification series owes something, and its register of obligations does not list it
     voice: declarative
     lifecycle: standard
     facets:
@@ -91,6 +94,7 @@ add:
   kinds.review_prompt:
     is_a: governed_document
     purpose: evidence
+    write_when: a review of the corpus is about to run, and the instructions that the reviewer follows must be kept
     voice: declarative
     lifecycle: standard
     facets:
@@ -109,6 +113,7 @@ add:
   kinds.review_record:
     is_a: governed_document
     purpose: evidence
+    write_when: a review ran, and a later reader needs what it found as evidence
     voice: narrative
     lifecycle: standard
     facets:

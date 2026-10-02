@@ -130,6 +130,11 @@ resolved:
 /// reads on every engine that reads that one. The digest is the one the body
 /// has, because `headwater_lock::at` refuses a lock whose digest is wrong.
 fn foreign_lock() -> String {
+    lock_over(FOREIGN)
+}
+
+/// The committed lock's header, as another package, over `body`.
+fn lock_over(body: &str) -> String {
     let committed = committed();
     let mut header = String::new();
     let mut inside = false;
@@ -152,7 +157,189 @@ fn foreign_lock() -> String {
         header.push('\n');
     }
     header.push_str("  sources: []\n");
-    redigest(&format!("{header}{FOREIGN}"))
+    redigest(&format!("{header}{body}"))
+}
+
+/// A foreign taxonomy whose kinds state when to write one (#1580.2): an
+/// abstract parent states a sentence, one child inherits it, one child
+/// overrides it, and a third kind outside the chain states none.
+const FOREIGN_WHEN: &str = "\
+resolved:
+  purposes:
+    procedure:
+      intent: walk an operator through a repair step by step
+      answers:
+        - how do I bring the widget line back up
+    notice:
+      intent: tell an operator something changed
+  facets:
+    owner:
+      required: false
+  kinds:
+    widget_page:
+      abstract: true
+      write_when: a widget changed in a way an operator must act on
+    runbook_widget:
+      is_a: widget_page
+      purpose: procedure
+    incident_widget:
+      is_a: widget_page
+      purpose: procedure
+      write_when: a widget failed in production and the failure is understood
+    loose_note:
+      purpose: procedure
+    alert_widget:
+      purpose: notice
+      write_when: an operator must hear of a change before the next shift
+    memo_widget:
+      purpose: notice
+    blank_widget:
+      is_a: widget_page
+      purpose: procedure
+      write_when: \"  \"
+  shelves:
+    widget_runbooks:
+      path: ops/runbooks/**
+      homogeneous: true
+      kind: runbook_widget
+";
+
+/// The `when` member of each kind of a `--json` report, as
+/// `(name, declared, note)`, with JSON `null` read as the string `null`.
+fn whens(json: &str) -> Vec<(String, String, String)> {
+    let loaded = headwater_yaml::load(json).expect("the json loads");
+    let top = loaded.value.as_map().expect("an object");
+    let scalar = |map: &headwater_yaml::Mapping, key: &str| {
+        map.get(key)
+            .and_then(|node| node.value.as_scalar())
+            .map(|scalar| scalar.text.clone())
+            .unwrap_or_else(|| panic!("`{key}` is a scalar"))
+    };
+    top.get("kinds")
+        .and_then(|node| node.value.as_seq())
+        .expect("a kinds array")
+        .iter()
+        .map(|node| {
+            let kind = node.value.as_map().expect("a kind");
+            let when = map(kind, "when");
+            (
+                scalar(kind, "name"),
+                scalar(when, "declared"),
+                scalar(when, "note"),
+            )
+        })
+        .collect()
+}
+
+/// A kind prints the sentence it declares, a kind that declares none prints
+/// its nearest ancestor's, and a chain that declares none prints the gap.
+#[test]
+fn a_declared_when_is_printed_inherited_and_overridden_and_its_absence_is_the_gap() {
+    let at = root("when", &lock_over(FOREIGN_WHEN));
+    let ran = kinds(&at, &[]);
+    assert_eq!(ran.code, Some(0), "{}{}", ran.out, ran.err);
+    let report = ran.out;
+    let inherited = "a widget changed in a way an operator must act on";
+    let own = "a widget failed in production and the failure is understood";
+
+    // A block is cut at the blank line, so its last line has no newline, and
+    // the last block of the report keeps the report's final newline.
+    let runbook = block(&report, "runbook_widget");
+    assert!(
+        runbook.ends_with(&format!("  when      {inherited}")),
+        "{runbook}"
+    );
+    let incident = block(&report, "incident_widget");
+    assert!(
+        incident.ends_with(&format!("  when      {own}")),
+        "{incident}"
+    );
+    assert!(!incident.contains(inherited), "{incident}");
+    let loose = block(&report, "loose_note");
+    let gap = format!("  when      {}", headwater_query::kinds::UNDECLARED_WHEN);
+    assert!(loose.ends_with(&gap), "{loose}");
+    // A purpose with no answers does not hide a declared sentence, and a kind
+    // under it that declares none prints the sentence for that case.
+    let alert = block(&report, "alert_widget");
+    assert!(
+        alert.ends_with("  when      an operator must hear of a change before the next shift"),
+        "{alert}"
+    );
+    let memo = block(&report, "memo_widget");
+    let unanswered = format!(
+        "  when      {}",
+        headwater_query::kinds::UNDECLARED_WHEN_UNANSWERED
+    );
+    assert!(memo.ends_with(&unanswered), "{memo}");
+    // A blank sentence, which `taxonomy validate` refuses in a source, is no
+    // sentence when a lock carries one: the kind takes its ancestor's.
+    let blank = block(&report, "blank_widget");
+    assert!(
+        blank.ends_with(&format!("  when      {inherited}\n")),
+        "{blank}"
+    );
+    assert_eq!(report.matches("  when      ").count(), 6, "{report}");
+
+    let ran = kinds(&at, &["--json"]);
+    assert_eq!(ran.code, Some(0), "{}{}", ran.out, ran.err);
+    assert_eq!(
+        whens(&ran.out),
+        vec![
+            (
+                "runbook_widget".to_string(),
+                inherited.to_string(),
+                "null".to_string()
+            ),
+            (
+                "incident_widget".to_string(),
+                own.to_string(),
+                "null".to_string()
+            ),
+            (
+                "loose_note".to_string(),
+                "null".to_string(),
+                headwater_query::kinds::UNDECLARED_WHEN.to_string()
+            ),
+            (
+                "alert_widget".to_string(),
+                "an operator must hear of a change before the next shift".to_string(),
+                "null".to_string()
+            ),
+            (
+                "memo_widget".to_string(),
+                "null".to_string(),
+                headwater_query::kinds::UNDECLARED_WHEN_UNANSWERED.to_string()
+            ),
+            (
+                "blank_widget".to_string(),
+                inherited.to_string(),
+                "null".to_string()
+            ),
+        ]
+    );
+    let _ = std::fs::remove_dir_all(&at);
+}
+
+/// Every concrete kind of this repository's lock states when to write one
+/// (#1580.2), so a kind added with no sentence fails here and not in an
+/// agent's draft.
+#[test]
+fn every_kind_of_this_repository_declares_when_to_write_one() {
+    let ran = kinds(&repository(), &["--json"]);
+    assert_eq!(ran.code, Some(0), "{}", ran.err);
+    let whens = whens(&ran.out);
+    assert!(!whens.is_empty(), "the committed lock declares kinds");
+    let undeclared: Vec<&str> = whens
+        .iter()
+        .filter(|(_, declared, _)| declared == "null")
+        .map(|(name, _, _)| name.as_str())
+        .collect();
+    assert!(
+        undeclared.is_empty(),
+        "{} of {} kinds declare no `write_when`: {undeclared:?}",
+        undeclared.len(),
+        whens.len()
+    );
 }
 
 fn map<'a>(map: &'a headwater_yaml::Mapping, key: &str) -> &'a headwater_yaml::Mapping {

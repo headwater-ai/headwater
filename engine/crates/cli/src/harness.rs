@@ -141,10 +141,17 @@ pub enum Found {
 /// digest in the record is the digest of every byte before that line. An
 /// edit anywhere above the record moves that digest, and a file with no
 /// record was never the step's.
+///
+/// The step writes `\n` line endings. Git checks a file out with `\r\n` in
+/// their place under `core.autocrlf=true`, so the decision reads every
+/// `\r\n` of the bytes found as `\n` before it compares them. A `\r` that
+/// ends no line is a changed byte and stays one.
 pub fn classify(existing: Option<&[u8]>, current: &str) -> Found {
     let Some(existing) = existing else {
         return Found::Absent;
     };
+    let read_as_lf = lf_line_endings(existing);
+    let existing = read_as_lf.as_slice();
     if existing == current.as_bytes() {
         return Found::Current;
     }
@@ -163,6 +170,19 @@ pub fn classify(existing: Option<&[u8]>, current: &str) -> Found {
         Some(digest) if digest == headwater_hash::digest(above.as_bytes()) => Found::Earlier,
         _ => Found::Foreign,
     }
+}
+
+/// The bytes with each `\r\n` written as `\n`, and every other byte kept.
+fn lf_line_endings(bytes: &[u8]) -> Vec<u8> {
+    let mut out = Vec::with_capacity(bytes.len());
+    let mut rest = bytes.iter().peekable();
+    while let Some(&byte) = rest.next() {
+        if byte == b'\r' && rest.peek() == Some(&&b'\n') {
+            continue;
+        }
+        out.push(byte);
+    }
+    out
 }
 
 /// What a shipped file must not hold, each with the reason.
@@ -286,6 +306,65 @@ mod tests {
         );
         // This release's bytes with more after them are not this release.
         let grown = format!("{current}a line after the record\n");
+        assert_eq!(classify(Some(grown.as_bytes()), &current), Found::Foreign);
+        // Nor are they with more before them.
+        let prefixed = format!("a line before the text\n{current}");
+        assert_eq!(
+            classify(Some(prefixed.as_bytes()), &current),
+            Found::Foreign
+        );
+    }
+
+    /// What git writes for a file it checks out with `core.autocrlf=true`.
+    fn crlf(text: &str) -> String {
+        text.replace('\n', "\r\n")
+    }
+
+    #[test]
+    fn a_copy_git_checked_out_with_crlf_line_endings_is_the_steps_own() {
+        for file in files() {
+            assert!(
+                !file.bytes.contains('\r'),
+                "{} ships a carriage return, so a CRLF reading would change what it means",
+                file.path
+            );
+            let checked_out = crlf(&file.bytes);
+            assert_eq!(
+                classify(Some(checked_out.as_bytes()), &file.bytes),
+                Found::Current,
+                "{} with CRLF line endings",
+                file.path
+            );
+        }
+        let current = installed("---\nname: x\n---\nnew\n");
+        // Each `\r\n` is read alone, so mixed endings are still this release:
+        // a file whose first line alone is CRLF, so that it ends in LF, and a
+        // file whose first line alone is LF, so that it ends in CRLF.
+        let first_line_only = current.replacen('\n', "\r\n", 1);
+        assert_eq!(
+            classify(Some(first_line_only.as_bytes()), &current),
+            Found::Current
+        );
+        let all_but_first = crlf(&current).replacen("\r\n", "\n", 1);
+        assert_eq!(
+            classify(Some(all_but_first.as_bytes()), &current),
+            Found::Current
+        );
+        let earlier = crlf(&installed("---\nname: x\n---\nold\n"));
+        assert_eq!(classify(Some(earlier.as_bytes()), &current), Found::Earlier);
+        // One changed byte above the record is an edit, in either ending.
+        let edited = earlier.replacen("old", "mine", 1);
+        assert_eq!(classify(Some(edited.as_bytes()), &current), Found::Foreign);
+        let edited_current = crlf(&current).replacen("new", "neW", 1);
+        assert_eq!(
+            classify(Some(edited_current.as_bytes()), &current),
+            Found::Foreign
+        );
+        // A carriage return that ends no line is a changed byte, not an ending.
+        let stray = crlf(&current).replacen("new", "ne\rw", 1);
+        assert_eq!(classify(Some(stray.as_bytes()), &current), Found::Foreign);
+        // This release's bytes with more after them are not this release.
+        let grown = crlf(&format!("{current}a line after the record\n"));
         assert_eq!(classify(Some(grown.as_bytes()), &current), Found::Foreign);
     }
 }

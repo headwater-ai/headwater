@@ -79,6 +79,8 @@ The step writes each skill at two paths and the agent at one. Claude Code reads 
 - When the file ends with the line and the digest agrees with the bytes before it, an earlier release wrote the file. Nobody edited it since. The step writes the text of this release over it.
 - In every other case, somebody edited the file or another tool wrote it. The step names the path on standard error, writes no file of the set, and exits 1. Move the file away, or delete it, and run the step again.
 
+**A copy whose only difference is its line endings is the step's own.** Git can check out a file with `\r\n` in place of each `\n`, for example under `core.autocrlf=true` on Windows. Before the step decides a path, it reads each `\r\n` of the file as `\n`. So the step reads such a copy of this release as this release, in the cases above and under `--check`. A second run over it writes nothing. A `\r` that ends no line is a changed byte. The step always writes `\n`.
+
 **`--check` writes nothing and reports.** It does not bind the repository and does no other step. It exits 0 when each path of the table holds the bytes of this release. Otherwise it names each path that differs or is absent, and it exits 1. A repository that commits the set can run `headwater init --harness --check` in CI, as it runs `headwater generate --check`.
 
 On a repository that is already bound, `--harness` skips the declaration and the overlay and does the harness step alone. With `--git` too, it does the git step and then the harness step.
