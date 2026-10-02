@@ -467,13 +467,21 @@ $names"
         1 'names no identifier scheme' \
         "$engine" new specification --title 'A specification nobody can name' --root "$scratch"
 
-    claim 'an edge the taxonomy does not assign to a scaffold is refused' \
+    claim 'an edge the taxonomy assigns to neither a scaffold nor an agent is refused' \
         headwater-authoring/SKILL.md \
-        'The verb writes an edge only where the taxonomy declares `created_by: scaffold` on the relation.' \
-        1 'created_by: agent' \
-        "$engine" new obligation_record --title 'An edge an agent proposes' \
+        'The verb writes an edge only where the taxonomy declares `created_by: scaffold` or `created_by: agent` on the relation.' \
+        1 'created_by: author' \
+        "$engine" new obligation_record --title 'An edge a person types' \
         --facet waiting_on=build \
-        --relates traces_to=HW-SPEC-ai-integration --root "$scratch"
+        --relates discharges=HW-OBL-0105 --root "$scratch"
+
+    claim 'a governs pattern that matches no entry is refused' \
+        headwater-authoring/SKILL.md \
+        'A pattern that matches no entry is refused, and nothing is written.' \
+        1 'binds to nothing' \
+        "$engine" new obligation_record --title 'A governs edge onto nothing' \
+        --facet waiting_on=build \
+        --relates 'governs=engine/crates/nowhere/**' --root "$scratch"
 
     # A shelf with no layout, because a layout that carries the identifier
     # sequence mints a fresh number on every run and so never collides. The
