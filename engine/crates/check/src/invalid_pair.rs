@@ -118,13 +118,15 @@ impl<'a> InvalidPair<'a> {
     }
 
     /// The edits that clear the finding and end there. See the module comment
-    /// for why a changed state facet is not one of them.
+    /// for why a changed state facet is not one of them. `(written, file)` is
+    /// the entry the reported file holds: the relation's name as its author
+    /// wrote it, which is the inverse on an inverse half, and that file.
     fn remedy(
         &self,
         relation: &Relation,
         condition: &str,
         (source, target): (&str, &str),
-        entry: &str,
+        (written, file): (&str, &str),
     ) -> String {
         let stated = relation
             .invalid_when
@@ -146,8 +148,7 @@ impl<'a> InvalidPair<'a> {
         };
         format!(
             "decide which of {source} and {target} stands and move the other off {condition}: \
-             {moves}. If the two no longer conflict, remove the `{}` entry from {entry}",
-            relation.name
+             {moves}. If the two no longer conflict, remove the `{written}` entry from {file}"
         )
     }
 }
@@ -242,8 +243,8 @@ impl EdgeCheck for InvalidPair<'_> {
             remediation: self.remedy(
                 relation,
                 &condition,
-                (&source.path, &target.path),
-                &half.source.path,
+                (source.path, target.path),
+                (&half.name, &half.source.path),
             ),
             // No patch. Which side loses is a judgment only an author can
             // make (Q18).
@@ -285,7 +286,7 @@ relations:
         let declarations = Declarations::read(root).expect("the declarations read");
         let rule = InvalidPair::over(&declarations, &shape);
         let relation = rule.conditioned[0];
-        let remedy = rule.remedy(relation, &condition(relation), ("a.md", "b.md"), "a.md");
+        let remedy = rule.remedy(relation, &condition(relation), ("a.md", "b.md"), ("conflicts_with", "a.md"));
         assert!(
             remedy.contains("off `phase: adopted`: supersede it. "),
             "{remedy}"
