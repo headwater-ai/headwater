@@ -134,8 +134,9 @@
 #   11  the plan refuses the run, or it does not select the probe. It runs
 #       before any harness call, so it spends nothing
 #   12  the session cannot be confined, or it loaded the host's
-#       configuration (#1467). No `bwrap` on the path, or a `bwrap` that
-#       cannot create a namespace, refuses before any harness call, so it
+#       configuration (#1467). No `bwrap` on the path, a `bwrap` that
+#       cannot create a namespace with no network, no `python3`, or an egress
+#       proxy that does not start, refuses before any harness call, so it
 #       spends nothing. An init line that shows `bypassPermissions`, a
 #       plugin that is not built in, an MCP server the workspace does not
 #       declare, a skill of the host's own or of a plugin, or a memory path
@@ -588,12 +589,31 @@ probe_log=$(cd "$probe_log" && pwd -P)
 # the workspace read-write at its own path, the harness binary read-only, this
 # run's log directory read-write (the intent hook writes there), and a
 # configuration directory of the session's own read-write. Nothing else of
-# `$HOME`, no other tree of the batch and no copy of this repository is in it.
-# The network is shared, because the session needs the API, and that is the
-# one channel this does not close (spec 15 names it).
+# `$HOME`, no other tree of the batch and no copy of this repository on the
+# host is in it. That is the file system alone; the network is below.
 #
-# It fails closed. No `bwrap`, or one that cannot create a namespace, is exit
-# 12 before any harness call, and no variable turns the confinement off,
+# The session has no network of its own either (#1467, clause 5). Until then
+# the network was shared, and sessions of the 2026-09-30 batch reached GitHub
+# with `gh api` and `curl`. Others reached it with `WebSearch` or `WebFetch`,
+# which the driver now denies to the session. `bwrap
+# --unshare-net` gives the session a namespace with a loopback interface and
+# nothing else, and the host's loopback is not in it. The one route out is
+# `tools/probe/egress-proxy.py`: this script runs it on the host before the
+# session and stops it after, listening on a unix socket in a directory bound
+# into the session. Inside, the same file forwards `127.0.0.1:3128` to that
+# socket and then runs the harness, with `HTTPS_PROXY` naming the port. The
+# proxy opens a tunnel to the hosts its own source lists and to no other, and
+# logs each decision, so the transcript states every connection it refused.
+#
+# That closes every direct connection, and not one channel: the provider API
+# itself. A `Bash` call that holds the session's credential can send a request
+# to it that asks for a server-side web tool, and the provider then reaches
+# any host from outside the session. Nothing here closes or measures that
+# channel, and the transcript says so (verify of #1467, round 2).
+#
+# It fails closed. No `bwrap`, one that cannot create a namespace with no
+# network, no `python3`, or a proxy that does not start, is exit 12 before any
+# harness call, and no variable turns the confinement off or widens the hosts,
 # because such a switch would be the hole #1467 exists to close.
 #
 # The configuration directory is `HEADWATER_PROBE_CONFIG_DIR`, or a fresh
@@ -606,6 +626,17 @@ probe_log=$(cd "$probe_log" && pwd -P)
 # reaches the session either.
 command -v bwrap >/dev/null 2>&1 || {
     echo "probe-record: no \`bwrap\` on the path, so the session cannot be confined to its workspace (#1467). Install bubblewrap; nothing was spent." >&2
+    exit 12
+}
+command -v python3 >/dev/null 2>&1 || {
+    echo "probe-record: no \`python3\` on the path, so the egress proxy that is the session's one route to the network cannot run (#1467). Install python3; nothing was spent." >&2
+    exit 12
+}
+egress_proxy=$root/tools/probe/egress-proxy.py
+egress_at=/opt/headwater-harness/egress-proxy.py
+egress_port=3128
+egress_hosts=$(python3 "$egress_proxy" hosts 2>/dev/null) && [ -n "$egress_hosts" ] || {
+    echo "probe-record: the egress proxy at $egress_proxy did not name the hosts it allows, so the session has no route to the network it can state (#1467); nothing was spent." >&2
     exit 12
 }
 harness=$(command -v claude)
@@ -628,6 +659,12 @@ else
 fi
 config=$(cd "$config" && pwd -P)
 here_real=$(cd "$here" && pwd -P)
+# The egress proxy's directory. Its `sock` subdirectory is bound into the
+# session and holds the socket alone. The log of the proxy's decisions stays
+# beside it, outside the session, so the session cannot write a line of it.
+egress=$(mktemp -d "${TMPDIR:-/tmp}/headwater-egress.XXXXXX") || exit 1
+mkdir -p "$egress/sock" || exit 1
+egress_sock_at=/opt/headwater-egress
 # What the workspace declares and what the host holds are read before the
 # session, which could change the first.
 declared_servers='[]'
@@ -643,7 +680,7 @@ host_skills=$( (ls -A "$host_config/skills" 2>/dev/null || true) | jq -Rsc 'spli
 allowed_tools=Bash,Read,Grep,Glob,Edit,Write,NotebookEdit,TodoWrite,Skill,Agent,ToolSearch,EnterWorktree,ExitWorktree,mcp__headwater
 permission_mode=dontAsk
 
-set -- --unshare-user --unshare-pid --unshare-ipc --unshare-uts --unshare-cgroup-try \
+set -- --unshare-user --unshare-net --unshare-pid --unshare-ipc --unshare-uts --unshare-cgroup-try \
     --die-with-parent --new-session \
     --ro-bind /usr /usr --ro-bind /etc /etc
 for top in bin sbin lib lib32 lib64 libx32; do
@@ -654,7 +691,9 @@ for top in bin sbin lib lib32 lib64 libx32; do
     fi
 done
 # A resolver configuration that links out of `/etc`, as systemd-resolved's
-# does, is bound by its target, or the session reaches no host by name.
+# does, is bound by its target, so a tool in the session that reads it finds
+# it. Under `--unshare-net` no name resolves from inside the session; the
+# proxy on the host resolves the name of each host it allows.
 resolver=$(readlink -f /etc/resolv.conf 2>/dev/null) || resolver=
 case $resolver in
     ''|/etc/*|/usr/*) ;;
@@ -665,23 +704,51 @@ set -- "$@" --proc /proc --dev /dev --tmpfs /tmp \
     --bind "$probe_log" "$probe_log" \
     --bind "$config" "$config" \
     --ro-bind "$harness" "$harness_at" \
+    --ro-bind "$egress_proxy" "$egress_at" \
+    --ro-bind "$egress/sock" "$egress_sock_at" \
     --chdir "$here" \
     --clearenv \
     --setenv PATH /usr/local/bin:/usr/bin:/bin \
     --setenv HOME "$config" \
     --setenv CLAUDE_CONFIG_DIR "$config" \
     --setenv TMPDIR /tmp \
+    --setenv HTTPS_PROXY "http://127.0.0.1:$egress_port" \
+    --setenv HTTP_PROXY "http://127.0.0.1:$egress_port" \
+    --setenv https_proxy "http://127.0.0.1:$egress_port" \
+    --setenv http_proxy "http://127.0.0.1:$egress_port" \
+    --setenv CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC 1 \
     --setenv HEADWATER_PROBE_SESSION "$session" \
     --setenv HEADWATER_SHADOW_LOG_DIR "$probe_log"
 [ -n "${LANG:-}" ] && set -- "$@" --setenv LANG "$LANG"
 [ -n "${ANTHROPIC_API_KEY:-}" ] && set -- "$@" --setenv ANTHROPIC_API_KEY "$ANTHROPIC_API_KEY"
-if ! bwrap "$@" -- true 2>"$raw.bwrap"; then
-    echo "probe-record: \`bwrap\` could not confine the session to its workspace, so nothing ran and nothing was spent (#1467). It said:" >&2
+# The namespace is probed with the options the session gets, and with the
+# `python3` the forwarder needs inside it, so a host that cannot give a
+# session a namespace with no network refuses here and spends nothing.
+if ! bwrap "$@" -- python3 -c '' 2>"$raw.bwrap"; then
+    echo "probe-record: \`bwrap\` could not confine the session to its workspace with no network of its own, so nothing ran and nothing was spent (#1467). It said:" >&2
     tail -5 "$raw.bwrap" >&2
     rm -f "$raw.bwrap"
+    rm -rf "$egress"
     exit 12
 fi
 rm -f "$raw.bwrap"
+# The proxy starts on the host, and the session does not start until its
+# socket exists. It stops when the session does, on every path below.
+python3 "$egress_proxy" serve "$egress/sock/proxy.sock" "$egress/log" 2>"$egress/err" &
+egress_pid=$!
+waited=0
+while [ ! -S "$egress/sock/proxy.sock" ] && [ "$waited" -lt 50 ] && kill -0 "$egress_pid" 2>/dev/null; do
+    sleep 0.1
+    waited=$((waited + 1))
+done
+if [ ! -S "$egress/sock/proxy.sock" ]; then
+    kill "$egress_pid" 2>/dev/null
+    wait "$egress_pid" 2>/dev/null
+    echo "probe-record: the egress proxy that is the session's one route to the network did not start, so nothing ran and nothing was spent (#1467). It said:" >&2
+    tail -5 "$egress/err" >&2
+    rm -rf "$egress"
+    exit 12
+fi
 if [ -f "$host_config/.credentials.json" ]; then
     cp "$host_config/.credentials.json" "$config/.credentials.json" && chmod 600 "$config/.credentials.json"
 fi
@@ -710,7 +777,10 @@ mcp_config=
     # The confinement's own options are the positional parameters set above.
     # `--allowedTools` and `--disallowedTools` take one or more values too, so
     # each is one comma-separated value with a flag after it.
-    bwrap "$@" -- "$harness_at" -p ${mcp_config:+--mcp-config "$mcp_config"} --strict-mcp-config \
+    # The forwarder listens on the session's own `127.0.0.1` before it runs
+    # the harness in its place, so the harness never finds the port closed.
+    bwrap "$@" -- python3 "$egress_at" forward "$egress_port" "$egress_sock_at/proxy.sock" -- \
+        "$harness_at" -p ${mcp_config:+--mcp-config "$mcp_config"} --strict-mcp-config \
         --setting-sources project,local \
         --permission-mode "$permission_mode" \
         --allowedTools "$allowed_tools" \
@@ -724,6 +794,19 @@ status=$?
 # The copy of the credentials leaves with the session. The directory stays,
 # because what the harness wrote there is this session's and no other's.
 rm -f "$config/.credentials.json"
+# The proxy stops with the session, and its log becomes two phrases of the
+# transcript: what it allowed and what it refused, each host with its count.
+kill "$egress_pid" 2>/dev/null
+wait "$egress_pid" 2>/dev/null
+egress_count() {
+    { grep "^$1 " "$egress/log" 2>/dev/null || true; } | cut -d' ' -f2 | sort | uniq -c | sort -k1,1nr -k2,2 \
+        | awk '{ printf "%s%d %s to `%s`", (NR > 1 ? ", " : ""), $1, ($1 == 1 ? "connection" : "connections"), $2 }'
+}
+egress_allowed=$(egress_count allowed)
+egress_refused=$(egress_count refused)
+egress_named=$(printf '%s\n' "$egress_hosts" | awk 'NF { n++; h[n] = "`" $1 "`" }
+    END { for (i = 1; i <= n; i++) printf "%s%s", (i == 1 ? "" : (i == n ? " and " : ", ")), h[i] }')
+rm -rf "$egress"
 if [ -e "$raw.nocd" ]; then
     rm -f "$raw.nocd"
     echo "probe-record: the session could not enter the workspace at $here." >&2
@@ -748,6 +831,10 @@ if [ "$status" != 0 ]; then
     else
         echo "probe-record: the harness exited $status." >&2
         tail -5 "$raw.err" >&2
+        # A harness that could not reach its provider fails here, so the
+        # proxy's decisions are named too: a refused host the harness needs
+        # is the first thing to look for.
+        echo "probe-record: the egress proxy allowed ${egress_allowed:-no connection}, and refused ${egress_refused:-no connection}." >&2
         exit 10
     fi
 fi
@@ -870,9 +957,12 @@ fi
 # The confinement and the configuration, stated (#1467). A rate of a batch
 # recorded under them does not compare with one of a batch before them, so the
 # transcript says so where a reader of one session meets it.
-printf 'The session ran confined to its workspace. The confinement bound the workspace read-write, `/usr` and `/etc` read-only, the harness, the log directory of this run and the configuration directory below, and nothing else of the host'"'"'s file system, so no copy of this repository, no other tree of its batch and no configuration of the host was readable.\n\n'
+printf 'The session ran confined to its workspace. The confinement bound the workspace read-write, `/usr` and `/etc` read-only, the harness, the egress proxy and the directory of its socket read-only, the log directory of this run and the configuration directory below, and nothing else of the host'"'"'s file system, so no copy of this repository on the host, no other tree of its batch and no configuration of the host was readable through the session'"'"'s file system.\n\n'
 printf 'The session ran under the configuration directory `%s`, which held a copy of the host'"'"'s credentials and nothing else, in the permission mode `%s`, with the tools `%s` allowed and `WebSearch` and `WebFetch` denied. The batches of 2026-09-28 and 2026-09-30 ran under `bypassPermissions` and the host'"'"'s configuration, so a rate of this session does not compare with a rate of theirs.\n\n' \
     "$config" "$permission_mode" "$allowed_tools"
+printf 'The session ran with no network of its own. Its one route out was a proxy outside it that opens a connection to %s on port 443 and refuses every other, so a direct connection to any other host, such as `gh api`, `curl` or `git clone` to GitHub, was refused. The proxy allowed %s, and refused %s.\n\n' \
+    "$egress_named" "${egress_allowed:-no connection}" "${egress_refused:-no connection}"
+printf 'One channel stays open, and nothing measured it. A call that holds the provider credential can ask the provider API for a server-side web tool, which reaches any host from outside the session, so this transcript does not show that the session read nothing from GitHub.\n\n'
 
 # The paths outside the workspace the session named (#1467, clause 2). A
 # session cannot see a refusal from outside, so this counts what it tried:

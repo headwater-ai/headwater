@@ -78,13 +78,26 @@ chmod +x "$w"/good/bwrap "$w"/bad/bwrap "$w"/flag/bwrap "$w"/sudo/sudo
 # run NAME KIND EXTRA-PATH WANT-STATUS WANT-LINE SUITE(ran|not) [VAR=value...]
 # Every case runs as under CI (`GITHUB_ACTIONS=true`) unless it sets
 # `GITHUB_ACTIONS=` itself. A case that sets NO_SUDO=yes also fails when
-# `sudo` received any call.
+# `sudo` received any call. The marker `GITHUB_ACTIONS=unset` runs the case
+# with the variable absent from the environment, which a contributor's shell
+# is, and which `GITHUB_ACTIONS=` is not: `env` cannot unset a variable after
+# it has set one, so the marker selects `env -u` in place of the assignment.
 run() {
     name=$1 kind=$2 extra=$3 want=$4 line=$5 ran=$6
     shift 6
+    unset_ga= n=$#
+    while [ "$n" -gt 0 ]; do
+        arg=$1; shift; n=$((n - 1))
+        if [ "$arg" = GITHUB_ACTIONS=unset ]; then unset_ga=yes; else set -- "$@" "$arg"; fi
+    done
     rm -f "$w/sudo.log" "$w/installed/bwrap" "$w/userns-allowed"
-    out=$(env GITHUB_ACTIONS=true NO_SUDO= "$@" RUNNER_KIND="$kind" RUNNER_NAME=fixture-runner HW_RECORDER_SUITE="$w/suite.sh" \
-        PATH="$extra$w/installed:$w/base" sh "$gate" 2>&1)
+    if [ -n "$unset_ga" ]; then
+        out=$(env -u GITHUB_ACTIONS NO_SUDO= "$@" RUNNER_KIND="$kind" RUNNER_NAME=fixture-runner HW_RECORDER_SUITE="$w/suite.sh" \
+            PATH="$extra$w/installed:$w/base" sh "$gate" 2>&1)
+    else
+        out=$(env GITHUB_ACTIONS=true NO_SUDO= "$@" RUNNER_KIND="$kind" RUNNER_NAME=fixture-runner HW_RECORDER_SUITE="$w/suite.sh" \
+            PATH="$extra$w/installed:$w/base" sh "$gate" 2>&1)
+    fi
     status=$?
     why=
     [ "$status" = "$want" ] || why="exit $status, wanted $want"
@@ -135,6 +148,10 @@ run "outside CI, a refused namespace gets no sudo call and fails" "" "$w/flag:$w
 run "outside CI, a missing bwrap gets no sudo call and fails" "" "$w/sudo:" 1 "no \`bwrap\`, which this script installs only under CI" not GITHUB_ACTIONS= NO_SUDO=yes
 run "outside CI, a bwrap that confines runs the cases with no sudo call" "" "$w/good:$w/sudo:" 0 SUITE-RAN ran GITHUB_ACTIONS= NO_SUDO=yes
 run "and GITHUB_ACTIONS must be true, not merely set" "" "$w/flag:$w/sudo:" 1 "$cannot" not GITHUB_ACTIONS=false SYSCTL_LIFTS=yes NO_SUDO=yes
+# A contributor's shell has no `GITHUB_ACTIONS` at all, set or empty, so a gate
+# that read an absent variable as CI would call `sudo` there (#1467, clause 8).
+run "outside CI with GITHUB_ACTIONS unset, a refused namespace gets no sudo call and fails" "" "$w/flag:$w/sudo:" 1 "outside CI this script does not lift the AppArmor restriction" not GITHUB_ACTIONS=unset SYSCTL_LIFTS=yes NO_SUDO=yes
+run "outside CI with GITHUB_ACTIONS unset, a missing bwrap gets no sudo call and fails" "" "$w/sudo:" 1 "no \`bwrap\`, which this script installs only under CI" not GITHUB_ACTIONS=unset NO_SUDO=yes
 
 # The calls `sudo` received: `sysctl` only where bwrap could not make a
 # namespace, and nothing where `bwrap` already confines.

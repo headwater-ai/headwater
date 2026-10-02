@@ -6113,7 +6113,7 @@ fn export(
         [] => {
             return refuse(
                 "this taxonomy declares no projection, so it declares no export profile. \
-                 Spec 6 makes a profile an entry under `projections`",
+                 Spec 7 makes a profile an entry under `projections`",
             )
         }
         several => {
@@ -6830,7 +6830,7 @@ fn checked(root: &Path, asked: Asked) -> Result<ExitCode, ExitCode> {
     let artifact = headwater_adapter::render_at(&run, taken, graph, &subject, format, width, mode);
     report(&artifact)?;
     headwater_check::phase::mark("render");
-    // The census over what was written, in the shape spec 6 fixes for the
+    // The census over what was written, in the shape spec 7 fixes for the
     // graph emitters. A finding that reached no output and that no loss
     // reason covers is a defect in the adapter, and it fails the run the
     // way a defective projection census does.

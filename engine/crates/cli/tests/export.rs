@@ -287,7 +287,7 @@ fn uncommitted_control() -> Scratch {
 /// and its marker says which verb builds it
 /// ([#1343](https://github.com/headwater-ai/headwater/issues/1343)).
 ///
-/// Spec 6 asks a filtered export that leaves the repository to state when it
+/// Spec 7 asks a filtered export that leaves the repository to state when it
 /// was generated. An uncommitted export is that artifact, and no gate compares
 /// it by byte, so the date the byte gate forbids elsewhere is allowed here. A
 /// run whose plan holds a committed export is still refused whole, because a

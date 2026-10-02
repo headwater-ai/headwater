@@ -16,6 +16,7 @@ provenance:
 relations:
   governs:
     - tools/probe/probe-record.sh
+    - tools/probe/egress-proxy.py
     - engine/crates/probe/src/intake.rs
     - engine/crates/probe/src/grade.rs
     - engine/crates/generate/src/probe_result.rs
@@ -54,7 +55,7 @@ A harness log carries the calls and not the rest of the contract below. Each val
 
 A probe measures what the workspace gives a session. A session that can read outside its workspace measures the host instead. In the 2026-09-30 batch, 51 of 658 sessions named a path outside the workspace. 16 of 658 named a checkout of this repository. So the driver confines each session, and it refuses a session that it cannot confine.
 
-### What the session can read
+### What the file system of the session holds
 
 `tools/probe/probe-record.sh` runs the harness under `bwrap`. The file system of the session holds these items and no other:
 
@@ -62,10 +63,11 @@ A probe measures what the workspace gives a session. A session that can read out
 - A private `/proc`, `/dev` and `/tmp`.
 - The workspace, read-write, at its own path.
 - The harness binary, read-only, at a path of its own.
+- The egress proxy, read-only, and the directory of its socket, read-only. The next sections say why.
 - The log directory of the run, read-write, because the intent hook writes there.
 - A configuration directory of the session, read-write.
 
-So the session cannot read a copy of this repository, another tree of its batch, or the home directory of the host. The driver also clears the environment, so no token of the host reaches the session.
+So the file system of the session holds no copy of this repository on the host. It also holds no other tree of the batch and no part of the home directory. The network is a separate channel, and [the one route to the network](#the-one-route-to-the-network) says what it holds and what stays open. The driver also clears the environment, so no token of the host reaches the session.
 
 ### The configuration the session runs under
 
@@ -89,21 +91,30 @@ A log with no init line is refused too, because it does not state what loaded. T
 
 ### What a host must provide
 
-A recording host must provide these three items:
+A recording host must provide these four items:
 
-- `bwrap`, with user namespaces that an unprivileged user can create. Without them, the driver exits 12 before any harness call, so nothing is spent. No variable turns the confinement off.
+- `bwrap`, with user namespaces and network namespaces that an unprivileged user can create. Without them, the driver exits 12 before any harness call, so nothing is spent. No variable turns the confinement off.
+- `python3` in `/usr`, because the egress proxy and its forwarder are Python. Without it, the driver exits 12 before any harness call.
 - Credentials for the harness, in `.credentials.json` of the user configuration of the host.
 - A batch directory outside `$HOME`. `tools/probe/campaign.sh` refuses an output directory under it.
 
-### The channel that stays open
+### The one route to the network
 
-The confinement shares the network of the host, because the session needs the provider API. So a `Bash` call can still reach the public repository with `curl`, `gh api` or `git clone`. Only an egress proxy that allows one host, or a network namespace with one route, closes this channel. That is a provision of the host, and no recorder of this repository has it yet.
+The session has no network of its own. The driver runs it with `--unshare-net`, so its network namespace holds a loopback interface and nothing else. The loopback of the host is not in it. In the 2026-09-30 batch, the network was shared, and sessions reached GitHub with `gh api` and `curl`. The confinement now refuses each direct connection of this kind. Other sessions of that batch reached GitHub with `WebSearch` or `WebFetch`, and the driver now denies those two tools to the session.
+
+The one route out is `tools/probe/egress-proxy.py`. The driver starts it on the host before the session and stops it after the session. It listens on a unix socket in a directory that the driver binds into the session. In the session, the same file forwards `127.0.0.1:3128` to that socket, and `HTTPS_PROXY` names that port. The driver also sets `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC`, so the harness asks for no telemetry host or update host.
+
+The proxy opens a connection to `api.anthropic.com` or `platform.claude.com` on port 443, and to no other host. The first host is the provider API. The harness refreshes an OAuth credential at the second. The list is in the source of the proxy, and no variable or argument changes it. A switch that adds a host would open the direct channel again. The proxy writes one log line for each decision, before it connects to the host.
+
+One channel stays open, and nothing has measured it. The provider API is on the list, and a `Bash` call that holds the credential of the session can send a request to it. That request can ask for a server-side web tool. The provider then reaches any host, GitHub included, from outside the session. The proxy sees only a connection to `api.anthropic.com`, so neither the proxy nor the transcript can tell this call from a call of the harness. So the confinement holds every direct connection, and it does not show that a session read nothing from GitHub. Each transcript states this.
+
+The transcript states this confinement and names the two hosts. It also states each connection that the proxy allowed and each connection that it refused, with the host and the count. When the harness fails, the driver prints the same counts with exit 10. A session fails there when the proxy refuses a host that the harness needs. If the proxy does not start, the driver exits 12 before any harness call.
 
 ## The prompt is the task section, and the answer is the final line
 
 Two values cross the boundary between a probe document and a session. The driver sends one in and it reads one out. This part fixes both, and `tools/probe/probe-record.sh` is the recorder of this repository that implements them.
 
-**The prompt is the body of the probe's `## Task` section, word for word.** The driver copies that body and sends it as the whole of the session's first turn. No other section of the probe document reaches the session, because the session runs in a sealed workspace. `tools/probe/seal.sh` removes the probe shelves from the workspace, and every file that names the probe. A file outside `docs/` stays only if `folds:` in `.headwater/probe.yml` declares it. A fold names the probe by path or title and states no answer. The seal also removes each answer key that `.headwater/probe.yml` declares for the probe: a document that an earlier session wrote in answer to the task, and every line elsewhere that names that document. The driver refuses a workspace in which a file still names the probe or an answer key. Before #1229 both arms kept every probe, and one session read its own probe file and then answered. An expectation, a worked example and a paragraph of rationale are for the person who reads the probe. So a paragraph of commentary under the `## Task` heading is prompt rather than commentary. It reaches the model, it changes what `headwater route` scores, and the probe then measures a task that nobody wrote.
+**The prompt is the body of the probe's `## Task` section, word for word.** The driver copies that body and sends it as the whole of the session's first turn. No other section of the probe document is in the prompt or in the workspace, because the session runs in a sealed workspace. `tools/probe/seal.sh` removes the probe shelves from the workspace, and every file that names the probe. A file outside `docs/` stays only if `folds:` in `.headwater/probe.yml` declares it. A fold names the probe by path or title and states no answer. The seal also removes each answer key that `.headwater/probe.yml` declares for the probe: a document that an earlier session wrote in answer to the task, and every line elsewhere that names that document. The driver refuses a workspace in which a file still names the probe or an answer key. Before #1229 both arms kept every probe, and one session read its own probe file and then answered. An expectation, a worked example and a paragraph of rationale are for the person who reads the probe. So a paragraph of commentary under the `## Task` heading is prompt rather than commentary. It reaches the model, it changes what `headwater route` scores, and the probe then measures a task that nobody wrote.
 
 **The answer is the final line of the final message, compared as a set of words.** The driver takes the last line of the final message that is not empty. It trims the space around that line, strips one trailing period, and folds the case. It then splits the line into words at each run of space, and it splits each declared answer in the same way. The answer is a value only where the line holds the words of one answer that the probe declares under `answers`, in any order. An extra word or a missing word gives no value. The driver writes the declared form of that answer. Every other message records `answer: null`. The recorder reads the whole set and never the `expected` values. So a wrong word of the set is recorded as that word, and the grader then finds it wrong. A message that states the reasoning and then puts the word on a line of its own carries that word. A message whose last line is a sentence carries no answer, and so does a message that sets the word in Markdown emphasis. The driver writes the word and nothing else, so the transcript holds no prose. A driver that searched for the word inside a sentence would read the session rather than observe it, and [spec 5](05-ai-integration.md#a-transcript-is-recorded-from-outside-the-session-and-never-written-back-by-the-agent) puts that reading outside a recorder. So a probe with a closed answer set states the output form in its own task text.
 

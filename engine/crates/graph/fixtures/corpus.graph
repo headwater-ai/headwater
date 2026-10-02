@@ -691,6 +691,8 @@ anchors
     cited by HW-EVAL-one-clone-many-agents-how-this-repository-isolates-the-sessions-that-build-it
   code_path `tools/hw-cargo` via source-tree
     cited by HW-HOW-diagnose-an-isolation-failure
+  code_path `tools/probe/egress-proxy.py` via source-tree
+    cited by HW-SPEC-the-recorder-contract
   code_path `tools/probe/probe-record.sh` via source-tree
     cited by HW-SPEC-the-recorder-contract
   code_path `tools/probe/rdf-probe/emit.py` via source-tree

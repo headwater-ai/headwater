@@ -496,7 +496,7 @@ fn the_run_carries_all_three_classes() {
 
 /// Every finding of the run reaches every format, or the format said why not.
 ///
-/// The audit of the loss-set claim, in the shape spec 6 fixes for the graph
+/// The audit of the loss-set claim, in the shape spec 7 fixes for the graph
 /// emitters. It reads the rendered bytes rather than the emitter. All four
 /// formats are held to it at the same denominator: every finding the run
 /// reported, escaped ones included. `text` used to be held to the live subset

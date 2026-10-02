@@ -50,11 +50,21 @@ passed=0
 failed=0
 pass() { printf 'ok   %s\n' "$1"; passed=$((passed + 1)); }
 fail() { printf 'FAIL %s\n  %s\n' "$1" "$2"; failed=$((failed + 1)); }
+# Each helper takes exactly three arguments. Two calls joined on one line pass
+# the second as extra arguments, and the second case would never run, so an
+# extra argument is a failure of its own (verify of #1467).
+arity() {
+    [ "$2" = 3 ] && return 0
+    fail "$1" "the case helper received $2 arguments, not 3: two cases joined on one line?"
+    return 1
+}
 same() {
+    arity "$1" $# || return 0
     if [ "$2" = "$3" ]; then pass "$1"; else fail "$1" "expected \`$2\`, got \`$3\`"; fi
 }
 absent() {
     # $1 name, $2 needle, $3 file
+    arity "$1" $# || return 0
     if grep -qF -- "$2" "$3"; then
         fail "$1" "the output holds \`$2\`, which came from a block the filter must drop"
     else
@@ -62,6 +72,7 @@ absent() {
     fi
 }
 present() {
+    arity "$1" $# || return 0
     if grep -qF -- "$2" "$3"; then pass "$1"; else fail "$1" "the output does not hold \`$2\`"; fi
 }
 
@@ -1612,8 +1623,12 @@ STUB
     # driver maps every nonzero harness status to 10 and prints the harness's
     # own status, so no harness can return a code that a path of the script
     # returns.
+    # The stub first asks the proxy for a host off its list, as a harness
+    # that needs an unlisted host does, and the driver names that refusal
+    # (#1467, clause 5).
     cat > "$scratch/bin/claude" <<'STUB'
 #!/bin/sh
+curl -s -p -x "$HTTPS_PROXY" --max-time 3 -o /dev/null https://github.com/ 2>/dev/null
 exit 7
 STUB
     chmod +x "$scratch/bin/claude"
@@ -1623,6 +1638,8 @@ STUB
     same "a harness that exits 7 makes the driver exit 10, never 7" "10" "$?"
     present "and the driver names the harness's own status" \
         "the harness exited 7" "$scratch/failed-run.err"
+    present "and names the host the egress proxy refused it" \
+        "the egress proxy allowed no connection, and refused 1 connection to \`github.com:443\`" "$scratch/failed-run.err"
 
     # The turn cap (#1384). A harness stopped by `--max-turns` ends its stream
     # with a `result` line of subtype `error_max_turns` and exits 1. Until
@@ -1847,6 +1864,132 @@ STUB
             "The session named 3 paths outside its workspace that the confinement does not bind, so no file of the host at any of them was readable." \
             "$scratch/confined.md"
 
+        # THE decisive case of #1467's network half (clause 5): the public
+        # repository is not reachable from a session by a direct connection.
+        # (The provider API stays a channel, which spec 15 names and no case
+        # can measure without spending.) A server on the host's
+        # loopback stands in for it, so the case needs no internet access. It
+        # serves a marker file and a git repository that holds the marker. The
+        # stub tries each road to it: `curl` direct, the same request through
+        # the session's proxy, a `CONNECT` to it through that proxy, a socket
+        # from `python3`, `git clone` and `gh api`. It also asks the proxy for
+        # the provider's host, which the proxy allows and logs before any
+        # upstream connection. With the network shared, `curl` reads the marker.
+        rm -rf "$conf/served" "$conf/net-ws"
+        mkdir -p "$conf/served" "$conf/net-ws" "$conf/served-src"
+        printf 'HW-LEAK-MARKER-1467-NET\n' > "$conf/served/secret.md"
+        printf 'HW-LEAK-MARKER-1467-NET\n' > "$conf/served-src/secret.md"
+        git -C "$conf/served-src" init -q
+        git -C "$conf/served-src" add secret.md
+        git -C "$conf/served-src" -c user.name=f -c user.email=f@f commit -q -m marker
+        git clone -q --bare "$conf/served-src" "$conf/served/repo.git"
+        git -C "$conf/served/repo.git" update-server-info
+        rm -f "$conf/port"
+        python3 -c '
+import functools, http.server, sys
+class Quiet(http.server.SimpleHTTPRequestHandler):
+    def log_message(self, *args):
+        pass
+handler = functools.partial(Quiet, directory=sys.argv[1])
+server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), handler)
+open(sys.argv[2] + ".tmp", "w").write(str(server.server_address[1]))
+__import__("os").rename(sys.argv[2] + ".tmp", sys.argv[2])
+server.serve_forever()
+' "$conf/served" "$conf/port" &
+        served_pid=$!
+        n=0
+        while [ ! -s "$conf/port" ] && [ "$n" -lt 50 ]; do sleep 0.1; n=$((n + 1)); done
+        port=$(cat "$conf/port" 2>/dev/null)
+        same "the stand-in for the public repository serves on the host" "HW-LEAK-MARKER-1467-NET" \
+            "$(curl -s --noproxy '*' --max-time 5 "http://127.0.0.1:$port/secret.md")"
+        cat > "$scratch/bin/claude" <<STUB
+#!/bin/sh
+{
+    curl -s --noproxy '*' --max-time 3 "http://127.0.0.1:$port/secret.md"
+    curl -s --max-time 3 -x "\$HTTPS_PROXY" "http://127.0.0.1:$port/secret.md"
+    curl -s --max-time 3 -p -x "\$HTTPS_PROXY" "http://127.0.0.1:$port/secret.md"
+    python3 -c 'import socket; s = socket.create_connection(("127.0.0.1", $port), 3); s.sendall(b"GET /secret.md HTTP/1.0\r\n\r\n"); print(s.recv(4096).decode())'
+    git clone -q "http://127.0.0.1:$port/repo.git" cloned && cat cloned/secret.md
+    GH_TOKEN=x GH_ENTERPRISE_TOKEN=x gh api --hostname "127.0.0.1:$port" /secret.md
+} > found.txt 2>/dev/null
+curl -s -p -x "\$HTTPS_PROXY" --max-time 3 -o /dev/null https://api.anthropic.com/ 2>/dev/null
+printf '%s\n' "\$HTTPS_PROXY" > proxy.txt
+touch /opt/headwater-egress/planted 2>/dev/null && printf '%s\n' /opt/headwater-egress >> wrote.txt
+printf '%s\n' '{"type":"system","subtype":"init","model":"claude-haiku-4-5","session_id":"s22"}'
+printf '%s\n' '{"type":"result","subtype":"success","result":"withheld","total_cost_usd":0.01,"modelUsage":{"claude-haiku-4-5-20251001":{"inputTokens":10}}}'
+STUB
+        chmod +x "$scratch/bin/claude"
+        PATH="$scratch/bin:$PATH" sh "$driver" --probe "HW-PROBE-$tombstone" --session fixture-no-network \
+            --task-file "$scratch/task.md" --workspace "$conf/net-ws" \
+            >"$scratch/no-network.md" 2>"$scratch/no-network.err"
+        same "a session with no network records" "0" "$?"
+        kill "$served_pid" 2>/dev/null
+        wait "$served_pid" 2>/dev/null
+        same "and the stub ran inside its workspace" "yes" \
+            "$([ -f "$conf/net-ws/found.txt" ] && echo yes || echo no)"
+        absent "no road from the session reaches a server on the host" \
+            "HW-LEAK-MARKER-1467-NET" "$conf/net-ws/found.txt"
+        same "and git cloned nothing from it" "" "$(cat "$conf/net-ws/cloned/secret.md" 2>/dev/null)"
+        present "the session was handed its proxy" "http://127.0.0.1:" "$conf/net-ws/proxy.txt"
+        same "and cannot write beside the proxy's socket, which is the host's directory" "" "$(cat "$conf/net-ws/wrote.txt" 2>/dev/null)"
+        present "the transcript says the session had no network but the proxy" \
+            "The session ran with no network of its own." "$scratch/no-network.md"
+        present "and names the hosts the proxy allows" \
+            "\`api.anthropic.com\` and \`platform.claude.com\`" "$scratch/no-network.md"
+        present "and names the host whose connection the proxy refused" \
+            "\`127.0.0.1:$port\`" "$scratch/no-network.md"
+        present "and says the proxy allowed the provider's host" \
+            "allowed 1 connection to \`api.anthropic.com:443\`" "$scratch/no-network.md"
+        present "and names the channel through the provider API as open and unmeasured" \
+            "One channel stays open, and nothing measured it. A call that holds the provider credential can ask the provider API for a server-side web tool, which reaches any host from outside the session, so this transcript does not show that the session read nothing from GitHub." \
+            "$scratch/no-network.md"
+        absent "and the transcript claims nothing is reachable from the session" "reachable" "$scratch/no-network.md"
+        present "and claims no more than the confinement holds: direct connections refused" \
+            "so a direct connection to any other host, such as \`gh api\`, \`curl\` or \`git clone\` to GitHub, was refused. The proxy allowed" "$scratch/no-network.md"
+        absent "and claims no read the confinement cannot show" "could not read" "$scratch/no-network.md"
+        present "and says the file system held no copy of this repository on the host, and no more" \
+            "no copy of this repository on the host, no other tree of its batch and no configuration of the host was readable through the session's file system." \
+            "$scratch/no-network.md"
+        present "and names every bind of the confinement, the egress proxy and its socket included" \
+            "The confinement bound the workspace read-write, \`/usr\` and \`/etc\` read-only, the harness, the egress proxy and the directory of its socket read-only, the log directory of this run and the configuration directory below, and nothing else of the host's file system" \
+            "$scratch/no-network.md"
+
+        # The proxy alone (#1467, clause 5). It tunnels a `CONNECT` to a
+        # listed host on 443 and nothing else: a listed host on another port,
+        # and a plain request for a listed host, are refused and logged before
+        # any connection upstream, so these cases need no internet access.
+        rm -rf "$conf/px"
+        mkdir -p "$conf/px"
+        python3 "$root/tools/probe/egress-proxy.py" serve "$conf/px/s" "$conf/px/log" 2>/dev/null &
+        px_pid=$!
+        n=0
+        while [ ! -S "$conf/px/s" ] && [ "$n" -lt 50 ]; do sleep 0.1; n=$((n + 1)); done
+        px_ask() {
+            python3 -c '
+import socket, sys
+s = socket.socket(socket.AF_UNIX)
+s.settimeout(5)
+s.connect(sys.argv[1])
+s.sendall(sys.argv[2].encode() + b"\r\nHost: x\r\n\r\n")
+print(s.recv(4096).decode("latin-1").split("\r\n", 1)[0])
+' "$conf/px/s" "$1" 2>/dev/null
+        }
+        same "the proxy refuses a CONNECT to a listed host on another port" "HTTP/1.1 403 Forbidden" \
+            "$(px_ask 'CONNECT api.anthropic.com:22 HTTP/1.1')"
+        same "and a plain request for a listed host" "HTTP/1.1 403 Forbidden" \
+            "$(px_ask 'GET http://api.anthropic.com:443/ HTTP/1.1')"
+        same "and a CONNECT to a host off the list" "HTTP/1.1 403 Forbidden" \
+            "$(px_ask 'CONNECT github.com:443 HTTP/1.1')"
+        same "and a host name that reads like a list entry and is not one" "HTTP/1.1 403 Forbidden" \
+            "$(px_ask 'CONNECT api.anthropic.com.example.net:443 HTTP/1.1')"
+        kill "$px_pid" 2>/dev/null
+        wait "$px_pid" 2>/dev/null
+        same "and logs each refusal, once, before any upstream connection" \
+            "refused api.anthropic.com:22|refused api.anthropic.com:443|refused github.com:443|refused api.anthropic.com.example.net:443" \
+            "$(tr '\n' '|' < "$conf/px/log" | sed 's/|$//')"
+        same "the proxy names the hosts it allows, and no variable adds one" "api.anthropic.com platform.claude.com" \
+            "$(HTTPS_PROXY=x ALLOWED=github.com HEADWATER_EGRESS_HOSTS=github.com python3 "$root/tools/probe/egress-proxy.py" hosts | tr '\n' ' ' | sed 's/ $//')"
+
         # No confinement, no session (#1467). A host with no `bwrap`, or one
         # that cannot create a namespace, refuses with 12 before any harness
         # call, so a refusal spends nothing. No variable turns this off.
@@ -1878,12 +2021,96 @@ STUB
         mkdir -p "$scratch/bad-bwrap"
         printf '#!/bin/sh\necho "bwrap: setting up uid map: Permission denied" >&2\nexit 1\n' > "$scratch/bad-bwrap/bwrap"
         chmod +x "$scratch/bad-bwrap/bwrap"
-        PATH="$scratch/bad-bwrap:$scratch/bin:$PATH" sh "$driver" --probe "HW-PROBE-$tombstone" --session fixture-bad-bwrap \
+        rm -rf "$scratch/bad-bwrap-tmp"
+        mkdir -p "$scratch/bad-bwrap-tmp"
+        TMPDIR="$scratch/bad-bwrap-tmp" PATH="$scratch/bad-bwrap:$scratch/bin:$PATH" sh "$driver" --probe "HW-PROBE-$tombstone" --session fixture-bad-bwrap \
             --task-file "$scratch/task.md" --workspace "$conf/conf-ws" \
             >/dev/null 2>"$scratch/bad-bwrap.err"
         same "a bwrap that cannot create a namespace refuses with 12" "12" "$?"
         present "and prints what bwrap said" "setting up uid map" "$scratch/bad-bwrap.err"
         same "and the harness never ran" "no" "$([ -e "$conf/conf-ws/harness-ran" ] && echo yes || echo no)"
+        same "and no egress proxy directory is left behind" "" \
+            "$(find "$scratch/bad-bwrap-tmp" -maxdepth 1 -name 'headwater-egress.*' 2>/dev/null)"
+
+        # No route that can be stated, no session (#1467, clause 5). A host
+        # with no `python3` has no proxy, and a proxy that does not start
+        # leaves the session no network at all, so both refuse with 12 before
+        # any harness call. The second `python3` names its hosts and then
+        # dies, which is a proxy that cannot listen.
+        rm -rf "$scratch/nopython"
+        mkdir -p "$scratch/nopython"
+        for dir in /usr/local/bin /usr/bin /bin; do
+            [ -d "$dir" ] || continue
+            for tool in "$dir"/*; do
+                name=${tool##*/}
+                case $name in python3|python3.*) continue ;; esac
+                [ -e "$scratch/nopython/$name" ] || [ -L "$scratch/nopython/$name" ] \
+                    || ln -s "$tool" "$scratch/nopython/$name" 2>/dev/null
+            done
+        done
+        PATH="$scratch/bin:$scratch/nopython" sh "$driver" --probe "HW-PROBE-$tombstone" --session fixture-no-python \
+            --task-file "$scratch/task.md" --workspace "$conf/conf-ws" \
+            >/dev/null 2>"$scratch/no-python.err"
+        same "a host with no python3 refuses with 12" "12" "$?"
+        present "and names what is missing" "no \`python3\`" "$scratch/no-python.err"
+        same "and the harness never ran" "no" "$([ -e "$conf/conf-ws/harness-ran" ] && echo yes || echo no)"
+        mkdir -p "$scratch/dead-proxy"
+        real_python=$(command -v python3)
+        printf '#!/bin/sh\ncase $2 in hosts) exec %s "$@" ;; serve) echo "OSError: the fixture refuses to listen" >&2; exit 1 ;; esac\nexec %s "$@"\n' \
+            "$real_python" "$real_python" > "$scratch/dead-proxy/python3"
+        chmod +x "$scratch/dead-proxy/python3"
+        rm -f "$conf/conf-ws/harness-ran"
+        rm -rf "$scratch/dead-proxy-tmp"
+        mkdir -p "$scratch/dead-proxy-tmp"
+        TMPDIR="$scratch/dead-proxy-tmp" PATH="$scratch/dead-proxy:$scratch/bin:$PATH" sh "$driver" --probe "HW-PROBE-$tombstone" --session fixture-dead-proxy \
+            --task-file "$scratch/task.md" --workspace "$conf/conf-ws" \
+            >/dev/null 2>"$scratch/dead-proxy.err"
+        same "an egress proxy that does not start refuses with 12" "12" "$?"
+        present "and says the proxy did not start" "the egress proxy that is the session's one route to the network did not start" "$scratch/dead-proxy.err"
+        present "and prints what the proxy said" "the fixture refuses to listen" "$scratch/dead-proxy.err"
+        same "and the harness never ran" "no" "$([ -e "$conf/conf-ws/harness-ran" ] && echo yes || echo no)"
+        same "and no proxy directory is left behind" "" \
+            "$(find "$scratch/dead-proxy-tmp" -maxdepth 1 -name 'headwater-egress.*' 2>/dev/null)"
+
+        # A driver killed with SIGKILL runs none of its own cleanup, so the
+        # proxy must notice on its own that its parent is gone and exit. The
+        # stub harness says it started and then sleeps. Once the driver is
+        # killed, the proxy's socket must refuse a connection within 5 s.
+        cat > "$scratch/bin/claude" <<'STUB'
+#!/bin/sh
+: > session-started
+sleep 60
+STUB
+        chmod +x "$scratch/bin/claude"
+        rm -rf "$scratch/killed-tmp" "$conf/killed-ws"
+        mkdir -p "$scratch/killed-tmp" "$conf/killed-ws"
+        TMPDIR="$scratch/killed-tmp" PATH="$scratch/bin:$PATH" sh "$driver" --probe "HW-PROBE-$tombstone" --session fixture-killed \
+            --task-file "$scratch/task.md" --workspace "$conf/killed-ws" >/dev/null 2>&1 &
+        killed_pid=$!
+        n=0
+        while [ ! -e "$conf/killed-ws/session-started" ] && [ "$n" -lt 100 ]; do sleep 0.1; n=$((n + 1)); done
+        same "a session that is running has started" "yes" \
+            "$([ -e "$conf/killed-ws/session-started" ] && echo yes || echo no)"
+        killed_sock=$(find "$scratch/killed-tmp" -path '*/headwater-egress.*/sock/proxy.sock' 2>/dev/null | head -1)
+        px_alive() {
+            python3 -c '
+import socket, sys
+s = socket.socket(socket.AF_UNIX)
+s.settimeout(2)
+try:
+    s.connect(sys.argv[1])
+except OSError:
+    sys.exit(1)
+' "$1" 2>/dev/null
+        }
+        same "and its proxy accepts a connection while the driver lives" "yes" \
+            "$([ -n "$killed_sock" ] && px_alive "$killed_sock" && echo yes || echo no)"
+        kill -9 "$killed_pid" 2>/dev/null
+        wait "$killed_pid" 2>/dev/null
+        n=0
+        while [ -n "$killed_sock" ] && px_alive "$killed_sock" && [ "$n" -lt 50 ]; do sleep 0.1; n=$((n + 1)); done
+        same "a driver killed with SIGKILL leaves no proxy running" "no" \
+            "$([ -n "$killed_sock" ] && px_alive "$killed_sock" && echo yes || echo no)"
 
         # The host's configuration reaches no session (#1467). The session
         # runs under a fresh configuration directory that holds a copy of the

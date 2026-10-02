@@ -20,7 +20,6 @@ relations:
     - HW-EVAL-first-contact
     - HW-EVAL-graph-export-and-federation
     - HW-EVAL-language-spike-results
-    - HW-EVAL-shacl-worked-example
     - HW-EVAL-the-measurement-layer
     - HW-EVAL-the-serving-boundary
     - HW-EVAL-warrant-and-adjudication
@@ -177,81 +176,15 @@ A verb index carries one row for every verb that the binary dispatches, and it m
 
 ### An export is a projection, and it declares what it dropped
 
-A graph export is a projection like the others. The taxonomy declares its output path, so whether an export is committed is a schema decision and not an engine default ([principle 1](00-vision-and-scope.md#design-principles)). A committed export is held to regeneration by `generate --check`, exactly as a shelf index is. A declaration states `committed: false` for an export that the tree does not hold. Then `headwater export` builds the file at publish time, `generate` does not write it, and neither `--check` requires or compares it. The corpus descriptor marks its row `committed: false`, so a reader who opens the output path knows why no file is there. The engine takes the member on a `graph_export` alone, because every other kind is read in the tree.
-
-**A committed export regenerates on every edit to a facet it carries, and that is the `Cargo.lock` regime.** The native export is lossless, so it carries every facet of every document, and `summary` is one of them. An edit to one summary changes the export, and `generate --check` then fails until somebody regenerates it. A committed copy that survived a source edit would be a committed copy that had drifted, which is what the gate exists to catch. This corpus already pays the same cost on its shelf index, which carries the summary of every document on the shelf.
-
-**An adopter who wants a committed artifact that a summary edit leaves alone has two controls, and neither one drops a facet.** The first is which corpus the profile carries. The second is whether the taxonomy declares an output path at all, because an export with no declared path is never committed. A declared export that states `committed: false` is not committed either, and `headwater export` writes it to its declared path at publish time. `headwater export --format` writes such an artifact to standard output on demand. A filter over facet values is not a third control, and [the filter section](#an-export-profile-carries-a-filter) below states why.
-
-Exports fall into two classes, and only one class preserves fidelity.
-
-- **The native graph export** carries the property graph with no loss, and that includes the instance attributes on edges ([Q4](09-decisions.md#q4--relation-storage)). It is what the federation tier reads ([spec 7](07-distribution-and-federation.md#the-tier-above-a-corpus-harvests-it)).
-- **An interoperability export** is lossy by construction. RDF, SKOS, LinkML, SHACL, JSON Schema and OKF each speak a vocabulary that cannot carry everything in the graph.
-
-So every emitter declares a **loss set**: the node classes, edge classes, and attributes that its target cannot carry, each with a reason. Every export run then emits a **projection census**. Every node and every edge in the graph is either present in the output, or accounted for by a declared loss reason. An omission that no reason covers is a projector defect, and it fails the run.
-
-**A node of that census is a classified document or an external anchor, and an identifier is not what makes one.** A typed document that declares no identifier never reaches the identifier index, and it is still content that leaves a corpus or does not. A census over the index alone would let an emitter drop every unidentified document and report itself complete.
-
-That is the coverage doctrine of [spec 4](04-assurance-model.md#no-silent-passes-every-document-is-accounted-for), applied one layer out. It answers the trust problem that the [SHACL evaluation](../evaluations/shacl-worked-example.md#problem-one-everything-downstream-trusts-the-projection-and-shacl-does-not-check-it) found. The projector was the component that everything downstream trusted and nothing could check. A round trip is the wrong instrument for the lossy class, and an earlier draft of [Q6](09-decisions.md#q6--where-the-corpus-graph-lives-at-rest) asked for one. The native export keeps its round-trip test, because an empty loss set is exactly what a round trip proves.
-
-**An emitter that cannot carry the warrant does not carry the content.** Every node carries a [warrant](01-conceptual-model.md#warrant), and the native export carries it with no loss. A target vocabulary that has no place for it produces an artifact in which unwarranted content is indistinguishable from accepted content. A loss-set entry reaches the consumer who reads the loss set and nobody else. The field also reports that ordinary tooling strips a mark which travels beside content ([HW-EVAL-adjacent-work §P](../evaluations/adjacent-work.md#p--provenance-endorsement-and-the-record-of-a-judgment)). So such an emitter **withholds** every `asserted` and `transcribed` node, at the profile's declared tombstone grain, with its own inability to mark as the reason. That is [principle 7](00-vision-and-scope.md#design-principles) read the way that a filtered exporter reads it. An unmarked assertion is unrecoverable, and a withholding is visible and cheap ([Q15](09-decisions.md#q15--a-synthesized-content-tier)).
-
-**A transcription that leaves carries its pin.** A `transcribed` node exports the identity of the snapshot that it copies. A consumer who holds the copy can then return to the authority and ask whether it is current. Scholarly publishing solved the same problem in that direction, rather than by a flag that has to survive every copy.
-
-**Emitters never chain.** Every emitter reads the resolved lock and the graph directly. A pipeline that routes one standard format through another inherits every loss of every hop, and declares none of them. LinkML's own SHACL generator is the observed case, because it drops constructs that LinkML itself expresses ([Q13](09-decisions.md#q13--linkml-and-shacl-as-substrate)).
+A graph export is one more projection, and every emitter declares what its target cannot carry. [Spec 7](07-distribution-and-federation.md#an-export-is-a-projection-and-it-declares-what-it-dropped) states the export rules: whether an export is committed, the loss set, the projection census, and what an emitter withholds.
 
 ### An export profile carries a filter
 
-The export is the point where a corpus meets a reader that it does not control, so it is where a corpus decides what leaves. An **export profile** is an entry under `projections` ([spec 2](02-taxonomy-model.md#the-thirteen-declarations)). It names an audience, an emitter target, an output path, a **filter** over facet values, and a **tombstone grain**. A corpus with one audience declares one profile with no filter, which is the first release ([Q17](09-decisions.md#q17--governed-access-and-the-solution-layer)).
-
-**The audience is the name, and the name groups the entries.** The fifth rule below asks every projection inside a profile to regenerate from the filtered graph, so a profile holds more than one artifact. Two entries that write one audience name are two artifacts for it. **Two entries of one profile may not declare two filters, and the engine refuses the pair.** One audience has one answer about what it may see. Otherwise one of the two filters wins. The winner is whichever the reader reaches last, and the artifact that lost carries more than the profile permits. An entry that names no profile is in the profile called `default`. A name that nobody can type is a name that `--profile` cannot select.
-
-**The filter runs at export, and there is no reader to identify.** A profile filters for a destination and never for a person. So the engine holds no principals, evaluates no permission at request time, issues no credential, and records no read. The bytes of a filtered export live in a repository. The permissions of the hosting platform on that repository decide who reads them, exactly as they decide who reads the Markdown. One permission system, and it is not ours.
-
-Six rules make the filter honest, and three of them already hold elsewhere.
-
-- **Carried and withheld partition the corpus, and the engine generates both.** This is the [partition rule](12-check-layer.md#exportable_as-is-a-set-with-a-partition-rule) that `exportable_as` obeys, applied to documents instead of to checks. Neither list is authored, so neither can drift from the other.
-- **A withholding is a loss reason.** The projection census already accounts for every node and edge that the output does not carry. A withheld document is one more accounted absence.
-- **A document is withheld whole.** The unit is the document, and no filter reaches inside a body. A redaction inside prose is how a reader ends up with a rectangle drawn over text that is still there.
-- **The filter is default-deny over classes.** A node class, an edge class, or an attribute that no profile names does not travel. So a later release that adds a class does not widen a profile that nobody re-read. A filter stated as a list of exclusions grows a hole every time the schema grows.
-- **Every projection inside a profile regenerates from the filtered graph.** Take a shelf index, a lineage view, or a navigation file. Built at full visibility and then shipped inside a filtered profile, each one carries what the filter removed. A count, a sort order, or an index of terms is enough. That failure is observed, and it is the one that survives a correct redaction.
-- **The declaration travels with the artifact.** A filtered export states that it is filtered, and it states when it was generated. A copy of an artifact carries neither of those unless the artifact does.
-
-**The class half of that fourth rule waits on an emitter that needs it.** The declaration reaches facet values, and the document is the unit that a filter withholds. A class filter acts on an emitter that carries some classes and not others. Neither of the two emitters that exist is one. The native export carries every class, and a JSON Schema carries no instance at all. So the first emitter that partitions by class is the one that gives a class filter something to act on.
-
-**The attribute half waits on a consumer, and until then a filter reaches no attribute.** The engine evaluates a clause over a document's facet values and withholds that document whole. It never projects an attribute off a document that it carries. So no profile can emit a graph that holds a document and omits its summary. What would ask for one is a consumer that wants a committed artifact which a summary edit leaves alone. That work reaches past the filter, because the projection census would have to account for a withheld attribute as well as a withheld node. And [`exportable_as`](12-check-layer.md#exportable_as-is-a-set-with-a-partition-rule) would have to rule whether an export that drops a declared facet still conforms.
-
-**The generation time is injected, and that is what lets it coexist with a byte gate.** The rule above and the regeneration gate look incompatible. A time inside an output moves on every run, so `generate --check` reports drift over a corpus that nobody touched. They hold together because they cover two artifacts. A **committed** export is held to regeneration and carries no time at all. An export that **leaves** the repository is the artifact the rule above is about, and `headwater export --at <date>` supplies its time. A declared export that states `committed: false` is one of these, so `--at` dates it too. `export` refuses `--at` for a run that selects a committed export. The clock is thus a value that a caller injects. [Spec 12](12-check-layer.md#determinism-concretely) injects it into a check for the same reason, rather than let one read a syscall. Same corpus, same lock, same injected clock, byte-identical output, under both.
-
-**The tombstone grain is declared, because the two things that a filtered view owes a reader are in tension.** A view must not look complete, and a report of what it withheld is itself a disclosure. Both cannot hold in full. The freedom-of-information statutes reached this exact conditional from the other direction, and so did the multilevel-security literature ([HW-EVAL-adjacent-work §O](../evaluations/adjacent-work.md#o--the-serving-boundary-descriptors-redaction-and-the-write-path)).
-
-| Grain | What the reader learns | When it fits |
-|---|---|---|
-| `counted` | A placeholder sits where each withheld node or edge would have been, and it carries the identifier of the rule that withheld it | The default. The reader is a tier under a contract, and the existence of the item is not the secret |
-| `sealed` | The view is filtered. Nothing else | The existence of the item is itself the disclosure |
-
-**A withholding reason comes from a closed set that the taxonomy declares.** Free prose in a tombstone is a channel, and a reason that quotes the document is a leak wearing a label. The rule identifier is what a reader needs to ask for access, and it is all that they get. Under `counted`, each tombstone also lists the digest of each identifier it withheld. A reader who already holds an identifier can test it, and a reader who holds none learns only the count ([HW-DR-0100](../decisions/0100-a-counted-tombstone-lists-a-digest-of-each-withheld-identifier-and-a-sealed-one-lists-nothing.md)).
-
-**No profile may produce a view that presents as total.** That is the invariant, and it holds under both grains because it leaks nothing. Under `sealed` a reader still knows to stop drawing conclusions from absence, which is the harm that the rule exists to prevent. An agent that traverses a filtered graph, finds nothing, and reports absence is the failure that [spec 5](05-ai-integration.md) names at its start. Here our own filter causes it.
-
-**An exporter fails closed, and that is [principle 7](00-vision-and-scope.md#design-principles) read correctly.** An exporter that cannot evaluate its filter emits nothing and fails the run. It never emits an unfiltered artifact, and it never emits a partly filtered one. The principle says "fail open at the edges", and its own gloss gives the rule underneath: degrade toward the cheaper error. For an agent-facing hint, silence is cheaper than a wrong pointer. For an exporter with a filter, an empty output is cheaper than one document too many.
-
-**A withholding rule never ships advisory.** Its two error classes are not both recoverable, so the promotion machinery measures the wrong one ([spec 4](04-assurance-model.md#promotion-advisory-to-blocking)). It is not suppressible and it is not waivable.
+An export profile selects what one audience receives. [Spec 7](07-distribution-and-federation.md#an-export-profile-carries-a-filter) states what a profile names, the rules that make the filter honest, the tombstone grains, and why an exporter fails closed.
 
 ### What a filtered export claims, and what it does not
 
-A tool acquires a security obligation when it publishes a claim that a boundary holds, and not before. So the claim is stated here, narrowly, and the things that are **not** claims are stated beside it. A reader who treats a non-claim as a boundary has been misled by us rather than by an attacker.
-
-**The claim.** A filtered export contains no document that its declared filter withholds, and no artifact inside the profile derives from one.
-
-**Not claims, and each one is a channel that the design accepts rather than removes.**
-
-- **The tombstone under `counted` is a declared channel.** It reports that something exists and does not say what. That is deliberate, and an adopter who cannot accept it declares `sealed`.
-- **Shape is not hidden.** Shelf and kind names, node counts, and edge degrees describe organizational and product structure. No filter removes what the remaining graph implies.
-- **A reader who can also read the publishing repository is not separated from anything.** The export is not a boundary against a party that holds a clone.
-- **Revocation is not immediate.** A tier reads a pinned export, so a document withheld today stays in the tier's copy until the next harvest ([spec 7](07-distribution-and-federation.md#the-tier-above-a-corpus-harvests-it)). The lag is bounded by the export cadence, and the export carries its generation time so that a reader can compute it.
-- **The platform's repository permission is the enforcement, and it has its own limits.** Repository history, forks, and a change of visibility are governed by the hosting platform and not by us.
-- **No claim about a license reaches any content.** Headwater never reads an upstream's terms, and it cannot decide whether an adopter may redistribute a requirement that the adopter imported. A profile that carries `transcribed` content republishes somebody else's material, and the adopter owns that decision. The filter defaults to deny over classes, so the decision is a line in a taxonomy that a reviewer reads ([Q19](09-decisions.md#q19--inbound-integration-an-external-system-of-record)).
+A filtered export claims one boundary and states beside it what it does not claim. [Spec 7](07-distribution-and-federation.md#what-a-filtered-export-claims-and-what-it-does-not) states the claim and each non-claim.
 
 ## Interfaces
 
@@ -397,7 +330,7 @@ The engine emits findings. Adapters translate them to the native vocabulary of a
 
 **Two of the four exist to hold the boundary open.** [Spec 8](08-design-departures.md) asks for more than one adapter from the start. One adapter cannot show where the boundary is, because everything a single adapter needs belongs in the core by definition. Two show it, and they show it by losing different things.
 
-**Every format declares a loss set, and a census audits the claim.** This is the rule above, read one layer out. The subject is a field of a run rather than a class of the graph, and the rest of the sentence does not change. Every finding of a run reaches the output, or a declared reason accounts for it. A finding that no reason covers is a defect in the adapter, and it fails the run.
+**Every format declares a loss set, and a census audits the claim.** This is the rule that [spec 7](07-distribution-and-federation.md#an-export-is-a-projection-and-it-declares-what-it-dropped) states for the graph emitters, read one layer out. The subject is a field of a run rather than a class of the graph, and the rest of the sentence does not change. Every finding of a run reaches the output, or a declared reason accounts for it. A finding that no reason covers is a defect in the adapter, and it fails the run.
 
 **A loss entry names where the value went, and the census reads it there.** An entry states a path into the artifact and the members under that path. The audit parses the emitted document and resolves each one. An entry is held when the artifact agrees with the run, and adrift when it does not. An entry that names no member of these bytes is counted as unaudited. The three outcomes sum to the entries declared, so nothing is passed over in silence. One entry stood wrong for as long as it existed. SARIF declared that the coverage went to a property bag. Four counts of it went there, and the skip classes went nowhere. An entry names its members, so a bag that resolves is not an answer. The audit holds that rule itself. An entry that names no member is held where its path resolves to one value. It is adrift where its path resolves to a bag, because a bag has names the entry could have listed.
 
