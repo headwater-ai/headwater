@@ -63,7 +63,7 @@ anchors
     cited by HW-OBL-0149
   code_path `.claude/settings.json` via source-tree
     cited by HW-SPEC-harness-support
-  code_path `.claude/skills/fixtures.sh, .claude/skills/headwater-authoring/SKILL.md, .claude/skills/headwater-taxonomy/SKILL.md, .claude/skills/hw-corpus/SKILL.md` via source-tree
+  code_path `.claude/skills/fixtures.sh, .claude/skills/headwater-authoring/SKILL.md, .claude/skills/headwater-orient/SKILL.md, .claude/skills/headwater-taxonomy/SKILL.md, .claude/skills/hw-corpus/SKILL.md` via source-tree
     cited by HW-SPEC-ai-integration
   code_path `.claude/skills/headwater-authoring/SKILL.md` via source-tree
     cited by HW-PROBE-the-authoring-skill-reaches-an-agent-that-is-about-to-write-a-governed-document
