@@ -251,3 +251,47 @@ impl EdgeCheck for InvalidPair<'_> {
         })
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// A taxonomy whose state facet is `phase`, not `status`, so a remedy that
+    /// knew the state facet by its name in spec 2 reads it as an ordinary facet
+    /// and offers to change it.
+    const RENAMED: &str = "\
+facets:
+  phase:
+    role: state
+    values:
+      - {value: proposed, role: initial}
+      - {value: adopted,  role: live}
+      - {value: replaced, role: terminal-retained}
+relations:
+  conflicts_with:
+    family: association
+    from: [decision]
+    to:   [decision]
+    reciprocal: symmetric
+    invalid_when: {both: {phase: adopted}}
+    created_by: author
+";
+
+    #[test]
+    fn the_state_facet_is_read_by_its_role_and_not_its_name() {
+        let root = headwater_yaml::load(RENAMED).expect("the source loads");
+        let root = root.value.as_map().expect("a mapping");
+        let shape = Shape::read(root).expect("the shape reads");
+        let declarations = Declarations::read(root).expect("the declarations read");
+        let rule = InvalidPair::over(&declarations, &shape);
+        let relation = rule.conditioned[0];
+        let remedy = rule.remedy(relation, &condition(relation), ("a.md", "b.md"), "a.md");
+        assert!(remedy.contains("supersede it"), "{remedy}");
+        assert!(!remedy.contains("change `phase`"), "{remedy}");
+        assert!(!remedy.contains("proposed"), "{remedy}");
+        assert!(
+            remedy.contains("remove the `conflicts_with` entry from a.md"),
+            "{remedy}"
+        );
+    }
+}
