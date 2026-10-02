@@ -79,8 +79,6 @@ resolved:
         - how do I bring the widget line back up
     evidence:
       intent: record what happened and what it showed
-      answers:
-        - what failed on the night
   facets:
     owner:
       required: false
@@ -220,7 +218,7 @@ fn a_foreign_lock_prints_its_own_kinds_and_none_of_this_repository() {
         "  facets    owner\n",
         // The parent's section first, then the kind's own.
         "  sections  Summary, Steps\n",
-        "  draft     headwater new runbook_widget \"<title>\"\n",
+        "  draft     headwater new runbook_widget --title \"<title>\"\n",
     ] {
         assert!(runbook.contains(line), "`{line}` in {runbook}");
     }
@@ -235,10 +233,13 @@ fn a_foreign_lock_prints_its_own_kinds_and_none_of_this_repository() {
         // The parent's facet first, then the kind's own.
         "  facets    owner, severity\n",
         "  sections  Summary\n",
-        "  draft     headwater new incident_widget \"<title>\"\n",
+        "  draft     headwater new incident_widget --title \"<title>\"\n",
     ] {
         assert!(incident.contains(line), "`{line}` in {incident}");
     }
+    // Its purpose declares no answers, so no answers line is printed and the
+    // when line does not point at one.
+    assert!(!incident.contains("  answers "), "{incident}");
 
     // The abstract parent is never offered as a kind to draft.
     assert!(!report.contains("headwater new widget_page"), "{report}");
@@ -256,11 +257,61 @@ fn a_foreign_lock_prints_its_own_kinds_and_none_of_this_repository() {
         );
     }
 
-    // The when line is the fixed gap sentence, once per kind, and nothing the
-    // engine wrote about this repository.
+    // The when line is one of the two fixed gap sentences, once per kind, and
+    // nothing the engine wrote about this repository. The sentence that sends
+    // the reader to the answers is printed only where answers are.
     let when = format!("  when      {}\n", headwater_query::kinds::UNDECLARED_WHEN);
-    assert_eq!(report.matches(&when).count(), 2, "{report}");
+    assert!(runbook.contains(&when), "{runbook}");
+    let unanswered = format!(
+        "  when      {}\n",
+        headwater_query::kinds::UNDECLARED_WHEN_UNANSWERED
+    );
+    assert!(incident.contains(&unanswered), "{incident}");
     assert_eq!(report.matches("  when      ").count(), 2, "{report}");
+    let _ = std::fs::remove_dir_all(&at);
+}
+
+/// The draft line is in the grammar `headwater new` parses.
+///
+/// The next component is the verb the line names, so this case runs it with
+/// the line's own words. The foreign root holds no consumer declaration, so
+/// `new` refuses on that, after the parser has accepted the line. A line the
+/// parser refused would never reach that refusal.
+#[test]
+fn the_draft_line_is_one_headwater_new_parses() {
+    let at = root("draft", &foreign_lock());
+    let report = kinds(&at, &[]).out;
+    let line = block(&report, "runbook_widget")
+        .lines()
+        .find_map(|line| line.strip_prefix("  draft     headwater "))
+        .expect("a draft line")
+        .to_string();
+    // `new runbook_widget --title "<title>"`, split as a shell would.
+    let mut argv: Vec<String> = Vec::new();
+    let mut rest = line.as_str();
+    while !rest.is_empty() {
+        rest = rest.trim_start();
+        if let Some(quoted) = rest.strip_prefix('"') {
+            let end = quoted.find('"').expect("a closing quote");
+            argv.push(quoted[..end].to_string());
+            rest = &quoted[end + 1..];
+        } else {
+            let end = rest.find(' ').unwrap_or(rest.len());
+            argv.push(rest[..end].to_string());
+            rest = &rest[end..];
+        }
+    }
+    assert_eq!(argv, vec!["new", "runbook_widget", "--title", "<title>"]);
+    let output = Command::new(env!("CARGO_BIN_EXE_headwater"))
+        .args(&argv)
+        .arg("--root")
+        .arg(&at)
+        .output()
+        .expect("the binary runs");
+    let err = String::from_utf8_lossy(&output.stderr);
+    for refused in ["unexpected argument", "Usage:", "required arguments were not provided"] {
+        assert!(!err.contains(refused), "the parser refused the draft line: {err}");
+    }
     let _ = std::fs::remove_dir_all(&at);
 }
 
@@ -285,6 +336,31 @@ fn json_is_the_same_content_as_one_document() {
         .map(|node| scalar(node.value.as_map().expect("a kind"), "name").expect("a name"))
         .collect();
     assert_eq!(names, vec!["runbook_widget", "incident_widget"]);
+
+    // The heterogeneous shelf keeps the facet that selects the kind.
+    let incident = top
+        .get("kinds")
+        .and_then(|node| node.value.as_seq())
+        .and_then(|kinds| kinds.get(1))
+        .and_then(|node| node.value.as_map())
+        .expect("incident_widget");
+    let discriminators: Vec<(Option<String>, Option<String>)> = incident
+        .get("shelves")
+        .and_then(|node| node.value.as_seq())
+        .expect("a shelves array")
+        .iter()
+        .map(|node| {
+            let shelf = node.value.as_map().expect("a shelf");
+            (scalar(shelf, "name"), scalar(shelf, "discriminator"))
+        })
+        .collect();
+    assert_eq!(
+        discriminators,
+        vec![
+            (Some("widget_incidents".to_string()), None),
+            (Some("widget_mixed".to_string()), Some("doc_type".to_string())),
+        ]
+    );
     let _ = std::fs::remove_dir_all(&at);
 }
 

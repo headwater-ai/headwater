@@ -1671,7 +1671,7 @@ fn the_kinds_tool_answers_the_bytes_of_the_one_renderer() {
         "{runbook}"
     );
     assert!(
-        runbook.contains("  draft     headwater new runbook \"<title>\"\n"),
+        runbook.contains("  draft     headwater new runbook --title \"<title>\"\n"),
         "{runbook}"
     );
     // A concrete kind that no shelf carries has nowhere to be drafted.
