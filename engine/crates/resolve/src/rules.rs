@@ -137,8 +137,8 @@ pub const RULES: [(&str, Ran); 23] = [
     (
         "purpose completeness",
         Ran::Resolved(
-            "every concrete kind has a purpose by declaration or inheritance, and every declared \
-             purpose is served",
+            "every concrete kind has a purpose by declaration or inheritance, every declared \
+             purpose is served, and no kind writes a blank `write_when`",
         ),
     ),
     (
@@ -1274,7 +1274,22 @@ fn narrowed_value_sets(view: &View, out: &mut Vec<ResolveError>) {
 fn purpose_completeness(view: &View, out: &mut Vec<ResolveError>) {
     const RULE: &str = "purpose completeness";
     let mut served: BTreeSet<String> = BTreeSet::new();
-    for (kind, _) in view.members("kinds") {
+    for (kind, body) in view.members("kinds") {
+        // `write_when` stands beside the purpose and says when to write one
+        // (#1580). A blank sentence tells a writer nothing, and a reader would
+        // print it where the gap sentence belongs, or let it hide an
+        // ancestor's sentence. So absent and blank are two states, as they are
+        // for a namespace, and only absent is an answer.
+        if text(body, "write_when").is_some_and(|sentence| sentence.trim().is_empty()) {
+            out.push(refusal(
+                RULE,
+                &format!("kinds.{kind}.write_when"),
+                "is blank, which tells a writer nothing. Write the sentence that says when \
+                 to write a document of this kind, or remove the member so that the kind \
+                 takes its nearest ancestor's"
+                    .to_string(),
+            ));
+        }
         let purpose = view
             .ancestry(kind)
             .into_iter()

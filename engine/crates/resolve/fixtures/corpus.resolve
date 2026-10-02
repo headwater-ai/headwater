@@ -1,4 +1,4 @@
-headwater/standard 4.15.0
+headwater/standard 4.16.0
 
 sources, in application order
   .headwater/packages/headwater-standard/taxonomy.yml
@@ -124,7 +124,7 @@ operations
 
 declarations, by member count
   taxonomy: headwater/standard
-  version: 4.15.0
+  version: 4.16.0
   purposes: 6 members
   vocabularies: 1 member
   facets: 14 members
@@ -158,7 +158,7 @@ rule by rule
   kind inheritance
     on the result: `is_a` names a declared abstract kind, the chain terminates and holds no cycle, no child un-requires or forbids what a parent requires, and a narrowed value set names only values the facet declares and only values every kind above it admits
   purpose completeness
-    on the result: every concrete kind has a purpose by declaration or inheritance, and every declared purpose is served
+    on the result: every concrete kind has a purpose by declaration or inheritance, every declared purpose is served, and no kind writes a blank `write_when`
   determinism
     on the result: no two shelf patterns can match one path at equal specificity. The overlap is decided over the two patterns, so no corpus has to exist for the rule to fire
   role uniqueness

@@ -101,6 +101,7 @@ add:
   kinds.standard:
     is_a: governed_document
     purpose: constraint
+    write_when: a rule must hold across many documents or much code, and nothing written states it
     identifier: {scheme: standard_id}
     voice: declarative
     lifecycle: standard
@@ -127,6 +128,7 @@ add:
   kinds.functional_spec:
     is_a: governed_document
     purpose: behavior
+    write_when: a component gained or changed a behavior that its users see
     identifier: {scheme: functional_spec_id}
     voice: declarative
     lifecycle: standard
@@ -152,6 +154,7 @@ add:
   kinds.technical_spec:
     is_a: governed_document
     purpose: behavior
+    write_when: the internal design of a component was decided or changed, and the people who build it need it written
     identifier: {scheme: technical_spec_id}
     voice: declarative
     lifecycle: standard
