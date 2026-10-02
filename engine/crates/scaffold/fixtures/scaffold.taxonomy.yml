@@ -337,7 +337,33 @@ shelves:
     kind: holed
     layout: "{seq:04d}-{slug}.md"
 
+# Two anchor kinds, so the verb binds a target that is not a document through
+# the resolver `headwater check` uses (HW-DR-0074). `test_site` names
+# `comment-scan`, which binds only for a document whose identifier a comment
+# cites, and a document this run mints is cited by no comment yet.
+anchors:
+  code_path: {resolver: source-tree}
+  test_site: {resolver: comment-scan, pattern: "DR-FIX-"}
+
 relations:
+
+  # An agent's edge onto a pattern over the tree. The verb writes it once the
+  # pattern matches an entry, and refuses it when the pattern matches none.
+  governs:
+    family: governance
+    from: [governed_document]
+    to:   [code_path]
+    cardinality: many
+    created_by: agent
+
+  # An agent's edge onto a file whose comment owes the citation. The verb
+  # writes it once the path reaches a file, and names the comment still owed.
+  cited_in:
+    family: evidence
+    from: [decision_record]
+    to:   [test_site]
+    cardinality: many
+    created_by: agent
 
   # The scaffold relation with reciprocity required. The far half goes into the
   # target document.
