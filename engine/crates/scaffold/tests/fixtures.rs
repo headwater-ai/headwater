@@ -279,6 +279,12 @@ fn cases() -> Vec<Case> {
             .relating("cited_in", "corpus/code/widget.txt"),
         // Two edges of one relation are two items under one key, and a
         // path that opens with `@` is quoted, so the front matter loads.
+        // An edge onto a path writes no far half and sets no state, and the
+        // same relation onto a document is owed both.
+        case("decision_record", "A required half onto a path")
+            .relating("realizes", "corpus/code/widget.txt"),
+        case("decision_record", "A required half onto a document")
+            .relating("realizes", "DR-FIX-0007"),
         case("decision_record", TWO_PATTERNS)
             .relating("governs", "corpus/code/*.txt")
             .relating("governs", "@scoped/widget.txt"),
@@ -310,6 +316,8 @@ fn cases() -> Vec<Case> {
             .relating("governs", "src/nowhere/**"),
         case("decision_record", "A citation in a file that is not there")
             .relating("cited_in", "corpus/code/missing.txt"),
+        case("decision_record", "A citation in a directory")
+            .relating("cited_in", "corpus/code"),
         // What `--summary` does. It fills the facet in the `scent` role
         // directly, exactly as `--title` fills the one in the `name` role, so
         // it needs the same two cases the `name` role never needed a comment
@@ -530,6 +538,9 @@ fn render_plan(plan: &Plan) -> String {
                 owed.half.relation, owed.half.path, owed.until
             )),
             (None, None) => out.push_str("    no far half\n"),
+        }
+        if let Some(state) = &edge.sets_target_state {
+            out.push_str(&format!("    sets `{state}` on the target, later\n"));
         }
         if let Some(anchor) = &edge.anchor {
             out.push_str(&format!(
