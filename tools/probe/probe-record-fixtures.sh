@@ -1851,6 +1851,7 @@ server.serve_forever()
 } > found.txt 2>/dev/null
 curl -s -p -x "\$HTTPS_PROXY" --max-time 3 -o /dev/null https://api.anthropic.com/ 2>/dev/null
 printf '%s\n' "\$HTTPS_PROXY" > proxy.txt
+touch /opt/headwater-egress/planted 2>/dev/null && printf '%s\n' /opt/headwater-egress >> wrote.txt
 printf '%s\n' '{"type":"system","subtype":"init","model":"claude-haiku-4-5","session_id":"s22"}'
 printf '%s\n' '{"type":"result","subtype":"success","result":"withheld","total_cost_usd":0.01,"modelUsage":{"claude-haiku-4-5-20251001":{"inputTokens":10}}}'
 STUB
@@ -1867,6 +1868,7 @@ STUB
             "HW-LEAK-MARKER-1467-NET" "$conf/net-ws/found.txt"
         same "and git cloned nothing from it" "" "$(cat "$conf/net-ws/cloned/secret.md" 2>/dev/null)"
         present "the session was handed its proxy" "http://127.0.0.1:" "$conf/net-ws/proxy.txt"
+        same "and cannot write beside the proxy's socket, which is the host's directory" "" "$(cat "$conf/net-ws/wrote.txt" 2>/dev/null)"
         present "the transcript says the session had no network but the proxy" \
             "The session ran with no network of its own." "$scratch/no-network.md"
         present "and names the hosts the proxy allows" \
@@ -1875,6 +1877,42 @@ STUB
             "\`127.0.0.1:$port\`" "$scratch/no-network.md"
         present "and says the proxy allowed the provider's host" \
             "allowed 1 connection to \`api.anthropic.com:443\`" "$scratch/no-network.md"
+
+        # The proxy alone (#1467, clause 5). It tunnels a `CONNECT` to a
+        # listed host on 443 and nothing else: a listed host on another port,
+        # and a plain request for a listed host, are refused and logged before
+        # any connection upstream, so these cases need no internet access.
+        rm -rf "$conf/px"
+        mkdir -p "$conf/px"
+        python3 "$root/tools/probe/egress-proxy.py" serve "$conf/px/s" "$conf/px/log" 2>/dev/null &
+        px_pid=$!
+        n=0
+        while [ ! -S "$conf/px/s" ] && [ "$n" -lt 50 ]; do sleep 0.1; n=$((n + 1)); done
+        px_ask() {
+            python3 -c '
+import socket, sys
+s = socket.socket(socket.AF_UNIX)
+s.settimeout(5)
+s.connect(sys.argv[1])
+s.sendall(sys.argv[2].encode() + b"\r\nHost: x\r\n\r\n")
+print(s.recv(4096).decode("latin-1").split("\r\n", 1)[0])
+' "$conf/px/s" "$1" 2>/dev/null
+        }
+        same "the proxy refuses a CONNECT to a listed host on another port" "HTTP/1.1 403 Forbidden" \
+            "$(px_ask 'CONNECT api.anthropic.com:22 HTTP/1.1')"
+        same "and a plain request for a listed host" "HTTP/1.1 403 Forbidden" \
+            "$(px_ask 'GET http://api.anthropic.com:443/ HTTP/1.1')"
+        same "and a CONNECT to a host off the list" "HTTP/1.1 403 Forbidden" \
+            "$(px_ask 'CONNECT github.com:443 HTTP/1.1')"
+        same "and a host name that reads like a list entry and is not one" "HTTP/1.1 403 Forbidden" \
+            "$(px_ask 'CONNECT api.anthropic.com.example.net:443 HTTP/1.1')"
+        kill "$px_pid" 2>/dev/null
+        wait "$px_pid" 2>/dev/null
+        same "and logs each refusal, once, before any upstream connection" \
+            "refused api.anthropic.com:22|refused api.anthropic.com:443|refused github.com:443|refused api.anthropic.com.example.net:443" \
+            "$(tr '\n' '|' < "$conf/px/log" | sed 's/|$//')"
+        same "the proxy names the hosts it allows, and no variable adds one" "api.anthropic.com platform.claude.com" \
+            "$(HTTPS_PROXY=x ALLOWED=github.com HEADWATER_EGRESS_HOSTS=github.com python3 "$root/tools/probe/egress-proxy.py" hosts | tr '\n' ' ' | sed 's/ $//')"
 
         # No confinement, no session (#1467). A host with no `bwrap`, or one
         # that cannot create a namespace, refuses with 12 before any harness
@@ -1907,12 +1945,16 @@ STUB
         mkdir -p "$scratch/bad-bwrap"
         printf '#!/bin/sh\necho "bwrap: setting up uid map: Permission denied" >&2\nexit 1\n' > "$scratch/bad-bwrap/bwrap"
         chmod +x "$scratch/bad-bwrap/bwrap"
-        PATH="$scratch/bad-bwrap:$scratch/bin:$PATH" sh "$driver" --probe "HW-PROBE-$tombstone" --session fixture-bad-bwrap \
+        rm -rf "$scratch/bad-bwrap-tmp"
+        mkdir -p "$scratch/bad-bwrap-tmp"
+        TMPDIR="$scratch/bad-bwrap-tmp" PATH="$scratch/bad-bwrap:$scratch/bin:$PATH" sh "$driver" --probe "HW-PROBE-$tombstone" --session fixture-bad-bwrap \
             --task-file "$scratch/task.md" --workspace "$conf/conf-ws" \
             >/dev/null 2>"$scratch/bad-bwrap.err"
         same "a bwrap that cannot create a namespace refuses with 12" "12" "$?"
         present "and prints what bwrap said" "setting up uid map" "$scratch/bad-bwrap.err"
         same "and the harness never ran" "no" "$([ -e "$conf/conf-ws/harness-ran" ] && echo yes || echo no)"
+        same "and no egress proxy directory is left behind" "" \
+            "$(find "$scratch/bad-bwrap-tmp" -maxdepth 1 -name 'headwater-egress.*' 2>/dev/null)"
 
         # No route that can be stated, no session (#1467, clause 5). A host
         # with no `python3` has no proxy, and a proxy that does not start
