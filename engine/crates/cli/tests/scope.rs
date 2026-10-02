@@ -242,6 +242,33 @@ fn govern(root: &Root, entry: &str) {
     .expect("the decision writes");
 }
 
+/// `--json --record` still appends the adoption reading, and the line that
+/// says so goes to standard error, so standard output is the one document.
+#[test]
+fn the_audit_json_with_record_appends_and_keeps_standard_output_one_document() {
+    let root = Root::new("scope-audit-json-record");
+    let store = root.at.join(".headwater/adoption.jsonl");
+    let before = std::fs::read_to_string(&store)
+        .unwrap_or_default()
+        .lines()
+        .count();
+    let ran = root.run(&[
+        "taxonomy",
+        "audit",
+        "--now",
+        "2026-09-25",
+        "--json",
+        "--record",
+    ]);
+    assert_eq!(ran.code, Some(0), "{ran:?}");
+    let after = std::fs::read_to_string(&store).expect("the store is written");
+    assert_eq!(after.lines().count(), before + 1, "{after}");
+    assert!(ran.err.contains("appended one adoption reading"), "{ran:?}");
+    let document = ran.out.trim();
+    assert_eq!(document.lines().count(), 1, "{document}");
+    assert_eq!(at(document, &["version"]), "1", "{document}");
+}
+
 /// Under `--json` a refusal writes nothing on standard output, and its account
 /// is one sentence on standard error (HW-DR-0043).
 #[test]
