@@ -95,6 +95,7 @@ impl Root {
     fn with_scope_tree(self) -> Self {
         for entry in [
             "engine/crates/stub/src/lib.rs",
+            "engine/crates/cli/harness/stub",
             ".githooks/stub",
             ".claude/hooks/stub",
             ".claude/agents/stub",
@@ -712,8 +713,8 @@ fn validate_skips_the_governed_scope_with_a_notice_where_no_tree_is_beside_the_t
 
 /// A tree whose every scope pattern is misspelled is still a tree, so each
 /// pattern is refused and no notice is printed (#951, verify finding F1). The
-/// copy carries `docs/` and not one of the seven roots the overlay names, which
-/// is what a consumer who misspelled all seven sees.
+/// copy carries `docs/` and not one entry under the eight patterns the overlay names, which
+/// is what a consumer who misspelled all eight sees.
 #[test]
 fn validate_refuses_every_scope_pattern_beside_a_tree_that_none_of_them_matches() {
     let root = Root::copy_only("scope-misspelled");
@@ -765,7 +766,7 @@ fn assert_no_tree_notice(ran: &Ran) {
 /// A directory the root's package manifest names under `contents` is the
 /// taxonomy's own, so an authored package source at the root is a root with no
 /// tree beside it (#1103). Before, `assemblies/` and `doctrine/` counted as a
-/// tree, and every one of the seven patterns was refused.
+/// tree, and every one of the eight patterns was refused.
 #[test]
 fn validate_gives_the_no_tree_notice_at_an_authored_package_source_beside_its_vendored_copy() {
     let root = authored_source_root("scope-authored-source");
@@ -787,7 +788,7 @@ fn validate_counts_an_examples_directory_as_a_tree_unless_the_manifest_names_it(
     let ran = root.run(&["taxonomy", "validate"]);
     assert_eq!(ran.code, Some(1), "{ran:?}");
     assert!(!ran.out.contains("no tree beside"), "{ran:?}");
-    assert_eq!(ran.err.matches("matches no entry").count(), 7, "{ran:?}");
+    assert_eq!(ran.err.matches("matches no entry").count(), 8, "{ran:?}");
 
     let manifest = root.at.join("package.yml");
     let text = std::fs::read_to_string(&manifest).expect("the manifest reads");
@@ -832,7 +833,7 @@ fn validate_refuses_a_misspelled_pattern_beside_a_tree_the_manifest_does_not_nam
 
 /// A root `package.yml` that does not read is named, and it leaves nothing out
 /// of the tree count (#1123). Before, it was read as a root with no manifest,
-/// and the seven refusals it caused named nothing about it.
+/// and the eight refusals it caused named nothing about it.
 fn assert_names_the_unread_manifest(ran: &Ran, reason: &str) {
     assert_eq!(ran.code, Some(1), "{ran:?}");
     let named: Vec<&str> = ran
@@ -842,7 +843,7 @@ fn assert_names_the_unread_manifest(ran: &Ran, reason: &str) {
         .collect();
     assert_eq!(named.len(), 1, "{ran:?}");
     assert!(named[0].contains(reason), "{named:?}");
-    assert_eq!(ran.err.matches("matches no entry").count(), 7, "{ran:?}");
+    assert_eq!(ran.err.matches("matches no entry").count(), 8, "{ran:?}");
 }
 
 #[test]

@@ -3,7 +3,7 @@ id: HW-OBL-0183
 status: current
 status_since: 2026-09-11
 summary: "The recording thread of this record is narrowed by HW-DR-0078: disclosure, not a compare, closes #601's binary asset. What holds a DIFFERENT committed binary asset against a run, one with no ruling of its own, is still nothing."
-last_verified: 2026-09-20
+last_verified: 2026-10-02
 title: "No mechanism holds a committed binary asset against a run"
 waiting_on: ruling
 relations:
@@ -36,8 +36,12 @@ provenance:
 
 The shape a compare-and-regenerate mechanism would take is unchanged from the original obligation. Replay a recorded artifact against a scratch corpus, in the way `--check` already works for a text figure. Fail the build when the result is not the committed bytes. A recorder must be on the runner for that step to run at all. The repository variable `CI_RUNNER` sends jobs to GitHub's hosted images, which install one on request.
 
+**The social card is outside the scope of this record.** `.github/assets/headwater-social-preview.png` is the image that GitHub shows on a link card for this repository, and the root `README.md` shows it first. It shows the Headwater mark, the name and the tagline. It shows no output of a run, so no number in it can drift from a live run. Principle 11 has nothing in it to hold. The gap that HW-DR-0061 measured is therefore not in this asset. What can go wrong with the card is its form, and a check already holds its form. HW-DR-0084 governs `tools/repo/readme-fixtures.sh`. Its `image_judge` refuses a first image of the root `README.md` that is not 1280 by 640 or that is 1 MB or more.
+
 ## Discharge
 
 **The #601-tied thread closes here.** A front-page recording's frozen number is held by disclosure under HW-DR-0078. The blocking text check for its marker is the mechanism that ruling asks for.
 
 **The general record stays open.** It discharges under either of two conditions. One: a step of `.github/workflows/ci.yml` regenerates a committed binary asset and compares it against the tree, failing the build on a difference. Two: every committed binary asset in this corpus carries a ruling of its own, the way #601's recording now does. Until one of those holds, a new committed binary asset with no ruling meets the same gap this record first measured.
+
+In both conditions, "committed binary asset" means an asset that shows output of a run. The social card shows none, so neither condition counts it.

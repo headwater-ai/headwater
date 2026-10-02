@@ -2359,30 +2359,31 @@ cp -R "$root/.claude/skills" "$root/.claude/agents" "$scratch/leak-ws/.claude/"
 
 # The probe's own name is nowhere in that text, which is the whole defect: a
 # search by name passes the tree.
-if grep -rqF "$status_probe" "$scratch/leak-ws/CLAUDE.md" "$scratch/leak-ws/.claude/skills/headwater-authoring/SKILL.md"; then
+if grep -rqF "$status_probe" "$scratch/leak-ws/CLAUDE.md" "$scratch/leak-ws/.claude/skills/hw-corpus/SKILL.md"; then
     fail "the always-loaded text does not name the status probe" "it does, so a search by name would find the leak"
 else
     pass "the always-loaded text does not name the status probe"
 fi
 
 # THE decisive case: a declaration that keeps no leak string. The check names the
-# authoring skill with the ruling's identifier, and exits 1.
+# internal hw-corpus skill with the ruling's identifier, and exits 1. Since #1578 the
+# shipped authoring skill names no ruling, and hw-corpus carries the sentence.
 awk '/^leaks_kept:/ { skip = 1; next } skip && /^[^ #]/ { skip = 0 } !skip' \
     "$root/.headwater/probe.yml" > "$scratch/leak-probe.yml"
 HW_PROBE_YML="$scratch/leak-probe.yml" sh "$seal" --leak "$scratch/leak-ws" "$status_probe" \
     > "$scratch/leak.out" 2> "$scratch/leak.err"
 same "the leak check fails the present tree for the status probe" "1" "$?"
-present "and names the authoring skill with the leak string HW-DR-0052" \
-    "leak $status_probe .claude/skills/headwater-authoring/SKILL.md HW-DR-0052" "$scratch/leak.out"
+present "and names the hw-corpus skill with the leak string HW-DR-0052" \
+    "leak $status_probe .claude/skills/hw-corpus/SKILL.md HW-DR-0052" "$scratch/leak.out"
 present "and the leak string \`status: current\` too" \
-    "leak $status_probe .claude/skills/headwater-authoring/SKILL.md status: current" "$scratch/leak.out"
+    "leak $status_probe .claude/skills/hw-corpus/SKILL.md status: current" "$scratch/leak.out"
 
 # The committed declaration keeps the leak string on purpose (#1472, outcome b): the
 # probe is reported on its own line and never in a sufficiency rate.
 sh "$seal" --leak "$scratch/leak-ws" "$status_probe" > "$scratch/kept.out" 2> "$scratch/kept.err"
 same "a leak string the declaration keeps does not fail the check" "0" "$?"
 present "and the check still prints it, as kept" \
-    "kept $status_probe .claude/skills/headwater-authoring/SKILL.md HW-DR-0052" "$scratch/kept.out"
+    "kept $status_probe .claude/skills/hw-corpus/SKILL.md HW-DR-0052" "$scratch/kept.out"
 
 # A description is the one line a harness loads. A leak string in the body of a skill
 # is not always loaded, so it is no leak.
@@ -2767,7 +2768,7 @@ if [ -x "$engine" ]; then
     present "and the server starts in the mcp tree and lists its tools" \
         "lists route explain" "$scratch/dry.out"
     present "and the leak check reports the status probe as kept" \
-        "leak check, present tree: kept $status_probe .claude/skills/headwater-authoring/SKILL.md HW-DR-0052" "$scratch/dry.out"
+        "leak check, present tree: kept $status_probe .claude/skills/hw-corpus/SKILL.md HW-DR-0052" "$scratch/dry.out"
     present "and each leak-kept line on its own" "line 8 holds only leak-kept probes" "$scratch/dry.out"
 
     # A line that pools a leak-kept probe with one that is not fails the dry run,
@@ -2797,7 +2798,7 @@ if [ -x "$engine" ]; then
         --spec "$scratch/kept.spec" > "$scratch/dry-leak.out" 2> "$scratch/dry-leak.err"
     same "a leak string no declaration keeps fails the dry run with 8" "8" "$?"
     present "and the dry run prints the leak" \
-        "leak check, present tree: leak $status_probe .claude/skills/headwater-authoring/SKILL.md HW-DR-0052" "$scratch/dry-leak.out"
+        "leak check, present tree: leak $status_probe .claude/skills/hw-corpus/SKILL.md HW-DR-0052" "$scratch/dry-leak.out"
 
     sed 's/^      no-hook: .*/      no-hook: [.claude\/hooks\/no-such-hook.sh]/' "$root/.headwater/probe.yml" > "$scratch/no-such-hook.yml"
     printf 'campaign no-hook navigability\n' > "$scratch/tree.spec"

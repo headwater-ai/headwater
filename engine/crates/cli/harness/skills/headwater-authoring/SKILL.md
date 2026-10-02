@@ -72,4 +72,3 @@ Neither is worked around. Hand both to the `headwater-taxonomy` skill, which own
 Errors must reach zero before a commit. `headwater check --fix` writes the corrections the engine derives without judgment — a British spelling, a contraction whose expansion is one word, a retired term that names a replacement, and a missing reciprocal half — and it leaves every finding whose remedy is a rewrite. Read the diff.
 
 **An edit to a document that a probe reads marks each result over it.** The next `headwater generate` writes one sentence into each such result, and it keeps every verdict. `generate --check` asks for that regeneration once, and `headwater probe stale` names the results the edit reached.
-<!-- installed by headwater init --harness, digest sha256:3acbd9e8960ff984851c3b6017f5c4d8cdf94e938963bc128633df5253282434 -->

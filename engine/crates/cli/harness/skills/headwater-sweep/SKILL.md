@@ -77,4 +77,3 @@ It confirms the citation and the novelty. Every quotation is really in the docum
 It confirms nothing about whether you opened the slice. The extent the report states is the slice that was asked for, not the set you read, and nothing can tell the two apart. That is on you.
 
 It confirms nothing about whether you are right. Whether two passages contradict each other is your reading, the report says so on the line that carries it, and a second sweep may not return the same set at all. That is why absence means nothing here: a slice you did not sweep and a slice with no problem produce the same silence.
-<!-- installed by headwater init --harness, digest sha256:c0e0cc99fa6684199de826f23935f55847ea09bfbb3f7ec6f791945591e45f4c -->

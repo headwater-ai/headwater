@@ -69,6 +69,7 @@
 //! this workspace and the feature that would let it reads the terminal. So the
 //! strings here are written as one long line each and reach a caller folded.
 
+pub mod harness;
 pub mod paint;
 pub mod taxonomy_graph;
 
@@ -897,6 +898,22 @@ pub enum Verb {
                     runs them"
         )]
         git_config: bool,
+        #[arg(
+            long,
+            help = "write the skills and the agent Headwater ships for an agent harness: four \
+                    skills under `.claude/skills/` and `.agents/skills/`, and one agent under \
+                    `.claude/agents/`. A file the step did not write is refused and never \
+                    overwritten, and a second run writes nothing. On a repository that is already \
+                    bound it does this and nothing else"
+        )]
+        harness: bool,
+        #[arg(
+            long,
+            requires = "harness",
+            help = "write nothing, and exit 1 when a path of the harness set does not hold the \
+                    bytes of this release"
+        )]
+        check: bool,
     },
     Taxonomy {
         #[command(subcommand)]
