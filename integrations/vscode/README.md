@@ -36,7 +36,7 @@ The extension degrades to nothing and says nothing in each of these cases:
 
 This is the same fails-open posture as every hook in this repository. A missing engine never blocks your editor.
 
-For Copilot Chat the posture is the same, with one change for the reader that is a model. When the extension finds no engine, it registers no MCP server. When a relay session fails, the relay answers with a JSON-RPC error and not with an empty list. It stops a session after 60 seconds, because the `check` tool reads the whole corpus.
+For Copilot Chat the posture is the same, with one change for the reader that is a model. When the extension finds no engine, it registers no MCP server, and the *Headwater* output channel (View, then Output) says which binary it looked for. When a relay session fails, the relay answers with a JSON-RPC error and not with an empty list. It stops a session after 60 seconds, because the `check` tool reads the whole corpus.
 
 ## What it does not show
 
@@ -48,7 +48,7 @@ The extension needs VS Code 1.101 or later. That is the first release in which t
 
 Build or install the engine so that `headwater` is on your path, or set `headwater.path` to the binary. Then choose one of these:
 
-- Open this folder in VS Code and press F5. `.vscode/launch.json` starts a second VS Code window with the extension loaded and the repository root open, because the extension activates only in a folder that holds `.headwater/`. It puts `engine/target/dev-release` and `engine/target/release` first on the path of that window, so a built engine needs no `headwater.path` setting. The path uses a colon separator, so on Windows set `headwater.path` instead.
+- Open this folder in VS Code and press F5. `.vscode/launch.json` starts a second VS Code window with the extension loaded and the repository root open, because the extension activates only in a folder that holds `.headwater/`. It puts `engine/target/dev-release` and `engine/target/release` first on the path of that window, so a built engine needs no `headwater.path` setting. The path uses a colon separator, so on Windows set `headwater.path` instead. A checkout with no engine build, such as a fresh worktree, puts nothing on that path: build the engine there, or set `headwater.path` in the second window.
 - Package it with `npx @vscode/vsce package` in this folder, and install the result with `code --install-extension headwater-vscode-0.2.0.vsix`.
 
 The extension has no npm dependencies and no build step. It is licensed under Apache-2.0, and `LICENSE` in this folder is a copy of the repository's license. `.vscodeignore` keeps `test/` out of the package.

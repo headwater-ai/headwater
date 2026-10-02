@@ -138,16 +138,31 @@ function activate(context) {
 // The Copilot Chat surfaces: an MCP server for each Headwater folder, two
 // language model tools and the `@headwater` participant.
 function registerCopilot(context) {
+  // The provider registers nothing when it finds no engine, and says so only
+  // here: View > Output > Headwater. A fail-open extension shows no pop-up,
+  // and without this line a person cannot tell why no server is listed.
+  const log = vscode.window.createOutputChannel('Headwater', { log: true });
   const changed = new vscode.EventEmitter();
   context.subscriptions.push(
+    log,
     changed,
     vscode.lm.registerMcpServerDefinitionProvider('headwater', {
       onDidChangeMcpServerDefinitions: changed.event,
       provideMcpServerDefinitions() {
-        const bin = client.resolveBin(vscode.workspace.getConfiguration('headwater').get('path') || 'headwater');
-        if (!bin) return [];
+        const configured = vscode.workspace.getConfiguration('headwater').get('path') || 'headwater';
+        const bin = client.resolveBin(configured);
+        const folders = headwaterFolders();
+        if (!bin) {
+          log.warn(`MCP: no server registered, because \`${configured}\` names no binary on PATH or on disk. Set headwater.path to the engine.`);
+          return [];
+        }
+        if (folders.length === 0) {
+          log.info('MCP: no server registered, because no workspace folder holds `.headwater/`.');
+          return [];
+        }
+        log.info(`MCP: registering ${folders.map((f) => f.uri.fsPath).join(', ')} with engine ${bin}.`);
         const relay = path.join(context.extensionPath, 'relay.js');
-        return headwaterFolders().map((folder) => {
+        return folders.map((folder) => {
           const server = new vscode.McpStdioServerDefinition(
             `Headwater (${folder.name})`,
             process.execPath,
