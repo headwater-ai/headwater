@@ -450,9 +450,16 @@ fn the_harness_check_fails_on_an_absent_path_and_on_a_copy_an_earlier_release_wr
     let absent = ".agents/skills/headwater-taxonomy/SKILL.md";
     std::fs::remove_file(root.join(absent)).expect("removed");
     let refused = headwater(root, &["init", "--harness", "--check"]);
-    assert_eq!(refused.status.code(), Some(1), "an absent path fails `--check`");
+    assert_eq!(
+        refused.status.code(),
+        Some(1),
+        "an absent path fails `--check`"
+    );
     assert!(String::from_utf8_lossy(&refused.stderr).contains(absent));
-    assert!(!root.join(absent).exists(), "`--check` wrote the absent file");
+    assert!(
+        !root.join(absent).exists(),
+        "`--check` wrote the absent file"
+    );
 
     std::fs::copy(repository().join(absent), root.join(absent)).expect("the gap is filled");
     let earlier_text = "---\nname: headwater-sweep\n---\n\nAn earlier text.\n";
@@ -469,5 +476,8 @@ fn the_harness_check_fails_on_an_absent_path_and_on_a_copy_an_earlier_release_wr
         "a copy an earlier release wrote fails `--check`"
     );
     assert!(String::from_utf8_lossy(&refused.stderr).contains(path));
-    assert_eq!(std::fs::read_to_string(root.join(path)).expect("reads"), earlier);
+    assert_eq!(
+        std::fs::read_to_string(root.join(path)).expect("reads"),
+        earlier
+    );
 }
