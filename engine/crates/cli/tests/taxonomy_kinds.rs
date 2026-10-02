@@ -170,6 +170,8 @@ resolved:
       intent: walk an operator through a repair step by step
       answers:
         - how do I bring the widget line back up
+    notice:
+      intent: tell an operator something changed
   facets:
     owner:
       required: false
@@ -186,6 +188,15 @@ resolved:
       write_when: a widget failed in production and the failure is understood
     loose_note:
       purpose: procedure
+    alert_widget:
+      purpose: notice
+      write_when: an operator must hear of a change before the next shift
+    memo_widget:
+      purpose: notice
+    blank_widget:
+      is_a: widget_page
+      purpose: procedure
+      write_when: \"  \"
   shelves:
     widget_runbooks:
       path: ops/runbooks/**
@@ -245,9 +256,29 @@ fn a_declared_when_is_printed_inherited_and_overridden_and_its_absence_is_the_ga
     );
     assert!(!incident.contains(inherited), "{incident}");
     let loose = block(&report, "loose_note");
-    let gap = format!("  when      {}\n", headwater_query::kinds::UNDECLARED_WHEN);
+    let gap = format!("  when      {}", headwater_query::kinds::UNDECLARED_WHEN);
     assert!(loose.ends_with(&gap), "{loose}");
-    assert_eq!(report.matches("  when      ").count(), 3, "{report}");
+    // A purpose with no answers does not hide a declared sentence, and a kind
+    // under it that declares none prints the sentence for that case.
+    let alert = block(&report, "alert_widget");
+    assert!(
+        alert.ends_with("  when      an operator must hear of a change before the next shift"),
+        "{alert}"
+    );
+    let memo = block(&report, "memo_widget");
+    let unanswered = format!(
+        "  when      {}",
+        headwater_query::kinds::UNDECLARED_WHEN_UNANSWERED
+    );
+    assert!(memo.ends_with(&unanswered), "{memo}");
+    // A blank sentence, which `taxonomy validate` refuses in a source, is no
+    // sentence when a lock carries one: the kind takes its ancestor's.
+    let blank = block(&report, "blank_widget");
+    assert!(
+        blank.ends_with(&format!("  when      {inherited}\n")),
+        "{blank}"
+    );
+    assert_eq!(report.matches("  when      ").count(), 6, "{report}");
 
     let ran = kinds(&at, &["--json"]);
     assert_eq!(ran.code, Some(0), "{}{}", ran.out, ran.err);
@@ -268,6 +299,21 @@ fn a_declared_when_is_printed_inherited_and_overridden_and_its_absence_is_the_ga
                 "loose_note".to_string(),
                 "null".to_string(),
                 headwater_query::kinds::UNDECLARED_WHEN.to_string()
+            ),
+            (
+                "alert_widget".to_string(),
+                "an operator must hear of a change before the next shift".to_string(),
+                "null".to_string()
+            ),
+            (
+                "memo_widget".to_string(),
+                "null".to_string(),
+                headwater_query::kinds::UNDECLARED_WHEN_UNANSWERED.to_string()
+            ),
+            (
+                "blank_widget".to_string(),
+                inherited.to_string(),
+                "null".to_string()
             ),
         ]
     );
