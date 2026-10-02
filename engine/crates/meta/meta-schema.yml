@@ -88,12 +88,19 @@ meta_schema: headwater/taxonomy
 # family alone could not say so. It is a minor, because a source that wrote none
 # declares `to`, which is the reading every evidence relation already had.
 #
+# 0.10.0 adds `kind.write_when`, an optional sentence that says when to write a
+# document of the kind (#1580). `headwater taxonomy kinds` prints it, and a
+# kind that writes none takes its nearest ancestor's through `is_a`. It is
+# not named `when`, because `relations.expect[].when` already means a status
+# condition one level down in the same block. It is a minor, because a source
+# that wrote none declares none, and the verb then prints the gap it printed.
+#
 # No consumer compares this value against anything. `fixtures/schema.record`
 # carries it, so a bump shows up in a diff, and nothing refuses a source for
 # the version it was written against. So the position of a digit here is a
 # statement to a reader and never a gate: the removal above is refused at the
 # member and never at the version.
-version: 0.9.0
+version: 0.10.0
 
 # --- the root of a taxonomy source ------------------------------------------
 #
@@ -429,6 +436,7 @@ definitions:
       abstract: {scalar: boolean}
       is_a: {scalar: string}
       purpose: {scalar: string}
+      write_when: {scalar: string}
       identifier: {block: kind_identifier}
       voice: {scalar: string}
       lifecycle: {scalar: string}

@@ -99,6 +99,7 @@ add:
   kinds.obligation_record:
     is_a: governed_document
     purpose: obligation
+    write_when: the corpus owes something that nobody can supply now, such as an unmeasured claim or an answer that waits on a person
     identifier: {scheme: obligation_record_id}
     voice: declarative
     lifecycle: obligation

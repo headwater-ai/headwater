@@ -9,9 +9,10 @@
 //! [principle 2](../../../../docs/spec/00-vision-and-scope.md#design-principles)
 //! rules against.
 //!
-//! Every word of a report is the lock's, with one exception. No taxonomy
-//! declares when to write a kind: the meta-schema's `kind` block has no member
-//! for it. So each kind carries [`UNDECLARED_WHEN`], one fixed sentence that
+//! Every word of a report is the lock's, with one exception. A kind states
+//! when to write one in its `write_when` member, and a kind that states none
+//! takes its nearest ancestor's through `is_a`. Where no kind in the chain
+//! states one, the kind carries [`UNDECLARED_WHEN`], one fixed sentence that
 //! says so and sends the reader to the `answers` of the kind's purpose, or
 //! [`UNDECLARED_WHEN_UNANSWERED`] where that purpose declares none. A
 //! sentence written here for each kind would describe this repository's
@@ -29,10 +30,10 @@ use headwater_check::Shape;
 use headwater_yaml::json::Json;
 
 /// The "when to write one" line of a kind whose purpose declares answers,
-/// while no taxonomy declares a trigger.
+/// where no kind in its chain declares `write_when`.
 ///
-/// It is a fact about the meta-schema rather than about a kind, so it is the
-/// same sentence for every such kind of every taxonomy.
+/// It is a fact about the taxonomy's silence rather than about a kind, so it
+/// is the same sentence for every such kind of every taxonomy.
 pub const UNDECLARED_WHEN: &str = "the taxonomy declares no trigger for this kind; \
                                    the answers of its purpose are what the lock states instead";
 
@@ -67,6 +68,9 @@ pub struct Entry {
     pub facets: Vec<String>,
     /// Required sections after inheritance.
     pub sections: Vec<String>,
+    /// When to write one, as the kind or its nearest ancestor declares it,
+    /// and `None` where no kind in the chain declares one.
+    pub write_when: Option<String>,
 }
 
 impl Entry {
@@ -87,11 +91,27 @@ impl Entry {
         }
     }
 
-    /// The "when to write one" line for this kind.
-    pub fn when(&self) -> &'static str {
+    /// The "when to write one" line for this kind: the declared sentence,
+    /// or the gap sentence where the chain declares none.
+    pub fn when(&self) -> &str {
+        self.write_when.as_deref().unwrap_or_else(|| self.gap())
+    }
+
+    /// The gap sentence, which the report prints only where the chain
+    /// declares no `write_when`.
+    fn gap(&self) -> &'static str {
         match self.answers.is_empty() {
             true => UNDECLARED_WHEN_UNANSWERED,
             false => UNDECLARED_WHEN,
+        }
+    }
+
+    /// The gap sentence where the chain declares nothing, and `None` where it
+    /// declares a sentence.
+    pub fn note(&self) -> Option<&'static str> {
+        match self.write_when {
+            Some(_) => None,
+            None => Some(self.gap()),
         }
     }
 }
@@ -156,6 +176,7 @@ impl Kinds {
                 carriers,
                 facets: shape.required_facets(&kind.name),
                 sections: shape.required_sections(&kind.name),
+                write_when: shape.write_when_of(&kind.name).map(str::to_string),
             });
         }
         Kinds {
@@ -283,8 +304,11 @@ impl Kinds {
                                 (
                                     "when",
                                     Json::object([
-                                        ("declared", Json::Raw("null".to_string())),
-                                        ("note", Json::string(entry.when())),
+                                        ("declared", optional(&entry.write_when)),
+                                        (
+                                            "note",
+                                            optional(&entry.note().map(str::to_string)),
+                                        ),
                                     ]),
                                 ),
                             ])

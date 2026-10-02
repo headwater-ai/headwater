@@ -149,6 +149,12 @@ taxonomy: headwater/standard
 # on load where they differ, and it names both files and both numbers. A bump
 # moves both or neither. `package.yml` states why the value is declared twice.
 #
+# 4.16.0 declares `write_when` on every concrete kind of this file and of its
+# six bundles, 18 kinds, which meta-schema 0.10.0 admits: one sentence that
+# says when an author or an agent writes a document of the kind, and that
+# `headwater taxonomy kinds` prints (#1580). A kind that declares none reads
+# as before, so it is a minor. It follows 4.15.0.
+#
 # 4.15.0 declares `evidence_at: from` on `relations.discharges` in the
 # `decision-record` bundle, which meta-schema 0.9.0 admits: the evaluation at
 # the source end is the evidence for the obligation at the target end
@@ -291,7 +297,7 @@ taxonomy: headwater/standard
 # each carries a recipe rather than a bare instruction. One package version
 # covers every content file it publishes, this one included, so the number
 # here moves with a change to either.
-version: 4.15.0
+version: 4.16.0
 
 purposes:
   rationale:
@@ -427,6 +433,7 @@ kinds:
   decision:
     is_a: governed_document
     purpose: rationale
+    write_when: a choice between alternatives was made, and a later reader would otherwise question it or undo it
     identifier: {scheme: decision_id}
     voice: declarative
     lifecycle: standard
@@ -434,6 +441,7 @@ kinds:
   specification:
     is_a: governed_document
     purpose: behavior
+    write_when: a behavior of the system was added or changed, and a reader must know what to rely on
     voice: declarative
     lifecycle: standard
     sections: {require: [Scope, Behavior]}

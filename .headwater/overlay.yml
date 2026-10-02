@@ -187,6 +187,7 @@ add:
   kinds.probe:
     is_a: governed_document
     purpose: evidence
+    write_when: a question about what an agent does with this corpus needs a repeatable test, with the task and the expected result written down
     voice: declarative
     lifecycle: standard
     identifier: {scheme: probe_id}
@@ -204,6 +205,7 @@ add:
   kinds.probe_transcript:
     is_a: governed_document
     purpose: evidence
+    write_when: a probe ran, and its record of events must be kept so that a result can be graded from it
     voice: narrative
     lifecycle: standard
     identifier: {scheme: run_id}
@@ -234,6 +236,7 @@ add:
   kinds.probe_result:
     is_a: governed_document
     purpose: evidence
+    write_when: never by hand, because `headwater generate` writes one from a transcript, its expectations and the grader version
     voice: declarative
     lifecycle: standard
     identifier: {scheme: result_id}
@@ -466,6 +469,7 @@ add:
   kinds.interface_contract:
     is_a: governed_document
     purpose: behavior
+    write_when: a verb, a tool or a file format that a user calls was added, or what it promises changed
     voice: declarative
     lifecycle: standard
     language: ste_house
@@ -564,6 +568,7 @@ add:
   kinds.tutorial:
     is_a: governed_document
     purpose: procedure
+    write_when: a reader who has never used Headwater needs one guided path to a first working result
     voice: declarative
     lifecycle: standard
     language: ste_house
@@ -619,6 +624,7 @@ add:
   kinds.subsystem_spec:
     is_a: governed_document
     purpose: behavior
+    write_when: the design of a part of the engine was added or changed, or an invariant that its code must keep moved
     voice: declarative
     lifecycle: standard
     language: ste_house
@@ -717,6 +723,7 @@ add:
   kinds.how_to:
     is_a: governed_document
     purpose: procedure
+    write_when: a reader who knows Headwater needs the steps of one task, and no page gives them
     voice: declarative
     lifecycle: standard
     language: ste_house
@@ -1015,6 +1022,7 @@ add:
   kinds.requirement:
     is_a: governed_document
     purpose: requirement
+    write_when: an issue or a decision asks for something that the system must do, and nothing states it as a need
     voice: prospective
     lifecycle: standard
     language: ste_house
@@ -1054,6 +1062,7 @@ add:
   kinds.acceptance_criterion:
     is_a: governed_document
     purpose: requirement
+    write_when: a Done-when clause or a requirement needs a statement that a test can pass or fail
     voice: prospective
     lifecycle: standard
     language: ste_house
@@ -1088,6 +1097,7 @@ add:
   kinds.verification:
     is_a: governed_document
     purpose: evidence
+    write_when: a test was added or changed to prove a requirement or an acceptance criterion
     voice: declarative
     lifecycle: standard
     identifier: {scheme: verification_id}
@@ -1272,6 +1282,7 @@ add:
   kinds.process_decision:
     is_a: governed_document
     purpose: rationale
+    write_when: the way this repository builds, reviews or merges its work changed by a choice that a later agent would otherwise undo
     voice: declarative
     lifecycle: standard
     language: ste_house
@@ -1324,6 +1335,7 @@ add:
   kinds.process_spec:
     is_a: governed_document
     purpose: behavior
+    write_when: a stage, a script or an agent of the build process gained or changed a behavior that other stages rely on
     voice: declarative
     lifecycle: standard
     language: ste_house
@@ -1334,6 +1346,7 @@ add:
   kinds.process_evaluation:
     is_a: governed_document
     purpose: evidence
+    write_when: the build process was measured, and a choice about how it runs depends on the result
     voice: narrative
     lifecycle: standard
     language: ste_house
@@ -1344,6 +1357,7 @@ add:
   kinds.process_obligation:
     is_a: governed_document
     purpose: obligation
+    write_when: the build process, its tools or its CI owe something that nobody can supply now
     voice: declarative
     lifecycle: obligation
     language: ste_house
@@ -1425,6 +1439,7 @@ add:
   kinds.explanation:
     is_a: governed_document
     purpose: behavior
+    write_when: a reader needs to know why Headwater has its design, apart from any one task
     voice: declarative
     lifecycle: standard
     language: ste_house
@@ -1437,6 +1452,7 @@ add:
   kinds.process_explanation:
     is_a: governed_document
     purpose: behavior
+    write_when: a reader needs to know why the build process works the way it does, apart from any one stage
     voice: declarative
     lifecycle: standard
     language: ste_house
@@ -1522,6 +1538,7 @@ add:
   kinds.library_doctrine:
     is_a: governed_document
     purpose: rationale
+    write_when: a principle from outside this repository governs how the engine or the corpus is designed, and no page states it
     voice: declarative
     lifecycle: standard
     language: ste_house

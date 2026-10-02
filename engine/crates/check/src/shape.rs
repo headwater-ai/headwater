@@ -362,6 +362,10 @@ pub struct Kind {
     /// permits a concrete kind to inherit one from an abstract parent, and
     /// [`Shape::purpose_of`] is the inherited answer.
     pub purpose: Option<String>,
+    /// `write_when`, the sentence that says when to write a document of this
+    /// kind, as this kind declares it (#1580). [`Shape::write_when_of`] is the
+    /// inherited answer.
+    pub write_when: Option<String>,
     /// `facets.require`, as this kind declares it and without its ancestors.
     /// [`Shape::required_facets`] is the inherited set.
     pub require: Vec<String>,
@@ -811,6 +815,16 @@ impl Shape {
         self.purposes.iter().find(|purpose| purpose.name == name)
     }
 
+    /// When to write a document of a kind, through the chain that declares
+    /// it: the kind's own `write_when`, or its nearest ancestor's. `None`
+    /// where no kind in the chain declares one, which the caller reports as
+    /// a gap rather than filling.
+    pub fn write_when_of(&self, kind: &str) -> Option<&str> {
+        self.ancestry(kind)
+            .into_iter()
+            .find_map(|step| step.write_when.as_deref())
+    }
+
     /// Whether a kind is an `ancestor`, itself included.
     ///
     /// This is what makes `to: [governed_document]` admit a `review_record`. A
@@ -918,6 +932,7 @@ fn read_kind(name: &str, value: &Value, span: Span) -> Result<Kind, DeclarationE
         name: name.to_string(),
         is_a: scalar(map, "is_a"),
         purpose: scalar(map, "purpose"),
+        write_when: scalar(map, "write_when"),
         require: facets
             .map(|map| sequence(map, "require"))
             .unwrap_or_default(),

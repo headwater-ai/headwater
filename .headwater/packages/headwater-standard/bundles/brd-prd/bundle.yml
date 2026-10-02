@@ -136,6 +136,7 @@ add:
   kinds.brd:
     is_a: governed_document
     purpose: requirement
+    write_when: a business need is about to be funded or built, and nothing states what must hold for it
     identifier: {scheme: brd_id}
     voice: prospective
     lifecycle: standard
@@ -167,6 +168,7 @@ add:
   kinds.prd:
     is_a: governed_document
     purpose: requirement
+    write_when: a product change is planned, and nothing states what it must do or what decides that it is done
     identifier: {scheme: prd_id}
     voice: prospective
     lifecycle: standard

@@ -194,6 +194,7 @@ shelves:
 kinds:
   decision:
     purpose: rationale                 # required; a kind without one is invalid
+    write_when: a choice between alternatives was made, and a later reader would otherwise undo it
     identifier: {scheme: decision_id}
     voice: declarative
     lifecycle: standard
@@ -298,6 +299,8 @@ Purpose does real work downstream:
 - **Routing** ([spec 5](05-ai-integration.md)) matches a task's intent against declared purposes before it matches text. "Why is it like this?" resolves to `rationale` kinds. "what does it do?" resolves to `behavior` kinds. This is a search over intentional structure, not over prose. It is far cheaper and more precise than lexical ranking alone.
 - **`headwater explain`** states a document's purpose alongside its kind. A reader who opens a document thus knows what it is *for* before they read it.
 - **The core** (below) is expressed in terms of purposes. This lets an adopter rename everything and still run the same method in a recognisable way.
+
+A purpose tells a reader what a kind is for. It does not tell a writer when to write one. So a kind can also declare `write_when`, one sentence that names the event in the work that calls for a document of the kind. An example is "a choice between alternatives was made". A kind that declares none takes the sentence of its nearest ancestor through `is_a`, so an abstract kind can state it once for each kind under it. The member is optional. `headwater taxonomy kinds` prints the sentence, and where no kind in the chain declares one, it prints a fixed sentence that states the gap ([the `headwater taxonomy` contract](../interfaces/headwater-taxonomy.md)).
 
 ## Language is declared, not assumed
 

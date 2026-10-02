@@ -24,6 +24,7 @@ add:
   kinds.tutorial:
     is_a: governed_document
     purpose: procedure
+    write_when: a new reader needs one guided path from nothing to a first working result
     identifier: {scheme: tutorial_id}
     voice: declarative
     lifecycle: standard
@@ -31,6 +32,7 @@ add:
   kinds.how_to:
     is_a: governed_document
     purpose: procedure
+    write_when: a reader who knows the system needs the steps of one task, and no page gives them
     identifier: {scheme: how_to_id}
     voice: declarative
     lifecycle: standard
@@ -38,6 +40,7 @@ add:
   kinds.reference:
     is_a: governed_document
     purpose: behavior
+    write_when: a command, an option, a format or an interface was added or changed, and a reader looks up what it does
     identifier: {scheme: reference_id}
     voice: declarative
     lifecycle: standard
@@ -45,6 +48,7 @@ add:
   kinds.explanation:
     is_a: governed_document
     purpose: rationale
+    write_when: a reader needs to know why the system has its design, apart from any one task
     identifier: {scheme: explanation_id}
     voice: declarative
     lifecycle: standard
