@@ -422,6 +422,17 @@ same 'a ruling outside gated, deferred, refused and open is refused with exit 2'
 sh "$tool" rule "$ruled" 20 gated >/dev/null 2>&1; status=$?
 same 'a ruling with no reason is refused with exit 2' 2 "$status"
 
+printf '\n# next holds a line marked blocked until the parent rules it open\n'
+# The owner ruled on 2026-10-02 that hw-queue checks each issue's GitHub
+# `blocked by` links and raises an open one to the parent, rather than
+# dropping the issue or building it unremarked.
+blocked=$(sh "$tool" start blocked 2>/dev/null)
+printf '# Queue\n\n1. #80 Waits | 0.12 | x | narrow | blocked (#79, 0.11)\n2. #81 Free | 0.12 | x | narrow\n' > "$blocked/queue.md"
+printf -- '- 2026-10-02 — OWNER (2026-10-02) #80: build it.\n' >> "$blocked/decisions.md"
+same 'a blocked line is skipped, and an OWNER line does not release it' 81 "$(sh "$tool" next "$blocked" 2>&1)"
+sh "$tool" rule "$blocked" 80 open 'the blocker merged' >/dev/null 2>&1
+same '  and the parent ruling it open releases it' 80 "$(sh "$tool" next "$blocked" 2>&1)"
+
 printf '\n# drain while an adjudicate is in flight: the claim waits for the next session\n'
 # Verify-1 of PR #1279: the parent claims on an adjudicate report, which can
 # arrive after drain has started. `claim` then writes nothing. The parent

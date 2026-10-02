@@ -3,7 +3,7 @@ id: HW-SPEC-orchestration-architecture
 status: current
 status_since: 2026-09-22
 summary: "The six stages of a build-order run, what each one owns and never does, where the veto sits, and how claims order the merges."
-last_verified: 2026-10-01
+last_verified: 2026-10-02
 title: "Orchestration architecture"
 provenance:
   warrant: asserted
@@ -30,7 +30,7 @@ relations:
     - to: .claude/commands/next.md
       verified_revision: sha256:69dd88bcbea169b0f42438d67e4627716f847128982ea38072a6857e4188d530
     - to: .claude/agents/hw-queue.md
-      verified_revision: sha256:24ddc87861f3f7bada00eb1f779f41627a40f9f6b1eb7b1411558b0a356eaf22
+      verified_revision: sha256:141a53657679aa2278c6085c66f91ba8ad91c34de96f650eb505f25bfb0071e1
     - to: .claude/agents/hw-adjudicate.md
       verified_revision: sha256:d33ccaa7b073f82caccf0a48b66fb933a96d518b9e4ab78a5c63c85190dd3045
     - to: .claude/agents/hw-iterate.md
@@ -40,9 +40,9 @@ relations:
     - to: .claude/agents/hw-verify.md
       verified_revision: sha256:c98a5e49c01127218a1a4b3b0e42bd30ede5c729b0c23ca9ee65e471ff5e55f8
     - to: .claude/agents/hw-integrate.md
-      verified_revision: sha256:2b9a3b297f09fd03d49fe57e280653dc610bd8cc85e091d504ec03909af295dc
+      verified_revision: sha256:60e02c40d9917aa958909997f7d07f5786b70abaadacb3a250c518149308cadb
     - to: .claude/skills/hw-run-policy/SKILL.md
-      verified_revision: sha256:05bbe166e4d10a953dfbbca09100f142909ad56670dfa0adf5edbe3e2c562c36
+      verified_revision: sha256:5cdeb3c3768094d621200f6532b0fc902c53b846b1f7004acedb7c95c1f9a4ea
     - to: .claude/skills/hw-verification-bar/SKILL.md
       verified_revision: sha256:a68ce6b14b5a8d7068aeafd8c7443e0497a55b4e444e2b971daa1da738c2153b
 ---
@@ -126,7 +126,7 @@ flowchart LR
 
 [`.claude/agents/hw-queue.md`](../../../.claude/agents/hw-queue.md) reads the whole issue list and the milestone list once, and writes an ordered file of eligible issues into the run directory.
 
-**It owns the population and the order.** It applies the value rule, sorts a defect above everything else, and marks each candidate with the artifacts that change most likely regenerates. The parent then reads one report and never the board. A board dump read once is re-read on every later turn of the run.
+**It owns the population and the order.** It applies the value rule, sorts a defect above everything else, and marks each candidate with the artifacts that change most likely regenerates. The parent then reads one report and never the board. A board dump read once is re-read on every later turn of the run. An issue with an open GitHub `blocked by` link stays in its place, marked `blocked`, and `run-dir.sh next` holds it until the parent rules it `open`. So the queue raises a dependency to the parent and never decides it.
 
 **It never claims an issue and never edits the board.** A claim belongs to the construction stage, so that the claim is atomic and survives an agent that dies. A misfiled issue, a finished milestone or a missing label is a line in this stage's report. [`headwater-product-owner`](../../../.claude/agents/headwater-product-owner.md) owns the structure of the board and never its scope.
 

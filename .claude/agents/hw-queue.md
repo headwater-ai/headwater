@@ -18,8 +18,11 @@ The file is an ordered list, one line per eligible issue: number, title, milesto
 
 The report ends with this block, which the parent acts on:
 
-    QUEUE: <count> eligible, <count> unmilestoned, <count> bug, <count> adopter-blocking
+    QUEUE: <count> eligible, <count> unmilestoned, <count> bug, <count> adopter-blocking, <count> blocked
     TOP: #<N> <title>
+    BLOCKED: #<N> by #<M> (<M's milestone>, <M's place: queue line k, or why M is not in the queue>)
+
+One `BLOCKED` line for each open blocker of each queued issue, and none when no issue is blocked.
 
 ## How you find each one
 
@@ -32,6 +35,12 @@ The project misses newly filed issues and every `adopter-blocking` one has been 
     gh api "repos/headwater-ai/headwater/milestones?state=all&per_page=100"
 
 The order: one labeled `bug` sorts above everything, whatever ground it stands on, because the value rule makes a defect eligible on its own; then an issue must stand on one of the four grounds of the value rule, and one labeled `adopter-blocking` sorts above the rest; then anything In Progress and unfinished; then `correctness-root`, because every check trusts it silently; then the item that unblocks the most others; otherwise the lowest number in the lowest milestone with open issues. **Every open milestone is a version, and lowest is numeric:** the title opens with the version, and 0.2 sorts before 0.3 and before 0.10. A milestone whose title opens with no version is a finding for `headwater-product-owner`, and you sort it last. An issue that waits on the owner's ruling stays in the queue at its place, marked `ruling`, and is never dropped in silence: the parent asks the owner at the top of the run and skips the line only where the owner defers. An issue the dispatch or the owner gates for this run is not a prose note: record it with `sh tools/run/run-dir.sh rule <run> <issue> gated <reason>`, because `run-dir.sh next` reads that line and not `queue.md` (in run `20260929-1205` a gate written only as prose let `next` offer #917). An issue that waits on a person's action outside this repository is not eligible, and you name it in your report. Neither kind holds the next version back. When that milestone has no eligible issue left, look at the eligible issues carrying no milestone before moving to the next milestone. They are invisible to every rule above and have sat unreachable for weeks before.
+
+**Check the `blocked by` links of every issue you queue, and respect them.** The product owner records each dependency between issues as a GitHub `blocked by` link:
+
+    gh api repos/headwater-ai/headwater/issues/<N>/dependencies/blocked_by --jq '[.[] | select(.state == "open") | .number]'
+
+An issue with an open blocker stays in the queue at its place, and its last field reads `blocked (#<M>, <milestone>)`. You do not drop it and you do not reorder past the selection order to hide it. `run-dir.sh next` holds a `blocked` line until the parent rules it `open`, so the parent decides, not you: it builds the blocker first, proceeds with a reason, or gates the issue. A blocker in a later milestone than the issue it blocks is a finding for `headwater-product-owner`, because the milestone order then contradicts the link. The rule "the item that unblocks the most others" counts open issues in each candidate's `blocking` list, read the same way from `dependencies/blocking`.
 
 Read an issue body with `sh tools/run/gh-issue.sh body <N>`. Read only the bodies you need to rank, not all of them.
 
