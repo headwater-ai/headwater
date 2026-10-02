@@ -1375,6 +1375,14 @@ pub enum TaxonomyWord {
         )]
         legend: bool,
     },
+    Kinds {
+        #[arg(
+            long,
+            help = "write the same content as one JSON document, which is what the MCP `kinds` \
+                    tool returns as its structured content"
+        )]
+        json: bool,
+    },
     #[command(external_subcommand)]
     Other(Vec<String>),
 }

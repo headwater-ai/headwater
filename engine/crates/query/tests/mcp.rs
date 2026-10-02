@@ -568,11 +568,11 @@ fn every_tool_annotates_what_it_does() {
     for tool in &WRITE_CLASS {
         assert!(tool.writes, "{}", tool.name);
     }
-    // Six reads and two writes, and the two annotations are the two values.
-    assert_eq!(listed.matches(r#""readOnlyHint":true"#).count(), 6);
+    // Seven reads and two writes, and the two annotations are the two values.
+    assert_eq!(listed.matches(r#""readOnlyHint":true"#).count(), 7);
     assert_eq!(listed.matches(r#""readOnlyHint":false"#).count(), 2);
     assert_eq!(listed.matches(r#""destructiveHint":true"#).count(), 2);
-    assert_eq!(listed.matches(r#""destructiveHint":false"#).count(), 6);
+    assert_eq!(listed.matches(r#""destructiveHint":false"#).count(), 7);
 }
 
 /// A read answers the same bytes twice, which is what an agent depends on.
