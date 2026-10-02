@@ -1,19 +1,19 @@
 ---
 name: headwater-orient
-description: Find what this corpus already says about a subject, before reading any of it. Use at the start of a task that names a document, a decision, an obligation or a concept of this repository, when a question is about what was already decided, and whenever the alternative is a search across `docs/` or reading a specification part end to end. It answers from the graph the engine already built, and it never replaces reading the document it finds.
+description: Find what this corpus already says about a subject, before reading any of it. Use at the start of a task that names a document, a decision, an obligation or a concept of this repository, when a question is about what was already decided, and whenever the alternative is a search across the corpus or reading a long document end to end. It answers from the graph the engine already built, and it never replaces reading the document it finds.
 ---
 
 # Orientation
 
-The corpus is typed, and the engine holds a graph over it. So the cost of finding out what this repository already says about a subject is one command, and the cost of reading a specification part to discover that it was the wrong one is most of a session's attention.
+The corpus is typed, and the engine holds a graph over it. So the cost of finding out what this repository already says about a subject is one command, and the cost of reading a long document to discover that it was the wrong one is most of a session's attention.
 
 This skill is the first thing in a task, and it is finished as soon as the right document is open. It finds; it does not read for you.
 
-## Start with what the hook already handed you
+## Start with what a hook already handed you
 
-`.claude/hooks/intent.sh` runs `headwater route` on every prompt, and prints the documents it matched above the first tool call. Those pointers are the answer to "where does this subject live", already paid for. Read them before searching for anything.
+Where a hook of this repository runs `headwater route` on every prompt, the documents it matched are printed above the first tool call. Those pointers are the answer to "where does this subject live", already paid for. Read them before searching for anything.
 
-The hook is silent when the route matched nothing, which is a result rather than a failure. Silence means the subject is not one a declared purpose answers, and a search is then reasonable.
+A route that matched nothing prints nothing, which is a result rather than a failure. Silence means the subject is not one a declared purpose answers, and a search is then reasonable.
 
 ## The three verbs
 
@@ -40,10 +40,10 @@ Open an entry point when the subject is unknown. Use `explain` when a document i
 
 ## When a search is the right tool
 
-A search over `docs/` is right for a literal string: a spelling, an identifier, a phrase in an error message, a term whose home is what you are trying to find out. It is wrong for a question about subject, status, authority or relationship, because none of those is written in the text of the document that carries them.
+A search over the corpus is right for a literal string: a spelling, an identifier, a phrase in an error message, a term whose home is what you are trying to find out. It is wrong for a question about subject, status, authority or relationship, because none of those is written in the text of the document that carries them.
 
 The test is whether you could name the file the answer is in. If yes, `explain` it. If no, and the question is about meaning rather than characters, `route` it.
 
 ## What orientation does not settle
 
-`explain` reports the warrant of a document and never whether it is right. Contradictions between documents that each pass every rule are what a coherence sweep is for, and [headwater-sweep](../headwater-sweep/SKILL.md) carries it. Whether the corpus owes something that nobody has written is a question for the same sweep, and for `headwater check` when a rule already reads it.
+`explain` reports the warrant of a document and never whether it is right. Contradictions between documents that each pass every rule are what a coherence sweep is for, and the `headwater-sweep` skill carries it. Whether the corpus owes something that nobody has written is a question for the same sweep, and for `headwater check` when a rule already reads it.

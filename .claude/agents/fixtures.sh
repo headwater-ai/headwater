@@ -10,7 +10,7 @@
 # definition's instructions, and a skill name nobody matches never loads. This
 # suite is what reports the drift.
 #
-# Thirteen cases, and the ceilings are the reason two of them exist. The parent's
+# Fourteen cases, and the ceilings are the reason two of them exist. The parent's
 # context is the unit of cost ([HW-PD-0003]), so the command and the doctrine
 # carry a byte ceiling declared here, once, and CLAUDE.md carries one because
 # every agent pays for it on every dispatch ([HW-PD-0001]).
@@ -611,6 +611,73 @@ why=$(throughput_owners "$scratch/dot")
 case "$why" in
     *'names a corpus fold on FOOTPRINT: .headwater/corpus.json'*) pass 'and a corpus fold put back on FOOTPRINT is reported' ;;
     *) fail 'a corpus fold put back on FOOTPRINT is reported' "reported: \`$why\`" ;;
+esac
+
+# --- 14. every file under .claude is shipped or named as internal --------------
+
+# `headwater init --harness` writes the shipped set from text compiled into the
+# binary, and `engine/crates/cli/harness/` is that text (#1578). Everything
+# else under `.claude/agents`, `.claude/skills` and `.claude/commands` is this
+# repository's own build order and must not reach an adopter. So each name is
+# in exactly one of two lists: the compiled set, read from the tree, and the
+# internal list below. A new file in neither fails, and so does an internal
+# name placed in the compiled set.
+printf '\n# every file under .claude is in the shipped set or named as internal\n'
+internal_names='hw-* headwater-engine headwater-product-owner repo-cleanup ste-editor next next-run product-owner'
+is_internal() {
+    for pattern in $internal_names; do
+        case $1 in $pattern) return 0 ;; esac
+    done
+    return 1
+}
+# The names of the compiled set under a harness source directory.
+shipped_names() {
+    for file in "$1"/skills/*/SKILL.md "$1"/agents/*.md; do
+        [ -f "$file" ] || continue
+        case $file in
+            */SKILL.md) basename "$(dirname "$file")" ;;
+            *) basename "$file" .md ;;
+        esac
+    done
+}
+# Every reason the boundary does not hold, for a harness source and a .claude.
+boundary() {
+    harness=$1 dot=$2
+    shipped=$(shipped_names "$harness")
+    [ -n "$shipped" ] || printf ' the compiled set under %s is empty' "$harness"
+    for name in $shipped; do
+        is_internal "$name" && printf ' %s is internal and in the compiled set' "$name"
+    done
+    for file in "$dot"/agents/*.md "$dot"/commands/*.md "$dot"/skills/*/SKILL.md; do
+        [ -f "$file" ] || continue
+        case $file in
+            */SKILL.md) name=$(basename "$(dirname "$file")") ;;
+            *) name=$(basename "$file" .md) ;;
+        esac
+        printf '%s\n' "$shipped" | grep -qx "$name" && continue
+        is_internal "$name" || printf ' %s is neither shipped nor named as internal' "$name"
+    done
+}
+why=$(boundary "$root/engine/crates/cli/harness" "$root/.claude")
+if [ -z "$why" ]; then
+    pass "every name under .claude is shipped ($(shipped_names "$root/engine/crates/cli/harness" | wc -l | tr -d ' ')) or internal"
+else
+    fail 'every name under .claude is shipped or internal' "$why"
+fi
+# The two refusal arms: an internal agent in the compiled set, and a new file
+# in neither list.
+mkdir -p "$scratch/harness/agents" "$scratch/harness/skills/headwater-orient"
+cp "$root/engine/crates/cli/harness/skills/headwater-orient/SKILL.md" "$scratch/harness/skills/headwater-orient/SKILL.md"
+cp "$root/.claude/agents/hw-build.md" "$scratch/harness/agents/hw-build.md"
+case $(boundary "$scratch/harness" "$root/.claude") in
+    *'hw-build is internal and in the compiled set'*) pass 'and an internal agent placed in the compiled set is reported' ;;
+    *) fail 'an internal agent placed in the compiled set is reported' 'the boundary passed it' ;;
+esac
+mkdir -p "$scratch/newdot/agents"
+printf -- '---\nname: unsorted\n---\n' > "$scratch/newdot/agents/unsorted.md"
+case $(boundary "$root/engine/crates/cli/harness" "$scratch/newdot") in
+    *'unsorted is neither shipped nor named as internal'*) pass 'and a file in neither list is reported' ;;
+    *) fail 'a file in neither list is reported' 'the boundary passed it' ;;
 esac
 
 printf '\n%s passed, %s failed\n' "$passed" "$failed"

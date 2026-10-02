@@ -5,19 +5,19 @@ description: Run a coherence sweep over a slice of this repository's corpus — 
 
 # Headwater coherence sweep
 
-A sweep is the mechanism for what no rule reads. The check layer decides cohesion: links that land, facets that hold, identifiers that bind. Coherence is whether the corpus adds up to one account, and [spec 4](../../../docs/spec/04-assurance-model.md#discharging-coherence-obligations-the-assisted-sweep) says that structural checks cannot discharge it.
+A sweep is the mechanism for what no rule reads. The check layer decides cohesion: links that land, facets that hold, identifiers that bind. Coherence is whether the corpus adds up to one account, and structural checks cannot discharge it.
 
 **You are the middle part of the mechanism, and there is no other.** The engine writes a briefing, you read the documents, and the engine reads your file back. Nothing in the engine reaches a model. If you do not read the documents, nothing does.
 
-**Nothing gates on your output, and that is deliberate.** `headwater sweep report` exits 0 whatever it finds, no gate and no CI job runs it, and a run of it can never fail a build. Your output is a proposal that a person reads and accepts. So do not soften a finding to be safe, and do not pad the list to look productive. A finding nobody can adjudicate in seconds is noise, and noise is what makes a team turn the whole sweep off.
+**Nothing gates on your output, and that is deliberate.** `headwater sweep report` exits 0 whatever it finds, and a run of it can never fail a build. Your output is a proposal that a person reads and accepts. So do not soften a finding to be safe, and do not pad the list to look productive. A finding nobody can adjudicate in seconds is noise, and noise is what makes a team turn the whole sweep off.
 
 ## The three steps
 
 ### 1. Ask for the briefing
 
-    headwater sweep plan --under docs/spec
+    headwater sweep plan --under <dir>
 
-`--under` is the slice, as a path prefix. There is no sampling rule and the engine will not pick one for you: name the corner of the corpus that is worth the reading. Without the flag the slice is the whole corpus, which is usually more than one sweep should claim.
+`--under` is the slice, as a path prefix under the corpus root. There is no sampling rule and the engine will not pick one for you: name the corner of the corpus that is worth the reading. Without the flag the slice is the whole corpus, which is usually more than one sweep should claim.
 
 The briefing gives you every classified document in the slice with its identifier, kind, title and summary, plus **every edge the graph already declares between two members**. It also states the extent: how many documents are in the slice against how many are in the corpus.
 
@@ -31,15 +31,15 @@ Report only these five classes:
 - **quiet_supersession** — a newer document has overtaken an older claim, and the older one still reads as live.
 - **undefined_concept** — a term is used across the slice and defined in none of it.
 - **audience_mismatch** — the audience the document declares could not act on what it says.
-- **unwritten_section** — a heading the kind requires, over prose that says nothing about it. [HW-OBL-0113](../../../docs/obligations/0113-every-check-passes-a-document-that-is-still-the-scaffolder-s-placeholder.md) is why this class exists: a decision record whose sections each read the scaffolder's own prompt passed every check.
+- **unwritten_section** — a heading the kind requires, over prose that says nothing about it. A record whose sections each read the scaffolder's own prompt passes every check, and this class is how a sweep finds it.
 
-**Readability is not one of them, and no sixth class is coming.** [Q24](../../../docs/decisions/0024-q24-readability-and-what-a-sweep-can-be-asked-about.md) rules that every class above names two things that do not fit, and that a finding about prose being hard to read names one. With no second term the quotation is the finding rather than evidence for it, so the intake would confirm what `grep` confirms. That work is a hand pass with the `ste-editor` skill.
+**Readability is not one of them, and no sixth class is coming.** Every class above names two things that do not fit, and a finding about prose being hard to read names one. With no second term the quotation is the finding rather than evidence for it, so the intake would confirm what `grep` confirms. That work is a hand pass over the prose.
 
-**A source file is not a slice member either.** The same ruling: `--under engine` names nothing because the census types documents, and `intake` refuses a path that is not a typed row of it. That refusal is what catches a model inventing a path, and over a tree where any file may be a member it weakens to "the file exists".
+**A source file is not a slice member either.** `--under src` names nothing, because the census types documents, and `intake` refuses a path that is not a typed row of it. That refusal is what catches a model inventing a path, and over a tree where any file may be a member it weakens to "the file exists".
 
-**A stated practice that no path backs is a hand pass beside the sweep, and it is not a sixth class.** The shape is a document that says a named path holds a practice, and a tree that holds nothing at that path. "Specs live in" a directory, "the source of truth for" a subject, and a literal command such as an `ls` of a directory are the usual forms. It cannot be a class, because its second term is a path in the tree and not a typed document. The second ruling of Q24 makes `intake` refuse a path that is not a census row, so `headwater sweep report` cannot carry this finding. The owner ruled on [#496](https://github.com/headwater-ai/headwater/issues/496#issuecomment-5770898999) on 2026-09-22 that it is a sweep pattern and not a check rule, because to tell an absent directory from one that nobody meant to exist is a judgment. Run it in three steps. First, collect every path that the governing prose names. From the corpus root, this command prints each backticked path whose first segment the tree tracks and whose whole path the tree does not track, with its file and line:
+**A stated practice that no path backs is a hand pass beside the sweep, and it is not a sixth class.** The shape is a document that says a named path holds a practice, and a tree that holds nothing at that path. "Specs live in" a directory, "the source of truth for" a subject, and a literal command such as an `ls` of a directory are the usual forms. It cannot be a class, because its second term is a path in the tree and not a typed document, and `intake` refuses a path that is not a census row. It is a hand pass and not a check rule, because to tell an absent directory from one that nobody meant to exist is a judgment. Run it in three steps. First, collect every path that the governing prose names. From the repository root, this command prints each backticked path whose first segment the tree tracks and whose whole path the tree does not track, with its file and line:
 
-    git ls-files '*.md' | grep -v -e '^docs/reviews/' -e '/fixtures/' | while read -r f; do
+    git ls-files '*.md' | while read -r f; do
       grep -no '`[.a-zA-Z_][a-zA-Z0-9_.-]*/[a-zA-Z0-9_./-]*`' "$f" | while IFS=: read -r n p; do
         p=${p#?}; p=${p%?}
         case "$p" in ./*|*..*) continue;; esac
@@ -48,7 +48,7 @@ Report only these five classes:
       done
     done
 
-Second, read the line of every path it prints, and not a sample. Third, judge each one: a claim about this tree, an example, a path in another repository, a retired tool that the text says is retired, or a file that a build or a run writes. Only the first is a finding. The command misses a path with no slash, a path outside backticks, and a code span that holds a space, such as a whole command. So read the lines around each claim that it finds for the same path in those forms. [The n8n evaluation](../../../docs/evaluations/n8n-worked-example.md#what-this-taxonomy-would-report-and-what-it-does-not) records one run of it over this repository, with its denominator. A finding goes to an obligation record, or to one line of the run's intake file during a build-order run. It never goes to `sweep report`.
+Second, read the line of every path it prints, and not a sample. Third, judge each one: a claim about this tree, an example, a path in another repository, a retired tool that the text says is retired, or a file that a build or a run writes. Only the first is a finding. The command misses a path with no slash, a path outside backticks, and a code span that holds a space, such as a whole command. So read the lines around each claim that it finds for the same path in those forms. A finding goes wherever this repository records an open gap. It never goes to `sweep report`.
 
 Two rules bound what you may report.
 
@@ -66,9 +66,9 @@ The report tells you what was carried and what was refused, and it names the tes
 
 ## The best outcome is an edge, and you do not write it
 
-Spec 4: the best outcome of a sweep is not a finding but a declared `conflicts_with`. After the edge is declared the engine owns the problem permanently and no sweep needs to find it again. So propose one whenever the class implies one, in the `proposal` block of a finding.
+The best outcome of a sweep is not a finding but a declared `conflicts_with`. After the edge is declared the engine owns the problem permanently and no sweep needs to find it again. So propose one whenever the class implies one, in the `proposal` block of a finding.
 
-Propose it and stop there. `headwater sweep report` prints the front matter that would declare the edge and it writes nothing, and there is no flag that makes it write. Do not apply the proposal yourself either. [HW-OBL-0108](../../../docs/obligations/0108-an-agent-writes-the-acceptance-stamp-of-every-document-in-this-corpus.md) records what happens when an agent accepts its own work at the scale of a corpus, and a proposal you apply to yourself is that same act.
+Propose it and stop there. `headwater sweep report` prints the front matter that would declare the edge and it writes nothing, and there is no flag that makes it write. Do not apply the proposal yourself either. An agent that accepts its own work at the scale of a corpus is the failure this rule prevents, and a proposal you apply to yourself is that same act.
 
 ## What the engine confirms, and what stays yours
 

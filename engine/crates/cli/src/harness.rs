@@ -172,7 +172,10 @@ pub fn classify(existing: Option<&[u8]>, current: &str) -> Found {
 /// repository to another package (`tests/init_harness.rs`), because a kind
 /// name is also an English word and only a lock says which ones a corpus has.
 pub const FOREIGN: [(&str, &str); 12] = [
-    ("HW-", "an identifier of the corpus that maintains this engine"),
+    (
+        "HW-",
+        "an identifier of the corpus that maintains this engine",
+    ),
     ("docs/", "a path into that corpus"),
     ("engine/", "a path into the engine workspace"),
     ("tools/", "a path into that repository's tools"),
@@ -180,9 +183,15 @@ pub const FOREIGN: [(&str, &str); 12] = [
     ("taxonomy-source", "that repository's package source"),
     (".claude/hooks", "a hook the set does not ship"),
     ("hw-", "an internal agent or skill of the build order"),
-    ("ste-editor", "an internal skill, for a language regime an adopter may not declare"),
+    (
+        "ste-editor",
+        "an internal skill, for a language regime an adopter may not declare",
+    ),
     ("repo-cleanup", "an internal skill"),
-    ("headwater-engine", "an internal skill, for building the engine"),
+    (
+        "headwater-engine",
+        "an internal skill, for building the engine",
+    ),
     ("headwater-product-owner", "an internal agent"),
 ];
 
@@ -239,7 +248,11 @@ mod tests {
                 .find_map(|line| line.strip_prefix("name: "))
                 .map(str::trim);
             assert_eq!(declared, Some(member.name));
-            assert!(member.text.ends_with('\n'), "{} ends with a newline", member.name);
+            assert!(
+                member.text.ends_with('\n'),
+                "{} ends with a newline",
+                member.name
+            );
         }
     }
 
@@ -261,8 +274,14 @@ mod tests {
         let edited = earlier.replacen("old", "mine", 1);
         assert_eq!(classify(Some(edited.as_bytes()), &current), Found::Foreign);
         let unrecorded = "---\nname: x\n---\nold\n";
-        assert_eq!(classify(Some(unrecorded.as_bytes()), &current), Found::Foreign);
+        assert_eq!(
+            classify(Some(unrecorded.as_bytes()), &current),
+            Found::Foreign
+        );
         let appended = format!("{earlier}a line after the record\n");
-        assert_eq!(classify(Some(appended.as_bytes()), &current), Found::Foreign);
+        assert_eq!(
+            classify(Some(appended.as_bytes()), &current),
+            Found::Foreign
+        );
     }
 }

@@ -93,11 +93,15 @@ fn the_paths_the_contract_names() -> BTreeSet<String> {
         .filter(|line| !line.starts_with("| File "))
         .filter_map(|line| {
             let cells: Vec<&str> = line.trim_matches('|').split('|').collect();
-            let last = cells.last()?.trim();
-            Some(last.trim_matches('`').to_string())
+            // The first code span of the last cell. A cell may close with a
+            // directive comment, which is not part of the path.
+            spans(cells.last()?).first().map(|path| (*path).to_string())
         })
         .collect();
-    assert!(!paths.is_empty(), "the contract's harness table names no path");
+    assert!(
+        !paths.is_empty(),
+        "the contract's harness table names no path"
+    );
     paths
 }
 
@@ -191,7 +195,10 @@ fn internal_names() -> BTreeSet<String> {
             }
         }
     }
-    assert!(names.contains("hw-build"), "the internal names include the build stage");
+    assert!(
+        names.contains("hw-build"),
+        "the internal names include the build stage"
+    );
     names
 }
 
@@ -406,7 +413,11 @@ fn the_harness_check_passes_on_this_repository_and_fails_on_one_changed_byte() {
     let before = std::fs::read(root.join(changed)).expect("reads");
 
     let refused = headwater(root, &["init", "--harness", "--check"]);
-    assert_eq!(refused.status.code(), Some(1), "one changed byte fails `--check`");
+    assert_eq!(
+        refused.status.code(),
+        Some(1),
+        "one changed byte fails `--check`"
+    );
     assert!(
         String::from_utf8_lossy(&refused.stderr).contains(changed),
         "the failure names the path:\n{}",
