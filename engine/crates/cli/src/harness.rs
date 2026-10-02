@@ -141,10 +141,17 @@ pub enum Found {
 /// digest in the record is the digest of every byte before that line. An
 /// edit anywhere above the record moves that digest, and a file with no
 /// record was never the step's.
+///
+/// The step writes `\n` line endings. Git checks a file out with `\r\n` in
+/// their place under `core.autocrlf=true`, so the decision reads every
+/// `\r\n` of the bytes found as `\n` before it compares them. A `\r` that
+/// ends no line is a changed byte and stays one.
 pub fn classify(existing: Option<&[u8]>, current: &str) -> Found {
     let Some(existing) = existing else {
         return Found::Absent;
     };
+    let read_as_lf = lf_line_endings(existing);
+    let existing = read_as_lf.as_slice();
     if existing == current.as_bytes() {
         return Found::Current;
     }
@@ -163,6 +170,19 @@ pub fn classify(existing: Option<&[u8]>, current: &str) -> Found {
         Some(digest) if digest == headwater_hash::digest(above.as_bytes()) => Found::Earlier,
         _ => Found::Foreign,
     }
+}
+
+/// The bytes with each `\r\n` written as `\n`, and every other byte kept.
+fn lf_line_endings(bytes: &[u8]) -> Vec<u8> {
+    let mut out = Vec::with_capacity(bytes.len());
+    let mut rest = bytes.iter().peekable();
+    while let Some(&byte) = rest.next() {
+        if byte == b'\r' && rest.peek() == Some(&&b'\n') {
+            continue;
+        }
+        out.push(byte);
+    }
+    out
 }
 
 /// What a shipped file must not hold, each with the reason.
