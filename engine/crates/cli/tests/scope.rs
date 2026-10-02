@@ -7,9 +7,13 @@
 //! keeps git off the check loop, and the audit verb drops the ignored entries
 //! afterward. This target holds that second step through the binary, so a
 //! verb that stopped dropping them prints a different figure here.
+//!
+//! It also holds `taxonomy audit --json` to the text (#1573): the governed
+//! scope figure a CI job uploads is the figure a person reads, for one tree.
 
 mod common;
 use common::Root;
+use headwater_yaml::json::{count, field};
 use std::process::Command;
 
 /// The line of the scope section that names `pattern`.
@@ -45,4 +49,179 @@ fn the_audit_leaves_a_file_git_ignores_out_of_the_governed_scope() {
     let line = line_for(&after.out, "tools/**");
     assert!(line.contains(" 1 in scope"), "{line}");
     assert!(!after.out.contains("__pycache__"), "{}", after.out);
+}
+
+/// The two counts of one scope line of the text: `(in scope, governed)`.
+fn counts_of(line: &str) -> (usize, usize) {
+    let words: Vec<&str> = line.split_whitespace().collect();
+    let before = |noun: &str| {
+        let at = words
+            .iter()
+            .position(|word| word.trim_end_matches(',') == noun)
+            .unwrap_or_else(|| panic!("no `{noun}` in {line}"));
+        words[at - 1].parse::<usize>().expect("a count")
+    };
+    let in_scope = words
+        .windows(3)
+        .find(|w| w[1] == "in" && w[2].starts_with("scope"))
+        .map(|w| w[0].parse::<usize>().expect("a count"))
+        .unwrap_or_else(|| panic!("no in-scope count in {line}"));
+    (in_scope, before("governed"))
+}
+
+/// The text's total line: `(governed, in scope)`.
+fn total_of(text: &str) -> (usize, usize) {
+    let line = text
+        .lines()
+        .find(|line| line.trim_start().starts_with("in total "))
+        .unwrap_or_else(|| panic!("no total line in {text}"));
+    let words: Vec<&str> = line.split_whitespace().collect();
+    (
+        words[2].parse().expect("a count"),
+        words[4].parse().expect("a count"),
+    )
+}
+
+fn path(steps: &[&str]) -> Vec<String> {
+    steps.iter().map(|step| step.to_string()).collect()
+}
+
+/// One scalar of the JSON document, or a panic naming the path.
+fn at(document: &str, steps: &[&str]) -> String {
+    field(document, &path(steps)).unwrap_or_else(|| panic!("no {steps:?} in {document}"))
+}
+
+fn number(document: &str, steps: &[&str]) -> usize {
+    at(document, steps).parse().expect("a count")
+}
+
+/// The index of the `scope` element for `pattern`.
+fn element_for(document: &str, pattern: &str) -> String {
+    let elements = count(document, &path(&["scope"])).expect("`scope` is an array");
+    (0..elements)
+        .map(|index| index.to_string())
+        .find(|index| at(document, &["scope", index, "pattern"]) == pattern)
+        .unwrap_or_else(|| panic!("no `{pattern}` element in {document}"))
+}
+
+/// The `ungoverned` paths of one `scope` element.
+fn ungoverned_of(document: &str, index: &str) -> Vec<String> {
+    let paths = count(document, &path(&["scope", index, "ungoverned"]))
+        .expect("`ungoverned` is an array");
+    (0..paths)
+        .map(|entry| at(document, &["scope", index, "ungoverned", &entry.to_string()]))
+        .collect()
+}
+
+/// The text and the JSON of one audit of `root`, both exiting 0.
+fn read(root: &Root) -> (String, String) {
+    let text = root.run(&["taxonomy", "audit", "--now", "2026-09-25"]);
+    assert_eq!(text.code, Some(0), "{text:?}");
+    let json = root.run(&["taxonomy", "audit", "--now", "2026-09-25", "--json"]);
+    assert_eq!(json.code, Some(0), "{json:?}");
+    let document = json.out.trim();
+    assert!(
+        document.starts_with('{') && document.ends_with('}') && document.lines().count() == 1,
+        "one JSON document on one line: {document}"
+    );
+    (text.out, document.to_string())
+}
+
+/// `taxonomy audit --json` carries the governed-scope figure a later ratchet
+/// reads (#1573), and it states the figures the text prints for the same tree.
+/// A new in-scope file that no `governs` edge reaches is named in
+/// `ungoverned`, and a `governs` edge onto it moves it out and raises
+/// `governed` by one.
+#[test]
+fn the_audit_json_names_an_ungoverned_entry_and_drops_it_once_an_edge_reaches_it() {
+    let root = Root::new("scope-audit-json");
+    std::fs::write(root.at.join("tools/new-script.sh"), "").expect("the new entry writes");
+
+    let (text, document) = read(&root);
+    assert_eq!(at(&document, &["version"]), "1", "{document}");
+    for member in ["package", "version", "lock"] {
+        assert!(!at(&document, &["subject", member]).is_empty(), "{document}");
+    }
+    assert_eq!(at(&document, &["subject", "now"]), "2026-09-25", "{document}");
+
+    // Every element agrees with its own text line.
+    let elements = count(&document, &path(&["scope"])).expect("`scope` is an array");
+    assert!(elements > 0, "{document}");
+    for index in 0..elements {
+        let index = index.to_string();
+        let pattern = at(&document, &["scope", &index, "pattern"]);
+        let (in_scope, governed) = counts_of(line_for(&text, &pattern));
+        assert_eq!(number(&document, &["scope", &index, "in_scope"]), in_scope, "{pattern}");
+        assert_eq!(number(&document, &["scope", &index, "governed"]), governed, "{pattern}");
+        assert_eq!(
+            ungoverned_of(&document, &index).len(),
+            in_scope - governed,
+            "{pattern}: {document}"
+        );
+    }
+
+    let tools = element_for(&document, "tools/**");
+    let governed = number(&document, &["scope", &tools, "governed"]);
+    let in_scope = number(&document, &["scope", &tools, "in_scope"]);
+    assert!(
+        ungoverned_of(&document, &tools).contains(&"tools/new-script.sh".to_string()),
+        "{document}"
+    );
+
+    let total = (
+        number(&document, &["scope_total", "governed"]),
+        number(&document, &["scope_total", "in_scope"]),
+    );
+    assert_eq!(total, total_of(&text), "{document}\n{text}");
+
+    govern(&root, "tools/new-script.sh");
+
+    let (text, after) = read(&root);
+    let tools = element_for(&after, "tools/**");
+    assert_eq!(number(&after, &["scope", &tools, "governed"]), governed + 1, "{after}\n{text}");
+    assert_eq!(number(&after, &["scope", &tools, "in_scope"]), in_scope, "{after}");
+    assert!(
+        !ungoverned_of(&after, &tools).contains(&"tools/new-script.sh".to_string()),
+        "{after}"
+    );
+    let total_after = (
+        number(&after, &["scope_total", "governed"]),
+        number(&after, &["scope_total", "in_scope"]),
+    );
+    assert_eq!(total_after, (total.0 + 1, total.1), "{after}");
+    assert_eq!(total_after, total_of(&text), "{after}\n{text}");
+}
+
+/// A `governs` edge onto `entry`, from one decision the fixture did not hold.
+///
+/// The shape is the decision `governed_pipe.rs` writes, because a decision
+/// is a kind that may carry `governs`.
+fn govern(root: &Root, entry: &str) {
+    let decision = format!(
+        "---\nid: HW-DR-0002\ntitle: The decision that governs a script\nstatus: \
+         current\nstatus_since: 2026-08-01\nlast_verified: 2026-08-01\nsummary: One \
+         decision that governs a script under the tools directory.\nprovenance:\n  \
+         warrant: asserted\n  agency: human\n  evidence_basis: unevidenced\nrelations:\n  \
+         governs:\n    - {entry}\n---\n\n# The decision that governs a script\n\n## \
+         Context\n\nA fixture.\n\n## Decision\n\nIt governs a script.\n\n## \
+         Consequences\n\nThe audit reads it.\n"
+    );
+    std::fs::write(
+        root.at
+            .join("docs/decisions/0002-the-decision-that-governs-a-script.md"),
+        decision,
+    )
+    .expect("the decision writes");
+}
+
+/// Under `--json` a refusal writes nothing on standard output, and its account
+/// is one sentence on standard error (HW-DR-0043).
+#[test]
+fn a_refused_audit_json_writes_no_document() {
+    let root = Root::new("scope-audit-json-refused");
+    std::fs::remove_file(root.at.join(".headwater/taxonomy.lock")).expect("the lock is removed");
+    let refused = root.run(&["taxonomy", "audit", "--now", "2026-09-25", "--json"]);
+    assert_ne!(refused.code, Some(0), "{refused:?}");
+    assert_eq!(refused.out, "", "{refused:?}");
+    assert!(refused.err.starts_with("headwater: "), "{refused:?}");
 }
