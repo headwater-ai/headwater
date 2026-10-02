@@ -934,11 +934,21 @@ docs/probes/a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answe
   typed: probe
 docs/probes/a-session-answers-from-the-register-without-opening-the-question-it-replaced.md
   typed: probe
+docs/probes/a-session-finds-a-ruling-from-a-task-in-plain-words.md
+  typed: probe
+docs/probes/a-session-follows-a-citation-from-one-record-to-the-next.md
+  typed: probe
 docs/probes/a-session-names-the-event-that-makes-a-document-accepted.md
   typed: probe
 docs/probes/a-session-names-the-status-a-settled-decision-carries-in-its-pull-request.md
   typed: probe
 docs/probes/a-session-records-an-unmeasured-claim-in-the-shape-this-corpus-checks.md
+  typed: probe
+docs/probes/a-session-records-which-obligation-an-evaluation-discharged.md
+  typed: probe
+docs/probes/a-session-says-how-a-governs-line-reaches-a-document.md
+  typed: probe
+docs/probes/a-session-says-where-a-figure-on-the-site-is-written.md
   typed: probe
 docs/probes/an-agent-reaches-the-adjudication-from-the-document-that-lost-it.md
   typed: probe
