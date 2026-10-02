@@ -518,6 +518,116 @@ fn the_harness_check_passes_on_this_repository_and_fails_on_one_changed_byte() {
     );
 }
 
+/// Run git in `at` with no configuration of the host's that could move a byte.
+fn git(at: &Path, arguments: &[&str]) {
+    let output = Command::new("git")
+        .args([
+            "-c",
+            "core.autocrlf=false",
+            "-c",
+            "core.hooksPath=/dev/null",
+            "-c",
+            "user.name=t",
+            "-c",
+            "user.email=t@example.invalid",
+        ])
+        .args(arguments)
+        .current_dir(at)
+        .env("GIT_CONFIG_NOSYSTEM", "1")
+        .env("GIT_CONFIG_GLOBAL", "/dev/null")
+        .output()
+        .expect("git runs");
+    succeeded(&output, &format!("git {}", arguments.join(" ")));
+}
+
+/// An adopter on Windows clones with `core.autocrlf=true`, and git writes each
+/// `\n` of the set as `\r\n`. The copy is still the step's own: `--check`
+/// passes on it, and a plain run writes nothing and refuses nothing. The
+/// line endings come from a real clone, so the case holds what git does and
+/// not what this test assumes it does.
+#[test]
+fn a_set_git_checked_out_with_crlf_line_endings_passes_the_check_and_a_rerun_writes_nothing() {
+    let scratch = a_repository_bound_to_another_taxonomy("crlf");
+    let root = &scratch.0;
+    succeeded(&headwater(root, &["init", "--harness"]), "the first run");
+    let paths = harness_files(root);
+    assert_eq!(paths.len(), 9, "the step wrote the set");
+
+    // Commit the set as the step wrote it, and clone it with autocrlf.
+    let origin = Scratch::new("crlf-origin");
+    for path in &paths {
+        let to = origin.0.join(path);
+        std::fs::create_dir_all(to.parent().expect("a parent")).expect("made");
+        std::fs::copy(root.join(path), &to).expect("the written copy copies");
+    }
+    git(&origin.0, &["init", "--quiet"]);
+    git(&origin.0, &["add", "--all"]);
+    git(&origin.0, &["commit", "--quiet", "--message", "the set"]);
+    let clone = Scratch::new("crlf-clone");
+    let checkout = clone.0.join("checkout");
+    git(
+        &clone.0,
+        &[
+            "-c",
+            "core.autocrlf=true",
+            "clone",
+            "--quiet",
+            "--config",
+            "core.autocrlf=true",
+            origin.0.to_str().expect("a UTF-8 path"),
+            "checkout",
+        ],
+    );
+    for path in &paths {
+        let bytes = std::fs::read(checkout.join(path)).expect("the clone holds the path");
+        let text = String::from_utf8(bytes.clone()).expect("UTF-8");
+        assert!(
+            text.contains("\r\n") && !text.replace("\r\n", "").contains('\n'),
+            "git wrote {path} with CRLF line endings throughout"
+        );
+        std::fs::write(root.join(path), &bytes).expect("the checked-out copy writes");
+    }
+    let before: Vec<(String, Vec<u8>)> = paths
+        .iter()
+        .map(|path| (path.clone(), std::fs::read(root.join(path)).expect("reads")))
+        .collect();
+
+    succeeded(
+        &headwater(root, &["init", "--harness", "--check"]),
+        "`--check` over a CRLF checkout",
+    );
+    let rerun = headwater(root, &["init", "--harness"]);
+    succeeded(&rerun, "a run over a CRLF checkout");
+    assert!(
+        !String::from_utf8_lossy(&rerun.stdout).contains("wrote "),
+        "the run over a CRLF checkout wrote a file:\n{}",
+        String::from_utf8_lossy(&rerun.stdout)
+    );
+    for (path, bytes) in &before {
+        assert_eq!(
+            &std::fs::read(root.join(path)).expect("reads"),
+            bytes,
+            "{path} moved"
+        );
+    }
+
+    // One changed byte above the record of a CRLF copy still fails the check.
+    let changed = ".claude/skills/headwater-orient/SKILL.md";
+    let text = std::fs::read_to_string(root.join(changed)).expect("reads");
+    std::fs::write(root.join(changed), text.replacen("# ", "#  ", 1)).expect("writes");
+    let refused = headwater(root, &["init", "--harness", "--check"]);
+    assert_eq!(
+        refused.status.code(),
+        Some(1),
+        "an edited CRLF copy fails `--check`"
+    );
+    assert!(
+        String::from_utf8_lossy(&refused.stderr).contains(changed),
+        "the failure names the path:\n{}",
+        String::from_utf8_lossy(&refused.stderr)
+    );
+}
+
 /// The gate's other two directions: an absent path fails it, and so does a
 /// copy an earlier release wrote, which the step itself would replace. So
 /// `--check` passes only on this release, and not on every file the step

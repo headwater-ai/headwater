@@ -264,6 +264,7 @@ This paragraph read eighteen for sixteen iterations, and the number is nineteen.
 - [HW-OBL-0099](../obligations/0099-whether-an-adjudication-is-ever-partial.md) — Whether an adjudication is ever partial
 - [HW-OBL-0100](../obligations/0100-the-size-of-a-committed-snapshot-with-full-requirement-text.md) — The size of a committed snapshot with full requirement text
 - [HW-OBL-0101](../obligations/0101-whether-the-read-set-of-a-real-corpus-is-small-enough.md) — Whether the read set of a real corpus is small enough that publishing it is free
+- [HW-OBL-0232](../obligations/0232-headwater-init-harness-ships-no-hook-and-no-hook-configuration-for-any-harness.md) — `headwater init --harness` ships no hook and no hook configuration for any harness, the gap that [HW-DR-0077](../decisions/0077-the-consumer-surface-is-what-an-adopter-receives-runs-and-must-have-installed-and-it-is-a-closed-and-declared-list.md) says a record holds
 
 ## What the engine found about itself
 
