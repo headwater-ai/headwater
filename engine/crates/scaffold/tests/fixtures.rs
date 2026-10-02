@@ -33,6 +33,7 @@ use headwater_census::shelves::Taxonomy;
 use headwater_census::walk::Corpus;
 use headwater_check::shape::Shape;
 use headwater_check::Date;
+use headwater_graph::anchors::{CommentScan, Resolvers};
 use headwater_graph::declarations::Declarations;
 use headwater_graph::index::Index;
 use headwater_graph::Config;
@@ -102,6 +103,9 @@ struct Loaded {
     /// No store under the fixture tree, so this is empty. Held rather than made
     /// at the point of use, because `sources` returns a borrow of it.
     claims: headwater_check::claim::Claims,
+    /// The resolvers `headwater check` would build over this tree: the source
+    /// tree, and `comment-scan` where an anchor kind names it with a pattern.
+    resolvers: Resolvers,
 }
 
 impl Loaded {
@@ -117,6 +121,21 @@ impl Loaded {
         let census = census::take(&corpus, &shelves);
         let config = Config::default();
         let index = Index::build(&census, &config);
+        let mut resolvers = Resolvers::over(&corpus);
+        if let Some(pattern) = relations
+            .anchors
+            .iter()
+            .find(|anchor| anchor.resolver == "comment-scan")
+            .and_then(|anchor| anchor.pattern.clone())
+        {
+            resolvers = resolvers
+                .with(Box::new(CommentScan::new(
+                    root,
+                    pattern,
+                    CommentScan::claimed(root),
+                )))
+                .expect("one resolver of each name");
+        }
         Loaded {
             resolved,
             shape,
@@ -126,6 +145,7 @@ impl Loaded {
             index,
             config,
             claims: headwater_check::claim::Claims::at(root),
+            resolvers,
         }
     }
 
@@ -139,6 +159,7 @@ impl Loaded {
             index: &self.index,
             config: &self.config,
             claims: &self.claims,
+            resolvers: &self.resolvers,
         }
     }
 }
@@ -402,6 +423,7 @@ branches![
     EndpointNotPermitted,
     ClaimUnwritable,
     TargetUnresolved,
+    AnchorUnresolved,
     ReciprocalUnwritable,
     TargetUnopened,
     DocumentUncreated,
@@ -460,6 +482,20 @@ fn render_plan(plan: &Plan) -> String {
                 owed.half.relation, owed.half.path, owed.until
             )),
             (None, None) => out.push_str("    no far half\n"),
+        }
+        if let Some(anchor) = &edge.anchor {
+            out.push_str(&format!(
+                "    anchor `{}`, matched {}\n",
+                anchor.anchor_kind,
+                match anchor.matched {
+                    Some(1) => "1 entry".to_string(),
+                    Some(count) => format!("{count} entries"),
+                    None => "no stated count".to_string(),
+                }
+            ));
+            if let Some(owes) = &anchor.owes {
+                out.push_str(&format!("    owes: {owes}\n"));
+            }
         }
     }
     let assisted = plan.assisted();

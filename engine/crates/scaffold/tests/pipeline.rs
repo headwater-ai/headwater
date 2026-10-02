@@ -221,6 +221,7 @@ fn scaffold_into(root: &Path) -> Vec<String> {
             index: &index,
             config: &config,
             claims: &claims,
+            resolvers: &headwater_graph::anchors::Resolvers::over(&corpus),
         };
         let request = Request {
             kind,

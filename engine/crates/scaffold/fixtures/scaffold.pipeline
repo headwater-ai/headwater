@@ -2,7 +2,7 @@ touched corpus/spec/04-a-scaffolded-fourth-part.md
 touched corpus/decisions/a-scaffolded-successor.md
 touched corpus/decisions/a-second-successor.md
 
-9 seen, 9 classified, 9 checked, 150 check instances
+10 seen, 9 classified, 9 checked, 150 check instances
      12 skipped: this document declares no warrant, and an absent warrant is not a value outside the closed set
       4 skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
      19 skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change

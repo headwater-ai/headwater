@@ -779,7 +779,11 @@ const SOURCE_TREE: &str = "source-tree";
 /// against an anchor kind, and only where every pattern it holds binds under
 /// the same one. `asserter` is the identifier of the document that declares
 /// the edge, which a resolver such as `comment-scan` binds against (#967).
-fn bind(
+///
+/// Public so that `headwater new --relates` binds a target in this one
+/// function rather than in a copy of it. The verb and the check then agree on
+/// what a pattern reaches (#1560).
+pub fn bind(
     raws: &[String],
     asserter: &str,
     permitted: &[String],

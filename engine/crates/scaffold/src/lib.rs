@@ -187,6 +187,12 @@ pub struct Sources<'a> {
     /// store is the second half of the bound, and [`crate::claim`] is what
     /// writes into it. See [`headwater_check::claim`].
     pub claims: &'a headwater_check::claim::Claims,
+    /// The resolver set `headwater check` binds an anchor with. A relation
+    /// whose far end admits an anchor kind binds its target here, through
+    /// [`headwater_graph::edges::bind`], so the verb and the check agree on
+    /// what a pattern reaches
+    /// ([HW-DR-0074](../../../../docs/decisions/0074-a-code-path-anchor-is-a-pattern-over-the-tree-and-it-binds-when-the-pattern-matches-at-least-one-entry.md)).
+    pub resolvers: &'a headwater_graph::anchors::Resolvers,
 }
 
 /// Where a value came from, which is the whole of the assisted fraction.
@@ -253,9 +259,29 @@ pub struct Proposed {
     /// `lifecycle.state.not_set_by_edge` reports it once this document leaves
     /// its initial state, and `headwater check --fix` writes it.
     pub sets_target_state: Option<String>,
-    /// The creator the taxonomy assigns, which is `scaffold` on every edge that
-    /// reaches this far.
+    /// The creator the taxonomy assigns, which is `scaffold` or `agent` on
+    /// every edge that reaches this far. An `agent` edge is accepted by the
+    /// review of the pull request that carries it, and not by this run.
     pub created_by: String,
+    /// The anchor the target bound to, where it is not a document. `None` for
+    /// an edge onto a document.
+    pub anchor: Option<Anchored>,
+}
+
+/// What an anchor target bound to, as `headwater check` binds it.
+#[derive(Clone, Debug)]
+pub struct Anchored {
+    /// The anchor kind that claimed the target.
+    pub anchor_kind: String,
+    /// How many tree entries the target matched, where the resolver states a
+    /// count.
+    pub matched: Option<usize>,
+    /// The comment the target still owes before the check binds the edge.
+    /// Set for an anchor kind whose resolver is `comment-scan`: that resolver
+    /// binds a file only where a comment in it cites the identifier of the
+    /// document that asserts the edge, and this run minted that identifier
+    /// a moment ago, so no file can cite it yet.
+    pub owes: Option<String>,
 }
 
 /// A far half that is owed at promotion and not written now.
@@ -631,6 +657,15 @@ pub enum Refusal {
         relation: String,
         target: String,
     },
+    /// The relation admits an anchor at its far end, and the resolver that
+    /// owns it bound nothing to the target: a `code_path` pattern that matches
+    /// no entry, or a path that reaches no file. `why` is the resolver's own
+    /// reason, in the words `headwater check` reports.
+    AnchorUnresolved {
+        relation: String,
+        target: String,
+        why: String,
+    },
     /// The reciprocal half would go into a document, and the splice did not
     /// read back. Nothing is written.
     ///
@@ -880,8 +915,17 @@ impl std::fmt::Display for Refusal {
             } => write!(
                 f,
                 "`{relation}` declares `created_by: {created_by}`, and this verb proposes the \
-                 edges the taxonomy assigns to a scaffold. Write it by hand, or change what the \
-                 declaration says pays for it"
+                 edges the taxonomy assigns to a scaffold or an agent. Write it by hand, or \
+                 change what the declaration says pays for it"
+            ),
+            Refusal::AnchorUnresolved {
+                relation,
+                target,
+                why,
+            } => write!(
+                f,
+                "`{relation}` names `{target}`, and it binds to nothing ({why}). `headwater \
+                 check` would report this edge as unbound, so nothing was written"
             ),
             Refusal::EndpointNotPermitted {
                 relation,
@@ -1765,7 +1809,8 @@ fn propose_edges(
                 .relations
                 .iter()
                 .filter(|relation| {
-                    declared::created_by(sources.resolved, &relation.name) == Some("scaffold")
+                    declared::created_by(sources.resolved, &relation.name)
+                        .is_some_and(writes)
                 })
                 .map(|relation| relation.name.clone())
                 .collect();
@@ -1778,7 +1823,7 @@ fn propose_edges(
         let relation = named.relation;
 
         let created_by = declared::created_by(sources.resolved, &relation.name).unwrap_or("");
-        if created_by != "scaffold" {
+        if !writes(created_by) {
             return Err(Refusal::RelationNotScaffolded {
                 relation: relation.name.clone(),
                 created_by: created_by.to_string(),
@@ -1799,30 +1844,44 @@ fn propose_edges(
             });
         }
 
-        let node = sources
-            .index
-            .node(target)
-            .ok_or_else(|| Refusal::TargetUnresolved {
-                relation: written.clone(),
-                target: target.clone(),
-            })?;
-        let target_kind = node.kind.clone().unwrap_or_default();
-        if !admits(sources, far, &target_kind) {
-            return Err(Refusal::EndpointNotPermitted {
-                relation: written.clone(),
-                end: "target",
-                kind: target_kind,
-                permitted: far.clone(),
-            });
+        let asserter = minting.map(|minting| minting.id.as_str()).unwrap_or("");
+        let (target_path, target_kind, anchor) = match bind_target(sources, far, target, asserter)
+        {
+            Bound::Document { path, kind } => (path, kind, None),
+            Bound::Anchor(anchored) => (target.clone(), None, Some(anchored)),
+            Bound::NoDocument => {
+                return Err(Refusal::TargetUnresolved {
+                    relation: written.clone(),
+                    target: target.clone(),
+                })
+            }
+            Bound::Refused(why) => {
+                return Err(Refusal::AnchorUnresolved {
+                    relation: written.clone(),
+                    target: target.clone(),
+                    why,
+                })
+            }
+        };
+        if let Some(target_kind) = target_kind {
+            if !admits(sources, far, &target_kind) {
+                return Err(Refusal::EndpointNotPermitted {
+                    relation: written.clone(),
+                    end: "target",
+                    kind: target_kind,
+                    permitted: far.clone(),
+                });
+            }
         }
 
         // The far half, for a relation that requires one. It is written under
         // the name the far document reads, which is the inverse of what this
         // document wrote. A symmetric relation gets none (HW-DR-0101): the
         // near half states the edge, and a far half in a live target is read
-        // by `lifecycle.dependency.on_initial`.
-        let reciprocal = match (&relation.reciprocal, minting) {
-            (Reciprocal::Required, Some(minting)) => {
+        // by `lifecycle.dependency.on_initial`. An anchor is not a document, so
+        // it holds no half of any edge.
+        let reciprocal = match (&relation.reciprocal, minting, &anchor) {
+            (Reciprocal::Required, Some(minting), None) => {
                 let name = match named.direction {
                     Direction::AsDeclared => {
                         relation.inverse.clone().unwrap_or(relation.name.clone())
@@ -1831,7 +1890,7 @@ fn propose_edges(
                 };
                 Some(Half {
                     relation: name,
-                    path: node.path.clone(),
+                    path: target_path.clone(),
                     id: minting.id.clone(),
                     attributes: Vec::new(),
                 })
@@ -1855,18 +1914,133 @@ fn propose_edges(
         proposed.push(Proposed {
             relation: written.clone(),
             target: target.clone(),
-            target_path: node.path.clone(),
+            target_path,
             reciprocal,
             owed,
             symmetric: matches!(relation.reciprocal, Reciprocal::Symmetric),
-            sets_target_state: match named.direction {
-                Direction::AsDeclared => relation.sets_target_state.clone(),
-                Direction::Inverse => None,
+            sets_target_state: match (&named.direction, &anchor) {
+                (Direction::AsDeclared, None) => relation.sets_target_state.clone(),
+                _ => None,
             },
             created_by: created_by.to_string(),
+            anchor,
         });
     }
     Ok(proposed)
+}
+
+/// The two actors whose edges this verb writes.
+///
+/// `scaffold` is an edge the taxonomy decides. `agent` is an edge an agent
+/// judges, and the review of the pull request that carries it is the
+/// acceptance: the owner's ruling of 2026-10-01 on #1315, recorded in the
+/// decision that supersedes HW-DR-0083. Every other actor, `author`,
+/// `generator`, `hook` and `import`, is still refused, because the verb is
+/// none of them. The gate reads the actor and never the relation's name, so
+/// the declaration stays the one statement of who pays for an edge.
+fn writes(created_by: &str) -> bool {
+    matches!(created_by, "scaffold" | "agent")
+}
+
+/// What one target bound to.
+enum Bound {
+    Document { path: String, kind: Option<String> },
+    Anchor(Anchored),
+    /// The far end admits documents alone, and no document carries the
+    /// identifier.
+    NoDocument,
+    /// The far end admits an anchor, and nothing bound: the words are the
+    /// check's own.
+    Refused(String),
+}
+
+/// Bind one target the way `headwater check` binds it.
+///
+/// A far end that admits documents alone resolves through the index, as it
+/// did before an anchor reached this verb. A far end that admits an anchor
+/// kind goes through [`headwater_graph::edges::bind`] with the check's own
+/// resolvers, so a `code_path` pattern that matches no entry is refused here
+/// and not first reported by the check.
+///
+/// One exception, stated rather than hidden: `comment-scan` binds a file only
+/// where a comment in it cites the asserting document's identifier, and the
+/// identifier is the one this run mints. So where every other anchor kind
+/// failed and one that names `comment-scan` is admitted, the path is asked of
+/// `source-tree` instead. A path that reaches a file is written, and the
+/// comment it still owes is named. A path that reaches nothing is refused.
+fn bind_target(sources: &Sources<'_>, far: &[String], target: &str, asserter: &str) -> Bound {
+    use headwater_graph::anchors::Binding;
+    use headwater_graph::edges::Target;
+
+    let anchor_kinds: Vec<_> = far
+        .iter()
+        .filter_map(|name| sources.relations.anchor(name))
+        .collect();
+    if anchor_kinds.is_empty() {
+        return match sources.index.node(target) {
+            Some(node) => Bound::Document {
+                path: node.path.clone(),
+                kind: Some(node.kind.clone().unwrap_or_default()),
+            },
+            None => Bound::NoDocument,
+        };
+    }
+
+    let unbound = match headwater_graph::edges::bind(
+        &[target.to_string()],
+        asserter,
+        far,
+        sources.index,
+        sources.relations,
+        sources.resolvers,
+    ) {
+        Target::Document { path, kind, .. } => {
+            return Bound::Document {
+                path,
+                kind: Some(kind),
+            }
+        }
+        Target::Anchor {
+            anchor_kind,
+            patterns,
+            ..
+        } => {
+            return Bound::Anchor(Anchored {
+                anchor_kind,
+                matched: Some(patterns.iter().map(|member| member.matched.len()).sum()),
+                owes: None,
+            })
+        }
+        Target::Withheld { anchor_kind, .. } => {
+            return Bound::Anchor(Anchored {
+                anchor_kind,
+                matched: None,
+                owes: None,
+            })
+        }
+        Target::Unbound(unbound) => unbound,
+    };
+
+    let cited = anchor_kinds
+        .iter()
+        .find(|anchor| anchor.resolver == "comment-scan");
+    let tree = sources.resolvers.get("source-tree");
+    if let (Some(anchor), Some(tree)) = (cited, tree) {
+        if let Binding::Resolved { normalized, .. } = tree.resolve(target) {
+            if !tree.names_directory(&normalized) {
+                return Bound::Anchor(Anchored {
+                    anchor_kind: anchor.name.clone(),
+                    matched: Some(1),
+                    owes: Some(format!(
+                        "`{}` binds `{normalized}` once a comment in it cites `{asserter}`, which \
+                         `headwater check` reports until one does",
+                        anchor.name
+                    )),
+                });
+            }
+        }
+    }
+    Bound::Refused(unbound.to_string())
 }
 
 /// The relations a document of this kind may declare and this run did not.
