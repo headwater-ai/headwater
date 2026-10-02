@@ -187,6 +187,10 @@ fn edges(entries: &[(&str, Option<String>)], verified: &[&str], edges: &[(&str, 
     .bind(|_| true)
 }
 
+/// One row of a case table: its label, the change it runs under, and the
+/// targets whose edge it expects stamped.
+type Row<'a> = (&'a str, &'a dyn Fn() -> Change, Vec<&'a str>);
+
 /// The hook the recorded document governs, which most cases change.
 const LIB: &str = ".claude/hooks/lib.sh";
 
@@ -454,6 +458,11 @@ fn an_unrecorded_entry_the_change_did_not_re_verify_is_silent() {
             "a change whose prior version of the document does not open",
             at(TODAY).scoped_to(unreadable(DOCUMENT)),
         ),
+        // An edge line about another target says nothing about this edge.
+        (
+            "a stated edge onto another target",
+            at(TODAY).scoped_to(edges(&[], &[], &[(DOCUMENT, ".githooks/commit-msg")])),
+        ),
     ] {
         let ran = run_in(&root, &ctx, &mut Cache::disabled(), &taxonomy());
         assert!(suspect(&ran).is_empty(), "{label}: {:?}", suspect(&ran));
@@ -481,6 +490,12 @@ fn an_unrecorded_entry_the_change_re_verified_offers_the_digest() {
         (
             "an added document",
             at(TODAY).scoped_to(change(&[(DOCUMENT, None)])),
+        ),
+        // A `verified` line that names the edge states its re-reading, with
+        // the document neither carried nor named on its own (#1520).
+        (
+            "a stated edge",
+            at(TODAY).scoped_to(edges(&[], &[], &[(DOCUMENT, ".githooks/pre-commit")])),
         ),
     ] {
         let ran = run_in(&root, &ctx, &mut Cache::disabled(), &taxonomy());
@@ -667,7 +682,7 @@ fn a_re_verified_document_stamps_only_the_edge_whose_target_the_change_names() {
     let moved = || (DOCUMENT, Some(yesterday("hooks", &entries)));
     // Each change is made inside the loop, so that a row the manifest reader
     // refuses fails as that row and not before the first one runs.
-    let rows: [(&str, &dyn Fn() -> Change, Vec<&str>); 7] = [
+    let rows: [Row<'_>; 7] = [
         (
             "the change carries one target",
             &|| change(&[moved(), (LIB, Some(lib_before.clone()))]),
@@ -876,6 +891,50 @@ fn a_pattern_target_is_named_by_a_path_it_reaches() {
     let reported = suspect(&ran);
     assert_eq!(reported.len(), 1, "{reported:?}");
     assert!(reported[0].patch.is_some(), "the normalized pattern");
+    let _ = std::fs::remove_dir_all(&root);
+}
+
+/// A file deleted from under a pattern target is a path the pattern matched,
+/// and the change that deletes it carries it in a `prior` line. That names the
+/// target, as an edit to a matched file does, though the pattern no longer
+/// reaches the path. A `verified` line that names the deleted path names the
+/// edge too. A path the pattern never matched names nothing (#1520).
+#[test]
+fn a_deleted_file_under_a_pattern_names_the_target() {
+    const PATTERN: &str = ".claude/hooks/*.sh";
+    let root = scratch("deleted-under-pattern");
+    let digest = expected(&root, &[LIB, ".claude/hooks/write.sh"]);
+    let entries = vec![format!(
+        "    - to: {PATTERN}\n      verified_revision: \"{digest}\""
+    )];
+    document(&root, TODAY, &entries);
+    let lib = named_lib(&root);
+    std::fs::remove_file(root.join(LIB)).expect("the hook deletes");
+    let moved = || (DOCUMENT, Some(yesterday("hooks", &entries)));
+    for (label, change, fixable) in [
+        ("the change deletes a matched file", change(&[moved(), lib()]), true),
+        (
+            "a verified line names the deleted file",
+            edges(&[], &[], &[(DOCUMENT, LIB)]),
+            true,
+        ),
+        (
+            "a deleted file the pattern never matched",
+            change(&[moved(), (".claude/notes.md", Some("x\n".to_string()))]),
+            false,
+        ),
+        (
+            "a verified line names a path the pattern never matched",
+            edges(&[], &[], &[(DOCUMENT, ".claude/hooks/sub/lib.sh")]),
+            false,
+        ),
+    ] {
+        let ctx = at(TODAY).scoped_to(change);
+        let ran = run_in(&root, &ctx, &mut Cache::disabled(), &taxonomy());
+        let reported = suspect(&ran);
+        assert_eq!(reported.len(), 1, "{label}: {reported:?}");
+        assert_eq!(reported[0].patch.is_some(), fixable, "{label}");
+    }
     let _ = std::fs::remove_dir_all(&root);
 }
 
