@@ -100,7 +100,7 @@ A recording host must provide these four items:
 
 ### The one route to the network
 
-The session has no network of its own. The driver runs it with `--unshare-net`, so its network namespace holds a loopback interface and nothing else. The loopback of the host is not in it. In the 2026-09-30 batch, 5 sessions read this repository from GitHub with `gh api`, `curl` and `git clone`. The confinement now refuses each of these direct connections.
+The session has no network of its own. The driver runs it with `--unshare-net`, so its network namespace holds a loopback interface and nothing else. The loopback of the host is not in it. In the 2026-09-30 batch, the network was shared, and sessions reached GitHub with `gh api` and `curl`. The confinement now refuses each direct connection of this kind. Other sessions of that batch reached GitHub with `WebSearch` or `WebFetch`, and the driver now denies those two tools to the session.
 
 The one route out is `tools/probe/egress-proxy.py`. The driver starts it on the host before the session and stops it after the session. It listens on a unix socket in a directory that the driver binds into the session. In the session, the same file forwards `127.0.0.1:3128` to that socket, and `HTTPS_PROXY` names that port. The driver also sets `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC`, so the harness asks for no telemetry host or update host.
 

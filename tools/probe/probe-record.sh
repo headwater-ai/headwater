@@ -593,8 +593,9 @@ probe_log=$(cd "$probe_log" && pwd -P)
 # host is in it. That is the file system alone; the network is below.
 #
 # The session has no network of its own either (#1467, clause 5). Until then
-# the network was shared, and 5 sessions of the 2026-09-30 batch read this
-# repository from GitHub with `gh api`, `curl` and `git clone`. `bwrap
+# the network was shared, and sessions of the 2026-09-30 batch reached GitHub
+# with `gh api` and `curl`. Others reached it with `WebSearch` or `WebFetch`,
+# which the driver now denies to the session. `bwrap
 # --unshare-net` gives the session a namespace with a loopback interface and
 # nothing else, and the host's loopback is not in it. The one route out is
 # `tools/probe/egress-proxy.py`: this script runs it on the host before the
@@ -956,7 +957,7 @@ fi
 # The confinement and the configuration, stated (#1467). A rate of a batch
 # recorded under them does not compare with one of a batch before them, so the
 # transcript says so where a reader of one session meets it.
-printf 'The session ran confined to its workspace. The confinement bound the workspace read-write, `/usr` and `/etc` read-only, the harness, the log directory of this run and the configuration directory below, and nothing else of the host'"'"'s file system, so no copy of this repository on the host, no other tree of its batch and no configuration of the host was readable through the session'"'"'s file system.\n\n'
+printf 'The session ran confined to its workspace. The confinement bound the workspace read-write, `/usr` and `/etc` read-only, the harness, the egress proxy and the directory of its socket read-only, the log directory of this run and the configuration directory below, and nothing else of the host'"'"'s file system, so no copy of this repository on the host, no other tree of its batch and no configuration of the host was readable through the session'"'"'s file system.\n\n'
 printf 'The session ran under the configuration directory `%s`, which held a copy of the host'"'"'s credentials and nothing else, in the permission mode `%s`, with the tools `%s` allowed and `WebSearch` and `WebFetch` denied. The batches of 2026-09-28 and 2026-09-30 ran under `bypassPermissions` and the host'"'"'s configuration, so a rate of this session does not compare with a rate of theirs.\n\n' \
     "$config" "$permission_mode" "$allowed_tools"
 printf 'The session ran with no network of its own. Its one route out was a proxy outside it that opens a connection to %s on port 443 and refuses every other, so a direct connection to any other host, such as `gh api`, `curl` or `git clone` to GitHub, was refused. The proxy allowed %s, and refused %s.\n\n' \
