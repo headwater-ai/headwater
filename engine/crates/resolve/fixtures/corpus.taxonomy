@@ -1,5 +1,5 @@
 taxonomy: headwater/standard
-version: 4.15.0
+version: 4.16.0
 purposes:
   rationale:
     intent: "explain why a choice was made and what it forecloses"
@@ -303,6 +303,7 @@ kinds:
   decision:
     is_a: governed_document
     purpose: rationale
+    write_when: "a choice between alternatives was made, and a later reader would otherwise question it or undo it"
     identifier:
       scheme: decision_id
     voice: declarative
@@ -319,6 +320,7 @@ kinds:
   specification:
     is_a: governed_document
     purpose: behavior
+    write_when: "a behavior of the system was added or changed, and a reader must know what to rely on"
     voice: declarative
     lifecycle: standard
     sections:
@@ -353,6 +355,7 @@ kinds:
         - "Fit criterion"
         - Method
     voice: prospective
+    write_when: "a Done-when clause or a requirement needs a statement that a test can pass or fail"
   decision_register:
     facets:
       require:
@@ -366,6 +369,7 @@ kinds:
     lifecycle: standard
     purpose: rationale
     voice: declarative
+    write_when: "the specification series made a choice, and its register of decisions does not list it"
   design_spec:
     facets:
       require:
@@ -379,6 +383,7 @@ kinds:
     lifecycle: standard
     purpose: behavior
     voice: declarative
+    write_when: "a change to the design moved what one part of the specification series states"
   evaluation:
     facets:
       require:
@@ -390,6 +395,7 @@ kinds:
     lifecycle: standard
     purpose: evidence
     voice: narrative
+    write_when: "something was measured or tested, and a claim or a decision depends on the result"
   explanation:
     facets:
       require:
@@ -406,6 +412,7 @@ kinds:
         - "How it works"
         - "Why it is this way"
     voice: declarative
+    write_when: "a reader needs to know why Headwater has its design, apart from any one task"
   how_to:
     facets:
       require:
@@ -422,6 +429,7 @@ kinds:
         - Steps
         - "How to know it worked"
     voice: declarative
+    write_when: "a reader who knows Headwater needs the steps of one task, and no page gives them"
   interface_contract:
     facets:
       require:
@@ -443,6 +451,7 @@ kinds:
         - Files
         - "See also"
     voice: declarative
+    write_when: "a verb, a tool or a file format that a user calls was added, or what it promises changed"
   library_doctrine:
     identifier:
       scheme: library_doctrine_id
@@ -451,6 +460,7 @@ kinds:
     lifecycle: standard
     purpose: rationale
     voice: declarative
+    write_when: "a principle from outside this repository governs how the engine or the corpus is designed, and no page states it"
   obligation_record:
     facets:
       require:
@@ -468,6 +478,7 @@ kinds:
         - Obligation
         - Discharge
     voice: declarative
+    write_when: "the corpus owes something that nobody can supply now, such as an unmeasured claim or an answer that waits on a person"
   obligation_register:
     facets:
       require:
@@ -481,6 +492,7 @@ kinds:
     lifecycle: standard
     purpose: obligation
     voice: declarative
+    write_when: "the specification series owes something, and its register of obligations does not list it"
   probe:
     facets:
       require:
@@ -498,6 +510,7 @@ kinds:
         - Task
         - Expectation
     voice: declarative
+    write_when: "a question about what an agent does with this corpus needs a repeatable test, with the task and the expected result written down"
   probe_result:
     facets:
       require:
@@ -508,6 +521,7 @@ kinds:
     lifecycle: standard
     purpose: evidence
     voice: declarative
+    write_when: "never by hand, because `headwater generate` writes one from a transcript, its expectations and the grader version"
   probe_transcript:
     facets:
       require:
@@ -524,6 +538,7 @@ kinds:
         - "Run identity"
         - Events
     voice: narrative
+    write_when: "a probe ran, and its record of events must be kept so that a result can be graded from it"
   process_decision:
     identifier:
       scheme: process_decision_id
@@ -537,6 +552,7 @@ kinds:
         - Decision
         - Consequences
     voice: declarative
+    write_when: "the way this repository builds, reviews or merges its work changed by a choice that a later agent would otherwise undo"
   process_evaluation:
     facets:
       require:
@@ -548,6 +564,7 @@ kinds:
     lifecycle: standard
     purpose: evidence
     voice: narrative
+    write_when: "the build process was measured, and a choice about how it runs depends on the result"
   process_explanation:
     facets:
       require:
@@ -564,6 +581,7 @@ kinds:
         - "How it works"
         - "Why it is this way"
     voice: declarative
+    write_when: "a reader needs to know why the build process works the way it does, apart from any one stage"
   process_obligation:
     facets:
       require:
@@ -581,6 +599,7 @@ kinds:
         - Obligation
         - Discharge
     voice: declarative
+    write_when: "the build process, its tools or its CI owe something that nobody can supply now"
   process_spec:
     facets:
       require:
@@ -592,6 +611,7 @@ kinds:
     lifecycle: standard
     purpose: behavior
     voice: declarative
+    write_when: "a stage, a script or an agent of the build process gained or changed a behavior that other stages rely on"
   requirement:
     facets:
       require:
@@ -618,6 +638,7 @@ kinds:
         - Requirement
         - Verification
     voice: prospective
+    write_when: "an issue or a decision asks for something that the system must do, and nothing states it as a need"
   review_prompt:
     facets:
       require:
@@ -640,6 +661,7 @@ kinds:
           severity: warn
           rationale: "an instrument that nobody applied is a plan rather than a review"
     voice: declarative
+    write_when: "a review of the corpus is about to run, and the instructions that the reviewer follows must be kept"
   review_record:
     facets:
       require:
@@ -651,6 +673,7 @@ kinds:
     lifecycle: standard
     purpose: evidence
     voice: narrative
+    write_when: "a review ran, and a later reader needs what it found as evidence"
   subsystem_spec:
     facets:
       require:
@@ -667,6 +690,7 @@ kinds:
         - Design
         - Invariants
     voice: declarative
+    write_when: "the design of a part of the engine was added or changed, or an invariant that its code must keep moved"
   tutorial:
     facets:
       require:
@@ -684,6 +708,7 @@ kinds:
         - "The words this teaches"
         - "Where to go next"
     voice: declarative
+    write_when: "a reader who has never used Headwater needs one guided path to a first working result"
   verification:
     facets:
       require:
@@ -698,6 +723,7 @@ kinds:
         - Approach
         - "What this does not cover"
     voice: declarative
+    write_when: "a test was added or changed to prove a requirement or an acceptance criterion"
 relations:
   supersedes:
     family: succession
