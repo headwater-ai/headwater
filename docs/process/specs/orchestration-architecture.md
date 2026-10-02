@@ -40,9 +40,9 @@ relations:
     - to: .claude/agents/hw-verify.md
       verified_revision: sha256:c98a5e49c01127218a1a4b3b0e42bd30ede5c729b0c23ca9ee65e471ff5e55f8
     - to: .claude/agents/hw-integrate.md
-      verified_revision: sha256:60e02c40d9917aa958909997f7d07f5786b70abaadacb3a250c518149308cadb
+      verified_revision: sha256:2b9a3b297f09fd03d49fe57e280653dc610bd8cc85e091d504ec03909af295dc
     - to: .claude/skills/hw-run-policy/SKILL.md
-      verified_revision: sha256:ba3723eef1eaa0bd2aa1fc14adcf3ccb663f250c24db266cb4b74918abf7a82f
+      verified_revision: sha256:05bbe166e4d10a953dfbbca09100f142909ad56670dfa0adf5edbe3e2c562c36
     - to: .claude/skills/hw-verification-bar/SKILL.md
       verified_revision: sha256:a68ce6b14b5a8d7068aeafd8c7443e0497a55b4e444e2b971daa1da738c2153b
 ---
