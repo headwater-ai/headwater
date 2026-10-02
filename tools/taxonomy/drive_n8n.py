@@ -518,7 +518,9 @@ def provoke_evaluation_figures(root, corpora, scratch):
     row of the shelf-shape table states one fewer than the README's row; and
     the standards-spec summary states seven more checked. A second leg strips
     the figures out of the design-spec README, and the run must fail naming
-    that README rather than pass over figures it never read.
+    that README rather than pass over figures it never read. A third points the
+    page's design-spec summary at a page that is not a fixture README, and the
+    run must fail saying that no summary links it.
     """
     def copy_in(dest_root):
         for rel in [EVALUATION] + [os.path.relpath(p, root) for _, p in corpora]:
@@ -589,6 +591,23 @@ def provoke_evaluation_figures(root, corpora, scratch):
     if gone.returncode != 1 or named not in gone.stderr:
         raise Mismatch("a design-spec README with no `## %s` exits %d under `--guard-only` and does not name it"
                        % (HELD_SECTION, gone.returncode))
+
+    # The page's denominator: a design-spec summary that no longer links its
+    # README fails the job, rather than leaving the summary held against nothing.
+    unlinked = os.path.join(scratch, "unlinked")
+    copy_in(unlinked)
+    path = os.path.join(unlinked, EVALUATION)
+    link = "(" + os.path.relpath(DESIGN_SPEC_README, os.path.dirname(EVALUATION))
+    text = open(path, encoding="utf-8").read()
+    if link not in text:
+        raise Mismatch("%s does not link %s, so the unlinked leg has nothing to remove" % (EVALUATION, DESIGN_SPEC_README))
+    open(path, "w", encoding="utf-8").write(text.replace(link, "(../taxonomies/design-spec/doctrine.md"))
+    cut = guard(unlinked)
+    named = ["%s: no `%s` block links %s" % (EVALUATION, SUMMARY, DESIGN_SPEC_README),
+             "a `%s` block links no fixture README" % SUMMARY]
+    if cut.returncode != 1 or any(n not in cut.stderr for n in named):
+        raise Mismatch("an evaluation whose design-spec summary links no README exits %d under `--guard-only` and does not say so"
+                       % cut.returncode)
 
 
 def report(problems, corpora, green):
