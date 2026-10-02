@@ -476,7 +476,8 @@ fn no_tool_outside_the_query_class_is_registered_without_the_switch() {
             "related",
             "resolve_identifier",
             "governing_docs_for_path",
-            "check"
+            "check",
+            "kinds"
         ]
     );
 
@@ -532,6 +533,7 @@ fn the_switch_registers_two_tools_and_no_landed_write() {
             "resolve_identifier",
             "governing_docs_for_path",
             "check",
+            "kinds",
             "new",
             "fix"
         ]
@@ -1306,7 +1308,7 @@ fn the_explain_tool_reads_an_absolute_path_under_a_relative_root() {
 
 /// An argument each tool accepts, so that a call reaches the read behind it.
 ///
-/// A `match` rather than one string for all six: `check` refuses a path where a
+/// A `match` rather than one string for all seven: `check` refuses a path where a
 /// format belongs, and a call that a tool refused proves nothing about what the
 /// tool does when it runs. A tool this list does not name fails the suite,
 /// which is what makes the next tool's author supply one.
@@ -1315,7 +1317,7 @@ fn an_argument_for(tool: &str) -> &'static str {
         "route" => "throttling",
         "explain" | "related" | "governing_docs_for_path" => "query/specs/api-design.md",
         "resolve_identifier" => "DR-FIX-0031",
-        "check" => "text",
+        "check" | "kinds" => "text",
         other => panic!("{other} is registered and this suite has no argument for it"),
     }
 }
@@ -1619,4 +1621,93 @@ fn no_string_under_structured_content_is_folded() {
             );
         }
     }
+}
+
+/// The `kinds` tool answers the kinds of the server's taxonomy, in the bytes
+/// the one renderer writes, and refuses a call that names no format (#1580).
+///
+/// The fixture taxonomy has one abstract kind, a concrete kind with no shelf,
+/// and a kind whose purpose arrives through its parent. Each of those is a
+/// line a renderer could get wrong in a way the others would not show.
+#[test]
+fn the_kinds_tool_answers_the_bytes_of_the_one_renderer() {
+    let built = fixture_tree();
+    let server = built.server(RECORDED_AT);
+    let response = once(&server, &calling("kinds", r#"{"format":"text"}"#));
+    let answer = content(&response).concat();
+    let expected =
+        headwater_query::kinds::Kinds::of("query-fixture", "0.0.0", &built.shape, &built.taxonomy);
+    assert_eq!(answer, expected.text(), "{response}");
+
+    // The abstract parent is counted and is never offered as a draft.
+    assert!(
+        answer.starts_with(
+            "query-fixture 0.0.0: 4 kind(s) a document can be, and 1 abstract kind(s) no \
+             document is: governed_document\n"
+        ),
+        "{answer}"
+    );
+    assert!(!answer.contains("headwater new governed_document"), "{answer}");
+    assert!(!answer.contains("\ngoverned_document\n"), "{answer}");
+    // A purpose inherited through `is_a`, and facets inherited from the
+    // abstract root.
+    let runbook = answer
+        .split("\n\n")
+        .find(|block| block.starts_with("runbook\n"))
+        .expect("runbook is listed");
+    assert!(
+        runbook.contains("  purpose   procedure: enable a reader to carry out a task correctly\n"),
+        "{runbook}"
+    );
+    assert!(
+        runbook.contains("  facets    status, status_since, summary\n"),
+        "{runbook}"
+    );
+    assert!(
+        runbook.contains("  shelf     runbooks (query/runbooks/**)\n"),
+        "{runbook}"
+    );
+    assert!(
+        runbook.contains("  draft     headwater new runbook \"<title>\"\n"),
+        "{runbook}"
+    );
+    // A concrete kind that no shelf carries has nowhere to be drafted.
+    let operations = answer
+        .split("\n\n")
+        .find(|block| block.starts_with("operations_document\n"))
+        .expect("operations_document is listed");
+    assert!(
+        operations.contains("  draft     (no shelf can place one)\n"),
+        "{operations}"
+    );
+    // The when line is the gap sentence for every kind, and nothing else.
+    assert_eq!(answer.matches("  when      ").count(), 4, "{answer}");
+    let gap = format!("  when      {}\n", headwater_query::kinds::UNDECLARED_WHEN);
+    assert_eq!(answer.matches(&gap).count(), 4, "{answer}");
+
+    // The structured answer is the `--json` document.
+    assert!(
+        structured(&response).is_some(),
+        "the kinds answer carries structuredContent: {response}"
+    );
+    assert!(
+        response.contains(&format!(
+            r#""structuredContent":{}"#,
+            expected.json().render()
+        )),
+        "{response}"
+    );
+
+    // `json` answers the same content, and an unknown format and a missing one
+    // are refused by name.
+    let json = content(&once(&server, &calling("kinds", r#"{"format":"json"}"#))).concat();
+    assert_eq!(json, expected.json().render_pretty());
+    let response = once(&server, &calling("kinds", r#"{"format":"yaml"}"#));
+    assert!(
+        response.contains("`kinds` takes a format, one of text, json"),
+        "{response}"
+    );
+    let response = once(&server, &calling("kinds", "{}"));
+    assert!(response.contains("format"), "{response}");
+    assert!(!response.contains("query-fixture 0.0.0"), "{response}");
 }
