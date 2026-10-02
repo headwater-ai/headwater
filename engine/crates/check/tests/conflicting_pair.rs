@@ -203,6 +203,7 @@ fn the_count_is_one_per_declared_entry() {
         vec![
             path("both-source.md"),
             path("clash-source.md"),
+            path("late-listed-source.md"),
             path("listed-source.md"),
             path("mutual-a.md"),
             path("mutual-b.md"),
@@ -446,6 +447,32 @@ fn a_list_that_contains_the_value_holds() {
     let run = run();
     assert_eq!(against(&run, "listed-source.md").len(), 1);
     assert!(against(&run, "listed-target.md").is_empty());
+    // Membership, not the first item: `[draft, current]` holds `current`.
+    assert_eq!(against(&run, "late-listed-source.md").len(), 1);
+}
+
+/// The entry the remedy offers to remove is the one the reported file holds,
+/// under the name its author wrote. `outranks-inverse-target.md` writes only
+/// `outranked_by`, so its remedy names that entry in that file and not the
+/// declared name or the far end's file.
+#[test]
+fn the_remedy_names_the_entry_as_the_reported_file_wrote_it() {
+    let run = run();
+    for finding in findings(&run) {
+        let (_, entry) = finding
+            .remediation
+            .split_once(" entry from ")
+            .unwrap_or_else(|| panic!("an entry to remove: {}", finding.remediation));
+        assert_eq!(entry, finding.path, "{}", finding.remediation);
+    }
+    let found = against(&run, "outranks-inverse-target.md");
+    assert!(
+        found[0]
+            .remediation
+            .contains("remove the `outranked_by` entry from"),
+        "the name as written: {}",
+        found[0].remediation
+    );
 }
 
 /// A list that does not contain the value does not hold, so the reading is
