@@ -1882,7 +1882,8 @@ STUB
         present "and names the channel through the provider API as open and unmeasured" \
             "One channel stays open, and nothing measured it. A call that holds the provider credential can ask the provider API for a server-side web tool, which reaches any host from outside the session, so this transcript does not show that the session read nothing from GitHub." \
             "$scratch/no-network.md"
-        absent "and the transcript claims nothing is reachable from the session" "reachable" "$scratch/no-network.md"        present "and claims no more than the confinement holds: direct connections refused" \
+        absent "and the transcript claims nothing is reachable from the session" "reachable" "$scratch/no-network.md"
+        present "and claims no more than the confinement holds: direct connections refused" \
             "so a direct connection to any other host, such as \`gh api\`, \`curl\` or \`git clone\` to GitHub, was refused." "$scratch/no-network.md"
         present "and says the file system held no copy of this repository on the host, and no more" \
             "no copy of this repository on the host, no other tree of its batch and no configuration of the host was readable through the session's file system." \
