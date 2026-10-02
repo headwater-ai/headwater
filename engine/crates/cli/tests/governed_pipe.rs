@@ -1037,6 +1037,7 @@ fn taxonomy_publish_vendor_and_diff_finish_when_a_named_pipe_or_socket_is_a_memb
         for args in [
             vec!["taxonomy", "vendor", artifact],
             vec!["taxonomy", "diff", artifact, "--now", "2026-08-01"],
+            vec!["taxonomy", "migrate", artifact, "--now", "2026-08-01"],
         ] {
             let verb = args.join(" ");
             let (status, _, err) = ended(
@@ -1048,6 +1049,49 @@ fn taxonomy_publish_vendor_and_diff_finish_when_a_named_pipe_or_socket_is_a_memb
             assert!(
                 flat(&err).contains("notes.md is not a regular file"),
                 "{verb} names the {kind}: {err}"
+            );
+            // The member is not the release record, so the refusal does
+            // not blame the record (#1567).
+            assert!(
+                !flat(&err).contains("release record"),
+                "{verb} does not blame the release record for a member: {err}"
+            );
+            // `diff` and `migrate` read the artifact through one function,
+            // which heads a member it cannot read as unreadable and never as
+            // a divergence from the record.
+            if args[1] != "vendor" {
+                assert!(
+                    flat(&err).contains(&format!("{artifact} cannot be read"))
+                        && !flat(&err).contains("is not what its own"),
+                    "{verb} heads an unreadable member as unreadable: {err}"
+                );
+            }
+        }
+
+        // The same file at `release.yml` is the record itself, so there
+        // the refusal names the record.
+        std::fs::remove_file(out.join("notes.md")).expect("the member is there to take out");
+        std::fs::remove_file(out.join("release.yml")).expect("the record is there to take out");
+        special(kind, &out.join("release.yml"));
+        for args in [
+            vec!["taxonomy", "vendor", artifact],
+            vec!["taxonomy", "diff", artifact, "--now", "2026-08-01"],
+        ] {
+            let verb = args.join(" ");
+            let (status, _, err) = ended(
+                &root,
+                &args,
+                &format!("{verb} opened the {kind} at release.yml, and waited on it"),
+            );
+            assert_eq!(
+                status.code(),
+                Some(1),
+                "{verb} refuses the {kind} record: {err}"
+            );
+            assert!(
+                flat(&err).contains("the release record")
+                    && flat(&err).contains("release.yml is not a regular file"),
+                "{verb} names the record when the {kind} is the record: {err}"
             );
         }
     }
