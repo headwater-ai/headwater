@@ -980,8 +980,9 @@ if [ "$(git -C "$root" rev-parse --show-toplevel 2>/dev/null)" = "$root" ]; then
     ( cd "$scratch/corpus" && find docs -type f -name '*.md' | grep -v -e '^docs/probes/' -e '^docs/probe-runs/' -e '^docs/probe-results/' | sort ) \
         > "$scratch/corpus-before.txt"
     # Outside `docs/`, every probe of the shelf is named by a declared fold or
-    # by one of the two files that state an answer, and by nothing else
-    # (#1384). A fold dropped from the list, or a new file that names a probe,
+    # by one of the three files that state an answer, and by nothing else
+    # (#1384). The third is the case table of the harder probes (#1472), which
+    # holds the shallow and the sound answer of each. A fold dropped from the list, or a new file that names a probe,
     # moves this set, so each entry of the list is held here.
     : > "$scratch/outside-naming.txt"
     for shelf_probe in "$root"/docs/probes/*.md; do
@@ -990,8 +991,8 @@ if [ "$(git -C "$root" rev-parse --show-toplevel 2>/dev/null)" = "$root" ]; then
         sh "$root/tools/probe/seal.sh" --naming "$scratch/corpus" "$shelf_id" \
             | awk -v here="$scratch/corpus/" 'index($0, here) == 1 { $0 = substr($0, length(here) + 1) } $0 !~ /^docs\//' >> "$scratch/outside-naming.txt"
     done
-    same "outside docs/, only the two files that state an answer name a probe and are not folds" \
-        ".claude/skills/fixtures.sh tools/probe/probe-record-fixtures.sh" \
+    same "outside docs/, only the three files that state an answer name a probe and are not folds" \
+        ".claude/skills/fixtures.sh engine/crates/probe/tests/corpus.rs tools/probe/probe-record-fixtures.sh" \
         "$(sort -u "$scratch/outside-naming.txt" | tr '\n' ' ' | sed 's/ $//')"
     sh "$root/tools/probe/seal.sh" "$scratch/corpus" \
         HW-PROBE-a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer \
@@ -2772,15 +2773,15 @@ if [ -x "$engine" ]; then
     present "and each leak-kept line on its own" "line 8 holds only leak-kept probes" "$scratch/dry.out"
 
     # A line that pools a leak-kept probe with one that is not fails the dry run,
-    # and a plan over its ceiling is printed rather than fatal: four
-    # sufficiency probes over six arms at 30 repetitions is 720 sessions.
+    # and a plan over its ceiling is printed rather than fatal: six
+    # sufficiency probes over six arms at 30 repetitions is 1080 sessions.
     printf 'campaign present sufficiency\n' > "$scratch/pooled.spec"
     PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
         --spec "$scratch/pooled.spec" > "$scratch/pooled.out" 2> "$scratch/pooled.err"
     same "a line that pools a leak-kept probe fails the dry run with 8, not 5" "8" "$?"
     present "and names the line" "line 1 pools a probe under \`leaks_kept:\`" "$scratch/pooled.out"
     present "and the ceiling's refusal is printed as a line" \
-        "L1 720 sessions project \$360.00 against a declared ceiling of \$300.00" "$scratch/pooled.out"
+        "L1 1080 sessions project \$540.00 against a declared ceiling of \$300.00" "$scratch/pooled.out"
 
     # Any other refusal of a plan is the batch driver's 5.
     printf 'campaign present discovery\n' > "$scratch/refused.spec"
