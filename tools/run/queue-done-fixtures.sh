@@ -203,6 +203,21 @@ answer OPEN - "$(entry AWAITING_CHECKS 1 PENDING check:2026-10-01T10:36:00Z chec
 run 42; status=$?
 if [ "$status" -eq 1 ] && [ ! -s "$scratch/out" ]; then ok "pending rollup: exit 1"; else bad "pending rollup (exit $status)"; fi
 
+echo "a failed group at the head of the queue is not stalled, however old its last completion"
+answer OPEN - "$(entry AWAITING_CHECKS 1 FAILURE check:2026-10-01T09:00:00Z)" - added
+run 42; status=$?
+if [ "$status" -eq 1 ] && [ ! -s "$scratch/out" ]; then ok "failure rollup: exit 1, nothing on stdout"; else bad "failure rollup (exit $status)"; fi
+
+echo "a locked entry with an old green group is not stalled"
+answer OPEN - "$(entry LOCKED 1 SUCCESS check:2026-10-01T09:00:00Z)" - added
+run 42; status=$?
+if [ "$status" -eq 1 ] && [ ! -s "$scratch/out" ] && grep -q 'in the queue, LOCKED' "$scratch/err"; then ok "locked: exit 1"; else bad "locked (exit $status)"; fi
+
+echo "a green group third in the queue is not stalled"
+answer OPEN - "$(entry AWAITING_CHECKS 3 SUCCESS check:2026-10-01T09:00:00Z)" - added
+run 42; status=$?
+if [ "$status" -eq 1 ] && [ ! -s "$scratch/out" ]; then ok "position 3: exit 1"; else bad "position 3 (exit $status)"; fi
+
 echo "the stall interval is fifteen minutes, counted from the latest completion"
 answer OPEN - "$(entry AWAITING_CHECKS 1 SUCCESS check:2026-10-01T11:00:00Z status:2026-10-01T11:45:01Z)" - added
 run 42; s1=$?

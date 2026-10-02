@@ -19,7 +19,7 @@ relations:
     - to: tools/run/queue-done.sh
       verified_revision: sha256:8f78819c2ec10471c380efa02b1804325f7b91f1ae43c486f7117a6277183858
     - to: tools/run/queue-done-fixtures.sh
-      verified_revision: sha256:d75f4c9cde1427590ea06d2b265d10157a39b635dde798d7e726697a4df42f3f
+      verified_revision: sha256:9459b2ec8d08c14798a30e70b1a9a1bf85a32eaf3d2ee2a11dcc3c692cd56ada
 ---
 
 # Merges go through the GitHub merge queue, one squash commit per pull request
