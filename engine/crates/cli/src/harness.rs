@@ -288,4 +288,44 @@ mod tests {
         let grown = format!("{current}a line after the record\n");
         assert_eq!(classify(Some(grown.as_bytes()), &current), Found::Foreign);
     }
+
+    /// What git writes for a file it checks out with `core.autocrlf=true`.
+    fn crlf(text: &str) -> String {
+        text.replace('\n', "\r\n")
+    }
+
+    #[test]
+    fn a_copy_git_checked_out_with_crlf_line_endings_is_the_steps_own() {
+        for file in files() {
+            assert!(
+                !file.bytes.contains('\r'),
+                "{} ships a carriage return, so a CRLF reading would change what it means",
+                file.path
+            );
+            let checked_out = crlf(&file.bytes);
+            assert_eq!(
+                classify(Some(checked_out.as_bytes()), &file.bytes),
+                Found::Current,
+                "{} with CRLF line endings",
+                file.path
+            );
+        }
+        let current = installed("---\nname: x\n---\nnew\n");
+        let earlier = crlf(&installed("---\nname: x\n---\nold\n"));
+        assert_eq!(classify(Some(earlier.as_bytes()), &current), Found::Earlier);
+        // One changed byte above the record is an edit, in either ending.
+        let edited = earlier.replacen("old", "mine", 1);
+        assert_eq!(classify(Some(edited.as_bytes()), &current), Found::Foreign);
+        let edited_current = crlf(&current).replacen("new", "neW", 1);
+        assert_eq!(
+            classify(Some(edited_current.as_bytes()), &current),
+            Found::Foreign
+        );
+        // A carriage return that ends no line is a changed byte, not an ending.
+        let stray = crlf(&current).replacen("new", "ne\rw", 1);
+        assert_eq!(classify(Some(stray.as_bytes()), &current), Found::Foreign);
+        // This release's bytes with more after them are not this release.
+        let grown = crlf(&format!("{current}a line after the record\n"));
+        assert_eq!(classify(Some(grown.as_bytes()), &current), Found::Foreign);
+    }
 }
