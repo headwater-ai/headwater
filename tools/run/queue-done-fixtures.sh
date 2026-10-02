@@ -181,10 +181,10 @@ if [ "$status" -eq 1 ] && [ ! -s "$scratch/out" ] && grep -q 'in the queue, MERG
 
 # #1548: the group of the entry at the head of the queue was green, and the
 # entry stayed in AWAITING_CHECKS for 84 minutes or more until the
-# integrator's deadline. The last check completed at 10:36, and the clock
-# reads 12:00.
+# integrator's deadline. The last check completed at 10:35:30, and the clock
+# reads 12:00, so the age is 84 and a half minutes and the line says 84.
 echo "a green group at the head of the queue that has not merged for 84 minutes is stalled (#1548)"
-answer OPEN - "$(entry AWAITING_CHECKS 1 SUCCESS check:2026-10-01T10:20:00Z check:2026-10-01T10:36:00Z status:2026-10-01T10:05:00Z)" - added
+answer OPEN - "$(entry AWAITING_CHECKS 1 SUCCESS check:2026-10-01T10:20:00Z check:2026-10-01T10:35:30Z status:2026-10-01T10:05:00Z)" - added
 run 42; status=$?
 if [ "$status" -eq 0 ] && grep -qx 'queue-done: #42 stalled: every check of its merge group is green and it has not merged in 84 minutes' "$scratch/out"; then ok "#1548: exit 0 with the stalled line"; else bad "#1548 stalled (exit $status)"; fi
 

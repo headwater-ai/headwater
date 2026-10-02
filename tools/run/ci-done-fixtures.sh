@@ -183,6 +183,12 @@ checks_json 'completed|failure|Engine tests|9011' 'completed|cancelled|Lint|9012
 run "$full"; status=$?
 if [ "$status" -eq 0 ] && grep -qx 'ci-done: 01234567 red: Engine tests, workflow CI' "$scratch/out"; then ok "the failure is red, the superseded run and its check are not named"; else bad "failed sibling (exit $status)"; fi
 
+echo "a completed run with no conclusion did not run, and supersedes nothing"
+runs_json '11|completed|-|CI|9011|main' '12|completed|cancelled|CI|9012|topic'
+checks_json 'completed|cancelled|Engine tests|9012'
+run "$full"; status=$?
+if [ "$status" -eq 0 ] && grep -qx 'ci-done: 01234567 red: Engine tests, workflow CI, workflow CI' "$scratch/out" && ! grep -q superseded "$scratch/out"; then ok "a null conclusion is -, and - never supersedes"; else bad "null conclusion (exit $status)"; fi
+
 echo "a run on any branch supersedes, not only a run on main"
 runs_json '11|completed|cancelled|CI|9011|hw/a' '12|completed|success|CI|9012|hw/b'
 checks_json 'completed|cancelled|Engine tests|9011' 'completed|success|Engine tests|9012'
