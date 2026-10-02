@@ -337,6 +337,19 @@ mod tests {
             );
         }
         let current = installed("---\nname: x\n---\nnew\n");
+        // Each `\r\n` is read alone, so mixed endings are still this release:
+        // a file whose first line alone is CRLF, so that it ends in LF, and a
+        // file whose first line alone is LF, so that it ends in CRLF.
+        let first_line_only = current.replacen('\n', "\r\n", 1);
+        assert_eq!(
+            classify(Some(first_line_only.as_bytes()), &current),
+            Found::Current
+        );
+        let all_but_first = crlf(&current).replacen("\r\n", "\n", 1);
+        assert_eq!(
+            classify(Some(all_but_first.as_bytes()), &current),
+            Found::Current
+        );
         let earlier = crlf(&installed("---\nname: x\n---\nold\n"));
         assert_eq!(classify(Some(earlier.as_bytes()), &current), Found::Earlier);
         // One changed byte above the record is an edit, in either ending.
