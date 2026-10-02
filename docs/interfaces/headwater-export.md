@@ -165,4 +165,4 @@ The history: `1.0` to `1.1` added `version` ([#343](https://github.com/headwater
 
 ## See also
 
-[`headwater generate`](headwater-generate.md) writes native projections. [`headwater taxonomy publish`](headwater-taxonomy.md) creates a package artifact.
+[`headwater generate`](headwater-generate.md) writes native projections. [`headwater taxonomy publish`](headwater-taxonomy.md) creates a package artifact. [Spec 7](../spec/07-distribution-and-federation.md#what-leaves-a-corpus) states the export rules that this command implements.

@@ -53,7 +53,7 @@
 //! filter reaches it. A filter clause names facet values, which is one step
 //! closer to the content than the shape a descriptor is allowed to disclose. So
 //! a reader learns that a profile is filtered and at what grain, which is what
-//! spec 6 requires a filtered view to admit, and learns the clause from the
+//! spec 7 requires a filtered view to admit, and learns the clause from the
 //! export itself if the export reaches them.
 //!
 //! # Two things the five did not mention, and one of them is a correction

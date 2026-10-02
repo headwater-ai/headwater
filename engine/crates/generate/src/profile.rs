@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! The export profile: the declaration that says what leaves a corpus.
 //!
-//! [Spec 6](../../../../docs/spec/06-engine-architecture.md#an-export-profile-carries-a-filter)
+//! [Spec 7](../../../../docs/spec/07-distribution-and-federation.md#an-export-profile-carries-a-filter)
 //! makes an export profile "an entry under `projections`" that names an
 //! audience, an emitter target, an output path, a filter over facet values and
 //! a tombstone grain. The meta-schema already declares every one of those
@@ -12,7 +12,7 @@
 //!
 //! # A profile is a group of entries, and the name is what groups them
 //!
-//! Spec 6 asks that "every projection inside a profile regenerates from the
+//! Spec 7 asks that "every projection inside a profile regenerates from the
 //! filtered graph", so a profile holds more than one projection. The
 //! meta-schema writes `profile` on each entry, which makes the name the thing
 //! that groups them. Two entries that name one profile are two artifacts for
@@ -29,7 +29,7 @@
 //!
 //! # An entry that names no profile is in `default`
 //!
-//! Spec 6: "A corpus with one audience declares one profile with no filter,
+//! Spec 7: "A corpus with one audience declares one profile with no filter,
 //! which is the first release." So an entry that names no profile is not
 //! profile-less, it is the one profile. The engine names it `default` rather
 //! than leave it anonymous, because `--profile` selects by name and a name that
@@ -171,7 +171,7 @@ mod emitter_tests {
 /// The tombstone grain: what a reader of a filtered view learns about what is
 /// missing.
 ///
-/// Spec 6 gives the two values and makes `counted` the default.
+/// Spec 7 gives the two values and makes `counted` the default.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Grain {
     /// A placeholder stands where each withheld node or edge would have been,
@@ -209,7 +209,7 @@ pub struct Clause {
 ///
 /// # Two directions, and only one of them is default-deny
 ///
-/// Spec 6 asks for a filter that is **default-deny**: "a node class, an edge
+/// Spec 7 asks for a filter that is **default-deny**: "a node class, an edge
 /// class, or an attribute that no profile names does not travel", because "a
 /// filter stated as a list of exclusions grows a hole every time the schema
 /// grows". Spec 2's own example writes an exclusion. Both are here, and they are
@@ -221,7 +221,7 @@ pub struct Clause {
 ///   that makes it deny by default: a facet value added to the taxonomy next
 ///   month reaches no profile until somebody names it.
 /// - An `exclude` clause names values that do not travel, and it grows the hole
-///   spec 6 warns about. It is admitted because the specification's own example
+///   spec 7 warns about. It is admitted because the specification's own example
 ///   uses one, and because a corpus whose confidentiality facet is required has
 ///   no hole to grow.
 ///
@@ -243,7 +243,7 @@ impl Filter {
     /// withheld it when it does not.
     ///
     /// The rule identifier is built from the declaration and never from the
-    /// document. Spec 6: "Free prose in a tombstone is a channel, and a reason
+    /// document. Spec 7: "Free prose in a tombstone is a channel, and a reason
     /// that quotes the document is a leak wearing a label. The rule identifier
     /// is what a reader needs to ask for access, and it is all that they get."
     /// So the identifier names the profile, the direction and the facet, and it

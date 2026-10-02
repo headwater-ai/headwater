@@ -80,7 +80,7 @@
 //! # What no member of this vocabulary can hold
 //!
 //! [`LOSS`] is the declaration and [`crate::census`] is the audit of it, in the
-//! shape spec 6 fixes for the graph emitters. A value that rides in a property
+//! shape spec 7 fixes for the graph emitters. A value that rides in a property
 //! bag is still a loss, because a property bag is not a member of the
 //! vocabulary and a consumer that reads SARIF alone does not find it.
 //!

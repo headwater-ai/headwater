@@ -1036,7 +1036,7 @@ fn the_descriptor_path_obeys_the_marker_rule() {
 /// The native export carries the graph with no loss, and the round trip is what
 /// proves it.
 ///
-/// [Spec 6](../../../../docs/spec/06-engine-architecture.md#an-export-is-a-projection-and-it-declares-what-it-dropped):
+/// [Spec 7](../../../../docs/spec/07-distribution-and-federation.md#an-export-is-a-projection-and-it-declares-what-it-dropped):
 /// "The native export keeps its round-trip test, because an empty loss set is
 /// exactly what a round trip proves." So this reads the emitted bytes back with
 /// the loader that reads every other file in this engine, and holds what it
@@ -1251,7 +1251,7 @@ fn the_native_export_carries_the_members_of_a_list_anchor() {
 
 /// A filter withholds a document whole, and every edge that names it.
 ///
-/// Spec 6's claim about a filtered export: it "contains no document that its
+/// Spec 7's claim about a filtered export: it "contains no document that its
 /// declared filter withholds, and no artifact inside the profile derives from
 /// one". An edge into a withheld document states that the document exists and
 /// what it is called, so it goes too.
@@ -1281,7 +1281,7 @@ fn a_filtered_profile_withholds_a_document_and_its_edges() {
         "the path of the withheld document reached the artifact"
     );
 
-    // The tombstone carries the rule identifier and never the document. Spec 6:
+    // The tombstone carries the rule identifier and never the document. Spec 7:
     // "The rule identifier is what a reader needs to ask for access, and it is
     // all that they get."
     assert!(
@@ -1343,7 +1343,7 @@ fn a_sealed_grain_states_the_filtering_and_no_count() {
 
 /// The census fails a projector that dropped something with no reason.
 ///
-/// This is the failing fixture for the rule spec 6 states: "An omission that no
+/// This is the failing fixture for the rule spec 7 states: "An omission that no
 /// reason covers is a projector defect, and it fails the run." It runs the
 /// census against a projector that carried nothing and declared no loss, which
 /// is the emitter this whole apparatus exists to catch, and then against one
@@ -1533,7 +1533,7 @@ fn an_unbuilt_emitter_refuses_and_says_what_it_waits_on() {
 
 /// An exporter that cannot evaluate its filter emits nothing.
 ///
-/// Spec 6, on principle 7 read for an exporter: "It never emits an unfiltered
+/// Spec 7, on principle 7 read for an exporter: "It never emits an unfiltered
 /// artifact, and it never emits a partly filtered one." A clause over a facet
 /// that the taxonomy does not declare withholds nothing at all, so the failure
 /// it produces is the one an export may not have.

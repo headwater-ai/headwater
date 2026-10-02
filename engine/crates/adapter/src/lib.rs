@@ -48,7 +48,7 @@
 //!
 //! # Every format declares a loss set
 //!
-//! [Spec 6](../../../../docs/spec/06-engine-architecture.md#an-export-is-a-projection-and-it-declares-what-it-dropped)
+//! [Spec 7](../../../../docs/spec/07-distribution-and-federation.md#an-export-is-a-projection-and-it-declares-what-it-dropped)
 //! requires an emitter to declare "the node classes, edge classes, and
 //! attributes that its target cannot carry, each with a reason". A finding is
 //! not a node, so [`Loss`] here is about a *field of a run* rather than about a
@@ -393,7 +393,7 @@ pub fn reported(run: &Run) -> Vec<Reported<'_>> {
 /// What a format carried, and what its loss set accounted for.
 ///
 /// The audit of the claim a loss set makes, in the shape
-/// [spec 6](../../../../docs/spec/06-engine-architecture.md#an-export-is-a-projection-and-it-declares-what-it-dropped)
+/// [spec 7](../../../../docs/spec/07-distribution-and-federation.md#an-export-is-a-projection-and-it-declares-what-it-dropped)
 /// fixes for the graph emitters: "Every node and every edge in the graph is
 /// either present in the output, or accounted for by a declared loss reason."
 /// Here the denominator is every finding of the run rather than every node of

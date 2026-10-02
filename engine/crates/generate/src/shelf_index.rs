@@ -276,7 +276,7 @@ fn render(
         if let Some(summary) = &pointer.summary {
             out.push_str(&format!(" — {summary}"));
         }
-        // Spec 6 rules that an emitter which cannot carry the warrant does not
+        // Spec 7 rules that an emitter which cannot carry the warrant does not
         // carry the content. Markdown can carry it, so this one says it rather
         // than withholding the row.
         match (&pointer.outside, pointer.unwarranted) {
