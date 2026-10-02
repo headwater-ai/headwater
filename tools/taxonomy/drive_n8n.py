@@ -6,6 +6,8 @@ Three READMEs under `docs/taxonomies/*/fixtures/n8n/` each carry a *How to run t
 Nothing here carries a second copy of a figure. Every expected value is parsed out of the README, so a number this file holds is a number a reader reads.
 
 It holds one thing more: no README states an aggregate check-instance count outside *What a run reports*, the one section it diffs, and the evaluation `docs/evaluations/n8n-worked-example.md`, which has no such section, states none at all. That count moves with every rule a release adds. Two copies of it in the design-spec probe arms read 6 and 26 when a run reported 7 and 31, and all seven on the evaluation were wrong when this guard first read it (#1452).
+
+And it holds the evaluation's figures transitively, page to README to run. Each *What the run reported* block on the evaluation is held against the README it links, and the totals of *The count* and the shelf-shape table against the design-spec README. That README moved to 13 findings at headwater/standard 4.3.0 while the evaluation still read 12 in six places (#1568).
 """
 
 import os
