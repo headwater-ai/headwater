@@ -2600,7 +2600,7 @@ fn artifact(
 ///
 /// [Spec 2](../../../../docs/spec/02-taxonomy-model.md#versioning-by-measured-compatibility)
 /// splits a payload into "what the engine can apply mechanically
-/// (`headwater migrate --apply`) and what needs human or agent judgment
+/// (`headwater taxonomy migrate --apply`) and what needs human or agent judgment
 /// (emitted as a task list with the affected documents attached)". Both halves
 /// are below, and the split is not this function's to make: it is derived from
 /// the target list by
@@ -5556,8 +5556,8 @@ fn probe_delta(
 
 /// `headwater probe grade <path>`.
 ///
-/// The one verb of this binary that returns a verdict, and the exit status
-/// still carries none. A probe never gates
+/// It returns a verdict for each expectation, and the exit status still
+/// carries none. A probe never gates
 /// ([spec 5](../../../../docs/spec/05-ai-integration.md#three-tiers-and-the-cadence-follows-the-purpose)),
 /// so a run where every expectation was refuted exits 0 exactly as a run where
 /// every one was satisfied does. A caller that wants the rate reads the text,

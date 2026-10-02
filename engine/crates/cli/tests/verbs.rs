@@ -382,3 +382,156 @@ fn the_verb_index_names_exactly_the_verbs_this_binary_dispatches() {
          `headwater generate` writes that file"
     );
 }
+
+/// The words an inline span of the specification may put after `headwater `
+/// although `VERBS` carries no verb of that name, as (file name, word).
+///
+/// `hook` is the one entry. Spec 5's "**No hook introduces a verb.**"
+/// paragraph names a `headwater hook <moment>` verb so that it can rule that
+/// verb out: the span names the verb the paragraph refuses, not one it
+/// promises. Every other word is a verb this binary carries, or it is a
+/// stale name, which is what
+/// [#1559](https://github.com/headwater-ai/headwater/issues/1559) found in
+/// spec 2 (`headwater migrate`, where the verb is `headwater taxonomy
+/// migrate`).
+const SPEC_MAY_NAME_A_NON_VERB: &[(&str, &str)] = &[("05-ai-integration.md", "hook")];
+
+/// Every inline code span of one Markdown text that opens with `headwater `,
+/// as (file name, line number, the word after `headwater ` up to the span's
+/// closing backtick). A line inside a fenced block is skipped: spec 6's
+/// grammar block is held by
+/// `the_cli_grammar_of_spec_6_names_every_verb_this_binary_ships`.
+fn inline_headwater_words(file: &str, text: &str) -> Vec<(String, usize, String)> {
+    let mut words = Vec::new();
+    let mut fenced = false;
+    for (index, line) in text.lines().enumerate() {
+        let trimmed = line.trim_start();
+        if trimmed.starts_with("```") || trimmed.starts_with("~~~") {
+            fenced = !fenced;
+            continue;
+        }
+        if fenced {
+            continue;
+        }
+        for (at, opening) in line.match_indices("`headwater ") {
+            if let Some(word) = line[at + opening.len()..].split_whitespace().next() {
+                let word = word.split('`').next().unwrap_or(word);
+                words.push((file.to_string(), index + 1, word.to_string()));
+            }
+        }
+    }
+    words
+}
+
+/// `inline_headwater_words` over every `docs/spec/*.md` file, in path order.
+fn spec_inline_headwater_words() -> Vec<(String, usize, String)> {
+    let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../docs/spec");
+    let mut paths: Vec<_> = std::fs::read_dir(&dir)
+        .unwrap_or_else(|e| panic!("{}: {e}", dir.display()))
+        .map(|entry| {
+            entry
+                .unwrap_or_else(|e| panic!("{}: {e}", dir.display()))
+                .path()
+        })
+        .filter(|path| path.extension().is_some_and(|ext| ext == "md"))
+        .collect();
+    paths.sort();
+    let mut words = Vec::new();
+    for path in paths {
+        let text =
+            std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
+        let file = path
+            .file_name()
+            .map(|name| name.to_string_lossy().into_owned())
+            .unwrap_or_default();
+        words.extend(inline_headwater_words(&file, &text));
+    }
+    words
+}
+
+/// Each span whose word is not a shipped verb and is not explained for its
+/// own file by `allowed`, as `<file>:<line> <word>`.
+fn unexplained_spans(words: &[(String, usize, String)], allowed: &[(&str, &str)]) -> Vec<String> {
+    let shipped: BTreeSet<&str> = headwater_verbs::VERBS
+        .iter()
+        .map(|verb| verb.name)
+        .collect();
+    words
+        .iter()
+        .filter(|(file, _, word)| {
+            !shipped.contains(word.as_str()) && !allowed.iter().any(|(f, w)| f == file && w == word)
+        })
+        .map(|(file, line, word)| format!("{file}:{line} {word}"))
+        .collect()
+}
+
+/// Every inline `headwater <word>` span under `docs/spec/` names a verb this
+/// binary carries, or a word `SPEC_MAY_NAME_A_NON_VERB` explains, and every
+/// entry of that list is still used by a span.
+///
+/// # This case was watched failing three ways
+///
+/// Before #1559 edited spec 2, it named `02-taxonomy-model.md:888 migrate`
+/// and `02-taxonomy-model.md:890 migrate`: the spec quoted a top-level
+/// `headwater migrate` verb, and `migrate` is a second word of `taxonomy`
+/// only. Removing the `hook` entry from `SPEC_MAY_NAME_A_NON_VERB` names
+/// `05-ai-integration.md:139 hook`, which proves the first assertion reads
+/// the list. Adding an entry that no span uses reddens the second assertion,
+/// naming that entry, so the list cannot go stale.
+#[test]
+fn every_headwater_code_span_in_the_specification_names_a_verb_this_binary_carries() {
+    let words = spec_inline_headwater_words();
+
+    let unexplained = unexplained_spans(&words, SPEC_MAY_NAME_A_NON_VERB);
+    assert!(
+        unexplained.is_empty(),
+        "docs/spec/ names `headwater <word>` for a word that is not a verb this binary \
+         carries and that SPEC_MAY_NAME_A_NON_VERB does not explain: {unexplained:?}"
+    );
+
+    let unused: Vec<&(&str, &str)> = SPEC_MAY_NAME_A_NON_VERB
+        .iter()
+        .filter(|(f, w)| !words.iter().any(|(file, _, word)| file == f && word == w))
+        .collect();
+    assert!(
+        unused.is_empty(),
+        "SPEC_MAY_NAME_A_NON_VERB lists {unused:?}, which no inline span under docs/spec/ \
+         names any more; remove the entry"
+    );
+}
+
+/// The reader and the list on a text the specification does not hold today:
+/// a span that closes on its word, a span inside a fenced block, an explained
+/// word in a file the explanation does not name, a second span on one line,
+/// and the defect of #1559 itself, `headwater migrate`.
+///
+/// No file under `docs/spec/` carries a span inside a fence or an explained
+/// word outside its file today, so the case above stays green when the fence
+/// skip or the file half of the list's match is removed. This case goes red
+/// for each of the two, and for a removed closing-backtick cut as well.
+/// Line 6 keeps the red run of #1559 after spec 2 was fixed: `migrate` is a
+/// second word of `taxonomy`, so a reader that took only the first span of a
+/// line, or that accepted a second word as a top-level name, would pass it.
+#[test]
+fn the_spec_span_reader_cuts_at_the_backtick_skips_a_fence_and_scopes_the_list_to_its_file() {
+    let text =
+        "Run `headwater check`.\n```\n`headwater nothing`\n```\nA `headwater hook x` verb.\n\
+                `headwater check` then `headwater migrate --apply`.\n";
+    let words = inline_headwater_words("a.md", text);
+    let read: Vec<(usize, &str)> = words
+        .iter()
+        .map(|(_, line, word)| (*line, word.as_str()))
+        .collect();
+    assert_eq!(
+        read,
+        vec![(1, "check"), (5, "hook"), (6, "check"), (6, "migrate")]
+    );
+    assert_eq!(
+        unexplained_spans(&words, &[("05-ai-integration.md", "hook")]),
+        vec!["a.md:5 hook".to_string(), "a.md:6 migrate".to_string()]
+    );
+    assert_eq!(
+        unexplained_spans(&words, &[("a.md", "hook")]),
+        vec!["a.md:6 migrate".to_string()]
+    );
+}
