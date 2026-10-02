@@ -267,6 +267,10 @@ AGGREGATE_COUNT = re.compile(r"(?<![\w,])[*_]*\d(?:[\d,]*\d)?[*_]*\s+check[\s-]+
 # The one page outside the three READMEs that restates their counts. It has no
 # held section, so every count on it is unheld.
 EVALUATION = "docs/evaluations/n8n-worked-example.md"
+# The README whose run the evaluation's `## The count` restates.
+DESIGN_SPEC_README = "docs/taxonomies/design-spec/fixtures/n8n/README.md"
+# The heading of each block on the evaluation that summarizes one README's run.
+SUMMARY = "What the run reported"
 
 
 def unheld_counts(text, held=HELD_SECTION):
@@ -388,6 +392,66 @@ def provoke_unheld(root, corpora, scratch):
                        % (EVALUATION, gone.returncode))
 
 
+def provoke_evaluation_figures(root, corpora, scratch):
+    """Arm 9. A design-spec figure on the evaluation that differs from the README must fail this job, run as `main` runs it, naming the page, the line and both values.
+
+    It copies the evaluation and the three READMEs into a scratch root and
+    provokes the page twice: the `Findings raised` row of `## The count` states
+    one fewer than the README, which is the defect of #1568, and the summary
+    sentence of `## What the run reported` states seven more. A second leg
+    strips the figures out of the design-spec README, and the run must fail
+    naming that README rather than pass over figures it never read.
+    """
+    def copy_in(dest_root):
+        for rel in [EVALUATION] + [os.path.relpath(p, root) for _, p in corpora]:
+            dest = os.path.join(dest_root, rel)
+            os.makedirs(os.path.dirname(dest), exist_ok=True)
+            shutil.copyfile(os.path.join(root, rel), dest)
+
+    def guard(dest_root):
+        return subprocess.run([sys.executable, os.path.abspath(__file__), dest_root, "--guard-only"],
+                              capture_output=True, text=True)
+
+    findings = stated_figures(open(os.path.join(root, DESIGN_SPEC_README), encoding="utf-8").read())["findings"]
+    lines = open(os.path.join(root, EVALUATION), encoding="utf-8").read().splitlines()
+    want = []
+    rows = [i for i, l in enumerate(lines) if re.match(r"\| Findings raised \| \d+ \|", l)]
+    if not rows:
+        raise Mismatch("%s has no `| Findings raised | N |` row to provoke" % EVALUATION)
+    fewer = str(int(findings) - 1)
+    lines[rows[0]] = re.sub(r"^(\| Findings raised \| )\d+", r"\g<1>" + fewer, lines[rows[0]])
+    want.append("%s:%d: states findings %s, and %s states %s" % (EVALUATION, rows[0] + 1, fewer, DESIGN_SPEC_README, findings))
+    summary = [i for i, l in enumerate(lines) if l.startswith("## ") and l[3:].strip() == SUMMARY]
+    said = [i for i in range(summary[0] + 1 if summary else len(lines), len(lines))
+            if re.search(r"\b\d+ findings\b", lines[i])][:1]
+    if not said or any(l.startswith("#") for l in lines[summary[0] + 1:said[0]]):
+        raise Mismatch("%s has no findings figure under `## %s` to provoke" % (EVALUATION, SUMMARY))
+    more = str(int(findings) + 7)
+    lines[said[0]] = re.sub(r"\b\d+ findings\b", more + " findings", lines[said[0]], count=1)
+    want.append("%s:%d: states findings %s, and %s states %s" % (EVALUATION, said[0] + 1, more, DESIGN_SPEC_README, findings))
+
+    provoked = os.path.join(scratch, "provoked")
+    copy_in(provoked)
+    open(os.path.join(provoked, EVALUATION), "w", encoding="utf-8").write("\n".join(lines) + "\n")
+    done = guard(provoked)
+    missed = [w for w in want if w not in done.stderr]
+    if done.returncode != 1 or missed:
+        raise Mismatch("a provoked evaluation exits %d under `--guard-only`; unnamed: %r" % (done.returncode, missed))
+
+    # The README's denominator: figures this guard cannot read fail the job
+    # naming the README, rather than holding the page against nothing.
+    blind = os.path.join(scratch, "blind")
+    copy_in(blind)
+    path = os.path.join(blind, DESIGN_SPEC_README)
+    text = open(path, encoding="utf-8").read()
+    open(path, "w", encoding="utf-8").write(text.replace("## " + HELD_SECTION, "## A heading this guard does not read"))
+    gone = guard(blind)
+    named = "%s: holds the figures %s states, and cannot read them" % (DESIGN_SPEC_README, EVALUATION)
+    if gone.returncode != 1 or named not in gone.stderr:
+        raise Mismatch("a design-spec README with no `## %s` exits %d under `--guard-only` and does not name it"
+                       % (HELD_SECTION, gone.returncode))
+
+
 def report(problems, corpora, green):
     if problems:
         print("n8n fixtures: %d claims of %d corpora do not hold" % (len(problems), len(corpora)), file=sys.stderr)
@@ -440,6 +504,11 @@ def main(root, binary):
             print("n8n fixtures: counts added outside `## %s` or to %s fail this job, and one inside it does not" % (HELD_SECTION, EVALUATION))
         except Mismatch as e:
             problems.append("the unheld-count arm: %s" % e)
+        try:
+            provoke_evaluation_figures(root, corpora, os.path.join(scratch, "figures"))
+            print("n8n fixtures: a design-spec figure on %s that differs from its README fails this job" % EVALUATION)
+        except Mismatch as e:
+            problems.append("the evaluation-figure arm: %s" % e)
         for name, readme_path in corpora:
             rel = os.path.relpath(readme_path, root)
             try:
