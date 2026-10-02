@@ -2757,11 +2757,11 @@ if [ -x "$engine" ]; then
     present "it prints the power calculation, uncorrected and corrected" \
         "needs 325 sessions per arm, 353 with the Fleiss continuity correction" "$scratch/dry.out"
     present "and prices a discovery line at the powered repetitions" \
-        "campaign no-hook discovery: 2 probes x 177 repetitions" "$scratch/dry.out"
-    present "and sums each arm" "arm campaign mcp: 564 sessions, \$282.00" "$scratch/dry.out"
+        "campaign no-hook discovery: 3 probes x 118 repetitions" "$scratch/dry.out"
+    present "and sums each arm" "arm campaign mcp: 684 sessions, \$342.00" "$scratch/dry.out"
     present "and holds the campaign tier to its ceiling" \
-        "tier campaign: 3384 sessions, \$1692.00 against a ceiling of \$300.00: over by \$1392.00" "$scratch/dry.out"
-    present "and prints the total" "total: 3504 sessions, \$1752.00 against the \$430.00 the tiers declare" "$scratch/dry.out"
+        "tier campaign: 4104 sessions, \$2052.00 against a ceiling of \$300.00: over by \$1752.00" "$scratch/dry.out"
+    present "and prints the total" "total: 4284 sessions, \$2142.00 against the \$430.00 the tiers declare" "$scratch/dry.out"
     present "and the delta of the no-hook arm is the hook's script alone" \
         "tree campaign no-hook: - .claude/hooks/intent.sh" "$scratch/dry.out"
     present "and the mcp arm adds its server" "tree campaign mcp: + .mcp.json" "$scratch/dry.out"

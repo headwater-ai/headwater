@@ -121,6 +121,13 @@ answer_keys:
 leaks:
   HW-PROBE-a-session-names-the-status-a-settled-decision-carries-in-its-pull-request: [HW-DR-0052, "status: current"]
   HW-PROBE-a-session-names-the-event-that-makes-a-document-accepted: [HW-DR-0052, HW-DR-0034, the merge activates, merged to main, merge onto `main`]
+  # The five harder probes of #1472, clause 2. Each names the identifier of
+  # the record that holds its answer, and the phrase that states the answer.
+  HW-PROBE-a-session-finds-a-ruling-from-a-task-in-plain-words: [HW-DR-0049, corpus-wide fold, HW-EVAL-why-corpus-counts-are-derived]
+  HW-PROBE-a-session-says-where-a-figure-on-the-site-is-written: [HW-DR-0097, measured when the site is published]
+  HW-PROBE-a-session-follows-a-citation-from-one-record-to-the-next: [HW-DR-0097]
+  HW-PROBE-a-session-says-how-a-governs-line-reaches-a-document: [HW-DR-0104, --relates governs]
+  HW-PROBE-a-session-records-which-obligation-an-evaluation-discharged: [discharged_by, relation.reciprocity.missing]
 
 # The probes whose leak string stays in the present arm on purpose (#1472, the second
 # outcome the issue offers). The leak string of the status probe is in the
@@ -149,8 +156,8 @@ leaks_kept:
 # "about 350" is the corrected figure.
 #
 # A category under `pooled` pools its probes into one rate, as a result
-# already does, so each of its k probes runs ceil(353 / k) repetitions: 177
-# for the two discovery probes a campaign can plan. `sh tools/probe/campaign.sh
+# already does, so each of its k probes runs ceil(353 / k) repetitions: 118
+# for the three discovery probes a campaign can plan. `sh tools/probe/campaign.sh
 # --dry-run` computes the count from these fields and prints the formula
 # beside it. The engine reads none of this block, and the plan still refuses
 # repetitions above the ones a tier declares, so the count is priced by the
@@ -215,8 +222,8 @@ tiers:
   # `--category sufficiency`), and there the ceiling is what refuses it.
   #
   # The discovery category holds that probe too. `--exclude` names it out, so
-  # the other two discovery probes, which the machine half of Q16 rests on,
-  # plan at this tier (#980).
+  # the other discovery probes plan at this tier: the two that the machine
+  # half of Q16 rests on (#980), and the vocabulary probe of #1472.
   #
   # `max_turns` is the turn cap of each session (#1384). #980 needed 80 for
   # the four `patched` sessions it recorded again after the 60-turn cap of
