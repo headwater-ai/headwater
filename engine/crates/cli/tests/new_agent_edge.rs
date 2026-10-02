@@ -53,7 +53,8 @@ impl Root {
         std::fs::create_dir_all(at.join("src")).expect("the source directory is made");
         std::fs::write(at.join("src/widget.rs"), "pub fn widget() {}\n").expect("a source file");
         std::fs::write(at.join("src/gadget.rs"), "pub fn gadget() {}\n").expect("a source file");
-        std::fs::write(at.join("logo.png"), b"\x89PNG\r\n\x1a\n\xff\xfe\x00").expect("a binary file");
+        std::fs::write(at.join("logo.png"), b"\x89PNG\r\n\x1a\n\xff\xfe\x00")
+            .expect("a binary file");
         let root = Root { at };
         let resolved = root.run(&["taxonomy", "resolve"]);
         assert_eq!(resolved.code, Some(0), "the fixture resolves\n{resolved:?}");
