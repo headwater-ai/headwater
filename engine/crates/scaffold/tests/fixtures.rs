@@ -249,6 +249,13 @@ fn cases() -> Vec<Case> {
         case("decision_record", "Two edges at once")
             .relating("supersedes", "SPEC-FIX-the-second-part")
             .relating("assesses", "SPEC-FIX-the-first-part"),
+        // An agent's edges onto an anchor rather than a document. The verb
+        // binds each through the resolver `headwater check` uses, so the two
+        // agree on what a pattern reaches (HW-DR-0074).
+        case("decision_record", "A governs pattern that matches an entry")
+            .relating("governs", "corpus/code/*.txt"),
+        case("decision_record", "A citation the file still owes")
+            .relating("cited_in", "corpus/code/widget.txt"),
         // What it refuses. One case per branch of `Refusal`.
         case("nonesuch", "A kind nobody declared"),
         case("governed_document", "An abstract kind"),
@@ -273,6 +280,10 @@ fn cases() -> Vec<Case> {
         case("design_spec", "A target end the relation forbids").relating("refines", "DR-FIX-0007"),
         case("decision_record", "A target that resolves to nothing")
             .relating("supersedes", "DR-FIX-9999"),
+        case("decision_record", "A governs pattern that matches no entry")
+            .relating("governs", "src/nowhere/**"),
+        case("decision_record", "A citation in a file that is not there")
+            .relating("cited_in", "corpus/code/missing.txt"),
         // What `--summary` does. It fills the facet in the `scent` role
         // directly, exactly as `--title` fills the one in the `name` role, so
         // it needs the same two cases the `name` role never needed a comment
