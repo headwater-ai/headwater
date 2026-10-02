@@ -2118,9 +2118,6 @@ jobs:
         # does not carry would have run green, and it fails if a check-instance
         # count added outside a README's *What a run reports*, or anywhere on
         # `docs/evaluations/n8n-worked-example.md`, would not have been named.
-        # It also holds the evaluation's figures against the README each one
-        # restates, and it fails if a figure there that differs from its README
-        # would not have been named (#1568).
         #
         # It writes nothing inside the checkout: every scratch root is under a
         # temporary directory, removed at the end.
