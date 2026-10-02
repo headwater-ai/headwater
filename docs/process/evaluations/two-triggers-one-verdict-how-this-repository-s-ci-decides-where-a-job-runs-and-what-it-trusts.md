@@ -3,7 +3,7 @@ id: HW-EVAL-two-triggers-one-verdict-how-this-repository-s-ci-decides-where-a-jo
 status: current
 status_since: 2026-09-21
 summary: "The event that started a run decides which of two machines it takes, and every other condition in the workflow can only take work away."
-last_verified: 2026-09-30
+last_verified: 2026-10-02
 title: "Two triggers, one verdict: how this repository's CI decides where a job runs and what it trusts"
 provenance:
   warrant: asserted
@@ -14,7 +14,7 @@ provenance:
 relations:
   governs:
     - to: .github/workflows/ci.yml
-      verified_revision: sha256:5f93740a98eb9b2dc3943e391f8c87246aff2a2e14bfd37e21aaf05e9cfe240b
+      verified_revision: sha256:3fcd842feb024c0759b93d91a5e14bea4be88917357796fd1a139ffc8efc6111
 ---
 
 # Two triggers, one verdict: how this repository's CI decides where a job runs and what it trusts
@@ -95,4 +95,4 @@ The event argument transfers whole. Any adopter with a public repository and a s
 
 What does not transfer is every number above. The cadence that makes strict status checks too expensive here is this repository's cadence. An adopter who merges twice a week should turn strict on rather than off. The split between a hosted cache and a bind mount is a property of owning the host. The decision to build into a cold target directory is the consequence of two specific failures rather than a general rule.
 
-Two records name defects in the file this document governs, and neither is closed by it. [HW-OBL-0145](../obligations/0145-the-ci-job-named-advisory-carries-every-blocking-shell-suite-in-the-repository.md) records that the job named advisory blocks on 48 of its 55 steps. [HW-OBL-0173](../obligations/0173-four-inline-gates-in-the-workflow-decide-an-exit-status-and-no-suite-provokes-one.md) records that four inline gates in the workflow decide an exit status and no suite provokes one.
+Two records name defects in the file this document governs, and neither is closed by it. [HW-OBL-0145](../obligations/0145-the-ci-job-named-advisory-carries-every-blocking-shell-suite-in-the-repository.md) records that the job named advisory blocks on most of its steps: 48 of 55 when the record was last verified, on 2026-09-21. On 2026-10-02 the job has 75 steps. [HW-OBL-0173](../obligations/0173-four-inline-gates-in-the-workflow-decide-an-exit-status-and-no-suite-provokes-one.md) records that four inline gates in the workflow decide an exit status and no suite provokes one.
