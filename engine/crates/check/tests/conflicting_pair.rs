@@ -31,6 +31,16 @@
 //! `outranks-both-target.md` in place of `outranks-both-source.md`, and **a
 //! rule that read the declared half alone** misses
 //! `outranks-inverse-target.md`, which wrote only the inverse.
+//!
+//! **A remedy that offered the initial state** sends an author to
+//! `lifecycle.dependency.on_initial`, whose remedy restores this one:
+//! `drafted-source.md` is the pair the author lands on, and it reports the
+//! other rule. **A remedy that never named removing the entry** leaves an
+//! author whose two decisions no longer conflict with no edit that ends.
+//!
+//! **A rule that read a list as no value** misses `listed-source.md`, whose ends
+//! both write `status: [current]`, and **a rule that read any list as holding**
+//! reports `unlisted-source.md`, whose far end writes `[draft, superseded]`.
 
 use headwater_census::census;
 use headwater_census::shelves::Taxonomy;
@@ -193,6 +203,7 @@ fn the_count_is_one_per_declared_entry() {
         vec![
             path("both-source.md"),
             path("clash-source.md"),
+            path("listed-source.md"),
             path("mutual-a.md"),
             path("mutual-b.md"),
             path("one-sided-z.md"),
@@ -315,4 +326,116 @@ fn every_facet_of_the_condition_must_hold_at_both_ends() {
     let run = run();
     assert_eq!(against(&run, "both-source.md").len(), 1);
     assert!(against(&run, "half-source.md").is_empty());
+}
+
+/// The findings of another rule reported against one file.
+fn of_rule_against<'a>(run: &'a Run, rule: &str, file: &str) -> Vec<&'a Finding> {
+    let wanted = path(file);
+    run.findings
+        .iter()
+        .filter(|finding| finding.rule == rule && finding.path == wanted)
+        .collect()
+}
+
+/// The rule that reports a live document resting on one at the initial state.
+const ON_INITIAL: &str = "lifecycle.dependency.on_initial";
+
+/// The value the fixture taxonomy gives `role: initial` on `status`.
+const INITIAL: &str = "draft";
+
+/// The decisive case of #1542. Where the condition names the facet in the
+/// `state` role, the remedy offers only exits that end: supersede one end, or
+/// remove the entry. It offers no changed facet, because the one state left to
+/// change to is the initial one, and `drafted-source.md` shows where that
+/// leads: this rule goes quiet and `on_initial` reports instead, with a remedy
+/// that promotes the draft and brings this finding back. `live-one.md` shows
+/// that supersession ends: neither rule reports it.
+#[test]
+fn the_remedy_of_a_state_condition_offers_no_exit_that_loops() {
+    let run = run();
+    let stated: Vec<&Finding> = findings(&run)
+        .into_iter()
+        .filter(|finding| finding.path != path("clash-source.md"))
+        .collect();
+    // Six without the list case, seven with it; the count is
+    // `the_count_is_one_per_declared_entry`'s to hold.
+    assert!(stated.len() >= 6, "the `status` conditions: {stated:?}");
+    for finding in stated {
+        let remedy = &finding.remediation;
+        assert!(
+            !remedy.contains(INITIAL),
+            "the remedy names no initial state: {remedy}"
+        );
+        assert!(
+            !remedy.contains("change the facet"),
+            "the remedy offers no changed state facet: {remedy}"
+        );
+        assert!(remedy.contains("supersede"), "supersession: {remedy}");
+        assert!(
+            remedy.contains("remove the `") && remedy.contains("` entry"),
+            "removing the entry: {remedy}"
+        );
+        assert!(
+            remedy.contains(&finding.path),
+            "the file the entry is in: {remedy}"
+        );
+    }
+    for file in ["mutual-a.md", "mutual-b.md"] {
+        let found = against(&run, file);
+        assert!(
+            found[0].remediation.contains("remove the `conflicts_with` entry"),
+            "the relation's own name: {}",
+            found[0].remediation
+        );
+    }
+
+    // Why the initial state is not an exit.
+    assert!(against(&run, "drafted-source.md").is_empty());
+    let initial = of_rule_against(&run, ON_INITIAL, "drafted-source.md");
+    assert_eq!(initial.len(), 1, "{initial:?}");
+    assert!(
+        initial[0].remediation.contains("promote"),
+        "the other rule's remedy is a promotion: {}",
+        initial[0].remediation
+    );
+
+    // Supersession ends: neither rule reports the superseded pair.
+    assert!(against(&run, "live-one.md").is_empty());
+    assert!(of_rule_against(&run, ON_INITIAL, "live-one.md").is_empty());
+}
+
+/// A condition on a facet with no state role keeps the changed facet, named,
+/// and also names removing the entry.
+#[test]
+fn the_remedy_of_another_condition_names_the_facet_and_the_entry() {
+    let run = run();
+    let found = against(&run, "clash-source.md");
+    assert_eq!(found.len(), 1, "{found:?}");
+    let remedy = &found[0].remediation;
+    assert!(remedy.contains("change `lifecycle`"), "the facet: {remedy}");
+    assert!(
+        remedy.contains("remove the `clashes_with` entry"),
+        "removing the entry: {remedy}"
+    );
+}
+
+/// A list holds when it contains the value. Both ends write
+/// `status: [current]`, and no other rule reports them, so a rule that read a
+/// list as no value left two live, conflicting decisions silent.
+#[test]
+fn a_list_that_contains_the_value_holds() {
+    let run = run();
+    assert_eq!(against(&run, "listed-source.md").len(), 1);
+    assert!(against(&run, "listed-target.md").is_empty());
+}
+
+/// A list that does not contain the value does not hold, so the reading is
+/// membership and not "any list".
+#[test]
+fn a_list_without_the_value_does_not_hold() {
+    let run = run();
+    assert!(against(&run, "unlisted-source.md").is_empty());
+    let outcomes = outcomes_reading(&run, "unlisted-target.md");
+    assert_eq!(outcomes.len(), 1, "{outcomes:?}");
+    assert!(matches!(outcomes[0], Outcome::Passed), "{outcomes:?}");
 }
