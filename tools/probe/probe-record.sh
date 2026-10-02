@@ -821,6 +821,10 @@ if [ "$status" != 0 ]; then
     else
         echo "probe-record: the harness exited $status." >&2
         tail -5 "$raw.err" >&2
+        # A harness that could not reach its provider fails here, so the
+        # proxy's decisions are named too: a refused host the harness needs
+        # is the first thing to look for.
+        echo "probe-record: the egress proxy allowed ${egress_allowed:-no connection}, and refused ${egress_refused:-no connection}." >&2
         exit 10
     fi
 fi

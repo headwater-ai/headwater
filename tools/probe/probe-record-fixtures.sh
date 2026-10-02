@@ -1562,8 +1562,12 @@ STUB
     # driver maps every nonzero harness status to 10 and prints the harness's
     # own status, so no harness can return a code that a path of the script
     # returns.
+    # The stub first asks the proxy for a host off its list, as a harness
+    # that needs an unlisted host does, and the driver names that refusal
+    # (#1467, clause 5).
     cat > "$scratch/bin/claude" <<'STUB'
 #!/bin/sh
+curl -s -p -x "$HTTPS_PROXY" --max-time 3 -o /dev/null https://github.com/ 2>/dev/null
 exit 7
 STUB
     chmod +x "$scratch/bin/claude"
@@ -1573,6 +1577,8 @@ STUB
     same "a harness that exits 7 makes the driver exit 10, never 7" "10" "$?"
     present "and the driver names the harness's own status" \
         "the harness exited 7" "$scratch/failed-run.err"
+    present "and names the host the egress proxy refused it" \
+        "the egress proxy allowed no connection, and refused 1 connection to \`github.com:443\`" "$scratch/failed-run.err"
 
     # The turn cap (#1384). A harness stopped by `--max-turns` ends its stream
     # with a `result` line of subtype `error_max_turns` and exits 1. Until

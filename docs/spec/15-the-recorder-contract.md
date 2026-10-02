@@ -16,6 +16,7 @@ provenance:
 relations:
   governs:
     - tools/probe/probe-record.sh
+    - tools/probe/egress-proxy.py
     - engine/crates/probe/src/intake.rs
     - engine/crates/probe/src/grade.rs
     - engine/crates/generate/src/probe_result.rs
@@ -62,6 +63,7 @@ A probe measures what the workspace gives a session. A session that can read out
 - A private `/proc`, `/dev` and `/tmp`.
 - The workspace, read-write, at its own path.
 - The harness binary, read-only, at a path of its own.
+- The egress proxy, read-only, and the directory of its socket, read-only. The next sections say why.
 - The log directory of the run, read-write, because the intent hook writes there.
 - A configuration directory of the session, read-write.
 
@@ -89,15 +91,22 @@ A log with no init line is refused too, because it does not state what loaded. T
 
 ### What a host must provide
 
-A recording host must provide these three items:
+A recording host must provide these four items:
 
-- `bwrap`, with user namespaces that an unprivileged user can create. Without them, the driver exits 12 before any harness call, so nothing is spent. No variable turns the confinement off.
+- `bwrap`, with user namespaces and network namespaces that an unprivileged user can create. Without them, the driver exits 12 before any harness call, so nothing is spent. No variable turns the confinement off.
+- `python3` in `/usr`, because the egress proxy and its forwarder are Python. Without it, the driver exits 12 before any harness call.
 - Credentials for the harness, in `.credentials.json` of the user configuration of the host.
 - A batch directory outside `$HOME`. `tools/probe/campaign.sh` refuses an output directory under it.
 
-### The channel that stays open
+### The one route to the network
 
-The confinement shares the network of the host, because the session needs the provider API. So a `Bash` call can still reach the public repository with `curl`, `gh api` or `git clone`. Only an egress proxy that allows one host, or a network namespace with one route, closes this channel. That is a provision of the host, and no recorder of this repository has it yet.
+The session has no network of its own. The driver runs it with `--unshare-net`, so its network namespace holds a loopback interface and nothing else. The loopback of the host is not in it. Before #1467 closed this channel, 5 sessions of the 2026-09-30 batch read this repository from GitHub with `gh api`, `curl` and `git clone`.
+
+The one route out is `tools/probe/egress-proxy.py`. The driver starts it on the host before the session and stops it after the session. It listens on a unix socket in a directory that the driver binds into the session. In the session, the same file forwards `127.0.0.1:3128` to that socket, and `HTTPS_PROXY` names that port. The driver also sets `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC`, so the harness asks for no telemetry host or update host.
+
+The proxy opens a connection to `api.anthropic.com` or `platform.claude.com` on port 443, and to no other host. The first host is the provider API. The harness refreshes an OAuth credential at the second. The list is in the source of the proxy, and no variable or argument changes it. A switch that adds a host would open the channel again. The proxy writes one log line for each decision, before it connects to the host.
+
+The transcript states this confinement and names the two hosts. It also states each connection that the proxy allowed and each connection that it refused, with the host and the count. When the harness fails, the driver prints the same counts with exit 10. A session fails there when the proxy refuses a host that the harness needs. If the proxy does not start, the driver exits 12 before any harness call.
 
 ## The prompt is the task section, and the answer is the final line
 
