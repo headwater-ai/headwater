@@ -383,7 +383,9 @@ fn the_remedy_of_a_state_condition_offers_no_exit_that_loops() {
     for file in ["mutual-a.md", "mutual-b.md"] {
         let found = against(&run, file);
         assert!(
-            found[0].remediation.contains("remove the `conflicts_with` entry"),
+            found[0]
+                .remediation
+                .contains("remove the `conflicts_with` entry"),
             "the relation's own name: {}",
             found[0].remediation
         );
