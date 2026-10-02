@@ -286,7 +286,12 @@ relations:
         let declarations = Declarations::read(root).expect("the declarations read");
         let rule = InvalidPair::over(&declarations, &shape);
         let relation = rule.conditioned[0];
-        let remedy = rule.remedy(relation, &condition(relation), ("a.md", "b.md"), ("conflicts_with", "a.md"));
+        let remedy = rule.remedy(
+            relation,
+            &condition(relation),
+            ("a.md", "b.md"),
+            ("conflicts_with", "a.md"),
+        );
         assert!(
             remedy.contains("off `phase: adopted`: supersede it. "),
             "{remedy}"
