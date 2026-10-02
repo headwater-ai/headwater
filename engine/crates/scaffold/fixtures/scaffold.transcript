@@ -364,7 +364,7 @@ claim .headwater/ids/decision_id/DR-FIX-0008
   edge cited_in -> corpus/code/widget.txt [created_by: agent]
     no far half
     anchor `test_site`, matched 1 entry
-    owes: `test_site` binds `corpus/code/widget.txt` once a comment in it cites `DR-FIX-0008`, which `headwater check` reports until one does
+    owes: `test_site` binds `corpus/code/widget.txt` once a Rust `//` or `/* */` comment in it cites `DR-FIX-0008`, which `headwater check` reports until one does
 assisted 7 of 9 — fields 3/4, sections 3/3, identifier 1/1, halves 0/1
 --- the document ---
 ---
@@ -607,7 +607,7 @@ refused, PathTaken
 === new decision_record --title "A relation nobody declared" --relates flibberty=DR-FIX-0007
 
 refused, RelationUnknown
-  no relation is named `flibberty`. This taxonomy declares `assesses`, `cited_in`, `governs`, `realizes`, `refines`, `supersedes`
+  no relation is named `flibberty`. This taxonomy declares `assesses`, `cited_in`, `governs`, `realizes`, `refines`, `ruled_in`, `supersedes`
 
 === new decision_record --title "An edge a hook pays for" --relates traces_to=DR-FIX-0007
 
@@ -653,6 +653,11 @@ refused, AnchorUnresolved
 
 refused, AnchorUnresolved
   `cited_in` names `corpus/code/*.txt`, and it binds to nothing (`test_site`: no `corpus/code/*.txt` in the source tree). `headwater check` would report this edge as unbound, so nothing was written
+
+=== new decision_record --title "A path that two anchor kinds claim" --relates ruled_in=corpus/code/widget.txt
+
+refused, AnchorUnresolved
+  `ruled_in` names `corpus/code/widget.txt`, and it binds to nothing (code_path and rule_name both claim this string, so it has two identities). `headwater check` would report this edge as unbound, so nothing was written
 
 === new decision_record --title "A scent role the caller states" --summary "What a reader learns before opening the file."
 

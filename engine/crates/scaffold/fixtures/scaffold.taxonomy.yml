@@ -344,6 +344,10 @@ shelves:
 anchors:
   code_path: {resolver: source-tree}
   test_site: {resolver: comment-scan, pattern: "DR-FIX-"}
+  # A third resolver, which the fixture test supplies and which claims every
+  # string. It stands in for an adopter's resolver whose namespace overlaps
+  # the source tree, so a path can have two identities.
+  rule_name: {resolver: every-string}
 
 relations:
 
@@ -362,6 +366,16 @@ relations:
     family: evidence
     from: [decision_record]
     to:   [test_site]
+    cardinality: many
+    created_by: agent
+
+  # An agent's edge onto two anchor kinds of two resolvers. A path both
+  # resolvers claim has two identities, so the check never binds it and the
+  # verb refuses it.
+  ruled_in:
+    family: evidence
+    from: [decision_record]
+    to:   [code_path, rule_name]
     cardinality: many
     created_by: agent
 

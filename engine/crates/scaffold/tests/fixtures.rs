@@ -136,6 +136,15 @@ impl Loaded {
                 )))
                 .expect("one resolver of each name");
         }
+        if relations
+            .anchors
+            .iter()
+            .any(|anchor| anchor.resolver == "every-string")
+        {
+            resolvers = resolvers
+                .with(Box::new(EveryString))
+                .expect("one resolver of each name");
+        }
         Loaded {
             resolved,
             shape,
@@ -160,6 +169,28 @@ impl Loaded {
             config: &self.config,
             claims: &self.claims,
             resolvers: &self.resolvers,
+        }
+    }
+}
+
+/// A resolver that claims every string as itself and reads no citation.
+///
+/// It stands in for an adopter's resolver whose namespace overlaps the source
+/// tree, so that a path two anchor kinds both claim reaches the verb. The check
+/// refuses such a target as having two identities, and so must the verb.
+struct EveryString;
+
+impl headwater_graph::anchors::Resolver for EveryString {
+    fn name(&self) -> &str {
+        "every-string"
+    }
+
+    fn resolve(&self, raw: &str) -> headwater_graph::anchors::Binding {
+        headwater_graph::anchors::Binding::Resolved {
+            normalized: raw.to_string(),
+            matched: vec![raw.to_string()],
+            excluded_by: None,
+            revision: headwater_graph::anchors::Revision::known(None),
         }
     }
 }
@@ -321,6 +352,8 @@ fn cases() -> Vec<Case> {
             .relating("cited_in", "corpus/code/image.png"),
         case("decision_record", "A citation in a pattern")
             .relating("cited_in", "corpus/code/*.txt"),
+        case("decision_record", "A path that two anchor kinds claim")
+            .relating("ruled_in", "corpus/code/widget.txt"),
         // What `--summary` does. It fills the facet in the `scent` role
         // directly, exactly as `--title` fills the one in the `name` role, so
         // it needs the same two cases the `name` role never needed a comment
