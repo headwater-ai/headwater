@@ -1309,6 +1309,12 @@ jobs:
         # 20260923-0733 read two of them wrong in production. Every suite
         # fakes `gh` or `cargo` on PATH, so this step needs no network, no
         # token and no toolchain, and writes only under temporary directories.
+        # It needs `jq`, which ubuntu-latest and the self-hosted runner both
+        # carry, as the run directory step above shows: the fake `gh` of the
+        # CI-finished and queue-finished suites runs each script's own
+        # `--jq` filter over a raw API body. Each of the two exits 1 without
+        # `jq` and does not skip, because an untested filter is the gap
+        # #1484 closed.
         run: |
           sh tools/run/ci-done-fixtures.sh
           sh tools/run/queue-done-fixtures.sh
