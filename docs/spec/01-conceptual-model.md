@@ -159,7 +159,7 @@ Six facet roles are engine-significant, and the registry is closed ([spec 2](02-
 - **`created`** — set at scaffold time. It is the origin for windows with no state condition.
 - **`freshness`** — staleness detection interprets it.
 - **`scent`** — what routing, indexes, and agent-facing pointers show (the `summary` facet in the default taxonomy).
-- **`name`** — the text that a projection writes as a heading or as a row (the `title` facet in the default taxonomy). A projection may not read a facet by the name of the facet ([spec 6](06-engine-architecture.md#projections)).
+- **`name`** — the text that a projection writes as a heading or as a row (the `title` facet in the default taxonomy). A projection may not read a facet by the name of the facet ([the `headwater generate` contract](../interfaces/headwater-generate.md#what-a-projection-writes-and-why)).
 
 The facet that plays each role is declared, not assumed. A corpus may call its state facet `status`, `stage`, or `état`. But the roles themselves come only from the registry.
 

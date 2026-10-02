@@ -4,15 +4,17 @@
 //! # The plan is the half of the run identity that exists before the run
 //!
 //! [Spec 5](../../../../docs/spec/05-ai-integration.md#a-run-produces-a-snapshot-and-a-document)
-//! lists nine members of a run identity: the model with its served version, the
-//! corpus tree hash, the taxonomy lock hash, the probe selection hash, the
-//! rotation seed, the harness version, the arm, and the time. Five of them are
-//! decided before anything is called, and this is where they are decided. The
-//! model, the served version and the time belong to the run, and the recorder
-//! writes them into the transcript.
+//! fixes six members of a run identity before anything is called: the taxonomy
+//! lock hash, the corpus tree hash, the probe selection hash, the read-set
+//! hash, the rotation seed and the harness version. This is where they are
+//! decided, as the fields `lock`, `tree`, `selection`, `read_set`, `seed` and
+//! `harness` of [`Plan`]. The model, the served version and the time belong to
+//! the run, and the recorder writes them into the transcript.
 //!
-//! [`crate::intake`] holds a transcript to both halves: the five here have to be
-//! the five the plan fixed, or the transcript records a run of something else.
+//! [`crate::intake`] reads the six back from a transcript and compares its lock
+//! and its read set with the tree's. It marks a move, or refuses a lock move
+//! where nothing shows what the move reached, so a transcript of a run of
+//! something else does not pass as a run of this plan.
 //!
 //! # The seed is the caller's, and a derived one would be worse
 //!
