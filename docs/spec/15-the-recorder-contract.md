@@ -67,7 +67,7 @@ A probe measures what the workspace gives a session. A session that can read out
 - The log directory of the run, read-write, because the intent hook writes there.
 - A configuration directory of the session, read-write.
 
-So the file system of the session holds no copy of this repository on the host. It also holds no other tree of the batch and no part of the home directory. The network is a separate channel, and [the one route to the network](#the-one-route-to-the-network) says what it holds and what stays open. The driver also clears the environment, so no token of the host reaches the session.
+So the file system of the session holds no copy of this repository on the host. It also holds no other tree of the batch and no part of the home directory. The network is a separate channel, and [the one route to the network](#the-one-route-to-the-network) says what it holds and what stays open. The driver also clears the environment, so no variable of the environment of the host, such as `GH_TOKEN`, reaches the session. The one token of the host that the session holds is the copy of the credentials in the next section.
 
 ### The configuration the session runs under
 

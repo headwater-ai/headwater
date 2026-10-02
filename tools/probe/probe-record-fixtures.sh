@@ -50,11 +50,21 @@ passed=0
 failed=0
 pass() { printf 'ok   %s\n' "$1"; passed=$((passed + 1)); }
 fail() { printf 'FAIL %s\n  %s\n' "$1" "$2"; failed=$((failed + 1)); }
+# Each helper takes exactly three arguments. Two calls joined on one line pass
+# the second as extra arguments, and the second case would never run, so an
+# extra argument is a failure of its own (verify of #1467).
+arity() {
+    [ "$2" = 3 ] && return 0
+    fail "$1" "the case helper received $2 arguments, not 3: two cases joined on one line?"
+    return 1
+}
 same() {
+    arity "$1" $# || return 0
     if [ "$2" = "$3" ]; then pass "$1"; else fail "$1" "expected \`$2\`, got \`$3\`"; fi
 }
 absent() {
     # $1 name, $2 needle, $3 file
+    arity "$1" $# || return 0
     if grep -qF -- "$2" "$3"; then
         fail "$1" "the output holds \`$2\`, which came from a block the filter must drop"
     else
@@ -62,6 +72,7 @@ absent() {
     fi
 }
 present() {
+    arity "$1" $# || return 0
     if grep -qF -- "$2" "$3"; then pass "$1"; else fail "$1" "the output does not hold \`$2\`"; fi
 }
 
@@ -1884,7 +1895,8 @@ STUB
             "$scratch/no-network.md"
         absent "and the transcript claims nothing is reachable from the session" "reachable" "$scratch/no-network.md"
         present "and claims no more than the confinement holds: direct connections refused" \
-            "so a direct connection to any other host, such as \`gh api\`, \`curl\` or \`git clone\` to GitHub, was refused." "$scratch/no-network.md"
+            "so a direct connection to any other host, such as \`gh api\`, \`curl\` or \`git clone\` to GitHub, was refused. The proxy allowed" "$scratch/no-network.md"
+        absent "and claims no read the confinement cannot show" "could not read" "$scratch/no-network.md"
         present "and says the file system held no copy of this repository on the host, and no more" \
             "no copy of this repository on the host, no other tree of its batch and no configuration of the host was readable through the session's file system." \
             "$scratch/no-network.md"
