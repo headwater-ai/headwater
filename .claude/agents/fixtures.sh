@@ -623,11 +623,12 @@ esac
 # internal list below. A new file in neither fails, and so does an internal
 # name placed in the compiled set.
 printf '\n# every file under .claude is in the shipped set or named as internal\n'
-internal_names='hw-* headwater-engine headwater-product-owner repo-cleanup ste-editor next next-run product-owner'
+# One `case` list, so `hw-*` is a pattern and never a glob over the current
+# directory. This list is the internal list of the case.
 is_internal() {
-    for pattern in $internal_names; do
-        case $1 in $pattern) return 0 ;; esac
-    done
+    case $1 in
+        hw-* | headwater-engine | headwater-product-owner | repo-cleanup | ste-editor | next | next-run | product-owner) return 0 ;;
+    esac
     return 1
 }
 # The names of the compiled set under a harness source directory.
@@ -690,6 +691,13 @@ esac
 case $(boundary "$root/engine/crates/cli/harness" "$scratch/skilldot") in
     *'adopter-tips is neither shipped nor named as internal'*) pass 'and a skill in neither list is reported' ;;
     *) fail 'a skill in neither list is reported' 'the boundary passed it' ;;
+esac
+# A name that is part of a shipped name is not that name.
+mkdir -p "$scratch/partdot/skills/orient"
+printf -- '---\nname: orient\n---\n' > "$scratch/partdot/skills/orient/SKILL.md"
+case $(boundary "$root/engine/crates/cli/harness" "$scratch/partdot") in
+    *'orient is neither shipped nor named as internal'*) pass 'and a skill named for part of a shipped name is reported' ;;
+    *) fail 'a skill named for part of a shipped name is reported' 'the boundary passed it' ;;
 esac
 
 printf '\n%s passed, %s failed\n' "$passed" "$failed"

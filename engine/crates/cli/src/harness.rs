@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! The agent support that `headwater init --harness` writes, compiled in.
 //!
 //! **The set is text in the binary, and the binary writes it out.** An
@@ -283,5 +284,8 @@ mod tests {
             classify(Some(appended.as_bytes()), &current),
             Found::Foreign
         );
+        // This release's bytes with more after them are not this release.
+        let grown = format!("{current}a line after the record\n");
+        assert_eq!(classify(Some(grown.as_bytes()), &current), Found::Foreign);
     }
 }

@@ -320,13 +320,16 @@ fn kinds_in_span(span: &str) -> Vec<&str> {
 
 /// Whether a text names an internal file. A name with a hyphen is matched
 /// anywhere, because no English word holds one. A bare word, such as the
-/// `next` command, is matched only as a whole code span, because the word is
+/// `next` command, is matched only as a whole code span, with or without the
+/// leading `/` a harness types before a command, because the word is
 /// also English.
 fn names(text: &str, name: &str) -> bool {
     if name.contains('-') {
         text.contains(name)
     } else {
-        spans(text).iter().any(|span| *span == name)
+        spans(text)
+            .iter()
+            .any(|span| span.trim_start_matches('/') == name)
     }
 }
 
@@ -341,6 +344,7 @@ fn a_kind_inside_a_command_span_counts_and_the_verb_of_a_command_does_not() {
     assert!(names("dispatch `hw-build` now", "hw-build"));
     assert!(!names("the next run", "next"));
     assert!(names("run `next`", "next"));
+    assert!(names("type `/next`", "next"));
 }
 
 #[test]
@@ -404,6 +408,32 @@ fn a_second_run_writes_nothing_and_an_edited_copy_is_refused_and_kept() {
     assert!(
         !root.join(removed).exists(),
         "a refused run wrote another file of the set"
+    );
+}
+
+/// A path the step cannot read for a reason other than its absence is
+/// refused, and never read as absent. `.agents` as a regular file makes every
+/// read under it fail as not a directory, and the step writes no file.
+#[test]
+fn a_path_that_cannot_be_read_is_refused_and_not_read_as_absent() {
+    let scratch = a_repository_bound_to_another_taxonomy("unreadable");
+    let root = &scratch.0;
+    std::fs::write(root.join(".agents"), "a file where a directory goes\n").expect("writes");
+    let refused = headwater(root, &["init", "--harness"]);
+    assert_eq!(
+        refused.status.code(),
+        Some(1),
+        "an unreadable path is refused:\n{}",
+        String::from_utf8_lossy(&refused.stdout)
+    );
+    assert!(
+        String::from_utf8_lossy(&refused.stderr).contains(".agents/skills/"),
+        "the refusal names the path:\n{}",
+        String::from_utf8_lossy(&refused.stderr)
+    );
+    assert!(
+        !root.join(".claude").exists(),
+        "a refused run wrote a file of the set"
     );
 }
 
