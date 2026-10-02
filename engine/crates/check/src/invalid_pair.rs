@@ -286,7 +286,10 @@ relations:
         let rule = InvalidPair::over(&declarations, &shape);
         let relation = rule.conditioned[0];
         let remedy = rule.remedy(relation, &condition(relation), ("a.md", "b.md"), "a.md");
-        assert!(remedy.contains("supersede it"), "{remedy}");
+        assert!(
+            remedy.contains("off `phase: adopted`: supersede it. "),
+            "{remedy}"
+        );
         assert!(!remedy.contains("change `phase`"), "{remedy}");
         assert!(!remedy.contains("proposed"), "{remedy}");
         assert!(

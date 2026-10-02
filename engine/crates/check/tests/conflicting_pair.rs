@@ -367,7 +367,7 @@ fn the_remedy_of_a_state_condition_offers_no_exit_that_loops() {
             "the remedy names no initial state: {remedy}"
         );
         assert!(
-            !remedy.contains("change the facet"),
+            !remedy.contains("change the facet") && !remedy.contains("change `status`"),
             "the remedy offers no changed state facet: {remedy}"
         );
         assert!(remedy.contains("supersede"), "supersession: {remedy}");
@@ -387,7 +387,24 @@ fn the_remedy_of_a_state_condition_offers_no_exit_that_loops() {
             "the relation's own name: {}",
             found[0].remediation
         );
+        assert!(
+            found[0]
+                .remediation
+                .contains("off `status: current`: supersede it. "),
+            "supersession is the one move off a state condition: {}",
+            found[0].remediation
+        );
     }
+
+    // A facet of the condition without the state role is still one to change.
+    let both = against(&run, "both-source.md");
+    assert!(
+        both[0]
+            .remediation
+            .contains("supersede it, or change `lifecycle` at one end"),
+        "the other facet of a two-facet condition: {}",
+        both[0].remediation
+    );
 
     // Why the initial state is not an exit.
     assert!(against(&run, "drafted-source.md").is_empty());
