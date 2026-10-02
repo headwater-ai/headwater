@@ -501,26 +501,37 @@ fn every_headwater_code_span_in_the_specification_names_a_verb_this_binary_carri
 }
 
 /// The reader and the list on a text the specification does not hold today:
-/// a span that closes on its word, a span inside a fenced block, and an
-/// explained word in a file the explanation does not name.
+/// a span that closes on its word, a span inside a fenced block, an explained
+/// word in a file the explanation does not name, a second span on one line,
+/// and the defect of #1559 itself, `headwater migrate`.
 ///
 /// No file under `docs/spec/` carries a span inside a fence or an explained
 /// word outside its file today, so the case above stays green when the fence
 /// skip or the file half of the list's match is removed. This case goes red
 /// for each of the two, and for a removed closing-backtick cut as well.
+/// Line 6 keeps the red run of #1559 after spec 2 was fixed: `migrate` is a
+/// second word of `taxonomy`, so a reader that took only the first span of a
+/// line, or that accepted a second word as a top-level name, would pass it.
 #[test]
 fn the_spec_span_reader_cuts_at_the_backtick_skips_a_fence_and_scopes_the_list_to_its_file() {
     let text =
-        "Run `headwater check`.\n```\n`headwater nothing`\n```\nA `headwater hook x` verb.\n";
+        "Run `headwater check`.\n```\n`headwater nothing`\n```\nA `headwater hook x` verb.\n\
+                `headwater check` then `headwater migrate --apply`.\n";
     let words = inline_headwater_words("a.md", text);
     let read: Vec<(usize, &str)> = words
         .iter()
         .map(|(_, line, word)| (*line, word.as_str()))
         .collect();
-    assert_eq!(read, vec![(1, "check"), (5, "hook")]);
+    assert_eq!(
+        read,
+        vec![(1, "check"), (5, "hook"), (6, "check"), (6, "migrate")]
+    );
     assert_eq!(
         unexplained_spans(&words, &[("05-ai-integration.md", "hook")]),
-        vec!["a.md:5 hook".to_string()]
+        vec!["a.md:5 hook".to_string(), "a.md:6 migrate".to_string()]
     );
-    assert!(unexplained_spans(&words, &[("a.md", "hook")]).is_empty());
+    assert_eq!(
+        unexplained_spans(&words, &[("a.md", "hook")]),
+        vec!["a.md:6 migrate".to_string()]
+    );
 }
