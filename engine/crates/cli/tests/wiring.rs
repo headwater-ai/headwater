@@ -490,6 +490,82 @@ fn a_stated_re_verification_records_the_digest_through_the_verbs() {
     );
 }
 
+/// #1520 through the binary: the governed file moved in an earlier change, so
+/// the change in hand does not carry it. `--verified <document>` re-verifies
+/// the document and names no target, so it stamps nothing, because each edge
+/// carries its own `verified_revision`. `--verified-edge <document> <target>`
+/// names the edge, and `check --fix --change` then records the new digest.
+#[test]
+fn a_stated_edge_records_the_digest_where_a_stated_document_does_not() {
+    let root = Root::over("change", "stated-edge");
+    std::fs::create_dir_all(root.path("docs/interfaces")).expect("the shelf is there");
+    std::fs::create_dir_all(root.path("tools")).expect("the directory is there");
+    std::fs::write(root.path("tools/run.sh"), "#!/bin/sh\necho one\n").expect("it writes");
+    std::fs::write(root.path(GOVERNING), governing("    - tools/run.sh")).expect("it writes");
+    git(&root.at, &["init", "-q"]);
+    git(&root.at, &["config", "user.email", "fixtures@invalid"]);
+    git(&root.at, &["config", "user.name", "fixtures"]);
+    git(&root.at, &["add", "-A"]);
+    git(&root.at, &["commit", "-q", "-m", "base"]);
+    let base = git(&root.at, &["rev-parse", "HEAD"]);
+    let fixed = |base: &str, label: &str, arguments: &[&str]| {
+        let out = out_dir(label);
+        let mut all = vec!["change", base, out.to_str().expect("a UTF-8 path")];
+        all.extend_from_slice(arguments);
+        let produced = root.run(&all);
+        assert_eq!(produced.code, Some(0), "{}{}", produced.out, produced.err);
+        let manifest = out.join("manifest").display().to_string();
+        let written = std::fs::read_to_string(&manifest).expect("the manifest reads");
+        let ran = root.run(&["check", "--no-cache", "--fix", "--change", &manifest]);
+        assert_eq!(ran.code, Some(0), "{label}: {}{}", ran.out, ran.err);
+        written
+    };
+    fixed(&base, "edge-first", &["--verified", GOVERNING]);
+    let stamped = recorded(&root).expect("the first stamp records a digest");
+    git(&root.at, &["commit", "-q", "-am", "the first stamp"]);
+
+    // The governed file moves in a change of its own, and nobody re-reads it.
+    std::fs::write(root.path("tools/run.sh"), "#!/bin/sh\necho two\n").expect("it writes");
+    git(&root.at, &["commit", "-q", "-am", "the hook moves"]);
+    let later = git(&root.at, &["rev-parse", "HEAD"]);
+
+    // A later change states the document re-read and carries no target.
+    let written = fixed(&later, "edge-document", &["--verified", GOVERNING]);
+    assert!(!written.contains("tools/run.sh"), "{written}");
+    assert_eq!(
+        recorded(&root),
+        Some(stamped.clone()),
+        "a stated document stamped an edge whose target nobody named"
+    );
+
+    // The same change names the edge. Two edges, and the real one second, so
+    // a verb that kept only the first pair would record nothing here.
+    let written = fixed(
+        &later,
+        "edge-named",
+        &[
+            "--verified-edge",
+            "docs/decisions/0001-the-warrant-a-person-set.md",
+            "tools/other.sh",
+            "--verified-edge",
+            GOVERNING,
+            "tools/run.sh",
+        ],
+    );
+    assert!(
+        written.contains(&format!("verified\t{GOVERNING}\ttools/run.sh\n")),
+        "{written}"
+    );
+    let restamped = recorded(&root).expect("the stated edge records a digest");
+    assert_ne!(restamped, stamped, "the digest did not move");
+    let clean = root.run(&["check", "--no-cache"]);
+    assert!(
+        !reports_suspect(&clean),
+        "the stamped entry is no longer suspect:\n{}",
+        clean.out
+    );
+}
+
 /// The decisive fixture of #929: a corpus that carries no `.githooks/` at
 /// all still reaches `warrant.promoted` in the same run that would otherwise
 /// report it skipped, because the verb alone — not a script this repository
