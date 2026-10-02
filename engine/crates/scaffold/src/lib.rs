@@ -1967,8 +1967,10 @@ enum Bound {
 /// where a comment in it cites the asserting document's identifier, and the
 /// identifier is the one this run mints. So where every other anchor kind
 /// failed and one that names `comment-scan` is admitted, the path is asked of
-/// `source-tree` instead. A path that reaches a file is written, and the
-/// comment it still owes is named. A path that reaches nothing is refused.
+/// `source-tree` instead. A literal path that names one regular file is
+/// written, and the comment it still owes is named. A path that reaches
+/// nothing, a directory and a pattern are refused, because `comment-scan`
+/// opens one named file and expands no pattern.
 fn bind_target(sources: &Sources<'_>, far: &[String], target: &str, asserter: &str) -> Bound {
     use headwater_graph::anchors::Binding;
     use headwater_graph::edges::Target;
@@ -2027,11 +2029,20 @@ fn bind_target(sources: &Sources<'_>, far: &[String], target: &str, asserter: &s
         .find(|anchor| anchor.resolver == "comment-scan");
     let tree = sources.resolvers.get("source-tree");
     if let (Some(anchor), Some(tree)) = (cited, tree) {
-        if let Binding::Resolved { normalized, .. } = tree.resolve(target) {
-            if !tree.names_directory(&normalized) {
+        // `comment-scan` opens one named file and never expands a pattern.
+        // So the fallback holds only for a path that `source-tree` matched to
+        // itself alone: a literal, and not a pattern that happens to reach
+        // one entry, which the check would then fail to open.
+        if let Binding::Resolved {
+            normalized,
+            matched,
+            ..
+        } = tree.resolve(target)
+        {
+            if matched == [normalized.as_str()] && !tree.names_directory(&normalized) {
                 return Bound::Anchor(Anchored {
                     anchor_kind: anchor.name.clone(),
-                    matched: Some(1),
+                    matched: Some(matched.len()),
                     owes: Some(format!(
                         "`{}` binds `{normalized}` once a comment in it cites `{asserter}`, which \
                          `headwater check` reports until one does",
