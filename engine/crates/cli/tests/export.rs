@@ -262,6 +262,46 @@ fn an_uncommitted_graph_export_is_written_by_export_and_not_by_generate() {
     }
 }
 
+/// A declared export that refuses before its first write writes no file
+/// ([#1510](https://github.com/headwater-ai/headwater/issues/1510)).
+///
+/// `headwater generate` has kept this order since #1466. `export` is the
+/// publish step, so a refusal after a partial write leaves a published
+/// directory half updated. The unmarked file at `exports/filtered.json` is an
+/// `Occupied` refusal, which the run knows before it writes, and the pending
+/// `exports/control.json` must therefore not appear.
+#[test]
+fn a_refused_export_writes_no_declared_output() {
+    let root = uncommitted_control();
+    let control = root.join("exports/control.json");
+    let filtered = root.join("exports/filtered.json");
+    let authored = "{\"authored\": true}\n";
+    std::fs::create_dir_all(root.join("exports")).expect("the directory");
+    std::fs::write(&filtered, authored).expect("the authored file");
+    assert!(!control.exists(), "the fixture already holds the export");
+
+    let (code, said) = status(&run(&root, &["export"]));
+    assert_eq!(code, Some(1), "`export` did not refuse\n{said}");
+    assert!(
+        !control.exists(),
+        "`export` wrote a declared export before it refused\n{said}"
+    );
+    assert_eq!(
+        std::fs::read_to_string(&filtered).expect("the authored file reads"),
+        authored,
+        "`export` changed the authored file it refused\n{said}"
+    );
+    assert!(
+        said.contains("not written, because the run refused before it wrote this file"),
+        "the report does not name the unwritten export\n{said}"
+    );
+    let stderr = said.split("\nstderr:\n").nth(1).expect("the stderr part");
+    assert!(
+        stderr.contains("wrote nothing and the tree is as it was"),
+        "the refusal does not say the run wrote nothing\n{said}"
+    );
+}
+
 /// The answered-export fixture with its `control` export declared
 /// `committed: false`, resolved into the lock.
 fn uncommitted_control() -> Scratch {
