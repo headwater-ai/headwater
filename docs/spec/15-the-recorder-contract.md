@@ -100,11 +100,13 @@ A recording host must provide these four items:
 
 ### The one route to the network
 
-The session has no network of its own. The driver runs it with `--unshare-net`, so its network namespace holds a loopback interface and nothing else. The loopback of the host is not in it. Before #1467 closed this channel, 5 sessions of the 2026-09-30 batch read this repository from GitHub with `gh api`, `curl` and `git clone`.
+The session has no network of its own. The driver runs it with `--unshare-net`, so its network namespace holds a loopback interface and nothing else. The loopback of the host is not in it. In the 2026-09-30 batch, 5 sessions read this repository from GitHub with `gh api`, `curl` and `git clone`. The confinement now refuses each of these direct connections.
 
 The one route out is `tools/probe/egress-proxy.py`. The driver starts it on the host before the session and stops it after the session. It listens on a unix socket in a directory that the driver binds into the session. In the session, the same file forwards `127.0.0.1:3128` to that socket, and `HTTPS_PROXY` names that port. The driver also sets `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC`, so the harness asks for no telemetry host or update host.
 
-The proxy opens a connection to `api.anthropic.com` or `platform.claude.com` on port 443, and to no other host. The first host is the provider API. The harness refreshes an OAuth credential at the second. The list is in the source of the proxy, and no variable or argument changes it. A switch that adds a host would open the channel again. The proxy writes one log line for each decision, before it connects to the host.
+The proxy opens a connection to `api.anthropic.com` or `platform.claude.com` on port 443, and to no other host. The first host is the provider API. The harness refreshes an OAuth credential at the second. The list is in the source of the proxy, and no variable or argument changes it. A switch that adds a host would open the direct channel again. The proxy writes one log line for each decision, before it connects to the host.
+
+One channel stays open, and nothing has measured it. The provider API is on the list, and a `Bash` call that holds the credential of the session can send a request to it. That request can ask for a server-side web tool. The provider then reaches any host, GitHub included, from outside the session. The proxy sees only a connection to `api.anthropic.com`, so neither the proxy nor the transcript can tell this call from a call of the harness. So the confinement holds every direct connection, and it does not show that a session read nothing from GitHub. Each transcript states this.
 
 The transcript states this confinement and names the two hosts. It also states each connection that the proxy allowed and each connection that it refused, with the host and the count. When the harness fails, the driver prints the same counts with exit 10. A session fails there when the proxy refuses a host that the harness needs. If the proxy does not start, the driver exits 12 before any harness call.
 

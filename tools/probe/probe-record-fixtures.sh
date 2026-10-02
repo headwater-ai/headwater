@@ -1877,6 +1877,10 @@ STUB
             "\`127.0.0.1:$port\`" "$scratch/no-network.md"
         present "and says the proxy allowed the provider's host" \
             "allowed 1 connection to \`api.anthropic.com:443\`" "$scratch/no-network.md"
+        present "and names the channel through the provider API as open and unmeasured" \
+            "One channel stays open, and nothing measured it." "$scratch/no-network.md"
+        absent "and claims no more than the confinement holds" \
+            "anywhere else was reachable" "$scratch/no-network.md"
 
         # The proxy alone (#1467, clause 5). It tunnels a `CONNECT` to a
         # listed host on 443 and nothing else: a listed host on another port,

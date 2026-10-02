@@ -31,7 +31,9 @@ and it exits when COMMAND does. The driver sets `HTTPS_PROXY` to
 `http://127.0.0.1:PORT` for the harness.
 
 ALLOWED is written here and read from no variable or argument, because a
-switch that widens it is a switch that opens the channel #1467 closes. The
+switch that widens it is a switch that opens the direct channel #1467 closes.
+The provider API stays a channel of its own, because a call with the
+credential can ask it for a server-side web tool; spec 15 states that. The
 hosts are the ones the harness needs to answer a prompt, measured on
 `claude` 2.1.287 on 2026-10-03: the provider's API, and the host it refreshes
 an OAuth credential at (`TOKEN_URL` in the harness binary). Telemetry and the

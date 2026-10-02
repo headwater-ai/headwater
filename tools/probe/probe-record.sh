@@ -603,6 +603,12 @@ probe_log=$(cd "$probe_log" && pwd -P)
 # proxy opens a tunnel to the hosts its own source lists and to no other, and
 # logs each decision, so the transcript states every connection it refused.
 #
+# That closes every direct connection, and not one channel: the provider API
+# itself. A `Bash` call that holds the session's credential can send a request
+# to it that asks for a server-side web tool, and the provider then reaches
+# any host from outside the session. Nothing here closes or measures that
+# channel, and the transcript says so (verify of #1467, round 2).
+#
 # It fails closed. No `bwrap`, one that cannot create a namespace with no
 # network, no `python3`, or a proxy that does not start, is exit 12 before any
 # harness call, and no variable turns the confinement off or widens the hosts,
@@ -950,8 +956,9 @@ fi
 printf 'The session ran confined to its workspace. The confinement bound the workspace read-write, `/usr` and `/etc` read-only, the harness, the log directory of this run and the configuration directory below, and nothing else of the host'"'"'s file system, so no copy of this repository, no other tree of its batch and no configuration of the host was readable.\n\n'
 printf 'The session ran under the configuration directory `%s`, which held a copy of the host'"'"'s credentials and nothing else, in the permission mode `%s`, with the tools `%s` allowed and `WebSearch` and `WebFetch` denied. The batches of 2026-09-28 and 2026-09-30 ran under `bypassPermissions` and the host'"'"'s configuration, so a rate of this session does not compare with a rate of theirs.\n\n' \
     "$config" "$permission_mode" "$allowed_tools"
-printf 'The session ran with no network of its own. Its one route out was a proxy outside it that opens a connection to %s on port 443 and refuses every other, so no copy of this repository on GitHub or anywhere else was reachable. The proxy allowed %s, and refused %s.\n\n' \
+printf 'The session ran with no network of its own. Its one route out was a proxy outside it that opens a connection to %s on port 443 and refuses every other, so a direct connection to any other host, such as `gh api`, `curl` or `git clone` to GitHub, was refused. The proxy allowed %s, and refused %s.\n\n' \
     "$egress_named" "${egress_allowed:-no connection}" "${egress_refused:-no connection}"
+printf 'One channel stays open, and nothing measured it. A call that holds the provider credential can ask the provider API for a server-side web tool, which reaches any host from outside the session, so this transcript does not show that the session read nothing from GitHub.\n\n'
 
 # The paths outside the workspace the session named (#1467, clause 2). A
 # session cannot see a refusal from outside, so this counts what it tried:
