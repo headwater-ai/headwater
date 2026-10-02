@@ -141,6 +141,9 @@ fn read(root: &Root) -> (String, String) {
 fn the_audit_json_names_an_ungoverned_entry_and_drops_it_once_an_edge_reaches_it() {
     let root = Root::new("scope-audit-json");
     std::fs::write(root.at.join("tools/new-script.sh"), "").expect("the new entry writes");
+    // A second ungoverned entry that sorts first, so the order of
+    // `ungoverned` is a fact the case reads.
+    std::fs::write(root.at.join("tools/aa-early.sh"), "").expect("the second entry writes");
 
     let (text, document) = read(&root);
     assert_eq!(at(&document, &["version"]), "1", "{document}");
@@ -150,6 +153,16 @@ fn the_audit_json_names_an_ungoverned_entry_and_drops_it_once_an_edge_reaches_it
             "{document}"
         );
     }
+    // The subject is the header of the text, member by member.
+    let header_lock = text
+        .lines()
+        .find_map(|line| line.trim_start().strip_prefix("lock "))
+        .unwrap_or_else(|| panic!("no lock line in {text}"));
+    assert_eq!(
+        at(&document, &["subject", "lock"]),
+        header_lock,
+        "{document}"
+    );
     assert_eq!(
         at(&document, &["subject", "now"]),
         "2026-09-25",
@@ -173,12 +186,60 @@ fn the_audit_json_names_an_ungoverned_entry_and_drops_it_once_an_edge_reaches_it
             governed,
             "{pattern}"
         );
+        let ungoverned = ungoverned_of(&document, &index);
         assert_eq!(
-            ungoverned_of(&document, &index).len(),
+            ungoverned.len(),
             in_scope - governed,
             "{pattern}: {document}"
         );
+        let mut sorted = ungoverned.clone();
+        sorted.sort();
+        assert_eq!(ungoverned, sorted, "{pattern}: `ungoverned` is sorted");
+        // The share is the percentage the text line prints.
+        let line = line_for(&text, &pattern);
+        let printed = line
+            .split_whitespace()
+            .find_map(|word| word.strip_suffix('%'))
+            .unwrap_or_else(|| panic!("no percentage in {line}"));
+        assert_eq!(
+            at(&document, &["scope", &index, "share"]),
+            printed,
+            "{pattern}: {line}"
+        );
+        // Every pattern this repository's overlay scopes is on `code_path`.
+        assert_eq!(
+            at(&document, &["scope", &index, "anchor_kind"]),
+            "code_path",
+            "{pattern}"
+        );
     }
+    // The elements come in the order of the text lines, which is declaration order.
+    let patterns: Vec<String> = (0..elements)
+        .map(|index| at(&document, &["scope", &index.to_string(), "pattern"]))
+        .collect();
+    let lines: Vec<String> = text
+        .lines()
+        .filter(|line| line.contains(" in scope,"))
+        .map(|line| {
+            line.split('`')
+                .nth(1)
+                .expect("a pattern in backticks")
+                .to_string()
+        })
+        .collect();
+    assert_eq!(patterns, lines, "{document}\n{text}");
+    let tools_ungoverned = ungoverned_of(&document, &element_for(&document, "tools/**"));
+    assert!(tools_ungoverned.len() >= 2, "{tools_ungoverned:?}");
+    // The total's share is the percentage the total line prints.
+    let total_line = text
+        .lines()
+        .find(|line| line.trim_start().starts_with("in total "))
+        .expect("a total line");
+    assert_eq!(
+        format!("{}%", at(&document, &["scope_total", "share"])),
+        total_line.split_whitespace().last().expect("a share"),
+        "{total_line}"
+    );
 
     let tools = element_for(&document, "tools/**");
     let governed = number(&document, &["scope", &tools, "governed"]);
