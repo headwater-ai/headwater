@@ -11,7 +11,7 @@
 use crate::{Audit, Finding};
 use headwater_check::filled;
 use headwater_check::paint::{paint, ColorMode, Role};
-use std::collections::BTreeMap;
+use headwater_yaml::json::Json;
 use std::fmt::Write;
 
 /// A token painted into text that is already folded.
@@ -64,6 +64,82 @@ impl Audit {
         self.adoption_section(&mut out, mode);
         self.waiting_section(&mut out, mode);
         out
+    }
+
+    /// The run as one JSON document, for `taxonomy audit --json` (#1573).
+    ///
+    /// **It carries the subject and the governed scope, and no other reading.**
+    /// The governed scope is the figure a CI job uploads and a later comparison
+    /// reads, and it is the one reading that clause asks for. The other readings
+    /// of the text report are not in the document, so a consumer reads their
+    /// absence as "not carried" and never as zero. A reading added here later is
+    /// a new member, and a change to a member already here moves `version`.
+    ///
+    /// The members:
+    ///
+    /// - `version`: the shape of this document, `1`.
+    /// - `subject`: `package`, `version`, `lock` and `now`, the header of the text.
+    /// - `scope`: one element per declared pattern, in declaration order, each
+    ///   `{anchor_kind, pattern, in_scope, governed, share, ungoverned}`. `share`
+    ///   is the percentage to one decimal place as the text prints it, and `null`
+    ///   for a pattern that admits nothing. `ungoverned` is the sorted paths no
+    ///   edge reaches.
+    /// - `scope_total`: `{in_scope, governed, share}` over the union of the
+    ///   entries, from [`Audit::scope_total`], never the sum of the rows.
+    pub fn json(&self) -> Json {
+        let share = |rate: Option<f64>| match rate {
+            Some(rate) => Json::Raw(format!("{rate:.1}")),
+            None => Json::Raw("null".to_string()),
+        };
+        let count = |n: usize| Json::Raw(n.to_string());
+        let total = self.scope_total();
+        Json::object([
+            ("version", Json::Raw("1".to_string())),
+            (
+                "subject",
+                Json::object([
+                    ("package", Json::string(self.subject.package.clone())),
+                    ("version", Json::string(self.subject.version.clone())),
+                    ("lock", Json::string(self.subject.lock.clone())),
+                    ("now", Json::string(self.subject.now.to_string())),
+                ]),
+            ),
+            (
+                "scope",
+                Json::Array(
+                    self.scope
+                        .iter()
+                        .map(|reading| {
+                            Json::object([
+                                ("anchor_kind", Json::string(reading.anchor_kind.clone())),
+                                ("pattern", Json::string(reading.pattern.clone())),
+                                ("in_scope", count(reading.entries.len())),
+                                ("governed", count(reading.governed)),
+                                ("share", share(reading.fraction())),
+                                (
+                                    "ungoverned",
+                                    Json::Array(
+                                        reading
+                                            .ungoverned()
+                                            .into_iter()
+                                            .map(Json::string)
+                                            .collect(),
+                                    ),
+                                ),
+                            ])
+                        })
+                        .collect(),
+                ),
+            ),
+            (
+                "scope_total",
+                Json::object([
+                    ("in_scope", count(total.in_scope)),
+                    ("governed", count(total.governed)),
+                    ("share", share(total.fraction())),
+                ]),
+            ),
+        ])
     }
 
     fn header(&self, out: &mut String, mode: ColorMode) {
@@ -188,21 +264,16 @@ impl Audit {
             }
         }
         // An entry two patterns admit is one entry of the tree, so the total
-        // is over the union rather than a sum of the rows above.
-        let mut union: BTreeMap<&str, bool> = BTreeMap::new();
-        for reading in &self.scope {
-            for (path, governed) in &reading.entries {
-                union.insert(path.as_str(), *governed);
-            }
-        }
-        let governed = union.values().filter(|governed| **governed).count();
-        match union.len() {
-            0 => out.push_str("  in total, no entry is in scope\n"),
-            total => {
+        // is over the union rather than a sum of the rows above, and the JSON
+        // reads the same method.
+        let total = self.scope_total();
+        match total.fraction() {
+            None => out.push_str("  in total, no entry is in scope\n"),
+            Some(rate) => {
                 let _ = writeln!(
                     out,
-                    "  in total {governed} of {total} entries in scope are governed, {:.1}%",
-                    100.0 * governed as f64 / total as f64
+                    "  in total {} of {} entries in scope are governed, {rate:.1}%",
+                    total.governed, total.in_scope
                 );
             }
         }
