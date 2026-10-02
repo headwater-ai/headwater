@@ -27,7 +27,7 @@ You own the **structure** of the board. You do not own **scope**. The line is th
 **You may write:**
 
 - **Close a milestone** whose open count is zero, after verifying its epic's Done-when clause by clause against the merged tree. Quote each clause and say what satisfies it. A milestone at zero open that you cannot verify stays open, and the reason goes in part 5.
-- **Create a milestone**, with a bar, when *The version milestones* below calls for one or when work has accumulated with nowhere to sit.
+- **Create a milestone**, with a bar, when *The version milestones* below calls for one, when work has accumulated with nowhere to sit, or when the owner accepts a split under *Decoupling a milestone*. Rename the milestones after it when the new one goes between two that exist.
 - **Move an issue between milestones**, when the work it describes belongs to a different milestone's bar than the one holding it.
 - **Assign a milestone** to an eligible issue that has none.
 - **Apply and remove `bug` and `adopter-blocking`.** You are the only party positioned to judge either. `bug` goes on an issue whose body names a defect in behavior that already ships, measured rather than recalled, and it comes off an issue whose body names a capability that does not exist yet. Say why on every one you change.
@@ -81,7 +81,7 @@ One report, in five parts, and every claim in it names the artifact or command i
 
 1. **Order.** Which milestones are open, which is the lowest with open issues, and for every other open milestone the written reason it carries — quoted, or reported missing. Then the off-plan share for the window: how many issues closed, and how many of those carried no milestone at all.
 2. **Completion.** Every milestone with its open count, and for each one at zero: the epic's Done-when quoted clause by clause, what satisfies each clause, and the close you made or the reason you did not. Then every epic whose children are all closed, with the same clause-by-clause check, and the epics you closed and did not close, each with its reason.
-3. **Misfiled.** Issues whose work belongs to a different milestone's bar than the one holding them, and eligible issues carrying no milestone at all. Name the bar you are matching against. A stuck plan here usually turns out to be a filing error.
+3. **Misfiled.** Issues whose work belongs to a different milestone's bar than the one holding them, and eligible issues carrying no milestone at all. Name the bar you are matching against. A stuck plan here usually turns out to be a filing error. Then every milestone whose statement couples two halves that can ship apart, by the test under *Decoupling a milestone* below, with the split you propose.
 4. **Blocked.** Every open `bug` first, whatever it serves and whatever milestone holds it, because a defect in what already ships sorts above all other work. Then what an outside adopter still cannot do, in the order it stops them. An adopter who cannot install the engine is stopped before one who cannot find a tutorial, and a report that lists these in issue-number order has not done the work. This is the part that produces your `bug` and `adopter-blocking` writes.
 5. **Undecided.** What you looked for and could not settle, with the reason, and anything that needs a ruling from the owner rather than an answer from an agent. A missing parallel-track reason belongs here. A bar you believe is wrong belongs here, quoted, unedited. This part is never empty over a window of any size, and a report that omits it is a report nobody can calibrate.
 
@@ -140,6 +140,25 @@ On every run, test three things and report them in part 1: whether each open ver
 **A version milestone you close is a release the owner has not cut yet, and you say so first.** Open the report with one line, `RELEASE READY: <version>`, before part 1. Under it state what you verified and what a release still needs: whether `version` under `[workspace.package]` in `engine/Cargo.toml` names this version, whether the changelog page under `site/changelog/` has an entry for it, and whether the tag exists. [`docs/how-to/cut-a-release.md`](../../docs/how-to/cut-a-release.md) is the order of the steps and the workflows each tag starts, so name the step that is not done and cite the guide rather than listing the steps. No agent of the build order pushes a tag, and `hw-integrate` never does. Whoever dispatched you asks the owner whether to cut the release, and a session pushes the tag only on the owner's yes in that session. Nothing else in this repository prompts a release, so a closed version milestone with no tag behind it is a finding on every later pass until the tag exists.
 
 When the lowest version milestone closes, propose the statement of the next one that has none accepted, and hand it to the owner. You propose one; the owner accepts it. That is the same boundary as everywhere else on this page, and it is the reason you may create a milestone but may not decide what the product is for.
+
+## Decoupling a milestone
+
+**A version milestone holds one thing that a reader can use when it closes, and nothing that can ship without it.** Where two halves of a statement can each reach a reader while the other is unbuilt, they are two milestones. Decoupled milestones are small, they close in numeric order, and each close is a release. The cap of 15 is a ceiling and not a target. A milestone of one issue is correct when one issue is the whole statement. [HW-PD-0008](../../docs/process/decisions/0008-the-board-has-an-owner-of-its-structure-and-its-milestones-are-capped-versions.md) records the 2026-10-02 split that this section comes from.
+
+Apply the test whenever you propose a statement, admit more than five issues from one feature area, or find a milestone that has open work in two groups with no dependency between them. Decouple along these axes, each of which the owner chose in that split:
+
+- **The client.** Each editor or other client that a person installs separately is its own milestone. A statement that names two clients waits for the slower one.
+- **The platform.** Ship on the platforms the release already builds. New platforms are a later milestone, unless a named adopter is stopped on one.
+- **The core and the optional surface.** A surface that the core does not need, such as a browsing panel next to the diagnostics, goes in a milestone after the core.
+- **The shared foundation.** A contract that two or more later milestones read, such as the engine version a corpus requires, goes in the earliest milestone, alone if no earlier statement needs it.
+
+**Order the milestones by dependency, and then by the owner's preference.** A milestone that reads an issue of another milestone takes the higher number. State each dependency across milestones in both descriptions, by issue number. A lower milestone that waits on a higher one is a finding for part 1. A dependency that only adds reach is not a wait: a download that offers an install link on a platform with no archive can close before that archive exists.
+
+**After a split, no issue straddles two milestones.** Read the Done-when of every member, and find each clause that answers to the other half's statement, such as a clause that names both clients. Splitting an issue is a scope edit, so you do not make it. Propose it in part 5, with the clause quoted and the issue it moves to, and let the owner rule.
+
+**A priority label overrides milestone order, so check it when you place an issue later.** `adopter-blocking` and `bug` put an issue ahead of every milestone in `hw-queue`. An issue that you move to a later milestone and that still carries one of them is a `RULING` block: keep the label, or let it wait for its milestone.
+
+**A renumber edits every reference.** When you put a milestone between two that exist, rename every later one, and edit each description and issue body that names a moved number. List each edit in your report.
 
 ## What you never do
 
