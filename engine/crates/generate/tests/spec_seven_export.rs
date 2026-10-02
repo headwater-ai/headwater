@@ -7,13 +7,18 @@
 //! The export rules used to live in spec 6, and #1572 moved them to spec 7
 //! (`docs/spec/07-distribution-and-federation.md#what-leaves-a-corpus`).
 //! A rule that two specification parts state drifts in one of them, which is
-//! the defect the move removed. So this file holds three things:
+//! the defect the move removed. So this file holds these things:
 //!
 //! - the tombstone grain table of spec 7 names exactly the grains the engine
 //!   reads, in both directions;
 //! - spec 6 states neither the grain table nor the filter rule list again, and
 //!   shares no sentence of six words or more with spec 7's export section;
-//! - spec 7 states the filter rules as a list of exactly six items.
+//! - spec 7 states the filter rules as a list of exactly six items;
+//! - spec 7 states, once and under the subsection that owns each, that
+//!   emitters never chain and that no profile presents as total, and spec 6
+//!   names neither;
+//! - no engine comment quotes a sentence of spec 7's export section and
+//!   credits it to spec 6.
 //!
 //! The private `_exhaustive` match makes a third `Grain` variant fail to
 //! compile until [`ENGINE_GRAINS`] and the table change with it.
@@ -200,56 +205,87 @@ fn spec_6_shares_no_sentence_with_the_export_section_of_spec_7() {
     );
 }
 
-/// Words that only the moved export rules use. A line that names spec 6, read
-/// with the two lines after it, may not carry one: the rule it credits now
-/// lives in spec 7. The list is narrow, because a wider one ("census",
-/// "native", "generated") fires on 26 lines that name text spec 6 keeps.
-/// [`no_comment_quotes_spec_7_export_text_as_spec_6`] holds the quotes this
-/// list cannot see.
-const MOVED_RULE_MARKERS: [&str; 25] = [
-    "06-engine-architecture.md#an-export",
-    "06-engine-architecture.md#what-a-filtered",
-    "`counted`",
-    "three classes",
-    "projector defect",
-    "one layer out",
-    "the hole",
-    "export\nis committed",
-    "filtered export",
-    "filtered view",
-    "carry the warrant",
-    "export is committed",
-    "export is\n",
-    "graph emitters",
-    "an entry under `projections`",
-    "projection like the others",
-    "export that leaves",
-    // Not "tombstone", "withholding" or "fails closed" alone: the graph, the
-    // harvest, the VCS reader and the probe use those words for other things.
-    "tombstone grain",
-    "withholding reason",
-    "withholding rule",
-    "exporter fails closed",
-    "default-deny",
-    "presents as total",
-    "committed export",
-    "never chain",
-];
+/// A moved rule that no table or list holds: the bold sentence that states
+/// it, the whole paragraph that it opens, the spec 7 subsection that owns it,
+/// and the words that name it, which spec 6 may not use at all. The paragraph
+/// is held whole, so an edit that keeps the bold sentence and changes what the
+/// rule says goes red here until the edit is made in this file too.
+struct Rule {
+    rule: &'static str,
+    paragraph: &'static str,
+    subsection: &'static str,
+    name: &'static str,
+}
 
-/// Lines that name spec 6 beside a marker and are right to: each names text
-/// that stays in spec 6, or is not a credit at all. The second member is a
-/// piece of the line itself, so an edit to that line drops it from this list.
-const STAYS_IN_SPEC_6: [(&str, &str); 1] = [
-    // A sentence splitter test input, not a credit.
-    (
-        "crates/doc/src/sentences.rs",
-        "cf. the projection census of spec 6",
-    ),
-];
+const EMITTERS_NEVER_CHAIN: Rule = Rule {
+    rule: "**Emitters never chain.**",
+    paragraph: "**Emitters never chain.** Every emitter reads the resolved lock and the graph \
+                directly. A pipeline that routes one standard format through another inherits \
+                every loss of every hop, and declares none of them. LinkML's own SHACL \
+                generator is the observed case, because it drops constructs that LinkML itself \
+                expresses ([Q13](09-decisions.md#q13--linkml-and-shacl-as-substrate)).",
+    subsection: "### An export is a projection, and it declares what it dropped",
+    name: "never chain",
+};
 
-/// This file, which names spec 6 on purpose: to say what spec 6 no longer
-/// holds, and in the cases that hold the scan itself.
-const THIS_FILE: &str = "crates/generate/tests/spec_seven_export.rs";
+const NO_VIEW_PRESENTS_AS_TOTAL: Rule = Rule {
+    rule: "**No profile may produce a view that presents as total.**",
+    paragraph: "**No profile may produce a view that presents as total.** That is the \
+                invariant, and it holds under both grains because it leaks nothing. Under \
+                `sealed` a reader still knows to stop drawing conclusions from absence, which \
+                is the harm that the rule exists to prevent. An agent that traverses a \
+                filtered graph, finds nothing, and reports absence is the failure that \
+                [spec 5](05-ai-integration.md) names at its start. Here our own filter causes \
+                it.",
+    subsection: "### An export profile carries a filter",
+    name: "presents as total",
+};
+
+/// Spec 7 states the rule once, as one whole paragraph under the subsection
+/// that owns it. Spec 6 does not name it.
+fn has_one_home(r: &Rule) {
+    assert!(
+        r.paragraph.starts_with(r.rule),
+        "{:?} opens its paragraph",
+        r.rule
+    );
+    let seven = spec_seven();
+    let owned: Vec<&str> = export_section(&seven)
+        .into_iter()
+        .skip_while(|l| *l != r.subsection)
+        .skip(1)
+        .take_while(|l| !l.starts_with("### "))
+        .collect();
+    assert_eq!(
+        owned.iter().filter(|l| **l == r.paragraph).count(),
+        1,
+        "spec 7's `{}` does not state this paragraph once: {:?}",
+        r.subsection,
+        r.paragraph
+    );
+    assert_eq!(
+        seven.matches(r.rule).count(),
+        1,
+        "spec 7 states {:?} more than once",
+        r.rule
+    );
+    let six = plain(&spec_six().lines().collect::<Vec<_>>().join(" "));
+    assert!(
+        !six.contains(r.name),
+        "spec 6 states {:?} again; spec 7 is its one home",
+        r.name
+    );
+}
+
+#[test]
+fn spec_7_alone_states_that_emitters_never_chain() {
+    has_one_home(&EMITTERS_NEVER_CHAIN);
+}
+
+#[test]
+fn spec_7_alone_states_that_no_profile_presents_as_total() {
+    has_one_home(&NO_VIEW_PRESENTS_AS_TOTAL);
+}
 
 fn engine_sources(dir: &Path, out: &mut Vec<PathBuf>) {
     for entry in std::fs::read_dir(dir).expect("read an engine directory") {
@@ -263,116 +299,6 @@ fn engine_sources(dir: &Path, out: &mut Vec<PathBuf>) {
             out.push(path);
         }
     }
-}
-
-/// Comment lines with their markers gone, lower case, one line each.
-fn comment_text(lines: &[&str]) -> String {
-    let text = lines
-        .iter()
-        .map(|l| l.trim().trim_start_matches(['/', '!', '#']).trim())
-        .collect::<Vec<_>>()
-        .join("\n")
-        .to_lowercase();
-    format!("{text}\n")
-}
-
-/// Every line of `text` that credits a moved export rule to spec 6, as
-/// `path:line: marker: line`.
-///
-/// A line that names spec 6 is read with the line before it and the two
-/// after it, and it is stale when that window carries a marker. A window that
-/// also names spec 7 from the spec 6 line on is a comment that already credits
-/// the moved rule where it lives ("Spec 6 names the verb; spec 7 states the
-/// filtered export rules"), so it passes.
-fn stale_credits(rel: &str, text: &str) -> Vec<String> {
-    let lines: Vec<&str> = text.lines().collect();
-    let mut stale = Vec::new();
-    for (i, line) in lines.iter().enumerate() {
-        let lower = line.to_lowercase();
-        if !(lower.contains("spec 6") || lower.contains("spec six")) {
-            continue;
-        }
-        let ahead = comment_text(&lines[i..lines.len().min(i + 3)]);
-        if ahead.contains("spec 7")
-            || ahead.contains("spec seven")
-            || ahead.contains("07-distribution-and-federation")
-        {
-            continue;
-        }
-        let window = comment_text(&lines[i.saturating_sub(1)..lines.len().min(i + 4)]);
-        let allowed = STAYS_IN_SPEC_6
-            .iter()
-            .any(|(path, text)| rel.ends_with(path) && line.contains(text));
-        if let Some(marker) = MOVED_RULE_MARKERS.iter().find(|m| window.contains(**m)) {
-            if !allowed {
-                stale.push(format!("{rel}:{}: {marker:?}: {}", i + 1, line.trim()));
-            }
-        }
-    }
-    stale
-}
-
-/// The scan in three directions: a stale credit goes red, and a comment that
-/// credits spec 7 or uses a word that other engine code also uses passes.
-/// The passing cases are the shapes the round 2 verifier of PR #1628 wrote.
-#[test]
-fn the_credit_scan_fires_on_a_stale_credit_and_on_nothing_else() {
-    let fires = [
-        "// Spec 6 asks a filtered export that leaves the repository to state when",
-        "/// [Spec 6](../../../../docs/spec/06-engine-architecture.md#an-export-is-a-projection-and-it-declares-what-it-dropped)\n/// requires an emitter to declare a loss set.",
-        "/// Spec 6 gives the two values and makes `counted` the default.",
-        "# tree holds a projection's output. Spec 6 makes whether an export is\n# committed a schema decision.",
-        // The round 2 verifier's E2, E4, E6 and E7.
-        "// Spec 6 says a committed export regenerates on every edit to a facet it carries.",
-        "\"this taxonomy declares no export profile. Spec 6 rules that emitters never chain\",",
-        "// Spec 6 states this rule, which\n// holds for every emitter\n// of the engine: a filtered export states when it was generated.",
-        "// As spec six rules, a filtered export states when it was generated.",
-    ];
-    for case in fires {
-        assert_eq!(stale_credits("x.rs", case).len(), 1, "should fire: {case}");
-    }
-    let passes = [
-        // O1: credits spec 7 for the moved rule.
-        "// Spec 6 names the verb; spec 7 states the filtered export rules.",
-        // O9: the same, over two lines.
-        "// Spec 6 names the verb; spec 7 states the\n// filtered export rules.",
-        // O8: "fails closed" is a common engine phrase, not an export marker.
-        "// Spec 6 fixes the lock as the one input,\n// and the read fails closed when it is absent.",
-        // O2: a graph tombstone, not an export tombstone.
-        "// Spec 6 excuses an anchor from checks. A removed edge leaves a\n// tombstone in the graph, and withholding it is the resolver's call.",
-    ];
-    for case in passes {
-        assert_eq!(
-            stale_credits("x.rs", case),
-            Vec::<String>::new(),
-            "should pass: {case}"
-        );
-    }
-}
-
-#[test]
-fn no_engine_source_credits_a_moved_export_rule_to_spec_6() {
-    let engine = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
-    let mut files = Vec::new();
-    engine_sources(&engine.join("crates"), &mut files);
-    assert!(files.len() > 50, "the walk found {} files", files.len());
-    let mut stale = Vec::new();
-    for file in files {
-        let text = std::fs::read_to_string(&file).expect("read an engine source");
-        let rel = file
-            .strip_prefix(&engine)
-            .unwrap_or(&file)
-            .to_string_lossy()
-            .replace('\\', "/");
-        if rel.ends_with(THIS_FILE) {
-            continue;
-        }
-        stale.extend(stale_credits(&rel, &text));
-    }
-    assert!(
-        stale.is_empty(),
-        "these lines credit to spec 6 an export rule that spec 7 now states: {stale:#?}"
-    );
 }
 
 /// The text inside the first pair of double quotes after `at` in `text`,
