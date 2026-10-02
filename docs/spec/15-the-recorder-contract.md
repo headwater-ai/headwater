@@ -55,7 +55,7 @@ A harness log carries the calls and not the rest of the contract below. Each val
 
 A probe measures what the workspace gives a session. A session that can read outside its workspace measures the host instead. In the 2026-09-30 batch, 51 of 658 sessions named a path outside the workspace. 16 of 658 named a checkout of this repository. So the driver confines each session, and it refuses a session that it cannot confine.
 
-### What the session can read
+### What the file system of the session holds
 
 `tools/probe/probe-record.sh` runs the harness under `bwrap`. The file system of the session holds these items and no other:
 
@@ -67,7 +67,7 @@ A probe measures what the workspace gives a session. A session that can read out
 - The log directory of the run, read-write, because the intent hook writes there.
 - A configuration directory of the session, read-write.
 
-So the session cannot read a copy of this repository, another tree of its batch, or the home directory of the host. The driver also clears the environment, so no token of the host reaches the session.
+So the file system of the session holds no copy of this repository on the host. It also holds no other tree of the batch and no part of the home directory. The network is a separate channel, and [the one route to the network](#the-one-route-to-the-network) says what it holds and what stays open. The driver also clears the environment, so no token of the host reaches the session.
 
 ### The configuration the session runs under
 

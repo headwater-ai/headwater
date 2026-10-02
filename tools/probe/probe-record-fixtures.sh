@@ -1804,7 +1804,9 @@ STUB
             "$scratch/confined.md"
 
         # THE decisive case of #1467's network half (clause 5): the public
-        # repository is not reachable from a session. A server on the host's
+        # repository is not reachable from a session by a direct connection.
+        # (The provider API stays a channel, which spec 15 names and no case
+        # can measure without spending.) A server on the host's
         # loopback stands in for it, so the case needs no internet access. It
         # serves a marker file and a git repository that holds the marker. The
         # stub tries each road to it: `curl` direct, the same request through
@@ -1879,8 +1881,11 @@ STUB
             "allowed 1 connection to \`api.anthropic.com:443\`" "$scratch/no-network.md"
         present "and names the channel through the provider API as open and unmeasured" \
             "One channel stays open, and nothing measured it." "$scratch/no-network.md"
-        absent "and claims no more than the confinement holds" \
-            "anywhere else was reachable" "$scratch/no-network.md"
+        present "and claims no more than the confinement holds: direct connections refused" \
+            "so a direct connection to any other host, such as \`gh api\`, \`curl\` or \`git clone\` to GitHub, was refused." "$scratch/no-network.md"
+        present "and says the file system held no copy of this repository on the host, and no more" \
+            "no copy of this repository on the host, no other tree of its batch and no configuration of the host was readable through the session's file system." \
+            "$scratch/no-network.md"
 
         # The proxy alone (#1467, clause 5). It tunnels a `CONNECT` to a
         # listed host on 443 and nothing else: a listed host on another port,
