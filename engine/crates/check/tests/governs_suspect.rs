@@ -824,6 +824,61 @@ fn a_moved_wildcard_names_its_pattern_and_its_match_count() {
     let _ = std::fs::remove_dir_all(&root);
 }
 
+/// A pattern entry's target is named by a path the pattern reaches, or by the
+/// pattern as the entry writes it in a `verified` line. A path the pattern
+/// does not reach names nothing (#1520).
+#[test]
+fn a_pattern_target_is_named_by_a_path_it_reaches() {
+    const PATTERN: &str = ".claude/hooks/*.sh";
+    const WRITE: &str = ".claude/hooks/write.sh";
+    let root = scratch("named-pattern");
+    let digest = expected(&root, &[LIB, WRITE]);
+    let entries = vec![format!(
+        "    - to: {PATTERN}\n      verified_revision: \"{digest}\""
+    )];
+    document(&root, TODAY, &entries);
+    let write_before = std::fs::read_to_string(root.join(WRITE)).expect("the hook reads");
+    write(&root, WRITE, "#!/bin/sh\n");
+    let moved = || (DOCUMENT, Some(yesterday("hooks", &entries)));
+    for (label, change, fixable) in [
+        (
+            "a matched path",
+            change(&[moved(), (WRITE, Some(write_before.clone()))]),
+            true,
+        ),
+        (
+            "the pattern in a verified line",
+            edges(&[], &[], &[(DOCUMENT, PATTERN)]),
+            true,
+        ),
+        (
+            "a path the pattern does not reach",
+            change(&[moved(), (".claude/hooks/notes.txt", None)]),
+            false,
+        ),
+        ("no target", change(&[moved()]), false),
+    ] {
+        let ctx = at(TODAY).scoped_to(change);
+        let ran = run_in(&root, &ctx, &mut Cache::disabled(), &taxonomy());
+        let reported = suspect(&ran);
+        assert_eq!(reported.len(), 1, "{label}: {reported:?}");
+        assert_eq!(reported[0].patch.is_some(), fixable, "{label}");
+    }
+
+    // The entry spells the pattern with a leading `./`. A `verified` line
+    // that names the normalized pattern names the edge too.
+    let spelled = vec![format!(
+        "    - to: ./{PATTERN}\n      verified_revision: \"{digest}\""
+    )];
+    document(&root, TODAY, &spelled);
+    let ctx = at(TODAY).scoped_to(edges(&[], &[], &[(DOCUMENT, PATTERN)]));
+    let ran = run_in(&root, &ctx, &mut Cache::disabled(), &taxonomy());
+    let reported = suspect(&ran);
+    assert_eq!(reported.len(), 1, "{reported:?}");
+    assert!(reported[0].patch.is_some(), "the normalized pattern");
+    let _ = std::fs::remove_dir_all(&root);
+}
+
 /// A file renamed under a governed wildcard, with its bytes unchanged, moves
 /// the digest, because the manifest the digest is taken over holds each
 /// entry's path as well as its bytes (#1104). The new name keeps the sort
