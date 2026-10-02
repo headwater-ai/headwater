@@ -13,7 +13,7 @@
 //! [Q19](../../../../docs/spec/09-decisions.md) adds `transcription`, and
 //! [spec 5](../../../../docs/spec/05-ai-integration.md#a-run-produces-a-snapshot-and-a-document)
 //! adds `probe_result`. Collecting them for the meta-schema showed that they do
-//! not form one set. Nine are declarable: a taxonomy names the kind and the
+//! not form one set. Eleven are declarable: a taxonomy names the kind and the
 //! output path, and
 //! [principle 1](../../../../docs/spec/00-vision-and-scope.md#design-principles)
 //! makes the path a schema decision. Two are engine-defined. Spec 4 makes the
@@ -1338,8 +1338,8 @@ fn graph_export(
 /// specification lists and this engine does not implement is reported as that,
 /// and never as an empty result.
 ///
-/// This is the only statement of the built/unbuilt split, over all twelve
-/// kinds rather than over the declarable ten. Every reason here reaches the
+/// This is the only statement of the built/unbuilt split, over all thirteen
+/// kinds rather than over the declarable eleven. Every reason here reaches the
 /// report of every run: [`engine_defined`] reads the register's reason from
 /// here rather than holding a second copy, [`undeclared`] carries the reason of
 /// a declarable kind no declaration named, and the `other =>` arm of [`plan`]
@@ -1347,7 +1347,7 @@ fn graph_export(
 /// holds the whole set against one run, and
 /// `engine/crates/generate/tests/spec_six_projections.rs` holds spec 6's
 /// projection-kinds block against it. The `match` is exhaustive, so a
-/// thirteenth variant is `E0004` here before it is anything else.
+/// fourteenth variant is `E0004` here before it is anything else.
 pub fn unbuilt(kind: Kind) -> Option<&'static str> {
     match kind {
         Kind::RelationView => Some(
