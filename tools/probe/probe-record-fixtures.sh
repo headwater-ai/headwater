@@ -1797,6 +1797,77 @@ STUB
             "The session named 3 paths outside its workspace that the confinement does not bind, so no file of the host at any of them was readable." \
             "$scratch/confined.md"
 
+        # THE decisive case of #1467's network half (clause 5): the public
+        # repository is not reachable from a session. A server on the host's
+        # loopback stands in for it, so the case needs no internet access. It
+        # serves a marker file and a git repository that holds the marker. The
+        # stub tries each road to it: `curl` direct, the same request through
+        # the session's proxy, a `CONNECT` to it through that proxy, a socket
+        # from `python3`, `git clone` and `gh api`. It also asks the proxy for
+        # the provider's host, which the proxy allows and logs before any
+        # upstream connection. With the network shared, `curl` reads the marker.
+        rm -rf "$conf/served" "$conf/net-ws"
+        mkdir -p "$conf/served" "$conf/net-ws" "$conf/served-src"
+        printf 'HW-LEAK-MARKER-1467-NET\n' > "$conf/served/secret.md"
+        printf 'HW-LEAK-MARKER-1467-NET\n' > "$conf/served-src/secret.md"
+        git -C "$conf/served-src" init -q
+        git -C "$conf/served-src" add secret.md
+        git -C "$conf/served-src" -c user.name=f -c user.email=f@f commit -q -m marker
+        git clone -q --bare "$conf/served-src" "$conf/served/repo.git"
+        git -C "$conf/served/repo.git" update-server-info
+        rm -f "$conf/port"
+        python3 -c '
+import functools, http.server, sys
+handler = functools.partial(http.server.SimpleHTTPRequestHandler, directory=sys.argv[1])
+handler.log_message = lambda *a: None
+server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), handler)
+open(sys.argv[2] + ".tmp", "w").write(str(server.server_address[1]))
+__import__("os").rename(sys.argv[2] + ".tmp", sys.argv[2])
+server.serve_forever()
+' "$conf/served" "$conf/port" &
+        served_pid=$!
+        n=0
+        while [ ! -s "$conf/port" ] && [ "$n" -lt 50 ]; do sleep 0.1; n=$((n + 1)); done
+        port=$(cat "$conf/port" 2>/dev/null)
+        same "the stand-in for the public repository serves on the host" "HW-LEAK-MARKER-1467-NET" \
+            "$(curl -s --noproxy '*' --max-time 5 "http://127.0.0.1:$port/secret.md")"
+        cat > "$scratch/bin/claude" <<STUB
+#!/bin/sh
+{
+    curl -s --noproxy '*' --max-time 3 "http://127.0.0.1:$port/secret.md"
+    curl -s --max-time 3 -x "\$HTTPS_PROXY" "http://127.0.0.1:$port/secret.md"
+    curl -s --max-time 3 -p -x "\$HTTPS_PROXY" "http://127.0.0.1:$port/secret.md"
+    python3 -c 'import socket; s = socket.create_connection(("127.0.0.1", $port), 3); s.sendall(b"GET /secret.md HTTP/1.0\r\n\r\n"); print(s.recv(4096).decode())'
+    git clone -q "http://127.0.0.1:$port/repo.git" cloned && cat cloned/secret.md
+    GH_TOKEN=x GH_ENTERPRISE_TOKEN=x gh api --hostname "127.0.0.1:$port" /secret.md
+} > found.txt 2>/dev/null
+curl -s -p -x "\$HTTPS_PROXY" --max-time 3 -o /dev/null https://api.anthropic.com/ 2>/dev/null
+printf '%s\n' "\$HTTPS_PROXY" > proxy.txt
+printf '%s\n' '{"type":"system","subtype":"init","model":"claude-haiku-4-5","session_id":"s22"}'
+printf '%s\n' '{"type":"result","subtype":"success","result":"withheld","total_cost_usd":0.01,"modelUsage":{"claude-haiku-4-5-20251001":{"inputTokens":10}}}'
+STUB
+        chmod +x "$scratch/bin/claude"
+        PATH="$scratch/bin:$PATH" sh "$driver" --probe "HW-PROBE-$tombstone" --session fixture-no-network \
+            --task-file "$scratch/task.md" --workspace "$conf/net-ws" \
+            >"$scratch/no-network.md" 2>"$scratch/no-network.err"
+        same "a session with no network records" "0" "$?"
+        kill "$served_pid" 2>/dev/null
+        wait "$served_pid" 2>/dev/null
+        same "and the stub ran inside its workspace" "yes" \
+            "$([ -f "$conf/net-ws/found.txt" ] && echo yes || echo no)"
+        absent "no road from the session reaches a server on the host" \
+            "HW-LEAK-MARKER-1467-NET" "$conf/net-ws/found.txt"
+        absent "and git cloned nothing from it" "HW-LEAK-MARKER" "$conf/net-ws/cloned/secret.md"
+        present "the session was handed its proxy" "http://127.0.0.1:" "$conf/net-ws/proxy.txt"
+        present "the transcript says the session had no network but the proxy" \
+            "The session ran with no network of its own." "$scratch/no-network.md"
+        present "and names the hosts the proxy allows" \
+            "\`api.anthropic.com\` and \`platform.claude.com\`" "$scratch/no-network.md"
+        present "and names the host whose connection the proxy refused" \
+            "\`127.0.0.1:$port\`" "$scratch/no-network.md"
+        present "and says the proxy allowed the provider's host" \
+            "allowed 1 connection to \`api.anthropic.com:443\`" "$scratch/no-network.md"
+
         # No confinement, no session (#1467). A host with no `bwrap`, or one
         # that cannot create a namespace, refuses with 12 before any harness
         # call, so a refusal spends nothing. No variable turns this off.
