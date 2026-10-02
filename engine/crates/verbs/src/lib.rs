@@ -389,7 +389,7 @@ pub const VERBS: &[Verb] = &[
             Word {
                 name: "kinds",
                 summary: "list the kinds a document can be, and what each one requires",
-                description: "List each concrete kind of the resolved taxonomy, in the order the lock declares them: its parent, its purpose with the intent and the questions that purpose answers, the shelf that carries it, the facets and sections it requires after inheritance, and the `headwater new` line that drafts one. An abstract kind gets no entry of its own: the header counts and names it, and its requirements appear in its children. No taxonomy declares when to write a kind, so each entry states that gap in one fixed sentence and invents nothing. `--json` writes the same content as one document, which is what the MCP `kinds` tool returns. It reads `.headwater/taxonomy.lock` and never the sources, and it writes no file.",
+                description: "List each concrete kind of the resolved taxonomy, in the order the lock declares them: its parent, its purpose with the intent and the questions that purpose answers, the shelf that carries it, the facets and sections it requires after inheritance, and the `headwater new <kind> --title` command for it, which `headwater new` can still refuse with what it needs. An abstract kind gets no entry of its own: the header counts and names it, and its requirements appear in its children. No taxonomy declares when to write a kind, so each entry states that gap in a fixed sentence and invents nothing. `--json` writes the same content as one document, which is what the MCP `kinds` tool returns. It reads `.headwater/taxonomy.lock` and never the sources, and it writes no file.",
             },
         ],
     },

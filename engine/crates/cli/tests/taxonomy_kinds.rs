@@ -260,8 +260,9 @@ fn a_foreign_lock_prints_its_own_kinds_and_none_of_this_repository() {
     // The when line is one of the two fixed gap sentences, once per kind, and
     // nothing the engine wrote about this repository. The sentence that sends
     // the reader to the answers is printed only where answers are.
-    let when = format!("  when      {}\n", headwater_query::kinds::UNDECLARED_WHEN);
-    assert!(runbook.contains(&when), "{runbook}");
+    // A block is cut at the blank line, so its last line has no newline.
+    let when = format!("  when      {}", headwater_query::kinds::UNDECLARED_WHEN);
+    assert!(runbook.ends_with(&when), "{runbook}");
     let unanswered = format!(
         "  when      {}\n",
         headwater_query::kinds::UNDECLARED_WHEN_UNANSWERED
@@ -357,7 +358,8 @@ fn json_is_the_same_content_as_one_document() {
     assert_eq!(
         discriminators,
         vec![
-            (Some("widget_incidents".to_string()), None),
+            // JSON `null`, which this loader reads as the plain scalar.
+            (Some("widget_incidents".to_string()), Some("null".to_string())),
             (Some("widget_mixed".to_string()), Some("doc_type".to_string())),
         ]
     );

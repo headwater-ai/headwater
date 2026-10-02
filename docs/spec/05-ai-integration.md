@@ -165,7 +165,7 @@ The hooks of this repository are `.claude/hooks/`, which sits outside the corpus
 
 Beyond files, there are three richer surfaces:
 
-**The corpus MCP server.** The server exposes the graph as tools that an agent calls directly: `route`, `governing_docs_for_path`, `resolve_identifier`, `related`, `explain`, `check`, `kinds`. The `kinds` tool reads the taxonomy and not the graph. It lists each kind that a document can be, what the kind requires, and the command that drafts one. This is strictly better than to make an agent grep a corpus that it does not understand. The graph already knows the answers, and a tool call returns them at no context cost for exploration.
+**The corpus MCP server.** The server exposes the graph as tools that an agent calls directly: `route`, `governing_docs_for_path`, `resolve_identifier`, `related`, `explain`, `check`, `kinds`. The `kinds` tool reads the taxonomy and not the graph. It lists each kind that a document can be, what the kind requires, and the `headwater new` command for it. This is strictly better than to make an agent grep a corpus that it does not understand. The graph already knows the answers, and a tool call returns them at no context cost for exploration.
 
 #### What the server may do, and the axis that decides it
 

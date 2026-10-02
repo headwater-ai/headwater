@@ -12,7 +12,8 @@
 //! Every word of a report is the lock's, with one exception. No taxonomy
 //! declares when to write a kind: the meta-schema's `kind` block has no member
 //! for it. So each kind carries [`UNDECLARED_WHEN`], one fixed sentence that
-//! says so and sends the reader to the `answers` of the kind's purpose. A
+//! says so and sends the reader to the `answers` of the kind's purpose, or
+//! [`UNDECLARED_WHEN_UNANSWERED`] where that purpose declares none. A
 //! sentence written here for each kind would describe this repository's
 //! taxonomy to an adopter whose taxonomy is a different one.
 //!
@@ -27,12 +28,19 @@ use headwater_census::shelves::{ShelfBody, Taxonomy};
 use headwater_check::Shape;
 use headwater_yaml::json::Json;
 
-/// The "when to write one" line of every kind, while no taxonomy declares one.
+/// The "when to write one" line of a kind whose purpose declares answers,
+/// while no taxonomy declares a trigger.
 ///
 /// It is a fact about the meta-schema rather than about a kind, so it is the
-/// same sentence for every kind of every taxonomy.
+/// same sentence for every such kind of every taxonomy.
 pub const UNDECLARED_WHEN: &str = "the taxonomy declares no trigger for this kind; \
                                    the answers of its purpose are what the lock states instead";
+
+/// The same line for a kind whose purpose declares no answers, or that has
+/// no purpose: the sentence above would point at a line the report does not
+/// print.
+pub const UNDECLARED_WHEN_UNANSWERED: &str =
+    "the taxonomy declares no trigger for this kind, and its purpose declares no answers";
 
 /// One shelf that carries a kind.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -62,13 +70,28 @@ pub struct Entry {
 }
 
 impl Entry {
-    /// The command that drafts a document of this kind, where a shelf can
-    /// place one. A kind no shelf carries has no place for `headwater new`
-    /// to write, so it has no command.
+    /// The `headwater new` command for this kind, in the grammar the verb
+    /// parses, where a shelf can place one. A kind no shelf carries has no
+    /// place for `headwater new` to write, so it has no command.
+    ///
+    /// It is the command and not a promise that the command succeeds.
+    /// `headwater new` decides the rest, and it refuses a kind whose
+    /// declarations leave something undetermined (an identifier scheme, a
+    /// closed-set facet it needs `--facet` for, a choice between two shelves)
+    /// by naming what it needs. Deciding that here would be a second copy of
+    /// the scaffolder's decision.
     pub fn draft(&self) -> Option<String> {
         match self.carriers.is_empty() {
             true => None,
-            false => Some(format!("headwater new {} \"<title>\"", self.name)),
+            false => Some(format!("headwater new {} --title \"<title>\"", self.name)),
+        }
+    }
+
+    /// The "when to write one" line for this kind.
+    pub fn when(&self) -> &'static str {
+        match self.answers.is_empty() {
+            true => UNDECLARED_WHEN_UNANSWERED,
+            false => UNDECLARED_WHEN,
         }
     }
 }
@@ -196,7 +219,7 @@ impl Kinds {
                 Some(draft) => line("draft", &draft),
                 None => line("draft", "(no shelf can place one)"),
             }
-            line("when", UNDECLARED_WHEN);
+            line("when", entry.when());
         }
         out
     }
@@ -261,7 +284,7 @@ impl Kinds {
                                     "when",
                                     Json::object([
                                         ("declared", Json::Raw("null".to_string())),
-                                        ("note", Json::string(UNDECLARED_WHEN)),
+                                        ("note", Json::string(entry.when())),
                                     ]),
                                 ),
                             ])
