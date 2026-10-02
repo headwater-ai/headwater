@@ -1996,6 +1996,46 @@ STUB
         same "and no proxy directory is left behind" "" \
             "$(find "$scratch/dead-proxy-tmp" -maxdepth 1 -name 'headwater-egress.*' 2>/dev/null)"
 
+        # A driver killed with SIGKILL runs none of its own cleanup, so the
+        # proxy must notice on its own that its parent is gone and exit. The
+        # stub harness says it started and then sleeps. Once the driver is
+        # killed, the proxy's socket must refuse a connection within 5 s.
+        cat > "$scratch/bin/claude" <<'STUB'
+#!/bin/sh
+: > session-started
+sleep 60
+STUB
+        chmod +x "$scratch/bin/claude"
+        rm -rf "$scratch/killed-tmp" "$conf/killed-ws"
+        mkdir -p "$scratch/killed-tmp" "$conf/killed-ws"
+        TMPDIR="$scratch/killed-tmp" PATH="$scratch/bin:$PATH" sh "$driver" --probe "HW-PROBE-$tombstone" --session fixture-killed \
+            --task-file "$scratch/task.md" --workspace "$conf/killed-ws" >/dev/null 2>&1 &
+        killed_pid=$!
+        n=0
+        while [ ! -e "$conf/killed-ws/session-started" ] && [ "$n" -lt 100 ]; do sleep 0.1; n=$((n + 1)); done
+        same "a session that is running has started" "yes" \
+            "$([ -e "$conf/killed-ws/session-started" ] && echo yes || echo no)"
+        killed_sock=$(find "$scratch/killed-tmp" -path '*/headwater-egress.*/sock/proxy.sock' 2>/dev/null | head -1)
+        px_alive() {
+            python3 -c '
+import socket, sys
+s = socket.socket(socket.AF_UNIX)
+s.settimeout(2)
+try:
+    s.connect(sys.argv[1])
+except OSError:
+    sys.exit(1)
+' "$1" 2>/dev/null
+        }
+        same "and its proxy accepts a connection while the driver lives" "yes" \
+            "$([ -n "$killed_sock" ] && px_alive "$killed_sock" && echo yes || echo no)"
+        kill -9 "$killed_pid" 2>/dev/null
+        wait "$killed_pid" 2>/dev/null
+        n=0
+        while [ -n "$killed_sock" ] && px_alive "$killed_sock" && [ "$n" -lt 50 ]; do sleep 0.1; n=$((n + 1)); done
+        same "a driver killed with SIGKILL leaves no proxy running" "no" \
+            "$([ -n "$killed_sock" ] && px_alive "$killed_sock" && echo yes || echo no)"
+
         # The host's configuration reaches no session (#1467). The session
         # runs under a fresh configuration directory that holds a copy of the
         # host's credentials and nothing else, and no variable of the host's
