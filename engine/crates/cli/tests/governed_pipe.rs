@@ -1072,7 +1072,11 @@ fn taxonomy_publish_vendor_and_diff_finish_when_a_named_pipe_or_socket_is_a_memb
                 &args,
                 &format!("{verb} opened the {kind} at release.yml, and waited on it"),
             );
-            assert_eq!(status.code(), Some(1), "{verb} refuses the {kind} record: {err}");
+            assert_eq!(
+                status.code(),
+                Some(1),
+                "{verb} refuses the {kind} record: {err}"
+            );
             assert!(
                 flat(&err).contains("the release record")
                     && flat(&err).contains("release.yml is not a regular file"),

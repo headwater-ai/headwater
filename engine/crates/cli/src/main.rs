@@ -2556,22 +2556,30 @@ fn artifact(
             return Err(ExitCode::FAILURE);
         }
     };
-    if let Err(error) = headwater_resolve::release::diverged(fetched, &record)
-        .map_err(|error| error.to_string())
-        .and_then(|diverged| match diverged.is_empty() {
-            true => Ok(()),
-            false => Err(diverged
-                .iter()
-                .map(|entry| entry.to_string())
-                .collect::<Vec<_>>()
-                .join("\n")),
-        })
-    {
+    // A member that cannot be read is not a divergence from the record, so
+    // it is not reported as one (#1567).
+    let diverged = match headwater_resolve::release::diverged(fetched, &record) {
+        Ok(diverged) => diverged,
+        Err(error) => {
+            eprintln!(
+                "headwater: {}",
+                err(&format!("{} cannot be read", fetched.display()))
+            );
+            eprintln!("{}", indent(&err(&error.to_string())));
+            return Err(ExitCode::FAILURE);
+        }
+    };
+    if !diverged.is_empty() {
         eprintln!(
             "headwater: {}",
             err("the artifact is not what its own release record says it is")
         );
-        eprintln!("{}", indent(&err(&error)));
+        let entries = diverged
+            .iter()
+            .map(|entry| entry.to_string())
+            .collect::<Vec<_>>()
+            .join("\n");
+        eprintln!("{}", indent(&err(&entries)));
         return Err(ExitCode::FAILURE);
     }
 

@@ -154,7 +154,12 @@ pub struct Member {
 pub enum ReleaseError {
     /// The directory carries no record, so it is not a published package.
     Absent(PathBuf),
+    /// The release record itself cannot be read.
     Unreadable(String),
+    /// A member of the artifact, a file other than the record, cannot be
+    /// read or is not a regular file. The message names the member and says
+    /// nothing about the record, which may be sound (#1567).
+    Member(String),
     Malformed(String),
     /// The declared `format` token is not the one this engine writes. [`read`]
     /// compares the raw token to [`FORMAT`] for inequality and never orders the
@@ -257,6 +262,9 @@ impl std::fmt::Display for ReleaseError {
                 path.display()
             ),
             ReleaseError::Unreadable(why) => write!(f, "the release record cannot be read: {why}"),
+            ReleaseError::Member(why) => {
+                write!(f, "a member of the artifact cannot be read: {why}")
+            }
             ReleaseError::Malformed(what) => write!(f, "the release record is malformed: {what}"),
             ReleaseError::Format { found } => write!(
                 f,
@@ -363,7 +371,7 @@ pub fn members(dir: &Path) -> Result<Vec<Member>, ReleaseError> {
 
 fn walk(root: &Path, dir: &Path, out: &mut Vec<Member>) -> Result<(), ReleaseError> {
     let mut entries: Vec<PathBuf> = std::fs::read_dir(dir)
-        .map_err(|error| ReleaseError::Unreadable(format!("{}: {error}", dir.display())))?
+        .map_err(|error| ReleaseError::Member(format!("{}: {error}", dir.display())))?
         .filter_map(|entry| entry.ok().map(|entry| entry.path()))
         .collect();
     entries.sort();
@@ -379,10 +387,10 @@ fn walk(root: &Path, dir: &Path, out: &mut Vec<Member>) -> Result<(), ReleaseErr
         // A named pipe, a socket or a device is refused before it is opened,
         // because a pipe with no writer blocks its reader for ever (#1366).
         if is_special(&entry) {
-            return Err(not_regular(&entry));
+            return Err(ReleaseError::Member(not_regular(&entry)));
         }
         let bytes = std::fs::read(&entry)
-            .map_err(|error| ReleaseError::Unreadable(format!("{}: {error}", entry.display())))?;
+            .map_err(|error| ReleaseError::Member(format!("{}: {error}", entry.display())))?;
         out.push(Member {
             path: relative,
             digest: headwater_hash::digest(&bytes),
@@ -398,9 +406,10 @@ fn is_special(path: &Path) -> bool {
     std::fs::metadata(path).is_ok_and(|meta| !meta.is_file())
 }
 
-/// The refusal for a path that is there and is not a regular file.
-fn not_regular(path: &Path) -> ReleaseError {
-    ReleaseError::Unreadable(format!("{} is not a regular file", path.display()))
+/// Why a path that is there and is not a regular file is refused. The caller
+/// says whether the path is the record or a member.
+fn not_regular(path: &Path) -> String {
+    format!("{} is not a regular file", path.display())
 }
 
 fn relative(root: &Path, path: &Path) -> String {
@@ -583,7 +592,7 @@ pub fn read(text: &str) -> Result<Release, ReleaseError> {
 pub fn at(dir: &Path) -> Result<Release, ReleaseError> {
     let path = dir.join(RECORD);
     if is_special(&path) {
-        return Err(not_regular(&path));
+        return Err(ReleaseError::Unreadable(not_regular(&path)));
     }
     let text = match std::fs::read_to_string(&path) {
         Ok(text) => text,
@@ -902,6 +911,68 @@ mod tests {
             path: path.to_string(),
             digest: headwater_hash::digest(bytes),
         }
+    }
+
+    /// A fresh directory for one test, keyed on the test's own name so that
+    /// two threads of one process never share it.
+    #[cfg(unix)]
+    fn scratch(name: &str) -> PathBuf {
+        let dir = std::env::temp_dir().join(format!("hw-release-{}-{name}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).expect("the scratch directory is made");
+        dir
+    }
+
+    /// A member that is not a regular file, or that cannot be read, is
+    /// refused as a member and never as the record (#1567). The record
+    /// itself keeps the record's refusal.
+    #[cfg(unix)]
+    #[test]
+    fn a_member_refusal_names_the_member_and_a_record_refusal_names_the_record() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let dir = scratch("special-member");
+        std::fs::write(dir.join("package.yml"), "name: x\n").expect("written");
+        let socket = dir.join("notes.md");
+        drop(std::os::unix::net::UnixListener::bind(&socket).expect("the socket is bound"));
+        let refused = members(&dir).expect_err("a socket member is refused");
+        assert_eq!(refused, ReleaseError::Member(not_regular(&socket)));
+        assert!(!refused.to_string().contains("release record"), "{refused}");
+
+        let record = dir.join(RECORD);
+        drop(std::os::unix::net::UnixListener::bind(&record).expect("the socket is bound"));
+        let refused = at(&dir).expect_err("a socket record is refused");
+        assert_eq!(refused, ReleaseError::Unreadable(not_regular(&record)));
+        assert!(
+            refused.to_string().contains("the release record"),
+            "{refused}"
+        );
+        std::fs::remove_file(&socket).expect("the socket is there to take out");
+
+        // A member the process may not read, and a directory it may not
+        // list. Root reads both, so the case holds only for another user.
+        let locked = dir.join("locked.yml");
+        std::fs::write(&locked, "x").expect("written");
+        std::fs::set_permissions(&locked, std::fs::Permissions::from_mode(0o000))
+            .expect("the mode is set");
+        if std::fs::read(&locked).is_err() {
+            let refused = members(&dir).expect_err("an unreadable member is refused");
+            assert!(matches!(refused, ReleaseError::Member(_)), "{refused:?}");
+            assert!(!refused.to_string().contains("release record"), "{refused}");
+        }
+        std::fs::remove_file(&locked).expect("the member is there to take out");
+        let shut = dir.join("shut");
+        std::fs::create_dir(&shut).expect("made");
+        std::fs::set_permissions(&shut, std::fs::Permissions::from_mode(0o000))
+            .expect("the mode is set");
+        if std::fs::read_dir(&shut).is_err() {
+            let refused = members(&dir).expect_err("an unlistable directory is refused");
+            assert!(matches!(refused, ReleaseError::Member(_)), "{refused:?}");
+            assert!(!refused.to_string().contains("release record"), "{refused}");
+        }
+        std::fs::set_permissions(&shut, std::fs::Permissions::from_mode(0o755))
+            .expect("the mode is set back");
+        let _ = std::fs::remove_dir_all(&dir);
     }
 
     /// The digest is over the member list and never over the order a walk
