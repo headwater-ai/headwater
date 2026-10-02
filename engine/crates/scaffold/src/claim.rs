@@ -2,9 +2,13 @@
 //! The writer of the identifier claim store.
 //!
 //! The store itself, its shape and the two rules that hold it are
-//! [`headwater_check::claim`]. This module is the one thing that puts a file
-//! into it, and it imports the path and the format from there rather than
-//! writing either a second time.
+//! [`headwater_check::claim`]. This module writes the claim of a mint. The
+//! store has a second writer, [`crate::fix::make`], which creates the claim
+//! file that an `identifier.claim.missing` finding names. Both create with
+//! `create_new` and never overwrite. This module imports the format,
+//! [`contents_for`], from the store's module rather than writing it a second
+//! time. The path reaches it on [`crate::Minting::claim`], which
+//! [`crate::propose`] took from [`headwater_check::claim::path_of`].
 //!
 //! # Create-new, and why it is the strictest line in this crate
 //!

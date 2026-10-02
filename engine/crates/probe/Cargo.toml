@@ -19,10 +19,12 @@ repository.workspace = true
 # that names an oracle reads the rule set of this engine, and a probe that names
 # a rule this engine does not carry stops the run.
 #
-# There is no HTTP crate here and there is none anywhere in this workspace.
-# Every dependency below is a path dependency inside it.
+# There is no HTTP crate here. The one HTTP client of this workspace is in
+# `headwater-fetch`, and this crate does not depend on it. Every dependency
+# below is a path dependency inside the workspace.
 [dependencies]
-# The rule set, which the `patched` expectation names an oracle from.
+# The rule set, which the `patched` expectation names an oracle from, and
+# `headwater_check::paint`, which colors the reports of `intake` and `read_set`.
 headwater-check = { workspace = true }
 
 # The classification. A probe is a classified document of this corpus or it is

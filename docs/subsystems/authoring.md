@@ -3,7 +3,7 @@ id: HW-SPEC-authoring
 status: current
 status_since: 2026-10-01
 summary: "How two crates write a new document, a fix, a migration step and an imported edge through one all-or-none put and one reciprocal splice."
-last_verified: 2026-10-01
+last_verified: 2026-10-02
 title: "Authoring"
 provenance:
   warrant: asserted
@@ -66,7 +66,7 @@ The public Rust API of each crate is not in this spec ([HW-DR-0098](../decisions
 
 ### The taxonomy determines a value, or a person owes it
 
-`propose` in `scaffold/src/lib.rs` turns a `Request` and a set of `Sources` into a `Plan` or a `Refusal`. It writes nothing. A `Request` carries the kind, the title, an optional summary and the date. The date is injected, so the same request over the same corpus gives the same bytes.
+`propose` in `scaffold/src/lib.rs` turns a `Request` and a set of `Sources` into a `Plan` or a `Refusal`. It writes nothing. A `Request` carries the kind, the title, an optional summary and the date. It also carries three inputs from the caller. `relates` holds the relations to write. `given` holds the facet values that the caller states. `directory` names the directory for a shelf whose pattern globs one. The date is injected, so the same request over the same corpus gives the same bytes.
 
 The scaffolder writes what the taxonomy determines and asks for what it does not. Each `Field` of a plan carries an `Origin`. `Origin::Scaffolded` names the declaration that decided the value. `Origin::HandEntry` marks a prompt for a value that a person owes. No template file exists. Spec 3 makes the template a function of the kind declaration, and a file under a package would be prose that no census row covers.
 
@@ -100,7 +100,7 @@ The handles stay open between the check and the write, because a probe that clos
 
 ### The claim store
 
-The identifier claim store has two writers ([HW-DR-0054](../decisions/0054-the-upper-bound-of-a-reconcile-first-allocator-is-the-corpus-and-a-claim-store.md)). `claim.rs` writes the claim of each identifier that `headwater new` mints. `fix::make` writes a claim that `identifier.claim.missing` reports as missing, from the `Patch::Create` of that rule. The path and the format of the store belong to `headwater_check::claim`. `claim.rs` imports them. `fix::make` writes the path and the bytes that `headwater_check::claim` put into the patch. Each writer opens a claim with `create_new`, so the test and the create are one syscall. An existing claim is a refusal. A claim is the only record of which document minted an identifier, so no writer truncates one.
+The identifier claim store has two writers ([HW-DR-0054](../decisions/0054-the-upper-bound-of-a-reconcile-first-allocator-is-the-corpus-and-a-claim-store.md)). `claim.rs` writes the claim of each identifier that `headwater new` mints. `fix::make` writes a claim that `identifier.claim.missing` reports as missing, from the `Patch::Create` of that rule. The path and the format of the store belong to `headwater_check::claim`. `claim.rs` imports the format, `contents_for`. The path comes from `path_of`, which the minting step of `propose` in `lib.rs` calls, and it reaches `claim.rs` on `Minting::claim`. `fix::make` writes the path and the bytes that `headwater_check::claim` put into the patch. Each writer opens a claim with `create_new`, so the test and the create are one syscall. An existing claim is a refusal. A claim is the only record of which document minted an identifier, so no writer truncates one.
 
 The claim is written before the document. If the document write then fails, the result is a spent number with no document, and spec 3 permits that state. The other order can leave a document with no claim, which `identifier.claim.missing` reports. Whether a mint owes a claim is decided once, at plan time, through `headwater_check::claim::takes_a_claim`. `Minting::claim` carries the answer, so the writer and the rule read one predicate.
 
@@ -111,6 +111,8 @@ The claim is written before the document. If the document write then fails, the 
 The unit of a fix is one file. All the patches of one file land or none of them do. A refusal over one file is no evidence about another, so the run reports it beside the files that landed.
 
 A fix edits files, and it can also create a file. `compose` puts each `Patch::Create` into a separate list. `fix::apply` puts the edits through `Reserved::over`, with no create step. Then `fix::make` creates each new file with `create_new`, outside `Reserved`. The create runs last because it is the step that can meet a path that another process took. If it fails, the edits are already on the tree, and `make` removes only the files that it created.
+
+A fix applies a third shape, `Patch::Facets`. It replaces the value of a top-level scalar facet that the front matter already declares, and it adds no key. It runs after the text patches, because the offsets of a text patch are into the file as it stood. The module comment states its guards.
 
 ### The two writing halves of a migration
 
