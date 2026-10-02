@@ -320,6 +320,10 @@ COUNT_ROWS = ("the `Findings raised` row", "the `Caught by neither` row", "the `
 # The `--fix` row states no total, so it is held by the table's own arithmetic:
 # written by `--fix` plus needing a change is every finding.
 FIX_ROW = re.compile(r"^\| Of those, written by `headwater check --fix` \| (\d+) \|")
+# The two `Already caught by` rows state no total either, and the README states
+# neither tool. So the table's other sum holds them: raised less what each tool
+# caught is what neither caught.
+CAUGHT_ROW = re.compile(r"^\| Already caught by `([\w-]+)` \| (\d+) \|")
 COUNT_SECTION = "The count"
 FENCE = re.compile(r"^ {0,3}(`{3,}|~{3,})")
 SHELF_SECTION = "What shape the shelf declaration had to take"
@@ -405,7 +409,7 @@ def evaluation_figure_problems(root, text):
     if design is None:
         return problems, held
 
-    seen, fixes, needing = set(), [], []
+    seen, fixes, needing, caught, rows = set(), [], [], [], {}
     for _, _, h2, body in blocks:
         if h2 != COUNT_SECTION:
             continue
@@ -415,11 +419,26 @@ def evaluation_figure_problems(root, text):
                     hold(n, "findings", m.group(1), DESIGN_SPEC_README, design["findings"])
                     held += 1
                     seen.add(name)
+                    rows.setdefault(name, []).append((n, int(m.group(1))))
                     if name == "the `needing` row":
                         needing.append(int(m.group(1)))
             m = FIX_ROW.match(line)
             if m:
                 fixes.append((n, int(m.group(1))))
+            m = CAUGHT_ROW.match(line)
+            if m:
+                caught.append((n, m.group(1), int(m.group(2))))
+    raised = rows.get("the `Findings raised` row", [])
+    neither = rows.get("the `Caught by neither` row", [])
+    if len(caught) != 2 or len(raised) != 1 or len(neither) != 1:
+        problems.append("%s: `## %s` carries %d `Already caught by` rows, %d `Findings raised` rows and %d `Caught by neither` rows, and this job holds two, one and one"
+                        % (EVALUATION, COUNT_SECTION, len(caught), len(raised), len(neither)))
+    else:
+        for n, tool, value in caught:
+            if raised[0][1] - sum(v for _, _, v in caught) != neither[0][1]:
+                problems.append("%s:%d: states %d already caught by `%s`, and the rows do not add up: %d raised, %s caught by the two tools, and %d caught by neither"
+                                % (EVALUATION, n, value, tool, raised[0][1], " and ".join(str(v) for _, _, v in caught), neither[0][1]))
+            held += 1
     for name in COUNT_ROWS:
         if name not in seen:
             problems.append("%s: `## %s` lacks %s, which this job holds" % (EVALUATION, COUNT_SECTION, name))
@@ -556,7 +575,8 @@ def provoke_evaluation_figures(root, corpora, scratch):
     read. A third points the page's design-spec summary at a page that is not a
     fixture README, and the run must fail saying that no summary links it. A
     fourth deletes the three held rows of `## The count`, and the run must name
-    each one. The arm writes its own list of labels and patterns rather than
+    each one. A fifth raises each `Already caught by` row on its own, and the
+    run must name that row because the table no longer adds up. The arm writes its own list of labels and patterns rather than
     reading the guard's, so a label or pattern dropped from the guard is still
     provoked.
     """
@@ -684,6 +704,27 @@ def provoke_evaluation_figures(root, corpora, scratch):
     if bare.returncode != 1 or any(n not in bare.stderr for n in named):
         raise Mismatch("an evaluation without the three held rows of `## %s` exits %d under `--guard-only`; unnamed: %r"
                        % (COUNT_SECTION, bare.returncode, [n for n in named if n not in bare.stderr]))
+
+    # The table's sum: a tool row that claims a catch, with nothing else moved,
+    # leaves the rows not adding up, and must fail the job naming that row.
+    text = open(os.path.join(root, EVALUATION), encoding="utf-8").read()
+    original = text.splitlines()
+    tools = [(n - 1, m) for _, _, h2, body in headed_blocks(text) if h2 == COUNT_SECTION
+             for n, l in body for m in [re.match(r"^(\| Already caught by `(\w+)` \| )(\d+)( \|.*)$", l)] if m]
+    if len(tools) != 2:
+        raise Mismatch("%s carries %d `Already caught by` rows to provoke, and this arm provokes two" % (EVALUATION, len(tools)))
+    for k, (i, m) in enumerate(tools):
+        caught_root = os.path.join(scratch, "caught-%d" % k)
+        copy_in(caught_root)
+        lines = list(original)
+        value = int(m.group(3)) + 2 + k
+        lines[i] = "%s%d%s" % (m.group(1), value, m.group(4))
+        open(os.path.join(caught_root, EVALUATION), "w", encoding="utf-8").write("\n".join(lines) + "\n")
+        sums = guard(caught_root)
+        named = "%s:%d: states %d already caught by `%s`, and the rows do not add up" % (EVALUATION, i + 1, value, m.group(2))
+        if sums.returncode != 1 or named not in sums.stderr:
+            raise Mismatch("an evaluation whose `%s` row claims %d catches exits %d under `--guard-only` and does not name it"
+                           % (m.group(2), value, sums.returncode))
 
 
 def report(problems, corpora, green):

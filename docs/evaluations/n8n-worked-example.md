@@ -168,7 +168,7 @@ Not one pattern reaches `packages/@n8n/instance-ai/`, `packages/@n8n/expression-
 | Of those, written by `headwater check --fix` | 0 |
 | Of those, needing a declaration change or a human edit upstream | 13 |
 
-The n8n fixture job holds each figure in this table against the [fixture README](../taxonomies/design-spec/fixtures/n8n/README.md#what-a-run-reports), and it holds the README against a run.
+The n8n fixture job holds the rows `Findings raised`, `Caught by neither` and the last row against the [fixture README](../taxonomies/design-spec/fixtures/n8n/README.md#what-a-run-reports), and it holds the README against a run. The README states nothing about `prettier`, `cubic` or `--fix`. So the job holds those three rows by two sums. Raised less the two tools is neither. The `--fix` row plus the last row is raised.
 
 ### What this repository's house regime adds
 
