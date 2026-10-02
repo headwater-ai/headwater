@@ -369,9 +369,13 @@ The documents on this shelf, in the reading order this corpus derives. Each head
 
 [HW-DR-0082](../decisions/0082-the-resolved-taxonomy-is-drawn-by-a-verb-that-prints-mermaid-and-writes-no-file.md) — `headwater taxonomy graph` prints the resolved taxonomy as a Mermaid flowchart, no projection or export target draws it, and D2 and DOT are equal candidates after it
 
+## An agent writes governs, traces_to and cited_in through the verb, and the review of its pull request is the acceptance
+
+[HW-DR-0104](../decisions/0104-an-agent-writes-governs-traces-to-and-cited-in-through-the-verb-and-the-review-of-its-pull-request-is-the-acceptance.md) — `headwater new --relates` writes `governs`, `traces_to` and `cited_in` and refuses a target that binds to nothing. A reviewed pull request accepts each edge (asserted, and no human has accepted it)
+
 ## Governs and traces_to are created by an agent, because a session proposes the line and a person types it
 
-[HW-DR-0083](../decisions/0083-governs-and-traces-to-are-created-by-an-agent-because-a-session-proposes-the-line-and-a-person-types-it.md) — The base package declares `created_by: agent` on `governs` and `traces_to`, because no verb writes either edge and a person types the line a session proposes (asserted, and no human has accepted it)
+[HW-DR-0083](../decisions/0083-governs-and-traces-to-are-created-by-an-agent-because-a-session-proposes-the-line-and-a-person-types-it.md) (superseded) — The base package declares `created_by: agent` on `governs` and `traces_to`, because no verb writes either edge and a person types the line a session proposes (asserted, and no human has accepted it)
 
 ## A live document that rests on a draft one is reported over every relation, because a draft leaves no record to cite
 

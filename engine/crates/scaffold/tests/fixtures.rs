@@ -316,8 +316,7 @@ fn cases() -> Vec<Case> {
             .relating("governs", "src/nowhere/**"),
         case("decision_record", "A citation in a file that is not there")
             .relating("cited_in", "corpus/code/missing.txt"),
-        case("decision_record", "A citation in a directory")
-            .relating("cited_in", "corpus/code"),
+        case("decision_record", "A citation in a directory").relating("cited_in", "corpus/code"),
         // What `--summary` does. It fills the facet in the `scent` role
         // directly, exactly as `--title` fills the one in the `name` role, so
         // it needs the same two cases the `name` role never needed a comment

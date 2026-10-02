@@ -1809,8 +1809,7 @@ fn propose_edges(
                 .relations
                 .iter()
                 .filter(|relation| {
-                    declared::created_by(sources.resolved, &relation.name)
-                        .is_some_and(writes)
+                    declared::created_by(sources.resolved, &relation.name).is_some_and(writes)
                 })
                 .map(|relation| relation.name.clone())
                 .collect();
@@ -1845,8 +1844,7 @@ fn propose_edges(
         }
 
         let asserter = minting.map(|minting| minting.id.as_str()).unwrap_or("");
-        let (target_path, target_kind, anchor) = match bind_target(sources, far, target, asserter)
-        {
+        let (target_path, target_kind, anchor) = match bind_target(sources, far, target, asserter) {
             Bound::Document { path, kind } => (path, kind, None),
             Bound::Anchor(anchored) => (target.clone(), None, Some(anchored)),
             Bound::NoDocument => {
@@ -1944,7 +1942,10 @@ fn writes(created_by: &str) -> bool {
 
 /// What one target bound to.
 enum Bound {
-    Document { path: String, kind: Option<String> },
+    Document {
+        path: String,
+        kind: Option<String>,
+    },
     Anchor(Anchored),
     /// The far end admits documents alone, and no document carries the
     /// identifier.
