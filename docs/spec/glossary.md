@@ -361,7 +361,7 @@ A [disposition](#disposition). No control discharges the obligation yet, it is w
 
 ### Generated-file marker
 
-The marker that a projection writes into its output. The engine refuses to overwrite a file that lacks it, so a projection can never silently destroy an authored document. See [spec 6](06-engine-architecture.md#projections).
+The marker that a projection writes into its output. The engine refuses to overwrite a file that lacks it, so a projection can never silently destroy an authored document. See [the `headwater generate` contract](../interfaces/headwater-generate.md#the-generated-file-marker).
 
 ### Heterogeneous shelf
 
