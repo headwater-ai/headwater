@@ -4,6 +4,12 @@ docs/acceptance-criteria/0001-no-engine-source-outside-the-fetch-crate-names-a-n
   typed: acceptance_criterion
 docs/acceptance-criteria/0002-every-required-section-of-every-governed-document-has-a-heading.md
   typed: acceptance_criterion
+docs/acceptance-criteria/0003-check-reports-a-document-path-written-as-a-relation-target-once-in-every-spelling-and-through-a-symlink.md
+  typed: acceptance_criterion
+docs/acceptance-criteria/0004-each-list-anchor-in-the-native-export-carries-its-sorted-members-and-a-single-pattern-carries-none.md
+  typed: acceptance_criterion
+docs/acceptance-criteria/0005-the-governing-documents-of-a-path-are-the-same-for-every-spelling-of-it-and-a-path-no-anchor-matches-has-none.md
+  typed: acceptance_criterion
 docs/acceptance-criteria/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/decisions/0001-implementation-language.md
@@ -1052,6 +1058,12 @@ docs/requirements/0001-the-engine-reaches-no-network-at-check-time.md
   typed: requirement
 docs/requirements/0002-every-document-of-a-kind-that-requires-sections-carries-all-of-them.md
   typed: requirement
+docs/requirements/0003-a-relation-target-written-as-the-path-of-a-document-is-reported-and-never-bound-as-an-anchor-onto-that-file.md
+  typed: requirement
+docs/requirements/0004-the-graph-export-carries-the-member-patterns-of-a-list-anchor.md
+  typed: requirement
+docs/requirements/0005-a-code-path-names-every-document-that-governs-it.md
+  typed: requirement
 docs/requirements/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/reviews/README.md
@@ -1457,6 +1469,12 @@ docs/tutorials/README.md
 docs/tutorials/your-first-governed-corpus.md
   typed: tutorial
 docs/verifications/0001-the-section-heading-rule-has-no-case-table-and-a-golden-fixture-report-is-what-proves-it-runs.md
+  typed: verification
+docs/verifications/0002-a-fixture-tree-of-document-paths-symlinks-and-identifiers-proves-the-document-path-finding.md
+  typed: verification
+docs/verifications/0003-a-fixture-tree-of-three-list-anchors-proves-that-the-export-carries-list-members.md
+  typed: verification
+docs/verifications/0004-the-ingest-stubs-of-the-query-fixture-tree-prove-what-governs-a-path.md
   typed: verification
 docs/verifications/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census

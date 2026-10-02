@@ -51,6 +51,10 @@
 //! **A rule that ignored the declaration.** `notes/f.md` writes the path of
 //! `NOTE-FIX-b` under `governs`, which admits only a `code_path` anchor. It is
 //! an anchor and no finding.
+//!
+//! This file and its fixture tree are the test design HW-VER-0002 states, and
+//! that verification governs both. The `comment-scan` resolver binds its
+//! `cited_in` edge from this sentence.
 
 use headwater_census::census;
 use headwater_census::shelves::Taxonomy;

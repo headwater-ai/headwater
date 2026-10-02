@@ -18,6 +18,10 @@
 //!     HEADWATER_BLESS=1 cargo test -p headwater-query --test reads
 //!
 //! Read the diff before committing it. A blessed fixture is the change.
+//!
+//! The `governing_docs_for_path` block of the recorded reads is half of the
+//! test design HW-VER-0004 states, over the two stubs under `fixtures/src/`.
+//! This sentence binds that verification's `cited_in` edge onto this file.
 
 use headwater_census::census::{self, Census};
 use headwater_census::shelves::Taxonomy;

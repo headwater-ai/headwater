@@ -1046,6 +1046,9 @@ fn outside(target: &str) -> String {
 /// `explain` tool does. `./x`, `a/../x` and an absolute path under the root
 /// answer what `x` answers, byte for byte, and a path that leaves the
 /// repository gets the one outside sentence from all three tools.
+///
+/// The `governing_docs_for_path` half of this test is the other half of the
+/// design HW-VER-0004 states, and this sentence binds its `cited_in` edge.
 #[test]
 fn the_related_and_governing_tools_read_every_spelling_of_a_path_as_explain_does() {
     let built = fixture_tree();
