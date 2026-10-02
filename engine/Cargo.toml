@@ -227,6 +227,18 @@ needless_raw_string_hashes = "deny"
 # readable assignment for a method that saves an allocation this engine does not
 # count, in ten places that read correctly today.
 
+# `cargo test`, `cargo check` and a plain `cargo build` use this profile. Cargo's
+# default is `debug = 2`, full debug information that only a debugger reads. A
+# cold `cargo test` writes about 7.5 GB under `target/debug`, 5.9 GB of it in
+# `deps`, and the self-hosted runner and the build-order host run it hundreds of
+# times a day, so the setting is paid for in disk wear and time (#1615).
+# `line-tables-only` keeps the file and line of a panic or a backtrace and drops
+# the type and variable information nothing here reads. `incremental` stays on
+# for a developer's own machine; the throwaway build slots turn it off with
+# `CARGO_INCREMENTAL=0`.
+[profile.dev]
+debug = "line-tables-only"
+
 [profile.release]
 opt-level = 3
 lto = true
