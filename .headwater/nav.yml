@@ -407,6 +407,7 @@ nav:
       - "The subsystem specs claim evidence their targets do not carry, and two rules of the shelf live only in a test": "obligations/0228-the-subsystem-specs-claim-evidence-their-targets-do-not-carry-and-two-rules-of-the-shelf-live-only-in-a-test.md"
       - "The counterfactual campaign evaluation withholds its discharges edge until a person promotes it": "obligations/0229-the-counterfactual-campaign-evaluation-withholds-its-discharges-edge-until-a-person-promotes-it.md"
       - "Comments in the command-surface crates and their subsystem spec state eight stale facts": "obligations/0230-comments-in-the-command-surface-crates-and-their-subsystem-spec-state-eight-stale-facts.md"
+      - "headwater init --harness ships no hook and no hook configuration for any harness": "obligations/0232-headwater-init-harness-ships-no-hook-and-no-hook-configuration-for-any-harness.md"
   - "Probe results":
       - "Probe results": "probe-results/README.md"
       - "Probe result for campaign-of-2026-09-28-campaign-tier-absent-arm-navigability": "probe-results/campaign-of-2026-09-28-campaign-tier-absent-arm-navigability.md"

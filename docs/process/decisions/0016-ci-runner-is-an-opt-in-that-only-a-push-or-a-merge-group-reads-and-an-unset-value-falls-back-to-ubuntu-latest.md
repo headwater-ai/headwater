@@ -3,7 +3,7 @@ id: HW-PD-0016
 status: current
 status_since: 2026-09-27
 summary: "The self-hosted labels reach runs-on only when the CI_RUNNER variable names them and the event is a push or a merge group. The default is a hosted runner."
-last_verified: 2026-09-30
+last_verified: 2026-10-02
 title: "CI_RUNNER is an opt-in that only a push or a merge group reads, and an unset value falls back to ubuntu-latest"
 provenance:
   warrant: asserted
@@ -14,14 +14,14 @@ provenance:
 relations:
   governs:
     - to: .github/workflows/ci.yml
-      verified_revision: sha256:5f93740a98eb9b2dc3943e391f8c87246aff2a2e14bfd37e21aaf05e9cfe240b
+      verified_revision: sha256:3fcd842feb024c0759b93d91a5e14bea4be88917357796fd1a139ffc8efc6111
 ---
 
 # CI_RUNNER is an opt-in that only a push or a merge group reads, and an unset value falls back to ubuntu-latest
 
 ## Context
 
-Before this record, the reasons lived in comments of `.github/workflows/ci.yml` on 2026-09-27. The comments were on the `runs-on` of the `engine` job (lines 213 to 222) and at the end of the header (lines 73 to 77). The `runs-on` expressions are at lines 223 and 493. [Two triggers, one verdict](../evaluations/two-triggers-one-verdict-how-this-repository-s-ci-decides-where-a-job-runs-and-what-it-trusts.md#the-only-boundary-is-the-event-and-it-is-the-only-one-that-can-be) holds the argument.
+Before this record, the reasons lived in comments of `.github/workflows/ci.yml` on 2026-09-27. The comments were on the `runs-on` of the `engine` job (lines 213 to 222) and at the end of the header (lines 73 to 77). On that day the `runs-on` expressions were at lines 223 and 493. On 2026-10-02 they are at lines 202 and 494. [Two triggers, one verdict](../evaluations/two-triggers-one-verdict-how-this-repository-s-ci-decides-where-a-job-runs-and-what-it-trusts.md#the-only-boundary-is-the-event-and-it-is-the-only-one-that-can-be) holds the argument.
 
 The variable lives in the repository settings and not in the tree. So a reader of the tree cannot see its value, and a document that states the value goes stale when a person changes it.
 

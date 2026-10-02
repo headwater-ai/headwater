@@ -9,8 +9,8 @@
 # Most of those edits were `verified_revision` stamps. A stamp says that a
 # person read the document against the file it governs. The engine can write
 # the digest, and it cannot do the reading. Since #1259 `--fix` offers a stamp
-# only in a run with `--change`, on a document the change re-verified, and
-# this passes no change. So a stamp never moves this tree, and the answer is
+# only in a run with `--change`, on an edge the change states was re-read
+# (#1520), and this passes no change. So a stamp never moves this tree, and the answer is
 # the same on every date. What can still move it is a patch that needs no
 # reading, such as a spelling or a reciprocal half. The remedy this prints is
 # not to commit what `--fix` wrote blind: run it, read the diff, and commit

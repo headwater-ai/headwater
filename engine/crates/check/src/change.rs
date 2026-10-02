@@ -88,6 +88,16 @@
 //! already reads today cannot move. The date does not decide instead, for the
 //! reason [`crate::suspect`] gives.
 //!
+//! A `verified\t<path>\t<target>` line states less: that the author re-read
+//! the one edge of the document at `<path>` whose target is `<target>`. A
+//! re-verified document no longer stamps every edge it declares, because each
+//! edge carries its own `verified_revision`, so a stamp also needs the edge's
+//! target named, and this line is how an author names it without carrying
+//! the target in the change (#1520). `<target>` is the target as the entry
+//! writes it, or a path its pattern matches. It is not held against the corpus,
+//! because a governed source file is no corpus document. `<path>` is held, as
+//! a two-field line's path is.
+//!
 //! # What a caller may state, and what this engine cannot check
 //!
 //! A manifest that names `added` for a document that already stood, or that
@@ -137,6 +147,56 @@ enum Held {
     /// this arm holding nothing, because bytes that are no document do not
     /// parse as one and [`read_prior`] has already said so.
     Unmatched { prior: Option<(String, Document)> },
+}
+
+/// What a change states about one edge beside the prior version of the
+/// document that declared it, and only for a check that declared
+/// `NEEDS_DECLARER_PRIOR`. None of the three is a version of a document, so
+/// each is held apart from [`Prior`], and each is a line of the cache key.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub(crate) struct Stated {
+    /// A `verified` line names the declaring document (#1376).
+    pub(crate) document: bool,
+    /// An `added` or a `prior` line names the edge's target, or a path the
+    /// target's pattern matches, a deleted file included (#1520).
+    pub(crate) target: bool,
+    /// A `verified\t<document>\t<target>` line names this edge (#1520).
+    pub(crate) edge: bool,
+}
+
+impl Stated {
+    /// What a run with no change, or an instance that reads no declarer,
+    /// states.
+    pub(crate) const NONE: Stated = Stated {
+        document: false,
+        target: false,
+        edge: false,
+    };
+
+    /// What `change` states about the edge that the document at `document`
+    /// declares, whose target `names` spell: the target as written and every
+    /// path it reaches. `patterns` are the target's normalized patterns, and a
+    /// path one of them matches names the target too, though the tree no
+    /// longer holds it: a change that deletes a file under a pattern carries
+    /// the file in a `prior` line, and the author read the edge to delete it.
+    pub(crate) fn of(
+        change: &Change,
+        document: &str,
+        names: &[&str],
+        patterns: &[headwater_meta::Pattern],
+    ) -> Stated {
+        let reaches = |path: &str| {
+            names.contains(&path) || patterns.iter().any(|pattern| pattern.matches(path))
+        };
+        Stated {
+            document: change.verified(document),
+            target: change.entries.iter().any(|(path, _)| reaches(path)),
+            edge: change
+                .edges
+                .iter()
+                .any(|(known, target)| known == document && reaches(target)),
+        }
+    }
 }
 
 /// The version of one document that stood before the change, as a check reads
@@ -192,6 +252,9 @@ pub struct Unbound {
     /// The paths a `verified` line names, in path order. See the module
     /// comment.
     verified: Vec<String>,
+    /// The `(document, target)` pairs a three-field `verified` line names,
+    /// in order. See the module comment.
+    edges: Vec<(String, String)>,
 }
 
 /// The documents one change carries, each held against the corpus this run
@@ -207,6 +270,12 @@ pub struct Change {
     /// The paths a `verified` line names and no census row holds, in path
     /// order. They are reported with the unmatched entries.
     unverifiable: Vec<String>,
+    /// The `(document, target)` pairs a three-field `verified` line names
+    /// and whose document a census row holds, in order. A pair whose document
+    /// no row holds puts the document in `unverifiable` instead. The target
+    /// is not held against the census, because it is what a document
+    /// governs, and a governed source file is no corpus document (#1520).
+    edges: Vec<(String, String)>,
 }
 
 /// What a run injected, for the report that states its own inputs.
@@ -282,6 +351,7 @@ impl Unbound {
 
         let mut entries: Vec<(String, Held)> = Vec::new();
         let mut verified: Vec<String> = Vec::new();
+        let mut edges: Vec<(String, String)> = Vec::new();
         for (number, line) in lines.enumerate() {
             let number = number + 2;
             if line.trim().is_empty() {
@@ -302,10 +372,26 @@ impl Unbound {
                     verified.push(path.to_string());
                     continue;
                 }
+                // One edge of the document re-read, and not the document
+                // (#1520). See the module comment.
+                (Some("verified"), Some(path), Some(target), None) => {
+                    if edges
+                        .iter()
+                        .any(|(known, to)| known == path && to == target)
+                    {
+                        return Err(format!(
+                            "the change manifest states the edge from `{path}` to `{target}` \
+                             verified twice"
+                        ));
+                    }
+                    edges.push((path.to_string(), target.to_string()));
+                    continue;
+                }
                 _ => {
                     return Err(format!(
                         "line {number} of the change manifest is none of `added\\t<path>`, \
-                         `prior\\t<path>\\t<file>` and `verified\\t<path>`: `{line}`"
+                         `prior\\t<path>\\t<file>`, `verified\\t<path>` and \
+                         `verified\\t<path>\\t<target>`: `{line}`"
                     ))
                 }
             };
@@ -319,7 +405,12 @@ impl Unbound {
 
         entries.sort_by(|(a, _), (b, _)| a.cmp(b));
         verified.sort();
-        Ok(Unbound { entries, verified })
+        edges.sort();
+        Ok(Unbound {
+            entries,
+            verified,
+            edges,
+        })
     }
 
     /// Read a manifest from a file, which is what `headwater check --change`
@@ -343,10 +434,21 @@ impl Unbound {
     /// disagree, and the pair that would disagree here is the set a run checks
     /// and the set a manifest is measured against.
     pub fn bind(self, holds: impl Fn(&str) -> bool) -> Change {
-        let (verified, unverifiable) = self.verified.into_iter().partition(|path| holds(path));
+        let (verified, mut unverifiable): (Vec<String>, Vec<String>) =
+            self.verified.into_iter().partition(|path| holds(path));
+        let (edges, unheld): (Vec<_>, Vec<_>) = self
+            .edges
+            .into_iter()
+            .partition(|(document, _)| holds(document));
+        // An edge whose document no row holds is the same mistyped path a
+        // two-field line would be, and it is reported the same way.
+        unverifiable.extend(unheld.into_iter().map(|(document, _)| document));
+        unverifiable.sort();
+        unverifiable.dedup();
         Change {
             verified,
             unverifiable,
+            edges,
             entries: self
                 .entries
                 .into_iter()
@@ -382,6 +484,15 @@ impl Unbound {
     pub fn verified(&self) -> Vec<&str> {
         self.verified.iter().map(String::as_str).collect()
     }
+
+    /// The `(document, target)` pairs a `verified\t<path>\t<target>` line
+    /// names, in order.
+    pub fn verified_edges(&self) -> Vec<(&str, &str)> {
+        self.edges
+            .iter()
+            .map(|(document, target)| (document.as_str(), target.as_str()))
+            .collect()
+    }
 }
 
 impl Change {
@@ -390,18 +501,28 @@ impl Change {
         // Every path any line names, once: a `verified` path that also has an
         // `added` or `prior` line is one document, and one with neither is a
         // document too, so that `unmatched` never counts past `documents`.
+        // A document that a `verified` line names, with or without a target,
+        // and that a row holds, once (#1520).
+        let mut stated: Vec<&str> = self
+            .verified
+            .iter()
+            .map(String::as_str)
+            .chain(self.edges.iter().map(|(document, _)| document.as_str()))
+            .collect();
+        stated.sort_unstable();
+        stated.dedup();
         let mut paths: Vec<&str> = self
             .entries
             .iter()
             .map(|(path, _)| path.as_str())
-            .chain(self.verified.iter().map(String::as_str))
+            .chain(stated.iter().copied())
             .chain(self.unverifiable.iter().map(String::as_str))
             .collect();
         paths.sort_unstable();
         paths.dedup();
         let mut named = Named {
             documents: paths.len(),
-            verified: self.verified.len(),
+            verified: stated.len(),
             ..Named::default()
         };
         for (_, held) in &self.entries {
@@ -417,12 +538,11 @@ impl Change {
         named.unmatched = self.unmatched().len();
         // A bound `verified` path that no entry names is a document of its own
         // class, and the only one the classes above do not hold (#1398).
-        named.verified_alone = self
-            .verified
+        named.verified_alone = stated
             .iter()
             .filter(|path| {
                 self.entries
-                    .binary_search_by(|(known, _)| known.as_str().cmp(path.as_str()))
+                    .binary_search_by(|(known, _)| known.as_str().cmp(path))
                     .is_err()
             })
             .count();
@@ -670,8 +790,11 @@ mod tests {
             &format!("{FORMAT}\nprior\tdocs/a.md\tprior/a.md\textra\n"),
             &format!("{FORMAT}\nadded\tdocs/a.md\nadded\tdocs/a.md\n"),
             &format!("{FORMAT}\nverified\n"),
-            &format!("{FORMAT}\nverified\tdocs/a.md\textra\n"),
+            &format!("{FORMAT}\nverified\tdocs/a.md\ttools/x.sh\textra\n"),
             &format!("{FORMAT}\nverified\tdocs/a.md\nverified\tdocs/a.md\n"),
+            &format!(
+                "{FORMAT}\nverified\tdocs/a.md\ttools/x.sh\nverified\tdocs/a.md\ttools/x.sh\n"
+            ),
         ] {
             assert!(
                 Unbound::read(manifest, tree(&[("prior/a.md", ASSERTED)])).is_err(),
@@ -735,6 +858,73 @@ mod tests {
         assert_eq!(
             named.added + named.carried + named.unreadable + named.unmatched + named.verified_alone,
             named.documents
+        );
+    }
+
+    /// A `verified\t<document>\t<target>` line states that one edge was
+    /// re-read, and not the document: the document is not re-verified by it.
+    /// The target is held against nothing, because a governed source file is
+    /// no corpus document, and a document no row holds is reported with the
+    /// unmatched paths, as a two-field line's is. An `added` or a `prior` line
+    /// names its path whether or not a row holds it (#1520).
+    #[test]
+    fn a_verified_edge_line_states_one_edge_and_not_the_document() {
+        let manifest = format!(
+            "{FORMAT}\nverified\tdocs/a.md\ttools/x.sh\nverified\tdocs/a.md\tsrc/**\n\
+             verified\tdocs/typo.md\ttools/x.sh\nverified\tdocs/a.md\nprior\ttools/y.sh\tprior/y.sh\n\
+             verified\tdocs/c.md\ttools/x.sh\n"
+        );
+        let unbound =
+            Unbound::read(&manifest, tree(&[("prior/y.sh", "echo\n")])).expect("a change");
+        assert_eq!(
+            unbound.verified_edges(),
+            vec![
+                ("docs/a.md", "src/**"),
+                ("docs/a.md", "tools/x.sh"),
+                ("docs/c.md", "tools/x.sh"),
+                ("docs/typo.md", "tools/x.sh"),
+            ]
+        );
+        assert_eq!(unbound.verified(), vec!["docs/a.md"]);
+        let change = unbound.bind(|path| path == "docs/a.md" || path == "docs/c.md");
+
+        // What the change states about an edge whose target is written as
+        // `target`, with no pattern.
+        let stated = |document: &str, target: &str| Stated::of(&change, document, &[target], &[]);
+        assert!(stated("docs/a.md", "tools/x.sh").edge);
+        assert!(stated("docs/a.md", "src/**").edge);
+        assert!(stated("docs/c.md", "tools/x.sh").edge);
+        assert!(!stated("docs/c.md", "src/**").edge);
+        assert!(
+            !stated("docs/typo.md", "tools/x.sh").edge,
+            "no row holds it"
+        );
+        // An edge line re-verifies the one edge and not the document.
+        assert!(change.verified("docs/a.md"), "its own two-field line");
+        assert!(!change.verified("docs/c.md"));
+        assert!(!stated("docs/c.md", "tools/x.sh").document);
+        // A governed file the change carries is named though no row holds it.
+        assert!(stated("docs/c.md", "tools/y.sh").target);
+        assert!(
+            !stated("docs/c.md", "tools/x.sh").target,
+            "a verified line carries nothing"
+        );
+        // A pattern names a path it matches, and a path the tree no longer
+        // holds is still one it matches.
+        let tools = [headwater_meta::Pattern::new("tools/*.sh")];
+        let by_pattern = Stated::of(&change, "docs/c.md", &["tools/*.sh"], &tools);
+        assert!(by_pattern.target, "tools/y.sh is under tools/*.sh");
+        assert!(by_pattern.edge, "the edge line names tools/x.sh");
+        let elsewhere = [headwater_meta::Pattern::new("src/*.rs")];
+        let unnamed = Stated::of(&change, "docs/c.md", &["src/*.rs"], &elsewhere);
+        assert!(!unnamed.target && !unnamed.edge, "{unnamed:?}");
+        assert_eq!(change.unmatched(), vec!["docs/typo.md", "tools/y.sh"]);
+        let named = change.named();
+        assert_eq!(named.verified, 2, "{named:?}");
+        assert_eq!(
+            named.added + named.carried + named.unreadable + named.unmatched + named.verified_alone,
+            named.documents,
+            "{named:?}"
         );
     }
 

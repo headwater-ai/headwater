@@ -127,7 +127,7 @@ The union loses which instance read which input, so a gate answers one question 
 
 The manifest is read in two steps. `Unbound::read` decides the syntax and reads the bytes, and it refuses a manifest that it cannot parse. A dropped line would read as a document that did not change. `Unbound::bind` holds each path against the census, and a path that matches no row is counted and named, not refused. No path is normalized.
 
-A `verified` line states that the author read a document again in this change. Only `suspect` reads it. A prior version that the engine could not read never reaches a check, and the runner skips the instance with the reason. Whether a change-scoped run is the cache under another name is open ([HW-OBL-0080](../obligations/0080-changed-only-is-the-content-addressed-cache-under-another-name.md)).
+A `verified` line states that the author read a document again in this change. A `verified` line with a third field states that the author read one edge of the document again. The third field is the target of the edge. Only `suspect` reads either line. It stamps an edge of a re-verified document only where the change also names the target of the edge. A three-field line that names the edge also gets a stamp. A prior version that the engine could not read never reaches a check, and the runner skips the instance with the reason. Whether a change-scoped run is the cache under another name is open ([HW-OBL-0080](../obligations/0080-changed-only-is-the-content-addressed-cache-under-another-name.md)).
 
 ### Coverage is computed against the census
 

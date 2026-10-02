@@ -113,23 +113,45 @@
 //! # When a fix is offered, and why the change decides it
 //!
 //! A patch that writes `verified_revision` records a verification. So it is
-//! offered only where the run's change states that one happened: the run
-//! carries a change, and the change names the document that declares the
-//! edge in a `verified` line, adds that document, or moves its freshness facet
-//! (`last_verified` in the standard package) off the value it held before. On
-//! any other document the
-//! finding carries its remedy as prose and no patch, because
-//! `headwater check --fix` would then record a verification nobody performed.
+//! offered only where the run's change states that one happened. Each edge
+//! carries its own `verified_revision`, so the statement is about one edge,
+//! and a suspect edge is offered the patch in one of two ways (#1520):
+//!
+//! - The change re-verified the document that declares the edge, and it names
+//!   the edge's target. The document is re-verified when the change names it
+//!   in a `verified` line, adds it, or moves its freshness facet
+//!   (`last_verified` in the standard package) off the value it held before.
+//!   The target is named when an `added` or a `prior` line names the target
+//!   as the entry writes it, or a path that a pattern of the target matches.
+//!   That path may be a file the change deleted.
+//! - A `verified\t<document>\t<target>` line names the edge. That states the
+//!   re-reading of this one edge, whatever the change says about the rest of
+//!   the document.
+//!
+//! On any other edge the finding carries its remedy as prose and no patch,
+//! because `headwater check --fix` would then record a verification nobody
+//! performed.
 //!
 //! Before #1259 the clock decided: a document whose freshness facet was at or
 //! after the run's date was stamped. That stamped every document that any
 //! merge of the day had re-verified, whatever the change in hand had read, and
-//! the same tree was fixable on one date and not on the next. The target is
-//! not what decides either. A change that edits a governed file makes every
+//! the same tree was fixable on one date and not on the next. The target alone
+//! does not decide either. A change that edits a governed file makes every
 //! edge onto it suspect, and a stamp on those edges is the unread stamp this
-//! rule exists to refuse. The declarer's re-verification also covers the one
-//! honest case the target misses: an author who re-reads a document whose
-//! edge went suspect in an earlier change.
+//! rule exists to refuse. So the target counts only on a document the change
+//! re-verified.
+//!
+//! The declarer alone does not decide either, since #1520. A moved
+//! `last_verified` stamped every suspect edge of the document, and so HW-PD-0020
+//! was stamped onto a `ci.yml` its author never re-read (#1484). The edge line
+//! covers the one honest case that the target misses: an author who re-reads a
+//! document whose edge went suspect in an earlier change, and whose change
+//! carries the document and not the target.
+//!
+//! The `Info` patch over an unrecorded edge keeps the document gate, or an
+//! edge line. It records the first digest of an edge that never had one, and
+//! re-stamps nothing that was suspect, and an added document's edges are the
+//! common source of it: its author wrote every entry.
 //!
 //! The `verified` line is the route for a second change on one day (#1376).
 //! The first change of the day set the facet to today, so the second cannot
@@ -256,7 +278,13 @@ impl EdgeCheck for Suspect<'_> {
     /// document it names is offered the fix whatever its freshness facet
     /// reads. The key holds the statement, and a verdict cached at 7 was
     /// keyed without it (#1376).
-    const VERSION: u32 = 8;
+    ///
+    /// 9: a re-verified document is offered the fix over a moved digest only
+    /// on an edge whose target the change names, or that a
+    /// `verified\t<document>\t<target>` line names. The key holds both
+    /// statements, and a verdict cached at 8 stamped every edge of the
+    /// document (#1520).
+    const VERSION: u32 = 9;
     /// The change decides the fix, and the clock decides nothing (#1259).
     const NEEDS_CLOCK: bool = false;
     /// The fix is offered only on a document the change re-verified, so the
@@ -295,12 +323,21 @@ impl EdgeCheck for Suspect<'_> {
         // A fix writes `verified_revision`, so it is offered only where the
         // relation declares that attribute: spec 2 makes an undeclared one a
         // finding, and a fix must not write what a later rule refuses.
-        let restated = self.re_verified(view)
-            && self
-                .declared
-                .iter()
-                .find(|known| known.name == view.relation())
-                .is_some_and(|known| known.attributes.iter().any(|a| a == VERIFIED_REVISION));
+        let declares = self
+            .declared
+            .iter()
+            .find(|known| known.name == view.relation())
+            .is_some_and(|known| known.attributes.iter().any(|a| a == VERIFIED_REVISION));
+        // A `verified` line that names this edge states its re-reading on its
+        // own, whatever the change says about the rest of the document.
+        let re_verified = self.re_verified(view);
+        // The gate of the `Info` patch over an unrecorded edge, which records
+        // a first digest and re-stamps nothing that was suspect.
+        let restated = declares && (re_verified || view.edge_verified());
+        // The gate of the patch over a moved digest, which re-stamps an edge
+        // that was suspect: the document re-verified and its target named by
+        // the change, or the edge named by a `verified` line (#1520).
+        let stamped = declares && ((re_verified && view.target_named()) || view.edge_verified());
         let (line, column) = at(Some(edge.span));
         let finding = |severity, message, remediation, patch| Finding {
             rule: self::RULE,
@@ -428,9 +465,10 @@ impl EdgeCheck for Suspect<'_> {
             ),
         };
         // A snapshot's revision is never fixed here: see `remediation`. A
-        // source-tree digest is, on a document the change re-verified, because
-        // then the verification the patch records is one the author stated.
-        let patch = match resolver == SOURCE_TREE && restated {
+        // source-tree digest is, on an edge the change states was re-read,
+        // because then the verification the patch records is one the author
+        // stated. A re-verified document alone does not state it (#1520).
+        let patch = match resolver == SOURCE_TREE && stamped {
             true => recording(edge, current),
             false => None,
         };

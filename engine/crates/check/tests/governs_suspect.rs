@@ -153,6 +153,12 @@ fn change(entries: &[(&str, Option<String>)]) -> Change {
 /// states that its author re-read that document, whether or not it carries it
 /// (#1376).
 fn stated(entries: &[(&str, Option<String>)], verified: &[&str]) -> Change {
+    edges(entries, verified, &[])
+}
+
+/// [`stated`], and a `verified\t<document>\t<target>` line for each pair in
+/// `edges`: the change states that its author re-read that one edge (#1520).
+fn edges(entries: &[(&str, Option<String>)], verified: &[&str], edges: &[(&str, &str)]) -> Change {
     let mut manifest = String::from("headwater change 1\n");
     for (path, prior) in entries {
         match prior {
@@ -162,6 +168,9 @@ fn stated(entries: &[(&str, Option<String>)], verified: &[&str]) -> Change {
     }
     for path in verified {
         manifest.push_str(&format!("verified\t{path}\n"));
+    }
+    for (document, target) in edges {
+        manifest.push_str(&format!("verified\t{document}\t{target}\n"));
     }
     let priors: Vec<(String, String)> = entries
         .iter()
@@ -176,6 +185,21 @@ fn stated(entries: &[(&str, Option<String>)], verified: &[&str]) -> Change {
     })
     .expect("the manifest reads")
     .bind(|_| true)
+}
+
+/// One row of a case table: its label, the change it runs under, and the
+/// targets whose edge it expects stamped.
+type Row<'a> = (&'a str, &'a dyn Fn() -> Change, Vec<&'a str>);
+
+/// The hook the recorded document governs, which most cases change.
+const LIB: &str = ".claude/hooks/lib.sh";
+
+/// A change entry that names [`LIB`] with the bytes it held under `root`
+/// before a case changes it: the change carries the target, so a re-verified
+/// document's edge onto it may be stamped (#1520). Read it before the write.
+fn named_lib(root: &Path) -> impl Fn() -> (&'static str, Option<String>) {
+    let before = std::fs::read_to_string(root.join(LIB)).expect("the hook reads");
+    move || (LIB, Some(before.clone()))
 }
 
 /// A change that names the document at `path` with a prior version that does
@@ -434,6 +458,11 @@ fn an_unrecorded_entry_the_change_did_not_re_verify_is_silent() {
             "a change whose prior version of the document does not open",
             at(TODAY).scoped_to(unreadable(DOCUMENT)),
         ),
+        // An edge line about another target says nothing about this edge.
+        (
+            "a stated edge onto another target",
+            at(TODAY).scoped_to(edges(&[], &[], &[(DOCUMENT, ".githooks/commit-msg")])),
+        ),
     ] {
         let ran = run_in(&root, &ctx, &mut Cache::disabled(), &taxonomy());
         assert!(suspect(&ran).is_empty(), "{label}: {:?}", suspect(&ran));
@@ -461,6 +490,12 @@ fn an_unrecorded_entry_the_change_re_verified_offers_the_digest() {
         (
             "an added document",
             at(TODAY).scoped_to(change(&[(DOCUMENT, None)])),
+        ),
+        // A `verified` line that names the edge states its re-reading, with
+        // the document neither carried nor named on its own (#1520).
+        (
+            "a stated edge",
+            at(TODAY).scoped_to(edges(&[], &[], &[(DOCUMENT, ".githooks/pre-commit")])),
         ),
     ] {
         let ran = run_in(&root, &ctx, &mut Cache::disabled(), &taxonomy());
@@ -490,20 +525,32 @@ fn an_unrecorded_entry_the_change_re_verified_offers_the_digest() {
 
 /// A moved digest is a warning in every run. It carries the patch that
 /// records the new digest only where the change re-verified the document that
-/// declares the edge. Without a change, or where the change left the facet
-/// where it stood, it carries none, because the patch would record a
-/// verification that nobody stated.
+/// declares the edge and names the edge's target. Without a change, where the
+/// change left the facet where it stood, or where it names no target, it
+/// carries none, because the patch would record a verification that nobody
+/// stated (#1520).
 #[test]
 fn a_moved_digest_is_fixable_only_on_a_document_the_change_re_verified() {
     let root = scratch("moved");
     let entries = recorded(&root);
     document(&root, TODAY, &entries);
-    write(&root, ".claude/hooks/lib.sh", "refuse() { :; }\n");
+    let lib = named_lib(&root);
+    write(&root, LIB, "refuse() { :; }\n");
     for (label, ctx, fixable) in [
         (
             "re-verified",
-            at(TODAY).scoped_to(change(&[(DOCUMENT, Some(yesterday("hooks", &entries)))])),
+            at(TODAY).scoped_to(change(&[
+                (DOCUMENT, Some(yesterday("hooks", &entries))),
+                lib(),
+            ])),
             true,
+        ),
+        // The document re-verified and the hook it governs not named: each
+        // edge carries its own stamp, and nobody stated this one (#1520).
+        (
+            "re-verified, target unnamed",
+            at(TODAY).scoped_to(change(&[(DOCUMENT, Some(yesterday("hooks", &entries)))])),
+            false,
         ),
         ("no change", at(TODAY), false),
         (
@@ -520,7 +567,7 @@ fn a_moved_digest_is_fixable_only_on_a_document_the_change_re_verified() {
         (
             "same day, stated",
             at(TODAY).scoped_to(stated(
-                &[(DOCUMENT, Some(text_of("hooks", TODAY, &entries)))],
+                &[(DOCUMENT, Some(text_of("hooks", TODAY, &entries))), lib()],
                 &[DOCUMENT],
             )),
             true,
@@ -528,8 +575,13 @@ fn a_moved_digest_is_fixable_only_on_a_document_the_change_re_verified() {
         // An author who re-read the document and changed nothing in it.
         (
             "stated, not carried",
-            at(TODAY).scoped_to(stated(&[], &[DOCUMENT])),
+            at(TODAY).scoped_to(stated(&[lib()], &[DOCUMENT])),
             true,
+        ),
+        (
+            "stated, target unnamed",
+            at(TODAY).scoped_to(stated(&[], &[DOCUMENT])),
+            false,
         ),
         // A statement about another document says nothing about this one.
         (
@@ -577,8 +629,11 @@ fn a_stamp_is_offered_only_on_the_document_the_change_re_verified() {
     let entries = recorded(&root);
     document(&root, TODAY, &entries);
     write(&root, OTHER, &text_of("other", TODAY, &entries));
-    write(&root, ".claude/hooks/lib.sh", "refuse() { :; }\n");
-    let re_verified = || change(&[(DOCUMENT, Some(yesterday("hooks", &entries)))]);
+    let lib = named_lib(&root);
+    write(&root, LIB, "refuse() { :; }\n");
+    // The change names the hook both documents govern, and re-verified one of
+    // them: a named target stamps nothing on a document nobody re-read.
+    let re_verified = || change(&[(DOCUMENT, Some(yesterday("hooks", &entries))), lib()]);
     for (label, ctx, stamped) in [
         ("today", at(TODAY).scoped_to(re_verified()), vec![DOCUMENT]),
         (
@@ -587,6 +642,11 @@ fn a_stamp_is_offered_only_on_the_document_the_change_re_verified() {
             vec![DOCUMENT],
         ),
         ("no change", at(TODAY), vec![]),
+        (
+            "target unnamed",
+            at(TODAY).scoped_to(change(&[(DOCUMENT, Some(yesterday("hooks", &entries)))])),
+            vec![],
+        ),
     ] {
         let ran = run_in(&root, &ctx, &mut Cache::disabled(), &taxonomy());
         let reported = suspect(&ran);
@@ -595,6 +655,81 @@ fn a_stamp_is_offered_only_on_the_document_the_change_re_verified() {
             .iter()
             .filter(|finding| finding.patch.is_some())
             .map(|finding| finding.path.as_str())
+            .collect();
+        assert_eq!(patched, stamped, "{label}");
+    }
+}
+
+/// The decisive fixture for #1520. One document governs two hooks, both hooks
+/// change, and so both edges go suspect. A re-verification of the document
+/// stamps only the edge whose target the person re-read: the change names
+/// the target with an `added` or a `prior` line, or a `verified` line names
+/// the edge. Before the fix a moved `last_verified` stamped both edges, which
+/// is how HW-PD-0020 was stamped onto a `ci.yml` its author never read (#1484).
+#[test]
+fn a_re_verified_document_stamps_only_the_edge_whose_target_the_change_names() {
+    const WRITE: &str = ".claude/hooks/write.sh";
+    let root = scratch("named-target");
+    let entries: Vec<String> = recorded(&root)
+        .into_iter()
+        .filter(|entry| entry.contains(LIB) || entry.contains(WRITE))
+        .collect();
+    assert_eq!(entries.len(), 2);
+    document(&root, TODAY, &entries);
+    let lib_before = std::fs::read_to_string(root.join(LIB)).expect("the hook reads");
+    write(&root, LIB, "refuse() { :; }\n");
+    write(&root, WRITE, "#!/bin/sh\nexit 0\n");
+    let moved = || (DOCUMENT, Some(yesterday("hooks", &entries)));
+    // Each change is made inside the loop, so that a row the manifest reader
+    // refuses fails as that row and not before the first one runs.
+    let rows: [Row<'_>; 7] = [
+        (
+            "the change carries one target",
+            &|| change(&[moved(), (LIB, Some(lib_before.clone()))]),
+            vec![LIB],
+        ),
+        (
+            "the change adds one target",
+            &|| change(&[moved(), (LIB, None)]),
+            vec![LIB],
+        ),
+        (
+            "a verified line names one edge",
+            &|| edges(&[], &[], &[(DOCUMENT, WRITE)]),
+            vec![WRITE],
+        ),
+        (
+            "a moved facet names no target",
+            &|| change(&[moved()]),
+            vec![],
+        ),
+        (
+            "a stated document names no target",
+            &|| stated(&[], &[DOCUMENT]),
+            vec![],
+        ),
+        (
+            "a named target on a document nobody re-read",
+            &|| change(&[(LIB, Some(lib_before.clone()))]),
+            vec![],
+        ),
+        (
+            "a verified line names the edge of another document",
+            &|| edges(&[], &[], &[(OTHER, WRITE)]),
+            vec![],
+        ),
+    ];
+    for (label, change, stamped) in rows {
+        let ctx = at(TODAY).scoped_to(change());
+        let ran = run_in(&root, &ctx, &mut Cache::disabled(), &taxonomy());
+        let reported = suspect(&ran);
+        assert_eq!(reported.len(), 2, "{label}: {reported:?}");
+        let patched: Vec<&str> = reported
+            .iter()
+            .filter_map(|finding| match &finding.patch {
+                Some(Patch::Half { id, .. }) => Some(id.as_str()),
+                _ => None,
+            })
             .collect();
         assert_eq!(patched, stamped, "{label}");
     }
@@ -609,12 +744,19 @@ fn a_warm_cache_keys_the_patch_on_the_change() {
     let root = scratch("warm-change");
     let entries = recorded(&root);
     document(&root, TODAY, &entries);
-    write(&root, ".claude/hooks/lib.sh", "refuse() { :; }\n");
-    let re_verified =
-        || at(TODAY).scoped_to(change(&[(DOCUMENT, Some(yesterday("hooks", &entries)))]));
+    let lib = named_lib(&root);
+    write(&root, LIB, "refuse() { :; }\n");
+    let re_verified = || {
+        at(TODAY).scoped_to(change(&[
+            (DOCUMENT, Some(yesterday("hooks", &entries))),
+            lib(),
+        ]))
+    };
+    // The same prior version of the document, with no target named.
+    let unnamed = || at(TODAY).scoped_to(change(&[(DOCUMENT, Some(yesterday("hooks", &entries)))]));
     let unmoved = |verified: &[&str]| {
         at(TODAY).scoped_to(stated(
-            &[(DOCUMENT, Some(text_of("hooks", TODAY, &entries)))],
+            &[(DOCUMENT, Some(text_of("hooks", TODAY, &entries))), lib()],
             verified,
         ))
     };
@@ -644,6 +786,18 @@ fn a_warm_cache_keys_the_patch_on_the_change() {
             false,
         ),
         ("facet unmoved, warm", unmoved(&[]), false, true),
+        // One prior version and one re-verification, with and without the
+        // target named: the key holds the target, so the unnamed run is not
+        // served the stamp the named run stored, and the other way round
+        // (#1520). Each is then served its own verdict.
+        ("target unnamed, after a named run", unnamed(), false, false),
+        (
+            "target named, after an unnamed run",
+            re_verified(),
+            true,
+            true,
+        ),
+        ("target unnamed, warm", unnamed(), false, true),
     ] {
         let mut cache = Cache::at(&root, LOCK, "sha256:rules");
         let ran = run_in(&root, &ctx, &mut cache, &taxonomy());
@@ -682,6 +836,109 @@ fn a_moved_wildcard_names_its_pattern_and_its_match_count() {
     assert!(message.contains(".claude/hooks/*.sh"), "{message}");
     assert!(message.contains("2 regular files"), "{message}");
     assert!(message.contains("not recorded"), "{message}");
+    let _ = std::fs::remove_dir_all(&root);
+}
+
+/// A pattern entry's target is named by a path the pattern reaches, or by the
+/// pattern as the entry writes it in a `verified` line. A path the pattern
+/// does not reach names nothing (#1520).
+#[test]
+fn a_pattern_target_is_named_by_a_path_it_reaches() {
+    const PATTERN: &str = ".claude/hooks/*.sh";
+    const WRITE: &str = ".claude/hooks/write.sh";
+    let root = scratch("named-pattern");
+    let digest = expected(&root, &[LIB, WRITE]);
+    let entries = vec![format!(
+        "    - to: {PATTERN}\n      verified_revision: \"{digest}\""
+    )];
+    document(&root, TODAY, &entries);
+    let write_before = std::fs::read_to_string(root.join(WRITE)).expect("the hook reads");
+    write(&root, WRITE, "#!/bin/sh\n");
+    let moved = || (DOCUMENT, Some(yesterday("hooks", &entries)));
+    for (label, change, fixable) in [
+        (
+            "a matched path",
+            change(&[moved(), (WRITE, Some(write_before.clone()))]),
+            true,
+        ),
+        (
+            "the pattern in a verified line",
+            edges(&[], &[], &[(DOCUMENT, PATTERN)]),
+            true,
+        ),
+        (
+            "a path the pattern does not reach",
+            change(&[moved(), (".claude/hooks/notes.txt", None)]),
+            false,
+        ),
+        ("no target", change(&[moved()]), false),
+    ] {
+        let ctx = at(TODAY).scoped_to(change);
+        let ran = run_in(&root, &ctx, &mut Cache::disabled(), &taxonomy());
+        let reported = suspect(&ran);
+        assert_eq!(reported.len(), 1, "{label}: {reported:?}");
+        assert_eq!(reported[0].patch.is_some(), fixable, "{label}");
+    }
+
+    // The entry spells the pattern with a leading `./`. A `verified` line
+    // that names the normalized pattern names the edge too.
+    let spelled = vec![format!(
+        "    - to: ./{PATTERN}\n      verified_revision: \"{digest}\""
+    )];
+    document(&root, TODAY, &spelled);
+    let ctx = at(TODAY).scoped_to(edges(&[], &[], &[(DOCUMENT, PATTERN)]));
+    let ran = run_in(&root, &ctx, &mut Cache::disabled(), &taxonomy());
+    let reported = suspect(&ran);
+    assert_eq!(reported.len(), 1, "{reported:?}");
+    assert!(reported[0].patch.is_some(), "the normalized pattern");
+    let _ = std::fs::remove_dir_all(&root);
+}
+
+/// A file deleted from under a pattern target is a path the pattern matched,
+/// and the change that deletes it carries it in a `prior` line. That names the
+/// target, as an edit to a matched file does, though the pattern no longer
+/// reaches the path. A `verified` line that names the deleted path names the
+/// edge too. A path the pattern never matched names nothing (#1520).
+#[test]
+fn a_deleted_file_under_a_pattern_names_the_target() {
+    const PATTERN: &str = ".claude/hooks/*.sh";
+    let root = scratch("deleted-under-pattern");
+    let digest = expected(&root, &[LIB, ".claude/hooks/write.sh"]);
+    let entries = vec![format!(
+        "    - to: {PATTERN}\n      verified_revision: \"{digest}\""
+    )];
+    document(&root, TODAY, &entries);
+    let lib = named_lib(&root);
+    std::fs::remove_file(root.join(LIB)).expect("the hook deletes");
+    let moved = || (DOCUMENT, Some(yesterday("hooks", &entries)));
+    for (label, change, fixable) in [
+        (
+            "the change deletes a matched file",
+            change(&[moved(), lib()]),
+            true,
+        ),
+        (
+            "a verified line names the deleted file",
+            edges(&[], &[], &[(DOCUMENT, LIB)]),
+            true,
+        ),
+        (
+            "a deleted file the pattern never matched",
+            change(&[moved(), (".claude/notes.md", Some("x\n".to_string()))]),
+            false,
+        ),
+        (
+            "a verified line names a path the pattern never matched",
+            edges(&[], &[], &[(DOCUMENT, ".claude/hooks/sub/lib.sh")]),
+            false,
+        ),
+    ] {
+        let ctx = at(TODAY).scoped_to(change);
+        let ran = run_in(&root, &ctx, &mut Cache::disabled(), &taxonomy());
+        let reported = suspect(&ran);
+        assert_eq!(reported.len(), 1, "{label}: {reported:?}");
+        assert_eq!(reported[0].patch.is_some(), fixable, "{label}");
+    }
     let _ = std::fs::remove_dir_all(&root);
 }
 
@@ -878,7 +1135,8 @@ fn a_stated_re_verification_needs_no_freshness_facet() {
     let root = scratch("no-freshness");
     let entries = recorded(&root);
     document(&root, TODAY, &entries);
-    write(&root, ".claude/hooks/lib.sh", "refuse() { :; }\n");
+    let lib = named_lib(&root);
+    write(&root, LIB, "refuse() { :; }\n");
     let unroled = taxonomy().replace(
         "  last_verified:\n    role: freshness\n",
         "  last_verified:\n",
@@ -887,7 +1145,18 @@ fn a_stated_re_verification_needs_no_freshness_facet() {
     for (label, ctx, fixable) in [
         (
             "stated",
+            at(TODAY).scoped_to(stated(&[lib()], &[DOCUMENT])),
+            true,
+        ),
+        (
+            "stated, target unnamed",
             at(TODAY).scoped_to(stated(&[], &[DOCUMENT])),
+            false,
+        ),
+        // A `verified` line that names the edge needs no facet either (#1520).
+        (
+            "edge stated",
+            at(TODAY).scoped_to(edges(&[], &[], &[(DOCUMENT, LIB)])),
             true,
         ),
         (
@@ -919,5 +1188,55 @@ fn no_fix_is_offered_where_the_relation_does_not_declare_the_attribute() {
     assert_ne!(undeclared, taxonomy(), "the declaration was removed");
     let ran = run_under(&root, TODAY, &mut Cache::disabled(), &undeclared);
     assert!(suspect(&ran).is_empty(), "{:?}", suspect(&ran));
+    let _ = std::fs::remove_dir_all(&root);
+}
+
+/// An edge that carries a digest goes suspect when its target moves, though
+/// its relation no longer declares `verified_revision`. A change that states
+/// the edge was re-read still gets no patch, because the patch would write an
+/// attribute the relation does not declare (#1520).
+#[test]
+fn a_stated_edge_gets_no_patch_where_the_relation_does_not_declare_the_attribute() {
+    let root = scratch("undeclared-stated");
+    let entries: Vec<String> = recorded(&root)
+        .into_iter()
+        .filter(|entry| entry.contains(LIB))
+        .collect();
+    assert_eq!(entries.len(), 1);
+    document(&root, TODAY, &entries);
+    let lib_before = std::fs::read_to_string(root.join(LIB)).expect("the hook reads");
+    write(&root, LIB, "refuse() { :; }\n");
+    let undeclared = taxonomy().replace(
+        "    attributes:\n      verified_revision: {type: string, owner: edge}\n",
+        "",
+    );
+    assert_ne!(undeclared, taxonomy(), "the declaration was removed");
+    let moved = || (DOCUMENT, Some(yesterday("hooks", &entries)));
+    let rows: [(&str, &dyn Fn() -> Change); 2] = [
+        ("a re-verified document names the target", &|| {
+            change(&[moved(), (LIB, Some(lib_before.clone()))])
+        }),
+        ("a verified line names the edge", &|| {
+            edges(&[], &[], &[(DOCUMENT, LIB)])
+        }),
+    ];
+    for (label, change) in rows {
+        let ctx = at(TODAY).scoped_to(change());
+        let declared = run_in(&root, &ctx, &mut Cache::disabled(), &taxonomy());
+        let reported = suspect(&declared);
+        assert_eq!(reported.len(), 1, "{label}, declared: {reported:?}");
+        assert!(
+            reported[0].patch.is_some(),
+            "{label}: the row states the edge"
+        );
+        let ran = run_in(&root, &ctx, &mut Cache::disabled(), &undeclared);
+        let reported = suspect(&ran);
+        assert_eq!(reported.len(), 1, "{label}: {reported:?}");
+        assert!(
+            reported[0].patch.is_none(),
+            "{label}: {:?}",
+            reported[0].patch
+        );
+    }
     let _ = std::fs::remove_dir_all(&root);
 }

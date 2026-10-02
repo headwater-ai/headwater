@@ -141,7 +141,7 @@
 //! cannot read is a miss. A cache file that will not parse is an empty cache.
 //! None of them is an error, and none of them can change a verdict.
 
-use crate::change::Prior;
+use crate::change::{Prior, Stated};
 use crate::context::Date;
 use crate::finding::{Finding, Severity};
 use crate::instance::{Input, Outcome};
@@ -353,7 +353,7 @@ impl Cache {
         reads: &[Input],
         clock: Option<Date>,
         prior: Option<Prior<'_>>,
-        stated: bool,
+        stated: Stated,
         resolution: Option<&str>,
         evaluate: F,
     ) -> Outcome
@@ -403,7 +403,7 @@ impl Cache {
         reads: &[Input],
         clock: Option<Date>,
         prior: Option<Prior<'_>>,
-        stated: bool,
+        stated: Stated,
         resolution: Option<&str>,
     ) -> Option<String> {
         let lock = self.lock.as_ref()?;
@@ -461,7 +461,16 @@ impl Cache {
             // re-verified. It is not a state of the prior version, so it has
             // a line of its own, and a run that states it is not served the
             // verdict of one that does not over the same prior (#1376).
-            text.push_str(&format!("declarer-verified {stated}\n"));
+            text.push_str(&format!("declarer-verified {}\n", stated.document));
+            // Whether the change names the edge's target, and whether a
+            // `verified` line names the edge. A re-verified document is
+            // offered a stamp only on an edge one of them names, so a run that
+            // names the target is not served the verdict of one that does not
+            // over the same prior and the same statement (#1520).
+            text.push_str(&format!(
+                "target-stated change={} verified={}\n",
+                stated.target, stated.edge
+            ));
         }
         // Escaped for the reason a record is: a target or a path is corpus
         // content, and a newline inside one would otherwise let a document
@@ -501,7 +510,15 @@ impl Cache {
         clock: Option<Date>,
     ) -> Option<String> {
         self.key(
-            rule, version, scope, target, reads, clock, None, false, None,
+            rule,
+            version,
+            scope,
+            target,
+            reads,
+            clock,
+            None,
+            Stated::NONE,
+            None,
         )
     }
 }
@@ -1201,7 +1218,7 @@ mod tests {
                 &inputs(Some("sha256:one")),
                 None,
                 Some(prior),
-                false,
+                Stated::NONE,
                 None,
             )
         };
@@ -1243,7 +1260,7 @@ mod tests {
                 &inputs(Some("sha256:one")),
                 None,
                 prior,
-                false,
+                Stated::NONE,
                 Some("resolved"),
             )
         };
@@ -1275,7 +1292,7 @@ mod tests {
     /// writes no line for it, so its key does not move with the argument.
     #[test]
     fn a_stated_re_verification_keys_apart_at_edge_grain_and_nowhere_else() {
-        let key = |scope: Scope, stated: bool| {
+        let key = |scope: Scope, stated: Stated| {
             cache().key(
                 "relation.target.suspect",
                 1,
@@ -1288,11 +1305,39 @@ mod tests {
                 Some("resolved"),
             )
         };
+        // Each of the three statements alone, and none, are four keys: a run
+        // that names the edge's target, or names the edge, is not served the
+        // verdict of one that only re-verified the document (#1520).
+        let states = [
+            Stated::NONE,
+            Stated {
+                document: true,
+                ..Stated::NONE
+            },
+            Stated {
+                target: true,
+                ..Stated::NONE
+            },
+            Stated {
+                edge: true,
+                ..Stated::NONE
+            },
+        ];
         let reads = Scope::edge(false, false, true);
-        assert!(key(reads, false).is_some());
-        assert_ne!(key(reads, false), key(reads, true));
+        for (index, state) in states.iter().enumerate() {
+            assert!(key(reads, *state).is_some(), "state {index} lost its key");
+            for other in &states[index + 1..] {
+                assert_ne!(
+                    key(reads, *state),
+                    key(reads, *other),
+                    "{state:?} and {other:?}"
+                );
+            }
+        }
         let ignores = Scope::edge(false, false, false);
-        assert_eq!(key(ignores, false), key(ignores, true));
+        for state in states {
+            assert_eq!(key(ignores, Stated::NONE), key(ignores, state), "{state:?}");
+        }
     }
 
     /// A scope that declares the prior version and was handed none is not
@@ -1309,7 +1354,7 @@ mod tests {
                 &inputs(Some("sha256:one")),
                 None,
                 None,
-                false,
+                Stated::NONE,
                 None,
             ),
             None
@@ -1400,7 +1445,7 @@ mod tests {
                 &inputs(Some("sha256:one")),
                 None,
                 None,
-                false,
+                Stated::NONE,
                 resolution,
             )
         };
