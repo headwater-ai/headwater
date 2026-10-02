@@ -270,11 +270,33 @@ fn generate_contract() -> PathBuf {
 /// or digits.
 fn count_word(word: &str) -> Option<usize> {
     const WORDS: [&str; 20] = [
-        "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve",
-        "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen", "twenty",
+        "one",
+        "two",
+        "three",
+        "four",
+        "five",
+        "six",
+        "seven",
+        "eight",
+        "nine",
+        "ten",
+        "eleven",
+        "twelve",
+        "thirteen",
+        "fourteen",
+        "fifteen",
+        "sixteen",
+        "seventeen",
+        "eighteen",
+        "nineteen",
+        "twenty",
     ];
-    let word = word.trim_matches(|c: char| !c.is_ascii_alphanumeric()).to_ascii_lowercase();
-    word.parse().ok().or_else(|| WORDS.iter().position(|w| *w == word).map(|i| i + 1))
+    let word = word
+        .trim_matches(|c: char| !c.is_ascii_alphanumeric())
+        .to_ascii_lowercase();
+    word.parse()
+        .ok()
+        .or_else(|| WORDS.iter().position(|w| *w == word).map(|i| i + 1))
 }
 
 /// Every `(N, M)` that a sentence of the form `<N> of the <M> are declarable`
@@ -284,7 +306,9 @@ fn declarable_counts(text: &str) -> Vec<(usize, usize)> {
     let mut counts = Vec::new();
     for (at, _) in lower.match_indices(" are declarable") {
         let before: Vec<&str> = lower[..at].split_whitespace().collect();
-        let [.., n, of, the, m] = before.as_slice() else { continue };
+        let [.., n, of, the, m] = before.as_slice() else {
+            continue;
+        };
         if *of != "of" || *the != "the" {
             continue;
         }
@@ -314,7 +338,8 @@ fn declarable_counts(text: &str) -> Vec<(usize, usize)> {
 fn the_declarable_count_spec_6_and_the_generate_contract_state_is_the_count_the_engine_declares() {
     let expected = (Kind::DECLARABLE.len(), Kind::ALL.len());
     for (path, must_state) in [(spec_six(), true), (generate_contract(), false)] {
-        let text = std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
+        let text =
+            std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
         let counts = declarable_counts(&text);
         assert!(
             !must_state || !counts.is_empty(),
@@ -340,12 +365,30 @@ fn the_declarable_count_spec_6_and_the_generate_contract_state_is_the_count_the_
 /// ignores a sentence of another shape.
 #[test]
 fn a_declarable_count_is_read_from_words_digits_and_emphasis() {
-    assert_eq!(declarable_counts("**Ten of the twelve are declarable, and two are not.**"), vec![(10, 12)]);
-    assert_eq!(declarable_counts("Eleven of the 13 are declarable."), vec![(11, 13)]);
-    assert_eq!(declarable_counts("The other four are declarable."), Vec::<(usize, usize)>::new());
-    assert_eq!(declarable_counts("Nine of those are declarable."), Vec::<(usize, usize)>::new());
-    assert_eq!(declarable_counts("Two of these four are declarable."), Vec::<(usize, usize)>::new());
-    assert_eq!(declarable_counts("ELEVEN OF THE THIRTEEN ARE DECLARABLE."), vec![(11, 13)]);
+    assert_eq!(
+        declarable_counts("**Ten of the twelve are declarable, and two are not.**"),
+        vec![(10, 12)]
+    );
+    assert_eq!(
+        declarable_counts("Eleven of the 13 are declarable."),
+        vec![(11, 13)]
+    );
+    assert_eq!(
+        declarable_counts("The other four are declarable."),
+        Vec::<(usize, usize)>::new()
+    );
+    assert_eq!(
+        declarable_counts("Nine of those are declarable."),
+        Vec::<(usize, usize)>::new()
+    );
+    assert_eq!(
+        declarable_counts("Two of these four are declarable."),
+        Vec::<(usize, usize)>::new()
+    );
+    assert_eq!(
+        declarable_counts("ELEVEN OF THE THIRTEEN ARE DECLARABLE."),
+        vec![(11, 13)]
+    );
 }
 
 /// The report of one run over an empty tree, under the given declarations.
