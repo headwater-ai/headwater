@@ -2,9 +2,10 @@
 //
 // Glue between VS Code and `client.js`. Every decision about what to ask the
 // server and what counts as an answer is in `client.js`, where `node --test`
-// holds it. This file only shows what the client returns: the pointers, and the
-// line `client.withheldNote` gives when the route budget held pointers back. It
-// shows nothing when the client returns neither.
+// holds it. This file only shows what the client returns: the pointers, the
+// line `client.withheldNote` gives when the route budget held pointers back, and
+// the engine's silence when a route the user asked for found nothing. It shows
+// nothing when the client returns none of these.
 
 'use strict';
 
@@ -85,7 +86,8 @@ function activate(context) {
       const answered = await client.route(task, options(folder));
       const note = client.withheldNote(answered);
       if (answered.pointers.length === 0) {
-        if (note) vscode.window.showInformationMessage(`Headwater: no document shown; ${note}`);
+        const said = [answered.silence, note].filter(Boolean).join('; ');
+        if (said) vscode.window.showInformationMessage(`Headwater: no document shown; ${said}`);
         return;
       }
       await pick(answered.pointers, folder, `Documents that govern this task${note ? ` (${note})` : ''}`);

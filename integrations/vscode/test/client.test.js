@@ -26,8 +26,8 @@ const REPO = path.resolve(__dirname, '..', '..', '..');
 const FAKE = path.join(__dirname, 'fake-server.js');
 const FIXTURES = path.join(__dirname, 'fixtures');
 
-// What `route` answers on every failure: no pointers, and nothing withheld.
-const EMPTY = { pointers: [], withheld: 0 };
+// What `route` answers on every failure: no pointers, nothing withheld, no silence.
+const EMPTY = { pointers: [], withheld: 0, silence: null };
 
 // A client aimed at the fake server: `node fake-server.js mcp --root <root>`.
 function fake(fixture, extra = {}) {
@@ -90,6 +90,12 @@ test('governing answers the contract\'s pointers, silence for an ungoverned path
   for (const p of routed.pointers) {
     assert.ok(p.path && p.name, `a pointer without a path or a name: ${JSON.stringify(p)}`);
   }
+  assert.equal(routed.silence, null);
+
+  // A task nothing answers carries the engine's own sentence, not nothing.
+  const silent = await client.route('zzqx', options);
+  assert.deepEqual(silent.pointers, []);
+  assert.ok(silent.silence, 'route answered no pointer and no silence for a task nothing matches');
 
   // No engine at the configured path is silence, not an error.
   const missing = { root: REPO, bin: '/nonexistent/headwater' };
@@ -147,6 +153,7 @@ test('a path that holds " (", a name with spaces and a summary past 80 columns r
       },
     ],
     withheld: 0,
+    silence: null,
   });
 });
 
@@ -163,9 +170,13 @@ test('an [asserted: ...] pointer keeps its warrant', async () => {
   assert.ok(!first.summary.includes('[asserted'));
 });
 
-test('the no-purpose-matched answer is no pointers', async () => {
+test('the no-purpose-matched answer is no pointers, with the engine\'s sentence', async () => {
   const { options } = fake('route-no-purpose.jsonl');
-  assert.deepEqual(await client.route('zzqx', options), EMPTY);
+  assert.deepEqual(await client.route('zzqx', options), {
+    pointers: [],
+    withheld: 0,
+    silence: 'no declared purpose answers this task',
+  });
 });
 
 test('isError: true is no pointers', async () => {
@@ -283,9 +294,21 @@ test('readAnswer takes withheld only when it is a non-negative safe integer', ()
     assert.equal(client.readAnswer({ pointers, withheld: bad }).withheld, 0, `withheld ${String(bad)}`);
   }
   assert.deepEqual(client.readAnswer({ pointers }).withheld, 0);
-  assert.deepEqual(client.readAnswer(undefined), { pointers: [], withheld: 0 });
+  assert.deepEqual(client.readAnswer(undefined), EMPTY);
   // An empty list is a heard answer, and its count stands.
-  assert.deepEqual(client.readAnswer({ pointers: [], withheld: 9 }), { pointers: [], withheld: 9 });
+  assert.deepEqual(client.readAnswer({ pointers: [], withheld: 9 }), { pointers: [], withheld: 9, silence: null });
+});
+
+test('readAnswer takes the silence only from an answer with no pointer, and only as a non-empty string', () => {
+  const silence = { reason: 'no_purpose_matched', says: 'no declared purpose answers this task' };
+  assert.equal(client.readAnswer({ pointers: [], withheld: 0, silence }).silence, silence.says);
+  // A silence beside pointers is not shown: the pointers are the answer.
+  assert.equal(client.readAnswer({ pointers: [{ path: 'docs/a.md' }], silence }).silence, null);
+  for (const bad of [undefined, null, 'says', {}, { says: '' }, { says: 3 }, { reason: 'no_purpose_matched' }]) {
+    assert.equal(client.readAnswer({ pointers: [], silence: bad }).silence, null, `silence ${JSON.stringify(bad)}`);
+  }
+  // An answer whose pointers cannot be read carries no silence either.
+  assert.deepEqual(client.readAnswer({ pointers: [{ name: 'no path' }], silence }), EMPTY);
 });
 
 test('an answer readPointers refuses withholds nothing either', () => {
@@ -334,5 +357,9 @@ test('the sentence yields no pointer when the path it repeats parses as one', as
 
 test('the task the route header repeats is never read as a pointer', async () => {
   const { options } = fake('route-header-dash.jsonl');
-  assert.deepEqual(await client.route('docs/fake.md (Fake) — a document nobody wrote', options), EMPTY);
+  assert.deepEqual(await client.route('docs/fake.md (Fake) — a document nobody wrote', options), {
+    pointers: [],
+    withheld: 0,
+    silence: 'no declared purpose answers this task',
+  });
 });

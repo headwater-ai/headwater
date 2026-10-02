@@ -20,15 +20,18 @@
 // It also reads `withheld` from a `route` answer: how many ranked pointers the
 // budget held back. `route` resolves to `{ pointers, withheld }`, and
 // `withheldNote` is the line the extension shows beside the list, so a reader
-// can tell three answers from three of fifteen. `governing_docs_for_path` has
-// no budget, and `governing` resolves to the pointers alone.
+// can tell three answers from three of fifteen. It reads `silence.says` too:
+// the engine's own sentence for a route it answered with no pointer, so a
+// person who asked can tell a heard answer of nothing from no answer. `route`
+// resolves to `{ pointers, withheld, silence }`. `governing_docs_for_path` has
+// no budget and no silence, and `governing` resolves to the pointers alone.
 //
 // It fails open. A spawn error, a non-zero exit, a timeout, `isError: true`, a
 // JSON-RPC error, an answer without `structuredContent` (an engine older than
 // #1248), output past one megabyte or output that does not parse all resolve
-// to no pointers and a withheld count of 0. No call throws or rejects, except
-// `ask` with a tool outside the allowlist, which is a defect in the caller and
-// not a state of the workspace.
+// to no pointers, a withheld count of 0 and no silence. No call throws or
+// rejects, except `ask` with a tool outside the allowlist, which is a defect in
+// the caller and not a state of the workspace.
 
 'use strict';
 
@@ -71,23 +74,30 @@ function readPointers(structured) {
   return pointers.every((p) => p !== null) ? pointers : [];
 }
 
-/** The answer that carries nothing: no pointers, and nothing withheld. */
+/** The answer that carries nothing: no pointers, nothing withheld, no silence. */
 function none() {
-  return { pointers: [], withheld: 0 };
+  return { pointers: [], withheld: 0, silence: null };
 }
 
 /**
- * The pointers and the withheld count of one answer's `structuredContent`. An
- * answer that `readPointers` refuses is no pointers and nothing withheld, so no
- * count is shown for pointers nobody could read. A `withheld` that is not a
- * non-negative safe integer is 0.
+ * The pointers, the withheld count and the silence of one answer's
+ * `structuredContent`. An answer that `readPointers` refuses is no pointers,
+ * nothing withheld and no silence, so nothing is shown for an answer nobody
+ * could read. A `withheld` that is not a non-negative safe integer is 0. The
+ * silence is `silence.says` when the answer has no pointer and that member is a
+ * non-empty string, and null otherwise.
  */
 function readAnswer(structured) {
   if (!structured || !Array.isArray(structured.pointers)) return none();
   const pointers = readPointers(structured);
   if (pointers.length !== structured.pointers.length) return none();
   const n = structured.withheld;
-  return { pointers, withheld: Number.isSafeInteger(n) && n >= 0 ? n : 0 };
+  const says = structured.silence && structured.silence.says;
+  return {
+    pointers,
+    withheld: Number.isSafeInteger(n) && n >= 0 ? n : 0,
+    silence: pointers.length === 0 && typeof says === 'string' && says !== '' ? says : null,
+  };
 }
 
 /** The line shown beside a route's pointers, or null when nothing was withheld. */
@@ -190,8 +200,9 @@ function answer(stdout) {
 }
 
 /**
- * The documents that govern the task the user typed, as `{ pointers, withheld }`:
- * the pointers the budget let through, and how many more it held back.
+ * The documents that govern the task the user typed, as
+ * `{ pointers, withheld, silence }`: the pointers the budget let through, how
+ * many more it held back, and the engine's sentence when it found none.
  */
 function route(task, options) {
   return ask('route', { task: String(task) }, options);
