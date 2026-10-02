@@ -176,7 +176,7 @@ A verb index carries one row for every verb that the binary dispatches, and it m
 
 ### An export is a projection, and it declares what it dropped
 
-A graph export is a projection like the others, and every emitter declares what its target cannot carry. [Spec 7](07-distribution-and-federation.md#an-export-is-a-projection-and-it-declares-what-it-dropped) states the export rules: whether an export is committed, the loss set, the projection census, and what an emitter withholds.
+A graph export is one more projection, and every emitter declares what its target cannot carry. [Spec 7](07-distribution-and-federation.md#an-export-is-a-projection-and-it-declares-what-it-dropped) states the export rules: whether an export is committed, the loss set, the projection census, and what an emitter withholds.
 
 ### An export profile carries a filter
 

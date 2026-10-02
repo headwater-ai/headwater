@@ -78,7 +78,7 @@
 //! `--check` compares bytes. A timestamp inside a generated file makes every run
 //! differ from the last one, so the gate reports drift on a corpus nobody
 //! touched. Every marker this module writes is therefore a function of the kind
-//! alone. Spec 6 asks a *filtered export* to state "when it was generated", and
+//! alone. Spec 7 asks a *filtered export* to state "when it was generated", and
 //! that sentence and this one cannot both hold for an artifact that `--check`
 //! covers.
 //!
@@ -87,7 +87,7 @@
 //! [spec 12](../../../../docs/spec/12-check-layer.md#determinism-concretely)
 //! injects the clock into a check rather than let one call a syscall. A
 //! committed export is held to regeneration and gets no time, so `plan` passes
-//! none. An export that leaves the repository is the artifact spec 6 is talking
+//! none. An export that leaves the repository is the artifact spec 7 is talking
 //! about, and `headwater export --at <date>` supplies its time: to the output of
 //! `--format`, and to a declared export that states `committed: false`, which
 //! `headwater export` builds at publish time and no gate compares. Same corpus,
@@ -383,7 +383,7 @@ pub struct Declaration {
     pub identity: Option<DeclaredIdentity>,
     /// Whether the tree holds the written file. `false` says that
     /// `headwater export` builds it at publish time, so `generate` does not
-    /// write it and `--check` does not compare it. Spec 6: "whether an export
+    /// write it and `--check` does not compare it. Spec 7: "whether an export
     /// is committed is a schema decision and not an engine default". Read on a
     /// `graph_export` alone, and `true` for a declaration that states nothing.
     pub committed: bool,
@@ -1268,9 +1268,9 @@ pub fn export_plan(
 
 /// One declared `graph_export`, written through the emitter its profile names.
 ///
-/// Spec 6: "A graph export is a projection like the others. The taxonomy
+/// Spec 7: "A graph export is a projection like the others. The taxonomy
 /// declares its output path, so whether an export is committed is a schema
-/// decision and not an engine default. A declared export is held to regeneration
+/// decision and not an engine default. A committed export is held to regeneration
 /// by `generate --check`, exactly as a shelf index is."
 ///
 /// Two things stop a declaration from producing a file, and both are reported

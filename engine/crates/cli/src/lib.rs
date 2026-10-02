@@ -856,7 +856,7 @@ pub enum Verb {
             conflicts_with = "check",
             help = "the generation time the artifact states, as `YYYY-MM-DD`. Absent by default, \
                     because an artifact that `--check` compares by byte cannot carry a clock \
-                    reading. Spec 6 asks a filtered export that leaves the repository to state \
+                    reading. Spec 7 asks a filtered export that leaves the repository to state \
                     one, and this is where it is injected: into the output of `--format`, and \
                     into a declared export that states `committed: false`. A run that selects a \
                     committed export is refused"

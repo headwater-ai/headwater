@@ -366,7 +366,7 @@ fn render(shelf: &str, output: &str, sections: &[Section], front: Option<&str>) 
         if let Some(summary) = &section.pointer.summary {
             out.push_str(&format!(" — {summary}"));
         }
-        // Spec 6 rules that an emitter which cannot carry the warrant does not
+        // Spec 7 rules that an emitter which cannot carry the warrant does not
         // carry the content. Markdown carries it, so the section says it.
         match (&section.pointer.outside, section.pointer.unwarranted) {
             (Some(warrant), _) => out.push_str(&format!(
