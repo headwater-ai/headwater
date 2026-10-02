@@ -307,6 +307,12 @@ mod tests {
         // This release's bytes with more after them are not this release.
         let grown = format!("{current}a line after the record\n");
         assert_eq!(classify(Some(grown.as_bytes()), &current), Found::Foreign);
+        // Nor are they with more before them.
+        let prefixed = format!("a line before the text\n{current}");
+        assert_eq!(
+            classify(Some(prefixed.as_bytes()), &current),
+            Found::Foreign
+        );
     }
 
     /// What git writes for a file it checks out with `core.autocrlf=true`.
