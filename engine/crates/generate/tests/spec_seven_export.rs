@@ -5,7 +5,7 @@
 //! # Why this file exists
 //!
 //! The export rules used to live in spec 6, and #1572 moved them to spec 7
-//! (`docs/spec/07-distribution-and-federation.md#exporting-what-leaves-a-corpus`).
+//! (`docs/spec/07-distribution-and-federation.md#what-leaves-a-corpus`).
 //! A rule that two specification parts state drifts in one of them, which is
 //! the defect the move removed. So this file holds three things:
 //!
@@ -41,7 +41,9 @@ fn _exhaustive(g: Grain) {
 }
 
 fn spec(name: &str) -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../docs/spec").join(name)
+    Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../../docs/spec")
+        .join(name)
 }
 
 fn spec_six() -> String {
@@ -54,13 +56,23 @@ fn spec_seven() -> String {
 
 /// The backticked first-column values of the `| Grain |` table.
 fn grain_table(text: &str) -> BTreeSet<String> {
-    let mut lines = text.lines().skip_while(|l| !l.starts_with(GRAIN_TABLE_HEADER));
-    assert!(lines.next().is_some(), "spec 7 has no `{GRAIN_TABLE_HEADER}` table");
+    let mut lines = text
+        .lines()
+        .skip_while(|l| !l.starts_with(GRAIN_TABLE_HEADER));
+    assert!(
+        lines.next().is_some(),
+        "spec 7 has no `{GRAIN_TABLE_HEADER}` table"
+    );
     lines
         .skip(1) // the separator row
         .take_while(|l| l.starts_with('|'))
         .map(|row| {
-            let cell = row.trim_start_matches('|').split('|').next().unwrap_or("").trim();
+            let cell = row
+                .trim_start_matches('|')
+                .split('|')
+                .next()
+                .unwrap_or("")
+                .trim();
             assert!(
                 cell.starts_with('`') && cell.ends_with('`') && cell.len() > 2,
                 "a grain cell is one backticked name, found {cell:?}"
@@ -73,7 +85,10 @@ fn grain_table(text: &str) -> BTreeSet<String> {
 /// The top-level list items that follow the paragraph holding the lead.
 fn filter_rules(text: &str) -> Vec<String> {
     let mut lines = text.lines().skip_while(|l| !l.contains(FILTER_RULES_LEAD));
-    assert!(lines.next().is_some(), "spec 7 holds no sentence with {FILTER_RULES_LEAD:?}");
+    assert!(
+        lines.next().is_some(),
+        "spec 7 holds no sentence with {FILTER_RULES_LEAD:?}"
+    );
     lines
         .skip_while(|l| l.trim().is_empty())
         .take_while(|l| l.starts_with("- "))
@@ -84,7 +99,10 @@ fn filter_rules(text: &str) -> Vec<String> {
 #[test]
 fn the_tombstone_grain_table_of_spec_7_names_exactly_the_grains_the_engine_reads() {
     let table = grain_table(&spec_seven());
-    let engine: BTreeSet<String> = ENGINE_GRAINS.map(|g| g.name().to_owned()).into_iter().collect();
+    let engine: BTreeSet<String> = ENGINE_GRAINS
+        .map(|g| g.name().to_owned())
+        .into_iter()
+        .collect();
     assert_eq!(table, engine, "spec 7's grain table and `Grain` disagree");
 }
 
@@ -96,7 +114,10 @@ fn spec_6_states_no_grain_table_and_no_filter_rule_list() {
             !line.starts_with("| `counted`") && !line.starts_with("| `sealed`"),
             "spec 6 states a grain row again: {line}"
         );
-        assert!(!line.starts_with(GRAIN_TABLE_HEADER), "spec 6 states the grain table again");
+        assert!(
+            !line.starts_with(GRAIN_TABLE_HEADER),
+            "spec 6 states the grain table again"
+        );
     }
     assert!(
         !six.contains(FILTER_RULES_LEAD),
@@ -107,5 +128,10 @@ fn spec_6_states_no_grain_table_and_no_filter_rule_list() {
 #[test]
 fn spec_7_states_six_filter_rules() {
     let rules = filter_rules(&spec_seven());
-    assert_eq!(rules.len(), 6, "spec 7 states {} filter rules, not six: {rules:#?}", rules.len());
+    assert_eq!(
+        rules.len(),
+        6,
+        "spec 7 states {} filter rules, not six: {rules:#?}",
+        rules.len()
+    );
 }

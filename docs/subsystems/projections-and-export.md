@@ -42,7 +42,8 @@ The stages have four inputs. They are the census of the corpus, the graph and it
 
 Other documents state what the stages do, and this spec does not repeat them:
 
-- [Spec 6](../spec/06-engine-architecture.md#projections) states the projection kinds, the loss set and the export profile.
+- [Spec 6](../spec/06-engine-architecture.md#projections) states the projection kinds.
+- [Spec 7](../spec/07-distribution-and-federation.md#what-leaves-a-corpus) states the loss set, the export profile and what a filtered export claims.
 - [The `headwater generate` contract](../interfaces/headwater-generate.md#the-generated-file-marker) states the marker rule and the other rules that each projection obeys.
 - [Spec 7](../spec/07-distribution-and-federation.md#arriving-at-a-corpus-cold) states what the corpus descriptor carries and why its path is fixed.
 - [Spec 3](../spec/03-authoring-and-lifecycle.md) states the warrant of a generated document.
@@ -143,6 +144,7 @@ A change to these crates must keep each of these. Each item names the test that 
 - **Each emitter labels a document with its declared name** (`every_emitter_that_labels_a_document_prints_its_declared_name`).
 - **The descriptor names its emitter set**, and a different set withholds the remedy (`a_committed_descriptor_from_another_emitter_set_withholds_the_remedy`).
 - **The native export round-trips the graph** (`the_native_export_round_trips_the_graph`). The census fails a projector that drops a node with no reason (`the_census_fails_a_projector_that_dropped_a_node_with_no_reason`). A filtered profile withholds a document and its edges (`a_filtered_profile_withholds_a_document_and_its_edges`), and two filters for one profile are refused (`two_entries_of_one_profile_may_not_declare_two_filters`).
+- **Spec 7 is the one home of the export rules** (`spec_6_states_no_grain_table_and_no_filter_rule_list`). Its tombstone grain table names exactly the grains the engine reads (`the_tombstone_grain_table_of_spec_7_names_exactly_the_grains_the_engine_reads`), and it states six filter rules (`spec_7_states_six_filter_rules`).
 - **The JSON Schema export agrees with the engine** (`the_emitted_schema_and_the_engine_agree_document_for_document`, in `differential.rs` against `differential_oracle.py`), and spec 2 names no emitter that this engine does not build (`no_other_format_in_spec_2_names_an_emitter_this_engine_does_not_build`).
 - **A probe result is generated from its transcript** (`the_fixture_tree_generates_the_recorded_result`), and it goes stale when the transcript changes (`a_result_goes_stale_when_its_transcript_changes`). A transcript planned against another taxonomy fails the run (`a_transcript_planned_against_another_taxonomy_fails_the_run`).
 - **`headwater site` resolves a served path in either form** (`a_source_is_served_in_either_form_and_an_index_in_one`), and a navigation path outside the corpus root is missing (`a_navigation_path_outside_the_corpus_root_is_missing`). The verb reports each of its three defects (`a_page_the_navigation_names_and_the_site_lacks_is_missing`, `a_page_under_a_shelf_that_no_document_answers_to_is_stale`, `a_fragment_that_names_no_id_on_its_page_is_dead`). These three are in `engine/crates/cli/tests/site.rs`, because they run the binary.

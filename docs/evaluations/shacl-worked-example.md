@@ -16,7 +16,7 @@ relations:
   cited_by:
     - HW-REG-decisions
     - HW-SPEC-assurance-model
-    - HW-SPEC-engine-architecture
+    - HW-SPEC-distribution-and-federation
     - HW-SPEC-check-layer
 ---
 
