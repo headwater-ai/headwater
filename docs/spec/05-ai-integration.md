@@ -165,7 +165,7 @@ The hooks of this repository are `.claude/hooks/`, which sits outside the corpus
 
 Beyond files, there are three richer surfaces:
 
-**The corpus MCP server.** The server exposes the graph as tools that an agent calls directly: `route`, `governing_docs_for_path`, `resolve_identifier`, `related`, `explain`, `check`. This is strictly better than to make an agent grep a corpus that it does not understand. The graph already knows the answers, and a tool call returns them at no context cost for exploration.
+**The corpus MCP server.** The server exposes the graph as tools that an agent calls directly: `route`, `governing_docs_for_path`, `resolve_identifier`, `related`, `explain`, `check`, `kinds`. The `kinds` tool reads the taxonomy and not the graph. It lists each kind that a document can be, what the kind requires, and the command that drafts one. This is strictly better than to make an agent grep a corpus that it does not understand. The graph already knows the answers, and a tool call returns them at no context cost for exploration.
 
 #### What the server may do, and the axis that decides it
 
@@ -173,7 +173,7 @@ Beyond files, there are three richer surfaces:
 
 | Class | Tools | Ships | Why |
 |---|---|---|---|
-| **Query** | `route`, `governing_docs_for_path`, `resolve_identifier`, `related`, `explain`, `check` | first release | It changes nothing |
+| **Query** | `route`, `governing_docs_for_path`, `resolve_identifier`, `related`, `explain`, `check`, `kinds` | first release, and `kinds` in a later one | It changes nothing |
 | **Working-tree write** | `new`, `fix` | first release, and off by default per server ([what the switch registers](#what-the-working-tree-write-class-registers-and-what-a-session-looks-like-after-a-write)) | The human reviews at commit, and the [fixability bar](12-check-layer.md#fixability) forbids a judgment-bearing patch |
 | **Landed write** | a commit, a push, a merge, a server that writes to a repository | never | Acceptance is a human act ([spec 3](03-authoring-and-lifecycle.md#provenance-is-recorded-not-assumed)), and no forge is privileged in the core |
 

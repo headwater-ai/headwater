@@ -110,6 +110,8 @@ The help gets its mode from `command_at`, which reads standard output. `command_
 
 `View` selects one of two drawings. The concrete view answers which kind can relate to which, and it draws no edge with an abstract kind at either end. The abstract view answers what an abstract kind gives to the kinds under it. `split_loops` takes each relation from a kind to itself out of the edges, and the view writes it on the node. Mermaid draws such an edge as a long detour. `PALETTE` holds eight stroke colors. The renderer gives them to the families in sorted order, and a ninth family takes the first color again. The output is sorted and carries no clock and no digest, so two runs over one lock write the same bytes.
 
+The body of `headwater taxonomy kinds` is in `main.rs`, and it reads the lock alone, as `graph` does. It renders nothing itself. It calls the `kinds` module of `headwater-query`, which the MCP `kinds` tool also calls, so the two cannot disagree ([Queries and explain](queries-and-explain.md)).
+
 ### The body of each verb
 
 `dispatch` sends each `Verb` to a function in `main.rs`. That function reads what its verb needs, calls the library crates that do the work, and writes the result through `emit`. [HW-OBL-0138](../obligations/0138-the-rest-of-the-editorial-pass-with-cli-src-main-rs-at-the-head-of-the-distribution.md) records that `main.rs` is the file at the head of the editorial pass that the corpus still owes.

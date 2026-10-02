@@ -2,13 +2,14 @@
 id: HW-IFACE-headwater-taxonomy
 status: current
 status_since: 2026-09-06
-summary: "How to validate, resolve, audit, publish, vendor, compare, migrate and draw taxonomy packages."
+summary: "How to validate, resolve, audit, publish, vendor, compare, migrate, draw and list the kinds of taxonomy packages."
 last_verified: 2026-09-25
 title: "headwater taxonomy"
 relations:
   governs:
     - [engine/crates/cli/src/lib.rs, engine/crates/cli/src/main.rs]
     - engine/crates/cli/src/taxonomy_graph.rs
+    - engine/crates/query/src/kinds.rs
     - engine/crates/resolve/src/lib.rs
     - engine/crates/audit/src/lib.rs
     - engine/crates/audit/src/reading.rs
@@ -21,9 +22,9 @@ relations:
 
 ## Synopsis
 
-    headwater taxonomy <validate|resolve|audit|publish|vendor|diff|migrate|graph> [options] [--root <path>]
+    headwater taxonomy <validate|resolve|audit|publish|vendor|diff|migrate|graph|kinds> [options] [--root <path>]
 
-The grouped command validates taxonomy sources, resolves the lock, measures schema use, publishes or vendors packages, compares versions and applies migration payloads. It also draws the resolved taxonomy.
+The grouped command validates taxonomy sources, resolves the lock, measures schema use, publishes or vendors packages, compares versions and applies migration payloads. It also draws the resolved taxonomy, and it lists the kinds that a document can be.
 
 ## Description
 
@@ -61,6 +62,12 @@ The abstract view draws each abstract kind as a dashed node, with the facets tha
 
 Neither view names a kind or a relation. Each reads `abstract: true` and `is_a` in the lock. Two runs over one lock write the same bytes, because the output is sorted and carries no clock and no digest. A lock that is absent or that does not read stops the run with a non-zero exit and one message on standard error.
 
+`kinds` lists the kinds of the resolved taxonomy for an agent or a person who is about to write a document (#1580). It reads `.headwater/taxonomy.lock` and no source, it walks no corpus, and it writes no file. The first line names the package, its version and the count of kinds. It also counts and names each abstract kind. An abstract kind gets no entry of its own, because no document is of that kind. Its required facets and sections appear in each kind under it.
+
+Each concrete kind gets one block, in the order that the lock declares the kinds. The block names the parent of the kind and its purpose, with the intent of that purpose and each question that the purpose answers. It names each shelf that carries the kind, with the path pattern of the shelf. On a heterogeneous shelf it also names the facet that selects the kind. It lists the facets and sections that the kind requires after inheritance. It gives the `headwater new` line that drafts a document of the kind. A kind that no shelf carries has no such line, and the block says that no shelf can place one.
+
+No taxonomy declares when to write a kind, because the `kind` block of the meta-schema has no member for it. So the `when` line of each block is one fixed sentence that states this gap. It sends the reader to the questions that the purpose answers. The verb writes no other word about a kind that the lock does not hold. `--json` writes the same content as one JSON document on standard output. The MCP `kinds` tool returns the same bytes, because one renderer in `headwater-query` writes both.
+
 ## Preconditions
 
 The consumer declaration and package sources must be readable for source operations. Package and artifact paths must exist for `publish`, `vendor`, `diff` and `migrate`. A write operation must satisfy its directory, digest, version and migration preconditions.
@@ -77,13 +84,14 @@ The consumer declaration and package sources must be readable for source operati
 | `diff <dir> [--to <version>] [--now <date>]` | Compares a fetched artifact with the current taxonomy. |
 | `migrate <dir> [--to <version>] [--apply] [--now <date>]` | Reports or applies migration steps. It reads the version it migrates from out of the lock header against no pin, and it refuses a transition that is not forward. |
 | `graph [--view concrete\|abstract] [--legend]` | Prints the resolved taxonomy as a Mermaid flowchart on standard output, and writes no file. `--view abstract` draws the abstract kinds and the kinds under them. `--legend` adds a key. |
+| `kinds [--json]` | Lists each concrete kind of the resolved taxonomy with its parent, purpose, shelves, inherited facets and sections, and the `headwater new` line, and writes no file. `--json` writes the same content as one JSON document. |
 | `--root <path>` | Selects the repository to load. |
 | `--no-color` | Force plain text on both streams: bold and dim weight plus glyphs, no escape sequence. The default already senses whether each stream is a terminal, and renders color only there. |
 | `--no-banner` | Suppress the masthead: the line naming this binary and its version, that the root help screen alone prints. It is accepted here and does nothing, since only the root screen prints one. |
 
 ## Exit status
 
-`validate`, `resolve`, `publish`, `vendor`, `diff` and `migrate` return **0** when their operation succeeds and **1** on refusal or write failure. `publish --json` moves no exit status. A refusal under it writes no document on standard output, and its account is one English sentence on standard error. That is the rule [HW-DR-0043](../decisions/0043-q43-whether-a-refusal-under-json-is-a-json-document.md) states for every `--json` this binary takes. `resolve --check` returns **1** for a stale lock. `publish --check` returns **1** where the vendored copy does not match a fresh publish of the source. It also returns **1** where it finds no vendored copy with a release record. `audit` returns **0** after it reports its measurements, and **1** where `--record` cannot write or read the store.
+`validate`, `resolve`, `publish`, `vendor`, `diff` and `migrate` return **0** when their operation succeeds and **1** on refusal or write failure. `publish --json` moves no exit status. A refusal under it writes no document on standard output, and its account is one English sentence on standard error. That is the rule [HW-DR-0043](../decisions/0043-q43-whether-a-refusal-under-json-is-a-json-document.md) states for every `--json` this binary takes. `resolve --check` returns **1** for a stale lock. `publish --check` returns **1** where the vendored copy does not match a fresh publish of the source. It also returns **1** where it finds no vendored copy with a release record. `audit` returns **0** after it reports its measurements, and **1** where `--record` cannot write or read the store. `kinds` returns **0** after it prints the list, and **1** where the lock is absent or does not read.
 
 **1**, and never 101, when standard output or standard error cannot be written, and one sentence on standard error names a failed standard output.
 
@@ -96,7 +104,7 @@ The command reads the system date when a subcommand has `--now` and no date is s
 | Path | How this verb treats it |
 |---|---|
 | `.headwater/taxonomy.yml`, package sources and overlay | Read by validation and resolution. |
-| `.headwater/taxonomy.lock` | Written by `resolve` without `--check`. Read by `diff`, which also re-hashes the source files it records. |
+| `.headwater/taxonomy.lock` | Written by `resolve` without `--check`. Read by `diff`, which also re-hashes the source files it records. Read by `graph` and `kinds`, which read nothing else. |
 | `.headwater/adoption.jsonl` | Read by `audit`, and appended to by `audit --record`. |
 | `.headwater/imports/` | Read by `audit`, `diff` and `migrate` where `.headwater/taxonomy.yml` declares an import, for the anchors that an imported snapshot supplies. An `imports` entry that does not read stops the verb with exit 1, and so does an `at` path outside the repository root. |
 | the path each `harvests.<name>.at` names | Read by `audit`, `diff` and `migrate` where `.headwater/taxonomy.yml` declares a pinned corpus export, for the anchors that export supplies. A `harvests` entry that does not read stops the verb with exit 1, and so does an `at` path outside the repository root. A pin with no digest binds no anchor. An absent file binds no anchor, and neither does a file that fails the pinned digest or is not an export. |
