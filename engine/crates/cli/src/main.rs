@@ -6070,6 +6070,13 @@ fn export(
             eprintln!("headwater: {}", err(&producer.line()));
             return ExitCode::FAILURE;
         }
+        // A run that refused before its first write wrote nothing (#1510),
+        // and the drift sentence below would say the opposite of what it
+        // did. `Report::remedy` owns that sentence, as it does for `generate`.
+        if let Some(remedy) = report.remedy().filter(|_| report.withheld) {
+            eprintln!("headwater: {}", err(&remedy));
+            return ExitCode::FAILURE;
+        }
         if report.has_errors() {
             eprintln!(
                 "headwater: {}",
