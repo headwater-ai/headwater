@@ -124,9 +124,14 @@ leaks:
 
 # The probes whose leak string stays in the present arm on purpose (#1472, the second
 # outcome the issue offers). The leak string of the status probe is in the
-# description of the authoring skill because #1294 put it there: a skill
-# reaches a session through its description, and `.claude/skills/fixtures.sh`
-# holds the sentence. Removing it would change what the present arm delivers,
+# description of a skill because #1294 put it there: a skill reaches a session
+# through its description, and `.claude/skills/fixtures.sh` holds the sentence.
+# #1294 put it in `headwater-authoring`. #1578 made that skill a file the binary
+# ships to adopters, which names no ruling of this corpus, so the sentence moved
+# whole to the description of the internal `hw-corpus` skill. Every skill
+# description is in the always-loaded set, so the present arm still delivers
+# the same two strings in a skill description, and the leak check names
+# `hw-corpus`. Removing it would change what the present arm delivers,
 # which is the treatment the campaign measures. So the two probes say in
 # their own documents that they measure the leak string, and a campaign reports each
 # on its own line and never in a rate of its category. Only the owner can

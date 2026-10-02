@@ -376,20 +376,20 @@ $out" ;;
     esac
 }
 
-# --- headwater-authoring, the conventions an obligation record keeps ----------
+# --- hw-corpus, the conventions an obligation record of this corpus keeps -----
 
 # A sentence claim with no engine behavior behind it: no rule reads a line
 # reference or a gap count in a record, and a check that did would be a new rule
 # with its own issue (#1486). So this half holds only that the skill still says
 # each convention, and it runs no command.
-printf '\n# headwater-authoring, the conventions an obligation record keeps\n'
+printf '\n# hw-corpus, the conventions an obligation record keeps\n'
 for sentence in \
     'The Discharge section states the closing condition, what must become true, and not a description of the present state.' \
     'A record names a function, a job key or another stable symbol, never a line number or a count' \
     'A record that bundles gaps is split when it passes five gaps.'
 do
     name="the authoring skill states an obligation-record convention: $sentence"
-    if grep -qF "$sentence" "$skills/headwater-authoring/SKILL.md"; then
+    if grep -qF "$sentence" "$skills/hw-corpus/SKILL.md"; then
         pass "$name"
     else
         fail "$name" "the skill no longer says: $sentence"
@@ -402,7 +402,7 @@ printf '\n# the fixture bar for a new check, in the two skills that repeat it\n'
 # the third file read, because it is the source the skills repeat. No rule reads
 # this prose, so this case holds only that the sentence is still there.
 for pair in \
-    'headwater-taxonomy/SKILL.md|**A check also owes the discriminating condition: an input on which the implemented rule and a plausible neighboring rule disagree.**' \
+    'hw-corpus/SKILL.md|**A check also owes the discriminating condition: an input on which the implemented rule and a plausible neighboring rule disagree.**' \
     'headwater-engine/SKILL.md|an input on which the check and a plausible neighboring rule disagree.' \
     '../../docs/spec/12-check-layer.md|**The floor is the firing condition, and a check also owes the discriminating condition.**'
 do
@@ -449,7 +449,7 @@ if [ -x "$engine" ]; then
         sed -n 's/.*This taxonomy declares //p' |
         tr -d '`' | tr ',' '\n' | sed 's/^ *//; s/ *$//' | sort)
     names=$(sed -n 's/.*The concrete kinds are \(.*\)\./\1/p' \
-        "$skills/headwater-authoring/SKILL.md" |
+        "$skills/hw-corpus/SKILL.md" |
         sed 's/ and /, /' | tr -d '`' | tr ',' '\n' | sed 's/^ *//; s/ *$//' | sort)
     if [ -n "$admits" ] && [ "$admits" = "$names" ]; then
         pass 'the kind list the skill prints is the kind list the verb admits'
@@ -680,7 +680,7 @@ $out" ;;
         0 'no declared purpose answers this task' \
         "$engine" route zzzqqqwww --root "$root"
 
-    printf '\n# headwater-authoring, its description against the ruling it cites\n'
+    printf '\n# hw-corpus, its description against the ruling it cites\n'
 
     # The status of a settled decision in its pull request (#1294). A skill
     # reaches a session through its description, which is always loaded, and
@@ -704,7 +704,7 @@ $out" ;;
     description=$(awk 'NR == 1 && $0 == "---" { on = 1; next }
                        on && $0 == "---" { exit }
                        on && /^description:/ { sub(/^description:[ \t]*/, ""); sub(/^["'\'']/, ""); print; exit }' \
-        "$skills/headwater-authoring/SKILL.md")
+        "$skills/hw-corpus/SKILL.md")
     sentence='. A settled document goes into its pull request at `status: current`, not `draft` ('
     ruling='docs/decisions/0052-a-document-is-proposed-at-the-state-it-will-hold-and-the-merge-activates-it.md'
     case $description in
@@ -722,13 +722,13 @@ $out" ;;
         *) fail "$name" "the description no longer says: $sentence<the ruling>): $description" ;;
     esac
 
-    printf '\n# headwater-maintainer, against the hook it invokes\n'
+    printf '\n# hw-corpus, the hook it tells headwater-maintainer to invoke here\n'
 
     # The agent tells its reader to drive the write hook by hand, one path at a
     # time. If that invocation stops working the agent's third part is empty and
     # nothing else reports it.
     sentence='hook_event_name":"PreToolUse'
-    if ! grep -qF "$sentence" "$agents/headwater-maintainer.md"; then
+    if ! grep -qF "$sentence" "$skills/hw-corpus/SKILL.md"; then
         fail 'the impact invocation the agent prints answers' \
             'the agent no longer names the PreToolUse position'
     else
@@ -769,7 +769,7 @@ $out" ;;
     #                  this one says so where a reader of a failure will see it.
     sentence='answers `docs/interfaces/headwater-check.md (headwater check)`'
     name='an edit to a governed crate names the contract and the command it describes'
-    if ! grep -qF "$sentence" "$agents/headwater-maintainer.md"; then
+    if ! grep -qF "$sentence" "$skills/hw-corpus/SKILL.md"; then
         fail "$name" 'the agent no longer says what a governed crate answers'
     else
         export HEADWATER_HOOK_ROOT="$root"

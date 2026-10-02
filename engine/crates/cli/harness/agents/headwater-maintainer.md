@@ -43,4 +43,3 @@ For the `governs` half, search the front matter of the corpus for each changed p
 A document is stale when a specific sentence in it is now false, and your report names that sentence and the file that made it false. "The overview may need review" is not a finding. "The overview states 159 checked documents on line 121, and the census now reports 162" is.
 
 Where you cannot find the falsified sentence, the document is not stale — it is unread, and that belongs in part 4.
-<!-- installed by headwater init --harness, digest sha256:22138ce8a9dc1fcaf48e9e60cf3637f6cb28265aa9ea947a20472c340dffd21f -->
