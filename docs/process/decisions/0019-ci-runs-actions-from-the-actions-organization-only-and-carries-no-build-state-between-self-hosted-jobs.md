@@ -3,7 +3,7 @@ id: HW-PD-0019
 status: current
 status_since: 2026-09-27
 summary: "Only actions from GitHub's own organization run in ci.yml. No self-hosted job inherits engine/target from another, and sccache makes a cold target cheap."
-last_verified: 2026-09-30
+last_verified: 2026-10-02
 title: "CI runs actions from the actions organization only, and carries no build state between self-hosted jobs"
 provenance:
   warrant: asserted
@@ -14,7 +14,7 @@ provenance:
 relations:
   governs:
     - to: .github/workflows/ci.yml
-      verified_revision: sha256:39219ac620aab2e8dcf756e7dd501bcedad957291727247333d1220a36a6da12
+      verified_revision: sha256:3fcd842feb024c0759b93d91a5e14bea4be88917357796fd1a139ffc8efc6111
 ---
 
 # CI runs actions from the actions organization only, and carries no build state between self-hosted jobs

@@ -3,7 +3,7 @@ id: HW-EVAL-the-build-order-as-a-multi-agent-system
 status: current
 status_since: 2026-09-07
 summary: "What a 20-hour run of the build order and the runs after it measured about their own orchestrator, the cost model those measurements settle, and the architecture that follows. What was rejected, and the numbers the next run is held against."
-last_verified: 2026-09-29
+last_verified: 2026-10-02
 title: "The build order as a multi-agent system"
 provenance:
   warrant: asserted
@@ -15,7 +15,7 @@ provenance:
 
 # The build order as a multi-agent system
 
-The build order is the loop that turns a session into an orchestrator, picks issues, dispatches agents, and merges what they build. `.claude/commands/next-run.md` carried its whole design as prose for eleven runs, and the prose was read by the one agent that could not be reloaded. This evaluation records what one run measured about that shape, the cost model the measurements settle, and the architecture that follows. It also records what was rejected on the way. Six decision records carry the rulings, and this document carries the evidence they cite.
+The build order is the loop that turns a session into an orchestrator, picks issues, dispatches agents, and merges what they build. `.claude/commands/next-run.md` carried its whole design as prose for eleven runs, and the prose was read by the one agent that could not be reloaded. This evaluation records what a 20-hour run and the runs after it measured about that shape. It records the cost model that the measurements settle, the architecture that follows, and what was rejected on the way. Six decision records carry the rulings, and this document carries the evidence they cite.
 
 The reader outside this repository is an adopter who runs an agentic loop over a Headwater corpus of their own. Every number here was taken on this repository, and the cost model is stated so that another corpus can take its own.
 
