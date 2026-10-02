@@ -277,3 +277,432 @@ fn every_answered_probe_on_the_shelf_expects_a_proper_part_of_its_set() {
         bad.join("; ")
     );
 }
+
+/// The five shapes of a probe that a shallow strategy fails (#1472, clause 2).
+///
+/// The #1384 re-run put the absent arm at the ceiling, because a search by
+/// name answered every probe. Each shape below is one way a name search or a
+/// one-document read reaches a wrong answer, and the case after this enum
+/// holds one probe of the shelf to each.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Shape {
+    /// The words of the task occur in no identifier, file name or title of
+    /// the governing document.
+    VocabularyMismatch,
+    /// A name search reaches a superseded document first, and its value is a
+    /// value of the closed set.
+    SupersessionTrap,
+    /// The expected value comes from two or more documents and from no one of
+    /// them alone.
+    MultiDocument,
+    /// Many documents share the terms of the task, and one or more of them
+    /// state another value of the closed set.
+    Distractors,
+    /// The oracle reports a finding over a patch that touches the asked file
+    /// alone.
+    ChangeTask,
+}
+
+impl Shape {
+    const ALL: [Shape; 5] = [
+        Shape::VocabularyMismatch,
+        Shape::SupersessionTrap,
+        Shape::MultiDocument,
+        Shape::Distractors,
+        Shape::ChangeTask,
+    ];
+}
+
+/// What one synthetic session of a harder probe did, in the terms a recorder
+/// writes.
+enum Session {
+    /// The session read these paths and gave no answer.
+    Read(&'static [&'static str]),
+    /// The session gave this final answer.
+    Answered(&'static str),
+    /// The session produced these artifacts, each with the rules that
+    /// reported over it.
+    Produced(&'static [(&'static str, &'static [&'static str])]),
+}
+
+/// One harder probe of the shelf, with the session a shallow strategy
+/// produces and the session a sound one produces.
+struct Harder {
+    id: &'static str,
+    shape: Shape,
+    /// The documents an `opened` probe examines, as identifier and path. The
+    /// case holds each path to its identifier and the probe to its `examines`
+    /// list, so the path here cannot drift from the shelf.
+    examines: &'static [(&'static str, &'static str)],
+    /// For the vocabulary shape: the content words of the task. Each is in
+    /// the task and in no identifier, file name or title of an examined
+    /// document.
+    words: &'static [&'static str],
+    /// Documents whose `status` the shape depends on, as path and status.
+    statuses: &'static [(&'static str, &'static str)],
+    shallow: Session,
+    sound: Session,
+}
+
+const ASKED_EVALUATION: &str = "docs/evaluations/governs-edges-what-an-anchor-reaches-what-covers-it-when-it-ages-and-where-a-session-meets-it.md";
+const GOVERNING_OBLIGATION: &str =
+    "docs/obligations/0104-a-governs-edge-reaches-the-path-it-names-and-nothing.md";
+
+const HARDER: &[Harder] = &[
+    Harder {
+        id: "HW-PROBE-a-session-finds-a-ruling-from-a-task-in-plain-words",
+        shape: Shape::VocabularyMismatch,
+        examines: &[
+            (
+                "HW-DR-0049",
+                "docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md",
+            ),
+            (
+                "HW-EVAL-why-corpus-counts-are-derived",
+                "docs/evaluations/why-corpus-counts-are-derived-not-stored.md",
+            ),
+        ],
+        words: &["branches", "page", "total", "shared", "merges", "conflict", "wrong"],
+        statuses: &[],
+        // A name search for the task's words reaches files whose names hold
+        // `merge` or `page`, and none of them is the ruling.
+        shallow: Session::Read(&[
+            ".githooks/merge-regenerate",
+            "docs/process/decisions/0020-merges-go-through-the-github-merge-queue-one-squash-commit-per-pull-request.md",
+            "docs/decisions/0050-q50-where-the-visual-register-of-the-hand-built-pages-lives.md",
+        ]),
+        sound: Session::Read(&[
+            ".githooks/merge-regenerate",
+            "docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md",
+        ]),
+    },
+    Harder {
+        id: "HW-PROBE-a-session-says-where-a-figure-on-the-site-is-written",
+        shape: Shape::SupersessionTrap,
+        examines: &[],
+        words: &[],
+        statuses: &[
+            ("docs/decisions/0039-q39-how-a-figure-reaches-a-hand-built-page.md", "superseded"),
+            (
+                "docs/decisions/0097-a-figure-on-a-hand-built-page-is-measured-when-the-site-is-published-and-the-committed-page-carries-none.md",
+                "current",
+            ),
+        ],
+        shallow: Session::Answered("committed"),
+        sound: Session::Answered("published"),
+    },
+    Harder {
+        id: "HW-PROBE-a-session-follows-a-citation-from-one-record-to-the-next",
+        shape: Shape::MultiDocument,
+        examines: &[],
+        words: &[],
+        statuses: &[
+            ("docs/decisions/0061-q61-how-a-recorded-terminal-demonstration-is-held-against-a-run.md", "superseded"),
+            ("docs/decisions/0039-q39-how-a-figure-reaches-a-hand-built-page.md", "superseded"),
+            (
+                "docs/decisions/0097-a-figure-on-a-hand-built-page-is-measured-when-the-site-is-published-and-the-committed-page-carries-none.md",
+                "current",
+            ),
+        ],
+        // The one record the task names cites HW-DR-0039 and stops there.
+        shallow: Session::Answered("HW-DR-0039"),
+        sound: Session::Answered("HW-DR-0097"),
+    },
+    Harder {
+        id: "HW-PROBE-a-session-says-how-a-governs-line-reaches-a-document",
+        shape: Shape::Distractors,
+        examines: &[],
+        words: &[],
+        statuses: &[
+            (
+                "docs/decisions/0083-governs-and-traces-to-are-created-by-an-agent-because-a-session-proposes-the-line-and-a-person-types-it.md",
+                "superseded",
+            ),
+            (
+                "docs/decisions/0104-an-agent-writes-governs-traces-to-and-cited-in-through-the-verb-and-the-review-of-its-pull-request-is-the-acceptance.md",
+                "current",
+            ),
+        ],
+        // The value the superseded ruling and its near copies state.
+        shallow: Session::Answered("hand"),
+        sound: Session::Answered("command"),
+    },
+    Harder {
+        id: "HW-PROBE-a-session-records-which-obligation-an-evaluation-discharged",
+        shape: Shape::ChangeTask,
+        examines: &[],
+        words: &[],
+        statuses: &[],
+        // What `probe-transform.sh --oracle-tree` derives over each patch, the
+        // derivation a campaign runs. The asked file alone carries the
+        // oracle's finding, and the two halves together carry none. The
+        // `--oracle-tree` case of `tools/probe/probe-record-fixtures.sh` runs
+        // both patches through that script and holds the oracle's place in
+        // these lists to the engine, with the oracle read from the probe.
+        shallow: Session::Produced(&[(
+            ASKED_EVALUATION,
+            &["relation.reciprocity.missing", "warrant.evidence.unsupported"],
+        )]),
+        sound: Session::Produced(&[
+            (ASKED_EVALUATION, &["warrant.evidence.unsupported"]),
+            (GOVERNING_OBLIGATION, &[]),
+        ]),
+    },
+];
+
+/// The `examines` list of a probe document, as written.
+fn examines_of(document: &headwater_doc::Document) -> Vec<String> {
+    let Some(relations) = document.facets.get("relations") else {
+        return Vec::new();
+    };
+    let Some(examines) = relations
+        .value
+        .as_map()
+        .and_then(|it| it.get("examines"))
+        .and_then(|it| it.value.as_seq())
+    else {
+        return Vec::new();
+    };
+    examines
+        .iter()
+        .filter_map(|it| it.value.as_scalar().map(|s| s.text.clone()))
+        .collect()
+}
+
+/// The body under `## Task`, which is the whole of what a session is given.
+fn task_of(source: &str) -> String {
+    let Some(start) = source.find("\n## Task\n") else {
+        return String::new();
+    };
+    let rest = &source[start + "\n## Task\n".len()..];
+    let end = rest.find("\n## ").unwrap_or(rest.len());
+    rest[..end].to_string()
+}
+
+fn front_matter(path: &Path) -> (String, headwater_doc::Document) {
+    let source =
+        std::fs::read_to_string(path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
+    let document = headwater_doc::parse(&source)
+        .unwrap_or_else(|_| panic!("{}: the front matter does not parse", path.display()));
+    (source, document)
+}
+
+/// The probe of the shelf this row names, as the grader meets it.
+fn selected(row: &Harder) -> headwater_probe::plan::Selected {
+    let root = repository_root();
+    let probe = probes()
+        .into_iter()
+        .find(|probe| probe.id.as_deref() == Some(row.id))
+        .unwrap_or_else(|| {
+            panic!(
+                "{} is not on {SHELF}. Each harder shape is held to a probe of the shelf, and a \
+                 row with no document grades nothing.",
+                row.id
+            )
+        });
+    let (_, document) = front_matter(&root.join(&probe.path));
+    // The grader reads the document's list, so the table holds that list and no
+    // other. A target the document adds and the table omits is one the shallow
+    // session may read, and a subset check would let it pass unseen.
+    let declared = examines_of(&document);
+    let mut tabled: Vec<&str> = row.examines.iter().map(|(id, _)| *id).collect();
+    let mut written: Vec<&str> = declared.iter().map(String::as_str).collect();
+    tabled.sort_unstable();
+    written.sort_unstable();
+    assert_eq!(
+        tabled, written,
+        "{}: this table and the document's `examines` list name different targets",
+        row.id
+    );
+    for (id, path) in row.examines {
+        let (_, target) = front_matter(&root.join(path));
+        assert_eq!(
+            scalar(&target, "id").as_deref(),
+            Some(*id),
+            "{path} is not the document {id}"
+        );
+    }
+    let expectation = probe
+        .expectation
+        .as_deref()
+        .and_then(Expectation::read)
+        .unwrap_or_else(|| panic!("{} declares no form the grader knows", row.id));
+    headwater_probe::plan::Selected {
+        path: probe.path.clone(),
+        id: row.id.to_string(),
+        category: scalar(&document, "probe_category")
+            .as_deref()
+            .and_then(headwater_probe::Category::read)
+            .unwrap_or_else(|| panic!("{} declares no category", row.id)),
+        expectation,
+        examines: row
+            .examines
+            .iter()
+            .map(|(id, path)| headwater_probe::plan::Examined {
+                id: Some(id.to_string()),
+                path: path.to_string(),
+            })
+            .collect(),
+        oracle: match expectation {
+            Expectation::Patched => scalar(&document, "oracle"),
+            _ => None,
+        },
+        answers: probe.answers.clone(),
+        expected: probe.expected.clone(),
+    }
+}
+
+/// One recorded session of one probe, as the intake would hand it over.
+fn record(probe: &str, session: &Session) -> headwater_probe::Record {
+    use headwater_probe::intake::{Answer, Call, Event, Produced};
+    let (calls, produced, answer) = match session {
+        Session::Read(paths) => (
+            paths
+                .iter()
+                .map(|path| Call {
+                    tool: "Read".into(),
+                    argument: format!("/workspace/{path}"),
+                    result: "sha256:0".into(),
+                })
+                .collect(),
+            Vec::new(),
+            Answer::Absent,
+        ),
+        Session::Answered(value) => (Vec::new(), Vec::new(), Answer::Value(value.to_string())),
+        Session::Produced(artifacts) => (
+            Vec::new(),
+            artifacts
+                .iter()
+                .map(|(path, findings)| Produced {
+                    path: path.to_string(),
+                    result: "sha256:0".into(),
+                    cites: Vec::new(),
+                    findings: Some(findings.iter().map(|it| it.to_string()).collect()),
+                })
+                .collect(),
+            Answer::Absent,
+        ),
+    };
+    let calls_made = calls.len();
+    headwater_probe::Record {
+        identity: None,
+        read: 1,
+        probes: vec![probe.to_string()],
+        sessions: 1,
+        calls: calls_made,
+        events: vec![Event {
+            at: 1,
+            probe: probe.to_string(),
+            session: "1".into(),
+            calls: Some(calls),
+            produced: Some(produced),
+            answer,
+        }],
+        rejected: Vec::new(),
+        refusal: None,
+        declared: 1,
+        lock_moved: None,
+        read_set_moved: None,
+    }
+}
+
+fn grade(selected: &headwater_probe::plan::Selected, session: &Session) -> Verdict {
+    let results = headwater_probe::Results::over(
+        &record(&selected.id, session),
+        std::slice::from_ref(selected),
+    );
+    assert_eq!(results.rows.len(), 1, "one probe, one row");
+    let row = &results.rows[0];
+    assert_eq!(row.sessions.len(), 1, "one session, one verdict");
+    row.sessions[0].verdict.clone()
+}
+
+use headwater_probe::grade::Verdict;
+
+/// Each harder probe of the shelf fails the shallow session and passes the
+/// sound one, through the grader a campaign uses (#1472, clause 2). The
+/// findings of the change task are the ones a campaign's `--oracle-tree`
+/// derivation writes, and the case of that flag in
+/// `tools/probe/probe-record-fixtures.sh` holds them to the engine.
+///
+/// A probe that a name search or a one-document read passes measures nothing
+/// about the documents, which is how the absent arm of the #1384 re-run sat at
+/// the ceiling. So each row grades the session that strategy produces and
+/// asserts a miss, and grades the sound session and asserts a pass. The table
+/// holds one probe of each of the five shapes, and every probe is a document of
+/// the shelf rather than a fixture of this crate.
+#[test]
+fn every_harder_probe_fails_the_shallow_session_and_passes_the_sound_one() {
+    let root = repository_root();
+    for shape in Shape::ALL {
+        let count = HARDER.iter().filter(|row| row.shape == shape).count();
+        assert_eq!(
+            count, 1,
+            "{shape:?} has {count} probes in the table, and it needs one"
+        );
+    }
+
+    for row in HARDER {
+        let selected = selected(row);
+
+        let shallow = grade(&selected, &row.shallow);
+        assert!(
+            matches!(shallow, Verdict::NotSatisfied(_)),
+            "{} ({:?}): the shallow session is {shallow:?}, and the shape exists so that it misses",
+            row.id,
+            row.shape
+        );
+        let sound = grade(&selected, &row.sound);
+        assert!(
+            matches!(sound, Verdict::Satisfied(_)),
+            "{} ({:?}): the sound session is {sound:?}",
+            row.id,
+            row.shape
+        );
+
+        // A trap value outside the closed set grades as no answer, and a
+        // recorder may drop it. Inside the set it grades as wrong.
+        if let Session::Answered(value) = row.shallow {
+            assert!(
+                selected.answers.iter().any(|it| it == value),
+                "{}: the shallow value `{value}` is not in the closed set {:?}",
+                row.id,
+                selected.answers
+            );
+        }
+
+        for (path, status) in row.statuses {
+            let (_, document) = front_matter(&root.join(path));
+            assert_eq!(
+                scalar(&document, "status").as_deref(),
+                Some(*status),
+                "{} rests on {path} holding `status: {status}`",
+                row.id
+            );
+        }
+
+        if row.shape == Shape::VocabularyMismatch {
+            let (source, _) = front_matter(&root.join(&selected.path));
+            let task = task_of(&source).to_lowercase();
+            assert!(!row.words.is_empty(), "{}: no words to check", row.id);
+            for word in row.words {
+                assert!(
+                    task.contains(word),
+                    "{}: `{word}` is not a word of the task",
+                    row.id
+                );
+                for (id, path) in row.examines {
+                    let (_, target) = front_matter(&root.join(path));
+                    let title = scalar(&target, "title").unwrap_or_default().to_lowercase();
+                    let named = [id.to_lowercase(), path.to_lowercase(), title];
+                    assert!(
+                        !named.iter().any(|it| it.contains(word)),
+                        "{}: `{word}` names {id} by its identifier, path or title, so a name \
+                         search reaches it",
+                        row.id
+                    );
+                }
+            }
+        }
+    }
+}

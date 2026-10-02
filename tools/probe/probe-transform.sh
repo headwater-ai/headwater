@@ -271,9 +271,17 @@ step_derive_cites() {
 # `patched` session of that arm could be recorded at all. The oracle is the
 # instrument and not the treatment, so it has to read both arms the same way.
 # Given a reference tree — the pinned present-arm tree with no session's edits
-# in it — this copies the tree, writes the one artifact into the copy at its own
-# path, and checks the copy. Both arms of a campaign pass the same reference
-# tree, so a finding differs between them only where the artifact does.
+# in it — this copies the tree, writes every artifact the session produced inside
+# the base into the copy at its own path, and checks the copy once. Both arms of
+# a campaign pass the same reference tree, so a finding differs between them only
+# where the session's artifacts do.
+#
+# **Every artifact goes in, not the one being derived (#1472).** A change task
+# can need two files to agree: a relation with a required inverse reports
+# `relation.reciprocity.missing` on whichever half stands alone. The first
+# version wrote one artifact per check, so a session that patched both halves
+# was graded as two sessions that each patched one, and the oracle reported on
+# both. A session that produced one artifact gets the result it got before.
 #
 # An empty `findings` list is a claim that no rule reported over the artifact.
 # So a failure here refuses rather than writes one, on the same reasoning as
@@ -293,17 +301,25 @@ step_derive_findings() {
             echo "probe-transform: the oracle tree at $oracle_tree holds no \`.headwater/\`, so it cannot check anything." >&2
             exit 5
         }
-        rm -rf "$scratch/oracle" "$scratch/oracle.json"
-        cp -a "$oracle_tree" "$scratch/oracle" || exit 5
-        mkdir -p "$scratch/oracle/${file%/*}" && cp "$base/$file" "$scratch/oracle/$file" || {
-            echo "probe-transform: the artifact $file could not be copied into the oracle tree." >&2
-            exit 5
-        }
-        "$engine" check --root "$scratch/oracle" --format json > "$scratch/oracle.json" 2>"$scratch/check.err" || {
-            echo "probe-transform: \`headwater check --format json\` failed over the oracle tree:" >&2
-            tail -3 "$scratch/check.err" >&2
-            exit 5
-        }
+        if [ ! -f "$scratch/oracle.json" ]; then
+            rm -rf "$scratch/oracle"
+            cp -a "$oracle_tree" "$scratch/oracle" || exit 5
+            while IFS= read -r each; do
+                case $each in
+                    '' | /*) continue ;;
+                esac
+                mkdir -p "$scratch/oracle/${each%/*}" && cp "$base/$each" "$scratch/oracle/$each" || {
+                    echo "probe-transform: the artifact $each could not be copied into the oracle tree." >&2
+                    exit 5
+                }
+            done < "$scratch/produced.txt"
+            "$engine" check --root "$scratch/oracle" --format json > "$scratch/oracle.json" 2>"$scratch/check.err" || {
+                rm -f "$scratch/oracle.json"
+                echo "probe-transform: \`headwater check --format json\` failed over the oracle tree:" >&2
+                tail -3 "$scratch/check.err" >&2
+                exit 5
+            }
+        fi
         jq -r --arg path "$file" '.findings[] | select(.path == $path) | .rule' \
             < "$scratch/oracle.json" | sort -u
         return 0

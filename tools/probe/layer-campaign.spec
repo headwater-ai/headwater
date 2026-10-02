@@ -15,6 +15,11 @@
 # arm without `.claude/` can satisfy, and at the powered repetitions the dry
 # run prints.
 #
+# A line names the probes it leaves out. So each sufficiency probe that is not
+# leak-kept is named on the leak-kept lines, or it would share a line with the
+# two leak-kept probes and the dry run would refuse the spec. The two harder
+# sufficiency probes of #1472 are named there for that reason.
+#
 # Nobody runs this spec until the owner rules on one ceiling for the whole
 # plan (#1472) and the sessions are confined (#1467).
 
@@ -28,13 +33,13 @@ campaign      mcp          sufficiency HW-PROBE-a-session-names-the-status-a-set
 documentation absent       sufficiency HW-PROBE-a-session-names-the-status-a-settled-decision-carries-in-its-pull-request HW-PROBE-a-session-names-the-event-that-makes-a-document-accepted
 
 # The two leak-kept probes, on lines of their own.
-campaign      present      sufficiency HW-PROBE-a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer HW-PROBE-a-session-records-an-unmeasured-claim-in-the-shape-this-corpus-checks
-campaign      absent       sufficiency HW-PROBE-a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer HW-PROBE-a-session-records-an-unmeasured-claim-in-the-shape-this-corpus-checks
-campaign      no-hook      sufficiency HW-PROBE-a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer HW-PROBE-a-session-records-an-unmeasured-claim-in-the-shape-this-corpus-checks
-campaign      no-skills    sufficiency HW-PROBE-a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer HW-PROBE-a-session-records-an-unmeasured-claim-in-the-shape-this-corpus-checks
-campaign      no-claude-md sufficiency HW-PROBE-a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer HW-PROBE-a-session-records-an-unmeasured-claim-in-the-shape-this-corpus-checks
-campaign      mcp          sufficiency HW-PROBE-a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer HW-PROBE-a-session-records-an-unmeasured-claim-in-the-shape-this-corpus-checks
-documentation absent       sufficiency HW-PROBE-a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer HW-PROBE-a-session-records-an-unmeasured-claim-in-the-shape-this-corpus-checks
+campaign      present      sufficiency HW-PROBE-a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer HW-PROBE-a-session-records-an-unmeasured-claim-in-the-shape-this-corpus-checks HW-PROBE-a-session-follows-a-citation-from-one-record-to-the-next HW-PROBE-a-session-records-which-obligation-an-evaluation-discharged
+campaign      absent       sufficiency HW-PROBE-a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer HW-PROBE-a-session-records-an-unmeasured-claim-in-the-shape-this-corpus-checks HW-PROBE-a-session-follows-a-citation-from-one-record-to-the-next HW-PROBE-a-session-records-which-obligation-an-evaluation-discharged
+campaign      no-hook      sufficiency HW-PROBE-a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer HW-PROBE-a-session-records-an-unmeasured-claim-in-the-shape-this-corpus-checks HW-PROBE-a-session-follows-a-citation-from-one-record-to-the-next HW-PROBE-a-session-records-which-obligation-an-evaluation-discharged
+campaign      no-skills    sufficiency HW-PROBE-a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer HW-PROBE-a-session-records-an-unmeasured-claim-in-the-shape-this-corpus-checks HW-PROBE-a-session-follows-a-citation-from-one-record-to-the-next HW-PROBE-a-session-records-which-obligation-an-evaluation-discharged
+campaign      no-claude-md sufficiency HW-PROBE-a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer HW-PROBE-a-session-records-an-unmeasured-claim-in-the-shape-this-corpus-checks HW-PROBE-a-session-follows-a-citation-from-one-record-to-the-next HW-PROBE-a-session-records-which-obligation-an-evaluation-discharged
+campaign      mcp          sufficiency HW-PROBE-a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer HW-PROBE-a-session-records-an-unmeasured-claim-in-the-shape-this-corpus-checks HW-PROBE-a-session-follows-a-citation-from-one-record-to-the-next HW-PROBE-a-session-records-which-obligation-an-evaluation-discharged
+documentation absent       sufficiency HW-PROBE-a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer HW-PROBE-a-session-records-an-unmeasured-claim-in-the-shape-this-corpus-checks HW-PROBE-a-session-follows-a-citation-from-one-record-to-the-next HW-PROBE-a-session-records-which-obligation-an-evaluation-discharged
 
 # Navigability.
 campaign      present      navigability

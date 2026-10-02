@@ -554,6 +554,55 @@ if [ -x "$engine" ] && [ -n "${reported:-}" ]; then
 fi
 
 # ---------------------------------------------------------------------------
+# `--oracle-tree` checks the session's whole patch, not one artifact (#1472).
+#
+# A campaign derives `findings` in a copy of the sealed present-arm tree. The
+# first version wrote one artifact into each copy, so a change task whose two
+# files must agree could not pass: each half alone reports
+# `relation.reciprocity.missing`. The probe that asks for this change is
+# `a-session-records-which-obligation-an-evaluation-discharged`, and this case
+# runs its two sessions through the transform a campaign calls. The oracle rule
+# is read from the probe, so a probe that names a rule its sound session still
+# carries goes red here.
+# ---------------------------------------------------------------------------
+oprobe=$root/docs/probes/a-session-records-which-obligation-an-evaluation-discharged.md
+oeval=docs/evaluations/governs-edges-what-an-anchor-reaches-what-covers-it-when-it-ages-and-where-a-session-meets-it.md
+oobl=docs/obligations/0104-a-governs-edge-reaches-the-path-it-names-and-nothing.md
+if [ -x "$engine" ] && [ -f "$oprobe" ]; then
+    orule=$(sed -n 's/^oracle: *//p' "$oprobe" | tr -d "\"'" | sed -n 1p)
+    oeid=$(sed -n 's/^id: *//p' "$root/$oeval" | sed -n 1p)
+    rm -rf "$scratch/otree" "$scratch/ows-one" "$scratch/ows-both"
+    mkdir -p "$scratch/otree" "$scratch/engine-only/engine/target/dev-release"
+    [ -e "$scratch/engine-only/engine/target/dev-release/headwater" ] ||
+        ln -s "$engine" "$scratch/engine-only/engine/target/dev-release/headwater"
+    cp -a "$root/docs" "$root/.headwater" "$root/CLAUDE.md" "$scratch/otree/"
+    cp -a "$scratch/otree" "$scratch/ows-one"
+    awk '{print} /^relations:$/ && !x {print "  discharges:"; print "    - HW-OBL-0104"; x=1}' \
+        "$root/$oeval" > "$scratch/ows-one/$oeval"
+    cp -a "$scratch/ows-one" "$scratch/ows-both"
+    awk -v id="$oeid" '{print} /^relations:$/ && !x {print "  discharged_by:"; print "    - " id; x=1}' \
+        "$root/$oobl" > "$scratch/ows-both/$oobl"
+    "$engine" check --root "$scratch/otree" --format json > "$scratch/otree.json" 2>/dev/null
+    same "the probe's oracle is not reported over the asked file before any patch" "0" \
+        "$(jq -r --arg p "$oeval" --arg r "$orule" '[.findings[] | select(.path == $p and .rule == $r)] | length' < "$scratch/otree.json")"
+    sh "$transform" --probe HW-PROBE-a-session-records-which-obligation-an-evaluation-discharged \
+        --session one-half --root "$scratch/engine-only" --workspace "$scratch/ows-one" \
+        --oracle-tree "$scratch/otree" --produced "$oeval" \
+        < "$scratch/watched-nothing.jsonl" > "$scratch/ows-one.yaml" 2>"$scratch/ows-one.err"
+    same "a session that patched one half derives its findings through the oracle tree" "0" "$?"
+    present "and the oracle reports over the half that stands alone" \
+        "        - \"$orule\"" "$scratch/ows-one.yaml"
+    sh "$transform" --probe HW-PROBE-a-session-records-which-obligation-an-evaluation-discharged \
+        --session both-halves --root "$scratch/engine-only" --workspace "$scratch/ows-both" \
+        --oracle-tree "$scratch/otree" --produced "$oeval" --produced "$oobl" \
+        < "$scratch/watched-nothing.jsonl" > "$scratch/ows-both.yaml" 2>"$scratch/ows-both.err"
+    same "a session that patched both halves derives its findings through the oracle tree" "0" "$?"
+    same "and both halves are in \`produced\`" "2" "$(grep -c '^    - path:' "$scratch/ows-both.yaml")"
+    absent "and the oracle reports over neither, because the copy holds the whole patch" \
+        "        - \"$orule\"" "$scratch/ows-both.yaml"
+fi
+
+# ---------------------------------------------------------------------------
 # A real stream, recorded from the channel rather than written by hand.
 #
 # `tools/probe/fixtures/live-haiku-session.jsonl` is the standard output
@@ -991,8 +1040,9 @@ if [ "$(git -C "$root" rev-parse --show-toplevel 2>/dev/null)" = "$root" ]; then
     ( cd "$scratch/corpus" && find docs -type f -name '*.md' | grep -v -e '^docs/probes/' -e '^docs/probe-runs/' -e '^docs/probe-results/' | sort ) \
         > "$scratch/corpus-before.txt"
     # Outside `docs/`, every probe of the shelf is named by a declared fold or
-    # by one of the two files that state an answer, and by nothing else
-    # (#1384). A fold dropped from the list, or a new file that names a probe,
+    # by one of the three files that state an answer, and by nothing else
+    # (#1384). The third is the case table of the harder probes (#1472), which
+    # holds the shallow and the sound answer of each. A fold dropped from the list, or a new file that names a probe,
     # moves this set, so each entry of the list is held here.
     : > "$scratch/outside-naming.txt"
     for shelf_probe in "$root"/docs/probes/*.md; do
@@ -1001,8 +1051,8 @@ if [ "$(git -C "$root" rev-parse --show-toplevel 2>/dev/null)" = "$root" ]; then
         sh "$root/tools/probe/seal.sh" --naming "$scratch/corpus" "$shelf_id" \
             | awk -v here="$scratch/corpus/" 'index($0, here) == 1 { $0 = substr($0, length(here) + 1) } $0 !~ /^docs\//' >> "$scratch/outside-naming.txt"
     done
-    same "outside docs/, only the two files that state an answer name a probe and are not folds" \
-        ".claude/skills/fixtures.sh tools/probe/probe-record-fixtures.sh" \
+    same "outside docs/, only the three files that state an answer name a probe and are not folds" \
+        ".claude/skills/fixtures.sh engine/crates/probe/tests/corpus.rs tools/probe/probe-record-fixtures.sh" \
         "$(sort -u "$scratch/outside-naming.txt" | tr '\n' ' ' | sed 's/ $//')"
     sh "$root/tools/probe/seal.sh" "$scratch/corpus" \
         HW-PROBE-a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer \
@@ -2984,11 +3034,11 @@ if [ -x "$engine" ]; then
     present "it prints the power calculation, uncorrected and corrected" \
         "needs 325 sessions per arm, 353 with the Fleiss continuity correction" "$scratch/dry.out"
     present "and prices a discovery line at the powered repetitions" \
-        "campaign no-hook discovery: 2 probes x 177 repetitions" "$scratch/dry.out"
-    present "and sums each arm" "arm campaign mcp: 564 sessions, \$282.00" "$scratch/dry.out"
+        "campaign no-hook discovery: 3 probes x 118 repetitions" "$scratch/dry.out"
+    present "and sums each arm" "arm campaign mcp: 684 sessions, \$342.00" "$scratch/dry.out"
     present "and holds the campaign tier to its ceiling" \
-        "tier campaign: 3384 sessions, \$1692.00 against a ceiling of \$300.00: over by \$1392.00" "$scratch/dry.out"
-    present "and prints the total" "total: 3504 sessions, \$1752.00 against the \$430.00 the tiers declare" "$scratch/dry.out"
+        "tier campaign: 4104 sessions, \$2052.00 against a ceiling of \$300.00: over by \$1752.00" "$scratch/dry.out"
+    present "and prints the total" "total: 4284 sessions, \$2142.00 against the \$430.00 the tiers declare" "$scratch/dry.out"
     present "and the delta of the no-hook arm is the hook's script alone" \
         "tree campaign no-hook: - .claude/hooks/intent.sh" "$scratch/dry.out"
     present "and the mcp arm adds its server" "tree campaign mcp: + .mcp.json" "$scratch/dry.out"
@@ -2999,15 +3049,15 @@ if [ -x "$engine" ]; then
     present "and each leak-kept line on its own" "line 8 holds only leak-kept probes" "$scratch/dry.out"
 
     # A line that pools a leak-kept probe with one that is not fails the dry run,
-    # and a plan over its ceiling is printed rather than fatal: four
-    # sufficiency probes over six arms at 30 repetitions is 720 sessions.
+    # and a plan over its ceiling is printed rather than fatal: six
+    # sufficiency probes over six arms at 30 repetitions is 1080 sessions.
     printf 'campaign present sufficiency\n' > "$scratch/pooled.spec"
     PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
         --spec "$scratch/pooled.spec" > "$scratch/pooled.out" 2> "$scratch/pooled.err"
     same "a line that pools a leak-kept probe fails the dry run with 8, not 5" "8" "$?"
     present "and names the line" "line 1 pools a probe under \`leaks_kept:\`" "$scratch/pooled.out"
     present "and the ceiling's refusal is printed as a line" \
-        "L1 720 sessions project \$360.00 against a declared ceiling of \$300.00" "$scratch/pooled.out"
+        "L1 1080 sessions project \$540.00 against a declared ceiling of \$300.00" "$scratch/pooled.out"
 
     # Any other refusal of a plan is the batch driver's 5.
     printf 'campaign present discovery\n' > "$scratch/refused.spec"
