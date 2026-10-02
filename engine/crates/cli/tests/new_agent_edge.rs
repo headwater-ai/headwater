@@ -145,7 +145,7 @@ fn a_cited_in_file_is_written_and_the_report_names_the_comment_it_owes() {
     );
     assert!(
         made.out
-            .contains("`test_site` binds `src/widget.rs` once a comment in it cites `"),
+            .contains("`test_site` binds `src/widget.rs` once a Rust `//` or `/* */` comment in it cites `"),
         "the report names the comment the file owes\n{}",
         made.out
     );

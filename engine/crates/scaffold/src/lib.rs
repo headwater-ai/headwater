@@ -278,7 +278,8 @@ pub struct Anchored {
     pub matched: Option<usize>,
     /// The comment the target still owes before the check binds the edge.
     /// Set for an anchor kind whose resolver is `comment-scan`: that resolver
-    /// binds a file only where a comment in it cites the identifier of the
+    /// binds a file only where a Rust `//` or `/* */` comment in it cites the
+    /// identifier of the
     /// document that asserts the edge, and this run minted that identifier
     /// a moment ago, so no file can cite it yet.
     pub owes: Option<String>,
@@ -1964,7 +1965,8 @@ enum Bound {
 /// and not first reported by the check.
 ///
 /// One exception, stated rather than hidden: `comment-scan` binds a file only
-/// where a comment in it cites the asserting document's identifier, and the
+/// where a Rust `//` or `/* */` comment in it cites the asserting document's
+/// identifier, and the
 /// identifier is the one this run mints. So where the binding failed, each
 /// admitted resolver is asked
 /// [`headwater_graph::anchors::Resolver::resolve_once_cited`]: would the
@@ -1972,7 +1974,8 @@ enum Bound {
 /// steps its own `resolve_for` runs. A file it would bind is written, and the
 /// comment it still owes is named. A path that reaches nothing, a directory, a
 /// pattern and a file that does not read as text are refused in the check's
-/// words.
+/// words. The answers are counted as `bind` counts them: a target that two
+/// admitted kinds would claim has two identities, and it is refused.
 fn bind_target(sources: &Sources<'_>, far: &[String], target: &str, asserter: &str) -> Bound {
     use headwater_graph::anchors::Binding;
     use headwater_graph::edges::Target;
@@ -2032,28 +2035,35 @@ fn bind_target(sources: &Sources<'_>, far: &[String], target: &str, asserter: &s
     // pattern and a file that does not read as text are refused in the
     // check's words. Every other resolver reads no citation, and its answer
     // is the one `bind` already had.
-    for anchor in &anchor_kinds {
-        let Some(resolver) = sources.resolvers.get(&anchor.resolver) else {
-            continue;
-        };
-        if let Binding::Resolved {
-            normalized,
-            matched,
-            ..
-        } = resolver.resolve_once_cited(target, asserter)
-        {
-            return Bound::Anchor(Anchored {
-                anchor_kind: anchor.name.clone(),
-                matched: Some(matched.len()),
-                owes: Some(format!(
-                    "`{}` binds `{normalized}` once a comment in it cites `{asserter}`, which \
-                     `headwater check` reports until one does",
-                    anchor.name
-                )),
-            });
+    //
+    // The answers are counted by the rule `bind` itself applies: a target
+    // that two anchor kinds claim has two identities and never binds. So the
+    // edge is written only where exactly one kind would claim it. Where
+    // `bind` refused because two kinds already claim the target, both claim
+    // it again here, and the verb refuses it as the check will (#1560).
+    let mut claims = anchor_kinds.iter().filter_map(|anchor| {
+        let resolver = sources.resolvers.get(&anchor.resolver)?;
+        match resolver.resolve_once_cited(target, asserter) {
+            Binding::Resolved {
+                normalized,
+                matched,
+                ..
+            } => Some((anchor, normalized, matched.len())),
+            _ => None,
         }
+    });
+    match (claims.next(), claims.next()) {
+        (Some((anchor, normalized, matched)), None) => Bound::Anchor(Anchored {
+            anchor_kind: anchor.name.clone(),
+            matched: Some(matched),
+            owes: Some(format!(
+                "`{}` binds `{normalized}` once a Rust `//` or `/* */` comment in it cites \
+                 `{asserter}`, which `headwater check` reports until one does",
+                anchor.name
+            )),
+        }),
+        _ => Bound::Refused(unbound.to_string()),
     }
-    Bound::Refused(unbound.to_string())
 }
 
 /// The relations a document of this kind may declare and this run did not.
