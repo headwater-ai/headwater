@@ -204,9 +204,9 @@ fn spec_6_shares_no_sentence_with_the_export_section_of_spec_7() {
 /// with the two lines after it, may not carry one: the rule it credits now
 /// lives in spec 7. The list is narrow, because a wider one ("census",
 /// "native", "generated") fires on 26 lines that name text spec 6 keeps.
-/// [`every_quote_of_spec_7_export_text_credits_spec_7`] holds the quotes this
+/// [`no_comment_quotes_spec_7_export_text_as_spec_6`] holds the quotes this
 /// list cannot see.
-const MOVED_RULE_MARKERS: [&str; 22] = [
+const MOVED_RULE_MARKERS: [&str; 25] = [
     "06-engine-architecture.md#an-export",
     "06-engine-architecture.md#what-a-filtered",
     "`counted`",
@@ -224,32 +224,32 @@ const MOVED_RULE_MARKERS: [&str; 22] = [
     "an entry under `projections`",
     "projection like the others",
     "export that leaves",
-    "tombstone",
-    "withholding",
+    // Not "tombstone", "withholding" or "fails closed" alone: the graph, the
+    // harvest, the VCS reader and the probe use those words for other things.
+    "tombstone grain",
+    "withholding reason",
+    "withholding rule",
+    "exporter fails closed",
     "default-deny",
     "presents as total",
-    "fails closed",
+    "committed export",
+    "never chain",
 ];
 
 /// Lines that name spec 6 beside a marker and are right to: each names text
 /// that stays in spec 6, or is not a credit at all. The second member is a
 /// piece of the line itself, so an edit to that line drops it from this list.
-const STAYS_IN_SPEC_6: [(&str, &str); 3] = [
+const STAYS_IN_SPEC_6: [(&str, &str); 1] = [
     // A sentence splitter test input, not a credit.
     (
         "crates/doc/src/sentences.rs",
         "cf. the projection census of spec 6",
     ),
-    // This file names spec 6 to say what spec 6 no longer holds.
-    (
-        "crates/generate/tests/spec_seven_export.rs",
-        "spec 6 states the filter rule list again",
-    ),
-    (
-        "crates/generate/tests/spec_seven_export.rs",
-        "spec 6 states neither the grain table",
-    ),
 ];
+
+/// This file, which names spec 6 on purpose: to say what spec 6 no longer
+/// holds, and in the cases that hold the scan itself.
+const THIS_FILE: &str = "crates/generate/tests/spec_seven_export.rs";
 
 fn engine_sources(dir: &Path, out: &mut Vec<PathBuf>) {
     for entry in std::fs::read_dir(dir).expect("read an engine directory") {
@@ -262,6 +262,91 @@ fn engine_sources(dir: &Path, out: &mut Vec<PathBuf>) {
         } else if name.ends_with(".rs") || name.ends_with(".yml") {
             out.push(path);
         }
+    }
+}
+
+/// Comment lines with their markers gone, lower case, one line each.
+fn comment_text(lines: &[&str]) -> String {
+    let text = lines
+        .iter()
+        .map(|l| l.trim().trim_start_matches(['/', '!', '#']).trim())
+        .collect::<Vec<_>>()
+        .join("\n")
+        .to_lowercase();
+    format!("{text}\n")
+}
+
+/// Every line of `text` that credits a moved export rule to spec 6, as
+/// `path:line: marker: line`.
+///
+/// A line that names spec 6 is read with the line before it and the two
+/// after it, and it is stale when that window carries a marker. A window that
+/// also names spec 7 from the spec 6 line on is a comment that already credits
+/// the moved rule where it lives ("Spec 6 names the verb; spec 7 states the
+/// filtered export rules"), so it passes.
+fn stale_credits(rel: &str, text: &str) -> Vec<String> {
+    let lines: Vec<&str> = text.lines().collect();
+    let mut stale = Vec::new();
+    for (i, line) in lines.iter().enumerate() {
+        let lower = line.to_lowercase();
+        if !(lower.contains("spec 6") || lower.contains("spec six")) {
+            continue;
+        }
+        let ahead = comment_text(&lines[i..lines.len().min(i + 3)]);
+        if ahead.contains("spec 7")
+            || ahead.contains("spec seven")
+            || ahead.contains("07-distribution-and-federation")
+        {
+            continue;
+        }
+        let window = comment_text(&lines[i.saturating_sub(1)..lines.len().min(i + 4)]);
+        let allowed = STAYS_IN_SPEC_6
+            .iter()
+            .any(|(path, text)| rel.ends_with(path) && line.contains(text));
+        if let Some(marker) = MOVED_RULE_MARKERS.iter().find(|m| window.contains(**m)) {
+            if !allowed {
+                stale.push(format!("{rel}:{}: {marker:?}: {}", i + 1, line.trim()));
+            }
+        }
+    }
+    stale
+}
+
+/// The scan in three directions: a stale credit goes red, and a comment that
+/// credits spec 7 or uses a word that other engine code also uses passes.
+/// The passing cases are the shapes the round 2 verifier of PR #1628 wrote.
+#[test]
+fn the_credit_scan_fires_on_a_stale_credit_and_on_nothing_else() {
+    let fires = [
+        "// Spec 6 asks a filtered export that leaves the repository to state when",
+        "/// [Spec 6](../../../../docs/spec/06-engine-architecture.md#an-export-is-a-projection-and-it-declares-what-it-dropped)\n/// requires an emitter to declare a loss set.",
+        "/// Spec 6 gives the two values and makes `counted` the default.",
+        "# tree holds a projection's output. Spec 6 makes whether an export is\n# committed a schema decision.",
+        // The round 2 verifier's E2, E4, E6 and E7.
+        "// Spec 6 says a committed export regenerates on every edit to a facet it carries.",
+        "\"this taxonomy declares no export profile. Spec 6 rules that emitters never chain\",",
+        "// Spec 6 states this rule, which\n// holds for every emitter\n// of the engine: a filtered export states when it was generated.",
+        "// As spec six rules, a filtered export states when it was generated.",
+    ];
+    for case in fires {
+        assert_eq!(stale_credits("x.rs", case).len(), 1, "should fire: {case}");
+    }
+    let passes = [
+        // O1: credits spec 7 for the moved rule.
+        "// Spec 6 names the verb; spec 7 states the filtered export rules.",
+        // O9: the same, over two lines.
+        "// Spec 6 names the verb; spec 7 states the\n// filtered export rules.",
+        // O8: "fails closed" is a common engine phrase, not an export marker.
+        "// Spec 6 fixes the lock as the one input,\n// and the read fails closed when it is absent.",
+        // O2: a graph tombstone, not an export tombstone.
+        "// Spec 6 excuses an anchor from checks. A removed edge leaves a\n// tombstone in the graph, and withholding it is the resolver's call.",
+    ];
+    for case in passes {
+        assert_eq!(
+            stale_credits("x.rs", case),
+            Vec::<String>::new(),
+            "should pass: {case}"
+        );
     }
 }
 
@@ -279,27 +364,10 @@ fn no_engine_source_credits_a_moved_export_rule_to_spec_6() {
             .unwrap_or(&file)
             .to_string_lossy()
             .replace('\\', "/");
-        let lines: Vec<&str> = text.lines().collect();
-        for (i, line) in lines.iter().enumerate() {
-            if !line.to_lowercase().contains("spec 6") {
-                continue;
-            }
-            let window = lines[i.saturating_sub(1)..lines.len().min(i + 3)]
-                .iter()
-                .map(|l| l.trim().trim_start_matches(['/', '!', '#']).trim())
-                .collect::<Vec<_>>()
-                .join("\n")
-                .to_lowercase();
-            let window = format!("{window}\n");
-            let allowed = STAYS_IN_SPEC_6
-                .iter()
-                .any(|(path, text)| rel.ends_with(path) && line.contains(text));
-            if let Some(marker) = MOVED_RULE_MARKERS.iter().find(|m| window.contains(**m)) {
-                if !allowed {
-                    stale.push(format!("{rel}:{}: {marker:?}: {}", i + 1, line.trim()));
-                }
-            }
+        if rel.ends_with(THIS_FILE) {
+            continue;
         }
+        stale.extend(stale_credits(&rel, &text));
     }
     assert!(
         stale.is_empty(),
@@ -326,7 +394,7 @@ fn quote_after(text: &str, at: usize) -> Option<&str> {
 /// quote is text of that section. A quote of text spec 6 keeps is not this
 /// test's business.
 #[test]
-fn every_quote_of_spec_7_export_text_credits_spec_7() {
+fn no_comment_quotes_spec_7_export_text_as_spec_6() {
     let engine = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     let seven = spec_seven();
     let export = plain(&export_section(&seven).join(" "));
