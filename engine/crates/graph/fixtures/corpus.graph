@@ -189,6 +189,8 @@ anchors
     cited by HW-DR-0027
   code_path `.headwater/overlay.yml` via source-tree
     cited by HW-DR-0028
+  code_path `.headwater/overlay.yml` via source-tree
+    cited by HW-DR-0104
   code_path `.headwater/packages/headwater-standard, taxonomy-source/headwater-standard` via source-tree
     cited by HW-SPEC-distribution-and-federation
   code_path `.headwater/packages/headwater-standard/taxonomy.yml` via source-tree
@@ -580,6 +582,8 @@ anchors
   code_path `engine/crates/scaffold/src/**` via source-tree
     cited by HW-SPEC-authoring
   code_path `engine/crates/scaffold/src/lib.rs` via source-tree
+    cited by HW-DR-0104
+  code_path `engine/crates/scaffold/src/lib.rs` via source-tree
     cited by HW-IFACE-headwater-new
   code_path `engine/crates/scaffold/src/reading.rs` via source-tree
     cited by HW-IFACE-headwater-capture
@@ -657,6 +661,8 @@ anchors
     cited by HW-SPEC-distribution-and-federation
   code_path `taxonomy-source/headwater-standard/taxonomy.yml` via source-tree
     cited by HW-DR-0083
+  code_path `taxonomy-source/headwater-standard/taxonomy.yml` via source-tree
+    cited by HW-DR-0104
   code_path `tools/cap-run` via source-tree
     cited by HW-EVAL-one-clone-many-agents-how-this-repository-isolates-the-sessions-that-build-it
   code_path `tools/cite/check-citations-fixtures.sh` via source-tree

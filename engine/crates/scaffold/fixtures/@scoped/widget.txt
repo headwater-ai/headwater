@@ -1,0 +1,1 @@
+A file whose path opens with a character YAML reserves, so a plain scalar of it does not load.
