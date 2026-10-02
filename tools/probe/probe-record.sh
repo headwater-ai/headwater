@@ -621,9 +621,8 @@ probe_log=$(cd "$probe_log" && pwd -P)
 # host's `~/.claude` by default), and that copy is removed when the session
 # ends. `HOME` and `CLAUDE_CONFIG_DIR` both name it, so no user `CLAUDE.md`,
 # skill, plugin, setting or auto-memory of the host loads, and the
-# environment is cleared, so no variable of the host's environment, such as
-# `GH_TOKEN`, reaches the session either. The copy of the credentials is the
-# one token of the host the session holds.
+# environment is cleared, so no token of the host's, such as `GH_TOKEN`,
+# reaches the session either.
 command -v bwrap >/dev/null 2>&1 || {
     echo "probe-record: no \`bwrap\` on the path, so the session cannot be confined to its workspace (#1467). Install bubblewrap; nothing was spent." >&2
     exit 12
