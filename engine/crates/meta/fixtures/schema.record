@@ -1,4 +1,4 @@
-headwater/taxonomy 0.9.0
+headwater/taxonomy 0.10.0
 
 declarations
   taxonomy (required) scalar:string
@@ -76,6 +76,7 @@ declarations
       abstract scalar:boolean
       is_a scalar:string
       purpose scalar:string
+      write_when scalar:string
       identifier members
         scheme (required) scalar:string
       voice scalar:string

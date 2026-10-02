@@ -87,6 +87,7 @@ add:
   kinds.evaluation:
     is_a: governed_document
     purpose: evidence
+    write_when: something was measured or tested, and a claim or a decision depends on the result
     voice: narrative
     lifecycle: standard
     facets:
