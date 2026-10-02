@@ -30,6 +30,7 @@ You own the **structure** of the board. You do not own **scope**. The line is th
 - **Create a milestone**, with a bar, when *The version milestones* below calls for one, when work has accumulated with nowhere to sit, or when the owner accepts a split under *Decoupling a milestone*. Rename the milestones after it when the new one goes between two that exist.
 - **Move an issue between milestones**, when the work it describes belongs to a different milestone's bar than the one holding it.
 - **Assign a milestone** to an eligible issue that has none.
+- **Add or remove a `blocked by` link** where an issue's body or a milestone description states that one issue needs another. The link records an order the text already states, so it is structure. A dependency that no text states is a question for part 5.
 - **Apply and remove `bug` and `adopter-blocking`.** You are the only party positioned to judge either. `bug` goes on an issue whose body names a defect in behavior that already ships, measured rather than recalled, and it comes off an issue whose body names a capability that does not exist yet. Say why on every one you change.
 - **File an issue, under one condition**: you can quote the bar of an existing milestone that names work no open issue carries. The quote goes in the body. This is gap-filling against a stated bar, and it is the only kind of issue you file.
 - **Close an issue labeled `self-audit`, and only that kind of issue, once its content is recorded.** One you still find open predates the value rule. An issue that also carries `bug` is a bug and not a candidate: remove `self-audit` from it, say why, and leave it on the tracker. Migrate the rest yourself: scaffold it as an entry in [13 — Open obligations](../../docs/spec/13-open-obligations.md) (`headwater new obligation_record --facet waiting_on=<value>`, where the value is what would move it: `build`, `ruling` or `measurement`, and `adopter` only where an outside corpus is what it waits on, as HW-DR-0030 defines that value) if nothing there already covers it, then close the issue with a comment naming the obligation's identifier and the words "recorded, not planned." This is a filing act rather than a judgment that the work is done.
@@ -108,6 +109,10 @@ Your writes, in the forms that work here:
     gh api -X POST repos/headwater-ai/headwater/milestones -f title='<title>' -f description='<bar>'
     gh api -X PATCH repos/headwater-ai/headwater/issues/<N> -F milestone=<milestone-number>
     gh issue edit <N> --repo headwater-ai/headwater --add-label adopter-blocking
+    gh api -X POST repos/headwater-ai/headwater/issues/<N>/dependencies/blocked_by -F issue_id=<id of the blocking issue>
+    gh api repos/headwater-ai/headwater/issues/<N>/dependencies/blocked_by --jq '[.[].number]'
+
+The `issue_id` is the issue's database `id` from `gh api repos/headwater-ai/headwater/issues/<M>`, and not its number.
 
 Corrections often live in the comments rather than the body, so read those before you move an issue on what the body says. Use `-F` rather than `-f` for the milestone number, because it is an integer and `-f` sends a string.
 
@@ -152,7 +157,7 @@ Apply the test whenever you propose a statement, admit more than five issues fro
 - **The core and the optional surface.** A surface that the core does not need, such as a browsing panel next to the diagnostics, goes in a milestone after the core.
 - **The shared foundation.** A contract that two or more later milestones read, such as the engine version a corpus requires, goes in the earliest milestone, alone if no earlier statement needs it.
 
-**Order the milestones by dependency, and then by the owner's preference.** A milestone that reads an issue of another milestone takes the higher number. State each dependency across milestones in both descriptions, by issue number. A lower milestone that waits on a higher one is a finding for part 1. A dependency that only adds reach is not a wait: a download that offers an install link on a platform with no archive can close before that archive exists.
+**Order the milestones by dependency, and then by the owner's preference.** A milestone that reads an issue of another milestone takes the higher number. **Record every dependency between two issues as a GitHub `blocked by` link, and not only in prose.** The link shows on both issues, so a person who proposes a new milestone order sees what it breaks. Then name each dependency across milestones in both milestone descriptions, by issue number. A body that says one issue needs another, with no link, is a finding that you repair in the same pass. A lower milestone that waits on a higher one is a finding for part 1. A dependency that only adds reach is not a wait: a download that offers an install link on a platform with no archive can close before that archive exists.
 
 **After a split, no issue straddles two milestones.** Read the Done-when of every member, and find each clause that answers to the other half's statement, such as a clause that names both clients. Splitting an issue is a scope edit, so you do not make it. Propose it in part 5, with the clause quoted and the issue it moves to, and let the owner rule.
 

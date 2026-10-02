@@ -14,7 +14,7 @@ provenance:
 relations:
   governs:
     - to: .claude/agents/headwater-product-owner.md
-      verified_revision: sha256:bac64718c810ba7b90a0c9909f977bcd3f7c16c0a3c3f026f7262c6eafbd6857
+      verified_revision: sha256:24fb89a504180a9cf03b08dfaa37a9a8f72573a31b4354ac138d3f0f928ffe4f
 ---
 
 # The board has an owner of its structure, and its milestones are capped versions
@@ -57,6 +57,6 @@ A closed version milestone is a release that the owner has not cut. The product 
 
 A cap that only grows is not a cap. So an admission into a full version names the issue that it moves to the backlog.
 
-**Added 2026-10-02: a version milestone is decoupled.** The product owner first proposed the editor work as two milestones. One held the VS Code and JetBrains features, the store listings and the browsing panel. The other held the engine requirement, the release index, the downloads and three new platforms. Neither could close before its slowest part. In four rulings that day, the owner split the work by client, by platform, and by core against optional surface. The owner also put the shared engine requirement ahead of all of it. The result was six milestones of 1 to 13 issues each. Each split also moved clauses between issues: #1613 took the JetBrains half of #1594, #1575 and #1609, and #1610 took the JetBrains half of #1600. One issue that moved later, #1601, still carried `adopter-blocking`, which would have put it ahead of every milestone. The agent's section *Decoupling a milestone* states the test that these rulings applied.
+**Added 2026-10-02: a version milestone is decoupled.** The product owner first proposed the editor work as two milestones. One held the VS Code and JetBrains features, the store listings and the browsing panel. The other held the engine requirement, the release index, the downloads and three new platforms. Neither could close before its slowest part. In four rulings that day, the owner split the work by client, by platform, and by core against optional surface. The owner also put the shared engine requirement ahead of all of it. The result was six milestones of 1 to 13 issues each. Each split also moved clauses between issues: #1613 took the JetBrains half of #1594, #1575 and #1609, and #1610 took the JetBrains half of #1600. One issue that moved later, #1601, still carried `adopter-blocking`, which would have put it ahead of every milestone. The owner then asked whether the issues link to each other, so that a reorder shows its effect. Their bodies named each dependency in prose, and no issue carried a GitHub `blocked by` link. The owner ruled that the link is preferred. The agent's section *Decoupling a milestone* states the test that these rulings applied.
 
 This record does not give the product owner scope. It does not close an issue as done, and it does not edit a Done-when clause or a bar. A version statement that the owner has not accepted is a proposal. A window where the intake rulings admit more than they fold and record is a finding against this decision. The report states it.
