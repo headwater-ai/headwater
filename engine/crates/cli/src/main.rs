@@ -6290,9 +6290,10 @@ fn change(
 ) -> ExitCode {
     // The parser takes two values per `--verified-edge`, so the list is
     // pairs, in the order given.
-    let edges: Vec<(String, String)> = verified_edge
-        .chunks_exact(2)
-        .map(|pair| (pair[0].clone(), pair[1].clone()))
+    let (pairs, _) = verified_edge.as_chunks::<2>();
+    let edges: Vec<(String, String)> = pairs
+        .iter()
+        .map(|[document, target]| (document.clone(), target.clone()))
         .collect();
     match headwater_vcs::produce(root, base, out, verified, &edges) {
         Ok(manifest) => {

@@ -1190,3 +1190,53 @@ fn no_fix_is_offered_where_the_relation_does_not_declare_the_attribute() {
     assert!(suspect(&ran).is_empty(), "{:?}", suspect(&ran));
     let _ = std::fs::remove_dir_all(&root);
 }
+
+/// An edge that carries a digest goes suspect when its target moves, though
+/// its relation no longer declares `verified_revision`. A change that states
+/// the edge was re-read still gets no patch, because the patch would write an
+/// attribute the relation does not declare (#1520).
+#[test]
+fn a_stated_edge_gets_no_patch_where_the_relation_does_not_declare_the_attribute() {
+    let root = scratch("undeclared-stated");
+    let entries: Vec<String> = recorded(&root)
+        .into_iter()
+        .filter(|entry| entry.contains(LIB))
+        .collect();
+    assert_eq!(entries.len(), 1);
+    document(&root, TODAY, &entries);
+    let lib_before = std::fs::read_to_string(root.join(LIB)).expect("the hook reads");
+    write(&root, LIB, "refuse() { :; }\n");
+    let undeclared = taxonomy().replace(
+        "    attributes:\n      verified_revision: {type: string, owner: edge}\n",
+        "",
+    );
+    assert_ne!(undeclared, taxonomy(), "the declaration was removed");
+    let moved = || (DOCUMENT, Some(yesterday("hooks", &entries)));
+    let rows: [(&str, &dyn Fn() -> Change); 2] = [
+        ("a re-verified document names the target", &|| {
+            change(&[moved(), (LIB, Some(lib_before.clone()))])
+        }),
+        ("a verified line names the edge", &|| {
+            edges(&[], &[], &[(DOCUMENT, LIB)])
+        }),
+    ];
+    for (label, change) in rows {
+        let ctx = at(TODAY).scoped_to(change());
+        let declared = run_in(&root, &ctx, &mut Cache::disabled(), &taxonomy());
+        let reported = suspect(&declared);
+        assert_eq!(reported.len(), 1, "{label}, declared: {reported:?}");
+        assert!(
+            reported[0].patch.is_some(),
+            "{label}: the row states the edge"
+        );
+        let ran = run_in(&root, &ctx, &mut Cache::disabled(), &undeclared);
+        let reported = suspect(&ran);
+        assert_eq!(reported.len(), 1, "{label}: {reported:?}");
+        assert!(
+            reported[0].patch.is_none(),
+            "{label}: {:?}",
+            reported[0].patch
+        );
+    }
+    let _ = std::fs::remove_dir_all(&root);
+}

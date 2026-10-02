@@ -1035,17 +1035,16 @@ fn stated(change: &crate::change::Change, edge: &Edge) -> Stated {
 }
 
 /// Every literal spelling of what `edge` targets that a change can name: the
-/// target as the entry writes it, each list member, and a document target's
-/// path. Sorted, with no duplicate. An anchor's normalized patterns are not
-/// here: [`stated`] matches each path against them, and every pattern matches
-/// its own text and every path the resolver found under it (#1520).
+/// target as the entry writes it and each list member. Sorted, with no
+/// duplicate. An anchor's normalized patterns are not here: [`stated`] matches
+/// each path against them, and every pattern matches its own text and every
+/// path the resolver found under it. A document target's path is not here
+/// either, because the one rule that reads [`Stated`] skips a document target
+/// (#1520).
 fn target_names(edge: &Edge) -> Vec<&str> {
     let mut names: Vec<&str> = std::iter::once(edge.raw_target.as_str())
         .chain(edge.raw_targets.iter().map(String::as_str))
         .collect();
-    if let Target::Document { path, .. } = &edge.target {
-        names.push(path);
-    }
     names.sort_unstable();
     names.dedup();
     names
