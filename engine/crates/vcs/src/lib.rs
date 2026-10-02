@@ -1116,7 +1116,8 @@ mod tests {
 
         let out = repo.out("verified");
         let stated = ["a.md".to_string(), "c.md".to_string()];
-        let manifest_path = produce(&repo.at, &base, &out, &stated, &[]).expect("the manifest writes");
+        let manifest_path =
+            produce(&repo.at, &base, &out, &stated, &[]).expect("the manifest writes");
         let manifest = read(&manifest_path);
         let verified: Vec<&str> = manifest
             .lines()

@@ -1906,14 +1906,8 @@ pub fn over_edges<C: EdgeCheck>(
             (true, Some(change)) => Stated::of(change, path, names),
             _ => Stated::NONE,
         };
-        let Some(view) = EdgeView::over(
-            halves,
-            census,
-            digests,
-            clock,
-            declarer_prior,
-            stated,
-        ) else {
+        let Some(view) = EdgeView::over(halves, census, digests, clock, declarer_prior, stated)
+        else {
             continue;
         };
         // The triple is the identity Q4 gives an edge, and it is what tells

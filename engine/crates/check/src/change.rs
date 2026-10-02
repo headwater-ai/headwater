@@ -363,7 +363,10 @@ impl Unbound {
                 // One edge of the document re-read, and not the document
                 // (#1520). See the module comment.
                 (Some("verified"), Some(path), Some(target), None) => {
-                    if edges.iter().any(|(known, to)| known == path && to == target) {
+                    if edges
+                        .iter()
+                        .any(|(known, to)| known == path && to == target)
+                    {
                         return Err(format!(
                             "the change manifest states the edge from `{path}` to `{target}` \
                              verified twice"
@@ -795,7 +798,9 @@ mod tests {
             &format!("{FORMAT}\nverified\n"),
             &format!("{FORMAT}\nverified\tdocs/a.md\ttools/x.sh\textra\n"),
             &format!("{FORMAT}\nverified\tdocs/a.md\nverified\tdocs/a.md\n"),
-            &format!("{FORMAT}\nverified\tdocs/a.md\ttools/x.sh\nverified\tdocs/a.md\ttools/x.sh\n"),
+            &format!(
+                "{FORMAT}\nverified\tdocs/a.md\ttools/x.sh\nverified\tdocs/a.md\ttools/x.sh\n"
+            ),
         ] {
             assert!(
                 Unbound::read(manifest, tree(&[("prior/a.md", ASSERTED)])).is_err(),
@@ -893,13 +898,19 @@ mod tests {
         assert!(change.verified_edge("docs/a.md", "src/**"));
         assert!(change.verified_edge("docs/c.md", "tools/x.sh"));
         assert!(!change.verified_edge("docs/c.md", "src/**"));
-        assert!(!change.verified_edge("docs/typo.md", "tools/x.sh"), "no row holds it");
+        assert!(
+            !change.verified_edge("docs/typo.md", "tools/x.sh"),
+            "no row holds it"
+        );
         // An edge line re-verifies the one edge and not the document.
         assert!(change.verified("docs/a.md"), "its own two-field line");
         assert!(!change.verified("docs/c.md"));
         // A governed file the change carries is named though no row holds it.
         assert!(change.names("tools/y.sh"));
-        assert!(!change.names("tools/x.sh"), "a verified line carries nothing");
+        assert!(
+            !change.names("tools/x.sh"),
+            "a verified line carries nothing"
+        );
         assert_eq!(change.unmatched(), vec!["docs/typo.md", "tools/y.sh"]);
         let named = change.named();
         assert_eq!(named.verified, 2, "{named:?}");

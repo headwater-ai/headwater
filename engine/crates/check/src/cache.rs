@@ -510,7 +510,15 @@ impl Cache {
         clock: Option<Date>,
     ) -> Option<String> {
         self.key(
-            rule, version, scope, target, reads, clock, None, Stated::NONE, None,
+            rule,
+            version,
+            scope,
+            target,
+            reads,
+            clock,
+            None,
+            Stated::NONE,
+            None,
         )
     }
 }
@@ -1319,7 +1327,11 @@ mod tests {
         for (index, state) in states.iter().enumerate() {
             assert!(key(reads, *state).is_some(), "state {index} lost its key");
             for other in &states[index + 1..] {
-                assert_ne!(key(reads, *state), key(reads, *other), "{state:?} and {other:?}");
+                assert_ne!(
+                    key(reads, *state),
+                    key(reads, *other),
+                    "{state:?} and {other:?}"
+                );
             }
         }
         let ignores = Scope::edge(false, false, false);

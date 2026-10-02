@@ -336,8 +336,7 @@ impl EdgeCheck for Suspect<'_> {
         // The gate of the patch over a moved digest, which re-stamps an edge
         // that was suspect: the document re-verified and its target named by
         // the change, or the edge named by a `verified` line (#1520).
-        let stamped =
-            declares && ((re_verified && view.target_named()) || view.edge_verified());
+        let stamped = declares && ((re_verified && view.target_named()) || view.edge_verified());
         let (line, column) = at(Some(edge.span));
         let finding = |severity, message, remediation, patch| Finding {
             rule: self::RULE,

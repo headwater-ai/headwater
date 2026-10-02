@@ -158,11 +158,7 @@ fn stated(entries: &[(&str, Option<String>)], verified: &[&str]) -> Change {
 
 /// [`stated`], and a `verified\t<document>\t<target>` line for each pair in
 /// `edges`: the change states that its author re-read that one edge (#1520).
-fn edges(
-    entries: &[(&str, Option<String>)],
-    verified: &[&str],
-    edges: &[(&str, &str)],
-) -> Change {
+fn edges(entries: &[(&str, Option<String>)], verified: &[&str], edges: &[(&str, &str)]) -> Change {
     let mut manifest = String::from("headwater change 1\n");
     for (path, prior) in entries {
         match prior {
@@ -742,8 +738,7 @@ fn a_warm_cache_keys_the_patch_on_the_change() {
         ]))
     };
     // The same prior version of the document, with no target named.
-    let unnamed =
-        || at(TODAY).scoped_to(change(&[(DOCUMENT, Some(yesterday("hooks", &entries)))]));
+    let unnamed = || at(TODAY).scoped_to(change(&[(DOCUMENT, Some(yesterday("hooks", &entries)))]));
     let unmoved = |verified: &[&str]| {
         at(TODAY).scoped_to(stated(
             &[(DOCUMENT, Some(text_of("hooks", TODAY, &entries))), lib()],
@@ -781,7 +776,12 @@ fn a_warm_cache_keys_the_patch_on_the_change() {
         // served the stamp the named run stored, and the other way round
         // (#1520). Each is then served its own verdict.
         ("target unnamed, after a named run", unnamed(), false, false),
-        ("target named, after an unnamed run", re_verified(), true, true),
+        (
+            "target named, after an unnamed run",
+            re_verified(),
+            true,
+            true,
+        ),
         ("target unnamed, warm", unnamed(), false, true),
     ] {
         let mut cache = Cache::at(&root, LOCK, "sha256:rules");
