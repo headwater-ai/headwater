@@ -1159,6 +1159,9 @@ fn the_native_export_round_trips_the_graph() {
 /// The second list holds `src/a, b.txt`, whose name holds `, `, the separator
 /// of the joined display string. An emitter that wrote the display string
 /// split on `, ` reads three members there and goes red.
+///
+/// HW-VER-0003 states this test's design and governs its fixture tree, and
+/// this sentence binds that verification's `cited_in` edge.
 #[test]
 fn the_native_export_carries_the_members_of_a_list_anchor() {
     let base = fixtures_dir().join("listanchor");

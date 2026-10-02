@@ -110,6 +110,9 @@ nav:
       - "Acceptance criteria": "acceptance-criteria/README.md"
       - "No engine source outside the fetch crate names a network API and no crate of the checking loop reaches a network package": "acceptance-criteria/0001-no-engine-source-outside-the-fetch-crate-names-a-network-api-and-no-crate-of-the-checking-loop-reaches-a-network-package.md"
       - "Every required section of every governed document has a heading": "acceptance-criteria/0002-every-required-section-of-every-governed-document-has-a-heading.md"
+      - "Check reports a document path written as a relation target once, in every spelling and through a symlink": "acceptance-criteria/0003-check-reports-a-document-path-written-as-a-relation-target-once-in-every-spelling-and-through-a-symlink.md"
+      - "Each list anchor in the native export carries its sorted members, and a single pattern carries none": "acceptance-criteria/0004-each-list-anchor-in-the-native-export-carries-its-sorted-members-and-a-single-pattern-carries-none.md"
+      - "The governing documents of a path are the same for every spelling of it, and a path no anchor matches has none": "acceptance-criteria/0005-the-governing-documents-of-a-path-are-the-same-for-every-spelling-of-it-and-a-path-no-anchor-matches-has-none.md"
   - "Evaluations":
       - "Evaluations": "evaluations/README.md"
       - "A probe task section is the prompt, so commentary under that heading is prompt": "evaluations/a-probe-task-section-is-the-prompt-so-commentary-under-that-heading-is-prompt.md"
@@ -553,6 +556,9 @@ nav:
       - "Requirements": "requirements/README.md"
       - "The engine reaches no network at check time": "requirements/0001-the-engine-reaches-no-network-at-check-time.md"
       - "Every document of a kind that requires sections carries all of them": "requirements/0002-every-document-of-a-kind-that-requires-sections-carries-all-of-them.md"
+      - "A relation target written as the path of a document is reported, and never bound as an anchor onto that file": "requirements/0003-a-relation-target-written-as-the-path-of-a-document-is-reported-and-never-bound-as-an-anchor-onto-that-file.md"
+      - "The graph export carries the member patterns of a list anchor": "requirements/0004-the-graph-export-carries-the-member-patterns-of-a-list-anchor.md"
+      - "A code path names every document that governs it": "requirements/0005-a-code-path-names-every-document-that-governs-it.md"
   - "Review records":
       - "Review records": "reviews/README.md"
       - "Assessment of the existing core-concepts findings": "reviews/core-concepts-findings-assessment.md"
@@ -598,3 +604,6 @@ nav:
   - "Verifications":
       - "Verifications": "verifications/README.md"
       - "The section-heading rule has no case table, and a golden fixture report is what proves it runs": "verifications/0001-the-section-heading-rule-has-no-case-table-and-a-golden-fixture-report-is-what-proves-it-runs.md"
+      - "A fixture tree of document paths, symlinks and identifiers proves the document path finding": "verifications/0002-a-fixture-tree-of-document-paths-symlinks-and-identifiers-proves-the-document-path-finding.md"
+      - "A fixture tree of three list anchors proves that the export carries list members": "verifications/0003-a-fixture-tree-of-three-list-anchors-proves-that-the-export-carries-list-members.md"
+      - "The ingest stubs of the query fixture tree prove what governs a path": "verifications/0004-the-ingest-stubs-of-the-query-fixture-tree-prove-what-governs-a-path.md"

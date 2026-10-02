@@ -251,6 +251,10 @@ anchors
     cited by HW-IFACE-headwater-mcp
   code_path `engine/crates/census/src/walk.rs` via source-tree
     cited by HW-IFACE-headwater-show
+  code_path `engine/crates/check/fixtures/document-path-target.taxonomy.yml` via source-tree
+    cited by HW-VER-0002
+  code_path `engine/crates/check/fixtures/document-path-target/**` via source-tree
+    cited by HW-VER-0002
   code_path `engine/crates/check/src/**` via source-tree
     cited by HW-SPEC-checks-and-cache
   code_path `engine/crates/check/src/claim.rs` via source-tree
@@ -297,6 +301,8 @@ anchors
     cited by HW-OBL-0168
   code_path `engine/crates/check/src/voice.rs` via source-tree
     cited by HW-SPEC-check-layer
+  code_path `engine/crates/check/tests/document_path_target.rs` via source-tree
+    cited by HW-VER-0002
   code_path `engine/crates/check/tests/fixtures.rs` via source-tree
     cited by HW-VER-0001
   code_path `engine/crates/cli/Cargo.toml` via source-tree
@@ -433,6 +439,10 @@ anchors
     cited by HW-IFACE-headwater-neighbors
   code_path `engine/crates/fetch/src/**` via source-tree
     cited by HW-SPEC-taxonomy-distribution-and-audit
+  code_path `engine/crates/generate/fixtures/listanchor.taxonomy.yml` via source-tree
+    cited by HW-VER-0003
+  code_path `engine/crates/generate/fixtures/listanchor/**` via source-tree
+    cited by HW-VER-0003
   code_path `engine/crates/generate/src/**` via source-tree
     cited by HW-SPEC-projections-and-export
   code_path `engine/crates/generate/src/derived.rs` via source-tree
@@ -509,6 +519,8 @@ anchors
     cited by HW-IFACE-headwater-probe
   code_path `engine/crates/probe/src/plan.rs` via source-tree
     cited by HW-IFACE-headwater-probe
+  code_path `engine/crates/query/fixtures/src/ingest/**` via source-tree
+    cited by HW-VER-0004
   code_path `engine/crates/query/src/**` via source-tree
     cited by HW-SPEC-queries-and-explain
   code_path `engine/crates/query/src/explain.rs` via source-tree
@@ -721,8 +733,18 @@ anchors
     cited by HW-DR-0048
   code_path `wrangler.jsonc` via source-tree
     cited by HW-DR-0047
+  test_site `engine/crates/check/tests/document_path_target.rs` via comment-scan
+    cited by HW-VER-0002
   test_site `engine/crates/check/tests/fixtures.rs` via comment-scan
     cited by HW-VER-0001
+  test_site `engine/crates/generate/tests/fixtures.rs` via comment-scan
+    cited by HW-VER-0003
+  test_site `engine/crates/query/tests/mcp.rs` via comment-scan
+    cited by HW-VER-0004
+  test_site `engine/crates/query/tests/reads.rs` via comment-scan
+    cited by HW-VER-0004
 
 docs/requirements/0002-every-document-of-a-kind-that-requires-sections-carries-all-of-them.md:17:7
   edge: `verified_by` -> section.required.missing resolves to nothing at all, and `check_rule` names the resolver `check-rule`, which this run does not have
+docs/requirements/0003-a-relation-target-written-as-the-path-of-a-document-is-reported-and-never-bound-as-an-anchor-onto-that-file.md:17:7
+  edge: `verified_by` -> relation.target.unresolved resolves to nothing at all, and `check_rule` names the resolver `check-rule`, which this run does not have
