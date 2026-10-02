@@ -61,7 +61,7 @@ On 2026-10-02 the owner widened [#1560](https://github.com/headwater-ai/headwate
 
 ## Consequences
 
-The verb now writes relations that cover 928 of 1135 declared edge halves of this corpus, against 62 before. The figures are from `headwater taxonomy audit` over `main` at `bdf2761f`, with `headwater-standard` 4.15.0. The `agent` row holds 866 of the 1135 halves and the `scaffold` row holds 62. The audit itself does not change.
+The verb now writes relations that cover 937 of 1144 declared edge halves of this corpus, against 64 before. The figures are from `headwater taxonomy audit` over 562 documents on 2026-10-02, with this record in the corpus. The `agent` row holds 873 of the 1144 halves and the `scaffold` row holds 64. No declaration changes, so no row of the audit moves to another actor.
 
 The case table of the scaffolder holds the new behavior. A `governs` pattern that matches no entry is refused with `AnchorUnresolved`, and so is a `cited_in` path that reaches no file. A `governs` pattern that matches an entry is written, and a `cited_in` path that reaches a file is written with the owed comment named. The row where `traces_to` declares `created_by: hook` stays refused, so the gate did not open to every actor.
 
