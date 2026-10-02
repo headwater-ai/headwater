@@ -396,16 +396,43 @@ fn the_verb_index_names_exactly_the_verbs_this_binary_dispatches() {
 /// migrate`).
 const SPEC_MAY_NAME_A_NON_VERB: &[(&str, &str)] = &[("05-ai-integration.md", "hook")];
 
-/// Every inline code span under `docs/spec/` that opens with `headwater `, as
-/// (file name, line number, the word after `headwater `, up to the span's
-/// closing backtick when it closes on that word). A fenced block is
-/// skipped: spec 6's grammar block is held by
+/// Every inline code span of one Markdown text that opens with `headwater `,
+/// as (file name, line number, the word after `headwater ` up to the span's
+/// closing backtick). A line inside a fenced block is skipped: spec 6's
+/// grammar block is held by
 /// `the_cli_grammar_of_spec_6_names_every_verb_this_binary_ships`.
+fn inline_headwater_words(file: &str, text: &str) -> Vec<(String, usize, String)> {
+    let mut words = Vec::new();
+    let mut fenced = false;
+    for (index, line) in text.lines().enumerate() {
+        let trimmed = line.trim_start();
+        if trimmed.starts_with("```") || trimmed.starts_with("~~~") {
+            fenced = !fenced;
+            continue;
+        }
+        if fenced {
+            continue;
+        }
+        for (at, opening) in line.match_indices("`headwater ") {
+            if let Some(word) = line[at + opening.len()..].split_whitespace().next() {
+                let word = word.split('`').next().unwrap_or(word);
+                words.push((file.to_string(), index + 1, word.to_string()));
+            }
+        }
+    }
+    words
+}
+
+/// `inline_headwater_words` over every `docs/spec/*.md` file, in path order.
 fn spec_inline_headwater_words() -> Vec<(String, usize, String)> {
     let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../docs/spec");
     let mut paths: Vec<_> = std::fs::read_dir(&dir)
         .unwrap_or_else(|e| panic!("{}: {e}", dir.display()))
-        .map(|entry| entry.unwrap_or_else(|e| panic!("{}: {e}", dir.display())).path())
+        .map(|entry| {
+            entry
+                .unwrap_or_else(|e| panic!("{}: {e}", dir.display()))
+                .path()
+        })
         .filter(|path| path.extension().is_some_and(|ext| ext == "md"))
         .collect();
     paths.sort();
@@ -417,25 +444,25 @@ fn spec_inline_headwater_words() -> Vec<(String, usize, String)> {
             .file_name()
             .map(|name| name.to_string_lossy().into_owned())
             .unwrap_or_default();
-        let mut fenced = false;
-        for (index, line) in text.lines().enumerate() {
-            let trimmed = line.trim_start();
-            if trimmed.starts_with("```") || trimmed.starts_with("~~~") {
-                fenced = !fenced;
-                continue;
-            }
-            if fenced {
-                continue;
-            }
-            for (at, opening) in line.match_indices("`headwater ") {
-                if let Some(word) = line[at + opening.len()..].split_whitespace().next() {
-                    let word = word.split('`').next().unwrap_or(word);
-                    words.push((file.clone(), index + 1, word.to_string()));
-                }
-            }
-        }
+        words.extend(inline_headwater_words(&file, &text));
     }
     words
+}
+
+/// Each span whose word is not a shipped verb and is not explained for its
+/// own file by `allowed`, as `<file>:<line> <word>`.
+fn unexplained_spans(words: &[(String, usize, String)], allowed: &[(&str, &str)]) -> Vec<String> {
+    let shipped: BTreeSet<&str> = headwater_verbs::VERBS
+        .iter()
+        .map(|verb| verb.name)
+        .collect();
+    words
+        .iter()
+        .filter(|(file, _, word)| {
+            !shipped.contains(word.as_str()) && !allowed.iter().any(|(f, w)| f == file && w == word)
+        })
+        .map(|(file, line, word)| format!("{file}:{line} {word}"))
+        .collect()
 }
 
 /// Every inline `headwater <word>` span under `docs/spec/` names a verb this
@@ -453,22 +480,9 @@ fn spec_inline_headwater_words() -> Vec<(String, usize, String)> {
 /// naming that entry, so the list cannot go stale.
 #[test]
 fn every_headwater_code_span_in_the_specification_names_a_verb_this_binary_carries() {
-    let shipped: BTreeSet<&str> = headwater_verbs::VERBS
-        .iter()
-        .map(|verb| verb.name)
-        .collect();
     let words = spec_inline_headwater_words();
 
-    let unexplained: Vec<String> = words
-        .iter()
-        .filter(|(file, _, word)| {
-            !shipped.contains(word.as_str())
-                && !SPEC_MAY_NAME_A_NON_VERB
-                    .iter()
-                    .any(|(f, w)| f == file && w == word)
-        })
-        .map(|(file, line, word)| format!("{file}:{line} {word}"))
-        .collect();
+    let unexplained = unexplained_spans(&words, SPEC_MAY_NAME_A_NON_VERB);
     assert!(
         unexplained.is_empty(),
         "docs/spec/ names `headwater <word>` for a word that is not a verb this binary \
@@ -484,4 +498,29 @@ fn every_headwater_code_span_in_the_specification_names_a_verb_this_binary_carri
         "SPEC_MAY_NAME_A_NON_VERB lists {unused:?}, which no inline span under docs/spec/ \
          names any more; remove the entry"
     );
+}
+
+/// The reader and the list on a text the specification does not hold today:
+/// a span that closes on its word, a span inside a fenced block, and an
+/// explained word in a file the explanation does not name.
+///
+/// No file under `docs/spec/` carries a span inside a fence or an explained
+/// word outside its file today, so the case above stays green when the fence
+/// skip or the file half of the list's match is removed. This case goes red
+/// for each of the two, and for a removed closing-backtick cut as well.
+#[test]
+fn the_spec_span_reader_cuts_at_the_backtick_skips_a_fence_and_scopes_the_list_to_its_file() {
+    let text =
+        "Run `headwater check`.\n```\n`headwater nothing`\n```\nA `headwater hook x` verb.\n";
+    let words = inline_headwater_words("a.md", text);
+    let read: Vec<(usize, &str)> = words
+        .iter()
+        .map(|(_, line, word)| (*line, word.as_str()))
+        .collect();
+    assert_eq!(read, vec![(1, "check"), (5, "hook")]);
+    assert_eq!(
+        unexplained_spans(&words, &[("05-ai-integration.md", "hook")]),
+        vec!["a.md:5 hook".to_string()]
+    );
+    assert!(unexplained_spans(&words, &[("a.md", "hook")]).is_empty());
 }
