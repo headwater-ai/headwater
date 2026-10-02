@@ -356,6 +356,51 @@ fn a_scope_pattern_with_an_ungoverned_entry_is_one_finding_that_lists_it() {
     assert!(report.contains("governed scope"), "{report}");
 }
 
+/// The scope total is over the union of the entries, in the text and in the
+/// JSON alike (#1573).
+///
+/// A second pattern here admits the same two entries `app/**` does, so a total
+/// that summed the rows would read 2 of 4 where the tree holds 1 of 2. Both
+/// renderers read [`Audit::scope_total`], so this case holds the method and
+/// each renderer's reading of it.
+#[test]
+fn two_patterns_that_admit_one_entry_count_it_once_in_the_text_and_the_json_total() {
+    let mut audit = fixture_tree().audit(AT);
+    assert_eq!(audit.scope.len(), 1, "the fixture declares one pattern");
+    let mut overlap = audit.scope[0].clone();
+    overlap.pattern = "app/*.rs".to_string();
+    audit.scope.push(overlap);
+
+    let total = audit.scope_total();
+    assert_eq!((total.in_scope, total.governed), (2, 1));
+
+    let report = audit.render(ColorMode::Plain);
+    assert!(
+        report.contains("in total 1 of 2 entries in scope are governed, 50.0%"),
+        "{report}"
+    );
+
+    let document = audit.json().render();
+    let at = |steps: &[&str]| {
+        let steps: Vec<String> = steps.iter().map(|step| step.to_string()).collect();
+        headwater_yaml::json::field(&document, &steps)
+            .unwrap_or_else(|| panic!("no {steps:?} in {document}"))
+    };
+    assert_eq!(at(&["scope_total", "in_scope"]), "2", "{document}");
+    assert_eq!(at(&["scope_total", "governed"]), "1", "{document}");
+    assert_eq!(at(&["scope_total", "share"]), "50.0", "{document}");
+    // Each row still states its own pattern's figure.
+    for index in ["0", "1"] {
+        assert_eq!(at(&["scope", index, "in_scope"]), "2", "{document}");
+        assert_eq!(at(&["scope", index, "governed"]), "1", "{document}");
+        assert_eq!(
+            at(&["scope", index, "ungoverned", "0"]),
+            "app/render.rs",
+            "{document}"
+        );
+    }
+}
+
 /// A scope pattern that matches no entry is refused, which is the check
 /// `taxonomy validate` runs, and a corpus that declares no scope prints one
 /// line and never a zero fraction.

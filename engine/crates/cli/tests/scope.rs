@@ -106,10 +106,15 @@ fn element_for(document: &str, pattern: &str) -> String {
 
 /// The `ungoverned` paths of one `scope` element.
 fn ungoverned_of(document: &str, index: &str) -> Vec<String> {
-    let paths = count(document, &path(&["scope", index, "ungoverned"]))
-        .expect("`ungoverned` is an array");
+    let paths =
+        count(document, &path(&["scope", index, "ungoverned"])).expect("`ungoverned` is an array");
     (0..paths)
-        .map(|entry| at(document, &["scope", index, "ungoverned", &entry.to_string()]))
+        .map(|entry| {
+            at(
+                document,
+                &["scope", index, "ungoverned", &entry.to_string()],
+            )
+        })
         .collect()
 }
 
@@ -140,9 +145,16 @@ fn the_audit_json_names_an_ungoverned_entry_and_drops_it_once_an_edge_reaches_it
     let (text, document) = read(&root);
     assert_eq!(at(&document, &["version"]), "1", "{document}");
     for member in ["package", "version", "lock"] {
-        assert!(!at(&document, &["subject", member]).is_empty(), "{document}");
+        assert!(
+            !at(&document, &["subject", member]).is_empty(),
+            "{document}"
+        );
     }
-    assert_eq!(at(&document, &["subject", "now"]), "2026-09-25", "{document}");
+    assert_eq!(
+        at(&document, &["subject", "now"]),
+        "2026-09-25",
+        "{document}"
+    );
 
     // Every element agrees with its own text line.
     let elements = count(&document, &path(&["scope"])).expect("`scope` is an array");
@@ -151,8 +163,16 @@ fn the_audit_json_names_an_ungoverned_entry_and_drops_it_once_an_edge_reaches_it
         let index = index.to_string();
         let pattern = at(&document, &["scope", &index, "pattern"]);
         let (in_scope, governed) = counts_of(line_for(&text, &pattern));
-        assert_eq!(number(&document, &["scope", &index, "in_scope"]), in_scope, "{pattern}");
-        assert_eq!(number(&document, &["scope", &index, "governed"]), governed, "{pattern}");
+        assert_eq!(
+            number(&document, &["scope", &index, "in_scope"]),
+            in_scope,
+            "{pattern}"
+        );
+        assert_eq!(
+            number(&document, &["scope", &index, "governed"]),
+            governed,
+            "{pattern}"
+        );
         assert_eq!(
             ungoverned_of(&document, &index).len(),
             in_scope - governed,
@@ -178,8 +198,16 @@ fn the_audit_json_names_an_ungoverned_entry_and_drops_it_once_an_edge_reaches_it
 
     let (text, after) = read(&root);
     let tools = element_for(&after, "tools/**");
-    assert_eq!(number(&after, &["scope", &tools, "governed"]), governed + 1, "{after}\n{text}");
-    assert_eq!(number(&after, &["scope", &tools, "in_scope"]), in_scope, "{after}");
+    assert_eq!(
+        number(&after, &["scope", &tools, "governed"]),
+        governed + 1,
+        "{after}\n{text}"
+    );
+    assert_eq!(
+        number(&after, &["scope", &tools, "in_scope"]),
+        in_scope,
+        "{after}"
+    );
     assert!(
         !ungoverned_of(&after, &tools).contains(&"tools/new-script.sh".to_string()),
         "{after}"
