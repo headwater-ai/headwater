@@ -304,7 +304,11 @@ fn a_refused_export_writes_no_declared_output() {
     // `--check` writes nothing in any state, so it withholds nothing, and its
     // sentence stays the drift sentence rather than the publish remedy.
     let (code, said) = status(&run(&root, &["export", "--check"]));
-    assert_eq!(code, Some(1), "`export --check` accepted the authored file\n{said}");
+    assert_eq!(
+        code,
+        Some(1),
+        "`export --check` accepted the authored file\n{said}"
+    );
     let stderr = said.split("\nstderr:\n").nth(1).expect("the stderr part");
     assert!(
         stderr.contains("a declared export is not what this corpus and this lock produce")
