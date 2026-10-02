@@ -10,10 +10,12 @@
 //! the defect the move removed. So this file holds these things:
 //!
 //! - the tombstone grain table of spec 7 names exactly the grains the engine
-//!   reads, in both directions;
-//! - spec 6 states neither the grain table nor the filter rule list again, and
-//!   shares no sentence of six words or more with spec 7's export section;
-//! - spec 7 states the filter rules as a list of exactly six items;
+//!   reads, in both directions, and each of its rows is held whole;
+//! - spec 6 states neither the grain table nor the filter rule list again,
+//!   shares no sentence of six words or more with spec 7's export section,
+//!   and shares no run of eight words in a row with it;
+//! - spec 7 states the filter rules as a list of exactly six items, each held
+//!   whole;
 //! - spec 7 states, once and under the subsection that owns each, that
 //!   emitters never chain and that no profile presents as total, and spec 6
 //!   names neither;
@@ -32,8 +34,46 @@ use headwater_generate::Grain;
 /// follows it is the list of the rules.
 const FILTER_RULES_LEAD: &str = "rules make the filter honest";
 
+/// The six filter rules, each list item whole and in order. A rule that is
+/// inverted, dropped, split or reworded in spec 7 goes red here until the
+/// same edit is made in this file.
+const FILTER_RULES: [&str; 6] = [
+    "- **Carried and withheld partition the corpus, and the engine generates both.** This is \
+     the [partition rule](12-check-layer.md#exportable_as-is-a-set-with-a-partition-rule) that \
+     `exportable_as` obeys, applied to documents instead of to checks. Neither list is \
+     authored, so neither can drift from the other.",
+    "- **A withholding is a loss reason.** The projection census already accounts for every \
+     node and edge that the output does not carry. A withheld document is one more accounted \
+     absence.",
+    "- **A document is withheld whole.** The unit is the document, and no filter reaches \
+     inside a body. A redaction inside prose is how a reader ends up with a rectangle drawn \
+     over text that is still there.",
+    "- **The filter is default-deny over classes.** A node class, an edge class, or an \
+     attribute that no profile names does not travel. So a later release that adds a class \
+     does not widen a profile that nobody re-read. A filter stated as a list of exclusions \
+     grows a hole every time the schema grows.",
+    "- **Every projection inside a profile regenerates from the filtered graph.** Take a shelf \
+     index, a lineage view, or a navigation file. Built at full visibility and then shipped \
+     inside a filtered profile, each one carries what the filter removed. A count, a sort \
+     order, or an index of terms is enough. That failure is observed, and it is the one that \
+     survives a correct redaction.",
+    "- **The declaration travels with the artifact.** A filtered export states that it is \
+     filtered, and it states when it was generated. A copy of an artifact carries neither of \
+     those unless the artifact does.",
+];
+
 /// The header line of the tombstone grain table.
 const GRAIN_TABLE_HEADER: &str = "| Grain |";
+
+/// The rows of the tombstone grain table, each whole and in order, so that
+/// what each grain tells a reader is held and not only its name.
+const GRAIN_ROWS: [&str; 2] = [
+    "| `counted` | A placeholder sits where each withheld node or edge would have been, and it \
+     carries the identifier of the rule that withheld it | The default. The reader is a tier \
+     under a contract, and the existence of the item is not the secret |",
+    "| `sealed` | The view is filtered. Nothing else | The existence of the item is itself the \
+     disclosure |",
+];
 
 /// Every grain the engine reads, in declaration order.
 const ENGINE_GRAINS: [Grain; 2] = [Grain::Counted, Grain::Sealed];
@@ -110,6 +150,21 @@ fn the_tombstone_grain_table_of_spec_7_names_exactly_the_grains_the_engine_reads
         .into_iter()
         .collect();
     assert_eq!(table, engine, "spec 7's grain table and `Grain` disagree");
+}
+
+#[test]
+fn the_tombstone_grain_rows_of_spec_7_state_what_each_grain_tells_a_reader() {
+    let seven = spec_seven();
+    let rows: Vec<&str> = seven
+        .lines()
+        .skip_while(|l| !l.starts_with(GRAIN_TABLE_HEADER))
+        .skip(2) // the header and the separator row
+        .take_while(|l| l.starts_with('|'))
+        .collect();
+    assert_eq!(
+        rows, GRAIN_ROWS,
+        "spec 7's grain rows are not the rows this file holds"
+    );
 }
 
 /// The first cell of a table row, with its spacing and backticks gone, so
@@ -202,6 +257,47 @@ fn spec_6_shares_no_sentence_with_the_export_section_of_spec_7() {
     assert!(
         copies.is_empty(),
         "spec 6 states again what spec 7's export section states: {copies:#?}"
+    );
+}
+
+/// The fewest words in a row that spec 6 may not share with spec 7's export
+/// section. A whole-fragment match misses a copy that drops the last clause
+/// of a sentence. A run of this many words catches it.
+const RUN_WORDS: usize = 8;
+
+/// Plain text cut into words, with punctuation gone.
+fn words(text: &str) -> Vec<String> {
+    plain(text)
+        .split(|c: char| !(c.is_alphanumeric() || c == '\'' || c == '-' || c == '_'))
+        .filter(|w| !w.is_empty())
+        .map(str::to_owned)
+        .collect()
+}
+
+#[test]
+fn spec_6_shares_no_run_of_eight_words_with_the_export_section_of_spec_7() {
+    let seven = spec_seven();
+    let six = format!(" {} ", words(&spec_six()).join(" "));
+    let mut runs = BTreeSet::new();
+    // Headings are left out: spec 6 keeps the three export headings on
+    // purpose, so that their inbound links land.
+    for line in export_section(&seven)
+        .iter()
+        .filter(|l| !l.starts_with('#'))
+    {
+        for cell in line.split('|') {
+            let w = words(cell);
+            for run in w.windows(RUN_WORDS) {
+                let run = run.join(" ");
+                if six.contains(&format!(" {run} ")) {
+                    runs.insert(run);
+                }
+            }
+        }
+    }
+    assert!(
+        runs.is_empty(),
+        "spec 6 shares these runs of {RUN_WORDS} words with spec 7's export section: {runs:#?}"
     );
 }
 
@@ -383,4 +479,12 @@ fn spec_7_states_six_filter_rules() {
         "spec 7 states {} filter rules, not six: {rules:#?}",
         rules.len()
     );
+    for (i, (found, held)) in rules.iter().zip(FILTER_RULES).enumerate() {
+        assert_eq!(
+            found,
+            held,
+            "spec 7 states filter rule {} otherwise than this file holds it",
+            i + 1
+        );
+    }
 }

@@ -180,7 +180,7 @@ A graph export is one more projection, and every emitter declares what its targe
 
 ### An export profile carries a filter
 
-An export profile names an audience, a filter over facet values and a tombstone grain. [Spec 7](07-distribution-and-federation.md#an-export-profile-carries-a-filter) states the rules that make the filter honest, the tombstone grains, and why an exporter fails closed.
+An export profile selects what one audience receives. [Spec 7](07-distribution-and-federation.md#an-export-profile-carries-a-filter) states what a profile names, the rules that make the filter honest, the tombstone grains, and why an exporter fails closed.
 
 ### What a filtered export claims, and what it does not
 
