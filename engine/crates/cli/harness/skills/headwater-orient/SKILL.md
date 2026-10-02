@@ -47,4 +47,3 @@ The test is whether you could name the file the answer is in. If yes, `explain` 
 ## What orientation does not settle
 
 `explain` reports the warrant of a document and never whether it is right. Contradictions between documents that each pass every rule are what a coherence sweep is for, and the `headwater-sweep` skill carries it. Whether the corpus owes something that nobody has written is a question for the same sweep, and for `headwater check` when a rule already reads it.
-<!-- installed by headwater init --harness, digest sha256:3f0287830cfecbc34a888ac8e909b6b4b6f20bfbac764bd47c6d1be6468f6458 -->

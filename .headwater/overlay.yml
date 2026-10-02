@@ -1110,9 +1110,12 @@ add:
   # pattern here that matches no entry, and `taxonomy audit` prints the share
   # of in-scope entries an edge reaches, per pattern and in total. The seven
   # patterns are the ones the governs-edges evaluation names under "Coverage:
-  # two numbers with two denominators".
+  # two numbers with two denominators". The eighth is the source of the agent
+  # set `headwater init --harness` writes, which moved there from
+  # `.claude/skills/` and `.claude/agents/` (#1578).
   anchors.code_path.scope:
     - engine/crates/**/src/**/*.rs
+    - engine/crates/cli/harness/**
     - .githooks/**
     - .claude/hooks/**
     - .claude/agents/**

@@ -500,7 +500,9 @@ fn dispatch(root: &Path, verb: Verb) -> ExitCode {
             package,
             git,
             git_config,
-        } => init(root, corpus, package, git, git_config),
+            harness,
+            check,
+        } => init(root, corpus, package, git, git_config, harness, check),
         Verb::Infer {
             owner,
             until,
@@ -2598,7 +2600,7 @@ fn artifact(
 ///
 /// [Spec 2](../../../../docs/spec/02-taxonomy-model.md#versioning-by-measured-compatibility)
 /// splits a payload into "what the engine can apply mechanically
-/// (`headwater migrate --apply`) and what needs human or agent judgment
+/// (`headwater taxonomy migrate --apply`) and what needs human or agent judgment
 /// (emitted as a task list with the affected documents attached)". Both halves
 /// are below, and the split is not this function's to make: it is derived from
 /// the target list by
@@ -5582,8 +5584,8 @@ fn probe_delta(
 
 /// `headwater probe grade <path>`.
 ///
-/// The one verb of this binary that returns a verdict, and the exit status
-/// still carries none. A probe never gates
+/// It returns a verdict for each expectation, and the exit status still
+/// carries none. A probe never gates
 /// ([spec 5](../../../../docs/spec/05-ai-integration.md#three-tiers-and-the-cadence-follows-the-purpose)),
 /// so a run where every expectation was refuted exits 0 exactly as a run where
 /// every one was satisfied does. A caller that wants the rate reads the text,
@@ -7606,16 +7608,128 @@ fn init(
     package: Option<String>,
     git: bool,
     git_config: bool,
+    harness: bool,
+    check: bool,
 ) -> ExitCode {
+    if check {
+        return init_harness(root, true);
+    }
     let bound = root.join(headwater_resolve::package::CONSUMER).exists();
-    if !(git && bound) {
+    if !((git || harness) && bound) {
         let bound = bind(root, corpus_root, package);
-        if bound != ExitCode::SUCCESS || !git {
+        if bound != ExitCode::SUCCESS || !(git || harness) {
             return bound;
         }
         println!();
     }
-    init_git(root, git_config)
+    let git_step = if git {
+        init_git(root, git_config)
+    } else {
+        ExitCode::SUCCESS
+    };
+    if !harness {
+        return git_step;
+    }
+    if git {
+        println!();
+    }
+    let harness_step = init_harness(root, false);
+    if git_step != ExitCode::SUCCESS {
+        return git_step;
+    }
+    harness_step
+}
+
+/// `headwater init --harness`: the skills and the agent Headwater ships.
+///
+/// **It decides every path before it writes one.** A path that holds a file
+/// the step did not write, or one somebody edited since, is refused, and then
+/// no file of the set is written: a half-installed set would leave one
+/// harness reading this release and another reading an older one.
+/// [`headwater_cli::harness::classify`] is the decision.
+///
+/// **Under `check` it writes nothing.** It reports each path that does not
+/// hold this release's bytes, so a repository that commits the set holds it
+/// the way `generate --check` holds a projection. It never binds.
+fn init_harness(root: &Path, check: bool) -> ExitCode {
+    use headwater_cli::harness::{classify, files, Found};
+    let files = files();
+    let mut writes = Vec::new();
+    let mut foreign = Vec::new();
+    for file in &files {
+        let existing = match std::fs::read(root.join(&file.path)) {
+            Ok(bytes) => Some(bytes),
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => None,
+            Err(error) => return refuse(&format!("cannot read {}: {error}", file.path)),
+        };
+        match classify(existing.as_deref(), &file.bytes) {
+            Found::Current => {}
+            Found::Foreign => foreign.push(file),
+            found => writes.push((file, found)),
+        }
+    }
+    if check {
+        if writes.is_empty() && foreign.is_empty() {
+            println!(
+                "the {} files of the harness set hold the bytes of this release",
+                files.len()
+            );
+            return ExitCode::SUCCESS;
+        }
+        for (file, found) in &writes {
+            let state = match found {
+                Found::Absent => "is absent",
+                _ => "holds an earlier release",
+            };
+            eprintln!("headwater: {} {state}", file.path);
+        }
+        for file in &foreign {
+            eprintln!(
+                "headwater: {} differs from this release, and the step did not write it",
+                file.path
+            );
+        }
+        eprintln!("headwater: `headwater init --harness` writes the set");
+        return ExitCode::FAILURE;
+    }
+    if !foreign.is_empty() {
+        for file in &foreign {
+            eprintln!(
+                "headwater: {}",
+                err(&format!(
+                    "{} holds a file that `headwater init --harness` did not write, or one \
+                     somebody edited",
+                    file.path
+                ))
+            );
+        }
+        return refuse(
+            "the step wrote no file of the set. Move each file above away, or delete it, and \
+             run the step again",
+        );
+    }
+    for (file, found) in &writes {
+        let at = root.join(&file.path);
+        if let Some(parent) = at.parent() {
+            if let Err(error) = std::fs::create_dir_all(parent) {
+                return refuse(&format!("cannot create {}: {error}", parent.display()));
+            }
+        }
+        if let Err(error) = std::fs::write(&at, &file.bytes) {
+            return refuse(&format!("cannot write {}: {error}", file.path));
+        }
+        match found {
+            Found::Absent => println!("wrote {}", file.path),
+            _ => println!("wrote {} over the copy an earlier release wrote", file.path),
+        }
+    }
+    if writes.is_empty() {
+        println!(
+            "the {} files of the harness set already hold this release, so nothing was written",
+            files.len()
+        );
+    }
+    ExitCode::SUCCESS
 }
 
 /// The name git prints for the driver, and the line it runs.

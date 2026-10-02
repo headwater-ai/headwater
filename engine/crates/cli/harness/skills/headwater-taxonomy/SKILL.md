@@ -80,4 +80,3 @@ It gates nothing and it exits 0 whatever it finds, because nothing declares what
     headwater generate
 
 A taxonomy change moves the lock digest, which moves every generated file that states it. Run `headwater generate` and read the diff.
-<!-- installed by headwater init --harness, digest sha256:cc779c2ec7660016e8927ed62e17b91c7a847a09cb70ec0d22c6c2c89a88e545 -->

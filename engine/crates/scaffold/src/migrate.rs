@@ -4,9 +4,9 @@
 //!
 //! [Spec 2](../../../../docs/spec/02-taxonomy-model.md#versioning-by-measured-compatibility)
 //! splits a migration payload into "what the engine can apply mechanically
-//! (`headwater migrate --apply`) and what needs human or agent judgment". A
-//! mechanical step names one new value, and applying it means rewriting one
-//! scalar of one front-matter key. This module is that rewrite.
+//! (`headwater taxonomy migrate --apply`) and what needs human or agent
+//! judgment". A mechanical step names one new value, and applying it means
+//! rewriting one scalar of one front-matter key. This module is that rewrite.
 //!
 //! # It is held to the bar `check --fix` is held to, and by the same means
 //!

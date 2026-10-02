@@ -3,11 +3,11 @@
 //! in place, in the file this repository owns.
 //!
 //! [Spec 2](../../../../docs/spec/02-taxonomy-model.md#versioning-by-measured-compatibility):
-//! "The payload migrates overlays, not only documents… `headwater migrate
-//! --apply` rewrites overlay addresses from that map." An address is the key of
-//! an operation, so the rewrite is a splice at one key and nothing else. The
-//! value under the key is what the adopter wrote, and no step of a payload has
-//! anything to say about it.
+//! "The payload migrates overlays, not only documents… `headwater taxonomy
+//! migrate --apply` rewrites overlay addresses from that map." An address is
+//! the key of an operation, so the rewrite is a splice at one key and nothing
+//! else. The value under the key is what the adopter wrote, and no step of a
+//! payload has anything to say about it.
 //!
 //! # Why this is a second writer beside [`crate::migrate`]
 //!

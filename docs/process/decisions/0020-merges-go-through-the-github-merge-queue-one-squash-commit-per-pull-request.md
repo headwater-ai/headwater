@@ -17,9 +17,9 @@ relations:
     - to: .github/workflows/ci.yml
       verified_revision: sha256:5f93740a98eb9b2dc3943e391f8c87246aff2a2e14bfd37e21aaf05e9cfe240b
     - to: tools/run/queue-done.sh
-      verified_revision: sha256:d7a2c3821a0db58d3e5ccfaf8152a613d316bf25df7b9848c174c65f418c4811
+      verified_revision: sha256:8f78819c2ec10471c380efa02b1804325f7b91f1ae43c486f7117a6277183858
     - to: tools/run/queue-done-fixtures.sh
-      verified_revision: sha256:2c1607d4ca51ba2f5f4527b9dbe005f1efb0b469eb00d7dfed90fbaf4e584eb2
+      verified_revision: sha256:9459b2ec8d08c14798a30e70b1a9a1bf85a32eaf3d2ee2a11dcc3c692cd56ada
 ---
 
 # Merges go through the GitHub merge queue, one squash commit per pull request

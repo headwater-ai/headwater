@@ -9,15 +9,18 @@ relations:
   governs:
     - [engine/crates/cli/src/lib.rs, engine/crates/cli/src/main.rs]
     - engine/crates/cli/tests/init.rs
+    - engine/crates/cli/src/harness.rs
+    - engine/crates/cli/harness/**
+    - engine/crates/cli/tests/init_harness.rs
 ---
 
 # headwater init
 
 ## Synopsis
 
-    headwater init [--corpus <dir>] [--package <name>] [--git [--git-config]] [--root <path>]
+    headwater init [--corpus <dir>] [--package <name>] [--git [--git-config]] [--harness [--check]] [--root <path>]
 
-The command writes `.headwater/taxonomy.yml` and `.headwater/overlay.yml` for a repository with no consumer declaration. With `--git`, it also writes the `.gitattributes` lines that the merge driver needs.
+The command writes `.headwater/taxonomy.yml` and `.headwater/overlay.yml` for a repository with no consumer declaration. With `--git`, it also writes the `.gitattributes` lines that the merge driver needs. With `--harness`, it also writes the skills and the agent that Headwater ships for an agent harness.
 
 ## Description
 
@@ -49,9 +52,40 @@ The override is one line of the form `<path> merge=headwater-regenerate` for eac
 
 **No step reaches a merge that comes before the override.** Git runs no hook before a merge. A clone can set the two `git config` lines by hand and merge before any run writes the override. That merge reads the committed `-merge` alone. Each fold conflicts with the current side in place, and no message names the producer. A repository whose hooks write the override on checkout, merge and commit has the same gap until the first of those hooks runs. Run `headwater init --git` after the `git config` lines and before the first merge.
 
+### The harness step
+
+`--harness` writes the agent support that Headwater ships: four skills and one agent. An agent harness reads these files from the repository. Each file tells an agent which verb to run at one moment of the work. The text of each file is compiled into the binary, so a release of the binary and its set are one version. No file of the set names a kind, an identifier, a path or a decision of the corpus that maintains this engine. A file reads what it needs from the lock of the repository or from a verb.
+
+The step writes each skill at two paths and the agent at one. Claude Code reads `.claude/skills/` and `.claude/agents/`. Copilot reads both directories too. Codex reads `.agents/skills/`. Codex states no agent file, so the step writes no agent file for it. <!-- headwater allow=surface.local_path.instructed scope=block until=2027-09-30 reason=false_positive note=these are paths headwater init --harness writes into the repository of the adopter -->
+
+| File | Path the step writes |
+|---|---|
+| the `headwater-orient` skill | `.claude/skills/headwater-orient/SKILL.md` <!-- headwater allow=surface.local_path.instructed scope=block until=2027-09-30 reason=false_positive note=a path the step writes for the adopter --> |
+| the `headwater-orient` skill | `.agents/skills/headwater-orient/SKILL.md` |
+| the `headwater-authoring` skill | `.claude/skills/headwater-authoring/SKILL.md` <!-- headwater allow=surface.local_path.instructed scope=block until=2027-09-30 reason=false_positive note=a path the step writes for the adopter --> |
+| the `headwater-authoring` skill | `.agents/skills/headwater-authoring/SKILL.md` |
+| the `headwater-taxonomy` skill | `.claude/skills/headwater-taxonomy/SKILL.md` <!-- headwater allow=surface.local_path.instructed scope=block until=2027-09-30 reason=false_positive note=a path the step writes for the adopter --> |
+| the `headwater-taxonomy` skill | `.agents/skills/headwater-taxonomy/SKILL.md` |
+| the `headwater-sweep` skill | `.claude/skills/headwater-sweep/SKILL.md` <!-- headwater allow=surface.local_path.instructed scope=block until=2027-09-30 reason=false_positive note=a path the step writes for the adopter --> |
+| the `headwater-sweep` skill | `.agents/skills/headwater-sweep/SKILL.md` |
+| the `headwater-maintainer` agent | `.claude/agents/headwater-maintainer.md` <!-- headwater allow=surface.local_path.instructed scope=block until=2027-09-30 reason=false_positive note=a path the step writes for the adopter --> |
+
+**The set holds no hook yet.** A hook needs a configuration that each harness reads, and a script or a verb that the configuration calls. Which of the two ships is not decided, so the step writes no hook and no hook configuration ([#1578](https://github.com/headwater-ai/headwater/issues/1578)).
+
+**The last line of each file records that the step wrote it.** The line is `<!-- installed by headwater init --harness, digest sha256:<hex> -->`, and the digest is over every byte before that line. The step decides each path before it writes any path:
+
+- When the path holds no file, the step writes the file.
+- When the file holds the bytes of this release, the step writes nothing. So a second run writes nothing.
+- When the file ends with the line and the digest agrees with the bytes before it, an earlier release wrote the file. Nobody edited it since. The step writes the text of this release over it.
+- In every other case, somebody edited the file or another tool wrote it. The step names the path on standard error, writes no file of the set, and exits 1. Move the file away, or delete it, and run the step again.
+
+**`--check` writes nothing and reports.** It does not bind the repository and does no other step. It exits 0 when each path of the table holds the bytes of this release. Otherwise it names each path that differs or is absent, and it exits 1. A repository that commits the set can run `headwater init --harness --check` in CI, as it runs `headwater generate --check`.
+
+On a repository that is already bound, `--harness` skips the declaration and the overlay and does the harness step alone. With `--git` too, it does the git step and then the harness step.
+
 ## Preconditions
 
-Without `--git`, the repository must not already contain `.headwater/taxonomy.yml`. Without `--corpus`, a subdirectory containing Markdown must exist. The selected package may be absent, but the command reports that the adopter must copy or vendor it before resolution.
+Without `--git` or `--harness`, the repository must not already contain `.headwater/taxonomy.yml`. Without `--corpus`, a subdirectory containing Markdown must exist. The selected package may be absent, but the command reports that the adopter must copy or vendor it before resolution.
 
 ## Options
 
@@ -61,15 +95,17 @@ Without `--git`, the repository must not already contain `.headwater/taxonomy.ym
 | `--package <name>` | Names the package to consume. |
 | `--git` | Appends the `-merge` lines to `.gitattributes`. Prints the two `git config` lines that name the driver and the override lines that select it. On a bound repository, it does this and nothing else. |
 | `--git-config` | Also runs the two `git config` lines in this clone, and then appends the override lines to its `info/attributes`. It requires `--git`. |
+| `--harness` | Writes the skills and the agent of the harness step, at each path its table names. On a bound repository, it does this and nothing else, or this after the git step under `--git`. |
+| `--check` | Writes no file of the harness step, and exits 1 when a path of its table does not hold the bytes of this release. It requires `--harness`. |
 | `--root <path>` | Selects the repository to initialize. |
 | `--no-color` | Force plain text on both streams: bold and dim weight plus glyphs, no escape sequence. The default already senses whether each stream is a terminal, and renders color only there. |
 | `--no-banner` | Suppress the masthead: the line naming this binary and its version, that the root help screen alone prints. It is accepted here and does nothing, since only the root screen prints one. |
 
 ## Exit status
 
-**0** means that the declaration and overlay were written, and that the git step completed where `--git` asked for it.
+**0** means that the declaration and overlay were written. It also means that each step a flag asked for completed: the git step under `--git`, and the harness step under `--harness`. Under `--check`, it means that every path of the harness table holds the bytes of this release.
 
-**1** means one of five failures. The repository is already bound and `--git` is absent. No corpus root could be proposed. A file could not be written. A `git config` line failed, and then no override is written. Or `--git` ran inside a git repository and git did not give the merge attributes. The step then does its other work, prints the reason on standard error, and exits 1, as [`headwater derived`](headwater-derived.md) does.
+**1** means one of seven failures. The repository is already bound and neither `--git` nor `--harness` is present. A path of the harness table holds a file that the step did not write, and then the step writes no file of the set. Under `--check`, a path of the harness table does not hold the bytes of this release. No corpus root could be proposed. A file could not be read or written, and a path of the harness table that cannot be read is refused before the step writes any file. A `git config` line failed, and then no override is written. Or `--git` ran inside a git repository and git did not give the merge attributes. The step then does its other work, prints the reason on standard error, and exits 1, as [`headwater derived`](headwater-derived.md) does.
 
 **1**, and never 101, when standard output or standard error cannot be written, and one sentence on standard error names a failed standard output.
 
@@ -87,6 +123,7 @@ The command reads no environment variable. Under `--git`, it runs `git` from the
 | `.gitattributes` | Under `--git`, read, and appended to with one line for each derived file that it does not declare. |
 | `.git/config` | Under `--git-config`, written by the two `git config` lines. |
 | `info/attributes` in the git directory | Under `--git-config`, read, and appended to with one `merge=headwater-regenerate` line for each derived file that it does not select. Git names the path. Without `--git-config`, not written. |
+| `.claude/skills/headwater-*/SKILL.md`, `.agents/skills/headwater-*/SKILL.md` and `.claude/agents/headwater-maintainer.md` | Under `--harness`, read, and written where [the harness step](#the-harness-step) permits. Under `--check`, read and not written. <!-- headwater allow=surface.local_path.instructed scope=block until=2027-09-30 reason=false_positive note=paths headwater init --harness writes into the repository of the adopter --> |
 
 ## See also
 
