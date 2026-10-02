@@ -679,6 +679,18 @@ case $(boundary "$root/engine/crates/cli/harness" "$scratch/newdot") in
     *'unsorted is neither shipped nor named as internal'*) pass 'and a file in neither list is reported' ;;
     *) fail 'a file in neither list is reported' 'the boundary passed it' ;;
 esac
+# The same arm in the other two directories the boundary reads.
+mkdir -p "$scratch/cmddot/commands" "$scratch/skilldot/skills/adopter-tips"
+printf -- '---\ndescription: a command in neither list\n---\n' > "$scratch/cmddot/commands/ship.md"
+printf -- '---\nname: adopter-tips\n---\n' > "$scratch/skilldot/skills/adopter-tips/SKILL.md"
+case $(boundary "$root/engine/crates/cli/harness" "$scratch/cmddot") in
+    *'ship is neither shipped nor named as internal'*) pass 'and a command in neither list is reported' ;;
+    *) fail 'a command in neither list is reported' 'the boundary passed it' ;;
+esac
+case $(boundary "$root/engine/crates/cli/harness" "$scratch/skilldot") in
+    *'adopter-tips is neither shipped nor named as internal'*) pass 'and a skill in neither list is reported' ;;
+    *) fail 'a skill in neither list is reported' 'the boundary passed it' ;;
+esac
 
 printf '\n%s passed, %s failed\n' "$passed" "$failed"
 [ "$failed" -eq 0 ]

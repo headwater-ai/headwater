@@ -273,20 +273,74 @@ fn the_harness_step_writes_the_shipped_set_into_a_repository_bound_to_another_ta
             }
         }
         for span in spans(&text) {
-            if only_ours.contains(&span.to_string()) {
-                named.push(format!("{path} names the kind `{span}`"));
+            for kind in kinds_in_span(span) {
+                if only_ours.contains(&kind.to_string()) {
+                    named.push(format!("{path} names the kind `{kind}` in `{span}`"));
+                }
             }
         }
     }
     assert!(named.is_empty(), "{}", named.join("\n"));
 
-    // (c) No written path is an internal file of this repository.
+    // (c) No written path is an internal file of this repository, and no
+    // written text names one. The names are read from this repository's
+    // `.claude`, so the boundary is the tree and not a list in the engine.
     let internal = internal_names();
+    let mut leaked = Vec::new();
     for path in &written {
         let name = shipped_name(path).expect("every written path addresses a skill or an agent");
         assert!(!internal.contains(&name), "{path} is an internal file");
         assert!(!name.starts_with("hw-"), "{path} is named as internal");
+        let text = std::fs::read_to_string(root.join(path)).expect("a written file reads");
+        for other in &internal {
+            if names(&text, other) {
+                leaked.push(format!("{path} names the internal file `{other}`"));
+            }
+        }
     }
+    assert!(leaked.is_empty(), "{}", leaked.join("\n"));
+}
+
+/// The words of a code span that could be a kind name. The verb of a
+/// `headwater <verb>` command is a verb and not a kind, so `headwater probe
+/// stale` names no kind while `headwater new obligation_record` names one.
+fn kinds_in_span(span: &str) -> Vec<&str> {
+    let words: Vec<&str> = span
+        .split(|c: char| !(c.is_ascii_lowercase() || c.is_ascii_digit() || c == '_'))
+        .filter(|word| !word.is_empty())
+        .collect();
+    let verb = usize::from(words.first() == Some(&"headwater"));
+    words
+        .iter()
+        .enumerate()
+        .filter(|(at, _)| verb == 0 || *at != 1)
+        .map(|(_, word)| *word)
+        .collect()
+}
+
+/// Whether a text names an internal file. A name with a hyphen is matched
+/// anywhere, because no English word holds one. A bare word, such as the
+/// `next` command, is matched only as a whole code span, because the word is
+/// also English.
+fn names(text: &str, name: &str) -> bool {
+    if name.contains('-') {
+        text.contains(name)
+    } else {
+        spans(text).iter().any(|span| *span == name)
+    }
+}
+
+#[test]
+fn a_kind_inside_a_command_span_counts_and_the_verb_of_a_command_does_not() {
+    assert_eq!(
+        kinds_in_span("headwater new obligation_record --title x"),
+        vec!["headwater", "obligation_record", "title", "x"]
+    );
+    assert!(!kinds_in_span("headwater probe stale").contains(&"probe"));
+    assert!(kinds_in_span("probe").contains(&"probe"));
+    assert!(names("dispatch `hw-build` now", "hw-build"));
+    assert!(!names("the next run", "next"));
+    assert!(names("run `next`", "next"));
 }
 
 #[test]
