@@ -301,6 +301,119 @@ def unheld_problems(rel, text, held=HELD_SECTION):
             % (rel, n, match, where) for n, match in unheld_counts(text, held)]
 
 
+# The figures a `What the run reported` block on the evaluation states. It
+# states no check instances, census or graph, which move with every release.
+PAGE_FIGURES = ("files under the corpus root", "typed", "excluded", "checked",
+                "findings", "errors", "strict exit status")
+# Each form `## The count` writes the design-spec total under the entry alone in.
+COUNT_FIGURES = [
+    re.compile(r"^\| Findings raised \| (\d+) \|"),
+    re.compile(r"^\| Caught by neither \| (\d+) \|"),
+    re.compile(r"\bcatches 0 of the (\d+)\b"),
+    re.compile(r"\bhonest total is (\d+)\b"),
+]
+COUNT_SECTION = "The count"
+SHELF_SECTION = "What shape the shelf declaration had to take"
+SHELF_ROW = re.compile(r"^\| `homogeneous: [^|]*\| (\d+)\b")
+FIXTURE_LINK = re.compile(r"\]\((\.\./taxonomies/[\w-]+/fixtures/n8n/README\.md)")
+
+
+def headed_blocks(text):
+    """Every heading of a page as (level, heading, enclosing `##` heading, [(line number, line)])."""
+    blocks, h2 = [], None
+    for n, line in enumerate(text.splitlines(), 1):
+        m = re.match(r"^(#{1,6}) (.*)$", line)
+        if m:
+            level, heading = len(m.group(1)), m.group(2).strip()
+            if level <= 2:
+                h2 = heading if level == 2 else None
+            blocks.append((level, heading, h2, []))
+        elif blocks:
+            blocks[-1][3].append((n, line))
+    return blocks
+
+
+def evaluation_figure_problems(root, text):
+    """Every design-spec or standards-spec figure the evaluation states that its fixture README does not, and the count held.
+
+    The README's own figures are diffed against a live run, so a figure held
+    here is held transitively: page, README, run. Nothing here carries a number.
+    Each `What the run reported` block is held against the README it links; the
+    `## The count` totals and the shelf-shape table against the design-spec one.
+    """
+    problems, held, readmes = [], 0, {}
+
+    def figures(rel):
+        if rel not in readmes:
+            try:
+                readmes[rel] = stated_figures(open(os.path.join(root, rel), encoding="utf-8").read())
+            except (Mismatch, OSError) as e:
+                readmes[rel] = None
+                problems.append("%s: holds the figures %s states, and cannot read them: %s" % (rel, EVALUATION, e))
+        return readmes[rel]
+
+    def hold(n, label, value, rel, theirs):
+        if value != theirs:
+            problems.append("%s:%d: states %s %s, and %s states %s" % (EVALUATION, n, label, value, rel, theirs))
+
+    blocks = headed_blocks(text)
+    summaries = [b for b in blocks if b[1] == SUMMARY]
+    linked = []
+    for _, _, _, body in summaries:
+        link = next((FIXTURE_LINK.search(l) for _, l in body if FIXTURE_LINK.search(l)), None)
+        first = body[0][0] - 1 if body else 0
+        if link is None:
+            problems.append("%s:%d: a `%s` block links no fixture README, so this job cannot hold it" % (EVALUATION, first, SUMMARY))
+            continue
+        rel = os.path.normpath(os.path.join(os.path.dirname(EVALUATION), link.group(1)))
+        linked.append(rel)
+        theirs = figures(rel)
+        if theirs is None:
+            continue
+        patterns = dict(FIGURES)
+        for label in PAGE_FIGURES:
+            hit = next(((n, m) for n, l in body for m in [re.search(patterns[label], l)] if m), None)
+            if hit is None:
+                problems.append("%s:%d: the `%s` block states no %s, which this job holds" % (EVALUATION, first, SUMMARY, label))
+                continue
+            n, m = hit
+            hold(n, label, next(g for g in m.groups() if g is not None), rel, theirs[label])
+            held += 1
+    # The denominator: the design-spec summary is the one `## The count` restates.
+    if DESIGN_SPEC_README not in linked:
+        problems.append("%s: no `%s` block links %s, which this job holds the page against" % (EVALUATION, SUMMARY, DESIGN_SPEC_README))
+    design = figures(DESIGN_SPEC_README)
+    if design is None:
+        return problems, held
+
+    rows = 0
+    for _, _, h2, body in blocks:
+        if h2 != COUNT_SECTION:
+            continue
+        for n, line in body:
+            for pattern in COUNT_FIGURES:
+                for m in pattern.finditer(line):
+                    hold(n, "findings", m.group(1), DESIGN_SPEC_README, design["findings"])
+                    held += 1
+                    rows += pattern is COUNT_FIGURES[0]
+    if rows == 0:
+        problems.append("%s: `## %s` carries no `| Findings raised | N |` row, which this job holds" % (EVALUATION, COUNT_SECTION))
+
+    # The shelf-shape table restates the README's, row for row.
+    ours = [(n, m.group(1)) for _, h, _, body in blocks if h == SHELF_SECTION
+            for n, l in body for m in [SHELF_ROW.match(l)] if m]
+    readme_text = open(os.path.join(root, DESIGN_SPEC_README), encoding="utf-8").read()
+    theirs = [m.group(1) for l in readme_text.splitlines() for m in [SHELF_ROW.match(l)] if m]
+    if not ours or len(ours) != len(theirs):
+        problems.append("%s: the shelf-shape table has %d rows, and the one in %s has %d"
+                        % (EVALUATION, len(ours), DESIGN_SPEC_README, len(theirs)))
+    else:
+        for (n, value), want in zip(ours, theirs):
+            hold(n, "a shelf-shape count of", value, DESIGN_SPEC_README, want)
+            held += 1
+    return problems, held
+
+
 PROVOKED_HELD = "A held run reads 8 check instances."
 PROVOKED_COUNTS = ("1,055 check instances", "1 check instance", "**12** check-instances", "_3_  check instances")
 PROVOKED_UNHELD = "A provoked run reads %s." % ", ".join(PROVOKED_COUNTS)
@@ -493,6 +606,9 @@ def main(root, binary):
         unheld = unheld_problems(EVALUATION, evaluation, None)
         problems += unheld
         print("n8n fixtures: %s, %d check-instance counts on a page with no held section" % (EVALUATION, len(unheld)))
+        differ, figures_held = evaluation_figure_problems(root, evaluation)
+        problems += differ
+        print("n8n fixtures: %s, %d figures held against the README each restates" % (EVALUATION, figures_held))
     if binary is None:
         return report(problems, corpora, "n8n fixtures: no check-instance count outside `## %s` on %d pages, and none on %s"
                       % (HELD_SECTION, len(corpora), EVALUATION))
