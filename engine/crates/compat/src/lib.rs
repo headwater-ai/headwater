@@ -34,8 +34,13 @@
 //! candidate taxonomy that does not resolve produces no census, no run, no plan
 //! and no graph, and five dimensions then have nothing to compare. Reporting
 //! them as preserved would state the strongest possible claim on the strength
-//! of a failure. [`Measured::against_nothing`] is the only route to that state
-//! and it takes the reason, so a caller cannot reach it without one.
+//! of a failure. [`Measured::against_nothing`] fills those five with
+//! [`Outcome::NotMeasured`]. A caller can also build that arm for one
+//! dimension it could not run: the CLI does so for `addressability` when the
+//! candidate does not resolve and no refusal names an overlay address, and for
+//! `projection` when a plan declaration does not read. Every route takes the
+//! reason, because the arm carries it as its one field, so a caller cannot
+//! reach the state without one.
 
 use headwater_census::census::{Census, Outcome as Row};
 use headwater_check::instance::{Instance, Outcome as Verdict};
@@ -143,8 +148,10 @@ impl Measured {
     /// The five corpus dimensions, unmeasured, with the overlay dimension the
     /// caller did measure.
     ///
-    /// The one route to a report in which a dimension did not run. A candidate
-    /// taxonomy that does not resolve is the case: the resolver's refusal is
+    /// The route for a candidate taxonomy that does not resolve, the one case
+    /// in which five dimensions did not run. A caller that could not run one
+    /// dimension builds [`Outcome::NotMeasured`] for it directly, as the module
+    /// comment says. Here the resolver's refusal is
     /// itself the `addressability` reading when it names an overlay address,
     /// and the other five have no second reading to compare against.
     pub fn against_nothing(addressability: Outcome, why: &str) -> Measured {
