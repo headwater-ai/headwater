@@ -109,6 +109,7 @@ fn scaffold(root: &Path, kind: &str, title: &str) -> headwater_scaffold::Plan {
             index: &index,
             config: &config,
             claims: &headwater_check::claim::Claims::empty(),
+            resolvers: &headwater_graph::anchors::Resolvers::over(&corpus),
         },
         &Request {
             kind,

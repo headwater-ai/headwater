@@ -1,7 +1,7 @@
 ---
 id: HW-DR-0083
-status: current
-status_since: 2026-09-26
+status: superseded
+status_since: 2026-10-02
 summary: "The base package declares `created_by: agent` on `governs` and `traces_to`, because no verb writes either edge and a person types the line a session proposes"
 last_verified: 2026-09-26
 title: "Governs and traces_to are created by an agent, because a session proposes the line and a person types it"
@@ -19,6 +19,8 @@ relations:
     - HW-OBL-0105
     - HW-SPEC-taxonomy-model
     - HW-EVAL-default-taxonomy-first-run
+  superseded_by:
+    - HW-DR-0104
 ---
 
 # Governs and traces_to are created by an agent, because a session proposes the line and a person types it

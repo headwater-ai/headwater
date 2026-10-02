@@ -33,6 +33,7 @@ use headwater_census::shelves::Taxonomy;
 use headwater_census::walk::Corpus;
 use headwater_check::shape::Shape;
 use headwater_check::Date;
+use headwater_graph::anchors::{CommentScan, Resolvers};
 use headwater_graph::declarations::Declarations;
 use headwater_graph::index::Index;
 use headwater_graph::Config;
@@ -102,6 +103,9 @@ struct Loaded {
     /// No store under the fixture tree, so this is empty. Held rather than made
     /// at the point of use, because `sources` returns a borrow of it.
     claims: headwater_check::claim::Claims,
+    /// The resolvers `headwater check` would build over this tree: the source
+    /// tree, and `comment-scan` where an anchor kind names it with a pattern.
+    resolvers: Resolvers,
 }
 
 impl Loaded {
@@ -117,6 +121,30 @@ impl Loaded {
         let census = census::take(&corpus, &shelves);
         let config = Config::default();
         let index = Index::build(&census, &config);
+        let mut resolvers = Resolvers::over(&corpus);
+        if let Some(pattern) = relations
+            .anchors
+            .iter()
+            .find(|anchor| anchor.resolver == "comment-scan")
+            .and_then(|anchor| anchor.pattern.clone())
+        {
+            resolvers = resolvers
+                .with(Box::new(CommentScan::new(
+                    root,
+                    pattern,
+                    CommentScan::claimed(root),
+                )))
+                .expect("one resolver of each name");
+        }
+        if relations
+            .anchors
+            .iter()
+            .any(|anchor| anchor.resolver == "every-string")
+        {
+            resolvers = resolvers
+                .with(Box::new(EveryString))
+                .expect("one resolver of each name");
+        }
         Loaded {
             resolved,
             shape,
@@ -126,6 +154,7 @@ impl Loaded {
             index,
             config,
             claims: headwater_check::claim::Claims::at(root),
+            resolvers,
         }
     }
 
@@ -139,6 +168,29 @@ impl Loaded {
             index: &self.index,
             config: &self.config,
             claims: &self.claims,
+            resolvers: &self.resolvers,
+        }
+    }
+}
+
+/// A resolver that claims every string as itself and reads no citation.
+///
+/// It stands in for an adopter's resolver whose namespace overlaps the source
+/// tree, so that a path two anchor kinds both claim reaches the verb. The check
+/// refuses such a target as having two identities, and so must the verb.
+struct EveryString;
+
+impl headwater_graph::anchors::Resolver for EveryString {
+    fn name(&self) -> &str {
+        "every-string"
+    }
+
+    fn resolve(&self, raw: &str) -> headwater_graph::anchors::Binding {
+        headwater_graph::anchors::Binding::Resolved {
+            normalized: raw.to_string(),
+            matched: vec![raw.to_string()],
+            excluded_by: None,
+            revision: headwater_graph::anchors::Revision::known(None),
         }
     }
 }
@@ -249,6 +301,24 @@ fn cases() -> Vec<Case> {
         case("decision_record", "Two edges at once")
             .relating("supersedes", "SPEC-FIX-the-second-part")
             .relating("assesses", "SPEC-FIX-the-first-part"),
+        // An agent's edges onto an anchor rather than a document. The verb
+        // binds each through the resolver `headwater check` uses, so the two
+        // agree on what a pattern reaches (HW-DR-0074).
+        case("decision_record", "A governs pattern that matches an entry")
+            .relating("governs", "corpus/code/*.txt"),
+        case("decision_record", "A citation the file still owes")
+            .relating("cited_in", "corpus/code/widget.txt"),
+        // Two edges of one relation are two items under one key, and a
+        // path that opens with `@` is quoted, so the front matter loads.
+        // An edge onto a path writes no far half and sets no state, and the
+        // same relation onto a document is owed both.
+        case("decision_record", "A required half onto a path")
+            .relating("realizes", "corpus/code/widget.txt"),
+        case("decision_record", "A required half onto a document")
+            .relating("realizes", "DR-FIX-0007"),
+        case("decision_record", TWO_PATTERNS)
+            .relating("governs", "corpus/code/*.txt")
+            .relating("governs", "@scoped/widget.txt"),
         // What it refuses. One case per branch of `Refusal`.
         case("nonesuch", "A kind nobody declared"),
         case("governed_document", "An abstract kind"),
@@ -273,6 +343,17 @@ fn cases() -> Vec<Case> {
         case("design_spec", "A target end the relation forbids").relating("refines", "DR-FIX-0007"),
         case("decision_record", "A target that resolves to nothing")
             .relating("supersedes", "DR-FIX-9999"),
+        case("decision_record", "A governs pattern that matches no entry")
+            .relating("governs", "src/nowhere/**"),
+        case("decision_record", "A citation in a file that is not there")
+            .relating("cited_in", "corpus/code/missing.txt"),
+        case("decision_record", "A citation in a directory").relating("cited_in", "corpus/code"),
+        case("decision_record", "A citation in a file that is not text")
+            .relating("cited_in", "corpus/code/image.png"),
+        case("decision_record", "A citation in a pattern")
+            .relating("cited_in", "corpus/code/*.txt"),
+        case("decision_record", "A path that two anchor kinds claim")
+            .relating("ruled_in", "corpus/code/widget.txt"),
         // What `--summary` does. It fills the facet in the `scent` role
         // directly, exactly as `--title` fills the one in the `name` role, so
         // it needs the same two cases the `name` role never needed a comment
@@ -308,6 +389,49 @@ fn cases() -> Vec<Case> {
         case("index_page", "A single file with a directory").within("corpus"),
         case("decision_record", "A directory shelf with a directory").within("corpus/decisions"),
     ]
+}
+
+/// The title of the case that names one relation twice.
+const TWO_PATTERNS: &str = "Two patterns under one key";
+
+/// The document `new` writes for two edges of one relation loads, and holds
+/// both targets under one key with the strings the caller wrote.
+///
+/// A transcript records the bytes and does not parse them. A second key of
+/// one name, or a plain path that opens with `@`, which YAML reserves, is a
+/// document the next command refuses, and only a parse shows it (#1560).
+#[test]
+fn two_edges_of_one_relation_load_as_one_key_with_both_targets() {
+    let loaded = Loaded::over(
+        &fixtures_dir(),
+        "corpus",
+        &fixtures_dir().join("scaffold.taxonomy.yml"),
+    );
+    let case = cases()
+        .into_iter()
+        .find(|case| case.title == TWO_PATTERNS)
+        .expect("the case is in the table");
+    let plan = propose(&loaded.sources(), &request(&case)).expect("both patterns bind");
+    let rendered = write::render(&plan);
+    let front = rendered
+        .strip_prefix("---\n")
+        .and_then(|rest| rest.split("\n---\n").next())
+        .expect("a front-matter block");
+    let document = headwater_yaml::load(front)
+        .unwrap_or_else(|errors| panic!("the front matter does not load: {errors:?}\n{front}"))
+        .value;
+    let governs: Vec<String> = document
+        .as_map()
+        .and_then(|map| map.get("relations"))
+        .and_then(|relations| relations.value.as_map())
+        .and_then(|relations| relations.get("governs"))
+        .and_then(|governs| governs.value.as_seq())
+        .expect("one `governs` key holding a sequence")
+        .iter()
+        .filter_map(|item| item.value.as_scalar())
+        .map(|scalar| headwater_yaml::core_schema::as_str(scalar).to_string())
+        .collect();
+    assert_eq!(governs, vec!["corpus/code/*.txt", "@scoped/widget.txt"]);
 }
 
 /// Every case over the fixture corpus, recorded whole.
@@ -391,6 +515,7 @@ branches![
     EndpointNotPermitted,
     ClaimUnwritable,
     TargetUnresolved,
+    AnchorUnresolved,
     ReciprocalUnwritable,
     TargetUnopened,
     DocumentUncreated,
@@ -449,6 +574,23 @@ fn render_plan(plan: &Plan) -> String {
                 owed.half.relation, owed.half.path, owed.until
             )),
             (None, None) => out.push_str("    no far half\n"),
+        }
+        if let Some(state) = &edge.sets_target_state {
+            out.push_str(&format!("    sets `{state}` on the target, later\n"));
+        }
+        if let Some(anchor) = &edge.anchor {
+            out.push_str(&format!(
+                "    anchor `{}`, matched {}\n",
+                anchor.anchor_kind,
+                match anchor.matched {
+                    Some(1) => "1 entry".to_string(),
+                    Some(count) => format!("{count} entries"),
+                    None => "no stated count".to_string(),
+                }
+            ));
+            if let Some(owes) = &anchor.owes {
+                out.push_str(&format!("    owes: {owes}\n"));
+            }
         }
     }
     let assisted = plan.assisted();

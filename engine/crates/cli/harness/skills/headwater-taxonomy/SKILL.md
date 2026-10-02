@@ -45,7 +45,7 @@ Four judgments are yours, because no validator makes them.
 - **Is this a kind or a facet?** A kind is a species of document and a facet is a property of one. If two documents differ only in a value, they are one kind with a facet.
 - **Does the shelf pattern overlap another?** Placement is primary, so a path that two shelves claim resolves to a kind by accident.
 - **Is the purpose right?** Routing matches a declared purpose against the intent of a task before it matches any text, so a wrong purpose is a wrong answer at the highest-value moment.
-- **Who pays for an edge?** `created_by` names an actor from a closed set, and it is a claim about the world. A relation that names `hook` where nothing mechanical writes it is a promise nobody keeps. Do not write a value that no code and no procedure honors.
+- **Who pays for an edge?** `created_by` names an actor from a closed set, and it is a claim about the world. A relation that names `hook` where nothing mechanical writes it is a promise nobody keeps. `headwater new --relates` writes an edge whose relation names `scaffold` or `agent`, and it refuses every other actor. Do not write a value that no code and no procedure honors.
 
 ## Three declarations that are easy to forget
 

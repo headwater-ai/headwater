@@ -3,7 +3,7 @@ id: HW-IFACE-headwater-new
 status: current
 status_since: 2026-09-06
 summary: "How to scaffold one typed document from the resolved taxonomy without overwriting existing files."
-last_verified: 2026-08-25
+last_verified: 2026-10-02
 title: "headwater new"
 relations:
   governs:
@@ -22,7 +22,7 @@ The command proposes and writes one document whose kind, shelf, facets, sections
 
 ## Description
 
-The command decides the complete artifact before it writes any file. It derives engine-owned fields, accepts a title and declared facet values, and can add scaffold-created relation edges.
+The command decides the complete artifact before it writes any file. It derives engine-owned fields and accepts a title and declared facet values. It can add relation edges that the taxonomy assigns to a scaffold or an agent.
 
 The command writes `provenance: {warrant: asserted}` into each document, because nobody has accepted the document yet. It writes no other member of the provenance block. A person who accepts the document sets `warrant: accepted` and adds their name in `accepted_by`.
 
@@ -52,7 +52,7 @@ A relation can name a kind that has no identifier scheme. For such a kind, the c
 
 The repository must have a readable consumer declaration, resolved taxonomy lock, corpus and configuration. The requested kind must exist in the resolved taxonomy.
 
-The title is required. A supplied relation must be declared as scaffold-created, connect permitted kinds and resolve at its target. A supplied facet must be required by the kind, must not be one that a declaration decides, and must use a permitted value. The identifier the run mints must be claimed by no document and by no file of the claim store.
+The title is required. A supplied relation must declare `created_by: scaffold` or `created_by: agent`, connect permitted kinds and resolve at its target. An anchor target binds through the resolvers that `headwater check` uses, so a `governs` pattern that matches no entry is refused. A review of the pull request that carries an `agent` edge accepts it ([HW-DR-0104](../decisions/0104-an-agent-writes-governs-traces-to-and-cited-in-through-the-verb-and-the-review-of-its-pull-request-is-the-acceptance.md)). A supplied facet must be required by the kind, must not be one that a declaration decides, and must use a permitted value. The identifier the run mints must be claimed by no document and by no file of the claim store.
 
 A shelf whose path puts a glob before a fixed file name, such as `docs/modules/*/README.md`, does not decide the directory. For a kind on such a shelf, `--directory` is required. The directory must be relative, must contain no `.`, `..` or empty segment, and must make a path that the shelf claims. No segment can hold `*`, `?` or `[`, because the command reads the directory as a literal path and not as a glob. On every other shelf, `--directory` is refused. A shelf whose path is one file, such as `docs/INDEX.md`, takes that path, and the command refuses when the file is already there.
 
@@ -62,7 +62,7 @@ A shelf whose path puts a glob before a fixed file name, such as `docs/modules/*
 |---|---|
 | `<kind>` | Selects the document kind. |
 | `--title <text>` | Supplies the document title and name facet. |
-| `--relates <relation=identifier>` | Adds a repeatable scaffold-created relation. |
+| `--relates <relation=identifier>` | Adds a repeatable relation that a scaffold or an agent creates. The value is an identifier, or a path or pattern where the relation admits an anchor. |
 | `--summary <text>` | Supplies the value of the facet in the `scent` role. |
 | `--facet <facet=value>` | Supplies a repeatable hand-entered facet value. |
 | `--directory <path>` | Names the directory for a shelf that fixes the file name after a glob. |
