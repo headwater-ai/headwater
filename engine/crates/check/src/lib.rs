@@ -808,7 +808,7 @@ pub fn run(
     // Two documents joined by a relation whose declared `invalid_when`
     // condition holds at both ends, over the relations that declare one.
     // Edge-scoped for [`dependency`]'s reason. See [`invalid_pair`].
-    let invalid_pair = invalid_pair::InvalidPair::over(declared.relations);
+    let invalid_pair = invalid_pair::InvalidPair::over(declared.relations, declared.shape);
     // An evidenced claim resting on a document nobody read, over the relations
     // whose declared family is `evidence`. Edge-scoped because the unit is the
     // pair: the claim is at one end and the warrant is at the other. See

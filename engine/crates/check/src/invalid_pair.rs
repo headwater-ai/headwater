@@ -24,6 +24,14 @@
 //! **every** pair holds at **both** ends. A facet one end does not declare is a
 //! condition that does not hold there, and that is a pass.
 //!
+//! **A list holds when it contains the value.** An end that writes
+//! `status: [current]` holds `status: current`, and an end that writes
+//! `[draft, superseded]` does not. A mapping holds nothing. The other reading,
+//! that a list never holds, was measured and refused (#1542): no other rule
+//! reports a list-valued state facet, so two live decisions joined by
+//! `conflicts_with` that wrote their status as a list checked clean, which is
+//! the state HW-OBL-0042 discharged.
+//!
 //! The meta-schema admits `both` alone, with a `gap:` comment that spec 2
 //! states no other form. This rule reads `both` alone and widens nothing.
 //!
@@ -51,15 +59,28 @@
 //! this engine can derive. A finding whose remedy is a rewrite is advisory in
 //! this repository's rule, so the severity is a warning.
 //!
-//! The remediation names only the edits that clear the finding: an end moved
-//! off the condition, by supersession where the facet is its status or by a
-//! changed facet. It does not name `overrides`. Under Q18 an overridden
-//! decision stays `current`, so the condition still holds and the finding
-//! stays, and a taxonomy can declare no `overrides` relation at all.
+//! The remediation names only the edits that clear the finding and end there.
+//! One is an end moved off the condition. The other is the entry removed, where
+//! the two documents no longer conflict. It does not name `overrides`. Under
+//! Q18 an overridden decision stays `current`, so the condition still holds and
+//! the finding stays, and a taxonomy can declare no `overrides` relation at all.
+//!
+//! **Where the condition names the facet in the `state` role, the remedy moves
+//! that facet by supersession alone.** The facet is read by role, through
+//! [`StateFacet`], and not as the literal `status`. Spec 2's condition is
+//! `status: current`, so the states left to move to are a terminal one and the
+//! initial one. The initial one is not an exit: a live document joined to a
+//! document at the initial state is `lifecycle.dependency.on_initial`'s
+//! finding, and that rule's remedy is to promote the draft, which restores this
+//! finding (#1542). So the remedy names no changed state facet and no initial
+//! value. A facet of the condition without the state role is still named as a
+//! facet to change at one end.
 
 use crate::finding::{at, Finding, Severity};
 use crate::instance::Outcome;
+use crate::lifecycle_state::StateFacet;
 use crate::scope::{EdgeCheck, EdgeUnit, EdgeView};
+use crate::shape::Shape;
 use headwater_graph::declarations::Relation;
 use headwater_graph::Declarations;
 use headwater_yaml::Mapping;
@@ -79,27 +100,74 @@ pub struct InvalidPair<'a> {
     /// Every relation that declares `invalid_when.both`. Empty for a taxonomy
     /// that declares none, and then this rule generates no instance at all.
     conditioned: Vec<&'a Relation>,
+    /// The name of the facet in the `state` role, read by role and never as
+    /// the literal `status`. It decides the remedy and never the verdict.
+    state: Option<String>,
 }
 
 impl<'a> InvalidPair<'a> {
-    pub fn over(declarations: &'a Declarations) -> Self {
+    pub fn over(declarations: &'a Declarations, shape: &Shape) -> Self {
         InvalidPair {
             conditioned: declarations
                 .relations
                 .iter()
                 .filter(|relation| !relation.invalid_when.is_empty())
                 .collect(),
+            state: StateFacet::of(shape).name,
         }
+    }
+
+    /// The edits that clear the finding and end there. See the module comment
+    /// for why a changed state facet is not one of them.
+    fn remedy(
+        &self,
+        relation: &Relation,
+        condition: &str,
+        (source, target): (&str, &str),
+        entry: &str,
+    ) -> String {
+        let stated = relation
+            .invalid_when
+            .iter()
+            .any(|(facet, _)| Some(facet.as_str()) == self.state.as_deref());
+        let others = relation
+            .invalid_when
+            .iter()
+            .filter(|(facet, _)| Some(facet.as_str()) != self.state.as_deref())
+            .map(|(facet, _)| format!("`{facet}`"))
+            .collect::<Vec<_>>()
+            .join(" and ");
+        let moves = match (stated, others.is_empty()) {
+            (true, true) => "supersede it".to_string(),
+            (true, false) => format!("supersede it, or change {others} at one end"),
+            (false, _) => {
+                format!("change {others} at one end, or supersede it where that changes {others}")
+            }
+        };
+        format!(
+            "decide which of {source} and {target} stands and move the other off {condition}: \
+             {moves}. If the two no longer conflict, remove the `{}` entry from {entry}",
+            relation.name
+        )
     }
 }
 
-/// The scalar value one end declares for a facet, and nothing where it
-/// declares none or declares a value that is not a scalar.
-fn value<'m>(facets: &'m Mapping, facet: &str) -> Option<&'m str> {
-    facets
-        .get(facet)
-        .and_then(|value| value.value.as_scalar())
-        .map(|scalar| scalar.text.as_str())
+/// Whether one end holds `wanted` for a facet. A scalar holds when its text is
+/// `wanted`, and a list holds when one of its scalar items is. An absent facet
+/// and a mapping do not hold. See the module comment for why a list is read.
+fn holds(facets: &Mapping, facet: &str, wanted: &str) -> bool {
+    let Some(value) = facets.get(facet) else {
+        return false;
+    };
+    if let Some(scalar) = value.value.as_scalar() {
+        return scalar.text == wanted;
+    }
+    value.value.as_seq().is_some_and(|items| {
+        items
+            .iter()
+            .filter_map(|item| item.value.as_scalar())
+            .any(|scalar| scalar.text == wanted)
+    })
 }
 
 /// The condition as an author reads it: "`status: current`", and the pairs
@@ -116,7 +184,7 @@ fn condition(relation: &Relation) -> String {
 impl EdgeCheck for InvalidPair<'_> {
     const RULE: &'static str = self::RULE;
     /// See [`crate::placement::Placement::VERSION`].
-    const VERSION: u32 = 1;
+    const VERSION: u32 = 2;
     /// The Q4 pair. See the module comment: both ends have to be documents,
     /// because the rule reads a facet at each of them.
     const UNIT: EdgeUnit = EdgeUnit::Pair;
@@ -149,11 +217,10 @@ impl EdgeCheck for InvalidPair<'_> {
             );
         };
 
-        let holds = relation.invalid_when.iter().all(|(facet, wanted)| {
-            value(source_facets, facet) == Some(wanted.as_str())
-                && value(target_facets, facet) == Some(wanted.as_str())
+        let held = relation.invalid_when.iter().all(|(facet, wanted)| {
+            holds(source_facets, facet, wanted) && holds(target_facets, facet, wanted)
         });
-        if !holds {
+        if !held {
             return Outcome::Passed;
         }
 
@@ -172,11 +239,11 @@ impl EdgeCheck for InvalidPair<'_> {
                  states two things that cannot both stand",
                 source.id, relation.name, target.id
             ),
-            remediation: format!(
-                "decide which of {} and {} stands, then move the other off {condition}: \
-                 supersede it where the facet is its status, or change the facet at one end if \
-                 the two no longer conflict",
-                source.path, target.path
+            remediation: self.remedy(
+                relation,
+                &condition,
+                (&source.path, &target.path),
+                &half.source.path,
             ),
             // No patch. Which side loses is a judgment only an author can
             // make (Q18).
