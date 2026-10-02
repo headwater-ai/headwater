@@ -514,6 +514,25 @@ impl ScopeReading {
     }
 }
 
+/// The governed scope over the union of every pattern's entries.
+///
+/// An entry two patterns admit is one entry of the tree, so this is a union
+/// and never the sum of the [`ScopeReading`] rows. The text and the JSON of
+/// the audit both read it from [`Audit::scope_total`], so they cannot state
+/// two totals for one tree (#1573).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct ScopeTotal {
+    pub in_scope: usize,
+    pub governed: usize,
+}
+
+impl ScopeTotal {
+    /// The share an edge reaches, and `None` where nothing is in scope.
+    pub fn fraction(&self) -> Option<f64> {
+        (self.in_scope > 0).then(|| 100.0 * self.governed as f64 / self.in_scope as f64)
+    }
+}
+
 /// One finding of this verb. Each class carries a declared input, and a
 /// reading with none carries no finding.
 #[derive(Clone, Copy, Debug)]
@@ -578,6 +597,26 @@ pub struct Audit {
 }
 
 impl Audit {
+    /// The governed scope over the union of the entries every pattern admits.
+    ///
+    /// An entry is keyed on its path, and where two readings admit it the
+    /// later reading's answer stands, which is the order the text report has
+    /// always taken. Both readings of one path come from one tree, so they
+    /// differ only where two anchor kinds share a path and only one of them
+    /// carries an edge.
+    pub fn scope_total(&self) -> ScopeTotal {
+        let mut union: std::collections::BTreeMap<&str, bool> = std::collections::BTreeMap::new();
+        for reading in &self.scope {
+            for (path, governed) in &reading.entries {
+                union.insert(path.as_str(), *governed);
+            }
+        }
+        ScopeTotal {
+            in_scope: union.len(),
+            governed: union.values().filter(|governed| **governed).count(),
+        }
+    }
+
     /// The findings this verb produces, in two classes, each with the input a
     /// declaration states: a relation whose halves sit on documents past the
     /// freshness window, and a scope pattern with an entry no edge reaches.

@@ -308,7 +308,7 @@ Two of the readings this section named do not run. The report evaluates the wait
 
 **The grain of the creator reading is a relation, and never an edge.** [Q4](09-decisions.md#q4--relation-storage) keeps `created_by` on the relation type, so a scaffolded `supersedes` and a hand-typed one are one string on disk. A row presented per edge would state a provenance that nothing records. The reading walks the closed set of six creators rather than the values in use. A creator that no relation declares is the arm a comparison needs, and a report of the values in use omits exactly that.
 
-The separation matters. `validate` must stay fast and total because it gates, while `audit` is a periodic design review with a tool attached. `audit` exits 0 whatever it finds, and no gate, no hook and no CI job runs it.
+The separation matters. `validate` must stay fast and total because it gates, while `audit` is a periodic design review with a tool attached. `audit` exits 0 whatever it finds, and no gate and no hook runs it. CI runs it to report the governed scope, and no step of CI gates on what it reports.
 
 ### Library
 
