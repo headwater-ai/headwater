@@ -1893,8 +1893,10 @@ jobs:
         # what a contributor does when it fails, and the suite on the line
         # before it provokes each arm with a stub in place of the engine.
         #
-        # The stamp patch is offered only in a run with `--change`, on a
-        # document the change re-verified (#1259). This step passes no change,
+        # The stamp patch is offered only in a run with `--change`, on an
+        # edge the change states: a document it re-verified, whose target it
+        # names, or one edge a verified line names (#1259, #1520). This step
+        # passes no change,
         # so no stamp is ever offered here and its answer does not move with
         # `--now`. It blocks: a refused patch exits 1, and so does any byte the
         # run wrote.
