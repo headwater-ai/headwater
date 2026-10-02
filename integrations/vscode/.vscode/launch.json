@@ -1,0 +1,17 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Run Headwater extension",
+      "type": "extensionHost",
+      "request": "launch",
+      "args": [
+        "--extensionDevelopmentPath=${workspaceFolder}",
+        "${workspaceFolder}/../.."
+      ],
+      "env": {
+        "PATH": "${workspaceFolder}/../../engine/target/dev-release:${workspaceFolder}/../../engine/target/release:${env:PATH}"
+      }
+    }
+  ]
+}

@@ -32,7 +32,7 @@ The write-time hook of the three agent harnesses also prints the paths in the go
 
 Build or install the engine so that `headwater` is on your path, or set `headwater.path` to the binary. Then choose one of these:
 
-- Open this folder in VS Code and press F5. This starts a second VS Code window with the extension loaded.
+- Open this folder in VS Code and press F5. `.vscode/launch.json` starts a second VS Code window with the extension loaded and the repository root open, because the extension activates only in a folder that holds `.headwater/`. It puts `engine/target/dev-release` and `engine/target/release` first on the path of that window, so a built engine needs no `headwater.path` setting. The path uses a colon separator, so on Windows set `headwater.path` instead.
 - Package it with `npx @vscode/vsce package` in this folder, and install the result with `code --install-extension headwater-vscode-0.1.0.vsix`.
 
 The extension has no npm dependencies and no build step. It is licensed under Apache-2.0, and `LICENSE` in this folder is a copy of the repository's license. `.vscodeignore` keeps `test/` out of the package.
