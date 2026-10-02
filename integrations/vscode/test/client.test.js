@@ -363,3 +363,69 @@ test('the task the route header repeats is never read as a pointer', async () =>
     silence: 'no declared purpose answers this task',
   });
 });
+
+test('toolText lists each pointer with its path, its name and its summary, then the withheld note', () => {
+  const answered = {
+    pointers: [
+      { path: 'docs/a.md', name: 'A', summary: 'what A says', asserted: null },
+      { path: 'docs/b.md', name: null, summary: null, asserted: 'nobody accepted this document' },
+    ],
+    withheld: 3,
+  };
+  assert.equal(
+    client.toolText(answered, 'this task'),
+    [
+      'Documents that govern this task:',
+      '- docs/a.md (A): what A says',
+      '- docs/b.md: (nobody accepted this document)',
+      '3 more withheld by the budget.',
+    ].join('\n'),
+  );
+});
+
+test('an empty answer never tells the model that nothing governs', () => {
+  // `ask` reads a failed session as an empty one, so the text names both cases.
+  assert.equal(
+    client.toolText(EMPTY, '`src/x.rs`'),
+    'Headwater named no document for `src/x.rs`. Either nothing governs it, or the engine did not answer.',
+  );
+  // A route that showed nothing but held pointers back still says how many.
+  assert.match(client.toolText({ pointers: [], withheld: 4 }, 'this task'), /\n4 more withheld by the budget\.$/);
+});
+
+test('an empty route that carries the engine\'s silence quotes it', () => {
+  const answered = { pointers: [], withheld: 0, silence: 'no declared purpose answers this task' };
+  assert.equal(
+    client.toolText(answered, 'this task'),
+    'Headwater named no document for this task. The engine says: no declared purpose answers this task.',
+  );
+  assert.equal(client.present(answered, 'x').entries.length, 0);
+});
+
+test('present takes the pointers of governing as an answer with nothing withheld', () => {
+  const pointers = [{ path: 'docs/a.md', name: 'A', summary: 'S', asserted: null }];
+  assert.deepEqual(client.present(pointers, 'x'), {
+    lead: 'Documents that govern x:',
+    entries: [{ path: 'docs/a.md', label: 'A', detail: 'S' }],
+    tail: null,
+  });
+  // Anything that is not an answer presents as the empty one.
+  assert.deepEqual(client.present(undefined, 'x').entries, []);
+  assert.deepEqual(client.present({ pointers: 'no' }, 'x').entries, []);
+});
+
+test('resolveBin finds a binary on PATH or at a path, and nothing otherwise', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hw-vscode-bin-'));
+  const bin = path.join(dir, 'headwater');
+  fs.writeFileSync(bin, '');
+  assert.equal(client.resolveBin('headwater', { PATH: `/nonexistent:${dir}` }, 'linux'), bin);
+  assert.equal(client.resolveBin(bin, {}, 'linux'), bin);
+  assert.equal(client.resolveBin('headwater', { PATH: '/nonexistent' }, 'linux'), null);
+  assert.equal(client.resolveBin(path.join(dir, 'missing'), {}, 'linux'), null);
+  // A directory is not the binary.
+  assert.equal(client.resolveBin(dir, {}, 'linux'), null);
+  assert.equal(client.resolveBin('', { PATH: dir }, 'linux'), null);
+  // On Windows a bare name is tried with each PATHEXT extension.
+  fs.writeFileSync(path.join(dir, 'hw.EXE'), '');
+  assert.equal(client.resolveBin('hw', { PATH: dir, PATHEXT: '.EXE' }, 'win32'), path.join(dir, 'hw.EXE'));
+});

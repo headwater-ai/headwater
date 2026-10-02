@@ -32,6 +32,12 @@
 // to no pointers, a withheld count of 0 and no silence. No call throws or
 // rejects, except `ask` with a tool outside the allowlist, which is a defect in
 // the caller and not a state of the workspace.
+//
+// It also decides what the Copilot surfaces of `extension.js` say (#1583).
+// `present` and `toolText` turn one answer into the lines of the `@headwater`
+// participant and the text of a language model tool. `resolveBin` decides
+// whether there is an engine to register as an MCP server. `exchange` is the
+// one spawn of a server session, which `ask` and `relay.js` both run.
 
 'use strict';
 
@@ -119,20 +125,48 @@ function ask(tool, args, options = {}) {
   if (typeof root !== 'string' || !fs.existsSync(path.join(root, '.headwater'))) {
     return Promise.resolve(none());
   }
+  const messages = [
+    {
+      jsonrpc: '2.0',
+      id: 1,
+      method: 'initialize',
+      params: {
+        protocolVersion: '2024-11-05',
+        capabilities: {},
+        clientInfo: { name: 'headwater-vscode', version: '0.2.0' },
+      },
+    },
+    { jsonrpc: '2.0', method: 'notifications/initialized' },
+    { jsonrpc: '2.0', id: 2, method: 'tools/call', params: { name: tool, arguments: args } },
+  ];
+  return exchange(messages, options).then((ended) => (ended.ok ? answer(ended.stdout) : none()));
+}
+
+/**
+ * One server process: spawn `<bin> [binArgs...] mcp --root <root>`, write
+ * `messages` and close standard input, then collect standard output until the
+ * process exits. Resolves to `{ ok: true, stdout }` when it exits 0, and to
+ * `{ ok: false, reason }` on a spawn error, a non-zero exit, a timeout or
+ * output past `maxOutput`. It never rejects. `ask` and `relay.js` both run
+ * every session through it, so a server never outlives the request it served.
+ */
+function exchange(messages, options = {}) {
+  const root = options.root;
   const bin = options.bin || 'headwater';
   const argv = [...(options.binArgs || []), 'mcp', '--root', root];
   const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+  const maxOutput = options.maxOutput ?? MAX_OUTPUT;
 
   return new Promise((resolve) => {
     let done = false;
     let child;
     let timer;
-    const finish = (answered) => {
+    const finish = (ended) => {
       if (done) return;
       done = true;
       clearTimeout(timer);
       if (child && child.exitCode === null && child.signalCode === null) child.kill('SIGKILL');
-      resolve(answered);
+      resolve(ended);
     };
 
     try {
@@ -142,42 +176,28 @@ function ask(tool, args, options = {}) {
         stdio: ['pipe', 'pipe', 'ignore'],
         windowsHide: true,
       });
-    } catch {
-      finish(none());
+    } catch (error) {
+      finish({ ok: false, reason: `could not start ${bin}: ${error.message}` });
       return;
     }
-    timer = setTimeout(() => finish(none()), timeoutMs);
-    child.on('error', () => finish(none()));
+    timer = setTimeout(() => finish({ ok: false, reason: `no answer within ${timeoutMs} ms` }), timeoutMs);
+    child.on('error', (error) => finish({ ok: false, reason: `could not start ${bin}: ${error.message}` }));
     child.stdin.on('error', () => {});
 
     let stdout = '';
     child.stdout.setEncoding('utf8');
     child.stdout.on('data', (chunk) => {
       stdout += chunk;
-      if (stdout.length > MAX_OUTPUT) finish(none());
+      if (stdout.length > maxOutput) finish({ ok: false, reason: `output past ${maxOutput} bytes` });
     });
     child.on('close', (code) => {
       if (code !== 0) {
-        finish(none());
+        finish({ ok: false, reason: `the server exited with status ${code}` });
         return;
       }
-      finish(answer(stdout));
+      finish({ ok: true, stdout });
     });
 
-    const messages = [
-      {
-        jsonrpc: '2.0',
-        id: 1,
-        method: 'initialize',
-        params: {
-          protocolVersion: '2024-11-05',
-          capabilities: {},
-          clientInfo: { name: 'headwater-vscode', version: '0.1.0' },
-        },
-      },
-      { jsonrpc: '2.0', method: 'notifications/initialized' },
-      { jsonrpc: '2.0', id: 2, method: 'tools/call', params: { name: tool, arguments: args } },
-    ];
     child.stdin.end(messages.map((m) => JSON.stringify(m)).join('\n') + '\n');
   });
 }
@@ -213,4 +233,92 @@ async function governing(relativePath, options) {
   return (await ask('governing_docs_for_path', { path: String(relativePath) }, options)).pointers;
 }
 
-module.exports = { TOOLS, ask, route, governing, readPointers, readAnswer, withheldNote };
+/**
+ * The absolute path of the binary `bin` names, or null when there is none. A
+ * `bin` with a directory part names a file; a bare name is looked up on
+ * `env.PATH`, with `env.PATHEXT` on Windows. The MCP registration runs this
+ * first, so a workspace with no engine registers no server and shows nothing.
+ */
+function resolveBin(bin, env = process.env, platform = process.platform) {
+  if (typeof bin !== 'string' || bin === '') return null;
+  const isFile = (candidate) => {
+    try {
+      return fs.statSync(candidate).isFile();
+    } catch {
+      return false;
+    }
+  };
+  if (bin.includes('/') || (platform === 'win32' && bin.includes('\\'))) {
+    return isFile(bin) ? path.resolve(bin) : null;
+  }
+  const extensions = platform === 'win32' ? ['', ...(env.PATHEXT || '.EXE;.CMD;.BAT').split(';')] : [''];
+  const delimiter = platform === 'win32' ? ';' : ':';
+  for (const directory of (env.PATH || '').split(delimiter)) {
+    if (directory === '') continue;
+    for (const extension of extensions) {
+      const candidate = path.join(directory, bin + extension);
+      if (isFile(candidate)) return candidate;
+    }
+  }
+  return null;
+}
+
+// A `route` answer as it is, or the pointers of `governing` as an answer with
+// nothing withheld, so one presentation serves both.
+function asAnswer(answered) {
+  if (Array.isArray(answered)) return { pointers: answered, withheld: 0 };
+  return answered && Array.isArray(answered.pointers) ? answered : none();
+}
+
+/**
+ * One answer, ready for a chat: a lead sentence, one entry for each pointer,
+ * and the withheld note as a tail, or null. An empty answer that carries the
+ * engine's silence quotes it, because the engine answered. Any other empty
+ * answer says that the engine named nothing, and not that nothing governs,
+ * because `ask` reads a failed session as an empty one.
+ */
+function present(answered, subject) {
+  const { pointers, withheld, silence } = asAnswer(answered);
+  const note = withheldNote({ withheld });
+  let lead = `Documents that govern ${subject}:`;
+  if (pointers.length === 0) {
+    lead = silence
+      ? `Headwater named no document for ${subject}. The engine says: ${silence}.`
+      : `Headwater named no document for ${subject}. Either nothing governs it, or the engine did not answer.`;
+  }
+  const entries = pointers.map((p) => ({
+    path: p.path,
+    label: p.name || p.path,
+    detail: [p.summary, p.asserted ? `(${p.asserted})` : null].filter(Boolean).join(' '),
+  }));
+  return { lead, entries, tail: note ? `${note}.` : null };
+}
+
+/**
+ * The text a language model tool returns to the model: `present` as plain
+ * lines, each entry with its path, so the model can open the document.
+ */
+function toolText(answered, subject) {
+  const { lead, entries, tail } = present(answered, subject);
+  const lines = [lead];
+  for (const entry of entries) {
+    const named = entry.label === entry.path ? entry.path : `${entry.path} (${entry.label})`;
+    lines.push(`- ${named}${entry.detail ? `: ${entry.detail}` : ''}`);
+  }
+  if (tail) lines.push(tail);
+  return lines.join('\n');
+}
+
+module.exports = {
+  TOOLS,
+  ask,
+  exchange,
+  route,
+  governing,
+  readPointers,
+  readAnswer,
+  withheldNote,
+  resolveBin,
+  present,
+  toolText,
+};

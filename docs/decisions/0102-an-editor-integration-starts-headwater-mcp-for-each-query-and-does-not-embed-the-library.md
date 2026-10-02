@@ -17,7 +17,7 @@ relations:
     - HW-DR-0001
   governs:
     - to: integrations/vscode/client.js
-      verified_revision: sha256:5ed4e45d21f342ce69fedf91b16bae9bb105e5ae34b452f3e711a06c68179a98
+      verified_revision: sha256:af595b7ad4d4706b041ca75b1782a5fd0bb724b35977aacc493ac8de28b76ffd
     - to: integrations/jetbrains/src/main/java/ai/headwater/jetbrains/Client.java
       verified_revision: sha256:dacff788b092c097bbf9c07c1e601fd3bc91ec3afb8e2abee2806ad9c7872f6a
 ---
