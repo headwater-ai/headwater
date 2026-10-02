@@ -251,7 +251,7 @@ fn carries(value: &headwater_yaml::Value, wanted: &str) -> bool {
 ///
 /// # Why an unreadable version is not this predicate's refusal
 ///
-/// A version neither side can parse is `Ok(())` here.
+/// A version that either side cannot parse is `Ok(())` here.
 /// [`headwater_resolve::release::parts`] refuses the same strings the range
 /// reader refuses, so the payload's own `covers` reports it against the range
 /// it failed under, which names the file the caller has to edit. A second

@@ -3,7 +3,7 @@ id: HW-DR-0102
 status: current
 status_since: 2026-09-30
 summary: "An editor plugin is a client of headwater mcp: it starts the server for each query, sends one read request and stops it. The library stays embeddable, but no editor host embeds it."
-last_verified: 2026-09-30
+last_verified: 2026-10-02
 title: "An editor integration starts headwater mcp for each query and does not embed the library"
 provenance:
   warrant: asserted
@@ -17,7 +17,7 @@ relations:
     - HW-DR-0001
   governs:
     - to: integrations/vscode/client.js
-      verified_revision: sha256:3bcd9b14898a4b07170e088bbad9e0e85d3bbbc69712e6d2527b9d382fe93be3
+      verified_revision: sha256:af595b7ad4d4706b041ca75b1782a5fd0bb724b35977aacc493ac8de28b76ffd
     - to: integrations/jetbrains/src/main/java/ai/headwater/jetbrains/Client.java
       verified_revision: sha256:dacff788b092c097bbf9c07c1e601fd3bc91ec3afb8e2abee2806ad9c7872f6a
 ---

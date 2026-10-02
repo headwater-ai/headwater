@@ -1589,10 +1589,13 @@ jobs:
         # the pointer shape `docs/interfaces/headwater-mcp.md` states as the
         # wire format. That case fails, rather than skips, when `CI` is set
         # and `HEADWATER_BIN` is not. The other cases replay recorded
-        # sessions. It writes only under a temporary directory.
+        # sessions. `relay.test.js` holds `relay.js`, the MCP server the
+        # extension registers for Copilot Chat (#1583), over the same recorded
+        # sessions, and counts one server for each request. It writes only
+        # under a temporary directory.
         env:
           HEADWATER_BIN: ${{ github.workspace }}/engine/target/release/headwater
-        run: node --test integrations/vscode/test/client.test.js
+        run: node --test integrations/vscode/test/client.test.js integrations/vscode/test/relay.test.js
       - name: The JDK the JetBrains client's suite runs on
         # `integrations/jetbrains/test/RunTests.java` runs under the source
         # launcher and compiles the client with the `jdk.compiler` module, so
