@@ -365,6 +365,19 @@ relations:
     cardinality: many
     created_by: agent
 
+  # An agent's edge that admits a document or an anchor, and that asks for a
+  # far half and a state on its target. An anchor holds neither, so an edge
+  # onto a path writes no half and sets no state, where an edge onto a
+  # document is owed both.
+  realizes:
+    family: derivation
+    from: [decision_record]
+    to:   [governed_document, code_path]
+    inverse: realized_by
+    reciprocal: required
+    on_target: {set_state: superseded}
+    created_by: agent
+
   # The scaffold relation with reciprocity required. The far half goes into the
   # target document.
   supersedes:
