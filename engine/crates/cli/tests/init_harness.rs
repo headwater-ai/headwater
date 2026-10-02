@@ -433,3 +433,41 @@ fn the_harness_check_passes_on_this_repository_and_fails_on_one_changed_byte() {
         "`--check` bound the repository"
     );
 }
+
+/// The gate's other two directions: an absent path fails it, and so does a
+/// copy an earlier release wrote, which the step itself would replace. So
+/// `--check` passes only on this release, and not on every file the step
+/// would accept.
+#[test]
+fn the_harness_check_fails_on_an_absent_path_and_on_a_copy_an_earlier_release_wrote() {
+    let scratch = Scratch::new("check-directions");
+    let root = &scratch.0;
+    for path in the_paths_the_contract_names() {
+        let to = root.join(&path);
+        std::fs::create_dir_all(to.parent().expect("a parent")).expect("made");
+        std::fs::copy(repository().join(&path), &to).expect("the installed copy copies");
+    }
+    let absent = ".agents/skills/headwater-taxonomy/SKILL.md";
+    std::fs::remove_file(root.join(absent)).expect("removed");
+    let refused = headwater(root, &["init", "--harness", "--check"]);
+    assert_eq!(refused.status.code(), Some(1), "an absent path fails `--check`");
+    assert!(String::from_utf8_lossy(&refused.stderr).contains(absent));
+    assert!(!root.join(absent).exists(), "`--check` wrote the absent file");
+
+    succeeded(&headwater(root, &["init", "--harness"]), "the step over the gap");
+    let earlier_text = "---\nname: headwater-sweep\n---\n\nAn earlier text.\n";
+    let earlier = format!(
+        "{earlier_text}<!-- installed by headwater init --harness, digest sha256:{} -->\n",
+        headwater_hash::hex(earlier_text.as_bytes())
+    );
+    let path = ".claude/skills/headwater-sweep/SKILL.md";
+    std::fs::write(root.join(path), &earlier).expect("writes");
+    let refused = headwater(root, &["init", "--harness", "--check"]);
+    assert_eq!(
+        refused.status.code(),
+        Some(1),
+        "a copy an earlier release wrote fails `--check`"
+    );
+    assert!(String::from_utf8_lossy(&refused.stderr).contains(path));
+    assert_eq!(std::fs::read_to_string(root.join(path)).expect("reads"), earlier);
+}
