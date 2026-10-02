@@ -53,6 +53,7 @@ impl Root {
         std::fs::create_dir_all(at.join("src")).expect("the source directory is made");
         std::fs::write(at.join("src/widget.rs"), "pub fn widget() {}\n").expect("a source file");
         std::fs::write(at.join("src/gadget.rs"), "pub fn gadget() {}\n").expect("a source file");
+        std::fs::write(at.join("logo.png"), b"\x89PNG\r\n\x1a\n\xff\xfe\x00").expect("a binary file");
         let root = Root { at };
         let resolved = root.run(&["taxonomy", "resolve"]);
         assert_eq!(resolved.code, Some(0), "the fixture resolves\n{resolved:?}");
@@ -191,6 +192,25 @@ fn a_cited_in_pattern_is_refused_because_comment_scan_opens_one_named_file() {
         "A citation in a pattern",
         "--relates",
         "cited_in=src/*.rs",
+    ]);
+    assert_eq!(refused.code, Some(1), "{refused:?}");
+    assert!(refused.err.contains("binds to nothing"), "{}", refused.err);
+    assert!(root.documents().is_empty(), "nothing is written");
+}
+
+/// `comment-scan` reads the file as text, so a file that is not UTF-8 can
+/// never carry a citation the check reads, and the verb refuses it rather
+/// than promising a comment that would not bind.
+#[test]
+fn a_cited_in_file_that_is_not_text_is_refused() {
+    let root = Root::new("cited-in-binary");
+    let refused = root.run(&[
+        "new",
+        "verification",
+        "--title",
+        "A citation in an image",
+        "--relates",
+        "cited_in=logo.png",
     ]);
     assert_eq!(refused.code, Some(1), "{refused:?}");
     assert!(refused.err.contains("binds to nothing"), "{}", refused.err);

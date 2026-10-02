@@ -644,6 +644,11 @@ refused, AnchorUnresolved
 refused, AnchorUnresolved
   `cited_in` names `corpus/code`, and it binds to nothing (`test_site`: no `corpus/code` in the source tree). `headwater check` would report this edge as unbound, so nothing was written
 
+=== new decision_record --title "A citation in a file that is not text" --relates cited_in=corpus/code/image.png
+
+refused, AnchorUnresolved
+  `cited_in` names `corpus/code/image.png`, and it binds to nothing (`test_site`: no `corpus/code/image.png` in the source tree). `headwater check` would report this edge as unbound, so nothing was written
+
 === new decision_record --title "A citation in a pattern" --relates cited_in=corpus/code/*.txt
 
 refused, AnchorUnresolved

@@ -1965,12 +1965,14 @@ enum Bound {
 ///
 /// One exception, stated rather than hidden: `comment-scan` binds a file only
 /// where a comment in it cites the asserting document's identifier, and the
-/// identifier is the one this run mints. So where every other anchor kind
-/// failed and one that names `comment-scan` is admitted, the path is asked of
-/// `source-tree` instead. A literal path that names one regular file is
-/// written, and the comment it still owes is named. A path that reaches
-/// nothing, a directory and a pattern are refused, because `comment-scan`
-/// opens one named file and expands no pattern.
+/// identifier is the one this run mints. So where the binding failed, each
+/// admitted resolver is asked
+/// [`headwater_graph::anchors::Resolver::resolve_once_cited`]: would the
+/// target bind once it cites the asserter? `comment-scan` answers through the
+/// steps its own `resolve_for` runs. A file it would bind is written, and the
+/// comment it still owes is named. A path that reaches nothing, a directory, a
+/// pattern and a file that does not read as text are refused in the check's
+/// words.
 fn bind_target(sources: &Sources<'_>, far: &[String], target: &str, asserter: &str) -> Bound {
     use headwater_graph::anchors::Binding;
     use headwater_graph::edges::Target;
@@ -2024,32 +2026,31 @@ fn bind_target(sources: &Sources<'_>, far: &[String], target: &str, asserter: &s
         Target::Unbound(unbound) => unbound,
     };
 
-    let cited = anchor_kinds
-        .iter()
-        .find(|anchor| anchor.resolver == "comment-scan");
-    let tree = sources.resolvers.get("source-tree");
-    if let (Some(anchor), Some(tree)) = (cited, tree) {
-        // `comment-scan` opens one named file and never expands a pattern.
-        // So the fallback holds only for a path that `source-tree` matched to
-        // itself alone: a literal, and not a pattern that happens to reach
-        // one entry, which the check would then fail to open.
+    // Each admitted anchor kind's own resolver says whether the target binds
+    // once it cites the asserter. `comment-scan` answers through the very
+    // steps the check runs, so a file that is not there, a directory, a
+    // pattern and a file that does not read as text are refused in the
+    // check's words. Every other resolver reads no citation, and its answer
+    // is the one `bind` already had.
+    for anchor in &anchor_kinds {
+        let Some(resolver) = sources.resolvers.get(&anchor.resolver) else {
+            continue;
+        };
         if let Binding::Resolved {
             normalized,
             matched,
             ..
-        } = tree.resolve(target)
+        } = resolver.resolve_once_cited(target, asserter)
         {
-            if matched == [normalized.as_str()] && !tree.names_directory(&normalized) {
-                return Bound::Anchor(Anchored {
-                    anchor_kind: anchor.name.clone(),
-                    matched: Some(matched.len()),
-                    owes: Some(format!(
-                        "`{}` binds `{normalized}` once a comment in it cites `{asserter}`, which \
-                         `headwater check` reports until one does",
-                        anchor.name
-                    )),
-                });
-            }
+            return Bound::Anchor(Anchored {
+                anchor_kind: anchor.name.clone(),
+                matched: Some(matched.len()),
+                owes: Some(format!(
+                    "`{}` binds `{normalized}` once a comment in it cites `{asserter}`, which \
+                     `headwater check` reports until one does",
+                    anchor.name
+                )),
+            });
         }
     }
     Bound::Refused(unbound.to_string())

@@ -317,6 +317,8 @@ fn cases() -> Vec<Case> {
         case("decision_record", "A citation in a file that is not there")
             .relating("cited_in", "corpus/code/missing.txt"),
         case("decision_record", "A citation in a directory").relating("cited_in", "corpus/code"),
+        case("decision_record", "A citation in a file that is not text")
+            .relating("cited_in", "corpus/code/image.png"),
         case("decision_record", "A citation in a pattern")
             .relating("cited_in", "corpus/code/*.txt"),
         // What `--summary` does. It fills the facet in the `scent` role
