@@ -42,7 +42,8 @@ The stages have four inputs. They are the census of the corpus, the graph and it
 
 Other documents state what the stages do, and this spec does not repeat them:
 
-- [Spec 6](../spec/06-engine-architecture.md#projections) states the projection kinds, the marker rule, the loss set and the export profile.
+- [Spec 6](../spec/06-engine-architecture.md#projections) states the projection kinds, the loss set and the export profile.
+- [The `headwater generate` contract](../interfaces/headwater-generate.md#the-generated-file-marker) states the marker rule and the other rules that each projection obeys.
 - [Spec 7](../spec/07-distribution-and-federation.md#arriving-at-a-corpus-cold) states what the corpus descriptor carries and why its path is fixed.
 - [Spec 3](../spec/03-authoring-and-lifecycle.md) states the warrant of a generated document.
 - [HW-DR-0063](../decisions/0063-every-required-facet-of-a-generated-document-is-derived-and-the-emitter-composes-the-summary.md) states why the engine derives each required facet of a generated document.
@@ -146,4 +147,4 @@ A change to these crates must keep each of these. Each item names the test that 
 - **A probe result is generated from its transcript** (`the_fixture_tree_generates_the_recorded_result`), and it goes stale when the transcript changes (`a_result_goes_stale_when_its_transcript_changes`). A transcript planned against another taxonomy fails the run (`a_transcript_planned_against_another_taxonomy_fails_the_run`).
 - **`headwater site` resolves a served path in either form** (`a_source_is_served_in_either_form_and_an_index_in_one`), and a navigation path outside the corpus root is missing (`a_navigation_path_outside_the_corpus_root_is_missing`). The verb reports each of its three defects (`a_page_the_navigation_names_and_the_site_lacks_is_missing`, `a_page_under_a_shelf_that_no_document_answers_to_is_stale`, `a_fragment_that_names_no_id_on_its_page_is_dead`). These three are in `engine/crates/cli/tests/site.rs`, because they run the binary.
 
-The generated-file marker is the rule that keeps this engine from destroying an authored file ([spec 6](../spec/06-engine-architecture.md#projections)).
+The generated-file marker is the rule that keeps this engine from destroying an authored file ([the `headwater generate` contract](../interfaces/headwater-generate.md#the-generated-file-marker)).
