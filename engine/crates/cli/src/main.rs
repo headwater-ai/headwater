@@ -2568,7 +2568,7 @@ fn artifact(
 ///
 /// [Spec 2](../../../../docs/spec/02-taxonomy-model.md#versioning-by-measured-compatibility)
 /// splits a payload into "what the engine can apply mechanically
-/// (`headwater migrate --apply`) and what needs human or agent judgment
+/// (`headwater taxonomy migrate --apply`) and what needs human or agent judgment
 /// (emitted as a task list with the affected documents attached)". Both halves
 /// are below, and the split is not this function's to make: it is derived from
 /// the target list by
