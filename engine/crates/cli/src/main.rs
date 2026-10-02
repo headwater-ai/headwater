@@ -500,7 +500,9 @@ fn dispatch(root: &Path, verb: Verb) -> ExitCode {
             package,
             git,
             git_config,
-        } => init(root, corpus, package, git, git_config),
+            harness,
+            check,
+        } => init(root, corpus, package, git, git_config, harness, check),
         Verb::Infer {
             owner,
             until,
@@ -7548,6 +7550,8 @@ fn init(
     package: Option<String>,
     git: bool,
     git_config: bool,
+    _harness: bool,
+    _check: bool,
 ) -> ExitCode {
     let bound = root.join(headwater_resolve::package::CONSUMER).exists();
     if !(git && bound) {
