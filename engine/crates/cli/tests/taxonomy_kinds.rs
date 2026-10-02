@@ -69,7 +69,7 @@ fn kinds(at: &Path, options: &[&str]) -> Ran {
 
 /// The body of another package's taxonomy: two concrete kinds this
 /// repository does not have, under one abstract parent that requires a facet
-/// the children name nowhere themselves.
+/// and a section the children name nowhere themselves.
 const FOREIGN: &str = "\
 resolved:
   purposes:
@@ -94,6 +94,9 @@ resolved:
       facets:
         require:
           - owner
+      sections:
+        require:
+          - Summary
     runbook_widget:
       is_a: widget_page
       purpose: procedure
@@ -215,7 +218,8 @@ fn a_foreign_lock_prints_its_own_kinds_and_none_of_this_repository() {
         "  shelf     widget_runbooks (ops/runbooks/**)\n",
         // Inherited from the abstract parent.
         "  facets    owner\n",
-        "  sections  Steps\n",
+        // The parent's section first, then the kind's own.
+        "  sections  Summary, Steps\n",
         "  draft     headwater new runbook_widget \"<title>\"\n",
     ] {
         assert!(runbook.contains(line), "`{line}` in {runbook}");
@@ -230,7 +234,7 @@ fn a_foreign_lock_prints_its_own_kinds_and_none_of_this_repository() {
         "  shelf     widget_mixed (ops/mixed/**, where `doc_type` names it)\n",
         // The parent's facet first, then the kind's own.
         "  facets    owner, severity\n",
-        "  sections  (none)\n",
+        "  sections  Summary\n",
         "  draft     headwater new incident_widget \"<title>\"\n",
     ] {
         assert!(incident.contains(line), "`{line}` in {incident}");

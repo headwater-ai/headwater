@@ -1647,7 +1647,10 @@ fn the_kinds_tool_answers_the_bytes_of_the_one_renderer() {
         ),
         "{answer}"
     );
-    assert!(!answer.contains("headwater new governed_document"), "{answer}");
+    assert!(
+        !answer.contains("headwater new governed_document"),
+        "{answer}"
+    );
     assert!(!answer.contains("\ngoverned_document\n"), "{answer}");
     // A purpose inherited through `is_a`, and facets inherited from the
     // abstract root.
