@@ -489,13 +489,27 @@ pub enum Verb {
             long = "verified",
             value_name = "path",
             help = "state that you re-read the document at <path> in this change, repeatable. \
-                    Each one is a `verified` line in the manifest, and `headwater check --fix \
-                    --change` then records `verified_revision` on the suspect entries that \
-                    document declares. It is the route for a second change on the day the \
-                    document's `last_verified` already reads. The path is relative to the \
-                    repository root and need not be in the diff"
+                    Each one is a `verified` line in the manifest. It is the route for a second \
+                    change on the day the document's `last_verified` already reads. `headwater \
+                    check --fix --change` then records `verified_revision` on a suspect entry \
+                    that document declares only where the change also carries what the entry \
+                    reaches; name any other entry with --verified-edge. The path is relative \
+                    to the repository root and need not be in the diff"
         )]
         verified: Vec<String>,
+        #[arg(
+            long = "verified-edge",
+            num_args = 2,
+            value_names = ["path", "target"],
+            help = "state that you re-read the one entry of the document at <path> whose \
+                    target is <target>, repeatable. Each one is a `verified\\t<path>\\t<target>` \
+                    line in the manifest, and `headwater check --fix --change` then records \
+                    `verified_revision` on that entry if it is suspect. Each entry carries its \
+                    own `verified_revision`, so this is how you stamp an entry whose target \
+                    this change does not carry. <target> is the target as the entry writes it, \
+                    or a path it reaches. Neither path need be in the diff"
+        )]
+        verified_edge: Vec<String>,
     },
     Gate {
         // Optional here and required by the verb, so that the refusal a caller

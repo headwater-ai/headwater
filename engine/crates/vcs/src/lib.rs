@@ -53,24 +53,37 @@ const FORMAT: &str = "headwater change 1";
 /// change nothing in it. `headwater check` reads the line as a stated
 /// re-verification, which is the one route for a second change on the day a
 /// document's `last_verified` already reads (#1376).
+///
+/// `edges` names each `(document, target)` edge the author states they
+/// re-read, and each one is written as a `verified\t<document>\t<target>`
+/// line. `headwater check` stamps a re-verified document's suspect edge only
+/// where the change names its target or such a line names the edge, because
+/// each edge carries its own `verified_revision` (#1520). Neither path need be
+/// in the diff.
 pub fn produce(
     root: &Path,
     base: &str,
     out: &Path,
     verified: &[String],
+    edges: &[(String, String)],
 ) -> Result<PathBuf, String> {
     let toplevel = show_toplevel(root)?;
 
     for (index, path) in verified.iter().enumerate() {
-        if path.contains('\t') || path.contains('\n') || path.is_empty() {
-            return Err(format!(
-                "`{path}` is empty or holds a tab or a newline, and a manifest line is one line \
-                 of tab-separated fields, so it cannot be stated as verified."
-            ));
-        }
+        field(path)?;
         if verified[..index].contains(path) {
             return Err(format!(
                 "`{path}` is named verified twice, and a manifest states it once."
+            ));
+        }
+    }
+    for (index, (document, target)) in edges.iter().enumerate() {
+        field(document)?;
+        field(target)?;
+        if edges[..index].contains(&(document.clone(), target.clone())) {
+            return Err(format!(
+                "the edge from `{document}` to `{target}` is named verified twice, and a \
+                 manifest states it once."
             ));
         }
     }
@@ -126,10 +139,24 @@ pub fn produce(
     for path in verified {
         manifest.push_str(&format!("verified\t{path}\n"));
     }
+    for (document, target) in edges {
+        manifest.push_str(&format!("verified\t{document}\t{target}\n"));
+    }
 
     fs::write(&manifest_path, manifest)
         .map_err(|error| format!("{}: {error}", manifest_path.display()))?;
     Ok(manifest_path)
+}
+
+/// One field of a `verified` line, refused where it would not stay one field.
+fn field(path: &str) -> Result<(), String> {
+    if path.contains('\t') || path.contains('\n') || path.is_empty() {
+        return Err(format!(
+            "`{path}` is empty or holds a tab or a newline, and a manifest line is one line of \
+             tab-separated fields, so it cannot be stated as verified."
+        ));
+    }
+    Ok(())
 }
 
 #[derive(PartialEq, Eq)]
@@ -1050,7 +1077,7 @@ mod tests {
         repo.write("b.md", "new\n");
 
         let out = repo.out("add-and-modify");
-        let manifest_path = produce(&repo.at, &base, &out, &[]).expect("the manifest writes");
+        let manifest_path = produce(&repo.at, &base, &out, &[], &[]).expect("the manifest writes");
         let manifest = read(&manifest_path);
         let mut lines: Vec<&str> = manifest.lines().collect();
         lines.sort_unstable();
@@ -1089,7 +1116,7 @@ mod tests {
 
         let out = repo.out("verified");
         let stated = ["a.md".to_string(), "c.md".to_string()];
-        let manifest_path = produce(&repo.at, &base, &out, &stated).expect("the manifest writes");
+        let manifest_path = produce(&repo.at, &base, &out, &stated, &[]).expect("the manifest writes");
         let manifest = read(&manifest_path);
         let verified: Vec<&str> = manifest
             .lines()
@@ -1116,7 +1143,54 @@ mod tests {
         ] {
             let out = repo.out("verified-refused");
             assert!(
-                produce(&repo.at, &base, &out, &refused).is_err(),
+                produce(&repo.at, &base, &out, &refused, &[]).is_err(),
+                "written: {refused:?}"
+            );
+            assert!(!out.join("manifest").exists(), "{refused:?}");
+            let _ = fs::remove_dir_all(&out);
+        }
+        let _ = fs::remove_dir_all(&repo.at);
+    }
+
+    /// An edge stated as verified is one `verified\t<document>\t<target>`
+    /// line, whether or not the change carries either path, and a field a
+    /// line cannot hold, or an edge named twice, is refused before anything
+    /// is written (#1520).
+    #[test]
+    fn a_stated_edge_is_one_three_field_verified_line() {
+        let repo = Repo::new("verified-edge");
+        repo.write("a.md", "before\n");
+        let base = repo.commit("base");
+        repo.write("a.md", "after\n");
+        let edge = |document: &str, target: &str| (document.to_string(), target.to_string());
+
+        let out = repo.out("verified-edge");
+        let stated = [edge("a.md", "tools/run.sh"), edge("a.md", "src/**")];
+        let manifest_path =
+            produce(&repo.at, &base, &out, &[], &stated).expect("the manifest writes");
+        let manifest = read(&manifest_path);
+        let verified: Vec<&str> = manifest
+            .lines()
+            .filter(|line| line.starts_with("verified\t"))
+            .collect();
+        assert_eq!(
+            verified,
+            vec!["verified\ta.md\ttools/run.sh", "verified\ta.md\tsrc/**"],
+            "{manifest}"
+        );
+        let _ = fs::remove_dir_all(&out);
+
+        for refused in [
+            vec![edge("a.md", "a\tb.sh")],
+            vec![edge("a\tb.md", "b.sh")],
+            vec![edge("a.md", "")],
+            vec![edge("", "b.sh")],
+            vec![edge("a.md", "a\nb.sh")],
+            vec![edge("a.md", "b.sh"), edge("a.md", "b.sh")],
+        ] {
+            let out = repo.out("verified-edge-refused");
+            assert!(
+                produce(&repo.at, &base, &out, &[], &refused).is_err(),
                 "written: {refused:?}"
             );
             assert!(!out.join("manifest").exists(), "{refused:?}");
@@ -1137,6 +1211,7 @@ mod tests {
             "0000000000000000000000000000000000000000",
             &out,
             &[],
+            &[],
         )
         .unwrap_err();
         assert!(error.contains("does not hold"), "{error}");
@@ -1153,7 +1228,7 @@ mod tests {
         let base = repo.commit("base");
         repo.write("a\tb.md", "y\n");
         let out = repo.out("tab-path");
-        let error = produce(&repo.at, &base, &out, &[]).unwrap_err();
+        let error = produce(&repo.at, &base, &out, &[], &[]).unwrap_err();
         assert!(error.contains("holds a tab"), "{error}");
         let _ = fs::remove_dir_all(&out);
         let _ = fs::remove_dir_all(&repo.at);
@@ -1169,7 +1244,7 @@ mod tests {
         let base = repo.commit("base");
         fs::remove_file(repo.at.join("gone.md")).expect("the file removes");
         let out = repo.out("deleted");
-        let manifest_path = produce(&repo.at, &base, &out, &[]).expect("the manifest writes");
+        let manifest_path = produce(&repo.at, &base, &out, &[], &[]).expect("the manifest writes");
         let manifest = read(&manifest_path);
         let prior_line = manifest
             .lines()
@@ -1190,7 +1265,7 @@ mod tests {
         let base = repo.commit("base");
         repo.git(&["mv", "old.md", "new.md"]);
         let out = repo.out("renamed");
-        let manifest_path = produce(&repo.at, &base, &out, &[]).expect("the manifest writes");
+        let manifest_path = produce(&repo.at, &base, &out, &[], &[]).expect("the manifest writes");
         let manifest = read(&manifest_path);
         let prior_line = manifest
             .lines()
@@ -1215,7 +1290,7 @@ mod tests {
         let base = repo.commit("base");
         repo.write("new-and-untracked.md", "y\n");
         let out = repo.out("untracked");
-        let manifest_path = produce(&repo.at, &base, &out, &[]).expect("the manifest writes");
+        let manifest_path = produce(&repo.at, &base, &out, &[], &[]).expect("the manifest writes");
         let manifest = read(&manifest_path);
         assert!(
             manifest.contains("added\tnew-and-untracked.md\n"),
@@ -1233,7 +1308,7 @@ mod tests {
         repo.write("a.md", "x\n");
         let base = repo.commit("base");
         let out = repo.out("no-change");
-        let manifest_path = produce(&repo.at, &base, &out, &[]).expect("the manifest writes");
+        let manifest_path = produce(&repo.at, &base, &out, &[], &[]).expect("the manifest writes");
         assert_eq!(read(&manifest_path), format!("{FORMAT}\n"));
         let _ = fs::remove_dir_all(&out);
         let _ = fs::remove_dir_all(&repo.at);

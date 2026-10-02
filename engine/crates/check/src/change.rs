@@ -88,6 +88,16 @@
 //! already reads today cannot move. The date does not decide instead, for the
 //! reason [`crate::suspect`] gives.
 //!
+//! A `verified\t<path>\t<target>` line states less: that the author re-read
+//! the one edge of the document at `<path>` whose target is `<target>`. A
+//! re-verified document no longer stamps every edge it declares, because each
+//! edge carries its own `verified_revision`, so a stamp also needs the edge's
+//! target named, and this line is how an author names it without carrying
+//! the target in the change (#1520). `<target>` is the target as the entry
+//! writes it, or a path it reaches. It is not held against the corpus,
+//! because a governed source file is no corpus document. `<path>` is held, as
+//! a two-field line's path is.
+//!
 //! # What a caller may state, and what this engine cannot check
 //!
 //! A manifest that names `added` for a document that already stood, or that
@@ -137,6 +147,44 @@ enum Held {
     /// this arm holding nothing, because bytes that are no document do not
     /// parse as one and [`read_prior`] has already said so.
     Unmatched { prior: Option<(String, Document)> },
+}
+
+/// What a change states about one edge beside the prior version of the
+/// document that declared it, and only for a check that declared
+/// `NEEDS_DECLARER_PRIOR`. None of the three is a version of a document, so
+/// each is held apart from [`Prior`], and each is a line of the cache key.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub(crate) struct Stated {
+    /// A `verified` line names the declaring document (#1376).
+    pub(crate) document: bool,
+    /// An `added` or a `prior` line names the edge's target, or a path the
+    /// target reaches (#1520).
+    pub(crate) target: bool,
+    /// A `verified\t<document>\t<target>` line names this edge (#1520).
+    pub(crate) edge: bool,
+}
+
+impl Stated {
+    /// What a run with no change, or an instance that reads no declarer,
+    /// states.
+    pub(crate) const NONE: Stated = Stated {
+        document: false,
+        target: false,
+        edge: false,
+    };
+
+    /// What `change` states about the edge that the document at `document`
+    /// declares, whose target `names` spell: the target as written and every
+    /// path it reaches.
+    pub(crate) fn of(change: &Change, document: &str, names: &[&str]) -> Stated {
+        Stated {
+            document: change.verified(document),
+            target: names.iter().any(|name| change.names(name)),
+            edge: names
+                .iter()
+                .any(|name| change.verified_edge(document, name)),
+        }
+    }
 }
 
 /// The version of one document that stood before the change, as a check reads
@@ -192,6 +240,9 @@ pub struct Unbound {
     /// The paths a `verified` line names, in path order. See the module
     /// comment.
     verified: Vec<String>,
+    /// The `(document, target)` pairs a three-field `verified` line names,
+    /// in order. See the module comment.
+    edges: Vec<(String, String)>,
 }
 
 /// The documents one change carries, each held against the corpus this run
@@ -207,6 +258,12 @@ pub struct Change {
     /// The paths a `verified` line names and no census row holds, in path
     /// order. They are reported with the unmatched entries.
     unverifiable: Vec<String>,
+    /// The `(document, target)` pairs a three-field `verified` line names
+    /// and whose document a census row holds, in order. A pair whose document
+    /// no row holds puts the document in `unverifiable` instead. The target
+    /// is not held against the census, because it is what a document
+    /// governs, and a governed source file is no corpus document (#1520).
+    edges: Vec<(String, String)>,
 }
 
 /// What a run injected, for the report that states its own inputs.
@@ -282,6 +339,7 @@ impl Unbound {
 
         let mut entries: Vec<(String, Held)> = Vec::new();
         let mut verified: Vec<String> = Vec::new();
+        let mut edges: Vec<(String, String)> = Vec::new();
         for (number, line) in lines.enumerate() {
             let number = number + 2;
             if line.trim().is_empty() {
@@ -302,10 +360,23 @@ impl Unbound {
                     verified.push(path.to_string());
                     continue;
                 }
+                // One edge of the document re-read, and not the document
+                // (#1520). See the module comment.
+                (Some("verified"), Some(path), Some(target), None) => {
+                    if edges.iter().any(|(known, to)| known == path && to == target) {
+                        return Err(format!(
+                            "the change manifest states the edge from `{path}` to `{target}` \
+                             verified twice"
+                        ));
+                    }
+                    edges.push((path.to_string(), target.to_string()));
+                    continue;
+                }
                 _ => {
                     return Err(format!(
                         "line {number} of the change manifest is none of `added\\t<path>`, \
-                         `prior\\t<path>\\t<file>` and `verified\\t<path>`: `{line}`"
+                         `prior\\t<path>\\t<file>`, `verified\\t<path>` and \
+                         `verified\\t<path>\\t<target>`: `{line}`"
                     ))
                 }
             };
@@ -319,7 +390,12 @@ impl Unbound {
 
         entries.sort_by(|(a, _), (b, _)| a.cmp(b));
         verified.sort();
-        Ok(Unbound { entries, verified })
+        edges.sort();
+        Ok(Unbound {
+            entries,
+            verified,
+            edges,
+        })
     }
 
     /// Read a manifest from a file, which is what `headwater check --change`
@@ -343,10 +419,21 @@ impl Unbound {
     /// disagree, and the pair that would disagree here is the set a run checks
     /// and the set a manifest is measured against.
     pub fn bind(self, holds: impl Fn(&str) -> bool) -> Change {
-        let (verified, unverifiable) = self.verified.into_iter().partition(|path| holds(path));
+        let (verified, mut unverifiable): (Vec<String>, Vec<String>) =
+            self.verified.into_iter().partition(|path| holds(path));
+        let (edges, unheld): (Vec<_>, Vec<_>) = self
+            .edges
+            .into_iter()
+            .partition(|(document, _)| holds(document));
+        // An edge whose document no row holds is the same mistyped path a
+        // two-field line would be, and it is reported the same way.
+        unverifiable.extend(unheld.into_iter().map(|(document, _)| document));
+        unverifiable.sort();
+        unverifiable.dedup();
         Change {
             verified,
             unverifiable,
+            edges,
             entries: self
                 .entries
                 .into_iter()
@@ -382,6 +469,15 @@ impl Unbound {
     pub fn verified(&self) -> Vec<&str> {
         self.verified.iter().map(String::as_str).collect()
     }
+
+    /// The `(document, target)` pairs a `verified\t<path>\t<target>` line
+    /// names, in order.
+    pub fn verified_edges(&self) -> Vec<(&str, &str)> {
+        self.edges
+            .iter()
+            .map(|(document, target)| (document.as_str(), target.as_str()))
+            .collect()
+    }
 }
 
 impl Change {
@@ -390,18 +486,28 @@ impl Change {
         // Every path any line names, once: a `verified` path that also has an
         // `added` or `prior` line is one document, and one with neither is a
         // document too, so that `unmatched` never counts past `documents`.
+        // A document that a `verified` line names, with or without a target,
+        // and that a row holds, once (#1520).
+        let mut stated: Vec<&str> = self
+            .verified
+            .iter()
+            .map(String::as_str)
+            .chain(self.edges.iter().map(|(document, _)| document.as_str()))
+            .collect();
+        stated.sort_unstable();
+        stated.dedup();
         let mut paths: Vec<&str> = self
             .entries
             .iter()
             .map(|(path, _)| path.as_str())
-            .chain(self.verified.iter().map(String::as_str))
+            .chain(stated.iter().copied())
             .chain(self.unverifiable.iter().map(String::as_str))
             .collect();
         paths.sort_unstable();
         paths.dedup();
         let mut named = Named {
             documents: paths.len(),
-            verified: self.verified.len(),
+            verified: stated.len(),
             ..Named::default()
         };
         for (_, held) in &self.entries {
@@ -417,12 +523,11 @@ impl Change {
         named.unmatched = self.unmatched().len();
         // A bound `verified` path that no entry names is a document of its own
         // class, and the only one the classes above do not hold (#1398).
-        named.verified_alone = self
-            .verified
+        named.verified_alone = stated
             .iter()
             .filter(|path| {
                 self.entries
-                    .binary_search_by(|(known, _)| known.as_str().cmp(path.as_str()))
+                    .binary_search_by(|(known, _)| known.as_str().cmp(path))
                     .is_err()
             })
             .count();
@@ -456,6 +561,24 @@ impl Change {
     pub(crate) fn verified(&self, path: &str) -> bool {
         self.verified
             .binary_search_by(|known| known.as_str().cmp(path))
+            .is_ok()
+    }
+
+    /// Whether an `added` or a `prior` line of this change names `path`,
+    /// whether or not a row of the corpus holds it. A governed source file is
+    /// held by no row, and a change that edits one names it, so this is how
+    /// a rule asks whether the person re-read what an edge reaches (#1520).
+    pub(crate) fn names(&self, path: &str) -> bool {
+        self.entries
+            .binary_search_by(|(known, _)| known.as_str().cmp(path))
+            .is_ok()
+    }
+
+    /// Whether a `verified\t<document>\t<target>` line of this change names
+    /// the edge from `document` to `target`. See the module comment.
+    pub(crate) fn verified_edge(&self, document: &str, target: &str) -> bool {
+        self.edges
+            .binary_search_by(|(known, to)| (known.as_str(), to.as_str()).cmp(&(document, target)))
             .is_ok()
     }
 

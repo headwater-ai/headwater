@@ -117,7 +117,7 @@
 //! it.
 
 use crate::cache::Cache;
-use crate::change::{Departed, Prior};
+use crate::change::{Departed, Prior, Stated};
 use crate::context::{Context, Date};
 use crate::instance::{Input, Instance, Outcome};
 use headwater_census::census::{Census, Outcome as Classification};
@@ -1011,11 +1011,36 @@ pub struct EdgeView<'a> {
     /// The version of the declaring document that stood before the change.
     /// See [`EdgeView::declarer_prior`].
     declarer_prior: Option<Prior<'a>>,
-    /// See [`EdgeView::declarer_verified`].
-    declarer_verified: bool,
+    /// See [`EdgeView::declarer_verified`], [`EdgeView::target_named`] and
+    /// [`EdgeView::edge_verified`].
+    stated: Stated,
     clock: Option<Date>,
     reads: Vec<Input>,
     resolution: String,
+}
+
+/// Every spelling of what `edge` targets that a change can name: the target as
+/// the entry writes it, each list member, and for an anchor each normalized
+/// pattern and each path it reaches. Sorted, with no duplicate. A change names
+/// a governed file by its path, and a `verified` line may name the edge by the
+/// target as written, so both are here (#1520).
+fn target_names(edge: &Edge) -> Vec<&str> {
+    let mut names: Vec<&str> = std::iter::once(edge.raw_target.as_str())
+        .chain(edge.raw_targets.iter().map(String::as_str))
+        .collect();
+    match &edge.target {
+        Target::Document { path, .. } => names.push(path),
+        Target::Anchor { patterns, .. } => {
+            for member in patterns {
+                names.push(&member.pattern);
+                names.extend(member.matched.iter().map(String::as_str));
+            }
+        }
+        _ => {}
+    }
+    names.sort_unstable();
+    names.dedup();
+    names
 }
 
 /// One end of a relation instance, in the direction the relation declares.
@@ -1095,7 +1120,7 @@ impl<'a> EdgeView<'a> {
         digests: &Digests,
         clock: Option<Date>,
         prior_of: impl Fn(&str) -> Option<Prior<'a>>,
-        verified_of: impl Fn(&str) -> bool,
+        stated_of: impl Fn(&str, &[&str]) -> Stated,
     ) -> Option<Self> {
         let declared = halves
             .iter()
@@ -1160,7 +1185,7 @@ impl<'a> EdgeView<'a> {
             ends,
             declarer: read_at(census, &anchor.source.path).0,
             declarer_prior: prior_of(&anchor.source.path),
-            declarer_verified: verified_of(&anchor.source.path),
+            stated: stated_of(&anchor.source.path, &target_names(anchor)),
             clock,
             reads,
             resolution: anchor.target.resolution(),
@@ -1247,7 +1272,32 @@ impl<'a> EdgeView<'a> {
     /// version of the document: a rule that reads the prior version must not
     /// see it as one (#1376). False in a run that carries no change.
     pub fn declarer_verified(&self) -> bool {
-        self.declarer_verified
+        self.stated.document
+    }
+
+    /// Whether an `added` or a `prior` line of the change names this edge's
+    /// target, or a path the target reaches, and only for a check that
+    /// declared `NEEDS_DECLARER_PRIOR`. A re-verified document stamps an edge
+    /// only where the person re-read what it reaches, because each edge
+    /// carries its own `verified_revision` (#1520). False in a run that
+    /// carries no change.
+    pub fn target_named(&self) -> bool {
+        self.stated.target
+    }
+
+    /// Whether a `verified\t<document>\t<target>` line of the change names
+    /// this edge, and only for a check that declared `NEEDS_DECLARER_PRIOR`.
+    /// It states that the person re-read this one edge, whatever the change
+    /// says about the rest of the document (#1520). False in a run that
+    /// carries no change.
+    pub fn edge_verified(&self) -> bool {
+        self.stated.edge
+    }
+
+    /// Everything the change states beside the prior version, for the cache
+    /// key and for nothing else.
+    pub(crate) fn stated(&self) -> Stated {
+        self.stated
     }
 
     /// Both endpoints: spec 12 fixes an edge-scoped read set at "one relation
@@ -1680,7 +1730,7 @@ pub fn over_documents<C: DocumentCheck>(
             &reads,
             clock,
             prior,
-            false,
+            Stated::NONE,
             None,
             || check.evaluate(&view),
         );
@@ -1770,7 +1820,7 @@ pub fn over_outside_root<C: OutsideCheck>(
             &reads,
             None,
             None,
-            false,
+            Stated::NONE,
             None,
             || check.evaluate(&view),
         );
@@ -1851,9 +1901,10 @@ pub fn over_edges<C: EdgeCheck>(
             (true, Some(change)) => change.prior_of(path).ok(),
             _ => None,
         };
-        let declarer_verified = |path: &str| match (scope.needs_declarer_prior(), ctx.change()) {
-            (true, Some(change)) => change.verified(path),
-            _ => false,
+        let stated = |path: &str, names: &[&str]| match (scope.needs_declarer_prior(), ctx.change())
+        {
+            (true, Some(change)) => Stated::of(change, path, names),
+            _ => Stated::NONE,
         };
         let Some(view) = EdgeView::over(
             halves,
@@ -1861,7 +1912,7 @@ pub fn over_edges<C: EdgeCheck>(
             digests,
             clock,
             declarer_prior,
-            declarer_verified,
+            stated,
         ) else {
             continue;
         };
@@ -1899,7 +1950,7 @@ pub fn over_edges<C: EdgeCheck>(
             // an edge reads, and only where the check declared it. The key
             // writes it on `Scope::needs_declarer_prior`'s terms.
             view.declarer_prior(),
-            view.declarer_verified(),
+            view.stated(),
             Some(view.resolution()),
             || check.evaluate(&view),
         );
@@ -1979,7 +2030,7 @@ pub fn over_neighbourhoods<C: NeighbourhoodCheck>(
             &reads,
             clock,
             None,
-            false,
+            Stated::NONE,
             adjacency.anchor_resolution_of_path(&row.path),
             || check.evaluate(&view),
         );
@@ -2158,7 +2209,7 @@ pub fn over_corpus<C: CorpusCheck>(
         &reads,
         None,
         None,
-        false,
+        Stated::NONE,
         orphaned.as_deref(),
         || check.evaluate(&view),
     );
