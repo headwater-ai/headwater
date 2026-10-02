@@ -1037,6 +1037,7 @@ fn taxonomy_publish_vendor_and_diff_finish_when_a_named_pipe_or_socket_is_a_memb
         for args in [
             vec!["taxonomy", "vendor", artifact],
             vec!["taxonomy", "diff", artifact, "--now", "2026-08-01"],
+            vec!["taxonomy", "migrate", artifact, "--now", "2026-08-01"],
         ] {
             let verb = args.join(" ");
             let (status, _, err) = ended(
@@ -1055,6 +1056,16 @@ fn taxonomy_publish_vendor_and_diff_finish_when_a_named_pipe_or_socket_is_a_memb
                 !flat(&err).contains("release record"),
                 "{verb} does not blame the release record for a member: {err}"
             );
+            // `diff` and `migrate` read the artifact through one function,
+            // which heads a member it cannot read as unreadable and never as
+            // a divergence from the record.
+            if args[1] != "vendor" {
+                assert!(
+                    flat(&err).contains(&format!("{artifact} cannot be read"))
+                        && !flat(&err).contains("is not what its own"),
+                    "{verb} heads an unreadable member as unreadable: {err}"
+                );
+            }
         }
 
         // The same file at `release.yml` is the record itself, so there

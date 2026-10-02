@@ -972,6 +972,23 @@ mod tests {
         }
         std::fs::set_permissions(&shut, std::fs::Permissions::from_mode(0o755))
             .expect("the mode is set back");
+
+        // A regular record the process may not read is still the record.
+        std::fs::remove_file(&record).expect("the socket record is there to take out");
+        std::fs::write(&record, "release: {}\n").expect("written");
+        std::fs::set_permissions(&record, std::fs::Permissions::from_mode(0o000))
+            .expect("the mode is set");
+        if std::fs::read(&record).is_err() {
+            let refused = at(&dir).expect_err("an unreadable record is refused");
+            assert!(
+                matches!(refused, ReleaseError::Unreadable(_)),
+                "{refused:?}"
+            );
+            assert!(
+                refused.to_string().contains("the release record"),
+                "{refused}"
+            );
+        }
         let _ = std::fs::remove_dir_all(&dir);
     }
 
