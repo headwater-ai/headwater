@@ -63,7 +63,7 @@ anchors
     cited by HW-OBL-0149
   code_path `.claude/settings.json` via source-tree
     cited by HW-SPEC-harness-support
-  code_path `.claude/skills/fixtures.sh, .claude/skills/headwater-authoring/SKILL.md, .claude/skills/headwater-taxonomy/SKILL.md` via source-tree
+  code_path `.claude/skills/fixtures.sh, .claude/skills/headwater-authoring/SKILL.md, .claude/skills/headwater-taxonomy/SKILL.md, .claude/skills/hw-corpus/SKILL.md` via source-tree
     cited by HW-SPEC-ai-integration
   code_path `.claude/skills/headwater-authoring/SKILL.md` via source-tree
     cited by HW-PROBE-the-authoring-skill-reaches-an-agent-that-is-about-to-write-a-governed-document
@@ -307,8 +307,12 @@ anchors
     cited by HW-VER-0001
   code_path `engine/crates/cli/Cargo.toml` via source-tree
     cited by HW-DR-0033
+  code_path `engine/crates/cli/harness/**` via source-tree
+    cited by HW-IFACE-headwater-init
   code_path `engine/crates/cli/src/**` via source-tree
     cited by HW-SPEC-command-surface
+  code_path `engine/crates/cli/src/harness.rs` via source-tree
+    cited by HW-IFACE-headwater-init
   code_path `engine/crates/cli/src/lib.rs, engine/crates/cli/src/main.rs` via source-tree
     cited by HW-IFACE-headwater-capture
   code_path `engine/crates/cli/src/lib.rs, engine/crates/cli/src/main.rs` via source-tree
@@ -390,6 +394,8 @@ anchors
   code_path `engine/crates/cli/tests/help.rs` via source-tree
     cited by HW-DR-0045
   code_path `engine/crates/cli/tests/init.rs` via source-tree
+    cited by HW-IFACE-headwater-init
+  code_path `engine/crates/cli/tests/init_harness.rs` via source-tree
     cited by HW-IFACE-headwater-init
   code_path `engine/crates/cli/tests/json.rs` via source-tree
     cited by HW-DR-0043

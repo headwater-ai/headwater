@@ -279,6 +279,7 @@ anchors:
     resolver: source-tree
     scope:
       - "engine/crates/**/src/**/*.rs"
+      - "engine/crates/cli/harness/**"
       - ".githooks/**"
       - ".claude/hooks/**"
       - ".claude/agents/**"
