@@ -305,10 +305,7 @@ impl Kinds {
                                     "when",
                                     Json::object([
                                         ("declared", optional(&entry.write_when)),
-                                        (
-                                            "note",
-                                            optional(&entry.note().map(str::to_string)),
-                                        ),
+                                        ("note", optional(&entry.note().map(str::to_string))),
                                     ]),
                                 ),
                             ])
