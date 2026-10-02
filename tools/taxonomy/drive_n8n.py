@@ -511,11 +511,14 @@ def provoke_evaluation_figures(root, corpora, scratch):
     """Arm 9. A design-spec figure on the evaluation that differs from the README must fail this job, run as `main` runs it, naming the page, the line and both values.
 
     It copies the evaluation and the three READMEs into a scratch root and
-    provokes the page twice: the `Findings raised` row of `## The count` states
-    one fewer than the README, which is the defect of #1568, and the summary
-    sentence of `## What the run reported` states seven more. A second leg
-    strips the figures out of the design-spec README, and the run must fail
-    naming that README rather than pass over figures it never read.
+    provokes the page once for each kind of figure the guard holds: the
+    `Findings raised` row of `## The count` states one fewer than the README,
+    which is the defect of #1568; the design-spec summary sentence states seven
+    more findings; a `catches 0 of the N` sentence states two more; the last
+    row of the shelf-shape table states one fewer than the README's row; and
+    the standards-spec summary states seven more checked. A second leg strips
+    the figures out of the design-spec README, and the run must fail naming
+    that README rather than pass over figures it never read.
     """
     def copy_in(dest_root):
         for rel in [EVALUATION] + [os.path.relpath(p, root) for _, p in corpora]:
@@ -527,23 +530,44 @@ def provoke_evaluation_figures(root, corpora, scratch):
         return subprocess.run([sys.executable, os.path.abspath(__file__), dest_root, "--guard-only"],
                               capture_output=True, text=True)
 
-    findings = stated_figures(open(os.path.join(root, DESIGN_SPEC_README), encoding="utf-8").read())["findings"]
-    lines = open(os.path.join(root, EVALUATION), encoding="utf-8").read().splitlines()
+    def readme(rel):
+        return stated_figures(open(os.path.join(root, rel), encoding="utf-8").read())
+
+    findings = readme(DESIGN_SPEC_README)["findings"]
+    standards = "docs/taxonomies/standards-spec/fixtures/n8n/README.md"
+    checked = readme(standards)["checked"]
+    shelf = [m.group(1) for l in open(os.path.join(root, DESIGN_SPEC_README), encoding="utf-8").read().splitlines()
+             for m in [SHELF_ROW.match(l)] if m]
+    if not shelf:
+        raise Mismatch("%s has no shelf-shape table to provoke against" % DESIGN_SPEC_README)
+    text = open(os.path.join(root, EVALUATION), encoding="utf-8").read()
+    lines, blocks = text.splitlines(), headed_blocks(text)
+
+    def first(where, pattern, last=False):
+        hits = [n for level, heading, h2, body in blocks if where(level, heading, h2)
+                for n, l in body if re.search(pattern, l)]
+        if not hits:
+            raise Mismatch("%s has no line matching `%s` to provoke" % (EVALUATION, pattern))
+        return hits[-1] if last else hits[0]
+
+    # (line number, the figure's pattern, the value written, the label, the README, its value)
+    provocations = [
+        (first(lambda lv, h, h2: h2 == COUNT_SECTION, COUNT_FIGURES[0].pattern),
+         r"^(\| Findings raised \| )\d+", str(int(findings) - 1), "findings", DESIGN_SPEC_README, findings),
+        (first(lambda lv, h, h2: lv == 2 and h == SUMMARY, r"\b\d+ findings\b"),
+         r"\b()\d+(?= findings\b)", str(int(findings) + 7), "findings", DESIGN_SPEC_README, findings),
+        (first(lambda lv, h, h2: h2 == COUNT_SECTION, COUNT_FIGURES[2].pattern),
+         r"(\bcatches 0 of the )\d+", str(int(findings) + 2), "findings", DESIGN_SPEC_README, findings),
+        (first(lambda lv, h, h2: h == SHELF_SECTION, SHELF_ROW.pattern, last=True),
+         r"^(\| `homogeneous: [^|]*\| )\d+", str(int(shelf[-1]) - 1),
+         "a shelf-shape count of", DESIGN_SPEC_README, shelf[-1]),
+        (first(lambda lv, h, h2: lv == 3 and h == SUMMARY, r"\b\d+ checked\b"),
+         r"\b()\d+(?= checked\b)", str(int(checked) + 7), "checked", standards, checked),
+    ]
     want = []
-    rows = [i for i, l in enumerate(lines) if re.match(r"\| Findings raised \| \d+ \|", l)]
-    if not rows:
-        raise Mismatch("%s has no `| Findings raised | N |` row to provoke" % EVALUATION)
-    fewer = str(int(findings) - 1)
-    lines[rows[0]] = re.sub(r"^(\| Findings raised \| )\d+", r"\g<1>" + fewer, lines[rows[0]])
-    want.append("%s:%d: states findings %s, and %s states %s" % (EVALUATION, rows[0] + 1, fewer, DESIGN_SPEC_README, findings))
-    summary = [i for i, l in enumerate(lines) if l.startswith("## ") and l[3:].strip() == SUMMARY]
-    said = [i for i in range(summary[0] + 1 if summary else len(lines), len(lines))
-            if re.search(r"\b\d+ findings\b", lines[i])][:1]
-    if not said or any(l.startswith("#") for l in lines[summary[0] + 1:said[0]]):
-        raise Mismatch("%s has no findings figure under `## %s` to provoke" % (EVALUATION, SUMMARY))
-    more = str(int(findings) + 7)
-    lines[said[0]] = re.sub(r"\b\d+ findings\b", more + " findings", lines[said[0]], count=1)
-    want.append("%s:%d: states findings %s, and %s states %s" % (EVALUATION, said[0] + 1, more, DESIGN_SPEC_README, findings))
+    for n, pattern, value, label, rel, theirs in provocations:
+        lines[n - 1] = re.sub(pattern, lambda m: m.group(1) + value, lines[n - 1], count=1)
+        want.append("%s:%d: states %s %s, and %s states %s" % (EVALUATION, n, label, value, rel, theirs))
 
     provoked = os.path.join(scratch, "provoked")
     copy_in(provoked)
