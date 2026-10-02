@@ -191,6 +191,17 @@ fn edges(
     .bind(|_| true)
 }
 
+/// The hook the recorded document governs, which most cases change.
+const LIB: &str = ".claude/hooks/lib.sh";
+
+/// A change entry that names [`LIB`] with the bytes it held under `root`
+/// before a case changes it: the change carries the target, so a re-verified
+/// document's edge onto it may be stamped (#1520). Read it before the write.
+fn named_lib(root: &Path) -> impl Fn() -> (&'static str, Option<String>) {
+    let before = std::fs::read_to_string(root.join(LIB)).expect("the hook reads");
+    move || (LIB, Some(before.clone()))
+}
+
 /// A change that names the document at `path` with a prior version that does
 /// not open. The change then states nothing about the document, so no stamp
 /// may be offered: reading the failure as an added document would record a
@@ -503,20 +514,32 @@ fn an_unrecorded_entry_the_change_re_verified_offers_the_digest() {
 
 /// A moved digest is a warning in every run. It carries the patch that
 /// records the new digest only where the change re-verified the document that
-/// declares the edge. Without a change, or where the change left the facet
-/// where it stood, it carries none, because the patch would record a
-/// verification that nobody stated.
+/// declares the edge and names the edge's target. Without a change, where the
+/// change left the facet where it stood, or where it names no target, it
+/// carries none, because the patch would record a verification that nobody
+/// stated (#1520).
 #[test]
 fn a_moved_digest_is_fixable_only_on_a_document_the_change_re_verified() {
     let root = scratch("moved");
     let entries = recorded(&root);
     document(&root, TODAY, &entries);
-    write(&root, ".claude/hooks/lib.sh", "refuse() { :; }\n");
+    let lib = named_lib(&root);
+    write(&root, LIB, "refuse() { :; }\n");
     for (label, ctx, fixable) in [
         (
             "re-verified",
-            at(TODAY).scoped_to(change(&[(DOCUMENT, Some(yesterday("hooks", &entries)))])),
+            at(TODAY).scoped_to(change(&[
+                (DOCUMENT, Some(yesterday("hooks", &entries))),
+                lib(),
+            ])),
             true,
+        ),
+        // The document re-verified and the hook it governs not named: each
+        // edge carries its own stamp, and nobody stated this one (#1520).
+        (
+            "re-verified, target unnamed",
+            at(TODAY).scoped_to(change(&[(DOCUMENT, Some(yesterday("hooks", &entries)))])),
+            false,
         ),
         ("no change", at(TODAY), false),
         (
@@ -533,7 +556,7 @@ fn a_moved_digest_is_fixable_only_on_a_document_the_change_re_verified() {
         (
             "same day, stated",
             at(TODAY).scoped_to(stated(
-                &[(DOCUMENT, Some(text_of("hooks", TODAY, &entries)))],
+                &[(DOCUMENT, Some(text_of("hooks", TODAY, &entries))), lib()],
                 &[DOCUMENT],
             )),
             true,
@@ -541,8 +564,13 @@ fn a_moved_digest_is_fixable_only_on_a_document_the_change_re_verified() {
         // An author who re-read the document and changed nothing in it.
         (
             "stated, not carried",
-            at(TODAY).scoped_to(stated(&[], &[DOCUMENT])),
+            at(TODAY).scoped_to(stated(&[lib()], &[DOCUMENT])),
             true,
+        ),
+        (
+            "stated, target unnamed",
+            at(TODAY).scoped_to(stated(&[], &[DOCUMENT])),
+            false,
         ),
         // A statement about another document says nothing about this one.
         (
@@ -590,8 +618,11 @@ fn a_stamp_is_offered_only_on_the_document_the_change_re_verified() {
     let entries = recorded(&root);
     document(&root, TODAY, &entries);
     write(&root, OTHER, &text_of("other", TODAY, &entries));
-    write(&root, ".claude/hooks/lib.sh", "refuse() { :; }\n");
-    let re_verified = || change(&[(DOCUMENT, Some(yesterday("hooks", &entries)))]);
+    let lib = named_lib(&root);
+    write(&root, LIB, "refuse() { :; }\n");
+    // The change names the hook both documents govern, and re-verified one of
+    // them: a named target stamps nothing on a document nobody re-read.
+    let re_verified = || change(&[(DOCUMENT, Some(yesterday("hooks", &entries))), lib()]);
     for (label, ctx, stamped) in [
         ("today", at(TODAY).scoped_to(re_verified()), vec![DOCUMENT]),
         (
@@ -600,6 +631,11 @@ fn a_stamp_is_offered_only_on_the_document_the_change_re_verified() {
             vec![DOCUMENT],
         ),
         ("no change", at(TODAY), vec![]),
+        (
+            "target unnamed",
+            at(TODAY).scoped_to(change(&[(DOCUMENT, Some(yesterday("hooks", &entries)))])),
+            vec![],
+        ),
     ] {
         let ran = run_in(&root, &ctx, &mut Cache::disabled(), &taxonomy());
         let reported = suspect(&ran);
@@ -621,7 +657,6 @@ fn a_stamp_is_offered_only_on_the_document_the_change_re_verified() {
 /// is how HW-PD-0020 was stamped onto a `ci.yml` its author never read (#1484).
 #[test]
 fn a_re_verified_document_stamps_only_the_edge_whose_target_the_change_names() {
-    const LIB: &str = ".claude/hooks/lib.sh";
     const WRITE: &str = ".claude/hooks/write.sh";
     let root = scratch("named-target");
     let entries: Vec<String> = recorded(&root)
@@ -698,12 +733,20 @@ fn a_warm_cache_keys_the_patch_on_the_change() {
     let root = scratch("warm-change");
     let entries = recorded(&root);
     document(&root, TODAY, &entries);
-    write(&root, ".claude/hooks/lib.sh", "refuse() { :; }\n");
-    let re_verified =
+    let lib = named_lib(&root);
+    write(&root, LIB, "refuse() { :; }\n");
+    let re_verified = || {
+        at(TODAY).scoped_to(change(&[
+            (DOCUMENT, Some(yesterday("hooks", &entries))),
+            lib(),
+        ]))
+    };
+    // The same prior version of the document, with no target named.
+    let unnamed =
         || at(TODAY).scoped_to(change(&[(DOCUMENT, Some(yesterday("hooks", &entries)))]));
     let unmoved = |verified: &[&str]| {
         at(TODAY).scoped_to(stated(
-            &[(DOCUMENT, Some(text_of("hooks", TODAY, &entries)))],
+            &[(DOCUMENT, Some(text_of("hooks", TODAY, &entries))), lib()],
             verified,
         ))
     };
@@ -733,6 +776,13 @@ fn a_warm_cache_keys_the_patch_on_the_change() {
             false,
         ),
         ("facet unmoved, warm", unmoved(&[]), false, true),
+        // One prior version and one re-verification, with and without the
+        // target named: the key holds the target, so the unnamed run is not
+        // served the stamp the named run stored, and the other way round
+        // (#1520). Each is then served its own verdict.
+        ("target unnamed, after a named run", unnamed(), false, false),
+        ("target named, after an unnamed run", re_verified(), true, true),
+        ("target unnamed, warm", unnamed(), false, true),
     ] {
         let mut cache = Cache::at(&root, LOCK, "sha256:rules");
         let ran = run_in(&root, &ctx, &mut cache, &taxonomy());
@@ -967,7 +1017,8 @@ fn a_stated_re_verification_needs_no_freshness_facet() {
     let root = scratch("no-freshness");
     let entries = recorded(&root);
     document(&root, TODAY, &entries);
-    write(&root, ".claude/hooks/lib.sh", "refuse() { :; }\n");
+    let lib = named_lib(&root);
+    write(&root, LIB, "refuse() { :; }\n");
     let unroled = taxonomy().replace(
         "  last_verified:\n    role: freshness\n",
         "  last_verified:\n",
@@ -976,7 +1027,18 @@ fn a_stated_re_verification_needs_no_freshness_facet() {
     for (label, ctx, fixable) in [
         (
             "stated",
+            at(TODAY).scoped_to(stated(&[lib()], &[DOCUMENT])),
+            true,
+        ),
+        (
+            "stated, target unnamed",
             at(TODAY).scoped_to(stated(&[], &[DOCUMENT])),
+            false,
+        ),
+        // A `verified` line that names the edge needs no facet either (#1520).
+        (
+            "edge stated",
+            at(TODAY).scoped_to(edges(&[], &[], &[(DOCUMENT, LIB)])),
             true,
         ),
         (

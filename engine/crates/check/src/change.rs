@@ -793,8 +793,9 @@ mod tests {
             &format!("{FORMAT}\nprior\tdocs/a.md\tprior/a.md\textra\n"),
             &format!("{FORMAT}\nadded\tdocs/a.md\nadded\tdocs/a.md\n"),
             &format!("{FORMAT}\nverified\n"),
-            &format!("{FORMAT}\nverified\tdocs/a.md\textra\n"),
+            &format!("{FORMAT}\nverified\tdocs/a.md\ttools/x.sh\textra\n"),
             &format!("{FORMAT}\nverified\tdocs/a.md\nverified\tdocs/a.md\n"),
+            &format!("{FORMAT}\nverified\tdocs/a.md\ttools/x.sh\nverified\tdocs/a.md\ttools/x.sh\n"),
         ] {
             assert!(
                 Unbound::read(manifest, tree(&[("prior/a.md", ASSERTED)])).is_err(),
@@ -858,6 +859,54 @@ mod tests {
         assert_eq!(
             named.added + named.carried + named.unreadable + named.unmatched + named.verified_alone,
             named.documents
+        );
+    }
+
+    /// A `verified\t<document>\t<target>` line states that one edge was
+    /// re-read, and not the document: the document is not re-verified by it.
+    /// The target is held against nothing, because a governed source file is
+    /// no corpus document, and a document no row holds is reported with the
+    /// unmatched paths, as a two-field line's is. An `added` or a `prior` line
+    /// names its path whether or not a row holds it (#1520).
+    #[test]
+    fn a_verified_edge_line_states_one_edge_and_not_the_document() {
+        let manifest = format!(
+            "{FORMAT}\nverified\tdocs/a.md\ttools/x.sh\nverified\tdocs/a.md\tsrc/**\n\
+             verified\tdocs/typo.md\ttools/x.sh\nverified\tdocs/a.md\nprior\ttools/y.sh\tprior/y.sh\n\
+             verified\tdocs/c.md\ttools/x.sh\n"
+        );
+        let unbound =
+            Unbound::read(&manifest, tree(&[("prior/y.sh", "echo\n")])).expect("a change");
+        assert_eq!(
+            unbound.verified_edges(),
+            vec![
+                ("docs/a.md", "src/**"),
+                ("docs/a.md", "tools/x.sh"),
+                ("docs/c.md", "tools/x.sh"),
+                ("docs/typo.md", "tools/x.sh"),
+            ]
+        );
+        assert_eq!(unbound.verified(), vec!["docs/a.md"]);
+        let change = unbound.bind(|path| path == "docs/a.md" || path == "docs/c.md");
+
+        assert!(change.verified_edge("docs/a.md", "tools/x.sh"));
+        assert!(change.verified_edge("docs/a.md", "src/**"));
+        assert!(change.verified_edge("docs/c.md", "tools/x.sh"));
+        assert!(!change.verified_edge("docs/c.md", "src/**"));
+        assert!(!change.verified_edge("docs/typo.md", "tools/x.sh"), "no row holds it");
+        // An edge line re-verifies the one edge and not the document.
+        assert!(change.verified("docs/a.md"), "its own two-field line");
+        assert!(!change.verified("docs/c.md"));
+        // A governed file the change carries is named though no row holds it.
+        assert!(change.names("tools/y.sh"));
+        assert!(!change.names("tools/x.sh"), "a verified line carries nothing");
+        assert_eq!(change.unmatched(), vec!["docs/typo.md", "tools/y.sh"]);
+        let named = change.named();
+        assert_eq!(named.verified, 2, "{named:?}");
+        assert_eq!(
+            named.added + named.carried + named.unreadable + named.unmatched + named.verified_alone,
+            named.documents,
+            "{named:?}"
         );
     }
 
