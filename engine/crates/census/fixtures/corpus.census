@@ -218,6 +218,8 @@ docs/decisions/0102-an-editor-integration-starts-headwater-mcp-for-each-query-an
   typed: decision
 docs/decisions/0103-an-evidence-relation-declares-which-end-is-the-evidence-and-discharges-declares-the-source.md
   typed: decision
+docs/decisions/0104-an-agent-writes-governs-traces-to-and-cited-in-through-the-verb-and-the-review-of-its-pull-request-is-the-acceptance.md
+  typed: decision
 docs/decisions/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/doctrine/maturity-model.md

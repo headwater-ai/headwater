@@ -499,7 +499,9 @@ pub const WRITE_CLASS: [Tool; 2] = [
         description: "Scaffold a document of a kind into this working tree: the placement its \
                       shelf dictates, the front matter its facets require, the sections its \
                       contract requires, an identifier under its scheme, and the edges the \
-                      taxonomy assigns to a scaffold. It writes what `headwater new` writes. It \
+                      taxonomy assigns to a scaffold or an agent. An edge an agent writes is \
+                      accepted by the review of the pull request that carries it, and not by \
+                      this tool. It writes what `headwater new` writes. It \
                       decides everything before it writes anything, it never overwrites a \
                       document, and it refuses rather than guessing. It writes no acceptance: no \
                       field it fills records that a human accepted the result, because acceptance \
@@ -519,10 +521,13 @@ pub const WRITE_CLASS: [Tool; 2] = [
             ),
             Argument::repeatable(
                 "relates",
-                "An edge to declare, written `<relation>=<identifier>`, which is the form \
-                 `headwater new --relates` takes. A list, and an absent list is no edge. The verb \
-                 refuses a relation the taxonomy assigns to another creator, an end the relation \
-                 forbids, and a target that resolves to nothing.",
+                "An edge to declare, written `<relation>=<target>`, which is the form \
+                 `headwater new --relates` takes. The target is an identifier, or a path or \
+                 pattern where the relation admits an anchor such as `code_path`. A list, and an \
+                 absent list is no edge. The verb writes a relation the taxonomy assigns to a \
+                 scaffold or an agent, and refuses one it assigns to another creator, an end the \
+                 relation forbids, and a target that binds to nothing, such as a `governs` \
+                 pattern that matches no entry.",
             ),
         ],
         writes: true,

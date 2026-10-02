@@ -72,9 +72,21 @@ pub fn render(plan: &Plan) -> String {
     // `Plan::assisted` does not count it.
     out.push_str("provenance:\n  warrant: asserted\n");
     if !plan.edges.is_empty() {
+        // One key per relation, in the order the caller first named it. Two
+        // `--relates` of one relation are two items under one key, because a
+        // second key of one name is a mapping the parser refuses (#1560).
         out.push_str("relations:\n");
+        let mut named: Vec<&str> = Vec::new();
         for edge in &plan.edges {
-            out.push_str(&format!("  {}:\n    - {}\n", edge.relation, edge.target));
+            if !named.contains(&edge.relation.as_str()) {
+                named.push(&edge.relation);
+            }
+        }
+        for relation in named {
+            out.push_str(&format!("  {relation}:\n"));
+            for edge in plan.edges.iter().filter(|edge| edge.relation == relation) {
+                out.push_str(&format!("    - {}\n", scalar(&edge.target)));
+            }
         }
     }
     out.push_str("---\n\n");
@@ -86,6 +98,24 @@ pub fn render(plan: &Plan) -> String {
         ));
     }
     out
+}
+
+/// A relation target as a YAML scalar: plain where a plain scalar reads back as
+/// the same string, and quoted where it does not.
+///
+/// An identifier is always plain. A path is not: `@scope/index.js` opens with
+/// `@`, which YAML reserves, so a plain write of it is a document the next
+/// command refuses (#1560).
+fn scalar(target: &str) -> String {
+    let plain = !target.is_empty()
+        && !target.starts_with(|c: char| "*&!|>%@`'\"#[]{},?:- ".contains(c))
+        && !target.ends_with([' ', ':'])
+        && !target.contains(": ")
+        && !target.contains(" #");
+    match plain {
+        true => target.to_string(),
+        false => quoted(target),
+    }
 }
 
 /// A scalar as a double-quoted YAML string.

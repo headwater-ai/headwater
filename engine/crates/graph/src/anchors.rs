@@ -335,6 +335,18 @@ pub trait Resolver {
         self.resolve(raw)
     }
 
+    /// Bind the string as [`Resolver::resolve_for`] would once the target
+    /// carries whatever mark of the asserter the resolver reads, and refuse
+    /// for every other reason in the resolver's own words. A resolver that
+    /// reads no such mark keeps the default, which is `resolve_for` itself.
+    ///
+    /// `headwater new` asks this of a document it is about to mint, which no
+    /// file can cite yet, so that the verb writes an edge the check will bind
+    /// once the citation is there, and refuses one it never will (#1560).
+    fn resolve_once_cited(&self, raw: &str, asserter: &str) -> Binding {
+        self.resolve_for(raw, asserter)
+    }
+
     /// The revision of a set of entries this resolver matched, and `None`
     /// where it has no such notion.
     ///
@@ -827,37 +839,10 @@ impl Resolver for CommentScan {
     }
 
     fn resolve_for(&self, raw: &str, asserter: &str) -> Binding {
-        let normalized = match normalize(raw) {
-            Ok(normalized) => normalized,
+        let (normalized, source) = match self.opened(raw, asserter) {
+            Ok(opened) => opened,
             Err(why) => return Binding::Unresolved(why),
         };
-
-        // Only a regular file is opened, and `metadata` follows a link, so a
-        // link to a source file still resolves. A named pipe with no writer
-        // blocks its reader for ever, so a pipe, a socket or a device is
-        // refused by what it is and never read (#1366). The words are the
-        // census's for the same entry, with the tree this resolver reads.
-        let path = self.base.join(&normalized);
-        if std::fs::metadata(&path).is_ok_and(|meta| !meta.is_file() && !meta.is_dir()) {
-            return Binding::Unresolved(format!(
-                "`{normalized}` names a named pipe, a socket or a device, which the source tree \
-                 never opens"
-            ));
-        }
-        let Ok(source) = std::fs::read_to_string(path) else {
-            return Binding::Unresolved(format!("no `{normalized}` in the source tree"));
-        };
-
-        // An asserter outside the declared prefix can never be cited, because
-        // `candidates` returns only tokens that open with it. So the refusal
-        // names the identifier and the prefix, and never a citation to add.
-        if !asserter.starts_with(self.prefix.as_str()) {
-            return Binding::Unresolved(format!(
-                "`{asserter}`, the document that asserts this edge, does not start `{}`, so no \
-                 comment in `{normalized}` can cite it",
-                self.prefix
-            ));
-        }
 
         let text = crate::comments::rust_comment_text(&source);
         let candidates = Self::candidates(&text, &self.prefix);
@@ -890,6 +875,61 @@ impl Resolver for CommentScan {
                  corpus mints, and no document mints it"
             ))
         }
+    }
+
+    /// Every refusal of [`Resolver::resolve_for`] that a citation cannot
+    /// cure, through the same [`CommentScan::opened`], and a binding where
+    /// only the citation is missing. A file that is not there, a directory, a
+    /// pattern, a file that does not read as text and an asserter outside the
+    /// prefix are each refused here exactly as the check refuses them.
+    fn resolve_once_cited(&self, raw: &str, asserter: &str) -> Binding {
+        match self.opened(raw, asserter) {
+            Ok((normalized, _)) => Binding::Resolved {
+                matched: vec![normalized.clone()],
+                normalized,
+                excluded_by: None,
+                revision: Revision::known(None),
+            },
+            Err(why) => Binding::Unresolved(why),
+        }
+    }
+}
+
+impl CommentScan {
+    /// The file a citation would sit in, read as text, with its normalized
+    /// path: every step of [`Resolver::resolve_for`] before it reads a
+    /// citation. One function, so the verb's question and the check's answer
+    /// cannot drift apart (#1560).
+    fn opened(&self, raw: &str, asserter: &str) -> Result<(String, String), String> {
+        let normalized = normalize(raw)?;
+
+        // Only a regular file is opened, and `metadata` follows a link, so a
+        // link to a source file still resolves. A named pipe with no writer
+        // blocks its reader for ever, so a pipe, a socket or a device is
+        // refused by what it is and never read (#1366). The words are the
+        // census's for the same entry, with the tree this resolver reads.
+        let path = self.base.join(&normalized);
+        if std::fs::metadata(&path).is_ok_and(|meta| !meta.is_file() && !meta.is_dir()) {
+            return Err(format!(
+                "`{normalized}` names a named pipe, a socket or a device, which the source tree \
+                 never opens"
+            ));
+        }
+        let Ok(source) = std::fs::read_to_string(path) else {
+            return Err(format!("no `{normalized}` in the source tree"));
+        };
+
+        // An asserter outside the declared prefix can never be cited, because
+        // `candidates` returns only tokens that open with it. So the refusal
+        // names the identifier and the prefix, and never a citation to add.
+        if !asserter.starts_with(self.prefix.as_str()) {
+            return Err(format!(
+                "`{asserter}`, the document that asserts this edge, does not start `{}`, so no \
+                 comment in `{normalized}` can cite it",
+                self.prefix
+            ));
+        }
+        Ok((normalized, source))
     }
 }
 

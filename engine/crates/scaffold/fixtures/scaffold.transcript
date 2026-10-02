@@ -311,6 +311,216 @@ TODO write this section.
 
 TODO write this section.
 
+=== new decision_record --title "A governs pattern that matches an entry" --relates governs=corpus/code/*.txt
+
+wrote corpus/decisions/a-governs-pattern-that-matches-an-entry.md
+identifier DR-FIX-0008 under `decision_id`, allocation reconcile-first, reconciled from 7
+claim .headwater/ids/decision_id/DR-FIX-0008
+  status = draft [scaffolded: `regimes.lifecycle.standard` opens at `draft`]
+  status_since = 2026-08-14 [scaffolded: the facet is in the `state_entered` role, and the run's clock is the date]
+  summary = TODO one sentence: what a reader learns here, which is what routing reads [hand entry: no declaration determines it, and this run states the question instead]
+  title = A governs pattern that matches an entry [scaffolded: the facet is in the `name` role, and `--title` is the name]
+  edge governs -> corpus/code/*.txt [created_by: agent]
+    no far half
+    anchor `code_path`, matched 1 entry
+assisted 7 of 9 — fields 3/4, sections 3/3, identifier 1/1, halves 0/1
+--- the document ---
+---
+id: DR-FIX-0008
+status: draft
+status_since: 2026-08-14
+summary: "TODO one sentence: what a reader learns here, which is what routing reads"
+title: "A governs pattern that matches an entry"
+provenance:
+  warrant: asserted
+relations:
+  governs:
+    - corpus/code/*.txt
+---
+
+# A governs pattern that matches an entry
+
+## Context
+
+TODO write this section.
+
+## Decision
+
+TODO write this section.
+
+## Consequences
+
+TODO write this section.
+
+=== new decision_record --title "A citation the file still owes" --relates cited_in=corpus/code/widget.txt
+
+wrote corpus/decisions/a-citation-the-file-still-owes.md
+identifier DR-FIX-0008 under `decision_id`, allocation reconcile-first, reconciled from 7
+claim .headwater/ids/decision_id/DR-FIX-0008
+  status = draft [scaffolded: `regimes.lifecycle.standard` opens at `draft`]
+  status_since = 2026-08-14 [scaffolded: the facet is in the `state_entered` role, and the run's clock is the date]
+  summary = TODO one sentence: what a reader learns here, which is what routing reads [hand entry: no declaration determines it, and this run states the question instead]
+  title = A citation the file still owes [scaffolded: the facet is in the `name` role, and `--title` is the name]
+  edge cited_in -> corpus/code/widget.txt [created_by: agent]
+    no far half
+    anchor `test_site`, matched 1 entry
+    owes: `test_site` binds `corpus/code/widget.txt` once a Rust `//` or `/* */` comment in it cites `DR-FIX-0008`, which `headwater check` reports until one does
+assisted 7 of 9 — fields 3/4, sections 3/3, identifier 1/1, halves 0/1
+--- the document ---
+---
+id: DR-FIX-0008
+status: draft
+status_since: 2026-08-14
+summary: "TODO one sentence: what a reader learns here, which is what routing reads"
+title: "A citation the file still owes"
+provenance:
+  warrant: asserted
+relations:
+  cited_in:
+    - corpus/code/widget.txt
+---
+
+# A citation the file still owes
+
+## Context
+
+TODO write this section.
+
+## Decision
+
+TODO write this section.
+
+## Consequences
+
+TODO write this section.
+
+=== new decision_record --title "A required half onto a path" --relates realizes=corpus/code/widget.txt
+
+wrote corpus/decisions/a-required-half-onto-a-path.md
+identifier DR-FIX-0008 under `decision_id`, allocation reconcile-first, reconciled from 7
+claim .headwater/ids/decision_id/DR-FIX-0008
+  status = draft [scaffolded: `regimes.lifecycle.standard` opens at `draft`]
+  status_since = 2026-08-14 [scaffolded: the facet is in the `state_entered` role, and the run's clock is the date]
+  summary = TODO one sentence: what a reader learns here, which is what routing reads [hand entry: no declaration determines it, and this run states the question instead]
+  title = A required half onto a path [scaffolded: the facet is in the `name` role, and `--title` is the name]
+  edge realizes -> corpus/code/widget.txt [created_by: agent]
+    no far half
+    anchor `code_path`, matched 1 entry
+assisted 7 of 9 — fields 3/4, sections 3/3, identifier 1/1, halves 0/1
+--- the document ---
+---
+id: DR-FIX-0008
+status: draft
+status_since: 2026-08-14
+summary: "TODO one sentence: what a reader learns here, which is what routing reads"
+title: "A required half onto a path"
+provenance:
+  warrant: asserted
+relations:
+  realizes:
+    - corpus/code/widget.txt
+---
+
+# A required half onto a path
+
+## Context
+
+TODO write this section.
+
+## Decision
+
+TODO write this section.
+
+## Consequences
+
+TODO write this section.
+
+=== new decision_record --title "A required half onto a document" --relates realizes=DR-FIX-0007
+
+wrote corpus/decisions/a-required-half-onto-a-document.md
+identifier DR-FIX-0008 under `decision_id`, allocation reconcile-first, reconciled from 7
+claim .headwater/ids/decision_id/DR-FIX-0008
+  status = draft [scaffolded: `regimes.lifecycle.standard` opens at `draft`]
+  status_since = 2026-08-14 [scaffolded: the facet is in the `state_entered` role, and the run's clock is the date]
+  summary = TODO one sentence: what a reader learns here, which is what routing reads [hand entry: no declaration determines it, and this run states the question instead]
+  title = A required half onto a document [scaffolded: the facet is in the `name` role, and `--title` is the name]
+  edge realizes -> DR-FIX-0007 [created_by: agent]
+    far half `realized_by` owed by corpus/decisions/an-earlier-decision.md once it leaves `draft`
+    sets `superseded` on the target, later
+assisted 7 of 9 — fields 3/4, sections 3/3, identifier 1/1, halves 0/1
+--- the document ---
+---
+id: DR-FIX-0008
+status: draft
+status_since: 2026-08-14
+summary: "TODO one sentence: what a reader learns here, which is what routing reads"
+title: "A required half onto a document"
+provenance:
+  warrant: asserted
+relations:
+  realizes:
+    - DR-FIX-0007
+---
+
+# A required half onto a document
+
+## Context
+
+TODO write this section.
+
+## Decision
+
+TODO write this section.
+
+## Consequences
+
+TODO write this section.
+
+=== new decision_record --title "Two patterns under one key" --relates governs=corpus/code/*.txt --relates governs=@scoped/widget.txt
+
+wrote corpus/decisions/two-patterns-under-one-key.md
+identifier DR-FIX-0008 under `decision_id`, allocation reconcile-first, reconciled from 7
+claim .headwater/ids/decision_id/DR-FIX-0008
+  status = draft [scaffolded: `regimes.lifecycle.standard` opens at `draft`]
+  status_since = 2026-08-14 [scaffolded: the facet is in the `state_entered` role, and the run's clock is the date]
+  summary = TODO one sentence: what a reader learns here, which is what routing reads [hand entry: no declaration determines it, and this run states the question instead]
+  title = Two patterns under one key [scaffolded: the facet is in the `name` role, and `--title` is the name]
+  edge governs -> corpus/code/*.txt [created_by: agent]
+    no far half
+    anchor `code_path`, matched 1 entry
+  edge governs -> @scoped/widget.txt [created_by: agent]
+    no far half
+    anchor `code_path`, matched 1 entry
+assisted 7 of 10 — fields 3/4, sections 3/3, identifier 1/1, halves 0/2
+--- the document ---
+---
+id: DR-FIX-0008
+status: draft
+status_since: 2026-08-14
+summary: "TODO one sentence: what a reader learns here, which is what routing reads"
+title: "Two patterns under one key"
+provenance:
+  warrant: asserted
+relations:
+  governs:
+    - corpus/code/*.txt
+    - "@scoped/widget.txt"
+---
+
+# Two patterns under one key
+
+## Context
+
+TODO write this section.
+
+## Decision
+
+TODO write this section.
+
+## Consequences
+
+TODO write this section.
+
 === new nonesuch --title "A kind nobody declared"
 
 refused, KindUnknown
@@ -379,7 +589,7 @@ refused, PlacementDoesNotResolve
 === new standard --title "A relation endpoint with no scheme"
 
 refused, Unnameable
-  `standard` names no identifier scheme, and `supersedes`, `assesses`, `traces_to` may name a document of it. Such a document is neither end of any edge, which `identifier.unusable` reports on every run. Declare `kinds.standard.identifier` first. Add these two lines under `add:` in .headwater/overlay.yml, in place of `{}` if the block is empty, then run `headwater taxonomy resolve` and this verb again:
+  `standard` names no identifier scheme, and `governs`, `realizes`, `supersedes`, `assesses`, `traces_to` may name a document of it. Such a document is neither end of any edge, which `identifier.unusable` reports on every run. Declare `kinds.standard.identifier` first. Add these two lines under `add:` in .headwater/overlay.yml, in place of `{}` if the block is empty, then run `headwater taxonomy resolve` and this verb again:
 
   identifier_schemes.standard_id: {pattern: "{namespace}-STANDARD-{slug}", namespace: FIX, allocation: minted-once}
   kinds.standard.identifier: {scheme: standard_id}
@@ -397,12 +607,12 @@ refused, PathTaken
 === new decision_record --title "A relation nobody declared" --relates flibberty=DR-FIX-0007
 
 refused, RelationUnknown
-  no relation is named `flibberty`. This taxonomy declares `assesses`, `refines`, `supersedes`
+  no relation is named `flibberty`. This taxonomy declares `assesses`, `cited_in`, `governs`, `realizes`, `refines`, `ruled_in`, `supersedes`
 
 === new decision_record --title "An edge a hook pays for" --relates traces_to=DR-FIX-0007
 
 refused, RelationNotScaffolded
-  `traces_to` declares `created_by: hook`, and this verb proposes the edges the taxonomy assigns to a scaffold. Write it by hand, or change what the declaration says pays for it
+  `traces_to` declares `created_by: hook`, and this verb proposes the edges the taxonomy assigns to a scaffold or an agent. Write it by hand, or change what the declaration says pays for it
 
 === new decision_record --title "A source end the relation forbids" --relates refines=SPEC-FIX-the-first-part
 
@@ -418,6 +628,36 @@ refused, EndpointNotPermitted
 
 refused, TargetUnresolved
   `supersedes` names `DR-FIX-9999`, and no document of this corpus carries that identifier
+
+=== new decision_record --title "A governs pattern that matches no entry" --relates governs=src/nowhere/**
+
+refused, AnchorUnresolved
+  `governs` names `src/nowhere/**`, and it binds to nothing (`code_path`: no entry in the source tree matches `src/nowhere/**`). `headwater check` would report this edge as unbound, so nothing was written
+
+=== new decision_record --title "A citation in a file that is not there" --relates cited_in=corpus/code/missing.txt
+
+refused, AnchorUnresolved
+  `cited_in` names `corpus/code/missing.txt`, and it binds to nothing (`test_site`: no `corpus/code/missing.txt` in the source tree). `headwater check` would report this edge as unbound, so nothing was written
+
+=== new decision_record --title "A citation in a directory" --relates cited_in=corpus/code
+
+refused, AnchorUnresolved
+  `cited_in` names `corpus/code`, and it binds to nothing (`test_site`: no `corpus/code` in the source tree). `headwater check` would report this edge as unbound, so nothing was written
+
+=== new decision_record --title "A citation in a file that is not text" --relates cited_in=corpus/code/image.png
+
+refused, AnchorUnresolved
+  `cited_in` names `corpus/code/image.png`, and it binds to nothing (`test_site`: no `corpus/code/image.png` in the source tree). `headwater check` would report this edge as unbound, so nothing was written
+
+=== new decision_record --title "A citation in a pattern" --relates cited_in=corpus/code/*.txt
+
+refused, AnchorUnresolved
+  `cited_in` names `corpus/code/*.txt`, and it binds to nothing (`test_site`: no `corpus/code/*.txt` in the source tree). `headwater check` would report this edge as unbound, so nothing was written
+
+=== new decision_record --title "A path that two anchor kinds claim" --relates ruled_in=corpus/code/widget.txt
+
+refused, AnchorUnresolved
+  `ruled_in` names `corpus/code/widget.txt`, and it binds to nothing (code_path and rule_name both claim this string, so it has two identities). `headwater check` would report this edge as unbound, so nothing was written
 
 === new decision_record --title "A scent role the caller states" --summary "What a reader learns before opening the file."
 
