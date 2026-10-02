@@ -13,8 +13,9 @@
 //!
 //! [Spec 5](../../../../docs/spec/05-ai-integration.md#agent-surfaces) names
 //! the tools of the query class: `route`, `governing_docs_for_path`,
-//! `resolve_identifier`, `related`, `explain`, `check`. The first five are the
-//! reads here. `check` is the runner, and this crate calls it rather than
+//! `resolve_identifier`, `related`, `explain`, `check`, `kinds`. The first five
+//! are the reads of the graph here, and [`kinds`] is the one read of the
+//! taxonomy alone (#1580). `check` is the runner, and this crate calls it rather than
 //! reimplementing it: [`mcp`] registers the tool and hands the runner the
 //! clock, the declarations and the two structures the walk produced, all of
 //! them decided by whoever started the server.
@@ -52,6 +53,7 @@
 
 pub mod explain;
 pub mod json;
+pub mod kinds;
 pub mod mcp;
 pub mod route;
 
