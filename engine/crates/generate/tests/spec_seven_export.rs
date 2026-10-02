@@ -228,12 +228,62 @@ fn export_section(text: &str) -> Vec<&str> {
     lines.take_while(|l| !l.starts_with("## ")).collect()
 }
 
-/// Every sentence fragment of the section that is long enough to count: a
+/// The three subsections of spec 7's export section. Each must be inside it,
+/// so that a stray `## ` heading cannot take one out of what the tests below
+/// read.
+const SUBSECTIONS: [&str; 3] = [
+    "### An export is a projection, and it declares what it dropped",
+    "### An export profile carries a filter",
+    "### What a filtered export claims, and what it does not",
+];
+
+/// A sentence that opens with a link and goes on "states ..." points at
+/// where something is stated, and states no rule itself. Spec 6 is right to
+/// carry the same kind of sentence.
+fn is_pointer(sentence: &str) -> bool {
+    let s = sentence.trim();
+    if !s.starts_with('[') {
+        return false;
+    }
+    let Some(target) = s.find("](") else {
+        return false;
+    };
+    let Some(close) = s[target..].find(')') else {
+        return false;
+    };
+    s[target + close + 1..].trim_start().starts_with("states ")
+}
+
+/// The rule text of spec 7's export section: every line from the first
+/// subsection on, headings and table separators left out, and each pointer
+/// sentence dropped. The opening paragraph above the first subsection says
+/// what the section holds and where the verb is stated, and it holds no rule.
+fn rule_lines(seven: &str) -> Vec<String> {
+    let section = export_section(seven);
+    for heading in SUBSECTIONS {
+        assert!(
+            section.contains(&heading),
+            "spec 7's export section does not hold `{heading}`"
+        );
+    }
+    section
+        .into_iter()
+        .skip_while(|l| *l != SUBSECTIONS[0])
+        .filter(|l| !l.starts_with('#') && !l.starts_with("|---"))
+        .map(|l| {
+            l.split(". ")
+                .filter(|s| !is_pointer(s))
+                .collect::<Vec<_>>()
+                .join(". ")
+        })
+        .collect()
+}
+
+/// Every sentence fragment of the rule text that is long enough to count: a
 /// line is cut at each table cell, each sentence end and each colon.
-fn fragments(lines: &[&str]) -> BTreeSet<String> {
+fn fragments(lines: &[String]) -> BTreeSet<String> {
     lines
         .iter()
-        .filter(|l| !l.starts_with('#') && !l.starts_with("|---"))
         .flat_map(|l| l.split('|'))
         .map(plain)
         .flat_map(|l| {
@@ -248,9 +298,8 @@ fn fragments(lines: &[&str]) -> BTreeSet<String> {
 #[test]
 fn spec_6_shares_no_sentence_with_the_export_section_of_spec_7() {
     let seven = spec_seven();
-    let section = export_section(&seven);
     let six = plain(&spec_six().lines().collect::<Vec<_>>().join(" "));
-    let copies: Vec<String> = fragments(&section)
+    let copies: Vec<String> = fragments(&rule_lines(&seven))
         .into_iter()
         .filter(|f| six.contains(f.as_str()))
         .collect();
@@ -280,11 +329,8 @@ fn spec_6_shares_no_run_of_eight_words_with_the_export_section_of_spec_7() {
     let six = format!(" {} ", words(&spec_six()).join(" "));
     let mut runs = BTreeSet::new();
     // Headings are left out: spec 6 keeps the three export headings on
-    // purpose, so that their inbound links land.
-    for line in export_section(&seven)
-        .iter()
-        .filter(|l| !l.starts_with('#'))
-    {
+    // purpose, so that their inbound links land. So are pointer sentences.
+    for line in rule_lines(&seven) {
         for cell in line.split('|') {
             let w = words(cell);
             for run in w.windows(RUN_WORDS) {
