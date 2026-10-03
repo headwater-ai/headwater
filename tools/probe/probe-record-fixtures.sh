@@ -2405,14 +2405,17 @@ STUB
                     "$r" "$tombstone" >> "$1/jobs"
             done
         }
-        # $1 is the call log, $2 is `ok` or `fail-first`.
+        # $1 is `ok` or `fail-first`. The stub runs confined, so it logs to
+        # the probe log directory, the one path the driver binds read-write
+        # for every session, which is `$scratch/probe-log/stagger.calls`.
         stagger_stub() {
             cat > "$scratch/bin/claude" <<STUB
 #!/bin/sh
 case "\${1:-}" in --version) echo '9.9.9 (Claude Code)'; exit 0 ;; esac
-pwd >> "$1"
+calls=\$HEADWATER_SHADOW_LOG_DIR/stagger.calls
+printf '%s %s\n' "\${CLAUDE_CONFIG_DIR:-}" "\$(pwd)" >> "\$calls"
 printf '%s\n' '{"type":"system","subtype":"init","model":"claude-haiku-4-5","session_id":"s16"}'
-if [ "$2" = fail-first ] && [ "\$(wc -l < "$1")" -le 1 ]; then
+if [ "$1" = fail-first ] && [ "\$(wc -l < "\$calls")" -le 1 ]; then
     printf '%s\n' '{"type":"result","subtype":"error_during_execution","is_error":true,"total_cost_usd":0.01,"modelUsage":{"claude-haiku-4-5-20251001":{"inputTokens":10}}}'
     exit 1
 fi
@@ -2436,30 +2439,30 @@ STUB
         printf 'campaign present sufficiency\n' > "$scratch/stagger.spec"
         stagger=$scratch/stagger
         stagger_batch "$stagger"
-        rm -f "$scratch/stagger.calls"
-        stagger_stub "$scratch/stagger.calls" ok
+        rm -f "$scratch/probe-log/stagger.calls"
+        stagger_stub ok
         stagger_run "$stagger" "$scratch/stagger-1.err"
         same "a slice of --max-sessions 2 over 3 jobs exits 9, jobs remain" "9" "$?"
         same "and records exactly 2 sessions" "2" "$(stagger_recorded "$stagger")"
-        same "and runs the harness for 2 sessions" "2" "$(wc -l < "$scratch/stagger.calls" 2>/dev/null | tr -d ' ')"
+        same "and runs the harness for 2 sessions" "2" "$(wc -l < "$scratch/probe-log/stagger.calls" 2>/dev/null | tr -d ' ')"
         present "and says how many remain" "2 of 3 sessions recorded, 1 remain; run the same command again" "$scratch/stagger-1.err"
         absent "and reports no skipped job as failed" "did not record" "$scratch/stagger-1.err"
         stagger_run "$stagger" "$scratch/stagger-2.err"
         same "the same command again finishes the batch with 0" "0" "$?"
         same "and all 3 jobs are recorded" "3" "$(stagger_recorded "$stagger")"
         same "and the harness ran 3 times in all, none twice" "3 3" \
-            "$(sort -u "$scratch/stagger.calls" | wc -l | tr -d ' ') $(wc -l < "$scratch/stagger.calls" | tr -d ' ')"
+            "$(sort -u "$scratch/probe-log/stagger.calls" | wc -l | tr -d ' ') $(wc -l < "$scratch/probe-log/stagger.calls" | tr -d ' ')"
 
         # The halt: the first session fails for a reason other than the cap.
         stagger_batch "$stagger"
-        rm -f "$scratch/stagger.calls"
-        stagger_stub "$scratch/stagger.calls" fail-first
+        rm -f "$scratch/probe-log/stagger.calls"
+        stagger_stub fail-first
         stagger_run "$stagger" "$scratch/stagger-3.err"
         same "a harness failure that is not the cap halts the slice with 9" "9" "$?"
-        same "and no later job of the slice starts" "1" "$(wc -l < "$scratch/stagger.calls" 2>/dev/null | tr -d ' ')"
+        same "and no later job of the slice starts" "1" "$(wc -l < "$scratch/probe-log/stagger.calls" 2>/dev/null | tr -d ' ')"
         present "and the stop names the halt" "halt" "$scratch/stagger-3.err"
-        rm -f "$scratch/stagger.calls"
-        stagger_stub "$scratch/stagger.calls" ok
+        rm -f "$scratch/probe-log/stagger.calls"
+        stagger_stub ok
         PATH="$scratch/bin:$PATH" sh "$root/tools/probe/campaign.sh" --out "$stagger" \
             --model claude-haiku-4-5 --spec "$scratch/stagger.spec" --repetitions 1 \
             >/dev/null 2>"$scratch/stagger-4.err"
@@ -2468,7 +2471,7 @@ STUB
         # The cap is the batch's, so a resumed slice that does not give one
         # keeps the one recorded. The pin and the harness version hold too.
         stagger_batch "$stagger"
-        rm -f "$scratch/stagger.calls"
+        rm -f "$scratch/probe-log/stagger.calls"
         PATH="$scratch/bin:$PATH" sh "$root/tools/probe/campaign.sh" --out "$stagger" \
             --model claude-haiku-4-5 --spec "$scratch/stagger.spec" --repetitions 1 \
             --cap-cents 500 --max-sessions 1 >/dev/null 2>"$scratch/stagger-5.err"
@@ -2477,10 +2480,10 @@ STUB
         same "and the first slice recorded the harness version" "9.9.9 (Claude Code)" \
             "$(cat "$stagger/claude-version" 2>/dev/null)"
         printf '1.0.0 (Claude Code)\n' > "$stagger/claude-version"
-        rm -f "$scratch/stagger.calls"
+        rm -f "$scratch/probe-log/stagger.calls"
         stagger_run "$stagger" "$scratch/stagger-7.err"
         same "a slice on another harness version refuses with 4" "4" "$?"
-        same "and starts no session" "0" "$(cat "$scratch/stagger.calls" 2>/dev/null | wc -l | tr -d ' ')"
+        same "and starts no session" "0" "$(cat "$scratch/probe-log/stagger.calls" 2>/dev/null | wc -l | tr -d ' ')"
         present "and names both versions" "1.0.0 (Claude Code)" "$scratch/stagger-7.err"
         rm -rf "$stagger"
         rm -f "$scratch/bin/cargo"
