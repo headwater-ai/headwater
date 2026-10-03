@@ -143,9 +143,9 @@ pub fn render_at(
         &indent(&run.render(headwater_check::Detail::Findings, mode)),
         width,
     ));
-    // The escaped findings, each marked with what holds it. Spec 6: "A
-    // suppressed finding is in the output, and it is marked. A live finding, a
-    // `migration-pending` finding and a suppressed one are three different
+    // The escaped findings, each marked with what holds it. Checks and cache:
+    // "A suppressed finding is in the output, and it is marked. A live finding,
+    // a `migration-pending` finding and a suppressed one are three different
     // things." They go after the checks block and before the read set, which is
     // inside the region every reader of this report cuts records out of, and
     // under a heading of their own, which is what keeps them from reading as

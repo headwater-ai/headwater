@@ -188,8 +188,8 @@ pub struct Lock {
     /// the bytes each one had.
     pub sources: Vec<SourceDigest>,
     /// The digest of the canonical taxonomy text. This is the number that
-    /// [spec 6](../../../../docs/spec/06-engine-architecture.md#ci-adapters) means
-    /// by "the taxonomy lock hash".
+    /// [checks and cache](../../../../docs/subsystems/checks-and-cache.md#what-a-run-states-beside-its-findings)
+    /// means by "the taxonomy lock hash".
     pub digest: String,
     /// The resolver's [`headwater_resolve::rules::RULE_SET`] this lock was
     /// validated under. [`read`] refuses a lock whose `rules` does not equal

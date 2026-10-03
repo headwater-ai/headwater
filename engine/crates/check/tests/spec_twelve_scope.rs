@@ -28,10 +28,17 @@
 //! `needs_*` fields of `struct Scope` from its source and holds `flags` to
 //! them.
 //!
+//! The grain lines of the block are bound the same way, against the variants
+//! of [`headwater_check::scope::Grain`]. Until
+//! [#1572](https://github.com/headwater-ai/headwater/issues/1572) the block
+//! named a `Shelf` grain that no code has, and left out the `Taxonomy` grain
+//! that the engine has. A private exhaustive match on `Grain` makes a sixth
+//! variant a compile error here until the list below names it.
+//!
 //! # What this does not hold
 //!
-//! The grain lines of the block and the `//` comment on each flag line are
-//! prose. Only the flag names are bound here.
+//! The `//` comment on each grain line and each flag line is prose. Only the
+//! grain names and the flag names are bound here.
 
 use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
@@ -48,16 +55,7 @@ fn spec_twelve() -> PathBuf {
 fn spec_flags() -> Vec<String> {
     let path = spec_twelve();
     let text = std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
-    let (_, after) = text
-        .split_once(SECTION)
-        .unwrap_or_else(|| panic!("{}: no `{SECTION}` heading", path.display()));
-    let (_, from_fence) = after
-        .split_once("```")
-        .unwrap_or_else(|| panic!("{}: `{SECTION}` holds no fenced block", path.display()));
-    let block = from_fence
-        .split_once("```")
-        .map(|(block, _)| block)
-        .unwrap_or_else(|| panic!("{}: the `Scope` block is never closed", path.display()));
+    let block = scope_block(&text, &path);
 
     let mut flags = Vec::new();
     for line in block.lines() {
@@ -117,6 +115,98 @@ fn the_scope_block_of_spec_12_names_every_flag_scope_declares() {
         rows.len(),
         named.len(),
         "docs/spec/12-check-layer.md's `Scope` block names a flag twice: {rows:?}"
+    );
+}
+
+/// The fenced `Scope` block under [`SECTION`], between its fences.
+fn scope_block(text: &str, path: &Path) -> String {
+    let (_, after) = text
+        .split_once(SECTION)
+        .unwrap_or_else(|| panic!("{}: no `{SECTION}` heading", path.display()));
+    let (_, from_fence) = after
+        .split_once("```")
+        .unwrap_or_else(|| panic!("{}: `{SECTION}` holds no fenced block", path.display()));
+    from_fence
+        .split_once("```")
+        .map(|(block, _)| block.to_string())
+        .unwrap_or_else(|| panic!("{}: the `Scope` block is never closed", path.display()))
+}
+
+/// Every grain name on a `| Name` line of the `Scope` block, in the order a
+/// reader meets them. The name is the identifier before any `(` or `//`.
+fn spec_grains() -> Vec<String> {
+    let path = spec_twelve();
+    let text = std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
+    let block = scope_block(&text, &path);
+    let grains: Vec<String> = block
+        .lines()
+        .filter_map(|line| line.trim_start().strip_prefix('|'))
+        .map(|rest| {
+            rest.trim_start()
+                .chars()
+                .take_while(|c| c.is_ascii_alphanumeric() || *c == '_')
+                .collect::<String>()
+        })
+        .filter(|name| !name.is_empty())
+        .collect();
+    assert!(
+        !grains.is_empty(),
+        "{}: the `Scope` block under `{SECTION}` holds no `| Grain` line, so this case would \
+         compare nothing",
+        path.display()
+    );
+    grains
+}
+
+/// The variant identifiers of [`headwater_check::scope::Grain`].
+///
+/// [`_exhaustive`] matches every variant with no wildcard, so a sixth variant
+/// does not compile until it is named there, and the list here sits beside it.
+const ENGINE_GRAINS: [&str; 5] = ["Document", "Edge", "Neighbourhood", "Corpus", "Taxonomy"];
+
+/// Never called. A variant added to `Grain` fails to compile here, so
+/// [`ENGINE_GRAINS`] cannot fall behind the enum unseen.
+fn _exhaustive(grain: headwater_check::scope::Grain) -> &'static str {
+    use headwater_check::scope::Grain;
+    match grain {
+        Grain::Document => ENGINE_GRAINS[0],
+        Grain::Edge => ENGINE_GRAINS[1],
+        Grain::Neighbourhood { .. } => ENGINE_GRAINS[2],
+        Grain::Corpus => ENGINE_GRAINS[3],
+        Grain::Taxonomy => ENGINE_GRAINS[4],
+    }
+}
+
+/// The `Scope` block of spec 12 names every grain `Grain` has, and no other.
+///
+/// The decisive case for slice 3 of #1572. It compares identifiers
+/// (`Neighbourhood`), not [`headwater_check::scope::Grain::name`]
+/// (`neighbourhood`), because the block carries engine identifiers.
+///
+/// # Watched failing
+///
+/// On `main` at `a629c0be`, with spec 12 unedited, this reddened naming
+/// `Taxonomy` as a grain the block does not name and `Shelf` as a grain no
+/// code has.
+#[test]
+fn the_scope_block_of_spec_12_names_every_grain_the_engine_has() {
+    let rows = spec_grains();
+    let named: BTreeSet<&str> = rows.iter().map(String::as_str).collect();
+    let declared: BTreeSet<&str> = ENGINE_GRAINS.iter().copied().collect();
+
+    let extra: Vec<&&str> = named.difference(&declared).collect();
+    let missing: Vec<&&str> = declared.difference(&named).collect();
+    assert!(
+        extra.is_empty() && missing.is_empty(),
+        "docs/spec/12-check-layer.md's `Scope` block and `enum Grain` in \
+         engine/crates/check/src/scope.rs disagree. `Grain` has {missing:?} and the block does \
+         not name them. The block names {extra:?} and `Grain` has no such variant. The block \
+         names {named:?}"
+    );
+    assert_eq!(
+        rows.len(),
+        named.len(),
+        "docs/spec/12-check-layer.md's `Scope` block names a grain twice: {rows:?}"
     );
 }
 

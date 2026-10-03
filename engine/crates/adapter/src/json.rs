@@ -372,9 +372,9 @@ fn document(run: &Run, subject: &Subject<'_>) -> Json {
             "findings",
             Json::Array(reported(run).iter().map(finding).collect()),
         ),
-        // The read set, in full, with a digest per input. Spec 6 asks a run to
-        // report it beside the findings, and the reader that needs it is a gate
-        // holding this verdict against a later tree.
+        // The read set, in full, with a digest per input. Checks and cache asks a
+        // run to report it beside the findings, and the reader that needs it is
+        // a gate holding this verdict against a later tree.
         (
             "read_set",
             Json::Array(

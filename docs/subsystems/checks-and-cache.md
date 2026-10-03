@@ -161,7 +161,69 @@ A `verified` line states that the author read a document again in this change. A
 
 The adapter is a crate above `check`, and not a module in it. Nothing in `headwater-check` names `headwater-adapter`, so the compiler stops a renderer that reaches into a check ([spec 8](../spec/08-design-departures.md), departure 6).
 
-`sarif.rs` writes SARIF 2.1.0. The SARIF `level` comes from the severity of the check alone: `error` to `error`, `warn` to `warning`, `info` to `note`. The severity of the obligation and the posture of the control never set it. A `level` that said "this blocks" would be an order, and the engine emits what it evaluated and never orders what lands.
+Each format has one file. `sarif.rs` writes SARIF 2.1.0, and `markdown.rs` writes a job summary or a review comment. `json.rs` writes the finding shape, and `text.rs` writes the report for a terminal.
+
+### A renderer is what the engine ships, and an adapter is a renderer with a credential
+
+`check --format` writes four vocabularies, and each of them is neutral. SARIF is an OASIS standard. Markdown is a job summary or a review comment. JSON is the finding shape that [spec 4](../spec/04-assurance-model.md#findings) declares. A forge is a forge because of the call that uploads the artifact, and because of the credential on that call. That call is outside the engine. The workflow of this repository is one instance of it.
+
+Two of the four formats exist to hold the adapter boundary open. [Spec 8](../spec/08-design-departures.md) asks for more than one adapter from the start, in departure 6. With one adapter, everything the adapter needs is in the core by definition, so nobody can see the boundary. SARIF and Markdown show the boundary, because each one loses different things.
+
+### Every format declares a loss set, and a census audits it
+
+`Format::loss` gives the loss set of each format. A finding of the run is in the output, or a declared reason accounts for its absence. A finding that no reason covers is a defect in the adapter, and the census fails the run. This is the export rule of [spec 7](../spec/07-distribution-and-federation.md#an-export-is-a-projection-and-it-declares-what-it-dropped), applied to the fields of a run in place of the classes of the graph.
+
+The census in `adapter/src/lib.rs` has two halves. The finding half matches each finding to one record of the artifact, and that record must name the rule and the path of the finding. For SARIF and `json`, a parser reads the artifact, and a record is one result or one member of `findings`. For Markdown and the text report, the census cuts the artifact, and a record is one table row or one finding block. Each record serves one finding only. So a run with two findings on one rule and one path needs two records, and one dropped record fails the census.
+
+The carrier half reads each entry of the loss set. An entry names a path into the artifact and the members under that path, and the census resolves each one in the parsed artifact. Each entry comes to one of three outcomes:
+
+- `held`: the artifact agrees with the run about each member. A member is present where the run has a value, and absent where the run has none.
+- `adrift`: the artifact and the run disagree. Like a finding that no reason covers, this is a defect in the adapter.
+- `unaudited`: the entry names no member of this artifact. The value went nowhere, or it went to a place outside these bytes.
+
+The three outcomes sum to the entries that the format declares, so the census passes over no entry in silence. `Census::accounts` states that sum.
+
+An entry names its members, so a bag that resolves is not an answer. An entry with no members is `held` only where its path resolves to a value that is not a map. Where the path resolves to a map, the entry is `adrift`, because a map has names that the entry could list. One SARIF entry showed why. It said that the coverage went to a property bag. Four counts went there, and the skip classes went nowhere, and the old audit held the entry for as long as it existed.
+
+An entry whose carrier is conditional is judged against the run, and never against the emitter. Some members are in the artifact of one run and absent from another. Such an entry declares its condition, and the census reads that condition off the run. It shares no function with the emitter. If the census read the run through the emitter, a change to the emitter would move the artifact and the expectation together. An emitter that stopped writing a member would then pass.
+
+The two prose formats declare entries that no member path can reach, because no parser reads them. For those entries, a person who reads the artifact is the only check.
+
+### Three severity scales, and the one that reaches SARIF
+
+Three scales meet at a CI surface. A check reports a severity ([spec 12](../spec/12-check-layer.md#severity-is-the-checks-posture-is-the-controls)). An obligation carries `high`, `medium` or `low` ([spec 4](../spec/04-assurance-model.md#obligations-are-data)). A control carries a posture, `advisory` or `blocking`. SARIF has a fourth scale, with the values `error`, `warning`, `note` and `none`. The SARIF `level` comes from the severity of the check alone, by this table:
+
+| Check severity | SARIF `level` |
+|---|---|
+| `error` | `error` |
+| `warn` | `warning` |
+| `info` | `note` |
+
+The other two scales are refused, and not left out by accident. The scale of the obligation describes the invariant, not the finding. It would give one level to each finding of each rule that serves the obligation. The judgment of the control would then arrive in the field of the check. The posture says whether a finding stops a gate. A `level` that said "this blocks" would be the engine ordering what lands. Both values still travel, in the members that SARIF keeps for values that its own vocabulary does not name.
+
+### A suppressed finding is in the output, and it is marked
+
+A live finding, a `migration-pending` finding and a suppressed one are three different things. A surface that shows only the live findings reports a suppression that nobody can count. [Spec 12](../spec/12-check-layer.md#suppression-is-the-runners) rules that such a suppression looks the same as a rule that never fires. So each format writes the escaped findings, and marks each one with its class. SARIF writes a `suppressions` array on each escaped result, so a consumer shows the result as dismissed and not as open.
+
+SARIF has two values for `suppression.kind`, and [spec 4](../spec/04-assurance-model.md#suppression) has three escape classes. `sarif::kind` maps them by where each one is written:
+
+| Escape class | Where it is written | SARIF `suppression.kind` |
+|---|---|---|
+| `suppression` | A directive in the document that it hides | `inSource` |
+| `migration-pending` | A task of the adoption payload, in the lock | `external` |
+| `waiver` | A record of a publisher, when a waiver mechanism exists | `external` |
+
+So the two widest classes share one value. `properties.headwater.escape` keeps them apart, and the SARIF loss set records the shared value.
+
+### What a run states beside its findings
+
+A run that names a change says so in every format. `check --change` gives a run the documents of one change, and the promotion count and every transition finding are about that set alone. The text report opens with the count of documents named, the paths that reached no row of the census, and the promotions. `json` writes the `change` member that [the check contract](../interfaces/headwater-check.md#the-json-report-member-by-member) names. `markdown` writes a paragraph and a list. SARIF writes the property bag of the run, and its loss set records that. A run of the full corpus writes none of this, and that absence tells the two kinds of run apart.
+
+A run emits what it evaluated, and never orders what lands. Each format writes the taxonomy lock hash and the [read set](../spec/12-check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict) beside the findings. `json` writes each input of the read set with its digest, and SARIF writes each input as an artifact. The text report writes the read set under a heading of its own, and Markdown writes a summary of it. A gate that holds the merge result can then decide whether the verdict still applies ([spec 4](../spec/04-assurance-model.md#a-verdict-is-about-one-state-of-the-corpus)). Over this corpus, the answer is always to run again, because every run publishes a barrier.
+
+The corpus tree is a gap ([HW-OBL-0028](../obligations/0028-a-run-cannot-report-the-corpus-tree-because-nothing-computes.md)). Nothing in the engine computes a corpus tree, so no format writes one, and `Subject` in `adapter/src/lib.rs` has no field for it. SARIF has `run.automationDetails.id` for that value, and `sarif.rs` leaves it out. The read set is not a corpus tree: the read set holds what the checks read, and a tree holds what the census walked.
+
+The engine does not hold a queue, choose an order of landing, evaluate a future state, or block a merge. A merge queue answers the merge question completely, and the cost is a serialized landing. That trade belongs to the forge. This is the boundary that [Q7](../spec/09-decisions.md#q7--scope-of-the-mcp-surface) drew for the write path, applied at a second place.
 
 ## Invariants
 
@@ -171,13 +233,14 @@ A change to these crates must keep each of these. Each item names the test that 
 - **Each key component invalidates an entry.** An edited document runs again (`an_edited_document_is_evaluated_again`). A moved anchor target, a moved clock, a moved lock and a dropped rule serve nothing stale (`a_moved_anchor_target_is_not_served_from_the_entry_before_it`, `a_clock_that_moved_is_not_served_from_the_entry_before_it`, `a_lock_that_moved_serves_nothing`, `an_engine_upgrade_that_drops_a_rule_serves_nothing`). So does a duplicate that the other file settled (`a_duplicate_settled_in_the_other_file_is_not_served_stale`).
 - **A damaged cache file costs one run** (`a_damaged_cache_file_costs_one_run_and_nothing_else`).
 - **A rule that changes its decisions raises its edition** (`every_ledgered_rule_decides_what_its_version_recorded`, `a_moved_digest_at_an_unchanged_version_fails_and_bless_keeps_the_row`).
-- **The scope comes from the trait, and the read set comes from the view** (`the_scope_of_every_rule_comes_from_the_trait_that_binds_it`, `the_read_set_of_an_instance_comes_from_the_view_and_not_from_the_check`, `a_document_check_receives_the_body_only_when_it_declares_it`). Spec 12 names every `Scope` flag (`the_scope_block_of_spec_12_names_every_flag_scope_declares`).
+- **The scope comes from the trait, and the read set comes from the view** (`the_scope_of_every_rule_comes_from_the_trait_that_binds_it`, `the_read_set_of_an_instance_comes_from_the_view_and_not_from_the_check`, `a_document_check_receives_the_body_only_when_it_declares_it`). Spec 12 names every `Scope` flag (`the_scope_block_of_spec_12_names_every_flag_scope_declares`) and every grain of `Grain` (`the_scope_block_of_spec_12_names_every_grain_the_engine_has`).
 - **The observation snapshot is in the read set** (`a_present_snapshot_joins_the_read_set`), and a gate does not carry a verdict over a deleted entry (`deleting_the_snapshot_entry_between_check_and_gate_does_not_carry`).
 - **The denominator is the census** (`the_denominator_is_the_census_and_not_the_classified_set`), and a classified document with no instance is a finding (`a_classified_document_with_no_instance_is_a_finding_and_an_untyped_one_is_not`).
 - **A suppression changes the report and not the instance** (`a_suppressed_finding_leaves_the_report_and_stays_in_the_instance`). A pending finding never blocks (`a_pending_finding_never_blocks`).
 - **The fixture tree runs to its recorded report** (`the_fixture_tree_runs_to_the_recorded_report`), and the injected clock changes a verdict and nothing else does (`the_injected_clock_changes_a_verdict_and_nothing_else_does`).
 - **Every finding reaches every format** (`every_finding_reaches_every_format`), and each format loses only what its loss set declares (`every_entry_of_every_loss_set_is_accounted_for`). Each format renders its recorded fixture (`the_fixture_tree_renders_the_recorded_sarif`, `the_fixture_tree_renders_the_recorded_json`, `the_fixture_tree_renders_the_recorded_markdown`, `the_fixture_tree_renders_the_recorded_text`).
 - **The SARIF level is the severity of the check** (`the_level_is_the_checks_severity_and_never_the_obligations`), and the SARIF rule list is the registry that ran (`the_rule_list_is_the_registry_that_ran`).
+- **The adapter sections above are what the adapter writes, and they are the one home of these rules.** The severity table is what `sarif::level` writes (`the_level_table_of_checks_and_cache_is_what_sarif_writes`), and the escape-class table is what `sarif::kind` writes (`the_suppression_kind_table_of_checks_and_cache_is_what_sarif_writes`). The three outcomes are the outcome fields of `Census` (`the_census_outcomes_checks_and_cache_names_are_the_fields_census_counts`). Spec 6 keeps a short section that links here (`spec_6_keeps_a_short_ci_adapters_section_that_points_at_checks_and_cache`). It shares no run of eight words with these sections (`spec_6_shares_no_run_of_eight_words_with_the_adapter_sections_of_checks_and_cache`), and no engine comment credits spec 6 with one of these rules (`no_comment_quotes_moved_adapter_text_as_spec_6`).
 - **The `headwater check` page names the JSON shape** (`the_check_interface_page_names_every_version_of_the_json_shape`, `every_member_of_a_rules_entry_is_named_on_the_check_page`).
 
 Scope enforcement and the cache are correctness roots ([spec 12](../spec/12-check-layer.md#the-correctness-roots)).

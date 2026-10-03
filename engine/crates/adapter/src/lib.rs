@@ -541,11 +541,13 @@ fn member<'a>(value: &'a Spanned<Value>, path: &[&str]) -> Option<&'a Spanned<Va
 /// is not a bag the entry declined to name, and every member the place names is
 /// under it.
 ///
-/// The middle clause is the one spec 6 rules and this function used not to
-/// hold. An entry whose `members` are empty says the value at `at` is the whole
-/// of what was carried, and a map is never that: a map has named members, so
-/// there is always a list an honest entry could have written, and stopping at
-/// the bag is the vaguer carrier that #233 shipped. A scalar and a sequence
+/// The middle clause is the one
+/// [checks and cache](../../../../docs/subsystems/checks-and-cache.md#every-format-declares-a-loss-set-and-a-census-audits-it)
+/// states and this function used not to hold. An entry whose `members` are
+/// empty says the value at `at` is the whole of what was carried, and a map
+/// is never that: a map has named members, so there is always a list an honest
+/// entry could have written, and stopping at the bag is the vaguer carrier
+/// that #233 shipped. A scalar and a sequence
 /// both pass, and they have to: a run value that is one string, or a list of
 /// entries with no names of their own, has no members to name and the path is
 /// the answer.
@@ -1022,11 +1024,11 @@ pub fn census_with(run: &Run, format: Format, artifact: &str, loss: &[Loss]) -> 
 
 /// What every format states about the run beside the findings.
 ///
-/// [Spec 6](../../../../docs/spec/06-engine-architecture.md#ci-adapters): "Every
-/// run reports the corpus tree, the taxonomy lock hash, and its read set beside
-/// the findings." Two of those three are here. The corpus tree is not, because
-/// nothing computes one — see [`sarif`] for where that absence shows up and
-/// what this crate declined to print in its place.
+/// [Checks and cache](../../../../docs/subsystems/checks-and-cache.md#what-a-run-states-beside-its-findings)
+/// names the taxonomy lock hash and the read set, and names the corpus tree as
+/// a gap. The lock hash and the read set are here. The corpus tree is not,
+/// because nothing computes one — see [`sarif`] for where that absence shows
+/// up and what this crate declined to print in its place.
 pub struct Subject<'a> {
     /// The taxonomy package the lock names.
     pub package: &'a str,

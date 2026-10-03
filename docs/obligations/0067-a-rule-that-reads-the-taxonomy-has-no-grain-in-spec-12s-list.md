@@ -1,10 +1,10 @@
 ---
 id: HW-OBL-0067
 title: "A rule that reads the taxonomy has no grain in spec 12's list"
-status: current
-status_since: 2026-08-13
+status: discharged
+status_since: 2026-10-03
 waiting_on: build
-last_verified: 2026-08-13
+last_verified: 2026-10-03
 summary: "Two register rules are about the taxonomy and about no document, and spec 12 draws every scope over the corpus."
 provenance:
   warrant: accepted
@@ -31,3 +31,5 @@ Either spec 12 names the fifth grain, or these two rules move out of the check l
 ## Discharge
 
 The engine states the grain as `Taxonomy` and reports it beside the other four. A corpus-grained verdict moves when a document moves, and a taxonomy-grained one moves when the lock moves. To fold the second into the first would put a document in a read set that no document was read for.
+
+**This record is discharged.** The `Scope` block of [spec 12](../spec/12-check-layer.md#scope--the-declaration-everything-else-rests-on) names `Taxonomy` as a grain, and it does not name `Shelf`, which no code has. The test `the_scope_block_of_spec_12_names_every_grain_the_engine_has` in `engine/crates/check/tests/spec_twelve_scope.rs` holds the grain lines of that block to the variants of `Grain`, in both directions. [#1572](https://github.com/headwater-ai/headwater/issues/1572) made both changes.
