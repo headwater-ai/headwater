@@ -159,7 +159,7 @@ The engine's own verbs, run over this corpus in the `headwater` job:
     headwater taxonomy audit
     headwater check
 
-The first three run in `--check` form, which refuses a committed artifact that the sources no longer produce. `check` runs several times rather than once: with the cache and without it, scoped to the change the pull request carries, and once per output format, because the cache must not be able to change a verdict and no format may disagree with another. CI also pins the clock with `--now`, so a rule that reads a date gives the same answer on a rerun. `taxonomy publish --check` publishes the maintained source into a directory outside the tree and fails when the vendored copy is not what that publish produces. `taxonomy audit` is the one verb here that cannot fail, because it exits 0 whatever it finds. CI runs it with `--json`, uploads the document as the `governed-scope` artifact, and renders the governed-scope table into the job summary from that document.
+The first three run in `--check` form, which refuses a committed artifact that the sources no longer produce. `check` runs several times rather than once: with the cache and without it, scoped to the change the pull request carries, and once per output format, because the cache must not be able to change a verdict and no format may disagree with another. CI also pins the clock with `--now`, so a rule that reads a date gives the same answer on a rerun. `taxonomy publish --check` publishes the maintained source into a directory outside the tree and fails when the vendored copy is not what that publish produces. `taxonomy audit` is the one verb here that cannot fail, because it exits 0 whatever it finds. CI runs it with `--json`, uploads the document as the `governed-scope` artifact, and renders the governed-scope table into the job summary from that document with `tools/ci/governed-scope.jq`. That filter writes each share to one decimal place itself, because jq 1.6 on the self-hosted runner prints the number `100.0` as `100`, and `tools/ci/governed-scope-fixtures.sh` holds it on the jq of each runner.
 
 The fixture suites, which are shell and Python rather than cargo, and which you can run yourself from the repository root:
 
@@ -195,6 +195,7 @@ The fixture suites, which are shell and Python rather than cargo, and which you 
     sh tools/repo/readme-fixtures.sh
     sh tools/repo/release-guide-fixtures.sh
     sh tools/repo/retire-worktree-fixtures.sh
+    sh tools/ci/governed-scope-fixtures.sh ./engine/target/release/headwater
     sh tools/site/refresh-crawler-files.sh --check
     sh tools/site/refresh-figures.sh --check
     sh tools/site/figures-fixtures.sh
