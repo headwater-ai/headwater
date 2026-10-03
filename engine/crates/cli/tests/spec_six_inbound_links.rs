@@ -224,6 +224,13 @@ fn moved_credits(rel: &str, text: &str) -> Vec<(usize, &'static str)> {
     if !governs(rel, text) {
         return Vec::new();
     }
+    credit_lines(text)
+}
+
+/// Every `(line, term)` in `text` where a present-tense credit to spec 6,
+/// read with the sentence after it, holds a term of `MOVED_CREDITS`, whatever
+/// document holds it.
+fn credit_lines(text: &str) -> Vec<(usize, &'static str)> {
     let mut out = Vec::new();
     for (i, line) in text.lines().enumerate() {
         let parts = sentences(line);
@@ -584,6 +591,31 @@ fn a_record_of_a_moment_keeps_its_links_to_spec_6() {
     assert!(
         moved.is_empty(),
         "a record of a moment stays as written (HW-DR-0106), and these links changed:\n{}",
+        moved.join("\n")
+    );
+}
+
+/// The present-tense credits to a moved rule that the records of a moment
+/// hold, with the count of each. On 2026-10-03 the records held none. A
+/// record stays as written (HW-DR-0106), so a credit added to one or taken
+/// out of one fails here. Each row is `(path, term, count)`.
+const RECORD_CREDITS: &[(&str, &str, usize)] = &[];
+
+#[test]
+fn a_record_of_a_moment_keeps_its_credits_to_spec_6() {
+    let mut found: BTreeMap<(String, String), usize> = BTreeMap::new();
+    for rel in corpus_files() {
+        if !RECORDS_OF_A_MOMENT.iter().any(|p| rel.starts_with(p)) {
+            continue;
+        }
+        for (_, term) in credit_lines(&read(&rel)) {
+            *found.entry((rel.clone(), term.to_owned())).or_default() += 1;
+        }
+    }
+    let moved = drift(&found, RECORD_CREDITS);
+    assert!(
+        moved.is_empty(),
+        "a record of a moment stays as written (HW-DR-0106), and these credits changed:\n{}",
         moved.join("\n")
     );
 }
