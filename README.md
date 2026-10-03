@@ -2,7 +2,7 @@
 
 **Documentation rots because nothing holds it accountable.** Headwater types your corpus, checks it as a graph, and accounts for every file it saw. Nothing else can answer *"is this corpus still true?"*
 
-[![CI](https://github.com/headwater-ai/headwater/actions/workflows/ci.yml/badge.svg)](https://github.com/headwater-ai/headwater/actions/workflows/ci.yml) [![Release](https://img.shields.io/github/v/release/headwater-ai/headwater)](https://github.com/headwater-ai/headwater/releases/latest) [![License](https://img.shields.io/github/license/headwater-ai/headwater)](LICENSE) [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/headwater-ai/headwater)
+[![CI](https://github.com/headwater-ai/headwater/actions/workflows/ci.yml/badge.svg)](https://github.com/headwater-ai/headwater/actions/workflows/ci.yml) [![Release](https://img.shields.io/github/v/release/headwater-ai/headwater)](https://github.com/headwater-ai/headwater/releases/latest) [![License](https://img.shields.io/github/license/headwater-ai/headwater)](LICENSE)
 
 ![The first seven steps of the Headwater tutorial in a terminal: init, taxonomy vendor, taxonomy resolve and check](.github/assets/headwater-demo.gif)
 
