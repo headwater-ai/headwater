@@ -300,6 +300,10 @@ fn a_refused_export_writes_no_declared_output() {
         stderr.contains("wrote nothing and the tree is as it was"),
         "the refusal does not say the run wrote nothing\n{said}"
     );
+    assert!(
+        !stderr.contains("is not what this corpus and this lock produce"),
+        "a withheld run also prints the drift sentence\n{said}"
+    );
 
     // `--check` writes nothing in any state, so it withholds nothing, and its
     // sentence stays the drift sentence rather than the publish remedy.
