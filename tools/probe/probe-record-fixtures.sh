@@ -2459,13 +2459,22 @@ STUB
             "$(sort -u "$scratch/probe-log/stagger.calls" | wc -l | tr -d ' ') $(wc -l < "$scratch/probe-log/stagger.calls" | tr -d ' ')"
 
         # The bound holds across parallel workers: 3 workers, 3 jobs, 2 tokens.
-        stagger_batch "$stagger"
-        rm -f "$scratch/probe-log/stagger.calls"
-        PATH="$scratch/bin:$PATH" sh "$root/tools/probe/campaign.sh" --out "$stagger" \
-            --model claude-haiku-4-5 --spec "$scratch/stagger.spec" --repetitions 1 \
-            --max-sessions 2 --parallel 3 >/dev/null 2>"$scratch/stagger-p.err"
-        same "3 parallel workers under --max-sessions 2 start 2 sessions and exit 9" "9 2" \
-            "$? $(wc -l < "$scratch/probe-log/stagger.calls" 2>/dev/null | tr -d ' ')"
+        # A token taken without O_EXCL lets a third worker through in about
+        # one trial of three on a host whose `mkdir` checks and then creates,
+        # so the case runs 6 trials and reports the first that overran.
+        trial=1
+        overran=
+        while [ "$trial" -le 6 ] && [ -z "$overran" ]; do
+            stagger_batch "$stagger"
+            rm -f "$scratch/probe-log/stagger.calls"
+            PATH="$scratch/bin:$PATH" sh "$root/tools/probe/campaign.sh" --out "$stagger" \
+                --model claude-haiku-4-5 --spec "$scratch/stagger.spec" --repetitions 1 \
+                --max-sessions 2 --parallel 3 >/dev/null 2>"$scratch/stagger-p.err"
+            got="$? $(wc -l < "$scratch/probe-log/stagger.calls" 2>/dev/null | tr -d ' ')"
+            [ "$got" = "9 2" ] || overran="trial $trial: $got"
+            trial=$((trial + 1))
+        done
+        same "3 parallel workers under --max-sessions 2 start 2 sessions and exit 9, in 6 trials" "" "$overran"
 
         # The halt: the first session fails for a reason other than the cap.
         stagger_batch "$stagger"
