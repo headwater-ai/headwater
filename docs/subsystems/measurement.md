@@ -108,7 +108,9 @@ The file is outside the corpus root. No rule reads it and no kind classifies it,
 
 The "no prose" confirmation is four closed key sets: `IDENTITY_KEYS`, `EVENT_KEYS`, `CALL_KEYS` and `PRODUCED_KEYS`. One key outside them refuses the file. `engine/crates/probe/tests/contract.rs` holds the four sets equal to the four tables of spec 15, so the contract and the code cannot drift.
 
-A moved lock refuses a transcript only where the read set moved too. A lock move that reaches no probe and no examined document changes no verdict, so the intake does not void a batch for it.
+A moved lock refuses a transcript only where the tree composes no read set over its probes. Where the tree composes one, the intake grades the transcript, and a moved read set keeps every verdict. `Record` notes a moved lock and a moved read set in `lock_moved` and `read_set_moved`. `Record::render` prints both for `headwater probe record`.
+
+`Record::render_page` is the text of a committed probe result, and it compares nothing with the tree. A committed result pins only what it read (the owner's ruling on [#1481](https://github.com/headwater-ai/headwater/issues/1481), 2026-10-03). So the page carries no moved mark and no count of the probes this corpus declares. A refusal on the page names only the recorded lock. The run of `headwater generate` names each moved lock, read set or selection instead, and it fails nothing for it.
 
 `Record` carries no verdict. A record that carried one is a grader in a place where no reviewer looks for one.
 

@@ -12,7 +12,7 @@ waiting_on: build
 
 ## Context
 
-`hw-run-policy` caps what one pass sends to the register as full records. Past the cap, one record lists the rest. Run `20260929-1205` wrote eight intake lines about the build order, its tooling and this repository's CI. The product owner ruled each one RECORD, on the fifth-merge pass, the tenth-merge pass and the end-of-run pass of that run. None names a reader outside this repository. Each item below gives the stage that found it and the issue in hand at the time. Four of the eight items are discharged, and the Discharge section states them. Four items stay open.
+`hw-run-policy` caps what one pass sends to the register as full records. Past the cap, one record lists the rest. Run `20260929-1205` wrote eight intake lines about the build order, its tooling and this repository's CI. The product owner ruled each one RECORD, on the fifth-merge pass, the tenth-merge pass and the end-of-run pass of that run. None names a reader outside this repository. Each item below gives the stage that found it and the issue in hand at the time. Five of the eight items are discharged, and the Discharge section states them. Three items stay open.
 
 ## Obligation
 
@@ -24,10 +24,6 @@ waiting_on: build
 **The run scripts and hooks.**
 
 - `hw_engine()` in `.claude/hooks/lib.sh` looks only for `engine/target/release/headwater` and `engine/target/dev-release/headwater`. In a tree whose only engine is `engine/target/debug/headwater`, which `tools/hw-cargo test` leaves, the write-time hook fails open and prints nothing. (build, the red-main fix under #1366)
-
-**Parallel branches and CI.**
-
-- An edit to `docs/spec/12-check-layer.md`, `docs/interfaces/headwater-mcp.md` or the governs-edges evaluation moves a read-set digest in nine files under `docs/probe-results/`. They are the `regression-probe-transcript-*` files and the campaign pilot of 2026-09-28. So a footprint of documents alone that names no probe result still regenerates them. The #1340 adjudicator's footprint missed them. HW-OBL-0224 records the same transcripts as a merge-conflict source. (build, #1340)
 
 ## Discharge
 
@@ -42,3 +38,7 @@ Three items are discharged by #1419, which merged as `16eecca0`:
 One item is discharged by #1518, the pull request for #1484:
 
 - `tools/run/queue-done.sh` printed "not queued: never removed from one" for PR #1412. The GraphQL timeline holds a `RemovedFromMergeQueueEvent` with reason `failed_checks` at 2026-09-29T19:09:58Z. HW-OBL-0224 records two earlier misreports of this script. The script read removals alone, so it could not tell a pull request never queued from one whose removal was not visible yet. It now reads the added and removed events together, and an add with no entry and no later removal holds the wait. (integrate, #1412)
+
+One item is discharged by #1481:
+
+- An edit to `docs/spec/12-check-layer.md`, `docs/interfaces/headwater-mcp.md` or the governs-edges evaluation moved a read-set digest in nine files under `docs/probe-results/`. They were the `regression-probe-transcript-*` files and the campaign pilot of 2026-09-28. So a footprint of documents alone that named no probe result still regenerated them. The #1340 adjudicator's footprint missed them. Since #1481 a committed result compares no recorded digest with the tree, so such an edit moves no result. A footprint of documents alone then regenerates none. The run of `headwater generate` names the results whose read set moved. (build, #1340)

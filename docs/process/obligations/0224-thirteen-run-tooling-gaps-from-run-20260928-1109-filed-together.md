@@ -31,7 +31,6 @@ waiting_on: build
 **Parallel branches and CI.**
 
 - The engine's check rule registry holds a hand-kept `RULES` count that each new rule bumps. Two branches that each add a rule compile alone and fail together. This cost two extra rounds and one queue ejection (#1311 against #1213, then against #1232). (integrate, #1311)
-- Seven transcripts under `docs/probe-results/` record digests that nearly every merge moves. They are the campaign-pilot and second-campaign-pilot discovery arms of 2026-09-28, and the regression-probe transcripts of 2026-09-16 and 2026-09-17. Two branches that regenerate them conflict. In this run they caused four ejections or refusals (#1328 twice, #1349, #1356, #1362). They behave as a derived fold, and they carry no merge driver. (integrate, #1328)
 - `headwater route` ranks HW-DR-0052 fifth of 445, the last slot of the default budget, by a margin of 12%. One new decision on identifiers or pull requests with a heavy summary moves it out and turns the route fixture red. The recorder case matches an exact phrase of the probe's task, and nothing holds a probe's expected value against the prose (PR #1362). (verify, #1294)
 - The ten documents that govern `.github/workflows/ci.yml` report `relation.target.suspect` on `origin/main` before #978 changed anything: 32 warnings on both trees. They are HW-OBL-0173, HW-PD-0013 to HW-PD-0020 and the evaluation of the two triggers. Each owes a new reading against the workflow. (build, #978)
 
@@ -47,3 +46,7 @@ Two items are discharged by #1518, the pull request for #1484:
 
 - `tools/run/queue-done.sh` printed `UNMERGEABLE` for #1328 for about nine minutes before the merge queue ejected it with `merge_conflict`. At the same time `gh pr view` showed CLEAN and green. Nothing recorded `UNMERGEABLE` as a sign of a coming ejection. The script now ends at once on an `UNMERGEABLE` entry with `unmergeable: the queue will eject it with merge_conflict`, and `.claude/agents/hw-integrate.md` reads that line as an ejection. (hw-iterate, #1348)
 - `tools/run/queue-done.sh` printed "ejected: merged" for PR #1353, which merged as `284e056b`. An integrator that trusts it reports a false ejection. The script now reads the last queue event on the timeline, and a removal with reason `merged` holds the wait until the merge is recorded. (integrate, #1334)
+
+One item is discharged by #1481:
+
+- Seven transcripts under `docs/probe-results/` recorded digests that nearly every merge moved. They were the campaign-pilot and second-campaign-pilot discovery arms of 2026-09-28, and the regression-probe transcripts of 2026-09-16 and 2026-09-17. Two branches that regenerated them conflicted. In run `20260928-1109` they caused four ejections or refusals (#1328 twice, #1349, #1356, #1362). #1448 took the read-set digest out of the result page. #1481 removed the four pins that remained. They were the composed selection digest with the probe count, the read-set mark, the lock mark, and the tree's lock in a refusal. A committed result now pins only what it read, so an unrelated merge leaves it alone, and no merge driver is owed. (integrate, #1328)
