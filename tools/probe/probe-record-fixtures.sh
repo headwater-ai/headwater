@@ -2708,6 +2708,27 @@ STUB
         present "and the batch line says so" \
             "campaign: the batch named 1 paths outside the workspace over 2 sessions, 1 sessions uncounted, 1 web-tool calls" \
             "$scratch/leak-assemble3.err"
+
+        # Figures that differ, so no figure can stand in for another (verify
+        # round 1). A fourth session names 5 paths and makes 2 web-tool calls.
+        # A fifth states its path count and not its web-tool count, so it is
+        # uncounted and its 7 paths are not summed.
+        cp -a "$leak/sessions/L1-campaign-present-p1-r1" "$leak/sessions/L1-campaign-present-p1-r4"
+        sed -e 's/^The session named 1 path outside/The session named 5 paths outside/' \
+            -e 's/^The session made 1 call to a web tool\.$/The session made 2 calls to a web tool./' \
+            "$leak/sessions/L1-campaign-present-p1-r1/record.md" > "$leak/sessions/L1-campaign-present-p1-r4/record.md"
+        cp -a "$leak/sessions/L1-campaign-present-p1-r1" "$leak/sessions/L1-campaign-present-p1-r5"
+        sed -e 's/^The session named 1 path outside/The session named 7 paths outside/' \
+            -e '/^The session made .* to a web tool\.$/d' \
+            "$leak/sessions/L1-campaign-present-p1-r1/record.md" > "$leak/sessions/L1-campaign-present-p1-r5/record.md"
+        sh "$root/tools/probe/campaign.sh" --out "$leak" --assemble >/dev/null 2>"$scratch/leak-assemble5.err"
+        same "assembly of four recorded sessions whose figures differ exits 0" "0" "$?"
+        same "and each figure of the summary is its own sum" \
+            "4 sessions, 4 cents, the intent hook live in 0, 0 stopped at the turn cap, 6 paths outside the workspace named, 2 sessions uncounted, 3 web-tool calls" \
+            "$(cat "$leak/assembled/L1-campaign-present-sufficiency.summary" 2>/dev/null)"
+        present "and so is each figure of the batch line" \
+            "campaign: the batch named 6 paths outside the workspace over 4 sessions, 2 sessions uncounted, 3 web-tool calls" \
+            "$scratch/leak-assemble5.err"
     else
         printf 'note not a checkout of this repository, so the campaign job case did not run.\n'
     fi
