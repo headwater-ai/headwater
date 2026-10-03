@@ -506,3 +506,33 @@ fn finding(entry: &Reported<'_>) -> Json {
 fn number(value: usize) -> Json {
     Json::Raw(value.to_string())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Each `verified` pair that names no edge is one object with both paths,
+    /// in the order the run holds them (#1631). The recorded fixtures hold
+    /// only the empty array.
+    #[test]
+    fn each_unstated_pair_is_an_object_with_its_document_and_target() {
+        let scoped = Scoped {
+            named: headwater_check::change::Named::default(),
+            unmatched: vec!["lib.sh".to_string()],
+            unstated: vec![
+                ("docs/a.md".to_string(), "nope.sh".to_string()),
+                ("lib.sh".to_string(), "docs/a.md".to_string()),
+            ],
+            promotions: 0,
+        };
+        let text = change(&scoped).render_pretty();
+        let squeezed: String = text.split_whitespace().collect();
+        assert!(
+            squeezed.contains(
+                "\"unstated\":[{\"document\":\"docs/a.md\",\"target\":\"nope.sh\"},\
+                 {\"document\":\"lib.sh\",\"target\":\"docs/a.md\"}]"
+            ),
+            "{text}"
+        );
+    }
+}

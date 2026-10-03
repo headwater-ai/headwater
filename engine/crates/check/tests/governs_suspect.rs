@@ -1374,7 +1374,13 @@ fn a_verified_pair_that_names_no_edge_is_listed_as_the_pair() {
         Vec<(String, String)>,
         Vec<&'a str>,
     );
-    let rows: [Expect<'_>; 4] = [
+    let rows: [Expect<'_>; 5] = [
+        (
+            "a target that another document governs",
+            &|| edges(&[], &[], &[(OTHER, LIB)]),
+            vec![owned((OTHER, LIB))],
+            vec![],
+        ),
         (
             "both pairs, every path held",
             &|| edges(&[], &[], &[typo, reversed]),
