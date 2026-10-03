@@ -1,0 +1,33 @@
+# The unblinded grade of #1670, written by `sh tools/run/relevance-grade.sh grade`.
+# It reads sample.tsv and consensus.tsv of this record and nothing else, so a clone reprints it.
+# A path is the deterministic route (column 7 of sample.tsv) or the embedding path (column 8).
+# A document in both offers is credited once to each path. A sealed token is graded like a path.
+# Both thresholds are printed and neither is chosen: score 2 (would need) and score 1 or more (perhaps).
+# A prompts figure counts the prompts on which the path offered with at least one document at the threshold.
+# A first offered figure counts the prompts whose first offered document of the path is at the threshold.
+# No line pools the strata: the overlap stratum is a draw from its kept prompts, and the other two are whole.
+# The gate did not wait on owner scores: the owner waived the spot check on 2026-10-03.
+stratum silent: 71 prompts
+stratum silent path route: offered on 0 of 71 prompts, 0 documents
+stratum silent path route score 2: documents 0 of 0 (n/a); prompts 0 of 0 (n/a, Wilson 95% n/a); first offered 0 of 0 (n/a)
+stratum silent path route score 1 or more: documents 0 of 0 (n/a); prompts 0 of 0 (n/a, Wilson 95% n/a); first offered 0 of 0 (n/a)
+stratum silent path embedding: offered on 71 of 71 prompts, 710 documents
+stratum silent path embedding score 2: documents 24 of 710 (0.0338); prompts 17 of 71 (0.2394, Wilson 95% 0.1552 to 0.3504); first offered 4 of 71 (0.0563)
+stratum silent path embedding score 1 or more: documents 76 of 710 (0.1070); prompts 35 of 71 (0.4930, Wilson 95% 0.3800 to 0.6066); first offered 13 of 71 (0.1831)
+stratum silent missing: 23 of 71 prompts (0.3239)
+stratum disjoint: 230 prompts
+stratum disjoint path route: offered on 230 of 230 prompts, 1108 documents
+stratum disjoint path route score 2: documents 15 of 1108 (0.0135); prompts 15 of 230 (0.0652, Wilson 95% 0.0399 to 0.1048); first offered 1 of 230 (0.0043)
+stratum disjoint path route score 1 or more: documents 83 of 1108 (0.0749); prompts 67 of 230 (0.2913, Wilson 95% 0.2364 to 0.3531); first offered 12 of 230 (0.0522)
+stratum disjoint path embedding: offered on 230 of 230 prompts, 2300 documents
+stratum disjoint path embedding score 2: documents 51 of 2300 (0.0222); prompts 40 of 230 (0.1739, Wilson 95% 0.1304 to 0.2281); first offered 12 of 230 (0.0522)
+stratum disjoint path embedding score 1 or more: documents 314 of 2300 (0.1365); prompts 134 of 230 (0.5826, Wilson 95% 0.5180 to 0.6445); first offered 49 of 230 (0.2130)
+stratum disjoint missing: 117 of 230 prompts (0.5087)
+stratum overlap: 60 prompts
+stratum overlap path route: offered on 60 of 60 prompts, 297 documents
+stratum overlap path route score 2: documents 15 of 297 (0.0505); prompts 13 of 60 (0.2167, Wilson 95% 0.1312 to 0.3362); first offered 4 of 60 (0.0667)
+stratum overlap path route score 1 or more: documents 58 of 297 (0.1953); prompts 35 of 60 (0.5833, Wilson 95% 0.4573 to 0.6994); first offered 12 of 60 (0.2000)
+stratum overlap path embedding: offered on 60 of 60 prompts, 600 documents
+stratum overlap path embedding score 2: documents 24 of 600 (0.0400); prompts 21 of 60 (0.3500, Wilson 95% 0.2417 to 0.4764); first offered 7 of 60 (0.1167)
+stratum overlap path embedding score 1 or more: documents 122 of 600 (0.2033); prompts 42 of 60 (0.7000, Wilson 95% 0.5749 to 0.8010); first offered 24 of 60 (0.4000)
+stratum overlap missing: 21 of 60 prompts (0.3500)
