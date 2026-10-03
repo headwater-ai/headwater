@@ -105,7 +105,10 @@ fn table(lines: &[&str]) -> Vec<Vec<String>> {
                 .collect()
         })
         .collect();
-    assert!(!rows.is_empty(), "the subsection holds no table with a body row");
+    assert!(
+        !rows.is_empty(),
+        "the subsection holds no table with a body row"
+    );
     rows
 }
 
@@ -146,7 +149,11 @@ fn the_level_table_of_checks_and_cache_is_what_sarif_writes() {
         .iter()
         .map(|r| (r[0].clone(), r.get(1).cloned().unwrap_or_default()))
         .collect();
-    assert_eq!(stated.len(), rows.len(), "the level table names a severity twice: {rows:?}");
+    assert_eq!(
+        stated.len(),
+        rows.len(),
+        "the level table names a severity twice: {rows:?}"
+    );
     let written: BTreeMap<String, String> = SEVERITIES
         .iter()
         .map(|s| (s.to_string(), sarif::level(*s).to_string()))
@@ -243,7 +250,11 @@ fn the_census_outcomes_checks_and_cache_names_are_the_fields_census_counts() {
         "the outcome list of the loss-set subsection of docs/subsystems/checks-and-cache.md is \
          not the outcome fields of `Census`"
     );
-    assert_eq!(listed.len(), named.len(), "the outcome list names an outcome twice: {listed:?}");
+    assert_eq!(
+        listed.len(),
+        named.len(),
+        "the outcome list names an outcome twice: {listed:?}"
+    );
     // The three outcomes sum to the entries declared, and the census states it.
     assert!(
         census.accounts(),
