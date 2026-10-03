@@ -499,8 +499,8 @@ cmd_ingest() {
     # Which items a file must cover: every document and the flag of each
     # prompt it was given, or for the third pass the items in dispute.
     if [ "$r" = third ]; then
-        [ -f "$packets/rater-third/items.tsv" ] || die "no third-pass items: run third first"
-        cp "$packets/rater-third/items.tsv" "$work/want"
+        [ -f "$packets/key/third-items.tsv" ] || die "no third-pass items: run third first"
+        cp "$packets/key/third-items.tsv" "$work/want"
     else
         awk -F '\t' -v pk="$pk" 'NR == FNR { if ($1 == pk) { lab[$3] = $2 }; next }
             FNR > 1 && ($1 in lab) { print lab[$1] "\t" $2 "\t" $1 "\t" $3 }' "$packets/key/prompts.tsv" "$packets/key/documents.tsv" > "$work/want.docs"
@@ -600,7 +600,7 @@ cmd_third() {
     need_packets
     rm -rf "$packets/rater-third"
     mkdir -p "$packets/rater-third"
-    : > "$packets/rater-third/items.tsv"
+    : > "$packets/key/third-items.tsv"
     awk -F '\t' 'NR > 1 { print $1 }' "$record/disagreements.tsv" | LC_ALL=C sort -u > "$work/dprompts"
     awk -F '\t' 'NR == FNR { d[$1] = 1; next } $1 == "rater" && ($3 in d) { print $2 "\t" $3 "\t" $4 }' "$work/dprompts" "$packets/key/prompts.tsv" > "$work/dlab"
     n=0
@@ -621,14 +621,14 @@ cmd_third() {
         } >> "$packets/rater-third/batch-$tb.md"
         for it in $items $flag; do
             if [ "$it" = missing ]; then
-                printf '%s\tmissing\t%s\tmissing\n' "$lab" "$id" >> "$packets/rater-third/items.tsv"
+                printf '%s\tmissing\t%s\tmissing\n' "$lab" "$id" >> "$packets/key/third-items.tsv"
             else
                 p=$(awk -F '\t' -v i="$id" -v l="$it" '$1 == i && $2 == l { print $3; exit }' "$packets/key/documents.tsv")
-                printf '%s\t%s\t%s\t%s\n' "$lab" "$it" "$id" "$p" >> "$packets/rater-third/items.tsv"
+                printf '%s\t%s\t%s\t%s\n' "$lab" "$it" "$id" "$p" >> "$packets/key/third-items.tsv"
             fi
         done
     done < "$work/dlab"
-    printf 'third pass: %s prompts, %s items\n' "$n" "$(wc -l < "$packets/rater-third/items.tsv" | tr -d ' ')"
+    printf 'third pass: %s prompts, %s items\n' "$n" "$(wc -l < "$packets/key/third-items.tsv" | tr -d ' ')"
 }
 
 cmd_consensus() {

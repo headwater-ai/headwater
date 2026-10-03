@@ -1,0 +1,26 @@
+statistic: share of exact agreement, and Cohen kappa (quadratic weights on the 0/1/2 scores, unweighted on the missing flag)
+stratum silent documents: 710
+stratum silent exact agreement on scores: 689 of 710 (0.9704)
+stratum silent quadratic-weighted kappa on scores: 0.9236
+stratum silent prompts: 71
+stratum silent exact agreement on missing: 64 of 71 (0.9014)
+stratum silent kappa on missing: 0.7897
+stratum disjoint documents: 3408
+stratum disjoint exact agreement on scores: 3278 of 3408 (0.9619)
+stratum disjoint quadratic-weighted kappa on scores: 0.8815
+stratum disjoint prompts: 230
+stratum disjoint exact agreement on missing: 197 of 230 (0.8565)
+stratum disjoint kappa on missing: 0.7123
+stratum overlap documents: 811
+stratum overlap exact agreement on scores: 781 of 811 (0.9630)
+stratum overlap quadratic-weighted kappa on scores: 0.9179
+stratum overlap prompts: 60
+stratum overlap exact agreement on missing: 54 of 60 (0.9000)
+stratum overlap kappa on missing: 0.7802
+stratum all documents: 4929
+stratum all exact agreement on scores: 4748 of 4929 (0.9633)
+stratum all quadratic-weighted kappa on scores: 0.8968
+stratum all prompts: 361
+stratum all exact agreement on missing: 315 of 361 (0.8726)
+stratum all kappa on missing: 0.7442
+disagreements: 227
