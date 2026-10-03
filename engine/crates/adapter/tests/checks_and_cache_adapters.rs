@@ -208,14 +208,14 @@ fn census_outcomes(census: &Census) -> [&'static str; 3] {
     ["held", "adrift", "unaudited"]
 }
 
-/// The backticked words of the loss-set subsection that name an outcome are
-/// the outcome fields of `Census`, and the subsection names all of them.
+/// The outcome list of the loss-set subsection names exactly the outcome
+/// fields of `Census`.
 ///
 /// # Watched failing
 ///
 /// On `main` at `a629c0be` this reddened because checks-and-cache had no
-/// `LOSS_SECTION`. Deleting `` `adrift` `` from the subsection reddens it
-/// naming `adrift`.
+/// `LOSS_SECTION`. Taking the backticks off `adrift` in the outcome list
+/// reddens it, although `` `adrift` `` stays elsewhere in the prose.
 #[test]
 fn the_census_outcomes_checks_and_cache_names_are_the_fields_census_counts() {
     let text = checks_and_cache();
@@ -229,17 +229,21 @@ fn the_census_outcomes_checks_and_cache_names_are_the_fields_census_counts() {
         adrift: Vec::new(),
         unaudited: 0,
     };
-    let outcomes = census_outcomes(&census);
-    let missing: Vec<&str> = outcomes
-        .iter()
-        .copied()
-        .filter(|o| !body.contains(&format!("`{o}`")))
+    let outcomes: BTreeSet<&str> = census_outcomes(&census).into_iter().collect();
+    // The list of outcomes: each item opens with the backticked outcome and a
+    // colon. A backticked outcome elsewhere in the prose is not the list.
+    let listed: Vec<&str> = body
+        .lines()
+        .filter_map(|l| l.strip_prefix("- `"))
+        .filter_map(|l| l.split_once("`:").map(|(name, _)| name))
         .collect();
-    assert!(
-        missing.is_empty(),
-        "the loss-set subsection of docs/subsystems/checks-and-cache.md does not name the census \
-         outcomes {missing:?}"
+    let named: BTreeSet<&str> = listed.iter().copied().collect();
+    assert_eq!(
+        named, outcomes,
+        "the outcome list of the loss-set subsection of docs/subsystems/checks-and-cache.md is \
+         not the outcome fields of `Census`"
     );
+    assert_eq!(listed.len(), named.len(), "the outcome list names an outcome twice: {listed:?}");
     // The three outcomes sum to the entries declared, and the census states it.
     assert!(
         census.accounts(),
