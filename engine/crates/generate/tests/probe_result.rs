@@ -214,15 +214,30 @@ fn plan_over(at: &Path) -> headwater_generate::Plan {
 
 /// The same, against a stated envelope, which is what a run would have cost.
 fn plan_priced(at: &Path, envelope: &str) -> headwater_generate::Plan {
+    plan_with(at, envelope, LOCK)
+}
+
+/// The same, over a tree that carries the stated lock. The transcript's own
+/// `lock:` line stays as it is, so this moves the tree and nothing the
+/// transcript read.
+fn plan_locked(at: &Path, lock: &str) -> headwater_generate::Plan {
+    plan_with(at, ENVELOPE, lock)
+}
+
+fn plan_with(at: &Path, envelope: &str, lock: &str) -> headwater_generate::Plan {
     let built = Built::over(at);
     let surface = built.surface();
     let root = load_map(&fixtures_dir().join("runs.taxonomy.yml"));
     let projections = Projections::read(&root).expect("the projections read");
+    let identity = Identity {
+        lock: lock.to_string(),
+        ..identity()
+    };
     plan(
         &surface,
         &built.census,
         &projections,
-        &identity(),
+        &identity,
         &runs_over(&built, at, envelope),
         headwater_verbs::VERBS,
     )
@@ -230,7 +245,11 @@ fn plan_priced(at: &Path, envelope: &str) -> headwater_generate::Plan {
 
 /// The plan over a tree, and the result output it produced.
 fn result_bytes(at: &Path) -> (headwater_generate::Plan, String) {
-    let plan = plan_over(at);
+    the_result_of(plan_over(at))
+}
+
+/// The result output a plan produced.
+fn the_result_of(plan: headwater_generate::Plan) -> (headwater_generate::Plan, String) {
     let bytes = plan
         .outputs
         .iter()
@@ -749,6 +768,198 @@ fn a_result_reports_whether_the_selection_it_recorded_is_the_one_this_corpus_com
     assert!(
         moved.contains(SELECTION),
         "the result does not name the digest the transcript recorded:\n{moved}"
+    );
+}
+
+/// A note the opened probe examines, and which is not a probe. Edited below to
+/// move the read set without moving any probe document.
+const EXAMINED: &str = "\
+---
+id: NOTE-FIX-examined
+status: current
+status_since: 2026-08-14
+summary: A note the opened probe examines, so that an edit to it moves the read set and no probe.
+---
+
+# A document a probe examines
+
+This sentence is the one the test edits.
+";
+
+/// A tree in which the opened probe also examines a note, and whose transcript
+/// records the read set that tree composes. The result is written, so the next
+/// plan is held against committed bytes.
+fn examined_tree(name: &str) -> PathBuf {
+    let at = copied(name);
+    std::fs::write(at.join("runs/notes/examined.md"), EXAMINED).expect("the note lands");
+    edit(
+        &at,
+        "runs/probes/0001-opened.md",
+        "    - PROBE-FIX-answered\n",
+        "    - PROBE-FIX-answered\n    - NOTE-FIX-examined\n",
+    );
+    let composed = read_set_over(&at);
+    let transcript = std::fs::read_to_string(at.join(TRANSCRIPT)).expect("the transcript reads");
+    let recorded = transcript
+        .lines()
+        .find_map(|line| line.strip_prefix("read_set: "))
+        .expect("the transcript records a read set")
+        .to_string();
+    edit(
+        &at,
+        TRANSCRIPT,
+        &format!("read_set: {recorded}\n"),
+        &format!("read_set: {composed}\n"),
+    );
+    let (first, _) = result_bytes(&at);
+    write(&at, &first);
+    at
+}
+
+/// Whether a plan over a moved tree leaves the committed result as it is: the
+/// same bytes, and `Unchanged` from the gate. The run's report where it does,
+/// and what moved where it does not, so that one run names every move that
+/// fails rather than the first.
+fn holds(
+    at: &Path,
+    committed: &str,
+    moved: headwater_generate::Plan,
+    what: &str,
+) -> Result<headwater_generate::Report, String> {
+    let (moved, bytes) = the_result_of(moved);
+    if bytes != committed {
+        let line = bytes
+            .lines()
+            .zip(committed.lines())
+            .find(|(new, old)| new != old)
+            .map(|(new, old)| format!("committed `{old}`, regenerated `{new}`"))
+            .unwrap_or_else(|| "the two differ in length".to_string());
+        return Err(format!(
+            "{what} moved a committed result, which pins only what it read: {line}"
+        ));
+    }
+    let checked = check(at, &moved);
+    match verdict_over_the_result(&checked) {
+        Verdict::Unchanged => Ok(checked),
+        other => Err(format!(
+            "{what} gave {other:?} over a committed result:\n{}",
+            checked.render(ColorMode::Plain)
+        )),
+    }
+}
+
+/// #1481, the owner's ruling of 2026-10-03: a committed result pins only what it
+/// read, so an unrelated merge cannot eject a queued pull request.
+///
+/// A result is a function of the transcript's bytes, the state it stands at,
+/// the declarations of the probes it names, the grader version, and the paired
+/// arm's result. Four moves change none of those and must leave the committed
+/// bytes alone. The control changes one of them and must move them, so the
+/// fixture cannot pass on a result that never moves.
+#[test]
+fn a_committed_result_pins_only_what_it_read() {
+    let mut failed: Vec<String> = Vec::new();
+
+    // (a) A probe the transcript does not name is added.
+    let at = examined_tree("pins-a-probe-added");
+    let committed = std::fs::read_to_string(at.join(RESULT)).expect("the result reads");
+    assert!(
+        verdicts_of(&committed).contains("satisfied"),
+        "the fixture grades with verdicts, so a held result is not an empty one"
+    );
+    std::fs::write(at.join("runs/probes/0003-third.md"), THIRD).expect("the probe lands");
+    let added = holds(&at, &committed, plan_over(&at), "a new probe")
+        .map_err(|why| failed.push(why))
+        .ok();
+
+    // (b) A document a probe examines, and not a probe document, is edited.
+    let at = examined_tree("pins-an-examined-edit");
+    let committed = std::fs::read_to_string(at.join(RESULT)).expect("the result reads");
+    edit(
+        &at,
+        "runs/notes/examined.md",
+        "This sentence is the one the test edits.",
+        "This sentence was edited by the test.",
+    );
+    assert_ne!(
+        read_set_over(&at),
+        std::fs::read_to_string(at.join(TRANSCRIPT))
+            .expect("the transcript reads")
+            .lines()
+            .find_map(|line| line.strip_prefix("read_set: "))
+            .expect("a read set")
+            .to_string(),
+        "the edit moves the read set this tree composes, or it tests nothing"
+    );
+    let edited = holds(&at, &committed, plan_over(&at), "an edit to an examined document")
+        .map_err(|why| failed.push(why))
+        .ok();
+
+    // (c) The tree's lock moves, and the transcript's `lock:` line does not.
+    let at = examined_tree("pins-a-lock-move");
+    let committed = std::fs::read_to_string(at.join(RESULT)).expect("the result reads");
+    let locked = holds(
+        &at,
+        &committed,
+        plan_locked(&at, "sha256:a-later-publish"),
+        "a move of the tree's lock",
+    )
+    .map_err(|why| failed.push(why))
+    .ok();
+
+    // (d) A transcript refused because the lock moved and no read set shows
+    // what the move reached: a second lock move leaves its page alone. The
+    // transcript is a draft, because a refusal over a `current` one holds the
+    // write, and a page nobody can commit pins nothing.
+    let at = examined_tree("pins-a-second-lock-move");
+    edit(&at, TRANSCRIPT, "status: current\n", "status: draft\n");
+    edit(
+        &at,
+        TRANSCRIPT,
+        &format!("selection: {SELECTION}\n"),
+        "selection: sha256:a-selection-this-tree-cannot-recover\n",
+    );
+    let (refused, _) = the_result_of(plan_locked(&at, "sha256:the-first-move"));
+    write(&at, &refused);
+    let committed = std::fs::read_to_string(at.join(RESULT)).expect("the result reads");
+    assert!(
+        !committed.contains("## The verdicts") || !verdicts_of(&committed).contains("satisfied"),
+        "the fixture for (d) is a refused result:\n{committed}"
+    );
+    assert!(
+        committed.contains("recorded nothing usable"),
+        "the fixture for (d) is refused by the intake:\n{committed}"
+    );
+    let relocked = holds(
+        &at,
+        &committed,
+        plan_locked(&at, "sha256:the-second-move"),
+        "a second move of the tree's lock",
+    )
+    .map_err(|why| failed.push(why))
+    .ok();
+
+    let _ = (&added, &edited, &locked, &relocked);
+    assert!(failed.is_empty(), "{}", failed.join("\n\n"));
+
+    // (e) The control: an expectation of a probe the transcript names flips a
+    // verdict, and the bytes move.
+    let at = examined_tree("pins-the-control");
+    let committed = std::fs::read_to_string(at.join(RESULT)).expect("the result reads");
+    edit(
+        &at,
+        "runs/probes/0002-answered.md",
+        "expected: [no]",
+        "expected: [yes]",
+    );
+    let (moved, regraded) = result_bytes(&at);
+    assert_ne!(
+        regraded, committed,
+        "an expectation the transcript was graded against moved, and the result did not"
+    );
+    assert_eq!(
+        verdict_over_the_result(&check(&at, &moved)),
+        &Verdict::Differs
     );
 }
 
