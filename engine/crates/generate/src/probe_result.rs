@@ -79,7 +79,8 @@ use headwater_probe::Arm;
 use headwater_probe::Tier;
 use headwater_query::Surface;
 
-use crate::{MovedReadSet, RefusedTranscript};
+use crate::{MovedSinceRecording, RefusedTranscript};
+use headwater_probe::grade::Planned;
 
 /// The placeholder an output path and a declared identity may carry.
 const RUN: &str = "{run}";
@@ -281,12 +282,34 @@ pub(crate) fn emit(
         let record = Record::read(&transcript.source, &tree);
         // A run planned by category, or with a probe named out of it, is
         // graded against the part of the selection it was planned over (#980).
-        let narrowed = headwater_probe::grade::narrowed(&runs.selected, &record);
-        let selected: &[Selected] = narrowed.as_deref().unwrap_or(&runs.selected);
-        let results = Results::over(&record, selected);
-        let part = narrowed
-            .as_ref()
-            .map(|part| (part.len(), runs.selected.len()));
+        // A selection this tree cannot recover from the probes the transcript
+        // names is graded over those probes alone, because a probe added to
+        // this corpus after the recording is not one the run read (#1481).
+        let planned = record.identity.as_ref().map(|identity| {
+            headwater_probe::grade::planned_over(
+                &runs.selected,
+                &identity.selection,
+                &record.probes,
+            )
+        });
+        let (selected, recovered): (Vec<Selected>, bool) = match planned {
+            Some(Some(Planned::Part(part))) => (part, true),
+            Some(None) => (
+                runs.selected
+                    .iter()
+                    .filter(|selected| record.probes.contains(&selected.id))
+                    .cloned()
+                    .collect(),
+                false,
+            ),
+            Some(Some(Planned::Whole)) | None => (runs.selected.clone(), true),
+        };
+        let mut results = Results::over(&record, &selected);
+        // The page names the lock the transcript recorded and not the tree's,
+        // so a later lock move leaves a refused result alone (#1481).
+        if let Some(refusal) = &record.refusal {
+            results.unusable = Some(refusal.recorded());
+        }
         // Who reads a refusal, which the state of the recording does not
         // answer. Taken for a refused transcript alone: a result that carries
         // verdicts costs a reader nothing, and a list of readers on every
@@ -310,14 +333,24 @@ pub(crate) fn emit(
                 readers: read_by.clone(),
             });
         }
-        // A read set that moved is graded and marked, and the run names it so
-        // that the author of the edit meets it (#1338). It fails nothing.
-        if let Some(recorded) = &record.read_set_moved {
-            plan.moved_read_sets.push(MovedReadSet {
-                transcript: path.to_string(),
-                output: output.clone(),
-                recorded: recorded.clone(),
-            });
+        // A read set, a lock or a selection that moved is graded, and the run
+        // names it so that the author of the move meets it (#1338). The page
+        // compares none of the three with the tree (#1481). It fails nothing.
+        let moved = MovedSinceRecording {
+            transcript: path.to_string(),
+            output: output.clone(),
+            read_set: record.read_set_moved.clone(),
+            lock: record.lock_moved.clone(),
+            selection: match recovered {
+                true => None,
+                false => record
+                    .identity
+                    .as_ref()
+                    .map(|identity| identity.selection.clone()),
+            },
+        };
+        if moved.moved() {
+            plan.moved_since_recording.push(moved);
         }
         graded.push(Graded {
             path: path.to_string(),
@@ -325,8 +358,7 @@ pub(crate) fn emit(
             front,
             record,
             results,
-            composed: runs.selection.clone(),
-            part,
+            recovered,
             read_by,
             recorded,
         });
@@ -365,11 +397,10 @@ struct Graded {
     front: String,
     record: Record,
     results: Results,
-    /// The selection digest this corpus composes.
-    composed: String,
-    /// Where the transcript was graded against part of the selection: how
-    /// many probes the part holds, and how many the whole selection holds.
-    part: Option<(usize, usize)>,
+    /// Whether this tree recovered the selection the transcript recorded, as
+    /// the whole selection or as the part its events name. Where it did not,
+    /// the transcript is graded over the probes it names alone.
+    recovered: bool,
     read_by: Vec<String>,
     /// The state the transcript stands at, which decides whether any figure
     /// of this result is a current finding.
@@ -965,25 +996,22 @@ fn body(graded: &Graded, comparisons: &[&Comparison]) -> String {
     }
     let _ = writeln!(
         out,
-        "A probe result is a function of three committed inputs and of nothing else: the \
-         transcript at `{transcript}`, the expectations the probes of this corpus declare, and \
-         the version of the grader that evaluated them. Fetch the three and this file comes back."
+        "A probe result is a function of committed inputs and of nothing else: the transcript \
+         at `{transcript}` and the state it stands at, the expectations the probes it names \
+         declare, the version of the grader that evaluated them, and for a compared arm the \
+         result of the other arm. Fetch those and this file comes back."
     );
     let _ = writeln!(out);
 
     let _ = writeln!(out, "## The run this transcript recorded");
     let _ = writeln!(out);
-    // Plain, always: this is a generated document's own bytes, never a
-    // terminal report, and `headwater check --strict` reads the same bytes
-    // this function writes.
-    out.push_str(&record.render(headwater_check::paint::ColorMode::Plain));
+    // The page variant: plain, because this is a generated document's own
+    // bytes and never a terminal report, and with no comparison against the
+    // tree, because a committed result pins only what it read (#1481).
+    out.push_str(&record.render_page());
     if let Some(identity) = &record.identity {
         let _ = writeln!(out);
-        out.push_str(&provenance(
-            &identity.selection,
-            &graded.composed,
-            graded.part,
-        ));
+        out.push_str(&provenance(&identity.selection, graded.recovered));
         let _ = writeln!(out);
         out.push_str(READ_SET);
     }
@@ -1011,17 +1039,14 @@ fn body(graded: &Graded, comparisons: &[&Comparison]) -> String {
 /// The section a refused result carries: where a reader of this file would meet
 /// a measurement that does not exist.
 ///
-/// # This is a comparison against the tree, and it is the second one that earns
-/// its place
+/// # This is the one comparison against the tree that a result keeps
 ///
-/// [`READ_SET`] rules that a comparison against the tree in front of a reader
-/// does not go into a derived document, because the bytes would move on every
-/// prose edit and the staleness of a measurement would stop a merge. The
-/// `selection` comparison stands beside that rule for a stated reason: it moves
-/// only when somebody adds, removes or renames a probe, which is a deliberate
-/// act and a rare one.
-///
-/// This list is the same shape and the same reason. It moves when a document
+/// [`READ_SET`] rules that a committed result pins only what it read (the
+/// owner's ruling on #1481, 2026-10-03), so it compares no recorded digest
+/// with the tree in front of a reader. This list is not something the
+/// transcript read either: it names the documents that link the result. It
+/// stays for a reason an outside reader holds, and the ruling on #1481 has not
+/// been put to it. It moves when a document
 /// starts or stops linking this result or the transcript it graded, which is an
 /// act somebody takes on purpose. It does not move when the prose of a citing
 /// document is edited. And the merge it stops is the merge that should stop: a
@@ -1073,111 +1098,87 @@ fn read_set_of_this_result(read_by: &[String]) -> String {
 
 /// The read set, named here and compared somewhere else.
 ///
-/// # A comparison against the tree in front of a reader cannot live in a
-/// derived document
+/// # A committed result pins only what it read
 ///
-/// This is the rule the `selection` comparison below looks like an exception
-/// to, and it is worth stating in the file that carries both.
+/// The owner ruled on #1481 (2026-10-03) that a committed result pins only
+/// what it read, so that an unrelated merge cannot eject a queued pull
+/// request. A result is a function of the transcript's bytes, the state it
+/// stands at, the declarations of the probes it names, the grader version and,
+/// for a compared arm, the other arm's result. It names the `lock`, the
+/// `selection` and the `read_set` the transcript recorded as provenance, and it
+/// compares none of them with the tree in front of a reader.
 ///
 /// `generate --check` holds every committed projection to its own bytes. So a
 /// sentence in this file that compares a recorded value against the tree in
 /// front of the reader changes these bytes whenever that tree moves, and the
 /// gate then asks for a regeneration. The read-set digest moves on any edit to
-/// any probe of the selection or to any document one of them examines, which is
-/// a prose edit somebody makes most weeks. Writing that comparison here would
-/// put the staleness of a measurement on a build, through the bytes of a
-/// derived document rather than through a rule, and
-/// [#171](https://github.com/headwater-ai/headwater/issues/171) rules that it
-/// may not.
+/// any probe of the selection or to any document one of them examines, the
+/// lock moves on every package publish, and the composed selection moves on
+/// every new probe. Each comparison moved every result it touched, and each
+/// moved result was a conflict for every other branch that regenerated the
+/// shelf. [#171](https://github.com/headwater-ai/headwater/issues/171) rules
+/// that the staleness of a measurement does not stop a build.
 ///
-/// Worse than the gate is what a regeneration would write. A result is a
-/// statement about the corpus a session met. Refreshing a digest in it would
-/// claim the run was taken over a state it was never taken over, so the honest
-/// value here is the recorded one and nothing else.
+/// Before #1481 two comparisons stood as exceptions: a mark that the read set
+/// or the lock moved, which moved the bytes once (#1338), and the composed
+/// selection with the count of the probes this corpus declares. The ruling
+/// removed both. The run report of `headwater generate` names each result
+/// whose recorded lock, read set or selection moved, and `headwater probe
+/// stale` names which recorded results a change voided. That output is
+/// printed, never committed, and no exit status carries it.
 ///
-/// # One mark, which moves the bytes once
-///
-/// Since #1338 the intake grades a transcript whose read set moved and marks
-/// it, because refusing it dropped every verdict on the first edit after an
-/// unrelated lock move. The mark is one sentence in the section above, and it
-/// names no digest this tree composes. So it moves these bytes on the first
-/// edit that moves the read set, and on no edit after it: the gate asks for
-/// one regeneration, the run names the result, and the verdicts stand.
-///
-/// The `selection` comparison stays because the value it compares against moves
-/// only when somebody adds, removes or renames a probe. That is a deliberate
-/// act, it is rare, and a regeneration after it states something true.
-///
-/// `headwater probe stale` is where the read set meets the tree, and no exit
-/// status of that verb carries the answer.
+/// A regeneration that refreshed a digest here would also claim the run was
+/// taken over a state it was never taken over, so the honest value is the
+/// recorded one and nothing else.
 const READ_SET: &str = "The `read_set` digest above covers every probe of the selection and every \
-     document one of them examines, by path and content. It is recorded here, and this file names \
-     no digest the tree in front of a reader composes. Where that tree composes another one, a \
-     single sentence above says that the read set moved, and it moves these bytes once. A digest \
-     from that tree would move these bytes on every edit to a document the selection points at, and `generate --check` holds this file to \
-     its bytes, so the staleness of a measurement would stop a merge. `headwater probe stale` \
-     takes the digest and reports which recorded results a change voided.\n";
+     document one of them examines, by path and content. This file names it as provenance and \
+     compares it with nothing, and the same holds for the lock and the selection: an edit to a \
+     document, a new probe or a moved lock leaves these bytes alone. `headwater generate` names \
+     each result whose recorded lock, read set or selection moved, and `headwater probe stale` \
+     takes the digest and reports which recorded results a change voided. Neither one fails for \
+     it.\n";
 
-/// What the four unconfirmed members of the run identity are worth, and the
-/// one of them this corpus can answer.
+/// What the four unconfirmed members of the run identity are worth.
 ///
-/// # The selection is compared and the tree is not, and the difference is what
-/// a gate would do about it
+/// # None of them is compared on the page
 ///
 /// A transcript names six members that a plan fixed before the run. The intake
-/// compares the lock and refuses the file when it moved. `headwater probe
-/// stale` compares the read set, outside this file and for the reason
-/// [`READ_SET`] gives. That leaves three, and the reason none of the three is
-/// compared is that the obvious comparison is worse than the gap. The `tree` digest covers every classified document, so a result
-/// that reported whether it still agreed would change its own bytes on the first
-/// edit to any document of the corpus, and `generate --check` would ask for a
-/// regeneration of every committed result on every pull request. A statement
-/// nobody can leave standing is not a statement.
+/// compares the lock to decide whether to read the file at all, and the run
+/// report and `headwater probe stale` compare the lock, the read set and the
+/// selection, for the reason [`READ_SET`] gives. The page compares none of
+/// them.
 ///
-/// The `selection` digest is different, and it is different in the way that
-/// matters: it is taken over the identifiers of the probes selected and over
-/// nothing else. It does not move when a probe's prose is edited, and it does
-/// move when a probe is added, removed or renamed — which is the one change that
-/// makes a recorded run cover a population this corpus no longer declares. So it
-/// is compared, and the comparison is reported here rather than refused, because
-/// a refusal would replace a graded rate with a notice at the moment somebody
-/// added a probe.
+/// The selection decides which probes are graded and nothing else. Where this
+/// tree recovers the recorded digest, as the whole selection or as the part of
+/// it the transcript's events name, the probes graded are the probes the run
+/// was planned over. A probe added later is not in that part, so it is not a
+/// session this run owed, and the page does not change for it. Where this tree
+/// cannot recover the digest, the transcript is graded over the probes its
+/// events name alone, and a probe the run was planned over and never ran is
+/// not reported. That is the cost of not comparing, and the run report names
+/// such a result. Spec 15 records it.
 ///
-/// The `seed` and the `harness` are provenance and stay provenance. A seed is a
-/// number the caller stated and this corpus holds nothing to compare it against.
-/// A harness version is the version of the engine that planned the run, and
-/// holding a recorded run to the version reading it would refuse every
-/// transcript on the first release.
-fn provenance(recorded: &str, composed: &str, part: Option<(usize, usize)>) -> String {
-    // The probes a transcript names do not say why they are fewer than the
-    // selection. A run planned by category, or with a probe named out of it,
-    // and a run recorded before a probe was added, leave the same trace, so the
-    // sentence names both and claims neither (#980).
-    if let Some((graded, whole)) = part {
-        return format!(
-            "**The selection this transcript names is not the selection this corpus composes.** \
-             The transcript names `{recorded}` and this corpus composes `{composed}`. The \
-             transcript's digest is the digest of {graded} of the {whole} probes this corpus \
-             composes, so the run was planned over that part of the selection, or the rest were \
-             added after it was recorded. Every verdict below is over that part, and a probe \
-             outside it is not a session this run owed. The tree, the seed and the harness \
-             above are provenance and nothing compares them.\n"
-        );
-    }
-    match recorded == composed {
-        true => "The selection this transcript names is the selection this corpus composes, so \
-                 the probes graded below are the probes this run was planned over. The tree, the \
-                 seed and the harness above are provenance: nothing compares them, and the tree \
-                 in particular is not compared because a result that tracked it would need \
-                 rewriting after an edit to any document of this corpus.\n"
-            .to_string(),
+/// The `tree`, the `seed` and the `harness` are provenance and stay provenance.
+/// The tree digest covers every classified document, so a result that tracked
+/// it would move on any edit to the corpus. A seed is a number the caller
+/// stated and this corpus holds nothing to compare it against. A harness
+/// version is the version of the engine that planned the run, and holding a
+/// recorded run to the version reading it would refuse every transcript on the
+/// first release.
+fn provenance(recorded: &str, recovered: bool) -> String {
+    match recovered {
+        true => format!(
+            "The selection this transcript names is `{recorded}`, and the probes graded below are \
+             the probes it was planned over, as this corpus declares them now. A probe added to \
+             this corpus after the recording is not a session this run owed. The tree, the seed \
+             and the harness above are provenance and nothing compares them.\n"
+        ),
         false => format!(
-            "**The selection this transcript names is not the selection this corpus composes.** \
-             The transcript names `{recorded}` and this corpus composes `{composed}`, so a probe \
-             was added, removed or renamed after this run was recorded. Every verdict below is \
-             over the probes as they stand now, and the rate is over a population this session \
-             did not meet. The tree, the seed and the harness above are provenance and nothing \
-             compares them.\n"
+            "**This corpus cannot recover the selection this transcript names** from the probes \
+             its events name. The transcript names `{recorded}`, and every verdict below is over \
+             the probes its events name alone, so a probe the run was planned over and never ran \
+             is not graded here. The tree, the seed and the harness above are provenance and \
+             nothing compares them.\n"
         ),
     }
 }
