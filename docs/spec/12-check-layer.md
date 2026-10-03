@@ -60,7 +60,7 @@ Spec 6 sketched three tiers. The correct decomposition is five. It comes from th
 
 This table settles three things.
 
-**Shape and Graph checks are generated, not written.** A new facet or relation in the taxonomy produces its checks with no code. That is the full point of taxonomy-as-data. It is also where most of the check count lives.
+**Shape and Graph checks are generated, not written.** A new facet or relation in the taxonomy produces its checks with no code. That is the full point of taxonomy-as-data. It is also where most of the check count lives. The other three origins are why a native engine exists at all, because LinkML and SHACL cannot express a check of any of them.
 
 **Document checks are the ones that no graph standard can reach**, because the body is not in the graph. That is the finding from the [SHACL instance-data evaluation](../evaluations/shacl-worked-example.md#does-this-help-with-the-actual-documents). Not by coincidence, they are also the checks that need source positions.
 

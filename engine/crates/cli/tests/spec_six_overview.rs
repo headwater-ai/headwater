@@ -140,7 +140,7 @@ const HEADINGS: [&str; 19] = [
 
 /// One lead sentence of each paragraph that left spec 6, because a home states
 /// its rule.
-const MOVED_LEADS: [&str; 22] = [
+const MOVED_LEADS: [&str; 23] = [
     // `taxonomy validate` versus `taxonomy audit`, to the `headwater taxonomy` contract.
     "Nine readings run",
     "Two of the readings this section named do not run",
@@ -156,6 +156,7 @@ const MOVED_LEADS: [&str; 22] = [
     "A call that moves a byte of that tree ends the server",
     // Checks, to spec 12.
     "Checks come from five origins",
+    "The last three are why a native engine exists at all",
     "The last column is a **set of emitter targets**",
     "The declaration is per rule, and it lives on the check as `EXPORTABLE_AS`",
     // Nothing stores the graph, to HW-DR-0006 and spec 12.
@@ -173,7 +174,7 @@ const MOVED_LEADS: [&str; 22] = [
 
 /// One sentence of each rule that moved to a home that did not state it, as
 /// the home states it now.
-const HOMES: [(&str, &str); 13] = [
+const HOMES: [(&str, &str); 14] = [
     (
         "docs/interfaces/headwater-taxonomy.md",
         "**The report takes nine readings of the corpus.**",
@@ -213,6 +214,10 @@ const HOMES: [(&str, &str); 13] = [
     (
         "docs/spec/12-check-layer.md",
         "`facet.required.missing` and `facet.value.not_permitted`",
+    ),
+    (
+        "docs/spec/12-check-layer.md",
+        "The other three origins are why a native engine exists at all, because LinkML and SHACL cannot express a check of any of them.",
     ),
     (
         "docs/subsystems/projections-and-export.md",
@@ -354,6 +359,58 @@ fn spec_6_shares_no_run_of_eight_words_with_a_home() {
     );
 }
 
+/// Words that deny what the sentence they stand in names.
+const NEGATIONS: [&str; 9] = [
+    "no", "not", "never", "none", "without", "absent", "lacks", "nor", "cannot",
+];
+
+/// The sentences of a text, cut at a full stop, a question mark or an
+/// exclamation mark followed by a space, after `plain()`.
+fn sentences(text: &str) -> Vec<String> {
+    let flat = plain(text);
+    flat.split(". ")
+        .flat_map(|s| s.split("? "))
+        .flat_map(|s| s.split("! "))
+        .map(str::to_owned)
+        .collect()
+}
+
+/// The commit hook runs `check --strict --change`, so no sentence of spec 6
+/// may deny that a change-scoped check exists, however it is worded.
+#[test]
+fn no_sentence_of_spec_6_denies_the_change_scoped_check() {
+    let denials: Vec<String> = sentences(&prose_lines(body(&spec_six())).join("\n"))
+        .into_iter()
+        .filter(|s| s.contains("change-scoped") || s.contains("change scoped"))
+        .filter(|s| {
+            let w = words(s);
+            NEGATIONS.iter().any(|n| w.iter().any(|x| x == n))
+        })
+        .collect();
+    assert!(
+        denials.is_empty(),
+        "{SPEC_SIX} denies a change-scoped check that `.githooks/pre-commit` runs:\n{}",
+        denials.join("\n")
+    );
+}
+
+/// The commit-hook row of the Performance table names the mode the hook runs
+/// and the record that says why it narrows nothing.
+#[test]
+fn the_commit_hook_row_names_the_change_scoped_run() {
+    let six = spec_six();
+    let row = six
+        .lines()
+        .find(|l| l.starts_with("| Commit hook"))
+        .unwrap_or_else(|| panic!("{SPEC_SIX} has no `| Commit hook` row"));
+    for needle in ["check --strict --change", "0080-changed-only"] {
+        assert!(
+            row.contains(needle),
+            "the commit-hook row of {SPEC_SIX} does not name `{needle}`:\n{row}"
+        );
+    }
+}
+
 /// The two sentences that contradicted the engine are gone, and the
 /// `**Embeddable.**` item cites the decision it is now true of.
 ///
@@ -381,6 +438,11 @@ fn spec_6_does_not_contradict_itself() {
         .lines()
         .find(|l| l.starts_with("- **Embeddable.**"))
         .unwrap_or_else(|| panic!("{SPEC_SIX} has no `**Embeddable.**` item"));
+    assert!(
+        embeddable.contains("client of `headwater mcp`"),
+        "the `**Embeddable.**` item of {SPEC_SIX} does not make an editor a client of \
+         `headwater mcp`:\n{embeddable}"
+    );
     assert!(
         embeddable.contains("decisions/0102-"),
         "the `**Embeddable.**` item of {SPEC_SIX} does not cite HW-DR-0102:\n{embeddable}"
