@@ -1271,7 +1271,9 @@ fn a_list_target_is_never_told_that_fix_will_stamp_it() {
     assert_ne!(now, digest, "the member moved");
     let lib_now = expected(&root, &[LIB]);
     let moved = || (DOCUMENT, Some(yesterday("hooks", &entries)));
-    let rows: [(&str, Option<&dyn Fn() -> Change>); 3] = [
+    // A row with no change runs over the whole corpus, unscoped.
+    type Scoped<'a> = (&'a str, Option<&'a dyn Fn() -> Change>);
+    let rows: [Scoped<'_>; 3] = [
         (
             "a verified line names the list by a member path",
             Some(&|| edges(&[], &[], &[(DOCUMENT, MEMBER), (DOCUMENT, LIB)])),
