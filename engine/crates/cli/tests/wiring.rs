@@ -706,6 +706,85 @@ fn a_plan_that_stopped_partway_grades_nothing_through_the_verb() {
     );
 }
 
+/// `probe grade` exits 0 on a transcript that intake refuses whole, and a
+/// script tells that refusal from a grade by the first line of standard output
+/// alone (#1640).
+///
+/// `docs/interfaces/headwater-probe.md`, under `## Exit status`, states the
+/// contract: a refusal is a probe result, probe results never gate, and the
+/// first line begins `Graded by grader ` on a grade and `This transcript
+/// reached no grader: ` on an intake refusal. This case holds both halves
+/// through the binary.
+///
+/// It is built on `probe-stale` and not on `probes`, because the plan of
+/// `probes` refuses first and the verb never reads a transcript there. The
+/// refused transcripts are written outside `docs/probe-runs/`, so that the
+/// committed-transcript count `probe stale` reports does not move. Two of
+/// them are refused for different reasons, one with no `Run identity` block
+/// and one whose selection digest is not the plan's, because the page states
+/// the prefix for every intake refusal and not for one of them.
+#[test]
+fn probe_grade_exits_0_on_a_refused_transcript_and_its_first_line_says_which() {
+    let root = Root::over("probe-stale", "grade-refused-first-line");
+    let committed = root.path("docs/probe-runs/first-regression.md");
+    let source = std::fs::read_to_string(&committed).expect("the committed transcript reads");
+
+    // The contrast: the committed transcript grades.
+    let graded = root.run(&["probe", "grade", &committed.display().to_string()]);
+    assert_eq!(graded.code, Some(0), "{}{}", graded.out, graded.err);
+    assert!(
+        graded
+            .out
+            .lines()
+            .next()
+            .is_some_and(|first| first.starts_with("Graded by grader ")),
+        "a grade opens with the grader line:\n{}",
+        graded.out
+    );
+
+    let identity = source
+        .find("## Run identity")
+        .expect("the fixture carries a Run identity block");
+    let events = source
+        .find("## Events")
+        .expect("the fixture carries an Events block");
+    let no_identity = format!("{}{}", &source[..identity], &source[events..]);
+    let digest = source
+        .find("selection: sha256:")
+        .expect("the fixture names its selection");
+    let wrong_selection = format!(
+        "{}selection: sha256:{}{}",
+        &source[..digest],
+        "0".repeat(64),
+        &source[digest + "selection: sha256:".len() + 64..]
+    );
+
+    for (label, transcript) in [
+        ("no-identity", no_identity),
+        ("wrong-selection", wrong_selection),
+    ] {
+        let path = root.path(&format!("{label}.md"));
+        std::fs::write(&path, transcript).expect("the refused transcript writes");
+        let refused = root.run(&["probe", "grade", &path.display().to_string()]);
+        assert_eq!(
+            refused.code,
+            Some(0),
+            "{label}: an intake refusal is a probe result and exits 0:\n{}{}",
+            refused.out,
+            refused.err
+        );
+        assert!(
+            refused
+                .out
+                .lines()
+                .next()
+                .is_some_and(|first| first.starts_with("This transcript reached no grader: ")),
+            "{label}: the first line of standard output names the refusal:\n{}",
+            refused.out
+        );
+    }
+}
+
 /// `probe stale` holds a transcript planned over the whole selection against
 /// the whole (#1384, item 2).
 ///
