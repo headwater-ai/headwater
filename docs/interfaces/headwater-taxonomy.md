@@ -3,7 +3,7 @@ id: HW-IFACE-headwater-taxonomy
 status: current
 status_since: 2026-09-06
 summary: "How to validate, resolve, audit, publish, vendor, compare, migrate, draw and list the kinds of taxonomy packages."
-last_verified: 2026-09-25
+last_verified: 2026-10-03
 title: "headwater taxonomy"
 relations:
   governs:
@@ -35,7 +35,7 @@ The grouped command validates taxonomy sources, resolves the lock, measures sche
 - `version` names the shape of the document, and its value is `1`. A consumer pins it rather than the version of this engine.
 - `subject` holds `package`, `version`, `lock` and `now`, which are the header of the report.
 - `scope` holds one element for each declared scope pattern, in declaration order. Each element holds `anchor_kind`, `pattern`, `in_scope`, `governed`, `share` and `ungoverned`. `share` is the percentage to one decimal place, as the report prints it, and `null` for a pattern that admits no entry. `ungoverned` is the sorted list of the entries that no edge reaches.
-- `scope_total` holds `in_scope`, `governed` and `share` over the union of the entries. An entry that two patterns admit counts once, so the total is not the sum of the elements.
+- `scope_total` holds `in_scope`, `governed` and `share` over the union of the entries. An entry that two patterns admit counts once, so the total is not the sum of the elements. The total counts an entry as governed when any pattern that admits it counts it as governed. Thus the order of the declarations does not change the total (#1649).
 
 The report and the document read one total, so they cannot state two figures for one tree. `--json` with `--record` still appends the reading, and the line that says so goes to standard error.
 

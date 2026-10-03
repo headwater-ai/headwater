@@ -1986,6 +1986,24 @@ jobs:
         # lock, same injected clock, so the two agree by the same determinism
         # that the cache step below tests.
         run: ./engine/target/release/headwater check --no-cache --now "$HEADWATER_NOW" --format markdown >> "$GITHUB_STEP_SUMMARY"
+      - name: The governed-scope table states each share to one decimal place on any jq
+        # #1649. The summary step below renders its table with
+        # `tools/ci/governed-scope.jq`. This job runs on a hosted runner for a
+        # pull request and on the self-hosted runner for a push and a merge
+        # group, and jq 1.6 prints the literal `100.0` as `100` where jq 1.7 and
+        # later print it as written. The filter writes the decimal point
+        # itself, and this suite renders recorded shares through it on this
+        # runner's jq and holds the table's total against the text report of
+        # this tree. It needs `jq`, and a runner without it skips with a
+        # warning, the way the run directory step does.
+        run: |
+          status=0
+          sh tools/ci/governed-scope-fixtures.sh ./engine/target/release/headwater || status=$?
+          if [ "$status" = 3 ]; then
+            echo "::warning title=Governed scope fixtures skipped::No jq on this runner, so none of these cases ran."
+            exit 0
+          fi
+          exit "$status"
       - name: The tree side of governs, into the job summary
         # #951. The share of each governed-scope pattern's entries that a
         # `governs` edge reaches, per pattern and in total. It is computed on
@@ -2006,21 +2024,7 @@ jobs:
             printf '## The governed scope, and what reaches it\n\nThe figure is in the `governed-scope` artifact of this run.\n' >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
-          jq -r '
-            "## The governed scope, and what reaches it",
-            "",
-            "The share of the entries each pattern admits that a `governance` edge reaches. It is computed on every run and committed nowhere, and the `governed-scope` artifact of this run holds it as JSON.",
-            "",
-            "| pattern | anchor kind | governed | in scope | share |",
-            "|---|---|---:|---:|---:|",
-            (.scope[] | "| `\(.pattern)` | \(.anchor_kind) | \(.governed) | \(.in_scope) | \(if .share == null then "no entry" else "\(.share)%" end) |"),
-            "| **total, over the union** | | \(.scope_total.governed) | \(.scope_total.in_scope) | \(if .scope_total.share == null then "no entry" else "\(.scope_total.share)%" end) |",
-            "",
-            "<details><summary>The in-scope entries no edge reaches</summary>",
-            "",
-            (.scope[] | select(.ungoverned | length > 0) | "**`\(.pattern)`**", "", (.ungoverned[] | "- `\(.)`"), ""),
-            "</details>"
-          ' governed-scope.json > governed-scope.md
+          jq -r -f tools/ci/governed-scope.jq governed-scope.json > governed-scope.md
           cat governed-scope.md
           cat governed-scope.md >> "$GITHUB_STEP_SUMMARY"
       - name: The tree side of governs, as an artifact
