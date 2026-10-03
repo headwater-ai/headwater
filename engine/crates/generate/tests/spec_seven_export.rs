@@ -25,7 +25,9 @@
 //! - a sentence that opens with a link and goes on "states that" is rule
 //!   text, and only a short pointer is dropped from the comparison;
 //! - no engine comment quotes a sentence of spec 7's export section and
-//!   credits it to spec 6.
+//!   credits it to spec 6;
+//! - every current decision that counts the non-claims of a filtered export
+//!   counts the bullets that spec 7 lists under **Not claims**.
 //!
 //! The private `_exhaustive` match makes a third `Grain` variant fail to
 //! compile until [`ENGINE_GRAINS`] and the table change with it.
@@ -821,4 +823,132 @@ fn spec_7_states_six_filter_rules() {
             i + 1
         );
     }
+}
+
+/// The line that opens spec 7's list of what a filtered export does not claim.
+const NON_CLAIMS_LEAD: &str = "**Not claims,";
+
+/// The number words a decision may count the non-claims with.
+const NUMBER_WORDS: [&str; 10] = [
+    "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten",
+];
+
+/// The top-level list items that follow spec 7's `**Not claims,` lead.
+fn non_claims(text: &str) -> Vec<String> {
+    let mut lines = text.lines().skip_while(|l| !l.starts_with(NON_CLAIMS_LEAD));
+    assert!(
+        lines.next().is_some(),
+        "spec 7 holds no line that opens {NON_CLAIMS_LEAD:?}"
+    );
+    lines
+        .skip_while(|l| l.trim().is_empty())
+        .take_while(|l| l.starts_with("- "))
+        .map(str::to_owned)
+        .collect()
+}
+
+/// True when the front matter of `text` says `status: current`.
+fn is_current(text: &str) -> bool {
+    let mut lines = text.lines();
+    if lines.next() != Some("---") {
+        return false;
+    }
+    lines
+        .take_while(|l| *l != "---")
+        .any(|l| l.trim() == "status: current")
+}
+
+/// Each `<number word> non-claims` in `line`, as the number the word names.
+fn stated_counts(line: &str) -> Vec<usize> {
+    let lower = line.to_lowercase();
+    let words: Vec<&str> = lower
+        .split(|c: char| !c.is_alphanumeric() && c != '-')
+        .filter(|w| !w.is_empty())
+        .collect();
+    words
+        .windows(2)
+        .filter(|pair| pair[1] == "non-claims")
+        .filter_map(|pair| NUMBER_WORDS.iter().position(|w| *w == pair[0]))
+        .map(|i| i + 1)
+        .collect()
+}
+
+/// How many counts of non-claims a current decision states, and each one
+/// that differs from `listed`, as `<name>:<line> says <count>`. A decision
+/// that is not current states none.
+fn miscounts(name: &str, text: &str, listed: usize) -> (usize, Vec<String>) {
+    if !is_current(text) {
+        return (0, Vec::new());
+    }
+    let mut found = 0;
+    let mut wrong = Vec::new();
+    for (n, line) in text.lines().enumerate() {
+        for count in stated_counts(line) {
+            found += 1;
+            if count != listed {
+                wrong.push(format!("{name}:{} says {count}", n + 1));
+            }
+        }
+    }
+    (found, wrong)
+}
+
+#[test]
+fn the_non_claims_count_reads_a_wrong_count_and_skips_a_decision_that_is_not_current() {
+    let current = "---\nid: X\nstatus: current\n---\n\nSpec 7 states one claim and five non-claims.\n\nSix non-claims, said again.\n";
+    assert_eq!(
+        miscounts("x.md", current, 6),
+        (2, vec!["x.md:6 says 5".to_owned()]),
+        "a current decision that says five where spec 7 lists six is one miscount of two counts"
+    );
+    let superseded = current.replace("status: current", "status: superseded");
+    assert_eq!(
+        miscounts("x.md", &superseded, 6),
+        (0, Vec::new()),
+        "a decision that is not current states no count this test holds"
+    );
+    let body_only = "status: current\n\nfive non-claims\n";
+    assert_eq!(
+        miscounts("x.md", body_only, 6),
+        (0, Vec::new()),
+        "a `status: current` line outside the front matter does not make a decision current"
+    );
+}
+
+#[test]
+fn every_current_decision_that_counts_the_non_claims_of_a_filtered_export_counts_what_spec_7_lists()
+{
+    let listed = non_claims(&spec_seven()).len();
+    assert!(
+        listed > 0,
+        "spec 7 lists no non-claim after {NON_CLAIMS_LEAD:?}"
+    );
+    let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../docs/decisions");
+    let mut paths: Vec<PathBuf> = std::fs::read_dir(&dir)
+        .expect("read docs/decisions")
+        .map(|e| e.expect("a directory entry").path())
+        .filter(|p| p.extension().is_some_and(|x| x == "md"))
+        .collect();
+    paths.sort();
+    let mut found = 0;
+    let mut wrong = Vec::new();
+    for path in paths {
+        let text = std::fs::read_to_string(&path).expect("read a decision");
+        let name = path
+            .file_name()
+            .unwrap_or_default()
+            .to_string_lossy()
+            .into_owned();
+        let (stated, miscounted) = miscounts(&name, &text, listed);
+        found += stated;
+        wrong.extend(miscounted);
+    }
+    assert!(
+        found > 0,
+        "no current decision states a count of non-claims, so this test holds nothing"
+    );
+    assert!(
+        wrong.is_empty(),
+        "spec 7 lists {listed} non-claims, and these current decisions count otherwise: {wrong:#?}"
+    );
 }

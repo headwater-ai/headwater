@@ -3,7 +3,7 @@ id: HW-DR-0016
 title: Q16 — Public presence
 status: current
 status_since: 2026-08-11
-last_verified: 2026-08-17
+last_verified: 2026-10-03
 summary: Registration needs a channel with an obliged reader, a directory of corpora is refused, and the site is a projection of this corpus.
 provenance:
   warrant: accepted
@@ -46,11 +46,13 @@ Registration closes with no new machinery, because two obliged channels already 
 | Compatibility, integrations | [Q13](0013-linkml-and-shacl-as-substrate.md)'s six emitters, of which two ship | Answered, and the answer is two |
 | Docs, getting started | [Spec 3](../spec/03-authoring-and-lifecycle.md), the [interview](../spec/07-distribution-and-federation.md#the-interview) and the [tutorial](../tutorials/your-first-governed-corpus.md) | Answered as a document, and the page that would carry it waits on the site |
 | Pricing, enterprise, consulting | [Q11](0011-license-and-distribution-posture.md) | Partial. The terms are Apache-2.0, and where a commercial tier sits is still open |
-| Compliance, audits, self-assessment | [Spec 4](../spec/04-assurance-model.md)'s obligation and gap registers, and [spec 7](../spec/07-distribution-and-federation.md#what-a-filtered-export-claims-and-what-it-does-not)'s one claim and five non-claims | Answered |
+| Compliance, audits, self-assessment | [Spec 4](../spec/04-assurance-model.md)'s obligation and gap registers, and [spec 7](../spec/07-distribution-and-federation.md#what-a-filtered-export-claims-and-what-it-does-not)'s one claim and six non-claims | Answered |
 | Changelog, community, open-source posture | [Q11](0011-license-and-distribution-posture.md). There is no changelog and no community | Partial. The posture is stated, and neither artifact exists |
 | `llms.txt`, AI-crawler `robots.txt` | Cheap to emit, and measurably unread | Ship it, and count it as nothing |
 
 **One row moved on 2026-08-17, and the reason it carried had expired.** The getting-started row read *no quickstart, because there is nothing to start*. That was true when this entry closed. It stopped being true when M1 and M2 shipped `headwater check`, `headwater taxonomy validate` and `headwater taxonomy resolve`. [The tutorial](../tutorials/your-first-governed-corpus.md) now takes a reader from an empty directory to a passing strict run. The row is answered as a document and no further. This entry rules the site a projection, and no item of the plan builds one.
+
+**The compliance row's count moved on 2026-10-03, and the old count was wrong when the row was written.** The row gave the count of non-claims as five. The specification already listed six on 2026-08-11, because the warrant ruling of 2026-08-10 added the sixth: no claim about a license reaches any content ([Q19](0019-inbound-integration-an-external-system-of-record.md)). Spec 7 now holds the list, and it lists six. The row now says six, and its answer did not change.
 
 **What the forcing function found is uncomfortable and correct.** The largest hole in the public story is the one that this project has decided it may not fill. The benchmark row is empty because [principle 11](../spec/00-vision-and-scope.md#design-principles) forbids a number that no run produced, and it stays empty until a campaign runs. The pressure to relax that will arrive exactly when the site does.
 
