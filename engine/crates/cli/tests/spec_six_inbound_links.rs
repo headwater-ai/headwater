@@ -96,9 +96,7 @@ fn pointer_links(text: &str) -> Vec<(usize, String)> {
         let mut rest = line;
         while let Some(at) = rest.find(&needle) {
             let after = &rest[at + needle.len()..];
-            let end = after
-                .find(|c: char| c == ')' || c == ' ' || c == '"' || c == '>')
-                .unwrap_or(after.len());
+            let end = after.find([')', ' ', '"', '>']).unwrap_or(after.len());
             let anchor = &after[..end];
             if POINTER_ONLY.contains(&anchor) {
                 out.push((i + 1, anchor.to_owned()));
