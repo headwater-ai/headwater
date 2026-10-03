@@ -465,7 +465,7 @@ run_batch() {
             ${reps:+--repetitions "$reps"} >&2
         code=$?
         set -- $(classify "$root/$dir")
-        rec=$1 total=$2 refusals=$3 failed=$4 halt=$5
+        rec=$1 total=$2 failed=$4 halt=$5
         shift 5
         names=$*
         new=$((rec - before))
@@ -498,13 +498,15 @@ run_batch() {
         [ "$action" = refused-only ] || retried=0
         # The ramp, for the next slice of this batch alone. A halt lowers it
         # one step, a slice that ended on the bound and was clean raises it
-        # one step, and anything else holds it.
+        # one step, and anything else holds it. A slice that ended on the
+        # bound refused no job, because campaign.sh exits 7 and not 9 when
+        # it refused one.
         if [ "$steps" -gt 0 ] && [ "$phase" != canary ]; then
             was=$p
             if [ "$action" = halt ] && [ "$step" -gt 1 ]; then
                 ramp_to $((step - 1))
                 say "ramp $phase parallel $was -> $p after a halt"
-            elif [ "$action" = bound ] && [ "$step" -lt "$steps" ] && [ "$refusals" = 0 ] && clean "$root/$dir"; then
+            elif [ "$action" = bound ] && [ "$step" -lt "$steps" ] && clean "$root/$dir"; then
                 ramp_to $((step + 1))
                 say "ramp $phase parallel $was -> $p after a clean slice"
             fi

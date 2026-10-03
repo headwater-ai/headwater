@@ -373,6 +373,18 @@ printf 'exit=9 halt=y\nexit=9 halt=y\nexit=9 record=1 cents=10 halt=y\nexit=0 re
 drive
 check "halt: a halt with progress counts from 1 again" sh -c "grep 'sleeping' '$CASE/out' | sed -n 3p | grep -q 'halt 1; sleeping 300 s'"
 
+# A slice that ends on the bound ends the run of halts.
+new_case
+only_a
+: > "$CASE/scenario"
+for i in 1 2 3 4 5 6 7; do echo 'exit=9 halt=y' >> "$CASE/scenario"; done
+echo 'exit=9 record=1 cents=10' >> "$CASE/scenario"
+for i in 1 2 3 4 5 6 7; do echo 'exit=9 halt=y' >> "$CASE/scenario"; done
+echo 'exit=0 record=20 cents=10' >> "$CASE/scenario"
+drive
+check "halt: 7 halts, a bound and 7 halts do not reach the limit" code_is 0
+check "halt: the halt after a bound counts from 1" sh -c "grep 'sleeping' '$CASE/out' | sed -n 8p | grep -q 'halt 1; sleeping 300 s'"
+
 # A halt beside refusals is a halt.
 new_case
 only_a
@@ -461,6 +473,13 @@ drive
 check "pin: HEAD other than --pin exits 4" code_is 4
 check "pin: HEAD other than --pin invokes nothing" calls_are 0
 pin_case
+echo two > "$CASE/repo/file"
+g2 commit -q -a -m two
+g2 update-ref refs/remotes/origin/main HEAD
+drive
+check "pin: a HEAD past a pin that is on origin/main exits 4" code_is 4
+check "pin: a HEAD past the pin invokes nothing" calls_are 0
+pin_case
 g2 checkout -q main
 drive
 check "pin: an attached branch exits 4" code_is 4
@@ -517,6 +536,7 @@ drive
 check "stops: a stop written during a halt backoff exits 10" code_is 10
 check "stops: before the next invocation" calls_are 1
 check "stops: and logs stop" sh -c "grep -qE 'Z stop\$' '$CASE/out'"
+check "stops: within one step of 60 s, not at the end of the 300 s backoff" [ "$(wc -l < "$CASE/sleeps")" = 1 ]
 new_case
 only_a
 : > "$CASE/root/stop"
