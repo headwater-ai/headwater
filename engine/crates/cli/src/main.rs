@@ -6021,9 +6021,10 @@ fn generate(root: &Path, check_only: bool) -> ExitCode {
 
 /// `headwater export`.
 ///
-/// Two modes, and the flag that separates them is `--format`. Spec 6 gives the
-/// reason for both in one sentence: export "carries its own verb because a
-/// consumer outside the repository asks for one format at a time".
+/// Two modes, and the flag that separates them is `--format`.
+/// `docs/interfaces/headwater-export.md` gives the reason for both: export is
+/// its own verb "because a consumer outside the repository asks for one format
+/// at a time".
 ///
 /// **With a target named**, the artifact goes to standard output. That consumer
 /// holds no clone, wants one vocabulary, and takes bytes on a pipe. No declared

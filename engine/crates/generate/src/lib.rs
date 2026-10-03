@@ -1197,9 +1197,10 @@ fn orphaned(census: &Census, outputs: &[Output], unwritten: &[Unwritten]) -> Vec
 ///
 /// The same emitter, the same census and the same marker rule that `plan` uses
 /// for a `graph_export`, over the subset one profile names. `selected` is what
-/// `--profile` supplies; `None` takes every declared profile, which is spec 6's
-/// rule that "with no profile named, the engine writes every declared profile,
-/// so a filtered audience is never omitted by accident".
+/// `--profile` supplies; `None` takes every declared profile, which is the rule
+/// of `docs/interfaces/headwater-export.md` that "with no `--profile`, the
+/// command writes every declared profile, so a filtered audience is never left
+/// out by accident".
 ///
 /// A profile the taxonomy does not declare is an error rather than an empty
 /// plan. An empty plan reports success over nothing, and a caller who mistyped

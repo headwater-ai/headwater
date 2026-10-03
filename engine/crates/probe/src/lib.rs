@@ -3,10 +3,11 @@
 //!
 //! [Spec 5](../../../../docs/spec/05-ai-integration.md#measuring-whether-any-of-this-works)
 //! declares the probe suite and
-//! [spec 6](../../../../docs/spec/06-engine-architecture.md#cli) says where it
-//! sits: outside `check`. `probe` reaches a model over the network, so it never
-//! runs inside `check` and never gates. `taxonomy vendor <location>` is the one
-//! other verb that opens a socket, through `headwater-fetch` (HW-DR-0075).
+//! [its contract](../../../../docs/interfaces/headwater-probe.md) says where it
+//! sits: outside `check`. The session between `plan` and `record` reaches a
+//! model, and no code here drives it, so `probe` opens no socket, never runs
+//! inside `check` and never gates. `taxonomy vendor <location>` is the one verb
+//! that opens a socket, through `headwater-fetch` (HW-DR-0075).
 //!
 //! # What a probe result is, and what makes it citable
 //!
