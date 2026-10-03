@@ -95,20 +95,35 @@ A recording host must provide these four items:
 
 - `bwrap`, with user namespaces and network namespaces that an unprivileged user can create. Without them, the driver exits 12 before any harness call, so nothing is spent. No variable turns the confinement off.
 - `python3` in `/usr`, because the egress proxy and its forwarder are Python. Without it, the driver exits 12 before any harness call.
-- Credentials for the harness, in `.credentials.json` of the user configuration of the host.
+- Credentials for the harness, in `.credentials.json` of the user configuration of the host. An OAuth access token in that file must stay valid for the full session, because the session cannot refresh it. When the token expires during a session, the harness stops with an authentication error.
 - A batch directory outside `$HOME`. `tools/probe/campaign.sh` refuses an output directory under it.
 
 ### The one route to the network
 
 The session has no network of its own. The driver runs it with `--unshare-net`, so its network namespace holds a loopback interface and nothing else. The loopback of the host is not in it. In the 2026-09-30 batch, the network was shared, and sessions reached GitHub with `gh api` and `curl`. The confinement now refuses each direct connection of this kind. Other sessions of that batch reached GitHub with `WebSearch` or `WebFetch`, and the driver now denies those two tools to the session.
 
-The one route out is `tools/probe/egress-proxy.py`. The driver starts it on the host before the session and stops it after the session. It listens on a unix socket in a directory that the driver binds into the session. In the session, the same file forwards `127.0.0.1:3128` to that socket, and `HTTPS_PROXY` names that port. The driver also sets `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC`, so the harness asks for no telemetry host or update host.
+The one route out is `tools/probe/egress-proxy.py`. The driver starts it on the host before the session and stops it after the session. It listens on a unix socket in a directory that the driver binds into the session. In the session, the same file forwards `127.0.0.1:3128` to that socket, and `HTTPS_PROXY` names that port. `ANTHROPIC_BASE_URL` names the same port in plain HTTP. So the harness sends each call to the provider API as a request that the proxy can read. The driver also sets `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC`, so the harness asks for no telemetry host or update host.
 
-The proxy opens a connection to `api.anthropic.com` or `platform.claude.com` on port 443, and to no other host. The first host is the provider API. The harness refreshes an OAuth credential at the second. The list is in the source of the proxy, and no variable or argument changes it. A switch that adds a host would open the direct channel again. The proxy writes one log line for each decision, before it connects to the host.
+The proxy opens no tunnel. It refuses each `CONNECT`, to any host, because the proxy cannot read the contents of a tunnel. It sends a request to one host only, the provider API at `api.anthropic.com` on port 443. Before it connects, it reads the full request, and it refuses the request when one of these conditions is true:
 
-One channel stays open, and nothing has measured it. The provider API is on the list, and a `Bash` call that holds the credential of the session can send a request to it. That request can ask for a server-side web tool. The provider then reaches any host, GitHub included, from outside the session. The proxy sees only a connection to `api.anthropic.com`, so neither the proxy nor the transcript can tell this call from a call of the harness. So the confinement holds every direct connection, and it does not show that a session read nothing from GitHub. Each transcript states this.
+- The request names a host or a port other than the forwarder of the session.
+- The head of the request holds a control character other than a tab or the `\r\n` at the end of a line. Such a character can add a line to the head that the proxy sends to the API.
+- The method is not `POST`, or the path is not `/v1/messages` or `/v1/messages/count_tokens`.
+- The proxy cannot read the body. The body has a `Transfer-Encoding` or a `Content-Encoding`, or it has no single `Content-Length` in ASCII digits. Or the body is larger than 32 MiB, or it is not a JSON object.
+- An object of the body names a key two times. The proxy reads the last value, and a parser at the API can read the first value.
+- An entry of `tools` has a `type` that starts with `web_search_`, `web_fetch_` or `mcp_`.
+- The body has an `mcp_servers` key.
+- An object at any depth of the body has a `source` with the type `url`.
 
-The transcript states this confinement and names the two hosts. It also states each connection that the proxy allowed and each connection that it refused, with the host and the count. When the harness fails, the driver prints the same counts with exit 10. A session fails there when the proxy refuses a host that the harness needs. If the proxy does not start, the driver exits 12 before any harness call.
+With the last three conditions, a request asks the provider to get data from another host for the session. These are its web search, its web fetch, its MCP connector, and a document or an image at a URL. Each refusal gets a 403 status and one log line that names the refused item. The proxy forwards every other request over TLS, and it verifies the certificate and the host name of the API. The host, the paths and the rules are in the source of the proxy, and no variable or argument changes them. A switch that changes them would open the channel again.
+
+The rule refuses named tool types and does not permit only a list of known types. The harness `claude` 2.1.288 names some server tools of its own, for example `tool_search_tool_regex` and `advisor_20260301`. A campaign session can send these tools, and one measured session is not sufficient evidence for a closed list of types.
+
+These rules come from a measurement on 2026-10-03 with `claude` 2.1.288 and one `haiku` session that answered a prompt. The harness sent one call through the base URL in plain HTTP with an OAuth credential. The call was `POST /v1/messages?beta=true` with a `Content-Length` body and 23 tools, and no tool had a `type`. The harness also sent three `CONNECT` requests to `api.anthropic.com`. A proxy refused all three, and the session answered the prompt. In a second measurement, a `curl` call in a session with no network held the credential and went through this proxy. The proxy refused a request for `web_search_20250305` and a request for `web_fetch_20250910` with 403. It also refused a `CONNECT` to each of the two provider hosts. It forwarded an ordinary request, and the API answered it with 200.
+
+The host `platform.claude.com` also answers `POST /v1/messages`, and the harness refreshes an OAuth credential there through a tunnel only. The harness accepts no other address for that host. So the proxy refuses that host too, and a session cannot refresh its credential. The section above states what this requires from the host.
+
+The transcript states this confinement and names the host that the proxy forwards to. It also states each connection that the proxy allowed and each connection that it refused, with the host and the count. It states each request to the provider API that the proxy refused, with the refused item and the count. When the harness fails, the driver prints the same counts with exit 10. A session fails there when the proxy refuses a host that the harness needs. If the proxy does not start, the driver exits 12 before any harness call.
 
 ## The prompt is the task section, and the answer is the final line
 
