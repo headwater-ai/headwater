@@ -147,7 +147,13 @@
 # `--assemble` checks that every recorded session of a line carries one
 # identity, and writes one identity block and one events block per line under
 # `<out>/assembled/`, with a count of sessions, the summed cost, how many
-# sessions the intent hook reached, and how many the turn cap stopped. A person
+# sessions the intent hook reached, how many the turn cap stopped, the paths
+# outside the workspace its sessions named, how many sessions it could not
+# count, and the calls its sessions made to a web tool (#1472). A session that
+# did not record, or whose record states no count, is uncounted and adds
+# nothing to either sum, so it never reads as 0. After the lines, one line on
+# standard error states the same three figures over the whole batch, and the
+# count of its sessions. A count above 0 does not fail assembly. A person
 # wraps them in a transcript with `headwater new`, because a transcript is an
 # authored document of this corpus and this script writes nothing inside it.
 #
@@ -378,6 +384,10 @@ if [ "$assemble" = 1 ]; then
     [ -f "$out/lines" ] || { echo "campaign: no batch at $out" >&2; exit 2; }
     mkdir -p "$out/assembled"
     failed=0
+    batch_sessions=0
+    batch_outside=0
+    batch_uncounted=0
+    batch_web=0
     while IFS= read -r line; do
         # shellcheck disable=SC2086
         set -- $line
@@ -390,14 +400,31 @@ if [ "$assemble" = 1 ]; then
         count=0
         live=0
         capped=0
+        outside=0
+        uncounted=0
+        web=0
         first_at=
         : > "$out/assembled/$stem.events.yaml"
         for dir in "$out"/sessions/L$index-*; do
             [ -d "$dir" ] || continue
+            batch_sessions=$((batch_sessions + 1))
             if [ "$(cat "$dir/status" 2>/dev/null)" != 0 ]; then
                 echo "campaign: $(basename "$dir") did not record (status $(cat "$dir/status" 2>/dev/null || echo none))." >&2
                 failed=1
+                # It may have spent, and nobody counted what it named.
+                uncounted=$((uncounted + 1))
                 continue
+            fi
+            # The two counts each record states (#1472). A record that states
+            # either one as uncounted, or states none, is an uncounted session
+            # and adds nothing to either sum, so it never reads as 0.
+            named=$(sed -n 's/^The session named \([0-9][0-9]*\) paths\{0,1\} outside its workspace .*/\1/p' "$dir/record.md" | head -1)
+            webbed=$(sed -n 's/^The session made \([0-9][0-9]*\) calls\{0,1\} to a web tool\.$/\1/p' "$dir/record.md" | head -1)
+            if [ -n "$named" ] && [ -n "$webbed" ]; then
+                outside=$((outside + named))
+                web=$((web + webbed))
+            else
+                uncounted=$((uncounted + 1))
             fi
             this=$(sed -n '/^```yaml$/,/^```$/p' "$dir/record.md" | sed '1d;$d' \
                 | grep -v -e '^at: ' -e '^cost_cents: ')
@@ -421,12 +448,19 @@ if [ "$assemble" = 1 ]; then
             printf '%s\n' "$identity" | grep -v -e '^tier: ' -e '^arm: '
             printf 'tier: %s\narm: %s\nat: %s\ncost_cents: %s\n' "$tier" "$arm" "$first_at" "$cost"
         } > "$out/assembled/$stem.identity.yaml"
-        printf '%s sessions, %s cents, the intent hook live in %s, %s stopped at the turn cap\n' \
-            "$count" "$cost" "$live" "$capped" \
+        printf '%s sessions, %s cents, the intent hook live in %s, %s stopped at the turn cap, %s paths outside the workspace named, %s sessions uncounted, %s web-tool calls\n' \
+            "$count" "$cost" "$live" "$capped" "$outside" "$uncounted" "$web" \
             > "$out/assembled/$stem.summary"
         printf 'campaign: %s: %s' "$stem" "$(cat "$out/assembled/$stem.summary")" >&2
         printf '\n' >&2
+        batch_outside=$((batch_outside + outside))
+        batch_uncounted=$((batch_uncounted + uncounted))
+        batch_web=$((batch_web + web))
     done < "$out/lines"
+    # The figure the campaign's report states for confinement (#1472). It is a
+    # report and not a gate: a confined session's tries are unreadable.
+    printf 'campaign: the batch named %s paths outside the workspace over %s sessions, %s sessions uncounted, %s web-tool calls\n' \
+        "$batch_outside" "$batch_sessions" "$batch_uncounted" "$batch_web" >&2
     [ "$failed" = 0 ] || exit 7
     exit 0
 fi
