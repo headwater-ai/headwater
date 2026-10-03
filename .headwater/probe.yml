@@ -194,6 +194,15 @@ tiers:
   # reason it may move. A plan above it still refuses, because a run that does
   # not happen is the cheaper error.
   #
+  # It moved again on #1659, for the same reason. In run 20261002-1233 the
+  # owner chose "Approve 2,142": "the campaign plan of 4,284 sessions at about
+  # 2,142 dollars stands". In run 20261003-1026, on 2026-10-03, he ruled: "I am
+  # giving the go ahead for 1659 so do it when ready." So the ceiling here is
+  # $2,052.00, this tier's share of that plan: 4,104 sessions at the declared
+  # 50 cents. The documentation tier keeps $130.00, because its share, $90.00,
+  # is inside it. `tools/probe/campaign.sh --session-cents` is what holds a
+  # batch below the figure it was given, and not this declaration.
+  #
   # Spec 5 takes the session count from statistical power rather than from
   # taste: 0.50 against 0.75 at 80% power and a 5% two-sided level is about 58
   # sessions per arm. That count is per arm of one claim, and a result pools
@@ -257,15 +266,15 @@ tiers:
   # `headwater probe plan --tier campaign --arm <arm> --delta`, so any YAML
   # form the plan accepts under `components` builds the same tree.
   #
-  # **What the arms cost.** Six arms is three times the sessions of the pair,
-  # so the plan of any category at 30 repetitions is over the ceiling below,
-  # and the plan refuses it. That refusal is correct: the ceiling is what a
-  # person agreed to spend, and nobody has agreed to spend more. `sh
+  # **What the arms cost.** Six arms is three times the sessions of the pair.
+  # At the $300.00 of 2026-09-28 the plan of any category at 30 repetitions
+  # was over the ceiling, and the plan refused it. `sh
   # tools/probe/campaign.sh --dry-run --spec tools/probe/layer-campaign.spec`
   # prints what each line and arm would cost against the ceiling. The owner
-  # rules on one ceiling for the whole plan before any of it runs (#1472).
+  # ruled on one ceiling for the whole plan before any of it ran (#1472), and
+  # it is the $2,052.00 below.
   campaign:
-    budget_cents: 30000
+    budget_cents: 205200
     session_cost_cents: 50
     repetitions: 30
     max_turns: 80

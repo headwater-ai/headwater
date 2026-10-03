@@ -44,7 +44,10 @@ if ! command -v jq >/dev/null 2>&1; then
 fi
 
 scratch=$(mktemp -d) || exit 1
-trap 'rm -rf "$scratch"' EXIT HUP INT TERM
+# The confinement cases keep their workspace outside `/tmp`, where a batch
+# keeps its own, because the session's `/tmp` is a tmpfs of its own (#1659).
+outer=$(mktemp -d /var/tmp/hw-probe-fixtures.XXXXXX) || exit 1
+trap 'rm -rf "$scratch" "$outer"' EXIT HUP INT TERM
 
 passed=0
 failed=0
@@ -1804,8 +1807,7 @@ printf '%s\n' '{"type":"result","subtype":"success","result":"withheld","total_c
 STUB
     chmod +x "$scratch/bin/claude"
     rm -f "$args"
-    # One repetition, because the six arms of the campaign tier at its declared
-    # 30 are over its ceiling since #1472, and the ceiling is not this case.
+    # One repetition keeps the plan small, and the ceiling is not this case.
     PATH="$scratch/bin:$PATH" sh "$driver" --probe "HW-PROBE-$tombstone" --session fixture-tier-cap \
         --tier campaign --category sufficiency --repetitions 1 \
         --task-file "$scratch/task.md" --workspace "$scratch/ws" \
@@ -1952,7 +1954,7 @@ STUB
     # this checkout. It writes what it got into its own workspace. With the
     # confinement removed, the marker reaches `found.txt`.
     if command -v bwrap >/dev/null 2>&1; then
-        conf=$(cd "$scratch" && pwd -P)
+        conf=$(cd "$outer" && pwd -P)
         rm -rf "$conf/outside" "$conf/trees" "$conf/conf-ws"
         mkdir -p "$conf/outside" "$conf/trees/oracle" "$conf/conf-ws"
         printf 'HW-LEAK-MARKER-1467\n' > "$conf/outside/secret.md"
@@ -1998,6 +2000,18 @@ STUB
         present "and counts the paths outside the workspace it named, none of them readable, and not its own /tmp" \
             "The session named 3 paths outside its workspace that the confinement does not bind, so no file of the host at any of them was readable." \
             "$scratch/confined.md"
+        # A workspace that is itself under `/tmp` lets the session see its own
+        # path there, so a path it names under `/tmp` may be a sibling tree of
+        # the host's, and the redirect counts: 4.
+        tmp_ws=$(cd "$scratch" && pwd -P)/conf-ws-tmp
+        rm -rf "$tmp_ws"
+        mkdir -p "$tmp_ws"
+        PATH="$scratch/bin:$PATH" sh "$driver" --probe "HW-PROBE-$tombstone" --session fixture-confined-tmp \
+            --task-file "$scratch/task.md" --workspace "$tmp_ws" \
+            >"$scratch/confined-tmp.md" 2>"$scratch/confined-tmp.err"
+        present "and a workspace under /tmp counts the session's /tmp paths as outside" \
+            "The session named 4 paths outside its workspace" "$scratch/confined-tmp.md"
+        rm -rf "$tmp_ws"
 
         # THE decisive case of #1467's network half (clause 5): the public
         # repository is not reachable from a session by a direct connection.
@@ -2597,8 +2611,7 @@ STUB
         cp -a "$scratch/bw-base" "$batch/trees/campaign-present"
         git -C "$root" rev-parse HEAD > "$batch/head"
         printf 'claude-haiku-4-5\n' > "$batch/model"
-        # One repetition: the six arms of the campaign tier at its declared
-        # 30 are over its ceiling since #1472, and the ceiling is not what
+        # One repetition keeps the plan small, and the ceiling is not what
         # this case holds.
         printf '1\n' > "$batch/repetitions"
         : > "$batch/max-turns"
@@ -2631,7 +2644,7 @@ STUB
         present "and the file it wrote through the shell is produced, against the tier's tree" \
             'path: "docs/written-by-bash.md"' "$batch/sessions/L1-campaign-present-p1-r1/record.md"
         sh "$root/tools/probe/campaign.sh" --out "$batch" --assemble >/dev/null 2>"$scratch/batch-assemble.err"
-        same "and assembly counts the capped session" "1 sessions, 1 cents, the intent hook live in 0, 1 stopped at the turn cap, 0 paths outside the workspace named, 0 sessions uncounted, 0 web-tool calls" \
+        same "and assembly counts the capped session" "1 sessions, 1 cents, the intent hook live in 0, 1 stopped at the turn cap, 0 stopped at the session budget, 0 paths outside the workspace named, 0 sessions uncounted, 0 web-tool calls" \
             "$(cat "$batch/assembled/L1-campaign-present-sufficiency.summary" 2>/dev/null)"
         same "the job ran under a configuration directory of the batch, outside every tree (#1467)" "yes" \
             "$([ -d "$batch/config/L1-campaign-present-p1-r1" ] && echo yes || echo no)"
@@ -2686,7 +2699,7 @@ STUB
         sh "$root/tools/probe/campaign.sh" --out "$leak" --assemble >/dev/null 2>"$scratch/leak-assemble.err"
         same "assembly exits 7 for the session that did not record, as before" "7" "$?"
         same "and the line's summary states the host path, the uncounted session and the web-tool call" \
-            "1 sessions, 1 cents, the intent hook live in 0, 0 stopped at the turn cap, 1 paths outside the workspace named, 1 sessions uncounted, 1 web-tool calls" \
+            "1 sessions, 1 cents, the intent hook live in 0, 0 stopped at the turn cap, 0 stopped at the session budget, 1 paths outside the workspace named, 1 sessions uncounted, 1 web-tool calls" \
             "$(cat "$leak/assembled/L1-campaign-present-sufficiency.summary" 2>/dev/null)"
         present "and the batch line states them over the whole batch" \
             "campaign: the batch named 1 paths outside the workspace over 2 sessions, 1 sessions uncounted, 1 web-tool calls" \
@@ -2706,7 +2719,7 @@ STUB
         sh "$root/tools/probe/campaign.sh" --out "$leak" --assemble >/dev/null 2>"$scratch/leak-assemble3.err"
         same "assembly of two recorded sessions exits 0, because a count is a report and not a gate" "0" "$?"
         same "and a record that states no count is uncounted, never 0" \
-            "2 sessions, 2 cents, the intent hook live in 0, 0 stopped at the turn cap, 1 paths outside the workspace named, 1 sessions uncounted, 1 web-tool calls" \
+            "2 sessions, 2 cents, the intent hook live in 0, 0 stopped at the turn cap, 0 stopped at the session budget, 1 paths outside the workspace named, 1 sessions uncounted, 1 web-tool calls" \
             "$(cat "$leak/assembled/L1-campaign-present-sufficiency.summary" 2>/dev/null)"
         present "and the batch line says so" \
             "campaign: the batch named 1 paths outside the workspace over 2 sessions, 1 sessions uncounted, 1 web-tool calls" \
@@ -2727,7 +2740,7 @@ STUB
         sh "$root/tools/probe/campaign.sh" --out "$leak" --assemble >/dev/null 2>"$scratch/leak-assemble5.err"
         same "assembly of four recorded sessions whose figures differ exits 0" "0" "$?"
         same "and each figure of the summary is its own sum" \
-            "4 sessions, 4 cents, the intent hook live in 0, 0 stopped at the turn cap, 6 paths outside the workspace named, 2 sessions uncounted, 3 web-tool calls" \
+            "4 sessions, 4 cents, the intent hook live in 0, 0 stopped at the turn cap, 0 stopped at the session budget, 6 paths outside the workspace named, 2 sessions uncounted, 3 web-tool calls" \
             "$(cat "$leak/assembled/L1-campaign-present-sufficiency.summary" 2>/dev/null)"
         present "and so is each figure of the batch line" \
             "campaign: the batch named 6 paths outside the workspace over 4 sessions, 2 sessions uncounted, 3 web-tool calls" \
@@ -3714,7 +3727,7 @@ if [ -x "$engine" ]; then
         "campaign no-hook discovery: 3 probes x 118 repetitions" "$scratch/dry.out"
     present "and sums each arm" "arm campaign mcp: 684 sessions, \$342.00" "$scratch/dry.out"
     present "and holds the campaign tier to its ceiling" \
-        "tier campaign: 4104 sessions, \$2052.00 against a ceiling of \$300.00: over by \$1752.00" "$scratch/dry.out"
+        "tier campaign: 4104 sessions, \$2052.00 against a ceiling of \$2052.00: inside it" "$scratch/dry.out"
     present "and prints the total" "total: 4284 sessions, \$2142.00 against the \$430.00 the tiers declare" "$scratch/dry.out"
     present "and sums each tier and category with its share of the total" \
         "category campaign discovery: 2124 sessions, \$1062.00, 49.6% of the total" "$scratch/dry.out"
@@ -3739,14 +3752,15 @@ if [ -x "$engine" ]; then
 
     # A line that pools a leak-kept probe with one that is not fails the dry run,
     # and a plan over its ceiling is printed rather than fatal: six
-    # sufficiency probes over six arms at 30 repetitions is 1080 sessions.
+    # sufficiency probes over six arms at 120 repetitions is 4320 sessions,
+    # $2160.00 against the $2052.00 the owner agreed to for this tier (#1659).
     printf 'campaign present sufficiency\n' > "$scratch/pooled.spec"
     PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
-        --spec "$scratch/pooled.spec" > "$scratch/pooled.out" 2> "$scratch/pooled.err"
+        --spec "$scratch/pooled.spec" --repetitions 120 > "$scratch/pooled.out" 2> "$scratch/pooled.err"
     same "a line that pools a leak-kept probe fails the dry run with 8, not 5" "8" "$?"
     present "and names the line" "line 1 pools a probe under \`leaks_kept:\`" "$scratch/pooled.out"
     present "and the ceiling's refusal is printed as a line" \
-        "L1 1080 sessions project \$540.00 against a declared ceiling of \$300.00" "$scratch/pooled.out"
+        "L1 4320 sessions project \$2160.00 against a declared ceiling of \$2052.00" "$scratch/pooled.out"
 
     # Any other refusal of a plan is the batch driver's 5.
     printf 'campaign present discovery\n' > "$scratch/refused.spec"

@@ -10,7 +10,8 @@
 #     sh tools/probe/probe-record.sh --probe PROBE-X --session one \
 #         --task-file task.md --model claude-haiku-4-5 \
 #         --workspace /tmp/scratch-copy [--raw raw.jsonl] [--produced docs/x.md]… \
-#         [--baseline /tmp/tree-it-was-copied-from] [--max-turns 80]
+#         [--baseline /tmp/tree-it-was-copied-from] [--max-turns 80] \
+#         [--max-budget-usd 3.00]
 #
 # Three modes read nothing from the network. `--identity-only` prints the six
 # members `headwater probe plan` fixes, `--provider-only <log>` prints the
@@ -106,8 +107,8 @@
 # Every code below is returned by one kind of path and no other, so a caller
 # and a fixture can branch on it. The harness's own status never leaves this
 # script: any nonzero one is 10, and the status it had is printed on stderr.
-# The one exception is a session the turn cap stopped, which is recorded and
-# exits 0 (#1384).
+# The two exceptions are a session the turn cap stopped (#1384) and one that
+# `--max-budget-usd` stopped (#1659), each recorded with exit 0.
 # The refusals 2, 4, 6, 8 and 9 run before any check of this host and before
 # any harness call, so they spend nothing. When both 8 and 9 apply, 8 answers,
 # because the instrument guard runs first.
@@ -129,8 +130,8 @@
 #       probe's answer keys or a document of this checkout that names the
 #       probe, or no `grep` can confirm that none does
 #       (`tools/probe/seal.sh` is the remedy)
-#   10  the harness exited nonzero for a reason other than the turn cap, and
-#       its status is on stderr
+#   10  the harness exited nonzero for a reason other than the turn cap or
+#       the budget, and its status is on stderr
 #   11  the plan refuses the run, or it does not select the probe. It runs
 #       before any harness call, so it spends nothing
 #   12  the session cannot be confined, or it loaded the host's
@@ -179,6 +180,7 @@ category=
 excludes=
 repetitions=
 max_turns=
+max_budget=
 identity_only=0
 provider_only=0
 answer_only=0
@@ -200,6 +202,7 @@ while [ $# -gt 0 ]; do
         --exclude) excludes="$excludes --exclude ${2:-}"; shift 2 ;;
         --repetitions) repetitions=${2:-}; shift 2 ;;
         --max-turns) max_turns=${2:-}; shift 2 ;;
+        --max-budget-usd) max_budget=${2:-}; shift 2 ;;
         --oracle-tree) transform_args="$transform_args --oracle-tree ${2:-}"; shift 2 ;;
         --identity-only) identity_only=1; shift ;;
         --provider-only) provider_only=1; raw=${2:-}; shift 2 ;;
@@ -804,6 +807,7 @@ mcp_config=
         --output-format stream-json --verbose \
         ${model:+--model "$model"} \
         ${max_turns:+--max-turns "$max_turns"} \
+        ${max_budget:+--max-budget-usd "$max_budget"} \
         "$task"
 ) > "$raw" 2>"$raw.err"
 status=$?
@@ -848,11 +852,20 @@ fi
 # can be repeated until it finishes under the cap is not a draw. So a capped
 # session records what the log holds: its calls, what it wrote, and no answer,
 # because the session did not finish. The transcript says it was capped.
+#
+# A session that `--max-budget-usd` stopped is the same kind of observation
+# (#1659). The harness ends it at the turn that crosses the budget, with a
+# `result` line of subtype `error_max_budget_usd`. The campaign's spend cap
+# rests on that stop, so a session it stopped is recorded, never drawn again,
+# and says so.
 capped=0
+budgeted=0
 if [ "$status" != 0 ]; then
     stopped=$(jq -s -r '([.[] | select(.type == "result")] | last | .subtype // "")' < "$raw" 2>/dev/null) || stopped=""
     if [ "$stopped" = error_max_turns ]; then
         capped=1
+    elif [ "$stopped" = error_max_budget_usd ] && [ -n "$max_budget" ]; then
+        budgeted=1
     else
         echo "probe-record: the harness exited $status." >&2
         tail -5 "$raw.err" >&2
@@ -995,14 +1008,22 @@ printf 'The proxy refused a request to the provider API that asked the provider 
 # each absolute path in the input of a call that reads or writes a file, and
 # each one in the text of a `Bash` command, that the confinement does not
 # bind. None of them is mounted from the host, so the count is of tries, not
-# of reads. A stream that does not parse is said to be uncounted.
+# of reads. `/tmp` is bound: it is the session's own tmpfs (`--tmpfs /tmp`
+# above) and holds no file of the host, so a redirect there is not a try
+# (#1659). #1474's L3-p2 counted 3 such paths, all its own redirect targets.
+# The one exception is a workspace that is itself under `/tmp`: the session
+# then sees its own path there, and a sibling of it that it names is a try at
+# the host's tree, so `/tmp` is not bound. A batch keeps its workspaces under
+# `/var/tmp` or `/mnt`. A stream that does not parse is said to be uncounted.
+own_tmp=/tmp
+case $here_real/ in /tmp/*) own_tmp= ;; esac
 if outside=$(jq -s -r \
     --arg here "$here" --arg here_real "$here_real" --arg config "$config" \
-    --arg log "$probe_log" --arg harness_dir "${harness_at%/*}" '
+    --arg log "$probe_log" --arg harness_dir "${harness_at%/*}" --arg tmp "$own_tmp" '
     def under($p; $b): $p == $b or ($p | startswith($b + "/"));
     def bound($p): $p == "/" or under($p; $harness_dir)
         or any(($here, $here_real, $config, $log, "/usr", "/etc", "/bin", "/sbin", "/lib",
-                 "/lib32", "/lib64", "/libx32", "/proc", "/dev"); under($p; .));
+                 "/lib32", "/lib64", "/libx32", "/proc", "/dev", ($tmp | select(. != ""))); under($p; .));
     [ .[] | select(.type == "assistant") | .message.content[]? | select(.type == "tool_use")
       | (.input // {}) as $in
       | if (.name == "Bash") then
@@ -1036,10 +1057,13 @@ fi
 if [ "$capped" = 1 ]; then
     printf 'The session stopped at the turn cap of %s.\n\n' "${max_turns:-the harness}"
 fi
+if [ "$budgeted" = 1 ]; then
+    printf 'The session stopped at its budget of $%s.\n\n' "$max_budget"
+fi
 
 answers=$(declared_answers "$probe")
 answer=
-[ "$capped" = 1 ] || answer=$(step_derive_answer)
+[ "$capped" = 1 ] || [ "$budgeted" = 1 ] || answer=$(step_derive_answer)
 
 # step_diff_baseline (#1384). A write made through `Bash` names no path in the
 # log, so the transform cannot seed `produced` from it. On 2026-09-28, 22 of 30
