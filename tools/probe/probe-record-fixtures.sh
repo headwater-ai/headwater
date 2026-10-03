@@ -2605,12 +2605,66 @@ STUB
         present "and the file it wrote through the shell is produced, against the tier's tree" \
             'path: "docs/written-by-bash.md"' "$batch/sessions/L1-campaign-present-p1-r1/record.md"
         sh "$root/tools/probe/campaign.sh" --out "$batch" --assemble >/dev/null 2>"$scratch/batch-assemble.err"
-        same "and assembly counts the capped session" "1 sessions, 1 cents, the intent hook live in 0, 1 stopped at the turn cap" \
+        same "and assembly counts the capped session" "1 sessions, 1 cents, the intent hook live in 0, 1 stopped at the turn cap, 0 paths outside the workspace named, 0 sessions uncounted, 0 web-tool calls" \
             "$(cat "$batch/assembled/L1-campaign-present-sufficiency.summary" 2>/dev/null)"
         same "the job ran under a configuration directory of the batch, outside every tree (#1467)" "yes" \
             "$([ -d "$batch/config/L1-campaign-present-p1-r1" ] && echo yes || echo no)"
         present "and the record names it" "$batch/config/L1-campaign-present-p1-r1" \
             "$batch/sessions/L1-campaign-present-p1-r1/record.md"
+
+        # THE decisive case of #1472's campaign report: assembly states the
+        # paths outside the workspace that a line's sessions named and the
+        # web-tool calls they made, and states a session it could not count as
+        # uncounted, never as 0. One session names an unbound host path through
+        # the shell, reads a bound one and calls WebSearch. The other's stream
+        # does not parse past its init line.
+        leak=$scratch/batch-leak
+        rm -rf "$leak"
+        cp -a "$batch" "$leak"
+        rm -rf "$leak/sessions" "$leak/assembled" "$leak/config"
+        mkdir -p "$leak/sessions"
+        cat > "$scratch/bin/claude" <<STUB
+#!/bin/sh
+printf '%s\n' '{"type":"system","subtype":"init","model":"claude-haiku-4-5","session_id":"s21"}'
+printf '%s\n' '{"type":"assistant","message":{"id":"m1","content":[{"type":"tool_use","id":"t1","name":"Bash","input":{"command":"cat /home/someone/secret.md"}}]}}'
+printf '%s\n' '{"type":"assistant","message":{"id":"m2","content":[{"type":"tool_use","id":"t2","name":"Read","input":{"file_path":"/etc/hostname"}}]}}'
+printf '%s\n' '{"type":"assistant","message":{"id":"m3","content":[{"type":"server_tool_use","id":"t3","name":"WebSearch","input":{"query":"x"}}]}}'
+printf '%s\n' '{"type":"result","subtype":"success","result":"withheld","total_cost_usd":0.01,"modelUsage":{"claude-haiku-4-5-20251001":{"inputTokens":10}}}'
+STUB
+        chmod +x "$scratch/bin/claude"
+        PATH="$scratch/bin:$PATH" sh "$root/tools/probe/campaign.sh" --out "$leak" \
+            --job "L1-campaign-present-p1-r1 1 campaign present sufficiency HW-PROBE-$tombstone" \
+            >/dev/null 2>"$scratch/leak-a.err"
+        same "a session that names a host path records" "0" \
+            "$(cat "$leak/sessions/L1-campaign-present-p1-r1/status" 2>/dev/null)"
+        present "and its record counts one web-tool call" \
+            "The session made 1 call to a web tool." "$leak/sessions/L1-campaign-present-p1-r1/record.md"
+        cat > "$scratch/bin/claude" <<STUB
+#!/bin/sh
+printf '%s\n' '{"type":"system","subtype":"init","model":"claude-haiku-4-5","session_id":"s22"}'
+printf '%s\n' '{"type":"assistant","message":{"id":"m1","content":[{"type":"tool_use","id":"t1","name":"Bash","input":{"command":"cat /home/someone/other.md"}}]}}'
+printf '%s\n' '{"type":"result","subtype":"success","result":"withheld","total_cost_usd":0.01,"modelUsage":{"claude-haiku-4-5-20251001":{"inputTokens":10}}}'
+printf '%s' '{"type":"assistant","message":{"id":"m2","content":[{"type":"tool_'
+STUB
+        chmod +x "$scratch/bin/claude"
+        PATH="$scratch/bin:$PATH" sh "$root/tools/probe/campaign.sh" --out "$leak" \
+            --job "L1-campaign-present-p1-r2 1 campaign present sufficiency HW-PROBE-$tombstone" \
+            >/dev/null 2>"$scratch/leak-b.err"
+        same "a session whose stream does not parse records" "0" \
+            "$(cat "$leak/sessions/L1-campaign-present-p1-r2/status" 2>/dev/null)"
+        present "and its record says its web-tool calls were not counted" \
+            "The calls this session made to a web tool were not counted" \
+            "$leak/sessions/L1-campaign-present-p1-r2/record.md"
+        sh "$root/tools/probe/campaign.sh" --out "$leak" --assemble >/dev/null 2>"$scratch/leak-assemble.err"
+        same "assembly of the two sessions exits 0, because the count is a report and not a gate" "0" "$?"
+        same "and the line's summary states the host path, the uncounted session and the web-tool call" \
+            "2 sessions, 2 cents, the intent hook live in 0, 0 stopped at the turn cap, 1 paths outside the workspace named, 1 sessions uncounted, 1 web-tool calls" \
+            "$(cat "$leak/assembled/L1-campaign-present-sufficiency.summary" 2>/dev/null)"
+        present "and the batch line states them over the whole batch" \
+            "campaign: the batch named 1 paths outside the workspace over 2 sessions, 1 sessions uncounted, 1 web-tool calls" \
+            "$scratch/leak-assemble.err"
+        absent "and the uncounted session is never reported as a batch of 0" \
+            "named 0 paths" "$scratch/leak-assemble.err"
     else
         printf 'note not a checkout of this repository, so the campaign job case did not run.\n'
     fi
