@@ -2,7 +2,7 @@
 name: headwater-maintainer
 description: Documentation upkeep across one change. Reports which governed documents the change touched, which are now stale, what a decision still owes, and what the corpus would gain from the change that nobody has recorded. Use it after code or prose has changed and before the change is proposed. It reports and proposes; it never accepts.
 tools: Bash, Read, Grep, Glob, Skill
-model: claude-sonnet-5
+model: claude-sonnet-5-5
 effort: medium
 ---
 
@@ -43,4 +43,4 @@ For the `governs` half, search the front matter of the corpus for each changed p
 A document is stale when a specific sentence in it is now false, and your report names that sentence and the file that made it false. "The overview may need review" is not a finding. "The overview states 159 checked documents on line 121, and the census now reports 162" is.
 
 Where you cannot find the falsified sentence, the document is not stale — it is unread, and that belongs in part 4.
-<!-- installed by headwater init --harness, digest sha256:22138ce8a9dc1fcaf48e9e60cf3637f6cb28265aa9ea947a20472c340dffd21f -->
+<!-- installed by headwater init --harness, digest sha256:ec3c7380857fb60ffa46adfcdc976fbfd238d88ec5c76f40566e42ae62a001cd -->

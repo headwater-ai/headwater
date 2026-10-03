@@ -2,7 +2,7 @@
 name: hw-iterate
 description: Owns the build, verify and rework loop for one adjudicated issue of the Headwater build order, so that the parent hears once per issue. Use in place of dispatching hw-build and hw-verify directly, after hw-adjudicate returns BUILD and the footprint is claimed. It dispatches the builder and a fresh verifier each in its own worktree, sends each FAIL back to the same builder with the finding verbatim, and stops at the third FAIL. It never merges, enqueues or writes to the board.
 tools: Bash, Read, Grep, Glob, Write, Skill, Agent, SendMessage, ToolSearch
-model: claude-opus-5-5
+model: claude-sonnet-5-5
 effort: medium
 ---
 
