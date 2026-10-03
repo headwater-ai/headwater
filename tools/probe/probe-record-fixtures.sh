@@ -777,6 +777,99 @@ else
 fi
 
 # ---------------------------------------------------------------------------
+# Spec 15's account of the session, held to the driver's source (#1641).
+#
+# Spec 15 said the driver "clears the environment, so no token of the host
+# reaches the session", while the driver set 12 variables and passed `LANG`
+# and `ANTHROPIC_API_KEY` from the host. It said the file system held its
+# list "and no other", while the driver also bound the target of
+# `/etc/resolv.conf`. Nothing compared the two. So each set is read off the
+# driver's code, with the comments stripped, and off spec 15's section, and
+# the two must be equal in both directions: a variable or a bind in the
+# driver that the spec does not list fails, and so does one the spec lists
+# that the driver does not set.
+# ---------------------------------------------------------------------------
+spec15="$root/docs/spec/15-the-recorder-contract.md"
+awk '/^## A session reads its workspace and nothing else of the host/ { on = 1; print; next }
+     on && /^## / { exit }
+     on' "$spec15" > "$scratch/spec15.section"
+# One subsection of that section, from its heading to the next `### `.
+spec15_sub() {
+    awk -v h="$1" '$0 == h { on = 1; next } on && /^##/ { exit } on' "$scratch/spec15.section"
+}
+spec15_sub '### What the file system of the session holds' > "$scratch/spec15.fs"
+spec15_sub '### The environment of the session' > "$scratch/spec15.env"
+
+# The environment. A name is the first backticked word of a list item.
+grep -o -- '--setenv [A-Za-z_][A-Za-z0-9_]*' "$scratch/driver.code" | awk '{ print $2 }' | sort -u > "$scratch/env.driver"
+sed -n 's/^- `\([A-Za-z_][A-Za-z0-9_]*\)`.*/\1/p' "$scratch/spec15.env" | sort -u > "$scratch/env.spec"
+env_unlisted=$(comm -23 "$scratch/env.driver" "$scratch/env.spec" | tr '\n' ' ')
+env_unset=$(comm -13 "$scratch/env.driver" "$scratch/env.spec" | tr '\n' ' ')
+if [ ! -s "$scratch/env.driver" ]; then
+    fail "spec 15 lists every variable the driver sets in the session, and no other" \
+        "no \`--setenv\` was read off the driver, so this case reads the wrong file"
+elif [ -n "$env_unlisted" ] || [ -n "$env_unset" ]; then
+    fail "spec 15 lists every variable the driver sets in the session, and no other" \
+        "set by the driver and not in spec 15: ${env_unlisted:-none}; in spec 15 and not set by the driver: ${env_unset:-none}"
+else
+    pass "spec 15 lists every variable the driver sets in the session, and no other"
+fi
+
+# The binds. Each source the driver binds, or the destination of a symlink,
+# maps to the phrase of spec 15's list that names it. A source with no row is
+# a bind the spec does not list; a row whose phrase is not in the list is an
+# item the spec lost; a row whose source the driver no longer binds is an
+# item the spec lists and the driver does not bind.
+awk '{ for (i = 1; i <= NF; i++) {
+         if ($i ~ /^--(ro-|dev-)?bind(-try)?$/) print $(i + 1)
+         else if ($i == "--symlink") print $NF
+         else if ($i == "--proc" || $i == "--dev" || $i == "--tmpfs") print $i
+     } }' "$scratch/driver.code" | sort -u > "$scratch/binds.driver"
+cat > "$scratch/binds.table" <<'EOF'
+/usr	`/usr` and `/etc`, read-only
+/etc	`/usr` and `/etc`, read-only
+"/$top"	with `/bin`, `/lib` and their siblings as the host has them
+"$resolver"	The target of `/etc/resolv.conf`, read-only
+--proc	A private `/proc`, `/dev` and `/tmp`
+--dev	A private `/proc`, `/dev` and `/tmp`
+--tmpfs	A private `/proc`, `/dev` and `/tmp`
+"$here"	The workspace, read-write
+"$probe_log"	The log directory of the run, read-write
+"$config"	A configuration directory of the session, read-write
+"$harness"	The harness binary, read-only
+"$egress_proxy"	The egress proxy, read-only
+"$egress/sock"	the directory of its socket, read-only
+EOF
+binds_unlisted=
+while IFS= read -r src; do
+    grep -qF -e "$src	" "$scratch/binds.table" || binds_unlisted="$binds_unlisted $src"
+done < "$scratch/binds.driver"
+binds_lost=
+binds_unbound=
+while IFS='	' read -r src phrase; do
+    grep -qF -e "$phrase" "$scratch/spec15.fs" || binds_lost="$binds_lost [$phrase]"
+    grep -qxF -e "$src" "$scratch/binds.driver" || binds_unbound="$binds_unbound $src"
+done < "$scratch/binds.table"
+if [ ! -s "$scratch/binds.driver" ]; then
+    fail "spec 15 lists every bind of the session's file system, and no other" \
+        "no bind was read off the driver, so this case reads the wrong file"
+elif [ -n "$binds_unlisted$binds_lost$binds_unbound" ]; then
+    fail "spec 15 lists every bind of the session's file system, and no other" \
+        "a bind spec 15 does not list:${binds_unlisted:- none}; an item spec 15 lost:${binds_lost:- none}; a row the driver no longer binds:${binds_unbound:- none}"
+else
+    pass "spec 15 lists every bind of the session's file system, and no other"
+fi
+
+# The leak figure: the evaluation's, in spec 15 and in the driver's comment.
+if grep -q '58 of 658' "$scratch/spec15.section" && grep -q '58 of 658' "$driver" \
+    && ! grep -q '51 of 658' "$scratch/spec15.section" && ! grep -q '51 of 658' "$driver"; then
+    pass "spec 15 and the driver state the evaluation's leak figure, 58 of 658"
+else
+    fail "spec 15 and the driver state the evaluation's leak figure, 58 of 658" \
+        "one of them lacks \`58 of 658\`, or still states \`51 of 658\`, which no document derives"
+fi
+
+# ---------------------------------------------------------------------------
 # The driver's own guards, which cost nothing and reach no network.
 # ---------------------------------------------------------------------------
 # The workspace guard, asserted unconditionally.
