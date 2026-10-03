@@ -3,7 +3,7 @@ id: HW-DR-0036
 status: current
 status_since: 2026-08-30
 summary: "MkDocs is the pick. Its `nav:` is data and not code, and Astro has no native nav format to emit at all."
-last_verified: 2026-08-30
+last_verified: 2026-10-03
 title: "Q36 — Which of MkDocs, Docusaurus, or Astro this corpus emits navigation for, and why"
 provenance:
   warrant: accepted
@@ -28,7 +28,7 @@ relations:
 
 **Spec 0 already closes the candidate set to three.** [Spec 0](../spec/00-vision-and-scope.md#what-we-do-not-build) refuses to build a documentation renderer and names the alternative: "Emit navigation config for MkDocs / Docusaurus / Astro." No fourth generator is named anywhere else in this corpus. This record picks among the three, and states why.
 
-**`site_nav` is declarable and unbuilt today.** [Spec 6](../spec/06-engine-architecture.md#projections) lists it among the ten declarable projection kinds. `engine/crates/generate/src/lib.rs` reports it under `Unwritten`, with the reason: `spec 5 and Q16 name the artifact and no document states its form, so an emitter here would be this engine inventing a schema for somebody else's consumer`. This record removes that reason. `.headwater/overlay.yml` declares no `site_nav` entry yet.
+**`site_nav` is declarable and unbuilt today.** [Spec 6](../spec/06-engine-architecture.md#projections) lists it among the eleven declarable projection kinds. `engine/crates/generate/src/lib.rs` reports it under `Unwritten`, with the reason: `spec 5 and Q16 name the artifact and no document states its form, so an emitter here would be this engine inventing a schema for somebody else's consumer`. This record removes that reason. `.headwater/overlay.yml` declares no `site_nav` entry yet.
 
 **A reading order is already derived, and a shelf index already consumes it.** `Relation::governs()` in `headwater-graph` returns `Governs::Source`, `Governs::Target`, or `Governs::Neither` from a relation's nucleus and family, per [spec 2](../spec/02-taxonomy-model.md#reading-precedence-is-derived)'s four clauses. `Surface::by_precedence` in `headwater-query` walks that derivation to order a list of documents, and `headwater generate`'s `shelf_index` emitter already calls it. A `site_nav` emitter needs the same call over each of this corpus's thirteen shelves, and not a new derivation.
 
