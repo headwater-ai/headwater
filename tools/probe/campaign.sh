@@ -9,7 +9,22 @@
 #         [--repetitions <n>] [--parallel <n>] [--max-turns <n>] [--seed <n>] \
 #         [--cap-cents <n>] [--max-sessions <n>]
 #     sh tools/probe/campaign.sh --out <dir> --assemble
-#     sh tools/probe/campaign.sh --dry-run --spec <file> [--max-sessions <n>]
+#     sh tools/probe/campaign.sh --dry-run --spec <file> [--repetitions <n>] \
+#         [--max-sessions <n>]
+#
+# `--repetitions <n>` sets the repetitions of every line. A count at or below
+# the one a line's tier declares is passed to the plan, a lowering. A count
+# above it is admitted on a line only up to the count the dry run prices for
+# that line, and the line is then planned, and each of its sessions
+# recorded, at the declared count, because the plan refuses a raise (#1659).
+# The owner's approval of a priced plan permits that raise and nothing above
+# it. A pooled line prices at the powered count and any other line at the
+# declared count, so a line not under `pooled:` admits no raise. The price is
+# read from `campaign-dry-run.sh --priced`, which holds the one copy of the
+# power calculation. A count above a line's price refuses the batch with 5
+# before any tree is built and before the harness is asked for its version.
+# A resumed invocation that gives no `--repetitions` keeps the count the
+# batch recorded.
 #
 # `--dry-run` spends nothing and calls no model (#1472). It plans every line
 # of the spec, prints the sessions and the cost of each line, each arm and
@@ -196,7 +211,8 @@
 #   4   the checkout is dirty, `HEAD` moved during the batch, `HEAD` is not
 #       the commit the output directory holds a batch of, or the `claude`
 #       harness is another version than the batch recorded
-#   5   the plan refuses a line of the spec
+#   5   the plan refuses a line of the spec, or `--repetitions` is above the
+#       count the dry run prices for a line
 #   6   the output directory is inside this checkout, or a batch's output
 #       directory is under `$HOME` (#1467)
 #   7   a session of the batch did not record, or a line's sessions disagree on
@@ -242,6 +258,10 @@ done
 case $max_sessions in
     '') ;;
     *[!0-9]*|0) echo "campaign: --max-sessions takes a positive whole number, not \`$max_sessions\`." >&2; exit 2 ;;
+esac
+case $repetitions in
+    '') ;;
+    *[!0-9]*|0*) echo "campaign: --repetitions takes a positive whole number, not \`$repetitions\`." >&2; exit 2 ;;
 esac
 case $session_cents in
     '') ;;
@@ -433,12 +453,17 @@ run_job() {
     rm -rf "$out/config/$name"
     mkdir -p "$out/config/$name"
     cp -a "$out/trees/$tier-$arm" "$ws" || { echo 2 > "$dir/status"; return 0; }
+    # The count the line's plan was given: the batch's count when it is at or
+    # below the declared one, and none when it raises it (#1659), so the
+    # recorder plans the session as the batch planned its line.
+    plan_repetitions=$repetitions
+    [ -f "$out/plans/L$index.repetitions" ] && plan_repetitions=$(cat "$out/plans/L$index.repetitions")
     # shellcheck disable=SC2086
     HEADWATER_PROBE_CONFIG_DIR=$out/config/$name \
         sh "$root/tools/probe/probe-record.sh" --probe "$probe" --session "$name" \
         --task-file "$out/tasks/$probe.md" --workspace "$ws" --model "$model" \
         --tier "$tier" --arm "$arm" --category "$category" $excludes \
-        ${repetitions:+--repetitions "$repetitions"} \
+        ${plan_repetitions:+--repetitions "$plan_repetitions"} \
         ${max_turns:+--max-turns "$max_turns"} \
         ${budget:+--max-budget-usd "$budget"} \
         --baseline "$out/trees/$tier-$arm" \
@@ -610,6 +635,31 @@ if [ -f "$out/head" ] && [ "$(cat "$out/head")" != "$head" ]; then
     echo "campaign: $out holds a batch of $(cat "$out/head"), and HEAD is $head. Use another directory." >&2
     exit 4
 fi
+# The count is the batch's, so a resumed invocation that gives none keeps the
+# one recorded, as it keeps the cap: its job list was made at that count.
+if [ -z "$repetitions" ] && [ -s "$out/repetitions" ]; then
+    repetitions=$(cat "$out/repetitions")
+fi
+# A raise is admitted on a line only up to the count the dry run prices for
+# it (#1659). This is checked before anything of the batch is written, so a
+# refused count leaves a resumed batch as it was.
+if [ -n "$repetitions" ]; then
+    HW_CAMPAIGN_ENGINE=$engine sh "$root/tools/probe/campaign-dry-run.sh" --priced "$spec" \
+        > "$out/priced" 2> "$out/priced.err" || {
+        priced_status=$?
+        echo "campaign: the dry run did not price the spec:" >&2
+        cat "$out/priced.err" >&2
+        exit "$priced_status"
+    }
+    raise_refused=0
+    while read -r index declared price how; do
+        [ "$repetitions" -gt "$declared" ] && [ "$repetitions" -gt "$price" ] || continue
+        what=$(awk 'NF && $1 !~ /^#/' "$spec" | awk -v i="$index" 'NR == i { print $1, $2, $3 }')
+        echo "campaign: line $index ($what): --repetitions $repetitions is above the $price the dry run prices for it ($how)." >&2
+        raise_refused=1
+    done < "$out/priced"
+    [ "$raise_refused" = 0 ] || exit 5
+fi
 printf '%s\n' "$head" > "$out/head"
 printf '%s\n' "$model" > "$out/model"
 printf '%s\n' "$repetitions" > "$out/repetitions"
@@ -646,9 +696,18 @@ while IFS= read -r line; do
     for excluded in "$@"; do
         excludes="$excludes --exclude $excluded"
     done
+    # A count above the line's declared one was held to its price above, and
+    # the line is planned at the declared count, which the plan does not
+    # refuse. A count at or below it is a lowering and goes to the plan.
+    plan_repetitions=$repetitions
+    if [ -n "$repetitions" ]; then
+        declared=$(awk -v i="$index" '$1 == i { print $2 }' "$out/priced")
+        [ -n "$declared" ] && [ "$repetitions" -gt "$declared" ] && plan_repetitions=
+    fi
+    printf '%s\n' "$plan_repetitions" > "$out/plans/L$index.repetitions"
     # shellcheck disable=SC2086
     "$engine" probe plan --root "$root" --tier "$tier" --category "$category" $excludes \
-        ${repetitions:+--repetitions "$repetitions"} > "$out/plans/L$index" 2>&1
+        ${plan_repetitions:+--repetitions "$plan_repetitions"} > "$out/plans/L$index" 2>&1
     if grep -q '^## This run does not start' "$out/plans/L$index"; then
         echo "campaign: line $index ($tier $arm $category) is refused by the plan:" >&2
         sed -n '/^## This run does not start/,$p' "$out/plans/L$index" | sed '1,2d' >&2

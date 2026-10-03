@@ -3257,6 +3257,114 @@ STUB
         same "and the present tree kept it" "yes" \
             "$([ -f "$arms/trees/oracle/.claude/hooks/intent.sh" ] && echo yes || echo no)"
         rm -rf "$arms"
+
+        # A raise above the tier's declared count is admitted on a line only
+        # up to the count the dry run prices for that line (#1659). Spec line
+        # 21 names one probe out of discovery, so k = 3 and the line prices
+        # at ceil(353 / 3) = 118 from this checkout's `power:`.
+        printf 'campaign present discovery HW-PROBE-the-authoring-skill-reaches-an-agent-that-is-about-to-write-a-governed-document\n' \
+            > "$scratch/raise.spec"
+        stagger_stub ok
+        for over in 119 1180; do
+            raise=$scratch/raise-$over
+            rm -rf "$raise"
+            rm -f "$scratch/probe-log/stagger.calls"
+            PATH="$scratch/bin:$PATH" sh "$root/tools/probe/campaign.sh" --out "$raise" \
+                --model claude-haiku-4-5 --spec "$scratch/raise.spec" --repetitions "$over" \
+                --cap-cents 100 >/dev/null 2>"$raise.err"
+            same "--repetitions $over above the 118 a discovery line prices refuses with 5, runs no harness and builds no tree" \
+                "5 0 no" \
+                "$? $(cat "$scratch/probe-log/stagger.calls" 2>/dev/null | wc -l | tr -d ' ') $([ -e "$raise/trees" ] && echo yes || echo no)"
+            present "and it names the line, the count asked and the count priced" \
+                "line 1 (campaign present discovery): --repetitions $over is above the 118 the dry run prices for it (ceil(353 / 3), powered)" \
+                "$raise.err"
+            rm -rf "$raise" "$raise.err"
+        done
+        # The price is read with the engine the batch plans with, the one its
+        # build wrote under CARGO_TARGET_DIR, and not the checkout's own
+        # `engine/target` (verify of #1659 slice 1b). The engine there is a
+        # wrapper that logs each call, so the priced pass, a plan with no
+        # --repetitions, must be in its log. A count above the price refuses
+        # before any tree is built, so the wrapper is never copied into one.
+        mkdir -p "$scratch/wrap-target/dev-release"
+        printf '#!/bin/sh\nprintf "%%s\\n" "$*" >> "%s/wrap.calls"\nexec "%s" "$@"\n' "$scratch" "$engine" \
+            > "$scratch/wrap-target/dev-release/headwater"
+        chmod +x "$scratch/wrap-target/dev-release/headwater"
+        rm -f "$scratch/wrap.calls"
+        raise=$scratch/raise-wrap
+        rm -rf "$raise"
+        CARGO_TARGET_DIR=$scratch/wrap-target PATH="$scratch/bin:$PATH" sh "$root/tools/probe/campaign.sh" \
+            --out "$raise" --model claude-haiku-4-5 --spec "$scratch/raise.spec" --repetitions 119 \
+            --cap-cents 100 >/dev/null 2>"$raise.err"
+        same "the priced pass plans the line with the engine under CARGO_TARGET_DIR, with no --repetitions" "5 yes no" \
+            "$? $(grep -q '^probe plan ' "$scratch/wrap.calls" 2>/dev/null && echo yes || echo no) $(grep -q -- '--repetitions' "$scratch/wrap.calls" 2>/dev/null && echo yes || echo no)"
+        rm -rf "$raise" "$raise.err" "$scratch/wrap-target" "$scratch/wrap.calls"
+        # At the priced count the batch runs: each session is planned at the
+        # tier's 30, so `probe-record.sh` does not refuse it with 11, and the
+        # job list holds 3 x 118 jobs.
+        raise=$scratch/raise-118
+        rm -rf "$raise"
+        rm -f "$scratch/probe-log/stagger.calls"
+        PATH="$scratch/bin:$PATH" sh "$root/tools/probe/campaign.sh" --out "$raise" \
+            --model claude-haiku-4-5 --spec "$scratch/raise.spec" --repetitions 118 \
+            --cap-cents 100 --max-sessions 1 >/dev/null 2>"$raise.err"
+        same "--repetitions 118 on that line runs one session and stops on --max-sessions with 9" "9" "$?"
+        same "and the session records with status 0, not 11" "1" "$(stagger_recorded "$raise")"
+        same "and the job list holds 3 probes x 118 repetitions" "354" "$(wc -l < "$raise/jobs" | tr -d ' ')"
+        same "and the batch records the count asked" "118" "$(cat "$raise/repetitions")"
+        # A resumed invocation that gives no --repetitions keeps the count
+        # the batch recorded, and still plans each session at the tier's 30.
+        PATH="$scratch/bin:$PATH" sh "$root/tools/probe/campaign.sh" --out "$raise" \
+            --model claude-haiku-4-5 --spec "$scratch/raise.spec" \
+            --max-sessions 1 >/dev/null 2>"$raise-resume.err"
+        same "a resumed invocation with no --repetitions runs one more session and exits 9" "9 2" \
+            "$? $(stagger_recorded "$raise")"
+        same "and keeps the recorded count and the job list" "118 354" \
+            "$(cat "$raise/repetitions") $(wc -l < "$raise/jobs" | tr -d ' ')"
+        # A raise on a resumed batch is checked against the price as well.
+        rm -f "$scratch/probe-log/stagger.calls"
+        PATH="$scratch/bin:$PATH" sh "$root/tools/probe/campaign.sh" --out "$raise" \
+            --model claude-haiku-4-5 --spec "$scratch/raise.spec" --repetitions 119 \
+            --max-sessions 1 >/dev/null 2>"$raise-resume.err"
+        same "a resumed invocation that asks 119 refuses with 5 and runs no harness" "5 0" \
+            "$? $(cat "$scratch/probe-log/stagger.calls" 2>/dev/null | wc -l | tr -d ' ')"
+        same "and leaves the recorded count as it was" "118" "$(cat "$raise/repetitions")"
+        rm -rf "$raise" "$raise.err" "$raise-resume.err"
+        # Without --repetitions nothing changes: the line runs the tier's 30.
+        raise=$scratch/raise-none
+        rm -rf "$raise"
+        rm -f "$scratch/probe-log/stagger.calls"
+        PATH="$scratch/bin:$PATH" sh "$root/tools/probe/campaign.sh" --out "$raise" \
+            --model claude-haiku-4-5 --spec "$scratch/raise.spec" \
+            --cap-cents 1 >/dev/null 2>"$raise.err"
+        same "with no --repetitions the line plans at the tier's 30: exit 7, no harness, 3 x 30 jobs" "7 0 90" \
+            "$? $(cat "$scratch/probe-log/stagger.calls" 2>/dev/null | wc -l | tr -d ' ') $(wc -l < "$raise/jobs" | tr -d ' ')"
+        rm -rf "$raise" "$raise.err"
+        # A line not under `pooled:` prices at the tier's declared count, so
+        # it admits no raise.
+        printf 'campaign present sufficiency\n' > "$scratch/raise-flat.spec"
+        raise=$scratch/raise-flat
+        rm -rf "$raise"
+        rm -f "$scratch/probe-log/stagger.calls"
+        PATH="$scratch/bin:$PATH" sh "$root/tools/probe/campaign.sh" --out "$raise" \
+            --model claude-haiku-4-5 --spec "$scratch/raise-flat.spec" --repetitions 118 \
+            --cap-cents 100 >/dev/null 2>"$raise.err"
+        same "--repetitions 118 on a sufficiency line refuses with 5 and builds no tree" "5 0 no" \
+            "$? $(cat "$scratch/probe-log/stagger.calls" 2>/dev/null | wc -l | tr -d ' ') $([ -e "$raise/trees" ] && echo yes || echo no)"
+        present "and it names the tier's count as the price" \
+            "line 1 (campaign present sufficiency): --repetitions 118 is above the 30 the dry run prices for it (the tier's 30)" \
+            "$raise.err"
+        # A spec that mixes the two is held line by line: the discovery line
+        # admits 118 and the sufficiency line does not.
+        printf 'campaign present discovery HW-PROBE-the-authoring-skill-reaches-an-agent-that-is-about-to-write-a-governed-document\ncampaign present sufficiency\n' \
+            > "$scratch/raise-mixed.spec"
+        rm -rf "$raise"
+        PATH="$scratch/bin:$PATH" sh "$root/tools/probe/campaign.sh" --out "$raise" \
+            --model claude-haiku-4-5 --spec "$scratch/raise-mixed.spec" --repetitions 118 \
+            --cap-cents 100 >/dev/null 2>"$raise.err"
+        same "a spec of a discovery line and a sufficiency line at 118 refuses with 5" "5" "$?"
+        present "and names the sufficiency line" "line 2 (campaign present sufficiency): --repetitions 118 is above the 30" "$raise.err"
+        rm -rf "$raise" "$raise.err"
         rm -rf "$stagger"
         rm -f "$scratch/bin/cargo"
         unset CARGO_TARGET_DIR
@@ -3951,6 +4059,51 @@ if [ -x "$engine" ]; then
     PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
         --spec "$scratch/refused.spec" > "$scratch/refused.out" 2> "$scratch/refused.err"
     same "a plan refused for another reason fails the dry run with 5" "5" "$?"
+
+    # Batch B, the six discovery lines, at the 118 the dry run prices them
+    # at (#1659): each line is planned at the tier's 30 and priced at 118.
+    awk 'NF && $1 !~ /^#/ && $3 == "discovery"' "$root/tools/probe/layer-campaign.spec" > "$scratch/batch-b.spec"
+    PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
+        --spec "$scratch/batch-b.spec" --repetitions 118 > "$scratch/batch-b.out" 2> "$scratch/batch-b.err"
+    same "the dry run of the discovery lines at --repetitions 118 exits 0" "0" "$?"
+    present "and prices each line at 118" \
+        "line 1  campaign present discovery: 3 probes x 118 repetitions (asked; the plan is at the tier's 30) = 354 sessions, \$177.00" \
+        "$scratch/batch-b.out"
+    present "and sums the category" "category campaign discovery: 2124 sessions, \$1062.00" "$scratch/batch-b.out"
+    PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
+        --spec "$scratch/batch-b.spec" --repetitions 119 > "$scratch/batch-b-119.out" 2> "$scratch/batch-b-119.err"
+    same "and at 119 it exits 5" "5" "$?"
+    present "and names the line and the price" \
+        "line 1 (campaign present discovery): --repetitions 119 is above the 118 the dry run prices for it (ceil(353 / 3), powered)" \
+        "$scratch/batch-b-119.out"
+    # A raise below the price is priced at the count asked, not at the price
+    # (verify of #1659 slice 1b).
+    PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
+        --spec "$scratch/batch-b.spec" --repetitions 100 > "$scratch/batch-b-100.out" 2> "$scratch/batch-b-100.err"
+    same "the dry run of the discovery lines at --repetitions 100 exits 0" "0" "$?"
+    present "and prices each line at the 100 asked, not the price of 118" \
+        "line 1  campaign present discovery: 3 probes x 100 repetitions (asked; the plan is at the tier's 30) = 300 sessions, \$150.00" \
+        "$scratch/batch-b-100.out"
+    # A count given is the count priced, so a pilot below the tier's count
+    # prices what it runs.
+    PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
+        --spec "$scratch/batch-b.spec" --repetitions 10 > "$scratch/batch-b-10.out" 2> "$scratch/batch-b-10.err"
+    same "the dry run of the discovery lines at --repetitions 10 exits 0" "0" "$?"
+    present "and prices a discovery line at the 10 asked, not the powered 118" \
+        "campaign present discovery: 3 probes x 10 repetitions" "$scratch/batch-b-10.out"
+    # A sufficiency line prices at the tier's 30, so a raise above it refuses.
+    printf 'campaign present sufficiency\n' > "$scratch/flat.spec"
+    PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
+        --spec "$scratch/flat.spec" --repetitions 31 > "$scratch/flat.out" 2> "$scratch/flat.err"
+    same "a dry run of a sufficiency line at --repetitions 31 exits 5" "5" "$?"
+    present "and names the tier's count as the price" \
+        "line 1 (campaign present sufficiency): --repetitions 31 is above the 30 the dry run prices for it (the tier's 30)" \
+        "$scratch/flat.out"
+    # The priced counts the batch driver reads: one line each, and no tree.
+    sh "$root/tools/probe/campaign-dry-run.sh" --priced "$scratch/batch-b.spec" > "$scratch/priced.out" 2> "$scratch/priced.err"
+    same "the priced mode exits 0 and prints the index, the declared and the priced count of each line, and how it priced it" \
+        "0 1 30 118 ceil(353 / 3), powered|6 30 118 ceil(353 / 3), powered|6" \
+        "$? $(sed -n 1p "$scratch/priced.out")|$(sed -n 6p "$scratch/priced.out")|$(wc -l < "$scratch/priced.out" | tr -d ' ')"
     printf 'documentation no-hook sufficiency\n' > "$scratch/arm.spec"
     PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
         --spec "$scratch/arm.spec" > "$scratch/arm.out" 2> "$scratch/arm.err"
