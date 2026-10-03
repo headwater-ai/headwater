@@ -3,7 +3,7 @@ id: HW-DR-0017
 title: Q17 — Governed access and the solution layer
 status: current
 status_since: 2026-08-11
-last_verified: 2026-08-11
+last_verified: 2026-10-03
 summary: The serving boundary is the export step of each publishing corpus. A profile filters for an audience, and Headwater has no principals.
 provenance:
   warrant: accepted
@@ -107,7 +107,7 @@ So the project takes on three things, and they arrive with the first filtered pr
 | Somebody outside the project can report a defect | A stated coordinated-disclosure process |
 | The control never ships in a state where it may be wrong for a while | The [principle 4](../spec/00-vision-and-scope.md#design-principles) exception, recorded in the register |
 
-**The trigger is a published claim, which is more useful than a category.** One vendor's servicing criteria decide whether a report earns a security fix by asking whether it violates a **published** boundary. The same document lists what is deliberately not one. A project does not become security software by writing a filter. It becomes security software by publishing a sentence that says a boundary holds. So [spec 7](../spec/07-distribution-and-federation.md#what-a-filtered-export-claims-and-what-it-does-not) states one claim and five non-claims. The non-claims are the more useful half, because they turn the tombstone channel, the shape leak and the revocation lag into stated limits.
+**The trigger is a published claim, which is more useful than a category.** One vendor's servicing criteria decide whether a report earns a security fix by asking whether it violates a **published** boundary. The same document lists what is deliberately not one. A project does not become security software by writing a filter. It becomes security software by publishing a sentence that says a boundary holds. So [spec 7](../spec/07-distribution-and-federation.md#what-a-filtered-export-claims-and-what-it-does-not) states one claim and six non-claims. The non-claims are the more useful half, because they turn the tombstone channel, the shape leak and the revocation lag into stated limits. Until 2026-10-03 this paragraph gave the count of non-claims as five. The sixth, that no claim about a license reaches any content, came from the warrant ruling of 2026-08-10, which [Q19](0019-inbound-integration-an-external-system-of-record.md) states.
 
 **One hole under the premise, recorded rather than answered.** Enforcement rests on the platform's repository permissions, and commits in a fork network stay reachable across that network by the platform's own account ([HW-EVAL-adjacent-work §O.12](../evaluations/adjacent-work.md#o12-the-platform-permission-that-this-design-leans-on-has-a-documented-hole)). The premise holds for the current tip of a repository that was never forked and never changed visibility. It is qualified otherwise, and no alternative placement is better.
 
