@@ -776,7 +776,11 @@ fn the_quote_scan_fires_on_a_stale_credit_and_on_nothing_else() {
         ),
     ];
     for (shape, source) in passes {
-        assert_eq!(stale(source), Vec::<usize>::new(), "{shape} fires: {source}");
+        assert_eq!(
+            stale(source),
+            Vec::<usize>::new(),
+            "{shape} fires: {source}"
+        );
     }
     // A credit on the second line of a block reports that line.
     assert_eq!(
