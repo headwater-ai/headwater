@@ -12,6 +12,33 @@ The run is not automatic, and nothing in CI performs it. `headwater check` reads
 
 **That a fixture corpus needs assembling is a finding rather than an inconvenience.** A package ships reference corpora, and [spec 7](../../../spec/07-distribution-and-federation.md#upgrading) measures compatibility against them. Nothing declares where such a corpus sits or how a run reaches one. The [doctrine](../doctrine.md#findings) does not carry this, because it is a fact about every entry rather than about this one.
 
+### The Beacon root
+
+| Copy | To |
+|---|---|
+| `.headwater/packages/` | `.headwater/packages/` |
+| `docs/taxonomies/decision-record/fixtures/corpus/docs/` | `docs/` |
+
+`.headwater/taxonomy.yml`:
+
+```yaml
+taxonomy:
+  package: headwater/standard
+  version: {version}
+  digest: {digest}
+  bundles: [design-spec, decision-record]
+  overlay: .headwater/overlay.yml
+
+corpus:
+  root: docs
+```
+
+`.headwater/overlay.yml`:
+
+```yaml
+add: {}
+```
+
 ## What each document exercises
 
 | Document | Kind | What it is here for |
@@ -42,6 +69,16 @@ That third finding is the [first doctrine finding](../doctrine.md#findings) arri
 **4. The two `current` decisions joined by `conflicts_with` are reported, once in each file.** `relation.pair.invalid`, warning, with no fix. `HW-DR-0002` and `HW-DR-0006` contradict each other, both are `current`, and both declare the edge. The base declares `conflicts_with` with `invalid_when: {both: {status: current}}`, and [spec 2](../../../spec/02-taxonomy-model.md#the-decision-relation-vocabulary) lists that state first among the four checks that the decision-relation vocabulary brings. Until [#1491](https://github.com/headwater-ai/headwater/issues/1491), no rule read the declaration, and this pair passed in silence. That is why the conflict is here rather than in the planted list. The rule reads the condition as the taxonomy declares it, so each author learns of the conflict in the file that declares it. The fix supersedes one side, and only a person can choose the side. An `overrides` edge does not clear the finding, because the overridden decision stays `current`. The [doctrine](../doctrine.md#findings) carried the finding.
 
 The count above predates this rule. The engine of 2026-10-01 reads the fixture differently in other ways too. The same assembly now needs `evidence-and-obligation` in `bundles:` and a namespace for `decision_id` and `obligation_record_id` in the overlay. Over that root, `--now 2026-08-13` reports 10 seen, 10 checked, 199 check instances and 17 findings. Two of the 17 are the pair above: 2 instances of `relation.pair.invalid`, and 2 findings.
+
+### The findings a run reports
+
+| Rule | Document | Planted |
+|---|---|---|
+| `section.required.missing` | `docs/obligations/0003-integration-guide-states-the-old-guarantee.md` | yes |
+| `relation.reciprocity.missing` | `docs/evaluations/retry-ceiling-measurement.md` | yes |
+| `relation.pair.invalid` | `docs/decisions/0002-store-attempts-in-postgres.md` | yes |
+| `relation.pair.invalid` | `docs/decisions/0006-hold-attempt-state-in-redis.md` | yes |
+| `voice.forbidden_construction` | `docs/decisions/0004-deliver-exactly-once-per-destination.md` | no |
 
 ## What a run does not report, and should
 
