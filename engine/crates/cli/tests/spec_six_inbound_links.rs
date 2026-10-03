@@ -193,28 +193,41 @@ fn spec_six_names(sentence: &str) -> Vec<usize> {
         }
         from = after;
     }
-    // The plain words, with a space after them, so that a link's text
-    // ("[Spec 6]") is read once, as the link.
+    // The plain words, with a space or a comma after them, so that a link's
+    // text ("[Spec 6]") is read once, as the link.
     let lower = sentence.to_lowercase();
     let mut from = 0;
-    while let Some(at) = lower[from..].find("spec 6 ") {
-        ends.push(from + at + "spec 6".len());
-        from += at + "spec 6 ".len();
+    while let Some(at) = lower[from..].find("spec 6") {
+        let end = from + at + "spec 6".len();
+        if matches!(lower.as_bytes().get(end), Some(b' ' | b',')) {
+            ends.push(end);
+        }
+        from = end;
     }
     ends
 }
 
 /// True when `sentence` names spec 6 and the first word after the name, past
-/// at most one adverb, is a present-tense credit verb.
+/// at most one relative pronoun ("spec 6, which says") and then at most one
+/// adverb, is a present-tense credit verb.
 fn credits_spec_six(sentence: &str) -> bool {
     spec_six_names(sentence).into_iter().any(|end| {
-        let mut words = sentence[end..].split_whitespace().map(|w| {
-            w.trim_matches(|c: char| !c.is_alphanumeric())
-                .to_lowercase()
-        });
+        let mut words = sentence[end..]
+            .split_whitespace()
+            .map(|w| {
+                w.trim_matches(|c: char| !c.is_alphanumeric())
+                    .to_lowercase()
+            })
+            .filter(|w| !w.is_empty());
         let Some(mut word) = words.next() else {
             return false;
         };
+        if word == "which" {
+            let Some(next) = words.next() else {
+                return false;
+            };
+            word = next;
+        }
         if ADVERBS.contains(&word.as_str()) {
             let Some(next) = words.next() else {
                 return false;
