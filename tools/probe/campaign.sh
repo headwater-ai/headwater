@@ -316,9 +316,19 @@ run_job() {
     # returned without releasing it, halts the invocation rather than wait
     # forever or break the lock: nothing has started under it, so nothing is
     # spent, and the next invocation clears `<out>/slice` with the lock.
+    # `HEADWATER_CAMPAIGN_HOLDER_DELAY` is a fixture seam between the read
+    # of the holder and the test of it.
     until ( set -C; printf '%s\n' "$$" > "$out/slice/lock" ) 2>/dev/null; do
         holder=$(cat "$out/slice/lock" 2>/dev/null)
-        if [ -n "$holder" ] && ! kill -0 "$holder" 2>/dev/null; then
+        if [ -n "${HEADWATER_CAMPAIGN_HOLDER_DELAY:-}" ]; then
+            sleep "$HEADWATER_CAMPAIGN_HOLDER_DELAY"
+        fi
+        # A holder can release the lock and exit between the read of its
+        # pid and the test of it. The holder is then gone and so is its
+        # lock, so the waiter halts only when the lock still names the
+        # process that is gone.
+        if [ -n "$holder" ] && ! kill -0 "$holder" 2>/dev/null &&
+            [ "$(cat "$out/slice/lock" 2>/dev/null)" = "$holder" ]; then
             : > "$out/slice/halt"
             echo "campaign: $name: the worker $holder holds the batch lock and is gone, so this invocation starts no other job (halt). Run the same command again." >&2
             return 0

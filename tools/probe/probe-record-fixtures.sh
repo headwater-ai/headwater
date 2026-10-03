@@ -3190,6 +3190,30 @@ STUB
             "$([ -f "$stagger/slice/halt" ] && echo yes || echo no) $(cat "$scratch/probe-log/stagger.calls" 2>/dev/null | wc -l | tr -d ' ')"
         present "and says which worker holds it" "the worker $gone holds the batch lock and is gone" "$scratch/budget-gone.err"
 
+        # A holder can release the lock and exit between the waiter's read
+        # of its pid and the waiter's test of it (verify 2 of #1659). That
+        # holder is gone and the lock with it, so the waiter takes the lock
+        # and does not halt. The seam holds the waiter between the read and
+        # the test while the lock goes.
+        stagger_batch "$stagger"
+        rm -f "$scratch/probe-log/stagger.calls"
+        mkdir -p "$stagger/slice/started" "$stagger/slice/refused"
+        printf '%s\n' "$gone" > "$stagger/slice/lock"
+        printf '\n' > "$stagger/model"
+        : > "$stagger/repetitions"
+        : > "$stagger/max-turns"
+        printf '205200\n' > "$stagger/ceiling.campaign"
+        printf '50\n' > "$stagger/unit.campaign"
+        HEADWATER_CAMPAIGN_HOLDER_DELAY=2 PATH="$scratch/bin:$PATH" timeout 60 sh "$root/tools/probe/campaign.sh" --out "$stagger" \
+            --job "L1-campaign-present-p1-r1 1 campaign present sufficiency HW-PROBE-$tombstone" \
+            >/dev/null 2>"$scratch/budget-released.err" &
+        waiter=$!
+        sleep 1
+        rm -f "$stagger/slice/lock"
+        wait "$waiter"
+        same "a waiter whose holder released the lock before it exited does not halt" "no 1" \
+            "$([ -f "$stagger/slice/halt" ] && echo yes || echo no) $(cat "$scratch/probe-log/stagger.calls" 2>/dev/null | wc -l | tr -d ' ')"
+
         # A worker that finds no token left releases the lock. A slice of 1
         # over 3 jobs: the second job takes no token, and the third must
         # find the lock free, so the invocation exits 9 with no halt.
