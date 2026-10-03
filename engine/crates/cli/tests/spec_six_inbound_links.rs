@@ -154,7 +154,10 @@ fn no_governing_document_links_a_pointer_only_section_of_spec_6() {
             hits.push(format!("{rel}:{line} #{anchor}"));
         }
     }
-    assert!(walked > 100, "the walk read {walked} files; it found no corpus");
+    assert!(
+        walked > 100,
+        "the walk read {walked} files; it found no corpus"
+    );
     assert!(
         hits.is_empty(),
         "{} governing link(s) credit a pointer-only section of spec 6; repoint each to the home the section names (HW-DR-0106):\n{}",
@@ -176,11 +179,15 @@ fn every_allowed_link_is_still_in_its_document() {
 
 #[test]
 fn the_walk_skips_a_record_of_a_moment_and_flags_a_governing_document() {
-    let line = "See [spec 6](../spec/06-engine-architecture.md#an-export-profile-carries-a-filter).\n";
+    let line =
+        "See [spec 6](../spec/06-engine-architecture.md#an-export-profile-carries-a-filter).\n";
 
     // A governing document with a pointer-only link is flagged.
     let hit = offending("docs/decisions/0500-a-decision.md", line);
-    assert_eq!(hit, vec![(1, "an-export-profile-carries-a-filter".to_owned())]);
+    assert_eq!(
+        hit,
+        vec![(1, "an-export-profile-carries-a-filter".to_owned())]
+    );
 
     // The same line in a record of a moment is not.
     for prefix in RECORDS_OF_A_MOMENT {
@@ -192,7 +199,10 @@ fn the_walk_skips_a_record_of_a_moment_and_flags_a_governing_document() {
     let superseded = format!("---\nid: HW-DR-0500\nstatus: superseded\n---\n\n{line}");
     assert!(offending("docs/decisions/0500-a-decision.md", &superseded).is_empty());
     let current = format!("---\nid: HW-DR-0500\nstatus: current\n---\n\n{line}");
-    assert_eq!(offending("docs/decisions/0500-a-decision.md", &current).len(), 1);
+    assert_eq!(
+        offending("docs/decisions/0500-a-decision.md", &current).len(),
+        1
+    );
 
     // A link to a section that still states its rule is not.
     let pipeline = "See [spec 6](../spec/06-engine-architecture.md#pipeline).\n";
@@ -208,6 +218,7 @@ fn the_walk_skips_a_record_of_a_moment_and_flags_a_governing_document() {
     assert_eq!(offending("docs/interfaces/headwater-mcp.md", mcp).len(), 1);
 
     // Two links on one line are two hits.
-    let two = "[a](06-engine-architecture.md#checks) and [b](06-engine-architecture.md#mcp-server)\n";
+    let two =
+        "[a](06-engine-architecture.md#checks) and [b](06-engine-architecture.md#mcp-server)\n";
     assert_eq!(offending("docs/spec/04-assurance-model.md", two).len(), 2);
 }
