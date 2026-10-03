@@ -2650,21 +2650,41 @@ STUB
         PATH="$scratch/bin:$PATH" sh "$root/tools/probe/campaign.sh" --out "$leak" \
             --job "L1-campaign-present-p1-r2 1 campaign present sufficiency HW-PROBE-$tombstone" \
             >/dev/null 2>"$scratch/leak-b.err"
-        same "a session whose stream does not parse records" "0" \
+        # The transform refuses a stream that does not parse, so the session
+        # spent and did not record. Nobody counted what it named.
+        same "a session whose stream does not parse does not record" "4" \
             "$(cat "$leak/sessions/L1-campaign-present-p1-r2/status" 2>/dev/null)"
-        present "and its record says its web-tool calls were not counted" \
+        present "and what it wrote says its web-tool calls were not counted" \
             "The calls this session made to a web tool were not counted" \
             "$leak/sessions/L1-campaign-present-p1-r2/record.md"
         sh "$root/tools/probe/campaign.sh" --out "$leak" --assemble >/dev/null 2>"$scratch/leak-assemble.err"
-        same "assembly of the two sessions exits 0, because the count is a report and not a gate" "0" "$?"
+        same "assembly exits 7 for the session that did not record, as before" "7" "$?"
         same "and the line's summary states the host path, the uncounted session and the web-tool call" \
-            "2 sessions, 2 cents, the intent hook live in 0, 0 stopped at the turn cap, 1 paths outside the workspace named, 1 sessions uncounted, 1 web-tool calls" \
+            "1 sessions, 1 cents, the intent hook live in 0, 0 stopped at the turn cap, 1 paths outside the workspace named, 1 sessions uncounted, 1 web-tool calls" \
             "$(cat "$leak/assembled/L1-campaign-present-sufficiency.summary" 2>/dev/null)"
         present "and the batch line states them over the whole batch" \
             "campaign: the batch named 1 paths outside the workspace over 2 sessions, 1 sessions uncounted, 1 web-tool calls" \
             "$scratch/leak-assemble.err"
         absent "and the uncounted session is never reported as a batch of 0" \
             "named 0 paths" "$scratch/leak-assemble.err"
+
+        # A recorded session whose record states neither count is uncounted
+        # too, never 0: the record of a stream that `jq -s` could not read,
+        # or one written before the sentences existed. The session that did
+        # not record is drawn again, as a resumed batch does, and passes.
+        rm -rf "$leak/sessions/L1-campaign-present-p1-r2"
+        cp -a "$leak/sessions/L1-campaign-present-p1-r1" "$leak/sessions/L1-campaign-present-p1-r3"
+        sed -e 's/^The session named .* outside its workspace .*$/The paths outside its workspace this session named were not counted, because its stream did not parse as JSON./' \
+            -e '/^The session made .* to a web tool\.$/d' \
+            "$leak/sessions/L1-campaign-present-p1-r1/record.md" > "$leak/sessions/L1-campaign-present-p1-r3/record.md"
+        sh "$root/tools/probe/campaign.sh" --out "$leak" --assemble >/dev/null 2>"$scratch/leak-assemble3.err"
+        same "assembly of two recorded sessions exits 0, because a count is a report and not a gate" "0" "$?"
+        same "and a record that states no count is uncounted, never 0" \
+            "2 sessions, 2 cents, the intent hook live in 0, 0 stopped at the turn cap, 1 paths outside the workspace named, 1 sessions uncounted, 1 web-tool calls" \
+            "$(cat "$leak/assembled/L1-campaign-present-sufficiency.summary" 2>/dev/null)"
+        present "and the batch line says so" \
+            "campaign: the batch named 1 paths outside the workspace over 2 sessions, 1 sessions uncounted, 1 web-tool calls" \
+            "$scratch/leak-assemble3.err"
     else
         printf 'note not a checkout of this repository, so the campaign job case did not run.\n'
     fi
