@@ -1956,7 +1956,7 @@ STUB
         present "and says the proxy allowed the provider's host" \
             "allowed 1 connection to \`api.anthropic.com:443\`" "$scratch/no-network.md"
         present "and names the request for a server-side web tool the proxy refused" \
-            "It refused 1 request for \`web_search_20250305\` of that kind, and no request whose body, method or path it does not forward." \
+            "It refused 1 request for \`web_search_20250305\` of that kind, and no request whose head, body, method or path it does not forward." \
             "$scratch/no-network.md"
         absent "and no longer says the channel through the provider API is open" "One channel stays open" "$scratch/no-network.md"
         absent "and the transcript claims nothing is reachable from the session" "reachable" "$scratch/no-network.md"

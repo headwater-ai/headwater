@@ -818,7 +818,7 @@ egress_read() {
         | awk '{ printf "%s%d %s for `%s`", (NR > 1 ? ", " : ""), $1, ($1 == 1 ? "request" : "requests"), $2 }'
 }
 egress_tools=$(egress_read refused-tool)
-egress_unread=$(egress_read 'refused-\(body\|path\)')
+egress_unread=$(egress_read 'refused-\(body\|path\|head\)')
 egress_named=$(printf '%s\n' "$egress_hosts" | awk 'NF { n++; h[n] = "`" $1 "`" }
     END { for (i = 1; i <= n; i++) printf "%s%s", (i == 1 ? "" : (i == n ? " and " : ", ")), h[i] }')
 rm -rf "$egress"
@@ -977,7 +977,7 @@ printf 'The session ran under the configuration directory `%s`, which held a cop
     "$config" "$permission_mode" "$allowed_tools"
 printf 'The session ran with no network of its own. Its one route out was a proxy outside it that opens no tunnel, and that forwards to %s on port 443 a request to the provider API only after it reads the request whole, so a direct connection to any other host, such as `gh api`, `curl` or `git clone` to GitHub, was refused. The proxy allowed %s, and refused %s.\n\n' \
     "$egress_named" "${egress_allowed:-no connection}" "${egress_refused:-no connection}"
-printf 'The proxy refused a request to the provider API that asked the provider to fetch from another host for the session, with its web search, its web fetch, its MCP connector or a URL in the content. It refused %s of that kind, and %s whose body, method or path it does not forward.\n\n' \
+printf 'The proxy refused a request to the provider API that asked the provider to fetch from another host for the session, with its web search, its web fetch, its MCP connector or a URL in the content. It refused %s of that kind, and %s whose head, body, method or path it does not forward.\n\n' \
     "${egress_tools:-no request}" "${egress_unread:-no request}"
 
 # The paths outside the workspace the session named (#1467, clause 2). A

@@ -107,13 +107,15 @@ The one route out is `tools/probe/egress-proxy.py`. The driver starts it on the 
 The proxy opens no tunnel. It refuses each `CONNECT`, to any host, because the proxy cannot read the contents of a tunnel. It sends a request to one host only, the provider API at `api.anthropic.com` on port 443. Before it connects, it reads the full request, and it refuses the request when one of these conditions is true:
 
 - The request names a host or a port other than the forwarder of the session.
+- The head of the request holds a control character other than a tab or the `\r\n` at the end of a line. Such a character can add a line to the head that the proxy sends to the API.
 - The method is not `POST`, or the path is not `/v1/messages` or `/v1/messages/count_tokens`.
-- The proxy cannot read the body. The body has a `Transfer-Encoding` or a `Content-Encoding`, or it has no single `Content-Length`. Or the body is larger than 32 MiB, or it is not a JSON object.
+- The proxy cannot read the body. The body has a `Transfer-Encoding` or a `Content-Encoding`, or it has no single `Content-Length` in ASCII digits. Or the body is larger than 32 MiB, or it is not a JSON object.
+- An object of the body names a key two times. The proxy reads the last value, and a parser at the API can read the first value.
 - An entry of `tools` has a `type` that starts with `web_search_`, `web_fetch_` or `mcp_`.
 - The body has an `mcp_servers` key.
 - An object at any depth of the body has a `source` with the type `url`.
 
-With the last three conditions, a request asks the provider to get data from another host for the session. These are its web search, its web fetch, its MCP connector, and a document or an image at a URL. Each refusal gets a 403 status and one log line that names the refused item. The proxy forwards every other request over TLS with a verifying context. The host, the paths and the rules are in the source of the proxy, and no variable or argument changes them. A switch that changes them would open the channel again.
+With the last three conditions, a request asks the provider to get data from another host for the session. These are its web search, its web fetch, its MCP connector, and a document or an image at a URL. Each refusal gets a 403 status and one log line that names the refused item. The proxy forwards every other request over TLS, and it verifies the certificate and the host name of the API. The host, the paths and the rules are in the source of the proxy, and no variable or argument changes them. A switch that changes them would open the channel again.
 
 The rule refuses named tool types and does not permit only a list of known types. The harness `claude` 2.1.288 names some server tools of its own, for example `tool_search_tool_regex` and `advisor_20260301`. A campaign session can send these tools, and one measured session is not sufficient evidence for a closed list of types.
 

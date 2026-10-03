@@ -26,9 +26,14 @@ verifying context, to the host of ALLOWED, when all of these hold:
 - the target is a path, or an `http` URL whose host is `127.0.0.1` or
   `localhost` on FORWARDER_PORT, the forwarder the base URL names; the
   driver's `egress_port` is the same number
+- the head holds no control character but the `\\r\\n` that ends each line
+  and a tab, so no line of the session's choice reaches the forwarded head
 - the method is `POST` and the path, less its query, is one of API_PATHS
-- the body has a `Content-Length` of at most BODY_LIMIT, no
+- the body has one `Content-Length` in ASCII digits of at most BODY_LIMIT, no
   `Transfer-Encoding`, no `Content-Encoding`, and parses as a JSON object
+  that names no key twice in any object, because a parser upstream that
+  keeps the first value would read one the proxy did not inspect
+- the forward verifies the API's certificate and host name
 - no entry of its `tools` has a `type` that starts with one of
   REFUSED_TOOL_PREFIXES, the body has no `mcp_servers` key, and no object
   anywhere in it has a `source` whose `type` is `url`
@@ -43,6 +48,7 @@ line to LOG for each decision, before it opens any connection upstream:
     refused-tool web_search_20250305 api.anthropic.com:443
     refused-path /v1/files api.anthropic.com:443
     refused-body chunked api.anthropic.com:443
+    refused-head control-character api.anthropic.com:443
 
 It exits when the process that started it exits, so a driver killed by a
 signal leaves no proxy behind.
@@ -90,6 +96,8 @@ HEAD_LIMIT = 65536
 BODY_LIMIT = 32 * 1024 * 1024
 HOST_SHAPE = re.compile(r"^[A-Za-z0-9.\-]+$|^\[[0-9A-Fa-f:.]+\]$")
 WORD_SHAPE = re.compile(r"^[A-Za-z0-9_./\-]{1,128}$")
+ASCII_DIGITS = re.compile(r"^[0-9]{1,20}$")
+CONTROL = re.compile(r"[\x00-\x08\x0a-\x1f\x7f]")
 FORBIDDEN = b"HTTP/1.1 403 Forbidden\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
 DROPPED_HEADERS = ("host", "connection", "keep-alive", "expect", "upgrade", "te", "trailer")
 
@@ -250,6 +258,26 @@ def reaches_out(body):
     return None
 
 
+class DuplicateKey(Exception):
+    pass
+
+
+def unique_keys(pairs):
+    """Build a JSON object, and refuse one that names a key twice.
+
+    Here the last value of a key wins. A parser upstream that keeps the first
+    would read a value the proxy never inspected."""
+    names = [name for name, _ in pairs]
+    if len(set(names)) != len(names):
+        raise DuplicateKey()
+    return dict(pairs)
+
+
+def tls_context():
+    """The context of the forward: it verifies the API's certificate and name."""
+    return ssl.create_default_context()
+
+
 def read_body(conn, pairs, rest):
     """Read a request body the proxy can inspect. Return it, or the reason it cannot."""
     if header(pairs, "transfer-encoding"):
@@ -257,7 +285,7 @@ def read_body(conn, pairs, rest):
     if [v for v in header(pairs, "content-encoding") if v.lower() != "identity"]:
         return None, "compressed"
     lengths = header(pairs, "content-length")
-    if len(set(lengths)) != 1 or not lengths[0].isdigit():
+    if len(set(lengths)) != 1 or not ASCII_DIGITS.match(lengths[0]):
         return None, "no-length"
     length = int(lengths[0])
     if length > BODY_LIMIT:
@@ -271,7 +299,9 @@ def read_body(conn, pairs, rest):
     if len(data) != length:
         return None, "too-long"
     try:
-        body = json.loads(data.decode("utf-8"))
+        body = json.loads(data.decode("utf-8"), object_pairs_hook=unique_keys)
+    except DuplicateKey:
+        return None, "duplicate-key"
     except (ValueError, RecursionError):
         return None, "not-json"
     if not isinstance(body, dict):
@@ -285,6 +315,10 @@ def forward_api(conn, log, head, rest):
     path = forwarded_path(head)
     if path is None:
         return False
+    if CONTROL.search(head.replace("\r\n", "")):
+        log.write("refused-head", api, ALLOWED_PORT, "control-character")
+        conn.sendall(FORBIDDEN)
+        return True
     method = head.split(" ", 1)[0]
     if method != "POST":
         log.write("refused-path", api, ALLOWED_PORT, method)
@@ -308,7 +342,7 @@ def forward_api(conn, log, head, rest):
     log.write("allowed", api, ALLOWED_PORT)
     try:
         raw = socket.create_connection((api, ALLOWED_PORT), timeout=15)
-        upstream = ssl.create_default_context().wrap_socket(raw, server_hostname=api)
+        upstream = tls_context().wrap_socket(raw, server_hostname=api)
     except OSError:
         conn.sendall(b"HTTP/1.1 502 Bad Gateway\r\nContent-Length: 0\r\nConnection: close\r\n\r\n")
         return True
