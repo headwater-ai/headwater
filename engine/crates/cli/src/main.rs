@@ -5607,7 +5607,10 @@ fn probe_delta(
 /// ([spec 5](../../../../docs/spec/05-ai-integration.md#three-tiers-and-the-cadence-follows-the-purpose)),
 /// so a run where every expectation was refuted exits 0 exactly as a run where
 /// every one was satisfied does. A caller that wants the rate reads the text,
-/// which is what a person does.
+/// which is what a person does. The first line of that text tells a grade from
+/// a refusal, and the `Exit status` section of
+/// [the interface page](../../../../docs/interfaces/headwater-probe.md) names
+/// its three prefixes.
 ///
 /// It reads the budget declaration for the same reason `plan` does: the
 /// selection a transcript is graded against is the selection the plan composed,

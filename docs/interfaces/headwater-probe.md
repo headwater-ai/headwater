@@ -3,7 +3,7 @@ id: HW-IFACE-headwater-probe
 status: current
 status_since: 2026-09-06
 summary: "How plan, record, grade and stale compose probe measurements without gating a build."
-last_verified: 2026-08-25
+last_verified: 2026-10-03
 title: "headwater probe"
 relations:
   governs:
@@ -68,6 +68,14 @@ Global `--root` selects the repository. `--help`, `--version`, `--wide` and `--n
 ## Exit status
 
 **0** when a subcommand completes, including when a probe refuses a run or a transcript contains findings. An arm, tier or category that a declaration or the corpus does not carry refuses the run at this status. Probe results never gate.
+
+`grade` also exits 0 when the intake refuses a transcript whole, for example a transcript with no `Run identity` block. That refusal is a probe result, and [spec 12](../spec/12-check-layer.md#four-things-stop-a-sweep-from-gating-and-none-of-them-is-a-rule-that-somebody-keeps) says why a probe result never gates. `grade` prints the refusal on standard output, not on standard error. A script tells the three results of `grade` apart by the start of the first line of standard output:
+
+- `Graded by grader ` when the grader read the transcript.
+- `This transcript reached no grader: ` when the intake refused the transcript, for any of its reasons.
+- `Nothing was graded. ` when the plan refuses the corpus, so that `grade` did not read the transcript.
+
+The first line carries no color escape, also under a terminal.
 
 **1** when the command line is invalid, or a required file cannot be read. A tier, arm or category name outside this engine's closed set makes the command line invalid. It is also 1 when the budget declaration is malformed or the corpus cannot load. Under `--delta`, an arm that the tier does not run is also 1, because a script builds a tree from the output. Under `--instrument`, `--folds` or `--answer-keys`, a malformed or unsafe declaration is 1, and nothing is printed on standard output. The message names the refusal.
 
