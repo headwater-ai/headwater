@@ -3008,7 +3008,7 @@ cents=90
 [ -n "\$budget" ] && cents=\$(awk -v b="\$budget" 'BEGIN { c = int(b * 100 + 0.5); print (c < 90 ? c : 90) }')
 usd=\$(awk -v c="\$cents" 'BEGIN { printf "%.2f", c / 100 }')
 if [ "\$cents" -lt 90 ]; then
-    printf '{"type":"result","subtype":"error_max_budget_usd","is_error":true,"total_cost_usd":%s,"modelUsage":{"claude-haiku-4-5-20251001":{"inputTokens":10}}}\n' "\$usd"
+    printf '{"type":"result","subtype":"error_max_budget_usd","is_error":true,"result":"withheld","total_cost_usd":%s,"modelUsage":{"claude-haiku-4-5-20251001":{"inputTokens":10}}}\n' "\$usd"
     exit 1
 fi
 printf '{"type":"result","subtype":"success","is_error":false,"result":"done","total_cost_usd":%s,"modelUsage":{"claude-haiku-4-5-20251001":{"inputTokens":10}}}\n' "\$usd"
@@ -3062,6 +3062,10 @@ STUB
             "0 stopped at the turn cap, 2 stopped at the session budget" "$scratch/budget-assemble.err"
         present "and the transcript says the session stopped at its budget" \
             "The session stopped at its budget of \$0.60." "$(ls "$stagger"/sessions/*/record.md | head -1)"
+        # The stub's budget line carries the probe's answer as its `result`,
+        # and a session that did not finish states none.
+        present "and it records no answer, because the session did not finish" \
+            "  answer: null" "$(ls "$stagger"/sessions/*/record.md | head -1)"
 
         # The cap's edge, in three directions. A session starts when it fits
         # exactly, and not one cent past.
