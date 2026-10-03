@@ -93,6 +93,7 @@ Case group 8 fails when the run reports one of these rules on any document of th
 | Rule | Why no document reports it |
 |---|---|
 | `identifier.claim.missing` | The runner claims each identifier that the tree declares |
+| `identifier.claim.stale` | Each claim names the document that declares it |
 | `facet.required.missing` | Each document carries every facet that its kind requires |
 | `relation.participation.overdue` | Item 3 above: no expectation reaches the evaluation |
 

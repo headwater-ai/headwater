@@ -2154,7 +2154,7 @@ jobs:
         # rule its second table names must be reported on no document. So a
         # release of the vendored package that breaks the recipe turns this
         # step red. Measured on 2026-10-03: removing `evidence-and-obligation`
-        # from the README recipe moves the suite from 61 passed and 0 failed
+        # from the README recipe moves the suite from 62 passed and 0 failed
         # to 48 and 1.
         #
         # It runs the engine this job built, `awk`, `sed`, `cmp` and
