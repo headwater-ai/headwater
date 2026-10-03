@@ -116,6 +116,13 @@ const MOVED_CREDITS: &[(&str, &str, &str)] = &[
         "docs/spec/07-distribution-and-federation.md",
         "a placeholder sits where each withheld node or edge would have been",
     ),
+    // What a tombstone gives a reader: the rule identifier, and under
+    // `counted` the digests that HW-DR-0100 added.
+    (
+        "all that a reader gets",
+        "docs/spec/07-distribution-and-federation.md",
+        "the rule identifier is what a reader needs to ask for access, and it is all that they get",
+    ),
     // The generated-file marker and the closed identity block.
     (
         "when it was generated",
@@ -449,6 +456,31 @@ fn a_present_tense_credit_to_a_moved_rule_is_flagged_and_history_is_not() {
     // A present-tense credit to another part is not a credit to spec 6.
     let other = "[Spec 5](../spec/05-ai-integration.md) puts the probe budget outside it.\n";
     assert!(moved_credits(decision, other).is_empty());
+
+    // A relative clause may stand between the name and the verb, after the
+    // plain words and after a link (HW-DR-0100 wrote "spec 6, which says").
+    let which = "It amends one sentence of spec 6, which says that the rule identifier is all that a reader gets.\n";
+    assert_eq!(
+        moved_credits(decision, which),
+        vec![(1, "all that a reader gets")]
+    );
+    let still = "It is the placeholder of spec 6, which still states it.\n";
+    assert_eq!(moved_credits(decision, still), vec![(1, "placeholder")]);
+    let linked = "It amends [spec 6](../spec/06-engine-architecture.md#cli), which says what a placeholder is.\n";
+    assert_eq!(moved_credits(decision, linked), vec![(1, "placeholder")]);
+
+    // A relative clause that credits nothing is not a credit, and neither is a
+    // past-tense one.
+    let split = "The placeholder rule left spec 6, which was split in HW-DR-0106.\n";
+    assert!(moved_credits(decision, split).is_empty());
+    let which_said = "It amends spec 6, which said that a placeholder sits there.\n";
+    assert!(moved_credits(decision, which_said).is_empty());
+
+    // The same relative clause in a record of a moment is not flagged.
+    for prefix in RECORDS_OF_A_MOMENT {
+        let rel = format!("{prefix}x.md");
+        assert!(moved_credits(&rel, which).is_empty(), "{rel} was flagged");
+    }
 }
 
 #[test]
