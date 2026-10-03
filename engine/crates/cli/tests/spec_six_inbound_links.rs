@@ -14,7 +14,9 @@
 //! anchor or as the plain words, and puts a verb of `CREDIT_VERBS` after the
 //! name, past at most two `RELATIVES`, two `ADVERBS` and, after a possessive,
 //! the owned noun, credits that part with what follows. So does a sentence
-//! that opens its claim with "according to" and the name. When that sentence or
+//! that opens its claim with "according to" and the name. A verb that one of
+//! `NEGATORS` follows is not a credit, because the sentence then says what
+//! that part does not hold. When that sentence or
 //! the next one holds a term of `MOVED_CREDITS`, the credit is to a rule that
 //! moved, and the sentence is repointed and its claim is corrected in place
 //! (HW-DR-0106). A past-tense verb (said, stated) is history and is not read.
@@ -192,6 +194,12 @@ const ADVERBS: &[&str] = &["then", "also", "still", "now", "already", "only"];
 /// a name followed by `which`, `that` or `where it`.
 const RELATIVES: &[&str] = &["which", "that", "where", "it"];
 
+/// The words that, right after the verb, make the sentence say what spec 6
+/// does not hold, which is true of a moved rule and so is not a credit.
+const NEGATORS: &[&str] = &[
+    "no", "nothing", "none", "neither", "nowhere", "not", "never",
+];
+
 /// After a possessive name, the most words of the owned noun that may stand
 /// before the verb (a section, a table, a rule).
 const POSSESSED: usize = 3;
@@ -248,7 +256,8 @@ fn spec_six_names(sentence: &str) -> Vec<usize> {
 /// first word after the name is a credit verb. Between the name and the verb
 /// there may stand up to two words of `RELATIVES`, and then up to two words
 /// of `ADVERBS`. After a possessive name, up to `POSSESSED` words of the noun
-/// it owns may stand before them.
+/// it owns may stand before them. A verb is not a credit when a word of
+/// `NEGATORS` follows it at once or is the last word of its clause.
 fn credits_spec_six(sentence: &str) -> bool {
     let lower = sentence.to_lowercase();
     if lower.contains("according to spec 6") || lower.contains("according to [spec 6]") {
@@ -257,38 +266,70 @@ fn credits_spec_six(sentence: &str) -> bool {
     spec_six_names(sentence).into_iter().any(|end| {
         let rest = &sentence[end..];
         let possessive = rest.starts_with("'s ") || rest.starts_with("\u{2019}s ");
-        let words: Vec<String> = rest
-            .split_whitespace()
-            .skip(usize::from(possessive))
-            .map(|w| {
-                w.trim_matches(|c: char| !c.is_alphanumeric())
-                    .to_lowercase()
-            })
-            .filter(|w| !w.is_empty())
-            .collect();
+        let words = clause_words(rest, usize::from(possessive));
         let owned = if possessive { POSSESSED } else { 0 };
         (0..=owned).any(|skip| verb_follows(&words[skip.min(words.len())..]))
     })
 }
 
+/// A word of a sentence, lower case and with its punctuation trimmed, and
+/// whether a comma, a semicolon or a colon closes its clause.
+struct Word {
+    text: String,
+    ends_clause: bool,
+}
+
+/// The words of `rest` after the first `skip` tokens. A token that is only
+/// punctuation is dropped, and a comma in it closes the clause of the word
+/// before it.
+fn clause_words(rest: &str, skip: usize) -> Vec<Word> {
+    let mut words: Vec<Word> = Vec::new();
+    for raw in rest.split_whitespace().skip(skip) {
+        let ends_clause = raw.ends_with([',', ';', ':']);
+        let text = raw
+            .trim_matches(|c: char| !c.is_alphanumeric())
+            .to_lowercase();
+        if text.is_empty() {
+            if let Some(last) = words.last_mut() {
+                last.ends_clause |= ends_clause;
+            }
+            continue;
+        }
+        words.push(Word { text, ends_clause });
+    }
+    words
+}
+
 /// True when `words`, past up to two `RELATIVES` and then up to two
-/// `ADVERBS`, open with a credit verb.
-fn verb_follows(words: &[String]) -> bool {
-    let mut at = 0;
-    while at < 2
-        && words
+/// `ADVERBS`, open with a credit verb that no word of `NEGATORS` follows
+/// at once or closes the clause of.
+fn verb_follows(words: &[Word]) -> bool {
+    let is = |at: usize, set: &[&str]| {
+        words
             .get(at)
-            .is_some_and(|w| RELATIVES.contains(&w.as_str()))
-    {
+            .is_some_and(|w| set.contains(&w.text.as_str()))
+    };
+    let mut at = 0;
+    while at < 2 && is(at, RELATIVES) {
         at += 1;
     }
     let relatives = at;
-    while at < relatives + 2 && words.get(at).is_some_and(|w| ADVERBS.contains(&w.as_str())) {
+    while at < relatives + 2 && is(at, ADVERBS) {
         at += 1;
     }
-    words
-        .get(at)
-        .is_some_and(|w| CREDIT_VERBS.contains(&w.as_str()))
+    if !is(at, CREDIT_VERBS) {
+        return false;
+    }
+    // A negator right after the verb ("holds no"), or as the last word of the
+    // verb's clause ("names it nowhere"), says what spec 6 does not hold.
+    if is(at + 1, NEGATORS) {
+        return false;
+    }
+    let mut last = at;
+    while !words[last].ends_clause && last + 1 < words.len() {
+        last += 1;
+    }
+    !(last > at && is(last, NEGATORS))
 }
 
 /// Every `(line, term)` in `text` where a present-tense credit to spec 6,
@@ -653,7 +694,10 @@ fn a_present_tense_credit_to_a_moved_rule_is_flagged_and_history_is_not() {
 
     // A possessive owns a noun of up to three words, and not four.
     let three_words = "Spec 6's export profile section says a placeholder sits there.\n";
-    assert_eq!(moved_credits(decision, three_words), vec![(1, "placeholder")]);
+    assert_eq!(
+        moved_credits(decision, three_words),
+        vec![(1, "placeholder")]
+    );
 
     // A sentence also ends at a question mark and at an exclamation mark, so
     // the window does not reach two sentences on.
