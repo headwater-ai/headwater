@@ -1,9 +1,9 @@
 ---
 id: HW-OBL-0200
-status: current
-status_since: 2026-09-19
-summary: "Three current probe-run transcripts moved to deprecated when a taxonomy change staled their lock, and no fresh session has run against the new one."
-last_verified: 2026-09-19
+status: discharged
+status_since: 2026-10-03
+summary: "Three regression transcripts went to deprecated when their lock moved. A sealed recording of their eight probes on claude-sonnet-5 replaced them on 2026-10-03."
+last_verified: 2026-10-03
 title: "Three graded regression runs are owed a fresh recording against a moved taxonomy lock"
 provenance:
   warrant: asserted
@@ -17,6 +17,9 @@ relations:
     - HW-RUN-regression-probe-transcript-for-2026-09-16
     - HW-RUN-regression-probe-transcript-for-2026-09-17
     - HW-RUN-regression-probe-transcript-for-2026-09-17-after-the-probe-corrections
+    - HW-RUN-regression-of-2026-10-03-regression-tier-present-arm-discovery
+    - HW-RUN-regression-of-2026-10-03-regression-tier-present-arm-navigability
+    - HW-RUN-regression-of-2026-10-03-regression-tier-present-arm-sufficiency
 ---
 
 # Three graded regression runs are owed a fresh recording against a moved taxonomy lock
@@ -38,3 +41,7 @@ This corpus owes a fresh regression recording, run with `tools/probe/probe-recor
 A new `docs/probe-runs/` transcript, `status: current`, planned against the lock this corpus carries once #935 merges, with a `docs/probe-results/` projection `headwater generate` writes from it. The two artifacts named above are read again by that recording's own grading, and this record is discharged when they are.
 
 **A fresh recording must now run in a sealed workspace (#1229).** [`tools/probe/seal.sh`](../../tools/probe/seal.sh) removes the three probe shelves and `.headwater/export.json`. It removes every document under `docs/` that names a selected probe, and every answer key that `.headwater/probe.yml` declares for one. For each document that it removes, it also removes the identifier claim under `.headwater/ids/`. It also removes each line, in any file of the workspace, that holds the identifier or the file name of that document. A JSON file loses the array element that names the document. A slug of one word, or a file name that another file shares such as `README`, removes no line. It removes every file outside `docs/` that names a selected probe, unless `folds:` in `.headwater/probe.yml` declares the file a fold. A fold stays as a file. `tools/probe/probe-record.sh` refuses a workspace that still holds the instrument, or a file that names the probe and is not a fold. The three runs that this record names ran before the seal existed. So a recording that repeats them as they ran does not discharge this record.
+
+**Discharged on 2026-10-03 by [PR #PRNUM](https://github.com/headwater-ai/headwater/pull/PRNUM) for [#1474](https://github.com/headwater-ai/headwater/issues/1474).** `tools/probe/campaign.sh` recorded the eight probes of the retired runs in a sealed workspace on `claude-sonnet-5`, at commit `a46bd95e`. The three transcripts are at `status: current`: [discovery](../probe-runs/regression-of-2026-10-03-regression-tier-present-arm-discovery.md), [navigability](../probe-runs/regression-of-2026-10-03-regression-tier-present-arm-navigability.md) and [sufficiency](../probe-runs/regression-of-2026-10-03-regression-tier-present-arm-sufficiency.md). `headwater generate` wrote a `docs/probe-results/` projection of each. The eight sessions spent 437 cents. No recorded call named a path on a probe shelf, and no session called `WebSearch` or `WebFetch`. Of the two artifacts above, HW-OBL-0198 was already discharged on 2026-10-01. The pointer-probe evaluation was read again against the new pointer session. The verdict is `not satisfied` again, for the same reason, so the evaluation stands and now states that reading.
+
+The new recording repeats the configuration of the 2026-09-17 run after the probe corrections. The 2026-09-17 run before the corrections cannot be recorded again, because only the corrected probes exist. No sealed recording of the 2026-09-16 configuration on `claude-haiku-4-5` exists. Whether one is owed is a spend question for the owner on #1474, and this record does not wait on it.
