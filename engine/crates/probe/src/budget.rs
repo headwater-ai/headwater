@@ -752,6 +752,47 @@ tiers:
                 entry: "/etc/passwd".to_string()
             })
         );
+        // The check reads every probe, not only the first: a second probe's
+        // unsafe key is refused while the first probe holds only safe ones
+        // (#1552).
+        assert_eq!(
+            Budgets::read(&format!(
+                "answer_keys:\n  P-1: [docs/a.md]\n  P-2: [../x]\n{GOOD}"
+            )),
+            Err(Unreadable::AnswerKeyUnsafe {
+                probe: "P-2".to_string(),
+                entry: "../x".to_string()
+            })
+        );
+    }
+
+    #[test]
+    fn an_unsafe_answer_key_of_every_shape_is_refused_in_a_middle_probe() {
+        // A probe between two safe ones, so a check of the first probe alone
+        // or of the last probe alone passes the file (#1552). Each entry is
+        // one shape `ablation_entry_is_safe` refuses: a `..` component, an
+        // absolute path, an empty entry, a `.` component, an empty
+        // component, and a control character.
+        for (written, entry) in [
+            ("../x", "../x"),
+            ("/etc/passwd", "/etc/passwd"),
+            ("\"\"", ""),
+            ("docs/./a.md", "docs/./a.md"),
+            ("docs//a.md", "docs//a.md"),
+            ("\"docs/a.md\\n- CLAUDE.md\"", "docs/a.md\n- CLAUDE.md"),
+        ] {
+            let source = format!(
+                "answer_keys:\n  P-1: [docs/a.md]\n  P-2: [docs/b.md, {written}]\n  P-3: [docs/c.md]\n{GOOD}"
+            );
+            assert_eq!(
+                Budgets::read(&source),
+                Err(Unreadable::AnswerKeyUnsafe {
+                    probe: "P-2".to_string(),
+                    entry: entry.to_string()
+                }),
+                "{written}"
+            );
+        }
     }
 
     #[test]
