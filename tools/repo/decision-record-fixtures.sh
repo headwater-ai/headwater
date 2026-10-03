@@ -3,6 +3,9 @@
 # of `UKGovernmentBEIS/inspect_evals` typed at `decision`, and Sysl's
 # `docs/ideas/root.md` typed at `obligation_record`. Both are vendored at a
 # pin, assembled into one corpus root at each run, and typed by the entry.
+# It also runs the invented Beacon corpus under `fixtures/corpus/` by the
+# recipe its README writes, so that the recipe fails here when a release of
+# the vendored package breaks it.
 #
 # Run it from anywhere:
 #     sh tools/repo/decision-record-fixtures.sh
@@ -98,6 +101,22 @@
 #   `status_since` comes from each document's own `## Date` heading where it
 #   has one, and from its population's own pin date where it does not.
 #
+#   THE BEACON ROOT, the invented corpus under `fixtures/corpus/`, is the
+#   third population, and case group 8 runs it. Its recipe comes from
+#   `### The Beacon root` of `fixtures/README.md`: a table of copies from this
+#   repository into the root, and one fenced block for each root file, named
+#   by the code span on the line above the fence. The runner writes this
+#   repository's own `version` and `digest` where the recipe writes
+#   `{version}` and `{digest}`, so the root binds the package this repository
+#   vendors and a release that breaks the recipe reddens this suite. The
+#   identifier claims come from the lock's own schemes and each document's
+#   `id:`. The findings it must report come from the table under
+#   `### The findings a run reports`, as (rule, document) pairs, and the check
+#   is containment: each pair is reported. The rules it must report on no
+#   document come from `### The rules a run reports on no document`. The total
+#   is printed and asserted by nothing, for the reason the population guards
+#   below give.
+#
 # ONE VALUE IS A CONSTANT THE RUNNER WRITES, AND IT IS A FINDING. `summary` is
 # required on every `governed_document` and nothing in either tradition
 # supplies one. `fixtures/README.md` carries that as a result rather than as a
@@ -144,7 +163,7 @@ if [ -z "$engine" ]; then
     exit 1
 fi
 
-for needed in "$readme" "$vendored/adr" "$vendored/LICENSE" "$sysl_vendored/root.md"; do
+for needed in "$readme" "$vendored/adr" "$vendored/LICENSE" "$sysl_vendored/root.md" "$fixtures/corpus/docs"; do
     if [ ! -e "$needed" ]; then
         echo "missing $needed, so the cases over the external corpora cannot run." >&2
         exit 1
@@ -306,6 +325,73 @@ bundle_selection() {
     else
         printf 'decision-record'
     fi
+}
+
+# The copies of the Beacon recipe: the repository path, and the root path it
+# goes to, one row each of the table under `### The Beacon root`.
+beacon_copies() {
+    awk -F'|' '
+        /^### The Beacon root/ { here = 1; next }
+        /^#/ { here = 0 }
+        here && /^\| `/ {
+            a = $2; b = $3
+            gsub(/[ `]/, "", a); gsub(/[ `]/, "", b)
+            if (a != "" && b != "") print a "\t" b
+        }
+    ' "$readme"
+}
+
+# The fenced block the Beacon recipe writes into one root file. $1 = the
+# root-relative path that the line above the fence names in a code span.
+beacon_block() {
+    awk -v want="$1" '
+        /^### The Beacon root/ { here = 1; next }
+        /^#/ && !infence { here = 0 }
+        !here { next }
+        infence && /^```/ { infence = 0; if (grab) exit; next }
+        infence { if (grab) print; next }
+        /^```/ { infence = 1; next }
+        $0 == "`" want "`:" { grab = 1 }
+    ' "$readme"
+}
+
+# The (rule, document) pairs the README says a Beacon run reports, one row
+# each of the table under `### The findings a run reports`.
+beacon_findings() {
+    awk -F'|' '
+        /^### The findings a run reports/ { here = 1; next }
+        /^#/ { here = 0 }
+        here && /^\| `/ {
+            a = $2; b = $3
+            gsub(/[ `]/, "", a); gsub(/[ `]/, "", b)
+            if (a != "" && b != "") print a "\t" b
+        }
+    ' "$readme"
+}
+
+# The rules the README says a Beacon run reports on no document, one row each
+# of the table under `### The rules a run reports on no document`.
+beacon_absent() {
+    awk -F'|' '
+        /^### The rules a run reports on no document/ { here = 1; next }
+        /^#/ { here = 0 }
+        here && /^\| `/ { a = $2; gsub(/[ `]/, "", a); if (a != "") print a }
+    ' "$readme"
+}
+
+# Every identifier scheme of a written lock: name, pattern, namespace.
+lock_schemes() {
+    awk '
+        /^  identifier_schemes:/ { here = 1; next }
+        /^  [a-z_]+:/ { here = 0 }
+        here && /^    [a-z_]+:/ {
+            if (s != "") print s "\t" p "\t" n
+            s = $0; sub(/^ +/, "", s); sub(/:.*/, "", s); p = ""; n = ""; next
+        }
+        here && /^      pattern:/ { p = $0; sub(/^[^:]*: */, "", p); gsub(/["]/, "", p); gsub(/ *$/, "", p) }
+        here && /^      namespace:/ { n = $0; sub(/^[^:]*: */, "", n); gsub(/["]/, "", n); gsub(/ *$/, "", n) }
+        END { if (s != "") print s "\t" p "\t" n }
+    ' "$1"
 }
 
 # A scratch root that selects the entry. $1 = destination.
@@ -678,6 +764,153 @@ fi
 
 (cd "$corpus" && "$engine" check --strict --no-cache) > "$scratch/strict.out" 2> "$scratch/strict.err"
 strictcode=$?
+
+echo
+echo "case group 8 — the Beacon root, assembled from the recipe the README writes"
+# The invented corpus under `fixtures/corpus/`, run as the README tells a
+# reader to run it. Every step is read out of `### The Beacon root` and every
+# expected finding out of `### The findings a run reports`, so a package
+# release that breaks the recipe, or a README that stops telling the truth
+# about it, reddens this group rather than a reader's first run.
+beacon="$scratch/beacon"
+mkdir -p "$beacon/.headwater"
+copies=$(beacon_copies)
+if [ -z "$copies" ]; then
+    fail "the Beacon recipe names at least one copy" "no row under ### The Beacon root in $entry/fixtures/README.md"
+else
+    pass "the Beacon recipe names at least one copy ($(printf '%s\n' "$copies" | grep -c .) read)"
+fi
+: > "$scratch/beacon-copies"
+printf '%s\n' "$copies" | while IFS="$(printf '\t')" read -r from to; do
+    [ -n "$from" ] || continue
+    if [ ! -e "$root/$from" ]; then
+        echo "  FAIL  the recipe copies $from, which is there"
+        echo fail >> "$scratch/beacon-copies"
+        continue
+    fi
+    mkdir -p "$beacon/$to"
+    cp -R "$root/$from/." "$beacon/$to"
+    echo "  ok    the recipe copies $from, which is there"
+    echo ok >> "$scratch/beacon-copies"
+done
+passed=$((passed + $(grep -c '^ok$' "$scratch/beacon-copies" || true)))
+failed=$((failed + $(grep -c '^fail$' "$scratch/beacon-copies" || true)))
+
+# The recipe writes `{version}` and `{digest}` where a reader writes the pin of
+# their own checkout, and this runner writes this repository's, so the root
+# binds the package that the repository vendors and no version is written here.
+pin_version=$(sed -n 's/^  version: *//p' "$root/.headwater/taxonomy.yml" | head -n 1)
+pin_digest=$(sed -n 's/^  digest: *//p' "$root/.headwater/taxonomy.yml" | head -n 1)
+for f in .headwater/taxonomy.yml .headwater/overlay.yml; do
+    beacon_block "$f" | sed -e "s|{version}|$pin_version|" -e "s|{digest}|$pin_digest|" > "$beacon/$f"
+    if [ -s "$beacon/$f" ]; then
+        pass "the Beacon recipe writes $f"
+    else
+        fail "the Beacon recipe writes $f" "no fenced block under \`$f\`: in ### The Beacon root"
+    fi
+done
+
+(cd "$beacon" && "$engine" taxonomy resolve) > "$scratch/beacon-resolve.out" 2> "$scratch/beacon-resolve.err"
+beacon_code=$?
+beacon_lock="$beacon/.headwater/taxonomy.lock"
+if [ "$beacon_code" -eq 0 ] && [ -f "$beacon_lock" ]; then
+    pass "the Beacon recipe resolves against headwater/standard $pin_version, and writes a lock"
+else
+    fail "the Beacon recipe resolves against headwater/standard $pin_version, and writes a lock" \
+        "exit $beacon_code: $(grep -v '^ *$' "$scratch/beacon-resolve.err" "$scratch/beacon-resolve.out" | sed 's/^[^:]*://' | head -n 8 | tr '\n' ' ' | sed 's/  */ /g')"
+fi
+
+if [ -f "$beacon_lock" ]; then
+    # Claim each identifier the tree declares, as an adopter's `headwater new`
+    # would. A scheme comes from the lock and an identifier is matched to it by
+    # the scheme's own pattern, so no scheme, namespace or identifier is written
+    # here. Without this the run reports one `identifier.claim.missing` per
+    # document, which is a defect of the assembly and not of the fixture.
+    lock_schemes "$beacon_lock" > "$scratch/beacon-schemes"
+    find "$beacon/docs" -type f -name '*.md' | LC_ALL=C sort > "$scratch/beacon-docs"
+    while read -r doc; do
+        id=$(awk 'NR == 1 && $0 != "---" { exit } NR > 1 && $0 == "---" { exit } /^id: / { sub(/^id: */, ""); print; exit }' "$doc")
+        [ -n "$id" ] || continue
+        rel=${doc#"$beacon/"}
+        while IFS="$(printf '\t')" read -r scheme pattern namespace; do
+            re=$(printf '%s' "$pattern" | sed -e "s/{namespace}/$namespace/" -e 's/{seq:04d}/[0-9]{4}/')
+            case "$re" in *'{'[a-z]*) continue ;; esac
+            if printf '%s\n' "$id" | grep -Eqx "$re"; then
+                mkdir -p "$beacon/.headwater/ids/$scheme"
+                printf '%s\n' "$rel" > "$beacon/.headwater/ids/$scheme/$id"
+            fi
+        done < "$scratch/beacon-schemes"
+    done < "$scratch/beacon-docs"
+
+    (cd "$beacon" && "$engine" check --no-cache) > "$scratch/beacon-check.out" 2> "$scratch/beacon-check.err"
+    beacon_check=$?
+    beacon_docs=$(sed -n 's/^ *\([0-9][0-9]*\) files under the corpus root$/\1/p' "$scratch/beacon-check.out" | head -n 1)
+    beacon_typed=$(sed -n 's/^ *\([0-9][0-9]*\) typed$/\1/p' "$scratch/beacon-check.out" | head -n 1)
+    if [ "${beacon_docs:-0}" -eq 0 ]; then
+        fail "the Beacon root holds at least one document" "the check read 0 files under the corpus root (exit $beacon_check)"
+    else
+        pass "the Beacon root holds at least one document (${beacon_docs} read)"
+    fi
+    judge "every document of the Beacon root is typed" "${beacon_docs:-0}" "${beacon_typed:-0}"
+
+    # Each finding as a (rule, document) pair, the document read off the
+    # "path[:line:col] ✗ error" header line above it.
+    awk '
+        /(✗ error|▲ warn)$/ { path = $0; sub(/ (✗ error|▲ warn)$/, "", path); sub(/^ +/, "", path); sub(/:[0-9]+:[0-9]+$/, "", path); next }
+        /^ +[a-z_]+\.[a-z_.]+ \(OB-/ { r = $1; print r "\t" path }
+    ' "$scratch/beacon-check.out" | LC_ALL=C sort -u > "$scratch/beacon-reported"
+    expected=$(beacon_findings)
+    if [ -z "$expected" ]; then
+        fail "the README lists at least one finding a run reports" "no row under ### The findings a run reports"
+    else
+        pass "the README lists at least one finding a run reports ($(printf '%s\n' "$expected" | grep -c .) read)"
+    fi
+    : > "$scratch/beacon-contained"
+    printf '%s\n' "$expected" | while IFS="$(printf '\t')" read -r rule doc; do
+        [ -n "$rule" ] || continue
+        if grep -Fxq "$(printf '%s\t%s' "$rule" "$doc")" "$scratch/beacon-reported"; then
+            echo "  ok    $rule is reported on $doc"
+            echo ok >> "$scratch/beacon-contained"
+        else
+            echo "  FAIL  $rule is reported on $doc"
+            on=$(awk -F'\t' -v d="$doc" '$2 == d { printf "%s ", $1 }' "$scratch/beacon-reported")
+            echo "          the run reported ${on:-nothing }on it"
+            echo fail >> "$scratch/beacon-contained"
+        fi
+    done
+    passed=$((passed + $(grep -c '^ok$' "$scratch/beacon-contained" || true)))
+    failed=$((failed + $(grep -c '^fail$' "$scratch/beacon-contained" || true)))
+
+    # The other direction, for the rules the README names: each is reported on
+    # no document. This is what holds the claims above and the facets of the
+    # fixture, and what keeps a discharged finding from coming back unnoticed.
+    absent=$(beacon_absent)
+    if [ -z "$absent" ]; then
+        fail "the README lists at least one rule a run reports on no document" "no row under ### The rules a run reports on no document"
+    else
+        pass "the README lists at least one rule a run reports on no document ($(printf '%s\n' "$absent" | grep -c .) read)"
+    fi
+    : > "$scratch/beacon-absent"
+    printf '%s\n' "$absent" | while read -r rule; do
+        [ -n "$rule" ] || continue
+        on=$(awk -F'\t' -v r="$rule" '$1 == r { printf "%s ", $2 }' "$scratch/beacon-reported")
+        if [ -z "$on" ]; then
+            echo "  ok    $rule is reported on no document"
+            echo ok >> "$scratch/beacon-absent"
+        else
+            echo "  FAIL  $rule is reported on no document"
+            echo "          the run reported it on $on"
+            echo fail >> "$scratch/beacon-absent"
+        fi
+    done
+    passed=$((passed + $(grep -c '^ok$' "$scratch/beacon-absent" || true)))
+    failed=$((failed + $(grep -c '^fail$' "$scratch/beacon-absent" || true)))
+
+    beacon_findings_n=$(sed -n 's/^ *\([0-9][0-9]*\) findings$/\1/p' "$scratch/beacon-check.out" | head -n 1)
+    echo "  recorded, not asserted: ${beacon_findings_n:-0} finding(s) over ${beacon_docs:-0} document(s), check exit $beacon_check; by rule, the documents it reports on:"
+    cut -f1 "$scratch/beacon-reported" | LC_ALL=C sort | uniq -c |
+        while read -r n rule; do echo "    $n  $rule"; done
+fi
 
 echo
 echo "the run record of criterion 4, recorded and not asserted"
