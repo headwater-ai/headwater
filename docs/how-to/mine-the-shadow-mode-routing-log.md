@@ -3,7 +3,7 @@ id: HW-HOW-mine-the-shadow-mode-routing-log
 status: current
 status_since: 2026-09-17
 summary: "Join the shadow log to the session transcripts by prompt identifier, and read the deterministic route against the embedding path one prompt at a time."
-last_verified: 2026-09-17
+last_verified: 2026-10-03
 title: "Mine the shadow-mode routing log"
 provenance:
   warrant: asserted
@@ -22,11 +22,13 @@ relations:
 
 ## Before you start
 
-[HW-DR-0064](../decisions/0064-q64-whether-intent-time-routing-gains-an-offline-embedding-path-in-shadow-mode.md) sets the collection period. Wait for 1,000 person prompts or 30 days, whichever comes first. The period also needs 58 silent invocations or more. A count below either bound is a measurement of the collector rather than of the router.
+[HW-DR-0064](../decisions/0064-q64-whether-intent-time-routing-gains-an-offline-embedding-path-in-shadow-mode.md) sets the collection period. Wait for 500 person prompts or 2026-10-17, whichever comes first. The period also needs 58 silent invocations or more. A count below either bound is a measurement of the collector rather than of the router.
+
+**One command runs the whole procedure.** `sh tools/run/shadow-mine.sh` runs steps 1 to 7 below and prints every figure that "How to know it worked" asks for. Its header states each rule it applies, and `sh tools/run/shadow-mine-fixtures.sh` holds it. Use the steps below to read what the tool does, or to check one of its figures by hand.
 
 Two sources join here. The first is the shadow log, which `.claude/hooks/intent.sh` writes to `<git common dir>/headwater-shadow-log/<harness session>.jsonl`. The second is the harness session logs under `~/.claude/projects/`. HW-DR-0064 licenses the session logs for this comparison as engineering evidence. [HW-DR-0059](../decisions/0059-a-transform-over-a-harness-session-log-is-an-observed-transcript-when-the-log-arrives-by-a-channel-the-model-cannot-write-to.md) still refuses them as a probe result, because the session can write them.
 
-Every command below was run on 2026-09-17, against the log of this host and the session logs beside it. The period held 21 lines that day. So these commands are reconstructed from a collection far under the bound above, and never from a finished one.
+Every command below was run on 2026-09-17, against the log of this host and the session logs beside it. The period held 21 lines that day. So these commands are reconstructed from a collection far under the bound above, and never from a finished one. `shadow-mine.sh` ran over the finished period on 2026-10-03, and [the evaluation of that reading](../evaluations/what-the-shadow-mode-routing-log-showed-at-its-bound.md) gives its figures.
 
 You need `jq`. Set two variables first. The examples below use them.
 
@@ -42,9 +44,8 @@ Three members of a line need care. `route` and `neighbors` are JSON documents he
 **1. Take the population.** Drop every line that a recorder submitted, and count what remains.
 
     jq -s 'map(select((.probe_session // "") == "")) | length' "$log"/*.jsonl
-    jq -s 'map(select((.probe_session // "") == "") | select(.injected == false)) | length' "$log"/*.jsonl
 
-The first count is the period against the 1,000. The second is the silent count against the 58.
+That count is the lines of the period. The bound of 500 counts person prompts, which are the distinct prompt ids that step 3 joins, and not lines. The silent count against the 58 also counts joined prompt ids. A prompt is silent when `route | fromjson | .silence` is not null. Do not count `injected == false` over raw lines. The two counts are different measures. A raw line can belong to no person prompt, and one prompt can have two lines. On 2026-10-03 the joined prompts carried 133 lines with `injected == false`, and 123 of the prompts were silent.
 
 **2. Separate the models.** A second model digest is a second population, and no report mixes them.
 
@@ -79,7 +80,7 @@ The other direction matters as much, and it is the one a reader forgets. A logge
 
 Report that count apart. HW-DR-0064 counts person prompts, so these lines leave the population. The three buckets are the whole of the join: the joined rows, the gaps of the step above, and these.
 
-**5. Normalize the paths.** A pointer path is relative to the corpus root, such as `docs/spec/05-ai-integration.md`. A transcript records a `Read` call with an absolute path, such as `/home/james/projects/headwater/docs/spec/05-ai-integration.md`. Each line carries its own `corpus_root`, so strip that prefix and one slash from the absolute path. A read whose path does not start with the line's `corpus_root` is outside the corpus. Drop it. A session reads its own dependencies and its own machine's files, and neither is a document this corpus governs.
+**5. Normalize the paths.** A pointer path is relative to the corpus root, such as `docs/spec/05-ai-integration.md`. A transcript records a `Read` call with an absolute path, such as `/home/james/projects/headwater/docs/spec/05-ai-integration.md`. Each line carries its own `corpus_root`, so strip that prefix and one slash from the absolute path. A read whose path does not start with the line's `corpus_root` is outside the corpus. Drop it. A session reads its own dependencies and its own machine's files, and neither is a document this corpus governs. `shadow-mine.sh` also drops a read that is not a Markdown document. It drops a read under a directory whose name starts with a dot, such as `.git` or `.claude`. No pointer names either. It reads the `Read` calls of the session's main thread alone, from the prompt to the next person prompt of that session.
 
 **6. Read the two paths against each other.** For one prompt, take three sets. The first is what the deterministic route offered, which is `route | fromjson | .pointers[].path`. The second is what the embedding path would have offered, which is `neighbors | fromjson | .neighbors[].path`. The third is what the session read after the prompt, normalized by step 5.
 

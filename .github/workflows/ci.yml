@@ -758,6 +758,21 @@ jobs:
             exit 0
           fi
           exit "$status"
+      - name: The shadow-log mining reports each model digest apart and both sums of the join
+        # `tools/run/shadow-mine.sh` is the how-to's mining procedure as one
+        # command (#927). This suite plants two model digests whose silence
+        # rates differ, a gap, unclaimed ids, a prompt logged twice, a torn
+        # line, an empty-id line and reads that must drop, so a pooled rate,
+        # a raw line count or a missing bucket each fails a case. It needs
+        # `jq` and skips with a warning without it.
+        run: |
+          status=0
+          sh tools/run/shadow-mine-fixtures.sh || status=$?
+          if [ "$status" = 3 ]; then
+            echo "::warning title=Shadow mine fixtures skipped::No jq on this runner, so none of these cases ran."
+            exit 0
+          fi
+          exit "$status"
       - name: The tools a build-order stage calls behave as their agent definitions say
         # Seven scripts that every stage of a run calls in place of a command
         # it once retyped: the CI-finished condition, the queue-finished
