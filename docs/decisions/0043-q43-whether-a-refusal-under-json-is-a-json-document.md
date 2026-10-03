@@ -3,7 +3,7 @@ id: HW-DR-0043
 status: current
 status_since: 2026-08-30
 summary: "A refusal is an English sentence on standard error and never a JSON document, because `--json` names the shape of an artifact and moves no stream and no grammar."
-last_verified: 2026-08-30
+last_verified: 2026-10-03
 title: "Q43 — Whether a refusal under `--json` is a JSON document"
 provenance:
   warrant: accepted
@@ -27,7 +27,7 @@ relations:
 
 **[#346](https://github.com/headwater-ai/headwater/issues/346) measures ten command lines that name a JSON target and then refuse.** Each one exits 1, writes zero bytes to standard output, and writes one English sentence to standard error. The verbs are `explain`, `gate`, `route`, `conformance`, `sweep report`, `export` and `check`. A consumer that reads standard output on any of those runs reads nothing at all.
 
-**The behavior is deliberate, and no document a reader meets states it.** [Spec 6](../spec/06-engine-architecture.md) says what `--format` puts on standard output and stops there. One interface contract states the rule for one verb. `docs/interfaces/headwater-explain.md` says that a missing target writes its refusal to standard error and no explanation to standard output. Seven other contracts are silent.
+**The behavior is deliberate, and no document a reader meets states it.** When this record was written, spec 6 said what `--format` puts on standard output and stopped there. One interface contract stated the rule for one verb. `docs/interfaces/headwater-explain.md` said that a missing target writes its refusal to standard error and no explanation to standard output. Seven other contracts were silent. Each verb contract now states what `--format` writes, and the contract of [`headwater check`](../interfaces/headwater-check.md#exit-status) also states the refusal rule that this record makes.
 
 **So the question is whether `--json` is a promise about every byte of a run, or about the artifact alone.** One answer makes a refusal a JSON document, so that a consumer holds one grammar for one verb. The other keeps a refusal as prose on the other stream and writes the rule down where a reader meets it. Issue #346 asks for a ruling before any code.
 

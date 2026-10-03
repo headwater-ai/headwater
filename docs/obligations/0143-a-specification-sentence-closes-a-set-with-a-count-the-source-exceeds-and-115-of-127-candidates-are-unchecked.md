@@ -37,4 +37,4 @@ None of the 90 is checked against its source yet. The filter misses a table row 
 
 ## Discharge
 
-Discharge requires every one of the 127 candidates checked against its source, or the population re-derived with a stated filter and checked again. A sentence found wrong needs correction, or its count replaced by a reference to the verb or file that produces it. Spec 6 states that a count copied into prose is a claim no run re-derives. This waits on the sweep running to completion. No rule traces a sentence to the source it describes, and none has been designed.
+Discharge requires every one of the 127 candidates checked against its source, or the population re-derived with a stated filter and checked again. A sentence found wrong needs correction, or its count replaced by a reference to the verb or file that produces it. The [`headwater taxonomy` contract](../interfaces/headwater-taxonomy.md#description) states that a count in prose goes false at the next change to the population that it counts. This waits on the sweep running to completion. No rule traces a sentence to the source it describes, and none has been designed.
