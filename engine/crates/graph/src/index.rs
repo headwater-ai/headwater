@@ -29,9 +29,9 @@
 //!
 //! Which rows resolved a kind is
 //! [`headwater_census::census::Outcome::node`]'s answer and not this module's,
-//! and a generated file that carries front matter is one of them. [Spec
-//! 6](../../../../docs/spec/06-engine-architecture.md#projections) excuses such
-//! a file from every *check*, on the ground that an author cannot repair its
+//! and a generated file that carries front matter is one of them.
+//! [The `headwater generate` contract](../../../../docs/interfaces/headwater-generate.md#the-generated-file-marker)
+//! excuses such a file from every *check*, on the ground that an author cannot repair its
 //! content in the file. Its identity is a different fact: it comes from the
 //! declaration that writes the file, and `generate --check` is what holds it.
 //!

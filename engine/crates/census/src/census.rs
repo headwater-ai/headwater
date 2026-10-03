@@ -53,8 +53,8 @@
 //! # A generated file can still be a node, and the reason above says nothing
 //! # against it
 //!
-//! [Spec 6](../../../../docs/spec/06-engine-architecture.md#projections) gives
-//! one reason no check reads a generated document: its content is a function of
+//! [The `headwater generate` contract](../../../../docs/interfaces/headwater-generate.md#the-generated-file-marker)
+//! gives one reason no check reads a generated document: its content is a function of
 //! the emitter, and an author cannot repair it in the file. **That reason is
 //! about checks. It says nothing about identity.** The identifier and the kind
 //! of a generated file are a function of the declaration that writes it, and a
@@ -519,8 +519,8 @@ impl Outcome {
     ///
     /// Two outcomes answer. A typed document is the ordinary one. A generated
     /// document that declared an identity is the other, and the reason it
-    /// answers is that spec 6 excuses it from *checks* rather than from
-    /// identity. See the module comment.
+    /// answers is that the `headwater generate` contract excuses it from
+    /// *checks* rather than from identity. See the module comment.
     pub fn node(&self) -> Option<(&str, Option<&Resolution>)> {
         match self {
             Outcome::Typed { kind, derivation } => Some((kind, Some(derivation))),
@@ -1055,7 +1055,7 @@ mod tests {
     /// A generated file that declares an identity is generated **and** a node.
     ///
     /// The two facts are independent. The marker says who wrote the file, and
-    /// [spec 6](../../../../docs/spec/06-engine-architecture.md#projections)
+    /// [the `headwater generate` contract](../../../../docs/interfaces/headwater-generate.md#the-generated-file-marker)
     /// gives one consequence of it: no check reads the file, because an author
     /// cannot repair its content there. The block says what the file is, and
     /// the graph reads that. A reading of the first as an answer to the second

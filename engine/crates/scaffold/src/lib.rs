@@ -28,9 +28,9 @@
 //! # 2. What it writes is authored, and it is checked
 //!
 //! A projection's output carries the generated-file marker and no check reads
-//! it, "because its content is a function of the emitter and an author cannot
+//! it, because "Its content is a function of the emitter, and an author cannot
 //! repair it in the file"
-//! ([spec 6](../../../../docs/spec/06-engine-architecture.md#projections)).
+//! ([the `headwater generate` contract](../../../../docs/interfaces/headwater-generate.md#the-generated-file-marker)).
 //! Neither clause holds here. A scaffolded document is written once and never
 //! written again, so an author repairs it in the file and nothing overwrites
 //! the repair. The test between the two is **regeneration**, and it is the
