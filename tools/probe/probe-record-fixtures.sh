@@ -2985,8 +2985,9 @@ STUB
         # when the budget binds. On the old path, which reserved the declared
         # 50, a cap of 150 started a second session at 90 spent and realized
         # 180, which is the overrun of #1474.
-        # $1 is `ok` or `fail-first`. The first session of `fail-first` fails
-        # for a reason other than the budget after it spent 50 cents.
+        # $1 is `ok` or `fail-first`. The first $2 sessions (1 by default) of
+        # `fail-first` fail for a reason other than the budget, after each
+        # spent 50 cents.
         budget_stub() {
             cat > "$scratch/bin/claude" <<STUB
 #!/bin/sh
@@ -3000,7 +3001,7 @@ for argument in "\$@"; do
 done
 printf '%s budget=%s\n' "\$(pwd)" "\${budget:-none}" >> "\$calls"
 printf '%s\n' '{"type":"system","subtype":"init","model":"claude-haiku-4-5","session_id":"s17"}'
-if [ "$1" = fail-first ] && [ "\$(wc -l < "\$calls")" -le 1 ]; then
+if [ "$1" = fail-first ] && [ "\$(wc -l < "\$calls")" -le ${2:-1} ]; then
     printf '%s\n' '{"type":"result","subtype":"error_during_execution","is_error":true,"total_cost_usd":0.50,"modelUsage":{"claude-haiku-4-5-20251001":{"inputTokens":10}}}'
     exit 1
 fi
@@ -3121,6 +3122,77 @@ STUB
         same "and the harness ran twice in all" "3" \
             "$(wc -l < "$scratch/probe-log/stagger.calls" 2>/dev/null | tr -d ' ')"
         present "and the batch's total counts the 50" "110 cents spent" "$scratch/budget-h2.err"
+
+        # Two failed attempts both count (verify of #1659). The job fails at
+        # 50 twice, then runs a third time under a cap of 160 at B = 60:
+        # 100 + 60 fits, the third attempt spends 60, and the batch spends
+        # 160 in all. A driver that kept only the last attempt's 50 would
+        # count 110 after it, 50 short of what the harness spent.
+        stagger_batch "$stagger"
+        rm -f "$scratch/probe-log/stagger.calls"
+        budget_stub fail-first 2
+        budget_run "$stagger" "$scratch/budget-t1.err" --cap-cents 160 --session-cents 60
+        budget_run "$stagger" "$scratch/budget-t2.err"
+        same "a job that failed twice at 50 has 100 counted" "9 100" "$? $(budget_spent "$stagger")"
+        budget_run "$stagger" "$scratch/budget-t3.err"
+        same "and its third attempt spends 160 in all and exits 7" "7 160" "$? $(budget_spent "$stagger")"
+        same "and the harness ran 3 times in all" "3" \
+            "$(wc -l < "$scratch/probe-log/stagger.calls" 2>/dev/null | tr -d ' ')"
+        budget_stub ok
+
+        # The `started` marker is written before the lock goes (verify of
+        # #1659). The second seam holds the lock after the marker, so while
+        # the lock is held the marker of the job that holds it exists. A
+        # marker written after the release leaves a window in which another
+        # worker reads the batch with this session in flight and not counted.
+        stagger_batch "$stagger"
+        rm -f "$scratch/probe-log/stagger.calls"
+        HEADWATER_CAMPAIGN_HOLD_DELAY=3 budget_run "$stagger" "$scratch/budget-hold.err" \
+            --cap-cents 150 --session-cents 60 &
+        held=$!
+        waited=0
+        while [ ! -f "$stagger/slice/lock" ] && [ "$waited" -lt 600 ]; do
+            sleep 0.1
+            waited=$((waited + 1))
+        done
+        sleep 1
+        seen="$([ -f "$stagger/slice/lock" ] && echo held || echo free) $(ls "$stagger"/sessions/*/started 2>/dev/null | wc -l | tr -d ' ')"
+        wait "$held"
+        same "while a worker holds the lock, its started marker exists" "held 1" "$seen"
+
+        # A lock whose holder is gone halts the invocation (verify of #1659):
+        # a worker killed inside the lock, or one that returned without
+        # releasing it, would otherwise leave every other worker waiting
+        # forever. Nothing starts and nothing is spent.
+        stagger_batch "$stagger"
+        rm -f "$scratch/probe-log/stagger.calls"
+        mkdir -p "$stagger/slice/started" "$stagger/slice/refused"
+        sh -c 'exit 0' &
+        gone=$!
+        wait "$gone"
+        printf '%s\n' "$gone" > "$stagger/slice/lock"
+        printf '\n' > "$stagger/model"
+        : > "$stagger/repetitions"
+        : > "$stagger/max-turns"
+        printf '205200\n' > "$stagger/ceiling.campaign"
+        printf '50\n' > "$stagger/unit.campaign"
+        PATH="$scratch/bin:$PATH" sh "$root/tools/probe/campaign.sh" --out "$stagger" \
+            --job "L1-campaign-present-p1-r1 1 campaign present sufficiency HW-PROBE-$tombstone" \
+            >/dev/null 2>"$scratch/budget-gone.err"
+        same "a job that finds the lock's holder gone halts and starts nothing" "yes 0" \
+            "$([ -f "$stagger/slice/halt" ] && echo yes || echo no) $(cat "$scratch/probe-log/stagger.calls" 2>/dev/null | wc -l | tr -d ' ')"
+        present "and says which worker holds it" "the worker $gone holds the batch lock and is gone" "$scratch/budget-gone.err"
+
+        # `--session-cents` takes a positive whole number of cents, and a
+        # refused value writes nothing (verify of #1659).
+        for bad in 0 1x 060 -5; do
+            rm -rf "$scratch/bad-budget"
+            PATH="$scratch/bin:$PATH" sh "$root/tools/probe/campaign.sh" --out "$scratch/bad-budget" \
+                --model claude-haiku-4-5 --spec "$scratch/stagger.spec" --session-cents "$bad" \
+                >/dev/null 2>"$scratch/bad-budget.err"
+            same "--session-cents $bad refuses with 2 and writes no batch" "2 no" \
+                "$? $([ -e "$scratch/bad-budget" ] && echo yes || echo no)"
+        done
 
         # Each component arm's tree is built by `ablate.sh` (#1659). The
         # slice-1 live check found no `.mcp.json` in the `mcp` arm's

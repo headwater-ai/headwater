@@ -41,7 +41,11 @@
 # starts only when `spent + (in flight + 1) * B` is at most the cap. The check
 # and the `started` marker are written under one lock, so the invariant holds
 # across `--parallel` workers: the batch spends at most the cap, and more only
-# by what the harness spends past B in the one turn that crosses it. Like the
+# by what the harness spends past B in the turn that crosses it, once for
+# each session in flight at the end. So the bound is the cap plus `--parallel`
+# times the largest such overshoot: at `--parallel 1` it is one overshoot, and
+# a verify of #1659 spent 360 under a cap of 280 at `--parallel 4` with a stub
+# that crossed a B of 70 by 20 cents. Like the
 # cap, it is recorded in `<out>/session-cents`, so a resumed invocation that
 # does not give it keeps it. Without it, a session in flight reserves the
 # declared cost and nothing bounds what one session spends, so the cap is a
@@ -307,9 +311,21 @@ run_job() {
     # a file the shell creates with `set -C`, as the tokens below are, and a
     # worker holds it from the first read of what the batch spent to the
     # write of its `started` marker. Without it, N workers can each read the
-    # same room and all start. A stale lock of a killed invocation goes with
-    # `<out>/slice`, which the next invocation clears.
-    until ( set -C; : > "$out/slice/lock" ) 2>/dev/null; do
+    # same room and all start. The lock holds the process id of its worker. A
+    # worker that waits on a lock whose holder is gone, killed inside it or
+    # returned without releasing it, halts the invocation rather than wait
+    # forever or break the lock: nothing has started under it, so nothing is
+    # spent, and the next invocation clears `<out>/slice` with the lock.
+    until ( set -C; printf '%s\n' "$$" > "$out/slice/lock" ) 2>/dev/null; do
+        holder=$(cat "$out/slice/lock" 2>/dev/null)
+        if [ -n "$holder" ] && ! kill -0 "$holder" 2>/dev/null; then
+            : > "$out/slice/halt"
+            echo "campaign: $name: the worker $holder holds the batch lock and is gone, so this invocation starts no other job (halt). Run the same command again." >&2
+            return 0
+        fi
+        if [ -f "$out/slice/halt" ]; then
+            return 0
+        fi
         sleep 0.1
     done
     # What one session in flight may still spend: `--session-cents` where the
@@ -322,28 +338,30 @@ run_job() {
     # A session's spend is its `cost`, and `spent-before` holds what earlier
     # attempts of the same job spent before it was run again. A session that
     # started and has no status is in flight.
-    spent=0
-    inflight=0
-    all=0
-    running=0
-    for other in "$out"/sessions/*; do
-        [ -d "$other" ] || continue
-        this=0
-        [ -f "$other/cost" ] && this=$(cat "$other/cost")
-        [ -f "$other/spent-before" ] && this=$((this + $(cat "$other/spent-before")))
-        flying=0
-        # This job's own directory is never in flight: a session of a killed
-        # invocation left it started, and this one is about to replace it.
-        if [ "$other" != "$dir" ] && [ ! -f "$other/cost" ] && [ -f "$other/started" ] && [ ! -f "$other/status" ]; then
-            flying=1
-        fi
-        all=$((all + this))
-        running=$((running + flying))
-        if [ "$(cat "$other/tier" 2>/dev/null)" = "$tier" ]; then
-            spent=$((spent + this))
-            inflight=$((inflight + flying))
-        fi
-    done
+    # This job's own directory is never in flight: a session of a killed
+    # invocation left it started, and this one is about to replace it. The
+    # sums are one `find` and one `awk`, because the lock is held while they
+    # run: a loop of `cat` over 4,284 sessions took 9.8 s per job (verify of
+    # #1659).
+    # shellcheck disable=SC2046
+    set -- $(find "$out/sessions" -mindepth 2 -maxdepth 2 -type f \( -name tier -o -name cost \
+        -o -name spent-before -o -name started -o -name status \) 2>/dev/null \
+        | awk -v own="$dir" -v tier="$tier" '
+            {
+                n = split($0, part, "/"); f = part[n]; d = substr($0, 1, length($0) - length(f) - 1)
+                dirs[d] = 1; has[d, f] = 1
+                if (f != "started" && f != "status") { v = ""; if ((getline v < $0) > 0) value[d, f] = v; close($0) }
+            }
+            END {
+                for (d in dirs) {
+                    this = value[d, "cost"] + value[d, "spent-before"]
+                    flying = (d != own && !((d, "cost") in has) && ((d, "started") in has) && !((d, "status") in has)) ? 1 : 0
+                    all += this; running += flying
+                    if (value[d, "tier"] == tier) { spent += this; inflight += flying }
+                }
+                printf "%d %d %d %d\n", spent, inflight, all, running
+            }')
+    spent=$1 inflight=$2 all=$3 running=$4
     if [ $((spent + (inflight + 1) * reserve)) -gt "$ceiling" ]; then
         rm -f "$out/slice/lock"
         echo "campaign: $name skipped: $spent cents spent and $inflight in flight at $reserve each against a $tier ceiling of $ceiling." >&2
@@ -391,6 +409,11 @@ run_job() {
     fi
     rm -f "$dir/status" "$dir/cost"
     : > "$dir/started"
+    # The second seam for the fixtures: it holds the lock after the marker,
+    # so a fixture can see that the marker is written before the lock goes.
+    if [ -n "${HEADWATER_CAMPAIGN_HOLD_DELAY:-}" ]; then
+        sleep "$HEADWATER_CAMPAIGN_HOLD_DELAY"
+    fi
     rm -f "$out/slice/lock"
     ws=$out/ws/$name
     rm -rf "$ws"
