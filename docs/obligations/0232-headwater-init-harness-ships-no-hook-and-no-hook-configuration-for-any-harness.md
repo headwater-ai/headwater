@@ -2,10 +2,10 @@
 id: HW-OBL-0232
 status: current
 status_since: 2026-10-02
-summary: "The harness step writes no hook and no hook registration, because no ruling chooses a script body, a hook verb or a flag."
-last_verified: 2026-10-02
+summary: "The harness step writes no hook and no hook registration. The owner chose one hook verb on 2026-10-03, and #1648 builds it."
+last_verified: 2026-10-03
 title: "headwater init --harness ships no hook and no hook configuration for any harness"
-waiting_on: ruling
+waiting_on: build
 provenance:
   warrant: asserted
 relations:
@@ -29,12 +29,13 @@ Two rulings stop each obvious delivery:
 
 A third delivery is a flag on the verbs that ship, for example one that makes `route` read the payload of a harness. That is arguably the same second entry point. The choice among the three amends a ruling, so it is the owner's ([#1578](https://github.com/headwater-ai/headwater/issues/1578)).
 
+The owner ruled on 2026-10-03, on #1578. One `headwater hook` verb delivers the hooks, and no shell script ships first. The change that builds the verb amends the spec 5 rule that no hook introduces a verb, and it makes that amendment first. The hook work does not block the current milestone, so [#1648](https://github.com/headwater-ai/headwater/issues/1648) carries it in milestone 0.16.
+
 ## Obligation
 
-- The corpus owes a ruling on the delivery of a hook. The three choices are script bodies with an amendment to HW-DR-0077, and one hook verb with an amendment to spec 5. The third is a payload flag on the verbs that ship, with a sentence in spec 5 that states what an entry point is.
-- After that ruling, the harness step owes a hook at each position that an adopter can use. It also owes a hook configuration for each harness that spec 16 names.
+- The harness step owes a hook at each position that an adopter can use. It also owes a hook configuration for each harness that spec 16 names.
 - Spec 0 and spec 5 owe a sentence that matches what a release carries. Spec 0 already says that no release ships the hooks.
 
 ## Discharge
 
-The record discharges when two things are true. An owner ruling chooses the delivery. Under that ruling, `headwater init --harness` writes the hook positions, and the hook configuration of each harness that spec 16 names. A test then holds that the step writes each configuration, and that each hook calls only what the ruling allows.
+The record discharges when two things are true. The `headwater hook` verb of the ruling of 2026-10-03 exists, and spec 5 states it. Under that ruling, `headwater init --harness` writes the hook positions, and the hook configuration of each harness that spec 16 names. A test then holds that the step writes each configuration, and that each hook calls only what the ruling allows.
