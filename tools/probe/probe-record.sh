@@ -578,8 +578,12 @@ probe_log=$(cd "$probe_log" && pwd -P)
 # `cd`ed into its workspace, so it could read every file its user can: four
 # copies of this repository on the recording host, the oracle and the other
 # arms' trees beside the workspace in the batch directory, and the host's own
-# configuration. The 2026-09-30 re-run found 51 of 658 sessions that named a
-# path outside the workspace, and 16 of 658 that named a checkout. An init
+# configuration. In the 2026-09-30 re-run, 118 of 658 sessions named a path
+# outside the workspace, and 58 of 658 named a source of this repository that
+# their arm did not give them; 17 of those 58 named a copy on the host
+# (docs/evaluations/what-the-counterfactual-campaign-of-2026-09-30-measured-by-component.md,
+# Limits). The committed transcripts and #1467 state 44, because that count
+# read two channels of the first kind and no other. An init
 # line of 2026-09-28 showed `bypassPermissions`, 41 skills of which 5 were the
 # user's own, 6 connector MCP servers and the user's auto-memory.
 #
@@ -587,8 +591,13 @@ probe_log=$(cd "$probe_log" && pwd -P)
 # what is bound below: `/usr` and `/etc` read-only (with `/bin`, `/lib` and
 # their siblings as the host has them), a private `/proc`, `/dev` and `/tmp`,
 # the workspace read-write at its own path, the harness binary read-only, this
-# run's log directory read-write (the intent hook writes there), and a
-# configuration directory of the session's own read-write. Nothing else of
+# run's log directory read-write (the intent hook writes there), a
+# configuration directory of the session's own read-write, and the target of
+# `/etc/resolv.conf` read-only where it links out of `/etc` and `/usr`. The
+# environment is cleared, and the variables set below are the whole of it,
+# `LANG` and `ANTHROPIC_API_KEY` from the host among them. Spec 15 lists both
+# sets, and probe-record-fixtures.sh holds each list against this code
+# (#1641). Nothing else of
 # `$HOME`, no other tree of the batch and no copy of this repository on the
 # host is in it. That is the file system alone; the network is below.
 #
@@ -972,7 +981,7 @@ fi
 # The confinement and the configuration, stated (#1467). A rate of a batch
 # recorded under them does not compare with one of a batch before them, so the
 # transcript says so where a reader of one session meets it.
-printf 'The session ran confined to its workspace. The confinement bound the workspace read-write, `/usr` and `/etc` read-only, the harness, the egress proxy and the directory of its socket read-only, the log directory of this run and the configuration directory below, and nothing else of the host'"'"'s file system, so no copy of this repository on the host, no other tree of its batch and no configuration of the host was readable through the session'"'"'s file system.\n\n'
+printf 'The session ran confined to its workspace. The confinement bound the workspace read-write, `/usr` and `/etc` read-only, the harness, the egress proxy and the directory of its socket read-only, the log directory of this run, the configuration directory below, and the target of `/etc/resolv.conf` read-only where it links out of `/etc` and `/usr`, and nothing else of the host'"'"'s file system, so no copy of this repository on the host, no other tree of its batch and no configuration of the host was readable through the session'"'"'s file system.\n\n'
 printf 'The session ran under the configuration directory `%s`, which held a copy of the host'"'"'s credentials and nothing else, in the permission mode `%s`, with the tools `%s` allowed and `WebSearch` and `WebFetch` denied. The batches of 2026-09-28 and 2026-09-30 ran under `bypassPermissions` and the host'"'"'s configuration, so a rate of this session does not compare with a rate of theirs.\n\n' \
     "$config" "$permission_mode" "$allowed_tools"
 printf 'The session ran with no network of its own. Its one route out was a proxy outside it that opens no tunnel, and that forwards to %s on port 443 a request to the provider API only after it reads the request whole, so a direct connection to any other host, such as `gh api`, `curl` or `git clone` to GitHub, was refused. The proxy allowed %s, and refused %s.\n\n' \
