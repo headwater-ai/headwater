@@ -2,7 +2,7 @@
 id: HW-PROBE-a-session-says-how-a-governs-line-reaches-a-document
 status: current
 status_since: 2026-10-03
-summary: Many documents share the terms of this task and several still state the answer of a replaced ruling, so a session must find the one record in force among near copies.
+summary: Many documents share the terms of this task, and a superseded record, a discharged one and two generated pages still state the answer of a replaced ruling, so a session must find the one record in force among near copies.
 last_verified: 2026-10-03
 probe_category: navigability
 expectation: answered
@@ -38,17 +38,18 @@ expected: [command]
 
 **This probe has the distractors-at-scale shape (#1472).** The record in force is [HW-DR-0104](../decisions/0104-an-agent-writes-governs-traces-to-and-cited-in-through-the-verb-and-the-review-of-its-pull-request-is-the-acceptance.md), at `status: current`. It rules that `headwater new --relates` writes `governs`, `traces_to` and `cited_in`, and that the review of the pull request accepts each edge. On 2026-10-03, `headwater new evaluation --title "A trial of the governs edge" --relates governs=engine/crates/probe/src/grade.rs` exited 0 in a copy of this repository and wrote the edge.
 
-**Near copies state the other answer.** [HW-DR-0083](../decisions/0083-governs-and-traces-to-are-created-by-an-agent-because-a-session-proposes-the-line-and-a-person-types-it.md) is `superseded` by HW-DR-0104. It rules that a session proposes the line and a person types it, so its answer is `hand`. Several documents that are not superseded still state its answer, because they cite it and were not updated. A session that answers from any of them answers `hand`, and the grade finds that answer wrong.
+**Near copies state the other answer.** [HW-DR-0083](../decisions/0083-governs-and-traces-to-are-created-by-an-agent-because-a-session-proposes-the-line-and-a-person-types-it.md) is `superseded` by HW-DR-0104. It rules that a session proposes the line and a person types it, so its answer is `hand`. Three other documents still state its answer. None of them is a current record: one is a discharged obligation, and two are generated pages that print the summary of HW-DR-0083. A session that answers from any of them answers `hand`, and the grade finds that answer wrong.
 
-**The count, and how it was measured.** A near copy here is a document that holds the two key terms of the task, `governs` and `created_by`. The tree is a present tree sealed for the five probes of #1472 with `tools/probe/seal.sh`, on 2026-10-03. In that tree, `grep -r -l 'created_by' docs | wc -l` printed 52, and 39 of those files also hold `governs`. A search of the 39 for a sentence that says no verb writes the edge, or that a person types it, found these documents, which state the answer `hand` about `governs`:
+**The count, and how it was measured.** A near copy here is a document that holds the two key terms of the task, `governs` and `created_by`. The tree is a present tree sealed for the five harder probes of #1472 with `tools/probe/seal.sh`. In that tree, `grep -r -l 'created_by' docs | wc -l` prints the documents that hold the first term, and `xargs grep -l governs` over that list prints the near copies. Then `grep -n -i -E "no verb (of this engine )?writes|person types|is hand entry"` over the near copies prints each candidate sentence. A person reads each candidate and keeps the documents that state the answer `hand` about `governs`.
+
+**The recount of 2026-10-03, after #1642.** #1642 repaired three current documents that stated the answer `hand`: [HW-DR-0074](../decisions/0074-a-code-path-anchor-is-a-pattern-over-the-tree-and-it-binds-when-the-pattern-matches-at-least-one-entry.md), [the orchestration architecture](../process/specs/orchestration-architecture.md) and [HW-OBL-0001](../obligations/0001-the-promotion-fix-has-no-reading-of-the-assisted-fraction.md). Each one now cites HW-DR-0104. On the tree of that change, sealed as above, the first search printed 52 documents, and 39 of them are near copies. These 4 of the 39 state the answer `hand` about `governs`:
 
 - HW-DR-0083 itself, which is `superseded`.
-- [HW-DR-0074](../decisions/0074-a-code-path-anchor-is-a-pattern-over-the-tree-and-it-binds-when-the-pattern-matches-at-least-one-entry.md), at `current`: "a session proposes the line and a person types it".
-- [The orchestration architecture](../process/specs/orchestration-architecture.md), at `current`: "That relation is `created_by: agent`, and no verb writes it".
-- [HW-OBL-0001](../obligations/0001-the-promotion-fix-has-no-reading-of-the-assisted-fraction.md), at `current`: "No verb writes either, so every half of both is hand entry".
 - [HW-OBL-0105](../obligations/0105-nothing-plays-the-hook-role-that-two-relations-name.md), at `discharged`: "No verb of this engine writes either edge".
 - The generated index `docs/decisions/README.md` and the tombstone `docs/spec/09-open-questions.md`, which each print the summary of HW-DR-0083 beside the mark `superseded`.
 
-So 39 near copies share the key terms, and 7 of them state the other answer. HW-DR-0104 and [the contract of `headwater new`](../interfaces/headwater-new.md) state the expected one. The contract says that `--relates` accepts a relation that declares `created_by: agent`.
+The other candidate sentences are about another relation or another artifact. `docs/taxonomies/brd-prd/doctrine.md` says that a person types the line of a relation between a business need and a product document, and it cites HW-DR-0083. It does not name `governs`, so the count leaves it out. HW-DR-0104 and [the contract of `headwater new`](../interfaces/headwater-new.md) state the expected answer. The contract says that `--relates` accepts a relation that declares `created_by: agent`.
 
-**The distractors are not built for this probe.** Each one is a document of this corpus that went stale when HW-DR-0104 landed. A campaign over this probe therefore measures the corpus as it is. If a later change repairs these documents, the count above falls, and this probe must count again before it runs.
+**The first count, before #1642.** On a tree sealed the same way earlier on 2026-10-03, the same method found 52 documents, 39 near copies, and 7 of the 39 that state the answer `hand`. The three documents that #1642 repaired were the difference.
+
+**The distractors are not built for this probe.** Each one is a document of this corpus that went stale when HW-DR-0104 landed. A campaign over this probe therefore measures the corpus as it is. If a later change repairs more of these documents, the count above falls, and this probe must count again before it runs.
