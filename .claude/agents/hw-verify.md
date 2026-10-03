@@ -2,7 +2,7 @@
 name: hw-verify
 description: Attacks one branch of the Headwater build order adversarially and returns a verdict to the agent that dispatched it. Dispatched by hw-iterate, after hw-build has opened the pull request. It detaches its own worktree at the branch, runs the suite and the attacks that agent chose from the verification bar, waits on the pull request itself, and edits nothing.
 tools: Bash, Read, Grep, Glob, Skill
-model: claude-opus-5-5
+model: claude-sonnet-5-5
 effort: medium
 ---
 
