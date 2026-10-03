@@ -218,4 +218,13 @@
   #}
   <script src="{{ 'js/leading-digit-anchor-shim.js'|url }}"></script>
   {{ super() }}
+  {#
+    Mermaid is vendored at `js/mermaid.min.js` (5.5 MB, same origin, so the
+    `script-src 'self'` policy in `site/_headers` admits it and no third party
+    does). Only a page whose rendered body holds a mermaid block loads it.
+  #}
+  {% if page and page.content and 'language-mermaid' in page.content %}
+  <script src="{{ 'js/mermaid.min.js'|url }}"></script>
+  <script src="{{ 'js/mermaid-init.js'|url }}"></script>
+  {% endif %}
 {% endblock %}
