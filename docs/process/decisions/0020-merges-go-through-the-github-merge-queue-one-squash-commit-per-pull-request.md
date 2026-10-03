@@ -15,7 +15,7 @@ provenance:
 relations:
   governs:
     - to: .github/workflows/ci.yml
-      verified_revision: sha256:e5355e89faa3f6ff3f6ef8f01fb9dd1f8aa4ebc2f620d0e2272f4fe2cf05ffcc
+      verified_revision: sha256:bf2f3f3ececf609b223cb2b152f59edfc3aa33faddc50efc5f9d94511e968cf2
     - to: tools/run/queue-done.sh
       verified_revision: sha256:8f78819c2ec10471c380efa02b1804325f7b91f1ae43c486f7117a6277183858
     - to: tools/run/queue-done-fixtures.sh
@@ -62,7 +62,7 @@ The `required_status_checks` rule stays as it is, with one change: `strict_requi
 
 ## Consequences
 
-`.github/workflows/ci.yml` runs on `merge_group` with the type `checks_requested`. Both required jobs run on that event under the same names, so the queue always gets the two checks that it waits for. A `merge_group` ref is built from branches of this repository that a person with write access queued. So the workflow trusts it as it trusts a `push`, and the job can use the self-hosted runner. The `route` job runs on `merge_group` too, and it measures the pool as it does for a `push`. No job is skipped on the new event. The queue branches are excluded from the `push` trigger, so one queued commit starts one run.
+`.github/workflows/ci.yml` runs on `merge_group` with the type `checks_requested`. Both required jobs run on that event under the same names, so the queue always gets the two checks that it waits for. A `merge_group` ref is built from branches of this repository that a person with write access queued. So the workflow trusts it as it trusts a `push`, and the job can use the self-hosted runner. The `route` job runs on `merge_group` too, and it measures the pool as it does for a `push`. Two jobs that are not required checks do not always run on that event. The `deploy` job runs only on a push to `main`. The `recorder` job runs only when `CI_RUNNER` opts the run in and `route` did not move the run to a hosted runner. So the queue waits on no job that the event skips. The queue branches are excluded from the `push` trigger, so one queued commit starts one run.
 
 This record amends four others on one point each, and each of them now says so. [HW-PD-0013](0013-self-hosted-eligibility-in-ci-is-decided-by-the-event-alone-and-a-push-to-any-branch-is-eligible.md) and [HW-PD-0016](0016-ci-runner-is-an-opt-in-that-only-a-push-or-a-merge-group-reads-and-an-unset-value-falls-back-to-ubuntu-latest.md) named `push` as the only eligible event. [HW-PD-0018](0018-a-router-sends-a-push-or-merge-group-run-to-a-hosted-runner-when-the-self-hosted-pool-is-full-and-it-can-only-take-work-away.md) measured the pool only for a `push`. [HW-PD-0017](0017-ci-concurrency-is-per-ref-and-every-ref-but-main-cancels-a-superseded-run.md) called the run on `main` the only composition check.
 
