@@ -7,6 +7,7 @@
 #     sh tools/probe/campaign.sh --dry-run --spec <file> [--repetitions <n>] \
 #         [--max-sessions <n>]
 #     sh tools/probe/campaign-dry-run.sh <spec> [<repetitions>] [<max-sessions>]
+#     sh tools/probe/campaign-dry-run.sh --priced <spec>
 #
 # `tools/probe/campaign.sh` states what it prints and its exit statuses. This
 # file is the mechanism, kept apart from the batch driver because the batch
@@ -25,10 +26,26 @@
 # where pbar is the mean of the two rates, q is 1 - p, and n is n0 with the
 # Fleiss continuity correction. A line of a category that `pooled:` names
 # pools its probes into one rate, so it runs ceil(n / k) repetitions of each
-# of its k probes. The plan refuses a repetition count above the one the tier
-# declares, because only a person may raise what a run spends. So a pooled
-# line is planned at the declared count, for its probes and its refusals, and
-# priced here at the powered count.
+# of its k probes. A line of any other category prices at the count its tier
+# declares. The plan refuses a repetition count above the declared one, so
+# every line is planned at the declared count, for its probes and its
+# refusals, and priced here.
+#
+# **A count given.** `--repetitions <n>` is priced as given on every line, so
+# the dry run prices what the batch runs. A count at or below the declared
+# one is passed to the plan, a lowering, as the batch driver passes it. A
+# count above the declared one is admitted on a line only up to the count
+# that line prices at, and the plan is then at the declared count: the
+# owner's approval of a priced plan permits that raise and nothing above it
+# (#1659). A count above the price is refused, with 5, and the line names
+# its price. So a line not under `pooled:` admits no raise.
+#
+# **The priced counts.** `--priced <spec>` prints `<index> <declared>
+# <priced> <how>` for each line it can plan and exits 0, with no header, no
+# sum, no tree and no leak check. `campaign.sh` reads it to hold a batch to
+# the same rule, so the power calculation has one copy. A line whose plan
+# prints no arms or is refused for another reason than the ceiling prints
+# nothing, and the batch driver's own plan refuses it.
 #
 # **The sums.** Beside the sum of each arm and each tier, it prints the sum of
 # each tier and category, with its share of the total, so a person can see
@@ -38,12 +55,21 @@
 
 set -u
 
+priced=0
+if [ "${1:-}" = --priced ]; then
+    priced=1
+    shift
+fi
 spec=${1:-}
 asked=${2:-}
 slice=${3:-}
 case $slice in
     '') ;;
     *[!0-9]*|0) echo "campaign: --max-sessions takes a positive whole number, not \`$slice\`." >&2; exit 2 ;;
+esac
+case $asked in
+    '') ;;
+    *[!0-9]*|0*) echo "campaign: --repetitions takes a positive whole number, not \`$asked\`." >&2; exit 2 ;;
 esac
 
 case $0 in
@@ -53,6 +79,9 @@ esac
 root=$(cd "$invoked_from/../.." && pwd -P)
 engine=$root/engine/target/dev-release/headwater
 [ -x "$engine" ] || engine=$root/engine/target/release/headwater
+# The batch driver names the engine its own plans read, so the priced counts
+# come from the binary that plans the batch.
+engine=${HW_CAMPAIGN_ENGINE:-$engine}
 # The server the `mcp` arm starts is this engine's, unless `HW_PROBE_ENGINE`
 # names another binary: for the fixtures alone, which need a server that
 # lists nothing. Every plan reads this checkout's engine.
@@ -76,9 +105,11 @@ finish() {
 }
 
 head=$(git -C "$root" rev-parse HEAD) || finish 3
-printf 'campaign: dry run of %s at %s. No session starts and nothing is spent.\n' "$spec" "$head"
-if [ -n "$(git -C "$root" status --porcelain --untracked-files=no)" ]; then
-    printf 'campaign: the checkout has uncommitted changes. The plans read this checkout and the trees are HEAD.\n'
+if [ "$priced" = 0 ]; then
+    printf 'campaign: dry run of %s at %s. No session starts and nothing is spent.\n' "$spec" "$head"
+    if [ -n "$(git -C "$root" status --porcelain --untracked-files=no)" ]; then
+        printf 'campaign: the checkout has uncommitted changes. The plans read this checkout and the trees are HEAD.\n'
+    fi
 fi
 
 # ---------------------------------------------------------------------------
@@ -119,7 +150,7 @@ needed=$(awk -v p1="$p1" -v p2="$p2" -v alpha="$alpha" -v power="$power" '
     }')
 n0=${needed% *}
 n=${needed#* }
-printf 'power: %s against %s at a two-sided level of %s and a power of %s needs %s sessions per arm, %s with the Fleiss continuity correction. A line of %s pools its probes into one rate and runs ceil(%s / k) repetitions of each of its k probes.\n' \
+[ "$priced" = 1 ] || printf 'power: %s against %s at a two-sided level of %s and a power of %s needs %s sessions per arm, %s with the Fleiss continuity correction. A line of %s pools its probes into one rate and runs ceil(%s / k) repetitions of each of its k probes.\n' \
     "$p1" "$p2" "$alpha" "$power" "$n0" "$n" "${pooled:-no category}" "$n"
 
 # The probes kept on their own line (`leaks_kept:`), read with the parser
@@ -144,10 +175,20 @@ while IFS= read -r line; do
     for excluded in "$@"; do
         excludes="$excludes --exclude $excluded"
     done
+    # Every line is planned at the tier's declared count first, which is the
+    # one plan when no count is given. A count at or below the declared one
+    # is a lowering, and the line is planned again at it.
     # shellcheck disable=SC2086
     "$engine" probe plan --root "$root" --tier "$tier" --category "$category" $excludes \
-        ${asked:+--repetitions "$asked"} > "$work/plan.L$index" 2>&1
+        > "$work/plan.L$index" 2>&1
+    declared=$(sed -n 's/.* x \([0-9]*\) repetitions = .*/\1/p' "$work/plan.L$index" | head -1)
+    if [ "$priced" = 0 ] && [ -n "$asked" ] && [ -n "$declared" ] && [ "$asked" -le "$declared" ]; then
+        # shellcheck disable=SC2086
+        "$engine" probe plan --root "$root" --tier "$tier" --category "$category" $excludes \
+            --repetitions "$asked" > "$work/plan.L$index" 2>&1
+    fi
     if ! grep -q '^arms: \[' "$work/plan.L$index"; then
+        [ "$priced" = 1 ] && continue
         printf 'line %s (%s %s %s): the plan printed no arms:\n' "$index" "$tier" "$arm" "$category"
         sed 's/^/    /' "$work/plan.L$index"
         status=5
@@ -157,6 +198,7 @@ while IFS= read -r line; do
     case " $arms " in
         *" $arm "*) ;;
         *)
+            [ "$priced" = 1 ] && continue
             printf 'line %s (%s %s %s): the tier runs the arms %s and not `%s`.\n' "$index" "$tier" "$arm" "$category" "$arms" "$arm"
             status=5
             continue
@@ -166,9 +208,10 @@ while IFS= read -r line; do
     if [ -n "$refusal" ]; then
         case $refusal in
             *" sessions project "*" against a declared ceiling of "*)
-                printf 'L%s %s\n' "$index" "$refusal" >> "$work/refused"
+                [ "$priced" = 1 ] || printf 'L%s %s\n' "$index" "$refusal" >> "$work/refused"
                 ;;
             *)
+                [ "$priced" = 1 ] && continue
                 printf 'line %s (%s %s %s) is refused by the plan: %s\n' "$index" "$tier" "$arm" "$category" "$refusal"
                 status=5
                 continue
@@ -186,19 +229,45 @@ while IFS= read -r line; do
     fi
     probes=$(sed -n 's/^- \(HW-PROBE-[^ ]*\) (.*/\1/p' "$listing")
     k=$(printf '%s\n' "$probes" | awk 'NF' | wc -l | tr -d ' ')
-    declared=$(sed -n 's/.* x \([0-9]*\) repetitions = .*/\1/p' "$work/plan.L$index" | head -1)
+    # The count this line prices at when no count is given: the powered
+    # count for a pooled category, and the tier's declared count otherwise.
+    price=$declared
+    price_how="the tier's $declared"
+    case " $pooled " in
+        *" $category "*)
+            if [ "$k" -gt 0 ]; then
+                price=$(awk -v n="$n" -v k="$k" 'BEGIN { r = n / k; c = int(r); if (c < r) c++; print c }')
+                price_how="ceil($n / $k), powered"
+            fi
+            ;;
+    esac
+    if [ "$priced" = 1 ]; then
+        printf '%s %s %s %s\n' "$index" "$declared" "$price" "$price_how"
+        continue
+    fi
+    # A count above the declared one is admitted only up to the price (#1659).
+    if [ -n "$asked" ] && [ "$asked" -gt "$declared" ] && [ "$asked" -gt "$price" ]; then
+        printf 'line %s (%s %s %s): --repetitions %s is above the %s the dry run prices for it (%s).\n' \
+            "$index" "$tier" "$arm" "$category" "$asked" "$price" "$price_how"
+        status=5
+        continue
+    fi
     unit=$(sed -n 's/.*at a declared \$\([0-9.]*\) each.*/\1/p' "$work/plan.L$index" | head -1)
     ceiling=$(sed -n 's/.*against a ceiling of \$\([0-9.]*\)\..*/\1/p' "$work/plan.L$index" | head -1)
     unit=$(awk -v d="$unit" 'BEGIN { printf "%d", d * 100 + 0.5 }')
     ceiling=$(awk -v d="$ceiling" 'BEGIN { printf "%d", d * 100 + 0.5 }')
-    reps=$declared
-    how="the tier's $declared"
-    case " $pooled " in
-        *" $category "*)
-            reps=$(awk -v n="$n" -v k="$k" 'BEGIN { r = n / k; c = int(r); if (c < r) c++; print c }')
-            how="ceil($n / $k), powered; the plan is at the tier's $declared"
-            ;;
-    esac
+    # A count given is the count priced, so the dry run prices what the batch
+    # runs. Before #1659 a pooled line was priced at the powered count even
+    # when a count was given.
+    if [ -n "$asked" ]; then
+        reps=$asked
+        how=asked
+        [ "$asked" -gt "$declared" ] && how="asked; the plan is at the tier's $declared"
+    else
+        reps=$price
+        how=$price_how
+        [ "$price_how" != "the tier's $declared" ] && how="$price_how; the plan is at the tier's $declared"
+    fi
     sessions=$((k * reps))
     cents=$((sessions * unit))
     printf 'line %s  %s %s %s: %s probes x %s repetitions (%s) = %s sessions, $%s\n' \
@@ -230,6 +299,7 @@ $probe
     [ "$has_cued" = 1 ] && [ "$has_other" = 0 ] && group="$category (leak-kept)"
     printf '%s %s %s %s %s %s\n' "$tier" "$arm" "$sessions" "$cents" "$ceiling" "$group" >> "$work/costs"
 done < "$work/lines"
+[ "$priced" = 1 ] && finish 0
 
 # ---------------------------------------------------------------------------
 # The sums, by arm and by tier, against each tier's ceiling.

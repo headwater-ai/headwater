@@ -4074,8 +4074,8 @@ if [ -x "$engine" ]; then
         "$scratch/flat.out"
     # The priced counts the batch driver reads: one line each, and no tree.
     sh "$root/tools/probe/campaign-dry-run.sh" --priced "$scratch/batch-b.spec" > "$scratch/priced.out" 2> "$scratch/priced.err"
-    same "the priced mode exits 0 and prints the index, the declared and the priced count of each line" \
-        "0 1 30 118|6 30 118|6" \
+    same "the priced mode exits 0 and prints the index, the declared and the priced count of each line, and how it priced it" \
+        "0 1 30 118 ceil(353 / 3), powered|6 30 118 ceil(353 / 3), powered|6" \
         "$? $(sed -n 1p "$scratch/priced.out")|$(sed -n 6p "$scratch/priced.out")|$(wc -l < "$scratch/priced.out" | tr -d ' ')"
     printf 'documentation no-hook sufficiency\n' > "$scratch/arm.spec"
     PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
