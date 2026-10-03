@@ -136,6 +136,12 @@ const MOVED_CREDITS: &[(&str, &str, &str)] = &[
         "docs/interfaces/headwater-generate.md",
         "three scalars: the identifier, the kind and the name",
     ),
+    // A count in prose is a claim that no run derives again.
+    (
+        "count copied into prose",
+        "docs/interfaces/headwater-taxonomy.md",
+        "a count in prose goes false at the next change to the population that it counts",
+    ),
     // A generated file is excused from checks and not from identity.
     (
         "excuses a generated file",
