@@ -43,7 +43,15 @@ The tool excluded these lines, and listed each one under its file:
 | submitted by a recorder (`probe_session` not empty) | 0 |
 | empty `prompt_id` | 7 |
 
-One of the seven empty-id lines is `verify971-real-session-def456.jsonl`, a fixture session that a verifier wrote into the live log on 2026-09-22.
+Three files hold every excluded line:
+
+| file | torn | empty `prompt_id` |
+|---|---|---|
+| `de9c8ddd-41e4-45d1-90b3-8617e676498e.jsonl` | 1, line 72 | 0 |
+| `17deb7c5-5e16-4739-b66b-f67aad932602.jsonl` | 0 | 6, lines 1 to 6 |
+| `verify971-real-session-def456.jsonl` | 0 | 1, line 1 |
+
+The last file is a fixture session that a verifier wrote into the live log on 2026-09-22.
 
 The bound of HW-DR-0064 is 500 person prompts. The 500th joined prompt, in the time order of its first line, was logged at 2026-10-02T10:28:15Z. That line closed the period. The floor is 58 silent person prompts, and the log holds 123.
 
