@@ -1982,12 +1982,77 @@ print(s.recv(4096).decode("latin-1").split("\r\n", 1)[0])
             "$(px_ask 'CONNECT github.com:443 HTTP/1.1')"
         same "and a host name that reads like a list entry and is not one" "HTTP/1.1 403 Forbidden" \
             "$(px_ask 'CONNECT api.anthropic.com.example.net:443 HTTP/1.1')"
-        kill "$px_pid" 2>/dev/null
-        wait "$px_pid" 2>/dev/null
         same "and logs each refusal, once, before any upstream connection" \
             "refused api.anthropic.com:22|refused api.anthropic.com:443|refused github.com:443|refused api.anthropic.com.example.net:443" \
             "$(tr '\n' '|' < "$conf/px/log" | sed 's/|$//')"
-        same "the proxy names the hosts it allows, and no variable adds one" "api.anthropic.com platform.claude.com" \
+        # The provider API is reached only through the proxy's own reading of
+        # each request (#1467, the owner's ruling of 2026-10-03). A tunnel to
+        # the API host is opaque, so the proxy opens none, to either host the
+        # harness talks to. The session sends its requests in plain HTTP to its
+        # own forwarder, which `ANTHROPIC_BASE_URL` names, and the proxy reads
+        # each one and refuses, before any upstream connection, a request that
+        # asks the provider to reach another host for the session.
+        : > "$conf/px/log"
+        same "the proxy opens no tunnel to the provider API" "HTTP/1.1 403 Forbidden" \
+            "$(px_ask 'CONNECT api.anthropic.com:443 HTTP/1.1')"
+        same "and none to the host that refreshes a credential, which answers the Messages API too" "HTTP/1.1 403 Forbidden" \
+            "$(px_ask 'CONNECT platform.claude.com:443 HTTP/1.1')"
+        px_post() {
+            python3 -c '
+import socket, sys
+s = socket.socket(socket.AF_UNIX)
+s.settimeout(20)
+s.connect(sys.argv[1])
+body = sys.argv[3].encode()
+head = sys.argv[2] + "\r\nHost: 127.0.0.1:3128\r\nContent-Type: application/json\r\n" + sys.argv[4]
+if "Content-Length" not in sys.argv[4]:
+    head += "Content-Length: %d\r\n" % len(body)
+s.sendall(head.encode() + b"\r\n" + body)
+print(s.recv(4096).decode("latin-1").split("\r\n", 1)[0])
+' "$conf/px/s" "$1" "$2" "${3:-}" 2>/dev/null
+        }
+        px_tools() {
+            printf '{"model":"claude-haiku-4-5","max_tokens":1,"messages":[{"role":"user","content":"x"}],"tools":[{"name":"Bash","input_schema":{"type":"object"}},%s]}' "$1"
+        }
+        same "the proxy refuses a request that asks for the provider's web search" "HTTP/1.1 403 Forbidden" \
+            "$(px_post 'POST /v1/messages HTTP/1.1' "$(px_tools '{"type":"web_search_20250305","name":"web_search"}')")"
+        same "and one that asks for the provider's web fetch" "HTTP/1.1 403 Forbidden" \
+            "$(px_post 'POST /v1/messages?beta=true HTTP/1.1' "$(px_tools '{"type":"web_fetch_20250910","name":"web_fetch"}')")"
+        same "and one that names an MCP toolset" "HTTP/1.1 403 Forbidden" \
+            "$(px_post 'POST /v1/messages HTTP/1.1' "$(px_tools '{"type":"mcp_toolset","mcp_server_name":"gh"}')")"
+        same "and one that names an MCP server for the provider to call" "HTTP/1.1 403 Forbidden" \
+            "$(px_post 'POST /v1/messages HTTP/1.1' '{"model":"m","messages":[],"mcp_servers":[{"type":"url","url":"https://example.net/","name":"x"}]}')"
+        same "and one whose content asks the provider to fetch a URL, however deep" "HTTP/1.1 403 Forbidden" \
+            "$(px_post 'POST /v1/messages HTTP/1.1' '{"model":"m","messages":[{"role":"user","content":[{"type":"tool_result","tool_use_id":"t","content":[{"type":"document","source":{"type":"url","url":"https://github.com/x"}}]}]}]}')"
+        same "and one to a path of the API off its list" "HTTP/1.1 403 Forbidden" \
+            "$(px_post 'POST /v1/files HTTP/1.1' '{}')"
+        same "and one with a method off its list" "HTTP/1.1 403 Forbidden" \
+            "$(px_post 'GET /v1/messages HTTP/1.1' '')"
+        same "and one whose body is chunked, which it cannot read before it forwards" "HTTP/1.1 403 Forbidden" \
+            "$(px_post 'POST /v1/messages HTTP/1.1' '' 'Transfer-Encoding: chunked\r\n')"
+        same "and one whose body is compressed" "HTTP/1.1 403 Forbidden" \
+            "$(px_post 'POST /v1/messages HTTP/1.1' '{}' 'Content-Encoding: gzip\r\n')"
+        same "and one whose body is not JSON" "HTTP/1.1 403 Forbidden" \
+            "$(px_post 'POST /v1/messages HTTP/1.1' 'tools: web_search_20250305')"
+        same "and one whose body states a length past the cap" "HTTP/1.1 403 Forbidden" \
+            "$(px_post 'POST /v1/messages HTTP/1.1' '{}' 'Content-Length: 999999999999\r\n')"
+        same "and one that names a host other than the session's own forwarder" "HTTP/1.1 403 Forbidden" \
+            "$(px_post 'POST http://api.anthropic.com/v1/messages HTTP/1.1' "$(px_tools '{"name":"Read","input_schema":{"type":"object"}}')")"
+        same "and logs each refusal with what it refused, before any upstream connection" \
+            "refused api.anthropic.com:443|refused platform.claude.com:443|refused-tool web_search_20250305 api.anthropic.com:443|refused-tool web_fetch_20250910 api.anthropic.com:443|refused-tool mcp_toolset api.anthropic.com:443|refused-tool mcp_servers api.anthropic.com:443|refused-tool url-source api.anthropic.com:443|refused-path /v1/files api.anthropic.com:443|refused-path GET api.anthropic.com:443|refused-body chunked api.anthropic.com:443|refused-body compressed api.anthropic.com:443|refused-body not-json api.anthropic.com:443|refused-body too-long api.anthropic.com:443|refused api.anthropic.com:80" \
+            "$(tr '\n' '|' < "$conf/px/log" | sed 's/|$//')"
+        # The control: a request with the session's own client tools alone
+        # passes the reading and is forwarded. With no network the forward
+        # fails with 502; with one, the API answers it without a credential.
+        # Either way it is not the proxy's 403.
+        : > "$conf/px/log"
+        px_control=$(px_post 'POST /v1/messages?beta=true HTTP/1.1' "$(px_tools '{"name":"Read","input_schema":{"type":"object"}}')")
+        same "a request with client tools alone passes the reading" "passed" \
+            "$([ -n "$px_control" ] && [ "$px_control" != "HTTP/1.1 403 Forbidden" ] && echo passed || echo "refused: $px_control")"
+        same "and the proxy logs it allowed, once" "allowed api.anthropic.com:443" "$(cat "$conf/px/log")"
+        kill "$px_pid" 2>/dev/null
+        wait "$px_pid" 2>/dev/null
+        same "the proxy names the hosts it allows, and no variable adds one" "api.anthropic.com" \
             "$(HTTPS_PROXY=x ALLOWED=github.com HEADWATER_EGRESS_HOSTS=github.com python3 "$root/tools/probe/egress-proxy.py" hosts | tr '\n' ' ' | sed 's/ $//')"
 
         # No confinement, no session (#1467). A host with no `bwrap`, or one
