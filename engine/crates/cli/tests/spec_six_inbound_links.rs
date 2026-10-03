@@ -9,8 +9,18 @@
 //! decision) stays as written, so the walk skips it, and a table holds the
 //! count of each link that a record keeps to one of the seven sections.
 //!
-//! The walk cannot see a bare `06-engine-architecture.md` credit, or a credit
-//! to a section that still states something. A reader checks those.
+//! A second walk reads credits in prose (#1572 clause 9). A sentence that
+//! names spec 6, as a link to `06-engine-architecture.md` with or without an
+//! anchor or as the plain words "spec 6", and puts a present-tense credit verb
+//! right after the name, credits spec 6 with what follows. When that sentence
+//! or the next one holds a term of `MOVED_CREDITS`, the credit is to a rule
+//! that moved, and the sentence is repointed and its claim is corrected in
+//! place (HW-DR-0106). A past-tense verb ("said", "stated") is history and is
+//! not read.
+//!
+//! Neither walk can see a present-tense credit to a moved rule whose wording
+//! no row of `MOVED_CREDITS` names. A reader checks those, and a row is added
+//! for each one found.
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
@@ -66,6 +76,175 @@ const ALLOWED: &[(&str, &str, &str)] = &[
         "the server of spec 6",
     ),
 ];
+
+/// The rules and counts that spec 6 stated once and states no more, each with
+/// its home now. Each row is `(term, home, held)`: `term` is the wording of a
+/// credit to the old rule, lower case, and `held` is the wording at `home`
+/// that holds the rule now.
+const MOVED_CREDITS: &[(&str, &str, &str)] = &[
+    // The probe budget sits outside the root. Spec 5 states the three
+    // consequences, and the measurement subsystem states that nothing
+    // recomputes a budget.
+    (
+        "probe budget",
+        "docs/spec/05-ai-integration.md",
+        "no taxonomy rule reads it, no language regime binds it, and no shelf classifies it",
+    ),
+    (
+        "probe budget",
+        "docs/subsystems/measurement.md",
+        "a budget is a policy, and nothing recomputes it",
+    ),
+    // No crate of the checking loop opens a socket, and headwater-fetch is the
+    // one crate that does.
+    (
+        "socket",
+        "docs/requirements/0001-the-engine-reaches-no-network-at-check-time.md",
+        "`headwater-fetch` opens a socket",
+    ),
+    // What `--format` writes, and what a refusal writes, is in each verb
+    // contract.
+    (
+        "puts on standard output",
+        "docs/interfaces/headwater-check.md",
+        "a refusal writes nothing to standard output",
+    ),
+    // The `counted` grain of an export profile.
+    (
+        "placeholder",
+        "docs/spec/07-distribution-and-federation.md",
+        "a placeholder sits where each withheld node or edge would have been",
+    ),
+    // The generated-file marker and the closed identity block.
+    (
+        "when it was generated",
+        "docs/interfaces/headwater-generate.md",
+        "no generated file states when it was generated",
+    ),
+    (
+        "refuses that shape",
+        "docs/interfaces/headwater-generate.md",
+        "three scalars: the identifier, the kind and the name",
+    ),
+    // A count: spec 6 still lists the projection kinds, and the count moved.
+    (
+        "ten declarable",
+        SPEC_SIX,
+        "eleven of the thirteen are declarable",
+    ),
+];
+
+/// The verbs that make a sentence a present-tense credit to spec 6 when one
+/// of them is the first word after the name.
+const CREDIT_VERBS: &[&str] = &[
+    "says",
+    "states",
+    "puts",
+    "lists",
+    "rules",
+    "refuses",
+    "describes",
+    "declares",
+    "requires",
+    "gives",
+    "calls",
+    "closes",
+];
+
+/// The words that may stand between the name and the verb.
+const ADVERBS: &[&str] = &["then", "also", "still", "now", "already", "only"];
+
+/// The sentences of one line. A sentence ends at a full stop, a question
+/// mark or an exclamation mark that a space or the end of the line follows.
+fn sentences(line: &str) -> Vec<&str> {
+    let mut out = Vec::new();
+    let mut start = 0;
+    let bytes = line.as_bytes();
+    for (i, b) in bytes.iter().enumerate() {
+        if matches!(b, b'.' | b'?' | b'!') && bytes.get(i + 1).is_none_or(|n| *n == b' ') {
+            out.push(line[start..=i].trim());
+            start = i + 1;
+        }
+    }
+    let tail = line[start..].trim();
+    if !tail.is_empty() {
+        out.push(tail);
+    }
+    out
+}
+
+/// The byte offset just after each place that `sentence` names spec 6.
+fn spec_six_names(sentence: &str) -> Vec<usize> {
+    let mut ends = Vec::new();
+    // A link: the name ends at the `)` that closes its target.
+    let mut from = 0;
+    while let Some(at) = sentence[from..].find(SPEC_SIX_FILE) {
+        let after = from + at + SPEC_SIX_FILE.len();
+        if let Some(close) = sentence[after..].find(')') {
+            ends.push(after + close + 1);
+        }
+        from = after;
+    }
+    // The plain words, with a space after them, so that a link's text
+    // ("[Spec 6]") is read once, as the link.
+    let lower = sentence.to_lowercase();
+    let mut from = 0;
+    while let Some(at) = lower[from..].find("spec 6 ") {
+        ends.push(from + at + "spec 6".len());
+        from += at + "spec 6 ".len();
+    }
+    ends
+}
+
+/// True when `sentence` names spec 6 and the first word after the name, past
+/// at most one adverb, is a present-tense credit verb.
+fn credits_spec_six(sentence: &str) -> bool {
+    spec_six_names(sentence).into_iter().any(|end| {
+        let mut words = sentence[end..].split_whitespace().map(|w| {
+            w.trim_matches(|c: char| !c.is_alphanumeric())
+                .to_lowercase()
+        });
+        let Some(mut word) = words.next() else {
+            return false;
+        };
+        if ADVERBS.contains(&word.as_str()) {
+            let Some(next) = words.next() else {
+                return false;
+            };
+            word = next;
+        }
+        CREDIT_VERBS.contains(&word.as_str())
+    })
+}
+
+/// Every `(line, term)` in `text` where a present-tense credit to spec 6,
+/// read with the sentence after it, holds a term of `MOVED_CREDITS`, for a
+/// governing `rel`. A line is reported once for each term.
+fn moved_credits(rel: &str, text: &str) -> Vec<(usize, &'static str)> {
+    if !governs(rel, text) {
+        return Vec::new();
+    }
+    let mut out = Vec::new();
+    for (i, line) in text.lines().enumerate() {
+        let parts = sentences(line);
+        for (k, sentence) in parts.iter().enumerate() {
+            if !credits_spec_six(sentence) {
+                continue;
+            }
+            let mut window = sentence.to_lowercase();
+            if let Some(next) = parts.get(k + 1) {
+                window.push(' ');
+                window.push_str(&next.to_lowercase());
+            }
+            for (term, _, _) in MOVED_CREDITS {
+                if window.contains(term) && !out.contains(&(i + 1, *term)) {
+                    out.push((i + 1, *term));
+                }
+            }
+        }
+    }
+    out
+}
 
 /// True when the front matter of `text` says `status: superseded`.
 fn is_superseded(text: &str) -> bool {
@@ -179,6 +358,89 @@ fn no_governing_document_links_a_pointer_only_section_of_spec_6() {
         hits.len(),
         hits.join("\n")
     );
+}
+
+#[test]
+fn no_governing_sentence_credits_spec_6_in_the_present_tense_with_a_rule_it_no_longer_holds() {
+    let mut hits = Vec::new();
+    let mut walked = 0;
+    for rel in corpus_files() {
+        let text = read(&rel);
+        walked += 1;
+        for (line, term) in moved_credits(&rel, &text) {
+            hits.push(format!("{rel}:{line} \"{term}\""));
+        }
+    }
+    assert!(
+        walked > 100,
+        "the walk read {walked} files; it found no corpus"
+    );
+    assert!(
+        hits.is_empty(),
+        "{} governing line(s) credit spec 6 in the present tense with a rule it no longer holds; repoint each to the home MOVED_CREDITS names and correct the claim in place (HW-DR-0106):\n{}",
+        hits.len(),
+        hits.join("\n")
+    );
+}
+
+#[test]
+fn each_moved_term_is_gone_from_spec_6_and_held_at_its_home() {
+    let spec_six = read(SPEC_SIX).to_lowercase();
+    for (term, home, held) in MOVED_CREDITS {
+        assert!(
+            !spec_six.contains(term),
+            "spec 6 holds \"{term}\" again; drop its MOVED_CREDITS row or move the text"
+        );
+        assert!(
+            read(home).to_lowercase().contains(held),
+            "{home} no longer holds \"{held}\"; find the new home of \"{term}\""
+        );
+    }
+}
+
+#[test]
+fn a_present_tense_credit_to_a_moved_rule_is_flagged_and_history_is_not() {
+    let decision = "docs/decisions/0500-a-decision.md";
+    let budget =
+        "[Spec 6](../spec/06-engine-architecture.md#cli) puts the probe budget outside it.\n";
+    assert_eq!(moved_credits(decision, budget), vec![(1, "probe budget")]);
+
+    // An adverb may stand between the name and the verb, and a bare link is a
+    // name.
+    let then = "[Spec 6](../spec/06-engine-architecture.md) then puts the probe budget there.\n";
+    assert_eq!(moved_credits(decision, then).len(), 1);
+
+    // The same line in a record of a moment is not flagged.
+    for prefix in RECORDS_OF_A_MOMENT {
+        let rel = format!("{prefix}x.md");
+        assert!(moved_credits(&rel, budget).is_empty(), "{rel} was flagged");
+    }
+
+    // The past tense is history.
+    let said = "Spec 6 said that under `counted` a placeholder sat there.\n";
+    assert!(moved_credits(decision, said).is_empty());
+    let past = "When this was written, spec 6 said what `--format` puts on standard output.\n";
+    assert!(moved_credits(decision, past).is_empty());
+
+    // The plain words are a name.
+    let plain = "Spec 6 says that under counted a placeholder sits there.\n";
+    assert_eq!(moved_credits(decision, plain), vec![(1, "placeholder")]);
+    let lower = "It is not the placeholder that spec 6 describes.\n";
+    assert_eq!(moved_credits(decision, lower), vec![(1, "placeholder")]);
+
+    // A credit is read with the sentence after it, and not the one after that.
+    let next = "[Spec 6](../spec/06-engine-architecture.md#cli) states two things. No crate opens a socket.\n";
+    assert_eq!(moved_credits(decision, next), vec![(1, "socket")]);
+    let far = "Spec 6 states one thing. It is a shell. No crate opens a socket.\n";
+    assert!(moved_credits(decision, far).is_empty());
+
+    // A credit to a rule that spec 6 still states is not flagged.
+    let kept = "[Spec 6](../spec/06-engine-architecture.md#library) states that the CLI is a thin shell.\n";
+    assert!(moved_credits(decision, kept).is_empty());
+
+    // A present-tense credit to another part is not a credit to spec 6.
+    let other = "[Spec 5](../spec/05-ai-integration.md) puts the probe budget outside it.\n";
+    assert!(moved_credits(decision, other).is_empty());
 }
 
 #[test]
