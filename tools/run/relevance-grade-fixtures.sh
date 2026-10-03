@@ -25,8 +25,15 @@
 #      sha256sum), the owner's sample, and the same bytes for the same seed.
 #   d  ingest, agreement, the third pass and the consensus, against scores
 #      whose kappa was worked by hand.
-#   e  the arguments, a score file that does not cover its batch, and the
-#      exit without `jq`.
+#   e  the arguments, a score file that does not cover its batch or scores
+#      an item it was not given, and the exit without `jq`.
+#   f  the edges of the draw: a three-letter word, an empty list, and two
+#      paths of which one holds the other as a part.
+#   g  the third pass's batches of twelve.
+#   s  the seal: a probe is named in the record by its token alone (#1384).
+#
+# No task here is a prompt that a person typed. The owner ruled on
+# 2026-10-03 that no prompt text is committed.
 #
 # Run it from anywhere:
 #     sh tools/run/relevance-grade-fixtures.sh
@@ -72,6 +79,8 @@ doc b "Beta title" "Beta summary, plain."
 doc c "Gamma title" "'Gamma summary, first version.'"
 doc d "Delta title" '"Delta summary."'
 doc e "Epsilon title" '"Epsilon summary, current."'
+mkdir -p "$H/docs/probes"
+doc probes/p "Probe title" '"Probe summary."'
 git -C "$H" init -q
 git -C "$H" -c user.name=f -c user.email=f@f add docs
 git -C "$H" -c user.name=f -c user.email=f@f commit -q -m v1
@@ -215,10 +224,10 @@ for id in v1 v2 v3 j1 j2 o1 o2 o3 x1 n1 late; do
     prompt c "2026-09-30T10:$(printf '%02d' "$i"):00.000Z" "$id"
 done
 logline c 2026-09-30T10:01:05Z v1 "Which decision governs the bound?" "$(route silent)" "$(neighbors "docs/a.md=$DA")"
-logline c 2026-09-30T10:02:05Z v2 "  /compact " "$(route silent)" "$(neighbors "docs/a.md=$DA")"
-logline c 2026-09-30T10:03:05Z v3 "ok A then 1 and 3" "$(route silent)" "$(neighbors "docs/a.md=$DA")"
+logline c 2026-09-30T10:02:05Z v2 "  /frobnicate " "$(route silent)" "$(neighbors "docs/a.md=$DA")"
+logline c 2026-09-30T10:03:05Z v3 "ok Q then 7 and 9" "$(route silent)" "$(neighbors "docs/a.md=$DA")"
 logline c 2026-09-30T10:04:05Z j1 "Explain the merge queue rules" "$(route "docs/b.md=$SB")" "$(neighbors "docs/a.md=$DA")"
-logline c 2026-09-30T10:05:05Z j2 "/next-run 20 --parallel 4" "$(route "docs/b.md=$SB")" "$(neighbors "docs/c.md=$DC1")"
+logline c 2026-09-30T10:05:05Z j2 "/frobnicate 9 --widgets 3" "$(route "docs/b.md=$SB")" "$(neighbors "docs/c.md=$DC1")"
 logline c 2026-09-30T10:06:05Z o1 "Summarize the delta" "$(route "docs/d.md=$SD")" "$(neighbors "docs/d.md=$DD")"
 logline c 2026-09-30T10:07:05Z o2 "Summarize the beta" "$(route "docs/b.md=$SB")" "$(neighbors "docs/b.md=$DB" "docs/a.md=$DA")"
 logline c 2026-09-30T10:08:05Z o3 "Summarize the alpha" "$(route "docs/a.md=$SA")" "$(neighbors "docs/a.md=$DA")"
@@ -277,8 +286,17 @@ awk -F '\t' 'NR > 1 { print $1 }' "$scratch/c/rec/sample.tsv" | while IFS= read 
 done | LC_ALL=C sort | cut -f 2 > "$scratch/c.porder"
 awk -F '\t' '$1 == "rater" { print $3 }' "$scratch/c/pk/key/prompts.tsv" > "$scratch/c.pgot"
 check "c: the packet orders its prompts by the seeded key" 'cmp -s "$scratch/c.porder" "$scratch/c.pgot"' "want $(tr '\n' ' ' < "$scratch/c.porder"), got $(tr '\n' ' ' < "$scratch/c.pgot")"
+check "c: the owner packet opens by asking the owner to rate before opening the record" \
+    '[ "$(head -n 1 "$scratch/c/pk/owner/packet.md")" = "Rate each prompt before you open tools/run/relevance-grade/ or any other" ]' \
+    "got: $(head -n 1 "$scratch/c/pk/owner/packet.md")"
 rg c packets --seed 42 --batch 2
 has c "$scratch/c/pk/key/packets.txt" "batches: 3 of up to 2 prompts"
+# A rewrite clears the packets it replaces, so no batch of the last run is
+# left for a rater to open.
+rg c packets --seed 42
+check "c: a rewrite with one batch leaves no second batch of the rewrite before" \
+    '[ ! -e "$scratch/c/pk/rater-a/batch-02.md" ] && [ ! -e "$scratch/c/pk/rater-b/batch-03.md" ]' \
+    "found: $(ls "$scratch/c/pk/rater-a" | tr '\n' ' ')"
 
 # d: scores for case a's prompt s1, by path, written through the key.
 K="$scratch/a1/pk/key/documents.tsv"
@@ -325,6 +343,86 @@ has d "$C" "s1${tab}docs/c.md${tab}0${tab}agreed"
 has d "$C" "s1${tab}docs/d.md${tab}1${tab}third"
 has d "$C" "s1${tab}missing${tab}1${tab}third"
 
+# f: the edges of the draw. f1 holds one word of three letters outside the
+# reply list, so it is kept. f2 is silent and its embedding path offered
+# nothing, so it is excluded as empty-list. f3's route offers a path that
+# holds the embedding path's one path as a part, and the two share no
+# document, so f3 is disjoint.
+i=0
+for id in f1 f2 f3; do
+    i=$((i + 1))
+    prompt f "2026-09-30T10:0$i:00.000Z" "$id"
+done
+logline f 2026-09-30T10:01:05Z f1 "fix it" "$(route silent)" "$(neighbors "docs/a.md=$DA")"
+logline f 2026-09-30T10:02:05Z f2 "Where does the gamma rule live?" "$(route silent)" "$(neighbors)"
+logline f 2026-09-30T10:03:05Z f3 "Which page holds the alpha rule?" "$(route "docs/old/docs/a.md=$SA")" "$(neighbors "docs/a.md=$DA")"
+rg f draw --until 2026-10-01T00:00:00Z --seed 7
+rc "f: draws" f.draw 0
+has f "$scratch/f/rec/draw.txt" "stratum silent: 2, excluded 1, kept 1, drawn 1"
+has f "$scratch/f/rec/draw.txt" "stratum disjoint: 1, excluded 0, kept 1, drawn 1"
+has f "$scratch/f/rec/draw.txt" "stratum overlap: 0, excluded 0, kept 0, drawn 0"
+has f "$scratch/f/rec/draw.txt" "excluded empty-list: 1"
+has f "$scratch/f/rec/draw.txt" "excluded no-word: 0"
+has f "$scratch/f/rec/excluded.tsv" "f2${tab}silent${tab}empty-list"
+check "f: a task with one three-letter word outside the reply list is kept" 'awk -F "\t" "\$1 == \"f1\"" "$scratch/f/rec/sample.tsv" | grep -q .'
+
+# g: the third pass writes batches of twelve prompts. Thirteen silent
+# prompts each list one document, and the two raters differ on each.
+i=0
+for n in 01 02 03 04 05 06 07 08 09 10 11 12 13; do
+    prompt g "2026-09-30T10:$n:00.000Z" "g$n"
+    logline g "2026-09-30T10:$n:05Z" "g$n" "Which rule bounds case $n?" "$(route silent)" "$(neighbors "docs/a.md=$DA")"
+done
+rg g draw --until 2026-10-01T00:00:00Z --seed 7
+rg g packets --seed 7 --batch 20
+awk -F '\t' '$1 == "rater" { print $2 "\tD1\t0\n" $2 "\tmissing\t0" }' "$scratch/g/pk/key/prompts.tsv" > "$scratch/g/pk/rater-a/scores-01.tsv"
+awk -F '\t' '$1 == "rater" { print $2 "\tD1\t1\n" $2 "\tmissing\t0" }' "$scratch/g/pk/key/prompts.tsv" > "$scratch/g/pk/rater-b/scores-01.tsv"
+rg g ingest a
+rg g ingest b
+rg g agreement
+rg g third --seed 7
+rc "g: writes the third packet" g.third 0
+has g "$scratch/g.third.out" "third pass: 13 prompts, 13 items"
+check "g: the third pass puts twelve prompts in its first batch and one in its second" \
+    '[ "$(grep -c "^rate only: " "$scratch/g/pk/rater-third/batch-01.md")" = 12 ] && [ "$(grep -c "^rate only: " "$scratch/g/pk/rater-third/batch-02.md")" = 1 ]' \
+    "got: $(grep -c '^rate only: ' "$scratch/g/pk/rater-third"/batch-*.md | tr '\n' ' ')"
+
+# s: the seal. The route offers a probe and the embedding path offers B.
+# The record names the probe by its token, the key keeps its path, the
+# packet renders it, and the third pass and the consensus read it through
+# the token.
+SP='Probe summary.'
+TOKEN="sealed:$(sha docs/probes/p.md | cut -c 1-16)"
+prompt s 2026-09-30T10:00:00.000Z w1
+logline s 2026-09-30T10:00:05Z w1 "$TASK" "$(route "docs/probes/p.md=$SP")" "$(neighbors "docs/b.md=$DB")"
+rg s draw --until 2026-10-01T00:00:00Z --seed 7
+rg s packets --seed 7
+rc "s: writes its packets" s.packets 0
+lacks s "$scratch/s/rec/sample.tsv" "probes"
+check "s: the sample names the probe by its token" 'awk -F "\t" "\$1 == \"w1\" { print \$7 }" "$scratch/s/rec/sample.tsv" | grep -Fqx "$TOKEN"' \
+    "got: $(awk -F '\t' '$1 == "w1"' "$scratch/s/rec/sample.tsv")"
+has s "$scratch/s/pk/rater-a/batch-01.md" "    $SP"
+check "s: the key keeps the probe's path" 'grep -Fq "${tab}docs/probes/p.md" "$scratch/s/pk/key/documents.tsv"'
+SK="$scratch/s/pk/key/documents.tsv"
+slab() { awk -F '\t' -v p="$1" '$3 == p { print $2 }' "$SK"; }
+printf 'P1\t%s\t0\nP1\t%s\t1\nP1\tmissing\t0\n' "$(slab docs/probes/p.md)" "$(slab docs/b.md)" > "$scratch/s/pk/rater-a/scores-01.tsv"
+printf 'P1\t%s\t2\nP1\t%s\t1\nP1\tmissing\t0\n' "$(slab docs/probes/p.md)" "$(slab docs/b.md)" > "$scratch/s/pk/rater-b/scores-01.tsv"
+rg s ingest a
+rg s ingest b
+rc "s: ingests rater b" s.ingest 0
+for f in scores-a.tsv scores-b.tsv; do lacks s "$scratch/s/rec/$f" "probes"; done
+has s "$scratch/s/rec/scores-a.tsv" "w1${tab}$TOKEN${tab}0"
+rg s agreement
+has s "$scratch/s/rec/disagreements.tsv" "w1${tab}$TOKEN${tab}disjoint"
+rg s third --seed 7
+has s "$scratch/s/pk/rater-third/batch-01.md" "rate only: $(slab docs/probes/p.md) "
+printf 'P1\t%s\t1\n' "$(slab docs/probes/p.md)" > "$scratch/s/pk/rater-third/scores-01.tsv"
+rg s ingest third
+rc "s: ingests the third pass" s.ingest 0
+rg s consensus
+has s "$scratch/s/rec/consensus.tsv" "w1${tab}$TOKEN${tab}1${tab}third"
+for f in "$scratch/s/rec"/*; do lacks s "$f" "docs/probes/"; done
+
 # e: the arguments, a short score file, and no `jq`.
 rg a1 draw --seed 7
 rc "e: a draw with no --until exits 2" a1.draw 2
@@ -346,6 +444,14 @@ rc "e: a missing flag of 2 exits 4" a1.ingest 4
 scores 2 1 0 3 0 > "$scratch/a1/pk/rater-a/scores-01.tsv"
 rg a1 ingest a
 rc "e: a score of 3 exits 4" a1.ingest 4
+scores 2 1 0 0 0 > "$scratch/a1/pk/rater-a/scores-01.tsv"
+printf 'P1\tD9\t1\n' >> "$scratch/a1/pk/rater-a/scores-01.tsv"
+rg a1 ingest a
+rc "e: a score of a label the packet does not list exits 4" a1.ingest 4
+scores 2 1 0 0 0 > "$scratch/a1/pk/rater-a/scores-01.tsv"
+printf 'P7\tmissing\t0\n' >> "$scratch/a1/pk/rater-a/scores-01.tsv"
+rg a1 ingest a
+rc "e: a flag of a prompt the packet does not hold exits 4" a1.ingest 4
 mkdir -p "$scratch/nojq"
 PATH="$scratch/nojq" /bin/sh "$tool" draw > "$scratch/e.out" 2> "$scratch/e.err"
 echo $? > "$scratch/e.rc"

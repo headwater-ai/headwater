@@ -338,6 +338,27 @@ mkdir -p "$scratch/g3"
 cp -r "$scratch/a/t" "$scratch/a/log" "$scratch/g3/"
 run g3 --until yesterday
 rc "g: an --until that is not an ISO time exits 2" g3 2
+# g4: q1 was typed at 11:00:00, exactly at the cut, so it is typed. Its line
+# is at 11:00:05, after the cut, so it is dropped, and q1 is a gap.
+mkdir -p "$scratch/g4"
+cp -r "$scratch/a/t" "$scratch/a/log" "$scratch/g4/"
+run g4 --until 2026-09-30T11:00:00Z
+has g "$scratch/g4.out" "typed: 5"
+has g "$scratch/g4.out" "joined: 4"
+has g "$scratch/g4.out" "gaps: 1"
+# g5: a line whose time does not parse is read under a cut.
+mkdir -p "$scratch/g5"
+cp -r "$scratch/a/t" "$scratch/a/log" "$scratch/g5/"
+logline g5 S1 garbled zz false "$A" "$silent" "$(neighbors "$A" docs/x.md)"
+run g5 --until 2026-09-30T10:59:00Z
+has g "$scratch/g5.out" "lines after until: 6"
+has g "$scratch/g5.out" "log lines: 8"
+# g6: a cut with a fraction of a second is compared to the second.
+mkdir -p "$scratch/g6"
+cp -r "$scratch/a/t" "$scratch/a/log" "$scratch/g6/"
+run g6 --until 2026-09-30T10:59:00.500Z
+rc "g: an --until with a fraction of a second exits 0" g6 0
+has g "$scratch/g6.out" "lines after until: 6"
 
 # h: `--rows` writes one row per joined id, in time order of its earliest
 # line, and names that line. p2 is logged twice, and its row is its earliest
