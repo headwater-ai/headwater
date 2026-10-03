@@ -324,6 +324,36 @@ fn spec_6_shares_no_run_of_eight_words_with_the_adapter_sections_of_checks_and_c
     }
 }
 
+/// The body of spec 6's `### CI adapters`, from its heading to the next
+/// heading.
+fn ci_adapters(six: &str) -> Vec<&str> {
+    let mut lines = six.lines().skip_while(|l| *l != "### CI adapters");
+    assert!(lines.next().is_some(), "spec 6 has no `### CI adapters`");
+    lines.take_while(|l| !l.starts_with('#')).collect()
+}
+
+/// Spec 6's `### CI adapters` is one short paragraph that points at
+/// checks-and-cache, and it keeps its heading, which inbound links name.
+///
+/// # Watched failing
+///
+/// On `main` at `a629c0be` the section was 1,143 words long, and this
+/// reddened.
+#[test]
+fn spec_6_keeps_a_short_ci_adapters_section_that_points_at_checks_and_cache() {
+    let six = spec_six();
+    let body = ci_adapters(&six).join("\n");
+    let count = body.split_whitespace().count();
+    assert!(
+        count <= 120,
+        "spec 6's `### CI adapters` is {count} words, and the bar is 120"
+    );
+    assert!(
+        body.contains("../subsystems/checks-and-cache.md#"),
+        "spec 6's `### CI adapters` does not link checks-and-cache"
+    );
+}
+
 fn engine_sources(dir: &Path, out: &mut Vec<PathBuf>) {
     for entry in std::fs::read_dir(dir).expect("read an engine directory") {
         let path = entry.expect("read a directory entry").path();
@@ -383,6 +413,7 @@ const MOVED_CLAIMS: [&str; 6] = [
 fn no_comment_quotes_moved_adapter_text_as_spec_6() {
     let engine = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     let sections = plain(&adapter_sections(&checks_and_cache()).join(" "));
+    let kept = plain(&ci_adapters(&spec_six()).join(" "));
     let mut files = Vec::new();
     engine_sources(&engine.join("crates"), &mut files);
     let mut credited = Vec::new();
@@ -420,6 +451,15 @@ fn no_comment_quotes_moved_adapter_text_as_spec_6() {
                 let quote = quote.trim_end_matches(['.', ',']);
                 if quote.split_whitespace().count() >= 4 && sections.contains(quote) {
                     credited.push(format!("{rel}:{}: {quote:?}", i + 1));
+                    continue;
+                }
+                // A quote under a link to spec 6's section is text that the
+                // section still holds, or the link points at nothing.
+                if quote.split_whitespace().count() >= 4
+                    && joined.contains("#ci-adapters")
+                    && !kept.contains(quote)
+                {
+                    credited.push(format!("{rel}:{}: {quote:?} (not in spec 6)", i + 1));
                     continue;
                 }
             }
