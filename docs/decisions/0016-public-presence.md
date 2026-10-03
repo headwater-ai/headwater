@@ -46,7 +46,7 @@ Registration closes with no new machinery, because two obliged channels already 
 | Compatibility, integrations | [Q13](0013-linkml-and-shacl-as-substrate.md)'s six emitters, of which two ship | Answered, and the answer is two |
 | Docs, getting started | [Spec 3](../spec/03-authoring-and-lifecycle.md), the [interview](../spec/07-distribution-and-federation.md#the-interview) and the [tutorial](../tutorials/your-first-governed-corpus.md) | Answered as a document, and the page that would carry it waits on the site |
 | Pricing, enterprise, consulting | [Q11](0011-license-and-distribution-posture.md) | Partial. The terms are Apache-2.0, and where a commercial tier sits is still open |
-| Compliance, audits, self-assessment | [Spec 4](../spec/04-assurance-model.md)'s obligation and gap registers, and [spec 6](../spec/06-engine-architecture.md#what-a-filtered-export-claims-and-what-it-does-not)'s one claim and five non-claims | Answered |
+| Compliance, audits, self-assessment | [Spec 4](../spec/04-assurance-model.md)'s obligation and gap registers, and [spec 7](../spec/07-distribution-and-federation.md#what-a-filtered-export-claims-and-what-it-does-not)'s one claim and five non-claims | Answered |
 | Changelog, community, open-source posture | [Q11](0011-license-and-distribution-posture.md). There is no changelog and no community | Partial. The posture is stated, and neither artifact exists |
 | `llms.txt`, AI-crawler `robots.txt` | Cheap to emit, and measurably unread | Ship it, and count it as nothing |
 

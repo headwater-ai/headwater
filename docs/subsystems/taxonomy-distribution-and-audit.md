@@ -45,7 +45,7 @@ None of the three builds the lock. The [Taxonomy resolution](taxonomy-resolution
 
 Other documents state what these verbs do, and this spec does not repeat them:
 
-- [Spec 6](../spec/06-engine-architecture.md#taxonomy-validate-versus-taxonomy-audit) states what `taxonomy audit` reads and why it gates nothing. The `taxonomy vendor` paragraph of the same part states why one crate holds the network.
+- [The `headwater taxonomy` contract](../interfaces/headwater-taxonomy.md#description) states what `taxonomy audit` reads and why it gates nothing. The `taxonomy vendor` paragraph of the same part states why one crate holds the network.
 - [Spec 2](../spec/02-taxonomy-model.md#versioning-by-measured-compatibility) states the six dimensions of compatibility and the version bump that each result requires.
 - [Spec 7](../spec/07-distribution-and-federation.md#consuming) states how a consumer vendors and fetches a package. Its [Upgrading](../spec/07-distribution-and-federation.md#upgrading) section states what `diff` and `migrate` report. Its [adoption store](../spec/07-distribution-and-federation.md#what-the-adoption-store-records-and-what-it-refuses-to) section states what one reading holds.
 - The [`headwater taxonomy`](../interfaces/headwater-taxonomy.md) contract states the commands, their flags and their exit codes.
@@ -118,7 +118,7 @@ A finding needs a declared input. The `Finding` type has two arms, and each one 
 
 Every other reading is a distribution, printed with its population and with no verdict. Nothing declares how narrow a facet can be, or how low a capture rate can fall. A bar that this crate invented would be a verdict that no corpus declared. [HW-OBL-0119](../obligations/0119-an-audit-reading-carries-no-declared-bar-so-a-distribution-cannot-become-a-finding.md) holds that gap.
 
-`Creators` holds the creator reading at the grain that [spec 6](../spec/06-engine-architecture.md#taxonomy-validate-versus-taxonomy-audit) rules, one row for each relation. It walks the closed set `CREATORS` and not the values in use.
+`Creators` holds the creator reading at the grain that [the `headwater taxonomy` contract](../interfaces/headwater-taxonomy.md#description) rules, one row for each relation. It walks the closed set `CREATORS` and not the values in use.
 
 The freshness of an edge is the freshness of the document that carries its half. The facet in the `freshness` role records when somebody last verified the document, its front matter included. The report states the reading in those words, because no corpus keeps a verification record for each edge.
 

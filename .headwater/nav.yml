@@ -108,6 +108,7 @@ nav:
       - "An editor integration starts headwater mcp for each query and does not embed the library": "decisions/0102-an-editor-integration-starts-headwater-mcp-for-each-query-and-does-not-embed-the-library.md"
       - "An evidence relation declares which end is the evidence, and discharges declares the source": "decisions/0103-an-evidence-relation-declares-which-end-is-the-evidence-and-discharges-declares-the-source.md"
       - "Whether the embedding path becomes the silence-only fallback of routing, and what happens to the shadow collection": "decisions/0105-whether-the-embedding-path-becomes-the-silence-only-fallback-of-routing-and-what-happens-to-the-shadow-collection.md"
+      - "A governing document repoints a link to a rule that moved, and a record of a moment stays as written": "decisions/0106-a-governing-document-repoints-a-link-to-a-rule-that-moved-and-a-record-of-a-moment-stays-as-written.md"
   - "Acceptance criteria":
       - "Acceptance criteria": "acceptance-criteria/README.md"
       - "No engine source outside the fetch crate names a network API and no crate of the checking loop reaches a network package": "acceptance-criteria/0001-no-engine-source-outside-the-fetch-crate-names-a-network-api-and-no-crate-of-the-checking-loop-reaches-a-network-package.md"

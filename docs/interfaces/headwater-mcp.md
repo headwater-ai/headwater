@@ -92,4 +92,4 @@ The default server writes no file. A write-enabled server ends its usable sessio
 
 [Spec 5](../spec/05-ai-integration.md#what-the-server-may-do-and-the-axis-that-decides-it) defines the query, working-tree write and landed-write classes.
 
-[Spec 6](../spec/06-engine-architecture.md#mcp-server) defines the MCP transport boundary.
+[Queries and explain](../subsystems/queries-and-explain.md#mcp) defines the MCP transport boundary.

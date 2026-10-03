@@ -22,7 +22,7 @@ relations:
 
 ## Context
 
-[Spec 6](../spec/06-engine-architecture.md#taxonomy-validate-versus-taxonomy-audit) says the findings of `taxonomy audit` are "advisory by construction, because a young or small corpus fails differentiation for reasons that are not defects". That sentence reads as a statement about severity. The build of the verb found that it is a statement about something earlier. For five of the six readings there is nothing to be advisory *about*, because no declaration says what the reading would have to cross.
+[The `headwater taxonomy` contract](../interfaces/headwater-taxonomy.md#description) says that each finding of `taxonomy audit` is advisory, because a young or small corpus fails differentiation for reasons that are not defects. That sentence reads as a statement about severity. The build of the verb found that it is a statement about something earlier. For five of the six readings there is nothing to be advisory *about*, because no declaration says what the reading would have to cross.
 
 The one exception is `stale_after_days`, which the freshness facet declares. `taxonomy audit` is its first reader in this engine, and the taxonomy states 180 days. So "this relation has a half on a document past the window" is a verdict out of the corpus rather than out of the code. Every other reading arrives with a population and a number, and with nothing to compare the number against.
 

@@ -22,7 +22,7 @@ relations:
 
 ## Context
 
-The build-order run's parent measured [spec 13](../spec/13-open-obligations.md) against its own merge commits and found its stated counts wrong three times in two days. At `9253b97` the file said 117 records against 125 on disk, eight short. At `c4a0ff0` it said 126 records and 122 items against 127 on disk, one short. Each gap stood until an iteration doing unrelated work tripped over it and repaired it, first at #232 and again at #244. Neither repair was a deliberate check for drift. [Spec 6](../spec/06-engine-architecture.md#taxonomy-validate-versus-taxonomy-audit) already names this defect and states the remedy, that a document needing such a figure names the verb producing it instead. An earlier pass rewrote six committed counts on that rule, and spec 13 was not among them.
+The build-order run's parent measured [spec 13](../spec/13-open-obligations.md) against its own merge commits and found its stated counts wrong three times in two days. At `9253b97` the file said 117 records against 125 on disk, eight short. At `c4a0ff0` it said 126 records and 122 items against 127 on disk, one short. Each gap stood until an iteration doing unrelated work tripped over it and repaired it, first at #232 and again at #244. Neither repair was a deliberate check for drift. [The `headwater taxonomy` contract](../interfaces/headwater-taxonomy.md#description) already names this defect and states the remedy, that a document needing such a figure names the verb producing it instead. An earlier pass rewrote six committed counts on that rule, and spec 13 was not among them.
 
 ## Obligation
 

@@ -15,7 +15,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - HW-SPEC-engine-architecture
+    - HW-SPEC-distribution-and-federation
     - HW-SPEC-assurance-model
 ---
 
@@ -23,7 +23,7 @@ relations:
 
 ## Context
 
-[Spec 6](../spec/06-engine-architecture.md#an-export-is-a-projection-and-it-declares-what-it-dropped) requires an emitter to declare what its target cannot carry. It also requires a census over the output that holds the declaration to the bytes. `headwater_adapter::census` is that audit for the four output formats of a run. It reads the rendered artifact rather than the emitter. That is the right posture, because an emitter that audited itself would be the untrusted projector one layer out.
+[Spec 7](../spec/07-distribution-and-federation.md#an-export-is-a-projection-and-it-declares-what-it-dropped) requires an emitter to declare what its target cannot carry. It also requires a census over the output that holds the declaration to the bytes. `headwater_adapter::census` is that audit for the four output formats of a run. It reads the rendered artifact rather than the emitter. That is the right posture, because an emitter that audited itself would be the untrusted projector one layer out.
 
 The instrument it reads with is a substring test. A finding counts as carried when the artifact contains its rule name anywhere, and contains its path anywhere. Those are two independent tests over the whole document. Neither asks whether the two appear together, and neither asks whether either appears in a findings block.
 

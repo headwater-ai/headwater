@@ -29,7 +29,7 @@ The export could not help. Under `counted`, each tombstone stated a rule and a c
 Three statements pull against each other here:
 
 - HW-DR-0017 and [spec 1](../spec/01-conceptual-model.md#external-anchor) say that withheld is never reported as unresolved.
-- [Spec 6](../spec/06-engine-architecture.md#an-export-profile-carries-a-filter) says that under `counted` the existence of the item is not the secret, and under `sealed` it is. It also says that the rule identifier is all that a reader of a tombstone gets.
+- [Spec 7](../spec/07-distribution-and-federation.md#an-export-profile-carries-a-filter) says that under `counted` the existence of the item is not the secret, and under `sealed` it is. It also says that the rule identifier is all that a reader of a tombstone gets.
 - A filtered export must not carry the identifier or the path of a document it withheld. The fixture `a_filtered_profile_withholds_a_document_and_its_edges` in `engine/crates/generate/tests/fixtures.rs` holds that.
 
 ## Decision

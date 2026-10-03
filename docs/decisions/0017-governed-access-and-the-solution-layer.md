@@ -43,7 +43,7 @@ There is a coherent version of the proposal. Name it, so that no one adopts it b
 
 The open-question entry placed enforcement at the federated layer: "the federated graph is a filtered view, and the filtering happens there". That is one tier too far out, on the entry's own argument. A harvesting tier holds pinned, committed exports, so a filter that the tier applies acts on bytes that already crossed the boundary. That is [Serena's failure](../evaluations/adjacent-work.md#l6-a-filter-in-the-tool-layer-is-advisory-and-the-documentation-says-so) at one remove, and the entry diagnosed that failure and then reproduced it.
 
-So the serving boundary is the **export step of each publishing corpus** ([spec 6](../spec/06-engine-architecture.md#an-export-profile-carries-a-filter)). A corpus decides what leaves it, and what reaches a tier is already what that tier may hold.
+So the serving boundary is the **export step of each publishing corpus** ([spec 7](../spec/07-distribution-and-federation.md#an-export-profile-carries-a-filter)). A corpus decides what leaves it, and what reaches a tier is already what that tier may hold.
 
 ### The unit is a destination, and there are no principals
 
@@ -107,7 +107,7 @@ So the project takes on three things, and they arrive with the first filtered pr
 | Somebody outside the project can report a defect | A stated coordinated-disclosure process |
 | The control never ships in a state where it may be wrong for a while | The [principle 4](../spec/00-vision-and-scope.md#design-principles) exception, recorded in the register |
 
-**The trigger is a published claim, which is more useful than a category.** One vendor's servicing criteria decide whether a report earns a security fix by asking whether it violates a **published** boundary. The same document lists what is deliberately not one. A project does not become security software by writing a filter. It becomes security software by publishing a sentence that says a boundary holds. So [spec 6](../spec/06-engine-architecture.md#what-a-filtered-export-claims-and-what-it-does-not) states one claim and five non-claims. The non-claims are the more useful half, because they turn the tombstone channel, the shape leak and the revocation lag into stated limits.
+**The trigger is a published claim, which is more useful than a category.** One vendor's servicing criteria decide whether a report earns a security fix by asking whether it violates a **published** boundary. The same document lists what is deliberately not one. A project does not become security software by writing a filter. It becomes security software by publishing a sentence that says a boundary holds. So [spec 7](../spec/07-distribution-and-federation.md#what-a-filtered-export-claims-and-what-it-does-not) states one claim and five non-claims. The non-claims are the more useful half, because they turn the tombstone channel, the shape leak and the revocation lag into stated limits.
 
 **One hole under the premise, recorded rather than answered.** Enforcement rests on the platform's repository permissions, and commits in a fork network stay reachable across that network by the platform's own account ([HW-EVAL-adjacent-work §O.12](../evaluations/adjacent-work.md#o12-the-platform-permission-that-this-design-leans-on-has-a-documented-hole)). The premise holds for the current tip of a repository that was never forked and never changed visibility. It is qualified otherwise, and no alternative placement is better.
 

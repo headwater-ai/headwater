@@ -252,7 +252,7 @@ One class of control does not meet it. The rule below is general, so that it doe
 
 > A control walks the promotion path when both of its error classes are recoverable. Where one error class is unrecoverable, the control ships at its final posture. The evidence that the promotion machinery would collect is then evidence about the wrong error.
 
-The [withholding rule](06-engine-architecture.md#an-export-profile-carries-a-filter) of an export profile is the only instance today. A document withheld that could have been carried is visible, cheap and reversible. A document carried that should have been withheld is invisible to both instruments above, and no later run undoes it. So a withholding rule never ships advisory, carries no promotion criteria, and admits no escape hatch ([Q17](09-decisions.md#q17--governed-access-and-the-solution-layer)).
+The [withholding rule](07-distribution-and-federation.md#an-export-profile-carries-a-filter) of an export profile is the only instance today. A document withheld that could have been carried is visible, cheap and reversible. A document carried that should have been withheld is invisible to both instruments above, and no later run undoes it. So a withholding rule never ships advisory, carries no promotion criteria, and admits no escape hatch ([Q17](09-decisions.md#q17--governed-access-and-the-solution-layer)).
 
 ### Where promotion cannot finish
 
@@ -387,7 +387,7 @@ Three consequences, and the machinery for all three exists.
 
 - **A run reports the state that it evaluated**, and the report is not optional. The corpus tree, the taxonomy lock hash, and the **read set** of the run ([spec 12](12-check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict)). A verdict about one tree is not a verdict about another one, and a report that omits the tree cannot say which.
 - **A merge is not free, and one document states the test.** [Spec 12](12-check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict) fixes what a gate reads, what voids a verdict, and which verdicts no gate carries at all. This document names the consequence and never restates the mechanism. Two statements of one test are two tests.
-- **The engine never orders the landing.** A merge queue tests the merged state before it lands, which answers this completely and costs a serialized queue. That belongs to the forge ([spec 6](06-engine-architecture.md#ci-adapters)), and the engine emits what such a gate consumes.
+- **The engine never orders the landing.** A merge queue tests the merged state before it lands, which answers this completely and costs a serialized queue. That belongs to the forge ([Checks and cache](../subsystems/checks-and-cache.md#what-a-run-states-beside-its-findings)), and the engine emits what such a gate consumes.
 
 **The test fails toward re-running.** A verdict declared void that would have held costs one run. A verdict carried that should have been void ships an invalid corpus and reports it green. That is [principle 7](00-vision-and-scope.md#design-principles) read the way that an exporter reads it: degrade toward the cheaper error, and say which one that is.
 
@@ -414,7 +414,7 @@ Uniform findings make the rest cheap: one renderer per output format (human, Mar
 
 ## Suppression
 
-Suppression is permitted, bounded, and observable. It is scoped to a file or block, it carries an expiry, and it states a reason from a closed set. The reasons are `false_positive` (the finding is wrong) and `accepted_deviation` (the finding is right and tolerated). The coverage report includes an inventory of suppressions. A rule with fifty suppressions is not a rule — it is a finding about the taxonomy. One class of finding sits outside the mechanism. A [withholding](06-engine-architecture.md#an-export-profile-carries-a-filter) finding is not suppressible. A suppression is one author's local judgment, and the error that it releases is a disclosure that nobody recalls.
+Suppression is permitted, bounded, and observable. It is scoped to a file or block, it carries an expiry, and it states a reason from a closed set. The reasons are `false_positive` (the finding is wrong) and `accepted_deviation` (the finding is right and tolerated). The coverage report includes an inventory of suppressions. A rule with fifty suppressions is not a rule — it is a finding about the taxonomy. One class of finding sits outside the mechanism. A [withholding](07-distribution-and-federation.md#an-export-profile-carries-a-filter) finding is not suppressible. A suppression is one author's local judgment, and the error that it releases is a disclosure that nobody recalls.
 
 Both constraints were looser in an earlier draft, and each looseness broke something downstream. Expiry was optional here, while waiver expiry ([spec 7](07-distribution-and-federation.md#waivers)) was mandatory. That made the local mechanism — the one that an individual author reaches for at a red check — the leakier of the two, which is backwards. And an undifferentiated reason field conflated "wrong" with "tolerated". That made the false-positive rate unmeasurable, and that is the number that the promotion machinery above runs on.
 

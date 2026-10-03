@@ -55,7 +55,7 @@ Two rules keep the corpora of one tree apart, and neither is complete. A path re
 
 The engine loads the corpus into a **corpus graph**: typed nodes with typed edges. The engine builds the graph in one pass and caches it. Every downstream operation reuses it. The graph — not the file tree — is the engine's working representation.
 
-**The graph is rebuilt, and nothing stores it.** Every run derives the graph from the Markdown, and the cache only makes that derivation cheap. A cache that can change a verdict is a store under another name, and the engine tests the difference ([spec 6](06-engine-architecture.md#nothing-stores-the-graph)). Every artifact that leaves the graph is a projection, and each one declares what it could not carry ([Q6](09-decisions.md#q6--where-the-corpus-graph-lives-at-rest)).
+**The graph is rebuilt, and nothing stores it.** Every run derives the graph from the Markdown, and the cache only makes that derivation cheap. A cache that can change a verdict is a store under another name, and the engine tests the difference ([spec 12](12-check-layer.md#the-correctness-roots)). Every artifact that leaves the graph is a projection, and each one declares what it could not carry ([Q6](09-decisions.md#q6--where-the-corpus-graph-lives-at-rest)).
 
 ## Nodes
 
@@ -196,7 +196,7 @@ A **projection** is a derived artifact computed from the graph. Examples: a shel
 - **checked** — CI fails when a committed projection differs from a regenerated one.
 - **declared** — the schema names them, so a taxonomy can add projections without engine changes, within the set of projection kinds that the engine implements.
 
-**A projection may be filtered, and a filtered projection says so.** An [export profile](06-engine-architecture.md#an-export-profile-carries-a-filter) names an audience and a filter over facet values. What it carries and what it withholds partition the corpus. A withholding is a loss with a declared reason, so the projection census reports it like any other loss. No profile may produce a view that presents itself as total ([Q17](09-decisions.md#q17--governed-access-and-the-solution-layer)).
+**A projection may be filtered, and a filtered projection says so.** An [export profile](07-distribution-and-federation.md#an-export-profile-carries-a-filter) names an audience and a filter over facet values. What it carries and what it withholds partition the corpus. A withholding is a loss with a declared reason, so the projection census reports it like any other loss. No profile may produce a view that presents itself as total ([Q17](09-decisions.md#q17--governed-access-and-the-solution-layer)).
 
 **The corpus descriptor is a projection too.** A machine that arrives at a location reads it to learn which corpora live there, what taxonomy governs each one, and where to start ([spec 7](07-distribution-and-federation.md#arriving-at-a-corpus-cold)). The engine generates it from the roots, holds it to regeneration, and filters it like any other served artifact ([Q14](09-decisions.md#q14--discovery-surface)). Like the register projection, it is engine-defined and non-optional, and its path is the engine's rather than the taxonomy's. A reader who must consult the taxonomy to find the descriptor already knows what it would say.
 
