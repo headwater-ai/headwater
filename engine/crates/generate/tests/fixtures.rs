@@ -1865,9 +1865,10 @@ projections:
 /// A graph export is JSON, and its declared path can sit inside the corpus
 /// root. When the declaration moves or goes away, the file it wrote stays in
 /// the tree with the marker on it, and nothing writes it any more. That is the
-/// orphan spec 6 names ("somebody removed a declaration or repointed it and
-/// left the output behind"), and it is reported in JSON as it is in Markdown
-/// (#1344). An unmarked JSON file beside it is an authored data file, and it
+/// orphan that
+/// [projections and export](../../../../docs/subsystems/projections-and-export.md)
+/// names: "a file from a declaration that was removed or moved". It is
+/// reported in JSON as it is in Markdown (#1344). An unmarked JSON file beside it is an authored data file, and it
 /// stays unreported.
 #[test]
 fn a_graph_export_left_behind_by_a_repointed_declaration_is_orphaned() {

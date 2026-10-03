@@ -9,9 +9,9 @@
 //!
 //! # One declared bar, and every other reading is a distribution
 //!
-//! Spec 6 says the findings here are "advisory by construction, because a young
-//! or small corpus fails differentiation for reasons that are not defects". The
-//! sharper statement this crate found while building the readings is that
+//! [The `headwater taxonomy` contract](../../../../docs/interfaces/headwater-taxonomy.md#description)
+//! says why the findings here are advisory: "A young or small corpus fails
+//! differentiation for reasons that are not defects". The sharper statement this crate found while building the readings is that
 //! almost none of them has a bar at all. Nothing in a taxonomy says how narrow
 //! a facet may get before it separates nothing, or how low a capture rate may
 //! fall before a relation is unmaintained. A number invented here would be a
@@ -457,7 +457,9 @@ pub struct Need {
     pub supply: Supply,
 }
 
-/// One reading that spec 6 names and this verb does not take.
+/// One reading that the
+/// [`headwater taxonomy` contract](../../../../docs/interfaces/headwater-taxonomy.md#description)
+/// names and this verb does not take.
 ///
 /// Every prerequisite is evaluated against the corpus of the run that prints
 /// it. The array this replaced was three string literals, so the verb asserted
@@ -625,7 +627,8 @@ impl Audit {
     /// declaration states: a relation whose halves sit on documents past the
     /// freshness window, and a scope pattern with an entry no edge reaches.
     ///
-    /// The first is about the schema, as spec 6 requires of a finding here.
+    /// The first is about the schema, as the `headwater taxonomy` contract
+    /// requires of a reading here.
     /// The second is about the corpus's claim on itself, which the scope is.
     pub fn findings(&self) -> Vec<Finding<'_>> {
         let mut stale: Vec<&RelationReading> = self
@@ -1336,8 +1339,10 @@ fn rendered(
 
 /// Every shelf that declares a layout, against the documents standing on it.
 ///
-/// A generated document is excluded, and the exclusion is spec 6's rule at this
-/// grain rather than a second decision here: the content of a generated file is
+/// A generated document is excluded, and the exclusion is the rule of the
+/// [`headwater generate` contract](../../../../docs/interfaces/headwater-generate.md#the-generated-file-marker)
+/// that no check reads a generated document, at this grain, rather than a
+/// second decision here: the content of a generated file is
 /// a function of its emitter, and so is its name. The projection declaration
 /// states an `output`, so holding one to a shelf layout would report the
 /// emitter as an authoring failure.

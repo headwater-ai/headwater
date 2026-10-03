@@ -522,7 +522,8 @@ pub struct Reach {
 /// would be a second denominator.
 ///
 /// A generated document that declared an identity is on that list, so it can be
-/// either end of an edge. Spec 6 excuses it from checks and not from identity,
+/// either end of an edge. The `headwater generate` contract excuses it from
+/// checks and not from identity,
 /// and an edge it declares is a fact its emitter wrote from the corpus rather
 /// than a claim its author made.
 pub fn build(

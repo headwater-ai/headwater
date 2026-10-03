@@ -88,9 +88,20 @@ fn subsection<'a>(text: &'a str, heading: &str) -> Vec<&'a str> {
     lines.take_while(|l| !l.starts_with('#')).collect()
 }
 
-/// The body rows of the first table in `lines`, each cut into its cells with
-/// backticks and spaces trimmed.
+/// The body rows of the one table in `lines`, each cut into its cells with
+/// backticks and spaces trimmed. A subsection that holds a second table is
+/// refused: this read the first table alone before #1572's slice 4d, so a
+/// second table later in the subsection stated rows that no test held.
 fn table(lines: &[&str]) -> Vec<Vec<String>> {
+    let tables = lines
+        .iter()
+        .enumerate()
+        .filter(|(i, l)| l.starts_with('|') && (*i == 0 || !lines[i - 1].starts_with('|')))
+        .count();
+    assert_eq!(
+        tables, 1,
+        "the subsection holds {tables} tables, and a guarded subsection holds exactly one"
+    );
     let rows: Vec<Vec<String>> = lines
         .iter()
         .skip_while(|l| !l.starts_with('|'))
@@ -110,6 +121,42 @@ fn table(lines: &[&str]) -> Vec<Vec<String>> {
         "the subsection holds no table with a body row"
     );
     rows
+}
+
+/// A subsection with a second table, even one with the same header, is
+/// refused rather than read for its first table alone. A second table would
+/// state rows that nothing holds.
+#[test]
+#[should_panic(expected = "holds 2 tables")]
+fn a_subsection_with_a_second_table_is_refused() {
+    let lines = [
+        "| Severity | Level |",
+        "|---|---|",
+        "| `error` | `error` |",
+        "",
+        "Prose between the two tables.",
+        "",
+        "| Severity | Level |",
+        "|---|---|",
+        "| `info` | `warning` |",
+    ];
+    table(&lines);
+}
+
+#[test]
+fn a_subsection_with_one_table_reads_its_body_rows() {
+    let lines = [
+        "Prose before the table.",
+        "| Severity | Level |",
+        "|---|---|",
+        "| `error` | `error` |",
+        "| `warn` | `warning` |",
+        "Prose after it.",
+    ];
+    assert_eq!(
+        table(&lines),
+        vec![vec!["error", "error"], vec!["warn", "warning"]]
+    );
 }
 
 /// Never called. A fourth severity fails to compile here until

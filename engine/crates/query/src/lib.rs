@@ -3,8 +3,8 @@
 //!
 //! [Spec 6](../../../../docs/spec/06-engine-architecture.md#library) makes the
 //! CLI "a thin shell over a library API — load, graph, check, query, generate",
-//! and says that "editor integrations, the MCP server, and CI adapters all
-//! consume the library directly". This crate is `query`. It adds no phase to a
+//! and says that "The MCP server consumes the library in the same process."
+//! This crate is `query`. It adds no phase to a
 //! run: the census carries every row and the document it parsed, the graph
 //! carries the edges and the identifier index, and every answer here is a
 //! projection of those two.

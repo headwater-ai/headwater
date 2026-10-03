@@ -16,9 +16,14 @@
 //!   and shares no run of eight words in a row with it;
 //! - spec 7 states the filter rules as a list of exactly six items, each held
 //!   whole;
-//! - spec 7 states, once and under the subsection that owns each, that
-//!   emitters never chain and that no profile presents as total, and spec 6
-//!   names neither;
+//! - spec 7 states each of seven moved rules once, as a whole paragraph under
+//!   the subsection that owns it (emitters never chain, no profile presents as
+//!   total, the warrant rule, the transcription pin, an exporter fails closed,
+//!   a withholding rule never ships advisory, and the claim), and no sentence
+//!   of spec 6 states one again, in its words or in a paraphrase the table of
+//!   forms names;
+//! - a sentence that opens with a link and goes on "states that" is rule
+//!   text, and only a short pointer is dropped from the comparison;
 //! - no engine comment quotes a sentence of spec 7's export section and
 //!   credits it to spec 6.
 //!
@@ -237,9 +242,28 @@ const SUBSECTIONS: [&str; 3] = [
     "### What a filtered export claims, and what it does not",
 ];
 
-/// A sentence that opens with a link and goes on "states ..." points at
-/// where something is stated, and states no rule itself. Spec 6 is right to
-/// carry the same kind of sentence.
+/// The words that open what a pointer says is stated elsewhere: a noun phrase
+/// ("the mechanics of the verb") or a question ("how the verb writes it").
+/// "states that ..." is not among them, because what follows "that" is the
+/// rule itself.
+const POINTER_OBJECTS: [&str; 10] = [
+    "the ", "how ", "which ", "what ", "why ", "when ", "where ", "whether ", "each ", "its ",
+];
+
+/// The most words a pointer names after "states". A longer run is prose that
+/// says something, whatever its first word.
+const POINTER_WORDS: usize = 25;
+
+/// A sentence that opens with a link and goes on "states" and a short list of
+/// what the linked document holds points at where something is stated, and
+/// states no rule itself. Spec 6 is right to carry the same kind of sentence.
+///
+/// A sentence in the same shape that states a rule is rule text, and it is
+/// compared: "[Spec 4](…) states that every emitter reads the lock" says what
+/// every emitter does, and so does "[Spec 4](…) states the rule: …". Before
+/// #1572's slice 4d any sentence that opened with a link and went on "states "
+/// was dropped, so spec 6 could copy a rule in that shape with the suite
+/// green.
 fn is_pointer(sentence: &str) -> bool {
     let s = sentence.trim();
     if !s.starts_with('[') {
@@ -251,7 +275,12 @@ fn is_pointer(sentence: &str) -> bool {
     let Some(close) = s[target..].find(')') else {
         return false;
     };
-    s[target + close + 1..].trim_start().starts_with("states ")
+    let Some(object) = s[target + close + 1..].trim_start().strip_prefix("states ") else {
+        return false;
+    };
+    POINTER_OBJECTS.iter().any(|o| object.starts_with(o))
+        && !object.contains(':')
+        && object.split_whitespace().count() <= POINTER_WORDS
 }
 
 /// The rule text of spec 7's export section: every line from the first
@@ -295,14 +324,19 @@ fn fragments(lines: &[String]) -> BTreeSet<String> {
         .collect()
 }
 
-#[test]
-fn spec_6_shares_no_sentence_with_the_export_section_of_spec_7() {
-    let seven = spec_seven();
-    let six = plain(&spec_six().lines().collect::<Vec<_>>().join(" "));
-    let copies: Vec<String> = fragments(&rule_lines(&seven))
+/// Every fragment of the rule text of `seven`'s export section that `six`
+/// states again.
+fn copied_fragments(six: &str, seven: &str) -> Vec<String> {
+    let six = plain(&six.lines().collect::<Vec<_>>().join(" "));
+    fragments(&rule_lines(seven))
         .into_iter()
         .filter(|f| six.contains(f.as_str()))
-        .collect();
+        .collect()
+}
+
+#[test]
+fn spec_6_shares_no_sentence_with_the_export_section_of_spec_7() {
+    let copies = copied_fragments(&spec_six(), &spec_seven());
     assert!(
         copies.is_empty(),
         "spec 6 states again what spec 7's export section states: {copies:#?}"
@@ -323,14 +357,14 @@ fn words(text: &str) -> Vec<String> {
         .collect()
 }
 
-#[test]
-fn spec_6_shares_no_run_of_eight_words_with_the_export_section_of_spec_7() {
-    let seven = spec_seven();
-    let six = format!(" {} ", words(&spec_six()).join(" "));
+/// Every run of [`RUN_WORDS`] words of the rule text of `seven`'s export
+/// section that `six` holds.
+fn shared_runs(six: &str, seven: &str) -> BTreeSet<String> {
+    let six = format!(" {} ", words(six).join(" "));
     let mut runs = BTreeSet::new();
     // Headings are left out: spec 6 keeps the three export headings on
     // purpose, so that their inbound links land. So are pointer sentences.
-    for line in rule_lines(&seven) {
+    for line in rule_lines(seven) {
         for cell in line.split('|') {
             let w = words(cell);
             for run in w.windows(RUN_WORDS) {
@@ -341,22 +375,52 @@ fn spec_6_shares_no_run_of_eight_words_with_the_export_section_of_spec_7() {
             }
         }
     }
+    runs
+}
+
+#[test]
+fn spec_6_shares_no_run_of_eight_words_with_the_export_section_of_spec_7() {
+    let runs = shared_runs(&spec_six(), &spec_seven());
     assert!(
         runs.is_empty(),
         "spec 6 shares these runs of {RUN_WORDS} words with spec 7's export section: {runs:#?}"
     );
 }
 
+/// One way spec 6 could state a moved rule again. A phrase is words in a row.
+/// A set of words held together is a paraphrase. "Emitters do not chain."
+/// holds "emitter" and "chain", so one sentence of spec 6 that holds every
+/// word of the set states the rule in other words.
+#[derive(Clone, Copy, Debug)]
+enum Form {
+    Phrase(&'static str),
+    Together(&'static [&'static str]),
+}
+
+impl Form {
+    /// Whether the plain text of one sentence states this form.
+    fn in_sentence(self, sentence: &str) -> bool {
+        match self {
+            Form::Phrase(p) => sentence.contains(&plain(p)),
+            Form::Together(ws) => ws.iter().all(|w| sentence.contains(&plain(w))),
+        }
+    }
+}
+
 /// A moved rule that no table or list holds: the bold sentence that states
 /// it, the whole paragraph that it opens, the spec 7 subsection that owns it,
-/// and the words that name it, which spec 6 may not use at all. The paragraph
+/// and the forms that name it, which spec 6 may not use at all. The paragraph
 /// is held whole, so an edit that keeps the bold sentence and changes what the
 /// rule says goes red here until the edit is made in this file too.
+///
+/// No form is a word that a pointer of spec 6 carries. Spec 6 says "why an
+/// exporter fails closed" and "states the claim", so neither "fails closed" nor
+/// "the claim" names a rule here.
 struct Rule {
     rule: &'static str,
     paragraph: &'static str,
     subsection: &'static str,
-    name: &'static str,
+    forms: &'static [Form],
 }
 
 const EMITTERS_NEVER_CHAIN: Rule = Rule {
@@ -367,7 +431,10 @@ const EMITTERS_NEVER_CHAIN: Rule = Rule {
                 generator is the observed case, because it drops constructs that LinkML itself \
                 expresses ([Q13](09-decisions.md#q13--linkml-and-shacl-as-substrate)).",
     subsection: "### An export is a projection, and it declares what it dropped",
-    name: "never chain",
+    forms: &[
+        Form::Phrase("never chain"),
+        Form::Together(&["emitter", "chain"]),
+    ],
 };
 
 const NO_VIEW_PRESENTS_AS_TOTAL: Rule = Rule {
@@ -380,53 +447,274 @@ const NO_VIEW_PRESENTS_AS_TOTAL: Rule = Rule {
                 [spec 5](05-ai-integration.md) names at its start. Here our own filter causes \
                 it.",
     subsection: "### An export profile carries a filter",
-    name: "presents as total",
+    forms: &[
+        Form::Phrase("presents as total"),
+        Form::Together(&["view", "complete"]),
+        Form::Together(&["filtered", "total"]),
+    ],
 };
 
-/// Spec 7 states the rule once, as one whole paragraph under the subsection
-/// that owns it. Spec 6 does not name it.
-fn has_one_home(r: &Rule) {
-    assert!(
-        r.paragraph.starts_with(r.rule),
-        "{:?} opens its paragraph",
-        r.rule
-    );
-    let seven = spec_seven();
-    let owned: Vec<&str> = export_section(&seven)
+/// G1 of #1572: the warrant rule.
+const NO_WARRANT_NO_CONTENT: Rule = Rule {
+    rule: "**An emitter that cannot carry the warrant does not carry the content.**",
+    paragraph: "**An emitter that cannot carry the warrant does not carry the content.** Every \
+                node carries a [warrant](01-conceptual-model.md#warrant), and the native export \
+                carries it with no loss. A target vocabulary that has no place for it produces \
+                an artifact in which unwarranted content is indistinguishable from accepted \
+                content. A loss-set entry reaches the consumer who reads the loss set and \
+                nobody else. The field also reports that ordinary tooling strips a mark which \
+                travels beside content ([HW-EVAL-adjacent-work \
+                §P](../evaluations/adjacent-work.md#p--provenance-endorsement-and-the-record-of-a-judgment)). \
+                So such an emitter **withholds** every `asserted` and `transcribed` node, at \
+                the profile's declared tombstone grain, with its own inability to mark as the \
+                reason. That is [principle 7](00-vision-and-scope.md#design-principles) read \
+                the way that a filtered exporter reads it. An unmarked assertion is \
+                unrecoverable, and a withholding is visible and cheap \
+                ([Q15](09-decisions.md#q15--a-synthesized-content-tier)).",
+    subsection: "### An export is a projection, and it declares what it dropped",
+    forms: &[
+        Form::Phrase("cannot carry the warrant"),
+        Form::Together(&["emitter", "warrant"]),
+    ],
+};
+
+/// G2 of #1572: the transcription pin.
+const A_TRANSCRIPTION_CARRIES_ITS_PIN: Rule = Rule {
+    rule: "**A transcription that leaves carries its pin.**",
+    paragraph: "**A transcription that leaves carries its pin.** A `transcribed` node exports \
+                the identity of the snapshot that it copies. A consumer who holds the copy can \
+                then return to the authority and ask whether it is current. Scholarly \
+                publishing solved the same problem in that direction, rather than by a flag \
+                that has to survive every copy.",
+    subsection: "### An export is a projection, and it declares what it dropped",
+    forms: &[
+        Form::Phrase("carries its pin"),
+        Form::Together(&["transcri", "pin"]),
+    ],
+};
+
+/// G3 of #1572: an exporter fails closed.
+const AN_EXPORTER_FAILS_CLOSED: Rule = Rule {
+    rule: "**An exporter fails closed, and that is [principle \
+           7](00-vision-and-scope.md#design-principles) read correctly.**",
+    paragraph: "**An exporter fails closed, and that is [principle \
+                7](00-vision-and-scope.md#design-principles) read correctly.** An exporter \
+                that cannot evaluate its filter emits nothing and fails the run. It never \
+                emits an unfiltered artifact, and it never emits a partly filtered one. The \
+                principle says \"fail open at the edges\", and its own gloss gives the rule \
+                underneath: degrade toward the cheaper error. For an agent-facing hint, \
+                silence is cheaper than a wrong pointer. For an exporter with a filter, an \
+                empty output is cheaper than one document too many.",
+    subsection: "### An export profile carries a filter",
+    forms: &[
+        Form::Phrase("emits nothing and fails the run"),
+        Form::Phrase("unfiltered artifact"),
+        Form::Together(&["exporter", "cannot evaluate"]),
+    ],
+};
+
+/// G4 of #1572: a withholding rule is never advisory.
+const A_WITHHOLDING_RULE_NEVER_SHIPS_ADVISORY: Rule = Rule {
+    rule: "**A withholding rule never ships advisory.**",
+    paragraph: "**A withholding rule never ships advisory.** Its two error classes are not \
+                both recoverable, so the promotion machinery measures the wrong one \
+                ([spec 4](04-assurance-model.md#promotion-advisory-to-blocking)). It is not \
+                suppressible and [it is not waivable](#waivers).",
+    subsection: "### An export profile carries a filter",
+    forms: &[
+        Form::Phrase("never ships advisory"),
+        Form::Together(&["withholding rule", "advisory"]),
+        Form::Together(&["withholding rule", "blocking"]),
+    ],
+};
+
+/// G5 of #1572: the claim of a filtered export.
+const THE_CLAIM: Rule = Rule {
+    rule: "**The claim.**",
+    paragraph: "**The claim.** A filtered export contains no document that its declared \
+                filter withholds, and no artifact inside the profile derives from one.",
+    subsection: "### What a filtered export claims, and what it does not",
+    forms: &[
+        Form::Phrase("no artifact inside the profile derives"),
+        Form::Together(&["filtered export", "withh"]),
+    ],
+};
+
+/// Every rule of spec 7's export section that a one-home test holds.
+const RULES: [&Rule; 7] = [
+    &EMITTERS_NEVER_CHAIN,
+    &NO_VIEW_PRESENTS_AS_TOTAL,
+    &NO_WARRANT_NO_CONTENT,
+    &A_TRANSCRIPTION_CARRIES_ITS_PIN,
+    &AN_EXPORTER_FAILS_CLOSED,
+    &A_WITHHOLDING_RULE_NEVER_SHIPS_ADVISORY,
+    &THE_CLAIM,
+];
+
+/// Every sentence of `text`, in plain text. A line is a paragraph in this
+/// corpus, so no sentence runs across two lines, and a heading is a sentence
+/// of its own.
+fn plain_sentences(text: &str) -> Vec<String> {
+    text.lines()
+        .map(plain)
+        .flat_map(|l| {
+            l.split(". ")
+                .map(|s| s.trim().to_owned())
+                .collect::<Vec<_>>()
+        })
+        .filter(|s| !s.is_empty())
+        .collect()
+}
+
+/// What breaks the one home of `r`, given the text of spec 6 and of spec 7:
+/// spec 7 must state the rule once, as one whole paragraph under the
+/// subsection that owns it, and no sentence of spec 6 may state any of its
+/// forms. Nothing found is an empty list.
+fn one_home_findings(r: &Rule, six: &str, seven: &str) -> Vec<String> {
+    let mut found = Vec::new();
+    if !r.paragraph.starts_with(r.rule) {
+        found.push(format!("{:?} does not open its paragraph", r.rule));
+    }
+    let owned: Vec<&str> = export_section(seven)
         .into_iter()
         .skip_while(|l| *l != r.subsection)
         .skip(1)
         .take_while(|l| !l.starts_with("### "))
         .collect();
-    assert_eq!(
-        owned.iter().filter(|l| **l == r.paragraph).count(),
-        1,
-        "spec 7's `{}` does not state this paragraph once: {:?}",
-        r.subsection,
-        r.paragraph
-    );
-    assert_eq!(
-        seven.matches(r.rule).count(),
-        1,
-        "spec 7 states {:?} more than once",
-        r.rule
-    );
-    let six = plain(&spec_six().lines().collect::<Vec<_>>().join(" "));
+    if owned.iter().filter(|l| **l == r.paragraph).count() != 1 {
+        found.push(format!(
+            "spec 7's `{}` does not state this paragraph once: {:?}",
+            r.subsection, r.paragraph
+        ));
+    }
+    if seven.matches(r.rule).count() != 1 {
+        found.push(format!("spec 7 does not state {:?} exactly once", r.rule));
+    }
+    for sentence in plain_sentences(six) {
+        for form in r.forms {
+            if form.in_sentence(&sentence) {
+                found.push(format!(
+                    "spec 6 states {form:?} of {:?} again, and spec 7 is its one home: \
+                     {sentence:?}",
+                    r.rule
+                ));
+            }
+        }
+    }
+    found
+}
+
+#[test]
+fn spec_7_alone_states_each_moved_export_rule() {
+    let (six, seven) = (spec_six(), spec_seven());
+    let found: Vec<String> = RULES
+        .iter()
+        .flat_map(|r| one_home_findings(r, &six, &seven))
+        .collect();
+    assert!(found.is_empty(), "{found:#?}");
+}
+
+/// The text of `rule`'s whole paragraph, with its line end.
+fn paragraph_line(rule: &Rule) -> String {
+    format!("{}\n", rule.paragraph)
+}
+
+/// Each mutation of spec 6 or spec 7 that the one-home tests must turn red,
+/// over the real text with one edit applied. The paraphrases are the bar of
+/// #1572's slice 4d: the two named in the issue and one for each of G1 to
+/// G5. A paraphrase this table does not hold is advisory, not a defect of
+/// the bar.
+#[test]
+fn each_mutation_of_a_moved_export_rule_turns_a_one_home_test_red() {
+    let (six, seven) = (spec_six(), spec_seven());
+    let paraphrases: [(&Rule, &str); 7] = [
+        (&EMITTERS_NEVER_CHAIN, "Emitters do not chain."),
+        (
+            &NO_VIEW_PRESENTS_AS_TOTAL,
+            "No filtered view may look complete.",
+        ),
+        (
+            &NO_WARRANT_NO_CONTENT,
+            "An emitter with no place for the warrant withholds the node.",
+        ),
+        (
+            &A_TRANSCRIPTION_CARRIES_ITS_PIN,
+            "A transcribed node that is exported names the pin of its snapshot.",
+        ),
+        (
+            &AN_EXPORTER_FAILS_CLOSED,
+            "An exporter that cannot evaluate a filter writes no file at all.",
+        ),
+        (
+            &A_WITHHOLDING_RULE_NEVER_SHIPS_ADVISORY,
+            "A withholding rule is blocking from the day it ships.",
+        ),
+        (
+            &THE_CLAIM,
+            "A filtered export holds no withheld document and nothing derived from one.",
+        ),
+    ];
+    for (rule, paraphrase) in paraphrases {
+        let six = format!("{six}\n{paraphrase}\n");
+        assert!(
+            !one_home_findings(rule, &six, &seven).is_empty(),
+            "spec 6 paraphrases {:?} as {paraphrase:?}, and no one-home test turns red",
+            rule.rule
+        );
+    }
+    for rule in RULES {
+        let seven = seven.replacen(&paragraph_line(rule), "", 1);
+        assert!(
+            !one_home_findings(rule, &six, &seven).is_empty(),
+            "spec 7 lost {:?}, and no one-home test turns red",
+            rule.rule
+        );
+    }
+    // A rule in the shape of a pointer is rule text: copied into spec 6, it
+    // turns the fragment test and the run test red.
+    let rule_as_pointer = "[Spec 4](04-assurance-model.md) states that an emitter reads \
+                           the resolved lock and the graph of the corpus directly.";
+    let anchor = paragraph_line(&A_TRANSCRIPTION_CARRIES_ITS_PIN);
+    let seven = seven.replacen(&anchor, &format!("{anchor}\n{rule_as_pointer}\n"), 1);
+    let six = format!("{six}\n{rule_as_pointer}\n");
     assert!(
-        !six.contains(r.name),
-        "spec 6 states {:?} again; spec 7 is its one home",
-        r.name
+        !copied_fragments(&six, &seven).is_empty(),
+        "spec 6 copies a rule in pointer shape, and the fragment test stays green"
+    );
+    assert!(
+        !shared_runs(&six, &seven).is_empty(),
+        "spec 6 copies a rule in pointer shape, and the run test stays green"
     );
 }
 
+/// The pointer sentences of spec 7's export section drop, and a sentence in
+/// the same shape that states a rule does not.
 #[test]
-fn spec_7_alone_states_that_emitters_never_chain() {
-    has_one_home(&EMITTERS_NEVER_CHAIN);
-}
-
-#[test]
-fn spec_7_alone_states_that_no_profile_presents_as_total() {
-    has_one_home(&NO_VIEW_PRESENTS_AS_TOTAL);
+fn a_pointer_drops_and_a_rule_in_pointer_shape_does_not() {
+    let seven = spec_seven();
+    let section = export_section(&seven).join("\n");
+    let pointers: Vec<&str> = section
+        .lines()
+        .flat_map(|l| l.split(". "))
+        .filter(|s| s.starts_with('[') && s.contains(") states "))
+        .collect();
+    assert!(
+        pointers.len() >= 3,
+        "spec 7's export section holds fewer pointer sentences than the three it had: \
+         {pointers:#?}"
+    );
+    for p in &pointers {
+        assert!(is_pointer(p), "a pointer of spec 7 does not drop: {p:?}");
+    }
+    for rule in [
+        "[Spec 4](04-assurance-model.md) states that every emitter reads the lock directly",
+        "[Spec 4](04-assurance-model.md) states the rule: every emitter reads the lock",
+        "[Spec 4](04-assurance-model.md) states the rule that every emitter reads the \
+         resolved lock and the graph directly, because a pipeline that routes one format \
+         through another inherits every loss of every hop and declares none of them",
+    ] {
+        assert!(!is_pointer(rule), "a rule in pointer shape drops: {rule:?}");
+    }
 }
 
 fn engine_sources(dir: &Path, out: &mut Vec<PathBuf>) {

@@ -448,3 +448,361 @@ fn spec_6_does_not_contradict_itself() {
         "the `**Embeddable.**` item of {SPEC_SIX} does not cite HW-DR-0102:\n{embeddable}"
     );
 }
+
+/// One run of comment lines in a source file: the text with each comment
+/// marker removed and the lines joined with a space, and the byte offset in
+/// that text at which each source line starts, with its line number.
+struct CommentBlock {
+    text: String,
+    starts: Vec<(usize, usize)>,
+}
+
+impl CommentBlock {
+    /// The source line that holds byte `at` of the joined text.
+    fn line_of(&self, at: usize) -> usize {
+        self.starts
+            .iter()
+            .rev()
+            .find(|(start, _)| *start <= at)
+            .map_or(0, |(_, line)| *line)
+    }
+}
+
+/// Every paragraph of comment lines in `source`. A Rust source comments with
+/// `//`, and a YAML file with `#`. A string literal is not a comment, so a
+/// message or a test input that names a spec is not read. An empty comment
+/// line ends a paragraph, so a credit at the end of one paragraph does not
+/// reach a quote in the next.
+fn comment_blocks(source: &str, yaml: bool) -> Vec<CommentBlock> {
+    let mut blocks = Vec::new();
+    let mut open: Option<CommentBlock> = None;
+    for (i, line) in source.lines().enumerate() {
+        let trimmed = line.trim_start();
+        let comment = if yaml {
+            trimmed.strip_prefix('#')
+        } else {
+            trimmed
+                .strip_prefix("//")
+                .map(|c| c.strip_prefix(['/', '!']).unwrap_or(c))
+        };
+        let Some(comment) = comment.map(str::trim).filter(|c| !c.is_empty()) else {
+            blocks.extend(open.take());
+            continue;
+        };
+        let block = open.get_or_insert_with(|| CommentBlock {
+            text: String::new(),
+            starts: Vec::new(),
+        });
+        if !block.text.is_empty() {
+            block.text.push(' ');
+        }
+        block.starts.push((block.text.len(), i + 1));
+        block.text.push_str(comment);
+    }
+    blocks.extend(open);
+    blocks
+}
+
+/// Whether `gap` names the commit at which a quote stood: a word of seven to
+/// forty hexadecimal digits, with at least one digit in it. A quote dated that
+/// way is history, and it does not say what the document holds today.
+fn names_a_commit(gap: &str) -> bool {
+    gap.split(|c: char| !c.is_ascii_alphanumeric()).any(|w| {
+        (7..=40).contains(&w.len())
+            && w.chars().all(|c| c.is_ascii_hexdigit())
+            && w.chars().any(|c| c.is_ascii_digit())
+    })
+}
+
+/// Whether `gap` ends a sentence: a full stop, a question mark or an
+/// exclamation mark before a space, or at the end of the gap. A credit names
+/// the document of its own sentence, and a quote in the next sentence is not
+/// what it credits. Link targets are dropped first, so `../06-engine` is not a
+/// sentence end.
+fn ends_a_sentence(gap: &str) -> bool {
+    let text = plain(gap);
+    let chars: Vec<char> = text.chars().collect();
+    chars.iter().enumerate().any(|(i, c)| {
+        matches!(c, '.' | '?' | '!') && chars.get(i + 1).is_none_or(|n| n.is_whitespace())
+    })
+}
+
+/// The most characters of plain text between a credit and the quote that it
+/// opens. "[Spec 6](…) makes these findings "…"" is a credit, and a quote two
+/// sentences on is not.
+const CREDIT_GAP: usize = 80;
+
+/// The fewest words a quote carries before it is read. "taxonomy lock hash"
+/// is a phrase that a document can hold or not, and "query" is not.
+const QUOTE_WORDS: usize = 3;
+
+/// Every quote that a comment of `source` credits to a document, and the line
+/// that credits it. A credit is the document's name (`spec 6`, `spec 6's`) or
+/// a link whose target names its file stem. A quote is the text inside a pair
+/// of double quotes that opens within [`CREDIT_GAP`] characters of plain text
+/// after the credit, in the same sentence, with no commit named between. A
+/// second quote counts as well when it opens the same way after the first one
+/// closes: "makes the CLI "…", and says that "…"" credits both.
+fn credited_quotes(source: &str, yaml: bool, name: &str, stem: &str) -> Vec<(usize, String)> {
+    let mut found = Vec::new();
+    for block in comment_blocks(source, yaml) {
+        let lower = block.text.to_ascii_lowercase();
+        let mut credits: Vec<usize> = lower
+            .match_indices(name)
+            .filter(|(at, m)| {
+                !lower[at + m.len()..]
+                    .chars()
+                    .next()
+                    .is_some_and(|c| c.is_ascii_digit())
+            })
+            .map(|(at, m)| at + m.len())
+            .collect();
+        credits.extend(
+            lower
+                .match_indices(stem)
+                .filter_map(|(at, _)| lower[at..].find(')').map(|j| at + j + 1)),
+        );
+        credits.sort_unstable();
+        let mut quoted = BTreeSet::new();
+        for credit in credits {
+            let mut from = credit;
+            loop {
+                let rest = &block.text[from..];
+                let Some(open) = rest.find('"') else {
+                    break;
+                };
+                let gap = &rest[..open];
+                if plain(gap).len() > CREDIT_GAP || ends_a_sentence(gap) || names_a_commit(gap) {
+                    break;
+                }
+                let body = &rest[open + 1..];
+                let Some(close) = body.find('"') else {
+                    break;
+                };
+                let quote = &body[..close];
+                if quoted.insert(from + open)
+                    && plain(quote).split_whitespace().count() >= QUOTE_WORDS
+                {
+                    found.push((block.line_of(credit), quote.to_owned()));
+                }
+                if quote.trim_end().ends_with(['.', '?', '!']) {
+                    break;
+                }
+                from += open + 1 + close + 1;
+            }
+        }
+    }
+    found
+}
+
+/// Whether the plain text of `doc` holds `quote`. An ellipsis in a quote
+/// stands for words left out, so each part is looked for on its own, and a
+/// closing full stop or comma belongs to the comment rather than the quote.
+fn holds_quote(doc: &str, quote: &str) -> bool {
+    quote.split('…').map(plain).all(|part| {
+        let part = part.trim_end_matches(['.', ',']).trim();
+        part.is_empty() || doc.contains(part)
+    })
+}
+
+/// Every quote that a comment of `source` credits to the document whose plain
+/// text is `doc`, and that the document does not hold.
+fn stale_quotes(
+    source: &str,
+    yaml: bool,
+    name: &str,
+    stem: &str,
+    doc: &str,
+) -> Vec<(usize, String)> {
+    credited_quotes(source, yaml, name, stem)
+        .into_iter()
+        .filter(|(_, quote)| !holds_quote(doc, quote))
+        .collect()
+}
+
+fn engine_sources(dir: &Path, out: &mut Vec<PathBuf>) {
+    for entry in std::fs::read_dir(dir).expect("read an engine directory") {
+        let path = entry.expect("read a directory entry").path();
+        let name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
+        if path.is_dir() {
+            if name != "target" && !name.starts_with('.') {
+                engine_sources(&path, out);
+            }
+        } else if name.ends_with(".rs") || name.ends_with(".yml") {
+            out.push(path);
+        }
+    }
+}
+
+/// Every engine comment that quotes the document at `rel` under `name`, and
+/// that the document does not hold, as `path:line: "quote"`. Also the number
+/// of quotes read, so that a scan that reads nothing does not pass.
+fn engine_stale_quotes(rel: &str, name: &str) -> (Vec<String>, usize) {
+    let engine = repo().join("engine");
+    let doc = plain(&read(rel));
+    let stem = Path::new(rel)
+        .file_stem()
+        .and_then(|s| s.to_str())
+        .expect("a document path has a file stem")
+        .to_lowercase();
+    let mut files = Vec::new();
+    engine_sources(&engine.join("crates"), &mut files);
+    files.sort();
+    let mut stale = Vec::new();
+    let mut read_count = 0;
+    for file in files {
+        let text = std::fs::read_to_string(&file).expect("read an engine source");
+        let yaml = file.extension().is_some_and(|e| e == "yml");
+        let rel_file = file
+            .strip_prefix(&engine)
+            .unwrap_or(&file)
+            .to_string_lossy()
+            .replace('\\', "/");
+        read_count += credited_quotes(&text, yaml, name, &stem).len();
+        for (line, quote) in stale_quotes(&text, yaml, name, &stem, &doc) {
+            stale.push(format!("{rel_file}:{line}: {quote:?}"));
+        }
+    }
+    (stale, read_count)
+}
+
+/// A comment that quotes spec 6 sends a reader to spec 6 for that sentence.
+/// Slice 4b of #1572 moved each rule that spec 6 alone stated to its home, and
+/// nine engine comments went on quoting the old text, with one more that
+/// credited spec 6 in the past tense and named no commit. A reader who
+/// followed any of them found no such sentence. This reads every comment of
+/// every engine source that credits a quote to spec 6, and fails on each quote
+/// that spec 6 does not hold. A quote that names the commit at which spec 6
+/// held it is history, and it passes.
+#[test]
+fn no_engine_comment_quotes_text_spec_6_does_not_hold() {
+    let (stale, read_count) = engine_stale_quotes(SPEC_SIX, "spec 6");
+    assert!(read_count > 0, "no engine comment quotes spec 6 at all");
+    assert!(
+        stale.is_empty(),
+        "these engine comments quote as spec 6's a sentence that {SPEC_SIX} does not hold. \
+         Quote the document that holds it, cite that document, or credit nothing:\n{}",
+        stale.join("\n")
+    );
+}
+
+/// The matcher of the test above, in both directions, over text it is given.
+#[test]
+fn the_quote_scan_fires_on_a_stale_credit_and_on_nothing_else() {
+    let doc = plain(
+        "The CLI is advisory by default (exit 0 with findings on stdout). Resolve merges \
+         the base taxonomy and overlays.",
+    );
+    let stale = |source: &str| -> Vec<usize> {
+        stale_quotes(source, false, "spec 6", "06-engine-architecture", &doc)
+            .into_iter()
+            .map(|(line, _)| line)
+            .collect()
+    };
+    let fires = [
+        (
+            "a colon credit",
+            "//! Spec 6: \"A projection carries a generated-file marker.\"",
+        ),
+        (
+            "a possessive",
+            "/// The digest: spec 6's \"taxonomy lock hash\".",
+        ),
+        (
+            "a linked credit",
+            "//! [Spec 6](../../docs/spec/06-engine-architecture.md#mcp-server): \"The MCP \
+             server is the agent-facing surface.\"",
+        ),
+        (
+            "a link with no name",
+            "//! [the engine](../../docs/spec/06-engine-architecture.md) says \"the census \
+             fixes the denominator\".",
+        ),
+        (
+            "a quote on the next line",
+            "/// default.** [Spec 6](../06-engine-architecture.md#audit)\n/// makes these \
+             findings \"advisory by construction, because a young\n/// or small corpus\".",
+        ),
+        (
+            "a past-tense credit",
+            "/// Spec 6 stated \"Ten of the twelve are declarable\" after the sets grew.",
+        ),
+        (
+            "a credit with a clause between",
+            "/// Spec 6 keeps them apart too, because a run reports \"the corpus tree, the \
+             taxonomy lock hash\" as two facts.",
+        ),
+        (
+            "a second quote in the credit's sentence",
+            "//! [Spec 6](../06-engine-architecture.md#library) makes the CLI \"advisory by \
+             default\", and says that \"editor integrations consume the library\".",
+        ),
+        (
+            "a plain comment",
+            "// spec 6 says \"somebody removed a declaration or repointed it\"",
+        ),
+    ];
+    for (shape, source) in fires {
+        assert_eq!(stale(source), vec![1], "{shape} does not fire: {source}");
+    }
+    let passes = [
+        (
+            "a quote spec 6 holds",
+            "//! Spec 6: \"The CLI is advisory by default (exit 0 with findings on stdout).\"",
+        ),
+        (
+            "a linked quote spec 6 holds, cut by an ellipsis",
+            "//! [Spec 6](../06-engine-architecture.md#pipeline): \"Resolve merges … \
+             overlays.\"",
+        ),
+        (
+            "a string literal",
+            "assert!(text.contains(\"spec 6 says something it does not hold\"));",
+        ),
+        (
+            "a quote of history at a named commit",
+            "/// Spec 6 stated, at `bdf2761f`, \"Ten of the twelve are declarable\".",
+        ),
+        (
+            "a quote far from the credit",
+            "/// Spec 6 keeps the pipeline, and a long way on from that, past every clause \
+             that names it, a reader meets \"some words of another document\".",
+        ),
+        ("a quote of two words", "/// Spec 6 calls it \"the lock\"."),
+        (
+            "a quote in the sentence after the credit",
+            "/// The comment once said it under a link to spec 6. The sentence \"`probe` \
+             reaches a model over the network\" went back in.",
+        ),
+        (
+            "a quote after a credited quote that ends its sentence",
+            "/// Spec 6: \"The CLI is advisory by default (exit 0 with findings on stdout).\" \
+             A reader adds \"some words of another document\".",
+        ),
+        (
+            "a quote in the paragraph after the credit",
+            "/// The comment once said it under a link to spec 6\n///\n/// \"`probe` reaches a \
+             model over the network\" went back in.",
+        ),
+        (
+            "another part",
+            "/// Spec 7: \"A projection carries a generated-file marker.\"",
+        ),
+        (
+            "a part whose number starts with 6",
+            "/// Spec 60: \"A projection carries a generated-file marker.\"",
+        ),
+    ];
+    for (shape, source) in passes {
+        assert_eq!(
+            stale(source),
+            Vec::<usize>::new(),
+            "{shape} fires: {source}"
+        );
+    }
+    // A credit on the second line of a block reports that line.
+    assert_eq!(
+        stale("/// First line.\n/// Spec 6: \"a sentence it does not hold\"."),
+        vec![2]
+    );
+}

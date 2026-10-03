@@ -35,7 +35,9 @@
 //!
 //! # Two declines, and both are whole
 //!
-//! Spec 6 rules that a projection which cannot name every row produces no file.
+//! [The `headwater generate` contract](../../../../docs/interfaces/headwater-generate.md#what-a-projection-writes-and-why)
+//! rules that every decline is whole: a projection which cannot name every row
+//! produces no file.
 //! A document on the shelf whose name matches no verb declines the file, and so
 //! does a document with no name at all. Either one would otherwise write an
 //! index that silently dropped a description somebody wrote.

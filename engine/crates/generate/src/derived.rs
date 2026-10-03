@@ -24,8 +24,8 @@
 //!
 //! # Every value here is a function of committed bytes
 //!
-//! [Spec 6](../../../../docs/spec/06-engine-architecture.md#projections) rules
-//! that no generated file states when it was generated, because `generate
+//! [The `headwater generate` contract](../../../../docs/interfaces/headwater-generate.md#the-generated-file-marker)
+//! rules that no generated file states when it was generated, because `generate
 //! --check` compares bytes and a clock would make every run differ from the
 //! last over a corpus nobody touched. Two of the facets below are dates, and
 //! neither one is a clock: each folds the dates that the documents this

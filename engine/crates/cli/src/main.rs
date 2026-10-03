@@ -1558,9 +1558,9 @@ fn taxonomy_kinds(root: &Path, json: bool) -> ExitCode {
 /// exits 0 with findings, and no gate and no hook runs it.
 ///
 /// **It exits 0 whatever it finds, and that is the constraint rather than a
-/// default.** [Spec 6](../../../../docs/spec/06-engine-architecture.md#taxonomy-validate-versus-taxonomy-audit)
-/// makes these findings "advisory by construction, because a young or small
-/// corpus fails differentiation for reasons that are not defects". The
+/// default.** [The `headwater taxonomy` contract](../../../../docs/interfaces/headwater-taxonomy.md#description)
+/// makes each finding advisory, because "A young or small corpus fails
+/// differentiation for reasons that are not defects". The
 /// strongest form of that promise is an exit status that no reading can move,
 /// which is the shape `sweep` already has for its own reason. There is no
 /// `--strict`.
@@ -3743,8 +3743,10 @@ fn plan_of(
 ///
 /// The taxonomy comes from the lock and the corpus block comes from the
 /// consumer declaration. The two are different questions: the lock says what
-/// the schema is, and `corpus:` says what to walk. Spec 6 keeps them apart too,
-/// because a run reports "the corpus tree, the taxonomy lock hash" as two facts.
+/// the schema is, and `corpus:` says what to walk.
+/// [Spec 4](../../../../docs/spec/04-assurance-model.md#a-verdict-is-about-one-state-of-the-corpus)
+/// keeps them apart too, because a run reports "The corpus tree, the taxonomy
+/// lock hash" as two facts.
 ///
 /// One function rather than one per verb. A read that walked a different tree
 /// from the one `check` walks would answer about a corpus no run evaluated, and

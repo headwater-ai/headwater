@@ -322,8 +322,8 @@ fn declarable_counts(text: &str) -> Vec<(usize, usize)> {
 /// The declarable count that spec 6 and the `headwater generate` contract
 /// state is the count this engine declares.
 ///
-/// Spec 6 stated "Ten of the twelve are declarable" after `verb_index` and
-/// `consumer_surface` had made the sets eleven and thirteen
+/// Spec 6 at `bdf2761f` stated "Ten of the twelve are declarable" after
+/// `verb_index` and `consumer_surface` had made the sets eleven and thirteen
 /// ([#1572](https://github.com/headwater-ai/headwater/issues/1572)). Nothing
 /// read the sentence, so the hand count drifted twice and every suite stayed
 /// green. This reads every sentence of that form in both documents and holds

@@ -123,8 +123,9 @@ impl Emitter {
 
     /// Whether this engine emits it.
     ///
-    /// Spec 6: "Only `json` and `jsonschema` ship in the first release, and each
-    /// later format waits for a consumer who asks for it."
+    /// [The `headwater export` contract](../../../../docs/interfaces/headwater-export.md#description):
+    /// "The engine ships `json` and `jsonschema`, and each later format waits
+    /// for a consumer who asks for it."
     ///
     /// An exhaustive `match` rather than a `matches!`, because the refusal in
     /// `export.rs` reads this to say which emitters ship. Under `matches!` an
