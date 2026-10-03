@@ -5,6 +5,7 @@ status: current
 status_since: 2026-03-20
 last_verified: 2026-07-01
 summary: One hour was chosen as the deduplication window, and no measurement supports it.
+waiting_on: measurement
 provenance:
   warrant: accepted
   agency: mixed

@@ -5,6 +5,7 @@ status: current
 status_since: 2026-03-15
 last_verified: 2026-03-15
 summary: The guide tells integrators to deduplicate, which the exactly-once decision took away from them.
+waiting_on: build
 provenance:
   warrant: accepted
   agency: human

@@ -5,6 +5,7 @@ status: current
 status_since: 2026-06-01
 last_verified: 2026-07-01
 summary: Nothing states what Beacon loses when a Redis node goes, and no deployment large enough to find out exists.
+waiting_on: adopter
 provenance:
   warrant: accepted
   agency: human
