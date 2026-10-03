@@ -678,6 +678,18 @@ fn a_present_tense_credit_to_a_moved_rule_is_flagged_and_history_is_not() {
     let later = "Spec 6 says that a placeholder sits there, and no other rule does.\n";
     assert_eq!(moved_credits(decision, later), vec![(1, "placeholder")]);
 
+    // A semicolon ends the verb's clause, so a negator after it does not undo
+    // the credit.
+    let semicolon = "Spec 6 states the corpus tree; nothing else.\n";
+    assert_eq!(moved_credits(decision, semicolon), vec![(1, "corpus tree")]);
+    // The case above passes even when a semicolon does not end a clause,
+    // because its last word is not a negator. This one holds the semicolon.
+    let semicolon_last = "Spec 6 states the corpus tree; the lock adds nothing.\n";
+    assert_eq!(
+        moved_credits(decision, semicolon_last),
+        vec![(1, "corpus tree")]
+    );
+
     // Each adverb of the list may stand before the verb.
     for adverb in ["then", "also", "still", "now", "already", "only"] {
         let line = format!("Spec 6 {adverb} states the placeholder.\n");
