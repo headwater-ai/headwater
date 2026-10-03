@@ -262,6 +262,121 @@ fn an_uncommitted_graph_export_is_written_by_export_and_not_by_generate() {
     }
 }
 
+/// A declared export that refuses before its first write writes no file
+/// ([#1510](https://github.com/headwater-ai/headwater/issues/1510)).
+///
+/// `headwater generate` has kept this order since #1466. `export` is the
+/// publish step, so a refusal after a partial write leaves a published
+/// directory half updated. The unmarked file at `exports/filtered.json` is an
+/// `Occupied` refusal, which the run knows before it writes, and the pending
+/// `exports/control.json` must therefore not appear.
+#[test]
+fn a_refused_export_writes_no_declared_output() {
+    let root = uncommitted_control();
+    let control = root.join("exports/control.json");
+    let filtered = root.join("exports/filtered.json");
+    let authored = "{\"authored\": true}\n";
+    std::fs::create_dir_all(root.join("exports")).expect("the directory");
+    std::fs::write(&filtered, authored).expect("the authored file");
+    assert!(!control.exists(), "the fixture already holds the export");
+
+    let (code, said) = status(&run(&root, &["export"]));
+    assert_eq!(code, Some(1), "`export` did not refuse\n{said}");
+    assert!(
+        !control.exists(),
+        "`export` wrote a declared export before it refused\n{said}"
+    );
+    assert_eq!(
+        std::fs::read_to_string(&filtered).expect("the authored file reads"),
+        authored,
+        "`export` changed the authored file it refused\n{said}"
+    );
+    assert!(
+        said.contains("not written, because the run refused before it wrote this file"),
+        "the report does not name the unwritten export\n{said}"
+    );
+    let stderr = said.split("\nstderr:\n").nth(1).expect("the stderr part");
+    assert!(
+        stderr.contains("wrote nothing and the tree is as it was"),
+        "the refusal does not say the run wrote nothing\n{said}"
+    );
+    assert!(
+        !stderr.contains("is not what this corpus and this lock produce"),
+        "a withheld run also prints the drift sentence\n{said}"
+    );
+
+    // `--check` writes nothing in any state, so it withholds nothing, and its
+    // sentence stays the drift sentence rather than the publish remedy.
+    let (code, said) = status(&run(&root, &["export", "--check"]));
+    assert_eq!(
+        code,
+        Some(1),
+        "`export --check` accepted the authored file\n{said}"
+    );
+    let stderr = said.split("\nstderr:\n").nth(1).expect("the stderr part");
+    assert!(
+        stderr.contains("a declared export is not what this corpus and this lock produce")
+            && !stderr.contains("wrote nothing"),
+        "`export --check` did not end on the drift sentence\n{said}"
+    );
+    assert!(
+        !said.contains("not written, because the run refused"),
+        "`export --check` reports a withheld write\n{said}"
+    );
+}
+
+/// The second refusal an export plan can raise withholds every write too: an
+/// output whose marker the census does not read
+/// ([#1510](https://github.com/headwater-ai/headwater/issues/1510)).
+///
+/// The generate crate holds this refusal over `write` alone, so without this
+/// case a `publish` that withheld on `Occupied` and not on `MarkerUnread`
+/// would pass every suite.
+#[test]
+fn an_export_whose_marker_the_census_would_not_read_writes_nothing() {
+    let root = uncommitted_control();
+    let package = root.join(".headwater/packages/acme-answered-export/taxonomy.yml");
+    let source = std::fs::read_to_string(&package).expect("the package reads");
+    let declared = "    output: exports/filtered.json\n";
+    assert!(source.contains(declared), "the fixture moved: {source}");
+    std::fs::write(
+        &package,
+        source.replace(declared, "    output: exports/filtered.yml\n"),
+    )
+    .expect("the package writes");
+    let (code, said) = status(&run(&root, &["taxonomy", "resolve"]));
+    assert_eq!(code, Some(0), "the taxonomy does not resolve\n{said}");
+    assert!(
+        !root.join("exports").exists(),
+        "the fixture already holds exports"
+    );
+
+    let (code, said) = status(&run(&root, &["export"]));
+    assert_eq!(code, Some(1), "`export` did not refuse\n{said}");
+    assert!(
+        !root.join("exports").exists(),
+        "`export` wrote a declared export before it refused\n{said}"
+    );
+    let stdout = said.split("\nstderr:\n").next().expect("the stdout part");
+    let control = stdout
+        .split("exports/control.json")
+        .nth(1)
+        .expect("the report names control.json");
+    assert!(
+        control
+            .lines()
+            .nth(1)
+            .is_some_and(|line| line
+                .contains("not written, because the run refused before it wrote this file")),
+        "the report does not name control.json as unwritten\n{said}"
+    );
+    let stderr = said.split("\nstderr:\n").nth(1).expect("the stderr part");
+    assert!(
+        stderr.contains("wrote nothing and the tree is as it was"),
+        "the refusal does not say the run wrote nothing\n{said}"
+    );
+}
+
 /// The answered-export fixture with its `control` export declared
 /// `committed: false`, resolved into the lock.
 fn uncommitted_control() -> Scratch {

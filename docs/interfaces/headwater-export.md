@@ -27,6 +27,13 @@ Without `--format`, it writes every declared profile to its taxonomy-declared pa
 
 The command refuses an ambiguous profile selection or an uncovered emitter loss.
 
+**A run that refuses writes nothing.** Without `--check`, the command finds the verdict of every declared export before its first write. It follows the rule that [`headwater generate`](headwater-generate.md) states, and two of the refusals that rule names can apply to an export:
+
+- an unmarked file at an output path
+- an output whose marker the census does not read
+
+When one of them applies, the command writes no file, the exports that declare `committed: false` included, and it exits 1. The report lists each export that it did not write with the line `not written, because the run refused before it wrote this file`. Standard error says that the run wrote nothing and that the tree is as it was. The operating system can still refuse a write after an earlier write, because no check before the first write can find that failure.
+
 **This command is the one writer of an export that declares `committed: false`.** Such an export is built at publish time, and the tree does not hold it. Without `--check`, the command writes it like every other declared export. With `--check`, it does not require the file and does not compare a copy that it finds. The report names the path with a line that is not an error. [`headwater generate`](headwater-generate.md) does not write the file.
 
 **`--at` dates an export that declares `committed: false`, and only that declared export.** No gate compares such a file, so a date inside it fails nothing. Its marker states that `headwater export` builds it at publish time and that no gate compares it. A committed export carries no date, because `generate --check` compares it by byte. So when the selected profiles include a committed export, the command refuses `--at` before it writes anything. The refusal names each committed path. Name a target with `--format`, or name with `--profile` a profile whose declared exports all state `committed: false`.
