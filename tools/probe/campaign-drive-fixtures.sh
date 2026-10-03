@@ -83,7 +83,7 @@ EOF
 
 # The campaign. Each invocation reads the next line of $CASE/scenario (the
 # last line repeats once they run out), which is either
-#     exit=<n> [record=<k>] [cents=<c>] [halt=y] [skip=<k>] [refuse=<k>] [fail=<k>]
+#     exit=<n> [record=<k>] [cents=<c>] [halt=y] [skip=<k>] [refuse=<k>] [fail=<k>] [provider=<k>]
 # or
 #     auto cents=<c>
 # A manual line walks the jobs not yet recorded, in order: it leaves `skip`
@@ -93,7 +93,9 @@ EOF
 # does at --parallel 1: it records a job at `cents` while spent plus the
 # session budget is at most the cap and the bound allows, refuses every job
 # after that, and exits 7 on a refusal, 9 on the bound and 0 when all are
-# recorded.
+# recorded. A session a manual line records gets a `record.md` stating that
+# the proxy refused `provider` provider fetches (default 0), in the words
+# probe-record.sh prints.
 cat > "$fix/campaign-stub.sh" <<'EOF'
 set -u
 printf 'argv %s\n' "$*" >> "$CASE/calls.argv"
@@ -128,7 +130,7 @@ fi
 [ -f "$out/claude-version" ] || printf '%s\n' "$ver" > "$out/claude-version"
 rm -rf "$out/slice"
 mkdir -p "$out/slice/started" "$out/slice/refused"
-code= record=0 cents=0 halt=n skip=0 refuse=0 fail=0 auto=n
+code= record=0 cents=0 halt=n skip=0 refuse=0 fail=0 auto=n provider=0
 for word in $line; do
     case $word in
         auto) auto=y ;;
@@ -139,6 +141,7 @@ for word in $line; do
         skip=*) skip=${word#skip=} ;;
         refuse=*) refuse=${word#refuse=} ;;
         fail=*) fail=${word#fail=} ;;
+        provider=*) provider=${word#provider=} ;;
     esac
 done
 printf 'argv %s cap=%s max=%s\n' "$out" "$cap" "$max" >> "$CASE/calls.short"
@@ -181,6 +184,8 @@ while read -r name rest; do
         start "$name"
         echo 0 > "$out/sessions/$name/status"
         echo "$cents" > "$out/sessions/$name/cost"
+        if [ "$provider" = 0 ]; then said="no request"; else said="$provider request"; fi
+        echo "The proxy refused a request to the provider API that asked the provider to fetch from another host for the session. It refused $said of that kind, and no request whose head it does not forward." > "$out/sessions/$name/record.md"
         record=$((record - 1))
     elif [ "$halt" = y ]; then
         start "$name"
@@ -208,7 +213,7 @@ EOF
 # ---------------------------------------------------------------- a case
 
 # new_case: a fresh case directory with a repository detached at the pin,
-# a clock at a fixed time, credentials that outlive it by 8 h, and two
+# a clock at a fixed time, credentials that outlive it by 30 days, and two
 # specs of 20 and 10 jobs. Sets CASE, PIN and the driver's defaults.
 new_case() {
     CASE=$(mktemp -d "$fix/case.XXXXXX")
@@ -227,7 +232,7 @@ new_case() {
     g update-ref refs/remotes/origin/main HEAD
     g checkout -q --detach
     PIN=$(g rev-parse HEAD)
-    B=60 C=100000 M=20 P=2 VERSION=2.1.288
+    B=60 C=100000 M=20 P=2 VERSION=2.1.288 RAMP=
 }
 
 write_token() {
@@ -244,6 +249,7 @@ only_a() {
 drive() {
     (
         cd "$CASE/repo" || exit 99
+        if [ -n "$RAMP" ]; then set -- --ramp "$RAMP" "$@"; else set -- --parallel "$P" "$@"; fi
         HEADWATER_DRIVE_CAMPAIGN=$fix/campaign-stub.sh \
         HEADWATER_DRIVE_NOW="sh $fix/now.sh" \
         HEADWATER_DRIVE_SLEEP="sh $fix/sleep.sh" \
@@ -252,7 +258,7 @@ drive() {
         PATH="$fix/decoy:$PATH" \
             timeout 60 sh "$driver" --root "$CASE/root" --pin "$PIN" --claude-version "$VERSION" \
             --spec-a "$CASE/spec-a" --spec-b "$CASE/spec-b" --repetitions-b 118 --model fixture-model \
-            --session-cents "$B" --cap-cents "$C" --parallel "$P" --overshoot-cents "$M" "$@"
+            --session-cents "$B" --cap-cents "$C" --overshoot-cents "$M" "$@"
     ) > "$CASE/out" 2> "$CASE/err"
     echo $? > "$CASE/code"
 }
@@ -576,6 +582,83 @@ echo 'exit=9 record=5 cents=500' > "$CASE/scenario"
 drive
 check "cap: a total past --cap-cents exits 7" code_is 7
 check "cap: and logs the figures" out_has "spent 2500 of 1000"
+
+# ------------------------------------------------- the ramp
+
+# caps_hold: every invocation in calls.argv was given C less what the other
+# batch had spent less its own --parallel times M. The stub's spend of the
+# other batch is fixed while a batch runs here, so the expected figure is
+# read from the files at the end.
+caps_hold() {
+    awk -v c="$C" -v m="$M" -v a="$(spent_of a)" '
+        {
+            for (i = 1; i < NF; i++) {
+                if ($i == "--out") out = $(i + 1)
+                if ($i == "--parallel") p = $(i + 1)
+                if ($i == "--cap-cents") cap = $(i + 1)
+            }
+            other = (out ~ /\/b$/) ? a : 0
+            if (cap != c - other - p * m) { print "bad: " $0; bad++ }
+        }
+        END { exit bad > 0 }
+    ' "$CASE/calls.argv"
+}
+parallels_of() {
+    grep -- "--out $CASE/root/$1 " "$CASE/calls.argv" | sed 's/.*--parallel \([0-9]*\).*/\1/' | tr '\n' ' '
+}
+
+new_case
+RAMP=2,3,4
+echo "jobs 10" > "$CASE/spec-a"
+echo "jobs 60" > "$CASE/spec-b"
+: > "$CASE/root/canary-passed"
+cat > "$CASE/scenario" <<'EOF'
+exit=9 record=8 cents=50
+exit=0 record=2 cents=50
+exit=9 record=4 cents=50
+exit=9 record=4 cents=50
+exit=9 record=4 cents=50
+exit=9 record=2 cents=50 halt=y
+exit=9 record=4 cents=70
+exit=9 record=4 cents=50 provider=1
+exit=7 record=2 cents=50 refuse=1
+exit=9 record=4 cents=50
+exit=0 record=60 cents=50
+EOF
+drive
+check "ramp: the batch finishes" code_is 0
+check "ramp: the canary runs at --parallel 1" [ "$(parallels_of a)" = "1 2 " ]
+check "ramp: B rises on a clean slice, stops at the last step, lowers on a halt, holds on a cost outside the canary's range, a provider refusal and a cap refusal, and rises again (saw: $(parallels_of b))" [ "$(parallels_of b)" = "2 3 4 4 3 3 3 3 4 " ]
+check "ramp: every invocation's cap is C - spent(other) - its own parallel x M" caps_hold
+check "ramp: both batches together within the cap" [ $(($(spent_of a) + $(spent_of b))) -le "$C" ]
+check "ramp: each change is logged" sh -c "grep -c 'ramp b parallel' '$CASE/out' | grep -qx 4"
+check "ramp: the canary range is written" grep -qx '50 50' "$CASE/root/canary-range"
+
+new_case
+only_a
+RAMP=2,3
+printf 'exit=9 halt=y\nexit=0 record=20 cents=10\n' > "$CASE/scenario"
+drive
+check "ramp: a halt at the first step holds it there" [ "$(parallels_of a)" = "2 2 " ]
+
+new_case
+only_a
+RAMP=2,3
+printf 'exit=9 record=4 cents=10\nexit=0 record=20 cents=10\n' > "$CASE/scenario"
+drive
+check "ramp: with no canary range the ramp holds (fails closed)" [ "$(parallels_of a)" = "2 2 " ]
+
+for bad_ramp in 4,3 4,,6 0,2 4, two; do
+    new_case
+    RAMP=$bad_ramp
+    drive
+    check "ramp: --ramp $bad_ramp exits 2" code_is 2
+done
+new_case
+RAMP=2,4
+drive --parallel 3
+check "ramp: --ramp with --parallel exits 2" code_is 2
+check "ramp: and invokes nothing" calls_are 0
 
 # ------------------------------------------------- 7. canary gate
 

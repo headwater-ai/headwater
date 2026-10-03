@@ -10,7 +10,7 @@
 #
 #     sh tools/probe/campaign-drive.sh --root <dir> --pin <sha> --claude-version <v> \
 #         --spec-a <file> --spec-b <file> --repetitions-b <n> --model <m> \
-#         --session-cents <B> --cap-cents <C> [--parallel <P>] \
+#         --session-cents <B> --cap-cents <C> [--parallel <P> | --ramp <P1,P2,...>] \
 #         [--overshoot-cents <M>] [--seed <n>]
 #
 # Launch it from a worktree detached at the pin, with the engine built there,
@@ -98,6 +98,23 @@
 # measurement. After each invocation, a total past `C` logs the figures and
 # exits 7. That is the alarm, not the mechanism.
 #
+# ## The ramp
+#
+# `--parallel <P>` (default 4) is the parallel count of every invocation of
+# batch A and batch B. `--ramp <P1,P2,...>` gives steps in its place, each
+# above the one before, and each batch starts at the first. After a slice
+# that ended on the bound, recorded at least one session, had no halt, no
+# refused job, and for every session it recorded a cost inside the range of
+# the canary's 8 costs (`<root>/canary-range`) and a `record.md` stating
+# that the proxy refused no provider fetch, the next slice runs one step
+# higher, never past the last. A halt lowers it one step, never below the
+# first. Anything else holds it. The cap margin is always `p * M` for the
+# `p` of the invocation it is computed for, so a higher step leaves a larger
+# margin. The provider count is a sentence of `record.md`, not a field, so a
+# record that words it otherwise holds the ramp rather than raising it. A
+# driver started again starts each batch at the first step. The canary runs
+# at `--parallel 1` whatever the ramp says.
+#
 # ## What each exit of campaign.sh does
 #
 # `campaign.sh` exits 7 both when the cap or the ceiling refused a job,
@@ -149,11 +166,11 @@
 set -u
 
 usage() {
-    echo "usage: sh tools/probe/campaign-drive.sh --root <dir> --pin <sha> --claude-version <v> --spec-a <file> --spec-b <file> --repetitions-b <n> --model <m> --session-cents <B> --cap-cents <C> [--parallel <P>] [--overshoot-cents <M>] [--seed <n>]" >&2
+    echo "usage: sh tools/probe/campaign-drive.sh --root <dir> --pin <sha> --claude-version <v> --spec-a <file> --spec-b <file> --repetitions-b <n> --model <m> --session-cents <B> --cap-cents <C> [--parallel <P> | --ramp <P1,P2,...>] [--overshoot-cents <M>] [--seed <n>]" >&2
     exit 2
 }
 
-root= pin= version= spec_a= spec_b= reps_b= model= budget= cap= parallel=4 margin=100 seed=0
+root= pin= version= spec_a= spec_b= reps_b= model= budget= cap= parallel=4 parallel_given= ramp= margin=100 seed=0
 while [ $# -gt 0 ]; do
     [ $# -ge 2 ] || usage
     case $1 in
@@ -166,7 +183,8 @@ while [ $# -gt 0 ]; do
         --model) model=$2 ;;
         --session-cents) budget=$2 ;;
         --cap-cents) cap=$2 ;;
-        --parallel) parallel=$2 ;;
+        --parallel) parallel=$2 parallel_given=1 ;;
+        --ramp) ramp=$2 ;;
         --overshoot-cents) margin=$2 ;;
         --seed) seed=$2 ;;
         *) usage ;;
@@ -183,6 +201,27 @@ for value in "$reps_b" "$budget" "$cap" "$parallel" "$margin"; do
     positive "$value" || usage
 done
 case $seed in '' | *[!0-9]*) usage ;; esac
+# The ramp: steps of --parallel, each above the one before.
+steps=0
+if [ -n "$ramp" ]; then
+    if [ -n "$parallel_given" ]; then
+        echo "campaign-drive: give --parallel or --ramp, not both." >&2
+        exit 2
+    fi
+    case $ramp in ,* | *, | *,,*) usage ;; esac
+    last=0
+    for value in $(printf '%s' "$ramp" | tr ',' ' '); do
+        positive "$value" || usage
+        if [ "$value" -le "$last" ]; then
+            echo "campaign-drive: each step of --ramp must be above the one before." >&2
+            exit 2
+        fi
+        last=$value
+        steps=$((steps + 1))
+    done
+    [ "$steps" -gt 0 ] || usage
+    parallel=$(printf '%s' "$ramp" | cut -d, -f1)
+fi
 for spec in "$spec_a" "$spec_b"; do
     [ -f "$spec" ] || { echo "campaign-drive: no spec file $spec." >&2; exit 2; }
 done
@@ -238,6 +277,46 @@ classify() {
 
 recorded() { set -- $(classify "$1"); echo "$1"; }
 
+# clean <dir>: whether the slice just run lets the ramp rise. It needs a
+# slice that recorded at least one session, and for every session it
+# recorded a cost inside the canary's range (`<root>/canary-range`) and a
+# record that states the proxy refused no provider fetch. That count is a
+# sentence of `record.md` and not a field, so a record that does not state
+# it in the words `probe-record.sh` prints today holds the ramp: the test
+# fails closed, and a reworded record costs a rise, never a cap.
+clean() {
+    [ -s "$root/canary-range" ] || return 1
+    [ -f "$1/jobs" ] || return 1
+    set -- "$1" $(cat "$root/canary-range")
+    awk -v d="$1" -v lo="$2" -v hi="$3" '
+        function exists(p,   line, r) { r = (getline line < p); close(p); return r >= 0 }
+        function first(p,   line) { line = ""; if ((getline line < p) <= 0) line = ""; close(p); return line }
+        function quiet(p,   line, ok) {
+            ok = 0
+            while ((getline line < p) > 0)
+                if (line ~ /It refused (no request|0 requests?) of that kind/) ok = 1
+            close(p)
+            return ok
+        }
+        NF {
+            name = $1
+            if (!exists(d "/slice/started/" name)) next
+            if (first(d "/sessions/" name "/status") != "0") next
+            n++
+            cost = first(d "/sessions/" name "/cost")
+            if (cost == "" || cost + 0 < lo + 0 || cost + 0 > hi + 0) bad++
+            else if (!quiet(d "/sessions/" name "/record.md")) bad++
+        }
+        END { exit !(n > 0 && bad == 0) }
+    ' "$1/jobs"
+}
+
+# ramp_to <step>: set the step and the parallel count it names.
+ramp_to() {
+    step=$1
+    p=$(printf '%s' "$ramp" | cut -d, -f"$step")
+}
+
 # ------------------------------------------------------------ the waits
 
 stop_check() {
@@ -248,14 +327,16 @@ stop_check() {
 }
 
 # pause <seconds>: sleep in steps of 60 s at most, checking the stop file.
+# The shell has no local variables, so every function of this script names
+# its own: a `step` here once overwrote the ramp's.
 pause() {
-    left=$1
-    while [ "$left" -gt 0 ]; do
+    pause_left=$1
+    while [ "$pause_left" -gt 0 ]; do
         stop_check
-        step=$left
-        [ "$step" -gt 60 ] && step=60
-        $sleep_cmd "$step"
-        left=$((left - step))
+        pause_chunk=$pause_left
+        [ "$pause_chunk" -gt 60 ] && pause_chunk=60
+        $sleep_cmd "$pause_chunk"
+        pause_left=$((pause_left - pause_chunk))
     done
     stop_check
 }
@@ -362,6 +443,9 @@ run_batch() {
     [ "$dir" = b ] && other=a
     halts=0
     retried=0
+    if [ "$steps" -gt 0 ] && [ "$phase" != canary ]; then
+        ramp_to 1
+    fi
     while :; do
         checks
         given=$((cap - $(spent "$root/$other") - p * margin))
@@ -381,7 +465,7 @@ run_batch() {
             ${reps:+--repetitions "$reps"} >&2
         code=$?
         set -- $(classify "$root/$dir")
-        rec=$1 total=$2 failed=$4 halt=$5
+        rec=$1 total=$2 refusals=$3 failed=$4 halt=$5
         shift 5
         names=$*
         new=$((rec - before))
@@ -412,6 +496,19 @@ run_batch() {
             exit 7
         fi
         [ "$action" = refused-only ] || retried=0
+        # The ramp, for the next slice of this batch alone. A halt lowers it
+        # one step, a slice that ended on the bound and was clean raises it
+        # one step, and anything else holds it.
+        if [ "$steps" -gt 0 ] && [ "$phase" != canary ]; then
+            was=$p
+            if [ "$action" = halt ] && [ "$step" -gt 1 ]; then
+                ramp_to $((step - 1))
+                say "ramp $phase parallel $was -> $p after a halt"
+            elif [ "$action" = bound ] && [ "$step" -lt "$steps" ] && [ "$refusals" = 0 ] && clean "$root/$dir"; then
+                ramp_to $((step + 1))
+                say "ramp $phase parallel $was -> $p after a clean slice"
+            fi
+        fi
         case $action in
             done) return 0 ;;
             bound)
@@ -478,6 +575,16 @@ if [ ! -f "$root/canary-recorded" ]; then
         say "canary failed: $reason"
         exit 11
     fi
+    awk -v d="$root/a" '
+        function first(p,   line) { line = ""; if ((getline line < p) <= 0) line = ""; close(p); return line }
+        NF && first(d "/sessions/" $1 "/status") == "0" {
+            cost = first(d "/sessions/" $1 "/cost") + 0
+            if (n == 0 || cost < lo) lo = cost
+            if (n == 0 || cost > hi) hi = cost
+            n++
+        }
+        END { print lo, hi }
+    ' "$root/a/jobs" > "$root/canary-range"
     : > "$root/canary-recorded"
     say "canary recorded"
 fi
