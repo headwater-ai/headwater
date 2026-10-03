@@ -208,7 +208,7 @@ Nine records under [`docs/process/decisions/`](../decisions/README.md) settle th
 
 ## Where each part of this architecture lives
 
-The front matter of this part declares a `governs` edge onto each `.claude/` file below. That relation is `created_by: agent`. An agent writes the edge, with `headwater new --relates governs=<pattern>` when it creates a document and by hand after that, and the merge ruling on a reviewed pull request accepts it ([HW-DR-0104](../../decisions/0104-an-agent-writes-governs-traces-to-and-cited-in-through-the-verb-and-the-review-of-its-pull-request-is-the-acceptance.md)). So the author of each change keeps both the edge and the row true, and no check reports a definition that neither one reaches.
+The front matter of this part declares a `governs` edge onto each `.claude/` file below. That relation is `created_by: agent`. An agent writes the edge with `headwater new --relates governs=<pattern>` when it creates a document, and by hand after that. The merge ruling on a reviewed pull request accepts it ([HW-DR-0104](../../decisions/0104-an-agent-writes-governs-traces-to-and-cited-in-through-the-verb-and-the-review-of-its-pull-request-is-the-acceptance.md)). So the author of each change keeps both the edge and the row true, and no check reports a definition that neither one reaches.
 
 | File | What it holds |
 |---|---|
