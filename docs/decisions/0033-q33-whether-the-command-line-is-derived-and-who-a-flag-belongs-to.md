@@ -3,7 +3,7 @@ id: HW-DR-0033
 status: current
 status_since: 2026-08-30
 summary: "`clap` derives the command line for 17 lock entries, and a flag belongs to the verb that reads it rather than to the binary."
-last_verified: 2026-09-08
+last_verified: 2026-10-03
 title: "Q33 — Whether the command line is derived, and who a flag belongs to"
 provenance:
   warrant: accepted
@@ -30,7 +30,7 @@ relations:
 
 **A caller cannot see the loss, which is what makes it worth a ruling.** The run succeeds. The report is the report a run with no flag writes. Nothing on either stream says that a word the caller typed reached nothing. [clig.dev](https://clig.dev/) puts this under errors, and the review that scoped [#321](https://github.com/headwater-ai/headwater/issues/321) named it there.
 
-**One published kit answers the whole surface and is out of reach.** Charmbracelet ships Bubble Tea, Lip Gloss, Glamour, Huh, Gum and `fang`, and every one of them is written in Go. Reaching one means starting a subprocess. [Spec 6](../spec/06-engine-architecture.md#cli) states two things about this engine. It is a thin shell over a library, and no crate of it opens a socket. Both are properties of the argument rather than rules that somebody keeps, so the cost of reaching Go is the argument. The one idea worth taking from Lip Gloss is that a style is a named value asked for by role.
+**One published kit answers the whole surface and is out of reach.** Charmbracelet ships Bubble Tea, Lip Gloss, Glamour, Huh, Gum and `fang`, and every one of them is written in Go. Reaching one means starting a subprocess. Two things hold of this engine. [HW-REQ-0001](../requirements/0001-the-engine-reaches-no-network-at-check-time.md) states that no crate of its checking loop opens a socket. The one crate that opens a socket, `headwater-fetch`, serves `headwater taxonomy vendor`, and only `headwater-cli` links it ([HW-DR-0075](0075-the-vendor-verb-may-take-a-location-and-the-fetch-lives-only-in-a-crate-the-checking-loop-never-links.md)). [Spec 6](../spec/06-engine-architecture.md#library) states that the command line is a thin shell over a library. Both are properties of the argument rather than rules that somebody keeps, so the cost of reaching Go is the argument. The one idea worth taking from Lip Gloss is that a style is a named value asked for by role.
 
 **The dependency graph of this engine is small enough that an addition is a decision.** Before this ruling the lock holds 35 packages: 23 crates of this workspace and 12 external ones, under 2 direct declarations. Those two are `saphyr-parser` in `crates/yaml` and `pulldown-cmark` in `crates/doc`. [HW-DR-0023](0023-the-engine-lint-floor.md) set the standard that a manifest line earns its place on the day it lands, and a third external declaration is measured against that.
 

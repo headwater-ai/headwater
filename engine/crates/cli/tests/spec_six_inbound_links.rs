@@ -9,8 +9,23 @@
 //! decision) stays as written, so the walk skips it, and a table holds the
 //! count of each link that a record keeps to one of the seven sections.
 //!
-//! The walk cannot see a bare `06-engine-architecture.md` credit, or a credit
-//! to a section that still states something. A reader checks those.
+//! A second walk reads credits in prose (#1572 clause 9). A sentence that
+//! names spec 6, as a link to `06-engine-architecture.md` with or without an
+//! anchor or as the plain words, and puts a verb of `CREDIT_VERBS` after the
+//! name, past at most two `RELATIVES`, two `ADVERBS` and, after a possessive,
+//! the owned noun, credits that part with what follows. So does a sentence
+//! that opens its claim with "according to" and the name. A verb that one of
+//! `NEGATORS` follows is not a credit, because the sentence then says what
+//! that part does not hold. When that sentence or
+//! the next one holds a term of `MOVED_CREDITS`, the credit is to a rule that
+//! moved, and the sentence is repointed and its claim is corrected in place
+//! (HW-DR-0106). A past-tense verb (said, stated) is history and is not read.
+//! A third walk holds the records of a moment to the credits they already
+//! keep, so that a record is not edited to add or drop one.
+//!
+//! Neither walk can see a present-tense credit to a moved rule whose wording
+//! no row of `MOVED_CREDITS` names. A reader checks those, and a row is added
+//! for each one found.
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
@@ -66,6 +81,292 @@ const ALLOWED: &[(&str, &str, &str)] = &[
         "the server of spec 6",
     ),
 ];
+
+/// The rules and counts that spec 6 stated once and states no more, each with
+/// its home now. Each row is `(term, home, held)`: `term` is the wording of a
+/// credit to the old rule, lower case, and `held` is the wording at `home`
+/// that holds the rule now.
+const MOVED_CREDITS: &[(&str, &str, &str)] = &[
+    // The probe budget sits outside the root. Spec 5 states the three
+    // consequences, and the measurement subsystem states that nothing
+    // recomputes a budget.
+    (
+        "probe budget",
+        "docs/spec/05-ai-integration.md",
+        "no taxonomy rule reads it, no language regime binds it, and no shelf classifies it",
+    ),
+    (
+        "probe budget",
+        "docs/subsystems/measurement.md",
+        "a budget is a policy, and nothing recomputes it",
+    ),
+    // No crate of the checking loop opens a socket, and headwater-fetch is the
+    // one crate that does.
+    (
+        "socket",
+        "docs/requirements/0001-the-engine-reaches-no-network-at-check-time.md",
+        "`headwater-fetch` opens a socket",
+    ),
+    // What `--format` writes, and what a refusal writes, is in each verb
+    // contract.
+    (
+        "puts on standard output",
+        "docs/interfaces/headwater-check.md",
+        "a refusal writes nothing to standard output",
+    ),
+    // The `counted` grain of an export profile.
+    (
+        "placeholder",
+        "docs/spec/07-distribution-and-federation.md",
+        "a placeholder sits where each withheld node or edge would have been",
+    ),
+    // What a tombstone gives a reader: the rule identifier, and under
+    // `counted` the digests that HW-DR-0100 added.
+    (
+        "all that a reader gets",
+        "docs/spec/07-distribution-and-federation.md",
+        "the rule identifier is what a reader needs to ask for access, and it is all that they get",
+    ),
+    // The generated-file marker and the closed identity block.
+    (
+        "when it was generated",
+        "docs/interfaces/headwater-generate.md",
+        "no generated file states when it was generated",
+    ),
+    (
+        "refuses that shape",
+        "docs/interfaces/headwater-generate.md",
+        "three scalars: the identifier, the kind and the name",
+    ),
+    // A count in prose is a claim that no run derives again.
+    (
+        "count copied into prose",
+        "docs/interfaces/headwater-taxonomy.md",
+        "a count in prose goes false at the next change to the population that it counts",
+    ),
+    // A generated file is excused from checks and not from identity.
+    (
+        "excuses a generated file",
+        "docs/interfaces/headwater-generate.md",
+        "the marker exempts the file from checks and from nothing else",
+    ),
+    // What a run states beside its findings: the lock hash, and the corpus
+    // tree that nothing computes yet.
+    (
+        "corpus tree",
+        "docs/subsystems/checks-and-cache.md",
+        "the corpus tree is a gap",
+    ),
+    // A count: spec 6 still lists the projection kinds, and the count moved.
+    (
+        "ten declarable",
+        SPEC_SIX,
+        "eleven of the thirteen are declarable",
+    ),
+];
+
+/// The verbs that make a sentence a present-tense credit to spec 6 when one
+/// of them is the first word after the name.
+const CREDIT_VERBS: &[&str] = &[
+    "says",
+    "states",
+    "puts",
+    "lists",
+    "rules",
+    "refuses",
+    "describes",
+    "declares",
+    "requires",
+    "gives",
+    "calls",
+    "closes",
+    "keeps",
+    "excuses",
+    "holds",
+    "defines",
+    "names",
+];
+
+/// The adverbs that may stand between the name and the verb, two at most.
+const ADVERBS: &[&str] = &["then", "also", "still", "now", "already", "only"];
+
+/// The words that open a relative clause after the name, two at most, as in
+/// a name followed by `which`, `that` or `where it`.
+const RELATIVES: &[&str] = &["which", "that", "where", "it"];
+
+/// The words that, right after the verb, make the sentence say what spec 6
+/// does not hold, which is true of a moved rule and so is not a credit.
+const NEGATORS: &[&str] = &[
+    "no", "nothing", "none", "neither", "nowhere", "not", "never",
+];
+
+/// After a possessive name, the most words of the owned noun that may stand
+/// before the verb (a section, a table, a rule).
+const POSSESSED: usize = 3;
+
+/// The sentences of one line. A sentence ends at a full stop, a question
+/// mark or an exclamation mark that a space or the end of the line follows.
+fn sentences(line: &str) -> Vec<&str> {
+    let mut out = Vec::new();
+    let mut start = 0;
+    let bytes = line.as_bytes();
+    for (i, b) in bytes.iter().enumerate() {
+        if matches!(b, b'.' | b'?' | b'!') && bytes.get(i + 1).is_none_or(|n| *n == b' ') {
+            out.push(line[start..=i].trim());
+            start = i + 1;
+        }
+    }
+    let tail = line[start..].trim();
+    if !tail.is_empty() {
+        out.push(tail);
+    }
+    out
+}
+
+/// The byte offset just after each place that `sentence` names spec 6.
+fn spec_six_names(sentence: &str) -> Vec<usize> {
+    let mut ends = Vec::new();
+    // A link: the name ends at the `)` that closes its target.
+    let mut from = 0;
+    while let Some(at) = sentence[from..].find(SPEC_SIX_FILE) {
+        let after = from + at + SPEC_SIX_FILE.len();
+        if let Some(close) = sentence[after..].find(')') {
+            ends.push(after + close + 1);
+        }
+        from = after;
+    }
+    // The plain words, with a space, a comma or a possessive after them, so
+    // that a link's text ("[Spec 6]") is read once, as the link.
+    let lower = sentence.to_lowercase();
+    let mut from = 0;
+    while let Some(at) = lower[from..].find("spec 6") {
+        let end = from + at + "spec 6".len();
+        let rest = &lower[end..];
+        if rest.starts_with([' ', ',']) || rest.starts_with("'s ") || rest.starts_with("\u{2019}s ")
+        {
+            ends.push(end);
+        }
+        from = end;
+    }
+    ends
+}
+
+/// True when `sentence` credits spec 6 in the present tense. That is so when
+/// the sentence opens its claim with `according to` and the name, or when the
+/// first word after the name is a credit verb. Between the name and the verb
+/// there may stand up to two words of `RELATIVES`, and then up to two words
+/// of `ADVERBS`. After a possessive name, up to `POSSESSED` words of the noun
+/// it owns may stand before them. A verb is not a credit when a word of
+/// `NEGATORS` follows it at once or is the last word of its clause.
+fn credits_spec_six(sentence: &str) -> bool {
+    let lower = sentence.to_lowercase();
+    if lower.contains("according to spec 6") || lower.contains("according to [spec 6]") {
+        return true;
+    }
+    spec_six_names(sentence).into_iter().any(|end| {
+        let rest = &sentence[end..];
+        let possessive = rest.starts_with("'s ") || rest.starts_with("\u{2019}s ");
+        let words = clause_words(rest, usize::from(possessive));
+        let owned = if possessive { POSSESSED } else { 0 };
+        (0..=owned).any(|skip| verb_follows(&words[skip.min(words.len())..]))
+    })
+}
+
+/// A word of a sentence, lower case and with its punctuation trimmed, and
+/// whether a comma, a semicolon or a colon closes its clause.
+struct Word {
+    text: String,
+    ends_clause: bool,
+}
+
+/// The words of `rest` after the first `skip` tokens. A token that is only
+/// punctuation is dropped, and a comma in it closes the clause of the word
+/// before it.
+fn clause_words(rest: &str, skip: usize) -> Vec<Word> {
+    let mut words: Vec<Word> = Vec::new();
+    for raw in rest.split_whitespace().skip(skip) {
+        let ends_clause = raw.ends_with([',', ';', ':']);
+        let text = raw
+            .trim_matches(|c: char| !c.is_alphanumeric())
+            .to_lowercase();
+        if text.is_empty() {
+            if let Some(last) = words.last_mut() {
+                last.ends_clause |= ends_clause;
+            }
+            continue;
+        }
+        words.push(Word { text, ends_clause });
+    }
+    words
+}
+
+/// True when `words`, past up to two `RELATIVES` and then up to two
+/// `ADVERBS`, open with a credit verb that no word of `NEGATORS` follows
+/// at once or closes the clause of.
+fn verb_follows(words: &[Word]) -> bool {
+    let is = |at: usize, set: &[&str]| {
+        words
+            .get(at)
+            .is_some_and(|w| set.contains(&w.text.as_str()))
+    };
+    let mut at = 0;
+    while at < 2 && is(at, RELATIVES) {
+        at += 1;
+    }
+    let relatives = at;
+    while at < relatives + 2 && is(at, ADVERBS) {
+        at += 1;
+    }
+    if !is(at, CREDIT_VERBS) {
+        return false;
+    }
+    // A negator right after the verb ("holds no"), or as the last word of the
+    // verb's clause ("names it nowhere"), says what spec 6 does not hold.
+    if is(at + 1, NEGATORS) {
+        return false;
+    }
+    let mut last = at;
+    while !words[last].ends_clause && last + 1 < words.len() {
+        last += 1;
+    }
+    !(last > at && is(last, NEGATORS))
+}
+
+/// Every `(line, term)` in `text` where a present-tense credit to spec 6,
+/// read with the sentence after it, holds a term of `MOVED_CREDITS`, for a
+/// governing `rel`. A line is reported once for each term.
+fn moved_credits(rel: &str, text: &str) -> Vec<(usize, &'static str)> {
+    if !governs(rel, text) {
+        return Vec::new();
+    }
+    credit_lines(text)
+}
+
+/// Every `(line, term)` in `text` where a present-tense credit to spec 6,
+/// read with the sentence after it, holds a term of `MOVED_CREDITS`, whatever
+/// document holds it.
+fn credit_lines(text: &str) -> Vec<(usize, &'static str)> {
+    let mut out = Vec::new();
+    for (i, line) in text.lines().enumerate() {
+        let parts = sentences(line);
+        for (k, sentence) in parts.iter().enumerate() {
+            if !credits_spec_six(sentence) {
+                continue;
+            }
+            let mut window = sentence.to_lowercase();
+            if let Some(next) = parts.get(k + 1) {
+                window.push(' ');
+                window.push_str(&next.to_lowercase());
+            }
+            for (term, _, _) in MOVED_CREDITS {
+                if window.contains(term) && !out.contains(&(i + 1, *term)) {
+                    out.push((i + 1, *term));
+                }
+            }
+        }
+    }
+    out
+}
 
 /// True when the front matter of `text` says `status: superseded`.
 fn is_superseded(text: &str) -> bool {
@@ -179,6 +480,249 @@ fn no_governing_document_links_a_pointer_only_section_of_spec_6() {
         hits.len(),
         hits.join("\n")
     );
+}
+
+#[test]
+fn no_governing_sentence_credits_spec_6_in_the_present_tense_with_a_rule_it_no_longer_holds() {
+    let mut hits = Vec::new();
+    let mut walked = 0;
+    for rel in corpus_files() {
+        let text = read(&rel);
+        walked += 1;
+        for (line, term) in moved_credits(&rel, &text) {
+            hits.push(format!("{rel}:{line} \"{term}\""));
+        }
+    }
+    assert!(
+        walked > 100,
+        "the walk read {walked} files; it found no corpus"
+    );
+    assert!(
+        hits.is_empty(),
+        "{} governing line(s) credit spec 6 in the present tense with a rule it no longer holds; repoint each to the home MOVED_CREDITS names and correct the claim in place (HW-DR-0106):\n{}",
+        hits.len(),
+        hits.join("\n")
+    );
+}
+
+#[test]
+fn each_moved_term_is_gone_from_spec_6_and_held_at_its_home() {
+    let spec_six = read(SPEC_SIX).to_lowercase();
+    for (term, home, held) in MOVED_CREDITS {
+        assert!(
+            !spec_six.contains(term),
+            "spec 6 holds \"{term}\" again; drop its MOVED_CREDITS row or move the text"
+        );
+        assert!(
+            read(home).to_lowercase().contains(held),
+            "{home} no longer holds \"{held}\"; find the new home of \"{term}\""
+        );
+    }
+}
+
+#[test]
+fn a_present_tense_credit_to_a_moved_rule_is_flagged_and_history_is_not() {
+    let decision = "docs/decisions/0500-a-decision.md";
+    let budget =
+        "[Spec 6](../spec/06-engine-architecture.md#cli) puts the probe budget outside it.\n";
+    assert_eq!(moved_credits(decision, budget), vec![(1, "probe budget")]);
+
+    // An adverb may stand between the name and the verb, and a bare link is a
+    // name.
+    let then = "[Spec 6](../spec/06-engine-architecture.md) then puts the probe budget there.\n";
+    assert_eq!(moved_credits(decision, then).len(), 1);
+
+    // The same line in a record of a moment is not flagged.
+    for prefix in RECORDS_OF_A_MOMENT {
+        let rel = format!("{prefix}x.md");
+        assert!(moved_credits(&rel, budget).is_empty(), "{rel} was flagged");
+    }
+
+    // The past tense is history.
+    let said = "Spec 6 said that under `counted` a placeholder sat there.\n";
+    assert!(moved_credits(decision, said).is_empty());
+    let past = "When this was written, spec 6 said what `--format` puts on standard output.\n";
+    assert!(moved_credits(decision, past).is_empty());
+
+    // The plain words are a name.
+    let plain = "Spec 6 says that under counted a placeholder sits there.\n";
+    assert_eq!(moved_credits(decision, plain), vec![(1, "placeholder")]);
+    let lower = "It is not the placeholder that spec 6 describes.\n";
+    assert_eq!(moved_credits(decision, lower), vec![(1, "placeholder")]);
+
+    // A credit is read with the sentence after it, and not the one after that.
+    let next = "[Spec 6](../spec/06-engine-architecture.md#cli) states two things. No crate opens a socket.\n";
+    assert_eq!(moved_credits(decision, next), vec![(1, "socket")]);
+    let far = "Spec 6 states one thing. It is a shell. No crate opens a socket.\n";
+    assert!(moved_credits(decision, far).is_empty());
+
+    // A credit to a rule that spec 6 still states is not flagged.
+    let kept = "[Spec 6](../spec/06-engine-architecture.md#library) states that the CLI is a thin shell.\n";
+    assert!(moved_credits(decision, kept).is_empty());
+
+    // A present-tense credit to another part is not a credit to spec 6.
+    let other = "[Spec 5](../spec/05-ai-integration.md) puts the probe budget outside it.\n";
+    assert!(moved_credits(decision, other).is_empty());
+
+    // A relative clause may stand between the name and the verb, after the
+    // plain words and after a link (HW-DR-0100 wrote "spec 6, which says").
+    let which = "It amends one sentence of spec 6, which says that the rule identifier is all that a reader gets.\n";
+    assert_eq!(
+        moved_credits(decision, which),
+        vec![(1, "all that a reader gets")]
+    );
+    let still = "It is the placeholder of spec 6, which still states it.\n";
+    assert_eq!(moved_credits(decision, still), vec![(1, "placeholder")]);
+    let linked = "It amends [spec 6](../spec/06-engine-architecture.md#cli), which says what a placeholder is.\n";
+    assert_eq!(moved_credits(decision, linked), vec![(1, "placeholder")]);
+
+    // A relative clause that credits nothing is not a credit, and neither is a
+    // past-tense one.
+    let split = "The placeholder rule left spec 6, which was split in HW-DR-0106.\n";
+    assert!(moved_credits(decision, split).is_empty());
+    let which_said = "It amends spec 6, which said that a placeholder sits there.\n";
+    assert!(moved_credits(decision, which_said).is_empty());
+
+    // HW-DR-0106 states the size of the verb list.
+    assert_eq!(
+        CREDIT_VERBS.len(),
+        17,
+        "HW-DR-0106's Consequences count the verbs; change both"
+    );
+
+    // `that` opens a relative clause as `which` does, and `where it` does too.
+    let that = "It amends spec 6, that says a placeholder sits there.\n";
+    assert_eq!(moved_credits(decision, that), vec![(1, "placeholder")]);
+    let that_only = "It amends spec 6, that puts the probe budget there.\n";
+    assert_eq!(
+        moved_credits(decision, that_only),
+        vec![(1, "probe budget")]
+    );
+    let where_it = "It amends spec 6, where it states the placeholder.\n";
+    assert_eq!(moved_credits(decision, where_it), vec![(1, "placeholder")]);
+
+    // Two adverbs, with or without a relative pronoun before them.
+    let two = "Spec 6 still also says that a placeholder sits there.\n";
+    assert_eq!(moved_credits(decision, two), vec![(1, "placeholder")]);
+    let which_two = "It amends spec 6, which still also says what a placeholder is.\n";
+    assert_eq!(moved_credits(decision, which_two), vec![(1, "placeholder")]);
+    let three = "Spec 6 then still also says that a placeholder sits there.\n";
+    assert!(moved_credits(decision, three).is_empty());
+
+    // The verbs that the live cases used (HW-DR-0064, graph-build, the engine
+    // README).
+    let keeps = "The fetch is refused, and spec 6 keeps a socket out of this engine.\n";
+    assert_eq!(moved_credits(decision, keeps), vec![(1, "socket")]);
+    let excuses = "Spec 6 excuses a generated file from checks and not from identity.\n";
+    assert_eq!(
+        moved_credits(decision, excuses),
+        vec![(1, "excuses a generated file")]
+    );
+    let tree = "Spec 6 keeps the two apart, since a run reports the corpus tree.\n";
+    assert_eq!(moved_credits(decision, tree), vec![(1, "corpus tree")]);
+
+    // A possessive name, plain and linked, with a short noun before the verb.
+    let possessive = "Spec 6's export section says that a placeholder sits there.\n";
+    assert_eq!(
+        moved_credits(decision, possessive),
+        vec![(1, "placeholder")]
+    );
+    let curly = "Spec 6\u{2019}s table says that a placeholder sits there.\n";
+    assert_eq!(moved_credits(decision, curly), vec![(1, "placeholder")]);
+    let linked_possessive = "[Spec 6](../spec/06-engine-architecture.md#cli)'s rule says where the probe budget sits.\n";
+    assert_eq!(
+        moved_credits(decision, linked_possessive),
+        vec![(1, "probe budget")]
+    );
+    let far_noun = "Spec 6's long old export table section says a placeholder sits there.\n";
+    assert!(moved_credits(decision, far_noun).is_empty());
+
+    // `according to` opens a credit, and the verb can be anywhere after it.
+    let according = "According to spec 6, a placeholder sits where each node was.\n";
+    assert_eq!(moved_credits(decision, according), vec![(1, "placeholder")]);
+    let according_link =
+        "According to [spec 6](../spec/06-engine-architecture.md), a placeholder sits there.\n";
+    assert_eq!(
+        moved_credits(decision, according_link),
+        vec![(1, "placeholder")]
+    );
+
+    // The window is read in lower case, so a term that opens the next
+    // sentence with a capital is still read.
+    let capital = "Spec 6 states one thing. Placeholders sit where each node was.\n";
+    assert_eq!(moved_credits(decision, capital), vec![(1, "placeholder")]);
+    let capital_same = "Spec 6 states that Placeholders sit there.\n";
+    assert_eq!(
+        moved_credits(decision, capital_same),
+        vec![(1, "placeholder")]
+    );
+
+    // A negator right after the verb makes the sentence say what spec 6 does
+    // not hold, and that is true of a moved rule, so it is not a credit.
+    for negative in [
+        "Spec 6 holds no socket rule, and HW-REQ-0001 holds it.\n",
+        "Spec 6 now holds no placeholder.\n",
+        "Spec 6 names the probe budget nowhere, and spec 5 holds it.\n",
+        "Spec 6 states nothing about the probe budget.\n",
+        "Spec 6 says none of the placeholder rule.\n",
+        "Spec 6 names neither the placeholder nor the probe budget.\n",
+        "Spec 6 states not one placeholder.\n",
+        "Spec 6 says never a word about the probe budget.\n",
+    ] {
+        assert!(
+            moved_credits(decision, negative).is_empty(),
+            "{negative} was flagged"
+        );
+    }
+    // A negator further on does not undo a credit.
+    let later = "Spec 6 says that a placeholder sits there, and no other rule does.\n";
+    assert_eq!(moved_credits(decision, later), vec![(1, "placeholder")]);
+
+    // A semicolon ends the verb's clause, so a negator after it does not undo
+    // the credit.
+    let semicolon = "Spec 6 states the corpus tree; nothing else.\n";
+    assert_eq!(moved_credits(decision, semicolon), vec![(1, "corpus tree")]);
+    // The case above passes even when a semicolon does not end a clause,
+    // because its last word is not a negator. This one holds the semicolon.
+    let semicolon_last = "Spec 6 states the corpus tree; the lock adds nothing.\n";
+    assert_eq!(
+        moved_credits(decision, semicolon_last),
+        vec![(1, "corpus tree")]
+    );
+
+    // Each adverb of the list may stand before the verb.
+    for adverb in ["then", "also", "still", "now", "already", "only"] {
+        let line = format!("Spec 6 {adverb} states the placeholder.\n");
+        assert_eq!(
+            moved_credits(decision, &line),
+            vec![(1, "placeholder")],
+            "{adverb}"
+        );
+    }
+
+    // Two relatives at most: a third one is not read.
+    let third = "It amends spec 6, which that it says a placeholder sits there.\n";
+    assert!(moved_credits(decision, third).is_empty());
+
+    // A possessive owns a noun of up to three words, and not four.
+    let three_words = "Spec 6's export profile section says a placeholder sits there.\n";
+    assert_eq!(
+        moved_credits(decision, three_words),
+        vec![(1, "placeholder")]
+    );
+
+    // A sentence also ends at a question mark and at an exclamation mark, so
+    // the window does not reach two sentences on.
+    let question = "Spec 6 states one thing? It is a shell. No crate opens a socket.\n";
+    assert!(moved_credits(decision, question).is_empty());
+    let exclaim = "Spec 6 states one thing! It is a shell. No crate opens a socket.\n";
+    assert!(moved_credits(decision, exclaim).is_empty());
+
+    // The same relative clause in a record of a moment is not flagged.
+    for prefix in RECORDS_OF_A_MOMENT {
+        let rel = format!("{prefix}x.md");
+        assert!(moved_credits(&rel, which).is_empty(), "{rel} was flagged");
+    }
 }
 
 #[test]
@@ -322,6 +866,31 @@ fn a_record_of_a_moment_keeps_its_links_to_spec_6() {
     assert!(
         moved.is_empty(),
         "a record of a moment stays as written (HW-DR-0106), and these links changed:\n{}",
+        moved.join("\n")
+    );
+}
+
+/// The present-tense credits to a moved rule that the records of a moment
+/// hold, with the count of each. On 2026-10-03 the records held none. A
+/// record stays as written (HW-DR-0106), so a credit added to one or taken
+/// out of one fails here. Each row is `(path, term, count)`.
+const RECORD_CREDITS: &[(&str, &str, usize)] = &[];
+
+#[test]
+fn a_record_of_a_moment_keeps_its_credits_to_spec_6() {
+    let mut found: BTreeMap<(String, String), usize> = BTreeMap::new();
+    for rel in corpus_files() {
+        if !RECORDS_OF_A_MOMENT.iter().any(|p| rel.starts_with(p)) {
+            continue;
+        }
+        for (_, term) in credit_lines(&read(&rel)) {
+            *found.entry((rel.clone(), term.to_owned())).or_default() += 1;
+        }
+    }
+    let moved = drift(&found, RECORD_CREDITS);
+    assert!(
+        moved.is_empty(),
+        "a record of a moment stays as written (HW-DR-0106), and these credits changed:\n{}",
         moved.join("\n")
     );
 }

@@ -3,7 +3,7 @@ id: HW-DR-0064
 status: current
 status_since: 2026-09-11
 summary: "Routing gains the shadow-mode embedding path, amended in four places. The intent hook is the only writer, and the vectors are a cache rather than a generated artifact. The model is pinned rather than committed, and the recorder gains a join key and a liveness fact."
-last_verified: 2026-09-11
+last_verified: 2026-10-03
 title: "Q64 — Whether intent-time routing gains an offline embedding path in shadow mode"
 provenance:
   warrant: asserted
@@ -40,7 +40,7 @@ The issue also says that abandonment cannot be graded, because a transcript reco
 
 **The vectors are a cache, and never a generated artifact.** `headwater generate` compares bytes, and quantized inference gives different bytes on different instruction sets. A committed vector file therefore fails `generate --check` between the self-hosted runner, a hosted runner and a laptop. `.headwater/cache/` already defines the shape, where every entry is recomputable from the tree it was written over. Key each vector by the model digest and the content digest of the summary, so a vector moves only when its summary moves.
 
-**The model is pinned and fetched, and never committed, and the inference is pure Rust.** Three separate limits force this. The `ort` crate turns on binary downloads by default, and it fetches during the build. `--locked` does not prevent that fetch, and spec 6 keeps a socket out of this engine. The model is 23 to 90 megabytes, this repository configures no large-file storage, and every crate here publishes against a 10 megabyte registry cap. The pure-Rust alternative declares a compiler floor of 1.91, against the 1.90 that nine files pin. A floor raise is therefore a separate change that comes first. `taxonomy vendor` is the pattern to copy, where the caller fetches and the verb holds the digest.
+**The model is pinned and fetched, and never committed, and the inference is pure Rust.** Three separate limits force this. The `ort` crate turns on binary downloads by default, and it fetches during the build. `--locked` does not prevent that fetch. [HW-REQ-0001](../requirements/0001-the-engine-reaches-no-network-at-check-time.md) states that the engine opens no network connection while it reads a corpus, and that this covers every dependency that the lock file pins. The model is 23 to 90 megabytes, this repository configures no large-file storage, and every crate here publishes against a 10 megabyte registry cap. The pure-Rust alternative declares a compiler floor of 1.91, against the 1.90 that nine files pin. A floor raise is therefore a separate change that comes first. `taxonomy vendor` is the pattern to copy, where the caller fetches and the verb holds the digest.
 
 **The recorder gains a join key and a liveness fact.** The driver exports a name for its session before it starts the harness. The hook writes that name into its line, and the transcript prose records whether the hook was live. Spec 15's four key sets stay closed, because the prose is the part that no verb reads.
 

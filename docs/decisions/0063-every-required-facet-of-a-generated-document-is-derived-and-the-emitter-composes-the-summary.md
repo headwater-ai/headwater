@@ -3,7 +3,7 @@ id: HW-DR-0063
 status: current
 status_since: 2026-09-11
 summary: "Nine required facets went unwritten on two generated documents. The engine derives seven from committed bytes, the emitter composes the summary, and the declaration block stays closed at three scalars."
-last_verified: 2026-10-01
+last_verified: 2026-10-03
 title: "Every required facet of a generated document is derived, and the emitter composes the summary"
 provenance:
   warrant: asserted
@@ -29,7 +29,7 @@ Nothing reported those nine. The reason is a gap between two mechanisms rather t
 
 **The absence had one measured consequence and one visible one.** `relations.supersedes` declares `on_target: {set_state: superseded}`, so an edge of it puts that state on its target. Two live registers declare such an edge into `docs/spec/09-open-questions.md`, and that file carried no state facet at all. [Spec 13](../spec/13-open-obligations.md) measured it as the only one of 192 nodes with none. Both instances of the dependency rule then skipped rather than decided, so a relation stated a fact that no rule could reach. That is [#227](https://github.com/headwater-ai/headwater/issues/227). Separately, three rows across two shelf indexes carried a label and no cue, because the documents they name declare no facet in the `scent` role.
 
-**Two shapes could close it, and one of them costs a ruling spec 6 already made.** The block could take a member for each facet. Spec 6 refuses that shape. A taxonomy source sits outside the corpus root, where no census row covers it, no language regime binds it and no rule reads it. That is the refusal the shelf-sections emitter already made against a `template`. A member that took an open mapping of facets would re-admit the same prose under a different syntax.
+**Two shapes could close it, and one of them costs a ruling that is already made.** The block could take a member for each facet. The [`headwater generate` contract](../interfaces/headwater-generate.md#a-generated-document-is-a-document-of-the-corpus) refuses that shape. A taxonomy source sits outside the corpus root, where no census row covers it, no language regime binds it and no rule reads it. That is the refusal the shelf-sections emitter already made against a `template`. A member that took an open mapping of facets would re-admit the same prose under a different syntax.
 
 ## Decision
 
@@ -47,7 +47,7 @@ Nothing reported those nine. The reason is a gap between two mechanisms rather t
 
 **The owner ruled on 2026-09-11 that the emitter composes the summary.** An asymmetry decided it. A generated document's body is already prose that its emitter wrote and that no rule reads. A summary beside that body is no more ungoverned than the body. So a refusal of the summary alone rests on nothing that spec 6 states.
 
-**No value comes from a clock.** Spec 6 rules that no generated file states when it was generated. A timestamp makes every run differ from the last over a corpus that nobody touched. A date folded from the dates the inputs already carry is not a statement about the run. So the rule stands untouched and the regeneration gate holds these bytes like every other byte of the file.
+**No value comes from a clock.** The [`headwater generate` contract](../interfaces/headwater-generate.md#the-generated-file-marker) rules that no generated file states when it was generated. A timestamp makes every run differ from the last over a corpus that nobody touched. A date folded from the dates the inputs already carry is not a statement about the run. So the rule stands untouched and the regeneration gate holds these bytes like every other byte of the file.
 
 **For freshness, and for a state that an edge sets, the stalest date answers rather than the freshest.** A file assembled from other documents is only as fresh as the oldest thing it carries. The freshest date would state a confidence that no source supports.
 

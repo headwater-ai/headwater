@@ -3,7 +3,7 @@ id: HW-DR-0100
 status: current
 status_since: 2026-09-29
 summary: "Under the counted grain, each tombstone of a filtered export lists the SHA-256 digest of each identifier it withheld. A tier that pins the export then binds an anchor to a withheld document as withheld, and it reports a typo as unresolved. Under sealed the export lists nothing, and both stay unresolved. An export older than version 1.3 lists nothing either."
-last_verified: 2026-09-29
+last_verified: 2026-10-03
 title: "A counted tombstone lists a digest of each withheld identifier, and a sealed one lists nothing"
 provenance:
   warrant: asserted
@@ -44,9 +44,9 @@ Three statements pull against each other here:
 
 **The export version moves from 1.2 to 1.3.** The change adds a member and removes none, so it is a minor version.
 
-**What this discloses, stated plainly.** A reader who holds an identifier can learn that the identifier exists and that the filter withheld it. The digest is not salted, so a reader who can guess an identifier can test the guess. An identifier from a pattern with a short slug is easy to guess. A reader who holds nothing learns nothing more than the count. This is consistent with the `counted` grain, where existence is not the secret. It amends one sentence of spec 6, which says that the rule identifier is all that a reader gets. Under `counted`, the reader also gets a membership test for an identifier that they already hold. Where the existence of a document is the secret, the publisher declares `sealed`. HW-DR-0017's instruction also stands: a fact whose existence is the secret does not belong in a corpus that is exported at all.
+**What this discloses, stated plainly.** A reader who holds an identifier can learn that the identifier exists and that the filter withheld it. The digest is not salted, so a reader who can guess an identifier can test the guess. An identifier from a pattern with a short slug is easy to guess. A reader who holds nothing learns nothing more than the count. This is consistent with the `counted` grain, where existence is not the secret. It amends one sentence of [spec 7](../spec/07-distribution-and-federation.md#an-export-profile-carries-a-filter), which says that the rule identifier is all that a reader gets. Spec 7 now states the amendment after that sentence. Under `counted`, the reader also gets a membership test for an identifier that they already hold. Where the existence of a document is the secret, the publisher declares `sealed`. HW-DR-0017's instruction also stands: a fact whose existence is the secret does not belong in a corpus that is exported at all.
 
-**The list is a membership test, and not the placeholder that spec 6 describes.** Spec 6 says that under `counted` a placeholder sits where each withheld node would have been. The export writes one aggregate entry for each rule, with no position. This decision does not close that gap.
+**The list is a membership test, and not the placeholder that [spec 7](../spec/07-distribution-and-federation.md#an-export-profile-carries-a-filter) describes.** [Spec 7](../spec/07-distribution-and-federation.md#an-export-profile-carries-a-filter) says that under `counted` a placeholder sits where each withheld node would have been. The export writes one aggregate entry for each rule, with no position. This decision does not close that gap.
 
 **What reopens this decision.** This is a product choice, and it is reversible. Reopen the `sealed` ruling when an adopter who harvests a `sealed` export reports that its unresolved findings hide real defects. Reopen the `counted` ruling when a publisher reports that the digest list disclosed an identifier that the `counted` grain was meant to keep.
 

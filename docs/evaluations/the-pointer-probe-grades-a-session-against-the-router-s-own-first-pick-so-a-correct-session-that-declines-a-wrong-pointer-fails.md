@@ -3,7 +3,7 @@ id: HW-EVAL-the-pointer-probe-grades-a-session-against-the-router-s-own-first-pi
 status: current
 status_since: 2026-09-17
 summary: "A session that declined a wrong first pointer answered correctly from two spec parts that the router ranks past 100th."
-last_verified: 2026-09-17
+last_verified: 2026-10-03
 title: "The pointer probe grades a session against the router's own first pick, so a correct session that declines a wrong pointer fails"
 provenance:
   warrant: asserted
@@ -14,6 +14,7 @@ provenance:
 relations:
   traces_to:
     - HW-RUN-regression-probe-transcript-for-2026-09-17-after-the-probe-corrections
+    - HW-RUN-regression-of-2026-10-03-regression-tier-present-arm-discovery
 ---
 
 # The pointer probe grades a session against the router's own first pick, so a correct session that declines a wrong pointer fails
@@ -84,3 +85,5 @@ The #896 and #908 evaluations each state that the router was right for this prob
 A reader who meets a failed `opened` verdict on any probe whose target came from the router checks one thing first. Does the examined document answer the task, by the judgment of a person who read it?
 
 **The session that this evaluation reads predates the sealed workspace (#1229).** It ran in a workspace that kept every probe file, so it could read its own expectation. The judgment about the router stands, because it reads the router and not the rate.
+
+**A sealed session read the probe again on 2026-10-03, and this judgment stands.** The session `L1-regression-present-p3-r1` of [the discovery line of the sealed re-recording](../probe-runs/regression-of-2026-10-03-regression-tier-present-arm-discovery.md) ran in a workspace without the probe shelves. It made no call that named a path on them. It ran `headwater route` over the task text, and the router again ranked `HW-OBL-0107` first, with the purpose scores `obligation` 7, `behavior` 3 and `evidence` 2. The session did not open `HW-OBL-0107`. It read `docs/spec/02-taxonomy-model.md` and `docs/spec/03-authoring-and-lifecycle.md`, and its final message answered both halves of the task correctly from them. The verdict is `not satisfied` again. So the miss repeats without the leak, and the mechanism above did not change.
