@@ -62,7 +62,7 @@ add:
 
 ## What a run reports
 
-`headwater check --no-cache` over the assembled root types and checks every document. The table under [The findings a run reports](#the-findings-a-run-reports) lists each finding that the run must report, as a rule and a document. Case group 8 fails when the run does not report one of them. The runner prints the total and the count for each rule, and it asserts neither, so a new rule of the engine can add a finding without a red suite. Items 1, 2 and 4 below are planted. Item 3 no longer reports. Item 5 is not planted.
+`headwater check --no-cache` over the assembled root types and checks every document. The table under [The findings a run reports](#the-findings-a-run-reports) lists each finding that the run must report, as a rule and a document. Case group 8 fails when the run does not report one of them, and when it reports a rule that [the second table](#the-rules-a-run-reports-on-no-document) names. The runner prints the total and the count for each rule, and it asserts neither, so a new rule of the engine can add a finding without a red suite. Items 1, 2 and 4 below are planted. Item 3 no longer reports. Item 5 is not planted.
 
 **1. `0003-integration-guide-states-the-old-guarantee.md` has no `Discharge` section.** `section.required.missing`, error, under `OB-SECT-1`. The kind requires `Context`, `Obligation` and `Discharge`, and the third is the one that makes a debt actionable. An obligation whose discharge nobody can state is a wish, and this is the fixture that proves the heading is enforced rather than suggested.
 
@@ -85,6 +85,16 @@ Two changes removed it. [HW-OBL-0039](../../../obligations/0039-a-participation-
 | `relation.pair.invalid` | `docs/decisions/0002-store-attempts-in-postgres.md` | yes |
 | `relation.pair.invalid` | `docs/decisions/0006-hold-attempt-state-in-redis.md` | yes |
 | `voice.forbidden_construction` | `docs/decisions/0004-deliver-exactly-once-per-destination.md` | no |
+
+### The rules a run reports on no document
+
+Case group 8 fails when the run reports one of these rules on any document of the root.
+
+| Rule | Why no document reports it |
+|---|---|
+| `identifier.claim.missing` | The runner claims each identifier that the tree declares |
+| `facet.required.missing` | Each document carries every facet that its kind requires |
+| `relation.participation.overdue` | Item 3 above: no expectation reaches the evaluation |
 
 ## What a run does not report, and should
 

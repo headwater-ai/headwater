@@ -112,8 +112,10 @@
 #   identifier claims come from the lock's own schemes and each document's
 #   `id:`. The findings it must report come from the table under
 #   `### The findings a run reports`, as (rule, document) pairs, and the check
-#   is containment: each pair is reported. The total is printed and asserted
-#   by nothing, for the reason the population guards below give.
+#   is containment: each pair is reported. The rules it must report on no
+#   document come from `### The rules a run reports on no document`. The total
+#   is printed and asserted by nothing, for the reason the population guards
+#   below give.
 #
 # ONE VALUE IS A CONSTANT THE RUNNER WRITES, AND IT IS A FINDING. `summary` is
 # required on every `governed_document` and nothing in either tradition
@@ -364,6 +366,16 @@ beacon_findings() {
             gsub(/[ `]/, "", a); gsub(/[ `]/, "", b)
             if (a != "" && b != "") print a "\t" b
         }
+    ' "$readme"
+}
+
+# The rules the README says a Beacon run reports on no document, one row each
+# of the table under `### The rules a run reports on no document`.
+beacon_absent() {
+    awk -F'|' '
+        /^### The rules a run reports on no document/ { here = 1; next }
+        /^#/ { here = 0 }
+        here && /^\| `/ { a = $2; gsub(/[ `]/, "", a); if (a != "") print a }
     ' "$readme"
 }
 
@@ -861,12 +873,38 @@ if [ -f "$beacon_lock" ]; then
             echo ok >> "$scratch/beacon-contained"
         else
             echo "  FAIL  $rule is reported on $doc"
-            echo "          the run reported $(awk -F'\t' -v d="$doc" '$2 == d { printf "%s ", $1 }' "$scratch/beacon-reported")on it"
+            on=$(awk -F'\t' -v d="$doc" '$2 == d { printf "%s ", $1 }' "$scratch/beacon-reported")
+            echo "          the run reported ${on:-nothing }on it"
             echo fail >> "$scratch/beacon-contained"
         fi
     done
     passed=$((passed + $(grep -c '^ok$' "$scratch/beacon-contained" || true)))
     failed=$((failed + $(grep -c '^fail$' "$scratch/beacon-contained" || true)))
+
+    # The other direction, for the rules the README names: each is reported on
+    # no document. This is what holds the claims above and the facets of the
+    # fixture, and what keeps a discharged finding from coming back unnoticed.
+    absent=$(beacon_absent)
+    if [ -z "$absent" ]; then
+        fail "the README lists at least one rule a run reports on no document" "no row under ### The rules a run reports on no document"
+    else
+        pass "the README lists at least one rule a run reports on no document ($(printf '%s\n' "$absent" | grep -c .) read)"
+    fi
+    : > "$scratch/beacon-absent"
+    printf '%s\n' "$absent" | while read -r rule; do
+        [ -n "$rule" ] || continue
+        on=$(awk -F'\t' -v r="$rule" '$1 == r { printf "%s ", $2 }' "$scratch/beacon-reported")
+        if [ -z "$on" ]; then
+            echo "  ok    $rule is reported on no document"
+            echo ok >> "$scratch/beacon-absent"
+        else
+            echo "  FAIL  $rule is reported on no document"
+            echo "          the run reported it on $on"
+            echo fail >> "$scratch/beacon-absent"
+        fi
+    done
+    passed=$((passed + $(grep -c '^ok$' "$scratch/beacon-absent" || true)))
+    failed=$((failed + $(grep -c '^fail$' "$scratch/beacon-absent" || true)))
 
     beacon_findings_n=$(sed -n 's/^ *\([0-9][0-9]*\) findings$/\1/p' "$scratch/beacon-check.out" | head -n 1)
     echo "  recorded, not asserted: ${beacon_findings_n:-0} finding(s) over ${beacon_docs:-0} document(s), check exit $beacon_check; by rule, the documents it reports on:"
