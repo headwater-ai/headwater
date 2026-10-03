@@ -337,6 +337,9 @@ This class dates from 2026-08-26. Before that date, such a finding was filed as 
 - [HW-OBL-0228](../obligations/0228-the-subsystem-specs-claim-evidence-their-targets-do-not-carry-and-two-rules-of-the-shelf-live-only-in-a-test.md) — The subsystem specs claim evidence their targets do not carry, and two rules of the shelf live only in a test
 - [HW-OBL-0229](../obligations/0229-the-counterfactual-campaign-evaluation-withholds-its-discharges-edge-until-a-person-promotes-it.md) — The counterfactual campaign evaluation withholds its discharges edge until a person promotes it
 - [HW-OBL-0230](../obligations/0230-comments-in-the-command-surface-crates-and-their-subsystem-spec-state-eight-stale-facts.md) — Comments in the command-surface crates and their subsystem spec state eight stale facts
+- [HW-OBL-0234](../obligations/0234-thirteen-test-gaps-that-the-verifiers-of-run-20261002-1233-left-in-the-recorder-the-probe-tools-and-the-spec-guards.md) — Thirteen test gaps that the verifiers of run 20261002-1233 left in the recorder, the probe tools and the spec guards
+- [HW-OBL-0235](../obligations/0235-eleven-documents-and-edges-that-trail-a-change-of-run-20261002-1233.md) — Eleven documents and edges that trail a change of run 20261002-1233
+- [HW-OBL-0236](../obligations/0236-six-questions-from-run-20261002-1233-about-when-an-edge-ages-and-what-a-moved-rule-owes.md) — Six questions from run 20261002-1233 about when an edge ages and what a moved rule owes
 
 ## What the first typing of this corpus found
 

@@ -412,6 +412,9 @@ nav:
       - "The counterfactual campaign evaluation withholds its discharges edge until a person promotes it": "obligations/0229-the-counterfactual-campaign-evaluation-withholds-its-discharges-edge-until-a-person-promotes-it.md"
       - "Comments in the command-surface crates and their subsystem spec state eight stale facts": "obligations/0230-comments-in-the-command-surface-crates-and-their-subsystem-spec-state-eight-stale-facts.md"
       - "headwater init --harness ships no hook and no hook configuration for any harness": "obligations/0232-headwater-init-harness-ships-no-hook-and-no-hook-configuration-for-any-harness.md"
+      - "Thirteen test gaps that the verifiers of run 20261002-1233 left in the recorder, the probe tools and the spec guards": "obligations/0234-thirteen-test-gaps-that-the-verifiers-of-run-20261002-1233-left-in-the-recorder-the-probe-tools-and-the-spec-guards.md"
+      - "Eleven documents and edges that trail a change of run 20261002-1233": "obligations/0235-eleven-documents-and-edges-that-trail-a-change-of-run-20261002-1233.md"
+      - "Six questions from run 20261002-1233 about when an edge ages and what a moved rule owes": "obligations/0236-six-questions-from-run-20261002-1233-about-when-an-edge-ages-and-what-a-moved-rule-owes.md"
   - "Probe results":
       - "Probe results": "probe-results/README.md"
       - "Probe result for campaign-of-2026-09-28-campaign-tier-absent-arm-navigability": "probe-results/campaign-of-2026-09-28-campaign-tier-absent-arm-navigability.md"
@@ -566,6 +569,7 @@ nav:
       - "Eight run-tooling gaps from run 20260929-1205, filed together": "process/obligations/0225-eight-run-tooling-gaps-from-run-20260929-1205-filed-together.md"
       - "Seven run-tooling gaps from run 20260929-2201, filed together": "process/obligations/0227-seven-run-tooling-gaps-from-run-20260929-2201-filed-together.md"
       - "Five run-tooling gaps from run 20261001-1107, filed together": "process/obligations/0231-five-run-tooling-gaps-from-run-20261001-1107-filed-together.md"
+      - "Thirteen run-tooling gaps from run 20261002-1233, filed together": "process/obligations/0233-thirteen-run-tooling-gaps-from-run-20261002-1233-filed-together.md"
   - "Process specifications":
       - "Process specifications": "process/specs/README.md"
       - "Orchestration architecture": "process/specs/orchestration-architecture.md"
