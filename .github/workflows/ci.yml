@@ -2128,8 +2128,9 @@ jobs:
         # the runner assembles a corpus root out of them at each run, adds front
         # matter and nothing else, and types them against the entry.
         #
-        # The step exists for one defect. The whole value of an external corpus
-        # is that its prose was not written to pass, so a run that goes green
+        # The step exists for two defects. The first: the whole value of an
+        # external corpus is that its prose was not written to pass, so a run
+        # that goes green
         # because somebody repaired a heading, a status line or a link in the
         # vendored copy has measured this repository against itself again. Two
         # cases catch that and each holds half: a SHA-256 seal on every vendored
@@ -2144,6 +2145,17 @@ jobs:
         # could not run reads as a check that passed. Everything else the run
         # reports is printed, because a finding count is a property of somebody
         # else's prose.
+        #
+        # The second defect is a README recipe that no longer runs (#1540).
+        # Case group 8 assembles the invented Beacon corpus under
+        # `fixtures/corpus/` by the recipe `fixtures/README.md` writes, with
+        # this repository's own package pin, and resolves and checks it. Each
+        # (rule, document) pair the README lists must be reported, and each
+        # rule its second table names must be reported on no document. So a
+        # release of the vendored package that breaks the recipe turns this
+        # step red. Measured on 2026-10-03: removing `evidence-and-obligation`
+        # from the README recipe moves the suite from 61 passed and 0 failed
+        # to 48 and 1.
         #
         # It runs the engine this job built, `awk`, `sed`, `cmp` and
         # `sha256sum`, opens no socket, and writes only under a temporary
