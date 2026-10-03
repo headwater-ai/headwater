@@ -58,11 +58,11 @@ Headwater parses once, builds one typed graph, and runs every check against it. 
 
 **Resolve** merges the base taxonomy and overlays, validates against the meta-schema, and writes a content-hashed lock. Everything downstream reads the lock, never the sources. Thus a check result depends on a hash that a reviewer can see in a diff.
 
-**Parse** reads each file once: front matter, headings, links, code fences. It does not interpret. Classification assigns a kind by the declared resolution rules and records the derivation for `explain`. Classification emits a **census**: every file under the corpus root and the outcome for each. The census fixes the denominator for coverage before any check runs. Thus a document that failed to classify is visibly unchecked, not silently absent.
+**Parse** reads each file once: front matter, headings, links, code fences. It does not interpret. Classification assigns a kind by the declared resolution rules and records the derivation for `explain`. It also writes a **census**, which states an outcome for each file under the corpus root before any check runs. So a document that failed to classify shows as unchecked, and it is not silently absent.
 
 **Graph build** reads the documents through the census and opens no document file itself. It resolves relations into edges, indexes identifiers, binds external anchors (code paths, work items, URLs), and reports what it could not resolve.
 
-**Cache** is content-addressed per file plus taxonomy hash, so incremental runs are proportional to the change, not the corpus. That first sentence is the promise [HW-OBL-0072](../obligations/0072-a-cache-of-check-results-does-not-make-a-run-proportional.md) holds open. The change-scoped mode that CI and hooks use is the same code path over the same corpus, and it narrows nothing. It supplies the version each named document stood at before the change, so the rules that read one reach a verdict rather than a skip. It therefore evaluates more instances than a full-corpus run and never fewer.
+**Cache** is content-addressed per file plus taxonomy hash. That a run is then proportional to the change and not to the corpus is a promise that [HW-OBL-0072](../obligations/0072-a-cache-of-check-results-does-not-make-a-run-proportional.md) holds open. The change-scoped mode that CI and hooks use narrows nothing. It supplies the version of each named document from before the change. So a rule that reads one reaches a verdict rather than a skip. It therefore evaluates more instances than a full-corpus run and never fewer.
 
 ### Subsystems
 
@@ -85,41 +85,15 @@ The diagram above does not draw two subsystems. Authoring (`new`, `capture`, `im
 
 ## Nothing stores the graph
 
-The graph is a function of the corpus and the lock, and every run rebuilds it. Three artifacts derive from it, and none of them is canonical for anything ([Q6](09-decisions.md#q6--where-the-corpus-graph-lives-at-rest)).
+The graph is a function of the corpus and the lock, and every run builds it again. [Q6](09-decisions.md#q6--where-the-corpus-graph-lives-at-rest) names the three artifacts that derive from it, how long each lives, and why none is canonical. [Spec 12](12-check-layer.md#the-correctness-roots) holds the cache to that with a test.
 
-| Artifact | Lives for | Committed | Canonical for |
-|---|---|---|---|
-| The in-memory graph | one run | never | nothing |
-| The cache | until its inputs change | never, and version control ignores it | nothing |
-| An export | until a run regenerates it | when the taxonomy declares an output path and does not state `committed: false` | nothing |
-
-**The cache is disposable, and a test says so.** `headwater check --no-cache` produces output byte-identical to `headwater check`. A cache that can change a verdict is a store under another name. The engine carries that test beside the fixtures for its other correctness roots ([spec 12](12-check-layer.md#the-correctness-roots)).
-
-**There is no embedded database, and the trigger to add one is named.** The refusal rests on measurement rather than on taste. A warm change-scoped pass over 1,000 documents costs about 2 ms against a 200 ms budget ([spike results](../evaluations/language-spike-results.md)). Nothing in the design asks a question that the in-memory graph cannot answer inside the targets below. A named query workload that misses a target reopens this, and nothing else does.
+**There is no embedded database, and the trigger to add one is named.** The [language spike](../evaluations/language-spike-results.md) measured a warm change-scoped pass at about 2 ms for 1,000 documents, and the budget is 200 ms. Nothing in the design asks a question that the in-memory graph cannot answer inside the targets below. Only a named query workload that misses a target reopens this.
 
 The industry does not agree, and the disagreement belongs in view. CodeQL ships a derived database as its query surface, at very large scale. The refusal here follows from spec 0's non-negotiables: offline, deterministic, and reviewable in a diff. It does not follow from a claim that a derived store cannot work ([evaluation](../evaluations/graph-export-and-federation.md)).
 
 ## Checks
 
-A check is a pure function from a **scoped view** of the graph to findings. Checks come from five origins:
-
-| Origin | Comes from | Exportable as |
-|---|---|---|
-| **Shape** | the taxonomy, generated | JSON Schema, and SHACL or LinkML when either emitter arrives |
-| **Graph** | relation declarations, generated | SHACL, when that emitter arrives |
-| **Corpus** | declarations that need many documents at once | — |
-| **Document** | regimes applied to the body, which is not in the graph | — |
-| **Plugin** | adopter code | — |
-
-The first two are *generated*: a new facet or relation brings its checks with no code. That is the point of taxonomy-as-data, and most of the check count is there. The last three are why a native engine exists at all. They are exactly what LinkML and SHACL cannot express.
-
-The last column is a **set of emitter targets**, not one format. A check exportable to SHACL need not be exportable to JSON Schema, and most checks export to nothing. The engine generates both the exported set and the unexported set from one registry. A target may appear only when the emitted constraint is equivalent to the native check. [Spec 12](12-check-layer.md#exportable_as-is-a-set-with-a-partition-rule) owns the partition rule and the equivalence bar.
-
-The column above states what an origin can reach. The declaration is per rule, and it lives on the check as `EXPORTABLE_AS`. Two rules declare a target today. `facet.required.missing` and `facet.value.not_permitted` both name `jsonschema`, and a differential test established each one.
-
-Every check declares its **scope**, and the engine enforces it. [Spec 12](12-check-layer.md#scope--the-declaration-everything-else-rests-on) lists the grains and the input flags that a scope declares. A check sees only what it declared. Scope is what makes change-scoped evaluation exact, cache keys sound, and parallelism safe.
-
-The design — scope semantics, instances and coverage, the two-phase census, fixability, determinism, and the plugin contract — is [spec 12](12-check-layer.md).
+A check is a pure function from a **scoped view** of the graph to findings, and it sees only what its scope declares. [Spec 12](12-check-layer.md) is the design of the check layer, from the origin of a check to its export.
 
 ## Projections
 
@@ -129,8 +103,6 @@ Projections are generated artifacts. Each one has the same contract:
 headwater generate            # write
 headwater generate --check    # fail if any committed output differs
 ```
-
-**One write is one run, and it can be several passes.** A generated document is a document of the corpus, so one projection can print a value that another projection writes in the same run. `headwater generate` therefore reads the tree again after it writes, and it stops at the first pass that writes nothing. That pass is what shows that `--check` accepts the tree. A run that still writes on its fourth pass exits non-zero and says so. The declarations then form a cycle, and more passes do not settle it.
 
 **Thirteen projection kinds exist, and this engine emits eight of them.** The block below names all thirteen, as a taxonomy writes each name. A kind under `runs` has an emitter here. A kind under `waits` has a slot that a declaration opens and no emitter fills.
 
@@ -153,22 +125,16 @@ waits
   coverage_report
 ```
 
-A shelf index and a shelf sections file each carry the documents of one shelf. A probe result carries the verdicts of one graded run, and [spec 5](05-ai-integration.md#a-run-produces-a-snapshot-and-a-document) declares it. A verb index carries the command surface of the binary, and [the paragraph below](#a-verb-index-reads-the-command-surface-of-the-engine) declares it. A consumer surface page carries the `surface` block of the taxonomy: what an adopter receives, runs and must have installed. [HW-DR-0077](../decisions/0077-the-consumer-surface-is-what-an-adopter-receives-runs-and-must-have-installed-and-it-is-a-closed-and-declared-list.md) rules that the block holds that list. Site navigation, a graph export and the corpus descriptor each carry one file that a reader outside this corpus opens.
-
-A relation view carries decision lineage and a traceability matrix. A template carries the permitted relations, facets and sections of one kind. An agent rule file is the artifact [the glossary](glossary.md#projection) names. A transcription reads a pinned external snapshot, and [Q19](09-decisions.md#q19--inbound-integration-an-external-system-of-record) leaves it to the first adopter who asks. `engine/crates/generate/src/lib.rs` states beside each of these four what no document says, and `headwater generate` prints all four over any corpus. `engine/crates/generate/tests/spec_six_projections.rs` holds the block above against that statement.
-
-**A run over any corpus names every waiting kind, and the coverage report is the one of the five that no taxonomy declares.** [Spec 4](04-assurance-model.md#every-obligation-has-exactly-one-disposition) makes the register engine-defined, so no taxonomy declares it and every run reaches it. The other four are declarable, and a run states each one at `no declaration names one` where the corpus declared none of them. A reason is a property of this engine rather than of the reader's corpus, which the [ruling on #596](https://github.com/headwater-ai/headwater/issues/596#issuecomment-5562802450) records. `headwater generate --check` prints the register under *what this verb does not write, and why*:
+[Projections and export](../subsystems/projections-and-export.md#thirteen-kinds-two-value-sets-and-the-unbuilt-set) says what each kind carries, why a waiting kind writes nothing, and why one run can take several passes. `engine/crates/generate/tests/spec_six_projections.rs` holds the block above against the engine. The coverage report is the one waiting kind that no taxonomy can declare, and [spec 13](13-open-obligations.md) carries it:
 
 ```
 coverage_report the register
   its content is a function of the clock as well as of the corpus and the lock, because a migration task lapses and a suppression expires on a date. A committed copy would fail this check on a morning when nothing changed. Spec 13 carries it
 ```
 
-[Spec 13](13-open-obligations.md) carries the register, and no committed copy of it exists.
+**Eleven of the thirteen are declarable, and two are not.** For a declarable kind, a taxonomy names the output path, and [principle 1](00-vision-and-scope.md#design-principles) makes that path a schema decision. [Spec 4](04-assurance-model.md#every-obligation-has-exactly-one-disposition) fixes the coverage report, and [Q20](09-decisions.md#q20--where-scent-lives) fixes the corpus descriptor at `.headwater/corpus.json`.
 
-**Eleven of the thirteen are declarable, and two are not.** A taxonomy names the kind and the output path, and [principle 1](00-vision-and-scope.md#design-principles) makes that path a schema decision. The coverage report and the corpus descriptor are the exceptions. [Spec 4](04-assurance-model.md#every-obligation-has-exactly-one-disposition) makes the register engine-defined and non-optional, and [Q20](09-decisions.md#q20--where-scent-lives) fixes the descriptor at `.headwater/corpus.json`. Both hold that standing for one reason. A reader who must consult the taxonomy to find an artifact already knows what it would tell them. So a declaration of either would put a second copy of one artifact at a path the engine did not fix. The meta-schema therefore closes the declarable eleven as a value set, and `headwater generate` writes the other two under no declaration at all.
-
-**The rules that each projection obeys are part of the `headwater generate` contract.** [The contract](../interfaces/headwater-generate.md#what-a-projection-writes-and-why) states what a projection may interpolate, why every decline is whole, and what the generated-file marker records and claims. It also states why a generated document is a node of the graph, and why no generated file carries a timestamp.
+**The rules that each projection obeys are part of the `headwater generate` contract**, which [states them](../interfaces/headwater-generate.md#what-a-projection-writes-and-why).
 
 ### A verb index reads the command surface of the engine
 
@@ -258,25 +224,9 @@ There are two commands because there are two kinds of question. The distinction 
 
 **`validate`** decides the schema alone: referential integrity, determinism, purpose completeness, kind rigidity, edge provenance, overlay confluence, core satisfiability. It needs no documents, always terminates in a verdict, and gates everything.
 
-**`audit`** measures the schema *against a corpus*. Nine readings run. It measures facet differentiation and orthogonality, edge counts and staleness by `created_by`, and relation drift by family. It also measures the discriminator distribution of a heterogeneous shelf, the state-dwell distribution, and the warrant of every classified document. The eighth reading is the file names on every shelf that declares a layout. The ninth is the adoption payload of this run, against every reading that `.headwater/adoption.jsonl` holds. Its findings are advisory by construction, because a young or small corpus fails differentiation for reasons that are not defects. The findings are about the taxonomy, not the documents. A facet that nothing distinguishes is a schema problem that only documents can show.
+**`audit`** measures the schema *against a corpus*. [The `headwater taxonomy` contract](../interfaces/headwater-taxonomy.md#description) states each reading and what it reports.
 
-Two of the readings this section named do not run. The report evaluates the wait of each one against the corpus in front of it, so a wait that a corpus has ended says so. Each prerequisite that a run does not find states where the absence lives. That matters because a declaration, an authoring pass and a decision are three different acts. Transition continuity waits on a facet in a role that spec 2's closed registry does not hold. Its absence is therefore a column rather than a row. Scent quality waits on a cue that nobody has authored on an edge instance ([HW-OBL-0023](../obligations/0023-no-corpus-has-authored-enough-cues-to-grade.md)). The promotion rate of [Q15](09-decisions.md#q15--a-synthesized-content-tier) is neither of the two, and it is not a wait. This verb reads one working tree, so it holds the denominator and it can never reach the numerator. `warrant.promoted` counts a promotion in the change that makes one, and the warrant reading names that rule beside the population it reports.
-
-**A wait that a string literal states is a claim that no run re-derives.** So each wait is a list of prerequisites that a run evaluates, and [Taxonomy distribution and audit](../subsystems/taxonomy-distribution-and-audit.md#audit-a-measurement-that-gates-nothing) states how.
-
-**A count copied into prose is the same defect at a smaller grain.** The change that built the reading above went on to commit its own count into five documents. Every one of them was false before the branch merged, because the change added a document to the population it counted. So a document that needs one of these figures names the verb that produces it. This specification states none of them.
-
-**The warrant reading walks the closed set of four that [spec 3](03-authoring-and-lifecycle.md#the-warrant-and-what-each-value-requires) declares.** It follows the rule the creator reading follows. A value that no document states keeps its row, so a reader can tell an arm that is empty from an arm that is absent. Two rows stand at zero by construction, because the engine reads `regenerated` and `transcribed` off the generated-file marker rather than out of a declaration. The section states the `asserted` count as the denominator that a promotion rate divides by, and states that nothing declares a bar over it. A value outside the closed set is reported apart from the four rows. `warrant.value.not_permitted` reports each document that states one, and this line counts them. `warrant.promoted` reads a movement between two values rather than the values a corpus holds.
-
-**The layout reading holds apart the arm that no declaration lets it measure.** A shelf layout names a file at birth, and no check reads one after that ([spec 3](03-authoring-and-lifecycle.md#templates-and-scaffolding)). The reading renders each name again, through the function that `headwater new` writes one with. A kind that declares no source for a placeholder puts its whole shelf outside the reading, and the row states where the absence lives. A document that the reading could not measure is in no numerator and no denominator. A missing declaration is not a name that drifted, and one figure over both would report the first as the second.
-
-**One bar is declared, and it is what separates a finding from a distribution.** `stale_after_days` on the freshness facet is the one number a taxonomy states about these readings. This verb produces two findings, and each one reads an input that the taxonomy declares. The first is a relation with a half on a document past that window. The second is a declared scope pattern with an entry that no `governs` edge reaches. That scope is a declared input and not a bar. So the second finding is advisory, and no number that the scope reports carries a verdict. Nothing states how narrow a facet may get before it separates nothing. Nothing states how low a capture rate may fall before a relation is unmaintained. A bar the engine invented would be a verdict derived from nothing a corpus declared. Every other reading therefore prints its population and carries no verdict, and [HW-OBL-0119](../obligations/0119-an-audit-reading-carries-no-declared-bar-so-a-distribution-cannot-become-a-finding.md) holds the gap.
-
-**`audit` also writes one line that is not a document, and only `--record` writes it.** The adoption reading of a run goes to `.headwater/adoption.jsonl`, which is outside the corpus root and which no rule reads. [Spec 7](07-distribution-and-federation.md#what-the-adoption-store-records-and-what-it-refuses-to) states what the line holds and what it deliberately does not. Without the flag the verb writes nothing. The help text of `--now` promises that two audits of one tree at one date write the same bytes. The store refuses a second reading at one lock and one date, so that promise holds under the flag too. This verb reads one working tree, so the series over time is the one reading here that a run cannot take by itself.
-
-**The grain of the creator reading is a relation, and never an edge.** [Q4](09-decisions.md#q4--relation-storage) keeps `created_by` on the relation type, so a scaffolded `supersedes` and a hand-typed one are one string on disk. A row presented per edge would state a provenance that nothing records. The reading walks the closed set of six creators rather than the values in use. A creator that no relation declares is the arm a comparison needs, and a report of the values in use omits exactly that.
-
-The separation matters. `validate` must stay fast and total because it gates, while `audit` is a periodic design review with a tool attached. `audit` exits 0 whatever it finds, and no gate and no hook runs it. CI runs it to report the governed scope, and no step of CI gates on what it reports.
+The separation matters. `validate` must stay fast and total because it gates, while `audit` is a periodic design review with a tool attached.
 
 ### Library
 
@@ -284,11 +234,7 @@ The CLI is a thin shell over a library API — load, graph, check, query, genera
 
 ### MCP server
 
-The MCP server is the agent-facing surface of the same library ([AI integration](05-ai-integration.md)). `headwater mcp` starts it on standard input and output, over the corpus the same lock and the same `corpus:` block describe. It registers the whole query class, and with `--write` the working-tree write class beside it. Spec 5 gives the reason that the registration rather than the annotation is what carries the property.
-
-The server walks the corpus once and reads the clock once, before it accepts a message. So every tool answers about one tree at one date. The `check` tool then answers what `check --format` answers, byte for byte. [What a `check` tool decides](05-ai-integration.md#what-a-check-tool-decides-and-where-each-decision-is-taken) states where each of those values is chosen, and none of them is chosen inside a tool.
-
-**A call that moves a byte of that tree ends the server.** The walk behind every later answer would otherwise describe a tree that is gone. [What a session looks like after a write](05-ai-integration.md#what-the-working-tree-write-class-registers-and-what-a-session-looks-like-after-a-write) states the rule and the two halves that make it exact. The write tools hold the verbs of this binary as functions. So a tool call runs `new` and `check --fix`, rather than a second assembly of the same parts.
+The MCP server is the surface of the library that an agent reads ([AI integration](05-ai-integration.md)). [The `headwater mcp` contract](../interfaces/headwater-mcp.md#description) states its tools and its session, and [Queries and explain](../subsystems/queries-and-explain.md#mcp) states how it answers.
 
 ### CI adapters
 
@@ -300,11 +246,11 @@ The engine emits findings. Adapters translate them to the native vocabulary of a
 |---|---|---|
 | Full check with no cache, 1,000 documents: `check --strict --no-cache` | < 5 s | 587 ms at 501 typed documents, 2026-10-01. Nothing has measured 1,000 documents. |
 | Full check, warm cache: `check --strict` | < 1 s | 193 ms at 501 typed documents, 2026-10-01. |
-| Commit hook: the same full warm `check --strict`, because no change-scoped check exists | < 200 ms | 193 ms at 501 typed documents, 2026-10-01. It was 257 ms on the engine before #1450, on the same host and the same tree. |
+| Commit hook: the full warm `check --strict --change`, because no mode narrows a check to a change ([HW-OBL-0080](../obligations/0080-changed-only-is-the-content-addressed-cache-under-another-name.md)) | < 200 ms | 193 ms at 501 typed documents, 2026-10-01. |
 | Edit hook: `explain --json --paths-at-most 20` and the `headwater json` reads of its document | < 200 ms | 90 ms for a document that governs one glob over 50,000 files, 2026-09-30. |
 | Route query: `route` | < 100 ms | 60 ms at 444 checked documents, 2026-09-28. |
 
-Every value in this table is user and system CPU time, and no row is wall time. CPU time is the measure because the load on a shared host changes it much less than it changes wall time. Each measured value is a median over warm runs of the `dev-release` engine on an 18-core host. `sh tools/measure/mcp-check.sh` measured the three full-check values over this repository, and `HW_MEASURE_BATCH=3 sh tools/measure/large-governs.sh 50000 5` measured the edit hook. [Spec 5](05-ai-integration.md#review-time-checks) states the route measurement. `sh tools/measure/check-phases.sh` says where the time of a warm check goes, stage by stage, on a build with the `phase-times` feature. On 2026-10-01 Phase A was 96 ms of 222 ms on that build, and the check of every rule was 109 ms. The edge rules were 62 ms of that, because the first of them reads the digest of every file that a `governs` edge names. The margin under the commit hook target is 7 ms, and a larger corpus or more governed files takes it. [HW-OBL-0080](../obligations/0080-changed-only-is-the-content-addressed-cache-under-another-name.md) records the position and what would change it.
+Every value in this table is user and system CPU time, because load on a shared host moves CPU time less than wall time. Each value is a median over warm runs of the `dev-release` engine on an 18-core host. `sh tools/measure/mcp-check.sh` measured the three full-check rows, and `sh tools/measure/large-governs.sh` measured the edit hook. [Spec 5](05-ai-integration.md#review-time-checks) states the route measurement. [HW-OBL-0080](../obligations/0080-changed-only-is-the-content-addressed-cache-under-another-name.md) records where the time of a warm check goes and what would change the position.
 
 Hooks and agent-facing queries must be fast enough to be invisible. A pre-commit check that costs two seconds is bypassed within a week. The developer who wrote the agent loop will skip a routing call that costs a second.
 
@@ -313,6 +259,6 @@ Hooks and agent-facing queries must be fast enough to be invisible. A pre-commit
 - **Single binary or single runtime.** Installation of the engine must not require a toolchain per check. A mix of Python, Node, and shell — each with its own container fallback — is a cost that we do not accept.
 - **Offline.** No network at check time.
 - **Deterministic.** Same corpus, same lock, same output, byte for byte. This is what makes `--check` on projections meaningful.
-- **Embeddable.** Usable as a library from an editor plugin or an agent process, with no need to spawn subprocesses.
+- **Embeddable.** The library runs in process for the MCP server and any Rust caller, and an editor is a client of `headwater mcp` ([HW-DR-0102](../decisions/0102-an-editor-integration-starts-headwater-mcp-for-each-query-and-does-not-embed-the-library.md)).
 
 These constraints made most of the choice. The language is Rust, and the embeddable requirement above is the argument that decided it ([Q1](09-decisions.md#q1--implementation-language)).

@@ -60,7 +60,7 @@ Spec 6 sketched three tiers. The correct decomposition is five. It comes from th
 
 This table settles three things.
 
-**Shape and Graph checks are generated, not written.** A new facet or relation in the taxonomy produces its checks with no code. That is the full point of taxonomy-as-data. It is also where most of the check count lives.
+**Shape and Graph checks are generated, not written.** A new facet or relation in the taxonomy produces its checks with no code. That is the full point of taxonomy-as-data. It is also where most of the check count lives. The other three origins are why a native engine exists at all, because LinkML and SHACL cannot express a check of any of them.
 
 **Document checks are the ones that no graph standard can reach**, because the body is not in the graph. That is the finding from the [SHACL instance-data evaluation](../evaluations/shacl-worked-example.md#does-this-help-with-the-actual-documents). Not by coincidence, they are also the checks that need source positions.
 
@@ -80,7 +80,7 @@ A finding in front matter carries no patch. `check --fix` reaches a run of prose
 
 **An origin is not a scope.** The origin says which part of the taxonomy a rule comes from, and the scope says what one instance of it covers. `identifier.claimed_twice` is Graph-origin, because the identifier index reports the collision, and it is corpus-scoped, because nothing smaller holds both claimants.
 
-**`exportable_as` is machine-checkable.** The emitted shapes are generated from exactly the checks that declare a target, and the next section states the rules that keep the claim honest. The last column above states what an origin can reach, and the declaration is per rule. Two rules declare a target today, and both name `jsonschema`.
+**`exportable_as` is machine-checkable.** The emitted shapes are generated from exactly the checks that declare a target, and the next section states the rules that keep the claim honest. The last column above states what an origin can reach, and the declaration is per rule. Two rules declare a target today, `facet.required.missing` and `facet.value.not_permitted`, and both name `jsonschema`. A differential test established each one.
 
 ### `exportable_as` is a set with a partition rule
 

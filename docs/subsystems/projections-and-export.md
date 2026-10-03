@@ -81,13 +81,15 @@ The format decides where the marker is. A format with comments carries it on the
 
 ### One run of `generate` is several passes
 
-One output can feed another. A generated document is a node of the census, and an index lists it. So `write_settled` plans from the tree, writes, and plans again, up to `PASSES` times. It stops at the first pass that writes nothing, and that pass is the proof that `--check` holds the result. A run that still writes on the last pass reports `unsettled` and fails. A pass reads the tree through the same loader as every other run, so no declaration has to state what each emitter reads and writes. The report states each path once, with the verdict of the first pass that changed it.
+One output can feed another. A generated document is a node of the census, and an index lists it. So `write_settled` plans from the tree, writes, and plans again, up to `PASSES` times. It stops at the first pass that writes nothing, and that pass is the proof that `--check` holds the result. A run that still writes on the last pass reports `unsettled` and fails. Such a run shows that the declarations form a cycle, and one more pass would not settle it. A pass reads the tree through the same loader as every other run, so no declaration has to state what each emitter reads and writes. The report states each path once, with the verdict of the first pass that changed it.
 
 ### Thirteen kinds, two value sets, and the unbuilt set
 
 `Kind` names thirteen projection kinds. Eleven are declarable, and a taxonomy names the kind and its output path. Two are engine-defined: the register and the corpus descriptor. The engine fixes the path of each, because a reader who must read the taxonomy to find one already knows what it says. `Kind::declarable` separates the two sets.
 
 `unbuilt` gives the reason that this engine writes no output for a kind, or nothing where it writes one. The reason is a property of the engine, so a run prints it for a kind that no declaration names. The match is exhaustive, so a new kind fails to compile until it has an answer. `engine_defined` lists the register as unwritten with its reason from `unbuilt`. The register depends on the clock, so a committed copy could not pass `--check` ([HW-OBL-0037](../obligations/0037-the-register-is-not-a-projection-of-the-lock-alone-so-generate.md)).
+
+Four declarable kinds wait, and `unbuilt` gives each one its reason. A relation view would carry the lineage of decisions and a traceability matrix. A template would carry the permitted relations, facets and sections of one kind. An agent rule file is the artifact that [the glossary](../spec/glossary.md#projection) names. A transcription reads a pinned external snapshot, and [Q19](../spec/09-decisions.md#q19--inbound-integration-an-external-system-of-record) leaves it to the first adopter who asks for one.
 
 No output states when it was generated, because `--check` compares bytes. `headwater export --at` injects a time into an output that leaves the repository, and `plan` passes none.
 
