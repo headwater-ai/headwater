@@ -108,7 +108,9 @@
 #     gate runs first, and nothing is written when it fails: every offered
 #     document of every sampled prompt has a consensus value of 0, 1 or 2,
 #     every sampled prompt has a `missing` value of 0 or 1, and the
-#     consensus scores nothing the sample did not offer. The gate does not
+#     consensus scores nothing the sample did not offer, and nothing twice.
+#     A sample row has eight columns and one of the three strata, and lists
+#     no document twice in one offer. The gate does not
 #     wait on owner scores, because the owner waived the spot check on
 #     2026-10-03. The path of a document is the column of `sample.tsv` that
 #     offered it, `deterministic` or `embedding`, and a document in both
@@ -724,13 +726,20 @@ cmd_grade() {
     # The gate runs in full before anything is written: every offered
     # document of every sampled prompt has a consensus value of 0, 1 or 2,
     # every sampled prompt has a `missing` value of 0 or 1, and the
-    # consensus holds no item that the sample did not offer.
+    # consensus holds no item that the sample did not offer and none twice.
+    # A sample row has eight columns, one of the three strata, and no
+    # document twice in one offer. A consensus row has four columns.
     LC_ALL=C awk -F '\t' '
         FNR == 1 { f++; next }
-        f == 1 { if ($1 in seen) { bad("prompt " $1 " is sampled twice") } seen[$1] = 1; want[$1 "\t" "missing"] = 1
+        f == 1 { if (NF != 8) bad("prompt " $1 " has " NF " columns, not 8")
+                 if ($1 in seen) { bad("prompt " $1 " is sampled twice") } seen[$1] = 1; want[$1 "\t" "missing"] = 1
                  if ($2 != "silent" && $2 != "disjoint" && $2 != "overlap") bad("prompt " $1 " has the stratum " $2)
-                 for (c = 7; c <= 8; c++) { n = ($c == "") ? 0 : split($c, d, "|"); for (i = 1; i <= n; i++) want[$1 "\t" d[i]] = 1 }
+                 for (c = 7; c <= 8; c++) {
+                     n = ($c == "") ? 0 : split($c, d, "|"); split("", once)
+                     for (i = 1; i <= n; i++) { if (d[i] in once) bad("prompt " $1 " lists " d[i] " twice in column " c); once[d[i]] = 1; want[$1 "\t" d[i]] = 1 }
+                 }
                  next }
+        NF != 4 { bad("a consensus row has " NF " columns, not 4: " $1 "\t" $2); next }
         { k = $1 "\t" $2
           if (!(k in want)) { bad("the consensus scores an item the sample did not offer: " k); next }
           if (k in got) { bad("the consensus scores an item twice: " k); next }

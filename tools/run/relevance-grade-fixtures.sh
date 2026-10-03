@@ -554,5 +554,72 @@ s1=$(sha256sum < "$G4")
 rg k4 grade
 check "k5: a rerun writes the same bytes" '[ "$s1" = "$(sha256sum < "$G4")" ]'
 
+# k6: three strata at once. Document A is scored 2 on the disjoint prompt
+# p1 and 0 on the overlap prompt p3, so a value is looked up by prompt and
+# item together. The silent prompt p2 flags `missing`, which counts in its
+# stratum although the route offered nothing there.
+krec k6
+ksample k6 p1 disjoint 'docs/a.md|docs/b.md' 'docs/b.md|docs/c.md|docs/d.md'
+ksample k6 p2 silent '' 'docs/g.md|docs/h.md'
+ksample k6 p3 overlap 'docs/a.md|docs/e.md' 'docs/a.md|docs/f.md'
+tail -n +2 "$scratch/k1/rec/consensus.tsv" >> "$scratch/k6/rec/consensus.tsv"
+kscore k6 p2 docs/g.md 0
+kscore k6 p2 docs/h.md 1
+kscore k6 p2 missing 1
+kscore k6 p3 docs/a.md 0
+kscore k6 p3 docs/e.md 2
+kscore k6 p3 docs/f.md 1
+kscore k6 p3 missing 0
+rg k6 grade
+rc "k6: grade exits 0" k6.grade 0
+G6="$scratch/k6/rec/grade.txt"
+has k6 "$G6" 'stratum disjoint path route score 2: documents 1 of 2 (0.5000); prompts 1 of 1 (1.0000, Wilson 95% 0.2065 to 1.0000); first offered 1 of 1 (1.0000)'
+has k6 "$G6" 'stratum overlap: 1 prompts'
+has k6 "$G6" 'stratum overlap path route: offered on 1 of 1 prompts, 2 documents'
+has k6 "$G6" 'stratum overlap path route score 2: documents 1 of 2 (0.5000); prompts 1 of 1 (1.0000, Wilson 95% 0.2065 to 1.0000); first offered 0 of 1 (0.0000)'
+has k6 "$G6" 'stratum overlap path route score 1 or more: documents 1 of 2 (0.5000); prompts 1 of 1 (1.0000, Wilson 95% 0.2065 to 1.0000); first offered 0 of 1 (0.0000)'
+has k6 "$G6" 'stratum overlap path embedding score 2: documents 0 of 2 (0.0000); prompts 0 of 1 (0.0000, Wilson 95% 0.0000 to 0.7935); first offered 0 of 1 (0.0000)'
+has k6 "$G6" 'stratum overlap path embedding score 1 or more: documents 1 of 2 (0.5000); prompts 1 of 1 (1.0000, Wilson 95% 0.2065 to 1.0000); first offered 0 of 1 (0.0000)'
+has k6 "$G6" 'stratum overlap missing: 0 of 1 prompts (0.0000)'
+has k6 "$G6" 'stratum silent path embedding score 1 or more: documents 1 of 2 (0.5000); prompts 1 of 1 (1.0000, Wilson 95% 0.2065 to 1.0000); first offered 0 of 1 (0.0000)'
+has k6 "$G6" 'stratum silent missing: 1 of 1 prompts (1.0000)'
+# Both thresholds are named in the header, and the waiver is stated.
+has k6 "$G6" '# Both thresholds are printed and neither is chosen: score 2 (would need) and score 1 or more (perhaps).'
+has k6 "$G6" '# The gate did not wait on owner scores: the owner waived the spot check on 2026-10-03.'
+
+# k7: the rest of the gate, each case on a copy of k1's record: a `missing`
+# flag of 2, a stratum outside the three, an item scored twice, a document
+# listed twice in one offer, a sample row of seven columns and a consensus
+# row of three. Each exits 4 and writes no grade.txt.
+for c in k7a k7b k7c k7d k7e k7f; do krec "$c"; done
+for c in k7a k7c k7f; do ksample "$c" p1 disjoint 'docs/a.md|docs/b.md' 'docs/b.md|docs/c.md|docs/d.md'; done
+ksample k7b p1 Disjoint 'docs/a.md|docs/b.md' 'docs/b.md|docs/c.md|docs/d.md'
+ksample k7d p1 disjoint 'docs/a.md|docs/b.md' 'docs/b.md|docs/c.md|docs/d.md|docs/b.md'
+printf 'p1\tdisjoint\t2026-09-30T10:00:05Z\tS.jsonl\t1\tsha256:t\tdocs/a.md|docs/b.md\n' >> "$scratch/k7e/rec/sample.tsv"
+sed 's/missing\t1/missing\t2/' "$scratch/k1/rec/consensus.tsv" > "$scratch/k7a/rec/consensus.tsv"
+for c in k7b k7c k7d; do cp "$scratch/k1/rec/consensus.tsv" "$scratch/$c/rec/consensus.tsv"; done
+kscore k7c p1 docs/c.md 0
+# k7e scores only what its short row offers, and k7f scores every offered
+# item, so each is refused by the column test alone.
+grep -v -e 'docs/c.md' -e 'docs/d.md' "$scratch/k1/rec/consensus.tsv" > "$scratch/k7e/rec/consensus.tsv"
+grep -v 'docs/d.md' "$scratch/k1/rec/consensus.tsv" > "$scratch/k7f/rec/consensus.tsv"
+printf 'p1\tdocs/d.md\t0\n' >> "$scratch/k7f/rec/consensus.tsv"
+for c in k7a k7b k7c k7d k7e k7f; do rg "$c" grade; done
+rc "k7a: a missing flag of 2 exits 4" k7a.grade 4
+rc "k7b: a stratum outside the three exits 4" k7b.grade 4
+rc "k7c: an item scored twice exits 4" k7c.grade 4
+rc "k7d: a document listed twice in one offer exits 4" k7d.grade 4
+rc "k7e: a sample row of seven columns exits 4" k7e.grade 4
+rc "k7f: a consensus row of three columns exits 4" k7f.grade 4
+check "k7: and none writes grade.txt" '[ ! -e "$scratch/k7a/rec/grade.txt" ] && [ ! -e "$scratch/k7b/rec/grade.txt" ] && [ ! -e "$scratch/k7c/rec/grade.txt" ] && [ ! -e "$scratch/k7d/rec/grade.txt" ] && [ ! -e "$scratch/k7e/rec/grade.txt" ] && [ ! -e "$scratch/k7f/rec/grade.txt" ]'
+
+# k8: the committed grade.txt is what `grade` prints on the committed
+# record, so an edit to the record that leaves it stale fails here.
+mkdir -p "$scratch/k8/rec"
+cp "$root/tools/run/relevance-grade/sample.tsv" "$root/tools/run/relevance-grade/consensus.tsv" "$scratch/k8/rec/"
+rg k8 grade
+rc "k8: grade exits 0 on the committed record" k8.grade 0
+check "k8: the committed grade.txt is what grade prints on the committed record" 'cmp -s "$scratch/k8/rec/grade.txt" "$root/tools/run/relevance-grade/grade.txt"'
+
 printf '%d passed, %d failed\n' "$passed" "$failed"
 [ "$failed" -eq 0 ]
