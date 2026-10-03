@@ -1,6 +1,6 @@
 ---
 name: hw-verify
-description: Attacks one branch of the Headwater build order adversarially and returns a verdict to the agent that dispatched it. Dispatched by hw-iterate, after hw-build has opened the pull request. It detaches its own worktree at the branch, runs the suite and the attacks that agent chose from the verification bar, waits on the pull request itself, and edits nothing.
+description: Attacks one branch of the Headwater build order adversarially and returns a verdict to the agent that dispatched it. Dispatched by hw-iterate, after hw-build has opened the pull request. It detaches its own worktree at the branch, runs the attacks that agent chose from the verification bar and leaves the workspace suite to CI, waits on the pull request itself, and edits nothing.
 tools: Bash, Read, Grep, Glob, Skill
 model: claude-sonnet-5-5
 effort: medium
@@ -30,7 +30,7 @@ The report ends with this block:
 
 Set `HW_CARGO_SLOT=verify-<N>` for your issue on every `tools/hw-cargo` call. Before your first build makes a fresh `target-verify-<N>`, run `df -h /`. When less than 40G is free, stop and report `FAIL` with `disk: <the reading>` as the first line of `FIRED`, because the build would fill the host. When you report, remove that slot's target directory and its `.root` file under `~/.cache/headwater/cargo-pool/`, as `hw-run-policy` says. Leave the tree with nothing uncommitted.
 
-**Run the suite and the gates**, each redirected to files, never piped, with stdout and stderr apart on an invariant test.
+**Do not run the workspace suite, clippy or the format check.** CI runs all three on the commit you detached at, on the same host, and you wait on it last; a second run here doubles the load the runner queues behind and tells you nothing the pull request's checks will not. The bar says the suite catches almost nothing the builder has not already caught. Run the build your attacks need, the one test or crate that each attack names, and every gate that is not a CI step, each redirected to files, never piped, with stdout and stderr apart on an invariant test. A full workspace run is for one case: a branch whose CI is red for a reason you cannot read from its log, and then it goes under `FIRED`.
 
 **Run the attacks you were given**, and the ones the bar marks as always. Make the new thing fail by hand, with your own edits rather than the fixtures' documents. Regress the implementation with a different regression from the agent's, and note when a regression will not compile, which is the strongest result there is. On a `Closes` pull request, attack each clause its body marks `- [x] #<issue>.<k>`: find the evidence it names on the branch, and a clause marked met that the branch does not meet is a `FAIL`.
 
