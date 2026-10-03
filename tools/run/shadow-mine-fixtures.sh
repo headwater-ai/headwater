@@ -11,16 +11,18 @@
 #      row, so that a pooled rate equals no row: digest A is silent on 1 of 2
 #      prompts on each path, digest B on 0 of 2, and the no-digest row on 1
 #      of 1. The log also holds one gap, two ids that no typed prompt claims,
-#      one prompt logged twice, one torn line, one line with an empty
-#      `prompt_id`, one line a recorder submitted, and one typed prompt from
+#      one prompt logged twice, one torn line, one empty line (#1420's
+#      unlocked writer can leave one), one line with an empty `prompt_id`,
+#      one line a recorder submitted, and one typed prompt from
 #      before the first line. A pooled rate, a raw line count or a missing
 #      bucket fails here, and so does a probe line read as a person's.
-#   b  recall and rank against planted `Read` calls. Of eight reads, two count:
+#   b  recall and rank against planted `Read` calls. Of nine reads, two count:
 #      one before the prompt, one outside `corpus_root`, one under a sibling
 #      directory that shares the root as a string prefix, one on a sidechain,
-#      one that is not a Markdown document and one after the next person
-#      prompt are each dropped, and a read made twice counts once. Each drop
-#      moves a denominator.
+#      one that is not a Markdown document, one under a directory whose name
+#      starts with a dot and one after the next person prompt are each
+#      dropped, and a read made twice counts once. Each drop moves a
+#      denominator.
 #   c  the injected and not-injected split, over both cases above.
 #   d  the bound: the date the bound closed is read on distinct ids in time
 #      order, so a prompt logged twice does not close it early.
@@ -143,14 +145,17 @@ logline a S1 2026-09-30T10:10:30Z p2 true "$A" "$(route 'docs/x.md docs/y.md')" 
 logline a S1 2026-09-30T10:30:05Z p4 false none "$silent" ""
 logline a S2 2026-09-30T11:00:05Z q1 true "$B" "$(route docs/z.md)" "$(neighbors "$B" docs/z.md)"
 logline a S2 2026-09-30T11:05:00Z "" true "$B" "$(route docs/z.md)" "$(neighbors "$B" docs/z.md)"
+printf '\n' >> "$scratch/a/log/S2.jsonl"
 logline a S2 2026-09-30T11:20:00Z u1 true "$B" "$(route docs/z.md)" "$(neighbors "$B" docs/z.md)"
 logline a S2 2026-09-30T11:30:00Z u2 false "$A" "$silent" "$(neighbors "$A" docs/x.md)"
 logline a S2 2026-09-30T11:40:00Z pr1 false "$A" "$silent" "$(neighbors "$A" docs/x.md)" rec-1
 run a
 o="$scratch/a.out"
 rc "a exits 0" a 0
-has a "$o" "log lines: 11"
+has a "$o" "log lines: 12"
 has a "$o" "torn lines: 1"
+has a "$o" "blank lines: 1"
+lacks a "$o" "torn: S2.jsonl"
 has a "$o" "probe lines: 1"
 has a "$o" "empty-id lines: 1"
 has a "$o" "torn: S1.jsonl:3"
@@ -209,6 +214,7 @@ readcall b R 2026-09-30T10:03:00.000Z /elsewhere/docs/a.md
 readcall b R 2026-09-30T10:04:00.000Z /root/cx/docs/d.md
 readcall b R 2026-09-30T10:05:00.000Z /root/c/docs/d.md true
 readcall b R 2026-09-30T10:06:00.000Z /root/c/tools/x.sh
+readcall b R 2026-09-30T10:06:30.000Z /root/c/.claude/agents/a.md
 readcall b R 2026-09-30T10:07:00.000Z /root/c/docs/b.md
 prompt b R 2026-09-30T10:30:00.000Z r2
 readcall b R 2026-09-30T10:31:00.000Z /root/c/docs/a.md
