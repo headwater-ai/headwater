@@ -38,7 +38,7 @@ The builders and the maintainer of run `20261002-1233` found sentences that a ch
 
 **Counts and statements no change has caught up with.**
 
-- HW-DR-0036 says that spec 6 lists "the ten declarable projection kinds". HW-OBL-0043 says "Eight kinds are declarable". `Kind::DECLARABLE` in `engine/crates/generate/src/lib.rs` holds 11, and the projections-and-export page states 11. Spec 9 says "129 records", and `docs/taxonomies/decision-record/doctrine.md` says "38 of the 39" open records wait on a ruling. The obligation shelves held 210 records when the line was written.
+- HW-DR-0036 counts ten projection kinds that a taxonomy may declare, in the paragraph on `site_nav`. HW-OBL-0043 says "Eight kinds are declarable". `Kind::DECLARABLE` in `engine/crates/generate/src/lib.rs` holds 11, and the projections-and-export page states 11. Spec 9 says "129 records", and `docs/taxonomies/decision-record/doctrine.md` says "38 of the 39" open records wait on a ruling. The obligation shelves held 210 records when the line was written.
 - The harness gives one `promptId` to more than one submission, such as a request and a `/compact` 27 seconds later. 39 of 587 joined identifiers carry more than one line of the shadow log, and 7 of them disagree on silence. `tools/run/shadow-capture.sh` and `tools/run/shadow-mine.sh` read the first record and the earliest line, and no document states that an identifier is not one prompt. The builder of #1670 meets this first.
 
 ## Discharge
