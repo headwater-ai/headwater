@@ -1970,7 +1970,7 @@ STUB
 } > found.txt 2>/dev/null
 printf '%s\n' '{"type":"system","subtype":"init","model":"claude-haiku-4-5","session_id":"s20"}'
 printf '%s\n' '{"type":"assistant","message":{"id":"m1","content":[{"type":"tool_use","id":"t1","name":"Read","input":{"file_path":"$conf/outside/secret.md"}}]}}'
-printf '%s\n' '{"type":"assistant","message":{"id":"m2","content":[{"type":"tool_use","id":"t2","name":"Bash","input":{"command":"cat $conf/outside/secret.md ../trees/oracle/secret.md; find / -name secret.md 2>/dev/null; ls /home /mnt"}}]}}'
+printf '%s\n' '{"type":"assistant","message":{"id":"m2","content":[{"type":"tool_use","id":"t2","name":"Bash","input":{"command":"cat $conf/outside/secret.md ../trees/oracle/secret.md; find / -name secret.md 2>/dev/null; ls /home /mnt > /tmp/out.txt"}}]}}'
 printf '%s\n' '{"type":"assistant","message":{"id":"m3","content":[{"type":"tool_use","id":"t3","name":"Grep","input":{"pattern":"x","path":"$conf/conf-ws/docs"}}]}}'
 printf '%s\n' '{"type":"result","subtype":"success","result":"withheld","total_cost_usd":0.01,"modelUsage":{"claude-haiku-4-5-20251001":{"inputTokens":10}}}'
 STUB
@@ -1992,7 +1992,10 @@ STUB
             "The session ran confined to its workspace" "$scratch/confined.md"
         present "and names the configuration directory it ran under" \
             "The session ran under the configuration directory" "$scratch/confined.md"
-        present "and counts the paths outside the workspace it named, none of them readable" \
+        # The session's own `/tmp` is a tmpfs of the confinement and no file of
+        # the host, so the `Bash` redirect to `/tmp/out.txt` above adds 0 to
+        # the 3 (#1659): #1474's L3-p2 counted 3 such redirects as outside.
+        present "and counts the paths outside the workspace it named, none of them readable, and not its own /tmp" \
             "The session named 3 paths outside its workspace that the confinement does not bind, so no file of the host at any of them was readable." \
             "$scratch/confined.md"
 
@@ -2916,6 +2919,148 @@ STUB
         stagger_run_cap
         same "a slice the cap refuses exits 7, not 9, and records nothing" "7 0" \
             "$? $(stagger_recorded "$stagger")"
+
+        # The hard cap (#1659). `--session-cents <B>` is the most one session
+        # may spend: the driver passes it to the harness as `--max-budget-usd`,
+        # and reserves B, not the declared unit, for each session in flight,
+        # under one lock with the `started` marker. So the batch spends at
+        # most the cap. The stub "spends" 90 cents with no budget, and
+        # min(90, budget) with one, and ends at the budget subtype with exit 1
+        # when the budget binds. On the old path, which reserved the declared
+        # 50, a cap of 150 started a second session at 90 spent and realized
+        # 180, which is the overrun of #1474.
+        # $1 is `ok` or `fail-first`. The first session of `fail-first` fails
+        # for a reason other than the budget after it spent 50 cents.
+        budget_stub() {
+            cat > "$scratch/bin/claude" <<STUB
+#!/bin/sh
+case "\${1:-}" in --version) echo '9.9.9 (Claude Code)'; exit 0 ;; esac
+calls=\$HEADWATER_SHADOW_LOG_DIR/stagger.calls
+budget=
+previous=
+for argument in "\$@"; do
+    [ "\$previous" = --max-budget-usd ] && budget=\$argument
+    previous=\$argument
+done
+printf '%s budget=%s\n' "\$(pwd)" "\${budget:-none}" >> "\$calls"
+printf '%s\n' '{"type":"system","subtype":"init","model":"claude-haiku-4-5","session_id":"s17"}'
+if [ "$1" = fail-first ] && [ "\$(wc -l < "\$calls")" -le 1 ]; then
+    printf '%s\n' '{"type":"result","subtype":"error_during_execution","is_error":true,"total_cost_usd":0.50,"modelUsage":{"claude-haiku-4-5-20251001":{"inputTokens":10}}}'
+    exit 1
+fi
+cents=90
+[ -n "\$budget" ] && cents=\$(awk -v b="\$budget" 'BEGIN { c = int(b * 100 + 0.5); print (c < 90 ? c : 90) }')
+usd=\$(awk -v c="\$cents" 'BEGIN { printf "%.2f", c / 100 }')
+if [ "\$cents" -lt 90 ]; then
+    printf '{"type":"result","subtype":"error_max_budget_usd","is_error":true,"total_cost_usd":%s,"modelUsage":{"claude-haiku-4-5-20251001":{"inputTokens":10}}}\n' "\$usd"
+    exit 1
+fi
+printf '{"type":"result","subtype":"success","is_error":false,"result":"done","total_cost_usd":%s,"modelUsage":{"claude-haiku-4-5-20251001":{"inputTokens":10}}}\n' "\$usd"
+exit 0
+STUB
+            chmod +x "$scratch/bin/claude"
+        }
+        # What the batch spent: the cost of every session, and what an earlier
+        # attempt of a job spent before it was run again.
+        budget_spent() {
+            n=0
+            for s in "$1"/sessions/*/cost "$1"/sessions/*/spent-before; do
+                [ -f "$s" ] && n=$((n + $(cat "$s")))
+            done
+            echo "$n"
+        }
+        # $1 out, $2 stderr file, then the flags of the invocation.
+        budget_run() {
+            run_out=$1 run_err=$2
+            shift 2
+            PATH="$scratch/bin:$PATH" sh "$root/tools/probe/campaign.sh" --out "$run_out" \
+                --model claude-haiku-4-5 --spec "$scratch/stagger.spec" --repetitions 1 \
+                "$@" >/dev/null 2>"$run_err"
+        }
+        budget_stub ok
+        # At --parallel 1 and 3, over 6 trials each. B is 60 and the cap 150,
+        # so a third session would need 120 + 60 = 180: 2 sessions start, each
+        # stopped at its budget of 60, and the batch spends 120.
+        for workers in 1 3; do
+            trial=1
+            overran=
+            while [ "$trial" -le 6 ] && [ -z "$overran" ]; do
+                stagger_batch "$stagger"
+                rm -f "$scratch/probe-log/stagger.calls"
+                budget_run "$stagger" "$scratch/budget-p$workers.err" \
+                    --cap-cents 150 --session-cents 60 --parallel "$workers"
+                got="$? $(budget_spent "$stagger") $(wc -l < "$scratch/probe-log/stagger.calls" 2>/dev/null | tr -d ' ')"
+                [ "$got" = "7 120 2" ] || overran="trial $trial: exit, cents, sessions $got"
+                trial=$((trial + 1))
+            done
+            same "under --session-cents 60 and --cap-cents 150 at --parallel $workers, 6 trials spend 120 over 2 sessions and exit 7" \
+                "" "$overran"
+        done
+        same "and the harness receives --max-budget-usd 0.60" "2" \
+            "$(grep -c ' budget=0.60$' "$scratch/probe-log/stagger.calls" 2>/dev/null)"
+        same "and the batch records the session budget" "60" "$(cat "$stagger/session-cents" 2>/dev/null)"
+        same "and a session stopped at its budget records with status 0" "2" "$(stagger_recorded "$stagger")"
+        PATH="$scratch/bin:$PATH" sh "$root/tools/probe/campaign.sh" --out "$stagger" --assemble \
+            >/dev/null 2>"$scratch/budget-assemble.err"
+        present "and assembly counts the sessions the budget stopped" \
+            "0 stopped at the turn cap, 2 stopped at the session budget" "$scratch/budget-assemble.err"
+        present "and the transcript says the session stopped at its budget" \
+            "The session stopped at its budget of \$0.60." "$(ls "$stagger"/sessions/*/record.md | head -1)"
+
+        # The cap's edge, in three directions. A session starts when it fits
+        # exactly, and not one cent past.
+        for edge in "119 1" "120 2" "180 3"; do
+            edge_cap=${edge% *}
+            edge_n=${edge#* }
+            stagger_batch "$stagger"
+            rm -f "$scratch/probe-log/stagger.calls"
+            budget_run "$stagger" "$scratch/budget-edge.err" --cap-cents "$edge_cap" --session-cents 60
+            same "a cap of $edge_cap with --session-cents 60 starts $edge_n sessions" "$edge_n" \
+                "$(wc -l < "$scratch/probe-log/stagger.calls" 2>/dev/null | tr -d ' ')"
+        done
+
+        # The lock. `HEADWATER_CAMPAIGN_CHECK_DELAY` holds a worker between its
+        # check and its `started` marker, so 3 workers that check without one
+        # lock all read 0 spent and 0 in flight, and all 3 start.
+        stagger_batch "$stagger"
+        rm -f "$scratch/probe-log/stagger.calls"
+        HEADWATER_CAMPAIGN_CHECK_DELAY=1 budget_run "$stagger" "$scratch/budget-lock.err" \
+            --cap-cents 150 --session-cents 60 --parallel 3
+        same "3 workers held between check and marker still start 2 sessions under a cap of 150" "2 120" \
+            "$(wc -l < "$scratch/probe-log/stagger.calls" 2>/dev/null | tr -d ' ') $(budget_spent "$stagger")"
+
+        # A resumed invocation that gives neither flag keeps the recorded
+        # budget and cap, and counts the 60 the first one spent: 60 + 60 fits
+        # 150, and 120 + 60 does not.
+        stagger_batch "$stagger"
+        rm -f "$scratch/probe-log/stagger.calls"
+        budget_run "$stagger" "$scratch/budget-r1.err" --cap-cents 150 --session-cents 60 --max-sessions 1
+        same "a first slice of 1 under --session-cents 60 exits 9 at 60 cents" "9 60" "$? $(budget_spent "$stagger")"
+        budget_run "$stagger" "$scratch/budget-r2.err"
+        same "and a resumed slice with neither flag spends 120 in all and exits 7" "7 120" \
+            "$? $(budget_spent "$stagger")"
+        same "and its session also receives --max-budget-usd 0.60" "2" \
+            "$(grep -c ' budget=0.60$' "$scratch/probe-log/stagger.calls" 2>/dev/null)"
+
+        # A halted job's spend counts when it runs again. The first session
+        # fails after 50 cents and halts the slice. The next invocation runs
+        # it again: 50 + 60 fits 150, and 110 + 60 does not, so the batch
+        # spends 110 and the harness runs twice in all. A driver that dropped
+        # the 50 when it ran the job again would start a third session and
+        # spend 170.
+        stagger_batch "$stagger"
+        rm -f "$scratch/probe-log/stagger.calls"
+        budget_stub fail-first
+        budget_run "$stagger" "$scratch/budget-h1.err" --cap-cents 150 --session-cents 60
+        same "a first session that fails after 50 cents halts with 9" "9 50" "$? $(budget_spent "$stagger")"
+        budget_stub ok
+        printf 'x\n' >> "$scratch/probe-log/stagger.calls"
+        budget_run "$stagger" "$scratch/budget-h2.err"
+        same "and the rerun counts the 50, spends 110 in all, and exits 7" "7 110" \
+            "$? $(budget_spent "$stagger")"
+        same "and the harness ran twice in all" "3" \
+            "$(wc -l < "$scratch/probe-log/stagger.calls" 2>/dev/null | tr -d ' ')"
+        present "and the batch's total counts the 50" "110 cents spent" "$scratch/budget-h2.err"
         rm -rf "$stagger"
         rm -f "$scratch/bin/cargo"
         unset CARGO_TARGET_DIR
