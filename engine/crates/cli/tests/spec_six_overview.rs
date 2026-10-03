@@ -538,13 +538,15 @@ const QUOTE_WORDS: usize = 3;
 
 /// Every quote that a comment of `source` credits to a document, and the line
 /// that credits it. A credit is the document's name (`spec 6`, `spec 6's`) or
-/// a link whose target names its file stem. The quote is the text inside the
-/// first pair of double quotes after the credit, where it opens within
-/// [`CREDIT_GAP`] characters of plain text and no commit is named between.
+/// a link whose target names its file stem. A quote is the text inside a pair
+/// of double quotes that opens within [`CREDIT_GAP`] characters of plain text
+/// after the credit, in the same sentence, with no commit named between. A
+/// second quote counts as well when it opens the same way after the first one
+/// closes: "makes the CLI "…", and says that "…"" credits both.
 fn credited_quotes(source: &str, yaml: bool, name: &str, stem: &str) -> Vec<(usize, String)> {
     let mut found = Vec::new();
     for block in comment_blocks(source, yaml) {
-        let lower = block.text.to_lowercase();
+        let lower = block.text.to_ascii_lowercase();
         let mut credits: Vec<usize> = lower
             .match_indices(name)
             .filter(|(at, m)| {
@@ -563,24 +565,30 @@ fn credited_quotes(source: &str, yaml: bool, name: &str, stem: &str) -> Vec<(usi
         credits.sort_unstable();
         let mut quoted = BTreeSet::new();
         for credit in credits {
-            let rest = &block.text[credit..];
-            let Some(open) = rest.find('"') else {
-                continue;
-            };
-            let gap = &rest[..open];
-            if plain(gap).len() > CREDIT_GAP || ends_a_sentence(gap) || names_a_commit(gap) {
-                continue;
-            }
-            let body = &rest[open + 1..];
-            let Some(close) = body.find('"') else {
-                continue;
-            };
-            if !quoted.insert(credit + open) {
-                continue;
-            }
-            let quote = &body[..close];
-            if plain(quote).split_whitespace().count() >= QUOTE_WORDS {
-                found.push((block.line_of(credit), quote.to_owned()));
+            let mut from = credit;
+            loop {
+                let rest = &block.text[from..];
+                let Some(open) = rest.find('"') else {
+                    break;
+                };
+                let gap = &rest[..open];
+                if plain(gap).len() > CREDIT_GAP || ends_a_sentence(gap) || names_a_commit(gap) {
+                    break;
+                }
+                let body = &rest[open + 1..];
+                let Some(close) = body.find('"') else {
+                    break;
+                };
+                let quote = &body[..close];
+                if quoted.insert(from + open)
+                    && plain(quote).split_whitespace().count() >= QUOTE_WORDS
+                {
+                    found.push((block.line_of(credit), quote.to_owned()));
+                }
+                if quote.trim_end().ends_with(['.', '?', '!']) {
+                    break;
+                }
+                from += open + 1 + close + 1;
             }
         }
     }
@@ -725,6 +733,11 @@ fn the_quote_scan_fires_on_a_stale_credit_and_on_nothing_else() {
              taxonomy lock hash\" as two facts.",
         ),
         (
+            "a second quote in the credit's sentence",
+            "//! [Spec 6](../06-engine-architecture.md#library) makes the CLI \"advisory by \
+             default\", and says that \"editor integrations consume the library\".",
+        ),
+        (
             "a plain comment",
             "// spec 6 says \"somebody removed a declaration or repointed it\"",
         ),
@@ -760,6 +773,11 @@ fn the_quote_scan_fires_on_a_stale_credit_and_on_nothing_else() {
             "a quote in the sentence after the credit",
             "/// The comment once said it under a link to spec 6. The sentence \"`probe` \
              reaches a model over the network\" went back in.",
+        ),
+        (
+            "a quote after a credited quote that ends its sentence",
+            "/// Spec 6: \"The CLI is advisory by default (exit 0 with findings on stdout).\" \
+             A reader adds \"some words of another document\".",
         ),
         (
             "a quote in the paragraph after the credit",

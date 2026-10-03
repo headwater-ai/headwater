@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 //! The generated-file marker: one wording, one predicate, two readers.
 //!
-//! [Spec 6](../../../../docs/spec/06-engine-architecture.md#projections) asks a
-//! projection to carry a marker so that "the engine refuses to overwrite a file
-//! that lacks the marker and did not come from a previous run". That sentence
-//! names one reader, the writer of a file. There is a second one, and it is the
+//! [The `headwater generate` contract](../../../../docs/interfaces/headwater-generate.md#description)
+//! asks a projection to carry a marker so that the engine "refuses to
+//! overwrite a file that lacks the generated-file marker". That sentence names
+//! one reader, the writer of a file. There is a second one, and it is the
 //! census: a generated file that lands inside the corpus root is walked like any
 //! other file, and the marker is what tells the walk that this engine wrote it.
 //!

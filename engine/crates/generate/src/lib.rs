@@ -34,10 +34,11 @@
 //!
 //! # The marker is the record of the previous run
 //!
-//! Spec 6: "A projection carries a generated-file marker. The engine refuses to
-//! overwrite a file that lacks the marker and did not come from a previous run."
-//! Read literally that is two permissions, and the second one needs the engine
-//! to remember what it wrote. It does not need to. The marker in the file *is*
+//! [The `headwater generate` contract](../../../../docs/interfaces/headwater-generate.md#description):
+//! "It refuses to overwrite a file that lacks the generated-file marker." The
+//! sentence this engine was first built from added "and did not come from a
+//! previous run". Read literally that is two permissions, and the second one
+//! needs the engine to remember what it wrote. It does not need to. The marker in the file *is*
 //! the record, and a manifest beside the file would be a second statement of one
 //! fact, which is the drift
 //! [principle 2](../../../../docs/spec/00-vision-and-scope.md#design-principles)
@@ -47,8 +48,8 @@
 //! - the path holds a file that carries the marker — overwrite it,
 //! - the path holds anything else — refuse, and say which path.
 //!
-//! An authored document is never destroyed, which is the property spec 6 asks
-//! the marker for.
+//! An authored document is never destroyed, which is the property the contract
+//! asks the marker for.
 //!
 //! **Where the marker sits is the format's business, and it is found either
 //! way.** A commented format carries it on the first line. JSON has no comment,
@@ -133,8 +134,9 @@ pub struct Identity {
     /// The taxonomy package the consumer took, and the version it pinned.
     pub package: String,
     pub version: String,
-    /// The digest of the canonical taxonomy text: spec 6's "taxonomy lock
-    /// hash".
+    /// The digest of the canonical taxonomy text: the "taxonomy lock hash"
+    /// that a run reports beside its findings
+    /// ([checks and cache](../../../../docs/subsystems/checks-and-cache.md)).
     pub lock: String,
 }
 
@@ -392,10 +394,11 @@ pub struct Declaration {
 impl Declaration {
     /// The emitter target this entry writes through.
     ///
-    /// An entry that names no `format` takes the native export. Spec 6 makes
-    /// the native graph JSON the one an adopter gets with no external consumer
-    /// at all, so it is the target a declaration falls back to rather than an
-    /// error a declaration has to avoid.
+    /// An entry that names no `format` takes the native export. The native
+    /// graph JSON is the one format that serves an adopter with no external
+    /// consumer at all, so this engine makes it the target a declaration falls
+    /// back to rather than an error a declaration has to avoid. No document
+    /// states this default. It is this engine's own choice.
     pub fn emitter(&self) -> Emitter {
         self.membership.emitter.unwrap_or(Emitter::Json)
     }

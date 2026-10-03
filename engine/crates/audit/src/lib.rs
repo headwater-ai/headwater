@@ -9,9 +9,9 @@
 //!
 //! # One declared bar, and every other reading is a distribution
 //!
-//! Spec 6 says the findings here are "advisory by construction, because a young
-//! or small corpus fails differentiation for reasons that are not defects". The
-//! sharper statement this crate found while building the readings is that
+//! [The `headwater taxonomy` contract](../../../../docs/interfaces/headwater-taxonomy.md#description)
+//! says why the findings here are advisory: "A young or small corpus fails
+//! differentiation for reasons that are not defects". The sharper statement this crate found while building the readings is that
 //! almost none of them has a bar at all. Nothing in a taxonomy says how narrow
 //! a facet may get before it separates nothing, or how low a capture rate may
 //! fall before a relation is unmaintained. A number invented here would be a

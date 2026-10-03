@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 //! The census: every file under the corpus root, and what became of it.
 //!
-//! [Spec 6](../../../../docs/spec/06-engine-architecture.md) states what it is
-//! for: "the census fixes the denominator for coverage before any check runs.
-//! Thus a document that failed to classify is visibly unchecked, not silently
-//! absent." [Spec 4](../../../../docs/spec/04-assurance-model.md#no-silent-passes-every-document-is-accounted-for)
+//! [Spec 12](../../../../docs/spec/12-check-layer.md#two-phases-and-why-the-order-matters)
+//! states what it is for: "The denominator is fixed before any checks start.
+//! Thus a document that fails to parse is counted, reported, and visibly
+//! unchecked." [Spec 4](../../../../docs/spec/04-assurance-model.md#no-silent-passes-every-document-is-accounted-for)
 //! states the obligation it discharges: OB-COV-1, every file under the corpus
 //! root is classified, or reported as unclassifiable.
 //!

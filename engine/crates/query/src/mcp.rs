@@ -2,7 +2,7 @@
 //! The agent-facing surface of the same library: MCP over a line of JSON.
 //!
 //! [Spec 6](../../../../docs/spec/06-engine-architecture.md#mcp-server): "The
-//! MCP server is the agent-facing surface of the same library." So the tools
+//! MCP server is the surface of the library that an agent reads." So the tools
 //! here call the reads beside them and render with the same functions the CLI
 //! renders with. Two renderings of one answer is the drift this repository
 //! spends its comments on, and a client and a terminal reading different text
