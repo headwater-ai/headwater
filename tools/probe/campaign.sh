@@ -7,9 +7,9 @@
 #
 #     sh tools/probe/campaign.sh --out <dir> --model <model> --spec <file> \
 #         [--repetitions <n>] [--parallel <n>] [--max-turns <n>] [--seed <n>] \
-#         [--cap-cents <n>]
+#         [--cap-cents <n>] [--max-sessions <n>]
 #     sh tools/probe/campaign.sh --out <dir> --assemble
-#     sh tools/probe/campaign.sh --dry-run --spec <file>
+#     sh tools/probe/campaign.sh --dry-run --spec <file> [--max-sessions <n>]
 #
 # `--dry-run` spends nothing and calls no model (#1472). It plans every line
 # of the spec, prints the sessions and the cost of each line, each arm and
@@ -25,10 +25,20 @@
 # it prints as a line, 5 for any other refusal of a plan, and 8 when an arm
 # differs from the present tree by more than its delta, a leak string leaks, a leak-kept
 # probe shares a line, or the MCP server lists no tool. It deletes the trees
-# before it exits.
+# before it exits. With `--max-sessions <n>` it also prints the stagger as
+# `slices: <total> sessions in <slices> slices of at most <n>`.
 #
 # `--cap-cents` stops the batch below a figure a person agreed to for this batch
-# alone, such as a pilot, where the tier's ceiling is set for the full run.
+# alone, such as a pilot, where the tier's ceiling is set for the full run. The
+# cap is cumulative over the batch directory, not per slice: a resumed run
+# that does not give `--cap-cents` keeps the cap the batch recorded, and one
+# that gives it replaces it.
+#
+# `--max-sessions <n>` starts at most `n` new sessions in this invocation, so
+# one batch can run in slices (#1472). A job already recorded with `status` 0
+# does not count toward it. The workers claim the bound atomically, with one
+# token file per session they start, created with the shell's `set -C`, so
+# the bound holds across them.
 #
 # `tools/probe/probe-record.sh` records one session. A campaign is hundreds of
 # them, over three tiers and arms, and the design on #980 named what the
@@ -66,7 +76,9 @@
 # 2026-09-28 that every workspace of both arms carries the binary. In an absent
 # arm it refuses, because `.headwater/` is gone, which is what that arm is
 # declared to remove. The driver runs the build before the batch, so the binary
-# it copies is the build of the pinned commit.
+# it copies is the build of the pinned commit. It reads the binary where cargo
+# wrote it, under `CARGO_TARGET_DIR` when that is set, and refuses with 3 when
+# the build left none there.
 #
 # ## The trees
 #
@@ -107,6 +119,29 @@
 # Run the same command again to finish a batch that stopped, or to record again
 # a session whose recorder failed. A capped session did not fail.
 #
+# **A halt on a harness failure.** When the recorder of a session exits 10,
+# the harness exited nonzero for a reason other than the turn cap. A usage
+# limit of the harness surfaces this way, and a session started after it would
+# fail the same way. So the job writes `<out>/slice/halt`, and no job of this
+# invocation starts after it. The script does not match the text of a limit
+# message, because no log of one is recorded to match against. The next
+# invocation clears the halt and runs the failed job again.
+#
+# **A staggered batch** runs in several invocations against one pinned commit,
+# for example to stay inside the harness's 5-hour usage window. Detach a
+# worktree of its own at the pin (`git worktree add --detach <dir> <pin>`) and
+# build the engine there. Run the batch from that worktree with `--out`
+# outside it and `--max-sessions <n>`. When the invocation stops with jobs
+# left, it exits 9 and prints `campaign: <recorded> of <total> sessions
+# recorded, <remaining> remain; run the same command again to continue at
+# <pin>.` Run the same command again, with the same `--out`, until it exits 0.
+# The batch refuses a checkout whose `HEAD` is not the pin. It records
+# `claude --version` in `<out>/claude-version` on its first invocation, and
+# refuses with 4, before any spend, an invocation whose harness reports
+# another version: assembly refuses a line whose sessions disagree on their
+# identity, so a batch that changed its harness half way is a batch that does
+# not assemble. Run the batch to the end on the harness it started with.
+#
 # ## Assembly
 #
 # `--assemble` checks that every recorded session of a line carries one
@@ -127,12 +162,17 @@
 #   2   a usage error, or a line whose tier declares no turn cap and no
 #       `--max-turns` was given
 #   3   a tool is missing, or no engine is built
-#   4   the checkout is dirty, or `HEAD` moved during the batch
+#   4   the checkout is dirty, `HEAD` moved during the batch, `HEAD` is not
+#       the commit the output directory holds a batch of, or the `claude`
+#       harness is another version than the batch recorded
 #   5   the plan refuses a line of the spec
 #   6   the output directory is inside this checkout, or a batch's output
 #       directory is under `$HOME` (#1467)
 #   7   a session of the batch did not record, or a line's sessions disagree on
 #       their identity at assembly
+#   9   the invocation stopped with jobs left, on `--max-sessions` or on a
+#       halt, and no session it started failed for another reason. Run the
+#       same command again to continue
 
 set -u
 
@@ -144,6 +184,7 @@ parallel=1
 max_turns=
 seed=0
 cap=
+max_sessions=
 assemble=0
 dry=0
 job=
@@ -158,12 +199,17 @@ while [ $# -gt 0 ]; do
         --max-turns) max_turns=${2:-}; shift 2 ;;
         --seed) seed=${2:-}; shift 2 ;;
         --cap-cents) cap=${2:-}; shift 2 ;;
+        --max-sessions) max_sessions=${2:-}; shift 2 ;;
         --assemble) assemble=1; shift ;;
         --dry-run) dry=1; shift ;;
         --job) job=${2:-}; shift 2 ;;
         *) echo "campaign: unknown argument \`$1\`" >&2; exit 2 ;;
     esac
 done
+case $max_sessions in
+    '') ;;
+    *[!0-9]*|0) echo "campaign: --max-sessions takes a positive whole number, not \`$max_sessions\`." >&2; exit 2 ;;
+esac
 
 case $0 in
     */*) invoked_from=${0%/*} ;;
@@ -174,7 +220,7 @@ engine=$root/engine/target/dev-release/headwater
 [ -x "$engine" ] || engine=$root/engine/target/release/headwater
 
 if [ "$dry" = 1 ]; then
-    exec sh "$root/tools/probe/campaign-dry-run.sh" "$spec" ${repetitions:+"$repetitions"}
+    exec sh "$root/tools/probe/campaign-dry-run.sh" "$spec" "$repetitions" "$max_sessions"
 fi
 
 [ -n "$out" ] || { echo "campaign: --out is required" >&2; exit 2; }
@@ -215,8 +261,13 @@ run_job() {
     if [ -f "$dir/status" ] && [ "$(cat "$dir/status")" = 0 ]; then
         return 0
     fi
+    # A halted invocation starts nothing more, and leaves the job to the next.
+    if [ -f "$out/slice/halt" ]; then
+        return 0
+    fi
     if [ "$(git -C "$root" rev-parse HEAD)" != "$(cat "$out/head")" ]; then
         echo "campaign: HEAD moved during the batch, so $name was not started." >&2
+        : > "$out/slice/refused/$name"
         return 0
     fi
     # The ceiling, at run time.
@@ -235,6 +286,7 @@ run_job() {
     done
     if [ $((spent + (inflight + 1) * unit)) -gt "$ceiling" ]; then
         echo "campaign: $name skipped: $spent cents spent and $inflight in flight against a $tier ceiling of $ceiling." >&2
+        : > "$out/slice/refused/$name"
         return 0
     fi
     # The cap, across every tier of the batch, where the caller set one.
@@ -251,9 +303,25 @@ run_job() {
         done
         if [ $((all + (running + 1) * unit)) -gt "$(cat "$out/cap")" ]; then
             echo "campaign: $name skipped: $all cents spent and $running in flight against the batch cap of $(cat "$out/cap")." >&2
+            : > "$out/slice/refused/$name"
             return 0
         fi
     fi
+    # The bound of this invocation. A token is a file the shell creates with
+    # `set -C`, which opens it with O_EXCL, so two workers never take one
+    # token, and no more sessions start than there are tokens. Not `mkdir`:
+    # the uutils `mkdir` that some hosts ship checks and then creates, and
+    # three workers took two of its tokens in 56 of 200 trials (#1472).
+    if [ -s "$out/slice/max" ]; then
+        bound=$(cat "$out/slice/max")
+        token=1
+        while [ "$token" -le "$bound" ]; do
+            ( set -C; : > "$out/slice/token.$token" ) 2>/dev/null && break
+            token=$((token + 1))
+        done
+        [ "$token" -le "$bound" ] || return 0
+    fi
+    : > "$out/slice/started/$name"
     mkdir -p "$dir"
     printf '%s\n' "$tier" > "$dir/tier"
     : > "$dir/started"
@@ -286,6 +354,10 @@ run_job() {
     fi
     [ -s "$dir/cost.tmp" ] && mv "$dir/cost.tmp" "$dir/cost" || rm -f "$dir/cost.tmp"
     printf '%s\n' "$status" > "$dir/status"
+    if [ "$status" = 10 ]; then
+        : > "$out/slice/halt"
+        echo "campaign: $name: the harness failed for a reason other than the turn cap, so this invocation starts no other job (halt). A usage limit stops a session this way." >&2
+    fi
     rm -rf "$ws"
     printf 'campaign: %s exited %s, %s cents\n' "$name" "$status" "$(cat "$dir/cost" 2>/dev/null || echo '?')" >&2
 }
@@ -294,6 +366,7 @@ if [ -n "$job" ]; then
     model=$(cat "$out/model")
     repetitions=$(cat "$out/repetitions")
     max_turns=$(cat "$out/max-turns")
+    mkdir -p "$out/slice/started" "$out/slice/refused"
     run_job "$job"
     exit 0
 fi
@@ -362,7 +435,7 @@ fi
 # The batch.
 # ---------------------------------------------------------------------------
 [ -n "$model" ] && [ -n "$spec" ] || {
-    echo "usage: campaign.sh --out <dir> --model <model> --spec <file> [--repetitions <n>] [--parallel <n>] [--max-turns <n>] [--seed <n>]" >&2
+    echo "usage: campaign.sh --out <dir> --model <model> --spec <file> [--repetitions <n>] [--parallel <n>] [--max-turns <n>] [--seed <n>] [--cap-cents <n>] [--max-sessions <n>]" >&2
     exit 2
 }
 [ -f "$spec" ] || { echo "campaign: no spec at $spec" >&2; exit 2; }
@@ -384,7 +457,20 @@ cargo build --profile dev-release -p headwater-cli --locked \
     tail -5 "$out/build.err" >&2
     exit 3
 }
-engine=$root/engine/target/dev-release/headwater
+# The binary is where cargo wrote it: under `CARGO_TARGET_DIR` when the caller
+# set one, which a relative value names from this directory, and under the
+# engine's own `target` otherwise. Reading `engine/target` while cargo wrote
+# elsewhere would copy a binary of another commit into every tree.
+target=${CARGO_TARGET_DIR:-$root/engine/target}
+case $target in
+    /*) ;;
+    *) target=$PWD/$target ;;
+esac
+engine=$target/dev-release/headwater
+[ -x "$engine" ] || {
+    echo "campaign: the build wrote no engine at $engine, so no workspace can carry the pinned engine." >&2
+    exit 3
+}
 if [ -f "$out/head" ] && [ "$(cat "$out/head")" != "$head" ]; then
     echo "campaign: $out holds a batch of $(cat "$out/head"), and HEAD is $head. Use another directory." >&2
     exit 4
@@ -393,7 +479,18 @@ printf '%s\n' "$head" > "$out/head"
 printf '%s\n' "$model" > "$out/model"
 printf '%s\n' "$repetitions" > "$out/repetitions"
 printf '%s\n' "$max_turns" > "$out/max-turns"
-printf '%s' "$cap" > "$out/cap"
+# The cap is the batch's, so a resumed invocation that gives none keeps the
+# one recorded (#1472).
+if [ -n "$cap" ]; then
+    printf '%s' "$cap" > "$out/cap"
+elif [ ! -f "$out/cap" ]; then
+    : > "$out/cap"
+fi
+# The state of this invocation alone: the bound, the tokens taken against it,
+# the jobs it started or refused, and the halt.
+rm -rf "$out/slice"
+mkdir -p "$out/slice/started" "$out/slice/refused"
+printf '%s' "$max_sessions" > "$out/slice/max"
 mkdir -p "$out/plans" "$out/tasks" "$out/trees" "$out/sessions" "$out/ws"
 
 # Plan every line. A refusal stops the batch before anything is built.
@@ -495,21 +592,60 @@ if [ ! -f "$out/jobs" ]; then
         | sort -k1,1 | cut -f2- > "$out/jobs"
 fi
 
+# The harness is part of every session's identity, and assembly refuses a line
+# whose sessions disagree on it. A batch staggered over days can meet another
+# `claude`, so the first invocation records its version and a later one on
+# another version refuses before it spends. It is asked after the plans, so a
+# spec the plan refuses never runs the harness at all.
+harness=$(claude --version 2>/dev/null | head -1)
+if [ -f "$out/claude-version" ]; then
+    if [ "$(cat "$out/claude-version")" != "$harness" ]; then
+        echo "campaign: $out was started with claude $(cat "$out/claude-version"), and this harness is ${harness:-of no version}. Its sessions would not assemble with the batch's. Run the rest of the batch on the harness it started with, or start a new batch in another directory." >&2
+        exit 4
+    fi
+else
+    printf '%s\n' "$harness" > "$out/claude-version"
+fi
+
 total=$(wc -l < "$out/jobs")
-echo "campaign: $total sessions over $(wc -l < "$out/lines") lines, $parallel at a time, at $head." >&2
+echo "campaign: $total sessions over $(wc -l < "$out/lines") lines, $parallel at a time, at $head${max_sessions:+, at most $max_sessions new in this invocation}." >&2
 # Each worker runs this script again with one job, so every job reads the
 # ceiling from the sessions already recorded.
 tr '\n' '\0' < "$out/jobs" | xargs -0 -P "$parallel" -I '{}' sh "$0" --out "$out" --job '{}'
 
+# A job is recorded, failed, or left for the next invocation. A job this
+# invocation never started, on the bound or after a halt, is left and did
+# not fail, and so is the job whose harness failure raised the halt. A job
+# the ceiling, the cap or a moved `HEAD` refused did not record.
+recorded=0
 failed=0
+remain=0
 while IFS= read -r row; do
     name=${row%% *}
-    [ "$(cat "$out/sessions/$name/status" 2>/dev/null)" = 0 ] || failed=$((failed + 1))
+    status=$(cat "$out/sessions/$name/status" 2>/dev/null)
+    if [ "$status" = 0 ]; then
+        recorded=$((recorded + 1))
+    elif [ -f "$out/slice/refused/$name" ]; then
+        failed=$((failed + 1))
+    elif [ ! -f "$out/slice/started/$name" ]; then
+        remain=$((remain + 1))
+    elif [ "$status" = 10 ] && [ -f "$out/slice/halt" ]; then
+        remain=$((remain + 1))
+    else
+        failed=$((failed + 1))
+    fi
 done < "$out/jobs"
 spent=0
 for cost in "$out"/sessions/*/cost; do
     [ -f "$cost" ] && spent=$((spent + $(cat "$cost")))
 done
-echo "campaign: $((total - failed)) of $total sessions recorded, $spent cents spent." >&2
+if [ "$remain" -gt 0 ]; then
+    [ -f "$out/slice/halt" ] && echo "campaign: this invocation stopped on a halt." >&2
+    echo "campaign: $recorded of $total sessions recorded, $remain remain; run the same command again to continue at $head." >&2
+    echo "campaign: $spent cents spent over the batch." >&2
+else
+    echo "campaign: $recorded of $total sessions recorded, $spent cents spent." >&2
+fi
 [ "$failed" = 0 ] || exit 7
+[ "$remain" = 0 ] || exit 9
 exit 0
