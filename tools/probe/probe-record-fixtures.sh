@@ -3280,6 +3280,25 @@ STUB
                 "$raise.err"
             rm -rf "$raise" "$raise.err"
         done
+        # The price is read with the engine the batch plans with, the one its
+        # build wrote under CARGO_TARGET_DIR, and not the checkout's own
+        # `engine/target` (verify of #1659 slice 1b). The engine there is a
+        # wrapper that logs each call, so the priced pass, a plan with no
+        # --repetitions, must be in its log. A count above the price refuses
+        # before any tree is built, so the wrapper is never copied into one.
+        mkdir -p "$scratch/wrap-target/dev-release"
+        printf '#!/bin/sh\nprintf "%%s\\n" "$*" >> "%s/wrap.calls"\nexec "%s" "$@"\n' "$scratch" "$engine" \
+            > "$scratch/wrap-target/dev-release/headwater"
+        chmod +x "$scratch/wrap-target/dev-release/headwater"
+        rm -f "$scratch/wrap.calls"
+        raise=$scratch/raise-wrap
+        rm -rf "$raise"
+        CARGO_TARGET_DIR=$scratch/wrap-target PATH="$scratch/bin:$PATH" sh "$root/tools/probe/campaign.sh" \
+            --out "$raise" --model claude-haiku-4-5 --spec "$scratch/raise.spec" --repetitions 119 \
+            --cap-cents 100 >/dev/null 2>"$raise.err"
+        same "the priced pass plans the line with the engine under CARGO_TARGET_DIR, with no --repetitions" "5 yes no" \
+            "$? $(grep -q '^probe plan ' "$scratch/wrap.calls" 2>/dev/null && echo yes || echo no) $(grep -q -- '--repetitions' "$scratch/wrap.calls" 2>/dev/null && echo yes || echo no)"
+        rm -rf "$raise" "$raise.err" "$scratch/wrap-target" "$scratch/wrap.calls"
         # At the priced count the batch runs: each session is planned at the
         # tier's 30, so `probe-record.sh` does not refuse it with 11, and the
         # job list holds 3 x 118 jobs.
@@ -4057,6 +4076,14 @@ if [ -x "$engine" ]; then
     present "and names the line and the price" \
         "line 1 (campaign present discovery): --repetitions 119 is above the 118 the dry run prices for it (ceil(353 / 3), powered)" \
         "$scratch/batch-b-119.out"
+    # A raise below the price is priced at the count asked, not at the price
+    # (verify of #1659 slice 1b).
+    PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
+        --spec "$scratch/batch-b.spec" --repetitions 100 > "$scratch/batch-b-100.out" 2> "$scratch/batch-b-100.err"
+    same "the dry run of the discovery lines at --repetitions 100 exits 0" "0" "$?"
+    present "and prices each line at the 100 asked, not the price of 118" \
+        "line 1  campaign present discovery: 3 probes x 100 repetitions (asked; the plan is at the tier's 30) = 300 sessions, \$150.00" \
+        "$scratch/batch-b-100.out"
     # A count given is the count priced, so a pilot below the tier's count
     # prices what it runs.
     PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
