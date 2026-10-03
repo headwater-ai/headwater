@@ -14,7 +14,7 @@ provenance:
 relations:
   governs:
     - to: .github/workflows/ci.yml
-      verified_revision: sha256:e5355e89faa3f6ff3f6ef8f01fb9dd1f8aa4ebc2f620d0e2272f4fe2cf05ffcc
+      verified_revision: sha256:bf2f3f3ececf609b223cb2b152f59edfc3aa33faddc50efc5f9d94511e968cf2
 ---
 
 # CI_RUNNER is an opt-in that only a push or a merge group reads, and an unset value falls back to ubuntu-latest
