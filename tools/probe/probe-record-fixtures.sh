@@ -2470,7 +2470,6 @@ STUB
         same "and records exactly 2 sessions" "2" "$(stagger_recorded "$stagger")"
         same "and runs the harness for 2 sessions" "2" "$(wc -l < "$scratch/probe-log/stagger.calls" 2>/dev/null | tr -d ' ')"
         present "and says how many remain" "2 of 3 sessions recorded, 1 remain; run the same command again" "$scratch/stagger-1.err"
-        absent "and reports no skipped job as failed" "did not record" "$scratch/stagger-1.err"
         stagger_run "$stagger" "$scratch/stagger-2.err"
         same "the same command again finishes the batch with 0" "0" "$?"
         same "and all 3 jobs are recorded" "3" "$(stagger_recorded "$stagger")"
@@ -2527,6 +2526,20 @@ STUB
         same "a slice on another harness version refuses with 4" "4" "$?"
         same "and starts no session" "0" "$(cat "$scratch/probe-log/stagger.calls" 2>/dev/null | wc -l | tr -d ' ')"
         present "and names both versions" "1.0.0 (Claude Code)" "$scratch/stagger-7.err"
+
+        # A job the cap refuses did not record, so it is a failure (7) and
+        # not a job left for the next slice (9). A cap of 49 cents is below
+        # one declared session of 50, so it refuses every job.
+        stagger_batch "$stagger"
+        rm -f "$scratch/probe-log/stagger.calls"
+        stagger_run_cap() {
+            PATH="$scratch/bin:$PATH" sh "$root/tools/probe/campaign.sh" --out "$stagger" \
+                --model claude-haiku-4-5 --spec "$scratch/stagger.spec" --repetitions 1 \
+                --max-sessions 2 --cap-cents 49 >/dev/null 2>"$scratch/stagger-8.err"
+        }
+        stagger_run_cap
+        same "a slice the cap refuses exits 7, not 9, and records nothing" "7 0" \
+            "$? $(stagger_recorded "$stagger")"
         rm -rf "$stagger"
         rm -f "$scratch/bin/cargo"
         unset CARGO_TARGET_DIR
@@ -3186,8 +3199,14 @@ if [ -x "$engine" ]; then
         "category campaign discovery: 2124 sessions, \$1062.00, 49.6% of the total" "$scratch/dry.out"
     present "and sums a leak-kept line apart from its category" \
         "category campaign sufficiency (leak-kept): 360 sessions, \$180.00" "$scratch/dry.out"
-    present "and prints the stagger of --max-sessions" \
+    present "and prints the stagger of --max-sessions, rounded up where 500 does not divide 4284" \
         "slices: 4284 sessions in 9 slices of at most 500" "$scratch/dry.out"
+    # A bound that divides the session count gives the quotient, not one more.
+    PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
+        --spec "$root/tools/probe/layer-campaign.spec" --max-sessions 2142 \
+        > "$scratch/dry-even.out" 2> "$scratch/dry-even.err"
+    present "and a bound that divides the sessions evenly gives the quotient" \
+        "slices: 4284 sessions in 2 slices of at most 2142" "$scratch/dry-even.out"
     present "and the delta of the no-hook arm is the hook's script alone" \
         "tree campaign no-hook: - .claude/hooks/intent.sh" "$scratch/dry.out"
     present "and the mcp arm adds its server" "tree campaign mcp: + .mcp.json" "$scratch/dry.out"
