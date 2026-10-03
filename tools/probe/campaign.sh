@@ -7,9 +7,9 @@
 #
 #     sh tools/probe/campaign.sh --out <dir> --model <model> --spec <file> \
 #         [--repetitions <n>] [--parallel <n>] [--max-turns <n>] [--seed <n>] \
-#         [--cap-cents <n>]
+#         [--cap-cents <n>] [--max-sessions <n>]
 #     sh tools/probe/campaign.sh --out <dir> --assemble
-#     sh tools/probe/campaign.sh --dry-run --spec <file>
+#     sh tools/probe/campaign.sh --dry-run --spec <file> [--max-sessions <n>]
 #
 # `--dry-run` spends nothing and calls no model (#1472). It plans every line
 # of the spec, prints the sessions and the cost of each line, each arm and
@@ -25,10 +25,19 @@
 # it prints as a line, 5 for any other refusal of a plan, and 8 when an arm
 # differs from the present tree by more than its delta, a leak string leaks, a leak-kept
 # probe shares a line, or the MCP server lists no tool. It deletes the trees
-# before it exits.
+# before it exits. With `--max-sessions <n>` it also prints the stagger as
+# `slices: <total> sessions in <slices> slices of at most <n>`.
 #
 # `--cap-cents` stops the batch below a figure a person agreed to for this batch
-# alone, such as a pilot, where the tier's ceiling is set for the full run.
+# alone, such as a pilot, where the tier's ceiling is set for the full run. The
+# cap is cumulative over the batch directory, not per slice: a resumed run
+# that does not give `--cap-cents` keeps the cap the batch recorded, and one
+# that gives it replaces it.
+#
+# `--max-sessions <n>` starts at most `n` new sessions in this invocation, so
+# one batch can run in slices (#1472). A job already recorded with `status` 0
+# does not count toward it. The workers claim the bound atomically, with one
+# `mkdir` token per session they start, so the bound holds across them.
 #
 # `tools/probe/probe-record.sh` records one session. A campaign is hundreds of
 # them, over three tiers and arms, and the design on #980 named what the
@@ -107,6 +116,29 @@
 # Run the same command again to finish a batch that stopped, or to record again
 # a session whose recorder failed. A capped session did not fail.
 #
+# **A halt on a harness failure.** When the recorder of a session exits 10,
+# the harness exited nonzero for a reason other than the turn cap. A usage
+# limit of the harness surfaces this way, and a session started after it would
+# fail the same way. So the job writes `<out>/slice/halt`, and no job of this
+# invocation starts after it. The script does not match the text of a limit
+# message, because no log of one is recorded to match against. The next
+# invocation clears the halt and runs the failed job again.
+#
+# **A staggered batch** runs in several invocations against one pinned commit,
+# for example to stay inside the harness's 5-hour usage window. Detach a
+# worktree of its own at the pin (`git worktree add --detach <dir> <pin>`) and
+# build the engine there. Run the batch from that worktree with `--out`
+# outside it and `--max-sessions <n>`. When the invocation stops with jobs
+# left, it exits 9 and prints `campaign: <recorded> of <total> sessions
+# recorded, <remaining> remain; run the same command again to continue at
+# <pin>.` Run the same command again, with the same `--out`, until it exits 0.
+# The batch refuses a checkout whose `HEAD` is not the pin. It records
+# `claude --version` in `<out>/claude-version` on its first invocation, and
+# refuses with 4, before any spend, an invocation whose harness reports
+# another version: assembly refuses a line whose sessions disagree on their
+# identity, so a batch that changed its harness half way is a batch that does
+# not assemble. Run the batch to the end on the harness it started with.
+#
 # ## Assembly
 #
 # `--assemble` checks that every recorded session of a line carries one
@@ -127,12 +159,17 @@
 #   2   a usage error, or a line whose tier declares no turn cap and no
 #       `--max-turns` was given
 #   3   a tool is missing, or no engine is built
-#   4   the checkout is dirty, or `HEAD` moved during the batch
+#   4   the checkout is dirty, `HEAD` moved during the batch, `HEAD` is not
+#       the commit the output directory holds a batch of, or the `claude`
+#       harness is another version than the batch recorded
 #   5   the plan refuses a line of the spec
 #   6   the output directory is inside this checkout, or a batch's output
 #       directory is under `$HOME` (#1467)
 #   7   a session of the batch did not record, or a line's sessions disagree on
 #       their identity at assembly
+#   9   the invocation stopped with jobs left, on `--max-sessions` or on a
+#       halt, and no session it started failed for another reason. Run the
+#       same command again to continue
 
 set -u
 

@@ -4,8 +4,9 @@
 # The dry run of a campaign spec: what the batch would cost and whether its
 # trees are what the declaration says, with no session and no spend (#1472).
 #
-#     sh tools/probe/campaign.sh --dry-run --spec <file> [--repetitions <n>]
-#     sh tools/probe/campaign-dry-run.sh <spec> [<repetitions>]
+#     sh tools/probe/campaign.sh --dry-run --spec <file> [--repetitions <n>] \
+#         [--max-sessions <n>]
+#     sh tools/probe/campaign-dry-run.sh <spec> [<repetitions>] [<max-sessions>]
 #
 # `tools/probe/campaign.sh` states what it prints and its exit statuses. This
 # file is the mechanism, kept apart from the batch driver because the batch
@@ -28,11 +29,22 @@
 # declares, because only a person may raise what a run spends. So a pooled
 # line is planned at the declared count, for its probes and its refusals, and
 # priced here at the powered count.
+#
+# **The sums.** Beside the sum of each arm and each tier, it prints the sum of
+# each tier and category, with its share of the total, so a person can see
+# where the plan spends before ruling on it (#1472). A line that holds only
+# leak-kept probes is summed apart, as `<category> (leak-kept)`. With a slice
+# size it prints how many invocations of `--max-sessions` the batch takes.
 
 set -u
 
 spec=${1:-}
 asked=${2:-}
+slice=${3:-}
+case $slice in
+    '') ;;
+    *[!0-9]*|0) echo "campaign: --max-sessions takes a positive whole number, not \`$slice\`." >&2; exit 2 ;;
+esac
 
 case $0 in
     */*) invoked_from=${0%/*} ;;
@@ -192,7 +204,6 @@ while IFS= read -r line; do
     printf 'line %s  %s %s %s: %s probes x %s repetitions (%s) = %s sessions, $%s\n' \
         "$index" "$tier" "$arm" "$category" "$k" "$reps" "$how" "$sessions" \
         "$(awk -v c="$cents" 'BEGIN { printf "%.2f", c / 100 }')"
-    printf '%s %s %s %s %s\n' "$tier" "$arm" "$sessions" "$cents" "$ceiling" >> "$work/costs"
 
     # A leak-kept probe is reported on its own line and never pooled with one that
     # is not (#1472).
@@ -215,6 +226,9 @@ $probe
     elif [ "$has_cued" = 1 ]; then
         printf 'line %s holds only leak-kept probes, and is reported on its own line.\n' "$index"
     fi
+    group=$category
+    [ "$has_cued" = 1 ] && [ "$has_other" = 0 ] && group="$category (leak-kept)"
+    printf '%s %s %s %s %s %s\n' "$tier" "$arm" "$sessions" "$cents" "$ceiling" "$group" >> "$work/costs"
 done < "$work/lines"
 
 # ---------------------------------------------------------------------------
@@ -229,10 +243,19 @@ if [ -s "$work/costs" ]; then
             as[key] += $3; ac[key] += $4
             if (!($1 in ts)) torder[++nt] = $1
             ts[$1] += $3; tc[$1] += $4; ceil[$1] = $5
+            group = $6
+            for (f = 7; f <= NF; f++) group = group " " $f
+            gkey = $1 " " group
+            if (!(gkey in gs)) gorder[++ng] = gkey
+            gs[gkey] += $3; gc[gkey] += $4
             s += $3; c += $4
         }
         END {
             for (i = 1; i <= na; i++) printf "arm %s: %d sessions, %s\n", order[i], as[order[i]], d(ac[order[i]])
+            for (i = 1; i <= ng; i++) {
+                g = gorder[i]
+                printf "category %s: %d sessions, %s, %.1f%% of the total\n", g, gs[g], d(gc[g]), (c > 0 ? 100 * gc[g] / c : 0)
+            }
             for (i = 1; i <= nt; i++) {
                 t = torder[i]
                 over = tc[t] - ceil[t]
@@ -240,8 +263,9 @@ if [ -s "$work/costs" ]; then
                 cs += ceil[t]
             }
             printf "total: %d sessions, %s against the %s the tiers declare\n", s, d(c), d(cs)
+            if (slice != "") printf "slices: %d sessions in %d slices of at most %d\n", s, int((s + slice - 1) / slice), slice
         }
-    ' "$work/costs"
+    ' slice="$slice" "$work/costs"
 fi
 if [ -s "$work/refused" ]; then
     printf 'The ceiling refuses these plans, and only a person who agrees to spend more may move it:\n'

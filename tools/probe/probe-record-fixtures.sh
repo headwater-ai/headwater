@@ -2386,6 +2386,103 @@ STUB
         else
             pass "and it builds no tree"
         fi
+
+        # A staggered batch (#1472): one batch of 3 jobs run in slices against
+        # one pin. `--max-sessions 2` starts 2 sessions and exits 9 with the
+        # third left, and the same command again starts the third alone. A
+        # harness failure that is not the turn cap halts the invocation, so no
+        # later job of it starts. The stub harness logs each session it runs.
+        stagger_batch() {
+            rm -rf "$1"
+            mkdir -p "$1/tasks" "$1/sessions" "$1/ws" "$1/trees"
+            cp -a "$scratch/bw-base" "$1/trees/oracle"
+            cp -a "$scratch/bw-base" "$1/trees/campaign-present"
+            git -C "$root" rev-parse HEAD > "$1/head"
+            cp "$scratch/task.md" "$1/tasks/HW-PROBE-$tombstone.md"
+            : > "$1/jobs"
+            for r in 1 2 3; do
+                printf 'L1-campaign-present-p1-r%s 1 campaign present sufficiency HW-PROBE-%s\n' \
+                    "$r" "$tombstone" >> "$1/jobs"
+            done
+        }
+        # $1 is the call log, $2 is `ok` or `fail-first`.
+        stagger_stub() {
+            cat > "$scratch/bin/claude" <<STUB
+#!/bin/sh
+case "\${1:-}" in --version) echo '9.9.9 (Claude Code)'; exit 0 ;; esac
+pwd >> "$1"
+printf '%s\n' '{"type":"system","subtype":"init","model":"claude-haiku-4-5","session_id":"s16"}'
+if [ "$2" = fail-first ] && [ "\$(wc -l < "$1")" -le 1 ]; then
+    printf '%s\n' '{"type":"result","subtype":"error_during_execution","is_error":true,"total_cost_usd":0.01,"modelUsage":{"claude-haiku-4-5-20251001":{"inputTokens":10}}}'
+    exit 1
+fi
+printf '%s\n' '{"type":"result","subtype":"success","is_error":false,"result":"done","total_cost_usd":0.01,"modelUsage":{"claude-haiku-4-5-20251001":{"inputTokens":10}}}'
+exit 0
+STUB
+            chmod +x "$scratch/bin/claude"
+        }
+        stagger_run() {
+            PATH="$scratch/bin:$PATH" sh "$root/tools/probe/campaign.sh" --out "$1" \
+                --model claude-haiku-4-5 --spec "$scratch/stagger.spec" --repetitions 1 \
+                --max-sessions 2 >/dev/null 2>"$2"
+        }
+        stagger_recorded() {
+            n=0
+            for s in "$1"/sessions/*/status; do
+                [ "$(cat "$s" 2>/dev/null)" = 0 ] && n=$((n + 1))
+            done
+            echo "$n"
+        }
+        printf 'campaign present sufficiency\n' > "$scratch/stagger.spec"
+        stagger=$scratch/stagger
+        stagger_batch "$stagger"
+        rm -f "$scratch/stagger.calls"
+        stagger_stub "$scratch/stagger.calls" ok
+        stagger_run "$stagger" "$scratch/stagger-1.err"
+        same "a slice of --max-sessions 2 over 3 jobs exits 9, jobs remain" "9" "$?"
+        same "and records exactly 2 sessions" "2" "$(stagger_recorded "$stagger")"
+        same "and runs the harness for 2 sessions" "2" "$(wc -l < "$scratch/stagger.calls" 2>/dev/null | tr -d ' ')"
+        present "and says how many remain" "2 of 3 sessions recorded, 1 remain; run the same command again" "$scratch/stagger-1.err"
+        absent "and reports no skipped job as failed" "did not record" "$scratch/stagger-1.err"
+        stagger_run "$stagger" "$scratch/stagger-2.err"
+        same "the same command again finishes the batch with 0" "0" "$?"
+        same "and all 3 jobs are recorded" "3" "$(stagger_recorded "$stagger")"
+        same "and the harness ran 3 times in all, none twice" "3 3" \
+            "$(sort -u "$scratch/stagger.calls" | wc -l | tr -d ' ') $(wc -l < "$scratch/stagger.calls" | tr -d ' ')"
+
+        # The halt: the first session fails for a reason other than the cap.
+        stagger_batch "$stagger"
+        rm -f "$scratch/stagger.calls"
+        stagger_stub "$scratch/stagger.calls" fail-first
+        stagger_run "$stagger" "$scratch/stagger-3.err"
+        same "a harness failure that is not the cap halts the slice with 9" "9" "$?"
+        same "and no later job of the slice starts" "1" "$(wc -l < "$scratch/stagger.calls" 2>/dev/null | tr -d ' ')"
+        present "and the stop names the halt" "halt" "$scratch/stagger-3.err"
+        rm -f "$scratch/stagger.calls"
+        stagger_stub "$scratch/stagger.calls" ok
+        PATH="$scratch/bin:$PATH" sh "$root/tools/probe/campaign.sh" --out "$stagger" \
+            --model claude-haiku-4-5 --spec "$scratch/stagger.spec" --repetitions 1 \
+            >/dev/null 2>"$scratch/stagger-4.err"
+        same "and a rerun with a working harness finishes all 3" "0 3" "$? $(stagger_recorded "$stagger")"
+
+        # The cap is the batch's, so a resumed slice that does not give one
+        # keeps the one recorded. The pin and the harness version hold too.
+        stagger_batch "$stagger"
+        rm -f "$scratch/stagger.calls"
+        PATH="$scratch/bin:$PATH" sh "$root/tools/probe/campaign.sh" --out "$stagger" \
+            --model claude-haiku-4-5 --spec "$scratch/stagger.spec" --repetitions 1 \
+            --cap-cents 500 --max-sessions 1 >/dev/null 2>"$scratch/stagger-5.err"
+        stagger_run "$stagger" "$scratch/stagger-6.err"
+        same "a resumed slice without --cap-cents keeps the recorded cap" "500" "$(cat "$stagger/cap" 2>/dev/null)"
+        same "and the first slice recorded the harness version" "9.9.9 (Claude Code)" \
+            "$(cat "$stagger/claude-version" 2>/dev/null)"
+        printf '1.0.0 (Claude Code)\n' > "$stagger/claude-version"
+        rm -f "$scratch/stagger.calls"
+        stagger_run "$stagger" "$scratch/stagger-7.err"
+        same "a slice on another harness version refuses with 4" "4" "$?"
+        same "and starts no session" "0" "$(cat "$scratch/stagger.calls" 2>/dev/null | wc -l | tr -d ' ')"
+        present "and names both versions" "1.0.0 (Claude Code)" "$scratch/stagger-7.err"
+        rm -rf "$stagger"
         rm -f "$scratch/bin/cargo"
     else
         printf 'note the checkout is not clean, so the uncapped batch case did not run.\n'
@@ -3024,7 +3121,7 @@ if [ -x "$engine" ]; then
     chmod +x "$scratch/dry-bin/claude"
     rm -f "$scratch/claude-called"
     PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
-        --spec "$root/tools/probe/layer-campaign.spec" > "$scratch/dry.out" 2> "$scratch/dry.err"
+        --spec "$root/tools/probe/layer-campaign.spec" --max-sessions 500 > "$scratch/dry.out" 2> "$scratch/dry.err"
     same "the dry run of the layer campaign exits 0" "0" "$?"
     if [ -e "$scratch/claude-called" ]; then
         fail "and it calls no model" "the harness on the path was called"
@@ -3039,6 +3136,12 @@ if [ -x "$engine" ]; then
     present "and holds the campaign tier to its ceiling" \
         "tier campaign: 4104 sessions, \$2052.00 against a ceiling of \$300.00: over by \$1752.00" "$scratch/dry.out"
     present "and prints the total" "total: 4284 sessions, \$2142.00 against the \$430.00 the tiers declare" "$scratch/dry.out"
+    present "and sums each tier and category with its share of the total" \
+        "category campaign discovery: 2124 sessions, \$1062.00, 49.6% of the total" "$scratch/dry.out"
+    present "and sums a leak-kept line apart from its category" \
+        "category campaign sufficiency (leak-kept): 360 sessions, \$180.00" "$scratch/dry.out"
+    present "and prints the stagger of --max-sessions" \
+        "slices: 4284 sessions in 9 slices of at most 500" "$scratch/dry.out"
     present "and the delta of the no-hook arm is the hook's script alone" \
         "tree campaign no-hook: - .claude/hooks/intent.sh" "$scratch/dry.out"
     present "and the mcp arm adds its server" "tree campaign mcp: + .mcp.json" "$scratch/dry.out"
