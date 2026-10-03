@@ -1,0 +1,17 @@
+seed: 1670
+until: 2026-10-03T04:42:21Z
+model digest: sha256:f342437e6e5f16aa1b759f8a329adcfc9328236d2caed6c8f289f7364b1e8e44
+joined: 587
+under the digest: 515
+stratum silent: 102, excluded 31, kept 71, drawn 71
+stratum disjoint: 230, excluded 0, kept 230, drawn 230
+stratum overlap: 183, excluded 7, kept 176, drawn 60
+stratum none: 0, excluded 0, kept 0, drawn 0
+excluded bare-command: 11
+excluded no-word: 27
+excluded empty-list: 0
+excluded outside-strata: 0
+disjoint draw: all
+overlap draw: 60
+sample: 361
+owner sample: 30

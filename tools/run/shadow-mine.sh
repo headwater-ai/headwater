@@ -10,7 +10,22 @@
 # a period with unreported gaps, or over two models. This is that procedure as
 # a tool, in the way `tools/run/shadow-capture.sh` is #917's join.
 #
-#     sh tools/run/shadow-mine.sh [--bound <n>]
+#     sh tools/run/shadow-mine.sh [--bound <n>] [--until <ISO time>] [--rows <file>]
+#
+# `--until` cuts the log at a time, so that a reading made later can give the
+# population of a reading made earlier. Every log line whose `at` is later
+# than the time, compared to the second, is dropped before anything is
+# counted, and a typed prompt later than the time is not typed. A line with no
+# time that parses is still read, and so are torn and blank lines. The output
+# then names the cut and the count of lines it dropped.
+#
+# `--rows` writes the join itself, one TSV row per joined id in time order of
+# its earliest line, under a header: `prompt_id`, the `at`, the log file and
+# the line number of that earliest line, `model_digest`, and the state of each
+# path (`silent`, `offered`, `absent`, or `none` for an embedding path that did
+# not run). `tools/run/relevance-grade.sh` reads it, so that the person-prompt
+# rule has one copy. With neither flag, the output is the same bytes as before
+# the two flags existed.
 #
 # The population is person prompts, by the rule of `shadow-capture.sh`: a
 # harness transcript record with `type` "user", `isSidechain` false and
@@ -77,11 +92,13 @@
 set -u
 
 usage() {
-    echo "usage: sh tools/run/shadow-mine.sh [--bound <n>]" >&2
+    echo "usage: sh tools/run/shadow-mine.sh [--bound <n>] [--until <ISO time>] [--rows <file>]" >&2
     exit 2
 }
 
 bound=500
+until=
+rows=
 while [ $# -gt 0 ]; do
     case $1 in
         --bound)
@@ -92,6 +109,16 @@ while [ $# -gt 0 ]; do
             bound=$2
             shift 2
             ;;
+        --until)
+            [ $# -ge 2 ] && [ -n "$2" ] || usage
+            until=$2
+            shift 2
+            ;;
+        --rows)
+            [ $# -ge 2 ] && [ -n "$2" ] || usage
+            rows=$2
+            shift 2
+            ;;
         *) usage ;;
     esac
 done
@@ -100,6 +127,13 @@ done
 if ! command -v jq >/dev/null 2>&1; then
     echo "shadow-mine: no \`jq\` on the path" >&2
     exit 3
+fi
+
+# The cut in epoch milliseconds, or empty for none.
+untilms=
+if [ -n "$until" ]; then
+    untilms=$(jq -rn --arg u "$until" '$u | sub("\\.[0-9]+"; "") | try (fromdateiso8601 * 1000 | tostring) catch empty') || untilms=
+    [ -n "$untilms" ] || usage
 fi
 
 here=$(cd "$(dirname "$0")/../.." && pwd)
@@ -144,7 +178,7 @@ nfiles=0
 for f in "$log"/*.jsonl; do
     [ -f "$f" ] || continue
     nfiles=$((nfiles + 1))
-    jq -R -r --arg file "$(basename "$f")" '
+    jq -R -r --arg file "$(basename "$f")" --arg until "$untilms" '
         def ms: tostring as $s
             | ($s | sub("\\.[0-9]+"; "") | try fromdateiso8601 catch null) as $e
             | if $e == null then "" else ($e * 1000 | tostring) end;
@@ -153,6 +187,7 @@ for f in "$log"/*.jsonl; do
         | if . == "" then ["blank", $file, $n]
           else (fromjson? // null) as $o
           | if ($o | type) != "object" then ["torn", $file, $n]
+            elif $until != "" and (($o.at // "" | ms) as $t | $t != "" and ($t | tonumber) > ($until | tonumber)) then ["after", $file, $n]
             elif ($o.probe_session // "" | tostring) != "" then ["probe", $file, $n]
             elif ($o.prompt_id // "" | tostring) == "" then ["emptyid", $file, $n, "", ($o.at // "" | tostring), ($o.at // "" | ms)]
             else
@@ -225,7 +260,12 @@ printf 'read at: %s\n' "$now"
 printf 'log files: %s\n' "$nfiles"
 printf 'transcript directories: %s\n' "$ndirs"
 
-LC_ALL=C awk -F '\t' -v bound="$bound" '
+if [ -n "$until" ]; then
+    printf 'until: %s\n' "$until"
+    printf 'lines after until: %s\n' "$(awk -F '\t' '$1 == "after"' "$scratch/log.tsv" | wc -l | tr -d ' ')"
+fi
+
+LC_ALL=C awk -F '\t' -v bound="$bound" -v untilms="$untilms" -v rows="$rows" '
 function rate(a, b) { return b == 0 ? "n/a" : sprintf("%.4f", a / b) }
 function frac(a, b) { return a " of " b " (" rate(a, b) ")" }
 # The 1-based position of the first path of list `l` that is in the set
@@ -247,8 +287,9 @@ function bucket(r) { return r == 0 ? "none" : (r >= 4 ? "4+" : r) }
 FNR == 1 { part = FILENAME ~ /\/held\.tsv$/ ? 1 : FILENAME ~ /\/log\.tsv$/ ? 2 : FILENAME ~ /\/persons\.tsv$/ ? 3 : 4 }
 part == 1 { held[$1] = $2; next }
 part == 2 {
-    loglines++
     k = $1
+    if (k == "after") next
+    loglines++
     if (k == "blank") { blank++; next }
     if (k == "torn") { torn++; excl[++nexcl] = "torn: " $2 ":" $3; next }
     if (k == "probe") { probe++; next }
@@ -262,6 +303,7 @@ part == 2 {
     if (!(id in lep) || ($6 != "" && $6 + 0 < lep[id] + 0)) {
         lep[id] = $6; lat[id] = $5; lroot[id] = $7; linj[id] = $8; ldig[id] = $9
         ldet[id] = $10; ldp[id] = $11; lemb[id] = $12; lep2[id] = $13
+        lfile[id] = $2; lline[id] = $3
     }
     next
 }
@@ -278,7 +320,7 @@ part == 4 {
 END {
     for (id in lep) { L++; if (id in pts) J++; else U++ }
     for (id in pts) {
-        if ((id in lep) || (first != "" && pts[id] + 0 >= first + 0)) {
+        if ((id in lep) || (first != "" && pts[id] + 0 >= first + 0 && (untilms == "" || pts[id] + 0 <= untilms + 0))) {
             T++; typed[id] = 1
             st = (pstart[id] in held) ? held[pstart[id]] : "gone"
             starts[st]++
@@ -312,6 +354,14 @@ END {
         x = jid[i]; j = i - 1
         while (j >= 1 && (lep[jid[j]] + 0 > lep[x] + 0 || (lep[jid[j]] + 0 == lep[x] + 0 && jid[j] > x))) { jid[j + 1] = jid[j]; j-- }
         jid[j + 1] = x
+    }
+    if (rows != "") {
+        printf "prompt_id\tat\tfile\tline\tmodel_digest\tdeterministic\tembedding\n" > rows
+        for (i = 1; i <= n; i++) {
+            id = jid[i]
+            printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\n", id, lat[id], lfile[id], lline[id], ldig[id], ldet[id], lemb[id] > rows
+        }
+        close(rows)
     }
     printf "joined lines: %d\n", jl
     printf "joined ids with more than one line: %d\n", dup

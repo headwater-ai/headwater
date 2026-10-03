@@ -206,6 +206,7 @@ The fixture suites, which are shell and Python rather than cargo, and which you 
     sh tools/run/ci-done-fixtures.sh
     sh tools/run/gh-issue-fixtures.sh
     sh tools/run/queue-done-fixtures.sh
+    sh tools/run/relevance-grade-fixtures.sh
     sh tools/run/run-census-fixtures.sh
     sh tools/run/run-dir-fixtures.sh
     sh tools/run/shadow-capture-fixtures.sh
@@ -290,7 +291,9 @@ Both of those two scripts, and `.claude/tutorial/drive.py` beside the first, loo
 
 `sh tools/run/shadow-capture-fixtures.sh` holds `tools/run/shadow-capture.sh`, which counts the person prompts of one UTC day against the distinct prompt ids in the shadow-mode routing log and tests whether the misses sit in a few sessions or in stretches (#917). The cases plant transcripts and a log whose answer was worked by hand, so a stub test, a raw line count, a sort that ignores time and a threshold moved on either test each fail a case. It needs `jq`, which CI treats as a skip when absent.
 
-`sh tools/run/shadow-mine-fixtures.sh` holds `tools/run/shadow-mine.sh`, which runs the procedure of [the mining how-to](docs/how-to/mine-the-shadow-mode-routing-log.md) as one command (#927). It prints the three buckets of the join with both sums, and each rate per model digest. The cases plant two digests whose silence rates differ, a gap, unclaimed ids, a prompt logged twice, a torn line and reads that must drop. So a pooled rate, a raw line count, a missing bucket and a read outside the prompt's window each fail a case. It needs `jq`, which CI treats as a skip when absent.
+`sh tools/run/shadow-mine-fixtures.sh` holds `tools/run/shadow-mine.sh`, which runs the procedure of [the mining how-to](docs/how-to/mine-the-shadow-mode-routing-log.md) as one command (#927). It prints the three buckets of the join with both sums, and each rate per model digest. The cases plant two digests whose silence rates differ, a gap, unclaimed ids, a prompt logged twice, a torn line and reads that must drop. So a pooled rate, a raw line count, a missing bucket and a read outside the prompt's window each fail a case. It needs `jq`, which CI treats as a skip when absent. Two more cases hold `--until`, which cuts the log at a time, and `--rows`, which writes the join one row per joined id.
+
+`sh tools/run/relevance-grade-fixtures.sh` holds `tools/run/relevance-grade.sh`, which draws the sample of #1670 from the rows of `shadow-mine.sh` and writes blind packets for its raters. The decisive case logs one prompt twice, with the two paths' offers swapped, and requires the same packet bytes. So a leak through rendering, through order or through a duplicate fails it. Other cases plant a summary edited after the line was logged, a digest that no version holds, the seeded draw and a kappa worked by hand. It needs `jq`, which CI treats as a skip when absent.
 
 `sh tools/run/supervise-fixtures.sh` holds `tools/run/supervise.sh`, the loop that runs one parent session at a time as `claude -p "/next-run --resume <run-id>"`, starts the drain when a call passes the context threshold or the session reaches K merges, and starts the next session once the previous one exits. A stub `claude` on `HW_SUPERVISE_CLAUDE` prints canned stream-json, so no case calls a model. The suite provokes each stop condition, both drain triggers, and a signal to the loop, which must leave no session behind. It needs `jq`, which CI treats as a skip when absent.
 
