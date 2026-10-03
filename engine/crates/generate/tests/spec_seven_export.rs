@@ -388,9 +388,9 @@ fn spec_6_shares_no_run_of_eight_words_with_the_export_section_of_spec_7() {
 }
 
 /// One way spec 6 could state a moved rule again. A phrase is words in a row.
-/// A set of words held together is a paraphrase: one sentence of spec 6 that
-/// holds every word of the set ("Emitters do not chain." holds "emitter" and
-/// "chain") states the rule in other words.
+/// A set of words held together is a paraphrase. "Emitters do not chain."
+/// holds "emitter" and "chain", so one sentence of spec 6 that holds every
+/// word of the set states the rule in other words.
 #[derive(Clone, Copy, Debug)]
 enum Form {
     Phrase(&'static str),
