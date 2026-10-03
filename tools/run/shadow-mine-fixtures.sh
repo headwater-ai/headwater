@@ -132,27 +132,35 @@ start a S1 "$scratch/co"
 prompt a S1 2026-09-30T09:00:00.000Z p0
 prompt a S1 2026-09-30T10:00:00.000Z p1
 prompt a S1 2026-09-30T10:10:00.000Z p2
-prompt a S1 2026-09-30T10:20:00.000Z p3
+prompt a S1 2026-09-30T10:20:00.000Z k3
 prompt a S1 2026-09-30T10:30:00.000Z p4
 start a S2 "$scratch/bare"
 prompt a S2 2026-09-30T11:00:00.000Z q1
 prompt a S2 2026-09-30T11:10:00.000Z q2
+# p2's second line is later in time and earlier in the file, and it routes
+# another text: the harness has given one id to two submissions. The prompt
+# is read from its earliest line in time, so a reader that keeps the first
+# line of the file, or the latest line, moves digest A's rates. k3 sorts
+# before p1 by id and after p2 in time, so the bound reads time and not ids.
 logline a S1 2026-09-30T10:00:05Z p1 false "$A" "$silent" "$(neighbors "$A" docs/x.md)"
-logline a S1 2026-09-30T10:10:05Z p2 true "$A" "$(route 'docs/x.md docs/y.md')" "$(neighbors "$A" '')"
+logline a S1 2026-09-30T10:10:30Z p2 false "$A" "$silent" "$(neighbors "$A" docs/x.md)"
 printf '{"at":"2026-09-30T10:1\n' >> "$scratch/a/log/S1.jsonl"
-logline a S1 2026-09-30T10:20:05Z p3 true "$B" "$(route docs/y.md)" "$(neighbors "$B" 'docs/y.md docs/z.md')"
-logline a S1 2026-09-30T10:10:30Z p2 true "$A" "$(route 'docs/x.md docs/y.md')" "$(neighbors "$A" '')"
+logline a S1 2026-09-30T10:20:05Z k3 true "$B" "$(route docs/y.md)" "$(neighbors "$B" 'docs/y.md docs/z.md')"
+logline a S1 2026-09-30T10:10:05Z p2 true "$A" "$(route 'docs/x.md docs/y.md')" "$(neighbors "$A" '')"
 logline a S1 2026-09-30T10:30:05Z p4 false none "$silent" ""
-logline a S2 2026-09-30T11:00:05Z q1 true "$B" "$(route docs/z.md)" "$(neighbors "$B" docs/z.md)"
+# q1's two offers share no document.
+logline a S2 2026-09-30T11:00:05Z q1 true "$B" "$(route docs/z.md)" "$(neighbors "$B" docs/x.md)"
 logline a S2 2026-09-30T11:05:00Z "" true "$B" "$(route docs/z.md)" "$(neighbors "$B" docs/z.md)"
 printf '\n' >> "$scratch/a/log/S2.jsonl"
+# u1 has two lines, and counts once among the unclaimed.
 logline a S2 2026-09-30T11:20:00Z u1 true "$B" "$(route docs/z.md)" "$(neighbors "$B" docs/z.md)"
+logline a S2 2026-09-30T11:25:00Z u1 true "$B" "$(route docs/z.md)" "$(neighbors "$B" docs/z.md)"
 logline a S2 2026-09-30T11:30:00Z u2 false "$A" "$silent" "$(neighbors "$A" docs/x.md)"
 logline a S2 2026-09-30T11:40:00Z pr1 false "$A" "$silent" "$(neighbors "$A" docs/x.md)" rec-1
 run a
 o="$scratch/a.out"
 rc "a exits 0" a 0
-has a "$o" "log lines: 12"
+has a "$o" "log lines: 13"
 has a "$o" "torn lines: 1"
 has a "$o" "blank lines: 1"
 lacks a "$o" "torn: S2.jsonl"
@@ -187,7 +195,8 @@ has a "$o" "unrestricted $A all deterministic silent, embedding offered: 1"
 has a "$o" "unrestricted $B all prompts: 2"
 has a "$o" "unrestricted $B all deterministic silent: 0 of 2 (0.0000)"
 has a "$o" "unrestricted $B all embedding silent: 0 of 2 (0.0000)"
-has a "$o" "unrestricted $B all both offered: 2, share a document: 2"
+has a "$o" "unrestricted $B all both offered: 2, share a document: 1"
+has a "$o" "unrestricted none all deterministic silent, embedding offered: 0"
 has a "$o" "unrestricted none all prompts: 1"
 has a "$o" "unrestricted none all deterministic silent: 1 of 1 (1.0000)"
 has a "$o" "unrestricted none all embedding silent: n/a, no model"
@@ -218,7 +227,7 @@ readcall b R 2026-09-30T10:06:30.000Z /root/c/.claude/agents/a.md
 readcall b R 2026-09-30T10:07:00.000Z /root/c/docs/b.md
 prompt b R 2026-09-30T10:30:00.000Z r2
 readcall b R 2026-09-30T10:31:00.000Z /root/c/docs/a.md
-logline b R 2026-09-30T10:00:01Z r1 true "$A" "$(route 'docs/a.md docs/b.md docs/c.md')" "$(neighbors "$A" 'docs/c.md docs/d.md')"
+logline b R 2026-09-30T10:00:01Z r1 true "$A" "$(route 'docs/a.md docs/b.md docs/c.md')" "$(neighbors "$A" 'docs/d.md docs/e.md docs/c.md')"
 logline b R 2026-09-30T10:30:01Z r2 false "$A" "$silent" "$(neighbors "$A" docs/e.md)"
 run b
 o="$scratch/b.out"
@@ -227,7 +236,7 @@ has b "$o" "unrestricted $A all prompts with a read: 2"
 has b "$o" "unrestricted $A all deterministic recall: 2 of 3 (0.6667)"
 has b "$o" "unrestricted $A all embedding recall: 1 of 3 (0.3333)"
 has b "$o" "unrestricted $A all deterministic first read at rank: 1=0 2=1 3=0 4+=0 none=1"
-has b "$o" "unrestricted $A all embedding first read at rank: 1=1 2=0 3=0 4+=0 none=1"
+has b "$o" "unrestricted $A all embedding first read at rank: 1=0 2=0 3=1 4+=0 none=1"
 has b "$o" "unrestricted $A all both offered: 1, share a document: 1"
 
 # c: the split by `injected`.
@@ -240,8 +249,9 @@ has c "$o" "unrestricted $A injected embedding recall: 1 of 2 (0.5000)"
 has c "$o" "unrestricted $A not-injected deterministic recall: 0 of 1 (0.0000)"
 has c "$o" "unrestricted $A not-injected embedding recall: 0 of 1 (0.0000)"
 
-# d: the bound closes on the third distinct id, p3, and not on the third
-# line, the second line of p2.
+# d: the bound closes on the third distinct id in time order, k3. It does not
+# close on the third line in time, the second line of p2, nor on the third id
+# in id order, p2.
 mkdir -p "$scratch/d"
 cp -r "$scratch/a/t" "$scratch/a/log" "$scratch/d/"
 run d --bound 3
