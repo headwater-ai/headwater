@@ -2002,7 +2002,8 @@ STUB
             "$scratch/confined.md"
         # A workspace that is itself under `/tmp` lets the session see its own
         # path there, so a path it names under `/tmp` may be a sibling tree of
-        # the host's, and the redirect counts: 4.
+        # the host's, and the redirect counts. So does the `Grep` path, which
+        # is the first workspace and not this one: 3 + 1 + 1 = 5.
         tmp_ws=$(cd "$scratch" && pwd -P)/conf-ws-tmp
         rm -rf "$tmp_ws"
         mkdir -p "$tmp_ws"
@@ -2010,7 +2011,7 @@ STUB
             --task-file "$scratch/task.md" --workspace "$tmp_ws" \
             >"$scratch/confined-tmp.md" 2>"$scratch/confined-tmp.err"
         present "and a workspace under /tmp counts the session's /tmp paths as outside" \
-            "The session named 4 paths outside its workspace" "$scratch/confined-tmp.md"
+            "The session named 5 paths outside its workspace" "$scratch/confined-tmp.md"
         rm -rf "$tmp_ws"
 
         # THE decisive case of #1467's network half (clause 5): the public
@@ -3728,7 +3729,7 @@ if [ -x "$engine" ]; then
     present "and sums each arm" "arm campaign mcp: 684 sessions, \$342.00" "$scratch/dry.out"
     present "and holds the campaign tier to its ceiling" \
         "tier campaign: 4104 sessions, \$2052.00 against a ceiling of \$2052.00: inside it" "$scratch/dry.out"
-    present "and prints the total" "total: 4284 sessions, \$2142.00 against the \$430.00 the tiers declare" "$scratch/dry.out"
+    present "and prints the total" "total: 4284 sessions, \$2142.00 against the \$2182.00 the tiers declare" "$scratch/dry.out"
     present "and sums each tier and category with its share of the total" \
         "category campaign discovery: 2124 sessions, \$1062.00, 49.6% of the total" "$scratch/dry.out"
     present "and sums a leak-kept line apart from its category" \
@@ -3752,15 +3753,16 @@ if [ -x "$engine" ]; then
 
     # A line that pools a leak-kept probe with one that is not fails the dry run,
     # and a plan over its ceiling is printed rather than fatal: six
-    # sufficiency probes over six arms at 120 repetitions is 4320 sessions,
-    # $2160.00 against the $2052.00 the owner agreed to for this tier (#1659).
-    printf 'campaign present sufficiency\n' > "$scratch/pooled.spec"
+    # sufficiency probes over the documentation tier's two arms at 30
+    # repetitions is 360 sessions, $180.00 against its $130.00. The campaign
+    # tier no longer serves: no plan of one line passes its $2052.00 (#1659).
+    printf 'documentation absent sufficiency\n' > "$scratch/pooled.spec"
     PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
-        --spec "$scratch/pooled.spec" --repetitions 120 > "$scratch/pooled.out" 2> "$scratch/pooled.err"
+        --spec "$scratch/pooled.spec" > "$scratch/pooled.out" 2> "$scratch/pooled.err"
     same "a line that pools a leak-kept probe fails the dry run with 8, not 5" "8" "$?"
     present "and names the line" "line 1 pools a probe under \`leaks_kept:\`" "$scratch/pooled.out"
     present "and the ceiling's refusal is printed as a line" \
-        "L1 4320 sessions project \$2160.00 against a declared ceiling of \$2052.00" "$scratch/pooled.out"
+        "L1 360 sessions project \$180.00 against a declared ceiling of \$130.00" "$scratch/pooled.out"
 
     # Any other refusal of a plan is the batch driver's 5.
     printf 'campaign present discovery\n' > "$scratch/refused.spec"
