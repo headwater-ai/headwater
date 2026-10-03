@@ -595,8 +595,16 @@ fn a_scope_total_of_one_in_four_states_twenty_five_percent_in_the_text_and_the_j
 fn two_disjoint_readings_add_their_governed_entries_in_the_total() {
     let mut audit = fixture_tree().audit(AT);
     audit.scope = vec![
-        scope_reading("code-path", "src/**", &[("src/a.rs", true), ("src/b.rs", false)]),
-        scope_reading("test-path", "tests/**", &[("tests/a.rs", true), ("tests/b.rs", false)]),
+        scope_reading(
+            "code-path",
+            "src/**",
+            &[("src/a.rs", true), ("src/b.rs", false)],
+        ),
+        scope_reading(
+            "test-path",
+            "tests/**",
+            &[("tests/a.rs", true), ("tests/b.rs", false)],
+        ),
     ];
     let total = audit.scope_total();
     assert_eq!((total.in_scope, total.governed), (4, 2));
