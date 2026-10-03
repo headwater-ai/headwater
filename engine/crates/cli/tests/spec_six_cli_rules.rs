@@ -387,3 +387,34 @@ fn no_comment_quotes_moved_cli_text_as_spec_6() {
          {credited:#?}"
     );
 }
+
+/// The module comment of the probe harness does not say that `probe` reaches
+/// a model over the network, whatever it credits. The contract of the verb
+/// says that no subcommand opens a network connection, and the comment once
+/// said the opposite under a link to spec 6.
+///
+/// # Watched failing
+///
+/// With the sentence "`probe` reaches a model over the network." put back
+/// into `probe/src/lib.rs`, with no link to spec 6 beside it, this reddened,
+/// and `no_comment_quotes_moved_cli_text_as_spec_6` stayed green.
+#[test]
+fn the_probe_module_comment_does_not_say_probe_reaches_the_network() {
+    let text = read("engine/crates/probe/src/lib.rs");
+    let comments: String = text
+        .lines()
+        .map(str::trim_start)
+        .filter(|l| l.starts_with("//"))
+        .map(|l| l.trim_start_matches(['/', '!']).trim())
+        .collect::<Vec<_>>()
+        .join(" ");
+    assert!(
+        !plain(&comments).contains("probe reaches a model over the network"),
+        "a comment in probe/src/lib.rs says that probe reaches a model over the network, and \
+         docs/interfaces/headwater-probe.md says that no subcommand opens a network connection"
+    );
+    assert!(
+        text.contains("docs/interfaces/headwater-probe.md"),
+        "the module comment of probe/src/lib.rs does not link the contract of the verb"
+    );
+}
