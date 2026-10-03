@@ -6,6 +6,8 @@ Three READMEs under `docs/taxonomies/*/fixtures/n8n/` each carry a *How to run t
 Nothing here carries a second copy of a figure. Every expected value is parsed out of the README, so a number this file holds is a number a reader reads.
 
 It holds one thing more: no README states an aggregate check-instance count outside *What a run reports*, the one section it diffs, and the evaluation `docs/evaluations/n8n-worked-example.md`, which has no such section, states none at all. That count moves with every rule a release adds. Two copies of it in the design-spec probe arms read 6 and 26 when a run reported 7 and 31, and all seven on the evaluation were wrong when this guard first read it (#1452).
+
+And it holds the evaluation's figures transitively, page to README to run. Each *What the run reported* block on the evaluation is held against the README it links, and the totals of *The count* and the shelf-shape table against the design-spec README. That README moved to 13 findings at headwater/standard 4.3.0 while the evaluation still read 12 in six places (#1568).
 """
 
 import os
@@ -267,6 +269,10 @@ AGGREGATE_COUNT = re.compile(r"(?<![\w,])[*_]*\d(?:[\d,]*\d)?[*_]*\s+check[\s-]+
 # The one page outside the three READMEs that restates their counts. It has no
 # held section, so every count on it is unheld.
 EVALUATION = "docs/evaluations/n8n-worked-example.md"
+# The README whose run the evaluation's `## The count` restates.
+DESIGN_SPEC_README = "docs/taxonomies/design-spec/fixtures/n8n/README.md"
+# The heading of each block on the evaluation that summarizes one README's run.
+SUMMARY = "What the run reported"
 
 
 def unheld_counts(text, held=HELD_SECTION):
@@ -295,6 +301,170 @@ def unheld_problems(rel, text, held=HELD_SECTION):
     where = "outside `## %s`, where" % held if held is not None else "on a page where"
     return ["%s:%d: states `%s` %s no job holds it; state it without the number"
             % (rel, n, match, where) for n, match in unheld_counts(text, held)]
+
+
+# The figures a `What the run reported` block on the evaluation states. It
+# states no check instances, census or graph, which move with every release.
+PAGE_FIGURES = ("files under the corpus root", "typed", "excluded", "checked",
+                "findings", "errors", "strict exit status")
+# Each form `## The count` writes the design-spec total under the entry alone
+# in, by name. A row must be present; a sentence is held wherever it stands.
+COUNT_FIGURES = {
+    "the `Findings raised` row": re.compile(r"^\| Findings raised \| (\d+) \|"),
+    "the `Caught by neither` row": re.compile(r"^\| Caught by neither \| (\d+) \|"),
+    "the `needing` row": re.compile(r"^\| Of those, needing [^|]*\| (\d+) \|"),
+    "a `catches 0 of the N` sentence": re.compile(r"\bcatches 0 of the (\d+)\b"),
+    "an `honest total is N` sentence": re.compile(r"\bhonest total is (\d+)\b"),
+}
+COUNT_ROWS = ("the `Findings raised` row", "the `Caught by neither` row", "the `needing` row")
+# The `--fix` row states no total, so it is held by the table's own arithmetic:
+# written by `--fix` plus needing a change is every finding.
+FIX_ROW = re.compile(r"^\| Of those, written by `headwater check --fix` \| (\d+) \|")
+# The two `Already caught by` rows state no total either, and the README states
+# neither tool. So the table's other sum holds them: raised less what each tool
+# caught is what neither caught.
+CAUGHT_ROW = re.compile(r"^\| Already caught by `([\w-]+)` \| (\d+) \|")
+COUNT_SECTION = "The count"
+FENCE = re.compile(r"^ {0,3}(`{3,}|~{3,})")
+SHELF_SECTION = "What shape the shelf declaration had to take"
+SHELF_ROW = re.compile(r"^\| `homogeneous: [^|]*\| (\d+)\b")
+FIXTURE_LINK = re.compile(r"\]\((\.\./taxonomies/[\w-]+/fixtures/n8n/README\.md)")
+
+
+def headed_blocks(text):
+    """Every heading of a page as (level, heading, enclosing `##` heading, [(line number, line)]).
+
+    A `#` line inside a fenced code block is a line of that block, not a
+    heading, so a shell comment under a section does not end the section.
+    """
+    blocks, h2, fence = [], None, None
+    for n, line in enumerate(text.splitlines(), 1):
+        f = FENCE.match(line)
+        if fence is None and f:
+            fence = f.group(1)
+        elif fence is not None and f and f.group(1)[0] == fence[0] and len(f.group(1)) >= len(fence) \
+                and not line.strip()[len(f.group(1)):].strip():
+            fence = None
+        m = re.match(r"^(#{1,6}) (.*)$", line) if fence is None and not f else None
+        if m:
+            level, heading = len(m.group(1)), m.group(2).strip()
+            if level <= 2:
+                h2 = heading if level == 2 else None
+            blocks.append((level, heading, h2, []))
+        elif blocks:
+            blocks[-1][3].append((n, line))
+    return blocks
+
+
+def evaluation_figure_problems(root, text):
+    """Every design-spec or standards-spec figure the evaluation states that its fixture README does not, and the count held.
+
+    The README's own figures are diffed against a live run, so a figure held
+    here is held transitively: page, README, run. Nothing here carries a number.
+    Each `What the run reported` block is held against the README it links; the
+    `## The count` totals and the shelf-shape table against the design-spec one.
+    """
+    problems, held, readmes = [], 0, {}
+
+    def figures(rel):
+        if rel not in readmes:
+            try:
+                readmes[rel] = stated_figures(open(os.path.join(root, rel), encoding="utf-8").read())
+            except (Mismatch, OSError) as e:
+                readmes[rel] = None
+                problems.append("%s: holds the figures %s states, and cannot read them: %s" % (rel, EVALUATION, e))
+        return readmes[rel]
+
+    def hold(n, label, value, rel, theirs):
+        if value != theirs:
+            problems.append("%s:%d: states %s %s, and %s states %s" % (EVALUATION, n, label, value, rel, theirs))
+
+    blocks = headed_blocks(text)
+    summaries = [b for b in blocks if b[1] == SUMMARY]
+    linked = []
+    for _, _, _, body in summaries:
+        link = next((FIXTURE_LINK.search(l) for _, l in body if FIXTURE_LINK.search(l)), None)
+        first = body[0][0] - 1 if body else 0
+        if link is None:
+            problems.append("%s:%d: a `%s` block links no fixture README, so this job cannot hold it" % (EVALUATION, first, SUMMARY))
+            continue
+        rel = os.path.normpath(os.path.join(os.path.dirname(EVALUATION), link.group(1)))
+        linked.append(rel)
+        theirs = figures(rel)
+        if theirs is None:
+            continue
+        patterns = dict(FIGURES)
+        for label in PAGE_FIGURES:
+            hit = next(((n, m) for n, l in body for m in [re.search(patterns[label], l)] if m), None)
+            if hit is None:
+                problems.append("%s:%d: the `%s` block states no %s, which this job holds" % (EVALUATION, first, SUMMARY, label))
+                continue
+            n, m = hit
+            hold(n, label, next(g for g in m.groups() if g is not None), rel, theirs[label])
+            held += 1
+    # The denominator: the design-spec summary is the one `## The count` restates.
+    if DESIGN_SPEC_README not in linked:
+        problems.append("%s: no `%s` block links %s, which this job holds the page against" % (EVALUATION, SUMMARY, DESIGN_SPEC_README))
+    design = figures(DESIGN_SPEC_README)
+    if design is None:
+        return problems, held
+
+    seen, fixes, needing, caught, rows = set(), [], [], [], {}
+    for _, _, h2, body in blocks:
+        if h2 != COUNT_SECTION:
+            continue
+        for n, line in body:
+            for name, pattern in COUNT_FIGURES.items():
+                for m in pattern.finditer(line):
+                    hold(n, "findings", m.group(1), DESIGN_SPEC_README, design["findings"])
+                    held += 1
+                    seen.add(name)
+                    rows.setdefault(name, []).append((n, int(m.group(1))))
+                    if name == "the `needing` row":
+                        needing.append(int(m.group(1)))
+            m = FIX_ROW.match(line)
+            if m:
+                fixes.append((n, int(m.group(1))))
+            m = CAUGHT_ROW.match(line)
+            if m:
+                caught.append((n, m.group(1), int(m.group(2))))
+    raised = rows.get("the `Findings raised` row", [])
+    neither = rows.get("the `Caught by neither` row", [])
+    if len(caught) != 2 or len(raised) != 1 or len(neither) != 1:
+        problems.append("%s: `## %s` carries %d `Already caught by` rows, %d `Findings raised` rows and %d `Caught by neither` rows, and this job holds two, one and one"
+                        % (EVALUATION, COUNT_SECTION, len(caught), len(raised), len(neither)))
+    else:
+        for n, tool, value in caught:
+            if raised[0][1] - sum(v for _, _, v in caught) != neither[0][1]:
+                problems.append("%s:%d: states %d already caught by `%s`, and the rows do not add up: %d raised, %s caught by the two tools, and %d caught by neither"
+                                % (EVALUATION, n, value, tool, raised[0][1], " and ".join(str(v) for _, _, v in caught), neither[0][1]))
+            held += 1
+    for name in COUNT_ROWS:
+        if name not in seen:
+            problems.append("%s: `## %s` lacks %s, which this job holds" % (EVALUATION, COUNT_SECTION, name))
+    if len(fixes) != 1 or len(needing) != 1:
+        problems.append("%s: `## %s` carries %d `--fix` rows and %d `needing` rows, and this job holds one of each"
+                        % (EVALUATION, COUNT_SECTION, len(fixes), len(needing)))
+    else:
+        n, fixed = fixes[0]
+        if fixed + needing[0] != int(design["findings"]):
+            problems.append("%s:%d: states %d written by `headwater check --fix` and %d needing a change, which add up to %d, and %s states %s findings"
+                            % (EVALUATION, n, fixed, needing[0], fixed + needing[0], DESIGN_SPEC_README, design["findings"]))
+        held += 1
+
+    # The shelf-shape table restates the README's, row for row.
+    ours = [(n, m.group(1)) for _, h, _, body in blocks if h == SHELF_SECTION
+            for n, l in body for m in [SHELF_ROW.match(l)] if m]
+    readme_text = open(os.path.join(root, DESIGN_SPEC_README), encoding="utf-8").read()
+    theirs = [m.group(1) for l in readme_text.splitlines() for m in [SHELF_ROW.match(l)] if m]
+    if not ours or len(ours) != len(theirs):
+        problems.append("%s: the shelf-shape table has %d rows, and the one in %s has %d"
+                        % (EVALUATION, len(ours), DESIGN_SPEC_README, len(theirs)))
+    else:
+        for (n, value), want in zip(ours, theirs):
+            hold(n, "a shelf-shape count of", value, DESIGN_SPEC_README, want)
+            held += 1
+    return problems, held
 
 
 PROVOKED_HELD = "A held run reads 8 check instances."
@@ -388,6 +558,175 @@ def provoke_unheld(root, corpora, scratch):
                        % (EVALUATION, gone.returncode))
 
 
+def provoke_evaluation_figures(root, corpora, scratch):
+    """Arm 9. A design-spec figure on the evaluation that differs from the README must fail this job, run as `main` runs it, naming the page, the line and both values.
+
+    It copies the evaluation and the three READMEs into a scratch root and
+    provokes every figure the guard holds, by name and not by position. Each
+    of the seven labels of the design-spec summary, and one of the
+    standards-spec summary, states more than its README does. Each pattern of
+    `## The count` states a figure other than the README's findings: the
+    `Findings raised` row one fewer, which is the defect of #1568. The `--fix`
+    row breaks the table's arithmetic, and the last row of the shelf-shape table
+    states one fewer than the README's row. A fenced block with a `#` comment
+    goes in before the `honest total` sentence, and the sentence must still be
+    named. A second leg strips the figures out of the design-spec README, and
+    the run must fail naming that README rather than pass over figures it never
+    read. A third points the page's design-spec summary at a page that is not a
+    fixture README, and the run must fail saying that no summary links it. A
+    fourth deletes the three held rows of `## The count`, and the run must name
+    each one. A fifth raises each `Already caught by` row on its own, and the
+    run must name that row because the table no longer adds up. The arm writes its own list of labels and patterns rather than
+    reading the guard's, so a label or pattern dropped from the guard is still
+    provoked.
+    """
+    def copy_in(dest_root):
+        for rel in [EVALUATION] + [os.path.relpath(p, root) for _, p in corpora]:
+            dest = os.path.join(dest_root, rel)
+            os.makedirs(os.path.dirname(dest), exist_ok=True)
+            shutil.copyfile(os.path.join(root, rel), dest)
+
+    def guard(dest_root):
+        return subprocess.run([sys.executable, os.path.abspath(__file__), dest_root, "--guard-only"],
+                              capture_output=True, text=True)
+
+    def readme(rel):
+        return stated_figures(open(os.path.join(root, rel), encoding="utf-8").read())
+
+    design = readme(DESIGN_SPEC_README)
+    findings = design["findings"]
+    standards = "docs/taxonomies/standards-spec/fixtures/n8n/README.md"
+    checked = readme(standards)["checked"]
+    shelf = [m.group(1) for l in open(os.path.join(root, DESIGN_SPEC_README), encoding="utf-8").read().splitlines()
+             for m in [SHELF_ROW.match(l)] if m]
+    if not shelf:
+        raise Mismatch("%s has no shelf-shape table to provoke against" % DESIGN_SPEC_README)
+    lines = open(os.path.join(root, EVALUATION), encoding="utf-8").read().splitlines()
+
+    def first(blocks, where, pattern, last=False):
+        hits = [n for level, heading, h2, body in blocks if where(level, heading, h2)
+                for n, l in body if re.search(pattern, l)]
+        if not hits:
+            raise Mismatch("%s has no line matching `%s` to provoke" % (EVALUATION, pattern))
+        return hits[-1] if last else hits[0]
+
+    in_count = lambda lv, h, h2: h2 == COUNT_SECTION
+    # A fence with a shell comment in it, before the sentence it must not hide.
+    at = first(headed_blocks("\n".join(lines)), in_count, r"\bhonest total is (\d+)\b") - 1
+    lines[at:at] = ["```sh", "# a shell comment, which is not a heading", "```", ""]
+    blocks = headed_blocks("\n".join(lines))
+
+    def provoke(n, pattern, value):
+        """Write `value` over the first figure `pattern` captures on line `n`."""
+        m = re.search(pattern, lines[n - 1])
+        g = next(i for i in range(1, len(m.groups()) + 1) if m.group(i) is not None)
+        lines[n - 1] = lines[n - 1][:m.start(g)] + value + lines[n - 1][m.end(g):]
+
+    # The arm names what it provokes itself, rather than reading the guard's
+    # own lists, so a label or pattern dropped from the guard stays provoked.
+    labels = ("files under the corpus root", "typed", "excluded", "checked",
+              "findings", "errors", "strict exit status")
+    count = [("Findings raised", r"^\| Findings raised \| (\d+) \|"),
+             ("Caught by neither", r"^\| Caught by neither \| (\d+) \|"),
+             ("needing", r"^\| Of those, needing [^|]*\| (\d+) \|"),
+             ("catches", r"\bcatches 0 of the (\d+)\b"),
+             ("honest total", r"\bhonest total is (\d+)\b")]
+    want, patterns = [], dict(FIGURES)
+    for k, label in enumerate(labels):
+        n = first(blocks, lambda lv, h, h2: lv == 2 and h == SUMMARY, patterns[label])
+        value = str(int(design[label]) + 7 + k)
+        provoke(n, patterns[label], value)
+        want.append("%s:%d: states %s %s, and %s states %s" % (EVALUATION, n, label, value, DESIGN_SPEC_README, design[label]))
+    n = first(blocks, lambda lv, h, h2: lv == 3 and h == SUMMARY, patterns["checked"])
+    provoke(n, patterns["checked"], str(int(checked) + 7))
+    want.append("%s:%d: states checked %d, and %s states %s" % (EVALUATION, n, int(checked) + 7, standards, checked))
+    for k, (name, pattern) in enumerate(count):
+        n = first(blocks, in_count, pattern)
+        value = str(int(findings) - 1) if name == "Findings raised" else str(int(findings) + 20 + k)
+        provoke(n, pattern, value)
+        want.append("%s:%d: states findings %s, and %s states %s" % (EVALUATION, n, value, DESIGN_SPEC_README, findings))
+    n = first(blocks, in_count, FIX_ROW.pattern)
+    provoke(n, FIX_ROW.pattern, "1")
+    want.append("%s:%d: states 1 written by `headwater check --fix`" % (EVALUATION, n))
+    n = first(blocks, lambda lv, h, h2: h == SHELF_SECTION, SHELF_ROW.pattern, last=True)
+    provoke(n, SHELF_ROW.pattern, str(int(shelf[-1]) - 1))
+    want.append("%s:%d: states a shelf-shape count of %d, and %s states %s"
+                % (EVALUATION, n, int(shelf[-1]) - 1, DESIGN_SPEC_README, shelf[-1]))
+
+    provoked = os.path.join(scratch, "provoked")
+    copy_in(provoked)
+    open(os.path.join(provoked, EVALUATION), "w", encoding="utf-8").write("\n".join(lines) + "\n")
+    done = guard(provoked)
+    missed = [w for w in want if w not in done.stderr]
+    if done.returncode != 1 or missed:
+        raise Mismatch("a provoked evaluation exits %d under `--guard-only`; unnamed: %r" % (done.returncode, missed))
+
+    # The README's denominator: figures this guard cannot read fail the job
+    # naming the README, rather than holding the page against nothing.
+    blind = os.path.join(scratch, "blind")
+    copy_in(blind)
+    path = os.path.join(blind, DESIGN_SPEC_README)
+    text = open(path, encoding="utf-8").read()
+    open(path, "w", encoding="utf-8").write(text.replace("## " + HELD_SECTION, "## A heading this guard does not read"))
+    gone = guard(blind)
+    named = "%s: holds the figures %s states, and cannot read them" % (DESIGN_SPEC_README, EVALUATION)
+    if gone.returncode != 1 or named not in gone.stderr:
+        raise Mismatch("a design-spec README with no `## %s` exits %d under `--guard-only` and does not name it"
+                       % (HELD_SECTION, gone.returncode))
+
+    # The page's denominator: a design-spec summary that no longer links its
+    # README fails the job, rather than leaving the summary held against nothing.
+    unlinked = os.path.join(scratch, "unlinked")
+    copy_in(unlinked)
+    path = os.path.join(unlinked, EVALUATION)
+    link = "(" + os.path.relpath(DESIGN_SPEC_README, os.path.dirname(EVALUATION))
+    text = open(path, encoding="utf-8").read()
+    if link not in text:
+        raise Mismatch("%s does not link %s, so the unlinked leg has nothing to remove" % (EVALUATION, DESIGN_SPEC_README))
+    open(path, "w", encoding="utf-8").write(text.replace(link, "(../taxonomies/design-spec/doctrine.md"))
+    cut = guard(unlinked)
+    named = ["%s: no `%s` block links %s" % (EVALUATION, SUMMARY, DESIGN_SPEC_README),
+             "a `%s` block links no fixture README" % SUMMARY]
+    if cut.returncode != 1 or any(n not in cut.stderr for n in named):
+        raise Mismatch("an evaluation whose design-spec summary links no README exits %d under `--guard-only` and does not say so"
+                       % cut.returncode)
+
+    # The count's denominator: a row this job holds that leaves the table fails
+    # the job naming the row, rather than leaving one figure fewer held.
+    rowless = os.path.join(scratch, "rowless")
+    copy_in(rowless)
+    path = os.path.join(rowless, EVALUATION)
+    kept = [l for l in open(path, encoding="utf-8").read().splitlines()
+            if not any(re.match(p, l) for _, p in count[:3])]
+    open(path, "w", encoding="utf-8").write("\n".join(kept) + "\n")
+    bare = guard(rowless)
+    named = ["%s: `## %s` lacks the `%s` row" % (EVALUATION, COUNT_SECTION, name) for name, _ in count[:3]]
+    if bare.returncode != 1 or any(n not in bare.stderr for n in named):
+        raise Mismatch("an evaluation without the three held rows of `## %s` exits %d under `--guard-only`; unnamed: %r"
+                       % (COUNT_SECTION, bare.returncode, [n for n in named if n not in bare.stderr]))
+
+    # The table's sum: a tool row that claims a catch, with nothing else moved,
+    # leaves the rows not adding up, and must fail the job naming that row.
+    text = open(os.path.join(root, EVALUATION), encoding="utf-8").read()
+    original = text.splitlines()
+    tools = [(n - 1, m) for _, _, h2, body in headed_blocks(text) if h2 == COUNT_SECTION
+             for n, l in body for m in [re.match(r"^(\| Already caught by `(\w+)` \| )(\d+)( \|.*)$", l)] if m]
+    if len(tools) != 2:
+        raise Mismatch("%s carries %d `Already caught by` rows to provoke, and this arm provokes two" % (EVALUATION, len(tools)))
+    for k, (i, m) in enumerate(tools):
+        caught_root = os.path.join(scratch, "caught-%d" % k)
+        copy_in(caught_root)
+        lines = list(original)
+        value = int(m.group(3)) + 2 + k
+        lines[i] = "%s%d%s" % (m.group(1), value, m.group(4))
+        open(os.path.join(caught_root, EVALUATION), "w", encoding="utf-8").write("\n".join(lines) + "\n")
+        sums = guard(caught_root)
+        named = "%s:%d: states %d already caught by `%s`, and the rows do not add up" % (EVALUATION, i + 1, value, m.group(2))
+        if sums.returncode != 1 or named not in sums.stderr:
+            raise Mismatch("an evaluation whose `%s` row claims %d catches exits %d under `--guard-only` and does not name it"
+                           % (m.group(2), value, sums.returncode))
+
+
 def report(problems, corpora, green):
     if problems:
         print("n8n fixtures: %d claims of %d corpora do not hold" % (len(problems), len(corpora)), file=sys.stderr)
@@ -429,6 +768,9 @@ def main(root, binary):
         unheld = unheld_problems(EVALUATION, evaluation, None)
         problems += unheld
         print("n8n fixtures: %s, %d check-instance counts on a page with no held section" % (EVALUATION, len(unheld)))
+        differ, figures_held = evaluation_figure_problems(root, evaluation)
+        problems += differ
+        print("n8n fixtures: %s, %d figures held against the README each restates" % (EVALUATION, figures_held))
     if binary is None:
         return report(problems, corpora, "n8n fixtures: no check-instance count outside `## %s` on %d pages, and none on %s"
                       % (HELD_SECTION, len(corpora), EVALUATION))
@@ -440,6 +782,11 @@ def main(root, binary):
             print("n8n fixtures: counts added outside `## %s` or to %s fail this job, and one inside it does not" % (HELD_SECTION, EVALUATION))
         except Mismatch as e:
             problems.append("the unheld-count arm: %s" % e)
+        try:
+            provoke_evaluation_figures(root, corpora, os.path.join(scratch, "figures"))
+            print("n8n fixtures: a design-spec figure on %s that differs from its README fails this job" % EVALUATION)
+        except Mismatch as e:
+            problems.append("the evaluation-figure arm: %s" % e)
         for name, readme_path in corpora:
             rel = os.path.relpath(readme_path, root)
             try:
