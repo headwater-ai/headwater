@@ -37,7 +37,8 @@
 # `--max-sessions <n>` starts at most `n` new sessions in this invocation, so
 # one batch can run in slices (#1472). A job already recorded with `status` 0
 # does not count toward it. The workers claim the bound atomically, with one
-# `mkdir` token per session they start, so the bound holds across them.
+# token file per session they start, created with the shell's `set -C`, so
+# the bound holds across them.
 #
 # `tools/probe/probe-record.sh` records one session. A campaign is hundreds of
 # them, over three tiers and arms, and the design on #980 named what the
@@ -304,14 +305,16 @@ run_job() {
             return 0
         fi
     fi
-    # The bound of this invocation. `mkdir` either creates a token or fails,
-    # so two workers never take one token, and no more sessions start than
-    # there are tokens.
+    # The bound of this invocation. A token is a file the shell creates with
+    # `set -C`, which opens it with O_EXCL, so two workers never take one
+    # token, and no more sessions start than there are tokens. Not `mkdir`:
+    # the uutils `mkdir` that some hosts ship checks and then creates, and
+    # three workers took two of its tokens in 56 of 200 trials (#1472).
     if [ -s "$out/slice/max" ]; then
         bound=$(cat "$out/slice/max")
         token=1
         while [ "$token" -le "$bound" ]; do
-            mkdir "$out/slice/token.$token" 2>/dev/null && break
+            ( set -C; : > "$out/slice/token.$token" ) 2>/dev/null && break
             token=$((token + 1))
         done
         [ "$token" -le "$bound" ] || return 0
@@ -468,19 +471,6 @@ if [ -n "$cap" ]; then
 elif [ ! -f "$out/cap" ]; then
     : > "$out/cap"
 fi
-# The harness is part of every session's identity, and assembly refuses a line
-# whose sessions disagree on it. A batch staggered over days can meet another
-# `claude`, so the first invocation records its version and a later one on
-# another version refuses before it spends.
-harness=$(claude --version 2>/dev/null | head -1)
-if [ -f "$out/claude-version" ]; then
-    if [ "$(cat "$out/claude-version")" != "$harness" ]; then
-        echo "campaign: $out was started with claude $(cat "$out/claude-version"), and this harness is ${harness:-of no version}. Its sessions would not assemble with the batch's. Run the rest of the batch on the harness it started with, or start a new batch in another directory." >&2
-        exit 4
-    fi
-else
-    printf '%s\n' "$harness" > "$out/claude-version"
-fi
 # The state of this invocation alone: the bound, the tokens taken against it,
 # the jobs it started or refused, and the halt.
 rm -rf "$out/slice"
@@ -585,6 +575,21 @@ if [ ! -f "$out/jobs" ]; then
     done < "$out/lines" \
         | awk -v seed="$seed" 'BEGIN { srand(seed) } { printf "%.12f\t%s\n", rand(), $0 }' \
         | sort -k1,1 | cut -f2- > "$out/jobs"
+fi
+
+# The harness is part of every session's identity, and assembly refuses a line
+# whose sessions disagree on it. A batch staggered over days can meet another
+# `claude`, so the first invocation records its version and a later one on
+# another version refuses before it spends. It is asked after the plans, so a
+# spec the plan refuses never runs the harness at all.
+harness=$(claude --version 2>/dev/null | head -1)
+if [ -f "$out/claude-version" ]; then
+    if [ "$(cat "$out/claude-version")" != "$harness" ]; then
+        echo "campaign: $out was started with claude $(cat "$out/claude-version"), and this harness is ${harness:-of no version}. Its sessions would not assemble with the batch's. Run the rest of the batch on the harness it started with, or start a new batch in another directory." >&2
+        exit 4
+    fi
+else
+    printf '%s\n' "$harness" > "$out/claude-version"
 fi
 
 total=$(wc -l < "$out/jobs")

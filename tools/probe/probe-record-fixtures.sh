@@ -2386,6 +2386,11 @@ STUB
         else
             pass "and it builds no tree"
         fi
+        if [ -e "$scratch/uncapped/claude-version" ]; then
+            fail "and it runs no harness, not even for its version" "claude-version was written"
+        else
+            pass "and it runs no harness, not even for its version"
+        fi
 
         # A staggered batch (#1472): one batch of 3 jobs run in slices against
         # one pin. `--max-sessions 2` starts 2 sessions and exits 9 with the
