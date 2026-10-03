@@ -197,6 +197,15 @@ fn the_suppression_kind_table_of_checks_and_cache_is_what_sarif_writes() {
         rows.len() <= ESCAPES.len() + 1,
         "the escape-class table has a row that is neither an engine class nor `waiver`: {rows:?}"
     );
+    // A map keeps the last of two rows for one class, so a contradictory row
+    // above the true one would pass the comparison. Each class has one row.
+    let classes: Vec<&str> = rows.iter().map(|r| r[0].as_str()).collect();
+    let distinct: BTreeSet<&str> = classes.iter().copied().collect();
+    assert_eq!(
+        classes.len(),
+        distinct.len(),
+        "the escape-class table names a class twice: {classes:?}"
+    );
 }
 
 /// The outcome fields of [`Census`]: what an entry of a loss set comes to.
@@ -409,11 +418,21 @@ const MOVED_CLAIMS: [&str; 6] = [
     "an entry names its members",
 ];
 
+/// Where `text`, in lower case, first names spec 6: the words `spec 6`, or a
+/// link into its file, whatever the link text says.
+fn spec_six_mention(text: &str) -> Option<usize> {
+    ["spec 6", "06-engine-architecture.md"]
+        .iter()
+        .filter_map(|m| text.find(m))
+        .min()
+}
+
 /// A comment that credits spec 6 with a sentence of the adapter sections
 /// points a reader at a part that no longer holds it.
 ///
-/// It reads every comment line that names spec 6, joined with the five lines
-/// after it, and fails when the text from `spec 6` on opens a quote that the
+/// It reads every comment line that names spec 6, in words or by a link to
+/// `06-engine-architecture.md`, joined with the five lines after it, and
+/// fails when the text from that mention on opens a quote that the
 /// adapter sections hold, or states one of [`MOVED_CLAIMS`] within 240 bytes.
 /// A quote of text that spec 6 keeps is not this test's business, and neither
 /// is a string literal, which is a message or a test input. This file is
@@ -445,7 +464,7 @@ fn no_comment_quotes_moved_adapter_text_as_spec_6() {
             .replace('\\', "/");
         let lines: Vec<&str> = text.lines().collect();
         for (i, line) in lines.iter().enumerate() {
-            if !line.to_lowercase().contains("spec 6") {
+            if spec_six_mention(&line.to_lowercase()).is_none() {
                 continue;
             }
             let trimmed = line.trim_start();
@@ -457,7 +476,7 @@ fn no_comment_quotes_moved_adapter_text_as_spec_6() {
                 .map(|l| l.trim().trim_start_matches(['/', '!']).trim())
                 .collect::<Vec<_>>()
                 .join(" ");
-            let Some(at) = joined.to_lowercase().find("spec 6") else {
+            let Some(at) = spec_six_mention(&joined.to_lowercase()) else {
                 continue;
             };
             read += 1;
