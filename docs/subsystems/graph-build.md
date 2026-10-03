@@ -45,7 +45,7 @@ The public Rust API of the crate is not in this spec ([HW-DR-0098](../decisions/
 
 `Graph::build` in `lib.rs` runs four passes in a fixed order. `Index::build` makes the indexes, `edges::build` resolves each `relations:` block, `links::bind` binds each prose link, and `Scope::reach` walks each declared governed scope. The first three passes read the rows of the census, and the fourth reads the tree through the resolvers. No pass opens a document file. A second read of the corpus could disagree with the census, and coverage is a function of the census and the graph together.
 
-The census decides the node set. A row is a node when `Outcome::node` of the census crate gives it a kind and the row declares an identifier. That set includes a generated document that declares an identifier. Spec 6 excuses a generated file from checks and not from identity. So a projection that other documents cite can be an end of an edge.
+The census decides the node set. A row is a node when `Outcome::node` of the census crate gives it a kind and the row declares an identifier. That set includes a generated document that declares an identifier. The [generate contract](../interfaces/headwater-generate.md#a-generated-document-is-a-document-of-the-corpus) excuses a generated file from checks and not from identity. So a projection that other documents cite can be an end of an edge.
 
 `Config` names the front matter key of the identifier (`id`, [HW-DR-0068](../decisions/0068-the-front-matter-key-that-carries-a-minted-identifier-is-id.md)) and of the relation block (`relations`, [Q4](../spec/09-decisions.md#q4--relation-storage)). Both are parameters and not literals, so a change to either declaration changes one default.
 
