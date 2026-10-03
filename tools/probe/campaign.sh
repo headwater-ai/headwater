@@ -97,8 +97,10 @@
 #
 # The present tree is the archive with the instrument removed
 # (`ablate.sh --present`) and sealed against every probe of every line
-# (`seal.sh`), so each arm of every run lost the same answer keys. Each absent
-# tree is a copy of the present tree with its tier's ablation removed. The
+# (`seal.sh`), so each arm of every run lost the same answer keys. Each other
+# arm's tree is a copy of the present tree that `ablate.sh <tier> <tree>
+# <arm>` changed: the absent arm loses its tier's ablation, and a component
+# arm loses or gains its `components` delta. The
 # present tree also serves as the oracle tree that `probe-transform.sh` grafts
 # a `patched` artifact into, so both arms are graded by one oracle. Each
 # session runs in a fresh copy of its arm's tree, deleted once it is recorded.
@@ -667,10 +669,19 @@ while IFS= read -r line; do
     set -- $line
     tier=$2 arm=$3
     [ -d "$out/trees/$tier-$arm" ] && continue
-    cp -a "$out/trees/oracle" "$out/trees/$tier-$arm" || exit 3
-    if [ "$arm" = absent ]; then
-        sh "$root/tools/probe/ablate.sh" "$tier" "$out/trees/$tier-$arm" >/dev/null || exit 3
-    fi
+    # A component arm is built by `ablate.sh` too (#1659). Before, only the
+    # absent arm was, so the `no-hook`, `no-skills`, `no-claude-md` and `mcp`
+    # trees were copies of the present tree, and the slice-1 live check found
+    # no `.mcp.json` in the `mcp` arm's workspace. The tree is built under
+    # another name and moved, so a build that stopped half way is not reused.
+    rm -rf "$out/trees/.building"
+    cp -a "$out/trees/oracle" "$out/trees/.building" || exit 3
+    case $arm in
+        present) ;;
+        absent) sh "$root/tools/probe/ablate.sh" "$tier" "$out/trees/.building" >/dev/null || exit 3 ;;
+        *) sh "$root/tools/probe/ablate.sh" "$tier" "$out/trees/.building" "$arm" >/dev/null || exit 3 ;;
+    esac
+    mv "$out/trees/.building" "$out/trees/$tier-$arm" || exit 3
 done < "$out/lines"
 
 # The jobs, shuffled with the seed. A job's name is its line, its probe's

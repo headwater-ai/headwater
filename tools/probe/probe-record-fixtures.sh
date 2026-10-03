@@ -3075,6 +3075,30 @@ STUB
         same "and the harness ran twice in all" "3" \
             "$(wc -l < "$scratch/probe-log/stagger.calls" 2>/dev/null | tr -d ' ')"
         present "and the batch's total counts the 50" "110 cents spent" "$scratch/budget-h2.err"
+
+        # Each component arm's tree is built by `ablate.sh` (#1659). The
+        # slice-1 live check found no `.mcp.json` in the `mcp` arm's
+        # workspace, because only the absent arm was ever ablated. A cap of
+        # 1 cent refuses every job, so the batch builds its trees from this
+        # checkout and starts no session.
+        arms=$scratch/arms
+        rm -rf "$arms"
+        printf 'campaign mcp navigability\ncampaign no-hook navigability\n' > "$scratch/arms.spec"
+        rm -f "$scratch/probe-log/stagger.calls"
+        PATH="$scratch/bin:$PATH" sh "$root/tools/probe/campaign.sh" --out "$arms" \
+            --model claude-haiku-4-5 --spec "$scratch/arms.spec" --repetitions 1 \
+            --cap-cents 1 >/dev/null 2>"$scratch/arms.err"
+        same "a batch the cap refuses whole exits 7 and runs no harness" "7 0" \
+            "$? $(cat "$scratch/probe-log/stagger.calls" 2>/dev/null | wc -l | tr -d ' ')"
+        same "and the mcp arm's tree holds the server the arm adds" "yes" \
+            "$([ -f "$arms/trees/campaign-mcp/.mcp.json" ] && echo yes || echo no)"
+        same "and the present tree does not" "no" \
+            "$([ -f "$arms/trees/oracle/.mcp.json" ] && echo yes || echo no)"
+        same "and the no-hook arm's tree lost the hook's script and kept the settings" "no yes" \
+            "$([ -f "$arms/trees/campaign-no-hook/.claude/hooks/intent.sh" ] && echo yes || echo no) $([ -f "$arms/trees/campaign-no-hook/.claude/settings.json" ] && echo yes || echo no)"
+        same "and the present tree kept it" "yes" \
+            "$([ -f "$arms/trees/oracle/.claude/hooks/intent.sh" ] && echo yes || echo no)"
+        rm -rf "$arms"
         rm -rf "$stagger"
         rm -f "$scratch/bin/cargo"
         unset CARGO_TARGET_DIR
