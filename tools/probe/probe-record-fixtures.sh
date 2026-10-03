@@ -2669,9 +2669,16 @@ STUB
             "$(cat "$batch/sessions/L1-campaign-present-p1-r2/status" 2>/dev/null || echo none)"
         present "and says what it reserved" "at 60 each against a campaign ceiling of 110" "$scratch/batch-ceiling.err"
         printf '111\n' > "$batch/ceiling.campaign"
+        # A session of another tier counts toward the cap and not toward
+        # this tier's ceiling.
+        mkdir -p "$batch/sessions/L2-other-tier"
+        printf 'documentation\n' > "$batch/sessions/L2-other-tier/tier"
+        printf '1000\n' > "$batch/sessions/L2-other-tier/cost"
+        printf '0\n' > "$batch/sessions/L2-other-tier/status"
         PATH="$scratch/bin:$PATH" sh "$root/tools/probe/campaign.sh" --out "$batch" --job "$job" \
             >/dev/null 2>"$scratch/batch-ceiling.err"
-        same "and a ceiling of 111 admits it" "0" \
+        rm -rf "$batch/sessions/L2-other-tier"
+        same "and a ceiling of 111 admits it, whatever another tier spent" "0" \
             "$(cat "$batch/sessions/L1-campaign-present-p1-r2/status" 2>/dev/null || echo none)"
         same "and the harness received the budget of B" "0.60" \
             "$(awk 'prev == "--max-budget-usd" { print; exit } { prev = $0 }' "$args" 2>/dev/null)"
@@ -3176,12 +3183,21 @@ STUB
         : > "$stagger/max-turns"
         printf '205200\n' > "$stagger/ceiling.campaign"
         printf '50\n' > "$stagger/unit.campaign"
-        PATH="$scratch/bin:$PATH" sh "$root/tools/probe/campaign.sh" --out "$stagger" \
+        PATH="$scratch/bin:$PATH" timeout 60 sh "$root/tools/probe/campaign.sh" --out "$stagger" \
             --job "L1-campaign-present-p1-r1 1 campaign present sufficiency HW-PROBE-$tombstone" \
             >/dev/null 2>"$scratch/budget-gone.err"
         same "a job that finds the lock's holder gone halts and starts nothing" "yes 0" \
             "$([ -f "$stagger/slice/halt" ] && echo yes || echo no) $(cat "$scratch/probe-log/stagger.calls" 2>/dev/null | wc -l | tr -d ' ')"
         present "and says which worker holds it" "the worker $gone holds the batch lock and is gone" "$scratch/budget-gone.err"
+
+        # A worker that finds no token left releases the lock. A slice of 1
+        # over 3 jobs: the second job takes no token, and the third must
+        # find the lock free, so the invocation exits 9 with no halt.
+        stagger_batch "$stagger"
+        rm -f "$scratch/probe-log/stagger.calls"
+        budget_run "$stagger" "$scratch/budget-tok.err" --max-sessions 1 --cap-cents 500 --session-cents 60
+        same "a slice of 1 over 3 jobs records 1 and exits 9 with no halt" "9 1 no" \
+            "$? $(stagger_recorded "$stagger") $([ -f "$stagger/slice/halt" ] && echo yes || echo no)"
 
         # `--session-cents` takes a positive whole number of cents, and a
         # refused value writes nothing (verify of #1659).
