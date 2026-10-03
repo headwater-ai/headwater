@@ -11,8 +11,9 @@
 //!
 //! A second walk reads credits in prose (#1572 clause 9). A sentence that
 //! names spec 6, as a link to `06-engine-architecture.md` with or without an
-//! anchor or as the plain words, and puts a present-tense credit verb right
-//! after the name, credits that part with what follows. When that sentence or
+//! anchor or as the plain words, and puts a present-tense credit verb after
+//! the name, with at most the relative pronoun "which" and one adverb between
+//! them, credits that part with what follows. When that sentence or
 //! the next one holds a term of `MOVED_CREDITS`, the credit is to a rule that
 //! moved, and the sentence is repointed and its claim is corrected in place
 //! (HW-DR-0106). A past-tense verb (said, stated) is history and is not read.
@@ -208,8 +209,8 @@ fn spec_six_names(sentence: &str) -> Vec<usize> {
 }
 
 /// True when `sentence` names spec 6 and the first word after the name, past
-/// at most one relative pronoun ("spec 6, which says") and then at most one
-/// adverb, is a present-tense credit verb.
+/// at most one relative pronoun (`which`) and then at most one adverb, is a
+/// present-tense credit verb.
 fn credits_spec_six(sentence: &str) -> bool {
     spec_six_names(sentence).into_iter().any(|end| {
         let mut words = sentence[end..]
