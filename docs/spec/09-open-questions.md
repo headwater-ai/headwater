@@ -432,3 +432,7 @@ The documents on this shelf, in the reading order this corpus derives. Each head
 ## An evidence relation declares which end is the evidence, and discharges declares the source
 
 [HW-DR-0103](../decisions/0103-an-evidence-relation-declares-which-end-is-the-evidence-and-discharges-declares-the-source.md) — A relation of the evidence family declares evidence_at, from or to, because the family cannot say which end substantiates the other. Absent is to. discharges declares from, so an evaluation is the evidence for its obligation. (asserted, and no human has accepted it)
+
+## Whether the embedding path becomes the silence-only fallback of routing, and what happens to the shadow collection
+
+[HW-DR-0105](../decisions/0105-whether-the-embedding-path-becomes-the-silence-only-fallback-of-routing-and-what-happens-to-the-shadow-collection.md) — Proposed, not ruled: the embedding path is not routing's silence-only fallback, because it is never silent and nothing grades its recall. The collection goes on. (asserted, and no human has accepted it)

@@ -107,6 +107,7 @@ nav:
       - "A counted tombstone lists a digest of each withheld identifier, and a sealed one lists nothing": "decisions/0100-a-counted-tombstone-lists-a-digest-of-each-withheld-identifier-and-a-sealed-one-lists-nothing.md"
       - "An editor integration starts headwater mcp for each query and does not embed the library": "decisions/0102-an-editor-integration-starts-headwater-mcp-for-each-query-and-does-not-embed-the-library.md"
       - "An evidence relation declares which end is the evidence, and discharges declares the source": "decisions/0103-an-evidence-relation-declares-which-end-is-the-evidence-and-discharges-declares-the-source.md"
+      - "Whether the embedding path becomes the silence-only fallback of routing, and what happens to the shadow collection": "decisions/0105-whether-the-embedding-path-becomes-the-silence-only-fallback-of-routing-and-what-happens-to-the-shadow-collection.md"
   - "Acceptance criteria":
       - "Acceptance criteria": "acceptance-criteria/README.md"
       - "No engine source outside the fetch crate names a network API and no crate of the checking loop reaches a network package": "acceptance-criteria/0001-no-engine-source-outside-the-fetch-crate-names-a-network-api-and-no-crate-of-the-checking-loop-reaches-a-network-package.md"
@@ -143,6 +144,7 @@ nav:
       - "Warrant — what stands behind a document, and who vouched for it": "evaluations/warrant-and-adjudication.md"
       - "What a check can know — the Q5 and Q21 evaluation": "evaluations/what-a-check-can-know.md"
       - "What the counterfactual campaign of 2026-09-30 measured, by component": "evaluations/what-the-counterfactual-campaign-of-2026-09-30-measured-by-component.md"
+      - "What the shadow-mode routing log showed at its bound": "evaluations/what-the-shadow-mode-routing-log-showed-at-its-bound.md"
       - "Why corpus counts are derived, not stored": "evaluations/why-corpus-counts-are-derived-not-stored.md"
   - "Explanations":
       - "Explanations": "explanations/README.md"
