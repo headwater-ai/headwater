@@ -249,6 +249,39 @@ has c "$o" "unrestricted $A injected embedding recall: 1 of 2 (0.5000)"
 has c "$o" "unrestricted $A not-injected deterministic recall: 0 of 1 (0.0000)"
 has c "$o" "unrestricted $A not-injected embedding recall: 0 of 1 (0.0000)"
 
+# f: the denominators and the held gaps, on digest C in a checkout with an
+# engine. f1 is silent on both paths. f2 has no route (the hook named a skip
+# reason), no neighbors, and no `injected` member. f3 offers on both. f4 is
+# typed and has no line. So deterministic silent is 1 of 2 and embedding
+# silent 1 of 2: an absent route or absent neighbors in a denominator, or an
+# embedding silence counted only where the route spoke, moves one. The floor
+# counts 1, not the absent route. f2 belongs to the not-injected group,
+# because nothing says it was injected. The held gap is f4.
+C=sha256:cccc
+start f F "$scratch/co"
+prompt f F 2026-09-30T10:00:00.000Z f1
+prompt f F 2026-09-30T10:10:00.000Z f2
+prompt f F 2026-09-30T10:20:00.000Z f3
+prompt f F 2026-09-30T10:30:00.000Z f4
+logline f F 2026-09-30T10:00:05Z f1 false "$C" "$silent" "$(neighbors "$C" '')"
+printf '{"at":"2026-09-30T10:10:05Z","session":"F","prompt_id":"f2","probe_session":"","corpus_root":"/root/c","skip":"no_engine","route":null,"model_digest":"%s","neighbors":null}\n' "$C" >> "$scratch/f/log/F.jsonl"
+logline f F 2026-09-30T10:20:05Z f3 true "$C" "$(route docs/x.md)" "$(neighbors "$C" docs/x.md)"
+run f
+o="$scratch/f.out"
+has f "$o" "typed: 4"
+has f "$o" "joined: 3"
+has f "$o" "held typed: 4"
+has f "$o" "held joined: 3"
+has f "$o" "held gaps: 1"
+has f "$o" "silent person prompts: 1 (floor 58: not met)"
+has f "$o" "unrestricted $C all prompts: 3"
+has f "$o" "unrestricted $C all route absent: 1"
+has f "$o" "unrestricted $C all deterministic silent: 1 of 2 (0.5000)"
+has f "$o" "unrestricted $C all embedding silent: 1 of 2 (0.5000)"
+has f "$o" "unrestricted $C injected prompts: 1"
+has f "$o" "unrestricted $C not-injected prompts: 2"
+has f "$o" "restricted $C all prompts: 3"
+
 # d: the bound closes on the third distinct id in time order, k3. It does not
 # close on the third line in time, the second line of p2, nor on the third id
 # in id order, p2.
