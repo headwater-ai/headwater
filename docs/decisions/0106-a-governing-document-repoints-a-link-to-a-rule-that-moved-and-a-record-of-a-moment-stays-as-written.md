@@ -48,7 +48,7 @@ The second ruling replaces the commit condition of the first. An evaluation that
 
 ## Consequences
 
-- The governing links to the seven pointer sections of spec 6 now go to the homes. `engine/crates/cli/tests/spec_six_inbound_links.rs` fails on a governing document that links one of the seven again. It skips the records of a moment by path, and it skips a document at `status: superseded`. Its allow table holds the links whose sentence credits spec 6 for the placement that the pointer section still states.
+- The governing links to the seven pointer sections of spec 6 now go to the homes. `engine/crates/cli/tests/spec_six_inbound_links.rs` fails on a governing document that links one of the seven again. It skips the records of a moment by path, and it skips a document at `status: superseded`. Its allow table holds the links whose sentence credits spec 6 for the placement that the pointer section still states. A second table holds the 34 links that the evaluations keep to the seven sections, so a repoint inside an evaluation also fails.
 - The test cannot read a bare link to spec 6, or a link to a section that still states something. A reader checks those, against the rule above.
 - An evaluation, a review or a probe run is never edited to follow a moved rule. A reader who follows its link to an older home reads a pointer there, and the pointer names the new home.
 - "Names its commit" is not yet a fact that a check can read. [#1652](https://github.com/headwater-ai/headwater/issues/1652) carries that work, and it carries this rule into the shipped package, because an adopter meets the same choice when a rule moves.

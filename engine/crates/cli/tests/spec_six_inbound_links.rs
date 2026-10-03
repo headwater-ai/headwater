@@ -6,7 +6,8 @@
 //! rule. A governing document that links one of them for the rule itself is
 //! repointed to the home, and nothing it claims changes. A record of a moment
 //! (an evaluation, a review, a probe run, a probe result, a superseded
-//! decision) stays as written, so the walk skips it.
+//! decision) stays as written, so the walk skips it, and a table holds the
+//! count of each link that a record keeps to one of the seven sections.
 //!
 //! The walk cannot see a bare `06-engine-architecture.md` credit, or a credit
 //! to a section that still states something. A reader checks those.
@@ -175,6 +176,103 @@ fn every_allowed_link_is_still_in_its_document() {
             "{rel} no longer links #{anchor}; drop the allow row ({reason})"
         );
     }
+}
+
+/// The links that the records of a moment hold to a pointer-only section of
+/// spec 6, with the count of each, measured on 2026-10-03. A record of a
+/// moment stays as written (HW-DR-0106), so a repoint inside one lowers a
+/// count, and this table catches it. Each row is `(path, anchor, count)`.
+const RECORD_LINKS: &[(&str, &str, usize)] = &[
+    (
+        "docs/evaluations/adjacent-work.md",
+        "an-export-is-a-projection-and-it-declares-what-it-dropped",
+        3,
+    ),
+    (
+        "docs/evaluations/adjacent-work.md",
+        "an-export-profile-carries-a-filter",
+        6,
+    ),
+    ("docs/evaluations/adjacent-work.md", "ci-adapters", 1),
+    (
+        "docs/evaluations/adjacent-work.md",
+        "what-a-filtered-export-claims-and-what-it-does-not",
+        4,
+    ),
+    (
+        "docs/evaluations/first-contact.md",
+        "what-a-filtered-export-claims-and-what-it-does-not",
+        2,
+    ),
+    (
+        "docs/evaluations/graph-export-and-federation.md",
+        "checks",
+        1,
+    ),
+    (
+        "docs/evaluations/the-measurement-layer.md",
+        "an-export-profile-carries-a-filter",
+        2,
+    ),
+    (
+        "docs/evaluations/the-serving-boundary.md",
+        "an-export-is-a-projection-and-it-declares-what-it-dropped",
+        2,
+    ),
+    (
+        "docs/evaluations/the-serving-boundary.md",
+        "an-export-profile-carries-a-filter",
+        2,
+    ),
+    ("docs/evaluations/the-serving-boundary.md", "ci-adapters", 2),
+    ("docs/evaluations/the-serving-boundary.md", "mcp-server", 1),
+    (
+        "docs/evaluations/the-serving-boundary.md",
+        "what-a-filtered-export-claims-and-what-it-does-not",
+        2,
+    ),
+    (
+        "docs/evaluations/warrant-and-adjudication.md",
+        "an-export-is-a-projection-and-it-declares-what-it-dropped",
+        1,
+    ),
+    (
+        "docs/evaluations/warrant-and-adjudication.md",
+        "an-export-profile-carries-a-filter",
+        2,
+    ),
+    (
+        "docs/evaluations/warrant-and-adjudication.md",
+        "what-a-filtered-export-claims-and-what-it-does-not",
+        1,
+    ),
+    (
+        "docs/evaluations/what-a-check-can-know.md",
+        "ci-adapters",
+        2,
+    ),
+];
+
+#[test]
+fn a_record_of_a_moment_keeps_its_links_to_spec_6() {
+    let mut moved = Vec::new();
+    for (rel, anchor, want) in RECORD_LINKS {
+        assert!(
+            RECORDS_OF_A_MOMENT.iter().any(|p| rel.starts_with(p)),
+            "{rel} is not a record of a moment"
+        );
+        let got = read(rel)
+            .matches(&format!("{SPEC_SIX_FILE}#{anchor})"))
+            .count();
+        if got != *want {
+            moved.push(format!("{rel} #{anchor}: {got} link(s), recorded {want}"));
+        }
+    }
+    assert!(
+        moved.is_empty(),
+        "a record of a moment stays as written (HW-DR-0106), and these links changed:\n{}",
+        moved.join("\n")
+    );
 }
 
 #[test]
