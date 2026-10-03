@@ -2370,11 +2370,30 @@ STUB
     # refuses with 2 before it builds a tree (#1384). The regression tier
     # declares none. The batch needs a clean checkout first, so the case runs
     # only on one, which is what CI checks out. `cargo` is a stub, because the
-    # engine this suite reads is already built.
+    # engine this suite reads is already built. The batch copies the binary
+    # its build wrote, at `dev-release/` under `CARGO_TARGET_DIR`, and CI
+    # builds only `release`. So the stub's build is a scratch target that
+    # holds the engine this suite reads, and the checkout's own target is
+    # not touched.
     if [ "$(git -C "$root" rev-parse --show-toplevel 2>/dev/null)" = "$root" ] \
         && [ -z "$(git -C "$root" status --porcelain --untracked-files=no)" ]; then
         printf '#!/bin/sh\nexit 0\n' > "$scratch/bin/cargo"
         chmod +x "$scratch/bin/cargo"
+        mkdir -p "$scratch/campaign-target/dev-release" "$scratch/empty-target"
+        cp "$engine" "$scratch/campaign-target/dev-release/headwater"
+        CARGO_TARGET_DIR=$scratch/campaign-target
+        export CARGO_TARGET_DIR
+
+        # A build that leaves no binary where cargo writes refuses with 3, and
+        # never reaches the plans.
+        printf 'campaign present sufficiency\n' > "$scratch/nobinary.spec"
+        CARGO_TARGET_DIR=$scratch/empty-target PATH="$scratch/bin:$PATH" \
+            sh "$root/tools/probe/campaign.sh" --out "$scratch/nobinary" \
+            --model claude-haiku-4-5 --spec "$scratch/nobinary.spec" \
+            >/dev/null 2>"$scratch/nobinary.err"
+        same "a batch whose build wrote no engine under CARGO_TARGET_DIR refuses with 3" "3" "$?"
+        present "and names the path" "no engine at $scratch/empty-target/dev-release/headwater" "$scratch/nobinary.err"
+
         printf 'regression present sufficiency\n' > "$scratch/uncapped.spec"
         PATH="$scratch/bin:$PATH" sh "$root/tools/probe/campaign.sh" --out "$scratch/uncapped" \
             --model claude-haiku-4-5 --spec "$scratch/uncapped.spec" \
@@ -2510,6 +2529,7 @@ STUB
         present "and names both versions" "1.0.0 (Claude Code)" "$scratch/stagger-7.err"
         rm -rf "$stagger"
         rm -f "$scratch/bin/cargo"
+        unset CARGO_TARGET_DIR
     else
         printf 'note the checkout is not clean, so the uncapped batch case did not run.\n'
     fi

@@ -76,7 +76,9 @@
 # 2026-09-28 that every workspace of both arms carries the binary. In an absent
 # arm it refuses, because `.headwater/` is gone, which is what that arm is
 # declared to remove. The driver runs the build before the batch, so the binary
-# it copies is the build of the pinned commit.
+# it copies is the build of the pinned commit. It reads the binary where cargo
+# wrote it, under `CARGO_TARGET_DIR` when that is set, and refuses with 3 when
+# the build left none there.
 #
 # ## The trees
 #
@@ -455,7 +457,20 @@ cargo build --profile dev-release -p headwater-cli --locked \
     tail -5 "$out/build.err" >&2
     exit 3
 }
-engine=$root/engine/target/dev-release/headwater
+# The binary is where cargo wrote it: under `CARGO_TARGET_DIR` when the caller
+# set one, which a relative value names from this directory, and under the
+# engine's own `target` otherwise. Reading `engine/target` while cargo wrote
+# elsewhere would copy a binary of another commit into every tree.
+target=${CARGO_TARGET_DIR:-$root/engine/target}
+case $target in
+    /*) ;;
+    *) target=$PWD/$target ;;
+esac
+engine=$target/dev-release/headwater
+[ -x "$engine" ] || {
+    echo "campaign: the build wrote no engine at $engine, so no workspace can carry the pinned engine." >&2
+    exit 3
+}
 if [ -f "$out/head" ] && [ "$(cat "$out/head")" != "$head" ]; then
     echo "campaign: $out holds a batch of $(cat "$out/head"), and HEAD is $head. Use another directory." >&2
     exit 4
