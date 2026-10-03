@@ -15,6 +15,7 @@
 #     sh tools/run/relevance-grade.sh agreement
 #     sh tools/run/relevance-grade.sh third --seed <s>
 #     sh tools/run/relevance-grade.sh consensus
+#     sh tools/run/relevance-grade.sh grade
 #
 # The procedure, in order. Each step is a commit, so the order is on record.
 #
@@ -102,6 +103,27 @@
 #     `agreed` or `third`. The column also admits `owner`, for an item the
 #     owner settles.
 #
+#  7. `grade` unblinds. It reads `sample.tsv` and `consensus.tsv` and
+#     nothing else, never the key or a packet, and writes `grade.txt`. The
+#     gate runs first, and nothing is written when it fails: every offered
+#     document of every sampled prompt has a consensus value of 0, 1 or 2,
+#     every sampled prompt has a `missing` value of 0 or 1, and the
+#     consensus scores nothing the sample did not offer, and nothing twice.
+#     A sample row has eight columns and one of the three strata, and lists
+#     no document twice in one offer. The gate does not
+#     wait on owner scores, because the owner waived the spot check on
+#     2026-10-03. The path of a document is the column of `sample.tsv` that
+#     offered it, `deterministic` or `embedding`, and a document in both
+#     offers is credited once to each path. For each stratum and each path
+#     it prints the prompts on which the path offered, the documents
+#     offered, and at both thresholds, score 2 and score 1 or more: the
+#     documents at the threshold, the prompts with one document at it with
+#     a Wilson 95% interval, and the prompts whose first offered document is
+#     at it. It chooses neither threshold, because the figures were seen
+#     before a threshold was fixed. It prints the `missing` count of each
+#     stratum and no line that pools the strata, because the overlap
+#     stratum is a draw and the other two are whole.
+#
 # The seal. A probe is sealed: outside `docs/`, only a fold and the three
 # files that state an answer may name one (#1384), and
 # `tools/probe/probe-record-fixtures.sh` holds that set. The routing paths
@@ -124,8 +146,9 @@
 #     HEADWATER_TRANSCRIPT_DIRS    the transcripts, as shadow-mine.sh reads them
 #     SHADOW_MINE_TOOL             shadow-mine.sh itself
 #
-# A non-zero exit is an argument or a missing input (2), no `jq` (3), or a
-# score file that does not cover its batch (4).
+# A non-zero exit is an argument or a missing input (2), no `jq` (3), a
+# score file that does not cover its batch (4), or at `grade`, a consensus
+# that does not cover the sample (4).
 #
 # `sh tools/run/relevance-grade-fixtures.sh` holds it.
 
@@ -696,6 +719,103 @@ cmd_consensus() {
         "$(awk -F '\t' '$4 == "third"' "$work/cons" | wc -l | tr -d ' ')"
 }
 
+cmd_grade() {
+    [ $# -eq 0 ] || usage
+    [ -f "$record/sample.tsv" ] || die "need sample.tsv"
+    [ -f "$record/consensus.tsv" ] || die "need consensus.tsv"
+    # The gate runs in full before anything is written: every offered
+    # document of every sampled prompt has a consensus value of 0, 1 or 2,
+    # every sampled prompt has a `missing` value of 0 or 1, and the
+    # consensus holds no item that the sample did not offer and none twice.
+    # A sample row has eight columns, one of the three strata, and no
+    # document twice in one offer. A consensus row has four columns.
+    LC_ALL=C awk -F '\t' '
+        FNR == 1 { f++; next }
+        f == 1 { if (NF != 8) bad("prompt " $1 " has " NF " columns, not 8")
+                 if ($1 in seen) { bad("prompt " $1 " is sampled twice") } seen[$1] = 1; want[$1 "\t" "missing"] = 1
+                 if ($2 != "silent" && $2 != "disjoint" && $2 != "overlap") bad("prompt " $1 " has the stratum " $2)
+                 for (c = 7; c <= 8; c++) {
+                     n = ($c == "") ? 0 : split($c, d, "|"); split("", once)
+                     for (i = 1; i <= n; i++) { if (d[i] in once) bad("prompt " $1 " lists " d[i] " twice in column " c); once[d[i]] = 1; want[$1 "\t" d[i]] = 1 }
+                 }
+                 next }
+        NF != 4 { bad("a consensus row has " NF " columns, not 4: " $1 "\t" $2); next }
+        { k = $1 "\t" $2
+          if (!(k in want)) { bad("the consensus scores an item the sample did not offer: " k); next }
+          if (k in got) { bad("the consensus scores an item twice: " k); next }
+          got[k] = 1
+          if ($2 == "missing" ? ($3 != "0" && $3 != "1") : ($3 != "0" && $3 != "1" && $3 != "2")) bad("a consensus value outside the scale: " k "\t" $3) }
+        function bad(m) { print "relevance-grade: " m > "/dev/stderr"; fails++ }
+        END {
+            for (k in want) if (!(k in got)) bad("no consensus value for " k)
+            exit fails ? 4 : 0
+        }' "$record/sample.tsv" "$record/consensus.tsv" || die "the consensus does not cover the sample, so no figure is written" 4
+    # A document's value is credited to each path that offered it, so a
+    # document in both offers counts once for each path.
+    LC_ALL=C awk -F '\t' '
+        function share(k, n) { return n == 0 ? "n/a" : sprintf("%.4f", k / n) }
+        function wilson(k, n,   z, p, d, c, h, lo, hi) {
+            if (n == 0) return "n/a"
+            z = 1.96; p = k / n; d = 1 + z * z / n
+            c = (p + z * z / (2 * n)) / d
+            h = z * sqrt(p * (1 - p) / n + z * z / (4 * n * n)) / d
+            lo = c - h; hi = c + h
+            if (lo < 0) lo = 0
+            if (hi > 1) hi = 1
+            return sprintf("%.4f to %.4f", lo, hi)
+        }
+        FNR == 1 { f++; next }
+        f == 1 { v[$1 "\t" $2] = $3; next }
+        {
+            id = $1; s = $2; np[s]++
+            if (v[id "\t" "missing"] == 1) miss[s]++
+            for (c = 7; c <= 8; c++) {
+                p = (c == 7) ? "route" : "embedding"
+                n = ($c == "") ? 0 : split($c, d, "|")
+                if (n == 0) continue
+                off[s, p]++; docs[s, p] += n
+                for (t = 1; t <= 2; t++) {
+                    any = 0
+                    for (i = 1; i <= n; i++) if (v[id "\t" d[i]] >= t) { at[s, p, t]++; any = 1 }
+                    if (any) pat[s, p, t]++
+                    if (v[id "\t" d[1]] >= t) first[s, p, t]++
+                }
+            }
+        }
+        END {
+            split("silent disjoint overlap", S, " ")
+            for (j = 1; j <= 3; j++) {
+                s = S[j]
+                printf "stratum %s: %d prompts\n", s, np[s]
+                for (q = 1; q <= 2; q++) {
+                    p = (q == 1) ? "route" : "embedding"
+                    o = off[s, p] + 0; dn = docs[s, p] + 0
+                    printf "stratum %s path %s: offered on %d of %d prompts, %d documents\n", s, p, o, np[s], dn
+                    for (t = 2; t >= 1; t--) {
+                        printf "stratum %s path %s score %s: documents %d of %d (%s); prompts %d of %d (%s, Wilson 95%% %s); first offered %d of %d (%s)\n", \
+                            s, p, (t == 2) ? "2" : "1 or more", at[s, p, t], dn, share(at[s, p, t], dn), \
+                            pat[s, p, t], o, share(pat[s, p, t], o), wilson(pat[s, p, t], o), first[s, p, t], o, share(first[s, p, t], o)
+                    }
+                }
+                printf "stratum %s missing: %d of %d prompts (%s)\n", s, miss[s], np[s], share(miss[s], np[s])
+            }
+        }' "$record/consensus.tsv" "$record/sample.tsv" > "$work/grade" || exit 1
+    {
+        printf '%s\n' \
+            "# The unblinded grade of #1670, written by \`sh tools/run/relevance-grade.sh grade\`." \
+            "# It reads sample.tsv and consensus.tsv of this record and nothing else, so a clone reprints it." \
+            "# A path is the deterministic route (column 7 of sample.tsv) or the embedding path (column 8)." \
+            "# A document in both offers is credited once to each path. A sealed token is graded like a path." \
+            "# Both thresholds are printed and neither is chosen: score 2 (would need) and score 1 or more (perhaps)." \
+            "# A prompts figure counts the prompts on which the path offered with at least one document at the threshold." \
+            "# A first offered figure counts the prompts whose first offered document of the path is at the threshold." \
+            "# No line pools the strata: the overlap stratum is a draw from its kept prompts, and the other two are whole." \
+            "# The gate did not wait on owner scores: the owner waived the spot check on 2026-10-03."
+        cat "$work/grade"
+    } > "$record/grade.txt"
+    printf 'grade: %s lines to %s\n' "$(wc -l < "$work/grade" | tr -d ' ')" "$record/grade.txt"
+}
+
 [ $# -ge 1 ] || usage
 sub=$1
 shift
@@ -706,5 +826,6 @@ case $sub in
     agreement) cmd_agreement "$@" ;;
     third) cmd_third "$@" ;;
     consensus) cmd_consensus "$@" ;;
+    grade) cmd_grade "$@" ;;
     *) usage ;;
 esac

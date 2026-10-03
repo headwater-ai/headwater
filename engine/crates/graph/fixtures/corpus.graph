@@ -715,6 +715,8 @@ anchors
     cited by HW-PD-0020
   code_path `tools/run/queue-done.sh` via source-tree
     cited by HW-PD-0020
+  code_path `tools/run/relevance-grade.sh` via source-tree
+    cited by HW-EVAL-what-a-blind-grade-of-the-two-routing-paths-offers-showed
   code_path `tools/run/run-census.sh` via source-tree
     cited by HW-PD-0003
   code_path `tools/run/run-census.sh` via source-tree

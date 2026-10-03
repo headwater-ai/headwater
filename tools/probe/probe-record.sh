@@ -1018,6 +1018,21 @@ else
     printf 'The paths outside its workspace this session named were not counted, because its stream did not parse as JSON.\n\n'
 fi
 
+# How many calls the session made to a web tool (#1472). The harness denies
+# `WebSearch` and `WebFetch` above, so 0 is expected, and this measures it
+# rather than assuming it. A call is a `tool_use` or `server_tool_use` block
+# that names one of the four forms the harness and the provider use. A stream
+# that does not parse is said to be uncounted, and never printed as none.
+if web_calls=$(jq -s '[.[] | select(.type == "assistant") | .message.content[]?
+    | select(.type == "tool_use" or .type == "server_tool_use")
+    | select((.name // "") as $n | any(("WebSearch", "WebFetch", "web_search", "web_fetch"); . == $n))] | length' \
+    < "$raw" 2>/dev/null) && [ -n "$web_calls" ]; then
+    printf 'The session made %s %s to a web tool.\n\n' "$web_calls" \
+        "$([ "$web_calls" = 1 ] && echo call || echo calls)"
+else
+    printf 'The calls this session made to a web tool were not counted, because its stream did not parse as JSON.\n\n'
+fi
+
 if [ "$capped" = 1 ]; then
     printf 'The session stopped at the turn cap of %s.\n\n' "${max_turns:-the harness}"
 fi
