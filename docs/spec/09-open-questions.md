@@ -436,3 +436,7 @@ The documents on this shelf, in the reading order this corpus derives. Each head
 ## Whether the embedding path becomes the silence-only fallback of routing, and what happens to the shadow collection
 
 [HW-DR-0105](../decisions/0105-whether-the-embedding-path-becomes-the-silence-only-fallback-of-routing-and-what-happens-to-the-shadow-collection.md) — Proposed, not ruled: the embedding path is not routing's silence-only fallback, because it is never silent and nothing grades its recall. The collection goes on. (asserted, and no human has accepted it)
+
+## A governing document repoints a link to a rule that moved, and a record of a moment stays as written
+
+[HW-DR-0106](../decisions/0106-a-governing-document-repoints-a-link-to-a-rule-that-moved-and-a-record-of-a-moment-stays-as-written.md) — When a rule moves to a new home, a document that still governs changes its link to the home and keeps its claim. An evaluation, a review or a probe run stays as written, and its date or commit marks its moment (asserted, and no human has accepted it)
