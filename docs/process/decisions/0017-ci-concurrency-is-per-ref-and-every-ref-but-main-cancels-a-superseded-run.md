@@ -14,7 +14,7 @@ provenance:
 relations:
   governs:
     - to: .github/workflows/ci.yml
-      verified_revision: sha256:bf2f3f3ececf609b223cb2b152f59edfc3aa33faddc50efc5f9d94511e968cf2
+      verified_revision: sha256:b8b984e00518ec90ea1715522b077a8609f1fcd7f65258b3a3f577e84a7291b4
 ---
 
 # CI concurrency is per ref, and every ref but main cancels a superseded run

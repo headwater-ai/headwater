@@ -36,13 +36,13 @@ relations:
     - to: .claude/agents/hw-iterate.md
       verified_revision: sha256:d611defd41b37a8039c0ffb5270626e09f71454e7c32ead30d5b53aa5286f7a2
     - to: .claude/agents/hw-build.md
-      verified_revision: sha256:1a7b77b125314abe42f56dad699853f4edb315218721aff5968b5cb4343ea67c
+      verified_revision: sha256:d5de6de1a60172f6f0a3496cae347dfb9cdfd9c364d856927ad82932928d977a
     - to: .claude/agents/hw-verify.md
-      verified_revision: sha256:c98a5e49c01127218a1a4b3b0e42bd30ede5c729b0c23ca9ee65e471ff5e55f8
+      verified_revision: sha256:45ed3ef085a7f964e882d7658c2103dea6c1a3f5d2375c4703966f133672921c
     - to: .claude/agents/hw-integrate.md
       verified_revision: sha256:2b9a3b297f09fd03d49fe57e280653dc610bd8cc85e091d504ec03909af295dc
     - to: .claude/skills/hw-run-policy/SKILL.md
-      verified_revision: sha256:316f6e6f69b85a66096c07f10ae336c5aa0877e3fea5d1852c19514e460a14bd
+      verified_revision: sha256:09d2a4b4b89583079451f87b98b27af8fb3461b6f90a9ccd15b54224efc41780
     - to: .claude/skills/hw-verification-bar/SKILL.md
       verified_revision: sha256:a68ce6b14b5a8d7068aeafd8c7443e0497a55b4e444e2b971daa1da738c2153b
 ---
@@ -162,7 +162,7 @@ flowchart LR
 
 [`.claude/agents/hw-verify.md`](../../../.claude/agents/hw-verify.md) attacks one branch adversarially and returns a verdict to `hw-iterate`, which dispatched it.
 
-**It owns the attacks and the evidence, and never the ruling.** It detaches its own worktree at the branch, runs the suite and the gates, and runs the attacks `hw-iterate` chose from [`hw-verification-bar`](../../../.claude/skills/hw-verification-bar/SKILL.md). Its block reports what fired, what held, and every claim in the build note it could not test.
+**It owns the attacks and the evidence, and never the ruling.** It detaches its own worktree at the branch and runs the attacks `hw-iterate` chose from [`hw-verification-bar`](../../../.claude/skills/hw-verification-bar/SKILL.md). It leaves the workspace suite, clippy and the format check to CI, which it waits on last: CI runs them on the commit it detached at and on the host that also builds the branch, so a second run here doubles the load and adds no evidence. Its block reports what fired, what held, and every claim in the build note it could not test.
 
 **A verdict of `PASS` says what the verifier ran, and never that the branch is sound.** The line of unchecked claims is what makes a verdict readable, and a verdict that omits it is a verdict nobody can calibrate. `hw-iterate` and the parent both know this when they rule.
 

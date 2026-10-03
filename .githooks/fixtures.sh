@@ -1055,6 +1055,104 @@ judge 'a worktree with core.hooksPath resolving to the main checkout still runs 
 judge 'and standard input still reaches it, which the unclaimed-issue warning proves' 0 0 \
     '#901 is unassigned' "$out"
 
+# --- the push gate's refusals: a format and a projection CI would reject -----
+#
+# The two clauses that refuse run against a real `cargo fmt` and a planted
+# engine, in a repository of their own with a one-crate workspace under
+# `engine/`. The planted engine answers `generate --check` from a file, so a
+# case provokes the stale projection without building anything. A case that
+# needs `cargo fmt` is skipped with a line when this host has none, because a
+# refusal that never ran is not one that held.
+
+gate=$(mktemp -d) || exit 1
+trap 'rm -rf "$scratch" "$merges" "$pushes" "$gate"' EXIT HUP INT TERM
+
+mkdir -p "$gate/repo/.githooks" "$gate/repo/engine/crates/a/src" "$gate/repo/engine/target/dev-release"
+cp "$root/.githooks/pre-push" "$gate/repo/.githooks/"
+chmod +x "$gate/repo/.githooks/pre-push"
+printf '[workspace]\nmembers = ["crates/a"]\nresolver = "2"\n' > "$gate/repo/engine/Cargo.toml"
+printf '[package]\nname = "a"\nversion = "0.0.0"\nedition = "2021"\n' > "$gate/repo/engine/crates/a/Cargo.toml"
+printf 'pub fn a() -> u8 {\n    1\n}\n' > "$gate/repo/engine/crates/a/src/lib.rs"
+cat > "$gate/repo/engine/target/dev-release/headwater" <<'STUB'
+#!/bin/sh
+if [ "$1 $2" = "generate --check" ] && [ -e STALE ]; then
+    echo "derived artifact stale: planted"
+    exit 1
+fi
+exit 0
+STUB
+chmod +x "$gate/repo/engine/target/dev-release/headwater"
+
+(
+    cd "$gate/repo" || exit 1
+    git init -q -b main .
+    git config user.name fixtures
+    git config user.email fixtures@invalid
+    git add -A
+    git commit -qm "a formatted tree" --no-verify
+) >/dev/null 2>&1
+
+gate_head=$(git -C "$gate/repo" rev-parse HEAD)
+push_gate() {
+    (
+        cd "$gate/repo" || exit 1
+        printf 'refs/heads/main %s refs/heads/main %s\n' "$gate_pushed" "$zeroes" |
+            sh .githooks/pre-push origin dummy 2>&1
+    )
+}
+
+gate_pushed=$gate_head
+if command -v cargo >/dev/null 2>&1 && cargo fmt --version >/dev/null 2>&1; then
+    out=$(push_gate); status=$?
+    judge 'a push of a formatted tree passes both clauses' 0 "$status" "" "$out"
+    refute 'and it prints no refusal' 'would change this tree' "$out"
+
+    printf 'pub fn a()->u8{1}\n' > "$gate/repo/engine/crates/a/src/lib.rs"
+    out=$(push_gate); status=$?
+    judge 'a push of a tree cargo fmt would change is refused' 1 "$status" \
+        'cargo fmt would change this tree' "$out"
+    judge 'and the refusal names the command that repairs it' 1 "$status" \
+        '(cd engine && cargo fmt --all)' "$out"
+
+    out=$(
+        cd "$gate/repo" || exit 1
+        printf 'refs/heads/main %s refs/heads/main %s\n' "$gate_head" "$zeroes" |
+            HEADWATER_SKIP_PUSH_GATE=1 sh .githooks/pre-push origin dummy 2>&1
+    ); status=$?
+    judge 'HEADWATER_SKIP_PUSH_GATE releases both clauses for one push' 0 "$status" "" "$out"
+
+    gate_pushed=$none
+    out=$(push_gate); status=$?
+    judge 'a push of a ref that is not HEAD is not checked against HEAD''s tree' 0 "$status" "" "$out"
+    gate_pushed=$gate_head
+
+    printf 'pub fn a() -> u8 {\n    1\n}\n' > "$gate/repo/engine/crates/a/src/lib.rs"
+    touch -d '1 hour ago' "$gate/repo/engine/crates/a/src/lib.rs"
+else
+    printf 'skip the format cases: this host has no cargo fmt\n'
+fi
+
+touch "$gate/repo/STALE"
+out=$(push_gate); status=$?
+judge 'a push whose projection is stale is refused' 1 "$status" \
+    'a projection of this corpus is stale' "$out"
+judge 'and the refusal carries what the engine said' 1 "$status" \
+    'derived artifact stale: planted' "$out"
+rm -f "$gate/repo/STALE"
+
+touch "$gate/repo/engine/crates/a/src/lib.rs"
+touch -d '1 hour ago' "$gate/repo/engine/target/dev-release/headwater"
+touch "$gate/repo/STALE"
+out=$(push_gate); status=$?
+judge 'an engine older than its source is not trusted to call a projection stale' 0 "$status" \
+    'the built engine is older than its source' "$out"
+rm -f "$gate/repo/STALE"
+
+rm -f "$gate/repo/engine/target/dev-release/headwater"
+out=$(push_gate); status=$?
+judge 'a clone with no built engine says so and lets the push through' 0 "$status" \
+    'no built engine, so this push is not checked for stale projections' "$out"
+
 reset
 printf '\n%s passed, %s failed\n' "$passed" "$failed"
 [ "$failed" -eq 0 ]
