@@ -36,6 +36,8 @@ relations:
 
 Probe output never changes an exit status. A probe is a measurement, not a build gate. No subcommand opens a network connection or writes a file.
 
+**No engine code performs the part between `plan` and `record`, so no build waits for a model.** That part drives a session and observes it. `plan` fixes the six members of the run identity that a run inherits. It projects the cost of the run against the declared budget of the tier, and it refuses a run above that budget. `stale` holds the read set of every committed transcript against the tree in front of it, and it reports which recorded results a change voided. The harness is a crate that `headwater-check` cannot name. An exit status that carried a rate would be a build that a model moves. These are the four facts that [spec 12](../spec/12-check-layer.md#four-things-stop-a-sweep-from-gating-and-none-of-them-is-a-rule-that-somebody-keeps) fixes for the sampler path.
+
 The harness reads the selection again when it grades a transcript. This prevents a result from grading against probes that the current corpus no longer declares.
 
 ## Preconditions

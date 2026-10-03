@@ -27,6 +27,10 @@ Without `--format`, it writes every declared profile to its taxonomy-declared pa
 
 The command refuses an ambiguous profile selection or an uncovered emitter loss.
 
+**`export` is its own verb because a consumer outside the repository asks for one format at a time.** The engine ships `json` and `jsonschema`, and each later format waits for a consumer who asks for it ([spec 13](../spec/13-open-obligations.md#what-waits-on-a-first-adopter)). With no `--profile`, the command writes every declared profile, so a filtered audience is never left out by accident.
+
+**`--format` serves a reader who holds no clone.** That reader wants one vocabulary and reads bytes on a pipe. No declared output path is involved, so a target that no taxonomy declared is still reachable. Without the flag, the command writes what the taxonomy declared, to the paths that the taxonomy names, and `--check` has those files to compare against.
+
 **A run that refuses writes nothing.** Without `--check`, the command finds the verdict of every declared export before its first write. It follows the rule that [`headwater generate`](headwater-generate.md) states, and two of the refusals that rule names can apply to an export:
 
 - an unmarked file at an output path

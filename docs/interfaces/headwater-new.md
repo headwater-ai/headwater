@@ -24,6 +24,8 @@ The command proposes and writes one document whose kind, shelf, facets, sections
 
 The command decides the complete artifact before it writes any file. It derives engine-owned fields and accepts a title and declared facet values. It can add relation edges that the taxonomy assigns to a scaffold or an agent.
 
+**`--title` is required, because the engine invents neither a file name nor a name.** The file name and the facet in the `name` role both come from the title. `--summary` fills the facet in the `scent` role in the same way. Without `--summary`, that facet carries a prompt for a person to answer. `--now` sets the clock that the two date facets take, on the terms that [spec 12](../spec/12-check-layer.md#determinism-concretely) fixes for a check. [Spec 3](../spec/03-authoring-and-lifecycle.md#templates-and-scaffolding) states what the command derives and what it leaves to a person.
+
 The command writes `provenance: {warrant: asserted}` into each document, because nobody has accepted the document yet. It writes no other member of the provenance block. A person who accepts the document sets `warrant: accepted` and adds their name in `accepted_by`.
 
 A relation that declares `reciprocal: required` needs one half on each of its two documents. When the new document opens at a state whose role is `initial`, such as `draft`, the command writes nothing into the target document. The target document owes its half only when the new document leaves that state ([HW-DR-0086](../decisions/0086-a-reciprocal-half-is-owed-once-its-writer-leaves-its-initial-state.md)). For each owed half, the report prints one line in this form:

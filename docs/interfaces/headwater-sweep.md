@@ -94,7 +94,7 @@ There is no precondition about a model, about a network, or about a plan having 
 | The file at the given path did not read | `report` | after the format is decided, before the corpus is loaded |
 | The lock is absent, or a declaration under it did not read | both | for `report`, after the return file is read and before it is parsed. For `plan`, before anything |
 
-**The order of the three reasons inside `report` matters to a caller who reads a message.** `--format` is decided first, the path second, and the lock last. A `report` over an unreadable path in a repository that never resolved therefore names the path. [Spec 12](../spec/12-check-layer.md#four-things-stop-a-sweep-from-gating-and-none-of-them-is-a-rule-that-somebody-keeps) carries the same three, and [spec 6](../spec/06-engine-architecture.md) carries the same statement about `plan`.
+**The order of the three reasons inside `report` matters to a caller who reads a message.** `--format` is decided first, the path second, and the lock last. A `report` over an unreadable path in a repository that never resolved therefore names the path. [Spec 12](../spec/12-check-layer.md#four-things-stop-a-sweep-from-gating-and-none-of-them-is-a-rule-that-somebody-keeps) carries the same three.
 
 **The lock is the reason a reader is most likely to be surprised by.** The other two are errors a caller made in the command line. This one is a fact about the repository, and it reaches a caller who typed a command with nothing wrong in it.
 
