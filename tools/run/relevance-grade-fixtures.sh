@@ -457,5 +457,169 @@ PATH="$scratch/nojq" /bin/sh "$tool" draw > "$scratch/e.out" 2> "$scratch/e.err"
 echo $? > "$scratch/e.rc"
 rc "e: no jq exits 3" e 3
 
+# k: the grade. Each record is planted by hand, with no draw, so the answer
+# is worked from the rows alone. The Wilson bounds were worked by hand: for
+# k = n = 1 the lower bound is 1 / (1 + 1.96^2) = 0.2065, and for k = 0, n = 1
+# the upper bound is 1.96^2 / (1 + 1.96^2) = 0.7935.
+krec() { mkdir -p "$scratch/$1/rec"; printf 'prompt_id\tstratum\tat\tfile\tline\ttask_digest\tdeterministic\tembedding\n' > "$scratch/$1/rec/sample.tsv"; printf 'prompt_id\titem\tvalue\tsettled_by\n' > "$scratch/$1/rec/consensus.tsv"; }
+# ksample <case> <id> <stratum> <route offer> <embedding offer>
+ksample() { printf '%s\t%s\t2026-09-30T10:00:05Z\tS.jsonl\t1\tsha256:t\t%s\t%s\n' "$2" "$3" "$4" "$5" >> "$scratch/$1/rec/sample.tsv"; }
+# kscore <case> <id> <item> <value>
+kscore() { printf '%s\t%s\t%s\tagreed\n' "$2" "$3" "$4" >> "$scratch/$1/rec/consensus.tsv"; }
+
+# k1, the decisive case: one disjoint prompt whose route offers A and B and
+# whose embedding path offers B, C and D. A=2, B=1, C=0, D=0, missing=1. B
+# is credited to both paths.
+krec k1
+ksample k1 p1 disjoint 'docs/a.md|docs/b.md' 'docs/b.md|docs/c.md|docs/d.md'
+kscore k1 p1 docs/a.md 2
+kscore k1 p1 docs/b.md 1
+kscore k1 p1 docs/c.md 0
+kscore k1 p1 docs/d.md 0
+kscore k1 p1 missing 1
+rg k1 grade
+rc "k1: grade exits 0" k1.grade 0
+G="$scratch/k1/rec/grade.txt"
+has k1 "$G" 'stratum disjoint path route: offered on 1 of 1 prompts, 2 documents'
+has k1 "$G" 'stratum disjoint path route score 2: documents 1 of 2 (0.5000); prompts 1 of 1 (1.0000, Wilson 95% 0.2065 to 1.0000); first offered 1 of 1 (1.0000)'
+has k1 "$G" 'stratum disjoint path route score 1 or more: documents 2 of 2 (1.0000); prompts 1 of 1 (1.0000, Wilson 95% 0.2065 to 1.0000); first offered 1 of 1 (1.0000)'
+has k1 "$G" 'stratum disjoint path embedding: offered on 1 of 1 prompts, 3 documents'
+has k1 "$G" 'stratum disjoint path embedding score 2: documents 0 of 3 (0.0000); prompts 0 of 1 (0.0000, Wilson 95% 0.0000 to 0.7935); first offered 0 of 1 (0.0000)'
+has k1 "$G" 'stratum disjoint path embedding score 1 or more: documents 1 of 3 (0.3333); prompts 1 of 1 (1.0000, Wilson 95% 0.2065 to 1.0000); first offered 1 of 1 (1.0000)'
+has k1 "$G" 'stratum disjoint missing: 1 of 1 prompts (1.0000)'
+has k1 "$G" 'stratum silent path route: offered on 0 of 0 prompts, 0 documents'
+lacks k1 "$G" 'stratum all'
+
+# k2: the same prompt with the two offer columns swapped. The route and
+# embedding lines exchange their figures, and no other byte moves.
+krec k2
+ksample k2 p1 disjoint 'docs/b.md|docs/c.md|docs/d.md' 'docs/a.md|docs/b.md'
+tail -n +2 "$scratch/k1/rec/consensus.tsv" >> "$scratch/k2/rec/consensus.tsv"
+rg k2 grade
+rc "k2: grade exits 0" k2.grade 0
+sed 's/ path route/ path X/; s/ path embedding/ path route/; s/ path X/ path embedding/' "$scratch/k2/rec/grade.txt" | LC_ALL=C sort > "$scratch/k2.relabelled"
+LC_ALL=C sort "$G" > "$scratch/k1.sorted"
+check "k2: swapping the offer columns swaps the two paths' lines and nothing else" 'cmp -s "$scratch/k1.sorted" "$scratch/k2.relabelled"' "$(diff "$scratch/k1.sorted" "$scratch/k2.relabelled" | head -n 6 | tr '\n' '|')"
+check "k2: the swap moves the figures" '! cmp -s "$G" "$scratch/k2/rec/grade.txt"'
+
+# k3: the gate. A record with one document unscored, one prompt with no
+# `missing` value, or a value outside 0, 1 and 2 exits 4 and writes no
+# grade.txt. No consensus or no sample exits 2.
+for c in k3a k3b k3c k3d; do krec "$c"; ksample "$c" p1 disjoint 'docs/a.md|docs/b.md' 'docs/b.md|docs/c.md|docs/d.md'; done
+grep -v 'docs/d.md' "$scratch/k1/rec/consensus.tsv" > "$scratch/k3a/rec/consensus.tsv"
+grep -v 'missing' "$scratch/k1/rec/consensus.tsv" > "$scratch/k3b/rec/consensus.tsv"
+sed 's/docs\/c.md\t0/docs\/c.md\t3/' "$scratch/k1/rec/consensus.tsv" > "$scratch/k3c/rec/consensus.tsv"
+cp "$scratch/k1/rec/consensus.tsv" "$scratch/k3d/rec/consensus.tsv"
+kscore k3d p9 docs/a.md 2
+for c in k3a k3b k3c k3d; do rg "$c" grade; done
+rc "k3a: an offered document with no consensus value exits 4" k3a.grade 4
+check "k3a: and writes no grade.txt" '[ ! -e "$scratch/k3a/rec/grade.txt" ]'
+rc "k3b: a sampled prompt with no missing value exits 4" k3b.grade 4
+check "k3b: and writes no grade.txt" '[ ! -e "$scratch/k3b/rec/grade.txt" ]'
+rc "k3c: a consensus value of 3 exits 4" k3c.grade 4
+check "k3c: and writes no grade.txt" '[ ! -e "$scratch/k3c/rec/grade.txt" ]'
+rc "k3d: a consensus item for a prompt the sample does not hold exits 4" k3d.grade 4
+check "k3d: and writes no grade.txt" '[ ! -e "$scratch/k3d/rec/grade.txt" ]'
+krec k3e
+rm "$scratch/k3e/rec/consensus.tsv"
+rg k3e grade
+rc "k3e: no consensus.tsv exits 2" k3e.grade 2
+krec k3f
+rm "$scratch/k3f/rec/sample.tsv"
+rg k3f grade
+rc "k3f: no sample.tsv exits 2" k3f.grade 2
+
+# k4: a silent prompt, whose route column is empty, counts toward no route
+# denominator, and its embedding documents count in the silent stratum. Its
+# first neighbor is a sealed probe, graded like a path.
+krec k4
+ksample k4 p1 disjoint 'docs/a.md|docs/b.md' 'docs/b.md|docs/c.md|docs/d.md'
+ksample k4 p2 silent '' 'sealed:0123456789abcdef|docs/e.md'
+tail -n +2 "$scratch/k1/rec/consensus.tsv" >> "$scratch/k4/rec/consensus.tsv"
+kscore k4 p2 sealed:0123456789abcdef 2
+kscore k4 p2 docs/e.md 0
+kscore k4 p2 missing 0
+rg k4 grade
+rc "k4: grade exits 0" k4.grade 0
+G4="$scratch/k4/rec/grade.txt"
+has k4 "$G4" 'stratum silent path route: offered on 0 of 1 prompts, 0 documents'
+has k4 "$G4" 'stratum silent path route score 2: documents 0 of 0 (n/a); prompts 0 of 0 (n/a, Wilson 95% n/a); first offered 0 of 0 (n/a)'
+has k4 "$G4" 'stratum silent path embedding: offered on 1 of 1 prompts, 2 documents'
+has k4 "$G4" 'stratum silent path embedding score 2: documents 1 of 2 (0.5000); prompts 1 of 1 (1.0000, Wilson 95% 0.2065 to 1.0000); first offered 1 of 1 (1.0000)'
+has k4 "$G4" 'stratum silent missing: 0 of 1 prompts (0.0000)'
+has k4 "$G4" 'stratum disjoint path route: offered on 1 of 1 prompts, 2 documents'
+
+# k5: a rerun writes the same bytes.
+s1=$(sha256sum < "$G4")
+rg k4 grade
+check "k5: a rerun writes the same bytes" '[ "$s1" = "$(sha256sum < "$G4")" ]'
+
+# k6: three strata at once. Document A is scored 2 on the disjoint prompt
+# p1 and 0 on the overlap prompt p3, so a value is looked up by prompt and
+# item together. The silent prompt p2 flags `missing`, which counts in its
+# stratum although the route offered nothing there.
+krec k6
+ksample k6 p1 disjoint 'docs/a.md|docs/b.md' 'docs/b.md|docs/c.md|docs/d.md'
+ksample k6 p2 silent '' 'docs/g.md|docs/h.md'
+ksample k6 p3 overlap 'docs/a.md|docs/e.md' 'docs/a.md|docs/f.md'
+tail -n +2 "$scratch/k1/rec/consensus.tsv" >> "$scratch/k6/rec/consensus.tsv"
+kscore k6 p2 docs/g.md 0
+kscore k6 p2 docs/h.md 1
+kscore k6 p2 missing 1
+kscore k6 p3 docs/a.md 0
+kscore k6 p3 docs/e.md 2
+kscore k6 p3 docs/f.md 1
+kscore k6 p3 missing 0
+rg k6 grade
+rc "k6: grade exits 0" k6.grade 0
+G6="$scratch/k6/rec/grade.txt"
+has k6 "$G6" 'stratum disjoint path route score 2: documents 1 of 2 (0.5000); prompts 1 of 1 (1.0000, Wilson 95% 0.2065 to 1.0000); first offered 1 of 1 (1.0000)'
+has k6 "$G6" 'stratum overlap: 1 prompts'
+has k6 "$G6" 'stratum overlap path route: offered on 1 of 1 prompts, 2 documents'
+has k6 "$G6" 'stratum overlap path route score 2: documents 1 of 2 (0.5000); prompts 1 of 1 (1.0000, Wilson 95% 0.2065 to 1.0000); first offered 0 of 1 (0.0000)'
+has k6 "$G6" 'stratum overlap path route score 1 or more: documents 1 of 2 (0.5000); prompts 1 of 1 (1.0000, Wilson 95% 0.2065 to 1.0000); first offered 0 of 1 (0.0000)'
+has k6 "$G6" 'stratum overlap path embedding score 2: documents 0 of 2 (0.0000); prompts 0 of 1 (0.0000, Wilson 95% 0.0000 to 0.7935); first offered 0 of 1 (0.0000)'
+has k6 "$G6" 'stratum overlap path embedding score 1 or more: documents 1 of 2 (0.5000); prompts 1 of 1 (1.0000, Wilson 95% 0.2065 to 1.0000); first offered 0 of 1 (0.0000)'
+has k6 "$G6" 'stratum overlap missing: 0 of 1 prompts (0.0000)'
+has k6 "$G6" 'stratum silent path embedding score 1 or more: documents 1 of 2 (0.5000); prompts 1 of 1 (1.0000, Wilson 95% 0.2065 to 1.0000); first offered 0 of 1 (0.0000)'
+has k6 "$G6" 'stratum silent missing: 1 of 1 prompts (1.0000)'
+# Both thresholds are named in the header, and the waiver is stated.
+has k6 "$G6" '# Both thresholds are printed and neither is chosen: score 2 (would need) and score 1 or more (perhaps).'
+has k6 "$G6" '# The gate did not wait on owner scores: the owner waived the spot check on 2026-10-03.'
+
+# k7: the rest of the gate, each case on a copy of k1's record: a `missing`
+# flag of 2, a stratum outside the three, an item scored twice, a document
+# listed twice in one offer, a sample row of seven columns and a consensus
+# row of three. Each exits 4 and writes no grade.txt.
+for c in k7a k7b k7c k7d k7e k7f; do krec "$c"; done
+for c in k7a k7c k7f; do ksample "$c" p1 disjoint 'docs/a.md|docs/b.md' 'docs/b.md|docs/c.md|docs/d.md'; done
+ksample k7b p1 Disjoint 'docs/a.md|docs/b.md' 'docs/b.md|docs/c.md|docs/d.md'
+ksample k7d p1 disjoint 'docs/a.md|docs/b.md' 'docs/b.md|docs/c.md|docs/d.md|docs/b.md'
+printf 'p1\tdisjoint\t2026-09-30T10:00:05Z\tS.jsonl\t1\tsha256:t\tdocs/a.md|docs/b.md\n' >> "$scratch/k7e/rec/sample.tsv"
+sed 's/missing\t1/missing\t2/' "$scratch/k1/rec/consensus.tsv" > "$scratch/k7a/rec/consensus.tsv"
+for c in k7b k7c k7d; do cp "$scratch/k1/rec/consensus.tsv" "$scratch/$c/rec/consensus.tsv"; done
+kscore k7c p1 docs/c.md 0
+# k7e scores only what its short row offers, and k7f scores every offered
+# item, so each is refused by the column test alone.
+grep -v -e 'docs/c.md' -e 'docs/d.md' "$scratch/k1/rec/consensus.tsv" > "$scratch/k7e/rec/consensus.tsv"
+grep -v 'docs/d.md' "$scratch/k1/rec/consensus.tsv" > "$scratch/k7f/rec/consensus.tsv"
+printf 'p1\tdocs/d.md\t0\n' >> "$scratch/k7f/rec/consensus.tsv"
+for c in k7a k7b k7c k7d k7e k7f; do rg "$c" grade; done
+rc "k7a: a missing flag of 2 exits 4" k7a.grade 4
+rc "k7b: a stratum outside the three exits 4" k7b.grade 4
+rc "k7c: an item scored twice exits 4" k7c.grade 4
+rc "k7d: a document listed twice in one offer exits 4" k7d.grade 4
+rc "k7e: a sample row of seven columns exits 4" k7e.grade 4
+rc "k7f: a consensus row of three columns exits 4" k7f.grade 4
+check "k7: and none writes grade.txt" '[ ! -e "$scratch/k7a/rec/grade.txt" ] && [ ! -e "$scratch/k7b/rec/grade.txt" ] && [ ! -e "$scratch/k7c/rec/grade.txt" ] && [ ! -e "$scratch/k7d/rec/grade.txt" ] && [ ! -e "$scratch/k7e/rec/grade.txt" ] && [ ! -e "$scratch/k7f/rec/grade.txt" ]'
+
+# k8: the committed grade.txt is what `grade` prints on the committed
+# record, so an edit to the record that leaves it stale fails here.
+mkdir -p "$scratch/k8/rec"
+cp "$root/tools/run/relevance-grade/sample.tsv" "$root/tools/run/relevance-grade/consensus.tsv" "$scratch/k8/rec/"
+rg k8 grade
+rc "k8: grade exits 0 on the committed record" k8.grade 0
+check "k8: the committed grade.txt is what grade prints on the committed record" 'cmp -s "$scratch/k8/rec/grade.txt" "$root/tools/run/relevance-grade/grade.txt"'
+
 printf '%d passed, %d failed\n' "$passed" "$failed"
 [ "$failed" -eq 0 ]
