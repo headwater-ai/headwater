@@ -834,7 +834,7 @@
     {
       "rule": "relation.pair.invalid",
       "scope": "edge",
-      "version": 1,
+      "version": 2,
       "obligations": []
     },
     {

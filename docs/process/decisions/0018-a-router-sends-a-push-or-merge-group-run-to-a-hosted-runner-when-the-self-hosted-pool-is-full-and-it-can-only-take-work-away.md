@@ -3,7 +3,7 @@ id: HW-PD-0018
 status: current
 status_since: 2026-09-27
 summary: "The route job counts the jobs on the self-hosted label and outputs overflow. A failure in it gives an empty output and changes no routing."
-last_verified: 2026-10-02
+last_verified: 2026-10-03
 title: "A router sends a push or merge group run to a hosted runner when the self-hosted pool is full, and it can only take work away"
 provenance:
   warrant: asserted
@@ -14,7 +14,7 @@ provenance:
 relations:
   governs:
     - to: .github/workflows/ci.yml
-      verified_revision: sha256:3fcd842feb024c0759b93d91a5e14bea4be88917357796fd1a139ffc8efc6111
+      verified_revision: sha256:e5355e89faa3f6ff3f6ef8f01fb9dd1f8aa4ebc2f620d0e2272f4fe2cf05ffcc
 ---
 
 # A router sends a push or merge group run to a hosted runner when the self-hosted pool is full, and it can only take work away

@@ -356,6 +356,121 @@ fn a_scope_pattern_with_an_ungoverned_entry_is_one_finding_that_lists_it() {
     assert!(report.contains("governed scope"), "{report}");
 }
 
+/// The scope total is over the union of the entries, in the text and in the
+/// JSON alike (#1573).
+///
+/// A second pattern here admits the same two entries `app/**` does, so a total
+/// that summed the rows would read 2 of 4 where the tree holds 1 of 2. Both
+/// renderers read [`Audit::scope_total`], so this case holds the method and
+/// each renderer's reading of it.
+#[test]
+fn two_patterns_that_admit_one_entry_count_it_once_in_the_text_and_the_json_total() {
+    let mut audit = fixture_tree().audit(AT);
+    assert_eq!(audit.scope.len(), 1, "the fixture declares one pattern");
+    let mut overlap = audit.scope[0].clone();
+    overlap.pattern = "app/*.rs".to_string();
+    audit.scope.push(overlap);
+
+    let total = audit.scope_total();
+    assert_eq!((total.in_scope, total.governed), (2, 1));
+
+    let report = audit.render(ColorMode::Plain);
+    assert!(
+        report.contains("in total 1 of 2 entries in scope are governed, 50.0%"),
+        "{report}"
+    );
+
+    let document = audit.json().render();
+    let at = |steps: &[&str]| {
+        let steps: Vec<String> = steps.iter().map(|step| step.to_string()).collect();
+        headwater_yaml::json::field(&document, &steps)
+            .unwrap_or_else(|| panic!("no {steps:?} in {document}"))
+    };
+    assert_eq!(at(&["scope_total", "in_scope"]), "2", "{document}");
+    assert_eq!(at(&["scope_total", "governed"]), "1", "{document}");
+    assert_eq!(at(&["scope_total", "share"]), "50.0", "{document}");
+    // Each row still states its own pattern's figure.
+    for index in ["0", "1"] {
+        assert_eq!(at(&["scope", index, "in_scope"]), "2", "{document}");
+        assert_eq!(at(&["scope", index, "governed"]), "1", "{document}");
+        assert_eq!(
+            at(&["scope", index, "ungoverned", "0"]),
+            "app/render.rs",
+            "{document}"
+        );
+    }
+}
+
+/// Each row of the JSON states its own share, a row that admits nothing
+/// states `null` and never 0.0, and the anchor kind is the reading's own
+/// (#1573).
+///
+/// Beside `app/**` (1 of 2, 50.0%) sit a row that admits only the governed
+/// `app/reading.rs` (1 of 1, 100.0%) and a row that admits nothing. The total
+/// over the union stays 1 of 2, so a row that printed the total's share, or a
+/// row with no entry that printed 0.0, fails here.
+#[test]
+fn each_json_row_states_its_own_share_and_a_row_with_no_entry_states_null() {
+    let mut audit = fixture_tree().audit(AT);
+    assert_eq!(audit.scope.len(), 1, "the fixture declares one pattern");
+    let mut narrow = audit.scope[0].clone();
+    narrow.pattern = "app/reading.rs".to_string();
+    narrow.entries.retain(|(path, _)| path == "app/reading.rs");
+    narrow.governed = 1;
+    assert_eq!(narrow.entries, [("app/reading.rs".to_string(), true)]);
+    let mut empty = audit.scope[0].clone();
+    empty.pattern = "app/none/**".to_string();
+    empty.entries.clear();
+    empty.governed = 0;
+    audit.scope.push(narrow);
+    audit.scope.push(empty);
+
+    let document = audit.json().render();
+    let field = |steps: &[&str]| {
+        let steps: Vec<String> = steps.iter().map(|step| step.to_string()).collect();
+        headwater_yaml::json::field(&document, &steps)
+    };
+    assert_eq!(
+        field(&["scope_total", "share"]).as_deref(),
+        Some("50.0"),
+        "{document}"
+    );
+    assert_eq!(
+        field(&["scope", "0", "share"]).as_deref(),
+        Some("50.0"),
+        "{document}"
+    );
+    assert_eq!(
+        field(&["scope", "1", "share"]).as_deref(),
+        Some("100.0"),
+        "{document}"
+    );
+    assert_eq!(
+        field(&["scope", "1", "pattern"]).as_deref(),
+        Some("app/reading.rs")
+    );
+    // `field` answers `None` for null, so the member is read as present and null.
+    assert_eq!(
+        field(&["scope", "2", "pattern"]).as_deref(),
+        Some("app/none/**")
+    );
+    assert_eq!(field(&["scope", "2", "share"]), None, "{document}");
+    assert!(document.contains("\"share\":null"), "{document}");
+    assert_eq!(field(&["scope", "2", "in_scope"]).as_deref(), Some("0"));
+    for index in ["0", "1", "2"] {
+        assert_eq!(
+            field(&["scope", index, "anchor_kind"]),
+            Some(audit.scope[0].anchor_kind.clone()),
+            "{document}"
+        );
+    }
+    assert_eq!(
+        field(&["subject", "lock"]),
+        Some(audit.subject.lock.clone()),
+        "{document}"
+    );
+}
+
 /// A scope pattern that matches no entry is refused, which is the check
 /// `taxonomy validate` runs, and a corpus that declares no scope prints one
 /// line and never a zero fraction.

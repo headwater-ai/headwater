@@ -552,7 +552,7 @@ fn dispatch(root: &Path, verb: Verb) -> ExitCode {
             )),
             Some(TaxonomyWord::Validate) => validate(root),
             Some(TaxonomyWord::Resolve { check }) => resolve(root, check),
-            Some(TaxonomyWord::Audit { now, record }) => audit(root, now, record),
+            Some(TaxonomyWord::Audit { now, record, json }) => audit(root, now, record, json),
             Some(TaxonomyWord::Publish {
                 package,
                 from,
@@ -1577,7 +1577,13 @@ fn taxonomy_kinds(root: &Path, json: bool) -> ExitCode {
 /// refuses a duplicate `(lock, date)`, so the promise holds under the flag too.
 /// The report is rendered from the store as it stands after the append, which
 /// is what makes the section a function of the file rather than of the flag.
-fn audit(root: &Path, now: Option<Date>, record: bool) -> ExitCode {
+///
+/// **`--json` changes the stream and nothing else (#1573).** The document is
+/// [`headwater_audit::Audit::json`], one line on standard output, and every
+/// account this verb writes besides it, a `--record` line and a refusal
+/// included, stays on standard error, so a consumer that parses standard output
+/// reads one document or nothing (HW-DR-0043).
+fn audit(root: &Path, now: Option<Date>, record: bool, json: bool) -> ExitCode {
     let loaded = match load(root) {
         Ok(loaded) => loaded,
         Err(code) => return code,
@@ -1659,7 +1665,10 @@ fn audit(root: &Path, now: Option<Date>, record: bool) -> ExitCode {
             unreadable,
         },
     );
-    print!("{}", audit.render(headwater_cli::paint::stdout_color()));
+    match json {
+        true => println!("{}", audit.json().render()),
+        false => print!("{}", audit.render(headwater_cli::paint::stdout_color())),
+    }
     ExitCode::SUCCESS
 }
 

@@ -17,13 +17,17 @@
 # verbatim against a scratch root, and diffs each figure against the block the
 # README prints. It carries no second copy of any number.
 #
-# It blocks in CI, and it holds four arms a green run cannot show you: the
+# It blocks in CI, and it holds five arms a green run cannot show you: the
 # count of corpora it found, an edited figure that must fail it naming the file
 # and both values, a version pin the vendored package does not carry, and a
 # check-instance count stated outside *What a run reports*, where nothing diffs
-# it, which must fail it naming the file and the line (#1452). The last arm also
+# it, which must fail it naming the file and the line (#1452). That arm also
 # covers `docs/evaluations/n8n-worked-example.md`, which restates the three
 # corpora and has no section this job diffs, so any count on it fails the job.
+# The fifth: the evaluation's figures are held against the README each one
+# restates, so a design-spec figure on it that differs from the README must
+# fail the job naming the line and both values, and a README whose figures it
+# cannot read must fail it naming the README (#1568).
 #
 # It writes nothing inside this checkout: every scratch root is under a
 # temporary directory, and the directory is removed at the end.

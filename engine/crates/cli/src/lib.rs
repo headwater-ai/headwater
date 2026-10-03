@@ -1254,6 +1254,8 @@ pub enum TaxonomyWord {
                     date still write the same bytes"
         )]
         record: bool,
+        #[arg(long, help = JSON_ALONE)]
+        json: bool,
     },
     Publish {
         #[arg(

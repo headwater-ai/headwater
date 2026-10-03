@@ -1918,19 +1918,48 @@ jobs:
         # #951. The share of each governed-scope pattern's entries that a
         # `governs` edge reaches, per pattern and in total. It is computed on
         # every run and committed nowhere (HW-DR-0049), so the summary is where
-        # a reviewer reads it. `taxonomy audit` exits 0 whatever it finds, and
-        # the block is cut out of its report with sed rather than re-rendered.
+        # a reviewer reads it. `taxonomy audit` exits 0 whatever it finds.
+        #
+        # #1573. The figure leaves the job as `taxonomy audit --json`, which
+        # the next step uploads, and the summary is rendered from that same
+        # document, so the table and the artifact cannot disagree. No step
+        # gates on it: a ratchet waits on the owner's ruling about its
+        # baseline. It needs `jq` for the table, and a runner without it
+        # writes one line that names the artifact and warns rather than fails,
+        # the way the fixture steps above do.
         run: |
-          ./engine/target/release/headwater taxonomy audit --now "$HEADWATER_NOW" > audit.txt
-          sed -n '/^the governed scope, and what reaches it$/,/^$/p' audit.txt > scope.txt
-          cat scope.txt
-          {
-            echo '## The governed scope, and what reaches it'
-            echo
-            echo '```'
-            cat scope.txt
-            echo '```'
-          } >> "$GITHUB_STEP_SUMMARY"
+          ./engine/target/release/headwater taxonomy audit --now "$HEADWATER_NOW" --json > governed-scope.json
+          if ! command -v jq > /dev/null 2>&1; then
+            echo "::warning title=Governed scope table skipped::No jq on this runner, so the summary names the artifact and draws no table."
+            printf '## The governed scope, and what reaches it\n\nThe figure is in the `governed-scope` artifact of this run.\n' >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          jq -r '
+            "## The governed scope, and what reaches it",
+            "",
+            "The share of the entries each pattern admits that a `governance` edge reaches. It is computed on every run and committed nowhere, and the `governed-scope` artifact of this run holds it as JSON.",
+            "",
+            "| pattern | anchor kind | governed | in scope | share |",
+            "|---|---|---:|---:|---:|",
+            (.scope[] | "| `\(.pattern)` | \(.anchor_kind) | \(.governed) | \(.in_scope) | \(if .share == null then "no entry" else "\(.share)%" end) |"),
+            "| **total, over the union** | | \(.scope_total.governed) | \(.scope_total.in_scope) | \(if .scope_total.share == null then "no entry" else "\(.scope_total.share)%" end) |",
+            "",
+            "<details><summary>The in-scope entries no edge reaches</summary>",
+            "",
+            (.scope[] | select(.ungoverned | length > 0) | "**`\(.pattern)`**", "", (.ungoverned[] | "- `\(.)`"), ""),
+            "</details>"
+          ' governed-scope.json > governed-scope.md
+          cat governed-scope.md
+          cat governed-scope.md >> "$GITHUB_STEP_SUMMARY"
+      - name: The tree side of governs, as an artifact
+        # The document the step above wrote, so a later job or a person can
+        # read the figure for this commit without parsing a summary. Only an
+        # action of the `actions` organization (HW-PD-0019).
+        uses: actions/upload-artifact@v4
+        with:
+          name: governed-scope
+          path: governed-scope.json
+          if-no-files-found: error
       - name: The SARIF this corpus emits is SARIF
         # The suite in the job above validates the emitter over a fixture tree.
         # This validates it over the corpus an adopter would point it at, which
