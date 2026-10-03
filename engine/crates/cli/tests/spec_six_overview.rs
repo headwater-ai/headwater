@@ -188,7 +188,7 @@ const HOMES: [(&str, &str); 13] = [
     ),
     (
         "docs/interfaces/headwater-taxonomy.md",
-        "**The warrant reading has one row for each of the four warrant values that [spec 3]",
+        "**The warrant reading has one row for each of the four warrant values that",
     ),
     (
         "docs/interfaces/headwater-taxonomy.md",
@@ -200,7 +200,7 @@ const HOMES: [(&str, &str); 13] = [
     ),
     (
         "docs/interfaces/headwater-taxonomy.md",
-        "**`--record` writes the one line that the report does not print.**",
+        "**`--record` writes one line that is not a document.**",
     ),
     (
         "docs/interfaces/headwater-taxonomy.md",
@@ -220,11 +220,11 @@ const HOMES: [(&str, &str); 13] = [
     ),
     (
         "docs/subsystems/projections-and-export.md",
-        "the declarations form a cycle, and a fifth pass would not settle it",
+        "the declarations form a cycle, and one more pass would not settle it",
     ),
     (
         "docs/subsystems/projections-and-export.md",
-        "A shelf index and a shelf sections file carry the documents of one shelf.",
+        "A template would carry the permitted relations, facets and sections of one kind.",
     ),
 ];
 
