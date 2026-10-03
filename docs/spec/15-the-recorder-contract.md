@@ -53,7 +53,7 @@ A harness log carries the calls and not the rest of the contract below. Each val
 
 ## A session reads its workspace and nothing else of the host
 
-A probe measures what the workspace gives a session. A session that can read outside its workspace measures the host instead. In the 2026-09-30 batch, 51 of 658 sessions named a path outside the workspace. 16 of 658 named a checkout of this repository. So the driver confines each session, and it refuses a session that it cannot confine.
+A probe measures what the workspace gives a session. A session that can read outside its workspace measures the host instead. In the 2026-09-30 batch, 118 of 658 sessions named a path outside the workspace. 58 of 658 named a source of this repository that their arm did not give them. 17 of those 58 named a copy of this repository on the host. [The evaluation of that batch](../evaluations/what-the-counterfactual-campaign-of-2026-09-30-measured-by-component.md#limits) derives these figures. The committed transcripts and [#1467](https://github.com/headwater-ai/headwater/issues/1467) state 44, because that count read only two channels. So the driver confines each session, and it refuses a session that it cannot confine.
 
 ### What the file system of the session holds
 
@@ -66,8 +66,30 @@ A probe measures what the workspace gives a session. A session that can read out
 - The egress proxy, read-only, and the directory of its socket, read-only. The next sections say why.
 - The log directory of the run, read-write, because the intent hook writes there.
 - A configuration directory of the session, read-write.
+- The target of `/etc/resolv.conf`, read-only, when that file links to a path outside `/etc` and `/usr`, as it does under systemd-resolved. No name resolves inside the session, because the session has no network of its own.
 
-So the file system of the session holds no copy of this repository on the host. It also holds no other tree of the batch and no part of the home directory. The network is a separate channel, and [the one route to the network](#the-one-route-to-the-network) says what it holds and what stays open. The driver also clears the environment, so no token of the host reaches the session.
+So the file system of the session holds no copy of this repository on the host. It also holds no other tree of the batch and no part of the home directory. The network is a separate channel, and [the one route to the network](#the-one-route-to-the-network) says what it holds and what stays open.
+
+### The environment of the session
+
+The driver clears the environment. Then it sets these variables in the session, and no other:
+
+- `PATH`, set to `/usr/local/bin:/usr/bin:/bin`.
+- `HOME`, set to the configuration directory of the session.
+- `CLAUDE_CONFIG_DIR`, set to the configuration directory of the session.
+- `TMPDIR`, set to `/tmp`.
+- `HTTPS_PROXY`, set to the egress proxy.
+- `HTTP_PROXY`, set to the egress proxy.
+- `https_proxy`, set to the egress proxy.
+- `http_proxy`, set to the egress proxy.
+- `ANTHROPIC_BASE_URL`, set to the egress proxy.
+- `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC`, set to `1`.
+- `HEADWATER_PROBE_SESSION`, set to the identifier of the session.
+- `HEADWATER_SHADOW_LOG_DIR`, set to the log directory of the run.
+- `LANG`, copied from the host when the host sets it.
+- `ANTHROPIC_API_KEY`, copied from the host when the host sets it.
+
+`ANTHROPIC_API_KEY` is a credential of the host. When the host sets it, it gets into the session. The other credential of the host in the session is the copy in the configuration directory, which the next section describes. `tools/probe/probe-record-fixtures.sh` compares this list and the list of the file system with the code of the driver, in both directions.
 
 ### The configuration the session runs under
 
