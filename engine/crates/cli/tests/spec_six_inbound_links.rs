@@ -12,6 +12,7 @@
 //! The walk cannot see a bare `06-engine-architecture.md` credit, or a credit
 //! to a section that still states something. A reader checks those.
 
+use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
 
 fn repo() -> PathBuf {
@@ -87,12 +88,9 @@ fn governs(rel: &str, text: &str) -> bool {
 }
 
 /// Every `(line, anchor)` in `text` that links a pointer-only section of
-/// spec 6 and that the allow table does not hold, for a governing `rel`.
-fn offending(rel: &str, text: &str) -> Vec<(usize, String)> {
+/// spec 6, whatever document holds it.
+fn pointer_links(text: &str) -> Vec<(usize, String)> {
     let mut out = Vec::new();
-    if !governs(rel, text) {
-        return out;
-    }
     let needle = format!("{SPEC_SIX_FILE}#");
     for (i, line) in text.lines().enumerate() {
         let mut rest = line;
@@ -102,15 +100,46 @@ fn offending(rel: &str, text: &str) -> Vec<(usize, String)> {
                 .find(|c: char| c == ')' || c == ' ' || c == '"' || c == '>')
                 .unwrap_or(after.len());
             let anchor = &after[..end];
-            if POINTER_ONLY.contains(&anchor)
-                && !ALLOWED.iter().any(|(p, a, _)| *p == rel && *a == anchor)
-            {
+            if POINTER_ONLY.contains(&anchor) {
                 out.push((i + 1, anchor.to_owned()));
             }
             rest = &after[end..];
         }
     }
     out
+}
+
+/// Every `(line, anchor)` in `text` that links a pointer-only section of
+/// spec 6 and that the allow table does not hold, for a governing `rel`.
+fn offending(rel: &str, text: &str) -> Vec<(usize, String)> {
+    if !governs(rel, text) {
+        return Vec::new();
+    }
+    pointer_links(text)
+        .into_iter()
+        .filter(|(_, anchor)| !ALLOWED.iter().any(|(p, a, _)| *p == rel && a == anchor))
+        .collect()
+}
+
+/// Every Markdown file the walk reads, as a path relative to the root.
+fn corpus_files() -> Vec<String> {
+    let root = repo().canonicalize().expect("repository root");
+    let mut files = Vec::new();
+    markdown_under(&root.join("docs"), &mut files);
+    markdown_under(&root.join(".claude"), &mut files);
+    files.push(root.join("README.md"));
+    files.push(root.join("engine/README.md"));
+    let mut rels: Vec<String> = files
+        .iter()
+        .map(|p| {
+            p.strip_prefix(&root)
+                .expect("under the root")
+                .to_string_lossy()
+                .replace('\\', "/")
+        })
+        .collect();
+    rels.sort();
+    rels
 }
 
 fn markdown_under(dir: &Path, out: &mut Vec<PathBuf>) {
@@ -133,22 +162,9 @@ fn markdown_under(dir: &Path, out: &mut Vec<PathBuf>) {
 
 #[test]
 fn no_governing_document_links_a_pointer_only_section_of_spec_6() {
-    let root = repo().canonicalize().expect("repository root");
-    let mut files = Vec::new();
-    markdown_under(&root.join("docs"), &mut files);
-    markdown_under(&root.join(".claude"), &mut files);
-    files.push(root.join("README.md"));
-    files.push(root.join("engine/README.md"));
-    files.sort();
-
     let mut hits = Vec::new();
     let mut walked = 0;
-    for path in &files {
-        let rel = path
-            .strip_prefix(&root)
-            .expect("under the root")
-            .to_string_lossy()
-            .replace('\\', "/");
+    for rel in corpus_files() {
         let text = read(&rel);
         walked += 1;
         for (line, anchor) in offending(&rel, &text) {
@@ -181,7 +197,8 @@ fn every_allowed_link_is_still_in_its_document() {
 /// The links that the records of a moment hold to a pointer-only section of
 /// spec 6, with the count of each, measured on 2026-10-03. A record of a
 /// moment stays as written (HW-DR-0106), so a repoint inside one lowers a
-/// count, and this table catches it. Each row is `(path, anchor, count)`.
+/// count and a new link raises one, and the test compares the whole table.
+/// Each row is `(path, anchor, count)`.
 const RECORD_LINKS: &[(&str, &str, usize)] = &[
     (
         "docs/evaluations/adjacent-work.md",
@@ -255,17 +272,28 @@ const RECORD_LINKS: &[(&str, &str, usize)] = &[
 
 #[test]
 fn a_record_of_a_moment_keeps_its_links_to_spec_6() {
+    let mut found: BTreeMap<(String, String), usize> = BTreeMap::new();
+    for rel in corpus_files() {
+        if !RECORDS_OF_A_MOMENT.iter().any(|p| rel.starts_with(p)) {
+            continue;
+        }
+        for (_, anchor) in pointer_links(&read(&rel)) {
+            *found.entry((rel.clone(), anchor)).or_default() += 1;
+        }
+    }
+    let recorded: BTreeMap<(String, String), usize> = RECORD_LINKS
+        .iter()
+        .map(|(p, a, n)| ((p.to_string(), a.to_string()), *n))
+        .collect();
     let mut moved = Vec::new();
-    for (rel, anchor, want) in RECORD_LINKS {
-        assert!(
-            RECORDS_OF_A_MOMENT.iter().any(|p| rel.starts_with(p)),
-            "{rel} is not a record of a moment"
-        );
-        let got = read(rel)
-            .matches(&format!("{SPEC_SIX_FILE}#{anchor})"))
-            .count();
-        if got != *want {
-            moved.push(format!("{rel} #{anchor}: {got} link(s), recorded {want}"));
+    for key in recorded.keys().chain(found.keys()).collect::<BTreeSet<_>>() {
+        let want = recorded.get(key).copied().unwrap_or(0);
+        let got = found.get(key).copied().unwrap_or(0);
+        if got != want {
+            moved.push(format!(
+                "{} #{}: {got} link(s), recorded {want}",
+                key.0, key.1
+            ));
         }
     }
     assert!(
@@ -273,6 +301,28 @@ fn a_record_of_a_moment_keeps_its_links_to_spec_6() {
         "a record of a moment stays as written (HW-DR-0106), and these links changed:\n{}",
         moved.join("\n")
     );
+}
+
+#[test]
+fn each_of_the_seven_pointer_sections_is_flagged() {
+    // The seven sections of spec 6 that state only a pointer, as #1572
+    // slice 4c names them. Dropping one from POINTER_ONLY fails here.
+    for anchor in [
+        "an-export-is-a-projection-and-it-declares-what-it-dropped",
+        "an-export-profile-carries-a-filter",
+        "what-a-filtered-export-claims-and-what-it-does-not",
+        "a-verb-index-reads-the-command-surface-of-the-engine",
+        "mcp-server",
+        "ci-adapters",
+        "checks",
+    ] {
+        let line = format!("[s](../spec/06-engine-architecture.md#{anchor})\n");
+        assert_eq!(
+            offending("docs/decisions/0500-a-decision.md", &line),
+            vec![(1, anchor.to_owned())],
+            "#{anchor} was not flagged"
+        );
+    }
 }
 
 #[test]
