@@ -20,7 +20,7 @@
 
 use headwater_audit::reading::{Reading, TaskReading};
 use headwater_audit::{
-    Audit, Finding, Series, Subject, Supply, Waiting, CREATORS, DERIVED, WARRANTS,
+    Audit, Finding, ScopeReading, Series, Subject, Supply, Waiting, CREATORS, DERIVED, WARRANTS,
 };
 use headwater_census::census::{self, Census};
 use headwater_census::shelves::Taxonomy;
@@ -468,6 +468,151 @@ fn each_json_row_states_its_own_share_and_a_row_with_no_entry_states_null() {
         field(&["subject", "lock"]),
         Some(audit.subject.lock.clone()),
         "{document}"
+    );
+    // The fixture's package name and its version differ, so a `package` member
+    // that read the version, the lock or nothing fails here (#1649).
+    assert_eq!(audit.subject.package, "audit/fixture");
+    assert_ne!(audit.subject.package, audit.subject.version);
+    assert_eq!(
+        field(&["subject", "package"]),
+        Some(audit.subject.package.clone()),
+        "{document}"
+    );
+    let report = audit.render(ColorMode::Plain);
+    assert!(
+        report.contains(&format!(
+            "taxonomy audit of {} {}",
+            audit.subject.package, audit.subject.version
+        )),
+        "{report}"
+    );
+}
+
+/// A reading built by hand over the given entries, for the scope-total cases.
+fn scope_reading(anchor_kind: &str, pattern: &str, entries: &[(&str, bool)]) -> ScopeReading {
+    let entries: Vec<(String, bool)> = entries
+        .iter()
+        .map(|(path, governed)| ((*path).to_string(), *governed))
+        .collect();
+    ScopeReading {
+        anchor_kind: anchor_kind.to_string(),
+        pattern: pattern.to_string(),
+        governed: entries.iter().filter(|(_, governed)| *governed).count(),
+        entries,
+    }
+}
+
+/// The text total line and the three members of the JSON `scope_total`, as
+/// `(line, in_scope, governed, share)`.
+fn stated_totals(audit: &Audit) -> (String, String, String, String) {
+    let report = audit.render(ColorMode::Plain);
+    let line = report
+        .lines()
+        .find(|line| line.trim_start().starts_with("in total"))
+        .unwrap_or_else(|| panic!("no total line in {report}"))
+        .trim()
+        .to_string();
+    let document = audit.json().render();
+    let at = |member: &str| {
+        headwater_yaml::json::field(&document, &["scope_total".to_string(), member.to_string()])
+            .unwrap_or_else(|| panic!("no scope_total.{member} in {document}"))
+    };
+    (line, at("in_scope"), at("governed"), at("share"))
+}
+
+/// The total does not depend on the order the anchor kinds are declared in
+/// (#1649).
+///
+/// Two readings of different anchor kinds admit one path, and only one of
+/// them carries an edge that reaches it. An entry is governed in the total
+/// when any reading that admits it is governed, so the total is 1 of 1 with
+/// the readings declared in either order, and the text and the JSON state
+/// the same figure both times. A last-wins or a first-wins fold reads 1 of 0
+/// in one of the two orders.
+#[test]
+fn the_scope_total_is_the_same_whichever_anchor_kind_is_declared_first() {
+    let governed = scope_reading("code-path", "src/**", &[("src/lib.rs", true)]);
+    let ungoverned = scope_reading("test-path", "src/*.rs", &[("src/lib.rs", false)]);
+    for order in [
+        [governed.clone(), ungoverned.clone()],
+        [ungoverned.clone(), governed.clone()],
+    ] {
+        let kinds: Vec<&str> = order.iter().map(|r| r.anchor_kind.as_str()).collect();
+        let mut audit = fixture_tree().audit(AT);
+        audit.scope = order.to_vec();
+
+        let total = audit.scope_total();
+        assert_eq!((total.in_scope, total.governed), (1, 1), "order {kinds:?}");
+        let (line, in_scope, governed, share) = stated_totals(&audit);
+        assert_eq!(
+            line, "in total 1 of 1 entries in scope are governed, 100.0%",
+            "order {kinds:?}"
+        );
+        assert_eq!(
+            (in_scope.as_str(), governed.as_str(), share.as_str()),
+            ("1", "1", "100.0"),
+            "order {kinds:?}"
+        );
+    }
+}
+
+/// A total share other than one half is stated as the share of the union, not
+/// its complement (#1649).
+///
+/// One reading of four entries, one governed, reads 25.0%. A share that
+/// counted the ungoverned entries reads 75.0%, and every other total case
+/// reads 50.0%, where the two agree.
+#[test]
+fn a_scope_total_of_one_in_four_states_twenty_five_percent_in_the_text_and_the_json() {
+    let mut audit = fixture_tree().audit(AT);
+    audit.scope = vec![scope_reading(
+        "code-path",
+        "src/**",
+        &[
+            ("src/a.rs", true),
+            ("src/b.rs", false),
+            ("src/c.rs", false),
+            ("src/d.rs", false),
+        ],
+    )];
+    let total = audit.scope_total();
+    assert_eq!((total.in_scope, total.governed), (4, 1));
+    let (line, in_scope, governed, share) = stated_totals(&audit);
+    assert_eq!(line, "in total 1 of 4 entries in scope are governed, 25.0%");
+    assert_eq!(
+        (in_scope.as_str(), governed.as_str(), share.as_str()),
+        ("4", "1", "25.0")
+    );
+}
+
+/// Two readings that admit no entry in common add their governed entries
+/// (#1649).
+///
+/// Each reading holds one governed and one ungoverned entry, on paths the
+/// other does not admit, so the union is 2 of 4. A total that took the
+/// largest row instead of the union reads 1.
+#[test]
+fn two_disjoint_readings_add_their_governed_entries_in_the_total() {
+    let mut audit = fixture_tree().audit(AT);
+    audit.scope = vec![
+        scope_reading(
+            "code-path",
+            "src/**",
+            &[("src/a.rs", true), ("src/b.rs", false)],
+        ),
+        scope_reading(
+            "test-path",
+            "tests/**",
+            &[("tests/a.rs", true), ("tests/b.rs", false)],
+        ),
+    ];
+    let total = audit.scope_total();
+    assert_eq!((total.in_scope, total.governed), (4, 2));
+    let (line, in_scope, governed, share) = stated_totals(&audit);
+    assert_eq!(line, "in total 2 of 4 entries in scope are governed, 50.0%");
+    assert_eq!(
+        (in_scope.as_str(), governed.as_str(), share.as_str()),
+        ("4", "2", "50.0")
     );
 }
 

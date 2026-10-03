@@ -85,7 +85,8 @@ impl Audit {
     ///   for a pattern that admits nothing. `ungoverned` is the sorted paths no
     ///   edge reaches.
     /// - `scope_total`: `{in_scope, governed, share}` over the union of the
-    ///   entries, from [`Audit::scope_total`], never the sum of the rows.
+    ///   entries, from [`Audit::scope_total`], never the sum of the rows. An
+    ///   entry is governed there when any reading that admits it is governed.
     pub fn json(&self) -> Json {
         let share = |rate: Option<f64>| match rate {
             Some(rate) => Json::Raw(format!("{rate:.1}")),
