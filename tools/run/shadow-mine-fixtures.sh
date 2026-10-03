@@ -361,6 +361,15 @@ mkdir -p "$scratch/h2"
 cp -r "$scratch/a/t" "$scratch/a/log" "$scratch/h2/"
 run h2 --until 2026-09-30T10:59:00Z --rows "$scratch/h2.rows"
 if [ "$(wc -l < "$scratch/h2.rows" 2>/dev/null)" = 5 ] && ! grep -q '^q1' "$scratch/h2.rows"; then pass "h: --rows under --until holds only the ids joined before the cut"; else fail "h: --rows under --until holds only the ids joined before the cut" "got: $(tr '\n\t' '|,' < "$scratch/h2.rows" 2>/dev/null)"; fi
+tab=$(printf '\t')
+# h4: a prompt whose earliest line in time is also its first in the file,
+# so a reader that keeps the last line of the file names the wrong line.
+start h4 H "$scratch/co"
+prompt h4 H 2026-09-30T10:00:00.000Z r9
+logline h4 H 2026-09-30T10:00:05Z r9 false "$A" "$silent" "$(neighbors "$A" docs/x.md)"
+logline h4 H 2026-09-30T10:00:50Z r9 false "$A" "$(route docs/y.md)" "$(neighbors "$A" docs/x.md)"
+run h4 --rows "$scratch/h4.rows"
+has h "$scratch/h4.rows" "r9${tab}2026-09-30T10:00:05Z${tab}H.jsonl${tab}1${tab}$A${tab}silent${tab}offered"
 mkdir -p "$scratch/h3"
 cp -r "$scratch/a/t" "$scratch/a/log" "$scratch/h3/"
 run h3 --rows

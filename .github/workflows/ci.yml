@@ -773,6 +773,22 @@ jobs:
             exit 0
           fi
           exit "$status"
+      - name: The relevance grade's packets do not tell a rater which path offered a document
+        # `tools/run/relevance-grade.sh` draws #1670's sample and writes its
+        # blind packets. The decisive case logs one prompt twice with the
+        # paths swapped and requires the same packet bytes, so a leak through
+        # rendering, order or a duplicate fails it. The suite also plants a
+        # summary edited after the line was logged, a digest no version
+        # holds, the seeded draw and a hand-worked kappa. It needs `jq` and
+        # skips with a warning without it.
+        run: |
+          status=0
+          sh tools/run/relevance-grade-fixtures.sh || status=$?
+          if [ "$status" = 3 ]; then
+            echo "::warning title=Relevance grade fixtures skipped::No jq on this runner, so none of these cases ran."
+            exit 0
+          fi
+          exit "$status"
       - name: The tools a build-order stage calls behave as their agent definitions say
         # Seven scripts that every stage of a run calls in place of a command
         # it once retyped: the CI-finished condition, the queue-finished

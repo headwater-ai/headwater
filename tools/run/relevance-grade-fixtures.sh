@@ -171,6 +171,23 @@ rg a1 packets --seed 8
 check "a: another seed writes another order" '! cmp -s "$scratch/a.first" "$P1"'
 rg a1 packets --seed 7
 
+# a3: one document under two digests. The route offers C with its second
+# summary inline, and the embedding path offers C under the first one's
+# digest; then the paths swap. The smaller digest is read in both logs, so
+# the choice reads no path, and the packets are the same bytes.
+SC2='Gamma summary, second version.'
+DC2="sha256:$(sha "$SC2")"
+if [ "$DC1" \< "$DC2" ]; then SMALL=$SC1; else SMALL=$SC2; fi
+for c in a3 a4; do prompt "$c" 2026-09-30T10:00:00.000Z s3; done
+logline a3 2026-09-30T10:00:05Z s3 "$TASK" "$(route "docs/c.md=$SC2" "docs/a.md=$SA")" "$(neighbors "docs/c.md=$DC1" "docs/d.md=$DD")"
+logline a4 2026-09-30T10:00:05Z s3 "$TASK" "$(route "docs/c.md=$SC1" "docs/d.md=$SD")" "$(neighbors "docs/c.md=$DC2" "docs/a.md=$DA")"
+for c in a3 a4; do
+    rg "$c" draw --until 2026-10-01T00:00:00Z --seed 7
+    rg "$c" packets --seed 7
+done
+check "a: a document under two digests reads the smaller one, whichever path offered it" 'cmp -s "$scratch/a3/pk/rater-a/batch-01.md" "$scratch/a4/pk/rater-a/batch-01.md" && grep -Fqx "    $SMALL" "$scratch/a3/pk/rater-a/batch-01.md"' "got: $(grep -F 'Gamma' "$scratch/a3/pk/rater-a/batch-01.md" "$scratch/a4/pk/rater-a/batch-01.md" | tr '\n' '|')"
+check "a: C appears once under two digests" '[ "$(grep -c "^    Gamma summary" "$scratch/a3/pk/rater-a/batch-01.md")" = 1 ]'
+
 # b: C is rendered from the version its digest names, and E from none.
 prompt b 2026-09-30T10:00:00.000Z u1
 logline b 2026-09-30T10:00:05Z u1 "Where is the gamma rule written down?" "$(route silent)" "$(neighbors "docs/c.md=$DC1" "docs/e.md=$DE")"
@@ -253,6 +270,13 @@ has c "$scratch/c/pk/key/packets.txt" "owner prompts: 3"
 lacks c "$scratch/c/pk/rater-a/batch-01.md" "silent"
 lacks c "$scratch/c/pk/rater-a/batch-01.md" "overlap"
 lacks c "$scratch/c/pk/rater-a/batch-01.md" "disjoint"
+# The prompts of a packet are in ascending order of
+# sha256("<seed>\tpacket\t<prompt id>"), worked here, so no stratum groups.
+awk -F '\t' 'NR > 1 { print $1 }' "$scratch/c/rec/sample.tsv" | while IFS= read -r id; do
+    printf '%s\t%s\n' "$(sha "42${tab}packet${tab}$id")" "$id"
+done | LC_ALL=C sort | cut -f 2 > "$scratch/c.porder"
+awk -F '\t' '$1 == "rater" { print $3 }' "$scratch/c/pk/key/prompts.tsv" > "$scratch/c.pgot"
+check "c: the packet orders its prompts by the seeded key" 'cmp -s "$scratch/c.porder" "$scratch/c.pgot"' "want $(tr '\n' ' ' < "$scratch/c.porder"), got $(tr '\n' ' ' < "$scratch/c.pgot")"
 rg c packets --seed 42 --batch 2
 has c "$scratch/c/pk/key/packets.txt" "batches: 3 of up to 2 prompts"
 
@@ -316,6 +340,12 @@ rc "e: a score file that scores an item twice exits 4" a1.ingest 4
 scores 2 1 0 0 3 > "$scratch/a1/pk/rater-a/scores-01.tsv"
 rg a1 ingest a
 rc "e: a missing flag that is not 0 or 1 exits 4" a1.ingest 4
+scores 2 1 0 0 2 > "$scratch/a1/pk/rater-a/scores-01.tsv"
+rg a1 ingest a
+rc "e: a missing flag of 2 exits 4" a1.ingest 4
+scores 2 1 0 3 0 > "$scratch/a1/pk/rater-a/scores-01.tsv"
+rg a1 ingest a
+rc "e: a score of 3 exits 4" a1.ingest 4
 mkdir -p "$scratch/nojq"
 PATH="$scratch/nojq" /bin/sh "$tool" draw > "$scratch/e.out" 2> "$scratch/e.err"
 echo $? > "$scratch/e.rc"
