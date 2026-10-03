@@ -305,6 +305,67 @@ HEADWATER_TRANSCRIPT_DIRS="$scratch/a/t" HEADWATER_SHADOW_LOG_DIR="$scratch/a/lo
 echo $? > "$scratch/e3.rc"
 rc "e: no jq exits 3" e3 3
 
+# g: `--until` cuts the log at a time. Over case a's inputs, a cut at 10:59
+# drops the six lines of S2 that have a time after it: q1, the empty-id line,
+# u1 twice, u2 and the recorder's line. The blank line has no time and is
+# still read. q1 and q2 were typed after the cut, so they are not gaps.
+mkdir -p "$scratch/g"
+cp -r "$scratch/a/t" "$scratch/a/log" "$scratch/g/"
+run g --until 2026-09-30T10:59:00Z
+o="$scratch/g.out"
+rc "g exits 0" g 0
+has g "$o" "until: 2026-09-30T10:59:00Z"
+has g "$o" "lines after until: 6"
+has g "$o" "log lines: 7"
+has g "$o" "blank lines: 1"
+has g "$o" "probe lines: 0"
+has g "$o" "empty-id lines: 0"
+has g "$o" "last line: 2026-09-30T10:30:05Z"
+has g "$o" "typed: 4"
+has g "$o" "joined: 4"
+has g "$o" "gaps: 0"
+has g "$o" "unclaimed: 0"
+has g "$o" "unrestricted $B all prompts: 1"
+lacks a "$scratch/a.out" "until:"
+lacks a "$scratch/a.out" "lines after until:"
+# A line exactly at the cut is read.
+mkdir -p "$scratch/g2"
+cp -r "$scratch/a/t" "$scratch/a/log" "$scratch/g2/"
+run g2 --until 2026-09-30T11:00:05Z
+has g "$scratch/g2.out" "joined: 5"
+has g "$scratch/g2.out" "lines after until: 5"
+mkdir -p "$scratch/g3"
+cp -r "$scratch/a/t" "$scratch/a/log" "$scratch/g3/"
+run g3 --until yesterday
+rc "g: an --until that is not an ISO time exits 2" g3 2
+
+# h: `--rows` writes one row per joined id, in time order of its earliest
+# line, and names that line. p2 is logged twice, and its row is its earliest
+# line in time, S1.jsonl:5, not its first line in the file, S1.jsonl:2. The
+# aggregate output does not move.
+mkdir -p "$scratch/h"
+cp -r "$scratch/a/t" "$scratch/a/log" "$scratch/h/"
+run h --rows "$scratch/h.rows"
+rc "h exits 0" h 0
+printf 'prompt_id\tat\tfile\tline\tmodel_digest\tdeterministic\tembedding\n' > "$scratch/h.want"
+printf 'p1\t2026-09-30T10:00:05Z\tS1.jsonl\t1\t%s\tsilent\toffered\n' "$A" >> "$scratch/h.want"
+printf 'p2\t2026-09-30T10:10:05Z\tS1.jsonl\t5\t%s\toffered\tsilent\n' "$A" >> "$scratch/h.want"
+printf 'k3\t2026-09-30T10:20:05Z\tS1.jsonl\t4\t%s\toffered\toffered\n' "$B" >> "$scratch/h.want"
+printf 'p4\t2026-09-30T10:30:05Z\tS1.jsonl\t6\tnone\tsilent\tnone\n' >> "$scratch/h.want"
+printf 'q1\t2026-09-30T11:00:05Z\tS2.jsonl\t1\t%s\toffered\toffered\n' "$B" >> "$scratch/h.want"
+if cmp -s "$scratch/h.want" "$scratch/h.rows"; then pass "h: one row per joined id, from its earliest line"; else fail "h: one row per joined id, from its earliest line" "got: $(tr '\n\t' '|,' < "$scratch/h.rows" 2>/dev/null)"; fi
+grep -v '^commit: \|^read at: ' "$scratch/a.out" > "$scratch/h.a"
+grep -v '^commit: \|^read at: ' "$scratch/h.out" > "$scratch/h.h"
+if cmp -s "$scratch/h.a" "$scratch/h.h"; then pass "h: --rows leaves the aggregate output unchanged"; else fail "h: --rows leaves the aggregate output unchanged" "outputs differ"; fi
+mkdir -p "$scratch/h2"
+cp -r "$scratch/a/t" "$scratch/a/log" "$scratch/h2/"
+run h2 --until 2026-09-30T10:59:00Z --rows "$scratch/h2.rows"
+if [ "$(wc -l < "$scratch/h2.rows" 2>/dev/null)" = 5 ] && ! grep -q '^q1' "$scratch/h2.rows"; then pass "h: --rows under --until holds only the ids joined before the cut"; else fail "h: --rows under --until holds only the ids joined before the cut" "got: $(tr '\n\t' '|,' < "$scratch/h2.rows" 2>/dev/null)"; fi
+mkdir -p "$scratch/h3"
+cp -r "$scratch/a/t" "$scratch/a/log" "$scratch/h3/"
+run h3 --rows
+rc "h: --rows with no file exits 2" h3 2
+
 # The same inputs give the same bytes, but for the commit and the time.
 grep -v '^commit: \|^read at: ' "$scratch/a.out" > "$scratch/a.first"
 run a
