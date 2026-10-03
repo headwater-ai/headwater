@@ -68,7 +68,7 @@ theme:
   # `overrides/`, because *override* is already this corpus's word for an entry
   # in `.headwater/overlay.yml`.
   #
-  # It holds four files now, and `main.html` is no longer the whole of it:
+  # It holds the files below now, and `main.html` is no longer the whole of it:
   #
   #   main.html      overrides blocks of the theme's `base.html` and never
   #                  replaces it. A hand-written `base.html` here would shadow
@@ -79,6 +79,11 @@ theme:
   #   js/leading-digit-anchor-shim.js   #614, loaded before `js/base.js`.
   #   js/darkmode.js          SHADOWS the theme's file of the same path. The
   #                  only file here that replaces one. See its own header.
+  #   js/mermaid.min.js, js/mermaid-init.js   mermaid 12.1.0 (MIT, licence in
+  #                  js/mermaid.LICENSE), vendored so `script-src 'self'` admits
+  #                  it. `main.html` loads both only on a page whose body holds
+  #                  a mermaid block, and the init file swaps each block for a
+  #                  rendered diagram.
   #
   # `.headwater/corpus.json` sits outside `docs_dir`, so no build copies it and
   # the CI job puts it beside the built pages instead. A local `mkdocs build`
