@@ -214,15 +214,30 @@ fn plan_over(at: &Path) -> headwater_generate::Plan {
 
 /// The same, against a stated envelope, which is what a run would have cost.
 fn plan_priced(at: &Path, envelope: &str) -> headwater_generate::Plan {
+    plan_with(at, envelope, LOCK)
+}
+
+/// The same, over a tree that carries the stated lock. The transcript's own
+/// `lock:` line stays as it is, so this moves the tree and nothing the
+/// transcript read.
+fn plan_locked(at: &Path, lock: &str) -> headwater_generate::Plan {
+    plan_with(at, ENVELOPE, lock)
+}
+
+fn plan_with(at: &Path, envelope: &str, lock: &str) -> headwater_generate::Plan {
     let built = Built::over(at);
     let surface = built.surface();
     let root = load_map(&fixtures_dir().join("runs.taxonomy.yml"));
     let projections = Projections::read(&root).expect("the projections read");
+    let identity = Identity {
+        lock: lock.to_string(),
+        ..identity()
+    };
     plan(
         &surface,
         &built.census,
         &projections,
-        &identity(),
+        &identity,
         &runs_over(&built, at, envelope),
         headwater_verbs::VERBS,
     )
@@ -230,7 +245,11 @@ fn plan_priced(at: &Path, envelope: &str) -> headwater_generate::Plan {
 
 /// The plan over a tree, and the result output it produced.
 fn result_bytes(at: &Path) -> (headwater_generate::Plan, String) {
-    let plan = plan_over(at);
+    the_result_of(plan_over(at))
+}
+
+/// The result output a plan produced.
+fn the_result_of(plan: headwater_generate::Plan) -> (headwater_generate::Plan, String) {
     let bytes = plan
         .outputs
         .iter()
@@ -520,8 +539,8 @@ expected: [no]
 ```
 ";
 
-/// The sentence the result carries when the two selections agree.
-const AGREES: &str = "The selection this transcript names is the selection this corpus composes";
+/// The words before the recorded selection digest, where this tree recovers it.
+const NAMES: &str = "The selection this transcript names is ";
 
 /// The read set this tree composes over the fixture selection.
 fn read_set_over(at: &Path) -> String {
@@ -547,17 +566,19 @@ fn verdicts_of(result: &str) -> &str {
     &result[at..]
 }
 
-/// #1338. An edit to a document the probes read, after an unrelated lock move,
-/// refused the transcript and dropped every verdict it paid for, with no word
-/// from any run. A moved read set is always a document edit, so the verdicts
-/// stand, the result carries one mark, and the run names the result.
+/// #1338, inverted by #1481. An edit to a document the probes read, after an
+/// unrelated lock move, refused the transcript and dropped every verdict it
+/// paid for, with no word from any run. #1338 graded it and marked the page.
+/// The owner ruled on #1481 (2026-10-03) that a committed result pins only what
+/// it read, so the page now carries no mark and its bytes do not move. The run
+/// still names the result.
 ///
-/// Four directions. The gate names the result in its own section. The
-/// regenerated result keeps every verdict. The run over the regenerated result
-/// does not fail. A second edit to the same document leaves the bytes alone,
-/// because the mark names no digest this tree composes.
+/// Four directions. The run names the result in its own section, apart from
+/// the refusals, with both moves. The gate gives `Unchanged`, because the
+/// bytes did not move. The run does not fail. A second edit to the same
+/// document leaves the bytes alone too.
 #[test]
-fn an_edit_to_a_document_the_probes_read_keeps_every_verdict_and_marks_them() {
+fn an_edit_to_a_document_the_probes_read_after_a_lock_move_leaves_the_result_alone() {
     let at = copied("probe-result-read-set-moved");
     let composed = read_set_over(&at);
     assert!(
@@ -570,10 +591,6 @@ fn an_edit_to_a_document_the_probes_read_keeps_every_verdict_and_marks_them() {
     let (first, _) = result_bytes(&at);
     write(&at, &first);
     let graded = std::fs::read_to_string(at.join(RESULT)).expect("the result reads");
-    assert!(
-        !graded.contains("moved since the recording"),
-        "an unmoved read set carries no mark:\n{graded}"
-    );
     let verdicts = verdicts_of(&graded).to_string();
     assert!(
         verdicts.contains("satisfied"),
@@ -594,59 +611,62 @@ fn an_edit_to_a_document_the_probes_read_keeps_every_verdict_and_marks_them() {
         "Say whether the cache may change a verdict.",
         "Say whether the cache can change a verdict.",
     );
-    let (moved, marked) = result_bytes(&at);
+    let (moved, regenerated) = result_bytes(&at);
 
-    // Direction 1: the gate names the result, apart from the refusals.
+    // Direction 1: the run names the result, apart from the refusals.
     let checked = check(&at, &moved);
     assert!(
         checked.refused.is_empty(),
         "a moved read set is graded and refused by nothing: {}",
         checked.render(ColorMode::Plain)
     );
-    match checked.moved_read_sets.as_slice() {
+    match checked.moved_since_recording.as_slice() {
         [one] => {
             assert_eq!(one.transcript, TRANSCRIPT);
             assert_eq!(one.output, RESULT);
+            assert!(one.read_set.is_some(), "the run names the moved read set");
+            assert_eq!(one.lock.as_deref(), Some("sha256:another-taxonomy"));
+            assert_eq!(one.selection, None);
         }
-        other => panic!("the run named {} moved read sets, not one", other.len()),
+        other => panic!("the run named {} moved results, not one", other.len()),
     }
     let rendered = checked.render(ColorMode::Plain);
     assert!(
-        rendered.contains("results graded over a moved read set"),
+        rendered.contains("results whose recorded lock, read set or selection moved"),
         "{rendered}"
     );
     assert!(
         rendered.contains("keeps every verdict"),
-        "the run tells the author that regeneration keeps the evidence: {rendered}"
+        "the run tells the author that the evidence stands: {rendered}"
     );
+
+    // Direction 2: the gate holds the committed bytes, which kept every verdict.
     assert_eq!(
         verdict_over_the_result(&checked),
-        &Verdict::Differs,
-        "the mark is new bytes, so the gate asks for one regeneration"
+        &Verdict::Unchanged,
+        "a moved read set moved a committed result, which pins only what it read"
     );
-
-    // Direction 2: the regenerated result keeps every verdict, with the mark.
-    assert_eq!(
-        verdicts_of(&marked),
-        verdicts,
-        "an edit to a document of the read set dropped or changed a verdict"
-    );
+    assert_eq!(regenerated, graded);
     assert!(
-        marked.contains("the read set of its probes moved since the recording"),
-        "{marked}"
+        !regenerated.contains("the read set of its probes moved since the recording"),
+        "the page carries no mark:\n{regenerated}"
     );
 
-    // Direction 3: once regenerated, the run does not fail.
+    // Direction 3: once the rest of the tree is written, the run does not fail
+    // and still names the result. The edit moved the corpus descriptor, which
+    // is not this result's to hold.
     write(&at, &moved);
-    let (again, _) = result_bytes(&at);
-    let held = check(&at, &again);
-    assert_eq!(verdict_over_the_result(&held), &Verdict::Unchanged);
+    let held = check(&at, &plan_over(&at));
     assert!(
         !held.has_errors(),
         "a result graded over a moved read set failed the run:\n{}",
         held.render(ColorMode::Plain)
     );
-    assert_eq!(held.moved_read_sets.len(), 1, "the run still names it");
+    assert_eq!(
+        held.moved_since_recording.len(),
+        1,
+        "the run still names it"
+    );
 
     // Direction 4: a second edit to the same document leaves the bytes alone.
     edit(
@@ -656,26 +676,21 @@ fn an_edit_to_a_document_the_probes_read_keeps_every_verdict_and_marks_them() {
         "Say whether a cache can change a verdict.",
     );
     let (second, twice) = result_bytes(&at);
-    assert_eq!(
-        twice, marked,
-        "a second edit moved the result, so the mark names something this tree composes"
-    );
+    assert_eq!(twice, graded, "a second edit moved the result");
     assert!(!check(&at, &second).has_errors());
 }
 
-/// #1338 with the lock unmoved. The same edit is named by the run the same
-/// way, so whether the author meets it does not turn on an unrelated package
-/// publish.
+/// #1338 with the lock unmoved, inverted by #1481. The same edit is named by
+/// the run the same way, so whether the author meets it does not turn on an
+/// unrelated package publish, and the page does not move for it.
 #[test]
-fn an_edit_under_an_unmoved_lock_is_named_by_the_run_and_keeps_every_verdict() {
+fn an_edit_under_an_unmoved_lock_is_named_by_the_run_and_leaves_the_result_alone() {
     let at = copied("probe-result-read-set-moved-lock-unmoved");
     let (first, _) = result_bytes(&at);
     write(&at, &first);
-    let verdicts =
-        verdicts_of(&std::fs::read_to_string(at.join(RESULT)).expect("the result reads"))
-            .to_string();
+    let committed = std::fs::read_to_string(at.join(RESULT)).expect("the result reads");
     assert!(
-        check(&at, &plan_over(&at)).moved_read_sets.is_empty(),
+        check(&at, &plan_over(&at)).moved_since_recording.is_empty(),
         "an unmoved read set is named by nothing"
     );
 
@@ -685,47 +700,45 @@ fn an_edit_under_an_unmoved_lock_is_named_by_the_run_and_keeps_every_verdict() {
         "Say whether the cache may change a verdict.",
         "Say whether the cache can change a verdict.",
     );
-    let (moved, marked) = result_bytes(&at);
+    let (moved, regenerated) = result_bytes(&at);
     let checked = check(&at, &moved);
-    match checked.moved_read_sets.as_slice() {
+    match checked.moved_since_recording.as_slice() {
         [one] => {
             assert_eq!(one.transcript, TRANSCRIPT);
             assert_eq!(one.output, RESULT);
+            assert!(one.read_set.is_some());
+            assert_eq!(one.lock, None, "the lock did not move");
         }
-        other => panic!("the run named {} moved read sets, not one", other.len()),
+        other => panic!("the run named {} moved results, not one", other.len()),
     }
     assert!(checked.refused.is_empty());
-    assert_eq!(verdicts_of(&marked), verdicts);
-    assert!(
-        marked.contains("the read set of its probes moved since the recording"),
-        "{marked}"
-    );
+    assert_eq!(regenerated, committed, "the page carries no mark");
+    assert_eq!(verdict_over_the_result(&checked), &Verdict::Unchanged);
 }
 
-/// The comparison a result reports about the selection it was recorded over.
+/// The selection a result names, inverted by #1481.
 ///
-/// Three directions, because a comparison that never moves and one that always
-/// moves are both useless and both look identical from a green run.
+/// Before the owner's ruling of 2026-10-03 a result compared the selection it
+/// recorded with the one this corpus composes, and a new probe anywhere moved
+/// every result. Now the page names the recorded digest and compares it with
+/// nothing. Three directions, because a page that never moves and one that
+/// always moves look the same from a green run.
 ///
-/// The `selection` digest is the one member of the pre-run identity that a
-/// result can compare and still be a file somebody can leave committed. The
-/// `tree` digest is the alternative and it is why the second direction is here:
-/// a tree digest covers every classified document, so a result that tracked it
-/// would move on the edit below and `generate --check` would ask for a fresh
-/// commit of every result after every prose change.
+/// The `tree` digest is why the second direction is here: it covers every
+/// classified document, so a result that tracked it would move on the edit
+/// below.
 #[test]
-fn a_result_reports_whether_the_selection_it_recorded_is_the_one_this_corpus_composes() {
+fn a_result_names_the_selection_it_recorded_and_a_new_probe_leaves_it_alone() {
     let at = copied("selection");
 
-    // Direction 1: the recorded pair agrees, and the result says so.
-    let (_, agreeing) = result_bytes(&at);
+    // Direction 1: the result names the digest the transcript recorded.
+    let (_, named) = result_bytes(&at);
     assert!(
-        agreeing.contains(AGREES),
-        "the result does not report the selection it agrees with:\n{agreeing}"
+        named.contains(&format!("{NAMES}`{SELECTION}`")),
+        "the result does not name the selection it recorded:\n{named}"
     );
 
-    // Direction 2: a probe's prose moves, and the selection does not. This is
-    // the direction that rules out comparing the corpus tree instead.
+    // Direction 2: a probe's prose moves, and the selection does not.
     edit(
         &at,
         "runs/probes/0002-answered.md",
@@ -733,22 +746,290 @@ fn a_result_reports_whether_the_selection_it_recorded_is_the_one_this_corpus_com
         "Say whether a cache may change any verdict at all.",
     );
     let (_, edited) = result_bytes(&at);
+    assert_eq!(edited, named, "an edit to a probe's prose moved the result");
+
+    // Direction 3: a probe is added. The transcript never named it, so the
+    // result stays as it is, and the run does not name it either: the
+    // selection the transcript recorded is still the part its events name.
+    std::fs::write(at.join("runs/probes/0003-third.md"), THIRD).expect("the probe lands");
+    let (plan, added) = result_bytes(&at);
+    assert_eq!(added, named, "a new probe moved the result");
     assert!(
-        edited.contains(AGREES),
-        "an edit to a probe's prose moved the selection this result compares:\n{edited}"
+        !added.contains("PROBE-FIX-third"),
+        "the result graded a probe the transcript never named:\n{added}"
+    );
+    assert!(
+        plan.moved_since_recording
+            .iter()
+            .all(|moved| moved.selection.is_none()),
+        "a probe added after the recording is not a move of the selection the transcript read"
     );
 
-    // Direction 3: a probe is added, so the population moved, and the result
-    // says which digest it recorded and which one this corpus composes.
-    std::fs::write(at.join("runs/probes/0003-third.md"), THIRD).expect("the probe lands");
-    let (_, moved) = result_bytes(&at);
+    // And the selection it cannot recover: a digest that is neither the whole
+    // nor the part its events name grades the probes it names alone, says so,
+    // and the run names it.
+    edit(
+        &at,
+        TRANSCRIPT,
+        &format!("selection: {SELECTION}\n"),
+        "selection: sha256:a-selection-this-tree-cannot-recover\n",
+    );
+    let (plan, unrecovered) = result_bytes(&at);
     assert!(
-        moved.contains("is not the selection this corpus composes"),
-        "a probe was added and the result did not report the moved selection:\n{moved}"
+        unrecovered.contains("This corpus cannot recover the selection this transcript names"),
+        "{unrecovered}"
     );
     assert!(
-        moved.contains(SELECTION),
-        "the result does not name the digest the transcript recorded:\n{moved}"
+        !unrecovered.contains("PROBE-FIX-third"),
+        "an unrecovered selection graded a probe the transcript never named:\n{unrecovered}"
+    );
+    match plan.moved_since_recording.as_slice() {
+        [one] => assert_eq!(
+            one.selection.as_deref(),
+            Some("sha256:a-selection-this-tree-cannot-recover")
+        ),
+        other => panic!("the run named {} moved results, not one", other.len()),
+    }
+}
+
+/// A note the opened probe examines, and which is not a probe. Edited below to
+/// move the read set without moving any probe document.
+const EXAMINED: &str = "\
+---
+id: NOTE-FIX-examined
+status: current
+status_since: 2026-08-14
+summary: A note the opened probe examines, so that an edit to it moves the read set and no probe.
+---
+
+# A document a probe examines
+
+This sentence is the one the test edits.
+";
+
+/// A tree in which the opened probe also examines a note, and whose transcript
+/// records the read set that tree composes. The result is written, so the next
+/// plan is held against committed bytes.
+fn examined_tree(name: &str) -> PathBuf {
+    let at = copied(name);
+    std::fs::write(at.join("runs/notes/examined.md"), EXAMINED).expect("the note lands");
+    edit(
+        &at,
+        "runs/probes/0001-opened.md",
+        "    - PROBE-FIX-answered\n",
+        "    - PROBE-FIX-answered\n    - NOTE-FIX-examined\n",
+    );
+    let composed = read_set_over(&at);
+    let transcript = std::fs::read_to_string(at.join(TRANSCRIPT)).expect("the transcript reads");
+    let recorded = transcript
+        .lines()
+        .find_map(|line| line.strip_prefix("read_set: "))
+        .expect("the transcript records a read set")
+        .to_string();
+    edit(
+        &at,
+        TRANSCRIPT,
+        &format!("read_set: {recorded}\n"),
+        &format!("read_set: {composed}\n"),
+    );
+    let (first, _) = result_bytes(&at);
+    write(&at, &first);
+    at
+}
+
+/// Whether a plan over a moved tree leaves the committed result as it is: the
+/// same bytes, and `Unchanged` from the gate. The run's report where it does,
+/// and what moved where it does not, so that one run names every move that
+/// fails rather than the first.
+fn holds(
+    at: &Path,
+    committed: &str,
+    moved: headwater_generate::Plan,
+    what: &str,
+) -> Result<headwater_generate::Report, String> {
+    let (moved, bytes) = the_result_of(moved);
+    if bytes != committed {
+        let line = bytes
+            .lines()
+            .zip(committed.lines())
+            .find(|(new, old)| new != old)
+            .map(|(new, old)| format!("committed `{old}`, regenerated `{new}`"))
+            .unwrap_or_else(|| "the two differ in length".to_string());
+        return Err(format!(
+            "{what} moved a committed result, which pins only what it read: {line}"
+        ));
+    }
+    let checked = check(at, &moved);
+    match verdict_over_the_result(&checked) {
+        Verdict::Unchanged => Ok(checked),
+        other => Err(format!(
+            "{what} gave {other:?} over a committed result:\n{}",
+            checked.render(ColorMode::Plain)
+        )),
+    }
+}
+
+/// #1481, the owner's ruling of 2026-10-03: a committed result pins only what it
+/// read, so an unrelated merge cannot eject a queued pull request.
+///
+/// A result is a function of the transcript's bytes, the state it stands at,
+/// the declarations of the probes it names, the grader version, and the paired
+/// arm's result. Four moves change none of those and must leave the committed
+/// bytes alone. The control changes one of them and must move them, so the
+/// fixture cannot pass on a result that never moves.
+#[test]
+fn a_committed_result_pins_only_what_it_read() {
+    let mut failed: Vec<String> = Vec::new();
+
+    // (a) A probe the transcript does not name is added.
+    let at = examined_tree("pins-a-probe-added");
+    let committed = std::fs::read_to_string(at.join(RESULT)).expect("the result reads");
+    assert!(
+        verdicts_of(&committed).contains("satisfied"),
+        "the fixture grades with verdicts, so a held result is not an empty one"
+    );
+    std::fs::write(at.join("runs/probes/0003-third.md"), THIRD).expect("the probe lands");
+    let added = holds(&at, &committed, plan_over(&at), "a new probe")
+        .map_err(|why| failed.push(why))
+        .ok();
+
+    // (b) A document a probe examines, and not a probe document, is edited.
+    let at = examined_tree("pins-an-examined-edit");
+    let committed = std::fs::read_to_string(at.join(RESULT)).expect("the result reads");
+    edit(
+        &at,
+        "runs/notes/examined.md",
+        "This sentence is the one the test edits.",
+        "This sentence was edited by the test.",
+    );
+    assert_ne!(
+        read_set_over(&at),
+        std::fs::read_to_string(at.join(TRANSCRIPT))
+            .expect("the transcript reads")
+            .lines()
+            .find_map(|line| line.strip_prefix("read_set: "))
+            .expect("a read set")
+            .to_string(),
+        "the edit moves the read set this tree composes, or it tests nothing"
+    );
+    let edited = holds(
+        &at,
+        &committed,
+        plan_over(&at),
+        "an edit to an examined document",
+    )
+    .map_err(|why| failed.push(why))
+    .ok();
+
+    // (c) The tree's lock moves, and the transcript's `lock:` line does not.
+    let at = examined_tree("pins-a-lock-move");
+    let committed = std::fs::read_to_string(at.join(RESULT)).expect("the result reads");
+    let locked = holds(
+        &at,
+        &committed,
+        plan_locked(&at, "sha256:a-later-publish"),
+        "a move of the tree's lock",
+    )
+    .map_err(|why| failed.push(why))
+    .ok();
+
+    // (d) A transcript refused because the lock moved and no read set shows
+    // what the move reached: a second lock move leaves its page alone. The
+    // transcript is a draft, because a refusal over a `current` one holds the
+    // write, and a page nobody can commit pins nothing.
+    let at = examined_tree("pins-a-second-lock-move");
+    edit(&at, TRANSCRIPT, "status: current\n", "status: draft\n");
+    edit(
+        &at,
+        TRANSCRIPT,
+        &format!("selection: {SELECTION}\n"),
+        "selection: sha256:a-selection-this-tree-cannot-recover\n",
+    );
+    let (refused, _) = the_result_of(plan_locked(&at, "sha256:the-first-move"));
+    write(&at, &refused);
+    let committed = std::fs::read_to_string(at.join(RESULT)).expect("the result reads");
+    assert!(
+        !committed.contains("## The verdicts") || !verdicts_of(&committed).contains("satisfied"),
+        "the fixture for (d) is a refused result:\n{committed}"
+    );
+    assert!(
+        committed.contains("recorded nothing usable"),
+        "the fixture for (d) is refused by the intake:\n{committed}"
+    );
+    let relocked = holds(
+        &at,
+        &committed,
+        plan_locked(&at, "sha256:the-second-move"),
+        "a second move of the tree's lock",
+    )
+    .map_err(|why| failed.push(why))
+    .ok();
+
+    assert!(failed.is_empty(), "{}", failed.join("\n\n"));
+
+    // The run still tells the author of each move it reports, and fails
+    // nothing for it. A new probe is not a move of anything the transcript
+    // read, so the run names nothing for (a).
+    let moved_of = |report: &headwater_generate::Report| {
+        report
+            .moved_since_recording
+            .iter()
+            .find(|moved| moved.transcript == TRANSCRIPT)
+            .cloned()
+    };
+    let added = added.expect("held above");
+    assert!(
+        moved_of(&added).is_none(),
+        "{}",
+        added.render(ColorMode::Plain)
+    );
+    let edited = edited.expect("held above");
+    let moved = moved_of(&edited).expect("the run names an edit to an examined document");
+    assert!(moved.read_set.is_some() && moved.lock.is_none() && moved.selection.is_none());
+    let locked = locked.expect("held above");
+    let moved = moved_of(&locked).expect("the run names a move of the tree's lock");
+    assert_eq!(
+        moved.lock.as_deref(),
+        Some(LOCK),
+        "the run names the recorded lock"
+    );
+    assert!(moved.read_set.is_none() && moved.selection.is_none());
+    assert!(
+        locked.render(ColorMode::Plain).contains(
+            "it was planned against taxonomy sha256:fixture and this tree carries another"
+        ),
+        "{}",
+        locked.render(ColorMode::Plain)
+    );
+    let relocked = relocked.expect("held above");
+    assert!(
+        relocked
+            .refused
+            .iter()
+            .any(|refused| refused.transcript == TRANSCRIPT
+                && refused.why.contains("sha256:the-second-move")),
+        "the run names the refusal with the tree's lock, which the page does not:\n{}",
+        relocked.render(ColorMode::Plain)
+    );
+
+    // (e) The control: an expectation of a probe the transcript names flips a
+    // verdict, and the bytes move.
+    let at = examined_tree("pins-the-control");
+    let committed = std::fs::read_to_string(at.join(RESULT)).expect("the result reads");
+    edit(
+        &at,
+        "runs/probes/0002-answered.md",
+        "expected: [no]",
+        "expected: [yes]",
+    );
+    let (moved, regraded) = result_bytes(&at);
+    assert_ne!(
+        regraded, committed,
+        "an expectation the transcript was graded against moved, and the result did not"
+    );
+    assert_eq!(
+        verdict_over_the_result(&check(&at, &moved)),
+        &Verdict::Differs
     );
 }
 
@@ -1163,7 +1444,7 @@ fn a_result_over_a_withdrawn_transcript_says_so_first_and_claims_no_significance
             .find("`deprecated`")
             .unwrap_or_else(|| panic!("{path} does not name the state first:\n{bytes}"));
         let inputs = opening
-            .find("A probe result is a function of three committed inputs")
+            .find("A probe result is a function of committed inputs")
             .expect("the result states its inputs");
         assert!(
             named < inputs,
@@ -1423,7 +1704,7 @@ fn a_narrowed_transcript_is_graded_against_its_own_part_of_the_selection() {
         .expect("the narrowed result is written")
         .bytes;
     assert!(
-        bytes.contains("is the digest of 1 of the 2 probes this corpus composes"),
+        bytes.contains("are the probes it was planned over") && !bytes.contains("cannot recover"),
         "the narrowed digest was not recognized:\n{bytes}"
     );
     assert!(

@@ -796,40 +796,74 @@ impl RefusedTranscript {
     }
 }
 
-/// A committed transcript whose read set moved since the recording, and the
-/// result this run wrote for it, which keeps every verdict and carries a mark.
+/// A committed transcript that recorded a lock, a read set or a selection this
+/// tree no longer composes, and the result this run wrote for it.
+///
+/// A committed result pins only what it read (the owner's ruling on #1481,
+/// 2026-10-03). Its page names the three recorded digests and compares none
+/// of them with the tree, so none of these moves changes its bytes, and an
+/// unrelated merge cannot eject a queued pull request through it. The
+/// comparison lives here instead, in the printed run, which is never
+/// committed.
 ///
 /// A moved read set is a document edit, because no lock move changes the
-/// bytes of a document. Before #1338 the first confirmation refused such a
-/// transcript where the lock had also moved, and an edit to one document a
-/// probe read dropped every verdict the recording paid for. 24 of 26 committed
-/// results carried no verdict for that reason on the day it was filed.
+/// bytes of a document, and it keeps every verdict (#1338). A moved lock is
+/// graded where the read set of the transcript's probes is one this tree
+/// composes (#1292). A selection this tree cannot recover from the probes the
+/// transcript names is graded over those probes alone, so a probe the run was
+/// planned over and never ran is not reported by the result.
 ///
 /// **This never fails a run.** The staleness of a measurement is a fact about
 /// the measurement, and spec 15 rules that no exit status carries it. The run
-/// names the result so that the author of the edit meets it: the first edit
-/// that moves a read set gives the result new bytes, so `generate --check`
-/// fails once through drift, and this section says that the regeneration it
-/// asks for keeps the verdicts.
-#[derive(Clone, Debug)]
-pub struct MovedReadSet {
+/// names the result so that the author of the move meets it.
+#[derive(Clone, Debug, Default)]
+pub struct MovedSinceRecording {
     /// The transcript, relative to the corpus root, in census order.
     pub transcript: String,
-    /// The result this run wrote for it, which holds the verdicts and the mark.
+    /// The result this run wrote for it, which holds the verdicts.
     pub output: String,
-    /// The read set the transcript recorded.
-    pub recorded: String,
+    /// The read set the transcript recorded, where this tree composes another.
+    pub read_set: Option<String>,
+    /// The lock the transcript recorded, where this tree carries another and
+    /// the transcript was graded anyway.
+    pub lock: Option<String>,
+    /// The selection the transcript recorded, where this tree cannot recover
+    /// it from the probes the transcript names.
+    pub selection: Option<String>,
 }
 
-impl MovedReadSet {
+impl MovedSinceRecording {
+    /// Whether anything moved, which is whether the run names the transcript.
+    pub fn moved(&self) -> bool {
+        self.read_set.is_some() || self.lock.is_some() || self.selection.is_some()
+    }
+
     /// The line a run prints under the transcript's path.
     pub fn line(&self) -> String {
+        let mut moved = Vec::new();
+        if let Some(recorded) = &self.read_set {
+            moved.push(format!(
+                "the read set of its probes is not {recorded} any more, so a document a session \
+                 was pointed at changed"
+            ));
+        }
+        if let Some(recorded) = &self.lock {
+            moved.push(format!(
+                "it was planned against taxonomy {recorded} and this tree carries another"
+            ));
+        }
+        if let Some(recorded) = &self.selection {
+            moved.push(format!(
+                "this corpus cannot recover the selection {recorded} from the probes it names, so \
+                 it is graded over those probes alone"
+            ));
+        }
         format!(
-            "the read set of its probes is not {} any more, so a document a session was pointed \
-             at changed. The result at `{}` keeps every verdict and says that it was graded over \
-             the documents the session met, and a regeneration keeps every verdict too. This \
-             fails nothing. `headwater probe stale` names what moved",
-            self.recorded, self.output
+            "{}. The result at `{}` keeps every verdict and compares none of this with the tree, \
+             so its bytes did not move for it. This fails nothing. `headwater probe stale` names \
+             what moved",
+            moved.join("; "),
+            self.output
         )
     }
 }
@@ -1001,9 +1035,9 @@ pub struct Plan {
     /// is written, because the refusal is what the file says, and this is the
     /// run saying it too.
     pub refused: Vec<RefusedTranscript>,
-    /// Committed transcripts graded over a read set that moved since the
-    /// recording. See [`MovedReadSet`].
-    pub moved_read_sets: Vec<MovedReadSet>,
+    /// Committed transcripts that recorded a lock, a read set or a selection
+    /// this tree no longer composes. See [`MovedSinceRecording`].
+    pub moved_since_recording: Vec<MovedSinceRecording>,
     /// Compared arms that hold a refused session the recorder or the probe
     /// declaration caused. See [`DefectiveArms`].
     pub defective_arms: Vec<DefectiveArms>,
@@ -1516,8 +1550,8 @@ pub struct Report {
     /// never a plan.
     pub refused: Vec<RefusedTranscript>,
     /// Carried from the plan, for the reason `refused` is. It never enters
-    /// [`Report::has_errors`]. See [`MovedReadSet`].
-    pub moved_read_sets: Vec<MovedReadSet>,
+    /// [`Report::has_errors`]. See [`MovedSinceRecording`].
+    pub moved_since_recording: Vec<MovedSinceRecording>,
     /// Carried from the plan, for the reason `refused` is. See
     /// [`DefectiveArms`].
     pub defective_arms: Vec<DefectiveArms>,
@@ -1740,15 +1774,15 @@ impl Report {
                 out.push('\n');
             }
         }
-        if !self.moved_read_sets.is_empty() {
+        if !self.moved_since_recording.is_empty() {
             out.push('\n');
             out.push_str(&paint(
                 Role::Heading,
-                "results graded over a moved read set",
+                "results whose recorded lock, read set or selection moved",
                 mode,
             ));
             out.push('\n');
-            for moved in &self.moved_read_sets {
+            for moved in &self.moved_since_recording {
                 out.push_str(&format!(
                     "  {}\n",
                     paint(Role::Path, &moved.transcript, mode)
@@ -1995,7 +2029,7 @@ fn run(root: &Path, plan: &Plan, mode: Mode) -> Report {
         unwritten: plan.unwritten.clone(),
         orphaned: plan.orphaned.clone(),
         refused: plan.refused.clone(),
-        moved_read_sets: plan.moved_read_sets.clone(),
+        moved_since_recording: plan.moved_since_recording.clone(),
         defective_arms: plan.defective_arms.clone(),
         ambiguous_arms: plan.ambiguous_arms.clone(),
         producer,
@@ -2332,10 +2366,12 @@ mod paint_tests {
                 // the cases below would then paint a line nobody writes.
                 readers: vec!["docs/obligations/0010-a-record.md".to_string()],
             }],
-            moved_read_sets: vec![MovedReadSet {
+            moved_since_recording: vec![MovedSinceRecording {
                 transcript: "docs/probe-runs/two.md".to_string(),
                 output: "docs/probe-results/two.md".to_string(),
-                recorded: "sha256:recorded".to_string(),
+                read_set: Some("sha256:recorded".to_string()),
+                lock: Some("sha256:recorded-lock".to_string()),
+                selection: Some("sha256:recorded-selection".to_string()),
             }],
             defective_arms: vec![DefectiveArms {
                 selection: "sha256:selection".to_string(),

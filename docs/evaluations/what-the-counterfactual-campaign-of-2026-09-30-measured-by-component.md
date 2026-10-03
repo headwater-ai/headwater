@@ -122,7 +122,7 @@ No separation and no non-separation above changes without them. Where the leak m
 
 **The host configuration was loaded in both arms.** Each session loaded the owner's user-level Claude Code configuration, which connects mail and drive tools and bypasses permissions. It was the same in both arms. #1467 removes it.
 
-**The corpus was not frozen between the two arms' sessions.** This repository merged changes while the batch ran. Each session read one archive of the pin, so both arms of a pair read the same bytes. Since the recording, `docs/spec/09-open-questions.md` and `docs/spec/12-check-layer.md` changed. So the navigability and discovery results say that the read set moved, and each verdict is graded over the documents that the session met.
+**The corpus was not frozen between the two arms' sessions.** This repository merged changes while the batch ran. Each session read one archive of the pin, so both arms of a pair read the same bytes. Since the recording, `docs/spec/09-open-questions.md` and `docs/spec/12-check-layer.md` changed. So the run of `headwater generate` names the navigability and discovery results under a moved read set. Each verdict is graded over the documents that the session met.
 
 **The sealed present arm lists the probes in `nav.yml`.** 69 of the 529 entries of `.headwater/nav.yml` in the sealed present tree name a file on the three instrument shelves, which the ablation removes. So a present-arm session can read the title of each probe. None of the 69 names a document that the seal deleted. Nothing controls this difference, and each transcript states it.
 

@@ -228,6 +228,26 @@ impl std::fmt::Display for Refusal {
 }
 
 impl Refusal {
+    /// The refusal in the words a committed probe result carries.
+    ///
+    /// The same as the [`std::fmt::Display`] text, except that a
+    /// [`Refusal::TaxonomyMoved`] names the lock the transcript recorded and
+    /// not the lock of the tree that read it. A result pins only what it read
+    /// (the owner's ruling on #1481, 2026-10-03), and the tree's lock is not
+    /// something a transcript read: naming it moved the page on every later
+    /// lock move. The run report and the CLI keep the [`std::fmt::Display`]
+    /// text, which names both.
+    pub fn recorded(&self) -> String {
+        match self {
+            Refusal::TaxonomyMoved { claimed, .. } => format!(
+                "it was planned against taxonomy {claimed}, which is not the lock of the tree \
+                 that read it, and no read set was composed over its probes to show that the \
+                 move left them alone"
+            ),
+            other => other.to_string(),
+        }
+    }
+
     /// Which of the five confirmations this refusal failed.
     ///
     /// Every variant maps, because a transcript is refused by a confirmation or
@@ -626,11 +646,32 @@ impl Record {
     /// reads no stream itself, on the rule `headwater_check::paint`'s module
     /// comment states.
     pub fn render(&self, mode: ColorMode) -> String {
+        self.render_as(mode, false)
+    }
+
+    /// The same report, in the words a committed probe result carries.
+    ///
+    /// A result pins only what it read (the owner's ruling on #1481,
+    /// 2026-10-03), so this text compares nothing the transcript recorded
+    /// against the tree that reads it. It carries no sentence that the lock or
+    /// the read set moved, it counts the probes the transcript names and not
+    /// the probes this corpus declares, and a refusal names the recorded lock
+    /// alone. [`Record::render`] keeps all three for `headwater probe record`,
+    /// whose output is printed once and never committed.
+    pub fn render_page(&self) -> String {
+        self.render_as(ColorMode::Plain, true)
+    }
+
+    fn render_as(&self, mode: ColorMode, page: bool) -> String {
         use std::fmt::Write;
         let mut out = String::new();
 
         if let Some(refusal) = &self.refusal {
-            let _ = writeln!(out, "This transcript recorded nothing usable: {refusal}");
+            let why = match page {
+                true => refusal.recorded(),
+                false => refusal.to_string(),
+            };
+            let _ = writeln!(out, "This transcript recorded nothing usable: {why}");
             return out;
         }
 
@@ -668,7 +709,13 @@ impl Record {
                              met, graded against the expectations this tree declares now, which \
                              can differ from the ones the session ran under. `headwater probe \
                              stale` names what moved.";
-        match (&self.lock_moved, &self.read_set_moved) {
+        // A committed page carries neither mark: the tree's lock and the read
+        // set it composes are not what the transcript read (#1481).
+        let marks = match page {
+            true => (&None, &None),
+            false => (&self.lock_moved, &self.read_set_moved),
+        };
+        match marks {
             (Some(claimed), None) => {
                 let _ = writeln!(
                     out,
@@ -696,15 +743,27 @@ impl Record {
         }
         let _ = writeln!(out);
 
-        let _ = writeln!(
-            out,
-            "{} over {} of the {} this corpus declares, in {} and {}.",
-            crate::plural(self.read, "event"),
-            self.probes.len(),
-            crate::plural(self.declared, "probe"),
-            crate::plural(self.sessions, "session"),
-            crate::plural(self.calls, "tool call")
-        );
+        // The page counts the probes the transcript names and no others, so a
+        // probe added anywhere leaves it alone (#1481).
+        let _ = match page {
+            true => writeln!(
+                out,
+                "{} over {}, in {} and {}.",
+                crate::plural(self.read, "event"),
+                crate::plural(self.probes.len(), "probe"),
+                crate::plural(self.sessions, "session"),
+                crate::plural(self.calls, "tool call")
+            ),
+            false => writeln!(
+                out,
+                "{} over {} of the {} this corpus declares, in {} and {}.",
+                crate::plural(self.read, "event"),
+                self.probes.len(),
+                crate::plural(self.declared, "probe"),
+                crate::plural(self.sessions, "session"),
+                crate::plural(self.calls, "tool call")
+            ),
+        };
 
         if !self.rejected.is_empty() {
             let _ = writeln!(out);
@@ -720,6 +779,23 @@ impl Record {
         }
 
         let _ = writeln!(out);
+        if page {
+            let _ = writeln!(
+                out,
+                "The engine confirmed the taxonomy, that every member of the run identity is \
+                 present, the membership of every probe named, that no key outside the closed set \
+                 appears, and that a realized cost was recorded. Present is not confirmed. This \
+                 page names the lock, the selection and the read set the transcript recorded, and \
+                 it compares none of them with the tree in front of a reader. `{}` and `{}` name \
+                 what moved since the recording, and neither one fails for it. It graded \
+                 nothing: a verdict is a function of this transcript, the expectations these \
+                 probes declare and a grader version, and `{}` is the verb that holds all three.",
+                paint(Role::Verb, "headwater generate", mode),
+                paint(Role::Verb, "headwater probe stale", mode),
+                paint(Role::Verb, "headwater probe grade", mode)
+            );
+            return out;
+        }
         let _ = writeln!(
             out,
             "The engine confirmed the taxonomy, that every member of the run identity is \
