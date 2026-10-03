@@ -1366,7 +1366,8 @@ fn a_verified_pair_that_names_no_edge_is_listed_as_the_pair() {
     let typo = (DOCUMENT, "nope.sh");
     let reversed = (LIB, DOCUMENT);
     let owned = |pair: (&str, &str)| (pair.0.to_string(), pair.1.to_string());
-    let listed = vec![owned(typo), owned(reversed)];
+    // In the order the change holds its pairs, which sorts them.
+    let listed = vec![owned(reversed), owned(typo)];
     type Expect<'a> = (
         &'a str,
         &'a dyn Fn() -> Change,
