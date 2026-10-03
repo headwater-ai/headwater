@@ -30,6 +30,7 @@ The collection period closed on 2026-10-02 at 500 joined person prompts. [The ev
 - **No floor on the score separates the two cases.** The top neighbor score on a silent line has a median of 0.3252. On a line where the route offered pointers, the median is 0.4127. The two ranges overlap from 0.1585 to 0.5498.
 - **The log cannot grade recall.** The main thread of a session read a corpus document after only 11 of 587 joined prompts. On the 7 such prompts under the model digest, neither path offered a document that the session read.
 - **The two paths agree on some document in 183 of 413 prompts** where both offered one.
+- **A blind grade found the embedding offer on a silent prompt mostly noise.** [The grade of #1670](../evaluations/what-a-blind-grade-of-the-two-routing-paths-offers-showed.md) scored 71 silent prompts with two agent raters and no person. On 17 of 71 the path offered a document that a session would need, and 686 of its 710 documents were not such a document.
 
 ## Decision
 
@@ -41,6 +42,6 @@ The collection period closed on 2026-10-02 at 500 joined person prompts. [The ev
 
 **Spec 5's fallback sentence stands as written, and `route.rs` gains no tier.** This is the state that HW-DR-0064 left, so the proposal changes no code.
 
-**The question opens again on one condition.** That condition is a reading of at least 58 silent person prompts, each followed by a read of a corpus document. The read can be on any thread of the session. Until then, a ruling for the tier rests on no measurement.
+**The question opens again on one condition.** That condition is a reading of at least 58 silent person prompts, each followed by a read of a corpus document. The read can be on any thread of the session. Until then, a ruling for the tier rests on no measurement. The blind grade of #1670 measures usefulness and not reads, so it does not meet this condition, and it leaves the proposal standing.
 
 **The owner may rule the other way.** A ruling for the tier needs a floor on the score first, so that the tier can stay silent. The figures above say that no single floor does that on this log, so the ruling would also need a second signal beside the score.
