@@ -602,14 +602,17 @@ probe_log=$(cd "$probe_log" && pwd -P)
 # session and stops it after, listening on a unix socket in a directory bound
 # into the session. Inside, the same file forwards `127.0.0.1:3128` to that
 # socket and then runs the harness, with `HTTPS_PROXY` naming the port. The
-# proxy opens a tunnel to the hosts its own source lists and to no other, and
-# logs each decision, so the transcript states every connection it refused.
+# proxy opens no tunnel to any host, and logs each decision, so the transcript
+# states every connection it refused.
 #
-# That closes every direct connection, and not one channel: the provider API
-# itself. A `Bash` call that holds the session's credential can send a request
-# to it that asks for a server-side web tool, and the provider then reaches
-# any host from outside the session. Nothing here closes or measures that
-# channel, and the transcript says so (verify of #1467, round 2).
+# The provider API is the one host it reaches, and it reads each request to
+# it first (#1467, the owner's ruling of 2026-10-03). A `Bash` call that holds
+# the session's credential could otherwise send the API a request that asks
+# for a server-side web tool, and the provider would then reach any host from
+# outside the session. So `ANTHROPIC_BASE_URL` names the session's forwarder
+# in plain HTTP, the proxy reads each request whole, refuses one that asks the
+# provider to fetch from another host, and forwards the rest over TLS itself.
+# Its source states the rules and the measurement behind them.
 #
 # It fails closed. No `bwrap`, one that cannot create a namespace with no
 # network, no `python3`, or a proxy that does not start, is exit 12 before any
@@ -634,6 +637,8 @@ command -v python3 >/dev/null 2>&1 || {
 }
 egress_proxy=$root/tools/probe/egress-proxy.py
 egress_at=/opt/headwater-harness/egress-proxy.py
+# The proxy forwards a request to the provider API only from this port, its
+# `FORWARDER_PORT`, so the two numbers change together.
 egress_port=3128
 egress_hosts=$(python3 "$egress_proxy" hosts 2>/dev/null) && [ -n "$egress_hosts" ] || {
     echo "probe-record: the egress proxy at $egress_proxy did not name the hosts it allows, so the session has no route to the network it can state (#1467); nothing was spent." >&2
@@ -716,6 +721,7 @@ set -- "$@" --proc /proc --dev /dev --tmpfs /tmp \
     --setenv HTTP_PROXY "http://127.0.0.1:$egress_port" \
     --setenv https_proxy "http://127.0.0.1:$egress_port" \
     --setenv http_proxy "http://127.0.0.1:$egress_port" \
+    --setenv ANTHROPIC_BASE_URL "http://127.0.0.1:$egress_port" \
     --setenv CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC 1 \
     --setenv HEADWATER_PROBE_SESSION "$session" \
     --setenv HEADWATER_SHADOW_LOG_DIR "$probe_log"
@@ -804,6 +810,15 @@ egress_count() {
 }
 egress_allowed=$(egress_count allowed)
 egress_refused=$(egress_count refused)
+# The requests to the provider API the proxy read and refused, each with what
+# it refused: a tool or a key that reaches another host, or a body, method or
+# path it does not forward.
+egress_read() {
+    { grep "^$1 " "$egress/log" 2>/dev/null || true; } | cut -d' ' -f2 | sort | uniq -c | sort -k1,1nr -k2,2 \
+        | awk '{ printf "%s%d %s for `%s`", (NR > 1 ? ", " : ""), $1, ($1 == 1 ? "request" : "requests"), $2 }'
+}
+egress_tools=$(egress_read refused-tool)
+egress_unread=$(egress_read 'refused-\(body\|path\)')
 egress_named=$(printf '%s\n' "$egress_hosts" | awk 'NF { n++; h[n] = "`" $1 "`" }
     END { for (i = 1; i <= n; i++) printf "%s%s", (i == 1 ? "" : (i == n ? " and " : ", ")), h[i] }')
 rm -rf "$egress"
@@ -960,9 +975,10 @@ fi
 printf 'The session ran confined to its workspace. The confinement bound the workspace read-write, `/usr` and `/etc` read-only, the harness, the egress proxy and the directory of its socket read-only, the log directory of this run and the configuration directory below, and nothing else of the host'"'"'s file system, so no copy of this repository on the host, no other tree of its batch and no configuration of the host was readable through the session'"'"'s file system.\n\n'
 printf 'The session ran under the configuration directory `%s`, which held a copy of the host'"'"'s credentials and nothing else, in the permission mode `%s`, with the tools `%s` allowed and `WebSearch` and `WebFetch` denied. The batches of 2026-09-28 and 2026-09-30 ran under `bypassPermissions` and the host'"'"'s configuration, so a rate of this session does not compare with a rate of theirs.\n\n' \
     "$config" "$permission_mode" "$allowed_tools"
-printf 'The session ran with no network of its own. Its one route out was a proxy outside it that opens a connection to %s on port 443 and refuses every other, so a direct connection to any other host, such as `gh api`, `curl` or `git clone` to GitHub, was refused. The proxy allowed %s, and refused %s.\n\n' \
+printf 'The session ran with no network of its own. Its one route out was a proxy outside it that opens no tunnel, and that forwards to %s on port 443 a request to the provider API only after it reads the request whole, so a direct connection to any other host, such as `gh api`, `curl` or `git clone` to GitHub, was refused. The proxy allowed %s, and refused %s.\n\n' \
     "$egress_named" "${egress_allowed:-no connection}" "${egress_refused:-no connection}"
-printf 'One channel stays open, and nothing measured it. A call that holds the provider credential can ask the provider API for a server-side web tool, which reaches any host from outside the session, so this transcript does not show that the session read nothing from GitHub.\n\n'
+printf 'The proxy refused a request to the provider API that asked the provider to fetch from another host for the session, with its web search, its web fetch, its MCP connector or a URL in the content. It refused %s of that kind, and %s whose body, method or path it does not forward.\n\n' \
+    "${egress_tools:-no request}" "${egress_unread:-no request}"
 
 # The paths outside the workspace the session named (#1467, clause 2). A
 # session cannot see a refusal from outside, so this counts what it tried:

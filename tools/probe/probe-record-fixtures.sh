@@ -1913,7 +1913,14 @@ server.serve_forever()
     GH_TOKEN=x GH_ENTERPRISE_TOKEN=x gh api --hostname "127.0.0.1:$port" /secret.md
 } > found.txt 2>/dev/null
 curl -s -p -x "\$HTTPS_PROXY" --max-time 3 -o /dev/null https://api.anthropic.com/ 2>/dev/null
+curl -s --max-time 5 -o /dev/null -w '%{http_code}' -H 'content-type: application/json' \
+    -d '{"model":"m","max_tokens":1,"messages":[{"role":"user","content":"x"}],"tools":[{"type":"web_search_20250305","name":"web_search"}]}' \
+    "\$ANTHROPIC_BASE_URL/v1/messages" > search.txt 2>/dev/null
+curl -s --max-time 10 -o /dev/null -w '%{http_code}' -H 'content-type: application/json' \
+    -d '{"model":"m","max_tokens":1,"messages":[{"role":"user","content":"x"}]}' \
+    "\$ANTHROPIC_BASE_URL/v1/messages" > plain.txt 2>/dev/null
 printf '%s\n' "\$HTTPS_PROXY" > proxy.txt
+printf '%s\n' "\$ANTHROPIC_BASE_URL" > base.txt
 touch /opt/headwater-egress/planted 2>/dev/null && printf '%s\n' /opt/headwater-egress >> wrote.txt
 printf '%s\n' '{"type":"system","subtype":"init","model":"claude-haiku-4-5","session_id":"s22"}'
 printf '%s\n' '{"type":"result","subtype":"success","result":"withheld","total_cost_usd":0.01,"modelUsage":{"claude-haiku-4-5-20251001":{"inputTokens":10}}}'
@@ -1934,15 +1941,24 @@ STUB
         same "and cannot write beside the proxy's socket, which is the host's directory" "" "$(cat "$conf/net-ws/wrote.txt" 2>/dev/null)"
         present "the transcript says the session had no network but the proxy" \
             "The session ran with no network of its own." "$scratch/no-network.md"
-        present "and names the hosts the proxy allows" \
-            "\`api.anthropic.com\` and \`platform.claude.com\`" "$scratch/no-network.md"
+        present "and names the host the proxy forwards to" \
+            "forwards to \`api.anthropic.com\` on port 443 a request to the provider API only after it reads the request whole" "$scratch/no-network.md"
+        same "the session's calls to the provider API go in plain HTTP to its own forwarder" "http://127.0.0.1:3128" \
+            "$(cat "$conf/net-ws/base.txt" 2>/dev/null)"
+        same "a call the session writes itself that asks the provider for its web search is refused" "403" \
+            "$(cat "$conf/net-ws/search.txt" 2>/dev/null)"
+        same "and an ordinary call passes the proxy's reading" "passed" \
+            "$(p=$(cat "$conf/net-ws/plain.txt" 2>/dev/null); [ -n "$p" ] && [ "$p" != 403 ] && echo passed || echo "refused: $p")"
+        present "and says the proxy refused the tunnel to the provider's host" \
+            "1 connection to \`api.anthropic.com:443\`" "$scratch/no-network.md"
         present "and names the host whose connection the proxy refused" \
             "\`127.0.0.1:$port\`" "$scratch/no-network.md"
         present "and says the proxy allowed the provider's host" \
             "allowed 1 connection to \`api.anthropic.com:443\`" "$scratch/no-network.md"
-        present "and names the channel through the provider API as open and unmeasured" \
-            "One channel stays open, and nothing measured it. A call that holds the provider credential can ask the provider API for a server-side web tool, which reaches any host from outside the session, so this transcript does not show that the session read nothing from GitHub." \
+        present "and names the request for a server-side web tool the proxy refused" \
+            "It refused 1 request for \`web_search_20250305\` of that kind, and no request whose body, method or path it does not forward." \
             "$scratch/no-network.md"
+        absent "and no longer says the channel through the provider API is open" "One channel stays open" "$scratch/no-network.md"
         absent "and the transcript claims nothing is reachable from the session" "reachable" "$scratch/no-network.md"
         present "and claims no more than the confinement holds: direct connections refused" \
             "so a direct connection to any other host, such as \`gh api\`, \`curl\` or \`git clone\` to GitHub, was refused. The proxy allowed" "$scratch/no-network.md"
@@ -2004,8 +2020,9 @@ s = socket.socket(socket.AF_UNIX)
 s.settimeout(20)
 s.connect(sys.argv[1])
 body = sys.argv[3].encode()
-head = sys.argv[2] + "\r\nHost: 127.0.0.1:3128\r\nContent-Type: application/json\r\n" + sys.argv[4]
-if "Content-Length" not in sys.argv[4]:
+extra = sys.argv[4].replace("\\r\\n", "\r\n")
+head = sys.argv[2] + "\r\nHost: 127.0.0.1:3128\r\nContent-Type: application/json\r\n" + extra
+if "Content-Length" not in extra:
     head += "Content-Length: %d\r\n" % len(body)
 s.sendall(head.encode() + b"\r\n" + body)
 print(s.recv(4096).decode("latin-1").split("\r\n", 1)[0])
@@ -2036,10 +2053,20 @@ print(s.recv(4096).decode("latin-1").split("\r\n", 1)[0])
             "$(px_post 'POST /v1/messages HTTP/1.1' 'tools: web_search_20250305')"
         same "and one whose body states a length past the cap" "HTTP/1.1 403 Forbidden" \
             "$(px_post 'POST /v1/messages HTTP/1.1' '{}' 'Content-Length: 999999999999\r\n')"
+        same "and one whose body states no length it can read" "HTTP/1.1 403 Forbidden" \
+            "$(px_post 'POST /v1/messages HTTP/1.1' '{}' 'Content-Length: 2\r\nContent-Length: 3\r\n')"
+        same "and one whose body is JSON and not an object" "HTTP/1.1 403 Forbidden" \
+            "$(px_post 'POST /v1/messages HTTP/1.1' '[{"type":"web_search_20250305"}]')"
+        same "and one whose tools are not a list it can read" "HTTP/1.1 403 Forbidden" \
+            "$(px_post 'POST /v1/messages HTTP/1.1' '{"tools":{"type":"web_search_20250305"}}')"
         same "and one that names a host other than the session's own forwarder" "HTTP/1.1 403 Forbidden" \
             "$(px_post 'POST http://api.anthropic.com/v1/messages HTTP/1.1' "$(px_tools '{"name":"Read","input_schema":{"type":"object"}}')")"
+        same "and one to another port of the session's own loopback" "HTTP/1.1 403 Forbidden" \
+            "$(px_post 'POST http://127.0.0.1:8000/v1/messages HTTP/1.1' "$(px_tools '{"name":"Read","input_schema":{"type":"object"}}')")"
+        same "and reads a request in the form the harness sends it through its proxy, to the forwarder by URL" "HTTP/1.1 403 Forbidden" \
+            "$(px_post 'POST http://127.0.0.1:3128/v1/messages?beta=true HTTP/1.1' "$(px_tools '{"type":"web_search_20260209","name":"web_search"}')")"
         same "and logs each refusal with what it refused, before any upstream connection" \
-            "refused api.anthropic.com:443|refused platform.claude.com:443|refused-tool web_search_20250305 api.anthropic.com:443|refused-tool web_fetch_20250910 api.anthropic.com:443|refused-tool mcp_toolset api.anthropic.com:443|refused-tool mcp_servers api.anthropic.com:443|refused-tool url-source api.anthropic.com:443|refused-path /v1/files api.anthropic.com:443|refused-path GET api.anthropic.com:443|refused-body chunked api.anthropic.com:443|refused-body compressed api.anthropic.com:443|refused-body not-json api.anthropic.com:443|refused-body too-long api.anthropic.com:443|refused api.anthropic.com:80" \
+            "refused api.anthropic.com:443|refused platform.claude.com:443|refused-tool web_search_20250305 api.anthropic.com:443|refused-tool web_fetch_20250910 api.anthropic.com:443|refused-tool mcp_toolset api.anthropic.com:443|refused-tool mcp_servers api.anthropic.com:443|refused-tool url-source api.anthropic.com:443|refused-path /v1/files api.anthropic.com:443|refused-path GET api.anthropic.com:443|refused-body chunked api.anthropic.com:443|refused-body compressed api.anthropic.com:443|refused-body not-json api.anthropic.com:443|refused-body too-long api.anthropic.com:443|refused-body no-length api.anthropic.com:443|refused-body not-json api.anthropic.com:443|refused-tool tools api.anthropic.com:443|refused api.anthropic.com:80|refused 127.0.0.1:8000|refused-tool web_search_20260209 api.anthropic.com:443" \
             "$(tr '\n' '|' < "$conf/px/log" | sed 's/|$//')"
         # The control: a request with the session's own client tools alone
         # passes the reading and is forwarded. With no network the forward
