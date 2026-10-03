@@ -710,8 +710,9 @@ fn a_carrier_that_is_wrong_is_adrift_and_one_that_is_right_is_held() {
 /// that the bag alone resolves and that the census holds it, which is the
 /// vaguer carrier passing: an entry could be walked up one level at any time
 /// and nothing but a recorded artifact would say so. It now asserts the
-/// opposite, and the doc sentence it rests on is the one spec 6 already ruled,
-/// "an entry names its members, so a bag that resolves is not an answer".
+/// opposite, and the doc sentence it rests on is the one checks and cache
+/// rules, "an entry names its members, so a bag that resolves is not an
+/// answer".
 #[test]
 fn a_carrier_that_names_the_block_and_not_the_values_is_adrift() {
     let ran = fixture_run();
@@ -1775,8 +1776,8 @@ fn the_two_escape_classes_reach_the_two_sarif_kinds() {
 ///
 /// The sibling of `a_suppressed_finding_is_marked_and_a_live_one_is_not`, over
 /// the one format that wrote a block for a live finding alone.
-/// [Spec 6](../../../../docs/spec/06-engine-architecture.md#ci-adapters) rules
-/// it: "A suppressed finding is in the output, and it is marked. A live
+/// [Checks and cache](../../../../docs/subsystems/checks-and-cache.md#a-suppressed-finding-is-in-the-output-and-it-is-marked)
+/// rules it: "A suppressed finding is in the output, and it is marked. A live
 /// finding, a `migration-pending` finding and a suppressed one are three
 /// different things."
 ///

@@ -152,9 +152,10 @@ pub enum Grain {
     Corpus,
     /// The resolved taxonomy, and no document at all.
     ///
-    /// [Spec 12](../../../../docs/spec/12-check-layer.md#scope--the-declaration-everything-else-rests-on) draws
-    /// every scope over the corpus, and it names five. A rule that reads the
-    /// taxonomy rather than the corpus fits none of them, and
+    /// [Spec 12](../../../../docs/spec/12-check-layer.md#scope--the-declaration-everything-else-rests-on)
+    /// names this grain beside the four drawn over the corpus, and
+    /// `tests/spec_twelve_scope.rs` holds its list to this enum. A rule that
+    /// reads the taxonomy rather than the corpus fits none of the four, and
     /// [`crate::register`] holds two: an obligation that carries no disposition
     /// and a control whose mechanism this engine does not implement are both
     /// defects of the taxonomy, and neither has a document to point at.
@@ -165,8 +166,8 @@ pub enum Grain {
     /// one reads the lock, and its verdict moves when the lock moves. To call
     /// the second one corpus-grained would put a document in a read set that no
     /// document was ever read for.
-    /// [13 — Open obligations](../../../../docs/spec/13-open-obligations.md)
-    /// carries what that costs spec 12's list.
+    /// [HW-OBL-0067](../../../../docs/obligations/0067-a-rule-that-reads-the-taxonomy-has-no-grain-in-spec-12s-list.md)
+    /// recorded that spec 12's list once left this grain out.
     Taxonomy,
 }
 

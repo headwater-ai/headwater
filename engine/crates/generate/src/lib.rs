@@ -1535,9 +1535,10 @@ pub struct Report {
     /// one of them wrote a file and the last therefore proves nothing. `None`
     /// for a run that settled and for every `--check`.
     pub unsettled: Option<usize>,
-    /// A write only: the run found a refusal before its first write, so it
-    /// wrote no file. False where a later pass refused after an earlier one
-    /// wrote, as [`write_settled`] says. See [`Report::refuses_before_writing`].
+    /// A write or a publish only: the run found a refusal before its first
+    /// write, so it wrote no file. False where a later pass refused after an
+    /// earlier one wrote, as [`write_settled`] says. See
+    /// [`Report::refuses_before_writing`].
     pub withheld: bool,
 }
 
@@ -1552,7 +1553,8 @@ impl Report {
             || !self.ambiguous_arms.is_empty()
     }
 
-    /// Whether a write run refuses before its first write (#1466).
+    /// Whether a write or a publish run refuses before its first write
+    /// (#1466 for `generate`, #1510 for `headwater export`).
     ///
     /// These are the six terms of [`Report::has_errors`] that a run knows
     /// before it writes a file. The other six are not here: `producer`,
@@ -1828,6 +1830,10 @@ pub fn write(root: &Path, plan: &Plan) -> Report {
 /// `committed: false` is built here and nowhere else, so this is the one
 /// writer that does not skip it. [`write`] and [`check`] leave it alone,
 /// because the tree does not hold it.
+///
+/// It refuses before its first write as [`write`] does: where
+/// [`Report::refuses_before_writing`] holds, it writes no file, the
+/// uncommitted outputs included, and [`Report::withheld`] says so (#1510).
 pub fn publish(root: &Path, plan: &Plan) -> Report {
     run(root, plan, Mode::Publish)
 }
@@ -2046,9 +2052,10 @@ fn run(root: &Path, plan: &Plan, mode: Mode) -> Report {
             verdict,
         });
     }
-    // `generate` alone. `headwater export` keeps its old order until the same
-    // question is settled for it, and `--check` writes nothing either way.
-    report.withheld = mode == Mode::Write && report.refuses_before_writing();
+    // `generate` (#1466) and `headwater export` (#1510) alike, because a
+    // publish that refuses after a partial write leaves a published directory
+    // half updated. `--check` writes nothing either way.
+    report.withheld = mode != Mode::Check && report.refuses_before_writing();
     for (line, path, bytes) in pending {
         let verdict = &mut report.wrote[line].verdict;
         *verdict = match report.withheld {

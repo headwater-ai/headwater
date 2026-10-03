@@ -116,6 +116,8 @@ The register's own item is discharged and it is not in the list below. The `$`-r
 
 [HW-OBL-0077](../obligations/0077-a-fragment-on-a-path-needs-a-grain-that-no-scope-supplies.md) is discharged and it is not in the list below. A fragment on a path needed a grain that no scope supplied, and the grain was `Corpus`, which this engine already had. `link.fragment.unresolved` is corpus-scoped at version 3 and reads a fragment on a path as well as a bare one.
 
+[HW-OBL-0067](../obligations/0067-a-rule-that-reads-the-taxonomy-has-no-grain-in-spec-12s-list.md) is discharged and it is not in the list below. Two register rules read the taxonomy and no document, and the `Scope` block of spec 12 named no grain for them. The block names `Taxonomy`, which the engine has, and it does not name `Shelf`, which no code has. A test holds the grain lines of the block to `Grain`.
+
 [HW-OBL-0040](../obligations/0040-composition-between-two-library-entries-has-no-add-only-form.md) is discharged and it is not in the list below. Two library entries had no add-only way to share vocabulary, and [Q67](09-decisions.md#q67--what-form-composition-between-two-library-entries-takes) ruled the form. The resolver now reads `requires` for that form alone. An entry may add into an entry that it names, and the named entry applies first. A selection that lacks the named entry is refused before the merge.
 
 [HW-OBL-0118](../obligations/0118-the-published-read-set-names-no-anchor-so-a-gate-decides-nothing-about-one.md) arrived from that work and it is in the list below. It is the same gap in the artifact a gate reads, where a barrier voids every answer before it is reachable.
@@ -195,7 +197,6 @@ The second said that a control declares one posture and that spec 4 writes two v
 - [HW-OBL-0064](../obligations/0064-two-identity-components-are-correctness-roots-that-spec-12.md) — Two identity components are correctness roots that spec 12 does not cover
 - [HW-OBL-0065](../obligations/0065-a-classified-document-with-no-check-instance-has-a-third-cause.md) — A classified document with no check instance has a third cause
 - [HW-OBL-0066](../obligations/0066-a-finding-names-one-obligation-and-a-control-discharges-a-list.md) — A finding names one obligation, and a control discharges a list
-- [HW-OBL-0067](../obligations/0067-a-rule-that-reads-the-taxonomy-has-no-grain-in-spec-12s-list.md) — A rule that reads the taxonomy has no grain in spec 12's list
 - [HW-OBL-0068](../obligations/0068-the-promotion-record-has-three-members-and-no-unit-scale.md) — The promotion record has three members and no unit, scale or shape
 - [HW-OBL-0069](../obligations/0069-a-suppressed-finding-leaves-its-obligation-verified-and-spec-4.md) — A suppressed finding leaves its obligation verified, and spec 4 does not say so
 - [HW-OBL-0070](../obligations/0070-one-of-the-four-warrant-values-has-no-instance-in-this-corpus.md) — One of the four warrant values has no instance in this corpus

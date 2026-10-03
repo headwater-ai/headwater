@@ -155,8 +155,8 @@ pub fn render(run: &Run, subject: &Subject<'_>) -> String {
         let _ = writeln!(out, "\n</details>\n");
     }
 
-    // Spec 6: a run reports what it evaluated. The read set is a count here and
-    // an artifact elsewhere, which is the first entry of the loss set above.
+    // Checks and cache: a run reports what it evaluated. The read set is a
+    // count here and an artifact elsewhere, which is the first entry of the loss set above.
     let _ = writeln!(
         out,
         "{}. {} obligations, {} verified.",
