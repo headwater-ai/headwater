@@ -694,6 +694,16 @@ fn a_plan_that_stopped_partway_grades_nothing_through_the_verb() {
             .to_string(),
     ]);
     assert_eq!(graded.code, Some(0), "{}{}", graded.out, graded.err);
+    // The interface page names this as the first line a script reads (#1640).
+    assert!(
+        graded
+            .out
+            .lines()
+            .next()
+            .is_some_and(|first| first.starts_with("Nothing was graded. ")),
+        "the planner refusal is the first line of standard output:\n{}",
+        graded.out
+    );
     assert!(
         graded.says("Nothing was graded. `headwater probe plan` refuses this corpus: the probe at docs/probes/0002-the-category-is-outside-the-closed-set.md"),
         "the verb reports the refusal the plan composed, which only `gradable` hands it:\n{}",
