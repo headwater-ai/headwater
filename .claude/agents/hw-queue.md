@@ -2,7 +2,7 @@
 name: hw-queue
 description: Reads the whole issue list and the milestones once and writes the ordered queue of eligible issues for a build-order run, so the parent never reads the board. Use at the top of a run and whenever the queue runs dry. It applies the value rule and the selection order, names what each candidate collides with, and never claims an issue or edits the board.
 tools: Bash, Read, Grep, Glob, Write
-model: claude-opus-5-5
+model: claude-sonnet-5-5
 effort: low
 ---
 
