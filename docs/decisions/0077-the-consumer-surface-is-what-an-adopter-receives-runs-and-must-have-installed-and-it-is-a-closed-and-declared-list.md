@@ -3,7 +3,7 @@ id: HW-DR-0077
 status: current
 status_since: 2026-09-20
 summary: "An adopter needs the binary, a data-only package, Git, `sh`, `curl`, `tar`, eight POSIX utilities and the four APT programs, and nothing else. Every other program reaches Headwater through a verb that the binary configures on request, and no adopter-facing page instructs this repository's own tooling."
-last_verified: 2026-09-29
+last_verified: 2026-10-03
 title: "The consumer surface is what an adopter receives, runs and must have installed, and it is a closed and declared list"
 relations:
   constrains:
@@ -57,7 +57,7 @@ The owner's statement for release 0.2 is that an adopter needs nothing but the `
 
 **A merge-driver verb does not break the rule of spec 5 that no hook introduces a verb.** That rule forbids a second entry point to `route` or to `check`. The driver answers a question that no verb answers, which is what a merge does with a derived fold.
 
-**Skills and harness hooks are not part of the surface of 0.2.** The vehicle is ruled here and the release is not. The binary emits them, and a hook configuration calls verbs only, as [HW-DR-0055](0055-a-hook-reads-a-wire-format-through-the-engine-and-not-through-an-interpreter.md) already requires. 0.3 is the earliest release that carries them.
+**The binary emits the skills and the harness hooks, and a hook configuration calls verbs only.** [HW-DR-0055](0055-a-hook-reads-a-wire-format-through-the-engine-and-not-through-an-interpreter.md) already requires the second half. [`headwater init --harness`](../interfaces/headwater-init.md#the-harness-step) writes the skills and the maintainer agent, and the first release after 0.5.0 carries it. The hooks do not ship yet. [#1648](https://github.com/headwater-ai/headwater/issues/1648) carries them as a `headwater hook` verb in milestone 0.16.
 
 **The supported platforms of 0.2 are a static Linux x86_64 build and a macOS arm64 build at the least.** `cargo install` is a labeled alternative and never the lead route.
 
@@ -73,7 +73,7 @@ The owner's statement for release 0.2 is that an adopter needs nothing but the `
 
 **The sentence of HW-DR-0049 about an adopter did not describe what ships.** An adopter inherits the rule and also the verbs that hold it. [#574](https://github.com/headwater-ai/headwater/issues/574) accepted HW-DR-0049 on 2026-09-23 and rewrote that sentence to say so.
 
-**Spec 0 and spec 5 state a delivery that no release makes.** Spec 0 says that release 0.1 carries the skills and the hooks, and no release carries them. An obligation record holds that gap, and the correction of the sentence is part of the work under #892.
+**Spec 0 and spec 5 stated a delivery that no release made.** Spec 0 said that release 0.1 carries the skills and the hooks, and no release carried them. [#1586](https://github.com/headwater-ai/headwater/pull/1586) closed the gap for the skills, and spec 0 now says that `headwater init --harness` writes them. [HW-OBL-0232](../obligations/0232-headwater-init-harness-ships-no-hook-and-no-hook-configuration-for-any-harness.md) holds the gap for the hooks.
 
 **Nothing checks this record.** The population of a file is stated here and in no declaration. [#976](https://github.com/headwater-ai/headwater/issues/976) declares the surface as a manifest, generates a page under `docs/interfaces/` from it, and reads every page for an adopter against it. [#933](https://github.com/headwater-ai/headwater/issues/933) rejected a wide rule because a list of one entry reports zero by construction. That reason does not hold here, because the audit counted at least 12 live findings under `docs/interfaces/` alone.
 
@@ -93,5 +93,7 @@ The owner's statement for release 0.2 is that an adopter needs nothing but the `
 **Amended 2026-09-29: population 1 names the programs of the APT route.** The README tells an adopter on Debian or Ubuntu to install the `headwater` package through `apt`. That block runs `apt-get`, `sudo`, `install` and `tee`, and it runs `curl` for the keyring and not for a release archive. The owner ruled in run 20260928-1109 to allow the whole block and to widen the clause by name. [#1230](https://github.com/headwater-ai/headwater/issues/1230) raised the ruling and carries the amendment. `surface.commands` in `.headwater/overlay.yml` names the four programs. `.claude/tutorial/adopter_interface.py` admits each one only in the shape that the block runs. The record is not superseded, and the other clauses do not change.
 
 **Amended 2026-10-01: population 1 names the install script and `uname`.** The site tells an adopter to run `curl -fsSL https://headwater.tools/install.sh | sh`. That script runs `uname` to find the archive for the machine, and `curl` and `tar` to fetch and unpack it. It uses `sha256sum` or `shasum` to check the archive when either is present, so neither is a prerequisite. The site serves `site/install.sh` byte for byte at that URL, as it serves the APT keyring. The owner asked for the script in [#1545](https://github.com/headwater-ai/headwater/pull/1545), which carries the ruling and this amendment. `surface.commands` in `.headwater/overlay.yml` names `uname`, the record is not superseded, and the other clauses do not change.
+
+**Amended 2026-10-03: a release carries the skills and the maintainer agent, and the hooks wait on #1648.** The first text kept the skills and the hooks out of release 0.2 and named release 0.3 as the first to carry them. Since [#1586](https://github.com/headwater-ai/headwater/pull/1586), `headwater init --harness` writes the skills and the maintainer agent, and no tag carries that verb yet. The owner ruled on [#1578](https://github.com/headwater-ai/headwater/issues/1578) to correct this record there ("Add to #1578"). The owner also ruled that one `headwater hook` verb delivers the hooks in a later milestone, and [#1648](https://github.com/headwater-ai/headwater/issues/1648) carries it. So no script body ships, and the vehicle clause does not change. The record is not superseded, and the other clauses do not change.
 
 **Whether `headwater neighbors` ships at all is a separate decision.** Its only caller is `.claude/hooks/intent.sh`, which is local to this repository. This record places the verb among the companions and rules nothing more about it.
