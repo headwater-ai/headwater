@@ -223,6 +223,20 @@ fn scoped_to(scoped: &Scoped) -> String {
         }
         out.push('\n');
     }
+    // A `verified` pair that names no edge stamps nothing, and each one is
+    // listed whole (#1631).
+    if !scoped.unstated.is_empty() {
+        let _ = writeln!(
+            out,
+            "{} `verified` lines named no edge of their document, so nothing was stamped over \
+             them:\n",
+            scoped.unstated.len()
+        );
+        for (document, target) in &scoped.unstated {
+            let _ = writeln!(out, "- `{document}` onto `{target}`");
+        }
+        out.push('\n');
+    }
     out
 }
 

@@ -91,6 +91,14 @@ use std::collections::HashSet;
 /// examined nothing. The same entry in a `1.4` document says only that this
 /// producer had no member for the count (#1347).
 ///
+/// `1.6` added `unstated` to [`change`]: each `verified\t<document>\t<target>`
+/// pair that names no edge of its document, as an object with `document` and
+/// `target`. Such a pair stamps nothing. A `1.6` document that writes
+/// `"unstated": []` says every pair named an edge. A `1.5` document said
+/// nothing of a pair whose target its document does not govern, and it named
+/// a pair whose document no row holds only by that document's path in
+/// `unmatched` (#1631).
+///
 /// Two of the shapes here have a second reader: [`change`] and [`coverage`] are
 /// what the SARIF property bag carries, so this constant versions them for that
 /// artifact too and [`crate::sarif`] writes it there.
@@ -98,7 +106,7 @@ use std::collections::HashSet;
 /// `docs/interfaces/headwater-check.md` states this history for a reader who
 /// holds no clone, and `tests/interface_page.rs` fails when this constant
 /// names a version the page does not (#1451). Raise both together.
-pub const VERSION: &str = "1.5";
+pub const VERSION: &str = "1.6";
 
 /// What a run carries that these bytes do not write.
 ///
@@ -160,6 +168,24 @@ pub fn change(scoped: &Scoped) -> Json {
                     .unmatched
                     .iter()
                     .map(|path| Json::string(path.clone()))
+                    .collect(),
+            ),
+        ),
+        // Each `verified` pair that names no edge of its document, whole. It
+        // stamps nothing, and a pair whose document no row holds would reach
+        // `unmatched` only as its first path (#1631).
+        (
+            "unstated",
+            Json::Array(
+                scoped
+                    .unstated
+                    .iter()
+                    .map(|(document, target)| {
+                        Json::object([
+                            ("document", Json::string(document.clone())),
+                            ("target", Json::string(target.clone())),
+                        ])
+                    })
                     .collect(),
             ),
         ),

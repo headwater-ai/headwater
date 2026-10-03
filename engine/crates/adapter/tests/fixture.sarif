@@ -130,7 +130,7 @@
               "properties": {
                 "headwater": {
                   "scope": "edge",
-                  "version": 9,
+                  "version": 10,
                   "obligations": [
                     "OB-FIX-27"
                   ],
@@ -3363,7 +3363,7 @@
       ],
       "properties": {
         "headwater": {
-          "shape": "1.5",
+          "shape": "1.6",
           "taxonomy": {
             "package": "headwater/fixture",
             "version": "1.0.0",
