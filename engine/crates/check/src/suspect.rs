@@ -166,6 +166,13 @@
 //! into the mapping form, and keeps every other attribute the entry had. An
 //! entry with a list target, or an attribute that is not a scalar, gets no
 //! patch, because the splice matches an entry by one scalar `to`.
+//!
+//! The remedy follows the patch. Where the splice can write the entry, the
+//! remedy names `headwater check --fix --change`, whether or not this run's
+//! change stated the re-reading, because that is the route that records it.
+//! Where the splice cannot, the remedy names the hand edit and the digest to
+//! copy, and says why `--fix` does not apply. Before #1631 every moved digest
+//! named `--fix`, and on a list target that command wrote nothing.
 
 use crate::change::Prior;
 use crate::finding::{at, Finding, Severity};
@@ -284,7 +291,12 @@ impl EdgeCheck for Suspect<'_> {
     /// `verified\t<document>\t<target>` line names. The key holds both
     /// statements, and a verdict cached at 8 stamped every edge of the
     /// document (#1520).
-    const VERSION: u32 = 9;
+    ///
+    /// 10: an entry that `--fix` cannot write, such as a list target, is told
+    /// to set `verified_revision` by hand rather than to run `--fix`, so a
+    /// verdict cached at 9 over such an entry names a command that writes
+    /// nothing (#1631).
+    const VERSION: u32 = 10;
     /// The change decides the fix, and the clock decides nothing (#1259).
     const NEEDS_CLOCK: bool = false;
     /// The fix is offered only on a document the change re-verified, so the
@@ -436,6 +448,14 @@ impl EdgeCheck for Suspect<'_> {
             && patterns[0].matched.len() == 1
             && patterns[0].matched[0] == patterns[0].pattern;
 
+        // The patch `--fix` would write, which exists only where the splice
+        // can find the entry by one scalar `to`. The remedy follows it rather
+        // than whether this run stamped the edge, so that an entry `--fix` can
+        // never write is never told to run it (#1631).
+        let recorded = match resolver == SOURCE_TREE {
+            true => recording(edge, current),
+            false => None,
+        };
         let (message, remediation) = match resolver.as_str() {
             SOURCE_TREE => (
                 moved(
@@ -451,7 +471,10 @@ impl EdgeCheck for Suspect<'_> {
                         false => Reach::Set(revision.covered().unwrap_or(reached)),
                     },
                 ),
-                reread(current),
+                match recorded {
+                    Some(_) => reread(current),
+                    None => by_hand(current, unwritable(edge)),
+                },
             ),
             _ => (
                 message(
@@ -468,8 +491,8 @@ impl EdgeCheck for Suspect<'_> {
         // source-tree digest is, on an edge the change states was re-read,
         // because then the verification the patch records is one the author
         // stated. A re-verified document alone does not state it (#1520).
-        let patch = match resolver == SOURCE_TREE && stamped {
-            true => recording(edge, current),
+        let patch = match stamped {
+            true => recorded,
             false => None,
         };
         Outcome::failed_with(finding(Severity::Warn, message, remediation, patch))
@@ -617,6 +640,29 @@ fn reread(current: &str) -> String {
     )
 }
 
+/// What to do about a moved digest on an entry that `--fix` cannot write: a
+/// list target, an inverse half, or an entry with an attribute that is not a
+/// scalar. [`reread`] would name a command that writes nothing there, so this
+/// remedy names the hand edit and the digest to copy (#1631).
+fn by_hand(current: &str, why: &str) -> String {
+    format!(
+        "re-read what the entry reaches and correct this document where it no longer holds; then \
+         set `{VERIFIED_REVISION}: {current}` on this entry by hand, because `headwater check` \
+         cannot write that stamp onto an entry {why}"
+    )
+}
+
+/// Why [`recording`] has no patch for `edge`, as the end of the clause
+/// [`by_hand`] writes. The list is the common case, and the one an adopter
+/// meets: the other two are an entry this rule rarely reaches.
+fn unwritable(edge: &Edge) -> &'static str {
+    match &edge.target {
+        Target::Anchor { patterns, .. } if patterns.len() != 1 => "whose target is a list",
+        _ if edge.direction != Direction::AsDeclared => "that another document declares",
+        _ => "with an attribute that is not a scalar",
+    }
+}
+
 /// An unrecorded edge on a document the change re-verified.
 fn unrecorded(id: &str, name: &str, raw: &str, current: &str) -> String {
     format!(
@@ -716,5 +762,16 @@ mod tests {
             "{remedy}"
         );
         assert!(remedy.contains("verified_revision: sha256:new"), "{remedy}");
+    }
+
+    /// The remedy for an entry `--fix` cannot write names the hand edit, the
+    /// digest to copy and the reason, and never `--fix` itself (#1631).
+    #[test]
+    fn the_hand_remedy_names_the_digest_and_never_the_fix() {
+        let remedy = by_hand("sha256:new", "whose target is a list");
+        assert!(!remedy.contains("--fix"), "{remedy}");
+        assert!(remedy.contains("verified_revision: sha256:new"), "{remedy}");
+        assert!(remedy.contains("by hand"), "{remedy}");
+        assert!(remedy.contains("whose target is a list"), "{remedy}");
     }
 }
