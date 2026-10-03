@@ -517,7 +517,8 @@ impl ScopeReading {
 /// The governed scope over the union of every pattern's entries.
 ///
 /// An entry two patterns admit is one entry of the tree, so this is a union
-/// and never the sum of the [`ScopeReading`] rows. The text and the JSON of
+/// and never the sum of the [`ScopeReading`] rows. An entry is governed here
+/// when any reading that admits it is governed (#1649). The text and the JSON of
 /// the audit both read it from [`Audit::scope_total`], so they cannot state
 /// two totals for one tree (#1573).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -599,16 +600,19 @@ pub struct Audit {
 impl Audit {
     /// The governed scope over the union of the entries every pattern admits.
     ///
-    /// An entry is keyed on its path, and where two readings admit it the
-    /// later reading's answer stands, which is the order the text report has
-    /// always taken. Both readings of one path come from one tree, so they
-    /// differ only where two anchor kinds share a path and only one of them
-    /// carries an edge.
+    /// An entry is keyed on its path, and it is governed in the total when
+    /// any reading that admits it is governed, so the total does not depend
+    /// on the order the anchor kinds are declared in (#1649). Two readings of
+    /// one path differ only where two anchor kinds share it and an edge onto
+    /// one kind reaches it. Each reading already counts only the edges onto
+    /// its own kind, so the total asks whether any edge reaches the entry.
+    /// Asking that every kind reach it would lower the figure for an entry
+    /// that is already governed whenever a kind is added.
     pub fn scope_total(&self) -> ScopeTotal {
         let mut union: std::collections::BTreeMap<&str, bool> = std::collections::BTreeMap::new();
         for reading in &self.scope {
             for (path, governed) in &reading.entries {
-                union.insert(path.as_str(), *governed);
+                *union.entry(path.as_str()).or_insert(false) |= *governed;
             }
         }
         ScopeTotal {
