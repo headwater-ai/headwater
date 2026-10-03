@@ -616,6 +616,52 @@ fn a_present_tense_credit_to_a_moved_rule_is_flagged_and_history_is_not() {
         vec![(1, "placeholder")]
     );
 
+    // A negator right after the verb makes the sentence say what spec 6 does
+    // not hold, and that is true of a moved rule, so it is not a credit.
+    for negative in [
+        "Spec 6 holds no socket rule, and HW-REQ-0001 holds it.\n",
+        "Spec 6 now holds no placeholder.\n",
+        "Spec 6 names the probe budget nowhere, and spec 5 holds it.\n",
+        "Spec 6 states nothing about the probe budget.\n",
+        "Spec 6 says none of the placeholder rule.\n",
+        "Spec 6 names neither the placeholder nor the probe budget.\n",
+        "Spec 6 states not one placeholder.\n",
+        "Spec 6 says never a word about the probe budget.\n",
+    ] {
+        assert!(
+            moved_credits(decision, negative).is_empty(),
+            "{negative} was flagged"
+        );
+    }
+    // A negator further on does not undo a credit.
+    let later = "Spec 6 says that a placeholder sits there, and no other rule does.\n";
+    assert_eq!(moved_credits(decision, later), vec![(1, "placeholder")]);
+
+    // Each adverb of the list may stand before the verb.
+    for adverb in ["then", "also", "still", "now", "already", "only"] {
+        let line = format!("Spec 6 {adverb} states the placeholder.\n");
+        assert_eq!(
+            moved_credits(decision, &line),
+            vec![(1, "placeholder")],
+            "{adverb}"
+        );
+    }
+
+    // Two relatives at most: a third one is not read.
+    let third = "It amends spec 6, which that it says a placeholder sits there.\n";
+    assert!(moved_credits(decision, third).is_empty());
+
+    // A possessive owns a noun of up to three words, and not four.
+    let three_words = "Spec 6's export profile section says a placeholder sits there.\n";
+    assert_eq!(moved_credits(decision, three_words), vec![(1, "placeholder")]);
+
+    // A sentence also ends at a question mark and at an exclamation mark, so
+    // the window does not reach two sentences on.
+    let question = "Spec 6 states one thing? It is a shell. No crate opens a socket.\n";
+    assert!(moved_credits(decision, question).is_empty());
+    let exclaim = "Spec 6 states one thing! It is a shell. No crate opens a socket.\n";
+    assert!(moved_credits(decision, exclaim).is_empty());
+
     // The same relative clause in a record of a moment is not flagged.
     for prefix in RECORDS_OF_A_MOMENT {
         let rel = format!("{prefix}x.md");
