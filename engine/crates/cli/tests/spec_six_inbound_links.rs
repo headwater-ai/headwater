@@ -270,18 +270,10 @@ const RECORD_LINKS: &[(&str, &str, usize)] = &[
     ),
 ];
 
-#[test]
-fn a_record_of_a_moment_keeps_its_links_to_spec_6() {
-    let mut found: BTreeMap<(String, String), usize> = BTreeMap::new();
-    for rel in corpus_files() {
-        if !RECORDS_OF_A_MOMENT.iter().any(|p| rel.starts_with(p)) {
-            continue;
-        }
-        for (_, anchor) in pointer_links(&read(&rel)) {
-            *found.entry((rel.clone(), anchor)).or_default() += 1;
-        }
-    }
-    let recorded: BTreeMap<(String, String), usize> = RECORD_LINKS
+/// Each `(path, anchor)` whose count in `found` differs from the table,
+/// in either direction: a link that left and a link that arrived.
+fn drift(found: &BTreeMap<(String, String), usize>, table: &[(&str, &str, usize)]) -> Vec<String> {
+    let recorded: BTreeMap<(String, String), usize> = table
         .iter()
         .map(|(p, a, n)| ((p.to_string(), a.to_string()), *n))
         .collect();
@@ -296,6 +288,39 @@ fn a_record_of_a_moment_keeps_its_links_to_spec_6() {
             ));
         }
     }
+    moved
+}
+
+#[test]
+fn drift_reports_a_link_that_left_and_a_link_that_arrived() {
+    let table = &[("docs/evaluations/e.md", "ci-adapters", 2)];
+    let key = |a: &str| ("docs/evaluations/e.md".to_owned(), a.to_owned());
+
+    let same = BTreeMap::from([(key("ci-adapters"), 2)]);
+    assert!(drift(&same, table).is_empty());
+
+    let left = BTreeMap::from([(key("ci-adapters"), 1)]);
+    assert_eq!(drift(&left, table).len(), 1);
+
+    let arrived = BTreeMap::from([(key("ci-adapters"), 2), (key("checks"), 1)]);
+    assert_eq!(
+        drift(&arrived, table),
+        vec!["docs/evaluations/e.md #checks: 1 link(s), recorded 0"]
+    );
+}
+
+#[test]
+fn a_record_of_a_moment_keeps_its_links_to_spec_6() {
+    let mut found: BTreeMap<(String, String), usize> = BTreeMap::new();
+    for rel in corpus_files() {
+        if !RECORDS_OF_A_MOMENT.iter().any(|p| rel.starts_with(p)) {
+            continue;
+        }
+        for (_, anchor) in pointer_links(&read(&rel)) {
+            *found.entry((rel.clone(), anchor)).or_default() += 1;
+        }
+    }
+    let moved = drift(&found, RECORD_LINKS);
     assert!(
         moved.is_empty(),
         "a record of a moment stays as written (HW-DR-0106), and these links changed:\n{}",
