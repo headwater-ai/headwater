@@ -891,9 +891,14 @@ fn a_committed_result_pins_only_what_it_read() {
             .to_string(),
         "the edit moves the read set this tree composes, or it tests nothing"
     );
-    let edited = holds(&at, &committed, plan_over(&at), "an edit to an examined document")
-        .map_err(|why| failed.push(why))
-        .ok();
+    let edited = holds(
+        &at,
+        &committed,
+        plan_over(&at),
+        "an edit to an examined document",
+    )
+    .map_err(|why| failed.push(why))
+    .ok();
 
     // (c) The tree's lock moves, and the transcript's `lock:` line does not.
     let at = examined_tree("pins-a-lock-move");
