@@ -1025,14 +1025,32 @@ pub struct EdgeView<'a> {
 /// a path one of its patterns matches, which covers a file the change deleted
 /// from under a pattern (#1520).
 fn stated(change: &crate::change::Change, edge: &Edge) -> Stated {
-    let patterns: Vec<headwater_meta::Pattern> = match &edge.target {
+    Stated::of(
+        change,
+        &edge.source.path,
+        &target_names(edge),
+        &target_patterns(edge),
+    )
+}
+
+/// The normalized patterns of an anchor target, and nothing for any other.
+fn target_patterns(edge: &Edge) -> Vec<headwater_meta::Pattern> {
+    match &edge.target {
         Target::Anchor { patterns, .. } => patterns
             .iter()
             .map(|member| headwater_meta::Pattern::new(&member.pattern))
             .collect(),
         _ => Vec::new(),
-    };
-    Stated::of(change, &edge.source.path, &target_names(edge), &patterns)
+    }
+}
+
+/// Whether a `verified\t<document>\t<target>` line names `edge`: the document
+/// at its source path is `document`, and `target` names the target under the
+/// test [`Stated::of`] applies. A pair no edge of the graph answers is listed
+/// in the report, because it stamps nothing (#1631).
+pub(crate) fn names_edge(edge: &Edge, document: &str, target: &str) -> bool {
+    edge.source.path == document
+        && crate::change::reaches(&target_names(edge), &target_patterns(edge), target)
 }
 
 /// Every literal spelling of what `edge` targets that a change can name: the

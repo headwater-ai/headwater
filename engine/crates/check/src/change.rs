@@ -185,9 +185,7 @@ impl Stated {
         names: &[&str],
         patterns: &[headwater_meta::Pattern],
     ) -> Stated {
-        let reaches = |path: &str| {
-            names.contains(&path) || patterns.iter().any(|pattern| pattern.matches(path))
-        };
+        let reaches = |path: &str| reaches(names, patterns, path);
         Stated {
             document: change.verified(document),
             target: change.entries.iter().any(|(path, _)| reaches(path)),
@@ -197,6 +195,14 @@ impl Stated {
                 .any(|(known, target)| known == document && reaches(target)),
         }
     }
+}
+
+/// Whether `path` names a target whose literal spellings are `names` and whose
+/// normalized patterns are `patterns`: it is one of the spellings, or a
+/// pattern matches it. [`Stated::of`] reads it, and so does the report of a
+/// `verified` pair that names no edge, so the two cannot disagree (#1631).
+pub(crate) fn reaches(names: &[&str], patterns: &[headwater_meta::Pattern], path: &str) -> bool {
+    names.contains(&path) || patterns.iter().any(|pattern| pattern.matches(path))
 }
 
 /// The version of one document that stood before the change, as a check reads
@@ -276,6 +282,11 @@ pub struct Change {
     /// is not held against the census, because it is what a document
     /// governs, and a governed source file is no corpus document (#1520).
     edges: Vec<(String, String)>,
+    /// Every `(document, target)` pair a three-field `verified` line names,
+    /// held or not, in the order [`Unbound`] holds them. The report lists
+    /// each one that names no edge, and a pair whose document no row holds
+    /// would otherwise reach it only as its document path (#1631).
+    pairs: Vec<(String, String)>,
 }
 
 /// What a run injected, for the report that states its own inputs.
@@ -436,6 +447,7 @@ impl Unbound {
     pub fn bind(self, holds: impl Fn(&str) -> bool) -> Change {
         let (verified, mut unverifiable): (Vec<String>, Vec<String>) =
             self.verified.into_iter().partition(|path| holds(path));
+        let pairs = self.edges.clone();
         let (edges, unheld): (Vec<_>, Vec<_>) = self
             .edges
             .into_iter()
@@ -449,6 +461,7 @@ impl Unbound {
             verified,
             unverifiable,
             edges,
+            pairs,
             entries: self
                 .entries
                 .into_iter()
@@ -569,6 +582,15 @@ impl Change {
         paths.sort_unstable();
         paths.dedup();
         paths
+    }
+
+    /// Every `(document, target)` pair a `verified\t<path>\t<target>` line
+    /// names, whether or not a row holds its document, in the order
+    /// [`Unbound::verified_edges`] gives them (#1631).
+    pub fn verified_pairs(&self) -> impl Iterator<Item = (&str, &str)> {
+        self.pairs
+            .iter()
+            .map(|(document, target)| (document.as_str(), target.as_str()))
     }
 
     /// Whether the change states that its author re-read the document at
