@@ -2652,6 +2652,48 @@ STUB
         present "and the record names it" "$batch/config/L1-campaign-present-p1-r1" \
             "$batch/sessions/L1-campaign-present-p1-r1/record.md"
 
+        # The tier's ceiling reserves `--session-cents` too, not the declared
+        # unit (#1659). The batch has spent 1 cent above and 50 in another
+        # session of the tier, so with B = 60 a ceiling of 110 refuses the next
+        # job, where the unit of 50 would let it through, and 111 admits it.
+        printf '60' > "$batch/session-cents"
+        mkdir -p "$batch/sessions/L1-other"
+        printf 'campaign\n' > "$batch/sessions/L1-other/tier"
+        printf '50\n' > "$batch/sessions/L1-other/cost"
+        printf '0\n' > "$batch/sessions/L1-other/status"
+        job="L1-campaign-present-p1-r2 1 campaign present sufficiency HW-PROBE-$tombstone"
+        printf '110\n' > "$batch/ceiling.campaign"
+        PATH="$scratch/bin:$PATH" sh "$root/tools/probe/campaign.sh" --out "$batch" --job "$job" \
+            >/dev/null 2>"$scratch/batch-ceiling.err"
+        same "a ceiling of 110 with 51 spent and B = 60 refuses the job" "none" \
+            "$(cat "$batch/sessions/L1-campaign-present-p1-r2/status" 2>/dev/null || echo none)"
+        present "and says what it reserved" "at 60 each against a campaign ceiling of 110" "$scratch/batch-ceiling.err"
+        printf '111\n' > "$batch/ceiling.campaign"
+        PATH="$scratch/bin:$PATH" sh "$root/tools/probe/campaign.sh" --out "$batch" --job "$job" \
+            >/dev/null 2>"$scratch/batch-ceiling.err"
+        same "and a ceiling of 111 admits it" "0" \
+            "$(cat "$batch/sessions/L1-campaign-present-p1-r2/status" 2>/dev/null || echo none)"
+        same "and the harness received the budget of B" "0.60" \
+            "$(awk 'prev == "--max-budget-usd" { print; exit } { prev = $0 }' "$args" 2>/dev/null)"
+        # A job that a killed invocation left started, with no status, is not
+        # in flight when it runs again: the batch has spent 52, so a cap of
+        # 112 admits it at B = 60, where counting it in flight would need 172.
+        printf '100000\n' > "$batch/ceiling.campaign"
+        printf '112' > "$batch/cap"
+        mkdir -p "$batch/sessions/L1-campaign-present-p1-r3"
+        printf 'campaign\n' > "$batch/sessions/L1-campaign-present-p1-r3/tier"
+        : > "$batch/sessions/L1-campaign-present-p1-r3/started"
+        job="L1-campaign-present-p1-r3 1 campaign present sufficiency HW-PROBE-$tombstone"
+        PATH="$scratch/bin:$PATH" sh "$root/tools/probe/campaign.sh" --out "$batch" --job "$job" \
+            >/dev/null 2>"$scratch/batch-killed.err"
+        same "a job a killed invocation left started runs again inside the cap" "0" \
+            "$(cat "$batch/sessions/L1-campaign-present-p1-r3/status" 2>/dev/null || echo none)"
+        rm -rf "$batch/sessions/L1-other" "$batch/sessions/L1-campaign-present-p1-r2" \
+            "$batch/sessions/L1-campaign-present-p1-r3"
+        : > "$batch/session-cents"
+        : > "$batch/cap"
+        printf '30000\n' > "$batch/ceiling.campaign"
+
         # THE decisive case of #1472's campaign report: assembly states the
         # paths outside the workspace that a line's sessions named and the
         # web-tool calls they made, and states a session it could not count as
