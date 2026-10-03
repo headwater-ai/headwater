@@ -594,6 +594,16 @@ jobs:
         # what lets it sit above the step that fixes the date for the three runs
         # after it.
         run: ./engine/target/release/headwater generate --check
+      - name: The Python packages the fixtures below import
+        # `tools/repo/release-guide-fixtures.sh`, `tools/repo/integrations-fixtures.sh`
+        # and the checks they run read YAML and JSON Schema. The site build
+        # installs PyYAML for itself further down, and these fixtures used to
+        # run behind it, which is how they found it. They run ahead of it now
+        # (see the comment below), and a run on this branch failed six cases of
+        # `assert-no-inline-expression-in-run.py` with exit 2 until this step
+        # existed. Unpinned, like the `engine` job's own line, because no
+        # fixture here depends on a version.
+        run: python3 -m pip install --user --break-system-packages jsonschema PyYAML
       # The steps from here to "The site this corpus's navigation builds" are
       # shell fixtures that need the engine built above and read nothing the
       # site build writes, and they take seconds each. They sit ahead of the
