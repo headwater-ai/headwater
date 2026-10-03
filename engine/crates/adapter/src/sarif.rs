@@ -30,7 +30,8 @@
 //! would carry two. That is the control's judgment arriving inside the check's
 //! field, which is the confusion spec 12 exists to prevent.
 //!
-//! The posture cannot be the source either, and for a stronger reason. Spec 6
+//! The posture cannot be the source either, and for a stronger reason.
+//! [Checks and cache](../../../../docs/subsystems/checks-and-cache.md#what-a-run-states-beside-its-findings)
 //! rules that the engine "emits what it evaluated, and never orders what
 //! lands". An artifact whose `level` said *this blocks* would be an order, and
 //! it would also be wrong on the next run, because a promotion from advisory to
@@ -116,8 +117,10 @@
 //! consumer that baselines still cannot tell the two runs apart from a member
 //! of the vocabulary, and the property bag is where the answer is.
 //!
-//! One entry is worth reading twice. Spec 6 asks a run to report "the corpus
-//! tree, the taxonomy lock hash, and its read set". SARIF has
+//! One entry is worth reading twice. A run reports the taxonomy lock hash and
+//! its read set, and
+//! [checks and cache](../../../../docs/subsystems/checks-and-cache.md#what-a-run-states-beside-its-findings)
+//! names the corpus tree as a gap. SARIF has
 //! `run.automationDetails.id`, which is exactly where a corpus tree would go,
 //! and this emitter leaves it out: nothing in the engine computes a corpus tree,
 //! and the read set is not one, because the read set holds what the checks read

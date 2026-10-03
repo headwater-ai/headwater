@@ -324,7 +324,7 @@ The server walks the corpus once and reads the clock once, before it accepts a m
 
 ### CI adapters
 
-The engine emits findings. Adapters translate them to the native vocabulary of a platform: annotations, check runs, job summaries, review comments. Adapters are thin and swappable so that no forge is privileged in the core. Portability is a requirement, not an aspiration. Coupling of the core to one CI platform is a stated failure mode that we correct ([spec 8](08-design-departures.md)). [Checks and cache](../subsystems/checks-and-cache.md#a-renderer-is-what-the-engine-ships-and-an-adapter-is-a-renderer-with-a-credential) states the four formats, the loss set of each, the severity map, the marking of a suppressed finding, and what a run states beside its findings.
+The engine emits findings. Adapters translate them to the native vocabulary of a platform: annotations, check runs, job summaries, review comments. Adapters are thin and swappable so that no forge is privileged in the core. Portability is a requirement, not an aspiration. Coupling of the core to one CI platform is a stated failure mode that we correct ([spec 8](08-design-departures.md)). [Checks and cache](../subsystems/checks-and-cache.md#a-renderer-is-what-the-engine-ships-and-an-adapter-is-a-renderer-with-a-credential) states the four formats and the loss set of each. It also states the severity map, the marking of a suppressed finding, and what a run states beside its findings.
 
 ## Performance targets
 
