@@ -216,7 +216,7 @@ new_case() {
     echo 1790000000 > "$CASE/clock"
     : > "$CASE/events"
     mkdir -p "$CASE/host" "$CASE/repo" "$CASE/root"
-    write_token $((1790000000 + 8 * 3600))
+    write_token $((1790000000 + 30 * 86400))
     echo "jobs 20" > "$CASE/spec-a"
     echo "jobs 10" > "$CASE/spec-b"
     g() { git -C "$CASE/repo" -c user.name=fixture -c user.email=fixture@example.invalid -c core.hooksPath=/dev/null "$@"; }
@@ -614,6 +614,6 @@ check "canary: started again after canary-recorded and canary-passed, runs no ca
 
 check "no case called claude with anything but --version" sh -c "[ ! -s '$fix/paid.log' ]"
 
-rm -rf "$fix"
+[ -n "${HEADWATER_DRIVE_FIXTURES_KEEP:-}" ] || rm -rf "$fix"
 echo "campaign-drive-fixtures: $passed passed, $failed failed"
 [ "$failed" = 0 ]
