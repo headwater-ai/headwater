@@ -260,6 +260,7 @@ pub const LOSS: &[Loss] = &[
                     "verified",
                     "verified_alone",
                     "unmatched",
+                    "unstated",
                     "promotions",
                 ],
             }],

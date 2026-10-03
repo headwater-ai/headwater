@@ -223,6 +223,20 @@ fn scoped_to(scoped: &Scoped) -> String {
         }
         out.push('\n');
     }
+    // A `verified` pair that names no edge stamps nothing, and each one is
+    // listed whole (#1631).
+    if !scoped.unstated.is_empty() {
+        let _ = writeln!(
+            out,
+            "{} `verified` lines named no edge of their document, so nothing was stamped over \
+             them:\n",
+            scoped.unstated.len()
+        );
+        for (document, target) in &scoped.unstated {
+            let _ = writeln!(out, "- `{document}` onto `{target}`");
+        }
+        out.push('\n');
+    }
     out
 }
 
@@ -336,4 +350,31 @@ fn at(entry: &Reported<'_>) -> String {
 /// what it said.
 fn cell(message: &str) -> String {
     message.replace('|', "\\|").replace('\n', " ")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// A `verified` pair that names no edge is listed whole, document and
+    /// target, and a change with none writes no such sentence (#1631). The
+    /// recorded fixtures hold only the empty case.
+    #[test]
+    fn a_pair_that_names_no_edge_is_listed_with_both_paths() {
+        let mut scoped = Scoped {
+            named: headwater_check::change::Named::default(),
+            unmatched: Vec::new(),
+            unstated: vec![("docs/a.md".to_string(), "nope.sh".to_string())],
+            promotions: 0,
+        };
+        let text = scoped_to(&scoped);
+        assert!(
+            text.contains("1 `verified` lines named no edge of their document"),
+            "{text}"
+        );
+        assert!(text.contains("- `docs/a.md` onto `nope.sh`"), "{text}");
+        scoped.unstated.clear();
+        let text = scoped_to(&scoped);
+        assert!(!text.contains("named no edge"), "{text}");
+    }
 }

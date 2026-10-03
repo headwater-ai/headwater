@@ -1268,6 +1268,16 @@ pub fn run(
     let change = ctx.change().map(|change| Scoped {
         named: change.named(),
         unmatched: change.unmatched().into_iter().map(str::to_string).collect(),
+        unstated: change
+            .verified_pairs()
+            .filter(|(document, target)| {
+                !graph
+                    .edges
+                    .iter()
+                    .any(|edge| scope::names_edge(edge, document, target))
+            })
+            .map(|(document, target)| (document.to_string(), target.to_string()))
+            .collect(),
         promotions: findings
             .iter()
             .filter(|finding| finding.rule == promotion::RULE)
@@ -1309,6 +1319,14 @@ pub struct Scoped {
     /// order. Nothing is checked over one, so the report is the only place one
     /// is ever seen.
     pub unmatched: Vec<String>,
+    /// The `(document, target)` pairs a `verified\t<document>\t<target>` line
+    /// names where no edge that `<document>` declares reaches `<target>`, in
+    /// the order the change holds them. Such a line states the re-reading of
+    /// an edge that does not exist, so nothing is stamped over it, and this
+    /// list is the only report of that (#1631). A pair whose document no row
+    /// holds is here too, and its document is in [`Scoped::unmatched`] as
+    /// well.
+    pub unstated: Vec<(String, String)>,
     /// Warrants that moved from `asserted` to `accepted` in this change.
     ///
     /// The count [spec 3](../../../../docs/spec/03-authoring-and-lifecycle.md#promotion-is-one-human-one-document-one-diff)
@@ -1359,6 +1377,19 @@ impl Scoped {
             );
             for path in &self.unmatched {
                 let _ = writeln!(out, "        {path}");
+            }
+        }
+        // A `verified` pair that names no edge stamps nothing, and nothing
+        // else in the report says so, so each pair is listed whole (#1631).
+        if !self.unstated.is_empty() {
+            let _ = writeln!(
+                out,
+                "  {:5} `verified` lines named no edge of their document, so nothing was stamped \
+                 over them:",
+                self.unstated.len()
+            );
+            for (document, target) in &self.unstated {
+                let _ = writeln!(out, "        {document} -> {target}");
             }
         }
         let _ = writeln!(
