@@ -662,7 +662,11 @@ fn an_edit_to_a_document_the_probes_read_after_a_lock_move_leaves_the_result_alo
         "a result graded over a moved read set failed the run:\n{}",
         held.render(ColorMode::Plain)
     );
-    assert_eq!(held.moved_since_recording.len(), 1, "the run still names it");
+    assert_eq!(
+        held.moved_since_recording.len(),
+        1,
+        "the run still names it"
+    );
 
     // Direction 4: a second edit to the same document leaves the bytes alone.
     edit(
