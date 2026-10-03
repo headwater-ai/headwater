@@ -1919,6 +1919,29 @@ STUB
         "The session made 0 calls to a tool of an MCP server." "$scratch/cut.md"
     present "and is said to be uncounted" \
         "were not counted, because its stream did not parse as JSON" "$scratch/cut.md"
+    absent "and is never counted as no web-tool call (#1472)" \
+        "to a web tool." "$scratch/cut.md"
+
+    # Each form of a web-tool call is counted, from the harness and from the
+    # provider, and a call to another tool is not (#1472).
+    cat > "$scratch/bin/claude" <<STUB
+#!/bin/sh
+printf '%s\n' "\$@" > "\$HEADWATER_SHADOW_LOG_DIR/claude-args"
+printf '%s\n' '{"type":"system","subtype":"init","model":"claude-haiku-4-5","session_id":"s18"}'
+printf '%s\n' '{"type":"assistant","message":{"id":"m1","content":[{"type":"server_tool_use","id":"t1","name":"web_search","input":{"query":"x"}}]}}'
+printf '%s\n' '{"type":"assistant","message":{"id":"m2","content":[{"type":"server_tool_use","id":"t2","name":"web_fetch","input":{"url":"https://example.org"}}]}}'
+printf '%s\n' '{"type":"assistant","message":{"id":"m3","content":[{"type":"tool_use","id":"t3","name":"WebFetch","input":{"url":"https://example.org"}}]}}'
+printf '%s\n' '{"type":"assistant","message":{"id":"m4","content":[{"type":"tool_use","id":"t4","name":"WebSearch","input":{"query":"x"}}]}}'
+printf '%s\n' '{"type":"assistant","message":{"id":"m5","content":[{"type":"tool_use","id":"t5","name":"Grep","input":{"pattern":"web_search"}}]}}'
+printf '%s\n' '{"type":"result","subtype":"success","result":"withheld","total_cost_usd":0.01,"modelUsage":{"claude-haiku-4-5-20251001":{"inputTokens":10}}}'
+STUB
+    chmod +x "$scratch/bin/claude"
+    PATH="$scratch/bin:$PATH" sh "$driver" --probe "HW-PROBE-$tombstone" --session fixture-web \
+        --tier campaign --arm no-hook --category sufficiency --repetitions 1 \
+        --task-file "$scratch/task.md" --workspace "$scratch/ws" \
+        >"$scratch/web.md" 2>"$scratch/web.err"
+    present "a record counts each form of a web-tool call, and no other tool" \
+        "The session made 4 calls to a web tool." "$scratch/web.md"
 
     # THE decisive case of #1467: a session reads only its workspace. A file
     # outside it holds a marker, and so does a sibling tree of the kind
