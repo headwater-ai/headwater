@@ -39,7 +39,7 @@ The coverage line of a run states the asymmetry rather than a count. It reads "n
 
 The corpus owes a reader that takes a waiver against a check rule. It owes a coverage account that counts a finding under it, at the precedence spec 4 fixes.
 
-Three questions come with it and none of them is answered here. Whether a check-rule waiver is scoped to the corpus or to a shelf. How a waived finding is reported, given that a waiver is wider than a suppression and the report has to say which mechanism caught it. And what refuses a waiver against the [withholding rule](../spec/06-engine-architecture.md#an-export-profile-carries-a-filter), which spec 7 puts outside the mechanism and which nothing enforces while the population is empty.
+Three questions come with it and none of them is answered here. Whether a check-rule waiver is scoped to the corpus or to a shelf. How a waived finding is reported, given that a waiver is wider than a suppression and the report has to say which mechanism caught it. And what refuses a waiver against the [withholding rule](../spec/07-distribution-and-federation.md#an-export-profile-carries-a-filter), which spec 7 puts outside the mechanism and which nothing enforces while the population is empty.
 
 That last one is the reason this record is worth opening rather than leaving to the day somebody needs it. **The exclusion is unenforced and untestable today, because no waiver can reach a check rule at all.** A guard that has never had a population to refuse is a guard nobody has measured.
 

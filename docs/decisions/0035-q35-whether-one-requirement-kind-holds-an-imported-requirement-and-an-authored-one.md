@@ -15,7 +15,7 @@ provenance:
 relations:
   traces_to:
     - HW-SPEC-authoring-and-lifecycle
-    - HW-SPEC-engine-architecture
+    - HW-IFACE-headwater-taxonomy
 ---
 
 # Q35 — Whether one requirement kind holds an imported requirement and an authored one
@@ -26,7 +26,7 @@ relations:
 
 **[#398](https://github.com/headwater-ai/headwater/issues/398) asks for the kind and cannot declare it.** It asks for `requirement` and `acceptance_criterion`, a `verified_by` relation, a required fit-criterion section and a `verification_method` facet. Its third clause asks a builder to state which case the kind serves. No record states it, so the clause asks a builder to write the ruling while building against it. [#252](https://github.com/headwater-ai/headwater/issues/252) named this decision as queued and blocking, and closed without filing it.
 
-**The warrant is a declaration on one branch and a derived reading on the other.** [Spec 3](../spec/03-authoring-and-lifecycle.md#the-warrant-and-what-each-value-requires) closes the warrant at four values, and `transcribed` requires the generated-file marker. [Spec 6](../spec/06-engine-architecture.md#taxonomy-validate-versus-taxonomy-audit) states what follows. The engine reads `regenerated` and `transcribed` "off the generated-file marker rather than out of a declaration". So two rows of the warrant reading stand at zero by construction. A document that states `warrant: transcribed` in its front matter therefore states a value that no reading of this engine takes.
+**The warrant is a declaration on one branch and a derived reading on the other.** [Spec 3](../spec/03-authoring-and-lifecycle.md#the-warrant-and-what-each-value-requires) closes the warrant at four values, and `transcribed` requires the generated-file marker. [The `headwater taxonomy` contract](../interfaces/headwater-taxonomy.md#description) states what follows. The engine reads `regenerated` and `transcribed` "off the generated-file marker rather than out of a declaration". So two rows of the warrant reading stand at zero by construction. A document that states `warrant: transcribed` in its front matter therefore states a value that no reading of this engine takes.
 
 **A marked file answers no contract, and no run reports the gap.** [Spec 3](../spec/03-authoring-and-lifecycle.md#templates-and-scaffolding) rules that "a projection carries a generated-file marker, and no check reads the file". [The `headwater generate` contract](../interfaces/headwater-generate.md#the-generated-file-marker) gives the two reasons and gives the census an outcome for such a file. So a required facet is absent and unreported on a marked file. A required section is absent and unreported there too. A kind whose contract demands either one demands it of two populations and measures it on one.
 

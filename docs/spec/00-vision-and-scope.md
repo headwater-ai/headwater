@@ -90,7 +90,7 @@ These are the tie-breakers when a design decision is genuinely contested.
 
 6. **Every rule earns its place.** Context is finite for humans and metered for agents. We remove a rule that has no enforcement, no observed violation, and no stated cost of failure. We do not tolerate it.
 
-7. **Fail open at the edges, closed at the core.** When agent-facing helpers cannot answer, they degrade silently, because a missing hint is better than a wrong one. Corpus validation never degrades silently. The position of a component is shorthand for the rule underneath, which is the cost of each error. Degrade toward the cheaper error, and say which one that is. An exporter that cannot evaluate its filter therefore emits nothing, although it sits at an edge ([spec 6](06-engine-architecture.md#an-export-profile-carries-a-filter)).
+7. **Fail open at the edges, closed at the core.** When agent-facing helpers cannot answer, they degrade silently, because a missing hint is better than a wrong one. Corpus validation never degrades silently. The position of a component is shorthand for the rule underneath, which is the cost of each error. Degrade toward the cheaper error, and say which one that is. An exporter that cannot evaluate its filter therefore emits nothing, although it sits at an edge ([spec 7](07-distribution-and-federation.md#an-export-profile-carries-a-filter)).
 
 8. **The system governs itself.** The documentation of Headwater is itself a Headwater corpus, and Headwater validates it in its own CI. If a change is painful to dogfood, its design is not complete.
 

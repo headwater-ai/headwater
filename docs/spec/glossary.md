@@ -109,7 +109,7 @@ The measured share of required front matter, sections, identifiers, and relation
 
 ### Audit
 
-`headwater taxonomy audit` measures a taxonomy against a real corpus. Its findings are about the schema, and they are advisory by construction. Compare the [accuracy audit](#accuracy-audit), which asks a different question. See [spec 6](06-engine-architecture.md#taxonomy-validate-versus-taxonomy-audit).
+`headwater taxonomy audit` measures a taxonomy against a real corpus. Its findings are about the schema, and they are advisory by construction. Compare the [accuracy audit](#accuracy-audit), which asks a different question. See [the `headwater taxonomy` contract](../interfaces/headwater-taxonomy.md#description).
 
 ### Backfill
 
@@ -129,7 +129,7 @@ A named overlay that the publisher ships, which adds optional content and declar
 
 ### Cache
 
-Content-addressed per file, plus the taxonomy lock hash, so that an incremental run costs what the change costs rather than what the corpus costs. It is disposable by test: a run with the cache and a run without it produce byte-identical output. See [spec 6](06-engine-architecture.md#nothing-stores-the-graph).
+Content-addressed per file, plus the taxonomy lock hash, so that an incremental run costs what the change costs rather than what the corpus costs. It is disposable by test: a run with the cache and a run without it produce byte-identical output. See [spec 12](12-check-layer.md#the-correctness-roots).
 
 ### Campaign
 
@@ -281,7 +281,7 @@ The measured effect of the instruction surface on agent behavior, taken from the
 
 ### Emitter
 
-The generator for one [export](#export) target. Every emitter reads the resolved [lock](#lock) and the graph directly, and no emitter reads another emitter's output. See [spec 6](06-engine-architecture.md#an-export-is-a-projection-and-it-declares-what-it-dropped).
+The generator for one [export](#export) target. Every emitter reads the resolved [lock](#lock) and the graph directly, and no emitter reads another emitter's output. See [spec 7](07-distribution-and-federation.md#an-export-is-a-projection-and-it-declares-what-it-dropped).
 
 ### Engine
 
@@ -305,11 +305,11 @@ The predicate that grades a probe run, drawn from a closed set of forms over the
 
 ### Export
 
-A [projection](#projection) of the graph for a consumer outside the engine. The native graph export carries the property graph with no loss. Every interoperability export is lossy, and each one declares a [loss set](#loss-set). It is also the serving boundary, so an [export profile](#export-profile) is where a corpus decides what leaves it. An emitter that cannot carry the [warrant](#warrant) withholds the content rather than shipping it unmarked. No export is canonical for anything. See [spec 6](06-engine-architecture.md#an-export-is-a-projection-and-it-declares-what-it-dropped).
+A [projection](#projection) of the graph for a consumer outside the engine. The native graph export carries the property graph with no loss. Every interoperability export is lossy, and each one declares a [loss set](#loss-set). It is also the serving boundary, so an [export profile](#export-profile) is where a corpus decides what leaves it. An emitter that cannot carry the [warrant](#warrant) withholds the content rather than shipping it unmarked. No export is canonical for anything. See [spec 7](07-distribution-and-federation.md#an-export-is-a-projection-and-it-declares-what-it-dropped).
 
 ### Export profile
 
-An entry under `projections` that names an audience, an emitter target, an output path, a filter over facet values, and a [tombstone grain](#tombstone-grain). It is not a fourteenth declaration. A corpus with one audience declares one profile and no filter. See [spec 6](06-engine-architecture.md#an-export-profile-carries-a-filter).
+An entry under `projections` that names an audience, an emitter target, an output path, a filter over facet values, and a [tombstone grain](#tombstone-grain). It is not a fourteenth declaration. A corpus with one audience declares one profile and no filter. See [spec 7](07-distribution-and-federation.md#an-export-profile-carries-a-filter).
 
 ### External anchor
 
@@ -405,7 +405,7 @@ The resolved taxonomy, written with a content hash and committed. Everything dow
 
 ### Loss set
 
-What an [emitter](#emitter)'s target vocabulary cannot carry: node classes, edge classes, and attributes, each with a reason. The [projection census](#projection-census) is what proves the declaration complete. See [spec 6](06-engine-architecture.md#an-export-is-a-projection-and-it-declares-what-it-dropped).
+What an [emitter](#emitter)'s target vocabulary cannot carry: node classes, edge classes, and attributes, each with a reason. The [projection census](#projection-census) is what proves the declaration complete. See [spec 7](07-distribution-and-federation.md#an-export-is-a-projection-and-it-declares-what-it-dropped).
 
 ### Maintainer subagent
 
@@ -533,7 +533,7 @@ A derived artifact computed from the graph: a shelf index, site navigation, an a
 
 ### Projection census
 
-The account that an [export](#export) run gives of itself. Every node and every edge is present in the output, or covered by a declared [loss set](#loss-set) reason. An uncovered omission fails the run. It is the [census](#census) doctrine, one layer out. See [spec 6](06-engine-architecture.md#an-export-is-a-projection-and-it-declares-what-it-dropped).
+The account that an [export](#export) run gives of itself. Every node and every edge is present in the output, or covered by a declared [loss set](#loss-set) reason. An uncovered omission fails the run. It is the [census](#census) doctrine, one layer out. See [spec 7](07-distribution-and-federation.md#an-export-is-a-projection-and-it-declares-what-it-dropped).
 
 ### Promotion
 
@@ -709,7 +709,7 @@ One layer of a federation: the generic method, a divisional taxonomy, or a repos
 
 ### Tombstone grain
 
-What a filtered [export profile](#export-profile) tells a reader about what it withheld. `counted` gives the number by declared reason, and `sealed` gives only the fact of the filter. No profile may present a filtered view as total. See [spec 6](06-engine-architecture.md#an-export-profile-carries-a-filter).
+What a filtered [export profile](#export-profile) tells a reader about what it withheld. `counted` gives the number by declared reason, and `sealed` gives only the fact of the filter. No profile may present a filtered view as total. See [spec 7](07-distribution-and-federation.md#an-export-profile-carries-a-filter).
 
 ### Transcription
 
@@ -757,7 +757,7 @@ The time bound on a [participation expectation](#participation-expectation), mea
 
 ### Withholding
 
-The removal of a document from an [export profile](#export-profile) by its declared filter. It is a [loss set](#loss-set) reason, so the [projection census](#projection-census) accounts for it. The rule that performs it never ships advisory, and no suppression or waiver reaches it, because its false negative is a disclosure that nothing recalls. See [spec 6](06-engine-architecture.md#an-export-profile-carries-a-filter).
+The removal of a document from an [export profile](#export-profile) by its declared filter. It is a [loss set](#loss-set) reason, so the [projection census](#projection-census) accounts for it. The rule that performs it never ships advisory, and no suppression or waiver reaches it, because its false negative is a disclosure that nothing recalls. See [spec 7](07-distribution-and-federation.md#an-export-profile-carries-a-filter).
 
 ## Distinctions that the design depends on
 

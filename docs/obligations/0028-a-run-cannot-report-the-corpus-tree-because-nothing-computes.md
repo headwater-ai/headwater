@@ -5,7 +5,7 @@ status: current
 status_since: 2026-08-13
 waiting_on: build
 last_verified: 2026-08-14
-summary: "Spec 6 asks every run for a corpus tree beside its findings, and the engine computes none."
+summary: "Checks and cache asks every run for a corpus tree beside its findings, and the engine computes none."
 provenance:
   warrant: accepted
   agency: mixed
@@ -22,7 +22,7 @@ relations:
 
 ## Context
 
-[Spec 6](../spec/06-engine-architecture.md#ci-adapters) asks every run to report three things beside its findings: the corpus tree, the taxonomy lock hash, and the read set. The engine reports the last two and computes no tree.
+[Checks and cache](../subsystems/checks-and-cache.md#what-a-run-states-beside-its-findings) asks every run to report three things beside its findings: the corpus tree, the taxonomy lock hash, and the read set. The engine reports the last two and computes no tree.
 
 The read set is not one, because it holds what the checks read and a tree holds what the census walked.
 
@@ -34,7 +34,7 @@ A run therefore states nothing about a file that no check opened, which is the e
 
 SARIF has the member for a tree, `run.automationDetails.id`, and the adapter leaves it out rather than print the read set's identity there. The cost grows with the corpus. A wider excluded set leaves a gate less of the evaluated state to hold a later tree against.
 
-**The check layer asks for no tree, and this record stands on spec 6 alone.** [Spec 12](../spec/12-check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict) fixes the gate as a comparison over listed inputs, which needs neither a tree nor a run. So the test that decides whether a verdict survives a merge does not wait on this record. [HW-OBL-0102](0102-two-documents-state-what-voids-a-verdict-and-they-do-not.md) carries that ruling and the construction under it.
+**The check layer asks for no tree, and this record stands on Checks and cache alone.** [Spec 12](../spec/12-check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict) fixes the gate as a comparison over listed inputs, which needs neither a tree nor a run. So the test that decides whether a verdict survives a merge does not wait on this record. [HW-OBL-0102](0102-two-documents-state-what-voids-a-verdict-and-they-do-not.md) carries that ruling and the construction under it.
 
 **The MCP server is the first consumer that can answer about a tree that is gone.** It walks the corpus once, before it accepts a message, so a session outlives the walk behind it. A `check` call over a server started before an edit was measured at 28 findings where a fresh run reported 30. The two answers of that server were identical across the edit. Every other caller re-walks on every invocation, so no other caller can be wrong this way. The `text` format leaves a reader the read set, which is a hash per listed input and not a tree. The other three formats leave a reader nothing at all. Until a run reports a tree, the remedy is the [operational one](../spec/05-ai-integration.md#what-a-check-tool-decides-and-where-each-decision-is-taken). A server holds one tree for its life, and a caller that wants another starts another server.
 

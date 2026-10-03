@@ -49,7 +49,7 @@ The cache and the gate read one artifact by two procedures, and that is why one 
 
 **This record is discharged.** [Spec 12](../spec/12-check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict) carries one statement of what a gate reads. A gate reads the published read set and the tree in front of it, and nothing else. `headwater gate --read-set <path>` is that statement as a verb, and the statement decides the three things above.
 
-**The test is a comparison over listed inputs.** A gate hashes the file at each listed path and holds it against the hash the run recorded. [HW-OBL-0028](0028-a-run-cannot-report-the-corpus-tree-because-nothing-computes.md) holds the other reading, and this ruling settles the dependency rather than waits on it. A comparison over listed inputs needs no tree, so a run that computes none blocks nothing here. That record stands on [spec 6](../spec/06-engine-architecture.md#ci-adapters), which asks a run for a tree for reasons of its own.
+**The test is a comparison over listed inputs.** A gate hashes the file at each listed path and holds it against the hash the run recorded. [HW-OBL-0028](0028-a-run-cannot-report-the-corpus-tree-because-nothing-computes.md) holds the other reading, and this ruling settles the dependency rather than waits on it. A comparison over listed inputs needs no tree, so a run that computes none blocks nothing here. That record stands on [Checks and cache](../subsystems/checks-and-cache.md#what-a-run-states-beside-its-findings), which asks a run for a tree for reasons of its own.
 
 **The clock voids a verdict.** The artifact names each rule that read the injected clock on a `windowed` line. A gate asked about another day voids those rules, and no tree change is needed for that.
 
