@@ -228,7 +228,8 @@ fn spec_six_names(sentence: &str) -> Vec<usize> {
     while let Some(at) = lower[from..].find("spec 6") {
         let end = from + at + "spec 6".len();
         let rest = &lower[end..];
-        if rest.starts_with([' ', ',']) || rest.starts_with("'s ") || rest.starts_with("\u{2019}s ") {
+        if rest.starts_with([' ', ',']) || rest.starts_with("'s ") || rest.starts_with("\u{2019}s ")
+        {
             ends.push(end);
         }
         from = end;
@@ -268,7 +269,11 @@ fn credits_spec_six(sentence: &str) -> bool {
 /// `ADVERBS`, open with a credit verb.
 fn verb_follows(words: &[String]) -> bool {
     let mut at = 0;
-    while at < 2 && words.get(at).is_some_and(|w| RELATIVES.contains(&w.as_str())) {
+    while at < 2
+        && words
+            .get(at)
+            .is_some_and(|w| RELATIVES.contains(&w.as_str()))
+    {
         at += 1;
     }
     let relatives = at;
@@ -542,7 +547,10 @@ fn a_present_tense_credit_to_a_moved_rule_is_flagged_and_history_is_not() {
     let that = "It amends spec 6, that says a placeholder sits there.\n";
     assert_eq!(moved_credits(decision, that), vec![(1, "placeholder")]);
     let that_only = "It amends spec 6, that puts the probe budget there.\n";
-    assert_eq!(moved_credits(decision, that_only), vec![(1, "probe budget")]);
+    assert_eq!(
+        moved_credits(decision, that_only),
+        vec![(1, "probe budget")]
+    );
     let where_it = "It amends spec 6, where it states the placeholder.\n";
     assert_eq!(moved_credits(decision, where_it), vec![(1, "placeholder")]);
 
@@ -568,7 +576,10 @@ fn a_present_tense_credit_to_a_moved_rule_is_flagged_and_history_is_not() {
 
     // A possessive name, plain and linked, with a short noun before the verb.
     let possessive = "Spec 6's export section says that a placeholder sits there.\n";
-    assert_eq!(moved_credits(decision, possessive), vec![(1, "placeholder")]);
+    assert_eq!(
+        moved_credits(decision, possessive),
+        vec![(1, "placeholder")]
+    );
     let curly = "Spec 6\u{2019}s table says that a placeholder sits there.\n";
     assert_eq!(moved_credits(decision, curly), vec![(1, "placeholder")]);
     let linked_possessive = "[Spec 6](../spec/06-engine-architecture.md#cli)'s rule says where the probe budget sits.\n";
@@ -582,7 +593,8 @@ fn a_present_tense_credit_to_a_moved_rule_is_flagged_and_history_is_not() {
     // `according to` opens a credit, and the verb can be anywhere after it.
     let according = "According to spec 6, a placeholder sits where each node was.\n";
     assert_eq!(moved_credits(decision, according), vec![(1, "placeholder")]);
-    let according_link = "According to [spec 6](../spec/06-engine-architecture.md), a placeholder sits there.\n";
+    let according_link =
+        "According to [spec 6](../spec/06-engine-architecture.md), a placeholder sits there.\n";
     assert_eq!(
         moved_credits(decision, according_link),
         vec![(1, "placeholder")]
@@ -593,7 +605,10 @@ fn a_present_tense_credit_to_a_moved_rule_is_flagged_and_history_is_not() {
     let capital = "Spec 6 states one thing. Placeholders sit where each node was.\n";
     assert_eq!(moved_credits(decision, capital), vec![(1, "placeholder")]);
     let capital_same = "Spec 6 states that Placeholders sit there.\n";
-    assert_eq!(moved_credits(decision, capital_same), vec![(1, "placeholder")]);
+    assert_eq!(
+        moved_credits(decision, capital_same),
+        vec![(1, "placeholder")]
+    );
 
     // The same relative clause in a record of a moment is not flagged.
     for prefix in RECORDS_OF_A_MOMENT {
