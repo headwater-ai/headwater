@@ -64,6 +64,9 @@ echo "decoy \$*" >> "$fix/paid.log"
 exit 1
 EOF
 chmod +x "$fix/decoy/claude"
+# A `claude` of the pinned version, for a case that runs the stub by hand.
+mkdir -p "$fix/vbin"
+ln -s "$fix/versions/2.1.288" "$fix/vbin/claude"
 
 # The clock: `now` prints the epoch seconds in $CASE/clock, and `sleep` adds
 # to it, logs the step, and runs the one-shot hook $CASE/on-sleep.
@@ -679,6 +682,82 @@ RAMP=2,4
 drive --parallel 3
 check "ramp: --ramp with --parallel exits 2" code_is 2
 check "ramp: and invokes nothing" calls_are 0
+
+# ------------------------------------------------- the edges (verify round 1)
+
+# A recorder failure beside a halt is a recorder failure, and is not run
+# again: the order of the exit-7 tests is the point.
+new_case
+only_a
+printf 'exit=7 halt=y fail=1 cents=10\nexit=0 record=20 cents=10\n' > "$CASE/scenario"
+drive
+check "edges: exit 7 with a halt and a failed job exits 7" code_is 7
+check "edges: a failed job beside a halt is not run again" calls_are 1
+
+# A refusal-only exit after a bound gets its own re-try: the re-try count
+# is reset by every other outcome.
+new_case
+only_a
+printf 'exit=7 record=2 cents=10 refuse=1\nexit=9 record=2 cents=10\nexit=7 refuse=1\nexit=0 record=20 cents=10\n' > "$CASE/scenario"
+drive
+check "edges: a refusal after a bound is re-tried and the batch finishes" code_is 0
+check "edges: four invocations" calls_are 4
+
+# A total exactly at the cap is not an overspend.
+new_case
+only_a
+C=1000
+echo 'exit=0 record=20 cents=50' > "$CASE/scenario"
+drive
+check "edges: spent equal to --cap-cents exits 0" code_is 0
+
+# A cap that leaves exactly 0 is capped, with no invocation.
+new_case
+C=1000
+: > "$CASE/root/canary-recorded"
+: > "$CASE/root/canary-passed"
+: > "$CASE/root/a.done"
+mkdir -p "$CASE/root/a/sessions/x"
+echo 960 > "$CASE/root/a/sessions/x/cost"
+drive
+check "edges: a cap of exactly 0 exits 8" code_is 8
+check "edges: a cap of exactly 0 invokes nothing" calls_are 0
+
+# A restart that finds the 8 canary sessions recorded, and no
+# canary-recorded, invokes no canary.
+new_case
+: > "$CASE/root/canary-passed"
+printf 'exit=9 record=8 cents=50\nexit=0 record=20 cents=50\nexit=0 record=10 cents=40\n' > "$CASE/scenario"
+(
+    cd "$CASE/repo" && PATH="$fix/vbin:$PATH" sh "$fix/campaign-stub.sh" --out "$CASE/root/a" --spec "$CASE/spec-a" \
+        --cap-cents 99980 --max-sessions 8 --session-cents 60
+) > /dev/null 2>&1
+drive
+check "edges: a restart with 8 canary sessions recorded exits 0" code_is 0
+check "edges: and never asks for --max-sessions 0" sh -c "! grep -q 'max=0\$' '$CASE/calls.short'"
+check "edges: three calls in all, the hand canary, A and B" calls_are 3
+check "edges: and writes canary-recorded" has canary-recorded
+
+# A slice that costs less than the canary's cheapest session holds the ramp.
+new_case
+RAMP=2,3
+: > "$CASE/root/canary-passed"
+: > "$CASE/root/b.done"
+printf 'exit=9 record=8 cents=50\nexit=9 record=2 cents=40\nexit=0 record=20 cents=50\n' > "$CASE/scenario"
+drive
+check "edges: a slice below the canary range holds the ramp (saw: $(parallels_of a))" [ "$(parallels_of a)" = "1 2 2 " ]
+
+# Batch B started on another version exits 4 before any spend.
+new_case
+: > "$CASE/root/canary-recorded"
+: > "$CASE/root/canary-passed"
+: > "$CASE/root/a.done"
+mkdir -p "$CASE/root/b"
+echo '2.1.287 (Claude Code)' > "$CASE/root/b/claude-version"
+echo 'exit=0 record=10 cents=10' > "$CASE/scenario"
+drive
+check "edges: a b/claude-version of another version exits 4" code_is 4
+check "edges: and invokes nothing" calls_are 0
 
 # ------------------------------------------------- 7. canary gate
 
