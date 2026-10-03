@@ -181,6 +181,7 @@ parallel=1
 max_turns=
 seed=0
 cap=
+max_sessions=
 assemble=0
 dry=0
 job=
@@ -195,12 +196,17 @@ while [ $# -gt 0 ]; do
         --max-turns) max_turns=${2:-}; shift 2 ;;
         --seed) seed=${2:-}; shift 2 ;;
         --cap-cents) cap=${2:-}; shift 2 ;;
+        --max-sessions) max_sessions=${2:-}; shift 2 ;;
         --assemble) assemble=1; shift ;;
         --dry-run) dry=1; shift ;;
         --job) job=${2:-}; shift 2 ;;
         *) echo "campaign: unknown argument \`$1\`" >&2; exit 2 ;;
     esac
 done
+case $max_sessions in
+    '') ;;
+    *[!0-9]*|0) echo "campaign: --max-sessions takes a positive whole number, not \`$max_sessions\`." >&2; exit 2 ;;
+esac
 
 case $0 in
     */*) invoked_from=${0%/*} ;;
@@ -211,7 +217,7 @@ engine=$root/engine/target/dev-release/headwater
 [ -x "$engine" ] || engine=$root/engine/target/release/headwater
 
 if [ "$dry" = 1 ]; then
-    exec sh "$root/tools/probe/campaign-dry-run.sh" "$spec" ${repetitions:+"$repetitions"}
+    exec sh "$root/tools/probe/campaign-dry-run.sh" "$spec" "$repetitions" "$max_sessions"
 fi
 
 [ -n "$out" ] || { echo "campaign: --out is required" >&2; exit 2; }
@@ -252,8 +258,13 @@ run_job() {
     if [ -f "$dir/status" ] && [ "$(cat "$dir/status")" = 0 ]; then
         return 0
     fi
+    # A halted invocation starts nothing more, and leaves the job to the next.
+    if [ -f "$out/slice/halt" ]; then
+        return 0
+    fi
     if [ "$(git -C "$root" rev-parse HEAD)" != "$(cat "$out/head")" ]; then
         echo "campaign: HEAD moved during the batch, so $name was not started." >&2
+        : > "$out/slice/refused/$name"
         return 0
     fi
     # The ceiling, at run time.
@@ -272,6 +283,7 @@ run_job() {
     done
     if [ $((spent + (inflight + 1) * unit)) -gt "$ceiling" ]; then
         echo "campaign: $name skipped: $spent cents spent and $inflight in flight against a $tier ceiling of $ceiling." >&2
+        : > "$out/slice/refused/$name"
         return 0
     fi
     # The cap, across every tier of the batch, where the caller set one.
@@ -288,9 +300,23 @@ run_job() {
         done
         if [ $((all + (running + 1) * unit)) -gt "$(cat "$out/cap")" ]; then
             echo "campaign: $name skipped: $all cents spent and $running in flight against the batch cap of $(cat "$out/cap")." >&2
+            : > "$out/slice/refused/$name"
             return 0
         fi
     fi
+    # The bound of this invocation. `mkdir` either creates a token or fails,
+    # so two workers never take one token, and no more sessions start than
+    # there are tokens.
+    if [ -s "$out/slice/max" ]; then
+        bound=$(cat "$out/slice/max")
+        token=1
+        while [ "$token" -le "$bound" ]; do
+            mkdir "$out/slice/token.$token" 2>/dev/null && break
+            token=$((token + 1))
+        done
+        [ "$token" -le "$bound" ] || return 0
+    fi
+    : > "$out/slice/started/$name"
     mkdir -p "$dir"
     printf '%s\n' "$tier" > "$dir/tier"
     : > "$dir/started"
@@ -323,6 +349,10 @@ run_job() {
     fi
     [ -s "$dir/cost.tmp" ] && mv "$dir/cost.tmp" "$dir/cost" || rm -f "$dir/cost.tmp"
     printf '%s\n' "$status" > "$dir/status"
+    if [ "$status" = 10 ]; then
+        : > "$out/slice/halt"
+        echo "campaign: $name: the harness failed for a reason other than the turn cap, so this invocation starts no other job (halt). A usage limit stops a session this way." >&2
+    fi
     rm -rf "$ws"
     printf 'campaign: %s exited %s, %s cents\n' "$name" "$status" "$(cat "$dir/cost" 2>/dev/null || echo '?')" >&2
 }
@@ -331,6 +361,7 @@ if [ -n "$job" ]; then
     model=$(cat "$out/model")
     repetitions=$(cat "$out/repetitions")
     max_turns=$(cat "$out/max-turns")
+    mkdir -p "$out/slice/started" "$out/slice/refused"
     run_job "$job"
     exit 0
 fi
@@ -399,7 +430,7 @@ fi
 # The batch.
 # ---------------------------------------------------------------------------
 [ -n "$model" ] && [ -n "$spec" ] || {
-    echo "usage: campaign.sh --out <dir> --model <model> --spec <file> [--repetitions <n>] [--parallel <n>] [--max-turns <n>] [--seed <n>]" >&2
+    echo "usage: campaign.sh --out <dir> --model <model> --spec <file> [--repetitions <n>] [--parallel <n>] [--max-turns <n>] [--seed <n>] [--cap-cents <n>] [--max-sessions <n>]" >&2
     exit 2
 }
 [ -f "$spec" ] || { echo "campaign: no spec at $spec" >&2; exit 2; }
@@ -430,7 +461,31 @@ printf '%s\n' "$head" > "$out/head"
 printf '%s\n' "$model" > "$out/model"
 printf '%s\n' "$repetitions" > "$out/repetitions"
 printf '%s\n' "$max_turns" > "$out/max-turns"
-printf '%s' "$cap" > "$out/cap"
+# The cap is the batch's, so a resumed invocation that gives none keeps the
+# one recorded (#1472).
+if [ -n "$cap" ]; then
+    printf '%s' "$cap" > "$out/cap"
+elif [ ! -f "$out/cap" ]; then
+    : > "$out/cap"
+fi
+# The harness is part of every session's identity, and assembly refuses a line
+# whose sessions disagree on it. A batch staggered over days can meet another
+# `claude`, so the first invocation records its version and a later one on
+# another version refuses before it spends.
+harness=$(claude --version 2>/dev/null | head -1)
+if [ -f "$out/claude-version" ]; then
+    if [ "$(cat "$out/claude-version")" != "$harness" ]; then
+        echo "campaign: $out was started with claude $(cat "$out/claude-version"), and this harness is ${harness:-of no version}. Its sessions would not assemble with the batch's. Run the rest of the batch on the harness it started with, or start a new batch in another directory." >&2
+        exit 4
+    fi
+else
+    printf '%s\n' "$harness" > "$out/claude-version"
+fi
+# The state of this invocation alone: the bound, the tokens taken against it,
+# the jobs it started or refused, and the halt.
+rm -rf "$out/slice"
+mkdir -p "$out/slice/started" "$out/slice/refused"
+printf '%s' "$max_sessions" > "$out/slice/max"
 mkdir -p "$out/plans" "$out/tasks" "$out/trees" "$out/sessions" "$out/ws"
 
 # Plan every line. A refusal stops the batch before anything is built.
@@ -533,20 +588,44 @@ if [ ! -f "$out/jobs" ]; then
 fi
 
 total=$(wc -l < "$out/jobs")
-echo "campaign: $total sessions over $(wc -l < "$out/lines") lines, $parallel at a time, at $head." >&2
+echo "campaign: $total sessions over $(wc -l < "$out/lines") lines, $parallel at a time, at $head${max_sessions:+, at most $max_sessions new in this invocation}." >&2
 # Each worker runs this script again with one job, so every job reads the
 # ceiling from the sessions already recorded.
 tr '\n' '\0' < "$out/jobs" | xargs -0 -P "$parallel" -I '{}' sh "$0" --out "$out" --job '{}'
 
+# A job is recorded, failed, or left for the next invocation. A job this
+# invocation never started, on the bound or after a halt, is left and did
+# not fail, and so is the job whose harness failure raised the halt. A job
+# the ceiling, the cap or a moved `HEAD` refused did not record.
+recorded=0
 failed=0
+remain=0
 while IFS= read -r row; do
     name=${row%% *}
-    [ "$(cat "$out/sessions/$name/status" 2>/dev/null)" = 0 ] || failed=$((failed + 1))
+    status=$(cat "$out/sessions/$name/status" 2>/dev/null)
+    if [ "$status" = 0 ]; then
+        recorded=$((recorded + 1))
+    elif [ -f "$out/slice/refused/$name" ]; then
+        failed=$((failed + 1))
+    elif [ ! -f "$out/slice/started/$name" ]; then
+        remain=$((remain + 1))
+    elif [ "$status" = 10 ] && [ -f "$out/slice/halt" ]; then
+        remain=$((remain + 1))
+    else
+        failed=$((failed + 1))
+    fi
 done < "$out/jobs"
 spent=0
 for cost in "$out"/sessions/*/cost; do
     [ -f "$cost" ] && spent=$((spent + $(cat "$cost")))
 done
-echo "campaign: $((total - failed)) of $total sessions recorded, $spent cents spent." >&2
+if [ "$remain" -gt 0 ]; then
+    [ -f "$out/slice/halt" ] && echo "campaign: this invocation stopped on a halt." >&2
+    echo "campaign: $recorded of $total sessions recorded, $remain remain; run the same command again to continue at $head." >&2
+    echo "campaign: $spent cents spent over the batch." >&2
+else
+    echo "campaign: $recorded of $total sessions recorded, $spent cents spent." >&2
+fi
 [ "$failed" = 0 ] || exit 7
+[ "$remain" = 0 ] || exit 9
 exit 0
