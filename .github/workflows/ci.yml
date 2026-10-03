@@ -725,6 +725,16 @@ jobs:
         # two, and hold every branch: install, `sysctl`, skip, fail, and the
         # suite's own status. It needs only `sh`.
         run: sh tools/probe/ci-confine-fixtures.sh
+      - name: The campaign's driver loop holds one cap over both batches and reads each exit from the files
+        # `tools/probe/campaign-drive.sh` runs a staggered campaign detached
+        # for about a day (#1659): the canary, batch A and batch B, each in
+        # slices, under one cap for both. Its fixtures run it against a stub
+        # `campaign.sh`, a stub clock and fake `claude` versions, so no case
+        # spends or waits, and hold the shared cap, the one re-try after a
+        # refusal, the halt backoff, the token wait, the pinned harness, the
+        # pin, the canary gate and the parallel ramp. It needs `sh`, `git`
+        # and `jq`.
+        run: sh tools/probe/campaign-drive-fixtures.sh
       - name: The run census counts a turn once per message and a call by what it is for
         # `tools/run/run-census.sh` is the measurement behind HW-PD-0003 as a
         # tool: one usage record per message id, because a response is
