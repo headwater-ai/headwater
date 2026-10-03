@@ -135,6 +135,19 @@ const MOVED_CREDITS: &[(&str, &str, &str)] = &[
         "docs/interfaces/headwater-generate.md",
         "three scalars: the identifier, the kind and the name",
     ),
+    // A generated file is excused from checks and not from identity.
+    (
+        "excuses a generated file",
+        "docs/interfaces/headwater-generate.md",
+        "the marker exempts the file from checks and from nothing else",
+    ),
+    // What a run states beside its findings: the lock hash, and the corpus
+    // tree that nothing computes yet.
+    (
+        "corpus tree",
+        "docs/subsystems/checks-and-cache.md",
+        "the corpus tree is a gap",
+    ),
     // A count: spec 6 still lists the projection kinds, and the count moved.
     (
         "ten declarable",
@@ -158,10 +171,23 @@ const CREDIT_VERBS: &[&str] = &[
     "gives",
     "calls",
     "closes",
+    "keeps",
+    "excuses",
+    "holds",
+    "defines",
+    "names",
 ];
 
-/// The words that may stand between the name and the verb.
+/// The adverbs that may stand between the name and the verb, two at most.
 const ADVERBS: &[&str] = &["then", "also", "still", "now", "already", "only"];
+
+/// The words that open a relative clause after the name, two at most, as in
+/// a name followed by `which`, `that` or `where it`.
+const RELATIVES: &[&str] = &["which", "that", "where", "it"];
+
+/// After a possessive name, the most words of the owned noun that may stand
+/// before the verb (a section, a table, a rule).
+const POSSESSED: usize = 3;
 
 /// The sentences of one line. A sentence ends at a full stop, a question
 /// mark or an exclamation mark that a space or the end of the line follows.
@@ -194,13 +220,14 @@ fn spec_six_names(sentence: &str) -> Vec<usize> {
         }
         from = after;
     }
-    // The plain words, with a space or a comma after them, so that a link's
-    // text ("[Spec 6]") is read once, as the link.
+    // The plain words, with a space, a comma or a possessive after them, so
+    // that a link's text ("[Spec 6]") is read once, as the link.
     let lower = sentence.to_lowercase();
     let mut from = 0;
     while let Some(at) = lower[from..].find("spec 6") {
         let end = from + at + "spec 6".len();
-        if matches!(lower.as_bytes().get(end), Some(b' ' | b',')) {
+        let rest = &lower[end..];
+        if rest.starts_with([' ', ',']) || rest.starts_with("'s ") || rest.starts_with("\u{2019}s ") {
             ends.push(end);
         }
         from = end;
@@ -208,35 +235,48 @@ fn spec_six_names(sentence: &str) -> Vec<usize> {
     ends
 }
 
-/// True when `sentence` names spec 6 and the first word after the name, past
-/// at most one relative pronoun (`which`) and then at most one adverb, is a
-/// present-tense credit verb.
+/// True when `sentence` credits spec 6 in the present tense. That is so when
+/// the sentence opens its claim with `according to` and the name, or when the
+/// first word after the name is a credit verb. Between the name and the verb
+/// there may stand up to two words of `RELATIVES`, and then up to two words
+/// of `ADVERBS`. After a possessive name, up to `POSSESSED` words of the noun
+/// it owns may stand before them.
 fn credits_spec_six(sentence: &str) -> bool {
+    let lower = sentence.to_lowercase();
+    if lower.contains("according to spec 6") || lower.contains("according to [spec 6]") {
+        return true;
+    }
     spec_six_names(sentence).into_iter().any(|end| {
-        let mut words = sentence[end..]
+        let rest = &sentence[end..];
+        let possessive = rest.starts_with("'s ") || rest.starts_with("\u{2019}s ");
+        let words: Vec<String> = rest
             .split_whitespace()
+            .skip(usize::from(possessive))
             .map(|w| {
                 w.trim_matches(|c: char| !c.is_alphanumeric())
                     .to_lowercase()
             })
-            .filter(|w| !w.is_empty());
-        let Some(mut word) = words.next() else {
-            return false;
-        };
-        if word == "which" {
-            let Some(next) = words.next() else {
-                return false;
-            };
-            word = next;
-        }
-        if ADVERBS.contains(&word.as_str()) {
-            let Some(next) = words.next() else {
-                return false;
-            };
-            word = next;
-        }
-        CREDIT_VERBS.contains(&word.as_str())
+            .filter(|w| !w.is_empty())
+            .collect();
+        let owned = if possessive { POSSESSED } else { 0 };
+        (0..=owned).any(|skip| verb_follows(&words[skip.min(words.len())..]))
     })
+}
+
+/// True when `words`, past up to two `RELATIVES` and then up to two
+/// `ADVERBS`, open with a credit verb.
+fn verb_follows(words: &[String]) -> bool {
+    let mut at = 0;
+    while at < 2 && words.get(at).is_some_and(|w| RELATIVES.contains(&w.as_str())) {
+        at += 1;
+    }
+    let relatives = at;
+    while at < relatives + 2 && words.get(at).is_some_and(|w| ADVERBS.contains(&w.as_str())) {
+        at += 1;
+    }
+    words
+        .get(at)
+        .is_some_and(|w| CREDIT_VERBS.contains(&w.as_str()))
 }
 
 /// Every `(line, term)` in `text` where a present-tense credit to spec 6,
@@ -489,6 +529,63 @@ fn a_present_tense_credit_to_a_moved_rule_is_flagged_and_history_is_not() {
     assert!(moved_credits(decision, split).is_empty());
     let which_said = "It amends spec 6, which said that a placeholder sits there.\n";
     assert!(moved_credits(decision, which_said).is_empty());
+
+    // `that` opens a relative clause as `which` does, and `where it` does too.
+    let that = "It amends spec 6, that says a placeholder sits there.\n";
+    assert_eq!(moved_credits(decision, that), vec![(1, "placeholder")]);
+    let that_only = "It amends spec 6, that puts the probe budget there.\n";
+    assert_eq!(moved_credits(decision, that_only), vec![(1, "probe budget")]);
+    let where_it = "It amends spec 6, where it states the placeholder.\n";
+    assert_eq!(moved_credits(decision, where_it), vec![(1, "placeholder")]);
+
+    // Two adverbs, with or without a relative pronoun before them.
+    let two = "Spec 6 still also says that a placeholder sits there.\n";
+    assert_eq!(moved_credits(decision, two), vec![(1, "placeholder")]);
+    let which_two = "It amends spec 6, which still also says what a placeholder is.\n";
+    assert_eq!(moved_credits(decision, which_two), vec![(1, "placeholder")]);
+    let three = "Spec 6 then still also says that a placeholder sits there.\n";
+    assert!(moved_credits(decision, three).is_empty());
+
+    // The verbs that the live cases used (HW-DR-0064, graph-build, the engine
+    // README).
+    let keeps = "The fetch is refused, and spec 6 keeps a socket out of this engine.\n";
+    assert_eq!(moved_credits(decision, keeps), vec![(1, "socket")]);
+    let excuses = "Spec 6 excuses a generated file from checks and not from identity.\n";
+    assert_eq!(
+        moved_credits(decision, excuses),
+        vec![(1, "excuses a generated file")]
+    );
+    let tree = "Spec 6 keeps the two apart, since a run reports the corpus tree.\n";
+    assert_eq!(moved_credits(decision, tree), vec![(1, "corpus tree")]);
+
+    // A possessive name, plain and linked, with a short noun before the verb.
+    let possessive = "Spec 6's export section says that a placeholder sits there.\n";
+    assert_eq!(moved_credits(decision, possessive), vec![(1, "placeholder")]);
+    let curly = "Spec 6\u{2019}s table says that a placeholder sits there.\n";
+    assert_eq!(moved_credits(decision, curly), vec![(1, "placeholder")]);
+    let linked_possessive = "[Spec 6](../spec/06-engine-architecture.md#cli)'s rule says where the probe budget sits.\n";
+    assert_eq!(
+        moved_credits(decision, linked_possessive),
+        vec![(1, "probe budget")]
+    );
+    let far_noun = "Spec 6's long old export table section says a placeholder sits there.\n";
+    assert!(moved_credits(decision, far_noun).is_empty());
+
+    // `according to` opens a credit, and the verb can be anywhere after it.
+    let according = "According to spec 6, a placeholder sits where each node was.\n";
+    assert_eq!(moved_credits(decision, according), vec![(1, "placeholder")]);
+    let according_link = "According to [spec 6](../spec/06-engine-architecture.md), a placeholder sits there.\n";
+    assert_eq!(
+        moved_credits(decision, according_link),
+        vec![(1, "placeholder")]
+    );
+
+    // The window is read in lower case, so a term that opens the next
+    // sentence with a capital is still read.
+    let capital = "Spec 6 states one thing. Placeholders sit where each node was.\n";
+    assert_eq!(moved_credits(decision, capital), vec![(1, "placeholder")]);
+    let capital_same = "Spec 6 states that Placeholders sit there.\n";
+    assert_eq!(moved_credits(decision, capital_same), vec![(1, "placeholder")]);
 
     // The same relative clause in a record of a moment is not flagged.
     for prefix in RECORDS_OF_A_MOMENT {
