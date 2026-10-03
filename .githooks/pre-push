@@ -1,7 +1,28 @@
 #!/bin/sh
-# One clause, a warning. Until #1273 a second clause refused a push while a
-# `site/*` merge conflict sat unreviewed; the pages carry no measured figure
-# now, merge as text, and the marker that clause read is gone.
+# Two clauses. The first refuses a push whose tree CI would reject for a reason
+# a second of local work finds: a Rust file `cargo fmt` would change, or a
+# projection `headwater generate` would write. The second warns about an issue
+# the push works on that nobody has claimed. Until #1273 a clause also refused a
+# push while an unreviewed `site/*` resolution was pending; the pages merge as
+# text now and the marker that clause read is gone.
+#
+# # The refusal: a format or a projection CI would reject
+#
+# A failed `Format` or `Every projection is what this corpus produces` step
+# costs a push, a wait on the self-hosted pool that this host also builds on,
+# and a second push (40 failed runs read on 2026-10-03: 7 Format, 7 projection).
+# `.claude/agents/hw-build.md` already tells the build agent to run both, and 7
+# Format failures happened anyway, which is HW-PD-0001's case: a sentence the
+# performer does not reread needs a check rather than a reader.
+#
+# Both read the tree that is being pushed, so they run only when one of the
+# refs in the push names `HEAD`; a push of another ref would be checked against
+# the wrong tree, and so it is not checked. Both fail open with one line when the
+# tool is missing, and with none when this is not a checkout with an engine at
+# all. The projection check also skips when a source file under `engine/` is
+# newer than the built engine, because an engine older than the change reads a
+# stale answer as a defect of the tree. `HEADWATER_SKIP_PUSH_GATE=1` releases
+# both for one push, and `--no-verify` releases the whole hook.
 #
 # # The warning: an issue this push works on that nobody has claimed
 #
@@ -63,11 +84,58 @@ if [ -z "${HEADWATER_HOOK_HANDOFF:-}" ] && [ "$self" != "$own_dir" ]; then
     echo "  checkout core.hooksPath names ran its copy instead." >&2
 fi
 
-# Everything below is the warning, and it exits 0 by every path.
-
 # Run by hand with no push behind it: there is no ref batch to read and a
 # `read` against the terminal would hang the hook rather than check anything.
 [ -t 0 ] && exit 0
+
+refs=$(cat)
+
+head_sha=$(git -C "$root" rev-parse HEAD 2>/dev/null)
+pushes_head=
+if [ -n "$head_sha" ]; then
+	printf '%s\n' "$refs" | awk -v h="$head_sha" '$2 == h { found = 1 } END { exit !found }' && pushes_head=1
+fi
+
+if [ -n "$pushes_head" ] && [ -z "${HEADWATER_SKIP_PUSH_GATE:-}" ] && [ -f "$root/engine/Cargo.toml" ]; then
+	# Format. `cargo fmt` resolves nothing and compiles nothing, so it takes
+	# about a second. `--all` is what lets a virtual workspace root answer.
+	if command -v cargo >/dev/null 2>&1 && cargo fmt --version >/dev/null 2>&1; then
+		if ! fmt=$(cd "$root/engine" && cargo fmt --all -- --check 2>&1); then
+			echo "headwater: cargo fmt would change this tree, and the Format step of CI would fail:" >&2
+			printf '%s\n' "$fmt" | head -20 | sed 's/^/    /' >&2
+			echo "  Fix it and amend or add a commit:" >&2
+			echo "        (cd engine && cargo fmt --all)" >&2
+			echo "  Or skip both push checks for one push: HEADWATER_SKIP_PUSH_GATE=1 git push ..." >&2
+			exit 1
+		fi
+	else
+		echo "headwater: no cargo fmt here, so this push is not checked for format." >&2
+	fi
+
+	# Projection. The newer of the two profiles answers, as the commit gate
+	# reads them, and a binary older than the engine source is not trusted.
+	release="$root/engine/target/release/headwater"
+	dev_release="$root/engine/target/dev-release/headwater"
+	engine=
+	[ -x "$release" ] && engine=$release
+	if [ -x "$dev_release" ] && { [ -z "$engine" ] || [ "$dev_release" -nt "$engine" ]; }; then
+		engine=$dev_release
+	fi
+	if [ -z "$engine" ]; then
+		echo "headwater: no built engine, so this push is not checked for stale projections." >&2
+	elif [ -n "$(find "$root/engine/crates" "$root/engine/Cargo.lock" -newer "$engine" \( -name '*.rs' -o -name Cargo.lock \) -print -quit 2>/dev/null)" ]; then
+		echo "headwater: the built engine is older than its source, so this push is not checked for stale projections." >&2
+	elif ! gen=$(cd "$root" && "$engine" generate --check 2>&1); then
+		echo "headwater: a projection of this corpus is stale, and the Every-projection step of CI would fail:" >&2
+		printf '%s\n' "$gen" | head -20 | sed 's/^/    /' >&2
+		echo "  Regenerate, read the diff and commit it:" >&2
+		echo "        $engine generate" >&2
+		echo "  Or skip both push checks for one push: HEADWATER_SKIP_PUSH_GATE=1 git push ..." >&2
+		exit 1
+	fi
+fi
+
+# Everything below is the warning, and it exits 0 by every path.
 
 command -v gh >/dev/null 2>&1 || exit 0
 
@@ -95,7 +163,7 @@ zeroes=0000000000000000000000000000000000000000
 # branch, and reading all of it to warn about a board is not worth the wait,
 # so `--max-count` still caps the walk below.
 numbers=$(
-	while read -r _local_ref local_sha _remote_ref _remote_sha; do
+	printf '%s\n' "$refs" | while read -r _local_ref local_sha _remote_ref _remote_sha; do
 		[ -n "$local_sha" ] || continue
 		[ "$local_sha" = "$zeroes" ] && continue
 

@@ -14,7 +14,7 @@ provenance:
 relations:
   governs:
     - to: .github/workflows/ci.yml
-      verified_revision: sha256:2b69a52875e5e5d17a7f076e5d37701c875a89ef2bac945c57adf1cbc4d4ce17
+      verified_revision: sha256:d8a516f0295d6e804f44ef219add3deddf25b2eb8c9157225760c9d6580f111d
 ---
 
 # Two triggers, one verdict: how this repository's CI decides where a job runs and what it trusts
@@ -95,4 +95,4 @@ The event argument transfers whole. Any adopter with a public repository and a s
 
 What does not transfer is every number above. The cadence that makes strict status checks too expensive here is this repository's cadence. An adopter who merges twice a week should turn strict on rather than off. The split between a hosted cache and a bind mount is a property of owning the host. The decision to build into a cold target directory is the consequence of two specific failures rather than a general rule.
 
-Two records name defects in the file this document governs, and neither is closed by it. [HW-OBL-0145](../obligations/0145-the-ci-job-named-advisory-carries-every-blocking-shell-suite-in-the-repository.md) records that the job named advisory blocks on most of its steps: 48 of 55 when the record was last verified, on 2026-09-21. On 2026-10-03 the job has 77 steps. [HW-OBL-0173](../obligations/0173-four-inline-gates-in-the-workflow-decide-an-exit-status-and-no-suite-provokes-one.md) records that four inline gates in the workflow decide an exit status and no suite provokes one.
+Two records name defects in the file this document governs, and neither is closed by it. [HW-OBL-0145](../obligations/0145-the-ci-job-named-advisory-carries-every-blocking-shell-suite-in-the-repository.md) records that the job named advisory blocks on most of its steps: 48 of 55 when the record was last verified, on 2026-09-21. On 2026-10-03 the job has 78 steps. [HW-OBL-0173](../obligations/0173-four-inline-gates-in-the-workflow-decide-an-exit-status-and-no-suite-provokes-one.md) records that four inline gates in the workflow decide an exit status and no suite provokes one.

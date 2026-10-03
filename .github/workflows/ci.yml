@@ -594,6 +594,473 @@ jobs:
         # what lets it sit above the step that fixes the date for the three runs
         # after it.
         run: ./engine/target/release/headwater generate --check
+      - name: The Python packages the fixtures below import
+        # `tools/repo/release-guide-fixtures.sh`, `tools/repo/integrations-fixtures.sh`
+        # and the checks they run read YAML and JSON Schema. The site build
+        # installs PyYAML for itself further down, and these fixtures used to
+        # run behind it, which is how they found it. They run ahead of it now
+        # (see the comment below), and a run on this branch failed six cases of
+        # `assert-no-inline-expression-in-run.py` with exit 2 until this step
+        # existed. Unpinned, like the `engine` job's own line, because no
+        # fixture here depends on a version.
+        run: python3 -m pip install --user --break-system-packages jsonschema PyYAML
+      # The steps from here to "The site this corpus's navigation builds" are
+      # shell fixtures that need the engine built above and read nothing the
+      # site build writes, and they take seconds each. They sit ahead of the
+      # site build so that a failure in one reports in minutes: a step fails
+      # the job where it stands, and the same fixtures behind the site build
+      # reported after 15 to 20 minutes on this host (40 failed runs read on
+      # 2026-10-03). A new step of that kind belongs here. A step that reads
+      # `.headwater/site-build` or the assembled site belongs after the build.
+      - name: The identifier claim store conflicts on a collision and merges on a coincidence
+        # The store answers "is this number taken" through git rather than
+        # through a rule, so the two outcomes it rests on are properties of
+        # `git merge` and of `.gitattributes` and nothing in this repository
+        # states them. This suite drives two branches from one base over
+        # scratch repositories and pins both, provokes the `merge=union`
+        # failure on purpose, and refuses an empty claim anywhere in the
+        # shipped store. It builds no engine and writes only under a temporary
+        # directory.
+        run: sh tools/repo/id-store-fixtures.sh
+      - name: The run directory refuses a reused id, a short line, a stored total and a second claimant
+        # `tools/run/run-dir.sh` is the ledger of a build-order run: a directory
+        # under the git common dir, its tabular parts as JSON lines, and every
+        # total derived by the reader and never stored, which is HW-DR-0049
+        # applied to a ledger and HW-PD-0005 is why. The tool refuses a
+        # second start under one id, a log line missing a key, and a line
+        # that carries a total. This suite provokes each refusal, holds the
+        # derived total against the lines it wrote, checks that the doctrine
+        # a run copies in is the checked-in doctrine byte for byte, and races
+        # two claimants for one artifact to hold that exactly one owns it.
+        #
+        # It needs `jq`, which is a developer dependency and nothing an
+        # adopter runs. A runner without it skips with a warning rather than
+        # failing, the way the browser console step does. It writes only
+        # under a temporary directory.
+        run: |
+          status=0
+          sh tools/run/run-dir-fixtures.sh || status=$?
+          if [ "$status" = 3 ]; then
+            echo "::warning title=Run directory fixtures skipped::No jq on this runner, so none of these cases ran."
+            exit 0
+          fi
+          exit "$status"
+      - name: The parent restart loop drains on context or merges, and stops on each of its conditions
+        # `tools/run/supervise.sh` restarts the build-order parent every few
+        # merges, so its context stays small (#1275). A stub `claude` prints
+        # canned stream-json, so no case calls a model. It needs `jq`, and a
+        # runner without it skips with a warning.
+        run: |
+          status=0
+          sh tools/run/supervise-fixtures.sh || status=$?
+          if [ "$status" = 3 ]; then
+            echo "::warning title=Supervise fixtures skipped::No jq on this runner, so none of these cases ran."
+            exit 0
+          fi
+          exit "$status"
+      - name: The retirement sweep refuses a locked, dirty, open, occupied or empty worktree
+        # `tools/repo/retire-worktree.sh` deletes directories and branches, so what
+        # this holds is mostly what it refuses. The tool exists because the
+        # agent that makes a build worktree exits while its branch is still
+        # unmerged and can never retire its own tree, and the integrator is
+        # the first stage that knows the branch merged.
+        #
+        # The case that carries the suite is the squash-merge shape: the
+        # fixture builds a branch, squashes it onto `main`, and asserts that
+        # ancestry calls the finished branch unmerged before asserting that
+        # the tool clears it from the pull request record. A suite without
+        # that arm would pass against a tool that trusted ancestry, which in
+        # this repository retires nothing at all.
+        #
+        # The in-use guard is provoked with a real process sitting in the
+        # tree, because removing such a tree pins the directory on disk and
+        # the next cargo run there exits 101 with a `NotFound` naming the
+        # binary under test, which reads as a defect in the code rather than
+        # as a directory somebody deleted.
+        #
+        # The empty guard is the other one with a cost behind it. A tree made
+        # by `git worktree add <path> -b <branch> origin/main` sits at that
+        # tip before anything is committed to it, so ancestry alone cleared it
+        # from the second it existed and the sweep removed the directory and
+        # then the branch it had just freed. The case asserts the reason
+        # string rather than the `KEPT` verb, because four other guards also
+        # print `KEPT`.
+        #
+        # It needs nothing but git. It builds its own repository under a
+        # temporary directory and writes nothing inside this checkout.
+        run: sh tools/repo/retire-worktree-fixtures.sh
+      - name: A recorder's transform drops every block the harness did not tag as a call
+        # `tools/probe/probe-transform.sh` is the half of a recorder that decides
+        # what reaches `docs/probe-runs/`, and the failure it exists to
+        # prevent is silent: a model's account of its own process arriving as
+        # an observation. This suite feeds it a harness log whose `thinking`
+        # and `text` blocks carry content shaped like transcript fields and
+        # asserts that no byte of any of them survives, which is the one case
+        # a filter by position, by index or by the tags in a sample fails. It
+        # also holds spec 15's three-state rule, where `calls: []` for a
+        # stream nobody watched turns an unobserved run into a clean result.
+        # It needs `jq` and skips with a warning without it.
+        #
+        # It also needs `bwrap` with unprivileged user namespaces, because the
+        # recorder confines every session to its workspace and refuses to run
+        # one it cannot confine (#1467). The cases run the real confinement
+        # with a stub harness. `tools/probe/ci-confine.sh` gets `bwrap` and the
+        # namespace where `sudo` can, never calls `sudo` where there is none,
+        # and then runs the cases, or skips them with one warning on a
+        # self-hosted runner that cannot confine, or fails on any other.
+        #
+        # The self-hosted runner's container cannot (measured 2026-10-01: no
+        # `bwrap`, no `sudo`, and Docker's seccomp profile refuses the
+        # namespace), so there this step skips. A same-repo `pull_request` run
+        # skips this whole job, so the job `recorder` below runs the cases on
+        # `ubuntu-latest` in every run where this job is self-hosted.
+        env:
+          RUNNER_KIND: ${{ runner.environment }}
+        run: sh tools/probe/ci-confine.sh
+      - name: The recorder's confinement gate runs, skips or fails where it should
+        # `tools/probe/ci-confine.sh` decides above whether a case of the
+        # recorder runs at all, and its first version turned `main` red by
+        # calling `sudo` on the self-hosted runner (#1467). Its fixtures run
+        # it with stub `bwrap`, `sudo` and suite on a `PATH` without the real
+        # two, and hold every branch: install, `sysctl`, skip, fail, and the
+        # suite's own status. It needs only `sh`.
+        run: sh tools/probe/ci-confine-fixtures.sh
+      - name: The run census counts a turn once per message and a call by what it is for
+        # `tools/run/run-census.sh` is the measurement behind HW-PD-0003 as a
+        # tool: one usage record per message id, because a response is
+        # written to the log as several lines that each carry the same record,
+        # and a Bash call grouped by its leading verb, because the cost that
+        # matters was spread over 43 pull requests with no command repeated
+        # enough to look like a loop. This suite holds both against a
+        # transcript written by hand whose right answer is known. It needs
+        # `jq` and skips with a warning without it.
+        run: |
+          status=0
+          sh tools/run/run-census-fixtures.sh || status=$?
+          if [ "$status" = 3 ]; then
+            echo "::warning title=Run census fixtures skipped::No jq on this runner, so none of these cases ran."
+            exit 0
+          fi
+          exit "$status"
+      - name: The shadow-log capture rate joins on distinct prompt ids and tests where the losses sit
+        # `tools/run/shadow-capture.sh` is the join #917 stated in its
+        # comments, as a tool: person prompts in the harness transcripts of one
+        # UTC day against distinct prompt ids in the shadow log, and two tests
+        # that the misses are random. This suite plants transcripts and a log
+        # whose answer was worked by hand, so a stub test, a raw line count or
+        # a window one second wide on either side each fails a case. It needs
+        # `jq` and skips with a warning without it.
+        run: |
+          status=0
+          sh tools/run/shadow-capture-fixtures.sh || status=$?
+          if [ "$status" = 3 ]; then
+            echo "::warning title=Shadow capture fixtures skipped::No jq on this runner, so none of these cases ran."
+            exit 0
+          fi
+          exit "$status"
+      - name: The tools a build-order stage calls behave as their agent definitions say
+        # Seven scripts that every stage of a run calls in place of a command
+        # it once retyped: the CI-finished condition, the queue-finished
+        # condition, the board move, the
+        # single-issue reads and writes, the capped wait, the fetched-added-
+        # built worktree and the cargo slot wrapper. Each suite was written
+        # with its script and none was run by anything until run
+        # 20260923-0733 read two of them wrong in production. Every suite
+        # fakes `gh` or `cargo` on PATH, so this step needs no network, no
+        # token and no toolchain, and writes only under temporary directories.
+        # It needs `jq`, which ubuntu-latest and the self-hosted runner both
+        # carry, as the run directory step above shows: the fake `gh` of the
+        # CI-finished and queue-finished suites runs each script's own
+        # `--jq` filter over a raw API body. Each of the two exits 1 without
+        # `jq` and does not skip, because an untested filter is the gap
+        # #1484 closed.
+        run: |
+          sh tools/run/ci-done-fixtures.sh
+          sh tools/run/queue-done-fixtures.sh
+          sh tools/run/board-move-fixtures.sh
+          sh tools/run/gh-issue-fixtures.sh
+          sh tools/run/wait-for-fixtures.sh
+          sh tools/repo/new-worktree-fixtures.sh
+          sh tools/hw-cargo-fixtures.sh
+      - name: A citation that went stale reads differently from one that was invented
+        # `tools/cite/check-citations.py` is the only checker in this
+        # repository that reads a code file rather than a document. Spec 5 asks
+        # generated code to carry `# per <IDENTIFIER> (<path>)` and states the
+        # purpose that rests on the comment being true, and nothing checked it,
+        # so a citation that aged out read exactly like one that still holds.
+        #
+        # The class that matters is the middle one. An identifier nothing
+        # carries is the easy half, and a checker that found only that half
+        # would pass a review while missing what the tool is for: a citation
+        # whose identifier resolves, in a file the cited document no longer
+        # governs. This suite plants each fixture at a path this repository
+        # really governs, or really does not, in a scratch copy of the corpus,
+        # and holds that the two classes report under two rule identifiers and
+        # that the advisory third one leaves the exit status at 0.
+        #
+        # The step runs over the fixtures rather than over this tree, and
+        # the reason is a measurement this suite pins rather than a claim this
+        # comment makes. Outside `tools/cite/`, one line of this repository
+        # carries the shape: `docs/spec/05-ai-integration.md` line 285, where
+        # spec 5 illustrates the convention with an identifier and a path from
+        # an imagined corpus. A case reads that real document and holds the
+        # count and the line. What this repository carries nowhere is a
+        # citation written as a claim about what licensed a line of its own
+        # code, and that is by ruling: HW-DR-0092 records that the convention
+        # is for an adopter's corpus, and a case holds that spec 5 says so.
+        #
+        # It writes only under a temporary directory and it builds no engine:
+        # it drives the one the build step above already wrote.
+        run: sh tools/cite/check-citations-fixtures.sh
+      - name: The build still declares its license and still refuses to rewrite its lock
+        # Two declarations that are green the day they land and green forever.
+        # `--locked` on a lock that is in sync changes no exit status, so
+        # dropping it from a step, or landing one more copy of the install
+        # command without it, costs nothing until the day it costs everything.
+        # The license half is self-guarding in the removal direction — deleting
+        # the `[workspace.package]` key fails every cargo command with
+        # `error inheriting 'license' from workspace root manifest` — and not
+        # at all in the direction where a crate added later forgets the member
+        # line.
+        #
+        # This suite enumerates every population from the tree rather than
+        # listing it, gives each one a case that fails when the enumeration
+        # comes back empty, and provokes every one of its judges against a
+        # planted defect so that an empty offender list means something. It
+        # builds nothing: its one cargo call is `metadata --no-deps --locked`.
+        run: sh tools/engine/build-declaration-fixtures.sh
+      - name: The library index accounts for every bundle, and the vendored copy has not drifted
+        # Two properties of `docs/taxonomies/README.md`, and NOT its prose.
+        #
+        # The first is set equality. The library carried six bundles and the
+        # admission table listed five, and the missing one,
+        # `evidence-and-obligation`, is required by two of the entries the
+        # table does admit and selected by the `headwater/starter` recipe. So
+        # a composer reading the index was made to select a bundle the index
+        # gave no name, no link and no reason for. Nothing reported it: the
+        # lock names no `README.md`, no rule of the engine reads a table, and
+        # `taxonomy resolve --check` and `headwater check --strict` both exit
+        # 0 over the omission. This step reads the bundles out of
+        # `contents.bundles` and the accounted-for entries out of the section,
+        # and compares the two sets in both directions. It writes down no
+        # count of either, because the ordinal narrative the same section used
+        # to carry was a count in disguise and it went stale the same way.
+        #
+        # The second is that `docs/taxonomies/README.md` and
+        # `.headwater/packages/headwater-standard/bundles/README.md` are byte-identical,
+        # along with every doctrine and template the anatomy table declares as
+        # carried. Measured on 2026-09-07: one line appended to either copy
+        # alone leaves `taxonomy resolve --check` and `headwater check
+        # --strict` at exit 0 with a byte-identical report, because the lock
+        # names neither file and the release digest is compared only at
+        # `vendor` time. The authored page and the page a consumer receives
+        # could disagree indefinitely with every other gate green.
+        #
+        # It holds no reading of the seven admission criteria, and it holds
+        # none of the prose. That page classifies to no kind, so no language
+        # rule reads it, and a second copy of a rule living in a script is
+        # what this repository refuses everywhere else.
+        #
+        # It runs `awk`, `sed` and `cmp`, builds no engine, opens no socket,
+        # and writes only under a temporary directory.
+        run: sh tools/repo/library-index-fixtures.sh
+      - name: Every sort that feeds a comm, and every comm, collates under LC_ALL=C
+        # `comm` requires both of its inputs already ordered in `comm`'s own
+        # notion of sorted order, and that notion does not always agree with a
+        # locale-aware `sort` run under the ambient environment: a `sort` that
+        # `sort -c` itself accepts as correctly ordered can still be one `comm`
+        # rejects, silently, on standard error, while its answer on standard
+        # output is either an empty diff over a population that is not really
+        # equal or a diff that names an entry wrongly (#828). Nine scripts
+        # under `tools/` paired a `sort` with a `comm` on 2026-09-22; one
+        # pinned `LC_ALL=C` on both throughout, seven pinned nothing, and one
+        # pinned it on only its newest call sites.
+        #
+        # This step does not hold a list of the nine. It reads `tools/`,
+        # `.githooks/` and `.claude/` fresh with `grep -rl` for every script
+        # that names `comm`, and holds that every `sort` and every `comm` such
+        # a script runs is pinned to `LC_ALL=C`, so a tenth script that pairs
+        # them next month is caught the same way.
+        #
+        # It runs `grep`, `awk` and `sed`, builds no engine, opens no socket,
+        # and writes only under a temporary directory.
+        run: sh tools/repo/collation-fixtures.sh
+      - name: The obligation register lists every current record, and no discharged one
+        # Set equality, in both directions, between `docs/obligations/*.md`
+        # (excluding `README.md`) whose `status` is not `discharged`, and the
+        # `- [HW-OBL-NNNN](...)` bullet lines of
+        # `docs/spec/13-open-obligations.md`. Measured on 2026-09-17: the
+        # shelf held 178 current and 20 discharged records, the file bulleted
+        # 181 lines, eight of them named a record that had already
+        # discharged, and five current records had no bullet line anywhere in
+        # the file. That is the register's own rule broken in both
+        # directions at once, and nothing in `headwater check --strict` or
+        # `generate --check` reads this file against the shelf to catch it.
+        #
+        # This step writes down no count of either population, because the
+        # file's own hand-typed counts are what went stale three times in two
+        # days and are the subject of
+        # [HW-OBL-0142](../../docs/obligations/0142-the-obligation-register-states-its-own-size-by-hand-and-it-went-stale-three-times-in-two-days.md).
+        # A bare mention of a discharged record in running prose, including
+        # the sanctioned "is discharged and it is not in the list below"
+        # sentence this file already uses, is deliberately outside the
+        # bulleted population, so a discharged record that leaves its bullet
+        # for that sentence is read as a repair rather than as a fresh
+        # defect.
+        #
+        # It runs `awk`, `sed`, `grep` and `comm`, builds no engine, opens no
+        # socket, and writes only under a temporary directory.
+        run: sh tools/repo/obligation-register-fixtures.sh
+      - name: The decision register names no record the shelf lacks, and claims no completeness it does not have
+        # `docs/spec/09-decisions.md` named 37 of the 80 records on
+        # `docs/decisions/*.md` on 2026-09-21 and still declared
+        # `supersedes: HW-REG-open-questions`, an edge that claims a
+        # completeness it did not have against the generated register, which
+        # `headwater generate` holds whole against the shelf. Two readers
+        # relied on the hand register's last heading to pick the next
+        # decision number on 2026-09-11 and both minted `HW-DR-0044`, a
+        # number the shelf already carried.
+        # [HW-DR-0081](../../docs/decisions/0081-the-hand-authored-decision-register-indexes-a-subset-of-the-shelf-and-stops-asserting-it-supersedes-the-complete-one.md)
+        # rules that the hand register stays a curated selection and stops
+        # making that claim. This step holds the ruling: every record the
+        # register cites by identifier still exists on the shelf, and the
+        # register's front matter never again declares the `supersedes` edge
+        # that misled the two readers above. It does not require every shelf
+        # record to have a heading here, because the ruling says that is not
+        # what this file is for.
+        #
+        # It runs `awk`, `sed` and `comm`, builds no engine, opens no socket,
+        # and writes only under a temporary directory.
+        run: sh tools/repo/decision-register-fixtures.sh
+      - name: No script under .claude/ or tools/ names one build profile and skips the other
+        # `engine/.cargo/config.toml` ships `dev-release-cli` as the fast
+        # build this repository tells a session to build, and
+        # `tools/repo/resolve-engine.sh` (`tools/repo/resolve_engine.py` for
+        # the one Python consumer) is the one place that finds either
+        # profile, the newer one answering (#647). Nine consumers already
+        # carried the same four lines as their own independent copy, and
+        # three — `.claude/tutorial/fixtures.sh`, `.claude/tutorial/drive.py`
+        # and `tools/taxonomy/n8n-fixtures.sh` — carried only the `release`
+        # half, and so reported "no engine" against a worktree built the way
+        # this repository's own documentation recommends.
+        #
+        # This step reddens the day a forty-third script repeats that: it
+        # scans every `*.sh` and `*.py` file under `.claude/` and `tools/` for
+        # the literal `target/release/headwater`, and fails on any match that
+        # neither carries the `dev-release` literal inline nor references the
+        # shared resolver, unless the file is one of two named, reasoned
+        # exceptions (a Node addon path that is not this binary, and a
+        # synthetic CI-workflow fixture string). `.githooks/` is never
+        # scanned; its own scripts state on themselves why the git-hook half
+        # keeps its own copy rather than depending on a file outside that
+        # directory.
+        #
+        # It runs `grep` and `find`, builds no engine, opens no socket, and
+        # writes only under a temporary directory.
+        run: sh tools/repo/engine-resolver-fixtures.sh
+      - name: The composite action's doc and resolve-latest.py hold against the fixture beside them
+        # `integrations/headwater-check`, #833's composite action, is packaged
+        # surface rather than corpus content: `docs/how-to/wire-
+        # headwater-check-into-your-own-workflow.md`'s own usage example and
+        # `action.yml`'s actual declared inputs are the two files this step
+        # holds against each other, the same shape as group 7 of
+        # `tools/repo/readme-fixtures.sh` a page's claim against a workflow's
+        # actual name.
+        #
+        # It also holds `resolve-latest.py` (the `latest`-resolution logic
+        # `resolve-version.sh` calls) against three synthetic release-list
+        # shapes, so the `latest` path is checked on every push rather than
+        # only when `.github/workflows/integrations-headwater-check.yml`
+        # happens to cut a real release and a real network reaches GitHub. That
+        # workflow pins a fixed tag for exactly this reason, stated in its own
+        # header.
+        #
+        # It needs `python3` and nothing else: no engine, no network, no
+        # corpus, and it writes nothing under this checkout.
+        run: sh tools/repo/integrations-fixtures.sh
+      - name: The contributor loop still lists what this job runs
+        # `DEVELOPING.md` is the contributor loop, and one section of it is a
+        # copy of this file: the list of what CI runs. A hand-kept list of that
+        # kind goes stale with no exit status moving, and the measurement is on
+        # record — the best hand-written one this repository produced named 8
+        # script invocations on 2026-09-06, on a day this workflow ran 15.
+        #
+        # This step derives the population from every `run:` value of this file
+        # — scripts that are executed, cargo commands, and engine verbs — and
+        # compares it against the page in both directions, so a gate added here
+        # without a line on the page fails the day it lands, and a gate the page
+        # names that no job runs fails too. It is the second `run:` walk under
+        # `tools/`; the header of the script says why it is not shared with
+        # `tools/engine/build-declaration-fixtures.sh`.
+        #
+        # This step is therefore a member of its own population, and the page
+        # names it. It builds nothing, runs no container and opens no socket.
+        run: sh tools/repo/developing-fixtures.sh
+      - name: The release guide still names every release workflow and its trigger
+        # A release is cut a few times a year, so `docs/how-to/cut-a-release.md`
+        # is read that often, and a tag pattern that moved in a workflow would
+        # go unseen until the next person followed the page. This step compares
+        # the guide's table of release workflows with the `on:` block of every
+        # workflow in this directory, in both directions: a workflow that a tag
+        # or a person alone starts must have a row, and every row must match a
+        # trigger on disk. It reads the workflows with PyYAML, which the
+        # MkDocs install earlier in this job supplies, so every shape of `on:`
+        # that GitHub runs is read. It builds nothing and opens no socket.
+        run: sh tools/repo/release-guide-fixtures.sh
+      - name: The harness hooks refuse what they claim to refuse
+        # The hooks in `.claude/hooks/` sit outside the corpus root, so no check
+        # reads them and `cargo test` never sees them. This step is what holds
+        # them. It drives all four registered positions through the same
+        # standard input the harness writes, and every refusal in it is provoked
+        # on purpose: a hook that has refused nothing is a hook nobody has seen
+        # work.
+        #
+        # It blocks. A hook binds nothing inside a session, and that is exactly
+        # why a broken one stays invisible until someone reads a diff that a
+        # refusal should have stopped.
+        #
+        # Last but one, because it plants one document under `docs/obligations/`
+        # to make the review hook refuse, and removes it again. Every step above
+        # reads the corpus, and none of them may see it.
+        #
+        # `HEADWATER_FIXTURES_REQUIRE_ENGINE` makes a skipped case fail here.
+        # Most cases in that suite call the engine, and the suite skips them
+        # rather than failing when there is none, so this job passed green on
+        # the strength of a `cargo build` a thousand lines above it that nothing
+        # tied it to. Move or drop that build and this step now says so.
+        env:
+          HEADWATER_FIXTURES_REQUIRE_ENGINE: '1'
+        run: sh .claude/hooks/fixtures.sh
+      - name: The skills say what this engine does
+        # `.claude/skills/` and `.claude/agents/` sit outside the corpus root
+        # too, and a skill is prose that nothing makes a model follow. What a
+        # suite holds is the half that is a claim about this engine: a verb a
+        # skill tells an agent to run, a refusal a skill says the verb makes, a
+        # rule a skill names, a path a skill cites.
+        #
+        # Half the cases are derived from the skill files rather than listed, so
+        # a skill added tomorrow reaches them with no edit to the runner.
+        #
+        # It blocks. A skill that describes an engine that moved under it is
+        # worse than no skill, because an agent that follows it produces a
+        # confident wrong answer, and nothing else reports the drift.
+        #
+        # It writes only into a scratch copy of the corpus under the temporary
+        # directory, so it may run after the step above with nothing between.
+        run: sh .claude/skills/fixtures.sh
+      - name: The build-order agents resolve, cite what exists, and hold their ceilings
+        # `.claude/commands/next-run.md` dispatches five agent definitions by
+        # `subagent_type`, each names the skills it invokes, and all of them
+        # cite rulings by identifier. A name that stops resolving fails
+        # silently: an unknown `subagent_type` falls back to a general agent
+        # with none of the definition's instructions. The suite also holds the
+        # byte ceilings on `CLAUDE.md`, the command and the doctrine, because
+        # the parent's context is the unit of cost, and it holds the doctrine
+        # block in the command byte-identical to `.claude/run/doctrine.md`.
+        #
+        # It blocks, it needs no engine, and it writes only under the
+        # temporary directory.
+        run: sh .claude/agents/fixtures.sh
       - name: The site this corpus's navigation builds
         # This blocks, and the failure it catches is the one that produced
         # #425: a generated artifact that nobody ever fed to its consumer. The
@@ -1153,223 +1620,6 @@ jobs:
             exit 0
           fi
           exit "$status"
-      - name: The identifier claim store conflicts on a collision and merges on a coincidence
-        # The store answers "is this number taken" through git rather than
-        # through a rule, so the two outcomes it rests on are properties of
-        # `git merge` and of `.gitattributes` and nothing in this repository
-        # states them. This suite drives two branches from one base over
-        # scratch repositories and pins both, provokes the `merge=union`
-        # failure on purpose, and refuses an empty claim anywhere in the
-        # shipped store. It builds no engine and writes only under a temporary
-        # directory.
-        run: sh tools/repo/id-store-fixtures.sh
-      - name: The run directory refuses a reused id, a short line, a stored total and a second claimant
-        # `tools/run/run-dir.sh` is the ledger of a build-order run: a directory
-        # under the git common dir, its tabular parts as JSON lines, and every
-        # total derived by the reader and never stored, which is HW-DR-0049
-        # applied to a ledger and HW-PD-0005 is why. The tool refuses a
-        # second start under one id, a log line missing a key, and a line
-        # that carries a total. This suite provokes each refusal, holds the
-        # derived total against the lines it wrote, checks that the doctrine
-        # a run copies in is the checked-in doctrine byte for byte, and races
-        # two claimants for one artifact to hold that exactly one owns it.
-        #
-        # It needs `jq`, which is a developer dependency and nothing an
-        # adopter runs. A runner without it skips with a warning rather than
-        # failing, the way the browser console step does. It writes only
-        # under a temporary directory.
-        run: |
-          status=0
-          sh tools/run/run-dir-fixtures.sh || status=$?
-          if [ "$status" = 3 ]; then
-            echo "::warning title=Run directory fixtures skipped::No jq on this runner, so none of these cases ran."
-            exit 0
-          fi
-          exit "$status"
-      - name: The parent restart loop drains on context or merges, and stops on each of its conditions
-        # `tools/run/supervise.sh` restarts the build-order parent every few
-        # merges, so its context stays small (#1275). A stub `claude` prints
-        # canned stream-json, so no case calls a model. It needs `jq`, and a
-        # runner without it skips with a warning.
-        run: |
-          status=0
-          sh tools/run/supervise-fixtures.sh || status=$?
-          if [ "$status" = 3 ]; then
-            echo "::warning title=Supervise fixtures skipped::No jq on this runner, so none of these cases ran."
-            exit 0
-          fi
-          exit "$status"
-      - name: The retirement sweep refuses a locked, dirty, open, occupied or empty worktree
-        # `tools/repo/retire-worktree.sh` deletes directories and branches, so what
-        # this holds is mostly what it refuses. The tool exists because the
-        # agent that makes a build worktree exits while its branch is still
-        # unmerged and can never retire its own tree, and the integrator is
-        # the first stage that knows the branch merged.
-        #
-        # The case that carries the suite is the squash-merge shape: the
-        # fixture builds a branch, squashes it onto `main`, and asserts that
-        # ancestry calls the finished branch unmerged before asserting that
-        # the tool clears it from the pull request record. A suite without
-        # that arm would pass against a tool that trusted ancestry, which in
-        # this repository retires nothing at all.
-        #
-        # The in-use guard is provoked with a real process sitting in the
-        # tree, because removing such a tree pins the directory on disk and
-        # the next cargo run there exits 101 with a `NotFound` naming the
-        # binary under test, which reads as a defect in the code rather than
-        # as a directory somebody deleted.
-        #
-        # The empty guard is the other one with a cost behind it. A tree made
-        # by `git worktree add <path> -b <branch> origin/main` sits at that
-        # tip before anything is committed to it, so ancestry alone cleared it
-        # from the second it existed and the sweep removed the directory and
-        # then the branch it had just freed. The case asserts the reason
-        # string rather than the `KEPT` verb, because four other guards also
-        # print `KEPT`.
-        #
-        # It needs nothing but git. It builds its own repository under a
-        # temporary directory and writes nothing inside this checkout.
-        run: sh tools/repo/retire-worktree-fixtures.sh
-      - name: A recorder's transform drops every block the harness did not tag as a call
-        # `tools/probe/probe-transform.sh` is the half of a recorder that decides
-        # what reaches `docs/probe-runs/`, and the failure it exists to
-        # prevent is silent: a model's account of its own process arriving as
-        # an observation. This suite feeds it a harness log whose `thinking`
-        # and `text` blocks carry content shaped like transcript fields and
-        # asserts that no byte of any of them survives, which is the one case
-        # a filter by position, by index or by the tags in a sample fails. It
-        # also holds spec 15's three-state rule, where `calls: []` for a
-        # stream nobody watched turns an unobserved run into a clean result.
-        # It needs `jq` and skips with a warning without it.
-        #
-        # It also needs `bwrap` with unprivileged user namespaces, because the
-        # recorder confines every session to its workspace and refuses to run
-        # one it cannot confine (#1467). The cases run the real confinement
-        # with a stub harness. `tools/probe/ci-confine.sh` gets `bwrap` and the
-        # namespace where `sudo` can, never calls `sudo` where there is none,
-        # and then runs the cases, or skips them with one warning on a
-        # self-hosted runner that cannot confine, or fails on any other.
-        #
-        # The self-hosted runner's container cannot (measured 2026-10-01: no
-        # `bwrap`, no `sudo`, and Docker's seccomp profile refuses the
-        # namespace), so there this step skips. A same-repo `pull_request` run
-        # skips this whole job, so the job `recorder` below runs the cases on
-        # `ubuntu-latest` in every run where this job is self-hosted.
-        env:
-          RUNNER_KIND: ${{ runner.environment }}
-        run: sh tools/probe/ci-confine.sh
-      - name: The recorder's confinement gate runs, skips or fails where it should
-        # `tools/probe/ci-confine.sh` decides above whether a case of the
-        # recorder runs at all, and its first version turned `main` red by
-        # calling `sudo` on the self-hosted runner (#1467). Its fixtures run
-        # it with stub `bwrap`, `sudo` and suite on a `PATH` without the real
-        # two, and hold every branch: install, `sysctl`, skip, fail, and the
-        # suite's own status. It needs only `sh`.
-        run: sh tools/probe/ci-confine-fixtures.sh
-      - name: The run census counts a turn once per message and a call by what it is for
-        # `tools/run/run-census.sh` is the measurement behind HW-PD-0003 as a
-        # tool: one usage record per message id, because a response is
-        # written to the log as several lines that each carry the same record,
-        # and a Bash call grouped by its leading verb, because the cost that
-        # matters was spread over 43 pull requests with no command repeated
-        # enough to look like a loop. This suite holds both against a
-        # transcript written by hand whose right answer is known. It needs
-        # `jq` and skips with a warning without it.
-        run: |
-          status=0
-          sh tools/run/run-census-fixtures.sh || status=$?
-          if [ "$status" = 3 ]; then
-            echo "::warning title=Run census fixtures skipped::No jq on this runner, so none of these cases ran."
-            exit 0
-          fi
-          exit "$status"
-      - name: The shadow-log capture rate joins on distinct prompt ids and tests where the losses sit
-        # `tools/run/shadow-capture.sh` is the join #917 stated in its
-        # comments, as a tool: person prompts in the harness transcripts of one
-        # UTC day against distinct prompt ids in the shadow log, and two tests
-        # that the misses are random. This suite plants transcripts and a log
-        # whose answer was worked by hand, so a stub test, a raw line count or
-        # a window one second wide on either side each fails a case. It needs
-        # `jq` and skips with a warning without it.
-        run: |
-          status=0
-          sh tools/run/shadow-capture-fixtures.sh || status=$?
-          if [ "$status" = 3 ]; then
-            echo "::warning title=Shadow capture fixtures skipped::No jq on this runner, so none of these cases ran."
-            exit 0
-          fi
-          exit "$status"
-      - name: The tools a build-order stage calls behave as their agent definitions say
-        # Seven scripts that every stage of a run calls in place of a command
-        # it once retyped: the CI-finished condition, the queue-finished
-        # condition, the board move, the
-        # single-issue reads and writes, the capped wait, the fetched-added-
-        # built worktree and the cargo slot wrapper. Each suite was written
-        # with its script and none was run by anything until run
-        # 20260923-0733 read two of them wrong in production. Every suite
-        # fakes `gh` or `cargo` on PATH, so this step needs no network, no
-        # token and no toolchain, and writes only under temporary directories.
-        # It needs `jq`, which ubuntu-latest and the self-hosted runner both
-        # carry, as the run directory step above shows: the fake `gh` of the
-        # CI-finished and queue-finished suites runs each script's own
-        # `--jq` filter over a raw API body. Each of the two exits 1 without
-        # `jq` and does not skip, because an untested filter is the gap
-        # #1484 closed.
-        run: |
-          sh tools/run/ci-done-fixtures.sh
-          sh tools/run/queue-done-fixtures.sh
-          sh tools/run/board-move-fixtures.sh
-          sh tools/run/gh-issue-fixtures.sh
-          sh tools/run/wait-for-fixtures.sh
-          sh tools/repo/new-worktree-fixtures.sh
-          sh tools/hw-cargo-fixtures.sh
-      - name: A citation that went stale reads differently from one that was invented
-        # `tools/cite/check-citations.py` is the only checker in this
-        # repository that reads a code file rather than a document. Spec 5 asks
-        # generated code to carry `# per <IDENTIFIER> (<path>)` and states the
-        # purpose that rests on the comment being true, and nothing checked it,
-        # so a citation that aged out read exactly like one that still holds.
-        #
-        # The class that matters is the middle one. An identifier nothing
-        # carries is the easy half, and a checker that found only that half
-        # would pass a review while missing what the tool is for: a citation
-        # whose identifier resolves, in a file the cited document no longer
-        # governs. This suite plants each fixture at a path this repository
-        # really governs, or really does not, in a scratch copy of the corpus,
-        # and holds that the two classes report under two rule identifiers and
-        # that the advisory third one leaves the exit status at 0.
-        #
-        # The step runs over the fixtures rather than over this tree, and
-        # the reason is a measurement this suite pins rather than a claim this
-        # comment makes. Outside `tools/cite/`, one line of this repository
-        # carries the shape: `docs/spec/05-ai-integration.md` line 285, where
-        # spec 5 illustrates the convention with an identifier and a path from
-        # an imagined corpus. A case reads that real document and holds the
-        # count and the line. What this repository carries nowhere is a
-        # citation written as a claim about what licensed a line of its own
-        # code, and that is by ruling: HW-DR-0092 records that the convention
-        # is for an adopter's corpus, and a case holds that spec 5 says so.
-        #
-        # It writes only under a temporary directory and it builds no engine:
-        # it drives the one the build step above already wrote.
-        run: sh tools/cite/check-citations-fixtures.sh
-      - name: The build still declares its license and still refuses to rewrite its lock
-        # Two declarations that are green the day they land and green forever.
-        # `--locked` on a lock that is in sync changes no exit status, so
-        # dropping it from a step, or landing one more copy of the install
-        # command without it, costs nothing until the day it costs everything.
-        # The license half is self-guarding in the removal direction — deleting
-        # the `[workspace.package]` key fails every cargo command with
-        # `error inheriting 'license' from workspace root manifest` — and not
-        # at all in the direction where a crate added later forgets the member
-        # line.
-        #
-        # This suite enumerates every population from the tree rather than
-        # listing it, gives each one a case that fails when the enumeration
-        # comes back empty, and provokes every one of its judges against a
-        # planted defect so that an empty offender list means something. It
-        # builds nothing: its one cargo call is `metadata --no-deps --locked`.
-        run: sh tools/engine/build-declaration-fixtures.sh
       - name: The first screen resolves, and says one true thing about its own tag
         # Two properties of the root `README.md`, and NOT its prose. Nothing
         # else here reads that file at all: `docs/` is the corpus root, so no
@@ -1424,155 +1674,6 @@ jobs:
         # the arm that succeeds installs a package over a copy of this checkout
         # made there rather than over the checkout.
         run: sh tools/repo/readme-fixtures.sh
-      - name: The library index accounts for every bundle, and the vendored copy has not drifted
-        # Two properties of `docs/taxonomies/README.md`, and NOT its prose.
-        #
-        # The first is set equality. The library carried six bundles and the
-        # admission table listed five, and the missing one,
-        # `evidence-and-obligation`, is required by two of the entries the
-        # table does admit and selected by the `headwater/starter` recipe. So
-        # a composer reading the index was made to select a bundle the index
-        # gave no name, no link and no reason for. Nothing reported it: the
-        # lock names no `README.md`, no rule of the engine reads a table, and
-        # `taxonomy resolve --check` and `headwater check --strict` both exit
-        # 0 over the omission. This step reads the bundles out of
-        # `contents.bundles` and the accounted-for entries out of the section,
-        # and compares the two sets in both directions. It writes down no
-        # count of either, because the ordinal narrative the same section used
-        # to carry was a count in disguise and it went stale the same way.
-        #
-        # The second is that `docs/taxonomies/README.md` and
-        # `.headwater/packages/headwater-standard/bundles/README.md` are byte-identical,
-        # along with every doctrine and template the anatomy table declares as
-        # carried. Measured on 2026-09-07: one line appended to either copy
-        # alone leaves `taxonomy resolve --check` and `headwater check
-        # --strict` at exit 0 with a byte-identical report, because the lock
-        # names neither file and the release digest is compared only at
-        # `vendor` time. The authored page and the page a consumer receives
-        # could disagree indefinitely with every other gate green.
-        #
-        # It holds no reading of the seven admission criteria, and it holds
-        # none of the prose. That page classifies to no kind, so no language
-        # rule reads it, and a second copy of a rule living in a script is
-        # what this repository refuses everywhere else.
-        #
-        # It runs `awk`, `sed` and `cmp`, builds no engine, opens no socket,
-        # and writes only under a temporary directory.
-        run: sh tools/repo/library-index-fixtures.sh
-      - name: Every sort that feeds a comm, and every comm, collates under LC_ALL=C
-        # `comm` requires both of its inputs already ordered in `comm`'s own
-        # notion of sorted order, and that notion does not always agree with a
-        # locale-aware `sort` run under the ambient environment: a `sort` that
-        # `sort -c` itself accepts as correctly ordered can still be one `comm`
-        # rejects, silently, on standard error, while its answer on standard
-        # output is either an empty diff over a population that is not really
-        # equal or a diff that names an entry wrongly (#828). Nine scripts
-        # under `tools/` paired a `sort` with a `comm` on 2026-09-22; one
-        # pinned `LC_ALL=C` on both throughout, seven pinned nothing, and one
-        # pinned it on only its newest call sites.
-        #
-        # This step does not hold a list of the nine. It reads `tools/`,
-        # `.githooks/` and `.claude/` fresh with `grep -rl` for every script
-        # that names `comm`, and holds that every `sort` and every `comm` such
-        # a script runs is pinned to `LC_ALL=C`, so a tenth script that pairs
-        # them next month is caught the same way.
-        #
-        # It runs `grep`, `awk` and `sed`, builds no engine, opens no socket,
-        # and writes only under a temporary directory.
-        run: sh tools/repo/collation-fixtures.sh
-      - name: The obligation register lists every current record, and no discharged one
-        # Set equality, in both directions, between `docs/obligations/*.md`
-        # (excluding `README.md`) whose `status` is not `discharged`, and the
-        # `- [HW-OBL-NNNN](...)` bullet lines of
-        # `docs/spec/13-open-obligations.md`. Measured on 2026-09-17: the
-        # shelf held 178 current and 20 discharged records, the file bulleted
-        # 181 lines, eight of them named a record that had already
-        # discharged, and five current records had no bullet line anywhere in
-        # the file. That is the register's own rule broken in both
-        # directions at once, and nothing in `headwater check --strict` or
-        # `generate --check` reads this file against the shelf to catch it.
-        #
-        # This step writes down no count of either population, because the
-        # file's own hand-typed counts are what went stale three times in two
-        # days and are the subject of
-        # [HW-OBL-0142](../../docs/obligations/0142-the-obligation-register-states-its-own-size-by-hand-and-it-went-stale-three-times-in-two-days.md).
-        # A bare mention of a discharged record in running prose, including
-        # the sanctioned "is discharged and it is not in the list below"
-        # sentence this file already uses, is deliberately outside the
-        # bulleted population, so a discharged record that leaves its bullet
-        # for that sentence is read as a repair rather than as a fresh
-        # defect.
-        #
-        # It runs `awk`, `sed`, `grep` and `comm`, builds no engine, opens no
-        # socket, and writes only under a temporary directory.
-        run: sh tools/repo/obligation-register-fixtures.sh
-      - name: The decision register names no record the shelf lacks, and claims no completeness it does not have
-        # `docs/spec/09-decisions.md` named 37 of the 80 records on
-        # `docs/decisions/*.md` on 2026-09-21 and still declared
-        # `supersedes: HW-REG-open-questions`, an edge that claims a
-        # completeness it did not have against the generated register, which
-        # `headwater generate` holds whole against the shelf. Two readers
-        # relied on the hand register's last heading to pick the next
-        # decision number on 2026-09-11 and both minted `HW-DR-0044`, a
-        # number the shelf already carried.
-        # [HW-DR-0081](../../docs/decisions/0081-the-hand-authored-decision-register-indexes-a-subset-of-the-shelf-and-stops-asserting-it-supersedes-the-complete-one.md)
-        # rules that the hand register stays a curated selection and stops
-        # making that claim. This step holds the ruling: every record the
-        # register cites by identifier still exists on the shelf, and the
-        # register's front matter never again declares the `supersedes` edge
-        # that misled the two readers above. It does not require every shelf
-        # record to have a heading here, because the ruling says that is not
-        # what this file is for.
-        #
-        # It runs `awk`, `sed` and `comm`, builds no engine, opens no socket,
-        # and writes only under a temporary directory.
-        run: sh tools/repo/decision-register-fixtures.sh
-      - name: No script under .claude/ or tools/ names one build profile and skips the other
-        # `engine/.cargo/config.toml` ships `dev-release-cli` as the fast
-        # build this repository tells a session to build, and
-        # `tools/repo/resolve-engine.sh` (`tools/repo/resolve_engine.py` for
-        # the one Python consumer) is the one place that finds either
-        # profile, the newer one answering (#647). Nine consumers already
-        # carried the same four lines as their own independent copy, and
-        # three — `.claude/tutorial/fixtures.sh`, `.claude/tutorial/drive.py`
-        # and `tools/taxonomy/n8n-fixtures.sh` — carried only the `release`
-        # half, and so reported "no engine" against a worktree built the way
-        # this repository's own documentation recommends.
-        #
-        # This step reddens the day a forty-third script repeats that: it
-        # scans every `*.sh` and `*.py` file under `.claude/` and `tools/` for
-        # the literal `target/release/headwater`, and fails on any match that
-        # neither carries the `dev-release` literal inline nor references the
-        # shared resolver, unless the file is one of two named, reasoned
-        # exceptions (a Node addon path that is not this binary, and a
-        # synthetic CI-workflow fixture string). `.githooks/` is never
-        # scanned; its own scripts state on themselves why the git-hook half
-        # keeps its own copy rather than depending on a file outside that
-        # directory.
-        #
-        # It runs `grep` and `find`, builds no engine, opens no socket, and
-        # writes only under a temporary directory.
-        run: sh tools/repo/engine-resolver-fixtures.sh
-      - name: The composite action's doc and resolve-latest.py hold against the fixture beside them
-        # `integrations/headwater-check`, #833's composite action, is packaged
-        # surface rather than corpus content: `docs/how-to/wire-
-        # headwater-check-into-your-own-workflow.md`'s own usage example and
-        # `action.yml`'s actual declared inputs are the two files this step
-        # holds against each other, the same shape as group 7 of
-        # `tools/repo/readme-fixtures.sh` a page's claim against a workflow's
-        # actual name.
-        #
-        # It also holds `resolve-latest.py` (the `latest`-resolution logic
-        # `resolve-version.sh` calls) against three synthetic release-list
-        # shapes, so the `latest` path is checked on every push rather than
-        # only when `.github/workflows/integrations-headwater-check.yml`
-        # happens to cut a real release and a real network reaches GitHub. That
-        # workflow pins a fixed tag for exactly this reason, stated in its own
-        # header.
-        #
-        # It needs `python3` and nothing else: no engine, no network, no
-        # corpus, and it writes nothing under this checkout.
-        run: sh tools/repo/integrations-fixtures.sh
       - name: The Node runtime the VS Code client's suite runs on
         # `integrations/vscode` has no npm dependency and no build step, so
         # this is all the suite below needs. Pinned to one major version so
@@ -1701,35 +1802,6 @@ jobs:
         # one another. `--locked` on those recipes belongs to
         # `tools/engine/build-declaration-fixtures.sh` and is not read twice here.
         run: sh tools/engine/engine-readme-fixtures.sh
-      - name: The contributor loop still lists what this job runs
-        # `DEVELOPING.md` is the contributor loop, and one section of it is a
-        # copy of this file: the list of what CI runs. A hand-kept list of that
-        # kind goes stale with no exit status moving, and the measurement is on
-        # record — the best hand-written one this repository produced named 8
-        # script invocations on 2026-09-06, on a day this workflow ran 15.
-        #
-        # This step derives the population from every `run:` value of this file
-        # — scripts that are executed, cargo commands, and engine verbs — and
-        # compares it against the page in both directions, so a gate added here
-        # without a line on the page fails the day it lands, and a gate the page
-        # names that no job runs fails too. It is the second `run:` walk under
-        # `tools/`; the header of the script says why it is not shared with
-        # `tools/engine/build-declaration-fixtures.sh`.
-        #
-        # This step is therefore a member of its own population, and the page
-        # names it. It builds nothing, runs no container and opens no socket.
-        run: sh tools/repo/developing-fixtures.sh
-      - name: The release guide still names every release workflow and its trigger
-        # A release is cut a few times a year, so `docs/how-to/cut-a-release.md`
-        # is read that often, and a tag pattern that moved in a workflow would
-        # go unseen until the next person followed the page. This step compares
-        # the guide's table of release workflows with the `on:` block of every
-        # workflow in this directory, in both directions: a workflow that a tag
-        # or a person alone starts must have a row, and every row must match a
-        # trigger on disk. It reads the workflows with PyYAML, which the
-        # MkDocs install earlier in this job supplies, so every shape of `on:`
-        # that GitHub runs is read. It builds nothing and opens no socket.
-        run: sh tools/repo/release-guide-fixtures.sh
       - name: The graph export is computed at build time and never committed
         # This corpus declares no `graph_export` since #1251, so `export --check`
         # would hold nothing here: it reports that no declaration produced a
@@ -2009,60 +2081,6 @@ jobs:
             ./engine/target/release/headwater check --now "$HEADWATER_NOW" --format "$format" > "warm.$format"
             diff "none.$format" "warm.$format"
           done
-      - name: The harness hooks refuse what they claim to refuse
-        # The hooks in `.claude/hooks/` sit outside the corpus root, so no check
-        # reads them and `cargo test` never sees them. This step is what holds
-        # them. It drives all four registered positions through the same
-        # standard input the harness writes, and every refusal in it is provoked
-        # on purpose: a hook that has refused nothing is a hook nobody has seen
-        # work.
-        #
-        # It blocks. A hook binds nothing inside a session, and that is exactly
-        # why a broken one stays invisible until someone reads a diff that a
-        # refusal should have stopped.
-        #
-        # Last but one, because it plants one document under `docs/obligations/`
-        # to make the review hook refuse, and removes it again. Every step above
-        # reads the corpus, and none of them may see it.
-        #
-        # `HEADWATER_FIXTURES_REQUIRE_ENGINE` makes a skipped case fail here.
-        # Most cases in that suite call the engine, and the suite skips them
-        # rather than failing when there is none, so this job passed green on
-        # the strength of a `cargo build` a thousand lines above it that nothing
-        # tied it to. Move or drop that build and this step now says so.
-        env:
-          HEADWATER_FIXTURES_REQUIRE_ENGINE: '1'
-        run: sh .claude/hooks/fixtures.sh
-      - name: The skills say what this engine does
-        # `.claude/skills/` and `.claude/agents/` sit outside the corpus root
-        # too, and a skill is prose that nothing makes a model follow. What a
-        # suite holds is the half that is a claim about this engine: a verb a
-        # skill tells an agent to run, a refusal a skill says the verb makes, a
-        # rule a skill names, a path a skill cites.
-        #
-        # Half the cases are derived from the skill files rather than listed, so
-        # a skill added tomorrow reaches them with no edit to the runner.
-        #
-        # It blocks. A skill that describes an engine that moved under it is
-        # worse than no skill, because an agent that follows it produces a
-        # confident wrong answer, and nothing else reports the drift.
-        #
-        # It writes only into a scratch copy of the corpus under the temporary
-        # directory, so it may run after the step above with nothing between.
-        run: sh .claude/skills/fixtures.sh
-      - name: The build-order agents resolve, cite what exists, and hold their ceilings
-        # `.claude/commands/next-run.md` dispatches five agent definitions by
-        # `subagent_type`, each names the skills it invokes, and all of them
-        # cite rulings by identifier. A name that stops resolving fails
-        # silently: an unknown `subagent_type` falls back to a general agent
-        # with none of the definition's instructions. The suite also holds the
-        # byte ceilings on `CLAUDE.md`, the command and the doctrine, because
-        # the parent's context is the unit of cost, and it holds the doctrine
-        # block in the command byte-identical to `.claude/run/doctrine.md`.
-        #
-        # It blocks, it needs no engine, and it writes only under the
-        # temporary directory.
-        run: sh .claude/agents/fixtures.sh
       - name: The tutorial says what a reader will see, and this sees it
         # `docs/tutorials/your-first-governed-corpus.md` states, after every one
         # of its sixteen steps, what the reader should now see. Each of those is
