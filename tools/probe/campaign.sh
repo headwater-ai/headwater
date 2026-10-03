@@ -34,6 +34,23 @@
 # that does not give `--cap-cents` keeps the cap the batch recorded, and one
 # that gives it replaces it.
 #
+# `--session-cents <B>` is the most one session may spend (#1659). The driver
+# passes it to the harness as `--max-budget-usd <B/100>`, and the harness
+# stops the session at the turn that crosses it. The ceiling and the cap then
+# reserve B for each session in flight, not the declared cost, so a session
+# starts only when `spent + (in flight + 1) * B` is at most the cap. The check
+# and the `started` marker are written under one lock, so the invariant holds
+# across `--parallel` workers: the batch spends at most the cap, and more only
+# by what the harness spends past B in the turn that crosses it, once for
+# each session in flight at the end. So the bound is the cap plus `--parallel`
+# times the largest such overshoot: at `--parallel 1` it is one overshoot, and
+# a verify of #1659 spent 360 under a cap of 280 at `--parallel 4` with a stub
+# that crossed a B of 70 by 20 cents. Like the
+# cap, it is recorded in `<out>/session-cents`, so a resumed invocation that
+# does not give it keeps it. Without it, a session in flight reserves the
+# declared cost and nothing bounds what one session spends, so the cap is a
+# reservation and not a stop: #1474 had a cap of 400 and spent 437.
+#
 # `--max-sessions <n>` starts at most `n` new sessions in this invocation, so
 # one batch can run in slices (#1472). A job already recorded with `status` 0
 # does not count toward it. The workers claim the bound atomically, with one
@@ -84,8 +101,10 @@
 #
 # The present tree is the archive with the instrument removed
 # (`ablate.sh --present`) and sealed against every probe of every line
-# (`seal.sh`), so each arm of every run lost the same answer keys. Each absent
-# tree is a copy of the present tree with its tier's ablation removed. The
+# (`seal.sh`), so each arm of every run lost the same answer keys. Each other
+# arm's tree is a copy of the present tree that `ablate.sh <tier> <tree>
+# <arm>` changed: the absent arm loses its tier's ablation, and a component
+# arm loses or gains its `components` delta. The
 # present tree also serves as the oracle tree that `probe-transform.sh` grafts
 # a `patched` artifact into, so both arms are graded by one oracle. Each
 # session runs in a fresh copy of its arm's tree, deleted once it is recorded.
@@ -95,11 +114,14 @@
 # Every (line, probe, repetition) is one job. The jobs are shuffled with the
 # seed, and `--parallel` workers take them in that order, so a drift inside the
 # batch lands on both arms alike. A worker sums the realized cost of every
-# recorded session of the job's tier, adds the declared session cost for each
-# session in flight, and skips the job if one more session would cross the
-# tier's ceiling. The engine refuses at plan time and this refuses at run time.
-# The check is not atomic across workers, so the ceiling can be passed by at
-# most one declared session cost per worker.
+# recorded session of the job's tier, adds `--session-cents` (or, without it,
+# the declared session cost) for each session in flight, and skips the job if
+# one more session would cross the tier's ceiling. The engine refuses at plan
+# time and this refuses at run time. A worker holds one lock, a file the
+# shell creates with `set -C`, from the first read of that sum to the write
+# of its `started` marker, so no two workers count the same room. A job that
+# runs again after a failure keeps what its earlier attempt spent in
+# `spent-before`, and both checks count it.
 #
 # ## The turn cap, and what the recorder sees
 #
@@ -117,12 +139,14 @@
 #
 # A job whose session directory holds `status` 0 is done and is not run again.
 # Run the same command again to finish a batch that stopped, or to record again
-# a session whose recorder failed. A capped session did not fail.
+# a session whose recorder failed. A capped session did not fail, and nor did
+# one the session budget stopped. A job run again keeps what its failed
+# attempt spent, in `spent-before`, so the cap of a resumed batch counts it.
 #
 # **A halt on a harness failure.** When the recorder of a session exits 10,
-# the harness exited nonzero for a reason other than the turn cap. A usage
-# limit of the harness surfaces this way, and a session started after it would
-# fail the same way. So the job writes `<out>/slice/halt`, and no job of this
+# the harness exited nonzero for a reason other than the turn cap or the
+# session budget. A usage limit of the harness surfaces this way, and a
+# session started after it would fail the same way. So the job writes `<out>/slice/halt`, and no job of this
 # invocation starts after it. The script does not match the text of a limit
 # message, because no log of one is recorded to match against. The next
 # invocation clears the halt and runs the failed job again.
@@ -147,7 +171,8 @@
 # `--assemble` checks that every recorded session of a line carries one
 # identity, and writes one identity block and one events block per line under
 # `<out>/assembled/`, with a count of sessions, the summed cost, how many
-# sessions the intent hook reached, how many the turn cap stopped, the paths
+# sessions the intent hook reached, how many the turn cap stopped, how many
+# the session budget stopped, the paths
 # outside the workspace its sessions named, how many sessions it could not
 # count, and the calls its sessions made to a web tool (#1472). A session that
 # did not record, or whose record states no count, is uncounted and adds
@@ -190,6 +215,7 @@ parallel=1
 max_turns=
 seed=0
 cap=
+session_cents=
 max_sessions=
 assemble=0
 dry=0
@@ -205,6 +231,7 @@ while [ $# -gt 0 ]; do
         --max-turns) max_turns=${2:-}; shift 2 ;;
         --seed) seed=${2:-}; shift 2 ;;
         --cap-cents) cap=${2:-}; shift 2 ;;
+        --session-cents) session_cents=${2:-}; shift 2 ;;
         --max-sessions) max_sessions=${2:-}; shift 2 ;;
         --assemble) assemble=1; shift ;;
         --dry-run) dry=1; shift ;;
@@ -215,6 +242,10 @@ done
 case $max_sessions in
     '') ;;
     *[!0-9]*|0) echo "campaign: --max-sessions takes a positive whole number, not \`$max_sessions\`." >&2; exit 2 ;;
+esac
+case $session_cents in
+    '') ;;
+    *[!0-9]*|0*) echo "campaign: --session-cents takes a positive whole number of cents, not \`$session_cents\`." >&2; exit 2 ;;
 esac
 
 case $0 in
@@ -276,42 +307,83 @@ run_job() {
         : > "$out/slice/refused/$name"
         return 0
     fi
-    # The ceiling, at run time.
+    # The ceiling and the cap, at run time, under one lock (#1659). The lock is
+    # a file the shell creates with `set -C`, as the tokens below are, and a
+    # worker holds it from the first read of what the batch spent to the
+    # write of its `started` marker. Without it, N workers can each read the
+    # same room and all start. The lock holds the process id of its worker. A
+    # worker that waits on a lock whose holder is gone, killed inside it or
+    # returned without releasing it, halts the invocation rather than wait
+    # forever or break the lock: nothing has started under it, so nothing is
+    # spent, and the next invocation clears `<out>/slice` with the lock.
+    # `HEADWATER_CAMPAIGN_HOLDER_DELAY` is a fixture seam between the read
+    # of the holder and the test of it.
+    until ( set -C; printf '%s\n' "$$" > "$out/slice/lock" ) 2>/dev/null; do
+        holder=$(cat "$out/slice/lock" 2>/dev/null)
+        if [ -n "${HEADWATER_CAMPAIGN_HOLDER_DELAY:-}" ]; then
+            sleep "$HEADWATER_CAMPAIGN_HOLDER_DELAY"
+        fi
+        # A holder can release the lock and exit between the read of its
+        # pid and the test of it. The holder is then gone and so is its
+        # lock, so the waiter halts only when the lock still names the
+        # process that is gone.
+        if [ -n "$holder" ] && ! kill -0 "$holder" 2>/dev/null &&
+            [ "$(cat "$out/slice/lock" 2>/dev/null)" = "$holder" ]; then
+            : > "$out/slice/halt"
+            echo "campaign: $name: the worker $holder holds the batch lock and is gone, so this invocation starts no other job (halt). Run the same command again." >&2
+            return 0
+        fi
+        if [ -f "$out/slice/halt" ]; then
+            return 0
+        fi
+        sleep 0.1
+    done
+    # What one session in flight may still spend: `--session-cents` where the
+    # batch set one, because the harness stops the session there, and the
+    # declared cost of the tier otherwise.
     ceiling=$(cat "$out/ceiling.$tier")
     unit=$(cat "$out/unit.$tier")
-    spent=0
-    inflight=0
-    for other in "$out"/sessions/*; do
-        [ -d "$other" ] || continue
-        [ "$(cat "$other/tier" 2>/dev/null)" = "$tier" ] || continue
-        if [ -f "$other/cost" ]; then
-            spent=$((spent + $(cat "$other/cost")))
-        elif [ -f "$other/started" ] && [ ! -f "$other/status" ]; then
-            inflight=$((inflight + 1))
-        fi
-    done
-    if [ $((spent + (inflight + 1) * unit)) -gt "$ceiling" ]; then
-        echo "campaign: $name skipped: $spent cents spent and $inflight in flight against a $tier ceiling of $ceiling." >&2
+    reserve=$unit
+    [ -s "$out/session-cents" ] && reserve=$(cat "$out/session-cents")
+    # A session's spend is its `cost`, and `spent-before` holds what earlier
+    # attempts of the same job spent before it was run again. A session that
+    # started and has no status is in flight.
+    # This job's own directory is never in flight: a session of a killed
+    # invocation left it started, and this one is about to replace it. The
+    # sums are one `find` and one `awk`, because the lock is held while they
+    # run: a loop of `cat` over 4,284 sessions took 9.8 s per job (verify of
+    # #1659).
+    # shellcheck disable=SC2046
+    set -- $(find "$out/sessions" -mindepth 2 -maxdepth 2 -type f \( -name tier -o -name cost \
+        -o -name spent-before -o -name started -o -name status \) 2>/dev/null \
+        | awk -v own="$dir" -v tier="$tier" '
+            {
+                n = split($0, part, "/"); f = part[n]; d = substr($0, 1, length($0) - length(f) - 1)
+                dirs[d] = 1; has[d, f] = 1
+                if (f != "started" && f != "status") { v = ""; if ((getline v < $0) > 0) value[d, f] = v; close($0) }
+            }
+            END {
+                for (d in dirs) {
+                    this = value[d, "cost"] + value[d, "spent-before"]
+                    flying = (d != own && !((d, "cost") in has) && ((d, "started") in has) && !((d, "status") in has)) ? 1 : 0
+                    all += this; running += flying
+                    if (value[d, "tier"] == tier) { spent += this; inflight += flying }
+                }
+                printf "%d %d %d %d\n", spent, inflight, all, running
+            }')
+    spent=$1 inflight=$2 all=$3 running=$4
+    if [ $((spent + (inflight + 1) * reserve)) -gt "$ceiling" ]; then
+        rm -f "$out/slice/lock"
+        echo "campaign: $name skipped: $spent cents spent and $inflight in flight at $reserve each against a $tier ceiling of $ceiling." >&2
         : > "$out/slice/refused/$name"
         return 0
     fi
     # The cap, across every tier of the batch, where the caller set one.
-    if [ -s "$out/cap" ]; then
-        all=0
-        running=0
-        for other in "$out"/sessions/*; do
-            [ -d "$other" ] || continue
-            if [ -f "$other/cost" ]; then
-                all=$((all + $(cat "$other/cost")))
-            elif [ -f "$other/started" ] && [ ! -f "$other/status" ]; then
-                running=$((running + 1))
-            fi
-        done
-        if [ $((all + (running + 1) * unit)) -gt "$(cat "$out/cap")" ]; then
-            echo "campaign: $name skipped: $all cents spent and $running in flight against the batch cap of $(cat "$out/cap")." >&2
-            : > "$out/slice/refused/$name"
-            return 0
-        fi
+    if [ -s "$out/cap" ] && [ $((all + (running + 1) * reserve)) -gt "$(cat "$out/cap")" ]; then
+        rm -f "$out/slice/lock"
+        echo "campaign: $name skipped: $all cents spent and $running in flight at $reserve each against the batch cap of $(cat "$out/cap")." >&2
+        : > "$out/slice/refused/$name"
+        return 0
     fi
     # The bound of this invocation. A token is a file the shell creates with
     # `set -C`, which opens it with O_EXCL, so two workers never take one
@@ -325,13 +397,34 @@ run_job() {
             ( set -C; : > "$out/slice/token.$token" ) 2>/dev/null && break
             token=$((token + 1))
         done
-        [ "$token" -le "$bound" ] || return 0
+        if [ "$token" -gt "$bound" ]; then
+            rm -f "$out/slice/lock"
+            return 0
+        fi
+    fi
+    # A seam for the fixtures alone: it holds a worker between its check and
+    # its marker, so a check made outside the lock lets every worker through.
+    if [ -n "${HEADWATER_CAMPAIGN_CHECK_DELAY:-}" ]; then
+        sleep "$HEADWATER_CAMPAIGN_CHECK_DELAY"
     fi
     : > "$out/slice/started/$name"
     mkdir -p "$dir"
     printf '%s\n' "$tier" > "$dir/tier"
-    : > "$dir/started"
+    # A job run again keeps what its earlier attempt spent, so the next
+    # check still counts it.
+    if [ -f "$dir/cost" ]; then
+        before=$(cat "$dir/cost")
+        [ -f "$dir/spent-before" ] && before=$((before + $(cat "$dir/spent-before")))
+        printf '%s\n' "$before" > "$dir/spent-before"
+    fi
     rm -f "$dir/status" "$dir/cost"
+    : > "$dir/started"
+    # The second seam for the fixtures: it holds the lock after the marker,
+    # so a fixture can see that the marker is written before the lock goes.
+    if [ -n "${HEADWATER_CAMPAIGN_HOLD_DELAY:-}" ]; then
+        sleep "$HEADWATER_CAMPAIGN_HOLD_DELAY"
+    fi
+    rm -f "$out/slice/lock"
     ws=$out/ws/$name
     rm -rf "$ws"
     # The session's own configuration directory, outside every tree (#1467).
@@ -347,6 +440,7 @@ run_job() {
         --tier "$tier" --arm "$arm" --category "$category" $excludes \
         ${repetitions:+--repetitions "$repetitions"} \
         ${max_turns:+--max-turns "$max_turns"} \
+        ${budget:+--max-budget-usd "$budget"} \
         --baseline "$out/trees/$tier-$arm" \
         --oracle-tree "$out/trees/oracle" --raw "$dir/raw.jsonl" \
         > "$dir/record.md" 2> "$dir/record.err"
@@ -362,7 +456,7 @@ run_job() {
     printf '%s\n' "$status" > "$dir/status"
     if [ "$status" = 10 ]; then
         : > "$out/slice/halt"
-        echo "campaign: $name: the harness failed for a reason other than the turn cap, so this invocation starts no other job (halt). A usage limit stops a session this way." >&2
+        echo "campaign: $name: the harness failed for a reason other than the turn cap or the budget, so this invocation starts no other job (halt). A usage limit stops a session this way." >&2
     fi
     rm -rf "$ws"
     printf 'campaign: %s exited %s, %s cents\n' "$name" "$status" "$(cat "$dir/cost" 2>/dev/null || echo '?')" >&2
@@ -372,6 +466,11 @@ if [ -n "$job" ]; then
     model=$(cat "$out/model")
     repetitions=$(cat "$out/repetitions")
     max_turns=$(cat "$out/max-turns")
+    # The harness takes the budget in dollars, so 60 cents is `0.60`.
+    budget=
+    if [ -s "$out/session-cents" ]; then
+        budget=$(awk -v c="$(cat "$out/session-cents")" 'BEGIN { printf "%.2f", c / 100 }')
+    fi
     mkdir -p "$out/slice/started" "$out/slice/refused"
     run_job "$job"
     exit 0
@@ -400,6 +499,7 @@ if [ "$assemble" = 1 ]; then
         count=0
         live=0
         capped=0
+        budgeted=0
         outside=0
         uncounted=0
         web=0
@@ -442,14 +542,15 @@ if [ "$assemble" = 1 ]; then
             count=$((count + 1))
             grep -q '^The intent hook was live' "$dir/record.md" && live=$((live + 1))
             grep -q '^The session stopped at the turn cap' "$dir/record.md" && capped=$((capped + 1))
+            grep -q '^The session stopped at its budget' "$dir/record.md" && budgeted=$((budgeted + 1))
             sed -n '/^- probe: /,$p' "$dir/record.md" >> "$out/assembled/$stem.events.yaml"
         done
         {
             printf '%s\n' "$identity" | grep -v -e '^tier: ' -e '^arm: '
             printf 'tier: %s\narm: %s\nat: %s\ncost_cents: %s\n' "$tier" "$arm" "$first_at" "$cost"
         } > "$out/assembled/$stem.identity.yaml"
-        printf '%s sessions, %s cents, the intent hook live in %s, %s stopped at the turn cap, %s paths outside the workspace named, %s sessions uncounted, %s web-tool calls\n' \
-            "$count" "$cost" "$live" "$capped" "$outside" "$uncounted" "$web" \
+        printf '%s sessions, %s cents, the intent hook live in %s, %s stopped at the turn cap, %s stopped at the session budget, %s paths outside the workspace named, %s sessions uncounted, %s web-tool calls\n' \
+            "$count" "$cost" "$live" "$capped" "$budgeted" "$outside" "$uncounted" "$web" \
             > "$out/assembled/$stem.summary"
         printf 'campaign: %s: %s' "$stem" "$(cat "$out/assembled/$stem.summary")" >&2
         printf '\n' >&2
@@ -469,7 +570,7 @@ fi
 # The batch.
 # ---------------------------------------------------------------------------
 [ -n "$model" ] && [ -n "$spec" ] || {
-    echo "usage: campaign.sh --out <dir> --model <model> --spec <file> [--repetitions <n>] [--parallel <n>] [--max-turns <n>] [--seed <n>] [--cap-cents <n>] [--max-sessions <n>]" >&2
+    echo "usage: campaign.sh --out <dir> --model <model> --spec <file> [--repetitions <n>] [--parallel <n>] [--max-turns <n>] [--seed <n>] [--cap-cents <n>] [--session-cents <n>] [--max-sessions <n>]" >&2
     exit 2
 }
 [ -f "$spec" ] || { echo "campaign: no spec at $spec" >&2; exit 2; }
@@ -519,6 +620,12 @@ if [ -n "$cap" ]; then
     printf '%s' "$cap" > "$out/cap"
 elif [ ! -f "$out/cap" ]; then
     : > "$out/cap"
+fi
+# The session budget is the batch's too, for the same reason (#1659).
+if [ -n "$session_cents" ]; then
+    printf '%s' "$session_cents" > "$out/session-cents"
+elif [ ! -f "$out/session-cents" ]; then
+    : > "$out/session-cents"
 fi
 # The state of this invocation alone: the bound, the tokens taken against it,
 # the jobs it started or refused, and the halt.
@@ -595,10 +702,19 @@ while IFS= read -r line; do
     set -- $line
     tier=$2 arm=$3
     [ -d "$out/trees/$tier-$arm" ] && continue
-    cp -a "$out/trees/oracle" "$out/trees/$tier-$arm" || exit 3
-    if [ "$arm" = absent ]; then
-        sh "$root/tools/probe/ablate.sh" "$tier" "$out/trees/$tier-$arm" >/dev/null || exit 3
-    fi
+    # A component arm is built by `ablate.sh` too (#1659). Before, only the
+    # absent arm was, so the `no-hook`, `no-skills`, `no-claude-md` and `mcp`
+    # trees were copies of the present tree, and the slice-1 live check found
+    # no `.mcp.json` in the `mcp` arm's workspace. The tree is built under
+    # another name and moved, so a build that stopped half way is not reused.
+    rm -rf "$out/trees/.building"
+    cp -a "$out/trees/oracle" "$out/trees/.building" || exit 3
+    case $arm in
+        present) ;;
+        absent) sh "$root/tools/probe/ablate.sh" "$tier" "$out/trees/.building" >/dev/null || exit 3 ;;
+        *) sh "$root/tools/probe/ablate.sh" "$tier" "$out/trees/.building" "$arm" >/dev/null || exit 3 ;;
+    esac
+    mv "$out/trees/.building" "$out/trees/$tier-$arm" || exit 3
 done < "$out/lines"
 
 # The jobs, shuffled with the seed. A job's name is its line, its probe's
@@ -669,8 +785,9 @@ while IFS= read -r row; do
         failed=$((failed + 1))
     fi
 done < "$out/jobs"
+# What the batch spent, with what an earlier attempt of a job run again spent.
 spent=0
-for cost in "$out"/sessions/*/cost; do
+for cost in "$out"/sessions/*/cost "$out"/sessions/*/spent-before; do
     [ -f "$cost" ] && spent=$((spent + $(cat "$cost")))
 done
 if [ "$remain" -gt 0 ]; then

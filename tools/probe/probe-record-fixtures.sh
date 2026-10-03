@@ -44,7 +44,10 @@ if ! command -v jq >/dev/null 2>&1; then
 fi
 
 scratch=$(mktemp -d) || exit 1
-trap 'rm -rf "$scratch"' EXIT HUP INT TERM
+# The confinement cases keep their workspace outside `/tmp`, where a batch
+# keeps its own, because the session's `/tmp` is a tmpfs of its own (#1659).
+outer=$(mktemp -d /var/tmp/hw-probe-fixtures.XXXXXX) || exit 1
+trap 'rm -rf "$scratch" "$outer"' EXIT HUP INT TERM
 
 passed=0
 failed=0
@@ -1804,8 +1807,7 @@ printf '%s\n' '{"type":"result","subtype":"success","result":"withheld","total_c
 STUB
     chmod +x "$scratch/bin/claude"
     rm -f "$args"
-    # One repetition, because the six arms of the campaign tier at its declared
-    # 30 are over its ceiling since #1472, and the ceiling is not this case.
+    # One repetition keeps the plan small, and the ceiling is not this case.
     PATH="$scratch/bin:$PATH" sh "$driver" --probe "HW-PROBE-$tombstone" --session fixture-tier-cap \
         --tier campaign --category sufficiency --repetitions 1 \
         --task-file "$scratch/task.md" --workspace "$scratch/ws" \
@@ -1952,7 +1954,7 @@ STUB
     # this checkout. It writes what it got into its own workspace. With the
     # confinement removed, the marker reaches `found.txt`.
     if command -v bwrap >/dev/null 2>&1; then
-        conf=$(cd "$scratch" && pwd -P)
+        conf=$(cd "$outer" && pwd -P)
         rm -rf "$conf/outside" "$conf/trees" "$conf/conf-ws"
         mkdir -p "$conf/outside" "$conf/trees/oracle" "$conf/conf-ws"
         printf 'HW-LEAK-MARKER-1467\n' > "$conf/outside/secret.md"
@@ -1970,7 +1972,7 @@ STUB
 } > found.txt 2>/dev/null
 printf '%s\n' '{"type":"system","subtype":"init","model":"claude-haiku-4-5","session_id":"s20"}'
 printf '%s\n' '{"type":"assistant","message":{"id":"m1","content":[{"type":"tool_use","id":"t1","name":"Read","input":{"file_path":"$conf/outside/secret.md"}}]}}'
-printf '%s\n' '{"type":"assistant","message":{"id":"m2","content":[{"type":"tool_use","id":"t2","name":"Bash","input":{"command":"cat $conf/outside/secret.md ../trees/oracle/secret.md; find / -name secret.md 2>/dev/null; ls /home /mnt"}}]}}'
+printf '%s\n' '{"type":"assistant","message":{"id":"m2","content":[{"type":"tool_use","id":"t2","name":"Bash","input":{"command":"cat $conf/outside/secret.md ../trees/oracle/secret.md; find / -name secret.md 2>/dev/null; ls /home /mnt > /tmp/out.txt"}}]}}'
 printf '%s\n' '{"type":"assistant","message":{"id":"m3","content":[{"type":"tool_use","id":"t3","name":"Grep","input":{"pattern":"x","path":"$conf/conf-ws/docs"}}]}}'
 printf '%s\n' '{"type":"result","subtype":"success","result":"withheld","total_cost_usd":0.01,"modelUsage":{"claude-haiku-4-5-20251001":{"inputTokens":10}}}'
 STUB
@@ -1992,9 +1994,25 @@ STUB
             "The session ran confined to its workspace" "$scratch/confined.md"
         present "and names the configuration directory it ran under" \
             "The session ran under the configuration directory" "$scratch/confined.md"
-        present "and counts the paths outside the workspace it named, none of them readable" \
+        # The session's own `/tmp` is a tmpfs of the confinement and no file of
+        # the host, so the `Bash` redirect to `/tmp/out.txt` above adds 0 to
+        # the 3 (#1659): #1474's L3-p2 counted 3 such redirects as outside.
+        present "and counts the paths outside the workspace it named, none of them readable, and not its own /tmp" \
             "The session named 3 paths outside its workspace that the confinement does not bind, so no file of the host at any of them was readable." \
             "$scratch/confined.md"
+        # A workspace that is itself under `/tmp` lets the session see its own
+        # path there, so a path it names under `/tmp` may be a sibling tree of
+        # the host's, and the redirect counts. So does the `Grep` path, which
+        # is the first workspace and not this one: 3 + 1 + 1 = 5.
+        tmp_ws=$(cd "$scratch" && pwd -P)/conf-ws-tmp
+        rm -rf "$tmp_ws"
+        mkdir -p "$tmp_ws"
+        PATH="$scratch/bin:$PATH" sh "$driver" --probe "HW-PROBE-$tombstone" --session fixture-confined-tmp \
+            --task-file "$scratch/task.md" --workspace "$tmp_ws" \
+            >"$scratch/confined-tmp.md" 2>"$scratch/confined-tmp.err"
+        present "and a workspace under /tmp counts the session's /tmp paths as outside" \
+            "The session named 5 paths outside its workspace" "$scratch/confined-tmp.md"
+        rm -rf "$tmp_ws"
 
         # THE decisive case of #1467's network half (clause 5): the public
         # repository is not reachable from a session by a direct connection.
@@ -2594,8 +2612,7 @@ STUB
         cp -a "$scratch/bw-base" "$batch/trees/campaign-present"
         git -C "$root" rev-parse HEAD > "$batch/head"
         printf 'claude-haiku-4-5\n' > "$batch/model"
-        # One repetition: the six arms of the campaign tier at its declared
-        # 30 are over its ceiling since #1472, and the ceiling is not what
+        # One repetition keeps the plan small, and the ceiling is not what
         # this case holds.
         printf '1\n' > "$batch/repetitions"
         : > "$batch/max-turns"
@@ -2628,12 +2645,61 @@ STUB
         present "and the file it wrote through the shell is produced, against the tier's tree" \
             'path: "docs/written-by-bash.md"' "$batch/sessions/L1-campaign-present-p1-r1/record.md"
         sh "$root/tools/probe/campaign.sh" --out "$batch" --assemble >/dev/null 2>"$scratch/batch-assemble.err"
-        same "and assembly counts the capped session" "1 sessions, 1 cents, the intent hook live in 0, 1 stopped at the turn cap, 0 paths outside the workspace named, 0 sessions uncounted, 0 web-tool calls" \
+        same "and assembly counts the capped session" "1 sessions, 1 cents, the intent hook live in 0, 1 stopped at the turn cap, 0 stopped at the session budget, 0 paths outside the workspace named, 0 sessions uncounted, 0 web-tool calls" \
             "$(cat "$batch/assembled/L1-campaign-present-sufficiency.summary" 2>/dev/null)"
         same "the job ran under a configuration directory of the batch, outside every tree (#1467)" "yes" \
             "$([ -d "$batch/config/L1-campaign-present-p1-r1" ] && echo yes || echo no)"
         present "and the record names it" "$batch/config/L1-campaign-present-p1-r1" \
             "$batch/sessions/L1-campaign-present-p1-r1/record.md"
+
+        # The tier's ceiling reserves `--session-cents` too, not the declared
+        # unit (#1659). The batch has spent 1 cent above and 50 in another
+        # session of the tier, so with B = 60 a ceiling of 110 refuses the next
+        # job, where the unit of 50 would let it through, and 111 admits it.
+        printf '60' > "$batch/session-cents"
+        mkdir -p "$batch/sessions/L1-other"
+        printf 'campaign\n' > "$batch/sessions/L1-other/tier"
+        printf '50\n' > "$batch/sessions/L1-other/cost"
+        printf '0\n' > "$batch/sessions/L1-other/status"
+        job="L1-campaign-present-p1-r2 1 campaign present sufficiency HW-PROBE-$tombstone"
+        printf '110\n' > "$batch/ceiling.campaign"
+        PATH="$scratch/bin:$PATH" sh "$root/tools/probe/campaign.sh" --out "$batch" --job "$job" \
+            >/dev/null 2>"$scratch/batch-ceiling.err"
+        same "a ceiling of 110 with 51 spent and B = 60 refuses the job" "none" \
+            "$(cat "$batch/sessions/L1-campaign-present-p1-r2/status" 2>/dev/null || echo none)"
+        present "and says what it reserved" "at 60 each against a campaign ceiling of 110" "$scratch/batch-ceiling.err"
+        printf '111\n' > "$batch/ceiling.campaign"
+        # A session of another tier counts toward the cap and not toward
+        # this tier's ceiling.
+        mkdir -p "$batch/sessions/L2-other-tier"
+        printf 'documentation\n' > "$batch/sessions/L2-other-tier/tier"
+        printf '1000\n' > "$batch/sessions/L2-other-tier/cost"
+        printf '0\n' > "$batch/sessions/L2-other-tier/status"
+        PATH="$scratch/bin:$PATH" sh "$root/tools/probe/campaign.sh" --out "$batch" --job "$job" \
+            >/dev/null 2>"$scratch/batch-ceiling.err"
+        rm -rf "$batch/sessions/L2-other-tier"
+        same "and a ceiling of 111 admits it, whatever another tier spent" "0" \
+            "$(cat "$batch/sessions/L1-campaign-present-p1-r2/status" 2>/dev/null || echo none)"
+        same "and the harness received the budget of B" "0.60" \
+            "$(awk 'prev == "--max-budget-usd" { print; exit } { prev = $0 }' "$args" 2>/dev/null)"
+        # A job that a killed invocation left started, with no status, is not
+        # in flight when it runs again: the batch has spent 52, so a cap of
+        # 112 admits it at B = 60, where counting it in flight would need 172.
+        printf '100000\n' > "$batch/ceiling.campaign"
+        printf '112' > "$batch/cap"
+        mkdir -p "$batch/sessions/L1-campaign-present-p1-r3"
+        printf 'campaign\n' > "$batch/sessions/L1-campaign-present-p1-r3/tier"
+        : > "$batch/sessions/L1-campaign-present-p1-r3/started"
+        job="L1-campaign-present-p1-r3 1 campaign present sufficiency HW-PROBE-$tombstone"
+        PATH="$scratch/bin:$PATH" sh "$root/tools/probe/campaign.sh" --out "$batch" --job "$job" \
+            >/dev/null 2>"$scratch/batch-killed.err"
+        same "a job a killed invocation left started runs again inside the cap" "0" \
+            "$(cat "$batch/sessions/L1-campaign-present-p1-r3/status" 2>/dev/null || echo none)"
+        rm -rf "$batch/sessions/L1-other" "$batch/sessions/L1-campaign-present-p1-r2" \
+            "$batch/sessions/L1-campaign-present-p1-r3"
+        : > "$batch/session-cents"
+        : > "$batch/cap"
+        printf '30000\n' > "$batch/ceiling.campaign"
 
         # THE decisive case of #1472's campaign report: assembly states the
         # paths outside the workspace that a line's sessions named and the
@@ -2683,7 +2749,7 @@ STUB
         sh "$root/tools/probe/campaign.sh" --out "$leak" --assemble >/dev/null 2>"$scratch/leak-assemble.err"
         same "assembly exits 7 for the session that did not record, as before" "7" "$?"
         same "and the line's summary states the host path, the uncounted session and the web-tool call" \
-            "1 sessions, 1 cents, the intent hook live in 0, 0 stopped at the turn cap, 1 paths outside the workspace named, 1 sessions uncounted, 1 web-tool calls" \
+            "1 sessions, 1 cents, the intent hook live in 0, 0 stopped at the turn cap, 0 stopped at the session budget, 1 paths outside the workspace named, 1 sessions uncounted, 1 web-tool calls" \
             "$(cat "$leak/assembled/L1-campaign-present-sufficiency.summary" 2>/dev/null)"
         present "and the batch line states them over the whole batch" \
             "campaign: the batch named 1 paths outside the workspace over 2 sessions, 1 sessions uncounted, 1 web-tool calls" \
@@ -2703,7 +2769,7 @@ STUB
         sh "$root/tools/probe/campaign.sh" --out "$leak" --assemble >/dev/null 2>"$scratch/leak-assemble3.err"
         same "assembly of two recorded sessions exits 0, because a count is a report and not a gate" "0" "$?"
         same "and a record that states no count is uncounted, never 0" \
-            "2 sessions, 2 cents, the intent hook live in 0, 0 stopped at the turn cap, 1 paths outside the workspace named, 1 sessions uncounted, 1 web-tool calls" \
+            "2 sessions, 2 cents, the intent hook live in 0, 0 stopped at the turn cap, 0 stopped at the session budget, 1 paths outside the workspace named, 1 sessions uncounted, 1 web-tool calls" \
             "$(cat "$leak/assembled/L1-campaign-present-sufficiency.summary" 2>/dev/null)"
         present "and the batch line says so" \
             "campaign: the batch named 1 paths outside the workspace over 2 sessions, 1 sessions uncounted, 1 web-tool calls" \
@@ -2724,7 +2790,7 @@ STUB
         sh "$root/tools/probe/campaign.sh" --out "$leak" --assemble >/dev/null 2>"$scratch/leak-assemble5.err"
         same "assembly of four recorded sessions whose figures differ exits 0" "0" "$?"
         same "and each figure of the summary is its own sum" \
-            "4 sessions, 4 cents, the intent hook live in 0, 0 stopped at the turn cap, 6 paths outside the workspace named, 2 sessions uncounted, 3 web-tool calls" \
+            "4 sessions, 4 cents, the intent hook live in 0, 0 stopped at the turn cap, 0 stopped at the session budget, 6 paths outside the workspace named, 2 sessions uncounted, 3 web-tool calls" \
             "$(cat "$leak/assembled/L1-campaign-present-sufficiency.summary" 2>/dev/null)"
         present "and so is each figure of the batch line" \
             "campaign: the batch named 6 paths outside the workspace over 4 sessions, 2 sessions uncounted, 3 web-tool calls" \
@@ -2916,6 +2982,281 @@ STUB
         stagger_run_cap
         same "a slice the cap refuses exits 7, not 9, and records nothing" "7 0" \
             "$? $(stagger_recorded "$stagger")"
+
+        # The hard cap (#1659). `--session-cents <B>` is the most one session
+        # may spend: the driver passes it to the harness as `--max-budget-usd`,
+        # and reserves B, not the declared unit, for each session in flight,
+        # under one lock with the `started` marker. So the batch spends at
+        # most the cap. The stub "spends" 90 cents with no budget, and
+        # min(90, budget) with one, and ends at the budget subtype with exit 1
+        # when the budget binds. On the old path, which reserved the declared
+        # 50, a cap of 150 started a second session at 90 spent and realized
+        # 180, which is the overrun of #1474.
+        # $1 is `ok` or `fail-first`. The first $2 sessions (1 by default) of
+        # `fail-first` fail for a reason other than the budget, after each
+        # spent 50 cents.
+        budget_stub() {
+            cat > "$scratch/bin/claude" <<STUB
+#!/bin/sh
+case "\${1:-}" in --version) echo '9.9.9 (Claude Code)'; exit 0 ;; esac
+calls=\$HEADWATER_SHADOW_LOG_DIR/stagger.calls
+budget=
+previous=
+for argument in "\$@"; do
+    [ "\$previous" = --max-budget-usd ] && budget=\$argument
+    previous=\$argument
+done
+printf '%s budget=%s\n' "\$(pwd)" "\${budget:-none}" >> "\$calls"
+printf '%s\n' '{"type":"system","subtype":"init","model":"claude-haiku-4-5","session_id":"s17"}'
+if [ "$1" = fail-first ] && [ "\$(wc -l < "\$calls")" -le ${2:-1} ]; then
+    printf '%s\n' '{"type":"result","subtype":"error_during_execution","is_error":true,"total_cost_usd":0.50,"modelUsage":{"claude-haiku-4-5-20251001":{"inputTokens":10}}}'
+    exit 1
+fi
+cents=90
+[ -n "\$budget" ] && cents=\$(awk -v b="\$budget" 'BEGIN { c = int(b * 100 + 0.5); print (c < 90 ? c : 90) }')
+usd=\$(awk -v c="\$cents" 'BEGIN { printf "%.2f", c / 100 }')
+if [ "\$cents" -lt 90 ]; then
+    printf '{"type":"result","subtype":"error_max_budget_usd","is_error":true,"result":"withheld","total_cost_usd":%s,"modelUsage":{"claude-haiku-4-5-20251001":{"inputTokens":10}}}\n' "\$usd"
+    exit 1
+fi
+printf '{"type":"result","subtype":"success","is_error":false,"result":"done","total_cost_usd":%s,"modelUsage":{"claude-haiku-4-5-20251001":{"inputTokens":10}}}\n' "\$usd"
+exit 0
+STUB
+            chmod +x "$scratch/bin/claude"
+        }
+        # What the batch spent: the cost of every session, and what an earlier
+        # attempt of a job spent before it was run again.
+        budget_spent() {
+            n=0
+            for s in "$1"/sessions/*/cost "$1"/sessions/*/spent-before; do
+                [ -f "$s" ] && n=$((n + $(cat "$s")))
+            done
+            echo "$n"
+        }
+        # $1 out, $2 stderr file, then the flags of the invocation.
+        budget_run() {
+            run_out=$1 run_err=$2
+            shift 2
+            PATH="$scratch/bin:$PATH" sh "$root/tools/probe/campaign.sh" --out "$run_out" \
+                --model claude-haiku-4-5 --spec "$scratch/stagger.spec" --repetitions 1 \
+                "$@" >/dev/null 2>"$run_err"
+        }
+        budget_stub ok
+        # At --parallel 1 and 3, over 6 trials each. B is 60 and the cap 150,
+        # so a third session would need 120 + 60 = 180: 2 sessions start, each
+        # stopped at its budget of 60, and the batch spends 120.
+        for workers in 1 3; do
+            trial=1
+            overran=
+            while [ "$trial" -le 6 ] && [ -z "$overran" ]; do
+                stagger_batch "$stagger"
+                rm -f "$scratch/probe-log/stagger.calls"
+                budget_run "$stagger" "$scratch/budget-p$workers.err" \
+                    --cap-cents 150 --session-cents 60 --parallel "$workers"
+                got="$? $(budget_spent "$stagger") $(wc -l < "$scratch/probe-log/stagger.calls" 2>/dev/null | tr -d ' ')"
+                [ "$got" = "7 120 2" ] || overran="trial $trial: exit, cents, sessions $got"
+                trial=$((trial + 1))
+            done
+            same "under --session-cents 60 and --cap-cents 150 at --parallel $workers, 6 trials spend 120 over 2 sessions and exit 7" \
+                "" "$overran"
+        done
+        same "and the harness receives --max-budget-usd 0.60" "2" \
+            "$(grep -c ' budget=0.60$' "$scratch/probe-log/stagger.calls" 2>/dev/null)"
+        same "and the batch records the session budget" "60" "$(cat "$stagger/session-cents" 2>/dev/null)"
+        same "and a session stopped at its budget records with status 0" "2" "$(stagger_recorded "$stagger")"
+        PATH="$scratch/bin:$PATH" sh "$root/tools/probe/campaign.sh" --out "$stagger" --assemble \
+            >/dev/null 2>"$scratch/budget-assemble.err"
+        present "and assembly counts the sessions the budget stopped" \
+            "0 stopped at the turn cap, 2 stopped at the session budget" "$scratch/budget-assemble.err"
+        present "and the transcript says the session stopped at its budget" \
+            "The session stopped at its budget of \$0.60." "$(ls "$stagger"/sessions/*/record.md | head -1)"
+        # The stub's budget line carries the probe's answer as its `result`,
+        # and a session that did not finish states none.
+        present "and it records no answer, because the session did not finish" \
+            "  answer: null" "$(ls "$stagger"/sessions/*/record.md | head -1)"
+
+        # The cap's edge, in three directions. A session starts when it fits
+        # exactly, and not one cent past.
+        for edge in "119 1" "120 2" "180 3"; do
+            edge_cap=${edge% *}
+            edge_n=${edge#* }
+            stagger_batch "$stagger"
+            rm -f "$scratch/probe-log/stagger.calls"
+            budget_run "$stagger" "$scratch/budget-edge.err" --cap-cents "$edge_cap" --session-cents 60
+            same "a cap of $edge_cap with --session-cents 60 starts $edge_n sessions" "$edge_n" \
+                "$(wc -l < "$scratch/probe-log/stagger.calls" 2>/dev/null | tr -d ' ')"
+        done
+
+        # The lock. `HEADWATER_CAMPAIGN_CHECK_DELAY` holds a worker between its
+        # check and its `started` marker, so 3 workers that check without one
+        # lock all read 0 spent and 0 in flight, and all 3 start.
+        stagger_batch "$stagger"
+        rm -f "$scratch/probe-log/stagger.calls"
+        HEADWATER_CAMPAIGN_CHECK_DELAY=1 budget_run "$stagger" "$scratch/budget-lock.err" \
+            --cap-cents 150 --session-cents 60 --parallel 3
+        same "3 workers held between check and marker still start 2 sessions under a cap of 150" "2 120" \
+            "$(wc -l < "$scratch/probe-log/stagger.calls" 2>/dev/null | tr -d ' ') $(budget_spent "$stagger")"
+
+        # A resumed invocation that gives neither flag keeps the recorded
+        # budget and cap, and counts the 60 the first one spent: 60 + 60 fits
+        # 150, and 120 + 60 does not.
+        stagger_batch "$stagger"
+        rm -f "$scratch/probe-log/stagger.calls"
+        budget_run "$stagger" "$scratch/budget-r1.err" --cap-cents 150 --session-cents 60 --max-sessions 1
+        same "a first slice of 1 under --session-cents 60 exits 9 at 60 cents" "9 60" "$? $(budget_spent "$stagger")"
+        budget_run "$stagger" "$scratch/budget-r2.err"
+        same "and a resumed slice with neither flag spends 120 in all and exits 7" "7 120" \
+            "$? $(budget_spent "$stagger")"
+        same "and its session also receives --max-budget-usd 0.60" "2" \
+            "$(grep -c ' budget=0.60$' "$scratch/probe-log/stagger.calls" 2>/dev/null)"
+
+        # A halted job's spend counts when it runs again. The first session
+        # fails after 50 cents and halts the slice. The next invocation runs
+        # it again: 50 + 60 fits 150, and 110 + 60 does not, so the batch
+        # spends 110 and the harness runs twice in all. A driver that dropped
+        # the 50 when it ran the job again would start a third session and
+        # spend 170.
+        stagger_batch "$stagger"
+        rm -f "$scratch/probe-log/stagger.calls"
+        budget_stub fail-first
+        budget_run "$stagger" "$scratch/budget-h1.err" --cap-cents 150 --session-cents 60
+        same "a first session that fails after 50 cents halts with 9" "9 50" "$? $(budget_spent "$stagger")"
+        budget_stub ok
+        printf 'x\n' >> "$scratch/probe-log/stagger.calls"
+        budget_run "$stagger" "$scratch/budget-h2.err"
+        same "and the rerun counts the 50, spends 110 in all, and exits 7" "7 110" \
+            "$? $(budget_spent "$stagger")"
+        same "and the harness ran twice in all" "3" \
+            "$(wc -l < "$scratch/probe-log/stagger.calls" 2>/dev/null | tr -d ' ')"
+        present "and the batch's total counts the 50" "110 cents spent" "$scratch/budget-h2.err"
+
+        # Two failed attempts both count (verify of #1659). The job fails at
+        # 50 twice, then runs a third time under a cap of 160 at B = 60:
+        # 100 + 60 fits, the third attempt spends 60, and the batch spends
+        # 160 in all. A driver that kept only the last attempt's 50 would
+        # count 110 after it, 50 short of what the harness spent.
+        stagger_batch "$stagger"
+        rm -f "$scratch/probe-log/stagger.calls"
+        budget_stub fail-first 2
+        budget_run "$stagger" "$scratch/budget-t1.err" --cap-cents 160 --session-cents 60
+        budget_run "$stagger" "$scratch/budget-t2.err"
+        same "a job that failed twice at 50 has 100 counted" "9 100" "$? $(budget_spent "$stagger")"
+        budget_run "$stagger" "$scratch/budget-t3.err"
+        same "and its third attempt spends 160 in all and exits 7" "7 160" "$? $(budget_spent "$stagger")"
+        same "and the harness ran 3 times in all" "3" \
+            "$(wc -l < "$scratch/probe-log/stagger.calls" 2>/dev/null | tr -d ' ')"
+        budget_stub ok
+
+        # The `started` marker is written before the lock goes (verify of
+        # #1659). The second seam holds the lock after the marker, so while
+        # the lock is held the marker of the job that holds it exists. A
+        # marker written after the release leaves a window in which another
+        # worker reads the batch with this session in flight and not counted.
+        stagger_batch "$stagger"
+        rm -f "$scratch/probe-log/stagger.calls"
+        HEADWATER_CAMPAIGN_HOLD_DELAY=3 budget_run "$stagger" "$scratch/budget-hold.err" \
+            --cap-cents 150 --session-cents 60 &
+        held=$!
+        waited=0
+        while [ ! -f "$stagger/slice/lock" ] && [ "$waited" -lt 600 ]; do
+            sleep 0.1
+            waited=$((waited + 1))
+        done
+        sleep 1
+        seen="$([ -f "$stagger/slice/lock" ] && echo held || echo free) $(ls "$stagger"/sessions/*/started 2>/dev/null | wc -l | tr -d ' ')"
+        wait "$held"
+        same "while a worker holds the lock, its started marker exists" "held 1" "$seen"
+
+        # A lock whose holder is gone halts the invocation (verify of #1659):
+        # a worker killed inside the lock, or one that returned without
+        # releasing it, would otherwise leave every other worker waiting
+        # forever. Nothing starts and nothing is spent.
+        stagger_batch "$stagger"
+        rm -f "$scratch/probe-log/stagger.calls"
+        mkdir -p "$stagger/slice/started" "$stagger/slice/refused"
+        sh -c 'exit 0' &
+        gone=$!
+        wait "$gone"
+        printf '%s\n' "$gone" > "$stagger/slice/lock"
+        printf '\n' > "$stagger/model"
+        : > "$stagger/repetitions"
+        : > "$stagger/max-turns"
+        printf '205200\n' > "$stagger/ceiling.campaign"
+        printf '50\n' > "$stagger/unit.campaign"
+        PATH="$scratch/bin:$PATH" timeout 60 sh "$root/tools/probe/campaign.sh" --out "$stagger" \
+            --job "L1-campaign-present-p1-r1 1 campaign present sufficiency HW-PROBE-$tombstone" \
+            >/dev/null 2>"$scratch/budget-gone.err"
+        same "a job that finds the lock's holder gone halts and starts nothing" "yes 0" \
+            "$([ -f "$stagger/slice/halt" ] && echo yes || echo no) $(cat "$scratch/probe-log/stagger.calls" 2>/dev/null | wc -l | tr -d ' ')"
+        present "and says which worker holds it" "the worker $gone holds the batch lock and is gone" "$scratch/budget-gone.err"
+
+        # A holder can release the lock and exit between the waiter's read
+        # of its pid and the waiter's test of it (verify 2 of #1659). That
+        # holder is gone and the lock with it, so the waiter takes the lock
+        # and does not halt. The seam holds the waiter between the read and
+        # the test while the lock goes.
+        stagger_batch "$stagger"
+        rm -f "$scratch/probe-log/stagger.calls"
+        mkdir -p "$stagger/slice/started" "$stagger/slice/refused"
+        printf '%s\n' "$gone" > "$stagger/slice/lock"
+        printf '\n' > "$stagger/model"
+        : > "$stagger/repetitions"
+        : > "$stagger/max-turns"
+        printf '205200\n' > "$stagger/ceiling.campaign"
+        printf '50\n' > "$stagger/unit.campaign"
+        HEADWATER_CAMPAIGN_HOLDER_DELAY=2 PATH="$scratch/bin:$PATH" timeout 60 sh "$root/tools/probe/campaign.sh" --out "$stagger" \
+            --job "L1-campaign-present-p1-r1 1 campaign present sufficiency HW-PROBE-$tombstone" \
+            >/dev/null 2>"$scratch/budget-released.err" &
+        waiter=$!
+        sleep 1
+        rm -f "$stagger/slice/lock"
+        wait "$waiter"
+        same "a waiter whose holder released the lock before it exited does not halt" "no 1" \
+            "$([ -f "$stagger/slice/halt" ] && echo yes || echo no) $(cat "$scratch/probe-log/stagger.calls" 2>/dev/null | wc -l | tr -d ' ')"
+
+        # A worker that finds no token left releases the lock. A slice of 1
+        # over 3 jobs: the second job takes no token, and the third must
+        # find the lock free, so the invocation exits 9 with no halt.
+        stagger_batch "$stagger"
+        rm -f "$scratch/probe-log/stagger.calls"
+        budget_run "$stagger" "$scratch/budget-tok.err" --max-sessions 1 --cap-cents 500 --session-cents 60
+        same "a slice of 1 over 3 jobs records 1 and exits 9 with no halt" "9 1 no" \
+            "$? $(stagger_recorded "$stagger") $([ -f "$stagger/slice/halt" ] && echo yes || echo no)"
+
+        # `--session-cents` takes a positive whole number of cents, and a
+        # refused value writes nothing (verify of #1659).
+        for bad in 0 1x 060 -5; do
+            rm -rf "$scratch/bad-budget"
+            PATH="$scratch/bin:$PATH" sh "$root/tools/probe/campaign.sh" --out "$scratch/bad-budget" \
+                --model claude-haiku-4-5 --spec "$scratch/stagger.spec" --session-cents "$bad" \
+                >/dev/null 2>"$scratch/bad-budget.err"
+            same "--session-cents $bad refuses with 2 and writes no batch" "2 no" \
+                "$? $([ -e "$scratch/bad-budget" ] && echo yes || echo no)"
+        done
+
+        # Each component arm's tree is built by `ablate.sh` (#1659). The
+        # slice-1 live check found no `.mcp.json` in the `mcp` arm's
+        # workspace, because only the absent arm was ever ablated. A cap of
+        # 1 cent refuses every job, so the batch builds its trees from this
+        # checkout and starts no session.
+        arms=$scratch/arms
+        rm -rf "$arms"
+        printf 'campaign mcp navigability\ncampaign no-hook navigability\n' > "$scratch/arms.spec"
+        rm -f "$scratch/probe-log/stagger.calls"
+        PATH="$scratch/bin:$PATH" sh "$root/tools/probe/campaign.sh" --out "$arms" \
+            --model claude-haiku-4-5 --spec "$scratch/arms.spec" --repetitions 1 \
+            --cap-cents 1 >/dev/null 2>"$scratch/arms.err"
+        same "a batch the cap refuses whole exits 7 and runs no harness" "7 0" \
+            "$? $(cat "$scratch/probe-log/stagger.calls" 2>/dev/null | wc -l | tr -d ' ')"
+        same "and the mcp arm's tree holds the server the arm adds" "yes" \
+            "$([ -f "$arms/trees/campaign-mcp/.mcp.json" ] && echo yes || echo no)"
+        same "and the present tree does not" "no" \
+            "$([ -f "$arms/trees/oracle/.mcp.json" ] && echo yes || echo no)"
+        same "and the no-hook arm's tree lost the hook's script and kept the settings" "no yes" \
+            "$([ -f "$arms/trees/campaign-no-hook/.claude/hooks/intent.sh" ] && echo yes || echo no) $([ -f "$arms/trees/campaign-no-hook/.claude/settings.json" ] && echo yes || echo no)"
+        same "and the present tree kept it" "yes" \
+            "$([ -f "$arms/trees/oracle/.claude/hooks/intent.sh" ] && echo yes || echo no)"
+        rm -rf "$arms"
         rm -rf "$stagger"
         rm -f "$scratch/bin/cargo"
         unset CARGO_TARGET_DIR
@@ -3569,8 +3910,8 @@ if [ -x "$engine" ]; then
         "campaign no-hook discovery: 3 probes x 118 repetitions" "$scratch/dry.out"
     present "and sums each arm" "arm campaign mcp: 684 sessions, \$342.00" "$scratch/dry.out"
     present "and holds the campaign tier to its ceiling" \
-        "tier campaign: 4104 sessions, \$2052.00 against a ceiling of \$300.00: over by \$1752.00" "$scratch/dry.out"
-    present "and prints the total" "total: 4284 sessions, \$2142.00 against the \$430.00 the tiers declare" "$scratch/dry.out"
+        "tier campaign: 4104 sessions, \$2052.00 against a ceiling of \$2052.00: inside it" "$scratch/dry.out"
+    present "and prints the total" "total: 4284 sessions, \$2142.00 against the \$2182.00 the tiers declare" "$scratch/dry.out"
     present "and sums each tier and category with its share of the total" \
         "category campaign discovery: 2124 sessions, \$1062.00, 49.6% of the total" "$scratch/dry.out"
     present "and sums a leak-kept line apart from its category" \
@@ -3594,14 +3935,16 @@ if [ -x "$engine" ]; then
 
     # A line that pools a leak-kept probe with one that is not fails the dry run,
     # and a plan over its ceiling is printed rather than fatal: six
-    # sufficiency probes over six arms at 30 repetitions is 1080 sessions.
-    printf 'campaign present sufficiency\n' > "$scratch/pooled.spec"
+    # sufficiency probes over the documentation tier's two arms at 30
+    # repetitions is 360 sessions, $180.00 against its $130.00. The campaign
+    # tier no longer serves: no plan of one line passes its $2052.00 (#1659).
+    printf 'documentation absent sufficiency\n' > "$scratch/pooled.spec"
     PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
         --spec "$scratch/pooled.spec" > "$scratch/pooled.out" 2> "$scratch/pooled.err"
     same "a line that pools a leak-kept probe fails the dry run with 8, not 5" "8" "$?"
     present "and names the line" "line 1 pools a probe under \`leaks_kept:\`" "$scratch/pooled.out"
     present "and the ceiling's refusal is printed as a line" \
-        "L1 1080 sessions project \$540.00 against a declared ceiling of \$300.00" "$scratch/pooled.out"
+        "L1 360 sessions project \$180.00 against a declared ceiling of \$130.00" "$scratch/pooled.out"
 
     # Any other refusal of a plan is the batch driver's 5.
     printf 'campaign present discovery\n' > "$scratch/refused.spec"
