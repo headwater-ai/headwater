@@ -141,9 +141,9 @@ fn spec_6_cli_keeps_only_the_grammar_and_the_three_rules_no_contract_states() {
         .filter(|p| !KEPT_LEADS.iter().any(|k| p.starts_with(&plain(k))))
         .collect();
     assert!(
-        others.len() <= 1,
-        "spec 6's `### CLI` holds {} paragraphs beside the three it keeps, and the bar is one \
-         pointer: {others:#?}",
+        others.len() == 1,
+        "spec 6's `### CLI` holds {} paragraphs beside the three it keeps, and the bar is \
+         exactly one pointer: {others:#?}",
         others.len()
     );
     for pointer in &paragraphs {
@@ -163,15 +163,53 @@ fn spec_6_cli_keeps_only_the_grammar_and_the_three_rules_no_contract_states() {
             pointer.contains("../interfaces/README.md"),
             "the pointer paragraph of spec 6's `### CLI` does not link the interface index"
         );
+        assert!(
+            pointer.contains(
+                "](09-decisions.md#q43--whether-a-refusal-under---json-is-a-json-document)"
+            ),
+            "the pointer paragraph of spec 6's `### CLI` does not cite Q43, which rules a refusal"
+        );
     }
 }
 
 /// For each rule that moved and that its contract did not already state, the
 /// contract and a sentence of that rule, as `plain` writes it.
-const MOVED_RULES: [(&str, &str); 12] = [
+const MOVED_RULES: [(&str, &str); 20] = [
     (
         "docs/interfaces/headwater-check.md",
         "the run opens every file of the batch before it writes the first byte",
+    ),
+    (
+        "docs/interfaces/headwater-check.md",
+        "the verb holds each patch against the bytes that the patch names, and it reads back each result",
+    ),
+    (
+        "docs/interfaces/headwater-check.md",
+        "it reads each file back from the tree, and it restores what it wrote when a write fails",
+    ),
+    (
+        "docs/interfaces/headwater-check.md",
+        "it does not reach a suppressed finding either",
+    ),
+    (
+        "docs/interfaces/headwater-new.md",
+        "--now sets the clock that the two date facets take",
+    ),
+    (
+        "docs/interfaces/headwater-taxonomy.md",
+        "it does not hold the binary, where check and vendor share one crate",
+    ),
+    (
+        "docs/interfaces/headwater-probe.md",
+        "it refuses a run above that budget",
+    ),
+    (
+        "docs/interfaces/headwater-probe.md",
+        "stale holds the read set of every committed transcript against the tree in front of it",
+    ),
+    (
+        "docs/interfaces/headwater-export.md",
+        "each later format waits for a consumer who asks for it",
     ),
     (
         "docs/interfaces/headwater-check.md",
