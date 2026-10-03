@@ -801,10 +801,10 @@ spec15_sub '### What the file system of the session holds' > "$scratch/spec15.fs
 spec15_sub '### The environment of the session' > "$scratch/spec15.env"
 
 # The environment. A name is the first backticked word of a list item.
-grep -o -- '--setenv [A-Za-z_][A-Za-z0-9_]*' "$scratch/driver.code" | awk '{ print $2 }' | sort -u > "$scratch/env.driver"
-sed -n 's/^- `\([A-Za-z_][A-Za-z0-9_]*\)`.*/\1/p' "$scratch/spec15.env" | sort -u > "$scratch/env.spec"
-env_unlisted=$(comm -23 "$scratch/env.driver" "$scratch/env.spec" | tr '\n' ' ')
-env_unset=$(comm -13 "$scratch/env.driver" "$scratch/env.spec" | tr '\n' ' ')
+grep -o -- '--setenv [A-Za-z_][A-Za-z0-9_]*' "$scratch/driver.code" | awk '{ print $2 }' | LC_ALL=C sort -u > "$scratch/env.driver"
+sed -n 's/^- `\([A-Za-z_][A-Za-z0-9_]*\)`.*/\1/p' "$scratch/spec15.env" | LC_ALL=C sort -u > "$scratch/env.spec"
+env_unlisted=$(LC_ALL=C comm -23 "$scratch/env.driver" "$scratch/env.spec" | tr '\n' ' ')
+env_unset=$(LC_ALL=C comm -13 "$scratch/env.driver" "$scratch/env.spec" | tr '\n' ' ')
 if [ ! -s "$scratch/env.driver" ]; then
     fail "spec 15 lists every variable the driver sets in the session, and no other" \
         "no \`--setenv\` was read off the driver, so this case reads the wrong file"
@@ -824,7 +824,7 @@ awk '{ for (i = 1; i <= NF; i++) {
          if ($i ~ /^--(ro-|dev-)?bind(-try)?$/) print $(i + 1)
          else if ($i == "--symlink") print $NF
          else if ($i == "--proc" || $i == "--dev" || $i == "--tmpfs") print $i
-     } }' "$scratch/driver.code" | sort -u > "$scratch/binds.driver"
+     } }' "$scratch/driver.code" | LC_ALL=C sort -u > "$scratch/binds.driver"
 cat > "$scratch/binds.table" <<'EOF'
 /usr	`/usr` and `/etc`, read-only
 /etc	`/usr` and `/etc`, read-only
@@ -860,13 +860,29 @@ else
     pass "spec 15 lists every bind of the session's file system, and no other"
 fi
 
-# The leak figure: the evaluation's, in spec 15 and in the driver's comment.
-if grep -q '58 of 658' "$scratch/spec15.section" && grep -q '58 of 658' "$driver" \
-    && ! grep -q '51 of 658' "$scratch/spec15.section" && ! grep -q '51 of 658' "$driver"; then
-    pass "spec 15 and the driver state the evaluation's leak figure, 58 of 658"
+# The leak figure: the evaluation's three numbers, each in spec 15 and in the
+# driver's comment, and each still in the evaluation they are copied from. A
+# figure the evaluation no longer states is one the copies must not keep.
+evaluation="$root/docs/evaluations/what-the-counterfactual-campaign-of-2026-09-30-measured-by-component.md"
+leak_missing=
+for pair in '118 sessions name such a path|118 of 658' \
+            '58 of 658 sessions leaked|58 of 658' \
+            '17 of the 58 named a copy on the host|17 of those 58'; do
+    source_phrase=${pair%%|*}
+    copy_phrase=${pair#*|}
+    grep -qF -e "$source_phrase" "$evaluation" || leak_missing="$leak_missing [evaluation: $source_phrase]"
+    grep -qF -e "$copy_phrase" "$scratch/spec15.section" || leak_missing="$leak_missing [spec 15: $copy_phrase]"
+    grep -qF -e "$copy_phrase" "$driver" || leak_missing="$leak_missing [driver: $copy_phrase]"
+done
+for stale in '51 of 658' '16 of 658'; do
+    grep -qF -e "$stale" "$scratch/spec15.section" && leak_missing="$leak_missing [spec 15 still: $stale]"
+    grep -qF -e "$stale" "$driver" && leak_missing="$leak_missing [driver still: $stale]"
+done
+if [ -z "$leak_missing" ]; then
+    pass "spec 15 and the driver state the evaluation's leak figures, 118, 58 and 17 of 58"
 else
-    fail "spec 15 and the driver state the evaluation's leak figure, 58 of 658" \
-        "one of them lacks \`58 of 658\`, or still states \`51 of 658\`, which no document derives"
+    fail "spec 15 and the driver state the evaluation's leak figures, 118, 58 and 17 of 58" \
+        "missing or stale:$leak_missing"
 fi
 
 # ---------------------------------------------------------------------------
@@ -1130,7 +1146,7 @@ same "and the fold keeps the element that names no deleted document, and still p
 if [ "$(git -C "$root" rev-parse --show-toplevel 2>/dev/null)" = "$root" ]; then
     mkdir -p "$scratch/corpus"
     git -C "$root" archive HEAD | tar -x -C "$scratch/corpus"
-    ( cd "$scratch/corpus" && find docs -type f -name '*.md' | grep -v -e '^docs/probes/' -e '^docs/probe-runs/' -e '^docs/probe-results/' | sort ) \
+    ( cd "$scratch/corpus" && find docs -type f -name '*.md' | grep -v -e '^docs/probes/' -e '^docs/probe-runs/' -e '^docs/probe-results/' | LC_ALL=C sort ) \
         > "$scratch/corpus-before.txt"
     # Outside `docs/`, every probe of the shelf is named by a declared fold or
     # by one of the three files that state an answer, and by nothing else
@@ -1146,7 +1162,7 @@ if [ "$(git -C "$root" rev-parse --show-toplevel 2>/dev/null)" = "$root" ]; then
     done
     same "outside docs/, only the three files that state an answer name a probe and are not folds" \
         ".claude/skills/fixtures.sh engine/crates/probe/tests/corpus.rs tools/probe/probe-record-fixtures.sh" \
-        "$(sort -u "$scratch/outside-naming.txt" | tr '\n' ' ' | sed 's/ $//')"
+        "$(LC_ALL=C sort -u "$scratch/outside-naming.txt" | tr '\n' ' ' | sed 's/ $//')"
     sh "$root/tools/probe/seal.sh" "$scratch/corpus" \
         HW-PROBE-a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer \
         HW-PROBE-a-session-answers-from-the-register-without-opening-the-question-it-replaced \
@@ -1208,7 +1224,7 @@ if [ "$(git -C "$root" rev-parse --show-toplevel 2>/dev/null)" = "$root" ]; then
     done
     same "and every guard passes the sealed corpus" "" "$unguarded"
     broken=""
-    for fold in $(cd "$scratch/corpus" && find . -name '*.json' | sort); do
+    for fold in $(cd "$scratch/corpus" && find . -name '*.json' | LC_ALL=C sort); do
         jq empty "$scratch/corpus/$fold" >/dev/null 2>&1 || broken="$broken $fold"
     done
     same "and every JSON file of the sealed corpus still parses" "" "$broken"
@@ -2716,7 +2732,7 @@ STUB
         same "the same command again finishes the batch with 0" "0" "$?"
         same "and all 3 jobs are recorded" "3" "$(stagger_recorded "$stagger")"
         same "and the harness ran 3 times in all, none twice" "3 3" \
-            "$(sort -u "$scratch/probe-log/stagger.calls" | wc -l | tr -d ' ') $(wc -l < "$scratch/probe-log/stagger.calls" | tr -d ' ')"
+            "$(LC_ALL=C sort -u "$scratch/probe-log/stagger.calls" | wc -l | tr -d ' ') $(wc -l < "$scratch/probe-log/stagger.calls" | tr -d ' ')"
 
         # The bound holds across parallel workers: 3 workers, 3 jobs, 2 tokens.
         # A token taken without O_EXCL lets a third worker through in about
@@ -3273,7 +3289,7 @@ if [ ! -e "$scratch/layer/.claude/hooks/intent.sh" ] && [ -e "$scratch/layer/.cl
     pass "and it removes the intent hook's script and keeps the settings and every other hook"
 else
     fail "and it removes the intent hook's script and keeps the settings and every other hook" \
-        "$(cd "$scratch/layer" && find . -type f | sort | tr '\n' ' ')"
+        "$(cd "$scratch/layer" && find . -type f | LC_ALL=C sort | tr '\n' ' ')"
 fi
 
 layer_tree
@@ -3385,7 +3401,7 @@ present "and the refusal names the control character" "no control character" "$s
 if [ -e "$scratch/layer/CLAUDE.md" ] && [ -e "$scratch/layer/.claude/hooks/intent.sh" ]; then
     pass "and it removes nothing"
 else
-    fail "and it removes nothing" "$(cd "$scratch/layer" && find . -type f | sort | tr '\n' ' ')"
+    fail "and it removes nothing" "$(cd "$scratch/layer" && find . -type f | LC_ALL=C sort | tr '\n' ' ')"
 fi
 
 layer_tree
@@ -3395,7 +3411,7 @@ present "and names it" "\`--arm no-docs\` names no arm" "$scratch/undeclared.err
 if [ -e "$scratch/layer/.claude/hooks/intent.sh" ] && [ -e "$scratch/layer/CLAUDE.md" ]; then
     pass "and it removes nothing"
 else
-    fail "and it removes nothing" "$(cd "$scratch/layer" && find . -type f | sort | tr '\n' ' ')"
+    fail "and it removes nothing" "$(cd "$scratch/layer" && find . -type f | LC_ALL=C sort | tr '\n' ' ')"
 fi
 layer_tree
 sh "$ablate" regression "$scratch/layer" no-hook > /dev/null 2> "$scratch/not-run.err"
