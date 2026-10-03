@@ -147,7 +147,10 @@ fn spec_6_cli_keeps_only_the_grammar_and_the_three_rules_no_contract_states() {
         others.len()
     );
     for pointer in &paragraphs {
-        if KEPT_LEADS.iter().any(|k| plain(pointer).starts_with(&plain(k))) {
+        if KEPT_LEADS
+            .iter()
+            .any(|k| plain(pointer).starts_with(&plain(k)))
+        {
             continue;
         }
         let count = pointer.split_whitespace().count();
