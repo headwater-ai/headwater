@@ -329,7 +329,7 @@ The lock does carry a migration state, and it carries the first-contact half of 
 
 `lock.format` is 2 for that block. An engine that skips a payload reports findings the adopter already accounted for, so an engine too old to read one refuses the lock rather than disagreeing with a newer one in silence.
 
-The lock carries the taxonomy and not the corpus declaration. `check` reads `corpus:` from `.headwater/taxonomy.yml`, because the lock says what the schema is and `corpus:` says what to walk. Spec 6 keeps the two apart in the same way, since a run reports "the corpus tree, the taxonomy lock hash" as two facts. The tree hash is the half that nothing computes yet.
+The lock carries the taxonomy and not the corpus declaration. `check` reads `corpus:` from `.headwater/taxonomy.yml`, because the lock says what the schema is and `corpus:` says what to walk. [Checks and cache](../docs/subsystems/checks-and-cache.md#what-a-run-states-beside-its-findings) keeps the two apart in the same way. A run writes the taxonomy lock hash beside its findings, and the corpus tree hash is the half that nothing computes yet ([HW-OBL-0028](../docs/obligations/0028-a-run-cannot-report-the-corpus-tree-because-nothing-computes.md)).
 
 The consumer declaration is not among the lock's hashed sources, and the digest still catches every edit to it that matters. A change to `taxonomy.bundles` changes the resolution and so changes the digest, which `resolve --check` reports. A change to `corpus:` changes what the census walks and nothing hashes it, which is the same missing tree hash one sentence up rather than a second gap. What is lost is only the diagnostic: `Lock::moved` names which taxonomy source changed, and it can never name this file.
 

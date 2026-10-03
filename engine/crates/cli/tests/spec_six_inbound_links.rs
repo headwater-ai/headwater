@@ -11,9 +11,10 @@
 //!
 //! A second walk reads credits in prose (#1572 clause 9). A sentence that
 //! names spec 6, as a link to `06-engine-architecture.md` with or without an
-//! anchor or as the plain words, and puts a present-tense credit verb after
-//! the name, with at most the relative pronoun "which" and one adverb between
-//! them, credits that part with what follows. When that sentence or
+//! anchor or as the plain words, and puts a verb of `CREDIT_VERBS` after the
+//! name, past at most two `RELATIVES`, two `ADVERBS` and, after a possessive,
+//! the owned noun, credits that part with what follows. So does a sentence
+//! that opens its claim with "according to" and the name. When that sentence or
 //! the next one holds a term of `MOVED_CREDITS`, the credit is to a rule that
 //! moved, and the sentence is repointed and its claim is corrected in place
 //! (HW-DR-0106). A past-tense verb (said, stated) is history and is not read.
@@ -529,6 +530,13 @@ fn a_present_tense_credit_to_a_moved_rule_is_flagged_and_history_is_not() {
     assert!(moved_credits(decision, split).is_empty());
     let which_said = "It amends spec 6, which said that a placeholder sits there.\n";
     assert!(moved_credits(decision, which_said).is_empty());
+
+    // HW-DR-0106 states the size of the verb list.
+    assert_eq!(
+        CREDIT_VERBS.len(),
+        17,
+        "HW-DR-0106's Consequences count the verbs; change both"
+    );
 
     // `that` opens a relative clause as `which` does, and `where it` does too.
     let that = "It amends spec 6, that says a placeholder sits there.\n";
