@@ -48,7 +48,8 @@
 #                     continue clear status restart both then and the them
 #                     push merge. A word is a run of the letters a to z,
 #                     after the text is put in lower case. So `b`, `#`, `2`,
-#                     `1 and 3` and `ok A then` are excluded;
+#                     `7 and 9` and `ok Q then` are excluded, and `fix it`
+#                     is not;
 #       empty-list    neither path offered a document.
 #
 #  2. `packets` writes the blind packets outside the tree, to the packet
@@ -100,6 +101,17 @@
 #     raters agree, and otherwise the median of the three, with `settled_by`
 #     `agreed` or `third`. The column also admits `owner`, for an item the
 #     owner settles.
+#
+# The seal. A probe is sealed: outside `docs/`, only a fold and the three
+# files that state an answer may name one (#1384), and
+# `tools/probe/probe-record-fixtures.sh` holds that set. The routing paths
+# offer documents of the instrument shelves like any other, so the record
+# names each document under `docs/probes/`, `docs/probe-runs/` or
+# `docs/probe-results/` as `sealed:` and the first 16 hex digits of the
+# sha256 of its path, in `sample.tsv` and in every file of scores. The
+# token is the same for one path everywhere, so every figure over the record
+# is unchanged. The key outside the tree keeps the path, and a packet
+# renders the document as any other.
 #
 # Where things live. Each has a variable, which the fixtures use:
 #     HEADWATER_RELEVANCE_RECORD   the committed record
@@ -165,6 +177,28 @@ work=$(mktemp -d) || exit 1
 
 # sha <string>: the hex sha256 of the string's bytes.
 sha() { printf '%s' "$1" | sha256sum | cut -d ' ' -f 1; }
+
+# sealed <path>: the name the record gives a path, by the seal above.
+sealed() {
+    case $1 in
+        docs/probes/* | docs/probe-runs/* | docs/probe-results/*) printf 'sealed:%s' "$(sha "$1" | cut -c 1-16)" ;;
+        *) printf '%s' "$1" ;;
+    esac
+}
+# seal_col <file> <column>: the file, with each path in that column sealed.
+seal_col() {
+    awk -F '\t' -v c="$2" '$c ~ /^docs\/probe(s|-runs|-results)\//' "$1" | cut -f "$2" | LC_ALL=C sort -u > "$work/seal.in"
+    : > "$work/seal.map"
+    while IFS= read -r _p; do printf '%s\t%s\n' "$_p" "$(sealed "$_p")" >> "$work/seal.map"; done < "$work/seal.in"
+    # The map is empty when nothing is sealed, so the first file is told by
+    # its name and never by `NR == FNR`.
+    awk -F '\t' -v OFS='\t' -v c="$2" 'FILENAME == ARGV[1] { m[$1] = $2; next } ($c in m) { $c = m[$c] } { print }' "$work/seal.map" "$1" > "$work/seal.out" \
+        && cat "$work/seal.out" > "$1"
+}
+# sealed_list <file>: the paths of an offer file, sealed, joined by `|`.
+sealed_list() {
+    cut -f 1 "$1" | while IFS= read -r _p; do sealed "$_p"; printf '\n'; done | paste -sd '|' -
+}
 
 # line_of <file> <line>: one log line, to $work/line.json.
 line_of() {
@@ -238,8 +272,8 @@ cmd_draw() {
         jq -j '.task // "" | tostring' "$work/line.json" > "$work/task"
         tdig="sha256:$(sha256sum < "$work/task" | cut -d ' ' -f 1)"
         offers
-        rp=$(cut -f 1 "$work/route.tsv" | paste -sd '|' -)
-        ep=$(cut -f 1 "$work/emb.tsv" | paste -sd '|' -)
+        rp=$(sealed_list "$work/route.tsv")
+        ep=$(sealed_list "$work/emb.tsv")
         if [ "$det" = silent ]; then
             st=silent
         elif [ "$det" = offered ] && [ "$emb" = offered ]; then
@@ -528,6 +562,7 @@ cmd_ingest() {
             got[k] = 1; print w[k] "\t" v > out
         }
         END { for (k in w) if (!(k in got)) { print "not scored: " k > "/dev/stderr"; bad = 1 } ; exit bad ? 4 : 0 }' "$work/want" "$work/raw" || exit 4
+    seal_col "$work/scores" 2
     printf 'prompt_id\titem\tvalue\n' > "$record/scores-$r.tsv"
     LC_ALL=C sort -t "$tab" -k1,1 -k2,2 "$work/scores" >> "$record/scores-$r.tsv"
     printf 'scores-%s: %s items\n' "$r" "$(wc -l < "$work/scores" | tr -d ' ')"
@@ -601,6 +636,10 @@ cmd_third() {
     rm -rf "$packets/rater-third"
     mkdir -p "$packets/rater-third"
     : > "$packets/key/third-items.tsv"
+    # The disagreements name a sealed document by its token, so the key is
+    # read here with the same seal.
+    cp "$packets/key/documents.tsv" "$work/docs.sealed"
+    seal_col "$work/docs.sealed" 3
     awk -F '\t' 'NR > 1 { print $1 }' "$record/disagreements.tsv" | LC_ALL=C sort -u > "$work/dprompts"
     awk -F '\t' 'NR == FNR { d[$1] = 1; next } $1 == "rater" && ($3 in d) { print $2 "\t" $3 "\t" $4 }' "$work/dprompts" "$packets/key/prompts.tsv" > "$work/dlab"
     n=0
@@ -613,7 +652,7 @@ cmd_third() {
             on && /^=== P[0-9]+ task ===$/ && $0 != "=== " l " task ===" { exit }
             on { print }' "$packets/rater-a/batch-$bn.md" > "$work/block"
         items=$(awk -F '\t' -v i="$id" 'NR == FNR { if ($1 == i) want[$2] = 1; next }
-            FNR > 1 && $1 == i && ($3 in want) { printf "%s ", $2 }' "$record/disagreements.tsv" "$packets/key/documents.tsv")
+            FNR > 1 && $1 == i && ($3 in want) { printf "%s ", $2 }' "$record/disagreements.tsv" "$work/docs.sealed")
         flag=$(awk -F '\t' -v i="$id" 'NR > 1 && $1 == i && $2 == "missing" { print "missing"; exit }' "$record/disagreements.tsv")
         {
             cat "$work/block"
@@ -623,7 +662,7 @@ cmd_third() {
             if [ "$it" = missing ]; then
                 printf '%s\tmissing\t%s\tmissing\n' "$lab" "$id" >> "$packets/key/third-items.tsv"
             else
-                p=$(awk -F '\t' -v i="$id" -v l="$it" '$1 == i && $2 == l { print $3; exit }' "$packets/key/documents.tsv")
+                p=$(awk -F '\t' -v i="$id" -v l="$it" '$1 == i && $2 == l { print $3; exit }' "$work/docs.sealed")
                 printf '%s\t%s\t%s\t%s\n' "$lab" "$it" "$id" "$p" >> "$packets/key/third-items.tsv"
             fi
         done
