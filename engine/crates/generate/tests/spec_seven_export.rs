@@ -873,6 +873,48 @@ fn stated_counts(line: &str) -> Vec<usize> {
         .collect()
 }
 
+/// How many counts of non-claims a current decision states, and each one
+/// that differs from `listed`, as `<name>:<line> says <count>`. A decision
+/// that is not current states none.
+fn miscounts(name: &str, text: &str, listed: usize) -> (usize, Vec<String>) {
+    if !is_current(text) {
+        return (0, Vec::new());
+    }
+    let mut found = 0;
+    let mut wrong = Vec::new();
+    for (n, line) in text.lines().enumerate() {
+        for count in stated_counts(line) {
+            found += 1;
+            if count != listed {
+                wrong.push(format!("{name}:{} says {count}", n + 1));
+            }
+        }
+    }
+    (found, wrong)
+}
+
+#[test]
+fn the_non_claims_count_reads_a_wrong_count_and_skips_a_decision_that_is_not_current() {
+    let current = "---\nid: X\nstatus: current\n---\n\nSpec 7 states one claim and five non-claims.\n\nSix non-claims, said again.\n";
+    assert_eq!(
+        miscounts("x.md", current, 6),
+        (2, vec!["x.md:6 says 5".to_owned()]),
+        "a current decision that says five where spec 7 lists six is one miscount of two counts"
+    );
+    let superseded = current.replace("status: current", "status: superseded");
+    assert_eq!(
+        miscounts("x.md", &superseded, 6),
+        (0, Vec::new()),
+        "a decision that is not current states no count this test holds"
+    );
+    let body_only = "status: current\n\nfive non-claims\n";
+    assert_eq!(
+        miscounts("x.md", body_only, 6),
+        (0, Vec::new()),
+        "a `status: current` line outside the front matter does not make a decision current"
+    );
+}
+
 #[test]
 fn every_current_decision_that_counts_the_non_claims_of_a_filtered_export_counts_what_spec_7_lists()
 {
@@ -892,22 +934,14 @@ fn every_current_decision_that_counts_the_non_claims_of_a_filtered_export_counts
     let mut wrong = Vec::new();
     for path in paths {
         let text = std::fs::read_to_string(&path).expect("read a decision");
-        if !is_current(&text) {
-            continue;
-        }
         let name = path
             .file_name()
             .unwrap_or_default()
             .to_string_lossy()
             .into_owned();
-        for (n, line) in text.lines().enumerate() {
-            for count in stated_counts(line) {
-                found += 1;
-                if count != listed {
-                    wrong.push(format!("{name}:{} says {count}", n + 1));
-                }
-            }
-        }
+        let (stated, miscounted) = miscounts(&name, &text, listed);
+        found += stated;
+        wrong.extend(miscounted);
     }
     assert!(
         found > 0,
