@@ -20,25 +20,24 @@
     code.parentNode.replaceWith(div);
   });
 
-  function token(name, fallback) {
-    var v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-    return v || fallback;
+  function token(name) {
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
   }
 
   function draw() {
-    var bg = token('--bg', '#fbfaf8');
-    var fg = token('--fg', '#1a1917');
-    var muted = token('--muted', '#5f5b54');
-    var rule = token('--rule', '#e2ddd4');
-    var accent = token('--accent', '#1d5c54');
-    var panel = token('--code-bg', '#f1eee8');
+    var bg = token('--bg');
+    var fg = token('--fg');
+    var muted = token('--muted');
+    var rule = token('--rule');
+    var accent = token('--accent');
+    var panel = token('--code-bg');
     mermaid.initialize({
       startOnLoad: false,
       securityLevel: 'strict',
       theme: 'base',
       themeVariables: {
         background: bg,
-        fontFamily: token('--sans', 'sans-serif'),
+        fontFamily: token('--sans'),
         primaryColor: panel,
         primaryTextColor: fg,
         primaryBorderColor: accent,
