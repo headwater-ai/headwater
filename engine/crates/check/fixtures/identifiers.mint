@@ -1,4 +1,4 @@
-19 schemes
+20 schemes
 
 decision_id
   pattern    {namespace}-DR-{seq:04d}
@@ -106,6 +106,16 @@ process_explanation_id
   render     HW-PEXP-<slug>
   needs      slug
   mint       HW-PEXP-a-name
+  admits     true
+  sequence   -
+  refuses    false
+
+process_how_to_id
+  pattern    {namespace}-PHOW-{slug}
+  namespace  HW
+  render     HW-PHOW-<slug>
+  needs      slug
+  mint       HW-PHOW-a-name
   admits     true
   sequence   -
   refuses    false

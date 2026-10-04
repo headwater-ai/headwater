@@ -1,6 +1,20 @@
 // SPDX-License-Identifier: Apache-2.0
-//! The site navigation: one file, the reading order this corpus derives,
+//! The site navigation: one file, each shelf's documents in path order,
 //! written in the shape MkDocs's `nav:` key reads.
+//!
+//! # Path order, where a shelf index prints the reading order
+//!
+//! A shelf index lists a shelf in the order [`headwater_query::Surface::by_precedence`]
+//! derives, because it is the page a reader opens to learn what to read first.
+//! This file is a sidebar, which a reader uses to find a document they already
+//! know the name or the number of. Precedence puts decision 101 before decision
+//! 86 and gives no reader a rule to find either, so this emitter sorts a
+//! shelf's documents by path. The numbered shelves carry a zero-padded prefix,
+//! so path order is numeric order, and an unnumbered shelf reads alphabetically
+//! by file name. This amends HW-DR-0036, which had this file follow
+//! `by_precedence`, and
+//! [HW-DR-0108](../../../../docs/decisions/0108-the-site-sidebar-lists-a-shelf-in-path-order-and-the-shelf-index-keeps-the-reading-order.md)
+//! records the amendment.
 //!
 //! [HW-DR-0036](../../../../docs/decisions/0036-q36-which-of-mkdocs-docusaurus-or-astro-this-corpus-emits-navigation-for-and-why.md)
 //! is why this emitter writes that shape and not Docusaurus's `sidebars.js` or
@@ -152,8 +166,12 @@ pub(crate) fn emit(
             return Ok(None);
         }
 
+        // Path order, and not `by_precedence`. A sidebar is a list a reader
+        // looks a document up in, and a shelf of numbered documents has to
+        // read 86 and then 101. The shelf index keeps the derived reading
+        // order. See the module comment.
         let mut ordered = pointers(surface, &on_shelf);
-        surface.by_precedence(&mut ordered);
+        ordered.sort_by(|a, b| a.path.cmp(&b.path));
         Ok(Some(Group {
             // The declared display name, through the one function three
             // emitters read. `Group::shelf` is a label and nothing addresses

@@ -26,7 +26,7 @@ relations:
 
 ## Task
 
-Read `docs/spec/09-open-questions.md#q8--probe-cost-and-cadence` and say what this project decided about probe cost and cadence.
+Read `docs/spec/09-open-questions.md#8--probe-cost-and-cadence` and say what this project decided about probe cost and cadence.
 
 ## Expectation
 

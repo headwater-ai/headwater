@@ -213,6 +213,10 @@ The documents on this shelf, in the reading order this corpus derives. Each head
 
 [HW-DR-0035](../decisions/0035-q35-whether-one-requirement-kind-holds-an-imported-requirement-and-an-authored-one.md) — The `requirement` and `acceptance_criterion` kinds serve the authored population alone. A transcribed requirement is a marked file that answers no contract, so a separate kind with an empty contract carries the imported case.
 
+## 108 — The site sidebar lists a shelf in path order, and the shelf index keeps the reading order
+
+[HW-DR-0108](../decisions/0108-the-site-sidebar-lists-a-shelf-in-path-order-and-the-shelf-index-keeps-the-reading-order.md) — The site sidebar lists the documents of a shelf in path order, which is numeric order on a numbered shelf. The shelf index keeps the derived reading order. (asserted, and no human has accepted it)
+
 ## 36 — Which of MkDocs, Docusaurus, or Astro this corpus emits navigation for, and why
 
 [HW-DR-0036](../decisions/0036-q36-which-of-mkdocs-docusaurus-or-astro-this-corpus-emits-navigation-for-and-why.md) — MkDocs is the pick. Its `nav:` is data and not code, and Astro has no native nav format to emit at all.
