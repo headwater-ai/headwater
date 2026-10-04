@@ -603,6 +603,43 @@ if [ -x "$engine" ] && [ -f "$oprobe" ]; then
     same "and both halves are in \`produced\`" "2" "$(grep -c '^    - path:' "$scratch/ows-both.yaml")"
     absent "and the oracle reports over neither, because the copy holds the whole patch" \
         "        - \"$orule\"" "$scratch/ows-both.yaml"
+
+    # A write the harness refused landed nothing, so it is not an artifact
+    # (#1659). Four sessions of the 2026-10-03 campaign met the workspace's
+    # write hook: each `Write` named a path, the hook refused it, and the old
+    # transform kept that path in `produced`. The oracle branch then exited 5
+    # on the `cp` of a file that was never there, and the non-oracle branch
+    # wrote `findings: []` for it, which the grader scores as a clean pass.
+    # Spec 15 gives `path` as "where the artifact landed", so the path leaves.
+    refused='docs/obligations/9999-a-write-the-hook-refused.md'
+    {
+        printf '%s\n' '{"type":"system","subtype":"init","model":"claude-haiku-4-5","session_id":"s-refused"}'
+        printf '{"type":"assistant","message":{"id":"m1","content":[{"type":"tool_use","id":"t1","name":"Write","input":{"file_path":"%s","content":"x"}}]}}\n' "$refused"
+        printf '%s\n' '{"type":"user","message":{"content":[{"type":"tool_result","tool_use_id":"t1","is_error":true,"content":"PreToolUse:Write hook error: run headwater new"}]}}'
+        printf '%s\n' '{"type":"result","subtype":"success","total_cost_usd":0.001}'
+    } > "$scratch/refused-write.jsonl"
+    sh "$transform" --probe HW-PROBE-a-session-records-which-obligation-an-evaluation-discharged \
+        --session refused-only --root "$scratch/engine-only" --workspace "$scratch/ows-one" \
+        --oracle-tree "$scratch/otree" \
+        < "$scratch/refused-write.jsonl" > "$scratch/refused-only.yaml" 2>"$scratch/refused-only.err"
+    same "a refused write with no other artifact records through the oracle tree" "0" "$?"
+    same "and its event says \`produced: []\`, the scored failure" "  produced: []" \
+        "$(grep '^  produced:' "$scratch/refused-only.yaml")"
+    sh "$transform" --probe HW-PROBE-a-session-records-which-obligation-an-evaluation-discharged \
+        --session refused-then-landed --root "$scratch/engine-only" --workspace "$scratch/ows-one" \
+        --oracle-tree "$scratch/otree" --produced "$oeval" \
+        < "$scratch/refused-write.jsonl" > "$scratch/refused-then-landed.yaml" 2>"$scratch/refused-then-landed.err"
+    same "a refused write then an artifact at another path records through the oracle tree" "0" "$?"
+    same "and \`produced\` names the path that landed and nothing else" \
+        "    - path: \"$oeval\"" "$(grep '^    - path:' "$scratch/refused-then-landed.yaml")"
+    present "and that artifact carries a \`findings\` key" \
+        "      findings:" "$scratch/refused-then-landed.yaml"
+    sh "$transform" --probe HW-PROBE-a-session-records-which-obligation-an-evaluation-discharged \
+        --session refused-no-oracle --root "$scratch/engine-only" --workspace "$scratch/ows-one" \
+        < "$scratch/refused-write.jsonl" > "$scratch/refused-no-oracle.yaml" 2>"$scratch/refused-no-oracle.err"
+    same "a refused write records without an oracle tree too" "0" "$?"
+    same "and it says \`produced: []\`, not an entry with \`findings: []\` that grades as clean" \
+        "  produced: []" "$(grep '^  produced:' "$scratch/refused-no-oracle.yaml")"
 fi
 
 # ---------------------------------------------------------------------------
