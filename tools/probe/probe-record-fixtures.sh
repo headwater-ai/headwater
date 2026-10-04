@@ -640,6 +640,16 @@ if [ -x "$engine" ] && [ -f "$oprobe" ]; then
     same "a refused write records without an oracle tree too" "0" "$?"
     same "and it says \`produced: []\`, not an entry with \`findings: []\` that grades as clean" \
         "  produced: []" "$(grep '^  produced:' "$scratch/refused-no-oracle.yaml")"
+    # An empty file that landed is an artifact: the test is that a file is
+    # there, not that it holds bytes.
+    rm -rf "$scratch/ows-empty"
+    cp -a "$scratch/ows-one" "$scratch/ows-empty"
+    : > "$scratch/ows-empty/$refused"
+    sh "$transform" --probe HW-PROBE-a-session-records-which-obligation-an-evaluation-discharged \
+        --session empty-landed --root "$scratch/engine-only" --workspace "$scratch/ows-empty" \
+        < "$scratch/refused-write.jsonl" > "$scratch/empty-landed.yaml" 2>"$scratch/empty-landed.err"
+    same "an empty file that landed is in \`produced\`" "    - path: \"$refused\"" \
+        "$(grep '^    - path:' "$scratch/empty-landed.yaml")"
 fi
 
 # ---------------------------------------------------------------------------
@@ -3024,6 +3034,13 @@ STUB
         fi
         sh "$root/tools/probe/campaign.sh" --out "$unrec" --unrecorded L9-not-a-job >/dev/null 2>"$scratch/unrec-3b.err"
         same "\`--unrecorded\` refuses a name that is not a job of the batch, with 2" "2" "$?"
+        : > "$unrec/sessions/$u3/cost"
+        sh "$root/tools/probe/campaign.sh" --out "$unrec" --unrecorded "$u3" >/dev/null 2>"$scratch/unrec-3c.err"
+        same "\`--unrecorded\` refuses an empty cost file, with 2" "2" "$?"
+        echo 'forty' > "$unrec/sessions/$u3/cost"
+        sh "$root/tools/probe/campaign.sh" --out "$unrec" --unrecorded "$u3" >/dev/null 2>"$scratch/unrec-3d.err"
+        same "\`--unrecorded\` refuses a cost that is not whole cents, with 2" "2" "$?"
+        rm -f "$unrec/sessions/$u3/cost"
         echo 40 > "$unrec/sessions/$u3/cost"
         (cd "$unrec/sessions/$u3" && find . -type f -exec sha256sum {} + | LC_ALL=C sort; ls -la --time-style=full-iso .) > "$scratch/unrec-before.txt"
         # With no marker, assembly still fails the line on the status 5.
@@ -3106,15 +3123,25 @@ STUB
                 "$? $(grep -c "the plan's \`$member\` moved" "$scratch/repin.err")"
             cp "$scratch/repin-plan.keep" "$unrec/plans/L1"
         done
-        # A dirty checkout is no pin. The edit is to a tracked file and is
-        # put back at once, because the clean-tree cases of this block need it.
-        cp "$root/LICENSE" "$scratch/repin-license.keep"
-        printf '\n' >> "$root/LICENSE"
-        repin_from "$oldpin"
-        repin_dirty=$?
-        cp "$scratch/repin-license.keep" "$root/LICENSE"
-        same "\`--repin\` refuses a dirty checkout with 4" "4" "$repin_dirty"
+        # A dirty checkout is no pin. The suite writes nothing in the checkout
+        # under test, so a `git` shim on the path reports a modified file to
+        # `status` and passes every other call to the real `git`.
+        mkdir -p "$scratch/dirty-bin"
+        printf '#!/bin/sh\nfor a in "$@"; do [ "$a" = status ] && { echo " M LICENSE"; exit 0; }; done\nexec %s "$@"\n' \
+            "$(command -v git)" > "$scratch/dirty-bin/git"
+        chmod +x "$scratch/dirty-bin/git"
+        printf '%s\n' "$oldpin" > "$unrec/head"
+        PATH="$scratch/dirty-bin:$scratch/bin:$PATH" sh "$root/tools/probe/campaign.sh" --out "$unrec" --repin \
+            >/dev/null 2>"$scratch/repin.err"
+        same "\`--repin\` refuses a dirty checkout with 4" "4" "$?"
         present "and says why" "uncommitted changes" "$scratch/repin.err"
+
+        # A probe the batch draws whose recorded task is gone is a task that
+        # moved, not one to skip.
+        mv "$task_file" "$scratch/repin-task.gone"
+        repin_from "$oldpin"
+        same "\`--repin\` refuses with 4 when a recorded task file is missing" "4" "$?"
+        mv "$scratch/repin-task.gone" "$task_file"
 
         printf 'another task\n' >> "$task_file"
         repin_from "$oldpin"

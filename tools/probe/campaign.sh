@@ -242,6 +242,7 @@
 #   2   a usage error, a line whose tier declares no turn cap and no
 #       `--max-turns` was given, or `--unrecorded` names a session that is not
 #       a job of the batch, whose `status` is not 5, or that states no cost
+#       in whole cents
 #   3   a tool is missing, or no engine is built
 #   4   the checkout is dirty, `HEAD` moved during the batch, `HEAD` is not
 #       the commit the output directory holds a batch of, the `claude`
@@ -373,9 +374,14 @@ if [ "$unrecorded" = 1 ]; then
         elif [ "$status" != 5 ]; then
             echo "campaign: $name has status ${status:-none}, and only a session whose recorder exited 5 can be accepted as unrecorded." >&2
             refused=1
-        elif [ ! -s "$dir/cost" ]; then
-            echo "campaign: $name states no cost, so the batch cannot count what it spent. It is not accepted as unrecorded." >&2
-            refused=1
+        else
+            # The cost is a whole number of cents, because assembly adds it.
+            case $(cat "$dir/cost" 2>/dev/null) in
+                '' | *[!0-9]*)
+                    echo "campaign: $name states no cost in whole cents, so the batch cannot count what it spent. It is not accepted as unrecorded." >&2
+                    refused=1
+                    ;;
+            esac
         fi
     done
     [ "$refused" = 0 ] || exit 2
