@@ -120,6 +120,34 @@ table th { font-family: var(--sans); font-size: 0.85rem; text-align: left; }
 .hw-shelves a:hover { color: var(--accent); }
 .hw-shelves a.here { color: var(--fg); border-bottom: 2px solid var(--accent); }
 
+/* THE SECTION ROWS (#1681), where the nav declares sections. A row is a
+ * labeled section. A section of groups is a row of tabs over one open panel,
+ * and a `noindex` section's row is tinted. The highlight is an underline and
+ * nothing else: on the current shelf, and on the tab of the group that holds
+ * the page, even while another group is open. An open tab that is not
+ * current carries no underline. */
+.hw-rows { display: flex; flex-direction: column; gap: 0.45rem; }
+.hw-row, .hw-panel { display: flex; flex-wrap: wrap; gap: 0.35rem 1.1rem; align-items: baseline; }
+.hw-panel { background: var(--code-bg); padding: 0.4rem 0.6rem; margin-inline: -0.6rem; }
+.hw-panel[hidden] { display: none; }
+.hw-row.hw-proc { background: var(--code-bg); padding: 0.35rem 0.6rem; margin-inline: -0.6rem; }
+.hw-grp {
+  font-family: var(--sans); font-size: 0.68rem; text-transform: uppercase;
+  letter-spacing: 0.12em; color: var(--accent); margin-right: 0.2rem;
+}
+.hw-shelves a.hw-tab { border-bottom: 2px solid transparent; }
+.hw-shelves a.hw-tab::after { content: " \25BE"; font-size: 0.7em; }
+.hw-shelves a.hw-tab[aria-expanded="true"] { color: var(--fg); }
+.hw-shelves a.hw-tab.cur { color: var(--fg); border-bottom-color: var(--accent); }
+.hw-shelves a.hw-tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* THE NOTICE that opens every page of a `noindex` section. */
+.hw-notice {
+  font-family: var(--sans); font-size: 0.8rem; color: var(--muted);
+  background: var(--code-bg); border-left: 3px solid var(--muted);
+  margin: 0 0 1rem; padding: 0.55rem 0.8rem;
+}
+
 /* THE SHELF LIST, above the page's own table of contents. */
 .hw-shelfhead { font-family: var(--sans); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.12em; margin: 0 0 0.6rem; }
 .hw-shelfhead a { color: var(--accent); text-decoration: none; }

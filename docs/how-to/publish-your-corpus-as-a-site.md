@@ -46,6 +46,27 @@ add_to:
       output: .headwater/nav.yml
 ```
 
+To put some shelves in their own labeled section, add a `sections` list to the same entry. A section has a `title`, and either `for` with its shelves or `groups` with labeled lists of shelves. The site shows sections, groups and shelves in the order that you write them. A shelf that no section names stays at the top level of the navigation. The shelf names below are examples, so use the names of your own shelves.
+
+```yaml
+add_to:
+  projections:
+    - kind: site_nav
+      output: .headwater/nav.yml
+      sections:
+        - title: Reference
+          groups:
+            - title: Guides
+              for: [tutorials, how_to]
+            - title: Records
+              for: [decisions]
+        - title: Internal notes
+          noindex: true
+          for: [meeting_notes]
+```
+
+`noindex: true` writes one path prefix for each shelf of the section to `extra.headwater_noindex` in `.headwater/nav.yml`. The prefix is the text of the shelf pattern before its first glob character, such as `decisions/` for `docs/decisions/**`. The recipe template of step 3 does not read that list. To keep those pages out of a search engine, your theme must emit `<meta name="robots" content="noindex">` on each page whose source path starts with a listed prefix.
+
 2. Resolve the taxonomy and generate the projections. The first command writes the lock, and the second command writes `.headwater/nav.yml`.
 
 ```sh

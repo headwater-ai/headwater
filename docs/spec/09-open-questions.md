@@ -109,6 +109,10 @@ The documents on this shelf, in the reading order this corpus derives. Each head
 
 [HW-DR-0050](../decisions/0050-q50-where-the-visual-register-of-the-hand-built-pages-lives.md) — The hand-built pages read as a specification rather than as a product page, and one file holds the color tokens and type stacks that carry it. A script writes that file into each hand-built page before the commit, because the content policy of those pages admits no linked stylesheet, and the generated half links the same file because its own policy admits one. (asserted, and no human has accepted it)
 
+## The process shelves stay published, in a labeled section of the site that a search engine does not index
+
+[HW-DR-0107](../decisions/0107-the-process-shelves-stay-published-in-a-labeled-section-of-the-site-that-a-search-engine-does-not-index.md) — The five process shelves stay on the published site, in their own labeled section that carries a robots noindex. One `sections` member of `site_nav` declares the section, and dropping the pages was refused because public pages cite them (asserted, and no human has accepted it)
+
 ## Q37 — Which parts of the site are hand-built and which are a projection of this corpus
 
 [HW-DR-0037](../decisions/0037-q37-which-parts-of-the-site-are-hand-built-and-which-are-a-projection-of-this-corpus.md) — Everything under `site/` is hand-built and the corpus is the generated projection. A hand-built page states no figure a person typed, and nothing checks that.

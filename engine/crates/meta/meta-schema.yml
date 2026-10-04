@@ -97,12 +97,19 @@ meta_schema: headwater/taxonomy
 # `taxonomy validate` refuses a blank sentence under `purpose completeness`,
 # because absent and blank are two states, as they are for a namespace.
 #
+# 0.11.0 adds `projection.sections`, the labeled top-level sections of a
+# `site_nav`, with the blocks `site_nav_section` and `site_nav_group` (#1681).
+# A section holds shelves or labeled groups of shelves, and `noindex` asks a
+# site template to keep its pages out of a search engine. It is a minor,
+# because a source that wrote none declares none, and the nav it writes is the
+# flat list it wrote before. HW-DR-0107 records why.
+#
 # No consumer compares this value against anything. `fixtures/schema.record`
 # carries it, so a bump shows up in a diff, and nothing refuses a source for
 # the version it was written against. So the position of a digit here is a
 # statement to a reader and never a gate: the removal above is refused at the
 # member and never at the version.
-version: 0.10.0
+version: 0.11.0
 
 # --- the root of a taxonomy source ------------------------------------------
 #
@@ -606,6 +613,30 @@ definitions:
       # The engine takes `false` on a `graph_export` alone, because every other
       # kind is read in the tree.
       committed: {scalar: boolean}
+      # The labeled top-level sections of a `site_nav` (#1681). A section holds
+      # shelves, or labeled groups of shelves, and the navigation nests them
+      # under the section's title in the order written here. A shelf that no
+      # section names stays at the top level, unchanged. `noindex: true` asks a
+      # site template to keep every page of the section's shelves out of a
+      # search engine, and the emitter writes the shelves' directories beside
+      # `nav:` for that template to read. The engine takes `sections` on a
+      # `site_nav` alone, and refuses a shelf named twice.
+      sections: {seq: {block: site_nav_section}}
+
+  # One section of a `site_nav`. It states `for` or `groups`, and the engine
+  # refuses both and neither, because the meta-schema has no way to say "one
+  # of two".
+  site_nav_section:
+    members:
+      title: {scalar: string, required: true}
+      for: {seq: {scalar: string}}
+      groups: {seq: {block: site_nav_group}}
+      noindex: {scalar: boolean}
+
+  site_nav_group:
+    members:
+      title: {scalar: string, required: true}
+      for: {seq: {scalar: string}, required: true}
 
   # What a generated document is, for a projection whose output is a document of
   # the corpus rather than a list beside it.

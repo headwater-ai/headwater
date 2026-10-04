@@ -857,6 +857,32 @@ fn dangling_names(view: &View) -> Vec<Dangling> {
         for shelf in strings(body, "for") {
             reads(at("for"), "shelf", &shelf, &shelves);
         }
+        // A `site_nav` section names shelves directly or through its groups,
+        // and a misspelled one is a resolve error rather than a shelf that
+        // silently leaves the navigation (#1681).
+        let sections = body.get("sections").and_then(|node| node.value.as_seq());
+        for (s, section) in sections.into_iter().flatten().enumerate() {
+            let Some(section) = section.value.as_map() else {
+                continue;
+            };
+            for shelf in strings(section, "for") {
+                reads(at(&format!("sections.{s}.for")), "shelf", &shelf, &shelves);
+            }
+            let groups = section.get("groups").and_then(|node| node.value.as_seq());
+            for (g, group) in groups.into_iter().flatten().enumerate() {
+                let Some(group) = group.value.as_map() else {
+                    continue;
+                };
+                for shelf in strings(group, "for") {
+                    reads(
+                        at(&format!("sections.{s}.groups.{g}.for")),
+                        "shelf",
+                        &shelf,
+                        &shelves,
+                    );
+                }
+            }
+        }
         if let Some(anchor) = block(body, "from").and_then(|node| text(node, "anchor")) {
             reads(at("from.anchor"), "anchor kind", anchor, &anchors);
         }

@@ -1815,5 +1815,33 @@ add_to:
     # to this corpus. An empty `for` covers every shelf, the same reading a
     # `shelf_index` with no `for` gives it, and an empty shelf is left out of
     # the written list rather than reported `Unwritten` for the whole file.
+    #
+    # Two sections, and the order of every group and shelf below is the order
+    # the published site shows (#1681, owner ruling of 2026-10-04). "Reference"
+    # orders its groups as a reader progresses: learn, then look up, then
+    # adopt, then audit. "Project process" holds the five process shelves,
+    # whose pages record how this repository is built and run. It is
+    # `noindex`, so a search engine does not send an adopter to them, and they
+    # stay published because public pages cite them and `mkdocs build
+    # --strict` refuses a nav that names a page the site lacks. HW-DR-0107
+    # records why. A shelf that no section names stays at the top level of
+    # the nav, and the site template shows it in an "Other" tab, so a new
+    # shelf cannot vanish from the site.
     - kind: site_nav
       output: .headwater/nav.yml
+      sections:
+        - title: Reference
+          groups:
+            - title: Guides
+              for: [tutorials, how_to, explanations]
+            - title: Specification
+              for: [spec_series, interfaces, requirements, acceptance_criteria, verifications, subsystems]
+            - title: Taxonomy library
+              for: [library_doctrine, library_index]
+            - title: Decisions and evidence
+              for: [decisions, evaluations, obligations, reviews]
+            - title: Probes
+              for: [probes, probe_runs, probe_results]
+        - title: Project process
+          noindex: true
+          for: [process_specs, process_decisions, process_evaluations, process_obligations, process_explanations]

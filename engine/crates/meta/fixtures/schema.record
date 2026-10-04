@@ -1,4 +1,4 @@
-headwater/taxonomy 0.10.0
+headwater/taxonomy 0.11.0
 
 declarations
   taxonomy (required) scalar:string
@@ -136,6 +136,13 @@ declarations
         kind (required) scalar:string
         name scalar:string
       committed scalar:boolean
+      sections seq of members
+          title (required) scalar:string
+          for seq of scalar:string
+          groups seq of members
+              title (required) scalar:string
+              for (required) seq of scalar:string
+          noindex scalar:boolean
   obligations map of members
       statement (required) scalar:string
       rationale (required) scalar:string
