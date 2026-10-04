@@ -2544,6 +2544,231 @@ fn a_site_nav_opens_each_group_with_that_shelf_s_generated_index() {
     }
 }
 
+/// The emitted `nav.yml` of one `site_nav` source over the fixture corpus,
+/// with the shelf index declared beside it so each group opens with its index.
+fn site_nav_bytes(nav: &str) -> Result<String, String> {
+    let (built, _root) = fixture_tree();
+    let surface = built.surface();
+    let source = format!(
+        "projections:\n  - kind: shelf_index\n    for: [decisions, guides, archive]\n    output: \"{{shelf}}/README.md\"\n{nav}"
+    );
+    let root = headwater_yaml::load(&source)
+        .expect("it loads")
+        .value
+        .as_map()
+        .expect("a mapping")
+        .clone();
+    let projections = Projections::read(&root)
+        .map_err(|errors| format!("{:?}", errors.iter().map(|e| &e.message).collect::<Vec<_>>()))?;
+    let plan = plan(
+        &surface,
+        &built.census,
+        &projections,
+        &fixture_identity(),
+        &Runs::default(),
+        headwater_verbs::VERBS,
+    );
+    if let Some(unwritten) = plan.unwritten.iter().find(|u| u.kind == Kind::SiteNav) {
+        return Err(unwritten.reason.clone());
+    }
+    Ok(plan
+        .outputs
+        .iter()
+        .find(|output| output.path == "nav.yml")
+        .expect("the declaration produced an output")
+        .bytes
+        .clone())
+}
+
+/// The block of one top-level entry of an emitted `nav:` list, from its
+/// `  - "<label>":` line to the line before the next top-level entry.
+fn top_level_block<'a>(bytes: &'a str, label: &str) -> Option<&'a str> {
+    let head = format!("\n  - \"{label}\":\n");
+    let start = bytes.find(&head)? + 1;
+    let body = start + head.len() - 1;
+    let rest = &bytes[body..];
+    let end = [rest.find("\n  - \""), rest.find("\nextra:")]
+        .into_iter()
+        .flatten()
+        .min()
+        .map_or(rest.len(), |at| at + 1);
+    Some(&bytes[start..body + end])
+}
+
+/// A `site_nav` that declares `sections` nests each named shelf under one
+/// labeled top-level entry, and leaves every other shelf where it was (#1681).
+///
+/// The fixture corpus is an adopter's, with shelves called `decisions`,
+/// `guides` and `archive`, so nothing here reads this repository's shelf names.
+/// That is the fourth Done-when clause of #1681. `archive` is empty, so it is
+/// the case of a named shelf that holds no document.
+#[test]
+fn a_site_nav_section_nests_its_shelves_under_one_labeled_top_level_entry() {
+    let plain = site_nav_bytes("  - kind: site_nav\n    output: nav.yml\n").expect("plain nav");
+    let sectioned = site_nav_bytes(concat!(
+        "  - kind: site_nav\n",
+        "    output: nav.yml\n",
+        "    sections:\n",
+        "      - title: Internal\n",
+        "        for: [guides, archive]\n",
+        "        noindex: true\n",
+    ))
+    .expect("a nav with one section");
+
+    // (a) One top-level entry labeled with the section's title, and the
+    // `guides` group, index first, one level deeper under it.
+    let internal = top_level_block(&sectioned, "Internal")
+        .unwrap_or_else(|| panic!("no top-level `Internal` entry in:\n{sectioned}"));
+    assert!(
+        internal.starts_with("  - \"Internal\":\n      - \"guides\":\n          - \"guides\": \"guides/README.md\"\n"),
+        "the guides group is not nested under the section with its index first:\n{internal}"
+    );
+    // The guides group under the section is the plain group indented by four.
+    let plain_guides = top_level_block(&plain, "guides").expect("guides in the plain nav");
+    let indented: String = plain_guides
+        .lines()
+        .map(|line| format!("    {line}\n"))
+        .collect();
+    assert!(
+        internal.contains(&indented),
+        "the nested guides group is not the plain group one level deeper"
+    );
+    // An empty shelf inside a section is left out, as it is at the top level.
+    assert!(!internal.contains("archive"), "an empty shelf appeared");
+
+    // (b) `guides` is gone from the top level, and `decisions` is there with
+    // the bytes the plain emission writes.
+    assert!(
+        top_level_block(&sectioned, "guides").is_none(),
+        "guides is still a top-level group"
+    );
+    assert_eq!(
+        top_level_block(&sectioned, "decisions"),
+        top_level_block(&plain, "decisions"),
+        "a shelf that no section names moved"
+    );
+    // The ungrouped shelves come first, then the sections.
+    assert!(
+        sectioned.find("  - \"decisions\":") < sectioned.find("  - \"Internal\":"),
+        "the section is not written after the ungrouped shelves"
+    );
+
+    // (c) The noindex list holds the directory of `guides` and `archive`, the
+    // two shelves of the noindex section, and nothing else.
+    let docs = YamlOwned::load_from_str(&sectioned).expect("the emitted file is valid YAML");
+    let doc = docs.first().expect("one YAML document");
+    let noindex: Vec<&str> = doc
+        .as_mapping_get("extra")
+        .and_then(|extra| extra.as_mapping_get("headwater_noindex"))
+        .and_then(|list| list.as_sequence())
+        .unwrap_or_else(|| panic!("no `extra.headwater_noindex` list in:\n{sectioned}"))
+        .iter()
+        .map(|item| item.as_str().expect("a string"))
+        .collect();
+    assert_eq!(noindex, vec!["guides/", "archive/"]);
+
+    // (d) The source with no `sections` writes no `extra` key and no section
+    // level: the plain shape, which every other nav case already pins.
+    assert!(!plain.contains("extra:"), "a nav with no sections wrote `extra`");
+    assert!(top_level_block(&plain, "guides").is_some());
+
+    // A section that is not noindex writes no `extra` key at all.
+    let indexed = site_nav_bytes(concat!(
+        "  - kind: site_nav\n",
+        "    output: nav.yml\n",
+        "    sections:\n",
+        "      - title: Internal\n",
+        "        for: [guides]\n",
+    ))
+    .expect("a nav with one indexed section");
+    assert!(!indexed.contains("extra:"), "an indexed section wrote `extra`");
+    assert_eq!(
+        top_level_block(&indexed, "Internal"),
+        top_level_block(&sectioned, "Internal")
+    );
+}
+
+/// A section holds groups of shelves, each group labeled, in the order the
+/// declaration lists them and not in the order of the taxonomy (#1681).
+#[test]
+fn a_site_nav_section_with_groups_nests_section_group_shelf_in_declared_order() {
+    let plain = site_nav_bytes("  - kind: site_nav\n    output: nav.yml\n").expect("plain nav");
+    let bytes = site_nav_bytes(concat!(
+        "  - kind: site_nav\n",
+        "    output: nav.yml\n",
+        "    sections:\n",
+        "      - title: Reference\n",
+        "        groups:\n",
+        "          - title: Learn\n",
+        "            for: [guides]\n",
+        "          - title: Look up\n",
+        "            for: [decisions]\n",
+    ))
+    .expect("a nav with grouped sections");
+    let reference = top_level_block(&bytes, "Reference").expect("the section");
+    let learn = reference.find("      - \"Learn\":\n          - \"guides\":\n");
+    let look_up = reference.find("      - \"Look up\":\n          - \"decisions\":\n");
+    assert!(learn.is_some(), "no Learn group holding guides:\n{reference}");
+    assert!(look_up.is_some(), "no Look up group holding decisions:\n{reference}");
+    // The taxonomy lists `decisions` first, and the declaration lists `guides`
+    // first. The declaration wins.
+    assert!(learn < look_up, "the groups are not in declared order");
+    // Each shelf group is the plain one, two levels deeper.
+    let plain_decisions = top_level_block(&plain, "decisions").expect("decisions");
+    let indented: String = plain_decisions
+        .lines()
+        .map(|line| format!("        {line}\n"))
+        .collect();
+    assert!(reference.contains(&indented), "decisions changed shape under a group");
+    // Every shelf is in a section, so nothing is at the top level but it.
+    assert!(bytes.trim_end().ends_with(reference.trim_end()));
+    assert_eq!(bytes.matches("\n  - \"").count(), 1);
+
+    // A shelf is named in one place, and a section takes `for` or `groups`.
+    for (source, says) in [
+        (
+            "    sections:\n      - title: A\n        for: [guides]\n      - title: B\n        for: [guides]\n",
+            "names the shelf `guides` twice",
+        ),
+        (
+            "    for: [guides]\n    sections:\n      - title: A\n        for: [guides]\n",
+            "names the shelf `guides` twice",
+        ),
+        (
+            "    sections:\n      - title: A\n        for: [guides]\n        groups:\n          - title: G\n            for: [decisions]\n",
+            "takes `for` or `groups`, not both",
+        ),
+        (
+            "    sections:\n      - title: A\n",
+            "takes `for` or `groups`, not both",
+        ),
+        (
+            "    sections:\n      - for: [guides]\n",
+            "states no `title`",
+        ),
+        (
+            "    sections:\n      - title: A\n        for: [guides]\n        noindex: maybe\n",
+            "`noindex` is not `true` or `false`",
+        ),
+    ] {
+        let err = site_nav_bytes(&format!("  - kind: site_nav\n    output: nav.yml\n{source}"))
+            .expect_err(source);
+        assert!(err.contains(says), "{source}: expected `{says}`, got {err}");
+    }
+    // A shelf the taxonomy does not declare is refused, not silently dropped.
+    let err = site_nav_bytes(
+        "  - kind: site_nav\n    output: nav.yml\n    sections:\n      - title: A\n        for: [guidse]\n",
+    )
+    .expect_err("an unknown shelf");
+    assert!(err.contains("`guidse`"), "{err}");
+    // And only a `site_nav` takes `sections`.
+    let err = site_nav_bytes(
+        "  - kind: shelf_index\n    output: \"x/{shelf}.md\"\n    sections:\n      - title: A\n        for: [guides]\n",
+    )
+    .expect_err("sections on a shelf index");
+    assert!(err.contains("only a `site_nav` takes `sections`"), "{err}");
+}
+
 /// A committed descriptor whose emitter set is not this engine's stops the
 /// `--check` verdict from naming a remedy, and the report names both numbers.
 ///
