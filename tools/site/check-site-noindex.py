@@ -13,8 +13,11 @@ WHAT IT HOLDS
     2. `llms.txt` lists a page that carries the meta.
     3. A page under a declared prefix does not carry the meta, which is the
        template dropping the line or the nav losing the list.
-    4. The nav declares prefixes and no served page sits under any of them,
-       so the third test read nothing. That is refused rather than passed.
+    4. The nav declares a prefix that no served page sits under, so the
+       third test read nothing for it. That is refused rather than passed,
+       one prefix at a time. A directory prefix covers every page served
+       under it, and a file prefix covers that one page, as the template's
+       match over the source path does.
 
 WHY IT READS THE ASSEMBLED DIRECTORY
 
@@ -70,18 +73,26 @@ def prefixes(nav):
 
 
 def served(prefix):
-    """The served directory prefix of a source-path prefix.
+    """The served page set of a source-path prefix, as `(path, exact)`.
 
-    MkDocs serves `a/b.md` at `a/b/` and `a/README.md` at `a/`, so a directory
-    prefix is served as itself and a file prefix by that rule.
+    The template marks a page whose source path starts with the prefix. A
+    directory prefix (`a/`) therefore covers every page served under `a/`. A file
+    prefix covers that one file, which MkDocs serves at `a/b/` for `a/b.md` and
+    at `a/` for `a/README.md`, so it matches that served directory exactly and
+    never the pages beneath it.
     """
     if prefix == "" or prefix.endswith("/"):
-        return prefix
+        return prefix, False
     stem = prefix[:-3] if prefix.endswith(".md") else prefix
     parent, _, name = stem.rpartition("/")
     if name in ("README", "index"):
-        return parent + "/" if parent else ""
-    return stem + "/"
+        return (parent + "/" if parent else ""), True
+    return stem + "/", True
+
+
+def under(rel, entry):
+    path, exact = entry
+    return rel == path if exact else rel.startswith(path)
 
 
 def page_of(url, root):
@@ -137,19 +148,25 @@ def main(argv):
                 findings.append("`%s` lists %s, and that page carries `noindex`" % (name, url))
 
     # 3 and 4: every page under a declared prefix carries the meta.
-    declared = [served(prefix) for prefix in prefixes(nav)]
+    raw = prefixes(nav)
+    declared = [served(prefix) for prefix in raw]
+    reach = [0] * len(declared)
     covered = 0
     for path in pages:
         rel = path.relative_to(root).parent.as_posix()
         rel = "" if rel == "." else rel + "/"
-        if any(rel.startswith(prefix) for prefix in declared):
+        hits = [i for i, entry in enumerate(declared) if under(rel, entry)]
+        for i in hits:
+            reach[i] += 1
+        if hits:
             covered += 1
             if path not in marked:
                 findings.append("`%s` is under a `noindex` section of the nav and carries no "
                                 "robots `noindex` meta" % path.relative_to(root).as_posix())
-    if declared and covered == 0:
-        findings.append("the nav declares %d `noindex` prefixes and no served page sits under "
-                        "any of them, so nothing was checked" % len(declared))
+    for prefix, count in zip(raw, reach):
+        if count == 0:
+            findings.append("the nav declares the `noindex` prefix `%s` and no served page sits "
+                            "under it, so nothing was checked for it" % prefix)
 
     print("%d of %d pages carry `noindex`; %d sit under the %d declared prefixes; "
           "%d URLs in sitemap.xml and %d in llms.txt were read"

@@ -177,8 +177,8 @@
       Two kinds of row. A section of groups is a row of tabs, and each tab
       is a link to its group's first shelf, so with no script every shelf is
       two clicks away. `js/shelf-tabs.js` turns each tab into a toggle for
-      the panel below it. A section of shelves is a row of shelf links, and a
-      `noindex` section's row is tinted. The panel of the group that holds
+      the panel below it. A section of shelves is a row of shelf links. The
+      row of a `noindex` section is tinted, and so are its panels. The panel of the group that holds
       this page is open when the page loads, and its tab and shelf carry
       `aria-current`.
     #}
@@ -191,7 +191,8 @@
           {% set grouped = top.children[0].children and top.children[0].children[0].is_section %}
           {% set outer = loop.index %}
           {% if grouped %}
-            <div class="hw-row">
+            {% set proc = hw_noindex(top.children[0].children[0].children[0].file.src_uri)|trim %}
+            <div class="hw-row{% if proc %} hw-proc{% endif %}">
               <span class="hw-grp">{{ top.title }}</span>
               {% for group in top.children %}
                 <a class="hw-tab{% if group.active %} cur{% endif %}" href="{{ group.children[0].children[0].url|url }}" data-panel="hw-panel-{{ outer }}-{{ loop.index }}"{% if group.active %} aria-current="true"{% endif %}>{{ group.title }}</a>
@@ -201,7 +202,7 @@
               {% endif %}
             </div>
             {% for group in top.children %}
-              <div class="hw-panel" id="hw-panel-{{ outer }}-{{ loop.index }}"{% if not group.active %} hidden{% endif %}>
+              <div class="hw-panel{% if proc %} hw-proc{% endif %}" id="hw-panel-{{ outer }}-{{ loop.index }}"{% if not group.active %} hidden{% endif %}>
                 {% for s in group.children %}
                   <a href="{{ s.children[0].url|url }}"{% if s.active %} class="here" aria-current="true"{% endif %}>{{ s.title }}</a>
                 {% endfor %}

@@ -2,8 +2,9 @@
 // (#1681). The template writes each tab as a link to its group's first shelf,
 // and writes every panel, with the panel of the group that holds the page open.
 // So with no script every shelf is still two clicks away, and this file only
-// saves the page load. A tab opens its panel and closes the others, and a
-// second click on an open tab closes it. The underline of the current group
+// saves the page load. A tab opens its panel and closes the other panels of
+// its own row, so a second grouped section keeps its open panel, and a second
+// click on an open tab closes it. The underline of the current group
 // is the `cur` class the template wrote, and this file never moves it.
 (function () {
   var tabs = document.querySelectorAll('.hw-tab[data-panel]');
@@ -18,7 +19,9 @@
     tab.addEventListener('click', function (event) {
       event.preventDefault();
       var open = tab.getAttribute('aria-expanded') === 'true';
-      tabs.forEach(function (other) {
+      var row = tab.closest('.hw-row');
+      var peers = row ? row.querySelectorAll('.hw-tab[data-panel]') : [tab];
+      Array.prototype.forEach.call(peers, function (other) {
         var p = panelOf(other);
         if (p) { p.hidden = true; }
         other.setAttribute('aria-expanded', 'false');

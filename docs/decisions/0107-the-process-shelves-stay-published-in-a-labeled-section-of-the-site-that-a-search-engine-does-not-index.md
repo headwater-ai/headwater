@@ -60,15 +60,15 @@ The owner approved a design on 2026-10-04 from a mockup, as "option A2". The top
 
 ## Consequences
 
-**The served sitemap lists no process page.** `tools/site/sitemap.py` leaves out each page whose `index.html` carries the robots `noindex` meta. It reads that from the page, so the sitemap is still derived from the served directory. On this branch, the assembled site has 613 pages, and its sitemap lists 557 of them. The 56 that it leaves out are the process pages.
+**The served sitemap lists no process page.** `tools/site/sitemap.py` leaves out each page whose `index.html` carries the robots `noindex` meta. It reads that from the page, so the sitemap is still derived from the served directory. On this branch, the assembled site has 614 pages, and its sitemap lists 558 of them. The 56 that it leaves out are the process pages.
 
-**A check holds the crawler files.** `tools/site/check-site-noindex.py` reads the assembled directory. It fails when `sitemap.xml` or `llms.txt` lists a `noindex` page, or when a page under a `noindex` prefix has no meta. It also fails when the nav declares prefixes and no served page is under any of them. `tools/site/site-noindex-fixtures.sh` causes each of those failures on a synthetic tree. CI runs both scripts after the assembly step.
+**A check holds the crawler files.** `tools/site/check-site-noindex.py` reads the assembled directory. It fails when `sitemap.xml` or `llms.txt` lists a `noindex` page, or when a page under a `noindex` prefix has no meta. It also fails for each prefix that the nav declares and that no served page is under. `tools/site/site-noindex-fixtures.sh` causes each of those failures on a synthetic tree. CI runs both scripts after the assembly step.
 
 **The template shows the sections as rows.** `mkdocs/overrides/main.html` finds the shelf of a page at any depth. It identifies a shelf as the item whose children are pages, and never by its label. A section of groups is a row of tabs, and each tab is a link to the first shelf of its group. `js/shelf-tabs.js` turns each tab into a toggle for its panel. With no script, every shelf is two clicks away. A shelf that no section names appears in an "Other" tab, so a new shelf cannot vanish from the switcher. Each page of a `noindex` section opens with a notice that links back to the specification.
 
 **An adopter gets the nav section from the engine, and the `noindex` meta only from a template.** The adopter template at `integrations/site-generator/mkdocs.yml` names no `custom_dir`. So an adopter that declares a `noindex` section gets the nested nav and the `extra.headwater_noindex` list. Their own theme must read the list to emit the meta.
 
-**The nav names the same files.** Before and after this change, `.headwater/nav.yml` names 604 files. Only their nesting changed, so `validation.nav.omitted_files` reads the same set. [HW-OBL-0161](../obligations/0161-the-validation-block-of-mkdocs-yml-is-a-gate-this-repository-owns-and-no-fixture-drives.md) is still open: no fixture drives that block.
+**The nav names the same files.** Before this change, `.headwater/nav.yml` names 604 files. After it, the nav names the same 604 files and this record, 605 in all. Only their nesting changed, so `validation.nav.omitted_files` reads the same set. [HW-OBL-0161](../obligations/0161-the-validation-block-of-mkdocs-yml-is-a-gate-this-repository-owns-and-no-fixture-drives.md) is still open: no fixture drives that block.
 
 **Two things are out of scope.** The MkDocs search index still holds the process pages. A `robots.txt` rule would stop a crawler from fetching a page, and the crawler would then never see its `noindex`, so none was added.
 

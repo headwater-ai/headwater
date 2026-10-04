@@ -175,7 +175,14 @@ tree "$t"
 nav "$scratch/stray.yml" "process/nowhere/"
 status=$(run "$t" "$scratch/stray.yml")
 report "a prefix that covers no page is refused, not passed" 1 "$status" \
-    "no served page sits under any of them" "$scratch/err"
+    "the \`noindex\` prefix \`process/nowhere/\` and no served page sits under it" "$scratch/err"
+
+# 6b. One stray prefix beside one that covers pages is still refused, by name.
+tree "$t"
+nav "$scratch/stray2.yml" "process/decisions/" "process/nowhere/"
+status=$(run "$t" "$scratch/stray2.yml")
+report "a stray prefix beside a covering one is refused, by name" 1 "$status" \
+    "the \`noindex\` prefix \`process/nowhere/\` and no served page sits under it" "$scratch/err"
 
 # 7. A file prefix is served by MkDocs's rule: `a/README.md` at `a/`.
 tree "$t"
@@ -187,6 +194,22 @@ python3 "$sitemap" "$t" >"$t/sitemap.xml"
 status=$(run "$t" "$scratch/file.yml")
 report "a file-prefix page that lost the meta is refused" 1 "$status" \
     "\`process/decisions/index.html\` is under" "$scratch/err"
+
+# 7b. A file prefix covers that one page and not the pages served beneath it,
+#     as the template's `startswith` over the source path does.
+tree "$t"
+page "$t" process/decisions/0003-c plain
+python3 "$sitemap" "$t" >"$t/sitemap.xml"
+status=$(run "$t" "$scratch/file.yml")
+report "a file prefix does not cover an unmarked page beneath its directory" 0 "$status"
+
+# 7c. A root `README.md` prefix covers the home page alone, not the whole site.
+tree "$t"
+page "$t" . noindex
+python3 "$sitemap" "$t" >"$t/sitemap.xml"
+nav "$scratch/root.yml" "README.md"
+status=$(run "$t" "$scratch/root.yml")
+report "a root README.md prefix covers the home page and nothing else" 0 "$status"
 
 # 8. Input that cannot be read exits 2 rather than passing.
 mkdir -p "$scratch/empty"
