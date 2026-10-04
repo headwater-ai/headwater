@@ -15,6 +15,7 @@ relations:
   constrains:
     - HW-DR-0036
     - HW-DR-0037
+    - HW-DR-0048
   governs:
     - engine/crates/generate/src/site_nav.rs
     - tools/site/check-site-noindex.py
@@ -55,6 +56,10 @@ The owner approved a design on 2026-10-04 from a mockup, as "option A2". The top
 **The emitter writes the `noindex` list beside `nav:`, as `extra.headwater_noindex`.** It holds the directory of each shelf of a `noindex` section, relative to the corpus root. MkDocs merges an `extra` mapping of the inherited file into the configuration, and the template reads it as `config.extra.headwater_noindex`. The other route was a template that finds the section by its title. That keys a crawler rule on a label that a person can rename, so it was not taken.
 
 **This amends one clause of [HW-DR-0036](0036-q36-which-of-mkdocs-docusaurus-or-astro-this-corpus-emits-navigation-for-and-why.md#consequences): "The generated file carries `nav:` alone".** The file now carries `nav:`, and `extra.headwater_noindex` where a section asks for it. The reason the clause gives still holds. `plan()` derives every byte of the file from the taxonomy, and nothing that a person would add to a working `mkdocs.yml` is in it. A declaration with no `sections` writes a file with no `extra` key and no section level.
+
+**This also amends the shape that [HW-DR-0036](0036-q36-which-of-mkdocs-docusaurus-or-astro-this-corpus-emits-navigation-for-and-why.md#context) states: "the nav a generator needs is two levels", and "one output file over flat groups".** Each shelf is still flat. A declaration with `sections` puts a section level above the shelves. A section with `groups` puts a group level between the section and its shelves. So the nav of this repository is four levels deep: section, group, shelf, document. A declaration with no `sections` writes the two levels that HW-DR-0036 describes.
+
+**This amends one sentence of [HW-DR-0048](0048-the-served-sitemap-is-derived-from-the-served-directory.md): "`tools/site/sitemap.py` walks a directory and writes one `<loc>` element for each `index.html` under it".** The module now writes one `<loc>` element for each `index.html` that does not carry the robots `noindex` meta. The rule of that record still holds: the module reads each page, it carries no list, and the output follows the served directory.
 
 **This constrains [HW-DR-0037](0037-q37-which-parts-of-the-site-are-hand-built-and-which-are-a-projection-of-this-corpus.md).** The generated half of the site is still a projection of the corpus. The section, its label and its `noindex` come from the overlay, and no hand-built page states them.
 
