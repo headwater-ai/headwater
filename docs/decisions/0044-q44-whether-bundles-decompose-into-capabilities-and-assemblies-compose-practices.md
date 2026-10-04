@@ -4,7 +4,7 @@ status: current
 status_since: 2026-08-31
 summary: "Design-spec's evaluation kind and its two purposes move to a new evidence-and-obligation bundle, so decision-record stops requiring the whole specification tradition."
 last_verified: 2026-08-31
-title: "Q44 — Whether bundles decompose into capabilities and assemblies compose practices"
+title: "44 — Whether bundles decompose into capabilities and assemblies compose practices"
 provenance:
   warrant: accepted
   agency: mixed
@@ -21,7 +21,7 @@ relations:
     - HW-EVAL-capability-bundle-address-inventory
 ---
 
-# Q44 — Whether bundles decompose into capabilities and assemblies compose practices
+# 44 — Whether bundles decompose into capabilities and assemblies compose practices
 
 ## Context
 

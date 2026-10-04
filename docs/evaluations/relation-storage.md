@@ -23,7 +23,7 @@ relations:
 
 # Relation storage — the Q4 evaluation
 
-This evaluation closes [Q4](../spec/09-open-questions.md#q4--relation-storage). The question asked where a relation instance lives. The three candidates were front matter, prose with an extractable syntax, and a sidecar edge file per document.
+This evaluation closes [Q4](../spec/09-open-questions.md#4--relation-storage). The question asked where a relation instance lives. The three candidates were front matter, prose with an extractable syntax, and a sidecar edge file per document.
 
 The recorded leaning was front matter, with prose links extracted and checked for resolvability. That leaning survives. The evaluation did not confirm it in the shape that the entry expected, and three of its findings change the specification.
 
@@ -31,7 +31,7 @@ The recorded leaning was front matter, with prose links extracted and checked fo
 
 Q4 reads as a choice between three files. Two later questions had already made it a choice about the *shape of an edge*, and neither of them noticed.
 
-[Q18](../spec/09-open-questions.md#q18--recording-adjudicated-disagreements) leans toward a record of adjudication "as data on the declared edge, with the adjudicator named". [Q20](../spec/09-open-questions.md#q20--where-scent-lives) leans toward "an optional cue on a relation". It states that it blocks on Q4, because "a cue attached to an edge needs somewhere to sit".
+[Q18](../spec/09-open-questions.md#18--recording-adjudicated-disagreements) leans toward a record of adjudication "as data on the declared edge, with the adjudicator named". [Q20](../spec/09-open-questions.md#20--where-scent-lives) leans toward "an optional cue on a relation". It states that it blocks on Q4, because "a cue attached to an edge needs somewhere to sit".
 
 Both leanings need an edge to carry data of its own. A bare pointer cannot carry any. So Q4 must first settle whether a relation instance is a pointer or an object. That answer decides most of what follows. A file format that cannot hold an attribute rules out both leanings without argument.
 
@@ -87,7 +87,7 @@ The leaning said that prose links "do not carry relation semantics unless they a
 
 An annotation syntax gives one edge two authoring locations. Three questions follow immediately, and none of them has a good answer. Which location wins when the two disagree? Which span does a finding anchor to? What does `--fix` write when it adds the reciprocal of an annotated link?
 
-The `headwater:` annotation prefix that [Q10](../spec/09-open-questions.md#q10--naming) names loses this use. Where else that prefix applies is not Q4's business.
+The `headwater:` annotation prefix that [Q10](../spec/09-open-questions.md#10--naming) names loses this use. Where else that prefix applies is not Q4's business.
 
 The cut is also a statement about what the two things are. A prose link is evidence that an author found a reference worth making at one point in a text. A relation is an assertion about two documents that holds wherever they are read. To make every incidental "see also" into a governed edge misstates most of them.
 
@@ -115,13 +115,13 @@ relations:
 
 The scalar is sugar for a mapping whose only key is `to`. Both forms produce the same edge, and the engine reports on one shape.
 
-The adjudication pair in that example is superseded, and the example stays as written because this document is a record of what Q4 decided. [Q18](../spec/09-open-questions.md#q18--recording-adjudicated-disagreements) later refused the edge-as-node change that Q4 offered it, and an adjudication is now a document with an `overrides` edge ([evaluation](warrant-and-adjudication.md)). The long form and the owning-end rule are unaffected.
+The adjudication pair in that example is superseded, and the example stays as written because this document is a record of what Q4 decided. [Q18](../spec/09-open-questions.md#18--recording-adjudicated-disagreements) later refused the edge-as-node change that Q4 offered it, and an adjudication is now a document with an `overrides` edge ([evaluation](warrant-and-adjudication.md)). The long form and the owning-end rule are unaffected.
 
 **Relations sit under one key.** A relation name and a facet name come from separate declarations. Nothing stops a taxonomy from declaring both a facet and a relation called `owns`. Under a flat front matter, that collision is unresolvable, and it appears in one adopter's corpus rather than in the meta-schema. A single `relations:` block also gives `--fix` one region to rewrite and gives edge findings one span root.
 
 **Targets are identifiers, never paths.** [Spec 8](../spec/08-design-departures.md#7-identifier-namespacing-arrives-late) makes every identifier namespaced and globally resolvable, and [spec 3](../spec/03-authoring-and-lifecycle.md#identifiers) never reuses one. A path is a location, and a location moves. An anchor target is the anchor string, which its resolver normalizes.
 
-**Edge identity is a triple.** The source identifier, the relation name, and the normalized target identify an edge. List order does not affect it. A repeated triple in one document is an error, for the reason that [Q2](../spec/09-open-questions.md#q2--schema-format) makes a duplicate YAML key an error. This is what makes the `Edge` scope of spec 12 well-defined and its cache key stable.
+**Edge identity is a triple.** The source identifier, the relation name, and the normalized target identify an edge. List order does not affect it. A repeated triple in one document is an error, for the reason that [Q2](../spec/09-open-questions.md#2--schema-format) makes a duplicate YAML key an error. This is what makes the `Edge` scope of spec 12 well-defined and its cache key stable.
 
 **Instance attributes are declared, not free.** A relation type declares the attributes that its instances may carry, as a kind declares its facets. An undeclared attribute is a finding. Without that rule, the long form becomes the ungoverned side channel that the previous section just closed.
 
@@ -133,13 +133,13 @@ That rule constrains Q18 rather than serving it, and the constraint is deliberat
 
 That last ruling unblocks Q20 without deciding it. A cue is a source-owned attribute, so the referring end writes it, which is what Serena's convention asks for and what foraging theory supports.
 
-**`created_by` stays on the type.** [Spec 2](../spec/02-taxonomy-model.md#who-creates-each-edge) declares it per relation type, and `taxonomy audit` measures whether the declared intent holds in a real corpus. A per-instance value would answer a different question and would make that measurement meaningless. [Q19](../spec/09-open-questions.md#q19--inbound-integration-an-external-system-of-record) may still want per-instance provenance for an imported edge. The instance-attribute surface is where it would go, and Q4 does not put it there.
+**`created_by` stays on the type.** [Spec 2](../spec/02-taxonomy-model.md#who-creates-each-edge) declares it per relation type, and `taxonomy audit` measures whether the declared intent holds in a real corpus. A per-instance value would answer a different question and would make that measurement meaningless. [Q19](../spec/09-open-questions.md#19--inbound-integration-an-external-system-of-record) may still want per-instance provenance for an imported edge. The instance-attribute surface is where it would go, and Q4 does not put it there.
 
 ## The projection has to reify
 
 An edge with attributes is a property graph edge. A plain RDF triple cannot hold one. That is why Wikidata reifies every statement into a node before it attaches a qualifier or a reference. ISO GQL and the openCypher family give edges properties natively, and the RDF 1.2 work adds triple terms for the same need.
 
-So the RDF projection of [Q6](../spec/09-open-questions.md#q6--where-the-corpus-graph-lives-at-rest) and [Q13](../spec/09-open-questions.md#q13--linkml-and-shacl-as-substrate) must reify any edge that carries an attribute, and the round-trip fidelity tests must cover attributes. This is a consequence rather than a new decision. It also sharpens the standing ruling that the Markdown is the corpus. The internal model is a property graph, and RDF is the lossy direction.
+So the RDF projection of [Q6](../spec/09-open-questions.md#6--where-the-corpus-graph-lives-at-rest) and [Q13](../spec/09-open-questions.md#13--linkml-and-shacl-as-substrate) must reify any edge that carries an attribute, and the round-trip fidelity tests must cover attributes. This is a consequence rather than a new decision. It also sharpens the standing ruling that the Markdown is the corpus. The internal model is a property graph, and RDF is the lossy direction.
 
 ## What this predicts, and how to measure it
 
@@ -160,5 +160,5 @@ Seven changes follow, and all are applied.
 | [Spec 2](../spec/02-taxonomy-model.md#the-decision-relation-vocabulary) | A relation type declares its instance attributes, each with an owning end |
 | [Spec 4](../spec/04-assurance-model.md#declaration-moves-the-boundary) | The undeclared-prose-reference check, at advisory posture |
 | [Spec 12](../spec/12-check-layer.md#scope--the-declaration-everything-else-rests-on) | Edge identity is the triple, which is what the `Edge` scope keys on |
-| [Q6](../spec/09-open-questions.md#q6--where-the-corpus-graph-lives-at-rest) | The RDF projection reifies an edge that carries an attribute |
-| [Q20](../spec/09-open-questions.md#q20--where-scent-lives) | The cue has a home, and the owning-end rule answers one of its three questions |
+| [Q6](../spec/09-open-questions.md#6--where-the-corpus-graph-lives-at-rest) | The RDF projection reifies an edge that carries an attribute |
+| [Q20](../spec/09-open-questions.md#20--where-scent-lives) | The cue has a home, and the owning-end rule answers one of its three questions |

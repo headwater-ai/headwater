@@ -4,7 +4,7 @@ status: current
 status_since: 2026-09-21
 summary: "The hand register keeps a curated selection of headings and drops its `supersedes` edge over the generated register, which stays the complete list."
 last_verified: 2026-09-21
-title: "The hand-authored decision register indexes a subset of the shelf, and stops asserting it supersedes the complete one"
+title: "81 — The hand-authored decision register indexes a subset of the shelf, and stops asserting it supersedes the complete one"
 provenance:
   warrant: asserted
   agency: agent
@@ -13,7 +13,7 @@ provenance:
   evidence_basis: evidenced
 ---
 
-# The hand-authored decision register indexes a subset of the shelf, and stops asserting it supersedes the complete one
+# 81 — The hand-authored decision register indexes a subset of the shelf, and stops asserting it supersedes the complete one
 
 ## Context
 

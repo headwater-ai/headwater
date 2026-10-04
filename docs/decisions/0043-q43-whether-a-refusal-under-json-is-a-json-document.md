@@ -4,7 +4,7 @@ status: current
 status_since: 2026-08-30
 summary: "A refusal is an English sentence on standard error and never a JSON document, because `--json` names the shape of an artifact and moves no stream and no grammar."
 last_verified: 2026-10-03
-title: "Q43 — Whether a refusal under `--json` is a JSON document"
+title: "43 — Whether a refusal under `--json` is a JSON document"
 provenance:
   warrant: accepted
   agency: mixed
@@ -21,7 +21,7 @@ relations:
     - engine/crates/cli/tests/json.rs
 ---
 
-# Q43 — Whether a refusal under `--json` is a JSON document
+# 43 — Whether a refusal under `--json` is a JSON document
 
 ## Context
 

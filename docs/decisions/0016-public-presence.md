@@ -1,6 +1,6 @@
 ---
 id: HW-DR-0016
-title: Q16 — Public presence
+title: 16 — Public presence
 status: current
 status_since: 2026-08-11
 last_verified: 2026-10-03
@@ -17,7 +17,7 @@ relations:
     - HW-EVAL-first-contact
 ---
 
-# Q16 — Public presence
+# 16 — Public presence
 
 ## Context
 

@@ -1,6 +1,6 @@
 ---
 id: HW-DR-0021
-title: Q21 — Terminological succession, and validity under merge
+title: 21 — Terminological succession, and validity under merge
 status: current
 status_since: 2026-08-11
 last_verified: 2026-08-11
@@ -17,7 +17,7 @@ relations:
     - HW-EVAL-what-a-check-can-know
 ---
 
-# Q21 — Terminological succession, and validity under merge
+# 21 — Terminological succession, and validity under merge
 
 ## Context
 

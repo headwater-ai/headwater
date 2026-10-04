@@ -4,7 +4,7 @@ status: current
 status_since: 2026-09-12
 summary: "A kind states which values of an enumerated facet it means, under `facets.values`. A lifecycle regime, a shelf discriminator and `facets.forbid` each narrow a value set. None of the three reaches a facet with no state machine behind it."
 last_verified: 2026-09-12
-title: "A kind narrows the value set of an enumerated facet, and nothing else can"
+title: "66 — A kind narrows the value set of an enumerated facet, and nothing else can"
 provenance:
   warrant: asserted
   agency: agent
@@ -19,7 +19,7 @@ relations:
     - engine/crates/resolve/src/rules.rs
 ---
 
-# A kind narrows the value set of an enumerated facet, and nothing else can
+# 66 — A kind narrows the value set of an enumerated facet, and nothing else can
 
 ## Context
 

@@ -4,7 +4,7 @@ status: current
 status_since: 2026-09-27
 summary: "release.yml names each runner image and never reads CI_RUNNER, because the image sets the glibc floor that README.md states. The build is --locked."
 last_verified: 2026-09-27
-title: "The runner image of the engine release build is written in the workflow because it sets the glibc floor"
+title: "91 — The runner image of the engine release build is written in the workflow because it sets the glibc floor"
 provenance:
   warrant: asserted
   agency: agent
@@ -19,7 +19,7 @@ relations:
       verified_revision: sha256:cc62f8db1425466922c618475983155ec51572a77c846a4634a730e18a804ae4
 ---
 
-# The runner image of the engine release build is written in the workflow because it sets the glibc floor
+# 91 — The runner image of the engine release build is written in the workflow because it sets the glibc floor
 
 ## Context
 

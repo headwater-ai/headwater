@@ -4,7 +4,7 @@ status: current
 status_since: 2026-09-27
 summary: "The taxonomy release runs taxonomy publish on taxonomy-source/ at the tag and never zips .headwater/packages/, so the artifact and the tag make one claim."
 last_verified: 2026-09-27
-title: "A taxonomy release publishes the source at the tagged commit and never ships the vendored copy"
+title: "89 — A taxonomy release publishes the source at the tagged commit and never ships the vendored copy"
 provenance:
   warrant: asserted
   agency: agent
@@ -17,7 +17,7 @@ relations:
       verified_revision: sha256:cc62f8db1425466922c618475983155ec51572a77c846a4634a730e18a804ae4
 ---
 
-# A taxonomy release publishes the source at the tagged commit and never ships the vendored copy
+# 89 — A taxonomy release publishes the source at the tagged commit and never ships the vendored copy
 
 ## Context
 

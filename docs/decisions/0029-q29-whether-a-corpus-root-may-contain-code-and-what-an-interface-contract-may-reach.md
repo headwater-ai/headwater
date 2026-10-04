@@ -4,7 +4,7 @@ status: current
 status_since: 2026-08-30
 summary: The corpus root stays `docs`, because a path is corpus content only where a file with no front matter is a defect, and 185 of the 186 Markdown files under `engine/` exist to be defective. An interface contract lives inside the root and reaches a crate by a `governs` edge that binds on existence alone.
 last_verified: 2026-10-03
-title: "Q29 — Whether a corpus root may contain code, and what an interface contract may reach"
+title: "29 — Whether a corpus root may contain code, and what an interface contract may reach"
 provenance:
   warrant: accepted
   agency: agent
@@ -18,7 +18,7 @@ relations:
     - engine/README.md
 ---
 
-# Q29 — Whether a corpus root may contain code, and what an interface contract may reach
+# 29 — Whether a corpus root may contain code, and what an interface contract may reach
 
 ## Context
 

@@ -26,7 +26,7 @@
 # part way runs nothing.
 #
 # For this repository: `site/install.sh` is served byte for byte at
-# https://headwater.tools/install.sh. Step 9 of `docs/how-to/cut-a-release.md`
+# https://headwater.tools/install.sh. Step 9 of `docs/process/how-to/cut-a-release.md`
 # moves the default tag below, and `tools/repo/readme-fixtures.sh` holds it to
 # the release the README installs.
 

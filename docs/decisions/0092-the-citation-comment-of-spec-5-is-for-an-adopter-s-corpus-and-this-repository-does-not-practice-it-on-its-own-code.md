@@ -4,7 +4,7 @@ status: current
 status_since: 2026-09-27
 summary: "The per-identifier citation comment of spec 5 is a convention for an adopter's corpus. By the owner's ruling, the code of this repository carries none. Its comments that name an identifier are prose, and the checker does not read them."
 last_verified: 2026-09-27
-title: "The citation comment of spec 5 is for an adopter's corpus, and this repository does not practice it on its own code"
+title: "92 — The citation comment of spec 5 is for an adopter's corpus, and this repository does not practice it on its own code"
 provenance:
   warrant: asserted
   agency: agent
@@ -19,7 +19,7 @@ relations:
     - HW-SPEC-ai-integration
 ---
 
-# The citation comment of spec 5 is for an adopter's corpus, and this repository does not practice it on its own code
+# 92 — The citation comment of spec 5 is for an adopter's corpus, and this repository does not practice it on its own code
 
 ## Context
 

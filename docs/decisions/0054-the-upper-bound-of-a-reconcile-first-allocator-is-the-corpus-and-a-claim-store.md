@@ -4,7 +4,7 @@ status: current
 status_since: 2026-09-06
 summary: "A tree holds no concurrency, so two branches mint one number in silence. A claim store of one file for each identifier makes the two branches meet, and the rule that already reports a duplicate then fires on the branch."
 last_verified: 2026-09-06
-title: "The upper bound of a reconcile-first allocator is the corpus and a claim store"
+title: "54 — The upper bound of a reconcile-first allocator is the corpus and a claim store"
 provenance:
   warrant: asserted
   agency: agent
@@ -16,7 +16,7 @@ relations:
     - HW-DR-0021
 ---
 
-# The upper bound of a reconcile-first allocator is the corpus and a claim store
+# 54 — The upper bound of a reconcile-first allocator is the corpus and a claim store
 
 ## Context
 

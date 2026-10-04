@@ -4,10 +4,10 @@ status: draft
 status_since: 2026-09-08
 summary: "A binary's `--version` keeps naming one number, the `Cargo.toml` version a `requires_engine` range is read against. Which commit built it is a separate fact a build script now captures, kept out of that comparison and not yet on the command line."
 last_verified: 2026-09-08
-title: "The engine's version stays one number, and a build's exact commit is a separate, unwired fact"
+title: "60 — The engine's version stays one number, and a build's exact commit is a separate, unwired fact"
 ---
 
-# The engine's version stays one number, and a build's exact commit is a separate, unwired fact
+# 60 — The engine's version stays one number, and a build's exact commit is a separate, unwired fact
 
 ## Context
 

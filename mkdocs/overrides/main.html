@@ -195,19 +195,19 @@
             <div class="hw-row{% if proc %} hw-proc{% endif %}">
               <span class="hw-grp">{{ top.title }}</span>
               {% for group in top.children %}
-                <a class="hw-tab{% if group.active %} cur{% endif %}" href="{{ group.children[0].children[0].url|url }}" data-panel="hw-panel-{{ outer }}-{{ loop.index }}"{% if group.active %} aria-current="true"{% endif %}>{{ group.title }}</a>
+                <a class="hw-tab{% if group.active %} cur{% endif %}" href="{{ group.children[0].children[0].url|url }}"{% if group.children|length > 1 %} data-panel="hw-panel-{{ outer }}-{{ loop.index }}"{% endif %}{% if group.active %} aria-current="true"{% endif %}>{{ group.title }}</a>
               {% endfor %}
               {% if others and not placed.others %}
                 <a class="hw-tab{% if shelf.item in others %} cur{% endif %}" href="{{ others[0].children[0].url|url }}" data-panel="hw-panel-other"{% if shelf.item in others %} aria-current="true"{% endif %}>Other</a>
               {% endif %}
             </div>
-            {% for group in top.children %}
+            {% for group in top.children %}{% if group.children|length > 1 %}
               <div class="hw-panel{% if proc %} hw-proc{% endif %}" id="hw-panel-{{ outer }}-{{ loop.index }}"{% if not group.active %} hidden{% endif %}>
                 {% for s in group.children %}
                   <a href="{{ s.children[0].url|url }}"{% if s.active %} class="here" aria-current="true"{% endif %}>{{ s.title }}</a>
                 {% endfor %}
               </div>
-            {% endfor %}
+            {% endif %}{% endfor %}
             {% if others and not placed.others %}
               {% set placed.others = true %}
               <div class="hw-panel" id="hw-panel-other"{% if shelf.item not in others %} hidden{% endif %}>
@@ -240,19 +240,26 @@
 
   <div class="col-md-3 hw-side">
     {% if shelf.item %}
-      {% set siblings = shelf.item.children[1:] %}
+      {#
+        A shelf's generated index is its first page and carries the shelf's
+        title. A shelf with no index page starts at its first document, so that
+        document is listed like the rest and the heading names the shelf
+        without linking to a document that is not its index.
+      #}
+      {% set has_index = shelf.item.children[0].title == shelf.item.title %}
+      {% set siblings = shelf.item.children[1:] if has_index else shelf.item.children %}
       {% set pos = namespace(i=0) %}
       {% for c in siblings %}{% if c.active %}{% set pos.i = loop.index0 %}{% endif %}{% endfor %}
       {% set start = [0, pos.i - (SHELF_WINDOW // 2)]|max %}
       {% set start = [start, [0, siblings|length - SHELF_WINDOW]|max]|min %}
       {% set shown = siblings[start:start + SHELF_WINDOW] %}
-      <h2 class="hw-shelfhead"><a href="{{ shelf.item.children[0].url|url }}">{{ shelf.item.title }}</a></h2>
+      <h2 class="hw-shelfhead">{% if has_index %}<a href="{{ shelf.item.children[0].url|url }}">{{ shelf.item.title }}</a>{% else %}{{ shelf.item.title }}{% endif %}</h2>
       <ul class="hw-shelflist">
         {% for c in shown %}
           <li{% if c.active %} class="here"{% endif %}><a href="{{ c.url|url }}">{{ c.title }}</a></li>
         {% endfor %}
       </ul>
-      {% if siblings|length > SHELF_WINDOW %}
+      {% if has_index and siblings|length > SHELF_WINDOW %}
         <p class="hw-shelfmore"><a href="{{ shelf.item.children[0].url|url }}">All {{ siblings|length }} on this shelf &rarr;</a></p>
       {% endif %}
     {% endif %}

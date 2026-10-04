@@ -1,6 +1,6 @@
 ---
 id: HW-DR-0015
-title: Q15 — A synthesized content tier
+title: 15 — A synthesized content tier
 status: current
 status_since: 2026-08-11
 last_verified: 2026-08-11
@@ -17,7 +17,7 @@ relations:
     - HW-EVAL-warrant-and-adjudication
 ---
 
-# Q15 — A synthesized content tier
+# 15 — A synthesized content tier
 
 ## Context
 

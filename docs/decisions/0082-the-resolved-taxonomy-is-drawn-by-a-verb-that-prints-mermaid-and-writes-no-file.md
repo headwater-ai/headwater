@@ -4,7 +4,7 @@ status: current
 status_since: 2026-09-24
 summary: "`headwater taxonomy graph` prints the resolved taxonomy as a Mermaid flowchart, no projection or export target draws it, and D2 and DOT are equal candidates after it"
 last_verified: 2026-09-27
-title: "The resolved taxonomy is drawn by a verb that prints Mermaid and writes no file"
+title: "82 — The resolved taxonomy is drawn by a verb that prints Mermaid and writes no file"
 provenance:
   warrant: accepted
   agency: agent
@@ -18,7 +18,7 @@ relations:
       verified_revision: sha256:3231a0b4cf0a9089d889fe1e3c3885c2b6f337bdba6645990aa5f4ea52633444
 ---
 
-# The resolved taxonomy is drawn by a verb that prints Mermaid and writes no file
+# 82 — The resolved taxonomy is drawn by a verb that prints Mermaid and writes no file
 
 ## Context
 

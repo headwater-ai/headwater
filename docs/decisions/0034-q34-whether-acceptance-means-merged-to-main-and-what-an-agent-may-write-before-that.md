@@ -4,7 +4,7 @@ status: current
 status_since: 2026-08-30
 summary: "Acceptance is the merge onto main. A provenance block on an unmerged branch is a proposal, so an agent may write `accepted_by` there, and stop rule 5 binds main rather than the byte."
 last_verified: 2026-09-18
-title: "Q34 — Whether acceptance means merged to main, and what an agent may write before that"
+title: "34 — Whether acceptance means merged to main, and what an agent may write before that"
 provenance:
   warrant: accepted
   agency: mixed
@@ -18,7 +18,7 @@ relations:
     - HW-OBL-0108
 ---
 
-# Q34 — Whether acceptance means merged to main, and what an agent may write before that
+# 34 — Whether acceptance means merged to main, and what an agent may write before that
 
 ## Context
 

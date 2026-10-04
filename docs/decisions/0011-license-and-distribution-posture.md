@@ -1,6 +1,6 @@
 ---
 id: HW-DR-0011
-title: Q11 — License and distribution posture
+title: 11 — License and distribution posture
 status: current
 status_since: 2026-08-11
 last_verified: 2026-08-11
@@ -19,7 +19,7 @@ relations:
     - HW-EVAL-first-contact
 ---
 
-# Q11 — License and distribution posture
+# 11 — License and distribution posture
 
 ## Context
 

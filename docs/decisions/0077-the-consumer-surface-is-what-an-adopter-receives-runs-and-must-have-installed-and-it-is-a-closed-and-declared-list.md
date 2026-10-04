@@ -4,7 +4,7 @@ status: current
 status_since: 2026-09-20
 summary: "An adopter needs the binary, a data-only package, Git, `sh`, `curl`, `tar`, eight POSIX utilities and the four APT programs, and nothing else. Every other program reaches Headwater through a verb that the binary configures on request, and no adopter-facing page instructs this repository's own tooling."
 last_verified: 2026-10-03
-title: "The consumer surface is what an adopter receives, runs and must have installed, and it is a closed and declared list"
+title: "77 — The consumer surface is what an adopter receives, runs and must have installed, and it is a closed and declared list"
 relations:
   constrains:
     - HW-DR-0072
@@ -18,7 +18,7 @@ provenance:
   evidence_basis: evidenced
 ---
 
-# The consumer surface is what an adopter receives, runs and must have installed, and it is a closed and declared list
+# 77 — The consumer surface is what an adopter receives, runs and must have installed, and it is a closed and declared list
 
 ## Context
 

@@ -1,6 +1,6 @@
 ---
 id: HW-DR-0008
-title: Q8 — Probe cost and cadence
+title: 8 — Probe cost and cadence
 status: current
 status_since: 2026-08-11
 last_verified: 2026-08-11
@@ -17,7 +17,7 @@ relations:
     - HW-EVAL-the-measurement-layer
 ---
 
-# Q8 — Probe cost and cadence
+# 8 — Probe cost and cadence
 
 ## Context
 

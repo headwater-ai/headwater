@@ -1,6 +1,6 @@
 ---
 id: HW-DR-0004
-title: Q4 — Relation storage
+title: 4 — Relation storage
 status: current
 status_since: 2026-08-11
 last_verified: 2026-08-11
@@ -17,7 +17,7 @@ relations:
     - HW-EVAL-relation-storage
 ---
 
-# Q4 — Relation storage
+# 4 — Relation storage
 
 ## Context
 

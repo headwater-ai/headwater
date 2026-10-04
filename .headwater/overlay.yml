@@ -745,6 +745,38 @@ add:
     homogeneous: true
     kind: how_to
 
+  # **A second kind for the guides only a contributor follows.** A how-to that
+  # cuts a release, rotates the signing subkey, mines the routing log or
+  # diagnoses an isolation failure is true of no adopter, for the reason
+  # `process_decision` is split from `decision`: the steps run on this
+  # repository's infrastructure. The shape is `how_to`'s, with its own
+  # identifier scheme so a slug on the process shelf cannot collide with one on
+  # the adopter's, and the shelf sits under `docs/process/` so the site puts it
+  # in the labeled, `noindex` section with the other process shelves.
+  identifier_schemes.process_how_to_id:
+    pattern: "{namespace}-PHOW-{slug}"
+    namespace: HW
+    allocation: minted-once
+
+  kinds.process_how_to:
+    is_a: governed_document
+    purpose: procedure
+    write_when: a contributor to this repository needs the steps of one task that only this repository's maintainers run, and no page gives them
+    voice: declarative
+    lifecycle: standard
+    language: ste_house
+    identifier: {scheme: process_how_to_id}
+    facets:
+      require: [title]
+    sections:
+      require: [Before you start, Steps, How to know it worked]
+
+  shelves.process_how_to:
+    title: Process how-to guides
+    path: docs/process/how-to/**
+    homogeneous: true
+    kind: process_how_to
+
   # --- the requirement layer ------------------------------------------------
   # Spec 3 gives a stable name to five artifacts: "decisions, requirements,
   # acceptance criteria, controls, and obligations". Three of the five had a
@@ -1511,24 +1543,23 @@ add:
   # records that answer as this repository's local one, and the base question
   # of whether package content is corpus content stays open there.
   #
-  # **Two shelves, because a shelf has one path.** The index is one file, and
-  # a pattern that claimed it with the entries would be `docs/taxonomies/**`
-  # again. Neither pattern claims a path the exclusions in
-  # `.headwater/taxonomy.yml` claim, and neither claims a path of another shelf.
+  # **One shelf, because the exclusions already cut the directory down to the
+  # prose.** The three exclusions in `.headwater/taxonomy.yml` remove each
+  # entry's fixtures, templates and bundle manifest, so `docs/taxonomies/**`
+  # claims the index and the seven doctrine pages and nothing else. This shelf
+  # was two once: the index sat alone on a second shelf, so the first
+  # shelf had no index page of its own and the site's side menu took its first
+  # doctrine page for one.
   #
-  # **The entries' shelf carries the index's title.** A shelf's served index
-  # page is the directory its path names before the first glob, so the entries'
-  # shelf is served at `/taxonomies/`. That page is the library index, and
-  # `tools/site/check-site-fragments.py` requires a shelf's served page to
-  # carry the shelf's title. So the shelf takes the index's H1.
+  # **The index is the shelf's first page, and it names the shelf.** The nav
+  # emitter lists a shelf's documents in path order, and `README.md` sorts
+  # before every entry directory. A shelf's served index page is the directory
+  # its path names before the first glob, which is `/taxonomies/`, and
+  # `tools/site/check-site-fragments.py` requires that page to carry the shelf's
+  # title. So the shelf takes the index's H1.
   #
-  # **`headwater new library_doctrine` refuses, and that is known.** The kind
-  # sits on two shelves, and nothing states which one a new document joins.
-  # The scaffolder places each pattern on its own: `--directory` names the
-  # directory the glob of the first stands for, and the second is one file.
-  # So the refusal that stands is two shelves for one kind. A doctrine page is
-  # written with its library entry, by hand, and the front matter of a sibling
-  # is the shape.
+  # **A doctrine page is written with its library entry, by hand.** The
+  # front matter of a sibling is the shape.
 
   identifier_schemes.library_doctrine_id:
     pattern: "{namespace}-LIB-{slug}"
@@ -1546,13 +1577,7 @@ add:
 
   shelves.library_doctrine:
     title: The canonical taxonomy library
-    path: docs/taxonomies/*/doctrine.md
-    homogeneous: true
-    kind: library_doctrine
-
-  shelves.library_index:
-    title: The library index
-    path: docs/taxonomies/README.md
+    path: docs/taxonomies/**
     homogeneous: true
     kind: library_doctrine
 
@@ -1697,7 +1722,7 @@ add_to:
     # account (#1231) with no edit to this list. `subsystems` is named for the same reason:
     # its shelf holds nothing yet (HW-DR-0098, #1288).
     - kind: shelf_index
-      for: [spec_series, obligations, evaluations, requirements, acceptance_criteria, verifications, probes, probe_results, probe_runs, reviews, tutorials, how_to, process_decisions, process_specs, process_evaluations, process_obligations, explanations, process_explanations, subsystems]
+      for: [spec_series, obligations, evaluations, requirements, acceptance_criteria, verifications, probes, probe_results, probe_runs, reviews, tutorials, how_to, process_decisions, process_specs, process_evaluations, process_obligations, explanations, process_explanations, process_how_to, subsystems]
       output: "{shelf}/README.md"
 
     # The redirect map. `docs/spec/09-open-questions.md` is a tombstone: the
@@ -1837,11 +1862,11 @@ add_to:
             - title: Specification
               for: [spec_series, interfaces, requirements, acceptance_criteria, verifications, subsystems]
             - title: Taxonomy library
-              for: [library_doctrine, library_index]
+              for: [library_doctrine]
             - title: Decisions and evidence
               for: [decisions, evaluations, obligations, reviews]
             - title: Probes
               for: [probes, probe_runs, probe_results]
         - title: Project process
           noindex: true
-          for: [process_specs, process_decisions, process_evaluations, process_obligations, process_explanations]
+          for: [process_specs, process_decisions, process_evaluations, process_obligations, process_how_to, process_explanations]

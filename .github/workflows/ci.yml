@@ -1038,7 +1038,7 @@ jobs:
         # names it. It builds nothing, runs no container and opens no socket.
         run: sh tools/repo/developing-fixtures.sh
       - name: The release guide still names every release workflow and its trigger
-        # A release is cut a few times a year, so `docs/how-to/cut-a-release.md`
+        # A release is cut a few times a year, so `docs/process/how-to/cut-a-release.md`
         # is read that often, and a tag pattern that moved in a workflow would
         # go unseen until the next person followed the page. This step compares
         # the guide's table of release workflows with the `on:` block of every

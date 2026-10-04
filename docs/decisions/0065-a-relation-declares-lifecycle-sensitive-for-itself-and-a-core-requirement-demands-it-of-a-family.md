@@ -4,7 +4,7 @@ status: current
 status_since: 2026-09-12
 summary: "The relation-level member and the core requirement are a union: either marks a relation, and the published base marks nothing beyond succession."
 last_verified: 2026-09-12
-title: "A relation declares lifecycle_sensitive for itself and a core requirement demands it of a family"
+title: "65 — A relation declares lifecycle_sensitive for itself and a core requirement demands it of a family"
 provenance:
   warrant: asserted
   agency: agent
@@ -13,7 +13,7 @@ provenance:
   evidence_basis: evidenced
 ---
 
-# A relation declares lifecycle_sensitive for itself and a core requirement demands it of a family
+# 65 — A relation declares lifecycle_sensitive for itself and a core requirement demands it of a family
 
 ## Context
 

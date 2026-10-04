@@ -4,7 +4,7 @@ status: current
 status_since: 2026-08-30
 summary: "`clap` derives the command line for 17 lock entries, and a flag belongs to the verb that reads it rather than to the binary."
 last_verified: 2026-10-03
-title: "Q33 — Whether the command line is derived, and who a flag belongs to"
+title: "33 — Whether the command line is derived, and who a flag belongs to"
 provenance:
   warrant: accepted
   agency: mixed
@@ -20,7 +20,7 @@ relations:
     - engine/crates/cli/tests/verbs.rs
 ---
 
-# Q33 — Whether the command line is derived, and who a flag belongs to
+# 33 — Whether the command line is derived, and who a flag belongs to
 
 ## Context
 

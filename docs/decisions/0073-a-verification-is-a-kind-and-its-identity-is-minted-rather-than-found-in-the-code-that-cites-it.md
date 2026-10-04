@@ -4,7 +4,7 @@ status: current
 status_since: 2026-09-18
 summary: "A verification takes a minted document identifier, because a rename must not break the link and one criterion may be proved in several repositories. The anchor option loses that identity, and it would also be blind to the participation expectation until #855 lands."
 last_verified: 2026-09-18
-title: "A verification is a kind, and its identity is minted rather than found in the code that cites it"
+title: "73 — A verification is a kind, and its identity is minted rather than found in the code that cites it"
 relations:
   constrains:
     - HW-DR-0029
@@ -17,7 +17,7 @@ provenance:
   evidence_basis: evidenced
 ---
 
-# A verification is a kind, and its identity is minted rather than found in the code that cites it
+# 73 — A verification is a kind, and its identity is minted rather than found in the code that cites it
 
 ## Context
 

@@ -4,7 +4,7 @@ status: current
 status_since: 2026-10-02
 summary: "`headwater new --relates` writes `governs`, `traces_to` and `cited_in` and refuses a target that binds to nothing. A reviewed pull request accepts each edge"
 last_verified: 2026-10-02
-title: "An agent writes governs, traces_to and cited_in through the verb, and the review of its pull request is the acceptance"
+title: "104 — An agent writes governs, traces_to and cited_in through the verb, and the review of its pull request is the acceptance"
 provenance:
   warrant: asserted
   agency: agent
@@ -25,7 +25,7 @@ relations:
     - HW-EVAL-default-taxonomy-first-run
 ---
 
-# An agent writes governs, traces_to and cited_in through the verb, and the review of its pull request is the acceptance
+# 104 — An agent writes governs, traces_to and cited_in through the verb, and the review of its pull request is the acceptance
 
 ## Context
 

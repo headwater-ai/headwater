@@ -17,430 +17,430 @@ relations:
 
 The documents on this shelf, in the reading order this corpus derives. Each heading below is the name that the document declares, so a citation of a heading is a citation of a document.
 
-## Q1 — Implementation language
+## 1 — Implementation language
 
 [HW-DR-0001](../decisions/0001-implementation-language.md) — The language is Rust, with a WebAssembly build of the same crate for editor and browser embedding.
 
-## Q2 — Schema format
+## 2 — Schema format
 
 [HW-DR-0002](../decisions/0002-schema-format.md) — YAML 1.2 is the concrete syntax, and Headwater owns the schema language, the reference sublanguage, the overlay language and the meta-schema.
 
-## Q3 — How much of the default taxonomy ships in the box
+## 3 — How much of the default taxonomy ships in the box
 
 [HW-DR-0003](../decisions/0003-how-much-of-the-default-taxonomy-ships-in-the-box.md) — The base package is minimal and derived from the core, and optional content ships as add-only bundles.
 
-## new writes no far half of a symmetric relation and no state on a supersedes target
+## 101 — The new command writes no far half of a symmetric relation and no state on a supersedes target
 
 [HW-DR-0101](../decisions/0101-new-writes-no-far-half-of-a-symmetric-relation-and-no-state-on-a-supersedes-target.md) — A scaffold edits no target of a symmetric relation. A far half in a live target reads as a live document that rests on a draft. It sets no supersedes state, which check --fix writes. (asserted, and no human has accepted it)
 
-## A reciprocal half is owed once its writer leaves its initial state
+## 86 — A reciprocal half is owed once its writer leaves its initial state
 
 [HW-DR-0086](../decisions/0086-a-reciprocal-half-is-owed-once-its-writer-leaves-its-initial-state.md) — While a draft holds the only half of a required pair, nothing is owed. The far document owes its half once the draft is promoted. (asserted, and no human has accepted it)
 
-## Q4 — Relation storage
+## 4 — Relation storage
 
 [HW-DR-0004](../decisions/0004-relation-storage.md) — Front matter is authoritative, and a relation instance is an object rather than a pointer.
 
-## Q5 — Voice checking depth
+## 5 — Voice checking depth
 
 [HW-DR-0005](../decisions/0005-voice-checking-depth.md) — Voice checking stays lexical, with a curated pattern set, a per-category posture and a reasoned escape hatch.
 
-## Q6 — Where the corpus graph lives at rest
+## 6 — Where the corpus graph lives at rest
 
 [HW-DR-0006](../decisions/0006-where-the-corpus-graph-lives-at-rest.md) — The graph never rests. Every run rebuilds it, and no derived artifact is canonical for anything.
 
-## Q7 — Scope of the MCP surface
+## 7 — Scope of the MCP surface
 
 [HW-DR-0007](../decisions/0007-scope-of-the-mcp-surface.md) — Three classes of tool, and a landed write never ships.
 
-## Q8 — Probe cost and cadence
+## 8 — Probe cost and cadence
 
 [HW-DR-0008](../decisions/0008-probe-cost-and-cadence.md) — A probe is a document with a declared expectation, and cadence follows the purpose of the run.
 
-## A namespace does not keep two corpora apart, and no rule compares identifier schemes across two locks
+## 99 — A namespace does not keep two corpora apart, and no rule compares identifier schemes across two locks
 
 [HW-DR-0099](../decisions/0099-a-namespace-does-not-keep-two-corpora-apart-and-no-rule-compares-identifier-schemes-across-two-locks.md) — Two corpora in one tree, or a vendored corpus beside its host, can mint one identifier, because one namespace plus a literal can spell another. The engine loads one root and one lock, so no rule compares schemes across two locks. An adopter picks namespaces that no pattern can spell from another, or resolves a scratch overlay that declares both corpora's schemes. (asserted, and no human has accepted it)
 
-## Q9 — Multi-repository corpora
+## 9 — Multi-repository corpora
 
 [HW-DR-0009](../decisions/0009-multi-repository-corpora.md) — A repository holds one or more corpora, the tier above harvests pinned exports, and no merged graph exists.
 
-## Q10 — Naming
+## 10 — Naming
 
 [HW-DR-0010](../decisions/0010-naming.md) — The name is Headwater, capitalized in prose and lower case as an identifier.
 
-## Q11 — License and distribution posture
+## 11 — License and distribution posture
 
 [HW-DR-0011](../decisions/0011-license-and-distribution-posture.md) — Apache-2.0 for the engine, the library, the base package and the bundles, ratified by the owner on 2026-08-11.
 
-## Q12 — Migration path for an existing corpus
+## 12 — Migration path for an existing corpus
 
 [HW-DR-0012](../decisions/0012-migration-path-for-an-existing-corpus.md) — Adoption is a migration from no taxonomy, and `headwater infer` computes the adoption payload.
 
-## Q13 — LinkML and SHACL as substrate
+## 13 — LinkML and SHACL as substrate
 
 [HW-DR-0013](../decisions/0013-linkml-and-shacl-as-substrate.md) — Headwater owns the language, emitters never chain, and LinkML is the last of six siblings.
 
-## Q14 — Discovery surface
+## 14 — Discovery surface
 
 [HW-DR-0014](../decisions/0014-discovery-surface.md) — The corpus descriptor is a generated projection at `.headwater/corpus.json`, and registration went to Q16.
 
-## Q15 — A synthesized content tier
+## 15 — A synthesized content tier
 
 [HW-DR-0015](../decisions/0015-a-synthesized-content-tier.md) — Every document carries a warrant from a closed set of four, and `asserted` content is admitted with limits.
 
-## A recorded terminal demonstration may show a frozen number behind a recorded-on-date marker
+## 78 — A recorded terminal demonstration may show a frozen number behind a recorded-on-date marker
 
 [HW-DR-0078](../decisions/0078-a-recorded-terminal-demonstration-may-show-a-frozen-number-behind-a-recorded-on-date-marker.md) — The owner relaxed principle 11 for one asset. A front-page recording may show a number a live run does not produce, if a recorded-on-<date> marker stands beside it. Nothing compares that number against a later run.
 
-## Q61 — How a recorded terminal demonstration is held against a run
+## 61 — How a recorded terminal demonstration is held against a run
 
 [HW-DR-0061](../decisions/0061-q61-how-a-recorded-terminal-demonstration-is-held-against-a-run.md) (superseded) — A recorded terminal demonstration is a figure under HW-DR-0039. It may show only the tutorial's scratch corpus, where a blocking step already holds every printed output against a run. (asserted, and no human has accepted it)
 
-## A figure on a hand-built page is measured when the site is published, and the committed page carries none
+## 97 — A figure on a hand-built page is measured when the site is published, and the committed page carries none
 
 [HW-DR-0097](../decisions/0097-a-figure-on-a-hand-built-page-is-measured-when-the-site-is-published-and-the-committed-page-carries-none.md) — The pages under site/ commit every data-figure element empty. A CI job on each push to main measures the figures into the assembled copy and deploys it with wrangler. Two pull requests that add documents merge without a conflict on the pages.
 
-## Q39 — How a figure reaches a hand-built page
+## 39 — How a figure reaches a hand-built page
 
 [HW-DR-0039](../decisions/0039-q39-how-a-figure-reaches-a-hand-built-page.md) (superseded) — The interpolating form that HW-DR-0037 admits runs before the commit rather than after it, and a script writes every figure on a hand-built page from a run.
 
-## Q50 — Where the visual register of the hand-built pages lives
+## 50 — Where the visual register of the hand-built pages lives
 
 [HW-DR-0050](../decisions/0050-q50-where-the-visual-register-of-the-hand-built-pages-lives.md) — The hand-built pages read as a specification rather than as a product page, and one file holds the color tokens and type stacks that carry it. A script writes that file into each hand-built page before the commit, because the content policy of those pages admits no linked stylesheet, and the generated half links the same file because its own policy admits one. (asserted, and no human has accepted it)
 
-## The process shelves stay published, in a labeled section of the site that a search engine does not index
+## 107 — The process shelves stay published, in a labeled section of the site that a search engine does not index
 
 [HW-DR-0107](../decisions/0107-the-process-shelves-stay-published-in-a-labeled-section-of-the-site-that-a-search-engine-does-not-index.md) — The five process shelves stay on the published site, in their own labeled section that carries a robots noindex. One `sections` member of `site_nav` declares the section, and dropping the pages was refused because public pages cite them (asserted, and no human has accepted it)
 
-## Q37 — Which parts of the site are hand-built and which are a projection of this corpus
+## 37 — Which parts of the site are hand-built and which are a projection of this corpus
 
 [HW-DR-0037](../decisions/0037-q37-which-parts-of-the-site-are-hand-built-and-which-are-a-projection-of-this-corpus.md) — Everything under `site/` is hand-built and the corpus is the generated projection. A hand-built page states no figure a person typed, and nothing checks that.
 
-## Q16 — Public presence
+## 16 — Public presence
 
 [HW-DR-0016](../decisions/0016-public-presence.md) — Registration needs a channel with an obliged reader, a directory of corpora is refused, and the site is a projection of this corpus.
 
-## Q17 — Governed access and the solution layer
+## 17 — Governed access and the solution layer
 
 [HW-DR-0017](../decisions/0017-governed-access-and-the-solution-layer.md) — The serving boundary is the export step of each publishing corpus. A profile filters for an audience, and Headwater has no principals.
 
-## Q18 — Recording adjudicated disagreements
+## 18 — Recording adjudicated disagreements
 
 [HW-DR-0018](../decisions/0018-recording-adjudicated-disagreements.md) — The edge does not become a node. An adjudication is a decision document that carries `overrides`.
 
-## Q19 — Inbound integration: an external system of record
+## 19 — Inbound integration: an external system of record
 
 [HW-DR-0019](../decisions/0019-inbound-integration-an-external-system-of-record.md) — Imported content is `transcribed` against a committed pin, and an imported edge carries full weight from the first release.
 
-## Q20 — Where scent lives
+## 20 — Where scent lives
 
 [HW-DR-0020](../decisions/0020-where-scent-lives.md) — An optional source-owned cue sits on a relation instance, graded against the alternatives in view at the point of decision.
 
-## Q21 — Terminological succession, and validity under merge
+## 21 — Terminological succession, and validity under merge
 
 [HW-DR-0021](../decisions/0021-terminological-succession-and-validity-under-merge.md) — A retired-term lexicon sits in the language regime, and a verdict reports the read set that a merge may void.
 
-## The vendor verb may take a location, and the fetch lives only in a crate the checking loop never links
+## 75 — The vendor verb may take a location, and the fetch lives only in a crate the checking loop never links
 
 [HW-DR-0075](../decisions/0075-the-vendor-verb-may-take-a-location-and-the-fetch-lives-only-in-a-crate-the-checking-loop-never-links.md) — `headwater taxonomy vendor` may accept a location, ruled yes with a boundary. The fetch lives in a crate only the CLI links, so the checking loop's crates keep the no-socket property that serves it.
 
-## Q22 — The integrity posture of a published package
+## 22 — The integrity posture of a published package
 
 [HW-DR-0022](../decisions/0022-q22-the-integrity-posture-of-a-published-package.md) — A package digest checks a fetched artifact against a pin that a person committed, and it is never a signature. The in-house SHA-256 is held against a second implementation rather than replaced by a dependency. (warrant `proposed` is not one of the four values, so no acceptance is read from it)
 
-## Q23 — The engine lint floor
+## 23 — The engine lint floor
 
 [HW-DR-0023](../decisions/0023-the-engine-lint-floor.md) — A published Rust guideline set is not installed as a skill, because a skill carries no rule of its own. Twenty-two lints are declared once in the workspace manifest, and each was chosen by measuring the corpus rather than by adopting a list.
 
-## Q24 — Readability, and what a sweep can be asked about
+## 24 — Readability, and what a sweep can be asked about
 
 [HW-DR-0024](../decisions/0024-q24-readability-and-what-a-sweep-can-be-asked-about.md) — Readability is not a sweep class and gets no verb, because every class of a sweep names two things that do not fit and a readability finding names one. A source file is not a slice member, because admitting one degrades the membership refusal for every class.
 
-## Q25 — Where the namespace goes in an identifier, and who declares it
+## 25 — Where the namespace goes in an identifier, and who declares it
 
 [HW-DR-0025](../decisions/0025-q25-where-the-namespace-goes-in-an-identifier-and-who-declares-it.md) — The namespace opens every identifier, and a published source declares no namespace at all, because any constant it wrote would be minted by every adopter of it at once.
 
-## Q26 — Whether terminality belongs to a state, or to a state and a regime
+## 26 — Whether terminality belongs to a state, or to a state and a regime
 
 [HW-DR-0026](../decisions/0026-q26-whether-terminality-belongs-to-a-state-or-to-a-state-and-a-regime.md) — Terminality stays a property of a state alone, because the per-regime reading is available at both call sites and costs the deferral that keeps one defect one finding. No published tradition wants the collision, and two that met it minted a second state name.
 
-## Q27 — Whether a decision record is governed prose
+## 27 — Whether a decision record is governed prose
 
 [HW-DR-0027](../decisions/0027-q27-whether-a-decision-record-is-governed-prose.md) — A decision record is governed prose, and the overlay binds the house language regime to it. The shelf carries a prose problem rather than a quotation problem, and collapsing all 37 inline quotations moves 64 findings to 63.
 
-## Q28 — Whether an evaluation is governed prose
+## 28 — Whether an evaluation is governed prose
 
 [HW-DR-0028](../decisions/0028-q28-whether-an-evaluation-is-governed-prose.md) — An evaluation is governed prose, and the overlay binds the house language regime to it. The shelf carries 432 advisory findings, and the measurement that explains them is whether a rule was reading the prose when it was written rather than who wrote it.
 
-## A verification is a kind, and its identity is minted rather than found in the code that cites it
+## 73 — A verification is a kind, and its identity is minted rather than found in the code that cites it
 
 [HW-DR-0073](../decisions/0073-a-verification-is-a-kind-and-its-identity-is-minted-rather-than-found-in-the-code-that-cites-it.md) — A verification takes a minted document identifier, because a rename must not break the link and one criterion may be proved in several repositories. The anchor option loses that identity, and it would also be blind to the participation expectation until #855 lands.
 
-## A code path anchor is a pattern over the tree, and it binds when the pattern matches at least one entry
+## 74 — A code path anchor is a pattern over the tree, and it binds when the pattern matches at least one entry
 
 [HW-DR-0074](../decisions/0074-a-code-path-anchor-is-a-pattern-over-the-tree-and-it-binds-when-the-pattern-matches-at-least-one-entry.md) — A `code_path` anchor is a pattern in the shelf language or a list of them, and a bare path matches one entry. An edge binds when every pattern matches at least one entry, and a query matches a path against the patterns.
 
-## A language rule reaches front-door prose outside the corpus root, and no other rule does
+## 84 — A language rule reaches front-door prose outside the corpus root, and no other rule does
 
 [HW-DR-0084](../decisions/0084-a-language-rule-reaches-front-door-prose-outside-the-corpus-root-and-no-other-rule-does.md) — A language regime lists the paths outside the corpus root that it binds, and only the three language rules read them. Such a path is not a document, so no facet, voice, link or relation rule reaches a README. (asserted, and no human has accepted it)
 
-## Q29 — Whether a corpus root may contain code, and what an interface contract may reach
+## 29 — Whether a corpus root may contain code, and what an interface contract may reach
 
 [HW-DR-0029](../decisions/0029-q29-whether-a-corpus-root-may-contain-code-and-what-an-interface-contract-may-reach.md) — The corpus root stays `docs`, because a path is corpus content only where a file with no front matter is a defect, and 185 of the 186 Markdown files under `engine/` exist to be defective. An interface contract lives inside the root and reaches a crate by a `governs` edge that binds on existence alone.
 
-## Q30 — Whether what an obligation waits on is a state or a property, and how many values it takes
+## 30 — Whether what an obligation waits on is a state or a property, and how many values it takes
 
 [HW-DR-0030](../decisions/0030-q30-whether-what-an-obligation-waits-on-is-a-state-or-a-property-and-how-many-values-it-takes.md) — What an obligation waits on is a state and not a property, and the closed set holds four values. A required `waiting_on` facet on `obligation_record` takes `ruling`, `build`, `measurement` or `adopter`, and the decision-record bundle declares it.
 
-## Q31 — Whether this repository becomes public, and when
+## 31 — Whether this repository becomes public, and when
 
 [HW-DR-0031](../decisions/0031-q31-whether-this-repository-becomes-public-and-when.md) — This repository is public. The owner set 2026-09-08 and opened it on 2026-09-06, and the record stops each run from raising the schedule.
 
-## Q32 — Which test the self-audit label states
+## 32 — Which test the self-audit label states
 
 [HW-DR-0032](../decisions/0032-q32-which-test-the-self-audit-label-states.md) — The `self-audit` label states the reader test and not the provenance test. How a finding was found is not the test, and the only question is whether a reader outside this repository is better off.
 
-## Q33 — Whether the command line is derived, and who a flag belongs to
+## 33 — Whether the command line is derived, and who a flag belongs to
 
 [HW-DR-0033](../decisions/0033-q33-whether-the-command-line-is-derived-and-who-a-flag-belongs-to.md) — `clap` derives the command line for 17 lock entries, and a flag belongs to the verb that reads it rather than to the binary.
 
-## Q34 — Whether acceptance means merged to main, and what an agent may write before that
+## 34 — Whether acceptance means merged to main, and what an agent may write before that
 
 [HW-DR-0034](../decisions/0034-q34-whether-acceptance-means-merged-to-main-and-what-an-agent-may-write-before-that.md) — Acceptance is the merge onto main. A provenance block on an unmerged branch is a proposal, so an agent may write `accepted_by` there, and stop rule 5 binds main rather than the byte.
 
-## Q35 — Whether one requirement kind holds an imported requirement and an authored one
+## 35 — Whether one requirement kind holds an imported requirement and an authored one
 
 [HW-DR-0035](../decisions/0035-q35-whether-one-requirement-kind-holds-an-imported-requirement-and-an-authored-one.md) — The `requirement` and `acceptance_criterion` kinds serve the authored population alone. A transcribed requirement is a marked file that answers no contract, so a separate kind with an empty contract carries the imported case.
 
-## Q36 — Which of MkDocs, Docusaurus, or Astro this corpus emits navigation for, and why
+## 36 — Which of MkDocs, Docusaurus, or Astro this corpus emits navigation for, and why
 
 [HW-DR-0036](../decisions/0036-q36-which-of-mkdocs-docusaurus-or-astro-this-corpus-emits-navigation-for-and-why.md) — MkDocs is the pick. Its `nav:` is data and not code, and Astro has no native nav format to emit at all.
 
-## Q38 — Which link relation a rendered page carries to the served corpus descriptor
+## 38 — Which link relation a rendered page carries to the served corpus descriptor
 
 [HW-DR-0038](../decisions/0038-q38-which-link-relation-a-rendered-page-carries-to-the-served-corpus-descriptor.md) — A rendered page points at the served descriptor with `rel="describedby"`, because the IANA registry carries that token and the Headwater extension address answers 404.
 
-## Q40 — Whether extends, bundle, requires and an overlay's taxonomy key are a mechanism or a label
+## 40 — Whether extends, bundle, requires and an overlay's taxonomy key are a mechanism or a label
 
 [HW-DR-0040](../decisions/0040-q40-whether-extends-bundle-requires-and-an-overlay-s-taxonomy-key-are-a-mechanism-or-a-label.md) — Three keys of the family are a label rather than a mechanism. HW-DR-0095 made `requires` a mechanism for one purpose, which is an add into the keys of the entry it names.
 
-## Q41 — Whether Vale becomes a declared regime backend
+## 41 — Whether Vale becomes a declared regime backend
 
 [HW-DR-0041](../decisions/0041-q41-whether-vale-becomes-a-declared-regime-backend.md) — Vale does not become a declared regime backend, and its findings are not translated into this engine's Finding shape. It stays where spec 00 already puts it, composable alongside, because four structural mismatches answer Q24's reopening condition a second time.
 
-## Q42 — What "one screen" means for the first help screen
+## 42 — What "one screen" means for the first help screen
 
 [HW-DR-0042](../decisions/0042-q42-what-one-screen-means-for-the-first-help-screen.md) — "One screen" is retired as a claim about a terminal and replaced by a claim about content. The first screen carries one line per entry, and the ceiling that follows from it is 64 lines.
 
-## Q43 — Whether a refusal under `--json` is a JSON document
+## 43 — Whether a refusal under `--json` is a JSON document
 
 [HW-DR-0043](../decisions/0043-q43-whether-a-refusal-under-json-is-a-json-document.md) — A refusal is an English sentence on standard error and never a JSON document, because `--json` names the shape of an artifact and moves no stream and no grammar.
 
-## Q44 — Whether bundles decompose into capabilities and assemblies compose practices
+## 44 — Whether bundles decompose into capabilities and assemblies compose practices
 
 [HW-DR-0044](../decisions/0044-q44-whether-bundles-decompose-into-capabilities-and-assemblies-compose-practices.md) — Design-spec's evaluation kind and its two purposes move to a new evidence-and-obligation bundle, so decision-record stops requiring the whole specification tradition.
 
-## Coloring the CLI, and where the banner goes
+## 45 — Coloring the CLI, and where the banner goes
 
 [HW-DR-0045](../decisions/0045-coloring-the-cli-and-where-the-banner-goes.md) — Color is sensed per stream and off by default in a pipe, and turned off everywhere by `--no-color` or `NO_COLOR`. A new masthead banner prints on the root help screen alone, off by `--no-banner` or `HEADWATER_NO_BANNER`.
 
-## Migrating from-version carries a semver and a release digest, kept as separate fields
+## 46 — Migrating from-version carries a semver and a release digest, kept as separate fields
 
 [HW-DR-0046](../decisions/0046-migrating-from-version-carries-a-semver-and-a-release-digest-kept-as-separate-fields.md) — `adoption.from` is a pair, a semver and the release digest that was pinned when the migration began, and never a hash of the two.
 
-## The served sitemap is derived from the served directory
+## 48 — The served sitemap is derived from the served directory
 
 [HW-DR-0048](../decisions/0048-the-served-sitemap-is-derived-from-the-served-directory.md) — The sitemap a reader gets is derived from the directory that is served, by one walk that both halves call. Nobody types a page list, and the assembled directory is the only place the union exists. (asserted, and no human has accepted it)
 
-## How the two halves of the site share one host
+## 47 — How the two halves of the site share one host
 
 [HW-DR-0047](../decisions/0047-how-the-two-halves-of-the-site-share-one-host.md) — One directory holds both halves of the site, composed by `tools/site/assemble-site.sh` with the hand-built half last. The Cloudflare Workers Builds build command runs that script, which puts a build on the deploy path for the first time. (asserted, and no human has accepted it)
 
-## The consumer surface is what an adopter receives, runs and must have installed, and it is a closed and declared list
+## 77 — The consumer surface is what an adopter receives, runs and must have installed, and it is a closed and declared list
 
 [HW-DR-0077](../decisions/0077-the-consumer-surface-is-what-an-adopter-receives-runs-and-must-have-installed-and-it-is-a-closed-and-declared-list.md) — An adopter needs the binary, a data-only package, Git, `sh`, `curl`, `tar`, eight POSIX utilities and the four APT programs, and nothing else. Every other program reaches Headwater through a verb that the binary configures on request, and no adopter-facing page instructs this repository's own tooling.
 
-## A corpus-wide fold is derived and never stored
+## 49 — A corpus-wide fold is derived and never stored
 
 [HW-DR-0049](../decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md) — A recorded artifact holds one record per entity and derives every total, because two branches that each add one document write the same new total and a merge takes it without a conflict.
 
-## Q51 — What licenses a term into the public glossary, and what licenses a sixteenth
+## 51 — What licenses a term into the public glossary, and what licenses a sixteenth
 
 [HW-DR-0051](../decisions/0051-q51-what-licenses-a-term-into-the-public-glossary-and-what-licenses-a-sixteenth.md) — A term reaches the public glossary because it recurs in the visitor-facing pages of the site, and for no other reason. The tutorial and the glossary itself are not sources, and the specification glossary answers to a different reader. (asserted, and no human has accepted it)
 
-## A document is proposed at the state it will hold, and the merge activates it
+## 52 — A document is proposed at the state it will hold, and the merge activates it
 
 [HW-DR-0052](../decisions/0052-a-document-is-proposed-at-the-state-it-will-hold-and-the-merge-activates-it.md) — A settled decision carries the status current, not draft, in its pull request. An author writes the state a document will hold once it merges, and the merge activates it. The state facet answers to the merge, the way HW-DR-0034 made the warrant facet answer to it.
 
-## A package manifest declares no selection, a recipe declares one, and a flattened manifest records provenance
+## 53 — A package manifest declares no selection, a recipe declares one, and a flattened manifest records provenance
 
 [HW-DR-0053](../decisions/0053-a-package-manifest-declares-no-selection-a-recipe-declares-one-and-a-flattened-manifest-records-provenance.md) — A manifest says what a package carries, a recipe says what a composer selected, and a flattened manifest records where it came from. Three enforcement points already hold the split, and this record names it as a rule rather than as specification prose. (asserted, and no human has accepted it)
 
-## The upper bound of a reconcile-first allocator is the corpus and a claim store
+## 54 — The upper bound of a reconcile-first allocator is the corpus and a claim store
 
 [HW-DR-0054](../decisions/0054-the-upper-bound-of-a-reconcile-first-allocator-is-the-corpus-and-a-claim-store.md) — A tree holds no concurrency, so two branches mint one number in silence. A claim store of one file for each identifier makes the two branches meet, and the rule that already reports a duplicate then fires on the branch. (asserted, and no human has accepted it)
 
-## A hook reads a wire format through the engine and not through an interpreter
+## 55 — A hook reads a wire format through the engine and not through an interpreter
 
 [HW-DR-0055](../decisions/0055-a-hook-reads-a-wire-format-through-the-engine-and-not-through-an-interpreter.md) — A harness payload is read by a verb of this engine rather than by an interpreter a session does not otherwise require. The verb answers nothing about a corpus, which is what puts it outside the term that forbids a hook verb. (asserted, and no human has accepted it)
 
-## A language regime reaches prose through a kind, so the starter kit's doctrine carries the writing profile
+## 56 — A language regime reaches prose through a kind, so the starter kit's doctrine carries the writing profile
 
 [HW-DR-0056](../decisions/0056-a-language-regime-reaches-prose-through-a-kind-so-the-starter-kit-s-doctrine-carries-the-writing-profile.md) — No kind in the base package or in any bundle binds a language regime. A package that set the default value would change nothing, so the doctrine page of the starter kit carries the promise. (asserted, and no human has accepted it)
 
-## A shelf layout is the second half of what the identifier claim store covers
+## 57 — A shelf layout is the second half of what the identifier claim store covers
 
 [HW-DR-0057](../decisions/0057-a-shelf-layout-is-the-second-half-of-what-the-identifier-claim-store-covers.md) — The claim store covers an identifier where the file name does not determine it: a shelf that declares a layout, or a scheme that reconciles
 
-## A blank facet value is a rule of its own and it reads every string facet
+## 58 — A blank facet value is a rule of its own and it reads every string facet
 
 [HW-DR-0058](../decisions/0058-a-blank-facet-value-is-a-rule-of-its-own-and-it-reads-every-string-facet.md) — A declared facet that carries no content is a state that neither the required-facet rule nor the enum rule reaches. A new rule reports it, over every facet a taxonomy types as a string, at error severity. (asserted, and no human has accepted it)
 
-## A transform over a harness session log is an observed transcript when the log arrives by a channel the model cannot write to
+## 59 — A transform over a harness session log is an observed transcript when the log arrives by a channel the model cannot write to
 
 [HW-DR-0059](../decisions/0059-a-transform-over-a-harness-session-log-is-an-observed-transcript-when-the-log-arrives-by-a-channel-the-model-cannot-write-to.md) — A filter that keeps the tool calls of a harness session log and drops every block the model wrote is an outside observation, because the type tag it reads is the harness's and not the model's. The condition is the channel the log arrives by, and a file the session can open is not one. (asserted, and no human has accepted it)
 
-## The engine's version stays one number, and a build's exact commit is a separate, unwired fact
+## 60 — The engine's version stays one number, and a build's exact commit is a separate, unwired fact
 
 [HW-DR-0060](../decisions/0060-the-engine-s-version-stays-one-number-and-a-build-s-exact-commit-is-a-separate-unwired-fact.md) — A binary's `--version` keeps naming one number, the `Cargo.toml` version a `requires_engine` range is read against. Which commit built it is a separate fact a build script now captures, kept out of that comparison and not yet on the command line.
 
-## A refused recording is held by the reliance its state claims, and not by promotion
+## 62 — A refused recording is held by the reliance its state claims, and not by promotion
 
 [HW-DR-0062](../decisions/0062-a-refused-recording-is-held-by-the-reliance-its-state-claims-and-not-by-promotion.md) — A refused transcript fails the run where its state carries the `live` role. A role that says nobody relies on the document leaves the run green. (asserted, and no human has accepted it)
 
-## Every required facet of a generated document is derived, and the emitter composes the summary
+## 63 — Every required facet of a generated document is derived, and the emitter composes the summary
 
 [HW-DR-0063](../decisions/0063-every-required-facet-of-a-generated-document-is-derived-and-the-emitter-composes-the-summary.md) — Nine required facets went unwritten on two generated documents. The engine derives seven from committed bytes, the emitter composes the summary, and the declaration block stays closed at three scalars. (asserted, and no human has accepted it)
 
-## Q64 — Whether intent-time routing gains an offline embedding path in shadow mode
+## 64 — Whether intent-time routing gains an offline embedding path in shadow mode
 
 [HW-DR-0064](../decisions/0064-q64-whether-intent-time-routing-gains-an-offline-embedding-path-in-shadow-mode.md) — Routing gains the shadow-mode embedding path, amended in four places. The intent hook is the only writer, and the vectors are a cache rather than a generated artifact. The model is pinned rather than committed, and the recorder gains a join key and a liveness fact. (asserted, and no human has accepted it)
 
-## A relation declares lifecycle_sensitive for itself and a core requirement demands it of a family
+## 65 — A relation declares lifecycle_sensitive for itself and a core requirement demands it of a family
 
 [HW-DR-0065](../decisions/0065-a-relation-declares-lifecycle-sensitive-for-itself-and-a-core-requirement-demands-it-of-a-family.md) — The relation-level member and the core requirement are a union: either marks a relation, and the published base marks nothing beyond succession. (asserted, and no human has accepted it)
 
-## A kind narrows the value set of an enumerated facet, and nothing else can
+## 66 — A kind narrows the value set of an enumerated facet, and nothing else can
 
 [HW-DR-0066](../decisions/0066-a-kind-narrows-the-value-set-of-an-enumerated-facet-and-nothing-else-can.md) — A kind states which values of an enumerated facet it means, under `facets.values`. A lifecycle regime, a shelf discriminator and `facets.forbid` each narrow a value set. None of the three reaches a facet with no state machine behind it. (asserted, and no human has accepted it)
 
-## The vendored package root moves under .headwater and the old root is named in a refusal
+## 67 — The vendored package root moves under .headwater and the old root is named in a refusal
 
 [HW-DR-0067](../decisions/0067-the-vendored-package-root-moves-under-headwater-and-the-old-root-is-named-in-a-refusal.md) — The vendored package root is `.headwater/packages/`, because the old root bought only the visibility of one explainer, and a tree there meets a named refusal. (asserted, and no human has accepted it)
 
-## The front-matter key that carries a minted identifier is id
+## 68 — The front-matter key that carries a minted identifier is id
 
 [HW-DR-0068](../decisions/0068-the-front-matter-key-that-carries-a-minted-identifier-is-id.md) — The front-matter key `id` is the fixed, global name for the value a kind's `identifier: {scheme: …}` facet mints. (asserted, and no human has accepted it)
 
-## No paragraph limit joins the language rule, because most paragraphs past six sentences hold one topic
+## 87 — No paragraph limit joins the language rule, because most paragraphs past six sentences hold one topic
 
 [HW-DR-0087](../decisions/0087-no-paragraph-limit-joins-the-language-rule-because-most-paragraphs-past-six-sentences-hold-one-topic.md) — The six-sentence paragraph defect is retired before it lands. 50 of 60 sampled paragraphs past six sentences held one topic, so the count misses what rule 6.5 asks, and no word count replaces it.
 
-## A paragraph limit counts sentences under the language rule and never words
+## 69 — A paragraph limit counts sentences under the language rule and never words
 
 [HW-DR-0069](../decisions/0069-a-paragraph-limit-counts-sentences-under-the-language-rule-and-never-words.md) (superseded) — No word-length rule joins the check layer. The six-sentence limit of the standard the house regime declares lands as a fifth defect of the language rule, advisory permanently. The paragraph that raised the question is a hand-kept index, and a derived list repairs it where no lexical rule reads it.
 
-## The matched purposes take turns at a route budget, and each pointer states what reached it
+## 70 — The matched purposes take turns at a route budget, and each pointer states what reached it
 
 [HW-DR-0070](../decisions/0070-the-matched-purposes-take-turns-at-a-route-budget-and-each-pointer-states-what-reached-it.md) — The purposes a task matches take turns at the route budget, and the kinds of one purpose take turns inside it. Each pointer states the task terms that reached it and its rank in the order by score. No pointer carries a score or a confidence.
 
-## A route offers a document and never a heading inside it
+## 71 — A route offers a document and never a heading inside it
 
 [HW-DR-0071](../decisions/0071-a-route-offers-a-document-and-never-a-heading-inside-it.md) — A route does not read headings and offers no anchor inside a document. A measured heading surface never reached spec 02 or spec 03 for the task that raised the question. At every threshold, function words reached wrong anchors.
 
-## The binary is the only interface an adopter must run, and every integration point outside it is declared
+## 72 — The binary is the only interface an adopter must run, and every integration point outside it is declared
 
 [HW-DR-0072](../decisions/0072-the-binary-is-the-only-interface-an-adopter-must-run-and-every-integration-point-outside-it-is-declared.md) — An adopter reaches the whole governed loop through the binary. One integration point sits outside it and the list is closed against growth. Git plumbing meets the necessity test, a network fetch left the list under HW-DR-0075, and a verb writes the change manifest.
 
-## A probe budget prices a run identity fixed before the run, and a committed transcript, and a sweep has neither
+## 76 — A probe budget prices a run identity fixed before the run, and a committed transcript, and a sweep has neither
 
 [HW-DR-0076](../decisions/0076-a-probe-budget-prices-a-run-identity-fixed-before-the-run-and-a-committed-transcript-and-a-sweep-has-neither.md) — Rules that a budget prices a run identity a probe has and a sweep does not, and names the sweep outside every tier. States where .headwater/probe.yml lives and why. (asserted, and no human has accepted it)
 
-## Criterion 5 admits naming or extending a core-serving kind, and a facet-only entry ships no templates directory under criterion 2
+## 79 — Criterion 5 admits naming or extending a core-serving kind, and a facet-only entry ships no templates directory under criterion 2
 
 [HW-DR-0079](../decisions/0079-criterion-5-admits-naming-or-extending-a-core-serving-kind-and-a-facet-only-entry-ships-no-templates-directory-under-criterion-2.md) — A full entry that serves neither core purpose names or extends a core-serving kind, and a facet-only entry ships no templates/ directory. (asserted, and no human has accepted it)
 
-## Q66 — the corpus dashboard ships free and self-hosted, with tenant isolation stated as a data-model constraint from day one
+## 80 — the corpus dashboard ships free and self-hosted, with tenant isolation stated as a data-model constraint from day one
 
 [HW-DR-0080](../decisions/0080-q66-the-corpus-dashboard-ships-free-and-self-hosted-with-tenant-isolation-stated-as-a-data-model-constraint-from-day-one.md) — The corpus-staleness dashboard (#505) ships as a free, self-hosted companion tool, with no hosted form now. Its data model carries a corpus identity on every row from day one, so a later hosted form is an addition rather than a rewrite.
 
-## The hand-authored decision register indexes a subset of the shelf, and stops asserting it supersedes the complete one
+## 81 — The hand-authored decision register indexes a subset of the shelf, and stops asserting it supersedes the complete one
 
 [HW-DR-0081](../decisions/0081-the-hand-authored-decision-register-indexes-a-subset-of-the-shelf-and-stops-asserting-it-supersedes-the-complete-one.md) — The hand register keeps a curated selection of headings and drops its `supersedes` edge over the generated register, which stays the complete list. (asserted, and no human has accepted it)
 
-## The resolved taxonomy is drawn by a verb that prints Mermaid and writes no file
+## 82 — The resolved taxonomy is drawn by a verb that prints Mermaid and writes no file
 
 [HW-DR-0082](../decisions/0082-the-resolved-taxonomy-is-drawn-by-a-verb-that-prints-mermaid-and-writes-no-file.md) — `headwater taxonomy graph` prints the resolved taxonomy as a Mermaid flowchart, no projection or export target draws it, and D2 and DOT are equal candidates after it
 
-## An agent writes governs, traces_to and cited_in through the verb, and the review of its pull request is the acceptance
+## 104 — An agent writes governs, traces_to and cited_in through the verb, and the review of its pull request is the acceptance
 
 [HW-DR-0104](../decisions/0104-an-agent-writes-governs-traces-to-and-cited-in-through-the-verb-and-the-review-of-its-pull-request-is-the-acceptance.md) — `headwater new --relates` writes `governs`, `traces_to` and `cited_in` and refuses a target that binds to nothing. A reviewed pull request accepts each edge (asserted, and no human has accepted it)
 
-## Governs and traces_to are created by an agent, because a session proposes the line and a person types it
+## 83 — Governs and traces_to are created by an agent, because a session proposes the line and a person types it
 
 [HW-DR-0083](../decisions/0083-governs-and-traces-to-are-created-by-an-agent-because-a-session-proposes-the-line-and-a-person-types-it.md) (superseded) — The base package declares `created_by: agent` on `governs` and `traces_to`, because no verb writes either edge and a person types the line a session proposes (asserted, and no human has accepted it)
 
-## A live document that rests on a draft one is reported over every relation, because a draft leaves no record to cite
+## 85 — A live document that rests on a draft one is reported over every relation, because a draft leaves no record to cite
 
 [HW-DR-0085](../decisions/0085-a-live-document-that-rests-on-a-draft-one-is-reported-over-every-relation-because-a-draft-leaves-no-record-to-cite.md) — A live document with any relation to a draft is a warning, unless the relation writes a state onto its target (asserted, and no human has accepted it)
 
-## An engine release and a taxonomy release have disjoint tag namespaces and are cut independently
+## 88 — An engine release and a taxonomy release have disjoint tag namespaces and are cut independently
 
 [HW-DR-0088](../decisions/0088-an-engine-release-and-a-taxonomy-release-have-disjoint-tag-namespaces-and-are-cut-independently.md) — An engine tag matches v* and a taxonomy tag matches taxonomy/headwater-standard/v*, so neither release waits on the other and requires_engine is the only link. (asserted, and no human has accepted it)
 
-## A taxonomy release publishes the source at the tagged commit and never ships the vendored copy
+## 89 — A taxonomy release publishes the source at the tagged commit and never ships the vendored copy
 
 [HW-DR-0089](../decisions/0089-a-taxonomy-release-publishes-the-source-at-the-tagged-commit-and-never-ships-the-vendored-copy.md) — The taxonomy release runs taxonomy publish on taxonomy-source/ at the tag and never zips .headwater/packages/, so the artifact and the tag make one claim. (asserted, and no human has accepted it)
 
-## Each release states in its notes the release digest that a consumer pins
+## 90 — Each release states in its notes the release digest that a consumer pins
 
 [HW-DR-0090](../decisions/0090-each-release-states-in-its-notes-the-release-digest-that-a-consumer-pins.md) — An engine release and a taxonomy release each print the headwater/standard release.digest in their notes, so an adopter pins it from the tag they downloaded. (asserted, and no human has accepted it)
 
-## The runner image of the engine release build is written in the workflow because it sets the glibc floor
+## 91 — The runner image of the engine release build is written in the workflow because it sets the glibc floor
 
 [HW-DR-0091](../decisions/0091-the-runner-image-of-the-engine-release-build-is-written-in-the-workflow-because-it-sets-the-glibc-floor.md) — release.yml names each runner image and never reads CI_RUNNER, because the image sets the glibc floor that README.md states. The build is --locked. (asserted, and no human has accepted it)
 
-## The citation comment of spec 5 is for an adopter's corpus, and this repository does not practice it on its own code
+## 92 — The citation comment of spec 5 is for an adopter's corpus, and this repository does not practice it on its own code
 
 [HW-DR-0092](../decisions/0092-the-citation-comment-of-spec-5-is-for-an-adopter-s-corpus-and-this-repository-does-not-practice-it-on-its-own-code.md) — The per-identifier citation comment of spec 5 is a convention for an adopter's corpus. By the owner's ruling, the code of this repository carries none. Its comments that name an identifier are prose, and the checker does not read them. (asserted, and no human has accepted it)
 
-## The live account of a domain is its own kind, split on the product and process line, and it draws on the records it cites
+## 93 — The live account of a domain is its own kind, split on the product and process line, and it draws on the records it cites
 
 [HW-DR-0093](../decisions/0093-the-live-account-of-a-domain-is-its-own-kind-split-on-the-product-and-process-line-and-it-draws-on-the-records-it-cites.md) — explanation and process_explanation state what holds now across one domain, and draws_on reports an account whose source decision ends. (asserted, and no human has accepted it)
 
-## The APT repository is served from headwater.tools and signed by a subkey the owner's offline key certifies
+## 94 — The APT repository is served from headwater.tools and signed by a subkey the owner's offline key certifies
 
 [HW-DR-0094](../decisions/0094-the-apt-repository-is-served-from-headwater-tools-and-signed-by-a-subkey-the-owner-s-offline-key-certifies.md) — Headwater ships one amd64 Debian package, taxonomy-free, through an APT repository on headwater.tools whose metadata a CI-held signing subkey signs (asserted, and no human has accepted it)
 
-## Q67 — One library entry may address the keys of an entry it names in requires, and confluence holds over the dependency order
+## 95 — One library entry may address the keys of an entry it names in requires, and confluence holds over the dependency order
 
 [HW-DR-0095](../decisions/0095-q67-one-library-entry-may-address-the-keys-of-an-entry-it-names-in-requires-and-confluence-holds-over-the-dependency-order.md) — An entry that names another in requires may add into its keys, and every other pair of entries still commutes only over disjoint leaves. (asserted, and no human has accepted it)
 
-## Harper does not become part of the engine now, and Q41 stands
+## 96 — Harper does not become part of the engine now, and Q41 stands
 
 [HW-DR-0096](../decisions/0096-harper-does-not-become-part-of-the-engine-now-and-q41-stands.md) — harper-core found 0 real errors in 187 hand-read findings on 25 documents of this corpus. So the engine does not link it now, Q41 stands, and a stated precision bar or an adopter request reopens it. (asserted, and no human has accepted it)
 
-## An engine subsystem is described by a technical design spec on a shelf of its own, and its behavior stays where it is already written
+## 98 — An engine subsystem is described by a technical design spec on a shelf of its own, and its behavior stays where it is already written
 
 [HW-DR-0098](../decisions/0098-an-engine-subsystem-is-described-by-a-technical-design-spec-on-a-shelf-of-its-own-and-its-behavior-stays-where-it-is-already-written.md) — Each engine subsystem gets one technical spec, a subsystem_spec on a new shelf, and it governs its crates by one pattern each. No crate gets a functional spec, because interface contracts, spec parts and requirements already state behavior.
 
-## A counted tombstone lists a digest of each withheld identifier, and a sealed one lists nothing
+## 100 — A counted tombstone lists a digest of each withheld identifier, and a sealed one lists nothing
 
 [HW-DR-0100](../decisions/0100-a-counted-tombstone-lists-a-digest-of-each-withheld-identifier-and-a-sealed-one-lists-nothing.md) — Under the counted grain, each tombstone of a filtered export lists the SHA-256 digest of each identifier it withheld. A tier that pins the export then binds an anchor to a withheld document as withheld, and it reports a typo as unresolved. Under sealed the export lists nothing, and both stay unresolved. An export older than version 1.3 lists nothing either. (asserted, and no human has accepted it)
 
-## An editor integration starts headwater mcp for each query and does not embed the library
+## 102 — An editor integration starts headwater mcp for each query and does not embed the library
 
 [HW-DR-0102](../decisions/0102-an-editor-integration-starts-headwater-mcp-for-each-query-and-does-not-embed-the-library.md) — An editor plugin is a client of headwater mcp: it starts the server for each query, sends one read request and stops it. The library stays embeddable, but no editor host embeds it. (asserted, and no human has accepted it)
 
-## An evidence relation declares which end is the evidence, and discharges declares the source
+## 103 — An evidence relation declares which end is the evidence, and discharges declares the source
 
 [HW-DR-0103](../decisions/0103-an-evidence-relation-declares-which-end-is-the-evidence-and-discharges-declares-the-source.md) — A relation of the evidence family declares evidence_at, from or to, because the family cannot say which end substantiates the other. Absent is to. discharges declares from, so an evaluation is the evidence for its obligation. (asserted, and no human has accepted it)
 
-## Whether the embedding path becomes the silence-only fallback of routing, and what happens to the shadow collection
+## 105 — Whether the embedding path becomes the silence-only fallback of routing, and what happens to the shadow collection
 
 [HW-DR-0105](../decisions/0105-whether-the-embedding-path-becomes-the-silence-only-fallback-of-routing-and-what-happens-to-the-shadow-collection.md) — Proposed, not ruled: the embedding path is not routing's silence-only fallback, because it is never silent and nothing grades its recall. The collection goes on. (asserted, and no human has accepted it)
 
-## A governing document repoints a link to a rule that moved, and a record of a moment stays as written
+## 106 — A governing document repoints a link to a rule that moved, and a record of a moment stays as written
 
 [HW-DR-0106](../decisions/0106-a-governing-document-repoints-a-link-to-a-rule-that-moved-and-a-record-of-a-moment-stays-as-written.md) — When a rule moves to a new home, a document that still governs changes its link to the home and keeps its claim. An evaluation, a review or a probe run stays as written, and its date or commit marks its moment (asserted, and no human has accepted it)

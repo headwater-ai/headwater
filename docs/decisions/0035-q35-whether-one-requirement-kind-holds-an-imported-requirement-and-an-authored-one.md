@@ -4,7 +4,7 @@ status: current
 status_since: 2026-08-30
 summary: "The `requirement` and `acceptance_criterion` kinds serve the authored population alone. A transcribed requirement is a marked file that answers no contract, so a separate kind with an empty contract carries the imported case."
 last_verified: 2026-08-30
-title: "Q35 — Whether one requirement kind holds an imported requirement and an authored one"
+title: "35 — Whether one requirement kind holds an imported requirement and an authored one"
 provenance:
   warrant: accepted
   agency: mixed
@@ -18,7 +18,7 @@ relations:
     - HW-IFACE-headwater-taxonomy
 ---
 
-# Q35 — Whether one requirement kind holds an imported requirement and an authored one
+# 35 — Whether one requirement kind holds an imported requirement and an authored one
 
 ## Context
 

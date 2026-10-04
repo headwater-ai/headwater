@@ -22,7 +22,7 @@
       "taxonomy": {
         "package": "headwater/standard",
         "version": "4.16.0",
-        "lock": "sha256:039554ed1e794e2ba1660fd0d1dcf300233a26008f70933ebe01cd185035e00a"
+        "lock": "sha256:f832eaaa7db51d1892775b7b142f08a59fabdfb2b79c05ac97de0bbd1ef4ba73"
       },
       "entry_points": [
         {
@@ -47,8 +47,8 @@
         },
         {
           "shelf": "how_to",
-          "path": "docs/how-to/cut-a-release.md",
-          "id": "HW-HOW-cut-a-release"
+          "path": "docs/how-to/publish-your-corpus-as-a-site.md",
+          "id": "HW-HOW-publish-your-corpus-as-a-site"
         },
         {
           "shelf": "interfaces",
@@ -57,11 +57,6 @@
         },
         {
           "shelf": "library_doctrine",
-          "path": "docs/taxonomies/brd-prd/doctrine.md",
-          "id": "HW-LIB-brd-prd"
-        },
-        {
-          "shelf": "library_index",
           "path": "docs/taxonomies/README.md",
           "id": "HW-LIB-index"
         },
@@ -99,6 +94,11 @@
           "shelf": "process_explanations",
           "path": "docs/process/explanations/where-a-ci-job-runs.md",
           "id": "HW-PEXP-where-a-ci-job-runs"
+        },
+        {
+          "shelf": "process_how_to",
+          "path": "docs/process/how-to/cut-a-release.md",
+          "id": "HW-PHOW-cut-a-release"
         },
         {
           "shelf": "process_obligations",

@@ -4,7 +4,7 @@ status: current
 status_since: 2026-09-17
 summary: "A route does not read headings and offers no anchor inside a document. A measured heading surface never reached spec 02 or spec 03 for the task that raised the question. At every threshold, function words reached wrong anchors."
 last_verified: 2026-09-17
-title: "A route offers a document and never a heading inside it"
+title: "71 — A route offers a document and never a heading inside it"
 relations:
   governs:
     - engine/crates/query/src/route.rs
@@ -17,7 +17,7 @@ provenance:
   evidence_basis: evidenced
 ---
 
-# A route offers a document and never a heading inside it
+# 71 — A route offers a document and never a heading inside it
 
 ## Context
 

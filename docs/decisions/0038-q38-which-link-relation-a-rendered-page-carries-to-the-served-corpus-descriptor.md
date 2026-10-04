@@ -4,7 +4,7 @@ status: current
 status_since: 2026-08-30
 summary: "A rendered page points at the served descriptor with `rel=\"describedby\"`, because the IANA registry carries that token and the Headwater extension address answers 404."
 last_verified: 2026-08-30
-title: "Q38 — Which link relation a rendered page carries to the served corpus descriptor"
+title: "38 — Which link relation a rendered page carries to the served corpus descriptor"
 provenance:
   warrant: accepted
   agency: mixed
@@ -20,7 +20,7 @@ relations:
     - HW-DR-0014
 ---
 
-# Q38 — Which link relation a rendered page carries to the served corpus descriptor
+# 38 — Which link relation a rendered page carries to the served corpus descriptor
 
 ## Context
 

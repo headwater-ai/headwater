@@ -25,7 +25,7 @@ relations:
 
 # The graph, its export, and the tier above it
 
-This evaluation closes three entries at once: [Q6](../spec/09-open-questions.md#q6--where-the-corpus-graph-lives-at-rest) (where the corpus graph lives at rest), [Q13](../spec/09-open-questions.md#q13--linkml-and-shacl-as-substrate) (LinkML and SHACL as substrate), and [Q9](../spec/09-open-questions.md#q9--multi-repository-corpora) (multi-repository corpora).
+This evaluation closes three entries at once: [Q6](../spec/09-open-questions.md#6--where-the-corpus-graph-lives-at-rest) (where the corpus graph lives at rest), [Q13](../spec/09-open-questions.md#13--linkml-and-shacl-as-substrate) (LinkML and SHACL as substrate), and [Q9](../spec/09-open-questions.md#9--multi-repository-corpora) (multi-repository corpora).
 
 The house pattern is one evaluation per question, and this one departs from it. The reason is the first finding below.
 
@@ -33,7 +33,7 @@ The house pattern is one evaluation per question, and this one departs from it. 
 
 Read the three leanings in sequence and a cycle appears.
 
-Q6 defers: an RDF view is acceptable, but the shape of it waits on Q13. Q13 defers twice: the emitter staging is open, and the OKF half arrives "after the graph export format is stable ([Q9](../spec/09-open-questions.md#q9--multi-repository-corpora))". Q9 defers back: confirm the federation model "before the graph export format is frozen, because that format is the aggregator's input".
+Q6 defers: an RDF view is acceptable, but the shape of it waits on Q13. Q13 defers twice: the emitter staging is open, and the OKF half arrives "after the graph export format is stable ([Q9](../spec/09-open-questions.md#9--multi-repository-corpora))". Q9 defers back: confirm the federation model "before the graph export format is frozen, because that format is the aggregator's input".
 
 Each entry waits for the other two. No entry owns the format that all three want. The deadlock is not an accident of drafting. It happened because the three are one question, asked at three radii.
 
@@ -47,7 +47,7 @@ The single question underneath is this: **what leaves the corpus graph, and what
 
 Twelve rulings constrain this evaluation, and it may not revisit any of them.
 
-**The Markdown is the corpus.** [Spec 0](../spec/00-vision-and-scope.md#non-negotiables) forbids a proprietary store and requires that the corpus degrades to readable Markdown. [Q17](../spec/09-open-questions.md#q17--governed-access-and-the-solution-layer) refused the inversion of that on four grounds and named the coherent alternative a pivot.
+**The Markdown is the corpus.** [Spec 0](../spec/00-vision-and-scope.md#non-negotiables) forbids a proprietary store and requires that the corpus degrades to readable Markdown. [Q17](../spec/09-open-questions.md#17--governed-access-and-the-solution-layer) refused the inversion of that on four grounds and named the coherent alternative a pivot.
 
 **No network at check time**, and the same verdict on a laptop as in continuous integration.
 
@@ -59,13 +59,13 @@ Twelve rulings constrain this evaluation, and it may not revisit any of them.
 
 **Explicit incompleteness** ([principle 5](../spec/00-vision-and-scope.md#design-principles)), and its operational form in [spec 4](../spec/04-assurance-model.md#no-silent-passes-every-document-is-accounted-for): the census fixes the denominator before any check runs.
 
-**The internal model is a property graph.** [Q4](../spec/09-open-questions.md#q4--relation-storage) made a relation instance an object with declared attributes.
+**The internal model is a property graph.** [Q4](../spec/09-open-questions.md#4--relation-storage) made a relation instance an object with declared attributes.
 
-**An edge is identified by the source identifier, the relation name, and the normalized target** ([Q4](../spec/09-open-questions.md#q4--relation-storage)). No position and no path is part of that identity.
+**An edge is identified by the source identifier, the relation name, and the normalized target** ([Q4](../spec/09-open-questions.md#4--relation-storage)). No position and no path is part of that identity.
 
 **Findings anchor to a line**, and [spec 12](../spec/12-check-layer.md#findings) states that spans do not survive an RDF round trip.
 
-**Headwater owns the schema language, and standard formats come out of it** ([Q2](../spec/09-open-questions.md#q2--schema-format), [Q13](../spec/09-open-questions.md#q13--linkml-and-shacl-as-substrate)).
+**Headwater owns the schema language, and standard formats come out of it** ([Q2](../spec/09-open-questions.md#2--schema-format), [Q13](../spec/09-open-questions.md#13--linkml-and-shacl-as-substrate)).
 
 **The solution layer is an ordinary corpus** that authors its own cross-estate facts ([Q9](../decisions/0009-multi-repository-corpora.md#the-aggregator-authors-its-own-facts)).
 
@@ -81,7 +81,7 @@ Those twelve settle more of the three questions than any of the three entries no
 
 **SCIP replaced LSIF at Sourcegraph, and its design document states the rule outright.** "SCIP is meant to be a *transmission* format for sending data from some producers to some consumers. It is not meant as a *storage* format for querying." LSIF failed on the other half of the same distinction. It encoded a graph with opaque global integer identifiers. That imposed an ordering constraint on how symbols entered the index and made partial update of one document impractical. Sourcegraph replaced the integers with human-readable string symbol identifiers.
 
-That last detail confirms a Headwater ruling that arrived for an unrelated reason. [Q4](../spec/09-open-questions.md#q4--relation-storage) made an edge identity a triple of stable strings, to give the `Edge` scope a computable key. Sourcegraph reached the same shape from incremental indexing. Two derivations, one result.
+That last detail confirms a Headwater ruling that arrived for an unrelated reason. [Q4](../spec/09-open-questions.md#4--relation-storage) made an edge identity a triple of stable strings, to give the `Edge` scope a computable key. Sourcegraph reached the same shape from incremental indexing. Two derivations, one result.
 
 **Software Heritage keeps two derived representations at two fidelities.** The archive exports its tables as Apache ORC, and a separate compression pipeline builds a WebGraph representation *from that export*. The compressed graph is regenerated rather than maintained. This is the layering that Q6 needed and did not have: an authority, a faithful export, and a lossy fast representation downstream of the export.
 
@@ -189,7 +189,7 @@ Three points were open. All three close, and one of them closes by fixing a sent
 
 Nothing in the engine changes. The lock is per corpus root. The census walks one root. A path resolves to exactly one corpus by the determinism rule that shelf patterns already use. The most specific root wins, and a tie is a validation error. Identifiers are namespaced at minting ([spec 3](../spec/03-authoring-and-lifecycle.md#identifiers)), so two corpora in one tree cannot collide. The sentence named the wrong container, and that is the whole defect.
 
-**The aggregator is in scope, and it is not a component.** It is a solution corpus plus one anchor kind. [Q9](../decisions/0009-multi-repository-corpora.md#the-aggregator-authors-its-own-facts) already admitted the solution layer as an ordinary corpus. What was missing is how it reaches the corpora below it, and the answer is machinery that [spec 2](../spec/02-taxonomy-model.md#behavior-at-the-limits) already has. An anchor kind is declared, and exactly one resolver owns it. That resolver reads pinned, committed exports, in the way that `code_path`'s resolver reads a source tree and [Q19](../spec/09-open-questions.md#q19--inbound-integration-an-external-system-of-record)'s resolver reads a committed snapshot.
+**The aggregator is in scope, and it is not a component.** It is a solution corpus plus one anchor kind. [Q9](../decisions/0009-multi-repository-corpora.md#the-aggregator-authors-its-own-facts) already admitted the solution layer as an ordinary corpus. What was missing is how it reaches the corpora below it, and the answer is machinery that [spec 2](../spec/02-taxonomy-model.md#behavior-at-the-limits) already has. An anchor kind is declared, and exactly one resolver owns it. That resolver reads pinned, committed exports, in the way that `code_path`'s resolver reads a source tree and [Q19](../spec/09-open-questions.md#19--inbound-integration-an-external-system-of-record)'s resolver reads a committed snapshot.
 
 **There is no merged graph, and the question about where merged graphs live dissolves.** Merging is anchor resolution. Anchor resolution produces nothing that outlives the run. The solution corpus holds its own documents and its own declared edges, and it resolves anchors against exports that it pinned. Q9 had already concluded that a merged graph is "canonical for nothing". The step it did not take is the obvious one. An artifact that is canonical for nothing, that nothing reviews, and that every run can rebuild, does not need to exist.
 
@@ -201,11 +201,11 @@ Nothing in the engine changes. The lock is per corpus root. The census walks one
 
 So a source export that the aggregator cannot read is a **finding that names the pin**. It is never a narrower answer delivered without notice.
 
-**A pin is the third instance of one pattern, and that is worth saying once.** A taxonomy pin ([spec 7](../spec/07-distribution-and-federation.md#consuming)), a requirements snapshot pin ([Q19](../spec/09-open-questions.md#q19--inbound-integration-an-external-system-of-record)), and a source-export pin are the same mechanism. Each fetches out of band, commits the result, checks against the committed copy, and compares on a schedule. Each raises a change proposal and never a mutation. [Spec 7](../spec/07-distribution-and-federation.md#upstream-awareness)'s upstream awareness covers all three with no change.
+**A pin is the third instance of one pattern, and that is worth saying once.** A taxonomy pin ([spec 7](../spec/07-distribution-and-federation.md#consuming)), a requirements snapshot pin ([Q19](../spec/09-open-questions.md#19--inbound-integration-an-external-system-of-record)), and a source-export pin are the same mechanism. Each fetches out of band, commits the result, checks against the committed copy, and compares on a schedule. Each raises a change proposal and never a mutation. [Spec 7](../spec/07-distribution-and-federation.md#upstream-awareness)'s upstream awareness covers all three with no change.
 
 ## What this fixes for Q17, which it does not decide
 
-[Q17](../spec/09-open-questions.md#q17--governed-access-and-the-solution-layer) states that it blocks on the graph export format. The format is now fixed, and four things follow that Q17 may rely on.
+[Q17](../spec/09-open-questions.md#17--governed-access-and-the-solution-layer) states that it blocks on the graph export format. The format is now fixed, and four things follow that Q17 may rely on.
 
 **The export is the serving artifact.** Filtering acts at export, never at graph build. Q17 already required that checks stay privileged and total, and it now has a named seam rather than an intention.
 
@@ -225,7 +225,7 @@ Q17 keeps everything else: whether to build access control at all, the identity 
 
 **Whether the aggregator tier needs conformance rules of its own.** `headwater conformance` ([spec 7](../spec/07-distribution-and-federation.md#conformance)) evaluates one repository. Whether a tier that harvests owes a separate set is unargued, and nothing depends on it today.
 
-**The `$`-reference grammar** stays where [Q2](../spec/09-open-questions.md#q2--schema-format) left it. It is not this group's to settle, and the emitters do not touch it.
+**The `$`-reference grammar** stays where [Q2](../spec/09-open-questions.md#2--schema-format) left it. It is not this group's to settle, and the emitters do not touch it.
 
 ## What this predicts, and how to measure it
 

@@ -1,5 +1,5 @@
 ---
-id: HW-HOW-mine-the-shadow-mode-routing-log
+id: HW-PHOW-mine-the-shadow-mode-routing-log
 status: current
 status_since: 2026-09-17
 summary: "Join the shadow log to the session transcripts by prompt identifier, and read the deterministic route against the embedding path one prompt at a time."
@@ -22,13 +22,13 @@ relations:
 
 ## Before you start
 
-[HW-DR-0064](../decisions/0064-q64-whether-intent-time-routing-gains-an-offline-embedding-path-in-shadow-mode.md) sets the collection period. Wait for 500 person prompts or 2026-10-17, whichever comes first. The period also needs 58 silent invocations or more. A count below either bound is a measurement of the collector rather than of the router.
+[HW-DR-0064](../../decisions/0064-q64-whether-intent-time-routing-gains-an-offline-embedding-path-in-shadow-mode.md) sets the collection period. Wait for 500 person prompts or 2026-10-17, whichever comes first. The period also needs 58 silent invocations or more. A count below either bound is a measurement of the collector rather than of the router.
 
 **One command runs the whole procedure.** `sh tools/run/shadow-mine.sh` runs steps 1 to 7 below and prints every figure that "How to know it worked" asks for. Its header states each rule it applies, and `sh tools/run/shadow-mine-fixtures.sh` holds it. Use the steps below to read what the tool does, or to check one of its figures by hand.
 
-Two sources join here. The first is the shadow log, which `.claude/hooks/intent.sh` writes to `<git common dir>/headwater-shadow-log/<harness session>.jsonl`. The second is the harness session logs under `~/.claude/projects/`. HW-DR-0064 licenses the session logs for this comparison as engineering evidence. [HW-DR-0059](../decisions/0059-a-transform-over-a-harness-session-log-is-an-observed-transcript-when-the-log-arrives-by-a-channel-the-model-cannot-write-to.md) still refuses them as a probe result, because the session can write them.
+Two sources join here. The first is the shadow log, which `.claude/hooks/intent.sh` writes to `<git common dir>/headwater-shadow-log/<harness session>.jsonl`. The second is the harness session logs under `~/.claude/projects/`. HW-DR-0064 licenses the session logs for this comparison as engineering evidence. [HW-DR-0059](../../decisions/0059-a-transform-over-a-harness-session-log-is-an-observed-transcript-when-the-log-arrives-by-a-channel-the-model-cannot-write-to.md) still refuses them as a probe result, because the session can write them.
 
-Every command below was run on 2026-09-17, against the log of this host and the session logs beside it. The period held 21 lines that day. So these commands are reconstructed from a collection far under the bound above, and never from a finished one. `shadow-mine.sh` ran over the finished period on 2026-10-03, and [the evaluation of that reading](../evaluations/what-the-shadow-mode-routing-log-showed-at-its-bound.md) gives its figures.
+Every command below was run on 2026-09-17, against the log of this host and the session logs beside it. The period held 21 lines that day. So these commands are reconstructed from a collection far under the bound above, and never from a finished one. `shadow-mine.sh` ran over the finished period on 2026-10-03, and [the evaluation of that reading](../../evaluations/what-the-shadow-mode-routing-log-showed-at-its-bound.md) gives its figures.
 
 You need `jq`. Set two variables first. The examples below use them.
 

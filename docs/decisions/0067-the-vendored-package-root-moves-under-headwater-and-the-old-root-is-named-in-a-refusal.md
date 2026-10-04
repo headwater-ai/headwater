@@ -4,7 +4,7 @@ status: current
 status_since: 2026-09-11
 summary: "The vendored package root is `.headwater/packages/`, because the old root bought only the visibility of one explainer, and a tree there meets a named refusal."
 last_verified: 2026-09-11
-title: "The vendored package root moves under .headwater and the old root is named in a refusal"
+title: "67 — The vendored package root moves under .headwater and the old root is named in a refusal"
 relations:
   governs:
     - engine/crates/resolve/src/package.rs
@@ -17,7 +17,7 @@ provenance:
   evidence_basis: evidenced
 ---
 
-# The vendored package root moves under .headwater and the old root is named in a refusal
+# 67 — The vendored package root moves under .headwater and the old root is named in a refusal
 
 ## Context
 

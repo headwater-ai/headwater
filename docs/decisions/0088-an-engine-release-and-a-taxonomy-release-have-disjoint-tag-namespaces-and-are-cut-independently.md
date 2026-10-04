@@ -4,7 +4,7 @@ status: current
 status_since: 2026-09-27
 summary: "An engine tag matches v* and a taxonomy tag matches taxonomy/headwater-standard/v*, so neither release waits on the other and requires_engine is the only link."
 last_verified: 2026-09-27
-title: "An engine release and a taxonomy release have disjoint tag namespaces and are cut independently"
+title: "88 — An engine release and a taxonomy release have disjoint tag namespaces and are cut independently"
 provenance:
   warrant: asserted
   agency: agent
@@ -21,7 +21,7 @@ relations:
       verified_revision: sha256:7cd391c5765c05030db6ff23f9957c6f7b9bbca73a0c8a2c8faed3651a0cad52
 ---
 
-# An engine release and a taxonomy release have disjoint tag namespaces and are cut independently
+# 88 — An engine release and a taxonomy release have disjoint tag namespaces and are cut independently
 
 ## Context
 
@@ -44,6 +44,6 @@ The taxonomy release has its own workflow file and is not a job in `release.yml`
 
 An adopter can pin a fixed `headwater/standard` version as soon as its maintainer publishes it, with no engine release. `README.md` tells the adopter that an engine tag carries the package version that shipped with it. That version can be older than the newest one.
 
-A tag in a third namespace starts no release workflow. `tools/repo/release-guide-fixtures.sh` holds the tag patterns of each release workflow against the table in [Cut a release](../how-to/cut-a-release.md). It reads in both directions.
+A tag in a third namespace starts no release workflow. `tools/repo/release-guide-fixtures.sh` holds the tag patterns of each release workflow against the table in [Cut a release](../process/how-to/cut-a-release.md). It reads in both directions.
 
 A change to the tag pattern of any of the three workflows makes this record suspect, because this record governs each of them.

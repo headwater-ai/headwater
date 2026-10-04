@@ -4,7 +4,7 @@ status: current
 status_since: 2026-09-06
 summary: "The hand-built pages read as a specification rather than as a product page, and one file holds the color tokens and type stacks that carry it. A script writes that file into each hand-built page before the commit, because the content policy of those pages admits no linked stylesheet, and the generated half links the same file because its own policy admits one."
 last_verified: 2026-09-08
-title: "Q50 — Where the visual register of the hand-built pages lives"
+title: "50 — Where the visual register of the hand-built pages lives"
 provenance:
   warrant: asserted
   agency: agent
@@ -23,7 +23,7 @@ relations:
     - .headwater/notes/website-design-brief.md
 ---
 
-# Q50 — Where the visual register of the hand-built pages lives
+# 50 — Where the visual register of the hand-built pages lives
 
 ## Context
 

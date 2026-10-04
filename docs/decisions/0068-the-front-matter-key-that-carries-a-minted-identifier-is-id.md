@@ -4,7 +4,7 @@ status: current
 status_since: 2026-09-16
 summary: "The front-matter key `id` is the fixed, global name for the value a kind's `identifier: {scheme: …}` facet mints."
 last_verified: 2026-09-16
-title: "The front-matter key that carries a minted identifier is id"
+title: "68 — The front-matter key that carries a minted identifier is id"
 relations:
   governs:
     - engine/crates/graph/src/lib.rs
@@ -19,7 +19,7 @@ provenance:
   evidence_basis: evidenced
 ---
 
-# The front-matter key that carries a minted identifier is id
+# 68 — The front-matter key that carries a minted identifier is id
 
 ## Context
 

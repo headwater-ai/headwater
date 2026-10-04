@@ -1,6 +1,6 @@
 ---
 id: HW-DR-0005
-title: Q5 — Voice checking depth
+title: 5 — Voice checking depth
 status: current
 status_since: 2026-08-11
 last_verified: 2026-08-11
@@ -17,7 +17,7 @@ relations:
     - HW-EVAL-what-a-check-can-know
 ---
 
-# Q5 — Voice checking depth
+# 5 — Voice checking depth
 
 ## Context
 

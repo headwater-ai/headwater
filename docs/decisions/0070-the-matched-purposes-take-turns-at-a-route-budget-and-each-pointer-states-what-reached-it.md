@@ -4,7 +4,7 @@ status: current
 status_since: 2026-09-17
 summary: "The purposes a task matches take turns at the route budget, and the kinds of one purpose take turns inside it. Each pointer states the task terms that reached it and its rank in the order by score. No pointer carries a score or a confidence."
 last_verified: 2026-09-17
-title: "The matched purposes take turns at a route budget, and each pointer states what reached it"
+title: "70 — The matched purposes take turns at a route budget, and each pointer states what reached it"
 relations:
   governs:
     - engine/crates/query/src/route.rs
@@ -18,7 +18,7 @@ provenance:
   evidence_basis: evidenced
 ---
 
-# The matched purposes take turns at a route budget, and each pointer states what reached it
+# 70 — The matched purposes take turns at a route budget, and each pointer states what reached it
 
 ## Context
 

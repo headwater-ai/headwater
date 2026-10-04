@@ -4,7 +4,7 @@ status: current
 status_since: 2026-08-31
 summary: "`adoption.from` is a pair, a semver and the release digest that was pinned when the migration began, and never a hash of the two."
 last_verified: 2026-08-31
-title: "Migrating from-version carries a semver and a release digest, kept as separate fields"
+title: "46 — Migrating from-version carries a semver and a release digest, kept as separate fields"
 provenance:
   warrant: accepted
   agency: mixed
@@ -18,7 +18,7 @@ relations:
     - HW-DR-0012
 ---
 
-# Migrating from-version carries a semver and a release digest, kept as separate fields
+# 46 — Migrating from-version carries a semver and a release digest, kept as separate fields
 
 ## Context
 

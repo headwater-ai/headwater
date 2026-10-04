@@ -4,7 +4,7 @@ status: current
 status_since: 2026-08-30
 summary: The `self-audit` label states the reader test and not the provenance test. How a finding was found is not the test, and the only question is whether a reader outside this repository is better off.
 last_verified: 2026-08-30
-title: "Q32 — Which test the self-audit label states"
+title: "32 — Which test the self-audit label states"
 provenance:
   warrant: accepted
   agency: mixed
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 ---
 
-# Q32 — Which test the self-audit label states
+# 32 — Which test the self-audit label states
 
 ## Context
 

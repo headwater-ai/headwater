@@ -4,7 +4,7 @@ status: current
 status_since: 2026-09-27
 summary: "Headwater ships one amd64 Debian package, taxonomy-free, through an APT repository on headwater.tools whose metadata a CI-held signing subkey signs"
 last_verified: 2026-09-30
-title: "The APT repository is served from headwater.tools and signed by a subkey the owner's offline key certifies"
+title: "94 — The APT repository is served from headwater.tools and signed by a subkey the owner's offline key certifies"
 provenance:
   warrant: asserted
   agency: agent
@@ -19,7 +19,7 @@ relations:
       verified_revision: sha256:cb44a3ed11960c738f0e4d9352565c03a0246544c35fa54fb805ef827a1dfd4c
 ---
 
-# The APT repository is served from headwater.tools and signed by a subkey the owner's offline key certifies
+# 94 — The APT repository is served from headwater.tools and signed by a subkey the owner's offline key certifies
 
 ## Context
 
@@ -51,6 +51,6 @@ The APT key authenticates the publisher of the engine on the APT route only. It 
 
 Cloudflare serves one asset of at most 25 MiB. The package built from the v0.4.0 archive is 8,132,796 bytes. The package job and `fetch-apt.sh` each refuse a larger package.
 
-[Rotate or revoke the APT signing subkey](../how-to/rotate-or-revoke-the-apt-signing-subkey.md) gives the order of steps for a new subkey. The apt program checks a signature only against the keyring file that an adopter downloaded. So every adopter downloads the keyring again after a new subkey is added.
+[Rotate or revoke the APT signing subkey](../process/how-to/rotate-or-revoke-the-apt-signing-subkey.md) gives the order of steps for a new subkey. The apt program checks a signature only against the keyring file that an adopter downloaded. So every adopter downloads the keyring again after a new subkey is added.
 
 Reopen this record when a person asks for it on the tracker. Three requests reopen it: a second host, an `arm64` package, and a package in the Debian archive.

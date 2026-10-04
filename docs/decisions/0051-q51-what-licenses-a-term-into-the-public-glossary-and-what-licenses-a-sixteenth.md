@@ -4,7 +4,7 @@ status: current
 status_since: 2026-09-06
 summary: "A term reaches the public glossary because it recurs in the visitor-facing pages of the site, and for no other reason. The tutorial and the glossary itself are not sources, and the specification glossary answers to a different reader."
 last_verified: 2026-09-06
-title: "Q51 — What licenses a term into the public glossary, and what licenses a sixteenth"
+title: "51 — What licenses a term into the public glossary, and what licenses a sixteenth"
 provenance:
   warrant: asserted
   agency: agent
@@ -17,7 +17,7 @@ relations:
     - .headwater/notes/website-design-brief.md
 ---
 
-# Q51 — What licenses a term into the public glossary, and what licenses a sixteenth
+# 51 — What licenses a term into the public glossary, and what licenses a sixteenth
 
 ## Context
 

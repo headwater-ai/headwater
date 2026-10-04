@@ -37,7 +37,7 @@ The title of each release is its tag: both workflows pass `--title "$TAG"`. No f
 
 ## Consequences
 
-A hand run of a release workflow against a tag that already has a release cannot repair that release. [Cut a release](../../how-to/cut-a-release.md) sends a maintainer to a hand run only for a tag that has no release.
+A hand run of a release workflow against a tag that already has a release cannot repair that release. [Cut a release](../how-to/cut-a-release.md) sends a maintainer to a hand run only for a tag that has no release.
 
 A release that shipped a wrong asset stays wrong until a person deletes it. The tag stays when the release goes.
 

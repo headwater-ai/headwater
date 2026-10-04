@@ -1,6 +1,6 @@
 ---
 id: HW-DR-0009
-title: Q9 — Multi-repository corpora
+title: 9 — Multi-repository corpora
 status: current
 status_since: 2026-08-11
 last_verified: 2026-08-11
@@ -17,7 +17,7 @@ relations:
     - HW-EVAL-graph-export-and-federation
 ---
 
-# Q9 — Multi-repository corpora
+# 9 — Multi-repository corpora
 
 ## Context
 

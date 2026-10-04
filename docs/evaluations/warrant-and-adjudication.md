@@ -28,7 +28,7 @@ relations:
 
 # Warrant — what stands behind a document, and who vouched for it
 
-This evaluation closes three entries at once: [Q15](../spec/09-open-questions.md#q15--a-synthesized-content-tier) (a synthesized content tier), [Q19](../spec/09-open-questions.md#q19--inbound-integration-an-external-system-of-record) (inbound integration with an external system of record), and [Q18](../spec/09-open-questions.md#q18--recording-adjudicated-disagreements) (recording adjudicated disagreements).
+This evaluation closes three entries at once: [Q15](../spec/09-open-questions.md#15--a-synthesized-content-tier) (a synthesized content tier), [Q19](../spec/09-open-questions.md#19--inbound-integration-an-external-system-of-record) (inbound integration with an external system of record), and [Q18](../spec/09-open-questions.md#18--recording-adjudicated-disagreements) (recording adjudicated disagreements).
 
 The house pattern is one evaluation per question. The [graph group](graph-export-and-federation.md) departed from it because three entries were one question at three radii. The [serving-boundary group](the-serving-boundary.md) departed from it because three entries described one boundary from three sides. This group departs from it for a third reason, and the reason is the first finding below.
 
@@ -68,7 +68,7 @@ Fifteen rulings constrain this evaluation, and it may not revisit any of them.
 
 **A control walks the promotion path when both of its error classes are recoverable** ([spec 4](../spec/04-assurance-model.md#where-promotion-does-not-apply)).
 
-**An instance attribute takes a facet's value space and is never a reference.** An edge that must point at a node is a request to make the edge a node, and Q18 owns that change ([Q4](../spec/09-open-questions.md#q4--relation-storage), [evaluation](relation-storage.md)).
+**An instance attribute takes a facet's value space and is never a reference.** An edge that must point at a node is a request to make the edge a node, and Q18 owns that change ([Q4](../spec/09-open-questions.md#4--relation-storage), [evaluation](relation-storage.md)).
 
 **A facet value is never a reference either**, and the reason is that a second ungoverned edge mechanism wins under deadline pressure ([spec 1](../spec/01-conceptual-model.md#facet)).
 
@@ -106,7 +106,7 @@ That settles a design question that would otherwise have been a coin toss. An un
 
 **C2PA measures what happens to a mark in transit.** Content Credentials bind a signed manifest to an asset, with assertions about capture, editing, and the use of generative tools. The specification's own threat model names manifest removal as a live case, and the ecosystem's answer is a durable binding through watermarking and fingerprinting. The reason is blunt: metadata that travels beside content gets stripped by ordinary tooling that never intended to strip it.
 
-That sharpens the constraint that [Q17](../spec/09-open-questions.md#q17--governed-access-and-the-solution-layer) handed this group. Q15 proposed that an emitter which cannot carry the mark declares that in its loss set. A loss-set entry tells a consumer who reads it that the distinction is gone. It does nothing at all for the consumer who does not read it, and that consumer receives unwarranted content that looks vouched. C2PA's second contribution is the signer. A manifest names an accountable party and validates against a trust list, so a credential with no named party is decoration. That is Q18's own test, generalized past adjudication.
+That sharpens the constraint that [Q17](../spec/09-open-questions.md#17--governed-access-and-the-solution-layer) handed this group. Q15 proposed that an emitter which cannot carry the mark declares that in its loss set. A loss-set entry tells a consumer who reads it that the distinction is gone. It does nothing at all for the consumer who does not read it, and that consumer receives unwarranted content that looks vouched. C2PA's second contribution is the signer. A manifest names an accountable party and validates against a trust list, so a credential with no named party is decoration. That is Q18's own test, generalized past adjudication.
 
 ### What the largest maintained corpus does about content nobody checked
 
@@ -120,7 +120,7 @@ That is the reframing of Q15, confirmed by the case that Q15 did not cite.
 
 **And the contradiction, which is the more useful half.** Most Wikipedia prose carries no inline citation. The policy demands attributability rather than attribution, and the encyclopedia is useful anyway. So a corpus full of unwarranted content is not worthless. It is useful in proportion to how cheaply a reader can check it. The inline `citation needed` mark is what keeps that cost visible at the point of reading. That contradicts any ruling that would forbid unwarranted content, and it supports Q15's leaning to admit it and mark it.
 
-One thing that Wikipedia does and this design declines: the `citation needed` mark sits inside a paragraph, at sub-document grain. [Q17](../spec/09-open-questions.md#q17--governed-access-and-the-solution-layer) already refused a filter that reaches inside a body, and the reasoning transfers. A warrant is per document.
+One thing that Wikipedia does and this design declines: the `citation needed` mark sits inside a paragraph, at sub-document grain. [Q17](../spec/09-open-questions.md#17--governed-access-and-the-solution-layer) already refused a filter that reaches inside a body, and the reasoning transfers. A warrant is per document.
 
 **TrustGraph and Serena are the two observed cases that the entries already supply, and the survey confirms both.** [HW-EVAL-adjacent-work §J](../evaluations/adjacent-work.md#j-trustgraph--the-same-pitch-the-opposite-mechanism) records per-fact receipts of source, ingestion timestamp, and extraction method. Read against PROV, a receipt is a derivation record and not an endorsement record. So it supplies the *shape* of the provenance block and none of the warrant. It also works at per-fact grain, which is the grain that the paragraph above declines. [HW-EVAL-adjacent-work §L.5](../evaluations/adjacent-work.md#l5-onboarding-ships-the-synthesized-tier-and-marks-nothing) records the failure with no mark at all, in a tool with a very large installed base.
 
@@ -128,7 +128,7 @@ One thing that Wikipedia does and this design declines: the `citation needed` ma
 
 ### What requirements practice did about a store that somebody else owns
 
-**Baselining is the pinned snapshot, named by the industry that invented the problem.** Requirements-management practice freezes an identified set of requirements as a baseline, and traceability is evaluated against the baseline rather than against the live set. [HW-EVAL-adjacent-work §K](../evaluations/adjacent-work.md#k-modern-requirements--the-first-candidate-where-the-arrow-reverses) records that the tool in question mints baselines as work items. So the pin that [Q9](../spec/09-open-questions.md#q9--multi-repository-corpora) generalized into one pattern with three instances is, for this instance, the upstream's own native concept.
+**Baselining is the pinned snapshot, named by the industry that invented the problem.** Requirements-management practice freezes an identified set of requirements as a baseline, and traceability is evaluated against the baseline rather than against the live set. [HW-EVAL-adjacent-work §K](../evaluations/adjacent-work.md#k-modern-requirements--the-first-candidate-where-the-arrow-reverses) records that the tool in question mints baselines as work items. So the pin that [Q9](../spec/09-open-questions.md#9--multi-repository-corpora) generalized into one pattern with three instances is, for this instance, the upstream's own native concept.
 
 **Suspect links are the drift mechanism, and they are better than what Q19 proposed.** DOORS-family tooling flags every trace link into a requirement as *suspect* when that requirement changes. The flag clears only when a person confirms the link. Q19 proposed a change proposal against the snapshot, which is correct and too coarse. A snapshot advance that changes one requirement should not raise one proposal about the snapshot. It should raise a finding on each edge that pointed into the changed requirement, because that is where the person who can act will look. [Spec 4](../spec/04-assurance-model.md#absence-is-a-finding-class-of-its-own) already states the report-at-the-origin rule for participation expectations, and this is the same rule.
 
@@ -221,7 +221,7 @@ What does not dissolve is the set of properties that the snapshot owes, because 
 - It carries its **fetch time and the upstream identity and revision of every requirement in it**. Without a revision, the drift comparison below cannot say which requirements changed.
 - It is a **pin**, so [spec 7](../spec/07-distribution-and-federation.md#upstream-awareness)'s one-pattern-three-instances covers it with no new machinery.
 
-The size question stays open, and it is the same question that [Q9](../spec/09-open-questions.md#q9--multi-repository-corpora) left open about a vendored source export. A requirement identity set is small enough that the answer here is obvious today. A snapshot with the full text of ten thousand requirements is not, and no adopter has one yet.
+The size question stays open, and it is the same question that [Q9](../spec/09-open-questions.md#9--multi-repository-corpora) left open about a vendored source export. A requirement identity set is small enough that the answer here is obvious today. A snapshot with the full text of ten thousand requirements is not, and no adopter has one yet.
 
 **What is an imported edge worth? Exactly what any generated edge is worth, and the leaning's answer is wrong.** The leaning said that imported edges "start advisory and walk the same evidence-driven promotion path as every other control". That misplaces the instrument, and the mistake is worth naming because it is easy to repeat.
 
@@ -232,7 +232,7 @@ So an importer joins the correctness roots, and imported edges carry full weight
 - **An imported edge satisfies a participation expectation.** Expectations are detective and never blocking ([spec 4](../spec/04-assurance-model.md#absence-is-a-finding-class-of-its-own)), so nothing gates on this. To refuse would make the absence-finding class report a false positive for every requirement that the corpus genuinely traces to.
 - **An imported edge supports `evidenced`.** The obligation on `evidenced` is that the pointer resolves to an external auditable artifact. A work item in a requirements tool is the clearest example of one that this specification has. Resolution runs offline against the committed snapshot and is deterministic. Q19's worry that "a system that nobody here governs discharges obligations" reads the state wrongly. `evidenced` asserts that an external artifact exists and is reachable, and it has never asserted that Headwater governs it.
 
-**Whether imported text may leave again. The default is that it does not, and the mechanism landed one group earlier.** [Q17](../spec/09-open-questions.md#q17--governed-access-and-the-solution-layer) made the export filter **default-deny over classes**. A transcribed document is a class. So imported text stays inside the repository unless a profile names it, and naming it is a line in a taxonomy that a reviewer reads.
+**Whether imported text may leave again. The default is that it does not, and the mechanism landed one group earlier.** [Q17](../spec/09-open-questions.md#17--governed-access-and-the-solution-layer) made the export filter **default-deny over classes**. A transcribed document is a class. So imported text stays inside the repository unless a profile names it, and naming it is a line in a taxonomy that a reviewer reads.
 
 What this evaluation adds is not machinery but a statement, and the statement belongs beside the other non-claims. Headwater checks nothing about a license. It does not read an upstream's terms, and it cannot tell whether an adopter may redistribute a requirement. A profile that carries transcribed content is a redistribution decision that the adopter makes. Debian's archive split is the shape of the honest answer: segregate by default, carry by an explicit act, and record the terms beside the content.
 
@@ -246,7 +246,7 @@ Q4 handed this entry one question to decide: does the edge become a node?
 
 Read what the entry asks for. A named adjudicator. A date. Enough scope to say that one source wins *here* and not everywhere. Q21 adds a reason, and says that a judgment with no recorded reason is the authority rank again. A thing with an author, a date, a scope, and a reason is a document. A reader must find it, and a later judgment may replace it. The corpus has documents. It gives them shelves, kinds, lifecycles, voice regimes, identifiers, `accepted_by`, and supersession.
 
-An edge promoted to a node would be a second and weaker version of all of that. It would be an object with an author and a date and some prose, held by no shelf and typed by no kind. It would be governed by no lifecycle, and bound by no `accepted_by`. [Spec 1](../spec/01-conceptual-model.md#facet) removed reference-valued facets on exactly that argument, and [Q4](../spec/09-open-questions.md#q4--relation-storage) cut the annotated prose link on it too. The cheaper and weaker mechanism wins under pressure, and then the record is in the weaker one.
+An edge promoted to a node would be a second and weaker version of all of that. It would be an object with an author and a date and some prose, held by no shelf and typed by no kind. It would be governed by no lifecycle, and bound by no `accepted_by`. [Spec 1](../spec/01-conceptual-model.md#facet) removed reference-valued facets on exactly that argument, and [Q4](../spec/09-open-questions.md#4--relation-storage) cut the annotated prose link on it too. The cheaper and weaker mechanism wins under pressure, and then the record is in the weaker one.
 
 **The edge that carries it is `overrides`, and the default vocabulary has shipped it all along.** [Spec 2](../spec/02-taxonomy-model.md#the-decision-relation-vocabulary) lists `overrides` in the Kruchten set, family `succession`, with the claim "displaces a prior decision's effect and does not retire it". That is an adjudication, stated in the specification, defined before the question was asked. The loser is kept and its effect is displaced, which is what a human adjudicating a live conflict actually does.
 
@@ -267,7 +267,7 @@ Everything that Q18 wants then follows from rulings that exist.
 
 ### The mark has to survive an export, and a loss set is not enough
 
-[Q17](../spec/09-open-questions.md#q17--governed-access-and-the-solution-layer) handed this group one constraint. Q15's answer to it was that an emitter whose target cannot carry the mark declares that in its loss set.
+[Q17](../spec/09-open-questions.md#17--governed-access-and-the-solution-layer) handed this group one constraint. Q15's answer to it was that an emitter whose target cannot carry the mark declares that in its loss set.
 
 That is right and it is one step short. A loss-set entry informs the consumer who reads the loss set. The consumer who does not read it receives content that carries no warrant and looks exactly like content that carries one. That is Serena's failure delivered by post, and C2PA's own threat model says that stripped marks are the ordinary case rather than the exotic one.
 
@@ -287,13 +287,13 @@ The `transcribed` case takes one addition, and CrossMark is where it comes from.
 
 **Whether a transcription projection ships at all.** No adopter has asked for imported requirement text, and reference-first is what ships. The trigger is an adopter who needs the corpus to be self-contained offline.
 
-**The size of a committed snapshot.** This is the same open question that [Q9](../spec/09-open-questions.md#q9--multi-repository-corpora) holds about a vendored source export, and one real import is the evidence that closes both.
+**The size of a committed snapshot.** This is the same open question that [Q9](../spec/09-open-questions.md#9--multi-repository-corpora) holds about a vendored source export, and one real import is the evidence that closes both.
 
 **Whether an adjudication is ever partial.** One decision may govern axis A while another governs axis B. Today that is two `overrides` edges, or one document whose prose carries the split and whose edges do not. Whether the corpus needs the split expressed mechanically is unargued, and no corpus shows the need.
 
 **Whether the `asserted` edge rule needs a converse.** The rule stops unwarranted content from governing warranted content. It says nothing about a warranted document that cites an asserted one in a plain association, and nothing needs it to today.
 
-**The `$`-reference grammar** stays where [Q2](../spec/09-open-questions.md#q2--schema-format) left it. A filter predicate over warrant values is one more candidate consumer of it.
+**The `$`-reference grammar** stays where [Q2](../spec/09-open-questions.md#2--schema-format) left it. A filter predicate over warrant values is one more candidate consumer of it.
 
 ## What this predicts, and how to measure it
 
@@ -346,4 +346,4 @@ Two further changes sit outside that table. [Spec 7](../spec/07-distribution-and
 
 The [glossary](../spec/glossary.md) gains **warrant**, **asserted content**, **transcription**, **snapshot pin** and **adjudication**. Its **provenance**, **projection**, **export**, **freshness** and **`created_by`** entries are corrected, Toulmin joins the table of borrowed terms, and two pairs join the table of distinctions.
 
-In [spec 9](../spec/09-open-questions.md), Q15, Q19 and Q18 are rewritten as closed entries. Two other entries carry a stale reference that this ruling corrects. [Q4](../spec/09-open-questions.md#q4--relation-storage) said that Q18 owns the edge-as-node change, and now records that Q18 declined it. [Q20](../spec/09-open-questions.md#q20--where-scent-lives) keeps its cue as the one live instance attribute in the specification.
+In [spec 9](../spec/09-open-questions.md), Q15, Q19 and Q18 are rewritten as closed entries. Two other entries carry a stale reference that this ruling corrects. [Q4](../spec/09-open-questions.md#4--relation-storage) said that Q18 owns the edge-as-node change, and now records that Q18 declined it. [Q20](../spec/09-open-questions.md#20--where-scent-lives) keeps its cue as the one live instance attribute in the specification.

@@ -4,7 +4,7 @@ status: current
 status_since: 2026-08-30
 summary: A decision record is governed prose, and the overlay binds the house language regime to it. The shelf carries a prose problem rather than a quotation problem, and collapsing all 37 inline quotations moves 64 findings to 63.
 last_verified: 2026-08-30
-title: "Q27 — Whether a decision record is governed prose"
+title: "27 — Whether a decision record is governed prose"
 provenance:
   warrant: accepted
   agency: agent
@@ -17,7 +17,7 @@ relations:
     - .headwater/overlay.yml
 ---
 
-# Q27 — Whether a decision record is governed prose
+# 27 — Whether a decision record is governed prose
 
 ## Context
 

@@ -1,6 +1,6 @@
 ---
 id: HW-DR-0003
-title: Q3 — How much of the default taxonomy ships in the box
+title: 3 — How much of the default taxonomy ships in the box
 status: current
 status_since: 2026-08-11
 last_verified: 2026-08-11
@@ -17,7 +17,7 @@ relations:
     - HW-EVAL-default-taxonomy-first-run
 ---
 
-# Q3 — How much of the default taxonomy ships in the box
+# 3 — How much of the default taxonomy ships in the box
 
 ## Context
 

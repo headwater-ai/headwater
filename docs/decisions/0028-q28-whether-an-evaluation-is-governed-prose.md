@@ -4,7 +4,7 @@ status: current
 status_since: 2026-08-30
 summary: An evaluation is governed prose, and the overlay binds the house language regime to it. The shelf carries 432 advisory findings, and the measurement that explains them is whether a rule was reading the prose when it was written rather than who wrote it.
 last_verified: 2026-08-30
-title: "Q28 — Whether an evaluation is governed prose"
+title: "28 — Whether an evaluation is governed prose"
 provenance:
   warrant: accepted
   agency: agent
@@ -17,7 +17,7 @@ relations:
     - .headwater/overlay.yml
 ---
 
-# Q28 — Whether an evaluation is governed prose
+# 28 — Whether an evaluation is governed prose
 
 ## Context
 

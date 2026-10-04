@@ -4,7 +4,7 @@ status: current
 status_since: 2026-09-27
 summary: "An entry that names another in requires may add into its keys, and every other pair of entries still commutes only over disjoint leaves."
 last_verified: 2026-09-27
-title: "Q67 — One library entry may address the keys of an entry it names in requires, and confluence holds over the dependency order"
+title: "95 — One library entry may address the keys of an entry it names in requires, and confluence holds over the dependency order"
 provenance:
   warrant: asserted
   agency: agent
@@ -22,7 +22,7 @@ relations:
     - HW-SPEC-distribution-and-federation
 ---
 
-# Q67 — One library entry may address the keys of an entry it names in requires, and confluence holds over the dependency order
+# 95 — One library entry may address the keys of an entry it names in requires, and confluence holds over the dependency order
 
 ## Context
 

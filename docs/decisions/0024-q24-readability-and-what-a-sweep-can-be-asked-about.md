@@ -4,7 +4,7 @@ status: current
 status_since: 2026-08-30
 last_verified: 2026-08-30
 summary: Readability is not a sweep class and gets no verb, because every class of a sweep names two things that do not fit and a readability finding names one. A source file is not a slice member, because admitting one degrades the membership refusal for every class.
-title: "Q24 — Readability, and what a sweep can be asked about"
+title: "24 — Readability, and what a sweep can be asked about"
 provenance:
   warrant: accepted
   agency: agent
@@ -19,7 +19,7 @@ relations:
     - .claude/skills/headwater-sweep/SKILL.md
 ---
 
-# Q24 — Readability, and what a sweep can be asked about
+# 24 — Readability, and what a sweep can be asked about
 
 ## Context
 

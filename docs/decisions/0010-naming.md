@@ -1,6 +1,6 @@
 ---
 id: HW-DR-0010
-title: Q10 — Naming
+title: 10 — Naming
 status: current
 status_since: 2026-08-11
 last_verified: 2026-08-11
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: unevidenced
 ---
 
-# Q10 — Naming
+# 10 — Naming
 
 ## Context
 

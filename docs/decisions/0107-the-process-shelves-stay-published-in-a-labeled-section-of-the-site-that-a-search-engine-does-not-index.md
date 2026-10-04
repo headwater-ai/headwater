@@ -4,7 +4,7 @@ status: current
 status_since: 2026-10-04
 summary: "The five process shelves stay on the published site, in their own labeled section that carries a robots noindex. One `sections` member of `site_nav` declares the section, and dropping the pages was refused because public pages cite them"
 last_verified: 2026-10-04
-title: "The process shelves stay published, in a labeled section of the site that a search engine does not index"
+title: "107 — The process shelves stay published, in a labeled section of the site that a search engine does not index"
 provenance:
   warrant: asserted
   agency: agent
@@ -23,7 +23,7 @@ relations:
     - mkdocs/overrides/js/shelf-tabs.js
 ---
 
-# The process shelves stay published, in a labeled section of the site that a search engine does not index
+# 107 — The process shelves stay published, in a labeled section of the site that a search engine does not index
 
 ## Context
 

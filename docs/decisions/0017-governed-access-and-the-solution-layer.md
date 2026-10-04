@@ -1,6 +1,6 @@
 ---
 id: HW-DR-0017
-title: Q17 — Governed access and the solution layer
+title: 17 — Governed access and the solution layer
 status: current
 status_since: 2026-08-11
 last_verified: 2026-10-03
@@ -17,7 +17,7 @@ relations:
     - HW-EVAL-the-serving-boundary
 ---
 
-# Q17 — Governed access and the solution layer
+# 17 — Governed access and the solution layer
 
 ## Context
 

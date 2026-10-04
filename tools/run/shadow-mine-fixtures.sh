@@ -4,7 +4,7 @@
 # The tool exists so that a reading of the shadow log cannot give one silence
 # rate over two models, or one bucket of the join without the other two, which
 # is the failure the last paragraph of
-# `docs/how-to/mine-the-shadow-mode-routing-log.md` names. So the cases are
+# `docs/process/how-to/mine-the-shadow-mode-routing-log.md` names. So the cases are
 # planted transcripts and a planted log whose right answer was worked by hand:
 #
 #   a  two model digests whose silence rates differ, and a deterministic-only

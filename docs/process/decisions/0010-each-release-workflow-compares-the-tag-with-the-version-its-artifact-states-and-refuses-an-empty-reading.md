@@ -49,7 +49,7 @@ Each comparison reads its value under `set -eo pipefail`. Where an empty reading
 
 ## Consequences
 
-A tag that does not agree with the version in the tree stops each release before it creates a release or publishes a crate. [Cut a release](../../how-to/cut-a-release.md) tells a maintainer to bump the version first, for this reason.
+A tag that does not agree with the version in the tree stops each release before it creates a release or publishes a crate. [Cut a release](../how-to/cut-a-release.md) tells a maintainer to bump the version first, for this reason.
 
 A container job does not get `bash` by default. Inside a container, GitHub runs `sh -e {0}`, which is `dash` on Debian and refuses `set -o pipefail`. So the musl smoke job of `release.yml` sets `bash` as its shell.
 

@@ -24,7 +24,7 @@ relations:
 
 # What ships in the box — a first-run walkthrough
 
-Evidence for [Q3](../spec/09-open-questions.md#q3--how-much-of-the-default-taxonomy-ships-in-the-box). Q3 named three options and a leaning, and it argued them on adoption feel: too opinionated repels, too thin leaves a blank schema. Feel is not a method. This walkthrough replaces it with one. Author the candidate base package as real YAML, and run five adopters through their first day against it. Count what each one types and what each one deletes.
+Evidence for [Q3](../spec/09-open-questions.md#3--how-much-of-the-default-taxonomy-ships-in-the-box). Q3 named three options and a leaning, and it argued them on adoption feel: too opinionated repels, too thin leaves a blank schema. Feel is not a method. This walkthrough replaces it with one. Author the candidate base package as real YAML, and run five adopters through their first day against it. Count what each one types and what each one deletes.
 
 It produced four kinds of result.
 
@@ -218,7 +218,7 @@ Each run asks the same two questions. How many lines does the adopter author bef
 
 **A — solo maintainer, empty repository.** Takes `headwater/starter` whole. `headwater new decision` works in the first minute. Authors nothing, deletes nothing.
 
-**B — small team, sixty documents, no conventions.** `headwater infer` ([Q12](../spec/09-open-questions.md#q12--migration-path-for-an-existing-corpus)) reads the tree and proposes three shelves from three directories. The interview asks which of the three hold how-to material, and selects `procedure`. The adopter authors about twelve lines, all of them shelf paths, and deletes nothing. Every document lacks `status_since`, so windowed expectations skip with reason `missing-origin` and the corpus stays honest while the missing facet is its own finding.
+**B — small team, sixty documents, no conventions.** `headwater infer` ([Q12](../spec/09-open-questions.md#12--migration-path-for-an-existing-corpus)) reads the tree and proposes three shelves from three directories. The interview asks which of the three hold how-to material, and selects `procedure`. The adopter authors about twelve lines, all of them shelf paths, and deletes nothing. Every document lacks `status_since`, so windowed expectations skip with reason `missing-origin` and the corpus stays honest while the missing facet is its own finding.
 
 **C — product suite, four hundred documents, an ADR numbering scheme already in use.** Selects `procedure`, `standards`, `evidence`, and `proposals`. Two lines override the identifier pattern so that inference does not renumber anything that already exists. About thirty authored lines, no deletions.
 
@@ -285,7 +285,7 @@ Q3 presented three options as alternatives. All three survive as layers, and the
 | 3 | "Creatable by scaffold, generator, or hook" is false for four of the five base relations. The rule that does the work is that no base relation is `created_by: author`. | [Who creates each edge](../spec/02-taxonomy-model.md#who-creates-each-edge) |
 | 4 | Enabling by reference does not generalize past relations. Optional content ships as add-only bundles with declared closures, and add-only is what makes any subset resolve. | [Defined and enabled](../spec/02-taxonomy-model.md#the-decision-relation-vocabulary) and [spec 7](../spec/07-distribution-and-federation.md#bundles-are-publisher-overlays-in-the-other-direction) |
 | 5 | The base package and the doctrine starter kit are two artifacts, and spec 0 and spec 2 name them as if they were one. | [Spec 0 item 6](../spec/00-vision-and-scope.md#what-we-build) and [spec 7](../spec/07-distribution-and-federation.md#the-starter-kit-is-an-assembly) |
-| 6 | The interview is package data rather than engine code, and it is `infer` with a second evidence source. | [Spec 7](../spec/07-distribution-and-federation.md#the-interview) and [Q12](../spec/09-open-questions.md#q12--migration-path-for-an-existing-corpus) |
+| 6 | The interview is package data rather than engine code, and it is `infer` with a second evidence source. | [Spec 7](../spec/07-distribution-and-federation.md#the-interview) and [Q12](../spec/09-open-questions.md#12--migration-path-for-an-existing-corpus) |
 
 Findings 1, 2, and 3 have one cause between them. The smallest column of the worked example was drawn as an impression of a small corpus. It was never derived from the core beside it. To write the base package out as YAML is what makes the three visible at once. None of them is visible from reading the prose.
 
@@ -297,4 +297,4 @@ Findings 1, 2, and 3 have one cause between them. The smallest column of the wor
 
 **Two findings against this repository's own corpus stay open.** The open-questions register cannot be expressed while it is one file, and the specification documents serve two purposes at once. Both are ordinary corpus work rather than design defects, and both are the kind of thing that the system exists to report.
 
-**The license half of Q3 stays with [Q11](../spec/09-open-questions.md#q11--license-and-distribution-posture).** Whether the base, the bundles, and the doctrine ship under the terms of the engine is a licensing decision. Nothing here depends on the answer.
+**The license half of Q3 stays with [Q11](../spec/09-open-questions.md#11--license-and-distribution-posture).** Whether the base, the bundles, and the doctrine ship under the terms of the engine is a licensing decision. Nothing here depends on the answer.
