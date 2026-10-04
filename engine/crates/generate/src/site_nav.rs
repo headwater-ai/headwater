@@ -549,3 +549,47 @@ mod index_tests {
         );
     }
 }
+
+/// The `noindex` prefix of a shelf, against each shape a shelf pattern takes.
+/// A template marks a page whose source path starts with the prefix, so every
+/// page the pattern admits has to start with it. Before #1681's first verify
+/// the prefix was cut at the directory and given a `/`, so `docs/internal-*.md`
+/// wrote `internal-/`, which no page starts with.
+#[cfg(test)]
+mod prefix_tests {
+    use super::prefix_of;
+
+    #[test]
+    fn a_directory_glob_takes_the_directory_with_its_slash() {
+        assert_eq!(
+            prefix_of("docs/process/decisions/**", "docs"),
+            "process/decisions/"
+        );
+        assert_eq!(prefix_of("decisions/**", ""), "decisions/");
+    }
+
+    #[test]
+    fn a_glob_inside_a_file_name_takes_the_literal_text_before_it() {
+        assert_eq!(prefix_of("docs/internal-*.md", "docs"), "internal-");
+        assert!("internal-plan.md".starts_with(&prefix_of("docs/internal-*.md", "docs")));
+        assert_eq!(prefix_of("docs/decisions*", "docs"), "decisions");
+    }
+
+    #[test]
+    fn a_glob_below_a_directory_takes_the_directory_before_it() {
+        assert_eq!(
+            prefix_of("docs/taxonomies/*/doctrine.md", "docs"),
+            "taxonomies/"
+        );
+    }
+
+    #[test]
+    fn a_pattern_over_the_whole_root_takes_the_empty_prefix() {
+        assert_eq!(prefix_of("docs/**", "docs"), "");
+    }
+
+    #[test]
+    fn a_pattern_with_no_glob_is_its_one_file() {
+        assert_eq!(prefix_of("docs/plan.md", "docs"), "plan.md");
+    }
+}
