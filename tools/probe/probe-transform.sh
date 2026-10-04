@@ -193,9 +193,21 @@ base_abs=$(cd "$base" 2>/dev/null && pwd) || base_abs=$base
 # []` because the driver passed nothing.
 #
 # The log supplies the path and nothing else. `result`, `cites` and `findings`
-# are still read off the file, so a call the harness refused names a path whose
-# derivation reads whatever is on disk there, and a path with no file derives
-# an empty `result`, as for a call.
+# are still read off the file.
+#
+# **A path inside the base that holds no file at the end of the session is not
+# in `produced` (#1659).** Spec 15 gives `path` as "where the artifact landed",
+# and a write the harness refused landed nothing. Neither did a file the session
+# wrote and then removed. Four sessions of the 2026-10-03 campaign met the
+# workspace's write hook. Each named a path in a refused `Write`, and the old
+# fold kept it. The `--oracle-tree` branch then exited 5 on the `cp` of a file
+# that was never there, and the branch without it wrote `findings: []`, which
+# the grader scores as a clean pass. So the fold below drops a relative entry
+# whose file is absent, whether the log or `--produced` named it. A session
+# whose only write was refused records `produced: []`, the scored failure. An
+# absolute path is outside the base and stays as it is. Spec 15's sentence "The
+# transform adds each of those paths to `produced` once" is owed this
+# narrowing, and it lands after the campaign that this recorder serves.
 #
 # A write made through `Bash` — a redirect, `sed -i`, a heredoc — names no path
 # in its input, so `path_of` returns null for it and this step cannot see it.
@@ -222,6 +234,10 @@ step_seed_produced() {
     [ -n "$file" ] || continue
     case $file in
         "$base_abs"/*) file=${file#"$base_abs"/} ;;
+    esac
+    case $file in
+        /*) ;;
+        *) [ -f "$base/$file" ] || continue ;;
     esac
     printf '%s\n' "$file"
 done | awk '!seen[$0]++' > "$scratch/produced.txt"
