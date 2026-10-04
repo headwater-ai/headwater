@@ -3067,13 +3067,23 @@ STUB
         # The fixture cannot build a second engine at a second commit, so it
         # moves the recorded side instead: the batch is told it was pinned at
         # another commit, and each recorded member is altered in turn.
+        # The stub `cargo` on `$scratch/bin` leaves the engine this suite
+        # copied into `$CARGO_TARGET_DIR`. Without it, `--repin` ran the real
+        # cargo into that directory, and on CI, whose suite engine is a
+        # `--release` build, the fresh build could never hash the same.
         repin_from() {
             printf '%s\n' "$1" > "$unrec/head"
             calls_before=$(wc -l < "$scratch/probe-log/stagger.calls" | tr -d ' ')
-            sh "$root/tools/probe/campaign.sh" --out "$unrec" --repin >/dev/null 2>"$scratch/repin.err"
+            PATH="$scratch/bin:$PATH" sh "$root/tools/probe/campaign.sh" --out "$unrec" --repin \
+                >/dev/null 2>"$scratch/repin.err"
         }
         repin_target=${CARGO_TARGET_DIR:-$root/engine/target}
         case $repin_target in /*) ;; *) repin_target=$PWD/$repin_target ;; esac
+        # Make the batch's engine one that no build of this tree writes, as
+        # CI's `--release` engine is: a byte past the end of the binary. A
+        # `--repin` that ran the real cargo would overwrite it and refuse.
+        cp "$repin_target/dev-release/headwater" "$scratch/repin-binary.keep"
+        printf '\n' >> "$repin_target/dev-release/headwater"
         sha256sum "$repin_target/dev-release/headwater" | awk '{ print $1 }' > "$unrec/engine.sha256"
         rm -f "$unrec/pins"
         oldpin=0000000000000000000000000000000000000001
@@ -3088,6 +3098,23 @@ STUB
         present "and names the member" "the plan's \`tree\` moved" "$scratch/repin.err"
         same "and leaves the pin" "$oldpin" "$(cat "$unrec/head")"
         cp "$scratch/repin-plan.keep" "$unrec/plans/L1"
+        # Each of the other five members of the identity refuses on its own.
+        for member in lock selection read_set seed harness; do
+            sed -i "s/^$member: .*/$member: moved/" "$unrec/plans/L1"
+            repin_from "$oldpin"
+            same "\`--repin\` refuses with 4 when the plan's $member moved, and names it" "4 1" \
+                "$? $(grep -c "the plan's \`$member\` moved" "$scratch/repin.err")"
+            cp "$scratch/repin-plan.keep" "$unrec/plans/L1"
+        done
+        # A dirty checkout is no pin. The edit is to a tracked file and is
+        # put back at once, because the clean-tree cases of this block need it.
+        cp "$root/LICENSE" "$scratch/repin-license.keep"
+        printf '\n' >> "$root/LICENSE"
+        repin_from "$oldpin"
+        repin_dirty=$?
+        cp "$scratch/repin-license.keep" "$root/LICENSE"
+        same "\`--repin\` refuses a dirty checkout with 4" "4" "$repin_dirty"
+        present "and says why" "uncommitted changes" "$scratch/repin.err"
 
         printf 'another task\n' >> "$task_file"
         repin_from "$oldpin"
@@ -3117,6 +3144,7 @@ STUB
         present "assembly prints every move of the pin" "pin moved: $oldpin $(git -C "$root" rev-parse HEAD)" "$scratch/unrec-8.err"
         stagger_run "$unrec" "$scratch/unrec-9.err"
         same "and a slice at the new pin runs" "0" "$?"
+        cp "$scratch/repin-binary.keep" "$repin_target/dev-release/headwater"
 
         # The cap is the batch's, so a resumed slice that does not give one
         # keeps the one recorded. The pin and the harness version hold too.
