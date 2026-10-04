@@ -545,7 +545,7 @@ run_batch() {
                 exit 8
                 ;;
             failed)
-                say "$phase: a recorder failed for$names; read their record.err, nothing is run again"
+                say "$phase: a recorder failed for $names; read their record.err, nothing is run again"
                 exit 7
                 ;;
             stop) exit "$code" ;;
