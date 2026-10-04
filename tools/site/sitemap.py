@@ -45,15 +45,38 @@ WHAT MKDOCS WRITES, AND WHY IT IS NOT ENOUGH
   sitemap that omits the page served at the site root is the wrong one to
   serve.
 
+WHAT IT LEAVES OUT, AND HOW IT KNOWS
+
+  A page that carries `<meta name="robots" content="noindex">` gets no line.
+  The page itself says so, so this still reads the served directory and
+  nothing a person typed. A sitemap that lists a page the page asks a crawler
+  not to index sends the crawler two answers, and #1681 is where the process
+  shelves took that meta. `tools/site/check-site-noindex.py` holds the
+  assembled sitemap and `llms.txt` against every page that carries it.
+
 USAGE
 
   python3 tools/site/sitemap.py <directory>     print the sitemap for a directory
 """
 
 import pathlib
+import re
 import sys
 
 BASE = "https://headwater.tools"
+
+# The robots meta in either attribute order, with `noindex` anywhere in its
+# content, as a crawler reads it.
+NOINDEX = re.compile(
+    r"""<meta\s+(?:name=["']robots["']\s+content=["'][^"']*\bnoindex\b"""
+    r"""|content=["'][^"']*\bnoindex\b[^"']*["']\s+name=["']robots["'])""",
+    re.IGNORECASE,
+)
+
+
+def noindexed(path):
+    """Whether the page at `path` asks a crawler not to index it."""
+    return NOINDEX.search(path.read_text(encoding="utf-8", errors="replace")) is not None
 
 
 def urls(directory, base=BASE):
@@ -63,11 +86,14 @@ def urls(directory, base=BASE):
     halves use: `mkdocs.yml` sets no `use_directory_urls`, so MkDocs keeps its
     default of directory URLs, and every hand-built page is a directory too.
     A file that is not an `index.html` — `404.html`, a stylesheet, the search
-    index — is not a page and gets no line.
+    index — is not a page and gets no line. Nor is a page that carries the
+    robots `noindex` meta.
     """
     root = pathlib.Path(directory)
     found = []
     for path in root.glob("**/index.html"):
+        if noindexed(path):
+            continue
         rel = path.relative_to(root).parent
         tail = "" if rel == pathlib.Path(".") else str(rel) + "/"
         found.append(base + "/" + tail)

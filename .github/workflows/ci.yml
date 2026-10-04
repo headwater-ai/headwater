@@ -1522,6 +1522,23 @@ jobs:
         run: |
           sh tools/site/check-site-footer.sh .headwater/site-deploy
           sh tools/site/site-footer-fixtures.sh
+      - name: No served crawler file lists a page that asks not to be indexed
+        # The overlay's `Project process` section of `site_nav` is `noindex`,
+        # so every process page carries the robots meta, and
+        # `tools/site/sitemap.py` leaves each one out of the assembled
+        # `sitemap.xml` (#1681). This reads the assembled directory, which is
+        # what `wrangler.jsonc` serves. It refuses a `sitemap.xml` or
+        # `llms.txt` that lists a `noindex` page, a page under a `noindex`
+        # prefix of `.headwater/nav.yml` that lost the meta, and a prefix list
+        # that covers no page. `site/sitemap.xml` and `site/llms.txt` list
+        # hand-built pages only, so a check of those two alone caught nothing.
+        run: python3 tools/site/check-site-noindex.py .headwater/site-deploy
+      - name: The noindex checker refuses what it claims to refuse
+        # Spec 12 refuses a check that ships with no failing fixture. Case 3
+        # plants a `noindex` page in an assembled sitemap, which is the defect
+        # the served sitemap carried for all 56 process pages before #1681.
+        # It writes only under a temporary directory.
+        run: sh tools/site/site-noindex-fixtures.sh
       - name: Every hand-built page carries the narrow content policy
         # `site/_headers` sets the wide policy under `/*`, because a generated
         # page links its stylesheet, its script, its fonts and its search
