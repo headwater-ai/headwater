@@ -56,6 +56,16 @@
 
 {% set SHELF_WINDOW = 30 %}
 
+{#
+  Whether a source path sits under a prefix of `extra.headwater_noindex`.
+  A macro returns text, so the test is whether it printed anything.
+#}
+{% macro hw_noindex(uri) -%}
+  {%- for prefix in config.extra.headwater_noindex or [] -%}
+    {%- if uri.startswith(prefix) %}1{% endif -%}
+  {%- endfor -%}
+{%- endmacro %}
+
 {% block extrahead %}
   {#
     Spec 7 requires that a rendered page carry a link relation to the served
@@ -63,6 +73,16 @@
     exists at all, and HW-DR-0038 is the ruling.
   #}
   <link rel="describedby" type="application/json" href="{{ 'corpus.json'|url }}">
+  {#
+    A page on a shelf of a `noindex` section carries the robots meta (#1681).
+    `extra.headwater_noindex` is the list of path prefixes that `site_nav`
+    derives from the overlay's `sections`, so no prefix is written here, and
+    `tools/site/sitemap.py` leaves every page that carries this meta out of
+    the served sitemap.
+  #}
+  {% if page and page.file and hw_noindex(page.file.src_uri)|trim %}
+  <meta name="robots" content="noindex">
+  {% endif %}
 {% endblock %}
 
 {% block styles %}
@@ -108,12 +128,43 @@
     protects `js/base.js` from (#614), so the shim is still load-bearing on
     exactly the pages it was written for.
   #}
-  {% set shelf = namespace(item=none) %}
-  {% for nav_item in nav %}
-    {% if nav_item.active and nav_item.children %}{% set shelf.item = nav_item %}{% endif %}
+  {#
+    THE SECTIONS OF THE NAV (#1681)
+
+    A `site_nav` that declares `sections` writes up to three levels above a
+    page: a section, then a group, then the shelf. A shelf is the one item
+    whose children are pages, so the walk below finds the active shelf at any
+    depth by that test and never by a label. A top-level item that is a shelf
+    is one no section names, and it goes in an "Other" tab, so a new shelf
+    cannot vanish from the switcher. A nav with no section keeps the flat
+    switcher it always had.
+  #}
+  {% set shelf = namespace(item=none, group=none, section=none, sectioned=false) %}
+  {% for top in nav %}
+    {% if top.children and top.children[0].is_section %}{% set shelf.sectioned = true %}{% endif %}
+    {% if top.active and top.children %}
+      {% if not top.children[0].is_section %}
+        {% set shelf.item = top %}
+      {% else %}
+        {% set shelf.section = top %}
+        {% for mid in top.children %}
+          {% if mid.active and mid.children %}
+            {% if not mid.children[0].is_section %}
+              {% set shelf.item = mid %}
+            {% else %}
+              {% set shelf.group = mid %}
+              {% for low in mid.children %}
+                {% if low.active and low.children %}{% set shelf.item = low %}{% endif %}
+              {% endfor %}
+            {% endif %}
+          {% endif %}
+        {% endfor %}
+      {% endif %}
+    {% endif %}
   {% endfor %}
 
   <div class="col-md-12 hw-shelves">
+    {% if not shelf.sectioned %}
     <nav aria-label="Shelves">
       {% for nav_item in nav %}
         {% if nav_item.children %}
@@ -121,6 +172,69 @@
         {% endif %}
       {% endfor %}
     </nav>
+    {% else %}
+    {#
+      Two kinds of row. A section of groups is a row of tabs, and each tab
+      is a link to its group's first shelf, so with no script every shelf is
+      two clicks away. `js/shelf-tabs.js` turns each tab into a toggle for
+      the panel below it. A section of shelves is a row of shelf links, and a
+      `noindex` section's row is tinted. The panel of the group that holds
+      this page is open when the page loads, and its tab and shelf carry
+      `aria-current`.
+    #}
+    {% set others = [] %}
+    {% for top in nav %}{% if top.children and not top.children[0].is_section %}{% set _ = others.append(top) %}{% endif %}{% endfor %}
+    {% set placed = namespace(others=false) %}
+    <nav aria-label="Shelves" class="hw-rows">
+      {% for top in nav %}
+        {% if top.children and top.children[0].is_section %}
+          {% set grouped = top.children[0].children and top.children[0].children[0].is_section %}
+          {% set outer = loop.index %}
+          {% if grouped %}
+            <div class="hw-row">
+              <span class="hw-grp">{{ top.title }}</span>
+              {% for group in top.children %}
+                <a class="hw-tab{% if group.active %} cur{% endif %}" href="{{ group.children[0].children[0].url|url }}" data-panel="hw-panel-{{ outer }}-{{ loop.index }}"{% if group.active %} aria-current="true"{% endif %}>{{ group.title }}</a>
+              {% endfor %}
+              {% if others and not placed.others %}
+                <a class="hw-tab{% if shelf.item in others %} cur{% endif %}" href="{{ others[0].children[0].url|url }}" data-panel="hw-panel-other"{% if shelf.item in others %} aria-current="true"{% endif %}>Other</a>
+              {% endif %}
+            </div>
+            {% for group in top.children %}
+              <div class="hw-panel" id="hw-panel-{{ outer }}-{{ loop.index }}"{% if not group.active %} hidden{% endif %}>
+                {% for s in group.children %}
+                  <a href="{{ s.children[0].url|url }}"{% if s.active %} class="here" aria-current="true"{% endif %}>{{ s.title }}</a>
+                {% endfor %}
+              </div>
+            {% endfor %}
+            {% if others and not placed.others %}
+              {% set placed.others = true %}
+              <div class="hw-panel" id="hw-panel-other"{% if shelf.item not in others %} hidden{% endif %}>
+                {% for s in others %}
+                  <a href="{{ s.children[0].url|url }}"{% if s.active %} class="here" aria-current="true"{% endif %}>{{ s.title }}</a>
+                {% endfor %}
+              </div>
+            {% endif %}
+          {% else %}
+            <div class="hw-row{% if hw_noindex(top.children[0].children[0].file.src_uri)|trim %} hw-proc{% endif %}">
+              <span class="hw-grp">{{ top.title }}</span>
+              {% for s in top.children %}
+                <a href="{{ s.children[0].url|url }}"{% if s.active %} class="here" aria-current="true"{% endif %}>{{ s.title }}</a>
+              {% endfor %}
+            </div>
+          {% endif %}
+        {% endif %}
+      {% endfor %}
+      {% if others and not placed.others %}
+        <div class="hw-row">
+          <span class="hw-grp">Other</span>
+          {% for s in others %}
+            <a href="{{ s.children[0].url|url }}"{% if s.active %} class="here" aria-current="true"{% endif %}>{{ s.title }}</a>
+          {% endfor %}
+        </div>
+      {% endif %}
+    </nav>
+    {% endif %}
   </div>
 
   <div class="col-md-3 hw-side">
@@ -157,6 +271,16 @@
       corpus. Every document on this half of the site is typed by the taxonomy
       the descriptor names: <a href="{{ 'corpus.json'|url }}">corpus.json</a>.
     </p>
+
+    {#
+      The notice every page of a `noindex` section opens with (#1681, owner
+      ruling of 2026-10-04). A reader who arrives at one by a link from a
+      public page learns that it is a note on how this project is run, and
+      has one link back to what an adopter reads.
+    #}
+    {% if page and page.file and hw_noindex(page.file.src_uri)|trim %}
+    <p class="hw-notice">Project process. These notes record how Headwater itself is built and run. You do not need them to use Headwater. <a href="{{ 'spec/'|url }}">Back to the specification</a></p>
+    {% endif %}
 
     {% include "content.html" %}
 
@@ -218,6 +342,8 @@
   #}
   <script src="{{ 'js/leading-digit-anchor-shim.js'|url }}"></script>
   {{ super() }}
+  {# The group tabs of the shelf switcher. Without it each tab is a link. #}
+  <script src="{{ 'js/shelf-tabs.js'|url }}"></script>
   {#
     Mermaid is vendored at `js/mermaid.min.js` (5.5 MB, same origin, so the
     `script-src 'self'` policy in `site/_headers` admits it and no third party
