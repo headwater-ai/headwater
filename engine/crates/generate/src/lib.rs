@@ -389,6 +389,50 @@ pub struct Declaration {
     /// is committed is a schema decision and not an engine default". Read on a
     /// `graph_export` alone, and `true` for a declaration that states nothing.
     pub committed: bool,
+    /// The labeled top-level sections of a `site_nav`, in declared order. Empty
+    /// for every other kind, and for a `site_nav` that states none, which then
+    /// writes the flat list it wrote before the member existed (#1681).
+    pub sections: Vec<NavSection>,
+}
+
+/// One labeled top-level entry of a `site_nav` (#1681).
+///
+/// A section holds shelves, or groups that hold shelves, so that a reader's
+/// navigation can say which shelves belong together. `noindex` asks every page
+/// of the section's shelves to carry a robots `noindex`, and the emitter writes
+/// that as a list of directories beside `nav:`, which a site template reads.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct NavSection {
+    pub title: String,
+    pub noindex: bool,
+    pub body: NavSectionBody,
+}
+
+/// What a [`NavSection`] holds: shelves directly, or labeled groups of them.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum NavSectionBody {
+    Shelves(Vec<String>),
+    Groups(Vec<NavGroup>),
+}
+
+/// One labeled group of shelves inside a [`NavSection`].
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct NavGroup {
+    pub title: String,
+    pub shelves: Vec<String>,
+}
+
+impl NavSection {
+    /// Every shelf the section names, in declared order.
+    pub fn shelves(&self) -> Vec<&str> {
+        match &self.body {
+            NavSectionBody::Shelves(shelves) => shelves.iter().map(String::as_str).collect(),
+            NavSectionBody::Groups(groups) => groups
+                .iter()
+                .flat_map(|group| group.shelves.iter().map(String::as_str))
+                .collect(),
+        }
+    }
 }
 
 impl Declaration {
@@ -516,16 +560,17 @@ impl Projections {
                 });
                 continue;
             }
-            let mut shelves = Vec::new();
-            if let Some(node) = body.get("for") {
-                if let Value::Seq(items) = &node.value {
-                    for item in items {
-                        if let Some(scalar) = item.value.as_scalar() {
-                            shelves.push(scalar.text.clone());
-                        }
-                    }
+            let shelves = scalars(body, "for");
+            let sections = match sections(body, kind, index, &shelves) {
+                Ok(sections) => sections,
+                Err(message) => {
+                    errors.push(DeclarationError {
+                        message,
+                        span: item.span,
+                    });
+                    continue;
                 }
-            }
+            };
             let membership = profile::Membership::read(body, index, item.span, &mut errors);
             let identity = identity::read(body, kind, index, item.span, &mut errors);
             let committed = match committed(body, kind, index) {
@@ -545,6 +590,7 @@ impl Projections {
                 membership,
                 identity,
                 committed,
+                sections,
             });
         }
         // The grouping runs over what read, so a taxonomy with one bad entry
@@ -598,6 +644,118 @@ fn committed(body: &Mapping, kind: Kind, index: usize) -> Result<bool, String> {
             kind.name()
         )),
     }
+}
+
+/// The scalar items of a sequence member, in order. A member that is absent or
+/// not a sequence reads as empty, the reading `for` has always had here; the
+/// meta-schema refuses the wrong shape over the sources.
+fn scalars(body: &Mapping, key: &str) -> Vec<String> {
+    let Some(Value::Seq(items)) = body.get(key).map(|node| &node.value) else {
+        return Vec::new();
+    };
+    items
+        .iter()
+        .filter_map(|item| item.value.as_scalar())
+        .map(|scalar| scalar.text.clone())
+        .collect()
+}
+
+/// The `sections` member of one projection, empty where it is absent (#1681).
+///
+/// Only a `site_nav` takes it, because only a `site_nav` writes one file over
+/// many shelves that a reader navigates. A section states a `title`, and
+/// exactly one of `for` (its shelves) and `groups` (labeled lists of shelves).
+/// A shelf is named in one place across the whole declaration, the top-level
+/// `for` included, because a shelf written twice in one navigation is two
+/// sidebar entries for one page and MkDocs serves the page under whichever it
+/// reads last. Whether each name is a declared shelf is the resolve's reading
+/// and the emitter's, as it is for `for`.
+fn sections(
+    body: &Mapping,
+    kind: Kind,
+    index: usize,
+    top: &[String],
+) -> Result<Vec<NavSection>, String> {
+    let Some(node) = body.get("sections") else {
+        return Ok(Vec::new());
+    };
+    if kind != Kind::SiteNav {
+        return Err(format!(
+            "`projections.{index}` is a `{}` and states `sections`, and only a `site_nav` \
+             takes `sections`",
+            kind.name()
+        ));
+    }
+    let Value::Seq(items) = &node.value else {
+        return Err(format!(
+            "`projections.{index}.sections` is {}, and it lists sections",
+            node.value.kind_name()
+        ));
+    };
+    let mut out = Vec::new();
+    let mut named: Vec<String> = top.to_vec();
+    for (at, item) in items.iter().enumerate() {
+        let here = format!("projections.{index}.sections.{at}");
+        let Value::Map(section) = &item.value else {
+            return Err(format!("`{here}` is not a block"));
+        };
+        let title =
+            text_of(section, "title").ok_or_else(|| format!("`{here}` states no `title`"))?;
+        let noindex = match section.get("noindex").map(|node| node.value.as_scalar()) {
+            None => false,
+            Some(Some(scalar)) if scalar.text == "true" => true,
+            Some(Some(scalar)) if scalar.text == "false" => false,
+            Some(_) => return Err(format!("`{here}.noindex` is not `true` or `false`")),
+        };
+        let body = match (section.get("for"), section.get("groups")) {
+            (Some(_), None) => NavSectionBody::Shelves(scalars(section, "for")),
+            (None, Some(node)) => {
+                let Value::Seq(groups) = &node.value else {
+                    return Err(format!("`{here}.groups` is not a list"));
+                };
+                let mut read = Vec::new();
+                for (g, group) in groups.iter().enumerate() {
+                    let Value::Map(group) = &group.value else {
+                        return Err(format!("`{here}.groups.{g}` is not a block"));
+                    };
+                    let title = text_of(group, "title")
+                        .ok_or_else(|| format!("`{here}.groups.{g}` states no `title`"))?;
+                    read.push(NavGroup {
+                        title,
+                        shelves: scalars(group, "for"),
+                    });
+                }
+                NavSectionBody::Groups(read)
+            }
+            _ => {
+                return Err(format!(
+                    "`{here}` takes `for` or `groups`, not both and not neither"
+                ))
+            }
+        };
+        let section = NavSection {
+            title,
+            noindex,
+            body,
+        };
+        for shelf in section.shelves() {
+            if named.iter().any(|name| name == shelf) {
+                return Err(format!(
+                    "`projections.{index}` names the shelf `{shelf}` twice, across `for` and \
+                     `sections`, and a shelf is written in one place of a navigation"
+                ));
+            }
+            named.push(shelf.to_string());
+        }
+        out.push(section);
+    }
+    Ok(out)
+}
+
+fn text_of(map: &Mapping, key: &str) -> Option<String> {
+    map.get(key)
+        .and_then(|node| node.value.as_scalar())
+        .map(|scalar| scalar.text.clone())
 }
 
 fn names(kinds: &[Kind]) -> String {

@@ -79,7 +79,9 @@
 //! [#538]: https://github.com/headwater-ai/headwater/issues/538
 //! [#567]: https://github.com/headwater-ai/headwater/issues/567
 
-use crate::{pointers, shelf_of, Declaration, Identity, Kind, Output, Plan, Unwritten};
+use crate::{
+    pointers, shelf_of, Declaration, Identity, Kind, NavSectionBody, Output, Plan, Unwritten,
+};
 use headwater_census::census::Census;
 use headwater_query::{Pointer, Surface};
 
@@ -121,33 +123,38 @@ pub(crate) fn emit(
         .map(|document| document.path)
         .collect();
 
-    let mut groups: Vec<Group> = Vec::new();
-    for name in &wanted {
-        let Some(shelf) = taxonomy.shelves.iter().find(|shelf| &shelf.name == name) else {
-            plan.unwritten.push(Unwritten {
-                at: declaration.output.clone(),
-                kind: Kind::SiteNav,
-                reason: format!("names a shelf `{name}` this taxonomy does not declare"),
-            });
-            return;
+    // A shelf a section names leaves the top level for that section (#1681).
+    // The parse has already refused a shelf named twice, so this is a
+    // partition and not a choice.
+    let in_sections: Vec<&str> = declaration
+        .sections
+        .iter()
+        .flat_map(|section| section.shelves())
+        .collect();
+
+    // One group per non-empty shelf, or `Err` with the first name this
+    // taxonomy does not declare.
+    let group_of = |name: &str| -> Result<Option<Group>, String> {
+        let Some(shelf) = taxonomy.shelves.iter().find(|shelf| shelf.name == name) else {
+            return Err(name.to_string());
         };
 
         let on_shelf: Vec<_> = surface
             .documents()
             .into_iter()
-            .filter(|document| shelf_of(document.path, surface).is_some_and(|s| &s.name == name))
+            .filter(|document| shelf_of(document.path, surface).is_some_and(|s| s.name == name))
             .collect();
 
         // Left out of the list rather than written as an empty group. See the
         // module comment: unlike a shelf index, one empty shelf here does not
         // make the whole projection `Unwritten`.
         if on_shelf.is_empty() {
-            continue;
+            return Ok(None);
         }
 
         let mut ordered = pointers(surface, &on_shelf);
         surface.by_precedence(&mut ordered);
-        groups.push(Group {
+        Ok(Some(Group {
             // The declared display name, through the one function three
             // emitters read. `Group::shelf` is a label and nothing addresses
             // a shelf by it: `index_of` takes the pattern and the filter above
@@ -156,22 +163,149 @@ pub(crate) fn emit(
             index: index_of(shelf.pattern.source(), written, &documents),
             pages: pages_of(shelf.pattern.source(), pages, &documents),
             ordered,
-        });
-    }
+        }))
+    };
+    let shelves_of = |names: &mut dyn Iterator<Item = &str>| -> Result<Vec<Entry>, String> {
+        let mut out = Vec::new();
+        for name in names {
+            if let Some(group) = group_of(name)? {
+                out.push(Entry::Shelf(group));
+            }
+        }
+        Ok(out)
+    };
 
-    for group in &groups {
-        plan.navigation.extend(group.index.iter().cloned());
-        plan.navigation
-            .extend(group.pages.iter().map(|(path, _)| path.clone()));
-        plan.navigation
-            .extend(group.ordered.iter().map(|pointer| pointer.path.clone()));
+    let built = (|| -> Result<Vec<Entry>, String> {
+        // The shelves no section names come first, in the order they always
+        // had, so a declaration with no `sections` writes the bytes it wrote
+        // before the member existed.
+        let mut entries = shelves_of(
+            &mut wanted
+                .iter()
+                .map(String::as_str)
+                .filter(|name| !in_sections.contains(name)),
+        )?;
+        for section in &declaration.sections {
+            let children = match &section.body {
+                NavSectionBody::Shelves(names) => {
+                    shelves_of(&mut names.iter().map(String::as_str))?
+                }
+                NavSectionBody::Groups(groups) => {
+                    let mut out = Vec::new();
+                    for group in groups {
+                        let children = shelves_of(&mut group.shelves.iter().map(String::as_str))?;
+                        // An empty group is left out, as an empty shelf is.
+                        if !children.is_empty() {
+                            out.push(Entry::Labeled {
+                                title: group.title.clone(),
+                                children,
+                            });
+                        }
+                    }
+                    out
+                }
+            };
+            if !children.is_empty() {
+                entries.push(Entry::Labeled {
+                    title: section.title.clone(),
+                    children,
+                });
+            }
+        }
+        Ok(entries)
+    })();
+    let entries = match built {
+        Ok(entries) => entries,
+        Err(name) => {
+            plan.unwritten.push(Unwritten {
+                at: declaration.output.clone(),
+                kind: Kind::SiteNav,
+                reason: format!("names a shelf `{name}` this taxonomy does not declare"),
+            });
+            return;
+        }
+    };
+
+    // The directory of every shelf a `noindex` section names, relative to the
+    // corpus root as a `nav:` path is. Read from the declaration and not from
+    // the documents, so an empty shelf keeps its place on the list and a page
+    // that later lands on it is not indexed in the meantime.
+    let noindex: Vec<String> = declaration
+        .sections
+        .iter()
+        .filter(|section| section.noindex)
+        .flat_map(|section| section.shelves())
+        .filter_map(|name| taxonomy.shelves.iter().find(|shelf| shelf.name == name))
+        .map(|shelf| prefix_of(shelf.pattern.source(), &identity.corpus_root))
+        .collect();
+
+    for entry in &entries {
+        entry.paths(&mut plan.navigation);
     }
     plan.outputs.push(Output {
-        bytes: render(&declaration.output, &groups, &identity.corpus_root),
+        bytes: render(
+            &declaration.output,
+            &entries,
+            &noindex,
+            &identity.corpus_root,
+        ),
         path: declaration.output.clone(),
         kind: Kind::SiteNav,
         committed: true,
     });
+}
+
+/// One entry of the emitted `nav:` tree: a shelf with its pages, or a labeled
+/// section or group that holds more entries (#1681).
+enum Entry {
+    Shelf(Group),
+    Labeled { title: String, children: Vec<Entry> },
+}
+
+impl Entry {
+    /// Every path under this entry, in the order the file lists them.
+    fn paths(&self, out: &mut Vec<String>) {
+        match self {
+            Entry::Shelf(group) => {
+                out.extend(group.index.iter().cloned());
+                out.extend(group.pages.iter().map(|(path, _)| path.clone()));
+                out.extend(group.ordered.iter().map(|pointer| pointer.path.clone()));
+            }
+            Entry::Labeled { children, .. } => {
+                for child in children {
+                    child.paths(out);
+                }
+            }
+        }
+    }
+}
+
+/// The path prefix that every page of a shelf starts with, relative to the
+/// corpus root, as a site template compares it against a page's source path.
+///
+/// A glob shelf claims a directory, so its prefix ends in `/`, and
+/// `process/decisions/` then never matches `process/decisions-old/`. A shelf
+/// whose pattern holds no glob claims one file, and its prefix is that file.
+/// A glob deeper than the directory, such as `taxonomies/*/doctrine.md`, takes
+/// the directory before the glob, which covers more than the shelf: that is
+/// the safe direction for `noindex`, because it can only hide a page and never
+/// leave one of the section's pages indexed.
+fn prefix_of(pattern: &str, corpus_root: &str) -> String {
+    let directory = crate::shelf_index::directory_of(pattern);
+    let globbed = directory.len() < pattern.trim_end_matches('/').len();
+    let under = if directory == corpus_root {
+        ""
+    } else if corpus_root.is_empty() {
+        directory.as_str()
+    } else {
+        directory
+            .strip_prefix(&format!("{corpus_root}/"))
+            .unwrap_or(&directory)
+    };
+    match (globbed, under.is_empty()) {
+        (true, false) => format!("{under}/"),
+        _ => under.to_string(),
+    }
 }
 
 /// The generated index of one shelf, among the paths the rest of the plan
@@ -247,47 +381,74 @@ fn quoted(scalar: &str) -> String {
     out
 }
 
-fn render(output: &str, groups: &[Group], corpus_root: &str) -> String {
+fn render(output: &str, entries: &[Entry], noindex: &[String], corpus_root: &str) -> String {
     let mut out = String::new();
     let mark = headwater_mark::marker(Kind::SiteNav.name(), output)
         .unwrap_or_else(|| format!("<!-- {} -->", headwater_mark::MARKER));
     out.push_str(&mark);
     out.push_str("\n\n");
     out.push_str("nav:\n");
-    for Group {
-        shelf,
-        index,
-        pages,
-        ordered,
-    } in groups
-    {
-        out.push_str(&format!("  - {}:\n", quoted(shelf)));
-        // The index first, so a reader who opens a group lands on the page
-        // that summarizes it before the first document of it. Its label is
-        // the shelf, because MkDocs serves this string as that page's title.
-        if let Some(path) = index {
-            out.push_str(&format!(
-                "      - {}: {}\n",
-                quoted(shelf),
-                quoted(&crate::shelf_index::relative(corpus_root, path))
-            ));
-        }
-        for (path, label) in pages {
-            out.push_str(&format!(
-                "      - {}: {}\n",
-                quoted(label),
-                quoted(&crate::shelf_index::relative(corpus_root, path))
-            ));
-        }
-        for pointer in ordered {
-            out.push_str(&format!(
-                "      - {}: {}\n",
-                quoted(&crate::label(pointer)),
-                quoted(&crate::shelf_index::relative(corpus_root, &pointer.path))
-            ));
+    for entry in entries {
+        render_entry(&mut out, entry, "  ", corpus_root);
+    }
+    // The pages a site template marks `noindex`, as path prefixes relative to
+    // the corpus root. MkDocs merges an `extra` mapping of an `INHERIT`ed file
+    // into the parent's, so a template reads this as `config.extra`. Written
+    // only where a section asks for it, so a declaration with none writes the
+    // file it wrote before (#1681).
+    if !noindex.is_empty() {
+        out.push_str("\nextra:\n  headwater_noindex:\n");
+        for prefix in noindex {
+            out.push_str(&format!("    - {}\n", quoted(prefix)));
         }
     }
     out
+}
+
+/// One entry at one depth. `pad` is the indentation of its own `- ` line, and
+/// every child sits four spaces deeper, the shape the flat file always had.
+fn render_entry(out: &mut String, entry: &Entry, pad: &str, corpus_root: &str) {
+    let inner = format!("{pad}    ");
+    match entry {
+        Entry::Labeled { title, children } => {
+            out.push_str(&format!("{pad}- {}:\n", quoted(title)));
+            for child in children {
+                render_entry(out, child, &inner, corpus_root);
+            }
+        }
+        Entry::Shelf(Group {
+            shelf,
+            index,
+            pages,
+            ordered,
+        }) => {
+            out.push_str(&format!("{pad}- {}:\n", quoted(shelf)));
+            // The index first, so a reader who opens a group lands on the page
+            // that summarizes it before the first document of it. Its label is
+            // the shelf, because MkDocs serves this string as that page's title.
+            if let Some(path) = index {
+                out.push_str(&format!(
+                    "{inner}- {}: {}\n",
+                    quoted(shelf),
+                    quoted(&crate::shelf_index::relative(corpus_root, path))
+                ));
+            }
+            for (path, label) in pages {
+                out.push_str(&format!(
+                    "{inner}- {}: {}\n",
+                    quoted(label),
+                    quoted(&crate::shelf_index::relative(corpus_root, path))
+                ));
+            }
+            for pointer in ordered {
+                out.push_str(&format!(
+                    "{inner}- {}: {}\n",
+                    quoted(&crate::label(pointer)),
+                    quoted(&crate::shelf_index::relative(corpus_root, &pointer.path))
+                ));
+            }
+        }
+    }
 }
 
 /// One case per condition of [`index_of`], because the corpus this engine runs

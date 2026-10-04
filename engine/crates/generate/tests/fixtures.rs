@@ -2591,7 +2591,7 @@ fn top_level_block<'a>(bytes: &'a str, label: &str) -> Option<&'a str> {
     let start = bytes.find(&head)? + 1;
     let body = start + head.len() - 1;
     let rest = &bytes[body..];
-    let end = [rest.find("\n  - \""), rest.find("\nextra:")]
+    let end = [rest.find("\n  - \""), rest.find("\n\nextra:")]
         .into_iter()
         .flatten()
         .min()
@@ -2767,7 +2767,7 @@ fn a_site_nav_section_with_groups_nests_section_group_shelf_in_declared_order() 
         ),
         (
             "    sections:\n      - title: A\n        for: [guides]\n        noindex: maybe\n",
-            "`noindex` is not `true` or `false`",
+            "noindex` is not `true` or `false`",
         ),
     ] {
         let err = site_nav_bytes(&format!("  - kind: site_nav\n    output: nav.yml\n{source}"))
