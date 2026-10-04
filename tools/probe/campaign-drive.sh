@@ -134,7 +134,11 @@
 #   refusal-only exit 7 that recorded nothing more writes `<root>/capped`
 #   and exits 8, and writes no `done`.
 # - 7 with a recorder failure: log the sessions and exit 7. The driver does
-#   not run them again, because a re-run spends again.
+#   not run them again, because a re-run spends again. A job that
+#   `campaign.sh --unrecorded` marked with `<dir>/unrecorded/<name>` is not a
+#   recorder failure: a person accepted it as a counted non-record (#1659),
+#   so the driver counts it as neither failed nor left, and a status 5 with
+#   no marker still exits 7.
 # - 4, 5, 6 and any other code: stop with that code.
 #
 # Each invocation logs one line, on standard output and in `drive.log`:
@@ -157,7 +161,8 @@
 #   4   the pin or the harness is not the one given, or campaign.sh exited 4
 #   5   campaign.sh refused the plan
 #   6   campaign.sh refused the output directory
-#   7   a recorder failed, or both batches spent past `--cap-cents`
+#   7   a recorder failed on a session no `<dir>/unrecorded/<name>` marks, or
+#       both batches spent past `--cap-cents`
 #   8   a batch is capped: `capped` is written, and `done` is not
 #   10  `<root>/stop` exists
 #   11  the canary failed: `canary-failed` holds the reason
@@ -250,14 +255,17 @@ spent() {
 }
 
 # classify <dir>: one pass over the jobs of the batch, printing
-# `<recorded> <total> <refused> <failed> <halt> [<failed names>...]`. A job
-# is recorded at `status` 0, refused with `slice/refused/<name>`, left when
-# this invocation did not start it or when it is the job a halt left, and
-# failed otherwise. `slice/started/<name>` matters: a job a halt left with
-# `status` 10 in an earlier invocation, and this one did not start, still
-# carries that status.
+# `<recorded> <total> <refused> <failed> <halt> <unrecorded> [<failed
+# names>...]`. A job is recorded at `status` 0, unrecorded with
+# `unrecorded/<name>`, refused with `slice/refused/<name>`, left when this
+# invocation did not start it or when it is the job a halt left, and failed
+# otherwise. `slice/started/<name>` matters: a job a halt left with `status`
+# 10 in an earlier invocation, and this one did not start, still carries that
+# status. An unrecorded job is a spent session a person accepted with
+# `campaign.sh --unrecorded` as a counted non-record (#1659). It is neither
+# failed nor left, and `campaign.sh` never draws it again.
 classify() {
-    [ -f "$1/jobs" ] || { echo "0 0 0 0 0"; return; }
+    [ -f "$1/jobs" ] || { echo "0 0 0 0 0 0"; return; }
     awk -v d="$1" '
         function exists(p,   line, r) { r = (getline line < p); close(p); return r >= 0 }
         function first(p,   line) { line = ""; if ((getline line < p) <= 0) line = ""; close(p); return line }
@@ -266,12 +274,13 @@ classify() {
             name = $1; total++
             status = first(d "/sessions/" name "/status")
             if (status == "0") recorded++
+            else if (exists(d "/unrecorded/" name)) unrecorded++
             else if (exists(d "/slice/refused/" name)) refused++
             else if (!exists(d "/slice/started/" name)) left++
             else if (status == "10" && halt) left++
             else { failed++; names = names " " name }
         }
-        END { printf "%d %d %d %d %d%s\n", recorded, total, refused, failed, halt, names }
+        END { printf "%d %d %d %d %d %d%s\n", recorded, total, refused, failed, halt, unrecorded, names }
     ' "$1/jobs"
 }
 
@@ -301,6 +310,7 @@ clean() {
         NF {
             name = $1
             if (!exists(d "/slice/started/" name)) next
+            # A job `--unrecorded` marked has status 5, so it is skipped here.
             if (first(d "/sessions/" name "/status") != "0") next
             n++
             cost = first(d "/sessions/" name "/cost")
@@ -466,7 +476,7 @@ run_batch() {
         code=$?
         set -- $(classify "$root/$dir")
         rec=$1 total=$2 failed=$4 halt=$5
-        shift 5
+        shift 6
         names=$*
         new=$((rec - before))
         mine=$(spent "$root/$dir")

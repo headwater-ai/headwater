@@ -133,10 +133,12 @@ fi
 [ -f "$out/claude-version" ] || printf '%s\n' "$ver" > "$out/claude-version"
 rm -rf "$out/slice"
 mkdir -p "$out/slice/started" "$out/slice/refused"
-code= record=0 cents=0 halt=n skip=0 refuse=0 fail=0 auto=n provider=0
+code= record=0 cents=0 halt=n skip=0 refuse=0 fail=0 auto=n provider=0 unrec=0 nomark=n
 for word in $line; do
     case $word in
         auto) auto=y ;;
+        unrec=*) unrec=${word#unrec=} ;;
+        nomark) nomark=y ;;
         exit=*) code=${word#exit=} ;;
         record=*) record=${word#record=} ;;
         cents=*) cents=${word#cents=} ;;
@@ -167,6 +169,11 @@ start() {
 refused=0 left=0 started=0
 while read -r name rest; do
     [ "$(cat "$out/sessions/$name/status" 2>/dev/null)" = 0 ] && continue
+    # campaign.sh never draws a job `--unrecorded` marked (#1659).
+    if [ -f "$out/unrecorded/$name" ]; then
+        echo "skip-unrecorded $name" >> "$CASE/events"
+        continue
+    fi
     if [ "$auto" = y ]; then
         if [ "$started" -ge "$max" ]; then
             left=1
@@ -203,6 +210,17 @@ while read -r name rest; do
         echo 2 > "$out/sessions/$name/status"
         echo "$cents" > "$out/sessions/$name/cost"
         fail=$((fail - 1))
+    elif [ "$unrec" -gt 0 ]; then
+        # A recorder exit 5 that a person accepted with `--unrecorded`, or,
+        # with `nomark`, one nobody accepted.
+        start "$name"
+        echo 5 > "$out/sessions/$name/status"
+        echo "$cents" > "$out/sessions/$name/cost"
+        if [ "$nomark" = n ]; then
+            mkdir -p "$out/unrecorded"
+            echo "2026-10-04T00:00:00Z probe-transform: the artifact x could not be copied" > "$out/unrecorded/$name"
+        fi
+        unrec=$((unrec - 1))
     fi
 done < "$out/jobs"
 if [ "$auto" = y ]; then
@@ -561,6 +579,26 @@ echo 'exit=7 refuse=2 fail=1 cents=10' > "$CASE/scenario"
 drive
 check "stops: a failure among refusals exits 7" code_is 7
 check "stops: a failure among refusals is not re-tried" calls_are 1
+# A status 5 that `campaign.sh --unrecorded` marked is a counted non-record,
+# not a recorder failure (#1659). The slice it ended in is a clean slice, and
+# the job is not drawn again.
+new_case
+only_a
+printf 'exit=7 record=1 cents=10 unrec=1 cents=10\nexit=0 record=1 cents=10\n' > "$CASE/scenario"
+drive
+check "stops: a marked status-5 job does not exit 7" sh -c "[ \"\$(cat '$CASE/code')\" != 7 ]"
+check "stops: and the batch finishes with 0" code_is 0
+check "stops: and is not drawn again" sh -c "grep -q '^skip-unrecorded a-002' '$CASE/events'"
+check "stops: and keeps its status 5" sh -c "[ \"\$(cat '$CASE/root/a/sessions/a-002/status')\" = 5 ]"
+check "stops: and is not named as a failed recorder" sh -c "! grep -q 'a recorder failed' '$CASE/out'"
+# The same status 5 with no marker is still a recorder failure.
+new_case
+only_a
+printf 'exit=7 record=1 cents=10 unrec=1 nomark cents=10\n' > "$CASE/scenario"
+drive
+check "stops: an unmarked status-5 job still exits 7" code_is 7
+check "stops: after one invocation, as a recorder failure" calls_are 1
+check "stops: and names that session and nothing else" out_has "a recorder failed for a-002;"
 
 # A refusal-only exit 7 re-tries once, and goes on when the re-try records.
 new_case

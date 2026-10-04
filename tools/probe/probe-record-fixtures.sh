@@ -2988,6 +2988,126 @@ STUB
             >/dev/null 2>"$scratch/stagger-4.err"
         same "and a rerun with a working harness finishes all 3" "0 3" "$? $(stagger_recorded "$stagger")"
 
+        # A spent session the recorder could not record is accepted once, by
+        # a person, as a counted non-record (#1659). Four sessions of the
+        # 2026-10-03 campaign exited 5 after a refused write, and a re-run of
+        # the batch would have drawn each of them again and paid again.
+        unrec=$scratch/unrec
+        stagger_batch "$unrec"
+        rm -f "$scratch/probe-log/stagger.calls"
+        stagger_stub ok
+        stagger_run "$unrec" "$scratch/unrec-1.err"
+        # The slice recorded two jobs and left one. The one it left becomes
+        # the session whose recorder exited 5, with no cost yet.
+        u0= u3=
+        for r in 1 2 3; do
+            if [ -f "$unrec/sessions/L1-campaign-present-p1-r$r/status" ]; then
+                u0=L1-campaign-present-p1-r$r
+            else
+                u3=L1-campaign-present-p1-r$r
+            fi
+        done
+        mkdir -p "$unrec/sessions/$u3"
+        echo 5 > "$unrec/sessions/$u3/status"
+        echo campaign > "$unrec/sessions/$u3/tier"
+        : > "$unrec/sessions/$u3/started"
+        echo 'probe-transform: the artifact docs/x.md could not be copied into the oracle tree.' > "$unrec/sessions/$u3/record.err"
+        sh "$root/tools/probe/campaign.sh" --out "$unrec" --unrecorded "$u0" >/dev/null 2>"$scratch/unrec-2.err"
+        same "\`--unrecorded\` refuses a session that recorded, with 2" "2" "$?"
+        present "and says why" "has status 0" "$scratch/unrec-2.err"
+        sh "$root/tools/probe/campaign.sh" --out "$unrec" --unrecorded "$u3" >/dev/null 2>"$scratch/unrec-3.err"
+        same "\`--unrecorded\` refuses a status-5 session that states no cost, with 2" "2" "$?"
+        if [ -e "$unrec/unrecorded" ]; then
+            fail "and a refusal writes no marker" "$(ls "$unrec/unrecorded" | tr '\n' ' ')"
+        else
+            pass "and a refusal writes no marker"
+        fi
+        sh "$root/tools/probe/campaign.sh" --out "$unrec" --unrecorded L9-not-a-job >/dev/null 2>"$scratch/unrec-3b.err"
+        same "\`--unrecorded\` refuses a name that is not a job of the batch, with 2" "2" "$?"
+        echo 40 > "$unrec/sessions/$u3/cost"
+        (cd "$unrec/sessions/$u3" && find . -type f -exec sha256sum {} + | LC_ALL=C sort; ls -la --time-style=full-iso .) > "$scratch/unrec-before.txt"
+        # With no marker, assembly still fails the line on the status 5.
+        sh "$root/tools/probe/campaign.sh" --out "$unrec" --assemble >/dev/null 2>"$scratch/unrec-4.err"
+        same "assembly of an unmarked status 5 still exits 7" "7" "$?"
+        sh "$root/tools/probe/campaign.sh" --out "$unrec" --unrecorded "$u3" >/dev/null 2>"$scratch/unrec-5.err"
+        same "\`--unrecorded\` accepts a spent status-5 session" "0" "$?"
+        present "and its marker holds the recorder's last line" "could not be copied into the oracle tree" "$unrec/unrecorded/$u3"
+        (cd "$unrec/sessions/$u3" && find . -type f -exec sha256sum {} + | LC_ALL=C sort; ls -la --time-style=full-iso .) > "$scratch/unrec-after.txt"
+        if cmp -s "$scratch/unrec-before.txt" "$scratch/unrec-after.txt"; then
+            pass "and it touches no file of the session directory"
+        else
+            fail "and it touches no file of the session directory" "$(diff "$scratch/unrec-before.txt" "$scratch/unrec-after.txt" | head -4 | tr '\n' ' ')"
+        fi
+        calls_before=$(wc -l < "$scratch/probe-log/stagger.calls" | tr -d ' ')
+        stagger_run "$unrec" "$scratch/unrec-6.err"
+        same "a slice over a marked job exits 0, not 7" "0" "$?"
+        same "and does not draw the marked job again" "$calls_before" "$(wc -l < "$scratch/probe-log/stagger.calls" | tr -d ' ')"
+        same "and leaves its status 5" "5" "$(cat "$unrec/sessions/$u3/status")"
+        present "and the tally counts it as unrecorded" "1 sessions are unrecorded" "$scratch/unrec-6.err"
+        sh "$root/tools/probe/campaign.sh" --out "$unrec" --assemble >/dev/null 2>"$scratch/unrec-7.err"
+        same "assembly counts a marked session and exits 0" "0" "$?"
+        present "and names it as unrecorded" "$u3 is unrecorded (status 5, 40 cents)" "$scratch/unrec-7.err"
+        same "and counts it uncounted, with its cost in the line's" "2 sessions, 42 cents" \
+            "$(sed 's/, the intent.*//' "$unrec/assembled/L1-campaign-present-sufficiency.summary")"
+        present "and its summary states one session uncounted" "1 sessions uncounted" \
+            "$unrec/assembled/L1-campaign-present-sufficiency.summary"
+
+        # `--repin` moves a batch's pin only when nothing a session meets moved
+        # (#1659): the engine, each line's plan identity and each task body.
+        # The fixture cannot build a second engine at a second commit, so it
+        # moves the recorded side instead: the batch is told it was pinned at
+        # another commit, and each recorded member is altered in turn.
+        repin_from() {
+            printf '%s\n' "$1" > "$unrec/head"
+            calls_before=$(wc -l < "$scratch/probe-log/stagger.calls" | tr -d ' ')
+            sh "$root/tools/probe/campaign.sh" --out "$unrec" --repin >/dev/null 2>"$scratch/repin.err"
+        }
+        repin_target=${CARGO_TARGET_DIR:-$root/engine/target}
+        case $repin_target in /*) ;; *) repin_target=$PWD/$repin_target ;; esac
+        sha256sum "$repin_target/dev-release/headwater" | awk '{ print $1 }' > "$unrec/engine.sha256"
+        rm -f "$unrec/pins"
+        oldpin=0000000000000000000000000000000000000001
+        cp "$unrec/plans/L1" "$scratch/repin-plan.keep"
+        task_file=$unrec/tasks/HW-PROBE-$tombstone.md
+        cp "$task_file" "$scratch/repin-task.keep"
+        cp "$unrec/engine.sha256" "$scratch/repin-engine.keep"
+
+        sed -i 's/^tree: sha256:./tree: sha256:X/' "$unrec/plans/L1"
+        repin_from "$oldpin"
+        same "\`--repin\` refuses with 4 when a classified document moved the plan's tree" "4" "$?"
+        present "and names the member" "the plan's \`tree\` moved" "$scratch/repin.err"
+        same "and leaves the pin" "$oldpin" "$(cat "$unrec/head")"
+        cp "$scratch/repin-plan.keep" "$unrec/plans/L1"
+
+        printf 'another task\n' >> "$task_file"
+        repin_from "$oldpin"
+        same "\`--repin\` refuses with 4 when a probe's task moved" "4" "$?"
+        present "and names the probe" "\`## Task\` of HW-PROBE-$tombstone moved" "$scratch/repin.err"
+        cp "$scratch/repin-task.keep" "$task_file"
+
+        echo 0000 > "$unrec/engine.sha256"
+        repin_from "$oldpin"
+        same "\`--repin\` refuses with 4 when the engine moved" "4" "$?"
+        present "and names the engine" "the engine moved" "$scratch/repin.err"
+        cp "$scratch/repin-engine.keep" "$unrec/engine.sha256"
+        if [ -e "$unrec/pins" ]; then
+            fail "and no refusal writes \`pins\`" "$(cat "$unrec/pins")"
+        else
+            pass "and no refusal writes \`pins\`"
+        fi
+
+        repin_from "$oldpin"
+        same "\`--repin\` moves the pin when the engine, the plans and the tasks are the same" "0" "$?"
+        same "and spends nothing and runs no harness" "$calls_before" "$(wc -l < "$scratch/probe-log/stagger.calls" | tr -d ' ')"
+        same "and writes the new pin" "$(git -C "$root" rev-parse HEAD)" "$(cat "$unrec/head")"
+        same "and appends the move to \`pins\`, with the recorded count" "$oldpin $(git -C "$root" rev-parse HEAD) 2" \
+            "$(awk '{ print $1, $2, $4 }' "$unrec/pins")"
+        same "and leaves the recorded plan as it was" "" "$(cmp "$scratch/repin-plan.keep" "$unrec/plans/L1" 2>&1)"
+        sh "$root/tools/probe/campaign.sh" --out "$unrec" --assemble >/dev/null 2>"$scratch/unrec-8.err"
+        present "assembly prints every move of the pin" "pin moved: $oldpin $(git -C "$root" rev-parse HEAD)" "$scratch/unrec-8.err"
+        stagger_run "$unrec" "$scratch/unrec-9.err"
+        same "and a slice at the new pin runs" "0" "$?"
+
         # The cap is the batch's, so a resumed slice that does not give one
         # keeps the one recorded. The pin and the harness version hold too.
         stagger_batch "$stagger"
