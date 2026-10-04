@@ -2696,6 +2696,28 @@ fn a_site_nav_section_nests_its_shelves_under_one_labeled_top_level_entry() {
         top_level_block(&indexed, "Internal"),
         top_level_block(&sectioned, "Internal")
     );
+
+    // A section, or a group, whose every shelf is empty is left out, as an
+    // empty shelf is. Its `noindex` directory is still listed, so a page that
+    // later lands on the shelf is not indexed in the meantime.
+    let empty = site_nav_bytes(concat!(
+        "  - kind: site_nav\n",
+        "    output: nav.yml\n",
+        "    sections:\n",
+        "      - title: Empty\n",
+        "        noindex: true\n",
+        "        for: [archive]\n",
+        "      - title: Grouped\n",
+        "        groups:\n",
+        "          - title: Hollow\n",
+        "            for: [guides]\n",
+        "          - title: Void\n",
+        "            for: []\n",
+    ))
+    .expect("a nav with empty sections");
+    assert!(!empty.contains("\"Empty\""), "an empty section was written");
+    assert!(!empty.contains("\"Void\""), "an empty group was written");
+    assert!(empty.contains("    - \"archive/\"\n"), "{empty}");
 }
 
 /// A section holds groups of shelves, each group labeled, in the order the
