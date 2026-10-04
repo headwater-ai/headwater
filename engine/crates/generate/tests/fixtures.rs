@@ -2558,8 +2558,12 @@ fn site_nav_bytes(nav: &str) -> Result<String, String> {
         .as_map()
         .expect("a mapping")
         .clone();
-    let projections = Projections::read(&root)
-        .map_err(|errors| format!("{:?}", errors.iter().map(|e| &e.message).collect::<Vec<_>>()))?;
+    let projections = Projections::read(&root).map_err(|errors| {
+        format!(
+            "{:?}",
+            errors.iter().map(|e| &e.message).collect::<Vec<_>>()
+        )
+    })?;
     let plan = plan(
         &surface,
         &built.census,
@@ -2669,7 +2673,10 @@ fn a_site_nav_section_nests_its_shelves_under_one_labeled_top_level_entry() {
 
     // (d) The source with no `sections` writes no `extra` key and no section
     // level: the plain shape, which every other nav case already pins.
-    assert!(!plain.contains("extra:"), "a nav with no sections wrote `extra`");
+    assert!(
+        !plain.contains("extra:"),
+        "a nav with no sections wrote `extra`"
+    );
     assert!(top_level_block(&plain, "guides").is_some());
 
     // A section that is not noindex writes no `extra` key at all.
@@ -2681,7 +2688,10 @@ fn a_site_nav_section_nests_its_shelves_under_one_labeled_top_level_entry() {
         "        for: [guides]\n",
     ))
     .expect("a nav with one indexed section");
-    assert!(!indexed.contains("extra:"), "an indexed section wrote `extra`");
+    assert!(
+        !indexed.contains("extra:"),
+        "an indexed section wrote `extra`"
+    );
     assert_eq!(
         top_level_block(&indexed, "Internal"),
         top_level_block(&sectioned, "Internal")
@@ -2708,8 +2718,14 @@ fn a_site_nav_section_with_groups_nests_section_group_shelf_in_declared_order() 
     let reference = top_level_block(&bytes, "Reference").expect("the section");
     let learn = reference.find("      - \"Learn\":\n          - \"guides\":\n");
     let look_up = reference.find("      - \"Look up\":\n          - \"decisions\":\n");
-    assert!(learn.is_some(), "no Learn group holding guides:\n{reference}");
-    assert!(look_up.is_some(), "no Look up group holding decisions:\n{reference}");
+    assert!(
+        learn.is_some(),
+        "no Learn group holding guides:\n{reference}"
+    );
+    assert!(
+        look_up.is_some(),
+        "no Look up group holding decisions:\n{reference}"
+    );
     // The taxonomy lists `decisions` first, and the declaration lists `guides`
     // first. The declaration wins.
     assert!(learn < look_up, "the groups are not in declared order");
@@ -2719,7 +2735,10 @@ fn a_site_nav_section_with_groups_nests_section_group_shelf_in_declared_order() 
         .lines()
         .map(|line| format!("        {line}\n"))
         .collect();
-    assert!(reference.contains(&indented), "decisions changed shape under a group");
+    assert!(
+        reference.contains(&indented),
+        "decisions changed shape under a group"
+    );
     // Every shelf is in a section, so nothing is at the top level but it.
     assert!(bytes.trim_end().ends_with(reference.trim_end()));
     assert_eq!(bytes.matches("\n  - \"").count(), 1);
