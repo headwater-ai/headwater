@@ -224,6 +224,8 @@ docs/decisions/0105-whether-the-embedding-path-becomes-the-silence-only-fallback
   typed: decision
 docs/decisions/0106-a-governing-document-repoints-a-link-to-a-rule-that-moved-and-a-record-of-a-moment-stays-as-written.md
   typed: decision
+docs/decisions/0107-the-process-shelves-stay-published-in-a-labeled-section-of-the-site-that-a-search-engine-does-not-index.md
+  typed: decision
 docs/decisions/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/doctrine/maturity-model.md

@@ -1150,6 +1150,45 @@ projections:
     output: docs/interfaces/consumer-surface.md
   - kind: site_nav
     output: ".headwater/nav.yml"
+    sections:
+      - title: Reference
+        groups:
+          - title: Guides
+            for:
+              - tutorials
+              - how_to
+              - explanations
+          - title: Specification
+            for:
+              - spec_series
+              - interfaces
+              - requirements
+              - acceptance_criteria
+              - verifications
+              - subsystems
+          - title: "Taxonomy library"
+            for:
+              - library_doctrine
+              - library_index
+          - title: "Decisions and evidence"
+            for:
+              - decisions
+              - evaluations
+              - obligations
+              - reviews
+          - title: Probes
+            for:
+              - probes
+              - probe_runs
+              - probe_results
+      - title: "Project process"
+        noindex: true
+        for:
+          - process_specs
+          - process_decisions
+          - process_evaluations
+          - process_obligations
+          - process_explanations
 obligations:
   OB-COV-1:
     statement: "Every file under the corpus root is classified, or reported as unclassifiable"

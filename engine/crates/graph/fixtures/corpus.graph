@@ -468,6 +468,8 @@ anchors
   code_path `engine/crates/generate/src/site.rs` via source-tree
     cited by HW-IFACE-headwater-site
   code_path `engine/crates/generate/src/site_nav.rs` via source-tree
+    cited by HW-DR-0107
+  code_path `engine/crates/generate/src/site_nav.rs` via source-tree
     cited by HW-IFACE-headwater-site
   code_path `engine/crates/graph/src/**` via source-tree
     cited by HW-SPEC-graph-build
@@ -639,6 +641,8 @@ anchors
     cited by HW-DR-0050
   code_path `mkdocs/overrides/css/headwater.css` via source-tree
     cited by HW-DR-0050
+  code_path `mkdocs/overrides/js/shelf-tabs.js` via source-tree
+    cited by HW-DR-0107
   code_path `mkdocs/overrides/main.html` via source-tree
     cited by HW-DR-0038
   code_path `site/**` via source-tree
@@ -733,6 +737,8 @@ anchors
     cited by HW-DR-0047
   code_path `tools/site/check-site-figures.sh` via source-tree
     cited by HW-DR-0097
+  code_path `tools/site/check-site-noindex.py` via source-tree
+    cited by HW-DR-0107
   code_path `tools/site/cloudflare-build.sh` via source-tree
     cited by HW-DR-0047
   code_path `tools/site/deploy-site.sh` via source-tree
@@ -747,6 +753,8 @@ anchors
     cited by HW-DR-0097
   code_path `tools/site/refresh-site-tokens.sh` via source-tree
     cited by HW-DR-0050
+  code_path `tools/site/site-noindex-fixtures.sh` via source-tree
+    cited by HW-DR-0107
   code_path `tools/site/site-tokens.css` via source-tree
     cited by HW-DR-0050
   code_path `tools/site/sitemap.py` via source-tree
