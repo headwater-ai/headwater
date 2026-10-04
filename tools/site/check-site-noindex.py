@@ -13,11 +13,17 @@ WHAT IT HOLDS
     2. `llms.txt` lists a page that carries the meta.
     3. A page under a declared prefix does not carry the meta, which is the
        template dropping the line or the nav losing the list.
+    3b. A page under a declared prefix does not carry the notice
+       (`class="hw-notice"`) that tells a reader the page is project process
+       and links back to the specification. The template writes the notice
+       under the same condition as the meta, so the two are held together.
     4. The nav declares a prefix that no served page sits under, so the
        third test read nothing for it. That is refused rather than passed,
-       one prefix at a time. A directory prefix covers every page served
-       under it, and a file prefix covers that one page, as the template's
-       match over the source path does.
+       one prefix at a time. The template marks a page whose source path
+       starts with the prefix. So a directory prefix (`a/`) covers every page
+       served under it, a file prefix (`a/b.md`) covers that one page, and a
+       prefix cut inside a file name (`a/internal-`, from `a/internal-*.md`)
+       covers every page whose served path starts with it.
 
 WHY IT READS THE ASSEMBLED DIRECTORY
 
@@ -47,6 +53,8 @@ HERE = pathlib.Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 from sitemap import BASE, noindexed  # noqa: E402
 
+NOTICE = re.compile(r'class="hw-notice"')
+
 ROOT = HERE.parent.parent
 
 
@@ -75,15 +83,19 @@ def prefixes(nav):
 def served(prefix):
     """The served page set of a source-path prefix, as `(path, exact)`.
 
-    The template marks a page whose source path starts with the prefix. A
-    directory prefix (`a/`) therefore covers every page served under `a/`. A file
-    prefix covers that one file, which MkDocs serves at `a/b/` for `a/b.md` and
-    at `a/` for `a/README.md`, so it matches that served directory exactly and
-    never the pages beneath it.
+    The template marks a page whose source path starts with the prefix.
+    MkDocs serves `a/b.md` at `a/b/` and `a/README.md` at `a/`. So a directory
+    prefix (`a/`) covers every page served under it. A file prefix (`a/b.md`)
+    covers that one file, and matches its served directory exactly, never the
+    pages beneath it. A prefix cut inside a file name (`a/internal-`) covers
+    every page whose served path starts with it, because MkDocs keeps the stem
+    of the source path.
     """
     if prefix == "" or prefix.endswith("/"):
         return prefix, False
-    stem = prefix[:-3] if prefix.endswith(".md") else prefix
+    if not prefix.endswith(".md"):
+        return prefix, False
+    stem = prefix[:-3]
     parent, _, name = stem.rpartition("/")
     if name in ("README", "index"):
         return (parent + "/" if parent else ""), True
@@ -163,6 +175,10 @@ def main(argv):
             if path not in marked:
                 findings.append("`%s` is under a `noindex` section of the nav and carries no "
                                 "robots `noindex` meta" % path.relative_to(root).as_posix())
+            if not NOTICE.search(path.read_text(encoding="utf-8", errors="replace")):
+                findings.append("`%s` is under a `noindex` section of the nav and carries no "
+                                "project-process notice (`class=\"hw-notice\"`)"
+                                % path.relative_to(root).as_posix())
     for prefix, count in zip(raw, reach):
         if count == 0:
             findings.append("the nav declares the `noindex` prefix `%s` and no served page sits "

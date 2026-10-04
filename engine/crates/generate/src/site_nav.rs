@@ -283,29 +283,29 @@ impl Entry {
 /// The path prefix that every page of a shelf starts with, relative to the
 /// corpus root, as a site template compares it against a page's source path.
 ///
-/// A glob shelf claims a directory, so its prefix ends in `/`, and
-/// `process/decisions/` then never matches `process/decisions-old/`. A shelf
-/// whose pattern holds no glob claims one file, and its prefix is that file.
-/// A glob deeper than the directory, such as `taxonomies/*/doctrine.md`, takes
-/// the directory before the glob, which covers more than the shelf: that is
-/// the safe direction for `noindex`, because it can only hide a page and never
-/// leave one of the section's pages indexed.
+/// The prefix is the literal text of the pattern before its first glob
+/// character, so every path the pattern admits starts with it. A shelf
+/// `process/decisions/**` takes `process/decisions/`, which never matches
+/// `process/decisions-old/`. A shelf `internal-*.md` takes `internal-`. A
+/// shelf whose pattern holds no glob claims one file, and its prefix is that
+/// file. Where the literal text admits more than the pattern does, as
+/// `taxonomies/` does for `taxonomies/*/doctrine.md`, the prefix covers more
+/// than the shelf. That is the safe direction for `noindex`: it can hide a
+/// page that is not on the shelf, and it never leaves a page of the shelf
+/// indexed.
 fn prefix_of(pattern: &str, corpus_root: &str) -> String {
-    let directory = crate::shelf_index::directory_of(pattern);
-    let globbed = directory.len() < pattern.trim_end_matches('/').len();
-    let under = if directory == corpus_root {
-        ""
-    } else if corpus_root.is_empty() {
-        directory.as_str()
-    } else {
-        directory
-            .strip_prefix(&format!("{corpus_root}/"))
-            .unwrap_or(&directory)
-    };
-    match (globbed, under.is_empty()) {
-        (true, false) => format!("{under}/"),
-        _ => under.to_string(),
+    let stop = pattern.find(['*', '?', '[', '{']).unwrap_or(pattern.len());
+    let literal = &pattern[..stop];
+    if corpus_root.is_empty() {
+        return literal.to_string();
     }
+    if literal == corpus_root {
+        return String::new();
+    }
+    literal
+        .strip_prefix(&format!("{corpus_root}/"))
+        .unwrap_or(literal)
+        .to_string()
 }
 
 /// The generated index of one shelf, among the paths the rest of the plan

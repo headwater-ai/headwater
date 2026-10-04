@@ -65,7 +65,7 @@ add_to:
           for: [meeting_notes]
 ```
 
-`noindex: true` writes the directory of each shelf of the section to `extra.headwater_noindex` in `.headwater/nav.yml`. The recipe template of step 3 does not read that list. To keep those pages out of a search engine, your theme must emit `<meta name="robots" content="noindex">` on each page under a listed directory.
+`noindex: true` writes one path prefix for each shelf of the section to `extra.headwater_noindex` in `.headwater/nav.yml`. The prefix is the text of the shelf pattern before its first glob character, such as `decisions/` for `docs/decisions/**`. The recipe template of step 3 does not read that list. To keep those pages out of a search engine, your theme must emit `<meta name="robots" content="noindex">` on each page whose source path starts with a listed prefix.
 
 2. Resolve the taxonomy and generate the projections. The first command writes the lock, and the second command writes `.headwater/nav.yml`.
 

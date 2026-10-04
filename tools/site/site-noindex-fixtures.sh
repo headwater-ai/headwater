@@ -78,7 +78,9 @@ run() {
     echo $?
 }
 
-# page DIR RELATIVE-DIR noindex|plain [reversed]
+# page DIR RELATIVE-DIR noindex|plain [reversed|nonotice]
+# A noindex page carries the project-process notice, as the template writes
+# it, unless the fourth argument is `nonotice`.
 page() {
     mkdir -p "$1/$2"
     {
@@ -87,7 +89,12 @@ page() {
             noindex:reversed) printf '<meta content="noindex, follow" name="robots">\n' ;;
             noindex:*) printf '<meta name="robots" content="noindex">\n' ;;
         esac
-        printf '<title>%s</title>\n</head><body></body></html>\n' "$2"
+        printf '<title>%s</title>\n</head><body>\n' "$2"
+        case "$3:${4:-}" in
+            noindex:nonotice) ;;
+            noindex:*) printf '<p class="hw-notice">Project process.</p>\n' ;;
+        esac
+        printf '</body></html>\n'
     } >"$1/$2/index.html"
 }
 
@@ -210,6 +217,28 @@ python3 "$sitemap" "$t" >"$t/sitemap.xml"
 nav "$scratch/root.yml" "README.md"
 status=$(run "$t" "$scratch/root.yml")
 report "a root README.md prefix covers the home page and nothing else" 0 "$status"
+
+# 7d. A prefix cut inside a file name, from a shelf such as `internal-*.md`,
+#     covers each page whose served path starts with it.
+tree "$t"
+page "$t" internal-plan noindex
+python3 "$sitemap" "$t" >"$t/sitemap.xml"
+nav "$scratch/glob.yml" "internal-"
+status=$(run "$t" "$scratch/glob.yml")
+report "a prefix cut inside a file name covers its pages" 0 "$status"
+page "$t" internal-notes plain
+python3 "$sitemap" "$t" >"$t/sitemap.xml"
+status=$(run "$t" "$scratch/glob.yml")
+report "a page under a file-name prefix with no meta is refused" 1 "$status" \
+    "\`internal-notes/index.html\` is under a \`noindex\` section" "$scratch/err"
+
+# 7e. A noindex page that lost the project-process notice is refused.
+tree "$t"
+page "$t" process/decisions/0002-b noindex nonotice
+python3 "$sitemap" "$t" >"$t/sitemap.xml"
+status=$(run "$t" "$n")
+report "a page under a noindex prefix with no notice is refused" 1 "$status" \
+    "\`process/decisions/0002-b/index.html\` is under a \`noindex\` section of the nav and carries no project-process notice" "$scratch/err"
 
 # 8. Input that cannot be read exits 2 rather than passing.
 mkdir -p "$scratch/empty"
