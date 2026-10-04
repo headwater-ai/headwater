@@ -14,7 +14,8 @@ fn taxonomy(source: &str) -> headwater_yaml::Mapping {
         .clone()
 }
 
-const SHELVES: &str = "shelves:\n  guides: {path: docs/guides/**}\n  decisions: {path: docs/decisions/**}\n";
+const SHELVES: &str =
+    "shelves:\n  guides: {path: docs/guides/**}\n  decisions: {path: docs/decisions/**}\n";
 
 #[test]
 fn a_section_shelf_and_a_group_shelf_are_each_read_against_the_declared_shelves() {
@@ -33,7 +34,10 @@ fn a_section_shelf_and_a_group_shelf_are_each_read_against_the_declared_shelves(
     assert_eq!(
         found,
         vec![
-            ("projections.0.sections.0.for".to_string(), "guidse".to_string()),
+            (
+                "projections.0.sections.0.for".to_string(),
+                "guidse".to_string()
+            ),
             (
                 "projections.0.sections.1.groups.0.for".to_string(),
                 "decisons".to_string()
