@@ -9,6 +9,8 @@
 #         [--repetitions <n>] [--parallel <n>] [--max-turns <n>] [--seed <n>] \
 #         [--cap-cents <n>] [--max-sessions <n>]
 #     sh tools/probe/campaign.sh --out <dir> --assemble
+#     sh tools/probe/campaign.sh --out <dir> --unrecorded <session>...
+#     sh tools/probe/campaign.sh --out <dir> --repin
 #     sh tools/probe/campaign.sh --dry-run --spec <file> [--repetitions <n>] \
 #         [--max-sessions <n>]
 #
@@ -153,10 +155,41 @@
 # ## Resume
 #
 # A job whose session directory holds `status` 0 is done and is not run again.
-# Run the same command again to finish a batch that stopped, or to record again
-# a session whose recorder failed. A capped session did not fail, and nor did
-# one the session budget stopped. A job run again keeps what its failed
-# attempt spent, in `spent-before`, so the cap of a resumed batch counts it.
+# Run the same command again to finish a batch that stopped. A capped session
+# did not fail, and nor did one the session budget stopped. A job run again
+# keeps what its failed attempt spent, in `spent-before`, so the cap of a
+# resumed batch counts it.
+#
+# **A session whose recorder failed is not recorded again by a re-run.** The
+# workspace is removed once the recorder returns, so a job run again is a new
+# paid draw of the same job, and a re-run until it records biases the batch
+# toward the sessions that record. Read its `record.err`. Where the fault is
+# the environment, such as no engine or a failing check, fix it and run the
+# same command again. Where the session itself left nothing the recorder could
+# record, accept it as a counted non-record with
+# `--unrecorded <session>...` (#1659). That verb refuses a session whose
+# `status` is not 5 or that states no `cost`. It writes
+# `<out>/unrecorded/<session>`, with the UTC time and the last line of
+# `record.err`, and changes no file of the session directory. A marked job is
+# never drawn again, the tally counts it as neither failed nor left, and
+# assembly counts it as uncounted, names it on standard error, and adds its
+# cost to its line's. A status 5 with no marker still exits 7. The marker is a
+# person's ruling on each session, because exit 5 is also how the recorder
+# reports no engine, an oracle tree with no `.headwater/` and a failing check.
+#
+# **A batch's pin moves with `--repin`, and only so (#1659).** A fix to the
+# recorder is a new commit, and the batch refuses a `HEAD` that is not its pin.
+# Check out the new commit, detached, and run `--repin` from it. It spends
+# nothing and runs no harness. It moves `<out>/head` only when a fresh build of
+# the engine hashes to `<out>/engine.sha256`, a fresh plan of every line prints
+# the same `lock`, `tree`, `selection`, `read_set`, `seed` and `harness` as
+# `<out>/plans/L<n>`, and every probe's `## Task` body is the same bytes as
+# `<out>/tasks/<probe>.md`. It refuses with 4 and names each member that moved.
+# A change to a classified document moves `tree`, so a pin moves only over a
+# commit range that changed no document, no task and no engine source. It
+# appends `<old> <new> <utc> <recorded-count>` to `<out>/pins`, and assembly
+# prints each line of it, because the identity block carries no recorder
+# version and would accept a batch that two recorders derived without saying so.
 #
 # **A halt on a harness failure.** When the recorder of a session exits 10,
 # the harness exited nonzero for a reason other than the turn cap or the
@@ -204,19 +237,24 @@
 #
 # ## Exit status
 #
-#   0   the batch finished, or the assembly was written
-#   2   a usage error, or a line whose tier declares no turn cap and no
-#       `--max-turns` was given
+#   0   the batch finished, the assembly was written, the sessions named
+#       were marked unrecorded, or the pin moved or had nothing to move
+#   2   a usage error, a line whose tier declares no turn cap and no
+#       `--max-turns` was given, or `--unrecorded` names a session that is not
+#       a job of the batch, whose `status` is not 5, or that states no cost
+#       in whole cents
 #   3   a tool is missing, or no engine is built
 #   4   the checkout is dirty, `HEAD` moved during the batch, `HEAD` is not
-#       the commit the output directory holds a batch of, or the `claude`
-#       harness is another version than the batch recorded
+#       the commit the output directory holds a batch of, the `claude`
+#       harness is another version than the batch recorded, or `--repin`
+#       found that the engine, a line's plan identity or a task moved
 #   5   the plan refuses a line of the spec, or `--repetitions` is above the
 #       count the dry run prices for a line
 #   6   the output directory is inside this checkout, or a batch's output
 #       directory is under `$HOME` (#1467)
-#   7   a session of the batch did not record, or a line's sessions disagree on
-#       their identity at assembly
+#   7   a session of the batch did not record and is not marked with
+#       `--unrecorded`, or a line's sessions disagree on their identity at
+#       assembly
 #   9   the invocation stopped with jobs left, on `--max-sessions` or on a
 #       halt, and no session it started failed for another reason. Run the
 #       same command again to continue
@@ -236,9 +274,23 @@ max_sessions=
 assemble=0
 dry=0
 job=
+unrecorded=0
+unrecorded_names=
+repin=0
 
 while [ $# -gt 0 ]; do
     case $1 in
+        --unrecorded)
+            unrecorded=1
+            shift
+            while [ $# -gt 0 ]; do
+                case $1 in
+                    --*) break ;;
+                    *) unrecorded_names="$unrecorded_names $1"; shift ;;
+                esac
+            done
+            ;;
+        --repin) repin=1; shift ;;
         --out) out=${2:-}; shift 2 ;;
         --model) model=${2:-}; shift 2 ;;
         --spec) spec=${2:-}; shift 2 ;;
@@ -293,13 +345,57 @@ esac
 # under `$HOME` would sit beside the host's own configuration and copies of
 # this repository. Assembly of a batch already recorded there still runs.
 home_real=$(cd "${HOME:-/nonexistent}" 2>/dev/null && pwd -P) || home_real=
-if [ "$assemble" = 0 ] && [ -n "$home_real" ]; then
+if [ "$assemble" = 0 ] && [ "$unrecorded" = 0 ] && [ -n "$home_real" ]; then
     case "$out" in
         "$home_real"|"$home_real"/*)
             echo "campaign: the output directory is under \$HOME ($home_real). Put the batch outside it, such as under /mnt or /var/tmp (#1467)." >&2
             exit 6
             ;;
     esac
+fi
+
+# ---------------------------------------------------------------------------
+# `--unrecorded`: a spent session the recorder could not record, accepted as a
+# counted non-record (#1659). It writes `<out>/unrecorded/<name>` and nothing
+# else, so the session directory stays as the recorder left it.
+# ---------------------------------------------------------------------------
+if [ "$unrecorded" = 1 ]; then
+    [ -f "$out/jobs" ] || { echo "campaign: no batch at $out" >&2; exit 2; }
+    [ -n "$unrecorded_names" ] || { echo "usage: campaign.sh --out <dir> --unrecorded <session>..." >&2; exit 2; }
+    # Every name is checked before any marker is written, so a refusal
+    # writes nothing.
+    refused=0
+    for name in $unrecorded_names; do
+        dir=$out/sessions/$name
+        status=$(cat "$dir/status" 2>/dev/null)
+        if ! awk -v n="$name" '$1 == n { f = 1 } END { exit !f }' "$out/jobs"; then
+            echo "campaign: $name is not a job of the batch at $out." >&2
+            refused=1
+        elif [ "$status" != 5 ]; then
+            echo "campaign: $name has status ${status:-none}, and only a session whose recorder exited 5 can be accepted as unrecorded." >&2
+            refused=1
+        else
+            # The cost is a whole number of cents, because assembly adds it.
+            case $(cat "$dir/cost" 2>/dev/null) in
+                '' | *[!0-9]*)
+                    echo "campaign: $name states no cost in whole cents, so the batch cannot count what it spent. It is not accepted as unrecorded." >&2
+                    refused=1
+                    ;;
+            esac
+        fi
+    done
+    [ "$refused" = 0 ] || exit 2
+    mkdir -p "$out/unrecorded"
+    for name in $unrecorded_names; do
+        if [ -f "$out/unrecorded/$name" ]; then
+            echo "campaign: $name is already unrecorded." >&2
+            continue
+        fi
+        reason=$(tail -1 "$out/sessions/$name/record.err" 2>/dev/null)
+        printf '%s %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "${reason:-the recorder wrote no error}" > "$out/unrecorded/$name"
+        echo "campaign: $name is unrecorded: $(cat "$out/sessions/$name/cost") cents, and it is never drawn again." >&2
+    done
+    exit 0
 fi
 
 # ---------------------------------------------------------------------------
@@ -316,6 +412,12 @@ run_job() {
     done
     dir=$out/sessions/$name
     if [ -f "$dir/status" ] && [ "$(cat "$dir/status")" = 0 ]; then
+        return 0
+    fi
+    # A session accepted with `--unrecorded` spent and was counted as a
+    # non-record (#1659). Its workspace is gone, so a run again would be a new
+    # paid draw and not a second recording of the same session.
+    if [ -f "$out/unrecorded/$name" ]; then
         return 0
     fi
     # A halted invocation starts nothing more, and leaves the job to the next.
@@ -533,6 +635,14 @@ if [ "$assemble" = 1 ]; then
         for dir in "$out"/sessions/L$index-*; do
             [ -d "$dir" ] || continue
             batch_sessions=$((batch_sessions + 1))
+            # A session accepted with `--unrecorded` is uncounted and does not
+            # fail the line (#1659). It spent, so its cost is in the line's.
+            if [ "$(cat "$dir/status" 2>/dev/null)" != 0 ] && [ -f "$out/unrecorded/$(basename "$dir")" ]; then
+                echo "campaign: $(basename "$dir") is unrecorded (status $(cat "$dir/status"), $(cat "$dir/cost") cents): $(cat "$out/unrecorded/$(basename "$dir")")" >&2
+                uncounted=$((uncounted + 1))
+                cost=$((cost + $(cat "$dir/cost")))
+                continue
+            fi
             if [ "$(cat "$dir/status" 2>/dev/null)" != 0 ]; then
                 echo "campaign: $(basename "$dir") did not record (status $(cat "$dir/status" 2>/dev/null || echo none))." >&2
                 failed=1
@@ -587,7 +697,146 @@ if [ "$assemble" = 1 ]; then
     # report and not a gate: a confined session's tries are unreadable.
     printf 'campaign: the batch named %s paths outside the workspace over %s sessions, %s sessions uncounted, %s web-tool calls\n' \
         "$batch_outside" "$batch_sessions" "$batch_uncounted" "$batch_web" >&2
+    # Every move of the batch's pin, so the transcript can state that two
+    # recorders derived its records and what `--repin` proved of the move.
+    if [ -s "$out/pins" ]; then
+        while IFS= read -r pin; do
+            echo "campaign: pin moved: $pin" >&2
+        done < "$out/pins"
+    fi
     [ "$failed" = 0 ] || exit 7
+    exit 0
+fi
+
+# build_engine: the engine of this checkout, at `$engine`, or exit 3.
+#
+# Cargo decides whether the binary is the build of this tree, and the build is
+# a no-op when it is. A comparison of timestamps would refuse a binary built
+# before the commit that pinned its source.
+#
+# The binary is where cargo wrote it: under `CARGO_TARGET_DIR` when the caller
+# set one, which a relative value names from this directory, and under the
+# engine's own `target` otherwise. Reading `engine/target` while cargo wrote
+# elsewhere would copy a binary of another commit into every tree.
+build_engine() {
+    cargo build --profile dev-release -p headwater-cli --locked \
+        --manifest-path "$root/engine/Cargo.toml" >/dev/null 2>"$out/build.err" || {
+        echo "campaign: the engine did not build, so no workspace can carry the pinned engine:" >&2
+        tail -5 "$out/build.err" >&2
+        exit 3
+    }
+    target=${CARGO_TARGET_DIR:-$root/engine/target}
+    case $target in
+        /*) ;;
+        *) target=$PWD/$target ;;
+    esac
+    engine=$target/dev-release/headwater
+    [ -x "$engine" ] || {
+        echo "campaign: the build wrote no engine at $engine, so no workspace can carry the pinned engine." >&2
+        exit 3
+    }
+}
+
+# plan_line <row of `<out>/lines`> <repetitions> <file>: the plan of one line,
+# as the batch takes it and as `--repin` takes it again.
+plan_line() {
+    # shellcheck disable=SC2086
+    set -- $1 "$2" "$3"
+    p_tier=$2 p_category=$4
+    shift 4
+    p_excludes=
+    while [ $# -gt 2 ]; do
+        p_excludes="$p_excludes --exclude $1"
+        shift
+    done
+    p_repetitions=$1 p_file=$2
+    # shellcheck disable=SC2086
+    "$engine" probe plan --root "$root" --tier "$p_tier" --category "$p_category" $p_excludes \
+        ${p_repetitions:+--repetitions "$p_repetitions"} > "$p_file" 2>&1
+}
+
+# extract_task <probe> <file>: the body of the probe's `## Task` and nothing
+# else (spec 15). A probe that no document declares writes an empty file.
+extract_task() {
+    t_file=$(grep -rlx -- "id: $1" "$root/docs/probes" | head -1)
+    if [ -z "$t_file" ]; then
+        : > "$2"
+        return 0
+    fi
+    awk '/^## Task$/ { on = 1; next } on && /^## / { exit } on { print }' "$t_file" \
+        | awk 'NF { seen = 1 } seen' | awk '{ lines[NR] = $0 } END { n = NR; while (n > 0 && lines[n] == "") n--; for (i = 1; i <= n; i++) print lines[i] }' \
+        > "$2"
+}
+
+# ---------------------------------------------------------------------------
+# `--repin`: move a batch's pin to this checkout's `HEAD` (#1659). It spends
+# nothing and runs no harness. It moves the pin only when it can show that no
+# session recorded after the move meets anything a session before it did not:
+# the same engine binary, the same plan identity on every line, and the same
+# task body for every probe. Each of the three is measured, not read off the
+# paths the commits touched.
+# ---------------------------------------------------------------------------
+if [ "$repin" = 1 ]; then
+    for f in head lines engine.sha256 pairs; do
+        [ -s "$out/$f" ] || { echo "campaign: no batch at $out to repin (no $f)." >&2; exit 2; }
+    done
+    for tool in git awk cargo cmp sha256sum; do
+        command -v "$tool" >/dev/null 2>&1 || { echo "campaign: \`$tool\` is not on the path." >&2; exit 3; }
+    done
+    if [ -n "$(git -C "$root" status --porcelain --untracked-files=no)" ]; then
+        echo "campaign: the checkout has uncommitted changes, so its HEAD is not a pin." >&2
+        exit 4
+    fi
+    head=$(git -C "$root" rev-parse HEAD)
+    old=$(cat "$out/head")
+    if [ "$old" = "$head" ]; then
+        echo "campaign: $out is already pinned at $head; nothing to move." >&2
+        exit 0
+    fi
+    build_engine
+    moved=0
+    # (a) The engine. Every tree carries the binary of the first pin, but
+    # `probe-transform.sh` derives `findings` with this checkout's engine.
+    now_sha=$(sha256sum "$engine" | awk '{ print $1 }')
+    if [ "$now_sha" != "$(cat "$out/engine.sha256")" ]; then
+        echo "campaign: the engine moved: it hashes to $now_sha at $head, and the batch's trees carry $(cat "$out/engine.sha256")." >&2
+        moved=1
+    fi
+    # (b) The plan identity of every line. It is compared before anything
+    # overwrites `<out>/plans`, and this verb overwrites nothing there.
+    rm -rf "$out/repin"
+    mkdir -p "$out/repin"
+    while IFS= read -r line; do
+        index=${line%% *}
+        reps=
+        [ -f "$out/plans/L$index.repetitions" ] && reps=$(cat "$out/plans/L$index.repetitions")
+        plan_line "$line" "$reps" "$out/repin/L$index"
+        for member in lock tree selection read_set seed harness; do
+            was=$(sed -n "s/^$member: //p" "$out/plans/L$index" 2>/dev/null | head -1)
+            now=$(sed -n "s/^$member: //p" "$out/repin/L$index" | head -1)
+            if [ -z "$was" ] || [ "$was" != "$now" ]; then
+                echo "campaign: line $index: the plan's \`$member\` moved from ${was:-nothing} to ${now:-nothing}." >&2
+                moved=1
+            fi
+        done
+    done < "$out/lines"
+    # (c) The task of every probe the batch draws.
+    for probe in $(awk '{ print $2 }' "$out/pairs" | sort -u); do
+        extract_task "$probe" "$out/repin/task.md"
+        if [ ! -f "$out/tasks/$probe.md" ] || ! cmp -s "$out/tasks/$probe.md" "$out/repin/task.md"; then
+            echo "campaign: the \`## Task\` of $probe moved." >&2
+            moved=1
+        fi
+    done
+    rm -rf "$out/repin"
+    if [ "$moved" != 0 ]; then
+        echo "campaign: the pin of $out stays at $old." >&2
+        exit 4
+    fi
+    recorded=$(find "$out/sessions" -mindepth 2 -maxdepth 2 -type f -name status -exec cat {} + 2>/dev/null | awk '$1 == "0" { n++ } END { print n + 0 }')
+    printf '%s %s %s %s\n' "$old" "$head" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$recorded" >> "$out/pins"
+    printf '%s\n' "$head" > "$out/head"
+    echo "campaign: $out moved its pin from $old to $head after $recorded recorded sessions: the engine, every line's plan identity and every task are the same." >&2
     exit 0
 fi
 
@@ -608,29 +857,7 @@ if [ -n "$(git -C "$root" status --porcelain --untracked-files=no)" ]; then
     exit 4
 fi
 head=$(git -C "$root" rev-parse HEAD)
-# Cargo decides whether the binary is the build of this tree, and the build is
-# a no-op when it is. A comparison of timestamps would refuse a binary built
-# before the commit that pinned its source.
-cargo build --profile dev-release -p headwater-cli --locked \
-    --manifest-path "$root/engine/Cargo.toml" >/dev/null 2>"$out/build.err" || {
-    echo "campaign: the engine did not build, so no workspace can carry the pinned engine:" >&2
-    tail -5 "$out/build.err" >&2
-    exit 3
-}
-# The binary is where cargo wrote it: under `CARGO_TARGET_DIR` when the caller
-# set one, which a relative value names from this directory, and under the
-# engine's own `target` otherwise. Reading `engine/target` while cargo wrote
-# elsewhere would copy a binary of another commit into every tree.
-target=${CARGO_TARGET_DIR:-$root/engine/target}
-case $target in
-    /*) ;;
-    *) target=$PWD/$target ;;
-esac
-engine=$target/dev-release/headwater
-[ -x "$engine" ] || {
-    echo "campaign: the build wrote no engine at $engine, so no workspace can carry the pinned engine." >&2
-    exit 3
-}
+build_engine
 if [ -f "$out/head" ] && [ "$(cat "$out/head")" != "$head" ]; then
     echo "campaign: $out holds a batch of $(cat "$out/head"), and HEAD is $head. Use another directory." >&2
     exit 4
@@ -691,11 +918,6 @@ while IFS= read -r line; do
     # shellcheck disable=SC2086
     set -- $line
     index=$1 tier=$2 arm=$3 category=$4
-    shift 4
-    excludes=
-    for excluded in "$@"; do
-        excludes="$excludes --exclude $excluded"
-    done
     # A count above the line's declared one was held to its price above, and
     # the line is planned at the declared count, which the plan does not
     # refuse. A count at or below it is a lowering and goes to the plan.
@@ -705,9 +927,7 @@ while IFS= read -r line; do
         [ -n "$declared" ] && [ "$repetitions" -gt "$declared" ] && plan_repetitions=
     fi
     printf '%s\n' "$plan_repetitions" > "$out/plans/L$index.repetitions"
-    # shellcheck disable=SC2086
-    "$engine" probe plan --root "$root" --tier "$tier" --category "$category" $excludes \
-        ${plan_repetitions:+--repetitions "$plan_repetitions"} > "$out/plans/L$index" 2>&1
+    plan_line "$line" "$plan_repetitions" "$out/plans/L$index"
     if grep -q '^## This run does not start' "$out/plans/L$index"; then
         echo "campaign: line $index ($tier $arm $category) is refused by the plan:" >&2
         sed -n '/^## This run does not start/,$p' "$out/plans/L$index" | sed '1,2d' >&2
@@ -736,10 +956,7 @@ sort -u "$out/pairs.tmp" > "$out/pairs" && rm -f "$out/pairs.tmp"
 
 # The task of each probe: the body of `## Task` and nothing else (spec 15).
 for probe in $probes; do
-    file=$(grep -rlx -- "id: $probe" "$root/docs/probes")
-    awk '/^## Task$/ { on = 1; next } on && /^## / { exit } on { print }' "$file" \
-        | awk 'NF { seen = 1 } seen' | awk '{ lines[NR] = $0 } END { n = NR; while (n > 0 && lines[n] == "") n--; for (i = 1; i <= n; i++) print lines[i] }' \
-        > "$out/tasks/$probe.md"
+    extract_task "$probe" "$out/tasks/$probe.md"
     [ -s "$out/tasks/$probe.md" ] || { echo "campaign: $probe has no task body." >&2; exit 5; }
 done
 
@@ -829,11 +1046,15 @@ tr '\n' '\0' < "$out/jobs" | xargs -0 -P "$parallel" -I '{}' sh "$0" --out "$out
 recorded=0
 failed=0
 remain=0
+unrecorded_count=0
 while IFS= read -r row; do
     name=${row%% *}
     status=$(cat "$out/sessions/$name/status" 2>/dev/null)
     if [ "$status" = 0 ]; then
         recorded=$((recorded + 1))
+    elif [ -f "$out/unrecorded/$name" ]; then
+        # Accepted with `--unrecorded` (#1659): neither failed nor left.
+        unrecorded_count=$((unrecorded_count + 1))
     elif [ -f "$out/slice/refused/$name" ]; then
         failed=$((failed + 1))
     elif [ ! -f "$out/slice/started/$name" ]; then
@@ -856,6 +1077,8 @@ if [ "$remain" -gt 0 ]; then
 else
     echo "campaign: $recorded of $total sessions recorded, $spent cents spent." >&2
 fi
+[ "$unrecorded_count" = 0 ] ||
+    echo "campaign: $unrecorded_count sessions are unrecorded by \`--unrecorded\`, and none is drawn again." >&2
 [ "$failed" = 0 ] || exit 7
 [ "$remain" = 0 ] || exit 9
 exit 0
