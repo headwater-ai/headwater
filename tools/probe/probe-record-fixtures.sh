@@ -3029,6 +3029,16 @@ STUB
         # With no marker, assembly still fails the line on the status 5.
         sh "$root/tools/probe/campaign.sh" --out "$unrec" --assemble >/dev/null 2>"$scratch/unrec-4.err"
         same "assembly of an unmarked status 5 still exits 7" "7" "$?"
+        # And the tally does not take an unmarked status 5 for one. A cap of
+        # one cent refuses the job, so nothing runs and nothing spends.
+        calls_before=$(wc -l < "$scratch/probe-log/stagger.calls" | tr -d ' ')
+        PATH="$scratch/bin:$PATH" sh "$root/tools/probe/campaign.sh" --out "$unrec" \
+            --model claude-haiku-4-5 --spec "$scratch/stagger.spec" --repetitions 1 \
+            --cap-cents 1 >/dev/null 2>"$scratch/unrec-4b.err"
+        same "a slice over an unmarked status 5 still exits 7, and runs nothing" "7 $calls_before" \
+            "$? $(wc -l < "$scratch/probe-log/stagger.calls" | tr -d ' ')"
+        rm -f "$unrec/cap"
+        : > "$unrec/cap"
         sh "$root/tools/probe/campaign.sh" --out "$unrec" --unrecorded "$u3" >/dev/null 2>"$scratch/unrec-5.err"
         same "\`--unrecorded\` accepts a spent status-5 session" "0" "$?"
         present "and its marker holds the recorder's last line" "could not be copied into the oracle tree" "$unrec/unrecorded/$u3"
