@@ -4,7 +4,7 @@ status: superseded
 status_since: 2026-09-20
 summary: "A recorded terminal demonstration is a figure under HW-DR-0039. It may show only the tutorial's scratch corpus, where a blocking step already holds every printed output against a run."
 last_verified: 2026-09-11
-title: "Q61 — How a recorded terminal demonstration is held against a run"
+title: "61 — How a recorded terminal demonstration is held against a run"
 provenance:
   warrant: asserted
   agency: agent
@@ -22,7 +22,7 @@ relations:
     - HW-DR-0078
 ---
 
-# Q61 — How a recorded terminal demonstration is held against a run
+# 61 — How a recorded terminal demonstration is held against a run
 
 ## Context
 

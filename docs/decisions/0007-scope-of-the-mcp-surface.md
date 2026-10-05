@@ -1,6 +1,6 @@
 ---
 id: HW-DR-0007
-title: Q7 — Scope of the MCP surface
+title: 7 — Scope of the MCP surface
 status: current
 status_since: 2026-08-11
 last_verified: 2026-08-11
@@ -17,7 +17,7 @@ relations:
     - HW-EVAL-the-serving-boundary
 ---
 
-# Q7 — Scope of the MCP surface
+# 7 — Scope of the MCP surface
 
 ## Context
 

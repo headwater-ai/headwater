@@ -4,7 +4,7 @@ status: current
 status_since: 2026-09-17
 summary: "An adopter reaches the whole governed loop through the binary. One integration point sits outside it and the list is closed against growth. Git plumbing meets the necessity test, a network fetch left the list under HW-DR-0075, and a verb writes the change manifest."
 last_verified: 2026-09-24
-title: "The binary is the only interface an adopter must run, and every integration point outside it is declared"
+title: "72 — The binary is the only interface an adopter must run, and every integration point outside it is declared"
 provenance:
   warrant: accepted
   agency: agent
@@ -18,7 +18,7 @@ relations:
     - tools/headwater-bootstrap.sh
 ---
 
-# The binary is the only interface an adopter must run, and every integration point outside it is declared
+# 72 — The binary is the only interface an adopter must run, and every integration point outside it is declared
 
 ## Context
 

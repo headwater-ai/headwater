@@ -4,7 +4,7 @@ status: current
 status_since: 2026-09-27
 summary: "explanation and process_explanation state what holds now across one domain, and draws_on reports an account whose source decision ends."
 last_verified: 2026-09-27
-title: "The live account of a domain is its own kind, split on the product and process line, and it draws on the records it cites"
+title: "93 — The live account of a domain is its own kind, split on the product and process line, and it draws on the records it cites"
 provenance:
   warrant: asserted
   agency: agent
@@ -13,7 +13,7 @@ provenance:
   evidence_basis: reconstructed
 ---
 
-# The live account of a domain is its own kind, split on the product and process line, and it draws on the records it cites
+# 93 — The live account of a domain is its own kind, split on the product and process line, and it draws on the records it cites
 
 ## Context
 

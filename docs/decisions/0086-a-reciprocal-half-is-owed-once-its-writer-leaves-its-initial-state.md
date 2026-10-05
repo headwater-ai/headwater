@@ -4,7 +4,7 @@ status: current
 status_since: 2026-09-26
 summary: "While a draft holds the only half of a required pair, nothing is owed. The far document owes its half once the draft is promoted."
 last_verified: 2026-09-26
-title: "A reciprocal half is owed once its writer leaves its initial state"
+title: "86 — A reciprocal half is owed once its writer leaves its initial state"
 provenance:
   warrant: asserted
   agency: agent
@@ -20,7 +20,7 @@ relations:
     - HW-SPEC-authoring-and-lifecycle
 ---
 
-# A reciprocal half is owed once its writer leaves its initial state
+# 86 — A reciprocal half is owed once its writer leaves its initial state
 
 ## Context
 

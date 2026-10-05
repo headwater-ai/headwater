@@ -19,7 +19,7 @@ relations:
 
 # The implementation language — the evidence for Q1
 
-The evidence for [Q1](../spec/09-open-questions.md#q1--implementation-language). The question listed four candidates. Two of them fall to a constraint that [spec 6](../spec/06-engine-architecture.md#implementation-constraints) already states, so this document argues the remaining two.
+The evidence for [Q1](../spec/09-open-questions.md#1--implementation-language). The question listed four candidates. Two of them fall to a constraint that [spec 6](../spec/06-engine-architecture.md#implementation-constraints) already states, so this document argues the remaining two.
 
 **Python and Node are out on distribution, not on speed.** Spec 6 requires a single binary and no toolchain per check. It also gives a 200 ms budget for the change-scoped run that a commit hook performs. An interpreter start costs a large fraction of that budget before any work begins. And a mix of Python, Node, and shell, each with its own container fallback, is the named cost that spec 6 refuses. That leaves Rust and Go.
 
@@ -45,7 +45,7 @@ So the performance argument is real, and it is completely spent on the exclusion
 
 Spec 6 states the constraint twice. Under implementation constraints: "Usable as a library from an editor plugin or an agent process, with no need to spawn subprocesses." Under interfaces: "Editor integrations, the MCP server, and CI adapters all consume the library directly. They do not start a subprocess and parse text."
 
-The hosts are known. An editor extension is Node or the JVM. An agent process is Python or Node. [Q16](../spec/09-open-questions.md#q16--public-presence) wants a site generated from the corpus, and [Q14](../spec/09-open-questions.md#q14--discovery-surface) wants a reader that encounters a corpus cold. Those two point at a browser.
+The hosts are known. An editor extension is Node or the JVM. An agent process is Python or Node. [Q16](../spec/09-open-questions.md#16--public-presence) wants a site generated from the corpus, and [Q14](../spec/09-open-questions.md#14--discovery-surface) wants a reader that encounters a corpus cold. Those two point at a browser.
 
 Rust reaches every one of those hosts as an in-process library. A `cdylib` with a C ABI adds no runtime to the host. `napi-rs` produces a native Node addon, `pyo3` produces a Python extension, and `wasm32` produces a browser build of the same crate. Ruff and uv ship this way through pip, and Biome ships this way through npm. The route is ordinary.
 
@@ -94,7 +94,7 @@ Go models a closed set as an interface plus a type switch, with no exhaustivenes
 
 Three arguments look decisive and are not. Each one is recorded here so that nobody re-runs it.
 
-**The RDF stack is a tiebreaker at most.** Rust has Oxigraph for SPARQL and rudof for SHACL and ShEx, both embeddable. And rudof comes out of a research group with published work behind it. Go's equivalent is thinner and younger. But [Q13](../spec/09-open-questions.md#q13--linkml-and-shacl-as-substrate) already settled that the engine never runs on SHACL's validation machinery. It also settled that SHACL emission waits for an external consumer who asks for it. The only near-term use is the differential-testing oracle. A cross-check that runs in continuous integration may call an external validator as a subprocess, because nothing about it is on the check path. So this is a convenience and not a constraint.
+**The RDF stack is a tiebreaker at most.** Rust has Oxigraph for SPARQL and rudof for SHACL and ShEx, both embeddable. And rudof comes out of a research group with published work behind it. Go's equivalent is thinner and younger. But [Q13](../spec/09-open-questions.md#13--linkml-and-shacl-as-substrate) already settled that the engine never runs on SHACL's validation machinery. It also settled that SHACL emission waits for an external consumer who asks for it. The only near-term use is the differential-testing oracle. A cross-check that runs in continuous integration may call an external validator as a subprocess, because nothing about it is on the check path. So this is a convenience and not a constraint.
 
 **WebAssembly plugin hosting is a wash.** Spec 12 leaves plugins open between in-process and subprocess. WebAssembly answers both horns, because a component runs in-process and receives no filesystem, no network, and no clock unless the host grants them. That is spec 12's plugin contract restated as a capability model. Rust hosts it with wasmtime and Go hosts it with wazero, which is pure Go and needs no cgo. Neither language wins the host side. Rust wins only the other direction, where the engine itself compiles to WebAssembly, and that is argument 1 rather than a separate point.
 

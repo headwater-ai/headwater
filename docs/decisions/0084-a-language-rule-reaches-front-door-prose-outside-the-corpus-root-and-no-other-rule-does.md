@@ -4,7 +4,7 @@ status: current
 status_since: 2026-09-26
 summary: "A language regime lists the paths outside the corpus root that it binds, and only the three language rules read them. Such a path is not a document, so no facet, voice, link or relation rule reaches a README."
 last_verified: 2026-09-26
-title: "A language rule reaches front-door prose outside the corpus root, and no other rule does"
+title: "84 — A language rule reaches front-door prose outside the corpus root, and no other rule does"
 relations:
   constrains:
     - HW-DR-0029
@@ -19,7 +19,7 @@ provenance:
   evidence_basis: evidenced
 ---
 
-# A language rule reaches front-door prose outside the corpus root, and no other rule does
+# 84 — A language rule reaches front-door prose outside the corpus root, and no other rule does
 
 ## Context
 

@@ -4,7 +4,7 @@ status: current
 status_since: 2026-09-27
 summary: "An engine release and a taxonomy release each print the headwater/standard release.digest in their notes, so an adopter pins it from the tag they downloaded."
 last_verified: 2026-09-27
-title: "Each release states in its notes the release digest that a consumer pins"
+title: "90 — Each release states in its notes the release digest that a consumer pins"
 provenance:
   warrant: asserted
   agency: agent
@@ -19,7 +19,7 @@ relations:
       verified_revision: sha256:cc62f8db1425466922c618475983155ec51572a77c846a4634a730e18a804ae4
 ---
 
-# Each release states in its notes the release digest that a consumer pins
+# 90 — Each release states in its notes the release digest that a consumer pins
 
 ## Context
 

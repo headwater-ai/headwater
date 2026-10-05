@@ -1,6 +1,6 @@
 ---
 id: HW-DR-0018
-title: Q18 — Recording adjudicated disagreements
+title: 18 — Recording adjudicated disagreements
 status: current
 status_since: 2026-08-11
 last_verified: 2026-08-11
@@ -17,7 +17,7 @@ relations:
     - HW-EVAL-warrant-and-adjudication
 ---
 
-# Q18 — Recording adjudicated disagreements
+# 18 — Recording adjudicated disagreements
 
 ## Context
 

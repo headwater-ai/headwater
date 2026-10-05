@@ -4,7 +4,7 @@ status: current
 status_since: 2026-09-07
 summary: "A declared facet that carries no content is a state that neither the required-facet rule nor the enum rule reaches. A new rule reports it, over every facet a taxonomy types as a string, at error severity."
 last_verified: 2026-09-07
-title: "A blank facet value is a rule of its own and it reads every string facet"
+title: "58 — A blank facet value is a rule of its own and it reads every string facet"
 provenance:
   warrant: asserted
   agency: agent
@@ -13,7 +13,7 @@ provenance:
   evidence_basis: evidenced
 ---
 
-# A blank facet value is a rule of its own and it reads every string facet
+# 58 — A blank facet value is a rule of its own and it reads every string facet
 
 ## Context
 

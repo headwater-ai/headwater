@@ -1,6 +1,6 @@
 ---
 id: HW-DR-0019
-title: "Q19 — Inbound integration: an external system of record"
+title: "19 — Inbound integration: an external system of record"
 status: current
 status_since: 2026-08-11
 last_verified: 2026-08-11
@@ -17,7 +17,7 @@ relations:
     - HW-EVAL-warrant-and-adjudication
 ---
 
-# Q19 — Inbound integration: an external system of record
+# 19 — Inbound integration: an external system of record
 
 ## Context
 

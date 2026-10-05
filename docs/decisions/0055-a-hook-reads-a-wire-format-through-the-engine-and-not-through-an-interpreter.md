@@ -4,7 +4,7 @@ status: current
 status_since: 2026-09-06
 summary: "A harness payload is read by a verb of this engine rather than by an interpreter a session does not otherwise require. The verb answers nothing about a corpus, which is what puts it outside the term that forbids a hook verb."
 last_verified: 2026-09-06
-title: "A hook reads a wire format through the engine and not through an interpreter"
+title: "55 — A hook reads a wire format through the engine and not through an interpreter"
 provenance:
   warrant: asserted
   agency: agent
@@ -18,7 +18,7 @@ relations:
     - .claude/hooks/review.sh
 ---
 
-# A hook reads a wire format through the engine and not through an interpreter
+# 55 — A hook reads a wire format through the engine and not through an interpreter
 
 ## Context
 

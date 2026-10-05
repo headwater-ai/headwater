@@ -4,7 +4,7 @@ status: current
 status_since: 2026-09-06
 summary: "No kind in the base package or in any bundle binds a language regime. A package that set the default value would change nothing, so the doctrine page of the starter kit carries the promise."
 last_verified: 2026-09-06
-title: "A language regime reaches prose through a kind, so the starter kit's doctrine carries the writing profile"
+title: "56 — A language regime reaches prose through a kind, so the starter kit's doctrine carries the writing profile"
 provenance:
   warrant: asserted
   agency: agent
@@ -13,7 +13,7 @@ provenance:
   evidence_basis: evidenced
 ---
 
-# A language regime reaches prose through a kind, so the starter kit's doctrine carries the writing profile
+# 56 — A language regime reaches prose through a kind, so the starter kit's doctrine carries the writing profile
 
 ## Context
 

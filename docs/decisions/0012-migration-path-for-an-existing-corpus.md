@@ -1,6 +1,6 @@
 ---
 id: HW-DR-0012
-title: Q12 — Migration path for an existing corpus
+title: 12 — Migration path for an existing corpus
 status: current
 status_since: 2026-08-11
 last_verified: 2026-08-11
@@ -17,7 +17,7 @@ relations:
     - HW-EVAL-first-contact
 ---
 
-# Q12 — Migration path for an existing corpus
+# 12 — Migration path for an existing corpus
 
 ## Context
 

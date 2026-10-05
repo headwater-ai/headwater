@@ -4,7 +4,7 @@ status: current
 status_since: 2026-09-29
 summary: "Two corpora in one tree, or a vendored corpus beside its host, can mint one identifier, because one namespace plus a literal can spell another. The engine loads one root and one lock, so no rule compares schemes across two locks. An adopter picks namespaces that no pattern can spell from another, or resolves a scratch overlay that declares both corpora's schemes."
 last_verified: 2026-09-29
-title: "A namespace does not keep two corpora apart, and no rule compares identifier schemes across two locks"
+title: "99 — A namespace does not keep two corpora apart, and no rule compares identifier schemes across two locks"
 provenance:
   warrant: asserted
   agency: agent
@@ -16,7 +16,7 @@ relations:
     - HW-DR-0009
 ---
 
-# A namespace does not keep two corpora apart, and no rule compares identifier schemes across two locks
+# 99 — A namespace does not keep two corpora apart, and no rule compares identifier schemes across two locks
 
 ## Context
 

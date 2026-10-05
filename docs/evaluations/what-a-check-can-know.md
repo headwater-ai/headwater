@@ -26,7 +26,7 @@ relations:
 
 # What a check can know — the Q5 and Q21 evaluation
 
-This evaluation closes [Q5](../spec/09-open-questions.md#q5--voice-checking-depth) and [Q21](../spec/09-open-questions.md#q21--terminological-succession-and-validity-under-merge). The two entries share one subject, and neither states it. A checker that matches strings does not know what a text means. A checker scoped to a change does not know what the rest of the corpus became. Both entries ask where the resulting error goes.
+This evaluation closes [Q5](../spec/09-open-questions.md#5--voice-checking-depth) and [Q21](../spec/09-open-questions.md#21--terminological-succession-and-validity-under-merge). The two entries share one subject, and neither states it. A checker that matches strings does not know what a text means. A checker scoped to a change does not know what the rest of the corpus became. Both entries ask where the resulting error goes.
 
 Q21 half-states the connection. Its retired-term lexicon is a lexical rule, and its own table says that the rule "brings the false positives that Q5 warns about". That is the smaller half of the connection, and the measurement below shows that it is also wrong.
 
@@ -52,7 +52,7 @@ Six rulings bind both halves, and neither entry may revisit them.
 
 **A check reads exactly what its scope declared, and the cache key is the hash of those inputs.** [Spec 12](../spec/12-check-layer.md#scope--the-declaration-everything-else-rests-on) enforces the scope through the type of the view, and calls a key that omits an input a correctness bug.
 
-**The engine emits what a gate consumes, and never becomes the gate.** [Q7](../spec/09-open-questions.md#q7--scope-of-the-mcp-surface) closed on that boundary, and [spec 6](../spec/06-engine-architecture.md#ci-adapters) says that no forge is privileged in the core.
+**The engine emits what a gate consumes, and never becomes the gate.** [Q7](../spec/09-open-questions.md#7--scope-of-the-mcp-surface) closed on that boundary, and [spec 6](../spec/06-engine-architecture.md#ci-adapters) says that no forge is privileged in the core.
 
 One further ruling is close enough to check and to set aside. [Principle 4](../spec/00-vision-and-scope.md#design-principles) gained an exception in the [serving-boundary evaluation](the-serving-boundary.md): where one error class is unrecoverable, a control ships at its final posture. That exception does not reach voice checking. A voice finding that fires wrongly is visible and cheap. A voice finding that fails to fire costs a sentence that a later reader or a later run still catches. Both error classes recover, so the ordinary promotion path applies.
 
@@ -147,7 +147,7 @@ That is a general rule and it is stated as one. Where the promotion path stops e
 
 ## The decision — Q21, part one: the vocabulary
 
-**A retired-term lexicon, in the taxonomy, in the language regime.** Terms do not become documents. SKOS labels wait for the taxonomy export to have a consumer, which is the trigger that [Q13](../spec/09-open-questions.md#q13--linkml-and-shacl-as-substrate) already set for emitter 4.
+**A retired-term lexicon, in the taxonomy, in the language regime.** Terms do not become documents. SKOS labels wait for the taxonomy export to have a consumer, which is the trigger that [Q13](../spec/09-open-questions.md#13--linkml-and-shacl-as-substrate) already set for emitter 4.
 
 **The entry's argument against the lexicon is the one part of it that the measurement contradicts.** A retired-term list is a closed, authored, small set of exact strings with a stated replacement. That is the highest-precision shape a lexical rule takes, and the lexicon is the component of this corpus's checker with no measured false positives. The lexicon does not inherit Q5's warning. It inherits Q5's two obligations, which are about the parser.
 
@@ -155,7 +155,7 @@ That is a general rule and it is stated as one. Where the promotion path stops e
 
 **An entry carries a term, a required reason, and an optional replacement, and the replacement decides fixability.** With a replacement, the fix is a substitution, which is mechanical and total, so the check offers a patch. Without one, the finding carries remediation prose and no patch. The observed case is the second shape: the retired phrase was "reference system", and the repair rewrote the clause around it. So the one case we have is the case that no fix repairs. The lexicon would still have caught it, because the reintroduction used the retired string exactly. That is n=1 and it is stated as n=1.
 
-**The reason field is required, and Q21 is right about why.** A retired term with no recorded reason is the authority rank that [Q18](../spec/09-open-questions.md#q18--recording-adjudicated-disagreements) rejected, with extra steps.
+**The reason field is required, and Q21 is right about why.** A retired term with no recorded reason is the authority rank that [Q18](../spec/09-open-questions.md#18--recording-adjudicated-disagreements) rejected, with extra steps.
 
 **Posture is advisory at first, under the ordinary [principle 4](../spec/00-vision-and-scope.md#design-principles) rule and not because the rule is lexical.** Unlike a voice category, a retired-term entry with a replacement can finish the promotion path, because its remediation is mechanical. That is the opposite of the entry's leaning, and it follows from the criterion that Q5 just established.
 
@@ -181,7 +181,7 @@ That is the read-set half of Serializable Snapshot Isolation, arrived at from th
 
 **The correction to Q21's own text.** The entry says that corpus-scoped checks are what catch a reintroduced term. They are not. A retired-term check reads one document body and the lexicon, so it is `Document`-scoped. What makes a new lexicon entry retroactive is the lock. The lexicon sits in the taxonomy, the lock hash is in every cache key, and a lock change voids every cached result at once. The mechanism the entry reached for is the wrong one, and the right one is stronger, because it needs no barrier.
 
-**The engine emits and never orders.** Headwater does not hold a queue, decide a landing order, speculate on future states, or block a merge. Those belong to the forge, and [Q7](../spec/09-open-questions.md#q7--scope-of-the-mcp-surface) already drew that line for the write path. What the engine owes a gate is the read set and the tree that it applies to. A merge queue can then skip a full re-run when nothing in that set moved. That is the same relationship as "emit what a change proposal needs, and let an adapter open it". Over this corpus, the condition does not hold. Over listed inputs, a gate carries the verdict on 2 of the 18 merges that carry a window. Every read set also carries a `barrier` line that voids the whole answer, so the fraction is zero ([HW-OBL-0017](../obligations/0017-publishing-the-read-set-skips-a-re-run-on-two-of-the-eighteen.md), [spec 12](../spec/12-check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict)).
+**The engine emits and never orders.** Headwater does not hold a queue, decide a landing order, speculate on future states, or block a merge. Those belong to the forge, and [Q7](../spec/09-open-questions.md#7--scope-of-the-mcp-surface) already drew that line for the write path. What the engine owes a gate is the read set and the tree that it applies to. A merge queue can then skip a full re-run when nothing in that set moved. That is the same relationship as "emit what a change proposal needs, and let an adapter open it". Over this corpus, the condition does not hold. Over listed inputs, a gate carries the verdict on 2 of the 18 merges that carry a window. Every read set also carries a `barrier` line that voids the whole answer, so the fraction is zero ([HW-OBL-0017](../obligations/0017-publishing-the-read-set-skips-a-re-run-on-two-of-the-eighteen.md), [spec 12](../spec/12-check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict)).
 
 **The error asymmetry is stated, because it decides which way the test fails.** A false invalidation costs a re-run. A false validation ships an invalid corpus and reports it green. So the test fails toward re-running, which is [principle 7](../spec/00-vision-and-scope.md#design-principles) read the way that spec 6 reads it for an exporter. SSI makes the same trade and calls its cost the false abort.
 

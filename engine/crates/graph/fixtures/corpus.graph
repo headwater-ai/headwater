@@ -48,7 +48,7 @@ anchors
   code_path `.claude/hooks/lib.sh` via source-tree
     cited by HW-EVAL-one-clone-many-agents-how-this-repository-isolates-the-sessions-that-build-it
   code_path `.claude/hooks/lib.sh` via source-tree
-    cited by HW-HOW-diagnose-an-isolation-failure
+    cited by HW-PHOW-diagnose-an-isolation-failure
   code_path `.claude/hooks/review.sh` via source-tree
     cited by HW-DR-0055
   code_path `.claude/hooks/touch.sh` via source-tree
@@ -96,9 +96,9 @@ anchors
   code_path `.githooks/pre-commit` via source-tree
     cited by HW-EVAL-one-clone-many-agents-how-this-repository-isolates-the-sessions-that-build-it
   code_path `.githooks/pre-commit` via source-tree
-    cited by HW-HOW-diagnose-an-isolation-failure
-  code_path `.githooks/pre-commit` via source-tree
     cited by HW-OBL-0179
+  code_path `.githooks/pre-commit` via source-tree
+    cited by HW-PHOW-diagnose-an-isolation-failure
   code_path `.githooks/pre-push` via source-tree
     cited by HW-EVAL-one-clone-many-agents-how-this-repository-isolates-the-sessions-that-build-it
   code_path `.github/assets/headwater-demo.gif` via source-tree
@@ -402,7 +402,7 @@ anchors
   code_path `engine/crates/cli/tests/json.rs` via source-tree
     cited by HW-DR-0043
   code_path `engine/crates/cli/tests/merge_driver.rs` via source-tree
-    cited by HW-HOW-keep-derived-files-from-conflicting-in-parallel-pull-requests
+    cited by HW-PHOW-keep-derived-files-from-conflicting-in-parallel-pull-requests
   code_path `engine/crates/cli/tests/network_boundary.rs` via source-tree
     cited by HW-DR-0075
   code_path `engine/crates/cli/tests/publish.rs` via source-tree
@@ -469,6 +469,8 @@ anchors
     cited by HW-IFACE-headwater-site
   code_path `engine/crates/generate/src/site_nav.rs` via source-tree
     cited by HW-DR-0107
+  code_path `engine/crates/generate/src/site_nav.rs` via source-tree
+    cited by HW-DR-0108
   code_path `engine/crates/generate/src/site_nav.rs` via source-tree
     cited by HW-IFACE-headwater-site
   code_path `engine/crates/graph/src/**` via source-tree
@@ -694,7 +696,7 @@ anchors
   code_path `tools/hw-cargo` via source-tree
     cited by HW-EVAL-one-clone-many-agents-how-this-repository-isolates-the-sessions-that-build-it
   code_path `tools/hw-cargo` via source-tree
-    cited by HW-HOW-diagnose-an-isolation-failure
+    cited by HW-PHOW-diagnose-an-isolation-failure
   code_path `tools/probe/egress-proxy.py` via source-tree
     cited by HW-SPEC-the-recorder-contract
   code_path `tools/probe/probe-record.sh` via source-tree
@@ -714,7 +716,7 @@ anchors
   code_path `tools/repo/retire-worktree.sh` via source-tree
     cited by HW-EVAL-one-clone-many-agents-how-this-repository-isolates-the-sessions-that-build-it
   code_path `tools/repo/retire-worktree.sh` via source-tree
-    cited by HW-HOW-diagnose-an-isolation-failure
+    cited by HW-PHOW-diagnose-an-isolation-failure
   code_path `tools/run/queue-done-fixtures.sh` via source-tree
     cited by HW-PD-0020
   code_path `tools/run/queue-done.sh` via source-tree

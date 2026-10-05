@@ -4,7 +4,7 @@ status: current
 status_since: 2026-10-03
 summary: "When a rule moves to a new home, a document that still governs changes its link to the home and keeps its claim. An evaluation, a review or a probe run stays as written, and its date or commit marks its moment"
 last_verified: 2026-10-03
-title: "A governing document repoints a link to a rule that moved, and a record of a moment stays as written"
+title: "106 — A governing document repoints a link to a rule that moved, and a record of a moment stays as written"
 provenance:
   warrant: asserted
   agency: agent
@@ -13,7 +13,7 @@ provenance:
   evidence_basis: evidenced
 ---
 
-# A governing document repoints a link to a rule that moved, and a record of a moment stays as written
+# 106 — A governing document repoints a link to a rule that moved, and a record of a moment stays as written
 
 ## Context
 

@@ -45,7 +45,7 @@ Before this record, the reasons lived in comments of the three release workflows
 
 - Each asset name is written in full, on its matrix row and again as an operand of `gh release create`. Those operands use variable names that no other step assigns. No name is assembled from `matrix.target` or by shell concatenation. Group 7 of `tools/repo/readme-fixtures.sh` compares these names with the names in `README.md`.
 - The step of `release.yml` that writes the release notes has a fixed name. `tools/repo/readme-fixtures.sh` finds the step by that name and runs it.
-- `tools/repo/release-guide-fixtures.sh` reads the `on:` block of each workflow against [Cut a release](../../how-to/cut-a-release.md). It also holds each workflow header against the records that govern the workflow.
+- `tools/repo/release-guide-fixtures.sh` reads the `on:` block of each workflow against [Cut a release](../how-to/cut-a-release.md). It also holds each workflow header against the records that govern the workflow.
 
 ## Consequences
 

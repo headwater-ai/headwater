@@ -4,7 +4,7 @@ status: current
 status_since: 2026-09-29
 summary: "Under the counted grain, each tombstone of a filtered export lists the SHA-256 digest of each identifier it withheld. A tier that pins the export then binds an anchor to a withheld document as withheld, and it reports a typo as unresolved. Under sealed the export lists nothing, and both stay unresolved. An export older than version 1.3 lists nothing either."
 last_verified: 2026-10-03
-title: "A counted tombstone lists a digest of each withheld identifier, and a sealed one lists nothing"
+title: "100 — A counted tombstone lists a digest of each withheld identifier, and a sealed one lists nothing"
 provenance:
   warrant: asserted
   agency: agent
@@ -16,7 +16,7 @@ relations:
     - engine/crates/import/src/harvest.rs
 ---
 
-# A counted tombstone lists a digest of each withheld identifier, and a sealed one lists nothing
+# 100 — A counted tombstone lists a digest of each withheld identifier, and a sealed one lists nothing
 
 ## Context
 

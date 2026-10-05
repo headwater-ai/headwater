@@ -4,7 +4,7 @@ status: superseded
 status_since: 2026-10-02
 summary: "The base package declares `created_by: agent` on `governs` and `traces_to`, because no verb writes either edge and a person types the line a session proposes"
 last_verified: 2026-09-26
-title: "Governs and traces_to are created by an agent, because a session proposes the line and a person types it"
+title: "83 — Governs and traces_to are created by an agent, because a session proposes the line and a person types it"
 provenance:
   warrant: asserted
   agency: agent
@@ -23,7 +23,7 @@ relations:
     - HW-DR-0104
 ---
 
-# Governs and traces_to are created by an agent, because a session proposes the line and a person types it
+# 83 — Governs and traces_to are created by an agent, because a session proposes the line and a person types it
 
 ## Context
 

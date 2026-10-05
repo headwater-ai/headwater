@@ -4,7 +4,7 @@ status: current
 status_since: 2026-09-07
 summary: "A filter that keeps the tool calls of a harness session log and drops every block the model wrote is an outside observation, because the type tag it reads is the harness's and not the model's. The condition is the channel the log arrives by, and a file the session can open is not one."
 last_verified: 2026-09-07
-title: "A transform over a harness session log is an observed transcript when the log arrives by a channel the model cannot write to"
+title: "59 — A transform over a harness session log is an observed transcript when the log arrives by a channel the model cannot write to"
 provenance:
   warrant: asserted
   agency: agent
@@ -13,7 +13,7 @@ provenance:
   evidence_basis: evidenced
 ---
 
-# A transform over a harness session log is an observed transcript when the log arrives by a channel the model cannot write to
+# 59 — A transform over a harness session log is an observed transcript when the log arrives by a channel the model cannot write to
 
 ## Context
 

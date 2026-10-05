@@ -4,7 +4,7 @@ status: current
 status_since: 2026-08-30
 summary: This repository is public. The owner set 2026-09-08 and opened it on 2026-09-06, and the record stops each run from raising the schedule.
 last_verified: 2026-09-06
-title: "Q31 — Whether this repository becomes public, and when"
+title: "31 — Whether this repository becomes public, and when"
 provenance:
   warrant: accepted
   agency: mixed
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 ---
 
-# Q31 — Whether this repository becomes public, and when
+# 31 — Whether this repository becomes public, and when
 
 ## Context
 

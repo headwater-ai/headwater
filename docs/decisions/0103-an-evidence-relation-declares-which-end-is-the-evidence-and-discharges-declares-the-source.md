@@ -4,7 +4,7 @@ status: current
 status_since: 2026-10-01
 summary: "A relation of the evidence family declares evidence_at, from or to, because the family cannot say which end substantiates the other. Absent is to. discharges declares from, so an evaluation is the evidence for its obligation."
 last_verified: 2026-10-01
-title: "An evidence relation declares which end is the evidence, and discharges declares the source"
+title: "103 — An evidence relation declares which end is the evidence, and discharges declares the source"
 provenance:
   warrant: asserted
   agency: agent
@@ -17,7 +17,7 @@ relations:
     - HW-SPEC-conceptual-model
 ---
 
-# An evidence relation declares which end is the evidence, and discharges declares the source
+# 103 — An evidence relation declares which end is the evidence, and discharges declares the source
 
 ## Context
 

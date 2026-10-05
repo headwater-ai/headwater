@@ -1,6 +1,6 @@
 ---
 id: HW-DR-0013
-title: Q13 — LinkML and SHACL as substrate
+title: 13 — LinkML and SHACL as substrate
 status: current
 status_since: 2026-08-11
 last_verified: 2026-08-11
@@ -19,7 +19,7 @@ relations:
     - HW-EVAL-shacl-worked-example
 ---
 
-# Q13 — LinkML and SHACL as substrate
+# 13 — LinkML and SHACL as substrate
 
 ## Context
 

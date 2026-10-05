@@ -4,7 +4,7 @@ status: current
 status_since: 2026-09-06
 summary: "A manifest says what a package carries, a recipe says what a composer selected, and a flattened manifest records where it came from. Three enforcement points already hold the split, and this record names it as a rule rather than as specification prose."
 last_verified: 2026-09-06
-title: "A package manifest declares no selection, a recipe declares one, and a flattened manifest records provenance"
+title: "53 — A package manifest declares no selection, a recipe declares one, and a flattened manifest records provenance"
 provenance:
   warrant: asserted
   agency: agent
@@ -19,7 +19,7 @@ relations:
     - HW-DR-0003
 ---
 
-# A package manifest declares no selection, a recipe declares one, and a flattened manifest records provenance
+# 53 — A package manifest declares no selection, a recipe declares one, and a flattened manifest records provenance
 
 ## Context
 

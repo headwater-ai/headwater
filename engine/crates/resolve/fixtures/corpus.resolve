@@ -81,6 +81,9 @@ operations
   add.identifier_schemes.how_to_id (.headwater/overlay.yml)
   add.kinds.how_to (.headwater/overlay.yml)
   add.shelves.how_to (.headwater/overlay.yml)
+  add.identifier_schemes.process_how_to_id (.headwater/overlay.yml)
+  add.kinds.process_how_to (.headwater/overlay.yml)
+  add.shelves.process_how_to (.headwater/overlay.yml)
   add.purposes.requirement (.headwater/overlay.yml)
   add.regimes.voice.prospective (.headwater/overlay.yml)
   add.facets.verification_method (.headwater/overlay.yml)
@@ -118,7 +121,6 @@ operations
   add.identifier_schemes.library_doctrine_id (.headwater/overlay.yml)
   add.kinds.library_doctrine (.headwater/overlay.yml)
   add.shelves.library_doctrine (.headwater/overlay.yml)
-  add.shelves.library_index (.headwater/overlay.yml)
   add.surface (.headwater/overlay.yml)
   add_to.projections (.headwater/overlay.yml)
 
@@ -130,10 +132,10 @@ declarations, by member count
   facets: 14 members
   regimes: 3 members
   anchors: 3 members
-  kinds: 27 members
+  kinds: 28 members
   relations: 15 members
   shelves: 24 members
-  identifier_schemes: 19 members
+  identifier_schemes: 20 members
   core: 1 member
   projections: 7 items
   obligations: 51 members

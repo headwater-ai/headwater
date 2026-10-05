@@ -75,7 +75,7 @@
 # carry one line that pipes `site/install.sh` to `sh`. The group holds both
 # pages to that line, holds the script's default release to the page's, and
 # runs the script against a planted release. Step 9 of
-# `docs/how-to/cut-a-release.md` moves the tag in each of these files, and
+# `docs/process/how-to/cut-a-release.md` moves the tag in each of these files, and
 # v0.4.1 was cut with the README and the site still on v0.4.0 (#1348). The group does
 # not ask whether the tag is the newest one, because that case would turn
 # `main` red from the push of a tag until the install text moves. Group 13 asks
@@ -4006,7 +4006,7 @@ echo "the site's install panel, against the page"
 # The site carries its own copy of the install block, and a stranger meets it
 # before the README. The install page carries every route, and the front page
 # carries one line that runs `site/install.sh`. A release moves the README's tag and
-# the site's tag in one step of `docs/how-to/cut-a-release.md`, and nothing
+# the site's tag in one step of `docs/process/how-to/cut-a-release.md`, and nothing
 # compared the two, so v0.4.1 was cut and both still said v0.4.0 (#1348). A
 # half move is worse: the README says one release and the site another, and
 # each is a working download on its own. So every value below is read out of
@@ -4722,7 +4722,7 @@ echo "the engine tag the tutorial installs, and how far the page's tag is behind
 # Group 13 reconciles groups 8 and 11 for the ENGINE tag (#1315). The tutorial
 # installs the engine in its own words: a download block, a macOS archive name,
 # a release-page link and the prose line "This installs version X". Step 9 of
-# `docs/how-to/cut-a-release.md` moves them, and until this group nothing read
+# `docs/process/how-to/cut-a-release.md` moves them, and until this group nothing read
 # them, in the Markdown or in the page `tools/site/render-tutorial.py` renders
 # from it. Group 8 holds the tutorial's TAXONOMY version only.
 #
@@ -4804,7 +4804,7 @@ engine_pin_judge() {
     elif [ "$1" = "$epj_newest" ] || [ "$1" = "$epj_before" ]; then
         echo ok
     else
-        echo "the page pins \`$1\`, and the newest release is \`$epj_newest\` with \`${epj_before:-nothing}\` before it; step 9 of docs/how-to/cut-a-release.md was skipped"
+        echo "the page pins \`$1\`, and the newest release is \`$epj_newest\` with \`${epj_before:-nothing}\` before it; step 9 of docs/process/how-to/cut-a-release.md was skipped"
     fi
 }
 
@@ -4868,7 +4868,7 @@ done
 same "  a page on the newest release passes" ok "$(engine_pin_judge v1.1.0 "$tags")"
 same "  a page one release behind passes, which is the window before step 9" ok "$(engine_pin_judge v1.0.1 "$tags")"
 same "  a page two releases behind is refused" \
-    "the page pins \`v1.0.0\`, and the newest release is \`v1.1.0\` with \`v1.0.1\` before it; step 9 of docs/how-to/cut-a-release.md was skipped" \
+    "the page pins \`v1.0.0\`, and the newest release is \`v1.1.0\` with \`v1.0.1\` before it; step 9 of docs/process/how-to/cut-a-release.md was skipped" \
     "$(engine_pin_judge v1.0.0 "$tags")"
 git clone -q --no-tags --no-checkout "$root" "$scratch/engine-tag/notags" >/dev/null 2>&1
 case $(engine_pin_judge "$engine_tag" "$scratch/engine-tag/notags") in

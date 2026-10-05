@@ -4,10 +4,10 @@ status: draft
 status_since: 2026-09-07
 summary: "The claim store covers an identifier where the file name does not determine it: a shelf that declares a layout, or a scheme that reconciles"
 last_verified: 2026-09-07
-title: "A shelf layout is the second half of what the identifier claim store covers"
+title: "57 — A shelf layout is the second half of what the identifier claim store covers"
 ---
 
-# A shelf layout is the second half of what the identifier claim store covers
+# 57 — A shelf layout is the second half of what the identifier claim store covers
 
 ## Context
 

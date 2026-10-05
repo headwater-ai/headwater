@@ -4,7 +4,7 @@ status: current
 status_since: 2026-08-30
 summary: "Three keys of the family are a label rather than a mechanism. HW-DR-0095 made `requires` a mechanism for one purpose, which is an add into the keys of the entry it names."
 last_verified: 2026-08-30
-title: "Q40 — Whether extends, bundle, requires and an overlay's taxonomy key are a mechanism or a label"
+title: "40 — Whether extends, bundle, requires and an overlay's taxonomy key are a mechanism or a label"
 provenance:
   warrant: accepted
   agency: mixed
@@ -21,7 +21,7 @@ relations:
     - engine/crates/meta/meta-schema.yml
 ---
 
-# Q40 — Whether extends, bundle, requires and an overlay's taxonomy key are a mechanism or a label
+# 40 — Whether extends, bundle, requires and an overlay's taxonomy key are a mechanism or a label
 
 ## Context
 

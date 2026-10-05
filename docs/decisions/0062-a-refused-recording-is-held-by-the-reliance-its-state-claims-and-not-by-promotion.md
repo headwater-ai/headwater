@@ -4,7 +4,7 @@ status: current
 status_since: 2026-09-11
 summary: "A refused transcript fails the run where its state carries the `live` role. A role that says nobody relies on the document leaves the run green."
 last_verified: 2026-09-11
-title: "A refused recording is held by the reliance its state claims, and not by promotion"
+title: "62 — A refused recording is held by the reliance its state claims, and not by promotion"
 provenance:
   warrant: asserted
   agency: agent
@@ -13,7 +13,7 @@ provenance:
   evidence_basis: evidenced
 ---
 
-# A refused recording is held by the reliance its state claims, and not by promotion
+# 62 — A refused recording is held by the reliance its state claims, and not by promotion
 
 ## Context
 

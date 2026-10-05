@@ -1,5 +1,5 @@
 ---
-id: HW-HOW-rotate-or-revoke-the-apt-signing-subkey
+id: HW-PHOW-rotate-or-revoke-the-apt-signing-subkey
 status: current
 status_since: 2026-09-27
 summary: "How a maintainer replaces or withdraws the subkey that signs the Headwater APT metadata, and what each adopter must download again"
@@ -15,7 +15,7 @@ provenance:
 
 # Rotate or revoke the APT signing subkey
 
-**Audience:** the owner of the Headwater primary key. An adopter does one step after a rotation, and step 4 tells them. [HW-DR-0094](../decisions/0094-the-apt-repository-is-served-from-headwater-tools-and-signed-by-a-subkey-the-owner-s-offline-key-certifies.md) is the decision that this guide follows.
+**Audience:** the owner of the Headwater primary key. An adopter does one step after a rotation, and step 4 tells them. [HW-DR-0094](../../decisions/0094-the-apt-repository-is-served-from-headwater-tools-and-signed-by-a-subkey-the-owner-s-offline-key-certifies.md) is the decision that this guide follows.
 
 ## Before you start
 

@@ -4,7 +4,7 @@ status: current
 status_since: 2026-08-30
 summary: What an obligation waits on is a state and not a property, and the closed set holds four values. A required `waiting_on` facet on `obligation_record` takes `ruling`, `build`, `measurement` or `adopter`, and the decision-record bundle declares it.
 last_verified: 2026-08-30
-title: "Q30 — Whether what an obligation waits on is a state or a property, and how many values it takes"
+title: "30 — Whether what an obligation waits on is a state or a property, and how many values it takes"
 provenance:
   warrant: accepted
   agency: agent
@@ -17,7 +17,7 @@ relations:
     - docs/taxonomies/decision-record/bundle.yml
 ---
 
-# Q30 — Whether what an obligation waits on is a state or a property, and how many values it takes
+# 30 — Whether what an obligation waits on is a state or a property, and how many values it takes
 
 ## Context
 

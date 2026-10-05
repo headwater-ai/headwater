@@ -4,7 +4,7 @@ status: current
 status_since: 2026-09-21
 summary: "A full entry that serves neither core purpose names or extends a core-serving kind, and a facet-only entry ships no templates/ directory."
 last_verified: 2026-09-21
-title: "Criterion 5 admits naming or extending a core-serving kind, and a facet-only entry ships no templates directory under criterion 2"
+title: "79 — Criterion 5 admits naming or extending a core-serving kind, and a facet-only entry ships no templates directory under criterion 2"
 provenance:
   warrant: asserted
   agency: agent
@@ -13,7 +13,7 @@ provenance:
   evidence_basis: evidenced
 ---
 
-# Criterion 5 admits naming or extending a core-serving kind, and a facet-only entry ships no templates directory under criterion 2
+# 79 — Criterion 5 admits naming or extending a core-serving kind, and a facet-only entry ships no templates directory under criterion 2
 
 ## Context
 

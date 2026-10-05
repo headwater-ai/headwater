@@ -4,7 +4,7 @@ status: current
 status_since: 2026-09-28
 summary: "Each engine subsystem gets one technical spec, a subsystem_spec on a new shelf, and it governs its crates by one pattern each. No crate gets a functional spec, because interface contracts, spec parts and requirements already state behavior."
 last_verified: 2026-09-28
-title: "An engine subsystem is described by a technical design spec on a shelf of its own, and its behavior stays where it is already written"
+title: "98 — An engine subsystem is described by a technical design spec on a shelf of its own, and its behavior stays where it is already written"
 provenance:
   warrant: accepted
   agency: agent
@@ -18,7 +18,7 @@ relations:
     - HW-DR-0074
 ---
 
-# An engine subsystem is described by a technical design spec on a shelf of its own, and its behavior stays where it is already written
+# 98 — An engine subsystem is described by a technical design spec on a shelf of its own, and its behavior stays where it is already written
 
 ## Context
 

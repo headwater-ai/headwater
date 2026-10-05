@@ -26,7 +26,7 @@ One command printed every figure below:
 
     sh tools/run/shadow-mine.sh
 
-[The how-to](../how-to/mine-the-shadow-mode-routing-log.md) states the procedure that the tool runs, and the header of `tools/run/shadow-mine.sh` states each rule it applies. The tool ran at commit `18cb6c6e2b181ae8ae11900face91f9d6fe6ede2`, at 2026-10-03T04:54:44Z. It read a copy of the log and of the main-thread transcripts, taken at 2026-10-03T04:47:21Z. A second run over the live files at 2026-10-03T04:54:50Z printed the same figures.
+[The how-to](../process/how-to/mine-the-shadow-mode-routing-log.md) states the procedure that the tool runs, and the header of `tools/run/shadow-mine.sh` states each rule it applies. The tool ran at commit `18cb6c6e2b181ae8ae11900face91f9d6fe6ede2`, at 2026-10-03T04:54:44Z. It read a copy of the log and of the main-thread transcripts, taken at 2026-10-03T04:47:21Z. A second run over the live files at 2026-10-03T04:54:50Z printed the same figures.
 
 The log held 96 files and 1,022 lines. Its first line is at 2026-09-20T04:48:19Z, and its last line is at 2026-10-03T04:42:21Z. The transcripts came from 52 project directories.
 

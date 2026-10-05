@@ -4,7 +4,7 @@ status: current
 status_since: 2026-09-28
 summary: "The pages under site/ commit every data-figure element empty. A CI job on each push to main measures the figures into the assembled copy and deploys it with wrangler. Two pull requests that add documents merge without a conflict on the pages."
 last_verified: 2026-09-29
-title: "A figure on a hand-built page is measured when the site is published, and the committed page carries none"
+title: "97 — A figure on a hand-built page is measured when the site is published, and the committed page carries none"
 provenance:
   warrant: accepted
   agency: agent
@@ -32,7 +32,7 @@ relations:
       verified_revision: sha256:c950d1a2863a05d888d81c7ea6bfac412b3cf2c341585825dcf4db19ff52f5a9
 ---
 
-# A figure on a hand-built page is measured when the site is published, and the committed page carries none
+# 97 — A figure on a hand-built page is measured when the site is published, and the committed page carries none
 
 ## Context
 

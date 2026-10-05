@@ -1,6 +1,6 @@
 #!/bin/sh
 # Mine the shadow-mode routing log: steps 1 to 7 of
-# `docs/how-to/mine-the-shadow-mode-routing-log.md` as one command.
+# `docs/process/how-to/mine-the-shadow-mode-routing-log.md` as one command.
 #
 # HW-DR-0064 collects one shadow-log line per prompt, written by
 # `.claude/hooks/intent.sh`, and asks whether the offline embedding path would

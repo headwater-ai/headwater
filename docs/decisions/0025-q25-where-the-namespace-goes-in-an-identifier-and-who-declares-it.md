@@ -4,7 +4,7 @@ status: current
 status_since: 2026-08-30
 summary: The namespace opens every identifier, and a published source declares no namespace at all, because any constant it wrote would be minted by every adopter of it at once.
 last_verified: 2026-09-06
-title: "Q25 — Where the namespace goes in an identifier, and who declares it"
+title: "25 — Where the namespace goes in an identifier, and who declares it"
 provenance:
   warrant: accepted
   agency: agent
@@ -21,7 +21,7 @@ relations:
     - engine/crates/meta/src/identifier.rs
 ---
 
-# Q25 — Where the namespace goes in an identifier, and who declares it
+# 25 — Where the namespace goes in an identifier, and who declares it
 
 ## Context
 

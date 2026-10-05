@@ -226,6 +226,8 @@ docs/decisions/0106-a-governing-document-repoints-a-link-to-a-rule-that-moved-an
   typed: decision
 docs/decisions/0107-the-process-shelves-stay-published-in-a-labeled-section-of-the-site-that-a-search-engine-does-not-index.md
   typed: decision
+docs/decisions/0108-the-site-sidebar-lists-a-shelf-in-path-order-and-the-shelf-index-keeps-the-reading-order.md
+  typed: decision
 docs/decisions/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/doctrine/maturity-model.md
@@ -298,19 +300,9 @@ docs/explanations/how-a-headwater-release-reaches-an-adopter.md
   typed: explanation
 docs/how-to/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
-docs/how-to/cut-a-release.md
-  typed: how_to
-docs/how-to/diagnose-an-isolation-failure.md
-  typed: how_to
-docs/how-to/keep-derived-files-from-conflicting-in-parallel-pull-requests.md
-  typed: how_to
-docs/how-to/mine-the-shadow-mode-routing-log.md
-  typed: how_to
 docs/how-to/publish-your-corpus-as-a-site.md
   typed: how_to
 docs/how-to/relocate-a-shelf.md
-  typed: how_to
-docs/how-to/rotate-or-revoke-the-apt-signing-subkey.md
   typed: how_to
 docs/how-to/wire-headwater-check-into-your-own-workflow.md
   typed: how_to
@@ -1048,6 +1040,18 @@ docs/process/explanations/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/process/explanations/where-a-ci-job-runs.md
   typed: process_explanation
+docs/process/how-to/README.md
+  generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
+docs/process/how-to/cut-a-release.md
+  typed: process_how_to
+docs/process/how-to/diagnose-an-isolation-failure.md
+  typed: process_how_to
+docs/process/how-to/keep-derived-files-from-conflicting-in-parallel-pull-requests.md
+  typed: process_how_to
+docs/process/how-to/mine-the-shadow-mode-routing-log.md
+  typed: process_how_to
+docs/process/how-to/rotate-or-revoke-the-apt-signing-subkey.md
+  typed: process_how_to
 docs/process/obligations/0145-the-ci-job-named-advisory-carries-every-blocking-shell-suite-in-the-repository.md
   typed: process_obligation
 docs/process/obligations/0147-the-skills-fixture-suite-passes-on-an-empty-input-set-and-always-fails-in-a-clone-that-has-not-built-the-engine.md

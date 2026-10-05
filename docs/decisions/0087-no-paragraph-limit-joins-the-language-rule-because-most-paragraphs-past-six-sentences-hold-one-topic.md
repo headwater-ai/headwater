@@ -4,7 +4,7 @@ status: current
 status_since: 2026-09-26
 summary: "The six-sentence paragraph defect is retired before it lands. 50 of 60 sampled paragraphs past six sentences held one topic, so the count misses what rule 6.5 asks, and no word count replaces it."
 last_verified: 2026-09-28
-title: "No paragraph limit joins the language rule, because most paragraphs past six sentences hold one topic"
+title: "87 — No paragraph limit joins the language rule, because most paragraphs past six sentences hold one topic"
 provenance:
   warrant: accepted
   agency: agent
@@ -22,7 +22,7 @@ relations:
     - HW-DR-0005
 ---
 
-# No paragraph limit joins the language rule, because most paragraphs past six sentences hold one topic
+# 87 — No paragraph limit joins the language rule, because most paragraphs past six sentences hold one topic
 
 ## Context
 

@@ -4,7 +4,7 @@ status: current
 status_since: 2026-09-27
 summary: "harper-core found 0 real errors in 187 hand-read findings on 25 documents of this corpus. So the engine does not link it now, Q41 stands, and a stated precision bar or an adopter request reopens it."
 last_verified: 2026-09-28
-title: "Harper does not become part of the engine now, and Q41 stands"
+title: "96 — Harper does not become part of the engine now, and Q41 stands"
 provenance:
   warrant: asserted
   agency: agent
@@ -18,7 +18,7 @@ relations:
     - HW-DR-0024
 ---
 
-# Harper does not become part of the engine now, and Q41 stands
+# 96 — Harper does not become part of the engine now, and Q41 stands
 
 ## Context
 

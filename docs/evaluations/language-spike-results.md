@@ -25,7 +25,7 @@ relations:
 
 # The Q1 spike — results
 
-The risk-retirement spike that [Q1](../spec/09-open-questions.md#q1--implementation-language) requires, run. The argument under test is in the [language evaluation](language-choice.md), and the code is in [`tools/engine/language-spike/`](../../tools/engine/language-spike/). Reproduce with `tools/engine/language-spike/build.sh`.
+The risk-retirement spike that [Q1](../spec/09-open-questions.md#1--implementation-language) requires, run. The argument under test is in the [language evaluation](language-choice.md), and the code is in [`tools/engine/language-spike/`](../../tools/engine/language-spike/). Reproduce with `tools/engine/language-spike/build.sh`.
 
 **All four items pass. Q1 stands: the language is Rust.** Three findings came out of the work that the argument did not predict. One of them is a correction to the specification rather than to the code.
 

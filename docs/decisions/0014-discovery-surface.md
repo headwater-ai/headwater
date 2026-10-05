@@ -1,6 +1,6 @@
 ---
 id: HW-DR-0014
-title: Q14 — Discovery surface
+title: 14 — Discovery surface
 status: current
 status_since: 2026-08-11
 last_verified: 2026-08-11
@@ -19,7 +19,7 @@ relations:
     - HW-EVAL-the-serving-boundary
 ---
 
-# Q14 — Discovery surface
+# 14 — Discovery surface
 
 ## Context
 

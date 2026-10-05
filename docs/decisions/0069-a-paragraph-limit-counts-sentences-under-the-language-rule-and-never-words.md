@@ -4,7 +4,7 @@ status: superseded
 status_since: 2026-09-26
 summary: "No word-length rule joins the check layer. The six-sentence limit of the standard the house regime declares lands as a fifth defect of the language rule, advisory permanently. The paragraph that raised the question is a hand-kept index, and a derived list repairs it where no lexical rule reads it."
 last_verified: 2026-09-17
-title: "A paragraph limit counts sentences under the language rule and never words"
+title: "69 — A paragraph limit counts sentences under the language rule and never words"
 relations:
   governs:
     - engine/crates/check/src/language.rs
@@ -21,7 +21,7 @@ provenance:
   evidence_basis: evidenced
 ---
 
-# A paragraph limit counts sentences under the language rule and never words
+# 69 — A paragraph limit counts sentences under the language rule and never words
 
 ## Context
 

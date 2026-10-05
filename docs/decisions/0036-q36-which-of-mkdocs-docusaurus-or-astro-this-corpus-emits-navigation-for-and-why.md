@@ -4,7 +4,7 @@ status: current
 status_since: 2026-08-30
 summary: "MkDocs is the pick. Its `nav:` is data and not code, and Astro has no native nav format to emit at all."
 last_verified: 2026-10-03
-title: "Q36 — Which of MkDocs, Docusaurus, or Astro this corpus emits navigation for, and why"
+title: "36 — Which of MkDocs, Docusaurus, or Astro this corpus emits navigation for, and why"
 provenance:
   warrant: accepted
   agency: mixed
@@ -22,7 +22,7 @@ relations:
     - HW-SPEC-engine-architecture
 ---
 
-# Q36 — Which of MkDocs, Docusaurus, or Astro this corpus emits navigation for, and why
+# 36 — Which of MkDocs, Docusaurus, or Astro this corpus emits navigation for, and why
 
 ## Context
 

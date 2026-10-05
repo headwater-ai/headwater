@@ -1,5 +1,5 @@
 ---
-id: HW-HOW-diagnose-an-isolation-failure
+id: HW-PHOW-diagnose-an-isolation-failure
 status: current
 status_since: 2026-09-18
 summary: "Five questions separate a failure of your change from a failure of the checkout it ran in, and each one is one command."
@@ -31,7 +31,7 @@ An isolation failure belongs to the checkout rather than to the change inside it
 
 You need a shell in the worktree where the failure happened. Step 1 tells you whether you also need a built engine.
 
-[DEVELOPING.md](../../DEVELOPING.md), under the heading "Where state lives when several sessions run at once", states the four rules these steps test. [The isolation evaluation](../process/evaluations/one-clone-many-agents-how-this-repository-isolates-the-sessions-that-build-it.md) states why each rule is the shape it is. This guide asks the questions in the order that finds the most failures first.
+[DEVELOPING.md](../../../DEVELOPING.md), under the heading "Where state lives when several sessions run at once", states the four rules these steps test. [The isolation evaluation](../evaluations/one-clone-many-agents-how-this-repository-isolates-the-sessions-that-build-it.md) states why each rule is the shape it is. This guide asks the questions in the order that finds the most failures first.
 
 Find your symptom, and go to the step beside it.
 

@@ -28,6 +28,8 @@ docs/process/evaluations/README.md
   1:1: no front matter; a document declares its facets in a `---` block on the first line
 docs/process/explanations/README.md
   1:1: no front matter; a document declares its facets in a `---` block on the first line
+docs/process/how-to/README.md
+  1:1: no front matter; a document declares its facets in a `---` block on the first line
 docs/process/obligations/README.md
   1:1: no front matter; a document declares its facets in a `---` block on the first line
 docs/process/specs/README.md

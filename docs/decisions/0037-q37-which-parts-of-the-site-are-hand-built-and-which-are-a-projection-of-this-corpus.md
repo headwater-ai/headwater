@@ -4,7 +4,7 @@ status: current
 status_since: 2026-08-30
 summary: "Everything under `site/` is hand-built and the corpus is the generated projection. A hand-built page states no figure a person typed, and nothing checks that."
 last_verified: 2026-08-30
-title: "Q37 — Which parts of the site are hand-built and which are a projection of this corpus"
+title: "37 — Which parts of the site are hand-built and which are a projection of this corpus"
 provenance:
   warrant: accepted
   agency: mixed
@@ -30,7 +30,7 @@ relations:
     - .headwater/notes/website-design-brief.md
 ---
 
-# Q37 — Which parts of the site are hand-built and which are a projection of this corpus
+# 37 — Which parts of the site are hand-built and which are a projection of this corpus
 
 ## Context
 

@@ -4,7 +4,7 @@ status: current
 status_since: 2026-08-30
 summary: "\"One screen\" is retired as a claim about a terminal and replaced by a claim about content. The first screen carries one line per entry, and the ceiling that follows from it is 64 lines."
 last_verified: 2026-09-18
-title: "Q42 — What \"one screen\" means for the first help screen"
+title: "42 — What \"one screen\" means for the first help screen"
 provenance:
   warrant: accepted
   agency: mixed
@@ -20,7 +20,7 @@ relations:
     - engine/crates/cli/tests/help.rs
 ---
 
-# Q42 — What "one screen" means for the first help screen
+# 42 — What "one screen" means for the first help screen
 
 ## Context
 

@@ -1,5 +1,5 @@
 ---
-id: HW-HOW-keep-derived-files-from-conflicting-in-parallel-pull-requests
+id: HW-PHOW-keep-derived-files-from-conflicting-in-parallel-pull-requests
 status: current
 status_since: 2026-09-27
 summary: "Commit the derived files a person reads on the forge, compute the graph export where a build step reads it, and union the capture-cost store."
@@ -43,7 +43,7 @@ relations:
 - `headwater generate --check`, `headwater taxonomy resolve --check` and `git ls-files .headwater/export.json` all agree: the first two exit 0 and the last prints nothing.
 - In a local merge or rebase, two branches that add documents to two different shelves with `headwater new` merge with no conflict. This includes a branch that edits a governed file and records a new `verified_revision`.
 - A forge merge of the same two pull requests can still conflict on `.headwater/capture-cost.jsonl`. Nobody has measured whether GitHub applies `merge=union`. It did not apply `-merge` when this repository measured that attribute on 2026-09-24.
-- One conflict stays, on a shelf whose identifiers are numbers. Two branches that each run `headwater new decision` both take the next number. The merge conflicts on the shelf index and on the claim file of that number under `.headwater/ids/`, which is by design ([HW-DR-0054](../decisions/0054-the-upper-bound-of-a-reconcile-first-allocator-is-the-corpus-and-a-claim-store.md)). `headwater generate` alone does not resolve it, because two documents then hold one identifier and `headwater check --strict` exits 1.
+- One conflict stays, on a shelf whose identifiers are numbers. Two branches that each run `headwater new decision` both take the next number. The merge conflicts on the shelf index and on the claim file of that number under `.headwater/ids/`, which is by design ([HW-DR-0054](../../decisions/0054-the-upper-bound-of-a-reconcile-first-allocator-is-the-corpus-and-a-claim-store.md)). `headwater generate` alone does not resolve it, because two documents then hold one identifier and `headwater check --strict` exits 1.
 
 ## If two branches took the same number
 

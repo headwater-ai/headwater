@@ -4,7 +4,7 @@ status: current
 status_since: 2026-09-11
 summary: "Routing gains the shadow-mode embedding path, amended in four places. The intent hook is the only writer, and the vectors are a cache rather than a generated artifact. The model is pinned rather than committed, and the recorder gains a join key and a liveness fact."
 last_verified: 2026-10-03
-title: "Q64 — Whether intent-time routing gains an offline embedding path in shadow mode"
+title: "64 — Whether intent-time routing gains an offline embedding path in shadow mode"
 provenance:
   warrant: asserted
   agency: mixed
@@ -16,7 +16,7 @@ relations:
     - .claude/hooks/intent.sh
 ---
 
-# Q64 — Whether intent-time routing gains an offline embedding path in shadow mode
+# 64 — Whether intent-time routing gains an offline embedding path in shadow mode
 
 ## Context
 

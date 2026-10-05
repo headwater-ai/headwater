@@ -4,7 +4,7 @@ status: current
 status_since: 2026-09-11
 summary: "Nine required facets went unwritten on two generated documents. The engine derives seven from committed bytes, the emitter composes the summary, and the declaration block stays closed at three scalars."
 last_verified: 2026-10-03
-title: "Every required facet of a generated document is derived, and the emitter composes the summary"
+title: "63 — Every required facet of a generated document is derived, and the emitter composes the summary"
 provenance:
   warrant: asserted
   agency: agent
@@ -19,7 +19,7 @@ relations:
       verified_revision: sha256:a6468fa333c53d996544e176099a80b804799d13bc12b0609f773f44ddd90244
 ---
 
-# Every required facet of a generated document is derived, and the emitter composes the summary
+# 63 — Every required facet of a generated document is derived, and the emitter composes the summary
 
 ## Context
 

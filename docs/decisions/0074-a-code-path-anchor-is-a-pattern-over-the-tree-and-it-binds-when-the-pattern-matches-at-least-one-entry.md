@@ -4,7 +4,7 @@ status: current
 status_since: 2026-09-20
 summary: "A `code_path` anchor is a pattern in the shelf language or a list of them, and a bare path matches one entry. An edge binds when every pattern matches at least one entry, and a query matches a path against the patterns."
 last_verified: 2026-09-20
-title: "A code path anchor is a pattern over the tree, and it binds when the pattern matches at least one entry"
+title: "74 — A code path anchor is a pattern over the tree, and it binds when the pattern matches at least one entry"
 relations:
   constrains:
     - HW-DR-0029
@@ -26,7 +26,7 @@ provenance:
   evidence_basis: evidenced
 ---
 
-# A code path anchor is a pattern over the tree, and it binds when the pattern matches at least one entry
+# 74 — A code path anchor is a pattern over the tree, and it binds when the pattern matches at least one entry
 
 ## Context
 

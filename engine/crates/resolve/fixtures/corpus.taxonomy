@@ -582,6 +582,23 @@ kinds:
         - "Why it is this way"
     voice: declarative
     write_when: "a reader needs to know why the build process works the way it does, apart from any one stage"
+  process_how_to:
+    facets:
+      require:
+        - title
+    identifier:
+      scheme: process_how_to_id
+    is_a: governed_document
+    language: ste_house
+    lifecycle: standard
+    purpose: procedure
+    sections:
+      require:
+        - "Before you start"
+        - Steps
+        - "How to know it worked"
+    voice: declarative
+    write_when: "a contributor to this repository needs the steps of one task that only this repository's maintainers run, and no page gives them"
   process_obligation:
     facets:
       require:
@@ -919,13 +936,8 @@ shelves:
   library_doctrine:
     homogeneous: true
     kind: library_doctrine
-    path: "docs/taxonomies/*/doctrine.md"
+    path: "docs/taxonomies/**"
     title: "The canonical taxonomy library"
-  library_index:
-    homogeneous: true
-    kind: library_doctrine
-    path: docs/taxonomies/README.md
-    title: "The library index"
   obligations:
     homogeneous: true
     kind: obligation_record
@@ -963,6 +975,11 @@ shelves:
     kind: process_explanation
     path: "docs/process/explanations/**"
     title: "Process explanations"
+  process_how_to:
+    homogeneous: true
+    kind: process_how_to
+    path: "docs/process/how-to/**"
+    title: "Process how-to guides"
   process_obligations:
     homogeneous: true
     kind: process_obligation
@@ -1059,6 +1076,10 @@ identifier_schemes:
     allocation: minted-once
     namespace: HW
     pattern: "{namespace}-PEXP-{slug}"
+  process_how_to_id:
+    allocation: minted-once
+    namespace: HW
+    pattern: "{namespace}-PHOW-{slug}"
   register_id:
     allocation: minted-once
     namespace: HW
@@ -1126,6 +1147,7 @@ projections:
       - process_obligations
       - explanations
       - process_explanations
+      - process_how_to
       - subsystems
     output: "{shelf}/README.md"
   - kind: shelf_sections
@@ -1169,7 +1191,6 @@ projections:
           - title: "Taxonomy library"
             for:
               - library_doctrine
-              - library_index
           - title: "Decisions and evidence"
             for:
               - decisions
@@ -1188,6 +1209,7 @@ projections:
           - process_decisions
           - process_evaluations
           - process_obligations
+          - process_how_to
           - process_explanations
 obligations:
   OB-COV-1:

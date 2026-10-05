@@ -22,7 +22,7 @@ relations:
 
 # The Headwater checks in SHACL — a worked example
 
-The companion to the [LinkML worked example](linkml-worked-example.md), and the second half of the evidence for [Q13](../spec/09-open-questions.md#q13--linkml-and-shacl-as-substrate).
+The companion to the [LinkML worked example](linkml-worked-example.md), and the second half of the evidence for [Q13](../spec/09-open-questions.md#13--linkml-and-shacl-as-substrate).
 
 The two are not alternatives. LinkML is a **schema** language — it says what a document is. SHACL is a **constraint** language over **graphs** — it says what must hold across them. So SHACL maps onto Headwater's *checks*, not its taxonomy, and it lands exactly where the LinkML exercise found the boundary: whole-graph invariants.
 
@@ -232,7 +232,7 @@ You *could* lift more in: project headings as triples and `sh:qualifiedValueShap
 
 The Markdown-to-RDF projector becomes the most trusted component in the pipeline, and nothing in SHACL validates it. A projector that drops a document, mistypes it, or misparses front matter produces a graph that does not represent the corpus. And SHACL will happily report that graph as conformant.
 
-This is a new trust boundary that did not exist when checks read the documents directly, and it needs its own fidelity tests. It also bears on [Q6](../spec/09-open-questions.md#q6--where-the-corpus-graph-lives-at-rest). If RDF is a derived view, the derivation is a component. If it is stored, it is a second copy that can drift from the Markdown.
+This is a new trust boundary that did not exist when checks read the documents directly, and it needs its own fidelity tests. It also bears on [Q6](../spec/09-open-questions.md#6--where-the-corpus-graph-lives-at-rest). If RDF is a derived view, the derivation is a component. If it is stored, it is a second copy that can drift from the Markdown.
 
 ### Problem two: silent passes
 

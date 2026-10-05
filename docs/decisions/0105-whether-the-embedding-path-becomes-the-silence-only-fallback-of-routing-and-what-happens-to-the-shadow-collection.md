@@ -4,7 +4,7 @@ status: draft
 status_since: 2026-10-03
 summary: "Proposed, not ruled: the embedding path is not routing's silence-only fallback, because it is never silent and nothing grades its recall. The collection goes on."
 last_verified: 2026-10-03
-title: "Whether the embedding path becomes the silence-only fallback of routing, and what happens to the shadow collection"
+title: "105 — Whether the embedding path becomes the silence-only fallback of routing, and what happens to the shadow collection"
 provenance:
   warrant: asserted
   agency: agent
@@ -16,7 +16,7 @@ relations:
     - HW-DR-0064
 ---
 
-# Whether the embedding path becomes the silence-only fallback of routing, and what happens to the shadow collection
+# 105 — Whether the embedding path becomes the silence-only fallback of routing, and what happens to the shadow collection
 
 **This record is a proposal. The owner has not ruled on it.** It stays at `draft` until the owner rules, and nothing in it binds a build before then.
 

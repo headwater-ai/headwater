@@ -4,7 +4,7 @@ status: current
 status_since: 2026-09-26
 summary: "A live document with any relation to a draft is a warning, unless the relation writes a state onto its target"
 last_verified: 2026-09-26
-title: "A live document that rests on a draft one is reported over every relation, because a draft leaves no record to cite"
+title: "85 — A live document that rests on a draft one is reported over every relation, because a draft leaves no record to cite"
 provenance:
   warrant: asserted
   agency: agent
@@ -18,7 +18,7 @@ relations:
     - HW-SPEC-authoring-and-lifecycle
 ---
 
-# A live document that rests on a draft one is reported over every relation, because a draft leaves no record to cite
+# 85 — A live document that rests on a draft one is reported over every relation, because a draft leaves no record to cite
 
 ## Context
 

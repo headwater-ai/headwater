@@ -4,7 +4,7 @@ status: current
 status_since: 2026-09-30
 summary: "A scaffold edits no target of a symmetric relation. A far half in a live target reads as a live document that rests on a draft. It sets no supersedes state, which check --fix writes."
 last_verified: 2026-09-30
-title: "new writes no far half of a symmetric relation and no state on a supersedes target"
+title: "101 — The new command writes no far half of a symmetric relation and no state on a supersedes target"
 provenance:
   warrant: asserted
   agency: agent
@@ -16,7 +16,7 @@ relations:
     - HW-DR-0086
 ---
 
-# new writes no far half of a symmetric relation and no state on a supersedes target
+# 101 — The new command writes no far half of a symmetric relation and no state on a supersedes target
 
 ## Context
 

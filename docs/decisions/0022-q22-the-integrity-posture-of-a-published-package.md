@@ -4,7 +4,7 @@ status: current
 status_since: 2026-08-14
 summary: A package digest checks a fetched artifact against a pin that a person committed, and it is never a signature. The in-house SHA-256 is held against a second implementation rather than replaced by a dependency.
 last_verified: 2026-08-14
-title: "Q22 — The integrity posture of a published package"
+title: "22 — The integrity posture of a published package"
 provenance:
   warrant: proposed
   agency: mixed
@@ -20,7 +20,7 @@ relations:
     - HW-SPEC-distribution-and-federation
 ---
 
-# Q22 — The integrity posture of a published package
+# 22 — The integrity posture of a published package
 
 ## Context
 

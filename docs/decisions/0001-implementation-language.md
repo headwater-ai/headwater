@@ -1,6 +1,6 @@
 ---
 id: HW-DR-0001
-title: Q1 — Implementation language
+title: 1 — Implementation language
 status: current
 status_since: 2026-08-11
 last_verified: 2026-08-11
@@ -18,7 +18,7 @@ relations:
     - HW-EVAL-language-spike-results
 ---
 
-# Q1 — Implementation language
+# 1 — Implementation language
 
 ## Context
 

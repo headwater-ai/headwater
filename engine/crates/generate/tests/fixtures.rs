@@ -596,17 +596,17 @@ fn every_output_carries_its_own_marker() {
     }
 }
 
-/// This repository generates its sixty-three artifacts, and it says why for
+/// This repository generates its sixty-four artifacts, and it says why for
 /// everything else.
 ///
 /// A property and not a recording, for the reason the query crate states about
 /// its own repository run: the corpus is prose somebody edits. What is asserted
 /// is what a prose edit must not change.
 ///
-/// **Twenty of the sixty-three are shelf indexes, one per shelf that holds a
+/// **Twenty-one of the sixty-four are shelf indexes, one per shelf that holds a
 /// document.** The first is the decisions shelf, which the package has declared
 /// since the first-run walkthrough and which produced a reason rather than a
-/// file until #124 filled that shelf. The other nineteen are the overlay's own
+/// file until #124 filled that shelf. The other twenty are the overlay's own
 /// entry, in the order its `for` list names them, and the specification index
 /// leads it because that is the list the root README used to carry by hand.
 /// #528 is why the seven after it are there: each of those shelf roots answered
@@ -656,7 +656,7 @@ fn every_output_carries_its_own_marker() {
 /// compares bytes, so a contributor who edits a `summary` and does not
 /// regenerate fails this test before CI runs.
 #[test]
-fn this_repository_generates_its_sixty_three_artifacts_and_accounts_for_the_rest() {
+fn this_repository_generates_its_sixty_four_artifacts_and_accounts_for_the_rest() {
     let root = repository_root();
     let resolved = headwater_resolve::repository(&root)
         .unwrap_or_else(|errors| panic!("{}", headwater_resolve::render_errors(&errors)));
@@ -736,6 +736,7 @@ fn this_repository_generates_its_sixty_three_artifacts_and_accounts_for_the_rest
             "docs/process/obligations/README.md",
             "docs/explanations/README.md",
             "docs/process/explanations/README.md",
+            "docs/process/how-to/README.md",
             "docs/subsystems/README.md",
             "docs/spec/09-open-questions.md",
             "docs/probe-results/campaign-of-2026-09-28-campaign-tier-absent-arm-navigability.md",
@@ -781,7 +782,7 @@ fn this_repository_generates_its_sixty_three_artifacts_and_accounts_for_the_rest
             ".headwater/nav.yml",
             descriptor::PATH
         ],
-        "this repository writes an index for each of its twenty shelves that hold a \
+        "this repository writes an index for each of its twenty-one shelves that hold a \
          document, then the redirect map, the verb index, the consumer surface page, the \
          site navigation and the descriptor, in that order"
     );
@@ -2193,8 +2194,8 @@ projections:
 ///
 /// It also parses the emitted bytes with `saphyr`, a YAML parser this engine
 /// did not write, rather than trusting the bytes by eye, and checks the
-/// `nav` sequence's order against [`Surface::by_precedence`] directly — the
-/// same derivation `site_nav.rs` itself calls, read back through a second
+/// `nav` sequence's order against the documents' paths directly, which is the
+/// order `site_nav.rs` sorts them into, read back through a second
 /// implementation.
 #[test]
 fn a_declared_site_nav_is_held_to_regeneration() {
@@ -2286,7 +2287,7 @@ projections:
     );
 
     // Stronger than eyeballing: an independent parser, and the order checked
-    // against `by_precedence` rather than assumed.
+    // against path order rather than assumed.
     let docs =
         YamlOwned::load_from_str(&bytes_after_write).expect("the emitted file is valid YAML");
     let doc = docs.first().expect("one YAML document");
@@ -2322,7 +2323,7 @@ projections:
             .iter()
             .map(|document| surface.pointer(document))
             .collect();
-        surface.by_precedence(&mut expected);
+        expected.sort_by(|a, b| a.path.cmp(&b.path));
 
         let entries = entries
             .as_sequence()
@@ -2349,7 +2350,7 @@ projections:
                 .expect("every fixture document sits under the fixture corpus root");
             assert_eq!(
                 path, expected_path,
-                "{shelf_name}'s order does not match `by_precedence`"
+                "{shelf_name}'s order is not path order"
             );
         }
     }
@@ -2507,7 +2508,7 @@ fn a_site_nav_opens_each_group_with_that_shelf_s_generated_index() {
         );
 
         // Everything after it is still the documents of the shelf, in the
-        // order `by_precedence` derives, unmoved by the index in front.
+        // path order, unmoved by the index in front.
         let on_shelf: Vec<_> = surface
             .documents()
             .into_iter()
@@ -2522,7 +2523,7 @@ fn a_site_nav_opens_each_group_with_that_shelf_s_generated_index() {
             .iter()
             .map(|document| surface.pointer(document))
             .collect();
-        surface.by_precedence(&mut expected);
+        expected.sort_by(|a, b| a.path.cmp(&b.path));
         assert_eq!(
             entries.len(),
             expected.len() + 1,
@@ -2538,7 +2539,7 @@ fn a_site_nav_opens_each_group_with_that_shelf_s_generated_index() {
                 .expect("every fixture document sits under the fixture corpus root");
             assert_eq!(
                 path, expected_path,
-                "{shelf_name}'s order does not match `by_precedence`"
+                "{shelf_name}'s order is not path order"
             );
         }
     }

@@ -1,5 +1,5 @@
 #!/bin/sh
-# What holds `docs/how-to/cut-a-release.md`, the guide to cutting a release.
+# What holds `docs/process/how-to/cut-a-release.md`, the guide to cutting a release.
 #
 # Run it from anywhere:
 #     sh tools/repo/release-guide-fixtures.sh
@@ -92,7 +92,7 @@
 set -u
 
 root=$(cd "$(dirname "$0")/../.." && pwd)
-guide_rel=docs/how-to/cut-a-release.md
+guide_rel=docs/process/how-to/cut-a-release.md
 
 scratch=$(mktemp -d "${TMPDIR:-/tmp}/release-guide-fixtures.XXXXXXXX") || exit 1
 trap 'rm -rf "$scratch"' EXIT HUP INT TERM
@@ -341,7 +341,7 @@ cites() {
 
 # copy_tree DEST — the inputs of both judges, copied under DEST.
 copy_tree() {
-    mkdir -p "$1/.github/workflows" "$1/docs/how-to" "$1/docs/decisions" "$1/docs/process/decisions"
+    mkdir -p "$1/.github/workflows" "$1/docs/process/how-to" "$1/docs/decisions" "$1/docs/process/decisions"
     for wf in "$root"/.github/workflows/*.yml "$root"/.github/workflows/*.yaml; do
         [ -f "$wf" ] && cp "$wf" "$1/.github/workflows/"
     done
@@ -953,7 +953,7 @@ sys.exit(1)
 apt_route_files="docs/decisions/0094-the-apt-repository-is-served-from-headwater-tools-and-signed-by-a-subkey-the-owner-s-offline-key-certifies.md
 tools/site/fetch-apt.sh
 .github/workflows/ci.yml
-docs/how-to/rotate-or-revoke-the-apt-signing-subkey.md
+docs/process/how-to/rotate-or-revoke-the-apt-signing-subkey.md
 README.md"
 
 apt_route() {

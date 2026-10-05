@@ -14,10 +14,10 @@ provenance:
 relations:
   governs:
     - engine/Cargo.toml
-title: "Q23 — The engine lint floor"
+title: "23 — The engine lint floor"
 ---
 
-# Q23 — The engine lint floor
+# 23 — The engine lint floor
 
 ## Context
 

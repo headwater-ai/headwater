@@ -22,7 +22,7 @@
 
 lock:
   format: 3
-  digest: sha256:039554ed1e794e2ba1660fd0d1dcf300233a26008f70933ebe01cd185035e00a
+  digest: sha256:f832eaaa7db51d1892775b7b142f08a59fabdfb2b79c05ac97de0bbd1ef4ba73
   rules: 2
   package: headwater/standard
   version: 4.16.0
@@ -36,7 +36,7 @@ lock:
     - path: .headwater/packages/headwater-standard/bundles/decision-record/bundle.yml
       digest: sha256:84e2d9770dfd50107a46f099af4d51666455a161eacf803cf05cfd303dd8f88d
     - path: .headwater/overlay.yml
-      digest: sha256:f969f552f5ad6fc304ec31b8ee734535a579cb93f98300541900ce11061aea57
+      digest: sha256:239864513c556055965008bd9abebb0bc8d84958fdb585f5a43bb5eaa82824e3
 
 # The adoption payload: the debt this corpus declared when the taxonomy first
 # reached it. Every other line of this file is generated and this block is not.
@@ -668,6 +668,23 @@ resolved:
           - "Why it is this way"
       voice: declarative
       write_when: "a reader needs to know why the build process works the way it does, apart from any one stage"
+    process_how_to:
+      facets:
+        require:
+          - title
+      identifier:
+        scheme: process_how_to_id
+      is_a: governed_document
+      language: ste_house
+      lifecycle: standard
+      purpose: procedure
+      sections:
+        require:
+          - "Before you start"
+          - Steps
+          - "How to know it worked"
+      voice: declarative
+      write_when: "a contributor to this repository needs the steps of one task that only this repository's maintainers run, and no page gives them"
     process_obligation:
       facets:
         require:
@@ -1005,13 +1022,8 @@ resolved:
     library_doctrine:
       homogeneous: true
       kind: library_doctrine
-      path: "docs/taxonomies/*/doctrine.md"
+      path: "docs/taxonomies/**"
       title: "The canonical taxonomy library"
-    library_index:
-      homogeneous: true
-      kind: library_doctrine
-      path: docs/taxonomies/README.md
-      title: "The library index"
     obligations:
       homogeneous: true
       kind: obligation_record
@@ -1049,6 +1061,11 @@ resolved:
       kind: process_explanation
       path: "docs/process/explanations/**"
       title: "Process explanations"
+    process_how_to:
+      homogeneous: true
+      kind: process_how_to
+      path: "docs/process/how-to/**"
+      title: "Process how-to guides"
     process_obligations:
       homogeneous: true
       kind: process_obligation
@@ -1145,6 +1162,10 @@ resolved:
       allocation: minted-once
       namespace: HW
       pattern: "{namespace}-PEXP-{slug}"
+    process_how_to_id:
+      allocation: minted-once
+      namespace: HW
+      pattern: "{namespace}-PHOW-{slug}"
     register_id:
       allocation: minted-once
       namespace: HW
@@ -1212,6 +1233,7 @@ resolved:
         - process_obligations
         - explanations
         - process_explanations
+        - process_how_to
         - subsystems
       output: "{shelf}/README.md"
     - kind: shelf_sections
@@ -1255,7 +1277,6 @@ resolved:
             - title: "Taxonomy library"
               for:
                 - library_doctrine
-                - library_index
             - title: "Decisions and evidence"
               for:
                 - decisions
@@ -1274,6 +1295,7 @@ resolved:
             - process_decisions
             - process_evaluations
             - process_obligations
+            - process_how_to
             - process_explanations
   obligations:
     OB-COV-1:

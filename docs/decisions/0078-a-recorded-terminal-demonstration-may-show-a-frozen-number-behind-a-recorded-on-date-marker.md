@@ -4,7 +4,7 @@ status: current
 status_since: 2026-09-20
 summary: "The owner relaxed principle 11 for one asset. A front-page recording may show a number a live run does not produce, if a recorded-on-<date> marker stands beside it. Nothing compares that number against a later run."
 last_verified: 2026-09-30
-title: "A recorded terminal demonstration may show a frozen number behind a recorded-on-date marker"
+title: "78 — A recorded terminal demonstration may show a frozen number behind a recorded-on-date marker"
 relations:
   supersedes:
     - HW-DR-0061
@@ -23,7 +23,7 @@ provenance:
   evidence_basis: evidenced
 ---
 
-# A recorded terminal demonstration may show a frozen number behind a recorded-on-date marker
+# 78 — A recorded terminal demonstration may show a frozen number behind a recorded-on-date marker
 
 ## Context
 

@@ -1,6 +1,6 @@
 ---
 id: HW-DR-0002
-title: Q2 — Schema format
+title: 2 — Schema format
 status: current
 status_since: 2026-08-11
 last_verified: 2026-08-11
@@ -17,7 +17,7 @@ relations:
     - HW-EVAL-schema-format-walkthrough
 ---
 
-# Q2 — Schema format
+# 2 — Schema format
 
 ## Context
 

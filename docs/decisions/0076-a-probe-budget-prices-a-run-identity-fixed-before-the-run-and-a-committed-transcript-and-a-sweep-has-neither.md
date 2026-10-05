@@ -4,7 +4,7 @@ status: current
 status_since: 2026-09-20
 summary: "Rules that a budget prices a run identity a probe has and a sweep does not, and names the sweep outside every tier. States where .headwater/probe.yml lives and why."
 last_verified: 2026-09-20
-title: "A probe budget prices a run identity fixed before the run, and a committed transcript, and a sweep has neither"
+title: "76 — A probe budget prices a run identity fixed before the run, and a committed transcript, and a sweep has neither"
 provenance:
   warrant: asserted
   agency: agent
@@ -16,7 +16,7 @@ relations:
     - .headwater/probe.yml
 ---
 
-# A probe budget prices a run identity fixed before the run, and a committed transcript, and a sweep has neither
+# 76 — A probe budget prices a run identity fixed before the run, and a committed transcript, and a sweep has neither
 
 ## Context
 
