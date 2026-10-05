@@ -13,7 +13,7 @@ description: The rulings, paths and kinds of this repository's own corpus that t
 
 ## Beside headwater-authoring
 
-The concrete kinds are `acceptance_criterion`, `decision`, `decision_register`, `design_spec`, `evaluation`, `explanation`, `how_to`, `interface_contract`, `library_doctrine`, `obligation_record`, `obligation_register`, `probe`, `probe_result`, `probe_transcript`, `process_decision`, `process_evaluation`, `process_explanation`, `process_obligation`, `process_spec`, `requirement`, `review_prompt`, `review_record`, `specification`, `subsystem_spec`, `tutorial` and `verification`.
+The concrete kinds are `acceptance_criterion`, `decision`, `decision_register`, `design_spec`, `evaluation`, `explanation`, `how_to`, `interface_contract`, `library_doctrine`, `obligation_record`, `obligation_register`, `probe`, `probe_result`, `probe_transcript`, `process_decision`, `process_evaluation`, `process_explanation`, `process_how_to`, `process_obligation`, `process_spec`, `requirement`, `review_prompt`, `review_record`, `specification`, `subsystem_spec`, `tutorial` and `verification`.
 
 A `Write` of a new document under `docs/` is refused by the `PreToolUse` hook, which names `headwater new`. An `Edit` of a document that already exists passes, and that is the repair path: scaffold first, then edit the file the verb wrote. [HW-OBL-0106](../../../docs/obligations/0106-a-shelf-layout-names-a-file-at-birth-and-no-rule-reads-it.md) records that no rule reads a shelf layout after birth.
 
