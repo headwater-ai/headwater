@@ -182,19 +182,19 @@ echo "over a renamed document"
 # process shelf. `--repo` points the checker at it.
 repo="$scratch/repo"
 rm -rf "$repo"
-mkdir -p "$repo/docs/obligations" "$repo/docs/taxonomies/x/fixtures"
-printf 'exclude_docs: |\n  taxonomies/*/fixtures/\n  taxonomies/*/templates/\n' >"$repo/mkdocs.yml"
+mkdir -p "$repo/docs/obligations" "$repo/docs/doctrine"
+printf 'exclude_docs: |\n  doctrine/\n  w3id/\n' >"$repo/mkdocs.yml"
 printf '# old\n' >"$repo/docs/obligations/0203-old.md"
-printf '# fixture\n' >"$repo/docs/taxonomies/x/fixtures/README.md"
+printf '# doctrine\n' >"$repo/docs/doctrine/old.md"
 printf '# gone\n' >"$repo/docs/obligations/0300-gone.md"
 g() { git -C "$repo" -c user.name=t -c user.email=t@example.com "$@"; }
 g init -q . 2>/dev/null || git init -q "$repo"
 g add -A
 g commit -q -m base
 base=$(g rev-parse HEAD)
-mkdir -p "$repo/docs/process/obligations" "$repo/docs/taxonomies/y/fixtures"
+mkdir -p "$repo/docs/process/obligations"
 g mv docs/obligations/0203-old.md docs/process/obligations/0203-old.md
-g mv docs/taxonomies/x/fixtures/README.md docs/taxonomies/y/fixtures/README.md
+g mv docs/doctrine/old.md docs/doctrine/new.md
 g commit -q -am "move"
 
 # 12. The document moved and nothing answers the old URL.
@@ -217,10 +217,10 @@ status=$(run "$t" --base "$base" --repo "$repo")
 report "a renamed document whose old URL is still served passes" 0 "$status"
 
 # 15. A document that exclude_docs removes was never served, so moving it costs
-#     nothing. Case 12 moved a fixture as well as the obligation and left both
-#     URLs unanswered, so its report must name the obligation and never the
-#     fixture.
-if grep -q 'fixtures' "$scratch/err12" || ! grep -q '0203-old' "$scratch/err12"; then
+#     nothing. Case 12 moved a doctrine page as well as the obligation and left
+#     both URLs unanswered, so its report must name the obligation and never
+#     the doctrine page.
+if grep -q 'doctrine' "$scratch/err12" || ! grep -q '0203-old' "$scratch/err12"; then
     failed=$((failed + 1)); echo "  FAIL  a renamed excluded document is not read"
 else
     passed=$((passed + 1)); echo "  ok    a renamed excluded document is not read"
