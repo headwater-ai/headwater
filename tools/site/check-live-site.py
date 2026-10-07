@@ -22,6 +22,14 @@ WHAT IT ASKS
   4. `http://` answers a permanent redirect to `https://` for the origin and for
      one page.
 
+  `--settle SECONDS` first waits, at most that long, until the host answers the
+  first static rule of `_redirects` with its status. `wrangler deploy` returns
+  before every edge serves the new version, and a 404 is an answer and not a
+  failure to retry, so a check that starts in the second the deploy ends reads
+  the previous site (it did, on the first deploy that ran it). A host that never
+  settles is not waited on past SECONDS: the questions are asked anyway and the
+  findings say what the host answered.
+
   A failing request is retried, `--retries` times a few seconds apart, because
   a deploy takes a moment to reach every edge. A finding that survives the
   retries is a finding.
@@ -33,7 +41,7 @@ WHAT IT ASKS
 USAGE
 
   python3 tools/site/check-live-site.py [ORIGIN] [--redirects FILE]
-      [--retries N] [--workers N] [--skip-http-check] [--quiet]
+      [--retries N] [--workers N] [--settle SECONDS] [--skip-http-check] [--quiet]
 
   ORIGIN defaults to `https://headwater.tools`. Exit 0 when every question is
   answered well, 1 with each finding on standard error, 2 when the sitemap
@@ -108,6 +116,7 @@ def main(argv):
     origin = "https://headwater.tools"
     redirects = ROOT / "site" / "_redirects"
     retries, workers = 3, 8
+    settle = 0
     http_check = True
     quiet = False
     args = list(argv)
@@ -119,6 +128,8 @@ def main(argv):
             retries = int(args.pop(0))
         elif arg == "--workers" and args:
             workers = int(args.pop(0))
+        elif arg == "--settle" and args:
+            settle = int(args.pop(0))
         elif arg == "--skip-http-check":
             http_check = False
         elif arg == "--quiet":
@@ -126,10 +137,22 @@ def main(argv):
         elif arg.startswith("-"):
             sys.stderr.write("usage: python3 tools/site/check-live-site.py [ORIGIN] "
                              "[--redirects FILE] [--retries N] [--workers N] "
-                             "[--skip-http-check] [--quiet]\n")
+                             "[--settle SECONDS] [--skip-http-check] [--quiet]\n")
             return 2
         else:
             origin = arg.rstrip("/")
+
+    if settle and redirects.is_file():
+        first = next(((p[0], p[2] if len(p) > 2 else "302")
+                      for p in (l.split() for l in redirects.read_text(encoding="utf-8").splitlines()
+                                if l.strip() and not l.lstrip().startswith("#"))
+                      if len(p) >= 2 and "*" not in p[0] and ":" not in p[0]), None)
+        deadline = time.monotonic() + settle
+        while first and time.monotonic() < deadline:
+            got, _, _ = fetch(origin + first[0], 0)
+            if str(got) == first[1]:
+                break
+            time.sleep(DELAY)
 
     status, _, body = fetch(origin + "/sitemap.xml", retries, want_body=True)
     locs = re.findall(r"<loc>([^<]+)</loc>", body.decode("utf-8", "replace"))

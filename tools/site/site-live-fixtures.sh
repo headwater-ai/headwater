@@ -245,6 +245,38 @@ status=$(run --redirects "$scratch/expected")
 report "a redirect that lands on another page is refused" 1 "$status" \
     "should answer 301 to /spec/a/" "$scratch/err"
 
+# 7b. A host that never honours the rule is waited on for at most `--settle`
+#     seconds and then asked anyway, so the wait is bounded and the refusal stands.
+tree "$t"
+printf '/old/ /spec/a/ 301\n' >"$t/_redirects"
+serve "$t" --no-redirects
+fix_sitemap
+started=$(date +%s)
+status=$(run --redirects "$t/_redirects" --settle 6)
+elapsed=$(( $(date +%s) - started ))
+report "a host that never settles is refused after a bounded wait" 1 "$status" \
+    "the host answered 404" "$scratch/err"
+if [ "$elapsed" -ge 4 ] && [ "$elapsed" -le 30 ]; then
+    passed=$((passed + 1)); echo "  ok    the wait is bounded by --settle ($elapsed s)"
+else
+    failed=$((failed + 1)); echo "  FAIL  the wait is bounded by --settle ($elapsed s)"
+fi
+
+# 7c. A host that has settled is not waited on.
+tree "$t"
+printf '/old/ /spec/a/ 301\n' >"$t/_redirects"
+serve "$t"
+fix_sitemap
+started=$(date +%s)
+status=$(run --redirects "$t/_redirects" --settle 60)
+elapsed=$(( $(date +%s) - started ))
+report "a host that has settled passes" 0 "$status"
+if [ "$elapsed" -le 10 ]; then
+    passed=$((passed + 1)); echo "  ok    a settled host costs no wait ($elapsed s)"
+else
+    failed=$((failed + 1)); echo "  FAIL  a settled host costs no wait ($elapsed s)"
+fi
+
 # 8. A site that cannot be read is exit 2, not a pass over nothing.
 stop
 origin="http://127.0.0.1:9"
