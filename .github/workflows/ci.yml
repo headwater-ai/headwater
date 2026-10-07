@@ -821,6 +821,7 @@ jobs:
           sh tools/run/board-move-fixtures.sh
           sh tools/run/gh-issue-fixtures.sh
           sh tools/run/wait-for-fixtures.sh
+          sh tools/run/disk-free-fixtures.sh
           sh tools/repo/new-worktree-fixtures.sh
           sh tools/hw-cargo-fixtures.sh
       - name: A citation that went stale reads differently from one that was invented

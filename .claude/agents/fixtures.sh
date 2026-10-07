@@ -592,10 +592,10 @@ case "$why" in
     *'hw-verify.md no longer states'*) pass 'and a rule dropped from its owner is reported' ;;
     *) fail 'a rule dropped from its owner is reported' "reported: \`$why\`" ;;
 esac
-sed 's/When less than 40G is free, stop and report `FAIL`/When less than 40G is free, note it and build anyway, or report `FAIL`/' "$root/.claude/agents/hw-verify.md" > "$scratch/dot/agents/hw-verify.md"
+sed 's/has less than 40G free, stop and report `FAIL`/has less than 40G free, note it and build anyway, or report `FAIL`/' "$root/.claude/agents/hw-verify.md" > "$scratch/dot/agents/hw-verify.md"
 why=$(throughput_owners "$scratch/dot")
 case "$why" in
-    *'hw-verify.md no longer states: When less than 40G'*) pass 'and a rule weakened inside its own sentence is reported' ;;
+    *"hw-verify.md no longer states: When the pool's volume has less than 40G"*) pass 'and a rule weakened inside its own sentence is reported' ;;
     *) fail 'a rule weakened inside its own sentence is reported' "reported: \`$why\`" ;;
 esac
 cp "$root/.claude/agents/hw-verify.md" "$scratch/dot/agents/hw-verify.md"

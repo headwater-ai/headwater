@@ -77,7 +77,7 @@ resolve() {
         p=$parent
     done
     [ -d "$p" ] || p=$(dirname "$p")
-    echo "$p"
+    (cd "$p" && pwd -P)
 }
 
 # Sets $at, $mount and $free_g for the path $1, or exits 2.
