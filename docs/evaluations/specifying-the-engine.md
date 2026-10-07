@@ -141,7 +141,7 @@ Two more projections fall out of the same graph at no extra declaration. A verb 
 
 ## What this evaluation does not do
 
-It declares nothing, and it is not a bundle doctrine. It proposes no `add` to `.headwater/overlay.yml`, no kind, no facet, no shelf, no relation, no regime member and no projection. Every mapping above is a candidate with a stated reason and an estimated cost. Each one would go through the [headwater-taxonomy](../../.claude/skills/headwater-taxonomy/SKILL.md) route with a failing fixture before it shipped.
+It declares nothing, and it is not a bundle doctrine. It proposes no `add` to `.headwater/overlay.yml`, no kind, no facet, no shelf, no relation, no regime member and no projection. Every mapping above is a candidate with a stated reason and an estimated cost. Each one would go through the [headwater-taxonomy](https://github.com/headwater-ai/headwater/blob/main/.claude/skills/headwater-taxonomy/SKILL.md) route with a failing fixture before it shipped.
 
 It also carries the warrant `accepted`. An agent drafted it, the external citations are real and checkable, and a human accepted the reading of them.
 

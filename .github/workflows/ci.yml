@@ -1539,6 +1539,46 @@ jobs:
         # the served sitemap carried for all 56 process pages before #1681.
         # It writes only under a temporary directory.
         run: sh tools/site/site-noindex-fixtures.sh
+      - name: No served page links to a path the site does not serve
+        # 44 URLs of headwater.tools reached Search Console as "Not found
+        # (404)" on 2026-09-22 with this job green. `mkdocs build --strict`
+        # held `not_found` at `info` and never resolves a root-absolute link,
+        # and `check-site-fragments.py` resolves only a link that carries a
+        # fragment. This reads every `href` and `src` of the assembled
+        # directory, which is what `wrangler.jsonc` serves, and refuses one that
+        # names no file, no directory with an index and no `_redirects` source,
+        # an internal link written with `http://`, and a `sitemap.xml` URL that
+        # is not a served page.
+        run: python3 tools/site/check-site-links.py .headwater/site-deploy
+      - name: The link checker refuses what it claims to refuse
+        # Spec 12 refuses a check that ships with no failing fixture. Cases 3
+        # to 6 are the four ways the 44 URLs were lost: a link out of
+        # `docs/`, a root-absolute link to a repository file, a directory link
+        # one level too deep, and a link to a renamed page. It writes only
+        # under a temporary directory.
+        run: sh tools/site/site-links-fixtures.sh
+      - name: Every renamed document leaves its old URL answered
+        # A document that moves to a process shelf, or whose slug changes,
+        # keeps its identifier and loses its URL, and Google reports the lost
+        # URL as a 404 weeks later. `site/_redirects` is the answer. This holds
+        # the file (a permanent status, a served destination, no chain, no
+        # source that is a live page) and, against the merge base with main, the
+        # rule that a renamed document's old URL is still served or is a source
+        # in it. On a push to main the merge base is HEAD and no rename is read.
+        run: python3 tools/site/check-site-redirects.py .headwater/site-deploy --base "$(git merge-base origin/main HEAD)"
+      - name: The redirect checker refuses what it claims to refuse
+        # Case 12 moves a document into a process shelf in a scratch repository
+        # and leaves its old URL unanswered, which is how the 44 URLs were lost.
+        # It writes only under a temporary directory.
+        run: sh tools/site/site-redirects-fixtures.sh
+      - name: The live-site checker refuses what it claims to refuse
+        # `tools/site/check-live-site.py` runs after `wrangler deploy` and asks
+        # the deployed host what the repository cannot see. This serves a
+        # scratch tree from a local server that behaves as Workers static
+        # assets does and provokes each refusal: a sitemap URL that is a 404, a
+        # link to a path that is a 404, and case 5, a host that ignores
+        # `_redirects`. It writes only under a temporary directory.
+        run: sh tools/site/site-live-fixtures.sh
       - name: Every hand-built page carries the narrow content policy
         # `site/_headers` sets the wide policy under `/*`, because a generated
         # page links its stylesheet, its script, its fonts and its search
@@ -1610,7 +1650,9 @@ jobs:
         #   only instrument over this read Markdown.
         #
         # It fails on a dead fragment and reports a dead path without failing.
-        # The tool's own header states why, and #406 owns the path half.
+        # It reads only the links that carry a fragment; the dead-path step
+        # after the noindex checker, `tools/site/check-site-links.py`, reads
+        # every link and fails.
         # `sh tools/site/site-fragments-fixtures.sh` provokes every one of those
         # outcomes, including each refusal, and runs in the step below.
         run: python3 tools/site/check-site-fragments.py

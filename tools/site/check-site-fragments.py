@@ -106,16 +106,15 @@ WHAT THE SHELF PASS ASSERTS, AND WHERE ITS EXPECTATION COMES FROM
 
 WHAT FAILS THE RUN, AND WHAT ONLY REPORTS
 
-  A dead fragment fails. A dead path reports and does not, and the reason is
-  a trade-off `mkdocs.yml` already made and stated: it holds `not_found` at
-  `info` because 18 citations point out of `docs_dir` at files that are
-  correct in the repository and unreachable from a site rooted at `docs/`,
-  and Q31 leaves this repository private so a rewrite to absolute URLs would
-  404. Measured on the tree that introduced this file, every dead path is
-  that class or a link into `taxonomies/`, which `exclude_docs` removes from
-  the site on purpose. Failing on them here would contradict a decision
-  recorded 20 lines above them. #406 is the issue that owns the path half,
-  and it is where that severity rises.
+  A dead fragment fails. A dead path reports and does not, and that is no
+  longer a trade-off about what is cited: the repository is public, every
+  citation of a repository file is an absolute GitHub URL, and
+  `tools/site/check-site-links.py` fails on a dead path of any link, with or
+  without a fragment. This file reads only the links that carry a fragment, so
+  its own dead-path count is the smaller population and is left reporting;
+  `--strict-paths` still makes it fatal here. The 44 pages Search Console
+  reported as "Not found (404)" on 2026-09-22 were in the population this file
+  does not read and the one that `check-site-links.py` does.
 
 WHAT IT REPORTS
 

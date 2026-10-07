@@ -21,7 +21,7 @@ relations:
 
 # Harper over this corpus finds no error on a 25-document sample, and version 2.11.0 does not build at the engine's floor of rustc 1.91
 
-[#1013](https://github.com/headwater-ai/headwater/issues/1013) asks whether `harper-core` is worth a place in this engine as a deterministic grammar and autofix layer. This page holds the measurements. The ruling that reads them is [HW-DR-0096](../decisions/0096-harper-does-not-become-part-of-the-engine-now-and-q41-stands.md). The code is in [`tools/engine/harper-spike/`](../../tools/engine/harper-spike/), and `tools/engine/harper-spike/build.sh` reproduces every number.
+[#1013](https://github.com/headwater-ai/headwater/issues/1013) asks whether `harper-core` is worth a place in this engine as a deterministic grammar and autofix layer. This page holds the measurements. The ruling that reads them is [HW-DR-0096](../decisions/0096-harper-does-not-become-part-of-the-engine-now-and-q41-stands.md). The code is in [`tools/engine/harper-spike/`](https://github.com/headwater-ai/headwater/tree/main/tools/engine/harper-spike), and `tools/engine/harper-spike/build.sh` reproduces every number.
 
 ## The setup
 

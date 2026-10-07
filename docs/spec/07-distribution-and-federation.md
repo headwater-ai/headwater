@@ -459,7 +459,7 @@ So the reading compares both and reports each half. A repository whose package d
 
 ### What a level means, and what stops it from becoming a score
 
-A level is a named subset of the conformance rule set, and the package declares it. [The maturity ladder](../doctrine/maturity-model.md) is the ordering over those subsets. **A level states what the adopter wired up. It is not a measurement of how good a corpus is, and this specification does not dress it as one.** A publisher asserts the ordering. The engine measures which rules pass, and it asserts nothing else.
+A level is a named subset of the conformance rule set, and the package declares it. [The maturity ladder](https://github.com/headwater-ai/headwater/blob/main/docs/doctrine/maturity-model.md) is the ordering over those subsets. **A level states what the adopter wired up. It is not a measurement of how good a corpus is, and this specification does not dress it as one.** A publisher asserts the ordering. The engine measures which rules pass, and it asserts nothing else.
 
 Three properties keep the number honest.
 

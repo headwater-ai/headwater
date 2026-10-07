@@ -40,7 +40,7 @@ The harness exists and this corpus still holds no adjudicated pair. [HW-PROBE-an
 
 This remains a reading of the supersession and not of Q18. Q18 rules that an adjudication is a decision document which carries `overrides`, and no document of this corpus carries that key. So the instrument the obligation names still has nothing to run against, and this record waits on a build.
 
-**Every recording that this record cites predates the sealed workspace (#1229).** Each session ran in a workspace that kept every probe file, so a session could read its own expectation. A reading that counts for this record comes from a workspace that [`tools/probe/seal.sh`](../../tools/probe/seal.sh) sealed.
+**Every recording that this record cites predates the sealed workspace (#1229).** Each session ran in a workspace that kept every probe file, so a session could read its own expectation. A reading that counts for this record comes from a workspace that [`tools/probe/seal.sh`](https://github.com/headwater-ai/headwater/blob/main/tools/probe/seal.sh) sealed.
 
 **A sealed batch now reads the probe, and every session reached the adjudication.** The batch of 2026-09-30 graded it in both arms of the `campaign` tier ([#1384](https://github.com/headwater-ai/headwater/issues/1384)). The present arm satisfied `opened` in 30 of 30 sessions, and the absent arm in 30 of 30. Each is 88.6% to 100.0% in a 95% Wilson interval. The present arm made 39 `Read` calls on this probe, and the absent arm made 45. The grader also counts a read made through Bash. The pair was still a supersession and not an adjudication, so this is a reading of recovery from a superseded document and not of Q18.
 

@@ -34,7 +34,7 @@ This document reports two of the three kinds that [#492](https://github.com/head
 | Branch | `master` |
 | Commit | `b0550cb3cb4d1752546a69056c55eccfb9111a12`, committed 2026-09-01T16:27:59Z |
 
-n8n's [Sustainable Use License](../taxonomies/design-spec/fixtures/n8n/LICENSE.md) states that content of branches other than `master` is not licensed. Every citation here names `master` and that commit.
+n8n's [Sustainable Use License](https://github.com/headwater-ai/headwater/blob/main/docs/taxonomies/design-spec/fixtures/n8n/LICENSE.md) states that content of branches other than `master` is not licensed. Every citation here names `master` and that commit.
 
 The fork carries no commit of this project. It is a mirror, and its one job is to keep the pin readable after the upstream moves.
 
@@ -51,7 +51,7 @@ Four documents, all typed as `kinds.design_spec` of the design-spec entry:
 
 The kind is right on its two declared grounds. The purpose of `design_spec` is `behavior`, which is what an architecture document serves. The tradition the entry models is the software design document, which is what each of these is.
 
-**Typing means one front-matter block on a copy, and nothing else.** No word, no heading, no link, no spelling, no contraction and no line break of any body was changed. The [fixture directory](../taxonomies/design-spec/fixtures/n8n/) holds the copies, a verbatim copy of n8n's license, and a modification notice that the license requires. Byte identity was verified mechanically before this document was written. Each copy had its front-matter block stripped and the remainder diffed against `git show <pin>:<path>`. All four diffs were empty.
+**Typing means one front-matter block on a copy, and nothing else.** No word, no heading, no link, no spelling, no contraction and no line break of any body was changed. The [fixture directory](https://github.com/headwater-ai/headwater/tree/main/docs/taxonomies/design-spec/fixtures/n8n) holds the copies, a verbatim copy of n8n's license, and a modification notice that the license requires. Byte identity was verified mechanically before this document was written. Each copy had its front-matter block stripped and the remainder diffed against `git show <pin>:<path>`. All four diffs were empty.
 
 **None of the four is under n8n's Enterprise License.** That license covers a file with `.ee.` in its name or a directory with `.ee` in its name. The tree at the pin holds 196 paths of the first form and 1,064 of the second. None is under any of the three packages this evaluation read.
 
@@ -65,7 +65,7 @@ The entry assumed that a design specification belongs to a numbered series. A mo
 
 ## What the run reported
 
-The [fixture README](../taxonomies/design-spec/fixtures/n8n/README.md#what-a-run-reports) carries the run in full, with the assembly that reproduces it. The summary:
+The [fixture README](https://github.com/headwater-ai/headwater/blob/main/docs/taxonomies/design-spec/fixtures/n8n/README.md#what-a-run-reports) carries the run in full, with the assembly that reproduces it. The summary:
 
 **4 files under the corpus root, 4 typed, 0 excluded, 4 checked, 13 findings, all 13 of them errors.** `headwater check --strict` exits 1. This page does not give the count of check instances, because each rule that a release adds changes it. The fixture README states that count, and the n8n fixture job compares it with each run. The first and third read 42 and 38 until [HW-DR-0067](../decisions/0067-the-vendored-package-root-moves-under-headwater-and-the-old-root-is-named-in-a-refusal.md). The 38 were the vendored taxonomy package, which sat inside this corpus root and had to be excluded from it.
 
@@ -79,7 +79,7 @@ Three findings per document, and the same three on each one.
 
 The run reported 8 findings until headwater/standard 4.0.0, which requires `title` on `design_spec`. None of these four upstream files declares one. This repository will not write four titles into somebody else's documents to make the number go down.
 
-`identifier.unusable` is a third finding about the entry rather than about n8n. The design-spec entry declares five kinds and no identifier scheme for any of them. This repository mints `spec_id` in its own overlay, and an overlay is not an admitted library entry. So a corpus that takes the entry alone gets documents that can stand at neither end of a relation. The [diataxis fixture](../taxonomies/diataxis/fixtures/README.md) reported the same rule six times for the same reason.
+`identifier.unusable` is a third finding about the entry rather than about n8n. The design-spec entry declares five kinds and no identifier scheme for any of them. This repository mints `spec_id` in its own overlay, and an overlay is not an admitted library entry. So a corpus that takes the entry alone gets documents that can stand at neither end of a relation. The [diataxis fixture](https://github.com/headwater-ai/headwater/blob/main/docs/taxonomies/diataxis/fixtures/README.md) reported the same rule six times for the same reason.
 
 ### Not one finding is about n8n's writing
 
@@ -168,11 +168,11 @@ Not one pattern reaches `packages/@n8n/instance-ai/`, `packages/@n8n/expression-
 | Of those, written by `headwater check --fix` | 0 |
 | Of those, needing a declaration change or a human edit upstream | 13 |
 
-The n8n fixture job holds the rows `Findings raised`, `Caught by neither` and the last row against the [fixture README](../taxonomies/design-spec/fixtures/n8n/README.md#what-a-run-reports), and it holds the README against a run. The README states nothing about `prettier`, `cubic` or `--fix`. So the job holds those three rows by two sums. Raised less the two tools is neither. The `--fix` row plus the last row is raised.
+The n8n fixture job holds the rows `Findings raised`, `Caught by neither` and the last row against the [fixture README](https://github.com/headwater-ai/headwater/blob/main/docs/taxonomies/design-spec/fixtures/n8n/README.md#what-a-run-reports), and it holds the README against a run. The README states nothing about `prettier`, `cubic` or `--fix`. So the job holds those three rows by two sums. Raised less the two tools is neither. The `--fix` row plus the last row is raised.
 
 ### What this repository's house regime adds
 
-A second reading binds `regimes.language.ste_house` from this repository's own overlay onto `kinds.design_spec`. It changes nothing else and touches no document. It is a probe and not a declaration, on the precedent the [brd-prd fixtures](../taxonomies/brd-prd/fixtures/README.md#what-the-bases-voice-regime-would-have-reported) set. The [fixture README](../taxonomies/design-spec/fixtures/n8n/README.md#what-this-repositorys-own-house-regime-would-have-reported) names the rules it fires.
+A second reading binds `regimes.language.ste_house` from this repository's own overlay onto `kinds.design_spec`. It changes nothing else and touches no document. It is a probe and not a declaration, on the precedent the [brd-prd fixtures](https://github.com/headwater-ai/headwater/blob/main/docs/taxonomies/brd-prd/fixtures/README.md#what-the-bases-voice-regime-would-have-reported) set. The [fixture README](https://github.com/headwater-ai/headwater/blob/main/docs/taxonomies/design-spec/fixtures/n8n/README.md#what-this-repositorys-own-house-regime-would-have-reported) names the rules it fires.
 
 This page states no count for the probe. The probe reads this repository's own house regime, so each edit to that regime changes its counts, and no job holds them. Run the probe to read them.
 
@@ -190,7 +190,7 @@ This page states no count for the probe. The probe reads this repository's own h
 
 [#508](https://github.com/headwater-ai/headwater/issues/508) types the second of the three kinds that #492 names. It reads the rules that n8n's AI code reviewer loads on every pull request. It also asks a question that no check answers: whether the three-level model n8n publishes about those rules holds.
 
-The fork is the same fork and the pin is the same commit. The corpus is not the same corpus. `corpus.root` is a single scalar string. n8n keeps its architecture prose under `packages/` and its review rules under `.agents/`, and one root cannot reach both. So the work built a second fixture beside the first, under the entry it evidences: [`docs/taxonomies/standards-spec/fixtures/n8n/`](../taxonomies/standards-spec/fixtures/n8n/README.md).
+The fork is the same fork and the pin is the same commit. The corpus is not the same corpus. `corpus.root` is a single scalar string. n8n keeps its architecture prose under `packages/` and its review rules under `.agents/`, and one root cannot reach both. So the work built a second fixture beside the first, under the entry it evidences: [`docs/taxonomies/standards-spec/fixtures/n8n/`](https://github.com/headwater-ai/headwater/blob/main/docs/taxonomies/standards-spec/fixtures/n8n/README.md).
 
 **This is where the headline claim of #492 narrows usefully.** n8n's architecture documents are scattered, one per package, across a source tree of 27,688 files. Its review rules are collected: 23 files under one directory, six subdirectories deep at most. **One repository is a scattered corpus for one of its kinds and a collected corpus for another.** The shelf model met both. The first cost a broad pattern and a forced exclusion. The second cost one ordinary path pattern.
 
@@ -202,11 +202,11 @@ Seven documents, all typed as `kinds.standard` of the [standards-spec entry](../
 
 **Typing means one front-matter block on a copy, and nothing else.** Byte identity was verified twice. Each copy had its front-matter block stripped and the remainder diffed against the file at the pin, which gave seven empty diffs. Each file at the pin was then compared by `git hash-object` against the blob the fork reports at that commit, which gave seven matches.
 
-The [fixture directory](../taxonomies/standards-spec/fixtures/n8n/) carries its own verbatim copy of n8n's license and its own modification notice. Neither is inherited from the design-spec fixture. A second set of copied files is a second receipt of part of the software. A modification notice is a claim about which files were modified, and these are different files. **None of the seven is under n8n's Enterprise License.** The tree at the pin holds 91 paths under `.agents/`, and zero of them match `.ee` in any form. The check was run rather than assumed.
+The [fixture directory](https://github.com/headwater-ai/headwater/tree/main/docs/taxonomies/standards-spec/fixtures/n8n) carries its own verbatim copy of n8n's license and its own modification notice. Neither is inherited from the design-spec fixture. A second set of copied files is a second receipt of part of the software. A modification notice is a claim about which files were modified, and these are different files. **None of the seven is under n8n's Enterprise License.** The tree at the pin holds 91 paths under `.agents/`, and zero of them match `.ee` in any form. The check was run rather than assumed.
 
 ### What the run reported
 
-The [fixture README](../taxonomies/standards-spec/fixtures/n8n/README.md#what-a-run-reports) carries the run in full. The summary:
+The [fixture README](https://github.com/headwater-ai/headwater/blob/main/docs/taxonomies/standards-spec/fixtures/n8n/README.md#what-a-run-reports) carries the run in full. The summary:
 
 **7 files under the corpus root, 7 typed, 0 excluded, 7 checked, 21 findings, all 21 of them errors.** `headwater check --strict` exits 1. The fixture README states the count of check instances, and the n8n fixture job compares it with each run. The graph reads 7 nodes and 0 declared edge halves.
 
@@ -220,7 +220,7 @@ Three findings per document, and the same three on every one. `section.required.
 
 ### Whether the three-level reach model holds
 
-This is the fourth Done-when bullet of #508, and it is a `headwater sweep` job rather than a check. **It is the first coherence sweep run and recorded anywhere in this repository.** There was no committed briefing, no return file and no report before this one. All three artifacts are committed under [`sweep/`](../taxonomies/standards-spec/fixtures/n8n/sweep/) beside the corpus. `sweep plan` is byte-reproducible, and the return file is the only thing that lets a later reader reach the same verdict.
+This is the fourth Done-when bullet of #508, and it is a `headwater sweep` job rather than a check. **It is the first coherence sweep run and recorded anywhere in this repository.** There was no committed briefing, no return file and no report before this one. All three artifacts are committed under [`sweep/`](https://github.com/headwater-ai/headwater/tree/main/docs/taxonomies/standards-spec/fixtures/n8n/sweep) beside the corpus. `sweep plan` is byte-reproducible, and the return file is the only thing that lets a later reader reach the same verdict.
 
 `headwater sweep report` confirmed four things and no more. The return file names the lock this tree carries. Every path it names is a typed row of the census. Every quotation is really in the document it is attributed to. No proposed edge restates one the graph already declares. **3 findings carried, 0 refused, of 3 the file held.** It confirms nothing about whether a reading is right.
 
@@ -357,11 +357,11 @@ It prints `0`. Any other number makes this section false.
 
 ## The skills corpus, typed
 
-The section above reports one finding in `.agents/skills/` and types none of it. This section types all of it. The premise both #492 and #509 rest on is dead: the [`diataxis-site` entry](../taxonomies/diataxis-site/doctrine.md) landed in `46b86799` and declares `kinds.how_to`, a concrete kind under `purposes.procedure`. That kind is what the third corpus waited for. The vendored slice is [`docs/taxonomies/diataxis-site/fixtures/n8n/`](../taxonomies/diataxis-site/fixtures/n8n/README.md), at the pin the other two corpora use, and its README carries the assembly commands that produced every number below.
+The section above reports one finding in `.agents/skills/` and types none of it. This section types all of it. The premise both #492 and #509 rest on is dead: the [`diataxis-site` entry](../taxonomies/diataxis-site/doctrine.md) landed in `46b86799` and declares `kinds.how_to`, a concrete kind under `purposes.procedure`. That kind is what the third corpus waited for. The vendored slice is [`docs/taxonomies/diataxis-site/fixtures/n8n/`](https://github.com/headwater-ai/headwater/blob/main/docs/taxonomies/diataxis-site/fixtures/n8n/README.md), at the pin the other two corpora use, and its README carries the assembly commands that produced every number below.
 
 **What the pin holds, re-measured.** `.agents/skills/` holds 22 skill directories, 34 files inside them, and one top-level `AGENTS.md` of 1,952 bytes. That is 35 files and 425,316 bytes of upstream body. #492 and #509 each write "22 skill directories and 35 files". Neither one names `AGENTS.md`, so a reader of either issue puts all 35 files inside the 22 directories. The files that are not a `SKILL.md` number 12 and not the ten that #509 enumerates.
 
-**Every file is typed, and that is the result this corpus was vendored for.** One homogeneous shelf at `.agents/skills/**` carries `how_to`. The run reports **35 files under the corpus root, 35 typed, 0 excluded, 35 checked, 136 findings**. The [fixture README](../taxonomies/diataxis-site/fixtures/n8n/README.md#what-a-run-reports) states the count of check instances, and the n8n fixture job compares it with each run. The census reads 35 `how_to`. The graph reads 35 nodes and 0 declared edge halves. Nothing is untyped, and `headwater check --strict` exits 1.
+**Every file is typed, and that is the result this corpus was vendored for.** One homogeneous shelf at `.agents/skills/**` carries `how_to`. The run reports **35 files under the corpus root, 35 typed, 0 excluded, 35 checked, 136 findings**. The [fixture README](https://github.com/headwater-ai/headwater/blob/main/docs/taxonomies/diataxis-site/fixtures/n8n/README.md#what-a-run-reports) states the count of check instances, and the n8n fixture job compares it with each run. The census reads 35 `how_to`. The graph reads 35 nodes and 0 declared edge halves. Nothing is untyped, and `headwater check --strict` exits 1.
 
 | Rule | Count | Severity |
 |---|---|---|
@@ -505,6 +505,6 @@ A census of every architecture document in the monorepo. Four is the sample, and
 
 ## Reproducing this
 
-The [design-spec fixture README](../taxonomies/design-spec/fixtures/n8n/README.md#how-to-run-this-corpus) carries the five commands for the architecture corpus. The [standards-spec fixture README](../taxonomies/standards-spec/fixtures/n8n/README.md#how-to-run-this-corpus) carries six for the review rules, and the sixth is the sweep. `sh tools/taxonomy/n8n-fixtures.sh` runs all three n8n corpora in CI as a blocking step, by the commands those pages print, and holds the figures those pages state.
+The [design-spec fixture README](https://github.com/headwater-ai/headwater/blob/main/docs/taxonomies/design-spec/fixtures/n8n/README.md#how-to-run-this-corpus) carries the five commands for the architecture corpus. The [standards-spec fixture README](https://github.com/headwater-ai/headwater/blob/main/docs/taxonomies/standards-spec/fixtures/n8n/README.md#how-to-run-this-corpus) carries six for the review rules, and the sixth is the sweep. `sh tools/taxonomy/n8n-fixtures.sh` runs all three n8n corpora in CI as a blocking step, by the commands those pages print, and holds the figures those pages state.
 
-**No job holds a figure of this document.** Every total above is restated here in prose. The job reads the three fixture READMEs rather than this page, so a number here can go stale while CI stays green. [The design-spec README says the same thing from the other side](../taxonomies/design-spec/fixtures/n8n/README.md#what-that-job-holds-and-what-it-does-not), and it also names the probe arms that no job holds. Re-run a figure before you cite it, and correct both copies when one moves.
+**No job holds a figure of this document.** Every total above is restated here in prose. The job reads the three fixture READMEs rather than this page, so a number here can go stale while CI stays green. [The design-spec README says the same thing from the other side](https://github.com/headwater-ai/headwater/blob/main/docs/taxonomies/design-spec/fixtures/n8n/README.md#what-that-job-holds-and-what-it-does-not), and it also names the probe arms that no job holds. Re-run a figure before you cite it, and correct both copies when one moves.

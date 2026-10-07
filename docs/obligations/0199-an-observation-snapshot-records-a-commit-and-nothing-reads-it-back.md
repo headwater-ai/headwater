@@ -14,7 +14,7 @@ waiting_on: ruling
 
 [#934](https://github.com/headwater-ai/headwater/issues/934) gave the register an observation dimension. `crate::observation::Observations` reads `.headwater/observations.yml`. A control naming a mechanism outside the engine discharges its obligation only where an entry there names that control. Each entry also names a commit. [Spec 4](../spec/04-assurance-model.md#every-obligation-has-exactly-one-disposition) and [HW-DR-0073](../decisions/0073-a-verification-is-a-kind-and-its-identity-is-minted-rather-than-found-in-the-code-that-cites-it.md) ruling 3 both write the shape as "a control naming the commit it ran against."
 
-`headwater check` runs no version control command. [`headwater-vcs`](../../engine/crates/vcs/src/lib.rs) states that boundary for the crate that owns it, and the check-evaluation path never links it. A comparison against this repository's own history, or against the commit that last changed a control's declaration, needs exactly that command.
+`headwater check` runs no version control command. [`headwater-vcs`](https://github.com/headwater-ai/headwater/blob/main/engine/crates/vcs/src/lib.rs) states that boundary for the crate that owns it, and the check-evaluation path never links it. A comparison against this repository's own history, or against the commit that last changed a control's declaration, needs exactly that command.
 
 ## Obligation
 
@@ -34,6 +34,6 @@ The owner ruled on 2026-09-25, in [a comment on #937](https://github.com/headwat
 
 The ruling says three things. The manifest boundary does not widen. The taxonomy states that the process of the adopter keeps the commit field honest. The content digest is the answer to a changed criterion. So no ancestry fact reaches the check-evaluation path, and this record's second remedy is the one taken.
 
-This change wrote that statement. The comment above `controls` in [the standard taxonomy](../../taxonomy-source/headwater-standard/taxonomy.yml) states that the `commit` of an observation entry is provenance. It states that the engine checks the `commit` of a verification entry for form only, and never for ancestry. It states that the process of the adopter, which is the job that writes the snapshot, keeps the field honest. Version 4.6.2 of `headwater/standard` publishes that comment.
+This change wrote that statement. The comment above `controls` in [the standard taxonomy](https://github.com/headwater-ai/headwater/blob/main/taxonomy-source/headwater-standard/taxonomy.yml) states that the `commit` of an observation entry is provenance. It states that the engine checks the `commit` of a verification entry for form only, and never for ancestry. It states that the process of the adopter, which is the job that writes the snapshot, keeps the field honest. Version 4.6.2 of `headwater/standard` publishes that comment.
 
 The ruling does not address the syntax check. This change adds no syntax check for the commit of a control, and the commit of a control stays stored and not compared. That is a statement of this change and not of the ruling.

@@ -45,7 +45,7 @@ relations:
 
 **An overlay's `taxonomy:` fails the bar because there is nothing to hold it against.** No content in this repository uses the key outside the specification's own worked example and the one fixture that mirrors it. No document records what an adopter's resolved taxonomy is named, for the restatement to be checked against.
 
-**Removing all four keys instead was considered and rejected.** The declaration set of the meta-schema's root is closed, so dropping any one of them is a breaking major bump. The meta-schema's own [0.3.0 removal of `lifecycle_regime.terminal`](../../engine/crates/meta/meta-schema.yml) is the precedent for what that costs. It would immediately refuse all five of this repository's own `bundle.yml` files on their next validation. It would force an edit to strip a bundle's own name, its author's stated base, and its author's stated dependency. That gains no reader over stating plainly that the reader is absent.
+**Removing all four keys instead was considered and rejected.** The declaration set of the meta-schema's root is closed, so dropping any one of them is a breaking major bump. The meta-schema's own [0.3.0 removal of `lifecycle_regime.terminal`](https://github.com/headwater-ai/headwater/blob/main/engine/crates/meta/meta-schema.yml) is the precedent for what that costs. It would immediately refuse all five of this repository's own `bundle.yml` files on their next validation. It would force an edit to strip a bundle's own name, its author's stated base, and its author's stated dependency. That gains no reader over stating plainly that the reader is absent.
 
 ## Consequences
 
