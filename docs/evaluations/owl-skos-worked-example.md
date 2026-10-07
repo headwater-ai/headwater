@@ -25,11 +25,11 @@ The third of the substrate worked examples, after [LinkML](linkml-worked-example
 
 **Nothing here reopens Q13.** The staging order stands. RDF and SKOS are emitter 4, and they ship when a named external consumer asks. This document is evidence about what that emitter will owe when it is written, gathered by writing a throwaway version of it now.
 
-The two earlier examples were written by hand. This one was run. The emitter is committed at [`tools/probe/rdf-probe/emit.py`](../../tools/probe/rdf-probe/emit.py), it reads the real base package and the real design-spec bundle, and it emits the real `docs/` tree. Every number below comes from that run.
+The two earlier examples were written by hand. This one was run. The emitter is committed at [`tools/probe/rdf-probe/emit.py`](https://github.com/headwater-ai/headwater/blob/main/tools/probe/rdf-probe/emit.py), it reads the real base package and the real design-spec bundle, and it emits the real `docs/` tree. Every number below comes from that run.
 
 ## The method
 
-The emitter resolves the taxonomy the way the resolver will: the base package `headwater/standard` plus the [design-spec bundle](../taxonomies/design-spec/bundle.yml) applied as add-only operations at dotted addresses. It then emits three graphs.
+The emitter resolves the taxonomy the way the resolver will: the base package `headwater/standard` plus the [design-spec bundle](https://github.com/headwater-ai/headwater/blob/main/docs/taxonomies/design-spec/bundle.yml) applied as add-only operations at dotted addresses. It then emits three graphs.
 
 - **`taxonomy.ttl`** — the TBox. A kind becomes an `owl:Class`, `is_a` becomes `rdfs:subClassOf`, and a facet becomes an `owl:DatatypeProperty` or `owl:ObjectProperty`. A controlled vocabulary becomes a `skos:ConceptScheme`, and a relation becomes an `owl:ObjectProperty` with domain and range.
 - **`corpus.ttl`** — the ABox. Kind resolution is by placement, which is what [spec 2](../spec/02-taxonomy-model.md#placement-is-primary-metadata-fills-the-gap) says is primary. Every Markdown link between two corpus documents becomes an edge.

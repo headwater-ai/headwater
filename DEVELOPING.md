@@ -222,14 +222,29 @@ The fixture suites, which are shell and Python rather than cargo, and which you 
     sh tools/site/site-console-fixtures.sh
     sh tools/site/site-footer-fixtures.sh
     sh tools/site/site-fragments-fixtures.sh
+    sh tools/site/site-links-fixtures.sh
+    sh tools/site/site-live-fixtures.sh
     sh tools/site/site-noindex-fixtures.sh
+    sh tools/site/site-redirects-fixtures.sh
     python3 tools/site/check-site-canonical.py .headwater/site-build
     python3 tools/site/check-site-console.py
     python3 tools/site/check-site-fragments.py
+    python3 tools/site/check-site-links.py .headwater/site-deploy
     python3 tools/site/check-site-noindex.py .headwater/site-deploy
+    python3 tools/site/check-site-redirects.py .headwater/site-deploy
     python3 tools/site/render-tutorial.py --check
 
 Each one holds an artifact that no rule of the engine reads: a workflow, a manifest, a page outside the corpus root, a hook, a skill file. They are cheap, they need no container, and running the ones your change touches before you push saves a round trip.
+
+**Links and redirects.** The site is read by crawlers that keep a URL after the page is gone, so a link or a rename that a build accepts can still cost a 404 weeks later. 44 URLs of headwater.tools reached Search Console that way on 2026-09-22 with a green build. Four rules and five readers now hold it:
+
+- A document cites a repository file by its absolute GitHub URL, `https://github.com/headwater-ai/headwater/blob/main/<path>`, and a repository folder with `/tree/main/<path>`. Never write `../../LICENSE` or `../../engine/crates/cli/src/lib.rs`: those paths resolve in a clone and not on a site rooted at `docs/`. Link a shelf by its `README.md`, because MkDocs serves a directory link one level too deep.
+- `mkdocs build --strict` fails on a relative link that leaves `docs/`, a root-absolute link, a folder link and a link to a file `exclude_docs` removes (`validation.links` in `mkdocs.yml`).
+- `tools/site/check-site-links.py` reads every link of the assembled site and fails on a path nothing serves, an internal `http://` link and a sitemap URL that is not a page.
+- When you rename or move a document under `docs/`, add the old URL to `site/_redirects` with status 301 in the same change. `tools/site/check-site-redirects.py` reads the file, and with `--base` it refuses a renamed document whose old URL answers nothing.
+- After every deploy, `deploy-site.yml` runs `tools/site/check-live-site.py` against https://headwater.tools. It asks the host what no file can show: that each redirect answers, that `http://` goes to `https://`, and that every link on a deployed page lands. A failure there is an alert and not a rollback.
+
+Search Console reports three reasons that need no fix. "Excluded by noindex tag" names a page under `/process/`, which is `noindex` on purpose ([HW-DR-0107](docs/decisions/0107-the-process-shelves-stay-published-in-a-labeled-section-of-the-site-that-a-search-engine-does-not-index.md)). "Page with redirect" and "Duplicate without user-selected canonical" name an `http://` URL that the host redirects to https. "Not found (404)" does need a fix, unless the page was deleted and has no successor.
 
 Two things are deliberately absent from that list. `.githooks/change-manifest` is a producer the workflow calls rather than a gate that can fail on its own. `.claude/hooks/fixtures-live.sh` spends real AI credits against a real login, so no job runs it and nothing gates on it.
 

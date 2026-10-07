@@ -21,6 +21,7 @@ relations:
     - tools/site/cloudflare-build.sh
     - wrangler.jsonc
     - site/_headers
+    - site/_redirects
 ---
 
 # 47 — How the two halves of the site share one host

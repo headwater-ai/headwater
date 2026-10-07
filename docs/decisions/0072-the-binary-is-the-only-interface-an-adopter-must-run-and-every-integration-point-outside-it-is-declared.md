@@ -50,7 +50,7 @@ No document states the boundary. The eleven principles in [spec 0](../spec/00-vi
 
 ## Consequences
 
-An adopter who runs `headwater check --change` gets the manifest from `headwater change`. No script stands between the adopter and a change-scoped check. [.githooks/change-manifest](../../.githooks/change-manifest) only hands its two arguments to that verb, for the hooks of this repository.
+An adopter who runs `headwater check --change` gets the manifest from `headwater change`. No script stands between the adopter and a change-scoped check. [.githooks/change-manifest](https://github.com/headwater-ai/headwater/blob/main/.githooks/change-manifest) only hands its two arguments to that verb, for the hooks of this repository.
 
 [#892](https://github.com/headwater-ai/headwater/issues/892) gains a frame it did not have. Its question was whether merge-safety tooling ships at all. The question now is narrower. The edge is legal, and consent of the clone is the constraint on it. What remains is what ships inside it.
 

@@ -31,7 +31,7 @@ The obligations shelf holds 129 records. 121 stand at `status: current`, 4 at `s
 
 ## Decision
 
-**What an obligation waits on is a state, and the closed set holds four values.** A required facet `waiting_on` on `obligation_record` takes `ruling`, `build`, `measurement` or `adopter`. [The decision-record bundle](../taxonomies/decision-record/bundle.yml) declares both the facet and the requirement.
+**What an obligation waits on is a state, and the closed set holds four values.** A required facet `waiting_on` on `obligation_record` takes `ruling`, `build`, `measurement` or `adopter`. [The decision-record bundle](https://github.com/headwater-ai/headwater/blob/main/docs/taxonomies/decision-record/bundle.yml) declares both the facet and the requirement.
 
 The four values name the act that comes next. `ruling` means that a person has to choose, and that no build and no measurement settles it. `build` means that the answer is known and somebody has to write the code or the prose. `measurement` means that an instrument exists and that no run of it has been made. `adopter` means that an outside corpus has to exist before anything can move.
 

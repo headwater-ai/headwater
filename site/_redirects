@@ -1,0 +1,58 @@
+# Redirects for https://headwater.tools/, served by Cloudflare Workers static
+# assets from the assembled directory root (`tools/site/assemble-site.sh` copies
+# this file there beside `_headers`, HW-DR-0047). One `source destination status`
+# per line, static rules only (Cloudflare allows 2000).
+#
+# WHY THIS FILE EXISTS
+#
+#   A document that moves to a process shelf (HW-PD-0024) or whose title, and so
+#   its slug, changes keeps its identifier and loses its URL. Google keeps the
+#   old URL in its index and reports it as "Not found (404)" in Search Console
+#   until something answers it. 44 such URLs were reported on 2026-09-22.
+#   Each line below answers one old URL with a permanent redirect to the page
+#   that carries the document now.
+#
+# HOW IT IS MAINTAINED
+#
+#   `tools/site/check-site-redirects.py` refuses a destination that is not
+#   served, a source that is also served, a loop, a chain, and a document
+#   renamed in a change whose old URL no line here answers. Add the line in the
+#   same change that renames the document, with status 301.
+
+/acceptance-criteria/0001-no-source-file-of-the-engine-names-a-network-api-and-no-locked-dependency-provides-one/ /acceptance-criteria/0001-no-engine-source-outside-the-fetch-crate-names-a-network-api-and-no-crate-of-the-checking-loop-reaches-a-network-package/ 301
+/decisions/0039-q39-how-a-figure-reaches-a-hand-built-page-now-that-a-build-interpolates-one/ /decisions/0039-q39-how-a-figure-reaches-a-hand-built-page/ 301
+/decisions/0050-q50-where-the-visual-register-of-the-hand-built-pages-lives-now-that-eight-pages-each-carried-a-copy/ /decisions/0050-q50-where-the-visual-register-of-the-hand-built-pages-lives/ 301
+/evaluations/one-clone-many-agents-how-this-repository-isolates-the-sessions-that-build-it/ /process/evaluations/one-clone-many-agents-how-this-repository-isolates-the-sessions-that-build-it/ 301
+/evaluations/the-build-order-as-a-multi-agent-system/ /process/evaluations/the-build-order-as-a-multi-agent-system/ 301
+/evaluations/two-triggers-one-verdict-how-this-repository-s-ci-decides-where-a-job-runs-and-what-it-trusts/ /process/evaluations/two-triggers-one-verdict-how-this-repository-s-ci-decides-where-a-job-runs-and-what-it-trusts/ 301
+/how-to/cut-a-release/ /process/how-to/cut-a-release/ 301
+/how-to/diagnose-an-isolation-failure/ /process/how-to/diagnose-an-isolation-failure/ 301
+/how-to/keep-derived-files-from-conflicting-in-parallel-pull-requests/ /process/how-to/keep-derived-files-from-conflicting-in-parallel-pull-requests/ 301
+/how-to/mine-the-shadow-mode-routing-log/ /process/how-to/mine-the-shadow-mode-routing-log/ 301
+/how-to/rotate-or-revoke-the-apt-signing-subkey/ /process/how-to/rotate-or-revoke-the-apt-signing-subkey/ 301
+/obligations/0011-nothing-has-been-promoted-out-of-the-synthesized-tier/ /obligations/0011-one-document-has-been-promoted-out-of-the-synthesized-tier-and-no-rate-says-whether-the-tier-drains/ 301
+/obligations/0070-two-of-the-four-warrant-values-have-no-instance-in-this-corpus/ /obligations/0070-one-of-the-four-warrant-values-has-no-instance-in-this-corpus/ 301
+/obligations/0125-nine-documents-state-a-warrant-the-closed-set-does-not-hold-and-no-check-reads-one/ /obligations/0125-nine-documents-state-a-warrant-outside-the-closed-set-and-only-a-person-can-set-the-value/ 301
+/obligations/0145-the-ci-job-named-advisory-carries-every-blocking-shell-suite-in-the-repository/ /process/obligations/0145-the-ci-job-named-advisory-carries-every-blocking-shell-suite-in-the-repository/ 301
+/obligations/0147-the-skills-fixture-suite-passes-on-an-empty-input-set-and-always-fails-in-a-clone-that-has-not-built-the-engine/ /process/obligations/0147-the-skills-fixture-suite-passes-on-an-empty-input-set-and-always-fails-in-a-clone-that-has-not-built-the-engine/ 301
+/obligations/0173-four-inline-gates-in-the-workflow-decide-an-exit-status-and-no-suite-provokes-one/ /process/obligations/0173-four-inline-gates-in-the-workflow-decide-an-exit-status-and-no-suite-provokes-one/ 301
+/obligations/0177-the-value-rule-writes-adopter-on-every-self-audit-record-and-most-of-them-wait-on-a-build/ /process/obligations/0177-the-value-rule-writes-adopter-on-every-self-audit-record-and-most-of-them-wait-on-a-build/ 301
+/obligations/0202-a-bare-none-footprint-is-claimed-as-a-literal-path-so-two-disjoint-issues-collide/ /process/obligations/0202-a-bare-none-footprint-is-claimed-as-a-literal-path-so-two-disjoint-issues-collide/ 301
+/obligations/0203-three-small-run-tooling-gaps-from-run-20260922-1121-filed-together/ /process/obligations/0203-three-small-run-tooling-gaps-from-run-20260922-1121-filed-together/ 301
+/obligations/0206-hw-run-policy-names-a-worktree-add-workaround-that-write-edit-refuses-under-this-harness/ /process/obligations/0206-hw-run-policy-names-a-worktree-add-workaround-that-write-edit-refuses-under-this-harness/ 301
+/obligations/0207-the-plan-usage-of-one-issue-is-known-only-as-the-average-of-its-run/ /process/obligations/0207-the-plan-usage-of-one-issue-is-known-only-as-the-average-of-its-run/ 301
+/obligations/0209-a-build-order-dispatch-passes-no-isolation-so-a-stage-can-inherit-the-parent-worktree-as-its-working-directory/ /process/obligations/0209-a-build-order-dispatch-passes-no-isolation-so-a-stage-can-inherit-the-parent-worktree-as-its-working-directory/ 301
+/obligations/0210-no-fixture-holds-the-symlink-case-of-new-worktree-sh-and-a-bare-name-of-two-dots-leaves-a-branch-behind/ /process/obligations/0210-no-fixture-holds-the-symlink-case-of-new-worktree-sh-and-a-bare-name-of-two-dots-leaves-a-branch-behind/ 301
+/obligations/0211-two-hand-remedy-lines-for-hw-cargo-in-hw-run-policy-may-no-longer-earn-their-cost-on-every-dispatch/ /process/obligations/0211-two-hand-remedy-lines-for-hw-cargo-in-hw-run-policy-may-no-longer-earn-their-cost-on-every-dispatch/ 301
+/obligations/0212-ci-done-sh-reads-a-cancelled-run-of-another-branch-as-a-red-result-on-a-main-merge-commit/ /process/obligations/0212-ci-done-sh-reads-a-cancelled-run-of-another-branch-as-a-red-result-on-a-main-merge-commit/ 301
+/obligations/0213-ci-builds-no-mkdocs-site-so-a-generated-page-under-docs-is-never-checked-against-a-strict-build-before-merge/ /process/obligations/0213-ci-builds-no-mkdocs-site-so-a-generated-page-under-docs-is-never-checked-against-a-strict-build-before-merge/ 301
+/obligations/0216-two-merge-hooks-of-this-repository-print-a-resolve-flag-that-the-verb-refuses/ /process/obligations/0216-two-merge-hooks-of-this-repository-print-a-resolve-flag-that-the-verb-refuses/ 301
+/obligations/0217-the-site-review-marker-lives-in-the-common-directory-of-a-clone-so-one-worktree-s-unreviewed-merge-blocks-the-push-of-every-worktree/ /process/obligations/0217-the-site-review-marker-lives-in-the-common-directory-of-a-clone-so-one-worktree-s-unreviewed-merge-blocks-the-push-of-every-worktree/ 301
+/obligations/0220-no-disk-floor-is-stated-for-a-build-order-run-and-nothing-prunes-the-cargo-pool/ /process/obligations/0220-no-disk-floor-is-stated-for-a-build-order-run-and-nothing-prunes-the-cargo-pool/ 301
+/obligations/0221-subagents-read-skills-from-the-shared-checkout-and-a-worktree-isolated-integrator-cannot-fast-forward-it-after-a-merge/ /process/obligations/0221-subagents-read-skills-from-the-shared-checkout-and-a-worktree-isolated-integrator-cannot-fast-forward-it-after-a-merge/ 301
+/process/decisions/0016-ci-runner-is-an-opt-in-that-only-a-push-reads-and-an-unset-value-falls-back-to-ubuntu-latest/ /process/decisions/0016-ci-runner-is-an-opt-in-that-only-a-push-or-a-merge-group-reads-and-an-unset-value-falls-back-to-ubuntu-latest/ 301
+/process/decisions/0018-a-router-sends-a-push-run-to-a-hosted-runner-when-the-self-hosted-pool-is-full-and-it-can-only-take-work-away/ /process/decisions/0018-a-router-sends-a-push-or-merge-group-run-to-a-hosted-runner-when-the-self-hosted-pool-is-full-and-it-can-only-take-work-away/ 301
+/spec/08-prior-art-and-departures/ /spec/08-design-departures/ 301
+/spec/10-theoretical-foundations/ /evaluations/theoretical-foundations/ 301
+/spec/11-adjacent-work/ /evaluations/adjacent-work/ 301
+/spec/17-orchestration-architecture/ /process/specs/orchestration-architecture/ 301

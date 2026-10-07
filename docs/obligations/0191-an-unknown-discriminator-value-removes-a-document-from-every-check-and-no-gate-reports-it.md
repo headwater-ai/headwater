@@ -18,7 +18,7 @@ provenance:
 
 ## Context
 
-This one was measured rather than reasoned. The [`standards-spec` fixture corpus](../taxonomies/standards-spec/fixtures/README.md) plants `spec_layer: interface_spec` on one document, and no kind of that shelf takes the value. Kind resolution stops. The census carries the row, no rule instantiates over the document, and `headwater check --strict` exits 0 on a run of that document alone.
+This one was measured rather than reasoned. The [`standards-spec` fixture corpus](https://github.com/headwater-ai/headwater/blob/main/docs/taxonomies/standards-spec/fixtures/README.md) plants `spec_layer: interface_spec` on one document, and no kind of that shelf takes the value. Kind resolution stops. The census carries the row, no rule instantiates over the document, and `headwater check --strict` exits 0 on a run of that document alone.
 
 `engine/crates/check/src/coverage.rs` states the ruling deliberately, so this is not a defect of the engine. It is a property of every heterogeneous shelf. The `design-spec` entry's `spec_series` shelf has carried it since the library opened. The sixth finding at [line 162](https://github.com/headwater-ai/headwater/blob/5fb9518/docs/taxonomies/standards-spec/doctrine.md#L162) of the doctrine holds the run.
 

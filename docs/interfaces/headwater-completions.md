@@ -62,6 +62,6 @@ None. The command reads no repository file and writes no file. The caller choose
 
 [`headwater help`](headwater-help.md) prints the same command tree for a person.
 
-[`headwater --help`](../../engine/crates/cli/src/lib.rs) is the root command grammar from which the script is generated.
+[`headwater --help`](https://github.com/headwater-ai/headwater/blob/main/engine/crates/cli/src/lib.rs) is the root command grammar from which the script is generated.
 
 [`headwater check`](headwater-check.md) documents a command whose options and status do read a corpus.

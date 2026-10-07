@@ -34,7 +34,7 @@ The measurement over this repository, at `--now 2026-08-14`:
 
 Four of the seven rules the package declares carry a reading and three carry none. A rule with none is reported, states what would decide it, and counts as neither met nor missing. It is therefore never met, so **a rung that named one would be a rung nobody reaches.** No rung names one, and the three sit outside the ladder.
 
-That is what holds the ladder at three rungs. [The maturity model](../doctrine/maturity-model.md) describes seven. L4 Gated is `gates.required` alone, and L3 Linked needs `hooks.installed` beside a participation reading that also does not exist.
+That is what holds the ladder at three rungs. [The maturity model](https://github.com/headwater-ai/headwater/blob/main/docs/doctrine/maturity-model.md) describes seven. L4 Gated is `gates.required` alone, and L3 Linked needs `hooks.installed` beside a participation reading that also does not exist.
 
 ## Obligation
 

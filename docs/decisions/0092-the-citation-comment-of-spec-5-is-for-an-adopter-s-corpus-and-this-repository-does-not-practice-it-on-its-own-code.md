@@ -57,7 +57,7 @@ The population of the checker is `engine/crates` by crate, not whole. `engine/cr
 
 **#844 closes on this record.** Its clause about the instruction in the files for an agent does not apply. Its clause about a population that is not empty in CI does not apply either. The checker is not for this repository's own code. The spec 13 record that the product owner proposed for the issue is not written, because this record settles the question.
 
-**The checker stays in `tools/cite/`.** [tools/README.md](../../tools/README.md) already says that the checker can move out as a companion that an adopter runs.
+**The checker stays in `tools/cite/`.** [tools/README.md](https://github.com/headwater-ai/headwater/blob/main/tools/README.md) already says that the checker can move out as a companion that an adopter runs.
 
 **Two events reopen the question.** The first event is that the checker moves out of `tools/` as a companion for an adopter. Then this repository can be its first user. The second event is that an adopter asks for this repository as a worked example of the convention. The fixture case over spec 5 fails when the scope paragraph stops linking this record. So the person who reopens the question reads this record first.
 

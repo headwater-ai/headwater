@@ -220,22 +220,33 @@ markdown_extensions:
 
 validation:
   links:
-    # Downgraded from the `warn` default, which `--strict` makes fatal. 18
-    # links across 10 documents point out of `docs_dir` at files that are
-    # correct in the repository and unreachable from a site rooted at `docs/`:
-    # `../../CLAUDE.md`, `../../.headwater/overlay.yml`,
-    # `../../engine/crates/cli/src/lib.rs` and the rest. Rewriting them to
-    # absolute GitHub URLs is refused, because Q31 leaves this repository
-    # private and the publication date with the owner (HW-OBL-0130), so those
-    # URLs would resolve to 404 for every visitor.
+    # Raised from `info` to the `warn` default, which `--strict` makes fatal.
+    # It was `info` while the repository was private (Q31, HW-OBL-0130): the
+    # documents cited repository files by relative path (`../../LICENSE`,
+    # `../../engine/crates/cli/src/lib.rs`), those paths resolve on disk and
+    # in a clone but not on a site rooted at `docs/`, and an absolute GitHub
+    # URL would have been a 404 for every visitor. The repository is public
+    # now, so every such citation is an absolute
+    # `https://github.com/headwater-ai/headwater/blob/main/<path>` URL, and a
+    # relative link that leaves `docs_dir`, names a folder, or names a file
+    # `exclude_docs` removes fails the build instead of reaching the served
+    # site as a 404 that Search Console reports weeks later.
     #
-    # This is a trade-off and not an oversight. `not_found: warn` is the reader
-    # that #406 records this engine as lacking, and measured against this
-    # corpus today it catches zero dead links inside `docs/` — all 18 are
-    # cross-boundary citations. So the downgrade costs nothing presently
-    # detectable and it costs a future guard. It rises to `warn` when those
-    # citations can point at resolvable URLs.
-    not_found: info
+    # `info` is why 44 such 404s reached headwater.tools before anything
+    # failed: 106 `info` lines printed to a log nobody reads and an exit status
+    # of 0 over them. `tools/site/check-site-links.py` is the reader of the
+    # served directory and CI runs both.
+    not_found: warn
+
+    # A root-absolute link (`/obligations/`) is not resolved against `docs_dir`
+    # by MkDocs, so it reaches the served site unchecked. Raised from the
+    # MkDocs 1.6 default of `info` for the same reason as `not_found`.
+    absolute_links: warn
+
+    # A link to a path with no trailing slash or a folder MkDocs cannot map
+    # to a page is reported at `info` by default and left as written, which is
+    # how `../obligations/` (one level too deep on the served site) shipped.
+    unrecognized_links: warn
 
     # Raised from the MkDocs 1.6 default of `info`, which `--strict` does not
     # fail on. That default is the whole reason #431 stood for three weeks
