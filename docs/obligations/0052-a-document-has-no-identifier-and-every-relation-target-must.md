@@ -26,7 +26,7 @@ relations:
 
 ## Obligation
 
-The typing pass minted four schemes in [this repository's overlay](../../.headwater/overlay.yml) before it could declare one edge, and every adopter meets that wall.
+The typing pass minted four schemes in [this repository's overlay](https://github.com/headwater-ai/headwater/blob/main/.headwater/overlay.yml) before it could declare one edge, and every adopter meets that wall.
 
 ## Discharge
 

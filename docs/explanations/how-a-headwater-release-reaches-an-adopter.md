@@ -25,7 +25,7 @@ relations:
 
 ## Scope
 
-This page states what an adopter gets from a Headwater release, and how the adopter can trust it. It is for a person who installs the engine, or who pins a version of the `headwater/standard` taxonomy in a corpus. It states no new rule. Each fact comes from one of the decisions that it draws on, or from the install section of [README.md](../../README.md). Where this page and a release workflow disagree, the workflow is correct and this page is stale.
+This page states what an adopter gets from a Headwater release, and how the adopter can trust it. It is for a person who installs the engine, or who pins a version of the `headwater/standard` taxonomy in a corpus. It states no new rule. Each fact comes from one of the decisions that it draws on, or from the install section of [README.md](https://github.com/headwater-ai/headwater/blob/main/README.md). Where this page and a release workflow disagree, the workflow is correct and this page is stale.
 
 How a maintainer cuts a release is out of scope. [Cut a release](../process/how-to/cut-a-release.md) and the process decisions that start at [HW-PD-0009](../process/decisions/0009-a-release-gets-all-its-assets-in-one-create-call-and-a-person-deletes-it-to-run-again.md) hold that account. This page also does not rule whether the kinds of this corpus follow the four modes of Diátaxis ([HW-OBL-0097](../obligations/0097-whether-the-four-modes-of-di-taxis-are-the-kind-set.md)).
 
@@ -50,7 +50,7 @@ The table shows what each route gives an adopter, and what the adopter checks.
 | the `headwater` binary in a Debian package | the APT repository on `headwater.tools` | apt checks the signature of the repository metadata, which the release signs only when the `APT_SIGNING_KEY` secret is set. Without the secret, this route does not exist for that release. |
 | the `headwater/standard` package as a zip | a taxonomy release, tag `taxonomy/headwater-standard/v*` | `headwater taxonomy vendor --expect <digest>`, with the digest from the release notes |
 
-[README.md](../../README.md) gives the commands for each route, and the current version of each line.
+[README.md](https://github.com/headwater-ai/headwater/blob/main/README.md) gives the commands for each route, and the current version of each line.
 
 ## Why it is this way
 

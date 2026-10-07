@@ -361,6 +361,6 @@ That sentence was true when this evaluation ran, and it is no longer true. The o
 | 9 | The public site is a projection of this corpus, rendered by a third-party generator, and every published number comes from the evidence register | [Spec 4](../spec/04-assurance-model.md#the-systems-own-assurance) |
 | 10 | The prior art for terms, on-ramps and being found | [HW-EVAL-adjacent-work §S](../evaluations/adjacent-work.md#s--terms-on-ramps-and-being-found) and its summary table |
 | 11 | The register is no longer a list of deferrals, and what remains live across it is stated once rather than reconstructed | [Spec 9](../spec/09-open-questions.md) |
-| 12 | The repository has no stated license, and a reader should learn that from the README rather than from its absence | [README](../../README.md) |
+| 12 | The repository has no stated license, and a reader should learn that from the README rather than from its absence | [README](https://github.com/headwater-ai/headwater/blob/main/README.md) |
 
 All twelve are applied.

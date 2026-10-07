@@ -651,6 +651,8 @@ anchors
     cited by HW-DR-0037
   code_path `site/_headers` via source-tree
     cited by HW-DR-0047
+  code_path `site/_redirects` via source-tree
+    cited by HW-DR-0047
   code_path `site/changelog/index.html` via source-tree
     cited by HW-DR-0037
   code_path `site/compare/index.html` via source-tree

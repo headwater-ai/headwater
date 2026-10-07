@@ -99,3 +99,15 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: sh tools/site/deploy-site.sh
+      - name: The deployed site answers every link and every redirect
+        # `wrangler deploy` has returned, so the site is live and a failure
+        # here is an alert and not a rollback: the job turns red and the log
+        # names each URL. Three things are the host's to do and nothing in the
+        # repository can see them before a deploy. It must read
+        # `site/_redirects` and answer each rule with its status, it must send
+        # `http://` to `https://`, and every link on a deployed page must land
+        # on a page that deployed. Search Console found 44 lost URLs weeks
+        # after they were lost because nothing asked. `tools/site/site-live-
+        # fixtures.sh` provokes each refusal against a local server, including
+        # a host that ignores the redirect file.
+        run: python3 tools/site/check-live-site.py https://headwater.tools

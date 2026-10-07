@@ -32,7 +32,7 @@ Every named concept in this specification, with one line about what it is and a 
 
 **A human writes this page, and no engine can generate it.** A [projection](01-conceptual-model.md#projections) of this repository's taxonomy emits one entry for each declared kind, facet, relation and purpose. That is 27 entries, with names like `governed_document`, `status` and `supersedes`. This page defines the words of the schema language rather than the declarations that are written in it. Of the 175 terms below, exactly one is the name of a declaration, and it is [summary](#summary). The two lists are almost disjoint, which is the measurement that [13 — Open obligations](13-open-obligations.md#a-human-maintains-this-list-by-hand) records.
 
-**On the count.** The list below holds about 175 terms, and that number needs an honest reading. Most of them belong to the engine, the check layer, or the publisher, and no author ever meets them. An author who files a document meets the eight in the next table. A taxonomy author meets roughly thirty-five. The [core-concepts review](../reviews/) treats concept count as a live risk to adoption. This page is the inventory that makes the count visible, instead of leaving it to be felt.
+**On the count.** The list below holds about 175 terms, and that number needs an honest reading. Most of them belong to the engine, the check layer, or the publisher, and no author ever meets them. An author who files a document meets the eight in the next table. A taxonomy author meets roughly thirty-five. The [core-concepts review](../reviews/README.md) treats concept count as a live risk to adoption. This page is the inventory that makes the count visible, instead of leaving it to be felt.
 
 ## The eight an author needs
 
@@ -804,7 +804,7 @@ Several terms are not ours. [HW-EVAL-theoretical-foundations](../evaluations/the
 | [Confluence](#confluence), overlay operations | Delta-oriented programming (Schaefer et al.) | Order independence of overlays, checked statically before application |
 | [Capture cost](#capture-cost) | IBIS, gIBIS, QOC, and the traceability literature | The failure that killed fifty years of design-rationale tools, now a tracked metric |
 | RFC 2119 | IETF | The normative keyword set that voice checking assumes by default |
-| LinkML, SHACL | The [evaluations](../evaluations/) | Export targets for Shape and Graph checks. Emitted, never authored, and each one waits for a named consumer ([spec 13](13-open-obligations.md#what-waits-on-a-first-adopter)) |
+| LinkML, SHACL | The [evaluations](../evaluations/README.md) | Export targets for Shape and Graph checks. Emitted, never authored, and each one waits for a named consumer ([spec 13](13-open-obligations.md#what-waits-on-a-first-adopter)) |
 | SARIF | OASIS | One of the finding output formats |
 | MCP | Model Context Protocol | The agent-facing surface of the engine library |
 

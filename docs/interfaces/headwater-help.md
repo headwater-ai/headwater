@@ -69,7 +69,7 @@ None. The command reads no repository file and writes no file.
 
 ## See also
 
-[`headwater --help`](../../engine/crates/cli/src/lib.rs) is the root command grammar.
+[`headwater --help`](https://github.com/headwater-ai/headwater/blob/main/engine/crates/cli/src/lib.rs) is the root command grammar.
 
 [`headwater completions`](headwater-completions.md) writes shell completion scripts from the same command tree.
 

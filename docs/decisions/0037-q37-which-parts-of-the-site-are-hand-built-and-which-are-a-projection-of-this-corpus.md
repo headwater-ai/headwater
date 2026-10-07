@@ -34,7 +34,7 @@ relations:
 
 ## Context
 
-**A site is live, and a merge to the default branch publishes it.** `site/` holds `index.html`, `ns/index.html`, `_headers` and `DESIGN-BRIEF.md`. `wrangler.jsonc` names `./site` as the asset directory of `https://headwater.tools/`, and its own comment states that Cloudflare runs `npx wrangler deploy` from the repository root on each push. [The w3id registration](../w3id/README.md) records that `https://w3id.org/headwater/` answers 302 and sends the client to `https://headwater.tools/ns/`. No staging step and no workflow stands between a merge and a reader.
+**A site is live, and a merge to the default branch publishes it.** `site/` holds `index.html`, `ns/index.html`, `_headers` and `DESIGN-BRIEF.md`. `wrangler.jsonc` names `./site` as the asset directory of `https://headwater.tools/`, and its own comment states that Cloudflare runs `npx wrangler deploy` from the repository root on each push. [The w3id registration](https://github.com/headwater-ai/headwater/blob/main/docs/w3id/README.md) records that `https://w3id.org/headwater/` answers 302 and sends the client to `https://headwater.tools/ns/`. No staging step and no workflow stands between a merge and a reader.
 
 **[Q16](0016-public-presence.md) ruled that the site is a projection of this corpus, and it stated the mechanism.** "Every number on the site comes from the evidence register, and a claim with no instrument is generated as unmeasured." The same entry adds that "a hand-written number on the site is then a finding, in the way that a hand-edited shelf index is."
 

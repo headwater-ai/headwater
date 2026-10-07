@@ -104,13 +104,13 @@ flowchart LR
 
 **Every stage is an agent definition, and each one loads fresh on every dispatch.** The parent dispatches by name and pastes nothing a definition already states. Each definition declares its own model in its own front matter, so a per-stage model choice is one line rather than a paragraph of prose. Each stage returns a fixed report block, so a parent that has compacted acts by matching a block rather than by recalling a rule.
 
-**Two skills carry what more than one stage obeys.** [`hw-run-policy`](../../../.claude/skills/hw-run-policy/SKILL.md) holds the standing rulings and the environment of a run, and every stage invokes it before it begins. [`hw-verification-bar`](../../../.claude/skills/hw-verification-bar/SKILL.md) holds the adversarial checks and the review questions behind them. `hw-iterate` chooses attacks from the bar. The builder runs them first, and the verifier runs them again.
+**Two skills carry what more than one stage obeys.** [`hw-run-policy`](https://github.com/headwater-ai/headwater/blob/main/.claude/skills/hw-run-policy/SKILL.md) holds the standing rulings and the environment of a run, and every stage invokes it before it begins. [`hw-verification-bar`](https://github.com/headwater-ai/headwater/blob/main/.claude/skills/hw-verification-bar/SKILL.md) holds the adversarial checks and the review questions behind them. `hw-iterate` chooses attacks from the bar. The builder runs them first, and the verifier runs them again.
 
 ## Roles and responsibilities
 
 ### The parent
 
-[`.claude/commands/next-run.md`](../../../.claude/commands/next-run.md) is the entrypoint and the parent's whole doctrine. [`.claude/commands/next.md`](../../../.claude/commands/next.md) runs one iteration over the same definitions and the same two skills, at width one. There the merge belongs to the person in the session.
+[`.claude/commands/next-run.md`](https://github.com/headwater-ai/headwater/blob/main/.claude/commands/next-run.md) is the entrypoint and the parent's whole doctrine. [`.claude/commands/next.md`](https://github.com/headwater-ai/headwater/blob/main/.claude/commands/next.md) runs one iteration over the same definitions and the same two skills, at width one. There the merge belongs to the person in the session.
 
 **The parent owns three things: the doctrine, the loop and the veto.** The doctrine is at most ten numbered lines and at most six hundred tokens. A run copies it into the run directory, so that a compacted parent acts from it alone. The loop dispatches the queue, fills the slots, and advances on each report. The veto is the merge decision on a final `PASS`, and it is the one judgment that never leaves the parent.
 
@@ -120,19 +120,19 @@ flowchart LR
 
 **A parent session ends every few merges, and the run outlives it.** The parent reads its whole context again on every call, so a long session pays more for each call than the call before it. `tools/run/supervise.sh` starts each session after the first. It creates a drain file when a call passes a context threshold or when the session reaches a count of merges. In drain the parent starts no new stage, and it exits when nothing is in flight, because every subagent ends with its process. The next session reads the handover file of each issue and dispatches the stage that each one needs. A veto of a `PASS` whose `hw-iterate` ended with the old session goes back through the handover file as a failed verify. [HW-PD-0023](../decisions/0023-a-build-order-parent-restarts-every-few-merges-drains-to-zero-first-and-resumes-from-the-handover-files-on-disk.md) records the three rulings and the measurement.
 
-**The parent escalates to a person on two conditions and rules on everything else.** A redirect that changes milestone order and a decision that needs an owner rather than an answer both go to the human. [`headwater-product-owner`](../../../.claude/agents/headwater-product-owner.md) reads the whole board and writes one ruling block for each decision the owner owes. The parent records the owner's answer in the run's decisions file, and the next pass of the product owner posts that answer on the issue. Until then, the adjudication stage reads the recorded answer as the ruling. [`headwater-maintainer`](../../../.claude/agents/headwater-maintainer.md) reports what a change left stale. Both propose, and neither accepts.
+**The parent escalates to a person on two conditions and rules on everything else.** A redirect that changes milestone order and a decision that needs an owner rather than an answer both go to the human. [`headwater-product-owner`](https://github.com/headwater-ai/headwater/blob/main/.claude/agents/headwater-product-owner.md) reads the whole board and writes one ruling block for each decision the owner owes. The parent records the owner's answer in the run's decisions file, and the next pass of the product owner posts that answer on the issue. Until then, the adjudication stage reads the recorded answer as the ruling. [`headwater-maintainer`](https://github.com/headwater-ai/headwater/blob/main/.claude/agents/headwater-maintainer.md) reports what a change left stale. Both propose, and neither accepts.
 
 ### The queue stage
 
-[`.claude/agents/hw-queue.md`](../../../.claude/agents/hw-queue.md) reads the whole issue list and the milestone list once, and writes an ordered file of eligible issues into the run directory.
+[`.claude/agents/hw-queue.md`](https://github.com/headwater-ai/headwater/blob/main/.claude/agents/hw-queue.md) reads the whole issue list and the milestone list once, and writes an ordered file of eligible issues into the run directory.
 
 **It owns the population and the order.** It applies the value rule, sorts a defect above everything else, and marks each candidate with the artifacts that change most likely regenerates. The parent then reads one report and never the board. A board dump read once is re-read on every later turn of the run. An issue with an open GitHub `blocked by` link stays in its place, marked `blocked`, and `run-dir.sh next` holds it until the parent rules it `open`. So the queue raises a dependency to the parent and never decides it.
 
-**It never claims an issue and never edits the board.** A claim belongs to the construction stage, so that the claim is atomic and survives an agent that dies. A misfiled issue, a finished milestone or a missing label is a line in this stage's report. [`headwater-product-owner`](../../../.claude/agents/headwater-product-owner.md) owns the structure of the board and never its scope.
+**It never claims an issue and never edits the board.** A claim belongs to the construction stage, so that the claim is atomic and survives an agent that dies. A misfiled issue, a finished milestone or a missing label is a line in this stage's report. [`headwater-product-owner`](https://github.com/headwater-ai/headwater/blob/main/.claude/agents/headwater-product-owner.md) owns the structure of the board and never its scope.
 
 ### The adjudication stage
 
-[`.claude/agents/hw-adjudicate.md`](../../../.claude/agents/hw-adjudicate.md) settles whether one issue's premise still holds, before anything is built.
+[`.claude/agents/hw-adjudicate.md`](https://github.com/headwater-ai/headwater/blob/main/.claude/agents/hw-adjudicate.md) settles whether one issue's premise still holds, before anything is built.
 
 **It owns the premise, the footprint and the decisive fixture.** It writes a note for the construction stage, which starts near an empty context and reads nothing the adjudicator saw unless the note carries it. Its report is a fixed block of four lines. They are the verdict, the paths the parent claims, the derived folds that nobody claims, and the decisive fixture. That fixture is the one test that would catch the thing the issue exists to prevent.
 
@@ -142,15 +142,15 @@ flowchart LR
 
 ### The loop stage
 
-[`.claude/agents/hw-iterate.md`](../../../.claude/agents/hw-iterate.md) owns the build, verify and rework loop for one adjudicated issue, and reports to the parent once ([HW-PD-0022](../decisions/0022-the-verify-and-rework-loop-for-one-issue-runs-below-the-parent.md)).
+[`.claude/agents/hw-iterate.md`](https://github.com/headwater-ai/headwater/blob/main/.claude/agents/hw-iterate.md) owns the build, verify and rework loop for one adjudicated issue, and reports to the parent once ([HW-PD-0022](../decisions/0022-the-verify-and-rework-loop-for-one-issue-runs-below-the-parent.md)).
 
-**It owns the intermediate verdicts and never the final one.** It dispatches the construction stage and a fresh verification stage, each in its own worktree. It chooses each verifier's attacks from [`hw-verification-bar`](../../../.claude/skills/hw-verification-bar/SKILL.md). It sends each `FAIL` to the same builder by `SendMessage`, with the finding verbatim, and it never replaces the builder. It stops at the third `FAIL` of one issue. The parent rules its `PASS` or its `STOP`, and a veto of a `PASS` comes back to it.
+**It owns the intermediate verdicts and never the final one.** It dispatches the construction stage and a fresh verification stage, each in its own worktree. It chooses each verifier's attacks from [`hw-verification-bar`](https://github.com/headwater-ai/headwater/blob/main/.claude/skills/hw-verification-bar/SKILL.md). It sends each `FAIL` to the same builder by `SendMessage`, with the finding verbatim, and it never replaces the builder. It stops at the third `FAIL` of one issue. The parent rules its `PASS` or its `STOP`, and a veto of a `PASS` comes back to it.
 
 **It never merges, never enqueues, never writes to the board and never reads the branch.** It reads verdicts and notes. The verifier reads the code, and that is why the verifier is a separate agent.
 
 ### The construction stage
 
-[`.claude/agents/hw-build.md`](../../../.claude/agents/hw-build.md) builds one adjudicated issue in a worktree of its own and opens the pull request. `hw-iterate` dispatches it.
+[`.claude/agents/hw-build.md`](https://github.com/headwater-ai/headwater/blob/main/.claude/agents/hw-build.md) builds one adjudicated issue in a worktree of its own and opens the pull request. `hw-iterate` dispatches it.
 
 **It owns the branch, the commits and the pull request.** It claims the issue on the board before its first commit, because a board claim is atomic and needs no coordinator. It extends the contract, the decision clause or the case table the note names before it writes any implementation. It runs the format gate and re-blesses each recorded fixture that the change moved before it pushes. It reports when the pull request is open, and it does not wait for continuous integration. The verifier waits for that run, and a red run comes back to the builder as a `FAIL` that names the failed checks.
 
@@ -160,9 +160,9 @@ flowchart LR
 
 ### The verification stage
 
-[`.claude/agents/hw-verify.md`](../../../.claude/agents/hw-verify.md) attacks one branch adversarially and returns a verdict to `hw-iterate`, which dispatched it.
+[`.claude/agents/hw-verify.md`](https://github.com/headwater-ai/headwater/blob/main/.claude/agents/hw-verify.md) attacks one branch adversarially and returns a verdict to `hw-iterate`, which dispatched it.
 
-**It owns the attacks and the evidence, and never the ruling.** It detaches its own worktree at the branch and runs the attacks `hw-iterate` chose from [`hw-verification-bar`](../../../.claude/skills/hw-verification-bar/SKILL.md). It leaves the workspace suite, clippy and the format check to CI, which it waits on last: CI runs them on the commit it detached at and on the host that also builds the branch, so a second run here doubles the load and adds no evidence. Its block reports what fired, what held, and every claim in the build note it could not test.
+**It owns the attacks and the evidence, and never the ruling.** It detaches its own worktree at the branch and runs the attacks `hw-iterate` chose from [`hw-verification-bar`](https://github.com/headwater-ai/headwater/blob/main/.claude/skills/hw-verification-bar/SKILL.md). It leaves the workspace suite, clippy and the format check to CI, which it waits on last: CI runs them on the commit it detached at and on the host that also builds the branch, so a second run here doubles the load and adds no evidence. Its block reports what fired, what held, and every claim in the build note it could not test.
 
 **A verdict of `PASS` says what the verifier ran, and never that the branch is sound.** The line of unchecked claims is what makes a verdict readable, and a verdict that omits it is a verdict nobody can calibrate. `hw-iterate` and the parent both know this when they rule.
 
@@ -170,7 +170,7 @@ flowchart LR
 
 ### The integration stage
 
-[`.claude/agents/hw-integrate.md`](../../../.claude/agents/hw-integrate.md) hands every ruled pull request to the GitHub merge queue and waits for each to land or be ejected ([HW-PD-0020](../decisions/0020-merges-go-through-the-github-merge-queue-one-squash-commit-per-pull-request.md)). Then it moves the shared checkout, rebuilds and regenerates once, and writes back to the board.
+[`.claude/agents/hw-integrate.md`](https://github.com/headwater-ai/headwater/blob/main/.claude/agents/hw-integrate.md) hands every ruled pull request to the GitHub merge queue and waits for each to land or be ejected ([HW-PD-0020](../decisions/0020-merges-go-through-the-github-merge-queue-one-squash-commit-per-pull-request.md)). Then it moves the shared checkout, rebuilds and regenerates once, and writes back to the board.
 
 **It is the sole owner of the shared checkout and of that checkout's engine target.** Depth one is a mutex rather than a tuning constant, because every merge touches the same checkout, the same target directory and the same `origin/main`. Two of them at once would check out `main` in one directory together.
 
@@ -212,17 +212,17 @@ The front matter of this part declares a `governs` edge onto each `.claude/` fil
 
 | File | What it holds |
 |---|---|
-| [`.claude/commands/next-run.md`](../../../.claude/commands/next-run.md) | The entrypoint: the value rule, the doctrine block, the loop, the veto, the resume form and the dispatch template |
-| [`.claude/commands/next.md`](../../../.claude/commands/next.md) | The single-iteration form over the same definitions and skills, with the merge left to a person |
-| [`.claude/agents/hw-queue.md`](../../../.claude/agents/hw-queue.md) | The queue stage: the eligible population, the selection order and the collision marks |
-| [`.claude/agents/hw-adjudicate.md`](../../../.claude/agents/hw-adjudicate.md) | The adjudication stage: the premise, the claimed footprint and the derived folds, the decisive fixture and the three kinds of refusal |
-| [`.claude/agents/hw-iterate.md`](../../../.claude/agents/hw-iterate.md) | The loop stage: the dispatch of the builder and each verifier, the rework by resume, the checkpoint at each stage boundary, the stop at the third FAIL and the report |
-| [`.claude/agents/hw-build.md`](../../../.claude/agents/hw-build.md) | The construction stage: the worktree, the contract-first order, the pull request and the write boundary |
-| [`.claude/agents/hw-verify.md`](../../../.claude/agents/hw-verify.md) | The verification stage: its own worktree, the suite, the chosen attacks and the verdict block |
-| [`.claude/agents/hw-integrate.md`](../../../.claude/agents/hw-integrate.md) | The integration stage: the merge, the rebuild, the regenerate, the write-back, the claim release and the ledger line |
-| [`.claude/skills/hw-run-policy/SKILL.md`](../../../.claude/skills/hw-run-policy/SKILL.md) | The standing rulings, the environment of a run, and the same list read for cost |
-| [`.claude/skills/hw-verification-bar/SKILL.md`](../../../.claude/skills/hw-verification-bar/SKILL.md) | The adversarial checks a branch survives before it merges, and the review questions behind them |
-| [`.claude/agents/headwater-product-owner.md`](../../../.claude/agents/headwater-product-owner.md) | Board judgment: milestone order, what is finished and unclosed, the rulings the owner owes, ruling write-back and epic closure |
-| [`.claude/agents/headwater-maintainer.md`](../../../.claude/agents/headwater-maintainer.md) | What one change touched, what it left stale, and what the corpus is owed |
+| [`.claude/commands/next-run.md`](https://github.com/headwater-ai/headwater/blob/main/.claude/commands/next-run.md) | The entrypoint: the value rule, the doctrine block, the loop, the veto, the resume form and the dispatch template |
+| [`.claude/commands/next.md`](https://github.com/headwater-ai/headwater/blob/main/.claude/commands/next.md) | The single-iteration form over the same definitions and skills, with the merge left to a person |
+| [`.claude/agents/hw-queue.md`](https://github.com/headwater-ai/headwater/blob/main/.claude/agents/hw-queue.md) | The queue stage: the eligible population, the selection order and the collision marks |
+| [`.claude/agents/hw-adjudicate.md`](https://github.com/headwater-ai/headwater/blob/main/.claude/agents/hw-adjudicate.md) | The adjudication stage: the premise, the claimed footprint and the derived folds, the decisive fixture and the three kinds of refusal |
+| [`.claude/agents/hw-iterate.md`](https://github.com/headwater-ai/headwater/blob/main/.claude/agents/hw-iterate.md) | The loop stage: the dispatch of the builder and each verifier, the rework by resume, the checkpoint at each stage boundary, the stop at the third FAIL and the report |
+| [`.claude/agents/hw-build.md`](https://github.com/headwater-ai/headwater/blob/main/.claude/agents/hw-build.md) | The construction stage: the worktree, the contract-first order, the pull request and the write boundary |
+| [`.claude/agents/hw-verify.md`](https://github.com/headwater-ai/headwater/blob/main/.claude/agents/hw-verify.md) | The verification stage: its own worktree, the suite, the chosen attacks and the verdict block |
+| [`.claude/agents/hw-integrate.md`](https://github.com/headwater-ai/headwater/blob/main/.claude/agents/hw-integrate.md) | The integration stage: the merge, the rebuild, the regenerate, the write-back, the claim release and the ledger line |
+| [`.claude/skills/hw-run-policy/SKILL.md`](https://github.com/headwater-ai/headwater/blob/main/.claude/skills/hw-run-policy/SKILL.md) | The standing rulings, the environment of a run, and the same list read for cost |
+| [`.claude/skills/hw-verification-bar/SKILL.md`](https://github.com/headwater-ai/headwater/blob/main/.claude/skills/hw-verification-bar/SKILL.md) | The adversarial checks a branch survives before it merges, and the review questions behind them |
+| [`.claude/agents/headwater-product-owner.md`](https://github.com/headwater-ai/headwater/blob/main/.claude/agents/headwater-product-owner.md) | Board judgment: milestone order, what is finished and unclosed, the rulings the owner owes, ruling write-back and epic closure |
+| [`.claude/agents/headwater-maintainer.md`](https://github.com/headwater-ai/headwater/blob/main/.claude/agents/headwater-maintainer.md) | What one change touched, what it left stale, and what the corpus is owed |
 | [The evaluation](../evaluations/the-build-order-as-a-multi-agent-system.md) | The measurements under every ruling above, and the numbers a later run answers to |
 | [`docs/process/decisions/`](../decisions/README.md) | The nine rulings this part states, each with the argument that settled it |

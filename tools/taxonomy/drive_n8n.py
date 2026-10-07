@@ -328,7 +328,10 @@ COUNT_SECTION = "The count"
 FENCE = re.compile(r"^ {0,3}(`{3,}|~{3,})")
 SHELF_SECTION = "What shape the shelf declaration had to take"
 SHELF_ROW = re.compile(r"^\| `homogeneous: [^|]*\| (\d+)\b")
-FIXTURE_LINK = re.compile(r"\]\((\.\./taxonomies/[\w-]+/fixtures/n8n/README\.md)")
+FIXTURE_LINK = re.compile(
+    r"\]\((?:\.\./|https://github\.com/headwater-ai/headwater/blob/main/docs/)"
+    r"(taxonomies/[\w-]+/fixtures/n8n/README\.md)"
+)
 
 
 def headed_blocks(text):
@@ -388,7 +391,7 @@ def evaluation_figure_problems(root, text):
         if link is None:
             problems.append("%s:%d: a `%s` block links no fixture README, so this job cannot hold it" % (EVALUATION, first, SUMMARY))
             continue
-        rel = os.path.normpath(os.path.join(os.path.dirname(EVALUATION), link.group(1)))
+        rel = os.path.normpath(os.path.join(os.path.dirname(os.path.dirname(EVALUATION)), link.group(1)))
         linked.append(rel)
         theirs = figures(rel)
         if theirs is None:
@@ -679,7 +682,7 @@ def provoke_evaluation_figures(root, corpora, scratch):
     unlinked = os.path.join(scratch, "unlinked")
     copy_in(unlinked)
     path = os.path.join(unlinked, EVALUATION)
-    link = "(" + os.path.relpath(DESIGN_SPEC_README, os.path.dirname(EVALUATION))
+    link = "(https://github.com/headwater-ai/headwater/blob/main/" + DESIGN_SPEC_README
     text = open(path, encoding="utf-8").read()
     if link not in text:
         raise Mismatch("%s does not link %s, so the unlinked leg has nothing to remove" % (EVALUATION, DESIGN_SPEC_README))
