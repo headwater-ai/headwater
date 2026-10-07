@@ -800,14 +800,15 @@ jobs:
           fi
           exit "$status"
       - name: The tools a build-order stage calls behave as their agent definitions say
-        # Seven scripts that every stage of a run calls in place of a command
+        # Eight scripts that every stage of a run calls in place of a command
         # it once retyped: the CI-finished condition, the queue-finished
         # condition, the board move, the
-        # single-issue reads and writes, the capped wait, the fetched-added-
-        # built worktree and the cargo slot wrapper. Each suite was written
-        # with its script and none was run by anything until run
-        # 20260923-0733 read two of them wrong in production. Every suite
-        # fakes `gh` or `cargo` on PATH, so this step needs no network, no
+        # single-issue reads and writes, the capped wait, the free space on
+        # the volume of the cargo pool, the fetched-added-
+        # built worktree and the cargo slot wrapper. Each of the first seven
+        # suites was written with its script and none was run by anything
+        # until run 20260923-0733 read two of them wrong in production. Every
+        # suite fakes `gh`, `cargo` or `df` on PATH, so this step needs no network, no
         # token and no toolchain, and writes only under temporary directories.
         # It needs `jq`, which ubuntu-latest and the self-hosted runner both
         # carry, as the run directory step above shows: the fake `gh` of the

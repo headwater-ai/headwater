@@ -61,7 +61,11 @@ case "$path" in
     *) mount=/mnt/fake-a; avail=${FAKE_A_K:-209715200} ;;
 esac
 echo "Filesystem     1024-blocks      Used Available Capacity Mounted on"
-echo "/dev/fake      300000000  1000 $avail 50% $mount"
+case "${FAKE_DF_MODE:-}" in
+    five) echo "/dev/fake      300000000  1000 $avail 50%" ;;
+    word) echo "/dev/fake      300000000  1000 lots 50% $mount" ;;
+    *) echo "/dev/fake      300000000  1000 $avail 50% $mount" ;;
+esac
 EOF
 chmod +x "$scratch/bin/df"
 
@@ -207,6 +211,25 @@ if [ "$status" -eq 1 ] && pool_line | grep -q 'free=39G'; then
 else
     fail "one KiB under the floor rounds down to 39G and exits 1" "status $status, out: $(cat "$scratch/out")"
 fi
+
+echo "a pool path that is a regular file is measured at its directory"
+: > "$scratch/vol-b/pool-file"
+run HW_CARGO_POOL="$scratch/vol-b/pool-file" --
+if [ "$status" -eq 0 ] && [ "$(pool_line)" = "pool       $scratch/vol-b  mount=/mnt/fake-b  free=5G" ]; then
+    pass "measured at vol-b, exit 0"
+else
+    fail "measured at vol-b, exit 0" "status $status, out: $(cat "$scratch/out"), err: $(cat "$scratch/err")"
+fi
+
+echo "df output that cannot be read is refused, exit 2, under a floor it would otherwise pass"
+for mode in five word; do
+    run HW_CARGO_POOL="$scratch/vol-a" FAKE_DF_MODE=$mode -- --floor 1
+    if [ "$status" -eq 2 ] && grep -q 'df printed' "$scratch/err" && [ -z "$(pool_line)" ]; then
+        pass "a \`$mode\` df line exits 2 and prints no reading"
+    else
+        fail "a \`$mode\` df line exits 2 and prints no reading" "status $status, out: $(cat "$scratch/out"), err: $(cat "$scratch/err")"
+    fi
+done
 
 echo "a bad argument is refused, exit 2"
 for args in "--floor" "--floor forty" "--bogus"; do

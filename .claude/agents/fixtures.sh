@@ -547,6 +547,9 @@ agents/hw-verify.md|A `PASS` requires exit 0. When the title says
 agents/hw-verify.md|When the title says `Closes #N` and the body says `Refs #N`, or the reverse, that is a `FAIL` of the body and not of the code.
 agents/hw-verify.md|Before your first build makes a fresh `target-verify-<N>`, run `sh tools/run/disk-free.sh`.
 agents/hw-verify.md|When the pool'"'"'s volume has less than 40G free, stop and report `FAIL` with `disk: <the reading>` as the first line of `FIRED`
+agents/hw-iterate.md|**Verify.** Before each verify, run `sh tools/run/disk-free.sh`
+agents/hw-iterate.md|The floor that `hw-verify` states is on the pool'"'"'s volume.
+skills/hw-run-policy/SKILL.md|`hw-iterate` runs `sh tools/run/disk-free.sh` before it dispatches a verify
 agents/hw-iterate.md|name them on the builder'"'"'s `attacks:` line as well, so that the builder runs them first.
 agents/hw-adjudicate.md|`FOOTPRINT` is what the parent claims: the paths the change edits by hand, and the recorded fixtures it moves
 agents/hw-adjudicate.md|So an overlap on a derived fold alone is not a `WAITS-ON`, and an overlap on a hand-edited path still is.
