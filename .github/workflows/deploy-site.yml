@@ -109,5 +109,8 @@ jobs:
         # on a page that deployed. Search Console found 44 lost URLs weeks
         # after they were lost because nothing asked. `tools/site/site-live-
         # fixtures.sh` provokes each refusal against a local server, including
-        # a host that ignores the redirect file.
-        run: python3 tools/site/check-live-site.py https://headwater.tools
+        # a host that ignores the redirect file. `--settle 240` waits until the
+        # edge serves the first redirect rule: the first deploy that ran this
+        # step asked in the second `wrangler deploy` returned and read the
+        # previous site.
+        run: python3 tools/site/check-live-site.py https://headwater.tools --settle 240
