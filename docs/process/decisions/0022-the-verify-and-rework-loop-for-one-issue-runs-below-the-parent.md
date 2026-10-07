@@ -59,4 +59,4 @@ The parent wakes for the adjudicate report, for the `hw-iterate` report, and for
 
 The veto of [HW-PD-0004](0004-coordination-is-a-create-only-claim-and-authority-stays-on-the-tree.md) stays on the tree. `hw-iterate` is the parent of its builder and its verifiers, so its `SendMessage` flows down the tree and is not a message from a peer.
 
-`.claude/commands/next-run.md`, `.claude/commands/next.md`, `.claude/run/doctrine.md`, `hw-run-policy`, `hw-build` and `hw-verify` state the new loop. The check `df -h /` before each verify moves from the parent to `hw-iterate`. Case 10 of `.claude/agents/fixtures.sh` holds the shape: the parent names `hw-iterate` and neither of the two stages that it dispatches.
+`.claude/commands/next-run.md`, `.claude/commands/next.md`, `.claude/run/doctrine.md`, `hw-run-policy`, `hw-build` and `hw-verify` state the new loop. The disk check before each verify moves from the parent to `hw-iterate`. Since #1694 that check is `sh tools/run/disk-free.sh`, which reads the volume that holds the cargo pool. Case 10 of `.claude/agents/fixtures.sh` holds the shape: the parent names `hw-iterate` and neither of the two stages that it dispatches.
