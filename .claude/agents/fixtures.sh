@@ -545,8 +545,11 @@ agents/hw-build.md|Hold a survivor with a test before you report, where you can.
 agents/hw-verify.md|Take the script from `main`, not from the branch: after `git fetch origin`, run `git show origin/main:tools/run/gh-issue.sh > <scratch>/gh-issue-main.sh`
 agents/hw-verify.md|A `PASS` requires exit 0. When the title says
 agents/hw-verify.md|When the title says `Closes #N` and the body says `Refs #N`, or the reverse, that is a `FAIL` of the body and not of the code.
-agents/hw-verify.md|Before your first build makes a fresh `target-verify-<N>`, run `df -h /`.
-agents/hw-verify.md|When less than 40G is free, stop and report `FAIL` with `disk: <the reading>` as the first line of `FIRED`
+agents/hw-verify.md|Before your first build makes a fresh `target-verify-<N>`, run `sh tools/run/disk-free.sh`.
+agents/hw-verify.md|When the pool'"'"'s volume has less than 40G free, stop and report `FAIL` with `disk: <the reading>` as the first line of `FIRED`
+agents/hw-iterate.md|**Verify.** Before each verify, run `sh tools/run/disk-free.sh`
+agents/hw-iterate.md|The floor that `hw-verify` states is on the pool'"'"'s volume.
+skills/hw-run-policy/SKILL.md|`hw-iterate` runs `sh tools/run/disk-free.sh` before it dispatches a verify
 agents/hw-iterate.md|name them on the builder'"'"'s `attacks:` line as well, so that the builder runs them first.
 agents/hw-adjudicate.md|`FOOTPRINT` is what the parent claims: the paths the change edits by hand, and the recorded fixtures it moves
 agents/hw-adjudicate.md|So an overlap on a derived fold alone is not a `WAITS-ON`, and an overlap on a hand-edited path still is.
@@ -592,10 +595,10 @@ case "$why" in
     *'hw-verify.md no longer states'*) pass 'and a rule dropped from its owner is reported' ;;
     *) fail 'a rule dropped from its owner is reported' "reported: \`$why\`" ;;
 esac
-sed 's/When less than 40G is free, stop and report `FAIL`/When less than 40G is free, note it and build anyway, or report `FAIL`/' "$root/.claude/agents/hw-verify.md" > "$scratch/dot/agents/hw-verify.md"
+sed 's/has less than 40G free, stop and report `FAIL`/has less than 40G free, note it and build anyway, or report `FAIL`/' "$root/.claude/agents/hw-verify.md" > "$scratch/dot/agents/hw-verify.md"
 why=$(throughput_owners "$scratch/dot")
 case "$why" in
-    *'hw-verify.md no longer states: When less than 40G'*) pass 'and a rule weakened inside its own sentence is reported' ;;
+    *"hw-verify.md no longer states: When the pool's volume has less than 40G"*) pass 'and a rule weakened inside its own sentence is reported' ;;
     *) fail 'a rule weakened inside its own sentence is reported' "reported: \`$why\`" ;;
 esac
 cp "$root/.claude/agents/hw-verify.md" "$scratch/dot/agents/hw-verify.md"
