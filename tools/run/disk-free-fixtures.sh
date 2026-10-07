@@ -38,11 +38,26 @@ ln -s "$scratch/vol-b/real-pool" "$scratch/vol-a/cargo-pool"
 
 cat > "$scratch/bin/df" <<'EOF'
 #!/bin/sh
-# The fake: df -P -k <path>. The last argument is the path.
-for p; do path=$p; done
+# The fake: df -P -k <path>. The last argument is the path. Without -P a
+# real df may wrap a long line, and without -k it counts in other units, so
+# the fake refuses a call that lacks either.
+posix=no
+kib=no
+for p; do
+    case "$p" in
+        -P) posix=yes ;;
+        -k) kib=yes ;;
+    esac
+    path=$p
+done
+if [ "$posix" != yes ] || [ "$kib" != yes ]; then
+    echo "fake df: called without -P and -k: $*" >&2
+    exit 1
+fi
 printf '%s\n' "$path" >> "$FAKE_DF_LOG"
 case "$path" in
     */vol-b|*/vol-b/*) mount=/mnt/fake-b; avail=${FAKE_B_K:-5242880} ;;
+    */vol-c|*/vol-c/*) mount="/mnt/fake c"; avail=1048576 ;;
     *) mount=/mnt/fake-a; avail=${FAKE_A_K:-209715200} ;;
 esac
 echo "Filesystem     1024-blocks      Used Available Capacity Mounted on"
@@ -132,14 +147,31 @@ case "$(pool_line)" in
     *) fail "and the pool line is on /mnt/fake-a" "out: $(cat "$scratch/out")" ;;
 esac
 
-echo "with no HW_WORKTREES the worktrees directory is <main>/.claude/worktrees"
-: > "$FAKE_DF_LOG"
-(cd "$root" && PATH="$scratch/bin:$PATH" HW_CARGO_POOL="$scratch/vol-a" HW_WORKTREES= sh "$tool") > "$scratch/out" 2> "$scratch/err"
-status=$?
-main=$(cd "$root" && cd "$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")" && pwd -P)
-case "$(wt_line)" in
-    "worktrees  $main/.claude/worktrees  "*|"worktrees  $main  "*) pass "the worktrees line is under the main checkout" ;;
-    *) fail "the worktrees line is under the main checkout" "status $status, out: $(cat "$scratch/out"), err: $(cat "$scratch/err")" ;;
+echo "with no HW_WORKTREES the worktrees directory is <main>/.claude/worktrees, from a linked worktree too"
+# A main checkout on vol-b, and a linked worktree of it on vol-a: the
+# worktrees directory is the main checkout's, on /mnt/fake-b, wherever the
+# script runs from.
+repo="$scratch/vol-b/repo"
+git init -q "$repo"
+mkdir -p "$repo/.claude/worktrees"
+git -C "$repo" -c user.name=fixture -c user.email=fixture@example.invalid commit -q --allow-empty -m init
+git -C "$repo" worktree add -q --detach "$scratch/vol-a/linked" 2> /dev/null
+for from in "$repo" "$scratch/vol-a/linked"; do
+    : > "$FAKE_DF_LOG"
+    (cd "$from" && PATH="$scratch/bin:$PATH" HW_CARGO_POOL="$scratch/vol-a" HW_WORKTREES= sh "$tool") > "$scratch/out" 2> "$scratch/err"
+    status=$?
+    case "$(wt_line)" in
+        "worktrees  $repo/.claude/worktrees  mount=/mnt/fake-b  free=5G") pass "from \`${from#"$scratch"/}\`, the main checkout's .claude/worktrees is measured" ;;
+        *) fail "from \`${from#"$scratch"/}\`, the main checkout's .claude/worktrees is measured" "status $status, out: $(cat "$scratch/out"), err: $(cat "$scratch/err")" ;;
+    esac
+done
+
+echo "a mount point with a space in it is printed whole"
+mkdir -p "$scratch/vol-c"
+run HW_CARGO_POOL="$scratch/vol-c" --
+case "$(pool_line)" in
+    "pool       $scratch/vol-c  mount=/mnt/fake c  free=1G") pass "mount=/mnt/fake c" ;;
+    *) fail "mount=/mnt/fake c" "status $status, out: $(cat "$scratch/out"), err: $(cat "$scratch/err")" ;;
 esac
 
 echo "outside a git repository with no HW_WORKTREES it refuses, exit 2"
