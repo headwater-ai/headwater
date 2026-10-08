@@ -153,12 +153,16 @@ add:
       documentation: both arms like a campaign, and the absent arm also removes `docs/`, for the claim that the documents change what an agent does
 
   facets.arm:
-    values: [present, absent]
+    values: [present, absent, no-hook, no-skills, no-claude-md, mcp]
     required: false
     volatility: stable
     guidance:
       present: the session ran against the corpus
       absent: the session ran against the declared ablation of it
+      no-hook: the session ran against the present tree with the intent hook script removed (#1472)
+      no-skills: the session ran against the present tree with the skills removed (#1472)
+      no-claude-md: the session ran against the present tree with the standing instructions removed (#1472)
+      mcp: the session ran against the present tree with the project MCP server added (#1472)
 
   # The check a `patched` expectation grades a produced patch against, which
   # spec 5 calls the oracle route.

@@ -93,11 +93,19 @@ facets:
   arm:
     guidance:
       absent: "the session ran against the declared ablation of it"
+      mcp: "the session ran against the present tree with the project MCP server added (#1472)"
+      no-claude-md: "the session ran against the present tree with the standing instructions removed (#1472)"
+      no-hook: "the session ran against the present tree with the intent hook script removed (#1472)"
+      no-skills: "the session ran against the present tree with the skills removed (#1472)"
       present: "the session ran against the corpus"
     required: false
     values:
       - present
       - absent
+      - no-hook
+      - no-skills
+      - no-claude-md
+      - mcp
     volatility: stable
   doc_type:
     guidance:
