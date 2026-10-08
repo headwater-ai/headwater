@@ -232,7 +232,10 @@ offenders() { cargo_offenders "$1" "$2" "$3" | sed '$d'; }
 # judged one occurrence at a time. Prints `path:line: cargo build …` for each
 # occurrence missing `--locked`, then `TOTAL FLAGGED` on the last line.
 install_judge() {
-    ( cd "$1" && git grep -n -F -- "$install_key" 2>/dev/null ) |
+    # `docs/probe-runs` is out: a transcript holds the commands a recorded
+    # session typed, verbatim, and no reader is handed one of them as an
+    # install line (#1659).
+    ( cd "$1" && git grep -n -F -e "$install_key" -- . ':(exclude)docs/probe-runs' 2>/dev/null ) |
         awk -v verb="$install_verb build" -v key="$install_key" '
             {
                 pfx = (match($0, /^[^:]*:[0-9]+:/)) ? substr($0, 1, RLENGTH) : ""
