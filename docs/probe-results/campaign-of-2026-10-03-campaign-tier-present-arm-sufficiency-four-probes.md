@@ -172,6 +172,13 @@ What the governance changes. The treated arm is the `campaign` present arm and t
 
 The difference is +15.0 points, in a 95% Newcombe interval of +6.7 points to +23.5 points. The interval is above zero, so the treated arm satisfied more often at the 5% level.
 
+What the documents and the governance change together. The treated arm is a present arm and the control is the `documentation` absent arm.
+
+- treated, `docs/probe-runs/campaign-of-2026-10-03-campaign-tier-present-arm-sufficiency-four-probes.md`: 114 of 120 graded sessions satisfied their expectation, 95.0%, in a 95% interval of 89.5% to 97.7%. 0 sessions refused by the session itself.
+- control, `docs/probe-runs/campaign-of-2026-10-03-documentation-tier-absent-arm-sufficiency-four-probes.md`: 41 of 114 graded sessions satisfied their expectation, 36.0%, in a 95% interval of 27.7% to 45.1%. 0 sessions refused by the session itself.
+
+The difference is +59.0 points, in a 95% Newcombe interval of +48.4 points to +67.7 points. The interval is above zero, so the treated arm satisfied more often at the 5% level.
+
 What the intent hook changes. The treated arm is the `campaign` present arm and the control is the `campaign` `no-hook` arm, which removed the paths the `no-hook` component's delta names. The documents are in both arms (spec 5).
 
 - treated, `docs/probe-runs/campaign-of-2026-10-03-campaign-tier-present-arm-sufficiency-four-probes.md`: 114 of 120 graded sessions satisfied their expectation, 95.0%, in a 95% interval of 89.5% to 97.7%. 0 sessions refused by the session itself.
