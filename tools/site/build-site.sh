@@ -61,3 +61,6 @@ fi
 
 echo "build-site.sh: refusing a blank figure in the assembled directory"
 sh tools/site/check-site-figures.sh "$out"
+
+echo "build-site.sh: refusing a file Cloudflare Workers will not serve"
+sh tools/site/check-site-asset-size.sh "$out"

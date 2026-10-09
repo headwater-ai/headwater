@@ -98,4 +98,7 @@ sh tools/site/check-site-figures.sh .headwater/site-deploy
 echo "cloudflare-build.sh: adding the signed APT repository of the newest release"
 sh tools/site/fetch-apt.sh .headwater/site-deploy
 
+echo "cloudflare-build.sh: refusing a file Cloudflare Workers will not serve"
+sh tools/site/check-site-asset-size.sh .headwater/site-deploy
+
 echo "cloudflare-build.sh: done"

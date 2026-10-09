@@ -1524,6 +1524,18 @@ jobs:
         run: |
           sh tools/site/check-site-footer.sh .headwater/site-deploy
           sh tools/site/site-footer-fixtures.sh
+      - name: No served file is above the size Cloudflare Workers accepts
+        # `wrangler deploy` refuses the whole upload when one asset is above
+        # 25 MiB. The search index reached 43.9 MiB when the campaign
+        # transcripts landed (#1697), and the failure showed on `main` after the
+        # merge. `mkdocs/hooks/search_scope.py` withholds those two shelves from
+        # the index, and this step fails a pull request whose served directory
+        # holds any other file above the limit. The fixture holds that the
+        # check passes under the limit and refuses over it, on an empty
+        # directory and on a missing one.
+        run: |
+          sh tools/site/check-site-asset-size.sh .headwater/site-deploy
+          sh tools/site/site-asset-size-fixtures.sh
       - name: No served crawler file lists a page that asks not to be indexed
         # The overlay's `Project process` section of `site_nav` is `noindex`,
         # so every process page carries the robots meta, and

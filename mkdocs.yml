@@ -213,6 +213,7 @@ exclude_docs: |
 # `tools/site/cloudflare-build.sh`.
 hooks:
   - mkdocs/hooks/site_tokens.py
+  - mkdocs/hooks/search_scope.py
 
 markdown_extensions:
   - toc:
