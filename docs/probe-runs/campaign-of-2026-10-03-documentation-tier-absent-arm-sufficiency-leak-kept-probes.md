@@ -2,7 +2,7 @@
 id: HW-RUN-campaign-of-2026-10-03-documentation-tier-absent-arm-sufficiency-leak-kept-probes
 status: current
 status_since: 2026-10-08
-summary: "The absent arm of the documentation tier over the sufficiency selection (leak-kept probes), in batch A of the paid layer campaign: 56 sessions, 3831 cents, the intent hook live in 0, none stopped at the turn cap, none at the session budget."
+summary: "The absent arm of the documentation tier over the sufficiency selection (leak-kept probes), in batch A of the paid layer campaign: 60 sessions, 3916 cents, the intent hook live in 0, none stopped at the turn cap, none at the session budget."
 last_verified: 2026-10-08
 tier: documentation
 arm: absent
@@ -31,14 +31,16 @@ harness: 0.5.0
 tier: documentation
 arm: absent
 at: 2026-10-03
-cost_cents: 3831
+cost_cents: 3916
 ```
 
 **This line is one of the paid layer campaign that [#1659](https://github.com/headwater-ai/headwater/issues/1659) asked for.** `tools/probe/campaign.sh` recorded it as line 14 of the plan of batch A, a plan that draws its lines from `tools/probe/layer-campaign.spec`. It is the absent arm of the documentation tier over the sufficiency selection, on the leak-kept probes, at 30 repetitions per probe, on `claude-sonnet-5` under Claude Code 2.1.288 with a cap of 80 turns for each session. The two probes of this line keep their leak string in the present arm, so they run on a line of their own and are never pooled into the rate of the other sufficiency probes.
 
+**Four repetitions were never drawn in the first run, and were drawn on 2026-10-09.** The documentation tier ceiling of 13,000 cents refused four jobs of this line before they started: `p1-r10`, `p1-r12`, `p1-r25` and `p1-r29`. The refusal left the line at 56 of its 60 planned sessions. The owner approved up to 800 cents on 2026-10-09 ("go ahead with the 800 cents"), and the ceiling was lifted by 1,020 cents for that one run so that no job started once 800 cents were spent. The four sessions ran on the same pin `debe0c70` and the same Claude Code 2.1.288, each ended with status 0, and they cost 17, 33, 21 and 14 cents in the order `p1-r12`, `p1-r10`, `p1-r25`, `p1-r29`: 85 cents in all. These draws complete the plan and are not a conditional redraw, and their events are as the recorder wrote them.
+
 **One tree, with one move of the pin.** Every session ran in a fresh copy of a `git archive` of the pinned tree, and the engine of that tree. The pin was `682c1e2a` at the start of the batch. It moved to `debe0c70` at session 650 of the batch, at 2026-10-04T09:00:26Z, and the sessions after it ran on `debe0c70`. The move changed five files under `tools/probe/` and no document, and the assembly accepted it. The `tree` digest in the identity above is the digest the assembly recorded, and a reader should not take it to state that all 2150 sessions of the batch read one pin.
 
-**What the recorder counted.** The line holds 56 sessions and cost 3831 cents. The intent hook was live in 0 of them. None stopped at the turn cap, and none at the session budget. The recorder reports 24 paths outside the workspace named in a call of this line, 0 sessions uncounted, and 0 web-tool calls.
+**What the recorder counted.** The line holds 60 sessions and cost 3916 cents. The intent hook was live in 0 of them. None stopped at the turn cap, and none at the session budget. The recorder reports 24 paths outside the workspace named in a call of this line, 0 sessions uncounted, and 0 web-tool calls.
 
 **The contract of this batch.** The sessions ran under the recorder contract of spec 15: a `bwrap` sandbox with no network of its own, an empty configuration directory, `--setting-sources project,local`, the permission mode `dontAsk`, and `WebSearch` and `WebFetch` denied. The batches of 2026-09-28 and 2026-09-30 ran under `bypassPermissions` and the configuration of the host, so a rate from this batch does not compare with a rate from those batches.
 
@@ -101,6 +103,44 @@ cost_cents: 3831
   produced: []
   answer: "stamp"
 - probe: "HW-PROBE-a-session-names-the-event-that-makes-a-document-accepted"
+  session: "L14-documentation-absent-p1-r10"
+  calls:
+    - tool: "Bash"
+      argument: "{\"command\":\"grep -rl \\\"accepted_by\\\" /var/tmp/hw-1659/a/ws/L14-documentation-absent-p1-r10 2>/dev/null\"}"
+      result: ""
+    - tool: "Read"
+      argument: "/var/tmp/hw-1659/a/ws/L14-documentation-absent-p1-r10/engine/crates/check/src/warrant.rs"
+      result: "sha256:7d35c6c025c4d36c3035b27ada014697590624d456c63e5af14429e41f7f9143"
+    - tool: "Read"
+      argument: "/var/tmp/hw-1659/a/ws/L14-documentation-absent-p1-r10/.agents/skills/headwater-authoring/SKILL.md"
+      result: "sha256:5588ef44dba3982a11a84a2df94abfe2a6ec28e24278888e16e2d7d518362520"
+    - tool: "Bash"
+      argument: "{\"command\":\"find /var/tmp/hw-1659/a/ws/L14-documentation-absent-p1-r10/docs -iname \\\"*03-authoring*\\\" -o -iname \\\"*0108*\\\"\"}"
+      result: ""
+    - tool: "Bash"
+      argument: "{\"command\":\"find /var/tmp/hw-1659/a/ws/L14-documentation-absent-p1-r10 -ipath \\\"*docs/spec/03*\\\" -o -ipath \\\"*0108*\\\"\"}"
+      result: ""
+    - tool: "Bash"
+      argument: "{\"command\":\"grep -rn \\\"merge\\\\|pull request\\\\|PR\\\\b\\\" /var/tmp/hw-1659/a/ws/L14-documentation-absent-p1-r10/engine/crates --include=\\\"*.rs\\\" -i | grep -v fixtures | head -80\"}"
+      result: ""
+    - tool: "Bash"
+      argument: "{\"command\":\"grep -rn \\\"accepted_by\\\\|ACCEPTED_BY\\\\|warrant_of\\\\|self-acceptance\\\\|acceptance\\\" /var/tmp/hw-1659/a/ws/L14-documentation-absent-p1-r10/engine/crates/doc/src/lib.rs\"}"
+      result: ""
+    - tool: "Read"
+      argument: "/var/tmp/hw-1659/a/ws/L14-documentation-absent-p1-r10/engine/crates/doc/src/lib.rs"
+      result: "sha256:40a13bfea94c574d9a03863c773127a78053930acfc08f40986d30b7cbf611ec"
+    - tool: "Read"
+      argument: "/var/tmp/hw-1659/a/ws/L14-documentation-absent-p1-r10/engine/crates/cli/fixtures/change/docs/decisions/0001-the-warrant-a-person-set.md"
+      result: "sha256:6f65c328fd1c8a04820c3793a9208edf5801f24d6ecb41be2c19c27effd8f7e2"
+    - tool: "Bash"
+      argument: "{\"command\":\"find /var/tmp/hw-1659/a/ws/L14-documentation-absent-p1-r10/engine/crates/check/src -iname \\\"*promot*\\\"\"}"
+      result: ""
+    - tool: "Read"
+      argument: "/var/tmp/hw-1659/a/ws/L14-documentation-absent-p1-r10/engine/crates/check/src/promotion.rs"
+      result: "sha256:e694ff623defba242adcc5c136b78dfb0741a47779ad0b4a648fa638022b3179"
+  produced: []
+  answer: "stamp"
+- probe: "HW-PROBE-a-session-names-the-event-that-makes-a-document-accepted"
   session: "L14-documentation-absent-p1-r11"
   calls:
     - tool: "Grep"
@@ -135,6 +175,29 @@ cost_cents: 3831
       result: "sha256:ec3c7380857fb60ffa46adfcdc976fbfd238d88ec5c76f40566e42ae62a001cd"
     - tool: "Bash"
       argument: "{\"command\":\"grep -n \\\"accept\\\" -i /var/tmp/hw-1659/a/ws/L14-documentation-absent-p1-r11/.agents/skills/headwater-authoring/SKILL.md\"}"
+      result: ""
+  produced: []
+  answer: "stamp"
+- probe: "HW-PROBE-a-session-names-the-event-that-makes-a-document-accepted"
+  session: "L14-documentation-absent-p1-r12"
+  calls:
+    - tool: "Grep"
+      argument: "/var/tmp/hw-1659/a/ws/L14-documentation-absent-p1-r12"
+      result: ""
+    - tool: "Grep"
+      argument: "/var/tmp/hw-1659/a/ws/L14-documentation-absent-p1-r12"
+      result: ""
+    - tool: "Read"
+      argument: "/var/tmp/hw-1659/a/ws/L14-documentation-absent-p1-r12/.agents/skills/headwater-authoring/SKILL.md"
+      result: "sha256:5588ef44dba3982a11a84a2df94abfe2a6ec28e24278888e16e2d7d518362520"
+    - tool: "Read"
+      argument: "/var/tmp/hw-1659/a/ws/L14-documentation-absent-p1-r12/engine/crates/cli/fixtures/change-prior/0001-the-warrant-a-person-set.md"
+      result: "sha256:1f8b02fe72e4a4a8231b24d2d0c6873ee0d12bbf665266c151690b376a295a11"
+    - tool: "Read"
+      argument: "/var/tmp/hw-1659/a/ws/L14-documentation-absent-p1-r12/engine/crates/check/src/promotion.rs"
+      result: "sha256:e694ff623defba242adcc5c136b78dfb0741a47779ad0b4a648fa638022b3179"
+    - tool: "Grep"
+      argument: "/var/tmp/hw-1659/a/ws/L14-documentation-absent-p1-r12/engine/crates/check/src"
       result: ""
   produced: []
   answer: "stamp"
@@ -615,6 +678,35 @@ cost_cents: 3831
   produced: []
   answer: "stamp"
 - probe: "HW-PROBE-a-session-names-the-event-that-makes-a-document-accepted"
+  session: "L14-documentation-absent-p1-r25"
+  calls:
+    - tool: "Bash"
+      argument: "{\"command\":\"grep -rn \\\"accepted_by\\\" . 2>/dev/null\"}"
+      result: ""
+    - tool: "Bash"
+      argument: "{\"command\":\"find . -iname \\\"*.md\\\" | xargs grep -ln \\\"warrant\\\" 2>/dev/null | grep -i spec\"}"
+      result: ""
+    - tool: "Bash"
+      argument: "{\"command\":\"find . -path \\\"*/docs/*\\\" -iname \\\"*.md\\\" | head -50; echo ---; find . -iname \\\"spec*.md\\\" -not -path \\\"*/fixtures/*\\\"\"}"
+      result: ""
+    - tool: "Bash"
+      argument: "{\"command\":\"find . -iname \\\"*.md\\\" -not -path \\\"*/fixtures/*\\\" -not -path \\\"*/node_modules/*\\\" | xargs grep -l \\\"provenance\\\" 2>/dev/null\"}"
+      result: ""
+    - tool: "Bash"
+      argument: "{\"command\":\"find . -iname \\\"*.md\\\" -not -path \\\"*/fixtures/*\\\" | xargs grep -l \\\"accepted_by\\\" 2>/dev/null; echo ---; find . -maxdepth 3 -iname \\\"*.md\\\"\"}"
+      result: ""
+    - tool: "Read"
+      argument: "./engine/crates/check/src/warrant.rs"
+      result: "sha256:7d35c6c025c4d36c3035b27ada014697590624d456c63e5af14429e41f7f9143"
+    - tool: "Bash"
+      argument: "{\"command\":\"find / -path \\\"*/docs/spec/03-authoring-and-lifecycle.md\\\" 2>/dev/null\"}"
+      result: ""
+    - tool: "Bash"
+      argument: "{\"command\":\"find / -maxdepth 6 -iname \\\"docs\\\" -type d 2>/dev/null; echo ---; ls /var/tmp/hw-1659/a/ws/L14-documentation-absent-p1-r25 2>/dev/null; find /var/tmp/hw-1659/a/ws/L14-documentation-absent-p1-r25 -maxdepth 2\"}"
+      result: ""
+  produced: []
+  answer: "stamp"
+- probe: "HW-PROBE-a-session-names-the-event-that-makes-a-document-accepted"
   session: "L14-documentation-absent-p1-r26"
   calls:
     - tool: "Bash"
@@ -750,6 +842,32 @@ cost_cents: 3831
     - tool: "Grep"
       argument: "{\"pattern\":\"main branch|merge to main|onto main|after merge|before merge|once merged\",\"output_mode\":\"content\",\"-n\":true,\"-i\":true}"
       result: ""
+  produced: []
+  answer: "stamp"
+- probe: "HW-PROBE-a-session-names-the-event-that-makes-a-document-accepted"
+  session: "L14-documentation-absent-p1-r29"
+  calls:
+    - tool: "Grep"
+      argument: "/var/tmp/hw-1659/a/ws/L14-documentation-absent-p1-r29"
+      result: ""
+    - tool: "Bash"
+      argument: "{\"command\":\"grep -rn \\\"accepted_by\\\\|warrant\\\\|provenance\\\" --include=*.md -l | head -50\"}"
+      result: ""
+    - tool: "Bash"
+      argument: "{\"command\":\"find . -iname \\\"*spec*\\\" -o -iname \\\"*audit*\\\" | grep -v fixtures | head -80\"}"
+      result: ""
+    - tool: "Bash"
+      argument: "{\"command\":\"find . -path ./node_modules -prune -o -iname \\\"*.md\\\" -print | xargs grep -l \\\"accepted_by\\\\|warrant: accepted\\\\|agency: human\\\" 2>/dev/null | grep -v fixtures\",\"description\":\"Search non-fixture docs mentioning accepted_by or warrant\"}"
+      result: ""
+    - tool: "Bash"
+      argument: "{\"command\":\"find . -type d -iname \\\"spec*\\\" -o -type d -iname \\\"docs\\\" 2>/dev/null | grep -v node_modules | grep -v fixtures\"}"
+      result: ""
+    - tool: "Bash"
+      argument: "{\"command\":\"grep -n \\\"accepted_by\\\\|warrant\\\\|agency\\\\|accepted\\\" ./.agents/skills/headwater-authoring/SKILL.md | head -60\"}"
+      result: ""
+    - tool: "Read"
+      argument: "/var/tmp/hw-1659/a/ws/L14-documentation-absent-p1-r29/.agents/skills/headwater-authoring/SKILL.md"
+      result: "sha256:5588ef44dba3982a11a84a2df94abfe2a6ec28e24278888e16e2d7d518362520"
   produced: []
   answer: "stamp"
 - probe: "HW-PROBE-a-session-names-the-event-that-makes-a-document-accepted"

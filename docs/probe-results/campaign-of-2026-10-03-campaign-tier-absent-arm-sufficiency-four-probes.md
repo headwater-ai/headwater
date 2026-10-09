@@ -175,6 +175,6 @@ The difference is +15.0 points, in a 95% Newcombe interval of +6.7 points to +23
 What the documents change. The treated arm is the `campaign` absent arm and the control is the `documentation` absent arm. Both removed the governance, and only the control removed `docs/`, so this is the effect of the documents alone (spec 5).
 
 - treated, `docs/probe-runs/campaign-of-2026-10-03-campaign-tier-absent-arm-sufficiency-four-probes.md`: 96 of 120 graded sessions satisfied their expectation, 80.0%, in a 95% interval of 72.0% to 86.2%. 0 sessions refused by the session itself.
-- control, `docs/probe-runs/campaign-of-2026-10-03-documentation-tier-absent-arm-sufficiency-four-probes.md`: 41 of 114 graded sessions satisfied their expectation, 36.0%, in a 95% interval of 27.7% to 45.1%. 0 sessions refused by the session itself.
+- control, `docs/probe-runs/campaign-of-2026-10-03-documentation-tier-absent-arm-sufficiency-four-probes.md`: 43 of 120 graded sessions satisfied their expectation, 35.8%, in a 95% interval of 27.8% to 44.7%. 0 sessions refused by the session itself.
 
-The difference is +44.0 points, in a 95% Newcombe interval of +31.9 points to +54.3 points. The interval is above zero, so the treated arm satisfied more often at the 5% level.
+The difference is +44.2 points, in a 95% Newcombe interval of +32.2 points to +54.3 points. The interval is above zero, so the treated arm satisfied more often at the 5% level.

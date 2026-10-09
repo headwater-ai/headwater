@@ -113,9 +113,9 @@ The difference is +11.7 points, in a 95% Newcombe interval of +3.2 points to +22
 What the documents and the governance change together. The treated arm is a present arm and the control is the `documentation` absent arm.
 
 - treated, `docs/probe-runs/campaign-of-2026-10-03-campaign-tier-present-arm-sufficiency-leak-kept-probes.md`: 60 of 60 graded sessions satisfied their expectation, 100.0%, in a 95% interval of 94.0% to 100.0%. 0 sessions refused by the session itself.
-- control, `docs/probe-runs/campaign-of-2026-10-03-documentation-tier-absent-arm-sufficiency-leak-kept-probes.md`: 23 of 56 graded sessions satisfied their expectation, 41.1%, in a 95% interval of 29.2% to 54.1%. 0 sessions refused by the session itself.
+- control, `docs/probe-runs/campaign-of-2026-10-03-documentation-tier-absent-arm-sufficiency-leak-kept-probes.md`: 23 of 60 graded sessions satisfied their expectation, 38.3%, in a 95% interval of 27.1% to 51.0%. 0 sessions refused by the session itself.
 
-The difference is +58.9 points, in a 95% Newcombe interval of +44.6 points to +70.8 points. The interval is above zero, so the treated arm satisfied more often at the 5% level.
+The difference is +61.7 points, in a 95% Newcombe interval of +47.7 points to +72.9 points. The interval is above zero, so the treated arm satisfied more often at the 5% level.
 
 What the intent hook changes. The treated arm is the `campaign` present arm and the control is the `campaign` `no-hook` arm, which removed the paths the `no-hook` component's delta names. The documents are in both arms (spec 5).
 
