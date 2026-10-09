@@ -397,7 +397,11 @@ if mode == "print":
 # copies in an assembled directory and never touches `site/`. The two read the
 # same markers, so a key that `--check` accepts is a key `--into` fills.
 base = pathlib.Path(into) if mode == "into" else root / "site"
-pages = sorted(base.glob("**/*.html"))
+# A transcript under probe-runs holds the commands a recorded session typed,
+# and one of them can name `data-figure=` while it searches a page. That text
+# is a record and no marker, so it is not read (#1659).
+pages = sorted(p for p in base.glob("**/*.html")
+               if "probe-runs" not in p.relative_to(base).parts)
 if not pages:
     sys.exit("refresh-figures.sh: no page under %s, so there is nothing to "
              "fill and nothing to check" % base)

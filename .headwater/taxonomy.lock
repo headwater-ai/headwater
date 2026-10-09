@@ -22,7 +22,7 @@
 
 lock:
   format: 3
-  digest: sha256:f832eaaa7db51d1892775b7b142f08a59fabdfb2b79c05ac97de0bbd1ef4ba73
+  digest: sha256:6ec7f5498f11fab45922aebbbd9ce1daf1601135ab91f4bf800480038a26708e
   rules: 2
   package: headwater/standard
   version: 4.16.0
@@ -36,7 +36,7 @@ lock:
     - path: .headwater/packages/headwater-standard/bundles/decision-record/bundle.yml
       digest: sha256:84e2d9770dfd50107a46f099af4d51666455a161eacf803cf05cfd303dd8f88d
     - path: .headwater/overlay.yml
-      digest: sha256:239864513c556055965008bd9abebb0bc8d84958fdb585f5a43bb5eaa82824e3
+      digest: sha256:a0e414bba979ca26fb8a9365dc046f7b1cfec5120092c49f784949eae92ed088
 
 # The adoption payload: the debt this corpus declared when the taxonomy first
 # reached it. Every other line of this file is generated and this block is not.
@@ -179,11 +179,19 @@ resolved:
     arm:
       guidance:
         absent: "the session ran against the declared ablation of it"
+        mcp: "the session ran against the present tree with the project MCP server added (#1472)"
+        no-claude-md: "the session ran against the present tree with the standing instructions removed (#1472)"
+        no-hook: "the session ran against the present tree with the intent hook script removed (#1472)"
+        no-skills: "the session ran against the present tree with the skills removed (#1472)"
         present: "the session ran against the corpus"
       required: false
       values:
         - present
         - absent
+        - no-hook
+        - no-skills
+        - no-claude-md
+        - mcp
       volatility: stable
     doc_type:
       guidance:

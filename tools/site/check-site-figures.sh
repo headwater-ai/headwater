@@ -31,7 +31,9 @@ python3 - "$dir" <<'PY'
 import pathlib, re, sys
 
 base = pathlib.Path(sys.argv[1])
-pages = sorted(base.glob("**/*.html"))
+# A transcript under probe-runs records typed commands, not markers.
+pages = sorted(p for p in base.glob("**/*.html")
+               if "probe-runs" not in p.relative_to(base).parts)
 if not pages:
     sys.exit("check-site-figures.sh: no page under %s" % base)
 empty = re.compile(r'<(\w+)\b[^>]*\bdata-figure="([^"]*)"[^>]*>\s*</\1>')

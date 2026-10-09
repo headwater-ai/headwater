@@ -816,6 +816,58 @@ docs/probe-results/campaign-of-2026-09-30-campaign-tier-present-arm-sufficiency.
   generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
 docs/probe-results/campaign-of-2026-09-30-documentation-tier-absent-arm-sufficiency.md
   generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
+docs/probe-results/campaign-of-2026-10-03-campaign-tier-absent-arm-navigability.md
+  generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
+docs/probe-results/campaign-of-2026-10-03-campaign-tier-absent-arm-sufficiency-four-probes.md
+  generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
+docs/probe-results/campaign-of-2026-10-03-campaign-tier-absent-arm-sufficiency-leak-kept-probes.md
+  generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
+docs/probe-results/campaign-of-2026-10-03-campaign-tier-mcp-arm-navigability.md
+  generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
+docs/probe-results/campaign-of-2026-10-03-campaign-tier-mcp-arm-sufficiency-four-probes.md
+  generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
+docs/probe-results/campaign-of-2026-10-03-campaign-tier-mcp-arm-sufficiency-leak-kept-probes.md
+  generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
+docs/probe-results/campaign-of-2026-10-03-campaign-tier-no-claude-md-arm-navigability.md
+  generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
+docs/probe-results/campaign-of-2026-10-03-campaign-tier-no-claude-md-arm-sufficiency-four-probes.md
+  generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
+docs/probe-results/campaign-of-2026-10-03-campaign-tier-no-claude-md-arm-sufficiency-leak-kept-probes.md
+  generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
+docs/probe-results/campaign-of-2026-10-03-campaign-tier-no-hook-arm-navigability.md
+  generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
+docs/probe-results/campaign-of-2026-10-03-campaign-tier-no-hook-arm-sufficiency-four-probes.md
+  generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
+docs/probe-results/campaign-of-2026-10-03-campaign-tier-no-hook-arm-sufficiency-leak-kept-probes.md
+  generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
+docs/probe-results/campaign-of-2026-10-03-campaign-tier-no-skills-arm-navigability.md
+  generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
+docs/probe-results/campaign-of-2026-10-03-campaign-tier-no-skills-arm-sufficiency-four-probes.md
+  generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
+docs/probe-results/campaign-of-2026-10-03-campaign-tier-no-skills-arm-sufficiency-leak-kept-probes.md
+  generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
+docs/probe-results/campaign-of-2026-10-03-campaign-tier-present-arm-navigability.md
+  generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
+docs/probe-results/campaign-of-2026-10-03-campaign-tier-present-arm-sufficiency-four-probes.md
+  generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
+docs/probe-results/campaign-of-2026-10-03-campaign-tier-present-arm-sufficiency-leak-kept-probes.md
+  generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
+docs/probe-results/campaign-of-2026-10-03-documentation-tier-absent-arm-sufficiency-four-probes.md
+  generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
+docs/probe-results/campaign-of-2026-10-03-documentation-tier-absent-arm-sufficiency-leak-kept-probes.md
+  generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
+docs/probe-results/campaign-of-2026-10-05-campaign-tier-absent-arm-discovery.md
+  generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
+docs/probe-results/campaign-of-2026-10-05-campaign-tier-mcp-arm-discovery.md
+  generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
+docs/probe-results/campaign-of-2026-10-05-campaign-tier-no-claude-md-arm-discovery.md
+  generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
+docs/probe-results/campaign-of-2026-10-05-campaign-tier-no-hook-arm-discovery.md
+  generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
+docs/probe-results/campaign-of-2026-10-05-campaign-tier-no-skills-arm-discovery.md
+  generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
+docs/probe-results/campaign-of-2026-10-05-campaign-tier-present-arm-discovery.md
+  generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
 docs/probe-results/campaign-pilot-of-2026-09-28-campaign-tier-absent-arm-discovery.md
   generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
 docs/probe-results/campaign-pilot-of-2026-09-28-campaign-tier-absent-arm-navigability.md
@@ -893,6 +945,58 @@ docs/probe-runs/campaign-of-2026-09-30-campaign-tier-present-arm-navigability.md
 docs/probe-runs/campaign-of-2026-09-30-campaign-tier-present-arm-sufficiency.md
   typed: probe_transcript
 docs/probe-runs/campaign-of-2026-09-30-documentation-tier-absent-arm-sufficiency.md
+  typed: probe_transcript
+docs/probe-runs/campaign-of-2026-10-03-campaign-tier-absent-arm-navigability.md
+  typed: probe_transcript
+docs/probe-runs/campaign-of-2026-10-03-campaign-tier-absent-arm-sufficiency-four-probes.md
+  typed: probe_transcript
+docs/probe-runs/campaign-of-2026-10-03-campaign-tier-absent-arm-sufficiency-leak-kept-probes.md
+  typed: probe_transcript
+docs/probe-runs/campaign-of-2026-10-03-campaign-tier-mcp-arm-navigability.md
+  typed: probe_transcript
+docs/probe-runs/campaign-of-2026-10-03-campaign-tier-mcp-arm-sufficiency-four-probes.md
+  typed: probe_transcript
+docs/probe-runs/campaign-of-2026-10-03-campaign-tier-mcp-arm-sufficiency-leak-kept-probes.md
+  typed: probe_transcript
+docs/probe-runs/campaign-of-2026-10-03-campaign-tier-no-claude-md-arm-navigability.md
+  typed: probe_transcript
+docs/probe-runs/campaign-of-2026-10-03-campaign-tier-no-claude-md-arm-sufficiency-four-probes.md
+  typed: probe_transcript
+docs/probe-runs/campaign-of-2026-10-03-campaign-tier-no-claude-md-arm-sufficiency-leak-kept-probes.md
+  typed: probe_transcript
+docs/probe-runs/campaign-of-2026-10-03-campaign-tier-no-hook-arm-navigability.md
+  typed: probe_transcript
+docs/probe-runs/campaign-of-2026-10-03-campaign-tier-no-hook-arm-sufficiency-four-probes.md
+  typed: probe_transcript
+docs/probe-runs/campaign-of-2026-10-03-campaign-tier-no-hook-arm-sufficiency-leak-kept-probes.md
+  typed: probe_transcript
+docs/probe-runs/campaign-of-2026-10-03-campaign-tier-no-skills-arm-navigability.md
+  typed: probe_transcript
+docs/probe-runs/campaign-of-2026-10-03-campaign-tier-no-skills-arm-sufficiency-four-probes.md
+  typed: probe_transcript
+docs/probe-runs/campaign-of-2026-10-03-campaign-tier-no-skills-arm-sufficiency-leak-kept-probes.md
+  typed: probe_transcript
+docs/probe-runs/campaign-of-2026-10-03-campaign-tier-present-arm-navigability.md
+  typed: probe_transcript
+docs/probe-runs/campaign-of-2026-10-03-campaign-tier-present-arm-sufficiency-four-probes.md
+  typed: probe_transcript
+docs/probe-runs/campaign-of-2026-10-03-campaign-tier-present-arm-sufficiency-leak-kept-probes.md
+  typed: probe_transcript
+docs/probe-runs/campaign-of-2026-10-03-documentation-tier-absent-arm-sufficiency-four-probes.md
+  typed: probe_transcript
+docs/probe-runs/campaign-of-2026-10-03-documentation-tier-absent-arm-sufficiency-leak-kept-probes.md
+  typed: probe_transcript
+docs/probe-runs/campaign-of-2026-10-05-campaign-tier-absent-arm-discovery.md
+  typed: probe_transcript
+docs/probe-runs/campaign-of-2026-10-05-campaign-tier-mcp-arm-discovery.md
+  typed: probe_transcript
+docs/probe-runs/campaign-of-2026-10-05-campaign-tier-no-claude-md-arm-discovery.md
+  typed: probe_transcript
+docs/probe-runs/campaign-of-2026-10-05-campaign-tier-no-hook-arm-discovery.md
+  typed: probe_transcript
+docs/probe-runs/campaign-of-2026-10-05-campaign-tier-no-skills-arm-discovery.md
+  typed: probe_transcript
+docs/probe-runs/campaign-of-2026-10-05-campaign-tier-present-arm-discovery.md
   typed: probe_transcript
 docs/probe-runs/campaign-pilot-of-2026-09-28-campaign-tier-absent-arm-discovery.md
   typed: probe_transcript
