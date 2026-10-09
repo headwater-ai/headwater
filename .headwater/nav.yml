@@ -463,6 +463,8 @@ nav:
               - "Thirteen test gaps that the verifiers of run 20261002-1233 left in the recorder, the probe tools and the spec guards": "obligations/0234-thirteen-test-gaps-that-the-verifiers-of-run-20261002-1233-left-in-the-recorder-the-probe-tools-and-the-spec-guards.md"
               - "Eleven documents and edges that trail a change of run 20261002-1233": "obligations/0235-eleven-documents-and-edges-that-trail-a-change-of-run-20261002-1233.md"
               - "Six questions from run 20261002-1233 about when an edge ages and what a moved rule owes": "obligations/0236-six-questions-from-run-20261002-1233-about-when-an-edge-ages-and-what-a-moved-rule-owes.md"
+              - "Eighteen findings that the paid layer campaign of run 20261003-1026 left in the probe recorder and the campaign driver": "obligations/0237-eighteen-findings-that-the-paid-layer-campaign-of-run-20261003-1026-left-in-the-probe-recorder-and-the-campaign-driver.md"
+              - "Four findings that the spec 6 trim of #1572 left in two decisions and their test": "obligations/0238-four-findings-that-the-spec-6-trim-of-1572-left-in-two-decisions-and-their-test.md"
           - "Review records":
               - "Review records": "reviews/README.md"
               - "Assessment of the existing core-concepts findings": "reviews/core-concepts-findings-assessment.md"
@@ -681,6 +683,7 @@ nav:
           - "Seven run-tooling gaps from run 20260929-2201, filed together": "process/obligations/0227-seven-run-tooling-gaps-from-run-20260929-2201-filed-together.md"
           - "Five run-tooling gaps from run 20261001-1107, filed together": "process/obligations/0231-five-run-tooling-gaps-from-run-20261001-1107-filed-together.md"
           - "Thirteen run-tooling gaps from run 20261002-1233, filed together": "process/obligations/0233-thirteen-run-tooling-gaps-from-run-20261002-1233-filed-together.md"
+          - "Three run-tooling gaps from run 20261003-1026, filed together": "process/obligations/0239-three-run-tooling-gaps-from-run-20261003-1026-filed-together.md"
       - "Process how-to guides":
           - "Process how-to guides": "process/how-to/README.md"
           - "Cut a release": "process/how-to/cut-a-release.md"
