@@ -215,9 +215,11 @@ The fixture suites, which are shell and Python rather than cargo, and which you 
     sh tools/run/shadow-mine-fixtures.sh
     sh tools/run/supervise-fixtures.sh
     sh tools/run/wait-for-fixtures.sh
+    sh tools/site/check-site-asset-size.sh .headwater/site-deploy
     sh tools/site/check-site-footer.sh .headwater/site-deploy
     sh tools/site/fetch-apt-fixtures.sh
     sh tools/site/render-tutorial-fixtures.sh
+    sh tools/site/site-asset-size-fixtures.sh
     sh tools/site/site-canonical-fixtures.sh
     sh tools/site/site-console-fixtures.sh
     sh tools/site/site-footer-fixtures.sh
