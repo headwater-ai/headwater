@@ -21,7 +21,7 @@ The maintainer and the verifiers of #1572 in run `20261003-1026` wrote these fin
 - [HW-DR-0106](../decisions/0106-a-governing-document-repoints-a-link-to-a-rule-that-moved-and-a-record-of-a-moment-stays-as-written.md) declares no relation. The test that enforces it, `engine/crates/cli/tests/spec_six_inbound_links.rs`, has no `governs` edge from it. So `headwater explain` on that path names no document.
 - [HW-DR-0063](../decisions/0063-every-required-facet-of-a-generated-document-is-derived-and-the-emitter-composes-the-summary.md) governs `engine/crates/generate/src/derived.rs` with a `verified_revision` that differs from the digest of the file today. PR #1676 moved its `last_verified` to 2026-10-03 for a change of a link only. A re-read of `derived.rs` against the decision is owed.
 - HW-DR-0106 says the negator rule opens again "when a governing sentence of either shape appears in the corpus". Read as written, its own two quoted examples meet that condition. The condition should exclude a quoted example.
-- Mutant M2 of the spec 6 credit check survives. Removing `last.ends_clause |= ends_clause;` in `clause_words` leaves the suite green. A case for "Spec 6 states the corpus tree ; the lock adds nothing." that expects `[(1, "corpus tree")]` would hold it.
+- Mutant M2 of the spec 6 credit check survives. Removing `last.ends_clause |= ends_clause;` in `clause_words` leaves the suite green. A case in which a semicolon, spaced as a separate token, follows the credited clause and one credit is expected with the rule words that precede it would hold it.
 
 ## Discharge
 
