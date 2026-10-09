@@ -4,7 +4,7 @@ title: "No probe tests whether an agent reaches the adjudication from the losing
 status: current
 status_since: 2026-08-10
 waiting_on: build
-last_verified: 2026-09-30
+last_verified: 2026-10-09
 summary: "Q18 claims that an agent meeting the losing document reaches the adjudication, and three of four recorded sessions did, against a mis-specified probe."
 provenance:
   warrant: accepted
@@ -18,6 +18,12 @@ relations:
     - HW-DR-0018
     - HW-RUN-campaign-of-2026-09-30-campaign-tier-present-arm-navigability
     - HW-RUN-campaign-of-2026-09-30-campaign-tier-absent-arm-navigability
+    - HW-RUN-campaign-of-2026-10-03-campaign-tier-present-arm-navigability
+    - HW-RUN-campaign-of-2026-10-03-campaign-tier-absent-arm-navigability
+    - HW-RUN-campaign-of-2026-10-03-campaign-tier-no-hook-arm-navigability
+    - HW-RUN-campaign-of-2026-10-03-campaign-tier-no-skills-arm-navigability
+    - HW-RUN-campaign-of-2026-10-03-campaign-tier-no-claude-md-arm-navigability
+    - HW-RUN-campaign-of-2026-10-03-campaign-tier-mcp-arm-navigability
 ---
 
 # No probe tests whether an agent reaches the adjudication from the losing document
@@ -46,4 +52,4 @@ This remains a reading of the supersession and not of Q18. Q18 rules that an adj
 
 **The reading has limits.** Both arms are at the ceiling, so the probe cannot show what the governance layer adds. The corpus was not frozen between the two arms' sessions. `docs/spec/09-open-questions.md` changed after the recording, so each verdict is graded over a moved read set. [The evaluation of that batch](../evaluations/what-the-counterfactual-campaign-of-2026-09-30-measured-by-component.md) states every limit and the cost. This record stays open by the owner's ruling of 2026-09-30, pending [#1472](https://github.com/headwater-ai/headwater/issues/1472), and it waits on a document that carries `overrides`.
 
-**The design of #1472 does not discharge this record.** That issue declares the component arms of the campaign tier, a power calculation and a dry run that prices the plan. It runs no session, and the owner ruled that this record stays open until the campaign runs.
+**The campaign of 2026-10-03 read the probe in six confined arms, and every arm is at the ceiling.** The probe was satisfied in 30 of 30 sessions in each of the `present`, `absent`, `no-hook`, `no-skills`, `no-claude-md` and `mcp` arms. Each interval is 88.6% to 100.0%. So the probe cannot show what any component adds. The pair is still a supersession and not an adjudication, so this is a reading of recovery from a superseded document and not of Q18. [The evaluation](../evaluations/what-the-paid-layer-campaign-of-2026-10-03-measured-by-arm-and-by-probe-line.md) states every figure and the limits. This record stays open, and it waits on a document that carries `overrides`. The earlier reason, the owner's ruling to wait for #1472, is spent, because the campaign ran.

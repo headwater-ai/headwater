@@ -4,7 +4,7 @@ title: "The human half of the public presence claim has no instrument at all"
 status: current
 status_since: 2026-08-11
 waiting_on: ruling
-last_verified: 2026-09-30
+last_verified: 2026-10-09
 summary: "Q16 claims that a generated site answers \"is this for me?\", and only the machine half has an instrument."
 provenance:
   warrant: accepted
@@ -18,6 +18,12 @@ relations:
     - HW-DR-0016
     - HW-RUN-campaign-of-2026-09-30-campaign-tier-present-arm-discovery
     - HW-RUN-campaign-of-2026-09-30-campaign-tier-absent-arm-discovery
+    - HW-RUN-campaign-of-2026-10-05-campaign-tier-present-arm-discovery
+    - HW-RUN-campaign-of-2026-10-05-campaign-tier-absent-arm-discovery
+    - HW-RUN-campaign-of-2026-10-05-campaign-tier-no-hook-arm-discovery
+    - HW-RUN-campaign-of-2026-10-05-campaign-tier-no-skills-arm-discovery
+    - HW-RUN-campaign-of-2026-10-05-campaign-tier-no-claude-md-arm-discovery
+    - HW-RUN-campaign-of-2026-10-05-campaign-tier-mcp-arm-discovery
 ---
 
 # The human half of the public presence claim has no instrument at all
@@ -38,4 +44,4 @@ The human half has no instrument at all, which is worth a statement rather than 
 
 **The reading has limits.** 5 of the 60 present-arm sessions and 3 of the 60 absent-arm sessions reached this repository from outside their workspace. That count uses the rule in [the Limits section of the evaluation](../evaluations/what-the-counterfactual-campaign-of-2026-09-30-measured-by-component.md#limits): a call names a copy of this repository, a `headwater` binary or GitHub. It does not count every path outside the workspace. The corpus was not frozen between the two arms' sessions. `docs/spec/12-check-layer.md` changed after the recording, so each verdict is graded over a moved read set. [The evaluation of that batch](../evaluations/what-the-counterfactual-campaign-of-2026-09-30-measured-by-component.md) states every limit and the cost. This record stays open by the owner's ruling of 2026-09-30, until [#1472](https://github.com/headwater-ai/headwater/issues/1472) runs a discovery selection sized for power. The human half still has no instrument.
 
-**The design of #1472 does not discharge this record.** That issue declares the component arms of the campaign tier, a power calculation and a dry run that prices the plan. It runs no session, and the owner ruled that this record stays open until the campaign runs.
+**The campaign of 2026-10-03 ran the discovery selection at power, and it does not separate the arms.** [#1659](https://github.com/headwater-ai/headwater/issues/1659) ran the three discovery probes at 118 repetitions each, in all six `campaign` arms. The `present` arm satisfied 137 of 354 sessions (38.7%) and the `absent` arm 152 of 354 (42.9%). The difference is +4.2 points for `absent`, in a 95% Newcombe interval of -3.0 to +11.4 points. The interval contains zero, so the batch does not show that the governance layer helps a cold session find a document. The reading has a limit: the recorder counted 177 paths outside the workspace in batch B. Each is a try and not a read, and the clause of #1659 that asks for 0 is not met. [The evaluation](../evaluations/what-the-paid-layer-campaign-of-2026-10-03-measured-by-arm-and-by-probe-line.md) states every figure. The human half still has no instrument, so this record stays open and it waits on a ruling. The earlier reason, the owner's ruling to wait for #1472, is spent, because the campaign ran.

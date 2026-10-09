@@ -4,7 +4,7 @@ title: "A cue has no measured effect on traversal precision"
 status: current
 status_since: 2026-08-11
 waiting_on: measurement
-last_verified: 2026-09-30
+last_verified: 2026-10-09
 summary: "Q20 claims that a cue raises traversal precision over the summary fallback, and no campaign has graded one."
 provenance:
   warrant: accepted
@@ -19,6 +19,12 @@ relations:
       cue: "The ruling that lets a hand-written cue exist at all, and the reason none has been authored to grade yet."
     - HW-RUN-campaign-of-2026-09-30-campaign-tier-present-arm-navigability
     - HW-RUN-campaign-of-2026-09-30-campaign-tier-absent-arm-navigability
+    - HW-RUN-campaign-of-2026-10-03-campaign-tier-present-arm-navigability
+    - HW-RUN-campaign-of-2026-10-03-campaign-tier-absent-arm-navigability
+    - HW-RUN-campaign-of-2026-10-03-campaign-tier-no-hook-arm-navigability
+    - HW-RUN-campaign-of-2026-10-03-campaign-tier-no-skills-arm-navigability
+    - HW-RUN-campaign-of-2026-10-03-campaign-tier-no-claude-md-arm-navigability
+    - HW-RUN-campaign-of-2026-10-03-campaign-tier-mcp-arm-navigability
 ---
 
 # A cue has no measured effect on traversal precision
@@ -41,4 +47,4 @@ When this record was written, no campaign had run, and this corpus authored no c
 
 **The reading has limits.** 8 of the 90 present-arm sessions and 0 of the 90 absent-arm sessions reached this repository from outside their workspace. That count uses the rule in [the Limits section of the evaluation](../evaluations/what-the-counterfactual-campaign-of-2026-09-30-measured-by-component.md#limits): a call names a copy of this repository, a `headwater` binary or GitHub. It does not count every path outside the workspace. The corpus was not frozen between the two arms' sessions. `docs/spec/09-open-questions.md` changed after the recording, so each verdict is graded over a moved read set. [The evaluation of that batch](../evaluations/what-the-counterfactual-campaign-of-2026-09-30-measured-by-component.md) states every limit and the cost. This record stays open by the owner's ruling of 2026-09-30, pending [#1472](https://github.com/headwater-ai/headwater/issues/1472).
 
-**The design of #1472 does not discharge this record.** That issue declares the component arms of the campaign tier, a power calculation and a dry run that prices the plan. It runs no session, and the owner ruled that this record stays open until the campaign runs.
+**The campaign of 2026-10-03 graded the navigability selection in six arms, and it did not grade a cue.** The `present` arm satisfied 95 of 150 sessions (63.3%) and the `absent` arm 121 of 150 (80.7%). The difference is +17.3 points for `absent` (+7.2 to +27.0). One probe supplies it. The `governs line` probe has an inverted key: 0 of 30 `present` sessions satisfied it and 26 of 30 `absent` sessions did. Without it, both arms are 95 of 120, a difference of +0.0 points (-10.3 to +10.3). The authors chose that exclusion after they read the data, so it is a sensitivity reading and not a result. This corpus authors no cue for a session to follow, so the batch measured the summary fallback. [The evaluation](../evaluations/what-the-paid-layer-campaign-of-2026-10-03-measured-by-arm-and-by-probe-line.md) states every figure and the limits. This record stays open. The earlier reason, the owner's ruling to wait for #1472, is spent, because the campaign ran.

@@ -4,7 +4,7 @@ title: "No probe tests whether a counted tombstone stops a confident report of a
 status: current
 status_since: 2026-08-10
 waiting_on: build
-last_verified: 2026-09-30
+last_verified: 2026-10-09
 summary: "Q17 claims a counted tombstone stops a confident report of absence, and the recorder discarded the answer of both runs that reached one."
 provenance:
   warrant: accepted
@@ -19,6 +19,13 @@ relations:
     - HW-RUN-campaign-of-2026-09-30-campaign-tier-present-arm-sufficiency
     - HW-RUN-campaign-of-2026-09-30-campaign-tier-absent-arm-sufficiency
     - HW-RUN-campaign-of-2026-09-30-documentation-tier-absent-arm-sufficiency
+    - HW-RUN-campaign-of-2026-10-03-campaign-tier-present-arm-sufficiency-four-probes
+    - HW-RUN-campaign-of-2026-10-03-campaign-tier-absent-arm-sufficiency-four-probes
+    - HW-RUN-campaign-of-2026-10-03-campaign-tier-no-hook-arm-sufficiency-four-probes
+    - HW-RUN-campaign-of-2026-10-03-campaign-tier-no-skills-arm-sufficiency-four-probes
+    - HW-RUN-campaign-of-2026-10-03-campaign-tier-no-claude-md-arm-sufficiency-four-probes
+    - HW-RUN-campaign-of-2026-10-03-campaign-tier-mcp-arm-sufficiency-four-probes
+    - HW-RUN-campaign-of-2026-10-03-documentation-tier-absent-arm-sufficiency-four-probes
 ---
 
 # No probe tests whether a counted tombstone stops a confident report of absence
@@ -53,4 +60,4 @@ The earlier account here read those two results as an undecided session. It was 
 
 The corpus was not frozen between the two arms' sessions, because this repository merged changes while the batch ran. Each session read one archive of one pin, so both arms read the same bytes. This record stays open by the owner's ruling of 2026-09-30, pending [#1472](https://github.com/headwater-ai/headwater/issues/1472). The probe meets a tombstone only when an export profile filters a document.
 
-**The design of #1472 does not discharge this record.** That issue declares the component arms of the campaign tier, a power calculation and a dry run that prices the plan. It runs no session, and the owner ruled that this record stays open until the campaign runs.
+**The campaign of 2026-10-03 read the probe in six confined arms, and it gives the control reading again.** All six `campaign` arms answered `absent` in 30 of 30 sessions, and the `documentation` absent arm answered `absent` in 29 of 29 graded sessions. No session met a tombstone, because this corpus still serves none. So the reading says that sessions do not invent a withheld answer. It says nothing about whether a counted tombstone stops a confident report of absence. [The evaluation](../evaluations/what-the-paid-layer-campaign-of-2026-10-03-measured-by-arm-and-by-probe-line.md) states every figure and the limits. This record stays open until a filter on the `site` profile serves a tombstone that the probe can meet. The earlier reason, the owner's ruling to wait for #1472, is spent, because the campaign ran.
