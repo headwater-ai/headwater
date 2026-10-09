@@ -28,7 +28,10 @@ WHAT IT ASKS
   failure to retry, so a check that starts in the second the deploy ends reads
   the previous site (it did, on the first deploy that ran it). A host that never
   settles is not waited on past SECONDS: the questions are asked anyway and the
-  findings say what the host answered.
+  findings say what the host answered. The same deadline covers a sitemap URL
+  that answers 404, because a page the deploy added reaches an edge after the
+  rule does: the URL is asked again every few seconds until it answers or the
+  deadline passes, and a page that never appears is still a finding.
 
   A failing request is retried, `--retries` times a few seconds apart, because
   a deploy takes a moment to reach every edge. A finding that survives the
@@ -142,12 +145,12 @@ def main(argv):
         else:
             origin = arg.rstrip("/")
 
+    deadline = time.monotonic() + settle if settle else 0.0
     if settle and redirects.is_file():
         first = next(((p[0], p[2] if len(p) > 2 else "302")
                       for p in (l.split() for l in redirects.read_text(encoding="utf-8").splitlines()
                                 if l.strip() and not l.lstrip().startswith("#"))
                       if len(p) >= 2 and "*" not in p[0] and ":" not in p[0]), None)
-        deadline = time.monotonic() + settle
         while first and time.monotonic() < deadline:
             got, _, _ = fetch(origin + first[0], 0)
             if str(got) == first[1]:
@@ -167,6 +170,14 @@ def main(argv):
     # 1. Every sitemap URL answers 200, and 2. collect the links of each page.
     def page(url):
         got, location, html = fetch(url, retries, want_body=True)
+        # A page this deploy added reaches an edge after the first `_redirects`
+        # rule does, because that rule was already served by the version before.
+        # So a 404 on a sitemap URL is polled until the same `--settle` deadline
+        # (2026-10-09: five new campaign pages answered 404 seven seconds after
+        # `wrangler deploy` and 200 when asked again about a minute later).
+        while got == 404 and time.monotonic() < deadline:
+            time.sleep(DELAY)
+            got, location, html = fetch(url, retries, want_body=True)
         return url, got, location, html
 
     targets = {}
