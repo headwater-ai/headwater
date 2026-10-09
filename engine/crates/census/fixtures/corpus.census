@@ -790,6 +790,10 @@ docs/obligations/0235-eleven-documents-and-edges-that-trail-a-change-of-run-2026
   typed: obligation_record
 docs/obligations/0236-six-questions-from-run-20261002-1233-about-when-an-edge-ages-and-what-a-moved-rule-owes.md
   typed: obligation_record
+docs/obligations/0237-eighteen-findings-that-the-paid-layer-campaign-of-run-20261003-1026-left-in-the-probe-recorder-and-the-campaign-driver.md
+  typed: obligation_record
+docs/obligations/0238-four-findings-that-the-spec-6-trim-of-1572-left-in-two-decisions-and-their-test.md
+  typed: obligation_record
 docs/obligations/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/probe-results/README.md
@@ -1201,6 +1205,8 @@ docs/process/obligations/0227-seven-run-tooling-gaps-from-run-20260929-2201-file
 docs/process/obligations/0231-five-run-tooling-gaps-from-run-20261001-1107-filed-together.md
   typed: process_obligation
 docs/process/obligations/0233-thirteen-run-tooling-gaps-from-run-20261002-1233-filed-together.md
+  typed: process_obligation
+docs/process/obligations/0239-three-run-tooling-gaps-from-run-20261003-1026-filed-together.md
   typed: process_obligation
 docs/process/obligations/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
