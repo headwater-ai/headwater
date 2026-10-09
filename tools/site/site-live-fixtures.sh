@@ -277,6 +277,43 @@ else
     failed=$((failed + 1)); echo "  FAIL  a settled host costs no wait ($elapsed s)"
 fi
 
+# 7d. A page the deploy added reaches the host after the check starts. Without
+#     `--settle` it is refused (case 2). With it the 404 is asked again until the
+#     page answers, and a page that never appears is still refused after the wait.
+tree "$t"
+sed -i 's|</urlset>|<url><loc>ORIGIN/spec/late/</loc></url>\n</urlset>|' "$t/sitemap.xml"
+: >"$t/_redirects"
+serve "$t"
+fix_sitemap
+( sleep 5; page "$t" spec/late '<a href="/">home</a>' ) &
+late_pid=$!
+started=$(date +%s)
+status=$(run --redirects "$t/_redirects" --settle 40)
+elapsed=$(( $(date +%s) - started ))
+wait "$late_pid" 2>/dev/null
+report "a page that appears during the settle wait passes" 0 "$status"
+if [ "$elapsed" -ge 4 ] && [ "$elapsed" -le 30 ]; then
+    passed=$((passed + 1)); echo "  ok    it waited for the page and no longer ($elapsed s)"
+else
+    failed=$((failed + 1)); echo "  FAIL  it waited for the page and no longer ($elapsed s)"
+fi
+
+tree "$t"
+sed -i 's|</urlset>|<url><loc>ORIGIN/spec/never/</loc></url>\n</urlset>|' "$t/sitemap.xml"
+: >"$t/_redirects"
+serve "$t"
+fix_sitemap
+started=$(date +%s)
+status=$(run --redirects "$t/_redirects" --settle 6)
+elapsed=$(( $(date +%s) - started ))
+report "a page that never appears is refused after a bounded wait" 1 "$status" \
+    "spec/never/ answered 404" "$scratch/err"
+if [ "$elapsed" -ge 4 ] && [ "$elapsed" -le 30 ]; then
+    passed=$((passed + 1)); echo "  ok    the wait for a missing page is bounded by --settle ($elapsed s)"
+else
+    failed=$((failed + 1)); echo "  FAIL  the wait for a missing page is bounded by --settle ($elapsed s)"
+fi
+
 # 8. A site that cannot be read is exit 2, not a pass over nothing.
 stop
 origin="http://127.0.0.1:9"
