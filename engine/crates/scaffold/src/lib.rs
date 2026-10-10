@@ -2091,26 +2091,32 @@ fn bind_target(sources: &Sources<'_>, far: &[String], target: &str, asserter: &s
     let [(anchor, Some((normalized, matched)))] = claims.as_slice() else {
         return Bound::Refused(unbound.to_string());
     };
-    if anchor.resolver == "comment-scan" && comments_with_hash(sources.root, normalized) {
-        return Bound::Refused(format!(
-            "`{}`: the comments in `{normalized}` open with `#`, and `comment-scan` reads only \
-             `//` and `/* */` comments, so no comment in it can cite `{asserter}`",
-            anchor.name
-        ));
-    }
-    let form = match std::path::Path::new(normalized)
-        .extension()
-        .is_some_and(|extension| extension == "rs")
-    {
-        true => "a Rust `//` or `/* */` comment",
-        false => "a `//` or `/* */` comment",
+    // Only `comment-scan` reads a comment, so only its target is held to the
+    // comment forms. Another resolver that reads a mark of the asserter is
+    // owed that mark, in words that name no comment.
+    let mark = match anchor.resolver == "comment-scan" {
+        false => "it".to_string(),
+        true if comments_with_hash(sources.root, normalized) => {
+            return Bound::Refused(format!(
+                "`{}`: the comments in `{normalized}` open with `#`, and `comment-scan` reads \
+                 only `//` and `/* */` comments, so no comment in it can cite `{asserter}`",
+                anchor.name
+            ));
+        }
+        true => match std::path::Path::new(normalized)
+            .extension()
+            .is_some_and(|extension| extension == "rs")
+        {
+            true => "a Rust `//` or `/* */` comment in it".to_string(),
+            false => "a `//` or `/* */` comment in it".to_string(),
+        },
     };
     Bound::Anchor(Anchored {
         anchor_kind: anchor.name.clone(),
         matched: Some(*matched),
         owes: Some(format!(
-            "`{}` binds `{normalized}` once {form} in it cites `{asserter}`, which \
-             `headwater check` reports until one does",
+            "`{}` binds `{normalized}` once {mark} cites `{asserter}`, and \
+             `headwater check` reports the edge as unbound until then",
             anchor.name
         )),
     })

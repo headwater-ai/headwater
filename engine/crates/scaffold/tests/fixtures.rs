@@ -147,6 +147,15 @@ impl Loaded {
                 .with(Box::new(EveryString))
                 .expect("one resolver of each name");
         }
+        if relations
+            .anchors
+            .iter()
+            .any(|anchor| anchor.resolver == "later-only")
+        {
+            resolvers = resolvers
+                .with(Box::new(LaterOnly))
+                .expect("one resolver of each name");
+        }
         Loaded {
             resolved,
             shape,
@@ -195,6 +204,34 @@ impl headwater_graph::anchors::Resolver for EveryString {
             matched: vec![raw.to_string()],
             excluded_by: None,
             revision: headwater_graph::anchors::Revision::known(None),
+        }
+    }
+}
+
+/// A resolver that claims nothing now and claims a string once it is cited.
+///
+/// It stands in for an adopter's resolver, other than `comment-scan`, that
+/// reads a mark of the asserter. Once cited, it withholds a Rust file, which
+/// `bind` counts as a claim, and it resolves every other file. So the verb's
+/// count of a withheld claim has a case, and so does the `#` test, which is
+/// for `comment-scan` alone (#1629).
+struct LaterOnly;
+
+impl headwater_graph::anchors::Resolver for LaterOnly {
+    fn name(&self) -> &str {
+        "later-only"
+    }
+
+    fn resolve(&self, raw: &str) -> headwater_graph::anchors::Binding {
+        headwater_graph::anchors::Binding::Unresolved(format!("nothing cites `{raw}` yet"))
+    }
+
+    fn resolve_once_cited(&self, raw: &str, _asserter: &str) -> headwater_graph::anchors::Binding {
+        match raw.ends_with(".rs") {
+            true => headwater_graph::anchors::Binding::Withheld {
+                profile: "fixture".to_string(),
+            },
+            false => headwater_graph::anchors::Resolver::resolve(&EveryString, raw),
         }
     }
 }
@@ -378,6 +415,19 @@ fn cases() -> Vec<Case> {
             "A citation in a file whose first line names an interpreter",
         )
         .relating("cited_in", "corpus/code/runner"),
+        // A claim withheld once cited is a claim, as `bind` counts it.
+        case(
+            "decision_record",
+            "A path one kind claims now and a second withholds once cited",
+        )
+        .relating("checked_later", "corpus/code/gadget.rs"),
+        // The `#` test is for `comment-scan`, and another resolver that reads
+        // a mark of the asserter is not refused by it.
+        case(
+            "decision_record",
+            "A shell file a resolver other than comment-scan claims once cited",
+        )
+        .relating("noted_in", "corpus/code/probe.sh"),
         // What `--summary` does. It fills the facet in the `scent` role
         // directly, exactly as `--title` fills the one in the `name` role, so
         // it needs the same two cases the `name` role never needed a comment

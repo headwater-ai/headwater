@@ -226,9 +226,14 @@ fn a_cited_in_file_that_is_not_text_is_refused() {
 fn a_cited_in_file_whose_comments_open_with_hash_is_refused() {
     let root = Root::new("cited-in-shell");
     std::fs::create_dir_all(root.at.join("tools")).expect("the tools directory is made");
-    std::fs::write(root.at.join("tools/probe.sh"), "#!/bin/sh\ntrue\n").expect("a shell file");
+    // The extension alone decides the first two, which open with no `#!`,
+    // and the extension is read without regard to case. The first line alone
+    // decides the third, which has no extension.
+    std::fs::write(root.at.join("tools/probe.sh"), "# a probe\ntrue\n").expect("a shell file");
+    std::fs::write(root.at.join("tools/config.YAML"), "# a key\nkey: value\n")
+        .expect("a YAML file");
     std::fs::write(root.at.join("tools/probe"), "#!/bin/sh\ntrue\n").expect("a script");
-    for target in ["tools/probe.sh", "tools/probe"] {
+    for target in ["tools/probe.sh", "tools/config.YAML", "tools/probe"] {
         let refused = root.run(&[
             "new",
             "verification",

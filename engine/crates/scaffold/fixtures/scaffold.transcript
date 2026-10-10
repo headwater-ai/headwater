@@ -364,7 +364,7 @@ claim .headwater/ids/decision_id/DR-FIX-0008
   edge cited_in -> corpus/code/widget.txt [created_by: agent]
     no far half
     anchor `test_site`, matched 1 entry
-    owes: `test_site` binds `corpus/code/widget.txt` once a `//` or `/* */` comment in it cites `DR-FIX-0008`, which `headwater check` reports until one does
+    owes: `test_site` binds `corpus/code/widget.txt` once a `//` or `/* */` comment in it cites `DR-FIX-0008`, and `headwater check` reports the edge as unbound until then
 assisted 7 of 9 — fields 3/4, sections 3/3, identifier 1/1, halves 0/1
 --- the document ---
 ---
@@ -607,7 +607,7 @@ refused, PathTaken
 === new decision_record --title "A relation nobody declared" --relates flibberty=DR-FIX-0007
 
 refused, RelationUnknown
-  no relation is named `flibberty`. This taxonomy declares `assesses`, `checked_in`, `cited_in`, `governs`, `realizes`, `refines`, `ruled_in`, `supersedes`
+  no relation is named `flibberty`. This taxonomy declares `assesses`, `checked_in`, `checked_later`, `cited_in`, `governs`, `noted_in`, `realizes`, `refines`, `ruled_in`, `supersedes`
 
 === new decision_record --title "An edge a hook pays for" --relates traces_to=DR-FIX-0007
 
@@ -673,6 +673,53 @@ refused, AnchorUnresolved
 
 refused, AnchorUnresolved
   `cited_in` names `corpus/code/runner`, and it binds to nothing (`test_site`: the comments in `corpus/code/runner` open with `#`, and `comment-scan` reads only `//` and `/* */` comments, so no comment in it can cite `DR-FIX-0008`). `headwater check` would report this edge as unbound, so nothing was written
+
+=== new decision_record --title "A path one kind claims now and a second withholds once cited" --relates checked_later=corpus/code/gadget.rs
+
+refused, AnchorUnresolved
+  `checked_later` names `corpus/code/gadget.rs`, and it binds to nothing (once a comment in it cites `DR-FIX-0008`, code_path and later_site both claim this string, so it has two identities). `headwater check` would report this edge as unbound, so nothing was written
+
+=== new decision_record --title "A shell file a resolver other than comment-scan claims once cited" --relates noted_in=corpus/code/probe.sh
+
+wrote corpus/decisions/a-shell-file-a-resolver-other-than-comment-scan-claims-once-cited.md
+identifier DR-FIX-0008 under `decision_id`, allocation reconcile-first, reconciled from 7
+claim .headwater/ids/decision_id/DR-FIX-0008
+  status = draft [scaffolded: `regimes.lifecycle.standard` opens at `draft`]
+  status_since = 2026-08-14 [scaffolded: the facet is in the `state_entered` role, and the run's clock is the date]
+  summary = TODO one sentence: what a reader learns here, which is what routing reads [hand entry: no declaration determines it, and this run states the question instead]
+  title = A shell file a resolver other than comment-scan claims once cited [scaffolded: the facet is in the `name` role, and `--title` is the name]
+  edge noted_in -> corpus/code/probe.sh [created_by: agent]
+    no far half
+    anchor `later_site`, matched 1 entry
+    owes: `later_site` binds `corpus/code/probe.sh` once it cites `DR-FIX-0008`, and `headwater check` reports the edge as unbound until then
+assisted 7 of 9 — fields 3/4, sections 3/3, identifier 1/1, halves 0/1
+--- the document ---
+---
+id: DR-FIX-0008
+status: draft
+status_since: 2026-08-14
+summary: "TODO one sentence: what a reader learns here, which is what routing reads"
+title: "A shell file a resolver other than comment-scan claims once cited"
+provenance:
+  warrant: asserted
+relations:
+  noted_in:
+    - corpus/code/probe.sh
+---
+
+# A shell file a resolver other than comment-scan claims once cited
+
+## Context
+
+TODO write this section.
+
+## Decision
+
+TODO write this section.
+
+## Consequences
+
+TODO write this section.
 
 === new decision_record --title "A scent role the caller states" --summary "What a reader learns before opening the file."
 

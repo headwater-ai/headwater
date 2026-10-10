@@ -348,6 +348,12 @@ anchors:
   # string. It stands in for an adopter's resolver whose namespace overlaps
   # the source tree, so a path can have two identities.
   rule_name: {resolver: every-string}
+  # A fourth resolver, which the fixture test supplies, and which claims a
+  # string only once it is cited. It stands in for an adopter's resolver
+  # other than `comment-scan` that reads a mark of the asserter, so the
+  # verb's count of a withheld claim and its `#` test, which is for
+  # `comment-scan` alone, each have a case.
+  later_site: {resolver: later-only}
 
 relations:
 
@@ -387,6 +393,26 @@ relations:
     family: evidence
     from: [decision_record]
     to:   [code_path, test_site]
+    cardinality: many
+    created_by: agent
+
+  # The same shape over the fourth resolver, whose claim once cited is
+  # withheld. A withheld claim is a claim, as `bind` counts it, so a file the
+  # source tree claims now is refused here too.
+  checked_later:
+    family: evidence
+    from: [decision_record]
+    to:   [code_path, later_site]
+    cardinality: many
+    created_by: agent
+
+  # An edge onto the fourth resolver alone. The verb refuses a file whose
+  # comments open with `#` only where `comment-scan` would read it, so a
+  # shell file this resolver claims once cited is written.
+  noted_in:
+    family: evidence
+    from: [decision_record]
+    to:   [later_site]
     cardinality: many
     created_by: agent
 
