@@ -1013,6 +1013,78 @@ This reaches [Q16](../spec/09-decisions.md#q16--public-presence) through [princi
 
 **Contradicts.** Two readings that this survey went in holding. That a relicensing simply kills a project, which the retrospective above refuses. And that a documented gradual-adoption mode belongs in the runner, which the sigil design refutes by shipping the alternative and keeping determinism.
 
+## T — Policy as code: the engine evaluates data, and the producer supplies the structure
+
+An outside reading of this design proposed two integrations on 2026-10-10. The first was Headwater as a front-end parser for a policy engine. It would parse the prose of a decision or a compliance document into JSON and hand it to Open Policy Agent. A build whose infrastructure disagreed with the sentence would then fail. This section confronts that proposal with what the policy-as-code field ships, and with the two standards that put a control into data.
+
+### T.1 OPA and Conftest never read a paragraph
+
+Open Policy Agent takes three inputs: a policy in Rego, a data document, and an input document. Every one of them is JSON. Conftest joined the OPA project in 2020, and it runs Rego over configuration files. The inputs it reads are a Terraform plan after `terraform show -json`, a Kubernetes manifest, a Dockerfile and HCL through a parser flag. Its format list runs from TOML to SPDX ([Conftest](https://platformengineering.org/tools/conftest)). The structure arrives from the producer of the file in every case. No tool in the family carries a stage that reads prose for meaning, and no tool takes an intent as input.
+
+So the proposal places a semantic extraction stage where the field has none. [Spec 0](../spec/00-vision-and-scope.md#what-we-do-not-build) draws the same line from the other side. The engine checks documents and their declared links, and never the meaning of what they govern. The deterministic core forbids the one component that could read a sentence, because a verdict never depends on a model. The two constraints agree, and the proposal fails both.
+
+What transfers is the input, and it already exists. `headwater export --format json` writes the native property graph with no loss, and `headwater check --format json` writes the findings in the shape [spec 4](../spec/04-assurance-model.md#findings) declares. Either one is a Conftest input as it stands. An adopter who wants a rule that no taxonomy declares can run Rego over the export, after the check and outside the binary. [HW-REQ-0001](../requirements/0001-the-engine-reaches-no-network-at-check-time.md) is why the step is outside: the check loop opens no connection, so a policy service can never be a sidecar of it.
+
+The cost of that path is a second home for a rule. Principle 1 puts what an adopter wants different into the schema, and this repository's own doctrine keeps one owner per rule. A Rego file beside the taxonomy is a rule that `headwater explain` cannot see and `headwater infer` cannot count. The verdict is the one [spec 13](../spec/13-open-obligations.md#what-waits-on-a-first-adopter) already gives every emitter: legal, an adapter nobody here writes, and shipped when a consumer asks.
+
+### T.2 InSpec puts the control text inside the test
+
+Chef InSpec is the field's compliance-as-code tool, and its unit is a `control` block. The block carries `impact` on a scale from 0.0 to 1.0, a `title`, a `desc`, `tag` pairs and a `ref` to an external document ([InSpec controls](https://docs.chef.io/inspec/profiles/controls)). The `describe` blocks that run come after them. The published example tags a control with a CCE identifier and refers to a section of a STIG. The prose of the control is a string field of the executable, and the standard it implements is named by a string.
+
+The arrow runs from code to document. The test names the control, and the control document knows nothing of the test. Nothing reports when the STIG section the `ref` names is revised, because the reference is a string and not an edge. [HW-DR-0073](../decisions/0073-a-verification-is-a-kind-and-its-identity-is-minted-rather-than-found-in-the-code-that-cites-it.md) chose the opposite shape for the same relation. A verification names an acceptance criterion by a minted identifier, and the observation entry records the digest of the criterion it proved. `relation.target.verification.suspect` reports the pair once the criterion moves. That is the report InSpec's `ref` cannot give, and it is the half of the proposal above that this design already carries. The honest claim is the ledger: which guarantee has a verification, which verification was observed, and which one went suspect when either side changed.
+
+### T.3 OSCAL has the three layers this corpus has, and it gives prose an identifier
+
+NIST's Open Security Controls Assessment Language is the standard for controls as data. It has three layers, and each lower layer supplies structures the one above it references ([OSCAL layers](https://pages.nist.gov/OSCAL/learn/concepts/layer)). The control layer is a catalog and a profile, where a profile selects and tailors controls into a baseline. The implementation layer is a component definition and a system security plan. The assessment layer is a plan, a result and a plan of action and milestones.
+
+The correspondence to this design is close enough to name. An obligation record is a catalog entry. A control with a posture is the implementation. An entry in `.headwater/observations.yml` is an assessment result, and the `adoption` block of the lock is a plan of action with an owner. A profile that selects and tailors a catalog is a package with an overlay, which [spec 7](../spec/07-distribution-and-federation.md#profiles-are-publisher-overlays) already calls a profile. [Spec 4](../spec/04-assurance-model.md#obligations-are-data) ruled that obligations are data before this standard was read, so the confirmation is independent.
+
+The sharper finding is what OSCAL does with the prose of a control. The statement is a part of the control object, with an identifier, and an assessment result attaches to the control by that identifier. The standard that exists to make compliance machine-readable does not read the statement for meaning. It gives the sentence an address and attaches evidence at the address. That is the whole of what the proposal's example needs, and it is what this design does with a verification.
+
+### T.4 What this section confirms, sharpens and contradicts
+
+**Confirms.** The no-meaning rule of spec 0, by the field's own practice: every policy engine evaluates structure a producer supplied. HW-DR-0073's minted identity, by InSpec's string reference and the drift it cannot report. Spec 4's obligations-as-data, by a standard with the same three layers.
+
+**Sharpens.** The export is the integration surface, and a Rego runtime is not. The verification entry is the compliance hook, and the suspect rule is the signal the field lacks.
+
+**Contradicts.** The proposal's framing of Headwater as a parser in front of a policy engine. The field puts the structure in the producer, and so does this design.
+
+## U — Architecture tests: a document is a rule source where it carries a diagram or a query
+
+The second proposal of 2026-10-10 was the inverse. Parse an architecture document, generate the constraints an architecture-testing library asserts, and a document edit then flags the code that disobeys it. This section reads four such libraries and the two that already take a document as the rule. It also reads the one feature that is this design's adoption block under another name.
+
+### U.1 Four tools, one shape
+
+ArchUnit asserts package and class dependencies through a fluent Java API inside a JUnit test. The Python tool import-linter reads an `.importlinter` file of contracts, and it ships five contract types: `forbidden`, `protected`, `layers`, `independence` and `acyclic siblings` ([import-linter](https://import-linter.readthedocs.io/en/stable/contract_types/)). The JavaScript tool dependency-cruiser reads a rules file with a `forbidden` list, and pytest-archon asserts an import rule in a pytest test. In every one, the rule is code or configuration beside the code, hand-written, and run by the test suite. None of the four reads an architecture document, and import-linter's own word for a rule is *contract*.
+
+### U.2 Two of them read a document, and both read a formal sub-language inside it
+
+ArchUnit can take a PlantUML component diagram as the rule. `adhereToPlantUmlDiagram` maps each component to packages by stereotype, and the dependencies drawn are the dependencies allowed ([ArchUnit #960](https://github.com/TNG/ArchUnit/issues/960)). The jQAssistant tool scans a codebase into a Neo4j graph and runs Cypher concepts and constraints over it. A rule may live in an AsciiDoc source block marked `role=constraint`. An `include::jQA:Rules[]` directive renders the result back into the document. A 2021 write-up shows an architecture decision record in AsciiDoc that carries its own rule and its own result ([ADR and jqAssistant](https://unexist.dev/testing/2021/03/15/adr-and-jqassistant.html)). A PlantUML rule plugin for jQAssistant existed, and its repository is archived.
+
+So the field has shipped the proposal twice. Both times the thing parsed is a diagram grammar or a query language embedded in the document. The paragraphs around it are not read. That is the line this design draws: front matter and declared relations are read, and the body is not. A document is a rule source exactly where it carries structure, and nowhere else. The executing ADR is the closest existing artifact to the proposal, and it is an ADR with a Cypher block in it.
+
+### U.3 FreezingArchRule is the adoption block, and it has no owner
+
+ArchUnit's `FreezingArchRule` wraps a rule, stores every present violation in a violation store, and fails only on a new one. The store is keyed by the rule's description, so a reworded description is a new store and the old violations are unfrozen ([ArchUnit #960](https://github.com/TNG/ArchUnit/issues/960)). Until 1.0.0 a class in no component crashed the condition, which made the legacy case unfreezable.
+
+`headwater infer --owner <name> --write` records each `(document, rule)` pair under a task in the `adoption` block of the lock, and a pending finding does not fail a strict run. The two mechanisms answer the same question. The differences are the ones [S.5](#s5-grandfathering-has-a-scale-at-which-it-lies) already found in RuboCop and ESLint. The store has no owner and no expiry, and the count is not printed on every run. The identity problem is the one [HW-DR-0073](../decisions/0073-a-verification-is-a-kind-and-its-identity-is-minted-rather-than-found-in-the-code-that-cites-it.md) solved. An identity found in a description string breaks on a rewording, and a minted one does not.
+
+### U.4 What is already here, what the proposal adds, and what it waits on
+
+This design already has an edge from a document to code, and it runs the other way from the proposal. A `governs` relation reaches a `code_path` pattern and binds on existence ([HW-DR-0029](../decisions/0029-q29-whether-a-corpus-root-may-contain-code-and-what-an-interface-contract-may-reach.md), [HW-DR-0074](../decisions/0074-a-code-path-anchor-is-a-pattern-over-the-tree-and-it-binds-when-the-pattern-matches-at-least-one-entry.md)). The source-tree resolver digests the bytes the pattern matches, and `relation.target.suspect` reports an edge whose digest moved since a person verified it. The sentence it produces is *the code changed, reread the document*. The proposal wants *the document changed, fail the code*.
+
+That sentence is a taxonomy declaration and an emitter, and not a parser. A kind whose relations name a permitted or forbidden dependency between two `code_path` anchors carries the structure, in front matter. An emitter target writes `.importlinter`, a dependency-cruiser rules file or a PlantUML diagram from the graph. `generate --check` holds the written file to its source under principle 3. Principle 9 names emitted configurations as the way the corpus serves a tool it does not own. The kind is a bundle under principle 1, and the emitter joins the projection kinds that [spec 6](../spec/06-engine-architecture.md#projections) names. The equivalence bar of [spec 12](../spec/12-check-layer.md#exportable_as-is-a-set-with-a-partition-rule) does not reach it, because there is no native dependency check for the emitted constraint to be equivalent to. It is a projection with a declared loss set, as the JSON Schema target is.
+
+Nothing in the family runs when a document is edited. The generated rule fails on the code's next test run, and that is the moment the proposal describes. What this waits on is the thing spec 13 names for every emitter: an adopter with a codebase, an architecture document and a request. None has arrived.
+
+### U.5 What this section confirms, sharpens and contradicts
+
+**Confirms.** The no-meaning line, by the two tools that read a document and read only the diagram or the query in it. Principle 3, because every tool here regenerates its rule from a source rather than letting a person edit the derived file. The S.5 finding on grandfathering, by a store with no owner and no expiry.
+
+**Sharpens.** A document is a rule source exactly where it carries a formal sub-language. For this design that sub-language is front matter, and the emitter is the mechanism. A dependency kind is a bundle and not engine code.
+
+**Contradicts.** The proposal's claim that a document edit flags the code. The flag arrives on the test run, from a generated rule, and this design's own `governs` aging runs in the opposite direction. The reading of either integration as a parser feature: the field has no parser, and neither does this design.
+
 ---
 
 ## Summary
@@ -1070,3 +1142,6 @@ This reaches [Q16](../spec/09-decisions.md#q16--public-presence) through [princi
 | RuboCop's exclusion limit, ESLint's suppressions file | A grandfathering mechanism has a scale at which it switches a rule off and says nothing | Applied — no threshold, and the count reported on every run (specs 4, 7) |
 | Rogers, diffusion of innovations | Trialability and observability reduce uncertainty by different routes, and neither substitutes | Applied — the order in which Q11, Q12 and Q16 had to close |
 | Diátaxis | Four modes on two axes, and this repository found one of the splits first | Noted as a candidate kind set for a documentation-site bundle. **Q16** closed |
+| OPA and Conftest | A policy engine evaluates structured input, and the producer supplies the structure. No tool in the family reads prose | Declined as a parser front-end. The graph export is the input a Rego adapter would take, and it waits on a consumer (spec 13) |
+| InSpec, OSCAL | The control's prose lives inside the data model with an identifier, and evidence attaches by identifier and never by meaning | Confirms HW-DR-0073 and spec 4. The verification entry is the compliance hook |
+| ArchUnit, import-linter, dependency-cruiser, jQAssistant | A document is a rule source where it carries a diagram or a query, and nowhere else. `FreezingArchRule` is a grandfathering store with no owner and no expiry | A dependency kind in a bundle and an emitted configuration are the shape (principles 1, 9). Waits on a first adopter |

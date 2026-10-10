@@ -628,7 +628,7 @@
     {
       "rule": "relation.target.suspect",
       "scope": "edge",
-      "version": 10,
+      "version": 11,
       "obligations": [
         "OB-FIX-27"
       ]

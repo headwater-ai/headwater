@@ -173,6 +173,22 @@
 //! Where the splice cannot, the remedy names the hand edit and the digest to
 //! copy, and says why `--fix` does not apply. Before #1631 every moved digest
 //! named `--fix`, and on a list target that command wrote nothing.
+//!
+//! # A run with a change says whether this change is the one that moved it
+//!
+//! A moved digest reads the same in a commit hook whose change edits the
+//! governed file and in one whose change edits something else, and the two
+//! ask for different acts. In the first the author just edited what the edge
+//! reaches, and re-reading the document is part of this change. In the second
+//! the digest moved in an earlier change that nobody re-read against, and the
+//! route to a stamp is `--verified-edge`, because this change carries nothing
+//! the pattern matches ([the `headwater change` contract](../../../../docs/interfaces/headwater-change.md)).
+//! So where the run carries a change, the message ends with which case it is,
+//! and the remedy names the route that fits. A run with no change says
+//! neither, because it has nothing to compare against. The manifest already
+//! names every changed path, documents and not (the `target` half of what the
+//! change states about an edge), so the engine runs no version control command
+//! to learn it.
 
 use crate::change::Prior;
 use crate::finding::{at, Finding, Severity};
@@ -296,7 +312,13 @@ impl EdgeCheck for Suspect<'_> {
     /// to set `verified_revision` by hand rather than to run `--fix`, so a
     /// verdict cached at 9 over such an entry names a command that writes
     /// nothing (#1631).
-    const VERSION: u32 = 10;
+    ///
+    /// 11: in a run with a change, a moved digest says whether this change
+    /// names what the entry reaches or the digest moved in an earlier change,
+    /// and the remedy names `--verified-edge` in the second case. The key
+    /// already holds the statement and the prior, so a verdict cached at 10
+    /// differs only in its text.
+    const VERSION: u32 = 11;
     /// The change decides the fix, and the clock decides nothing (#1259).
     const NEEDS_CLOCK: bool = false;
     /// The fix is offered only on a document the change re-verified, so the
@@ -456,6 +478,19 @@ impl EdgeCheck for Suspect<'_> {
             true => recording(edge, current),
             false => None,
         };
+        // What the run's change says about the entries this edge reaches.
+        // A run with no change states nothing, and so does one whose prior
+        // version of the document did not open and that names nothing: the
+        // two key alike, and they read alike.
+        let carried = view.declarer_prior().is_some()
+            || view.declarer_verified()
+            || view.target_named()
+            || view.edge_verified();
+        let under = match (carried, view.target_named()) {
+            (false, _) => Under::NoChange,
+            (true, true) => Under::Named,
+            (true, false) => Under::Unnamed,
+        };
         let (message, remediation) = match resolver.as_str() {
             SOURCE_TREE => (
                 moved(
@@ -470,9 +505,10 @@ impl EdgeCheck for Suspect<'_> {
                         // named pipe, a socket or a device it matched (#1333).
                         false => Reach::Set(revision.covered().unwrap_or(reached)),
                     },
+                    under,
                 ),
                 match recorded {
-                    Some(_) => reread(current),
+                    Some(_) => reread(current, under),
                     None => by_hand(current, unwritable(edge)),
                 },
             ),
@@ -610,9 +646,32 @@ enum Reach {
     Set(usize),
 }
 
+/// What the run's change says about the entries a moved source-tree anchor
+/// reaches. See the module comment.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+enum Under {
+    /// The run carries no change, so nothing is known about which change
+    /// moved the digest.
+    NoChange,
+    /// An `added` or a `prior` line of the change names an entry the anchor
+    /// reaches, so this change edits what the edge reaches.
+    Named,
+    /// The change names nothing the anchor reaches, so the digest moved in an
+    /// earlier change, and this one carries no file for a stamp to ride on.
+    Unnamed,
+}
+
 /// A moved digest, in the terms of the document that declares the edge.
-fn moved(id: &str, name: &str, raw: &str, verified: &str, current: &str, reach: Reach) -> String {
-    match reach {
+fn moved(
+    id: &str,
+    name: &str,
+    raw: &str,
+    verified: &str,
+    current: &str,
+    reach: Reach,
+    under: Under,
+) -> String {
+    let mut text = match reach {
         Reach::One => format!(
             "`{id}` declares `{name}: {raw}`, which was verified against content `{verified}`, \
              and the 1 entry it reaches has changed since: it now reads `{current}`"
@@ -626,18 +685,47 @@ fn moved(id: &str, name: &str, raw: &str, verified: &str, current: &str, reach: 
                 _ => "files",
             }
         ),
+    };
+    let what = match reach {
+        Reach::One => "the entry",
+        Reach::Set(_) => "a file it covers",
+    };
+    match under {
+        Under::NoChange => {}
+        Under::Named => text.push_str(&format!(". This change names {what}")),
+        Under::Unnamed => text.push_str(&format!(
+            ". This change names no {}, so the digest moved in an earlier change",
+            match reach {
+                Reach::One => "entry it reaches",
+                Reach::Set(_) => "file it covers",
+            }
+        )),
     }
+    text
 }
 
-/// What to do about a moved digest.
-fn reread(current: &str) -> String {
-    format!(
-        "re-read what the entry reaches and correct this document where it no longer holds; then \
-         set its `last_verified` to today, write the change with `headwater change <base> <dir>`, \
-         and run `headwater check --fix --change <dir>/manifest`, which records \
-         `{VERIFIED_REVISION}: {current}` on this entry; where `last_verified` already reads \
-         today, pass `--verified <this document>` to `headwater change` instead"
-    )
+/// What to do about a moved digest. The route to a stamp depends on whether
+/// this change carries what the entry reaches: where it does, re-verifying
+/// the document is enough, and where it does not, only an edge line states
+/// the re-reading, because each edge carries its own stamp (#1520).
+fn reread(current: &str, under: Under) -> String {
+    match under {
+        Under::Unnamed => format!(
+            "re-read what the entry reaches and correct this document where it no longer holds; \
+             then write the change with `headwater change <base> <dir> --verified-edge <this \
+             document> <this entry>`, and run `headwater check --fix --change <dir>/manifest`, \
+             which records `{VERIFIED_REVISION}: {current}` on this entry; a moved \
+             `last_verified` alone stamps nothing here, because this change carries no file the \
+             entry reaches"
+        ),
+        Under::NoChange | Under::Named => format!(
+            "re-read what the entry reaches and correct this document where it no longer holds; \
+             then set its `last_verified` to today, write the change with `headwater change \
+             <base> <dir>`, and run `headwater check --fix --change <dir>/manifest`, which \
+             records `{VERIFIED_REVISION}: {current}` on this entry; where `last_verified` \
+             already reads today, pass `--verified <this document>` to `headwater change` instead"
+        ),
+    }
 }
 
 /// What to do about a moved digest on an entry that `--fix` cannot write: a
@@ -751,7 +839,7 @@ mod tests {
     /// cannot take the first, and before #1376 the remedy named no other.
     #[test]
     fn the_remedy_names_the_verified_line_for_a_facet_that_reads_today() {
-        let remedy = reread("sha256:new");
+        let remedy = reread("sha256:new", Under::NoChange);
         assert!(
             remedy.contains("set its `last_verified` to today"),
             "{remedy}"
@@ -762,6 +850,62 @@ mod tests {
             "{remedy}"
         );
         assert!(remedy.contains("verified_revision: sha256:new"), "{remedy}");
+    }
+
+    /// A run with no change qualifies a moved digest with nothing. A change
+    /// that names what the entry reaches says so, and one that names nothing
+    /// it reaches says the digest moved earlier. The three texts differ, so a
+    /// reader in a commit hook learns which act the finding asks for.
+    #[test]
+    fn a_moved_digest_says_whether_this_change_names_what_it_reaches() {
+        let text = |under| moved("GS-FIX", "governs", "lib.sh", "a", "b", Reach::One, under);
+        let plain = text(Under::NoChange);
+        assert!(!plain.contains("This change"), "{plain}");
+        let named = text(Under::Named);
+        assert!(named.starts_with(&plain), "{named}");
+        assert!(named.ends_with("This change names the entry"), "{named}");
+        let unnamed = text(Under::Unnamed);
+        assert!(unnamed.starts_with(&plain), "{unnamed}");
+        assert!(
+            unnamed.ends_with("no entry it reaches, so the digest moved in an earlier change"),
+            "{unnamed}"
+        );
+        // Over a pattern the count is of files, and the clause says so.
+        let set = moved(
+            "GS-FIX",
+            "governs",
+            "hooks/**",
+            "a",
+            "b",
+            Reach::Set(3),
+            Under::Unnamed,
+        );
+        assert!(set.contains("3 regular files"), "{set}");
+        assert!(
+            set.ends_with("no file it covers, so the digest moved in an earlier change"),
+            "{set}"
+        );
+    }
+
+    /// Where this change names nothing the entry reaches, a moved
+    /// `last_verified` stamps nothing (#1520), so the remedy names the edge
+    /// line and never the facet. Where it does, the remedy is the one above.
+    #[test]
+    fn the_remedy_names_the_edge_line_where_this_change_carries_no_file_it_reaches() {
+        let remedy = reread("sha256:new", Under::Unnamed);
+        assert!(
+            remedy.contains("--verified-edge <this document> <this entry>"),
+            "{remedy}"
+        );
+        assert!(
+            !remedy.contains("set its `last_verified` to today"),
+            "{remedy}"
+        );
+        assert!(remedy.contains("verified_revision: sha256:new"), "{remedy}");
+        assert_eq!(
+            reread("sha256:new", Under::Named),
+            reread("sha256:new", Under::NoChange)
+        );
     }
 
     /// The remedy for an entry `--fix` cannot write names the hand edit, the
