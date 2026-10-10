@@ -152,9 +152,17 @@ pub fn marker(kind: &str, path: &str) -> Option<String> {
 /// quotes the marker while discussing it is an authored document, and this
 /// repository's own specification is exactly such a document. Reading the first
 /// line alone is what keeps a run from overwriting it, and it is what keeps the
-/// census from reporting spec 6 as a file this engine generated.
+/// census from reporting spec 6 as a file this engine generated. The line has to
+/// open with the comment syntax of the path's format, `<!--` for Markdown and
+/// `#` otherwise, so a compact JSON object or another format's comment on the
+/// first line is not a marker there.
 ///
-/// **JSON: a top-level member, wherever it sits.** A JSON file is not prose, so
+/// **JSON: a top-level member, wherever it sits, of a text that is a JSON
+/// object.** The first line that is not blank has to open with `{`. A Markdown
+/// document's front matter holds the same member on a line of its own, and its
+/// bytes at a `.json` path are not a JSON output, so they carry no marker
+/// there ([#1513](https://github.com/headwater-ai/headwater/issues/1513)). A
+/// JSON file is not prose, so
 /// nothing in one discusses a marker, and the line rule would answer for the
 /// brace that opens the object rather than for the file. The member is the
 /// marker, and it is matched as a quoted key at the start of a line so that a
@@ -276,30 +284,37 @@ fn marker_body<'a>(path: &str, text: &'a str) -> Option<&'a str> {
 /// asks whether there is such a line and [`kind_named`] reads it, so the
 /// predicate and the reader cannot come to different answers about one file.
 fn marker_line<'a>(path: &str, text: &'a str) -> Option<&'a str> {
+    // A comment is a marker only in the syntax the path's format comments
+    // with, so a compact JSON object or another format's comment on the first
+    // line is not one (#1513).
+    let first_comment = |opens: &str| {
+        text.lines()
+            .next()
+            .filter(|line| line.trim_start().starts_with(opens) && line.contains(MARKER))
+    };
     match comment_for(path) {
         // A member at the start of a line, or a member in key position on the
         // first line when that line opens the object, which is how a writer
-        // that prints JSON compactly writes the whole file.
-        Comment::None => text
-            .lines()
-            .find(|line| line.trim_start().starts_with(&quoted()))
-            .map(str::trim_start)
-            .or_else(|| {
-                let first = text.lines().find(|line| !line.trim().is_empty())?;
-                first
-                    .trim_start()
-                    .starts_with('{')
-                    .then(|| member_in_key_position(first))?
-            }),
+        // that prints JSON compactly writes the whole file. Both only when the
+        // text is a JSON object: a Markdown document's front matter holds the
+        // same member on a line of its own, and at a `.json` path it is not a
+        // JSON marker (#1513).
+        Comment::None => {
+            let first = text.lines().find(|line| !line.trim().is_empty())?;
+            if !first.trim_start().starts_with('{') {
+                return None;
+            }
+            text.lines()
+                .find(|line| line.trim_start().starts_with(&quoted()))
+                .map(str::trim_start)
+                .or_else(|| member_in_key_position(first))
+        }
         // The first line, and then the block. The two are disjoint: a first
         // line that carries the marker is a first line that is not `---`, so
         // such a file has no block for the second rule to read.
-        Comment::Html => text
-            .lines()
-            .next()
-            .filter(|line| line.contains(MARKER))
+        Comment::Html => first_comment("<!--")
             .or_else(|| front_matter(text).find(|line| line.trim_start().starts_with(&quoted()))),
-        Comment::Hash => text.lines().next().filter(|line| line.contains(MARKER)),
+        Comment::Hash => first_comment("#"),
     }
 }
 
@@ -398,6 +413,85 @@ mod tests {
         // After a `,` with no `:` after it, the quoted word is not a key.
         let value = format!("{{\"a\": 1, \"{MARKER}\"}}\n");
         assert!(!carries_marker("out/compact.json", &value));
+    }
+
+    #[test]
+    fn a_json_path_carries_only_a_json_member_and_not_a_front_matter_one() {
+        // A probe result's bytes: a Markdown document whose front matter holds
+        // the member. At a `.md` path that is the marker (#1466, #1513).
+        let front = format!(
+            "---\nid: HW-RESULT-x\n{}\n---\n\n# A result\n",
+            marker_member("probe_result")
+        );
+        assert!(carries_marker("docs/x.md", &front));
+
+        // At a `.json` path the text is not a JSON object, so its member is not
+        // a JSON marker, and the generator reports the output as unread.
+        let json = "runs/probe-results/first-regression.json";
+        assert!(!carries_marker(json, &front));
+        assert_eq!(kind_named(json, &front), None);
+        assert!(!built_at_publish(json, &front));
+
+        // Any text before the object is not an object either, wherever the
+        // member sits after it.
+        let preamble = format!("# note\n{{\n  \"{MARKER}\": \"graph_export. \"\n}}\n");
+        assert!(!carries_marker(json, &preamble));
+        // A brace later on the first line does not open an object either.
+        let later_brace = format!("note: {{\n\"{MARKER}\": \"graph_export. \"\n");
+        assert!(!carries_marker(json, &later_brace));
+
+        // The control: the object form still carries at the same path, with
+        // blank lines before the brace.
+        let object = format!(
+            "\n\n{{\n  \"{MARKER}\": \"{}\"\n}}\n",
+            marker_text("probe_result")
+        );
+        assert!(carries_marker(json, &object));
+        assert_eq!(kind_named(json, &object).as_deref(), Some("probe_result"));
+    }
+
+    #[test]
+    fn a_commented_format_carries_only_its_own_comment_on_the_first_line() {
+        // A compact JSON object is not a comment, at a Markdown path or a YAML
+        // or TOML one, even when the member opens it.
+        let compact = format!("{{\"{MARKER}\": \"graph_export. \"}}\n");
+        for path in ["docs/x.md", "out/x.yml", "out/x.toml"] {
+            assert!(!carries_marker(path, &compact), "{path}");
+            assert_eq!(kind_named(path, &compact), None, "{path}");
+        }
+
+        // An HTML comment is Markdown's syntax and not YAML's, and a hash
+        // comment is YAML's and not Markdown's.
+        let html = format!("<!-- {MARKER} shelf_index. -->\n");
+        assert!(carries_marker("docs/x.md", &html));
+        assert!(!carries_marker("out/x.yml", &html));
+        let hash = format!("# {MARKER} agent_rules. \n");
+        assert!(carries_marker("out/x.yml", &hash));
+        assert!(!carries_marker("docs/x.md", &hash));
+
+        // The comment has to hold the word: a first line that is an authored
+        // comment is not a marker, and most YAML and many Markdown files open
+        // with one.
+        assert!(!carries_marker(
+            "out/x.yml",
+            "# an authored comment\na: 1\n"
+        ));
+        assert!(!carries_marker("docs/x.md", "<!-- a note -->\n# x\n"));
+
+        // `<!--` opens the comment, and any other tag does not.
+        assert!(!carries_marker(
+            "docs/x.md",
+            &format!("<p>{MARKER} shelf_index.</p>\n")
+        ));
+
+        // Indentation before the comment does not change its syntax.
+        assert!(carries_marker("docs/x.md", &format!("  {html}")));
+        assert!(carries_marker("out/x.yml", &format!("  {hash}")));
+
+        // The census asks about a first line alone, at a `.md` path: the
+        // comment carries, and the opening fence of a block does not.
+        assert!(carries_marker("a.md", html.trim_end()));
+        assert!(!carries_marker("a.md", "---"));
     }
 
     #[test]

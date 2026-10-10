@@ -2197,7 +2197,7 @@ fn every_refusal_known_before_the_first_write_leaves_the_tree_unchanged() {
     type Planned = fn(&Path) -> headwater_generate::Plan;
     type Refused = fn(&headwater_generate::Report) -> bool;
     fn no_setup(_: &Path) {}
-    let rows: [(&str, Setup, Planned, Refused); 6] = [
+    let rows: [(&str, Setup, Planned, Refused); 7] = [
         ("ambiguous", lay_ambiguous, plan_over, |report| {
             !report.ambiguous_arms.is_empty()
         }),
@@ -2260,6 +2260,29 @@ fn every_refusal_known_before_the_first_write_leaves_the_tree_unchanged() {
                     .find(|output| output.path == RESULT)
                     .expect("the plan writes the result");
                 output.path = RESULT.replace(".md", ".yml");
+                plan
+            },
+            |report| {
+                report
+                    .wrote
+                    .iter()
+                    .any(|wrote| wrote.verdict == Verdict::MarkerUnread)
+            },
+        ),
+        (
+            "marker-unread-json",
+            no_setup,
+            // The same Markdown at a `.json` path. Its front matter holds the
+            // marker as a member on a line of its own, and the text is not a
+            // JSON object, so the census reads no marker there either (#1513).
+            |at| {
+                let mut plan = plan_over(at);
+                let output = plan
+                    .outputs
+                    .iter_mut()
+                    .find(|output| output.path == RESULT)
+                    .expect("the plan writes the result");
+                output.path = RESULT.replace(".md", ".json");
                 plan
             },
             |report| {
