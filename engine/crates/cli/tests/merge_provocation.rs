@@ -568,7 +568,7 @@ impl Pair {
             if conflicted.contains(&member.path) || !runnable(producer) {
                 continue;
             }
-            if false && copy.bytes(&member.path) != merged_bytes(&member.path) {
+            if copy.bytes(&member.path) != merged_bytes(&member.path) {
                 findings.push((
                     member.path.clone(),
                     format!(
