@@ -436,6 +436,9 @@ mod tests {
         // member sits after it.
         let preamble = format!("# note\n{{\n  \"{MARKER}\": \"graph_export. \"\n}}\n");
         assert!(!carries_marker(json, &preamble));
+        // A brace later on the first line does not open an object either.
+        let later_brace = format!("note: {{\n\"{MARKER}\": \"graph_export. \"\n");
+        assert!(!carries_marker(json, &later_brace));
 
         // The control: the object form still carries at the same path, with
         // blank lines before the brace.
@@ -465,6 +468,22 @@ mod tests {
         let hash = format!("# {MARKER} agent_rules. \n");
         assert!(carries_marker("out/x.yml", &hash));
         assert!(!carries_marker("docs/x.md", &hash));
+
+        // The comment has to hold the word: a first line that is an authored
+        // comment is not a marker, and most YAML and many Markdown files open
+        // with one.
+        assert!(!carries_marker("out/x.yml", "# an authored comment\na: 1\n"));
+        assert!(!carries_marker("docs/x.md", "<!-- a note -->\n# x\n"));
+
+        // `<!--` opens the comment, and any other tag does not.
+        assert!(!carries_marker(
+            "docs/x.md",
+            &format!("<p>{MARKER} shelf_index.</p>\n")
+        ));
+
+        // Indentation before the comment does not change its syntax.
+        assert!(carries_marker("docs/x.md", &format!("  {html}")));
+        assert!(carries_marker("out/x.yml", &format!("  {hash}")));
 
         // The census asks about a first line alone, at a `.md` path: the
         // comment carries, and the opening fence of a block does not.
