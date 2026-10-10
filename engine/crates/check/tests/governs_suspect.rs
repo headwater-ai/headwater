@@ -839,6 +839,106 @@ fn a_moved_wildcard_names_its_pattern_and_its_match_count() {
     let _ = std::fs::remove_dir_all(&root);
 }
 
+/// A run with a change says which change moved the digest. Where an `added`
+/// or a `prior` line names the entry, this change edited what the edge
+/// reaches, and the remedy is a re-verification of the document. Where the
+/// change names nothing the entry reaches, the digest moved in an earlier
+/// change, and the remedy names `--verified-edge`, because a moved
+/// `last_verified` would stamp nothing there (#1520). A run with no change
+/// says neither, and keeps the remedy the named case gets.
+#[test]
+fn a_moved_digest_says_whether_this_change_names_the_entry() {
+    let root = scratch("which-change");
+    let entries = recorded(&root);
+    document(&root, TODAY, &entries);
+    let lib = named_lib(&root);
+    write(&root, LIB, "refuse() { :; }\n");
+    let facet = "set its `last_verified` to today";
+    let edge_line = "--verified-edge <this document> <this entry>";
+    for (label, ctx, clause, route) in [
+        ("no change", at(TODAY), None, facet),
+        (
+            "this change carries the entry",
+            at(TODAY).scoped_to(change(&[lib()])),
+            Some("This change names the entry"),
+            facet,
+        ),
+        (
+            "this change carries the entry and re-verifies the document",
+            at(TODAY).scoped_to(change(&[
+                (DOCUMENT, Some(yesterday("hooks", &entries))),
+                lib(),
+            ])),
+            Some("This change names the entry"),
+            facet,
+        ),
+        (
+            "this change carries only the document",
+            at(TODAY).scoped_to(change(&[(DOCUMENT, Some(yesterday("hooks", &entries)))])),
+            Some("This change names no entry it reaches, so the digest moved in an earlier change"),
+            edge_line,
+        ),
+        (
+            "this change carries a file no edge reaches",
+            at(TODAY).scoped_to(change(&[(".claude/notes.md", None)])),
+            Some("so the digest moved in an earlier change"),
+            edge_line,
+        ),
+    ] {
+        let ran = run_in(&root, &ctx, &mut Cache::disabled(), &taxonomy());
+        let reported = suspect(&ran);
+        assert_eq!(reported.len(), 1, "{label}: {reported:?}");
+        let message = &reported[0].message;
+        match clause {
+            Some(clause) => assert!(message.contains(clause), "{label}: {message}"),
+            None => assert!(!message.contains("This change"), "{label}: {message}"),
+        }
+        let remedy = &reported[0].remediation;
+        assert!(remedy.contains(route), "{label}: {remedy}");
+        assert_ne!(
+            remedy.contains(facet),
+            remedy.contains(edge_line),
+            "{label}: one route and not both: {remedy}"
+        );
+    }
+    let _ = std::fs::remove_dir_all(&root);
+}
+
+/// The qualifier reads the change, and the key holds the prior version of the
+/// document and what the change states. So a run with no change after a run
+/// whose change named nothing the entry reaches is not served the sentence
+/// about an earlier change, and a repeat of that run is served its own.
+#[test]
+fn a_warm_cache_keys_the_qualifier_on_the_change() {
+    let root = scratch("warm-which-change");
+    let entries = recorded(&root);
+    document(&root, TODAY, &entries);
+    write(&root, LIB, "refuse() { :; }\n");
+    let elsewhere = || at(TODAY).scoped_to(change(&[(".claude/notes.md", None)]));
+    for (label, ctx, qualified, served) in [
+        ("a change elsewhere, cold", elsewhere(), true, false),
+        ("no change, after it", at(TODAY), false, false),
+        ("a change elsewhere, warm", elsewhere(), true, true),
+        ("no change, warm", at(TODAY), false, true),
+    ] {
+        let mut cache = Cache::at(&root, LOCK, "sha256:rules");
+        let ran = run_in(&root, &ctx, &mut cache, &taxonomy());
+        cache.write(&root).expect("the cache writes");
+        let reported = suspect(&ran);
+        assert_eq!(reported.len(), 1, "{label}: {reported:?}");
+        assert_eq!(
+            reported[0].message.contains("This change"),
+            qualified,
+            "{label}: {}",
+            reported[0].message
+        );
+        if served {
+            assert!(cache.report().hits > 0, "{label}: {:?}", cache.report());
+        }
+    }
+    let _ = std::fs::remove_dir_all(&root);
+}
+
 /// A pattern entry's target is named by a path the pattern reaches, or by the
 /// pattern as the entry writes it in a `verified` line. A path the pattern
 /// does not reach names nothing (#1520).
