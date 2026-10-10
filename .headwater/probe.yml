@@ -127,6 +127,8 @@ leaks:
   HW-PROBE-a-session-says-where-a-figure-on-the-site-is-written: [HW-DR-0097, measured when the site is published]
   HW-PROBE-a-session-follows-a-citation-from-one-record-to-the-next: [HW-DR-0097]
   HW-PROBE-a-session-says-how-a-governs-line-reaches-a-document: [HW-DR-0104, --relates governs]
+  # Its successor (#1709): the same task and key over the repaired tree.
+  HW-PROBE-a-session-says-whether-a-command-or-a-hand-writes-a-governs-line: [HW-DR-0104, --relates governs]
   HW-PROBE-a-session-records-which-obligation-an-evaluation-discharged: [discharged_by, relation.reciprocity.missing]
 
 # The probes whose leak string stays in the present arm on purpose (#1472, the second

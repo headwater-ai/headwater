@@ -1,7 +1,7 @@
 ---
 id: HW-PROBE-a-session-says-how-a-governs-line-reaches-a-document
-status: current
-status_since: 2026-10-03
+status: superseded
+status_since: 2026-10-10
 summary: Many documents share the terms of this task, and a superseded record, a discharged one and two generated pages still state the answer of a replaced ruling, so a session must find the one record in force among near copies.
 last_verified: 2026-10-03
 probe_category: navigability
@@ -17,6 +17,8 @@ provenance:
 relations:
   traces_to:
     - HW-SPEC-ai-integration
+  superseded_by:
+    - HW-PROBE-a-session-says-whether-a-command-or-a-hand-writes-a-governs-line
 ---
 
 # A session says how a governs line reaches a document
@@ -53,3 +55,5 @@ The other candidate sentences are about another relation or another artifact. `d
 **The first count, before #1642.** On a tree sealed the same way earlier on 2026-10-03, the same method found 52 documents, 39 near copies, and 7 of the 39 that state the answer `hand`. The three documents that #1642 repaired were the difference.
 
 **The distractors are not built for this probe.** Each one is a document of this corpus that went stale when HW-DR-0104 landed. A campaign over this probe therefore measures the corpus as it is. If a later change repairs more of these documents, the count above falls, and this probe must count again before it runs.
+
+**This is the probe that the campaign of 2026-10-03 ran, and it is superseded (#1709).** Its key held against HW-DR-0104. The recount above missed one current near copy: [the governs-edges evaluation](../evaluations/governs-edges-what-an-anchor-reaches-what-covers-it-when-it-ages-and-where-a-session-meets-it.md) said that a person or an agent types the line. #1709 repaired that sentence, and the repair changed the tree that this probe measures. So [its successor](a-session-says-whether-a-command-or-a-hand-writes-a-governs-line.md) asks the same task with the same key over the repaired tree. The recorded results under `docs/probe-results/` and `docs/probe-runs/` stand, and nobody rewrites them.
