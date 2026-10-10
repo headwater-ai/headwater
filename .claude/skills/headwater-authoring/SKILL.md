@@ -45,7 +45,7 @@ A relation that declares `created_by: author` is yours to type into the front ma
 
 **A code-path anchor reaches every entry a pattern admits, and a bare path still reaches only itself.** Its raw value is a pattern over the tree, or a YAML sequence of patterns for one anchor over several files. So a document that governs a directory of forty files can propose one pattern instead of forty edges. Nothing forces an existing hand-typed edge to change: propose a pattern where it earns its keep, and say how many entries it reaches. The verb binds a target through the resolvers `headwater check` uses and prints how many entries it reaches. A pattern that matches no entry is refused, and nothing is written.
 
-**An `agent` edge is a proposal, and the review of the pull request that carries it is the acceptance.** So an edge of yours reaches the main branch only through a pull request a person reviews. An anchor that binds only where the target cites the new document, such as one that the `comment-scan` resolver reads, binds once a Rust `//` or `/* */` comment in the file cites the new identifier. The verb names that comment in its report.
+**An `agent` edge is a proposal, and the review of the pull request that carries it is the acceptance.** So an edge of yours reaches the main branch only through a pull request a person reviews. An anchor that binds only where the target cites the new document, such as one that the `comment-scan` resolver reads, binds once a `//` or `/* */` comment in the file cites the new identifier. The verb names that comment in its report. It refuses a file whose comments open with `#`, such as a shell script, because that resolver reads no such comment.
 
 ## The stop rules
 
@@ -72,4 +72,4 @@ Neither is worked around. Hand both to the `headwater-taxonomy` skill, which own
 Errors must reach zero before a commit. `headwater check --fix` writes the corrections the engine derives without judgment — a British spelling, a contraction whose expansion is one word, a retired term that names a replacement, and a missing reciprocal half — and it leaves every finding whose remedy is a rewrite. Read the diff.
 
 **An edit to a document that a probe reads moves no committed result.** A result pins only what its transcript read, so it keeps its bytes and every verdict. The next `headwater generate` names each result whose read set moved, and `headwater probe stale` names the results the edit reached. Neither one fails for it.
-<!-- installed by headwater init --harness, digest sha256:5e62a09aa050ef94d7146f26e9d312f6200449370d04d99370d3131352b54e10 -->
+<!-- installed by headwater init --harness, digest sha256:fe74869a211cd3edf73c0513d679ac0a213f2106998c98a49681230b64975cf6 -->
