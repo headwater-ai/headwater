@@ -677,6 +677,17 @@ fn every_harder_probe_fails_the_shallow_session_and_passes_the_sound_one() {
             );
         }
 
+        // The leak check prints a probe with no `leaks:` entry as
+        // `undeclared` and passes it, so a harder probe whose answer key a
+        // session could read in the present arm would go unseen (#1709).
+        let declaration = std::fs::read_to_string(root.join(".headwater/probe.yml"))
+            .expect(".headwater/probe.yml reads");
+        assert!(
+            declaration.contains(&format!("\n  {}: [", row.id)),
+            "{}: `.headwater/probe.yml` declares no `leaks:` entry for it",
+            row.id
+        );
+
         for (path, status) in row.statuses {
             let (_, document) = front_matter(&root.join(path));
             assert_eq!(
