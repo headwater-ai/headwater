@@ -72,6 +72,7 @@ fn scaffold(kind: &str, relation: &str) -> (Plan, Vec<(String, String)>) {
         config: &config,
         claims: &claims,
         resolvers: &headwater_graph::anchors::Resolvers::over(&corpus),
+        root: &root,
     };
     let relates = vec![(relation.to_string(), "NOTE-FIX-the-anchor".to_string())];
     let title = format!("A new {kind}");

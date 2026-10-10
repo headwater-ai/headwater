@@ -106,6 +106,8 @@ struct Loaded {
     /// The resolvers `headwater check` would build over this tree: the source
     /// tree, and `comment-scan` where an anchor kind names it with a pattern.
     resolvers: Resolvers,
+    /// The tree the resolvers read.
+    root: std::path::PathBuf,
 }
 
 impl Loaded {
@@ -155,6 +157,7 @@ impl Loaded {
             config,
             claims: headwater_check::claim::Claims::at(root),
             resolvers,
+            root: root.to_path_buf(),
         }
     }
 
@@ -169,6 +172,7 @@ impl Loaded {
             config: &self.config,
             claims: &self.claims,
             resolvers: &self.resolvers,
+            root: &self.root,
         }
     }
 }
@@ -354,6 +358,26 @@ fn cases() -> Vec<Case> {
             .relating("cited_in", "corpus/code/*.txt"),
         case("decision_record", "A path that two anchor kinds claim")
             .relating("ruled_in", "corpus/code/widget.txt"),
+        // The source tree claims a Rust file now, and `comment-scan` claims it
+        // too once the comment is there. The check then reads two identities,
+        // so the verb refuses the edge now rather than write it (#1629).
+        case(
+            "decision_record",
+            "A path that one kind claims now and two claim once cited",
+        )
+        .relating("checked_in", "corpus/code/gadget.rs"),
+        // `comment-scan` reads `//` and `/* */` comments alone, so a file
+        // whose comments open with `#` can never cite the asserter (#1629).
+        case(
+            "decision_record",
+            "A citation in a file whose comments open with #",
+        )
+        .relating("cited_in", "corpus/code/probe.sh"),
+        case(
+            "decision_record",
+            "A citation in a file whose first line names an interpreter",
+        )
+        .relating("cited_in", "corpus/code/runner"),
         // What `--summary` does. It fills the facet in the `scent` role
         // directly, exactly as `--title` fills the one in the `name` role, so
         // it needs the same two cases the `name` role never needed a comment
@@ -432,6 +456,85 @@ fn two_edges_of_one_relation_load_as_one_key_with_both_targets() {
         .map(|scalar| headwater_yaml::core_schema::as_str(scalar).to_string())
         .collect();
     assert_eq!(governs, vec!["corpus/code/*.txt", "@scoped/widget.txt"]);
+}
+
+/// A file one anchor kind claims now and a second claims once it is cited is
+/// refused, and the check agrees: once the comment is there, `bind` reads the
+/// same file as two identities (#1629).
+///
+/// The verb asked the second kind only where the first refused, so it wrote
+/// the edge as `code_path`, and the check reported the edge as ambiguous the
+/// moment the comment it named was added.
+#[test]
+fn a_path_one_kind_claims_now_and_two_claim_once_cited_is_refused_as_the_check_reads_it() {
+    let loaded = Loaded::over(
+        &fixtures_dir(),
+        "corpus",
+        &fixtures_dir().join("scaffold.taxonomy.yml"),
+    );
+    let once_cited = cases()
+        .into_iter()
+        .find(|case| case.title == "A path that one kind claims now and two claim once cited")
+        .expect("the case is in the table");
+    let refusal = match propose(&loaded.sources(), &request(&once_cited)) {
+        Err(refusal) => refusal.to_string(),
+        Ok(plan) => panic!(
+            "the verb wrote an edge the check reads as ambiguous once cited\n{}",
+            render_plan(&plan)
+        ),
+    };
+    assert!(
+        refusal.contains("code_path and test_site both claim this string"),
+        "the refusal names both kinds\n{refusal}"
+    );
+
+    // The identifier the verb would mint, which is the one the comment cites.
+    let asserter = propose(&loaded.sources(), &request(&case("decision_record", "The asserter")))
+        .expect("an unrelated decision is proposed")
+        .minting
+        .expect("a minted identifier")
+        .id;
+
+    // The same file, once the comment the verb would have named is there.
+    let tree = std::env::temp_dir().join(format!(
+        "headwater-scaffold-once-cited-{}",
+        std::process::id()
+    ));
+    let _ = std::fs::remove_dir_all(&tree);
+    std::fs::create_dir_all(tree.join("corpus/code")).expect("the tree is made");
+    let source = std::fs::read_to_string(fixtures_dir().join("corpus/code/gadget.rs"))
+        .expect("the fixture reads");
+    std::fs::write(
+        tree.join("corpus/code/gadget.rs"),
+        format!("// {asserter}\n{source}"),
+    )
+    .expect("the cited copy is written");
+    let corpus = Corpus::new(tree.clone(), "corpus");
+    let resolvers = Resolvers::over(&corpus)
+        .with(Box::new(CommentScan::new(
+            &tree,
+            "DR-FIX-",
+            std::collections::BTreeSet::from([asserter.clone()]),
+        )))
+        .expect("one resolver of each name");
+    let bound = headwater_graph::edges::bind(
+        &["corpus/code/gadget.rs".to_string()],
+        &asserter,
+        &["code_path".to_string(), "test_site".to_string()],
+        &loaded.index,
+        &loaded.relations,
+        &resolvers,
+    );
+    let _ = std::fs::remove_dir_all(&tree);
+    assert!(
+        matches!(
+            bound,
+            headwater_graph::edges::Target::Unbound(
+                headwater_graph::edges::Unbound::AmbiguousAnchor { .. }
+            )
+        ),
+        "the check reads the cited file as two identities: {bound:?}"
+    );
 }
 
 /// Every case over the fixture corpus, recorded whole.

@@ -1,0 +1,3 @@
+#!/usr/bin/env python3
+# A script with no extension. Its first line names its interpreter.
+print("run")

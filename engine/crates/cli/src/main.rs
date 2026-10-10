@@ -4731,6 +4731,7 @@ fn scaffold(
         config: &loaded.config,
         claims: &loaded.claims,
         resolvers: &loaded.resolvers,
+        root,
     };
     let request = headwater_scaffold::Request {
         kind,

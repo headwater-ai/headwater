@@ -379,6 +379,17 @@ relations:
     cardinality: many
     created_by: agent
 
+  # An agent's edge onto two anchor kinds, one of which claims a file only
+  # once a comment in it cites the asserting document. A source file the
+  # source tree claims now is claimed by both once the comment is there, so
+  # the check reads it as two identities and the verb refuses it now.
+  checked_in:
+    family: evidence
+    from: [decision_record]
+    to:   [code_path, test_site]
+    cardinality: many
+    created_by: agent
+
   # An agent's edge that admits a document or an anchor, and that asks for a
   # far half and a state on its target. An anchor holds neither, so an edge
   # onto a path writes no half and sets no state, where an edge onto a

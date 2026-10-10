@@ -193,6 +193,11 @@ pub struct Sources<'a> {
     /// what a pattern reaches
     /// ([HW-DR-0074](../../../../docs/decisions/0074-a-code-path-anchor-is-a-pattern-over-the-tree-and-it-binds-when-the-pattern-matches-at-least-one-entry.md)).
     pub resolvers: &'a headwater_graph::anchors::Resolvers,
+    /// The root of the tree the resolvers read, which is the repository root.
+    /// The verb opens a `comment-scan` target under it to read its first
+    /// line, because a file whose first line names an interpreter comments
+    /// with `#` (#1629).
+    pub root: &'a std::path::Path,
 }
 
 /// Where a value came from, which is the whole of the assisted fraction.
@@ -278,10 +283,13 @@ pub struct Anchored {
     pub matched: Option<usize>,
     /// The comment the target still owes before the check binds the edge.
     /// Set for an anchor kind whose resolver is `comment-scan`: that resolver
-    /// binds a file only where a Rust `//` or `/* */` comment in it cites the
-    /// identifier of the
-    /// document that asserts the edge, and this run minted that identifier
-    /// a moment ago, so no file can cite it yet.
+    /// binds a file only where a `//` or `/* */` comment in it cites the
+    /// identifier of the document that asserts the edge, and this run minted
+    /// that identifier a moment ago, so no file can cite it yet. The words
+    /// name a Rust comment for a `.rs` file and a `//` or `/* */` comment for
+    /// any other. A file whose comments open with `#` is refused and never
+    /// reaches this field, because no comment it can hold is one the
+    /// resolver reads (#1629).
     pub owes: Option<String>,
 }
 
