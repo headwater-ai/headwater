@@ -409,11 +409,17 @@ const HARDER: &[Harder] = &[
         sound: Session::Answered("HW-DR-0097"),
     },
     Harder {
-        id: "HW-PROBE-a-session-says-how-a-governs-line-reaches-a-document",
+        id: "HW-PROBE-a-session-says-whether-a-command-or-a-hand-writes-a-governs-line",
         shape: Shape::Distractors,
         examines: &[],
         words: &[],
         statuses: &[
+            // The probe the campaign of 2026-10-03 ran stays on the shelf
+            // as its record, superseded by this one (#1709).
+            (
+                "docs/probes/a-session-says-how-a-governs-line-reaches-a-document.md",
+                "superseded",
+            ),
             (
                 "docs/decisions/0083-governs-and-traces-to-are-created-by-an-agent-because-a-session-proposes-the-line-and-a-person-types-it.md",
                 "superseded",
@@ -671,6 +677,27 @@ fn every_harder_probe_fails_the_shallow_session_and_passes_the_sound_one() {
             );
         }
 
+        // A harder probe goes into its pull request settled (HW-DR-0052), and
+        // a draft one is a probe nobody has agreed to run (#1709).
+        let (_, own) = front_matter(&root.join(&selected.path));
+        assert_eq!(
+            scalar(&own, "status").as_deref(),
+            Some("current"),
+            "{}: a harder probe holds `status: current`",
+            row.id
+        );
+
+        // The leak check prints a probe with no `leaks:` entry as
+        // `undeclared` and passes it, so a harder probe whose answer key a
+        // session could read in the present arm would go unseen (#1709).
+        let declaration = std::fs::read_to_string(root.join(".headwater/probe.yml"))
+            .expect(".headwater/probe.yml reads");
+        assert!(
+            declaration.contains(&format!("\n  {}: [", row.id)),
+            "{}: `.headwater/probe.yml` declares no `leaks:` entry for it",
+            row.id
+        );
+
         for (path, status) in row.statuses {
             let (_, document) = front_matter(&root.join(path));
             assert_eq!(
@@ -705,4 +732,62 @@ fn every_harder_probe_fails_the_shallow_session_and_passes_the_sound_one() {
             }
         }
     }
+}
+
+/// The campaign spec plans no superseded probe.
+///
+/// `headwater probe plan` selects every probe of a category, whatever its
+/// status, so a line of `tools/probe/layer-campaign.spec` that names a
+/// category plans a superseded probe unless it leaves it out by identifier.
+/// A superseded probe stays on the shelf as the record of the campaign that
+/// ran it (#1709), so the spec, and not the shelf, must keep it out. The dry
+/// run counts the probes of a line and names none, so it cannot tell the
+/// superseded probe from its successor.
+#[test]
+fn the_campaign_spec_plans_no_superseded_probe() {
+    let root = repository_root();
+    let spec_path = root.join("tools/probe/layer-campaign.spec");
+    let spec = std::fs::read_to_string(&spec_path)
+        .unwrap_or_else(|e| panic!("{}: {e}", spec_path.display()));
+
+    // Each superseded probe on the shelf, with its category.
+    let mut superseded = Vec::new();
+    for probe in probes() {
+        let (_, document) = front_matter(&root.join(&probe.path));
+        if scalar(&document, "status").as_deref() == Some("superseded") {
+            let id = probe.id.clone().expect("a probe declares an identifier");
+            let category = scalar(&document, "probe_category")
+                .unwrap_or_else(|| panic!("{id}: no probe_category"));
+            superseded.push((id, category));
+        }
+    }
+    assert!(
+        !superseded.is_empty(),
+        "the shelf holds no superseded probe, so this case reads nothing; the governs \
+         probe of 2026-10-03 is one (#1709)"
+    );
+
+    let mut lines = 0;
+    for (number, line) in spec.lines().enumerate() {
+        let fields: Vec<&str> = line.split_whitespace().collect();
+        if fields.is_empty() || fields[0].starts_with('#') {
+            continue;
+        }
+        assert!(
+            fields.len() >= 3,
+            "line {}: a spec line names a tier, an arm and a category",
+            number + 1
+        );
+        lines += 1;
+        let (category, left_out) = (fields[2], &fields[3..]);
+        for (id, of) in &superseded {
+            assert!(
+                of != category || left_out.contains(&id.as_str()),
+                "line {} of tools/probe/layer-campaign.spec plans the superseded probe {id}: \
+                 it names the category `{category}` and does not leave the probe out",
+                number + 1
+            );
+        }
+    }
+    assert!(lines > 0, "the campaign spec holds no line");
 }

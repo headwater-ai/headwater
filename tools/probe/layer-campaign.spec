@@ -99,13 +99,15 @@ campaign      no-claude-md sufficiency HW-PROBE-a-counted-tombstone-separates-a-
 campaign      mcp          sufficiency HW-PROBE-a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer HW-PROBE-a-session-records-an-unmeasured-claim-in-the-shape-this-corpus-checks HW-PROBE-a-session-follows-a-citation-from-one-record-to-the-next HW-PROBE-a-session-records-which-obligation-an-evaluation-discharged
 documentation absent       sufficiency HW-PROBE-a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer HW-PROBE-a-session-records-an-unmeasured-claim-in-the-shape-this-corpus-checks HW-PROBE-a-session-follows-a-citation-from-one-record-to-the-next HW-PROBE-a-session-records-which-obligation-an-evaluation-discharged
 
-# Navigability.
-campaign      present      navigability
-campaign      absent       navigability
-campaign      no-hook      navigability
-campaign      no-skills    navigability
-campaign      no-claude-md navigability
-campaign      mcp          navigability
+# Navigability, less the governs probe that the campaign of 2026-10-03 ran.
+# It is superseded and stays on the shelf as that campaign's record, and the
+# plan selects a probe by its category and not by its status (#1709).
+campaign      present      navigability HW-PROBE-a-session-says-how-a-governs-line-reaches-a-document
+campaign      absent       navigability HW-PROBE-a-session-says-how-a-governs-line-reaches-a-document
+campaign      no-hook      navigability HW-PROBE-a-session-says-how-a-governs-line-reaches-a-document
+campaign      no-skills    navigability HW-PROBE-a-session-says-how-a-governs-line-reaches-a-document
+campaign      no-claude-md navigability HW-PROBE-a-session-says-how-a-governs-line-reaches-a-document
+campaign      mcp          navigability HW-PROBE-a-session-says-how-a-governs-line-reaches-a-document
 
 # Discovery, less the authoring-skill probe, at the powered repetitions.
 campaign      present      discovery HW-PROBE-the-authoring-skill-reaches-an-agent-that-is-about-to-write-a-governed-document
