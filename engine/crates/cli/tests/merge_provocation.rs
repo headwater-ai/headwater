@@ -52,9 +52,10 @@
 //! The expectation is the treatment the member's **shape** takes, which is the
 //! "What a merge does" column of the shape table in
 //! [`what-a-check-can-know.md`](../../../../docs/evaluations/what-a-check-can-know.md#the-shapes-a-record-takes),
-//! and not the attribute the scratch tree gives the member. An arm changes the
-//! attribute and leaves the shape, so keying on the attribute would make every
-//! arm agree with itself.
+//! with the treatment applied. The population is computed over the base, before
+//! an arm sets its override, and the main case asserts that the base agrees with
+//! its own attributes, so the shape and the committed attribute name one
+//! treatment for every member.
 //!
 //! - A fold (`-merge`) conflicts, holds the current side's bytes and carries no
 //!   conflict marker.
@@ -68,27 +69,34 @@
 //!
 //! # The arms
 //!
-//! Each arm is a second merge of a pair that has already merged once with the
+//! Each arm is a further merge of a pair that has already merged once with the
 //! committed attributes and found nothing, and it differs from that merge in
 //! one line of the clone's own `info/attributes`, which wins over every
-//! `.gitattributes`. Each asserts that the findings name the one path that line
-//! governs and no other, for the reason `census/tests/merge_driver.rs` gives at
-//! its head: a case that is red for an unrelated reason measures nothing. A
-//! merge after the first costs one `headwater generate` where a new pair costs
-//! two more, and one `generate` of the debug binary over this repository took
-//! 16 seconds on 2026-10-10.
+//! `.gitattributes`. Each asserts the exact set of paths and findings that line
+//! should cause, for the reason `census/tests/merge_driver.rs` gives at its
+//! head: a case that is red for an unrelated reason measures nothing. A merge
+//! after the first costs one `headwater generate` where a new pair costs two
+//! more, and one `generate` of the debug binary over this repository took 16
+//! seconds on 2026-10-10.
 //!
-//! - Arm A runs over the main case's pair. It sets the taxonomy lock's merge
-//!   attribute back to unspecified, as if its `-merge` line left
-//!   `.gitattributes`. The lock then takes conflict markers, and the fold check
-//!   names it.
-//! - Arm B runs over a pair whose two decisions are adjacent, after a control
-//!   merge in which the decision shelf index conflicts. It gives the decision
-//!   shelf index `merge=union`. Union keeps "ours, then theirs" for the two
-//!   adjacent rows, out of the fixed order, so the merge is
+//! Over the main case's pair:
+//!
+//! - Arm A sets the taxonomy lock's merge attribute back to unspecified, as if
+//!   its `-merge` line left `.gitattributes`. The lock takes conflict markers.
+//! - Arm C gives the lock `merge=union`. The lock merges clean, to both sides'
+//!   lines, and the resolver rewrites it.
+//!
+//! Over a pair whose two decisions are adjacent, after a control merge in which
+//! the decision shelf index conflicts:
+//!
+//! - Arm B gives the decision shelf index `merge=union`. Union keeps "ours, then
+//!   theirs" for the two adjacent rows, out of the fixed order, so the merge is
 //!   clean and `headwater generate` rewrites it. This is the silent one, and it
 //!   is what #1112 exists to catch: a treatment that stops holding, found by the
 //!   run over the whole population and not by a case written for that file.
+//! - Arm D takes `merge=union` off one append store, which then conflicts.
+//! - Arm E gives one decomposed recorded fixture a driver that keeps the current
+//!   side and exits 0. The merge is clean and drops the other branch's line.
 
 mod common;
 use common::{fence, outside_base, repository};
@@ -364,23 +372,45 @@ struct Pair {
     unprovokable: BTreeSet<String>,
 }
 
+/// How a member's merge broke what its shape promises.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+enum Finding {
+    /// A fold that both branches moved merged without a conflict.
+    FoldMergedClean,
+    /// A fold carries conflict markers.
+    FoldMarkers,
+    /// A fold does not hold the current side's bytes.
+    FoldNotCurrentSide,
+    /// An append store conflicted.
+    StoreConflicted,
+    /// A path merged clean without a line one branch added.
+    LineMissing,
+    /// A path merged clean to bytes its producer rewrites over the merged tree.
+    ProducerRewrites,
+}
+
 /// What one merge of the pair showed, member by member.
 struct Merged {
     /// Paths the merge left conflicted.
     conflicted: BTreeSet<String>,
-    /// Each member whose merge is not what its shape promises, with the reason.
-    findings: Vec<(String, String)>,
+    /// Each member whose merge is not what its shape promises, why, and a
+    /// detail for the reader.
+    findings: Vec<(String, Finding, String)>,
 }
 
 impl Merged {
-    fn found(&self) -> BTreeSet<&str> {
-        self.findings.iter().map(|(path, _)| path.as_str()).collect()
+    /// Each path named, with each way it broke.
+    fn found(&self) -> BTreeSet<(&str, Finding)> {
+        self.findings
+            .iter()
+            .map(|(path, finding, _)| (path.as_str(), *finding))
+            .collect()
     }
 
     fn report(&self) -> String {
         self.findings
             .iter()
-            .map(|(path, why)| format!("  {path}: {why}"))
+            .map(|(path, finding, detail)| format!("  {path}: {finding:?} {detail}"))
             .collect::<Vec<_>>()
             .join("\n")
     }
@@ -524,31 +554,34 @@ impl Pair {
                 .map(|bytes| String::from_utf8_lossy(&bytes).into_owned())
                 .unwrap_or_default();
             let is_conflicted = conflicted.contains(&member.path);
-            let mut find = |why: String| findings.push((member.path.clone(), why));
+            let mut find = |finding: Finding, detail: String| {
+                findings.push((member.path.clone(), finding, detail));
+            };
             match (member.shape.treatment(), is_conflicted) {
                 (Treatment::Refuse, _) => {
                     if !is_conflicted {
-                        find("a fold that both branches moved merged without a conflict".into());
+                        find(Finding::FoldMergedClean, String::new());
                     }
                     if body.contains("<<<<<<<") {
-                        find("a fold carries conflict markers".into());
+                        find(Finding::FoldMarkers, String::new());
                     }
                     let current = copy.git(&["show", &format!("HEAD:{}", member.path)]);
                     if body != current {
-                        find("a fold does not hold the current side's bytes".into());
+                        find(Finding::FoldNotCurrentSide, String::new());
                     }
                 }
-                (Treatment::Union, true) => find("an append store conflicted".into()),
+                (Treatment::Union, true) => find(Finding::StoreConflicted, String::new()),
                 // A record per entity that conflicted is the correct report.
                 (_, true) => {}
+                // Git writes no conflict marker into a path it merged clean,
+                // so what a clean merge can get wrong is a lost line, which
+                // a driver that keeps one side does, and the order of lines,
+                // which the producer check below reads.
                 (_, false) => {
-                    if body.contains("<<<<<<<") {
-                        find("a path merged clean carries conflict markers".into());
-                    }
                     for side in ["a", "b"] {
                         for line in added_lines(copy, side, &member.path) {
                             if !body.lines().any(|merged| merged == line) {
-                                find(format!("the line branch {side} added is missing: {line}"));
+                                find(Finding::LineMissing, format!("branch {side}: {line}"));
                             }
                         }
                     }
@@ -561,6 +594,14 @@ impl Pair {
         for path in &conflicted {
             let _ = copy.git_output(&["checkout", "--ours", "--", path]);
         }
+        // A fold the merge took clean is put back to the current side too,
+        // because `headwater taxonomy resolve` refuses a lock that a union
+        // merge interleaved rather than rewrite it.
+        for (path, finding, _) in &findings {
+            if *finding == Finding::FoldMergedClean {
+                copy.git(&["checkout", "HEAD", "--", path]);
+            }
+        }
         copy.headwater_ok(&["taxonomy", "resolve"]);
         copy.headwater_ok(&["generate"]);
         for member in &population.members {
@@ -571,10 +612,11 @@ impl Pair {
             if copy.bytes(&member.path) != merged_bytes(&member.path) {
                 findings.push((
                     member.path.clone(),
-                    format!(
-                        "merged clean to bytes that `{}` rewrites",
-                        producer.expect("a runnable member has a producer").command()
-                    ),
+                    Finding::ProducerRewrites,
+                    producer
+                        .expect("a runnable member has a producer")
+                        .command()
+                        .to_string(),
                 ));
             }
         }
@@ -683,7 +725,13 @@ fn add_retired_term(copy: &Scratch, side: usize, name: &str) {
 /// for an append store, a line at one end of a decomposed recorded fixture,
 /// and a different last line for a recorded fold. A member a producer of the
 /// scratch tree writes is moved by the documents and the overlay instead.
-fn provoke_member(copy: &Scratch, population: &Population, member: &Member, side: usize, name: &str) {
+fn provoke_member(
+    copy: &Scratch,
+    population: &Population,
+    member: &Member,
+    side: usize,
+    name: &str,
+) {
     if runnable(producer_of(population, member)) {
         return;
     }
@@ -796,35 +844,45 @@ fn every_member_of_the_derived_population_merges_as_its_shape_promises() {
         pair.unprovokable.len()
     );
 
-    // Arm A, over the same pair: the lock's merge attribute is unspecified,
-    // as if its `-merge` line left `.gitattributes`. The lock takes conflict
-    // markers, and the fold check names it and nothing else.
-    let arm_a = pair.merged(&format!("{} !merge\n", derived::LOCK));
+    // Arm A: the lock's merge attribute is unspecified, as if its `-merge`
+    // line left `.gitattributes`. The lock takes conflict markers.
+    let lock = derived::LOCK;
+    let arm_a = pair.merged(&format!("{lock} !merge\n"));
     assert_eq!(
         arm_a.found(),
-        BTreeSet::from([derived::LOCK]),
-        "Arm A's findings name the lock alone:\n{}",
+        BTreeSet::from([
+            (lock, Finding::FoldMarkers),
+            (lock, Finding::FoldNotCurrentSide)
+        ]),
+        "Arm A names the lock for its markers, and nothing else:\n{}",
         arm_a.report()
     );
-    assert!(
-        arm_a
-            .findings
-            .iter()
-            .any(|(_, why)| why.contains("conflict markers")),
-        "Arm A names the lock for its conflict markers:\n{}",
-        arm_a.report()
+
+    // Arm C: the lock takes `merge=union`. The merge is clean, holds both
+    // sides' digest lines, and the resolver rewrites it.
+    let arm_c = pair.merged(&format!("{lock} merge=union\n"));
+    assert_eq!(
+        arm_c.found(),
+        BTreeSet::from([
+            (lock, Finding::FoldMergedClean),
+            (lock, Finding::FoldNotCurrentSide),
+            (lock, Finding::ProducerRewrites)
+        ]),
+        "Arm C names the lock for a clean merge the resolver rewrites, and nothing else:\n{}",
+        arm_c.report()
     );
 }
 
-/// The decisive fixture: a record per entity whose treatment stops holding.
+/// The decisive fixture, a record per entity whose treatment stops holding,
+/// and the two arms for the shapes no producer of the scratch tree writes.
 ///
 /// The pair adds two decisions with adjacent file names, so that the decision
 /// shelf index takes one hunk on each side. With the committed attributes that
-/// is an ordinary conflict, and the control finds nothing. Arm B then sets one
-/// line of the clone's own `info/attributes`, and its findings name the one
-/// path that line governs and no other.
+/// is an ordinary conflict, and the control finds nothing. Each arm then sets
+/// one line of the clone's own `info/attributes`, and its findings name the
+/// one path that line governs and no other.
 #[test]
-fn a_record_per_entity_merged_by_union_is_named_as_bytes_the_producer_rewrites() {
+fn a_record_or_a_store_whose_treatment_stops_holding_is_named() {
     let index = format!("{DECISIONS}/README.md");
     let Some(pair) = Pair::built("arm-b", Decisions::Adjacent) else {
         return;
@@ -850,16 +908,53 @@ fn a_record_per_entity_merged_by_union_is_named_as_bytes_the_producer_rewrites()
     let arm_b = pair.merged(&format!("{index} merge=union\n"));
     assert_eq!(
         arm_b.found(),
-        BTreeSet::from([index.as_str()]),
-        "Arm B's findings name the decision shelf index alone:\n{}",
+        BTreeSet::from([(index.as_str(), Finding::ProducerRewrites)]),
+        "Arm B names the decision shelf index as bytes `headwater generate` rewrites, and nothing else:\n{}",
         arm_b.report()
     );
-    assert!(
-        arm_b
-            .findings
-            .iter()
-            .any(|(_, why)| why.contains("rewrites")),
-        "Arm B names the index as bytes `headwater generate` rewrites:\n{}",
-        arm_b.report()
+
+    // Arm D: an append store loses `merge=union`. Both branches appended at
+    // its end, so a text merge conflicts.
+    let store = pair
+        .population
+        .members
+        .iter()
+        .find(|member| member.shape == Shape::IndependentLines && pair.moved.contains(&member.path))
+        .expect("the pair moves an append store")
+        .path
+        .clone();
+    let arm_d = pair.merged(&format!("{store} !merge\n"));
+    assert_eq!(
+        arm_d.found(),
+        BTreeSet::from([(store.as_str(), Finding::StoreConflicted)]),
+        "Arm D names the store for its conflict, and nothing else:\n{}",
+        arm_d.report()
+    );
+
+    // Arm E: a decomposed recorded fixture takes a driver that keeps the
+    // current side and exits 0, which no producer here can rerun. The merge
+    // is clean and drops the line the other branch inserted.
+    let fixture = pair
+        .population
+        .members
+        .iter()
+        .find(|member| {
+            member.shape == Shape::RecordPerEntity
+                && !runnable(producer_of(&pair.population, member))
+                && pair.moved.contains(&member.path)
+        })
+        .expect("the pair moves a decomposed recorded fixture")
+        .path
+        .clone();
+    pair.copy
+        .git(&["config", "merge.keep-current.driver", "true"]);
+    let arm_e = pair.merged(&format!("{fixture} merge=keep-current\n"));
+    pair.copy
+        .git(&["config", "--unset", "merge.keep-current.driver"]);
+    assert_eq!(
+        arm_e.found(),
+        BTreeSet::from([(fixture.as_str(), Finding::LineMissing)]),
+        "Arm E names the fixture for the line it dropped, and nothing else:\n{}",
+        arm_e.report()
     );
 }
