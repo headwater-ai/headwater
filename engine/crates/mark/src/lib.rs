@@ -401,6 +401,63 @@ mod tests {
     }
 
     #[test]
+    fn a_json_path_carries_only_a_json_member_and_not_a_front_matter_one() {
+        // A probe result's bytes: a Markdown document whose front matter holds
+        // the member. At a `.md` path that is the marker (#1466, #1513).
+        let front = format!(
+            "---\nid: HW-RESULT-x\n{}\n---\n\n# A result\n",
+            marker_member("probe_result")
+        );
+        assert!(carries_marker("docs/x.md", &front));
+
+        // At a `.json` path the text is not a JSON object, so its member is not
+        // a JSON marker, and the generator reports the output as unread.
+        let json = "runs/probe-results/first-regression.json";
+        assert!(!carries_marker(json, &front));
+        assert_eq!(kind_named(json, &front), None);
+        assert!(!built_at_publish(json, &front));
+
+        // Any text before the object is not an object either, wherever the
+        // member sits after it.
+        let preamble = format!("# note\n{{\n  \"{MARKER}\": \"graph_export. \"\n}}\n");
+        assert!(!carries_marker(json, &preamble));
+
+        // The control: the object form still carries at the same path, with
+        // blank lines before the brace.
+        let object = format!(
+            "\n\n{{\n  \"{MARKER}\": \"{}\"\n}}\n",
+            marker_text("probe_result")
+        );
+        assert!(carries_marker(json, &object));
+        assert_eq!(kind_named(json, &object).as_deref(), Some("probe_result"));
+    }
+
+    #[test]
+    fn a_commented_format_carries_only_its_own_comment_on_the_first_line() {
+        // A compact JSON object is not a comment, at a Markdown path or a YAML
+        // or TOML one, even when the member opens it.
+        let compact = format!("{{\"{MARKER}\": \"graph_export. \"}}\n");
+        for path in ["docs/x.md", "out/x.yml", "out/x.toml"] {
+            assert!(!carries_marker(path, &compact), "{path}");
+            assert_eq!(kind_named(path, &compact), None, "{path}");
+        }
+
+        // An HTML comment is Markdown's syntax and not YAML's, and a hash
+        // comment is YAML's and not Markdown's.
+        let html = format!("<!-- {MARKER} shelf_index. -->\n");
+        assert!(carries_marker("docs/x.md", &html));
+        assert!(!carries_marker("out/x.yml", &html));
+        let hash = format!("# {MARKER} agent_rules. \n");
+        assert!(carries_marker("out/x.yml", &hash));
+        assert!(!carries_marker("docs/x.md", &hash));
+
+        // The census asks about a first line alone, at a `.md` path: the
+        // comment carries, and the opening fence of a block does not.
+        assert!(carries_marker("a.md", html.trim_end()));
+        assert!(!carries_marker("a.md", "---"));
+    }
+
+    #[test]
     fn a_format_the_emitters_write_is_one_to_open_and_nothing_else_is() {
         for path in [
             "docs/spec/README.md",
