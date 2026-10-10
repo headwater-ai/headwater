@@ -45,7 +45,7 @@ A relation that declares `created_by: author` is yours to type into the front ma
 
 **A code-path anchor reaches every entry a pattern admits, and a bare path still reaches only itself.** Its raw value is a pattern over the tree, or a YAML sequence of patterns for one anchor over several files. So a document that governs a directory of forty files can propose one pattern instead of forty edges. Nothing forces an existing hand-typed edge to change: propose a pattern where it earns its keep, and say how many entries it reaches. The verb binds a target through the resolvers `headwater check` uses and prints how many entries it reaches. A pattern that matches no entry is refused, and nothing is written.
 
-**An `agent` edge is a proposal, and the review of the pull request that carries it is the acceptance.** So an edge of yours reaches the main branch only through a pull request a person reviews. An anchor that binds only where the target cites the new document, such as one that the `comment-scan` resolver reads, binds once a Rust `//` or `/* */` comment in the file cites the new identifier. The verb names that comment in its report.
+**An `agent` edge is a proposal, and the review of the pull request that carries it is the acceptance.** So an edge of yours reaches the main branch only through a pull request a person reviews. An anchor that binds only where the target cites the new document, such as one that the `comment-scan` resolver reads, binds once a `//` or `/* */` comment in the file cites the new identifier. The verb names that comment in its report. It refuses a file whose comments open with `#`, such as a shell script, because that resolver reads no such comment.
 
 ## The stop rules
 
