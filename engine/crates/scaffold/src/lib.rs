@@ -1973,20 +1973,27 @@ enum Bound {
 /// and not first reported by the check.
 ///
 /// One exception, stated rather than hidden: `comment-scan` binds a file only
-/// where a Rust `//` or `/* */` comment in it cites the asserting document's
-/// identifier, and the
-/// identifier is the one this run mints. So where the binding failed, each
-/// admitted resolver is asked
+/// where a `//` or `/* */` comment in it cites the asserting document's
+/// identifier, and the identifier is the one this run mints. So every
+/// admitted resolver is also asked
 /// [`headwater_graph::anchors::Resolver::resolve_once_cited`]: would the
 /// target bind once it cites the asserter? `comment-scan` answers through the
-/// steps its own `resolve_for` runs. A file it would bind is written, and the
-/// comment it still owes is named. A path that reaches nothing, a directory, a
-/// pattern and a file that does not read as text are refused in the check's
-/// words. The answers are counted as `bind` counts them: a target that two
-/// admitted kinds would claim has two identities, and it is refused.
+/// steps its own `resolve_for` runs. The answers are counted as `bind` counts
+/// them, whether or not the target binds now: a target that two admitted
+/// kinds would claim once the comment is there has two identities, and it is
+/// refused. A kind that claims the target now and a kind that claims it only
+/// once cited are two kinds, and the check reads the edge as ambiguous the
+/// moment the comment lands (#1629).
+///
+/// Where the target binds now and one kind claims it, the edge is written.
+/// Where it binds only once cited, a file is written and the comment it still
+/// owes is named, unless its comments open with `#`: `comment-scan` reads no
+/// such comment, so that file is refused ([`HASH_COMMENTED`]). A path that
+/// reaches nothing, a directory, a pattern and a file that does not read as
+/// text are refused in the check's words.
 fn bind_target(sources: &Sources<'_>, far: &[String], target: &str, asserter: &str) -> Bound {
     use headwater_graph::anchors::Binding;
-    use headwater_graph::edges::Target;
+    use headwater_graph::edges::{Target, Unbound};
 
     let anchor_kinds: Vec<_> = far
         .iter()
@@ -2002,7 +2009,7 @@ fn bind_target(sources: &Sources<'_>, far: &[String], target: &str, asserter: &s
         };
     }
 
-    let unbound = match headwater_graph::edges::bind(
+    let now = match headwater_graph::edges::bind(
         &[target.to_string()],
         asserter,
         far,
@@ -2020,21 +2027,17 @@ fn bind_target(sources: &Sources<'_>, far: &[String], target: &str, asserter: &s
             anchor_kind,
             patterns,
             ..
-        } => {
-            return Bound::Anchor(Anchored {
-                anchor_kind,
-                matched: Some(patterns.iter().map(|member| member.matched.len()).sum()),
-                owes: None,
-            })
-        }
-        Target::Withheld { anchor_kind, .. } => {
-            return Bound::Anchor(Anchored {
-                anchor_kind,
-                matched: None,
-                owes: None,
-            })
-        }
-        Target::Unbound(unbound) => unbound,
+        } => Ok(Anchored {
+            anchor_kind,
+            matched: Some(patterns.iter().map(|member| member.matched.len()).sum()),
+            owes: None,
+        }),
+        Target::Withheld { anchor_kind, .. } => Ok(Anchored {
+            anchor_kind,
+            matched: None,
+            owes: None,
+        }),
+        Target::Unbound(unbound) => Err(unbound),
     };
 
     // Each admitted anchor kind's own resolver says whether the target binds
@@ -2044,34 +2047,109 @@ fn bind_target(sources: &Sources<'_>, far: &[String], target: &str, asserter: &s
     // check's words. Every other resolver reads no citation, and its answer
     // is the one `bind` already had.
     //
-    // The answers are counted by the rule `bind` itself applies: a target
-    // that two anchor kinds claim has two identities and never binds. So the
-    // edge is written only where exactly one kind would claim it. Where
-    // `bind` refused because two kinds already claim the target, both claim
-    // it again here, and the verb refuses it as the check will (#1560).
-    let mut claims = anchor_kinds.iter().filter_map(|anchor| {
-        let resolver = sources.resolvers.get(&anchor.resolver)?;
-        match resolver.resolve_once_cited(target, asserter) {
-            Binding::Resolved {
-                normalized,
-                matched,
-                ..
-            } => Some((anchor, normalized, matched.len())),
-            _ => None,
-        }
-    });
-    match (claims.next(), claims.next()) {
-        (Some((anchor, normalized, matched)), None) => Bound::Anchor(Anchored {
-            anchor_kind: anchor.name.clone(),
-            matched: Some(matched),
-            owes: Some(format!(
-                "`{}` binds `{normalized}` once a Rust `//` or `/* */` comment in it cites \
-                 `{asserter}`, which `headwater check` reports until one does",
-                anchor.name
-            )),
-        }),
-        _ => Bound::Refused(unbound.to_string()),
+    // The answers are counted by the rule `bind` itself applies, and they are
+    // counted on every path, a target that binds now included: a target that
+    // two anchor kinds claim has two identities and never binds. A `.rs` file
+    // the source tree claims now is claimed by `comment-scan` too once the
+    // comment is there, so the edge the verb wrote would be the edge the
+    // check refuses (#1560, #1629).
+    let claims: Vec<_> = anchor_kinds
+        .iter()
+        .filter_map(|anchor| {
+            let resolver = sources.resolvers.get(&anchor.resolver)?;
+            match resolver.resolve_once_cited(target, asserter) {
+                Binding::Resolved {
+                    normalized,
+                    matched,
+                    ..
+                } => Some((*anchor, Some((normalized, matched.len())))),
+                Binding::Withheld { .. } => Some((*anchor, None)),
+                Binding::Unresolved(_) => None,
+            }
+        })
+        .collect();
+    if claims.len() > 1 {
+        return Bound::Refused(match now {
+            // Two kinds claim it already, and the check's words say so.
+            Err(ambiguous @ Unbound::AmbiguousAnchor { .. }) => ambiguous.to_string(),
+            _ => format!(
+                "once a comment in it cites `{asserter}`, {}",
+                Unbound::AmbiguousAnchor {
+                    anchor_kinds: claims
+                        .iter()
+                        .map(|(anchor, _)| anchor.name.clone())
+                        .collect(),
+                }
+            ),
+        });
     }
+
+    let unbound = match now {
+        Ok(anchored) => return Bound::Anchor(anchored),
+        Err(unbound) => unbound,
+    };
+    let [(anchor, Some((normalized, matched)))] = claims.as_slice() else {
+        return Bound::Refused(unbound.to_string());
+    };
+    if anchor.resolver == "comment-scan" && comments_with_hash(sources.root, normalized) {
+        return Bound::Refused(format!(
+            "`{}`: the comments in `{normalized}` open with `#`, and `comment-scan` reads only \
+             `//` and `/* */` comments, so no comment in it can cite `{asserter}`",
+            anchor.name
+        ));
+    }
+    let form = match std::path::Path::new(normalized)
+        .extension()
+        .is_some_and(|extension| extension == "rs")
+    {
+        true => "a Rust `//` or `/* */` comment",
+        false => "a `//` or `/* */` comment",
+    };
+    Bound::Anchor(Anchored {
+        anchor_kind: anchor.name.clone(),
+        matched: Some(*matched),
+        owes: Some(format!(
+            "`{}` binds `{normalized}` once {form} in it cites `{asserter}`, which \
+             `headwater check` reports until one does",
+            anchor.name
+        )),
+    })
+}
+
+/// The extensions of a file whose language writes its comments with `#`.
+///
+/// `comment-scan` reads `//` and `/* */` comments alone, so a citation in a
+/// shell script, a Python module or a YAML file is never one the check reads.
+/// The verb refuses such a target rather than name a comment the file cannot
+/// hold (#1629). The list is the verb's and not the check's: the check still
+/// binds a `# // HW-…` line in a shell file, and the verb is stricter than the
+/// check here on purpose, because no author writes that line. Compared without
+/// regard to case.
+const HASH_COMMENTED: &[&str] = &[
+    "sh", "bash", "zsh", "ksh", "fish", "py", "rb", "pl", "pm", "r", "yml", "yaml", "toml",
+];
+
+/// Whether the comments of the file at `normalized` under `root` open with
+/// `#`: its extension is one of [`HASH_COMMENTED`], or its first line opens
+/// `#!`, which names the interpreter of a script that has no extension.
+fn comments_with_hash(root: &std::path::Path, normalized: &str) -> bool {
+    use std::io::Read as _;
+
+    let by_extension = std::path::Path::new(normalized)
+        .extension()
+        .and_then(|extension| extension.to_str())
+        .is_some_and(|extension| {
+            HASH_COMMENTED
+                .iter()
+                .any(|hashed| hashed.eq_ignore_ascii_case(extension))
+        });
+    if by_extension {
+        return true;
+    }
+    let mut opening = [0u8; 2];
+    std::fs::File::open(root.join(normalized))
+        .and_then(|mut file| file.read_exact(&mut opening))
+        .is_ok_and(|()| &opening == b"#!")
 }
 
 /// The relations a document of this kind may declare and this run did not.

@@ -489,11 +489,14 @@ fn a_path_one_kind_claims_now_and_two_claim_once_cited_is_refused_as_the_check_r
     );
 
     // The identifier the verb would mint, which is the one the comment cites.
-    let asserter = propose(&loaded.sources(), &request(&case("decision_record", "The asserter")))
-        .expect("an unrelated decision is proposed")
-        .minting
-        .expect("a minted identifier")
-        .id;
+    let asserter = propose(
+        &loaded.sources(),
+        &request(&case("decision_record", "The asserter")),
+    )
+    .expect("an unrelated decision is proposed")
+    .minting
+    .expect("a minted identifier")
+    .id;
 
     // The same file, once the comment the verb would have named is there.
     let tree = std::env::temp_dir().join(format!(

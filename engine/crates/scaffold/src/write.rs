@@ -106,8 +106,26 @@ pub fn render(plan: &Plan) -> String {
 /// An identifier is always plain. A path is not: `@scope/index.js` opens with
 /// `@`, which YAML reserves, so a plain write of it is a document the next
 /// command refuses (#1560).
+///
+/// A file named `123`, `true` or `~` is quoted too. This engine reads every
+/// scalar as text, so a plain write binds; but the YAML 1.2 core schema types
+/// those three as an integer, a boolean and a null, and so does every other
+/// reader of the front matter. The test is the core schema's own predicates,
+/// asked of the target as a plain scalar (#1629).
 fn scalar(target: &str) -> String {
+    let as_plain = headwater_yaml::Scalar {
+        text: target.to_string(),
+        style: headwater_yaml::Style::Plain,
+    };
+    let typed = {
+        use headwater_yaml::core_schema::{as_bool, as_float, as_int, as_null};
+        as_null(&as_plain)
+            || as_bool(&as_plain).is_some()
+            || as_int(&as_plain).is_some()
+            || as_float(&as_plain).is_some()
+    };
     let plain = !target.is_empty()
+        && !typed
         && !target.starts_with(|c: char| "*&!|>%@`'\"#[]{},?:- ".contains(c))
         && !target.ends_with([' ', ':'])
         && !target.contains(": ")
@@ -459,6 +477,20 @@ mod tests {
                 .iter()
                 .map(|(name, value)| (name.to_string(), value.to_string()))
                 .collect(),
+        }
+    }
+
+    /// A target the YAML 1.2 core schema would type is quoted, and every other
+    /// plain-safe target stays plain (#1629).
+    #[test]
+    fn a_target_the_core_schema_would_type_is_quoted() {
+        for typed in [
+            "123", "true", "~", "null", "False", "0x1f", "-7", "1.5", ".inf", "",
+        ] {
+            assert_eq!(scalar(typed), quoted(typed), "`{typed}` is quoted");
+        }
+        for text in ["src/widget.rs", "DR-FIX-0007", "1.2.3", "truth", "123a"] {
+            assert_eq!(scalar(text), text, "`{text}` stays plain");
         }
     }
 

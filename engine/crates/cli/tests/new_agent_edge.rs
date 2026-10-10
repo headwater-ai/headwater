@@ -218,3 +218,118 @@ fn a_cited_in_file_that_is_not_text_is_refused() {
     assert!(refused.err.contains("binds to nothing"), "{}", refused.err);
     assert!(root.documents().is_empty(), "nothing is written");
 }
+
+/// `comment-scan` reads `//` and `/* */` comments alone, so a shell script can
+/// never carry a citation in the form its own comments take. The verb refuses
+/// it and names the `#` form, rather than promise a Rust comment (#1629).
+#[test]
+fn a_cited_in_file_whose_comments_open_with_hash_is_refused() {
+    let root = Root::new("cited-in-shell");
+    std::fs::create_dir_all(root.at.join("tools")).expect("the tools directory is made");
+    std::fs::write(root.at.join("tools/probe.sh"), "#!/bin/sh\ntrue\n").expect("a shell file");
+    std::fs::write(root.at.join("tools/probe"), "#!/bin/sh\ntrue\n").expect("a script");
+    for target in ["tools/probe.sh", "tools/probe"] {
+        let refused = root.run(&[
+            "new",
+            "verification",
+            "--title",
+            "A citation in a shell script",
+            "--relates",
+            &format!("cited_in={target}"),
+        ]);
+        assert_eq!(refused.code, Some(1), "{target}: {refused:?}");
+        assert!(
+            refused.err.contains("open with `#`"),
+            "{target}: the refusal names the `#` form\n{}",
+            refused.err
+        );
+        assert!(
+            !refused.err.contains("Rust") && !refused.out.contains("Rust"),
+            "{target}: no Rust comment is promised\n{refused:?}"
+        );
+        assert!(root.documents().is_empty(), "nothing is written");
+    }
+}
+
+/// A target that is not Rust is still written, and the comment it owes is not
+/// called a Rust comment (#1629).
+#[test]
+fn a_cited_in_file_that_is_not_rust_owes_a_comment_that_is_not_called_rust() {
+    let root = Root::new("cited-in-c");
+    std::fs::write(
+        root.at.join("src/widget.c"),
+        "int widget(void) { return 0; }\n",
+    )
+    .expect("a C file");
+    let made = root.run(&[
+        "new",
+        "verification",
+        "--title",
+        "A citation the C file owes",
+        "--relates",
+        "cited_in=src/widget.c",
+    ]);
+    assert_eq!(made.code, Some(0), "{made:?}");
+    assert!(
+        made.out.contains(
+            "`test_site` binds `src/widget.c` once a `//` or `/* */` comment in it cites `"
+        ),
+        "the report names the comment the file owes\n{}",
+        made.out
+    );
+}
+
+/// A file named like a YAML integer, boolean or null is written quoted, so the
+/// front matter reads as a string to every YAML reader, and the check binds it
+/// as it binds any other path. A name that reaches no file is refused (#1629).
+#[test]
+fn a_target_named_like_a_typed_scalar_is_written_quoted_and_binds() {
+    let root = Root::new("typed-scalars");
+    for name in ["123", "true", "~"] {
+        std::fs::write(root.at.join(name), "text\n").expect("a file named like a scalar");
+        let made = root.run(&[
+            "new",
+            "decision",
+            "--title",
+            &format!("A decision that governs {name}"),
+            "--relates",
+            &format!("governs={name}"),
+        ]);
+        assert_eq!(made.code, Some(0), "{name}: {made:?}");
+        let written: Vec<String> = root
+            .documents()
+            .iter()
+            .map(|path| std::fs::read_to_string(path).expect("the document reads"))
+            .filter(|text| text.contains(&format!("A decision that governs {name}")))
+            .collect();
+        let [document] = written.as_slice() else {
+            panic!("{name}: one document is written, not {}", written.len());
+        };
+        assert!(
+            document.contains(&format!("    - \"{name}\"\n")),
+            "{name}: the target is quoted\n{document}"
+        );
+    }
+
+    let checked = root.run(&["check"]);
+    for name in ["123", "true", "~"] {
+        assert!(
+            checked
+                .out
+                .contains(&format!("1 code_path `{name}` via source-tree")),
+            "{name}: the check binds the quoted target\n{}",
+            checked.out
+        );
+    }
+
+    let refused = root.run(&[
+        "new",
+        "decision",
+        "--title",
+        "A decision that governs null",
+        "--relates",
+        "governs=null",
+    ]);
+    assert_eq!(refused.code, Some(1), "{refused:?}");
+    assert!(refused.err.contains("binds to nothing"), "{}", refused.err);
+}
