@@ -494,10 +494,13 @@ impl Pair {
             match (editable.first(), editable.last()) {
                 (Some(first), Some(last)) => {
                     edits[0].push(first.clone());
+                    // Counted from the rows, not from the edit below, so a
+                    // branch `b` that stops editing is not excused by it.
+                    if editable.len() == 1 {
+                        one_sided.insert(member.path.clone());
+                    }
                     if last != first {
                         edits[1].push(last.clone());
-                    } else {
-                        one_sided.insert(member.path.clone());
                     }
                 }
                 _ => {
