@@ -2135,27 +2135,61 @@ const HASH_COMMENTED: &[&str] = &[
     "sh", "bash", "zsh", "ksh", "fish", "py", "rb", "pl", "pm", "r", "yml", "yaml", "toml",
 ];
 
-/// Whether the comments of the file at `normalized` under `root` open with
-/// `#`: its extension is one of [`HASH_COMMENTED`], or its first line opens
-/// `#!`, which names the interpreter of a script that has no extension.
-fn comments_with_hash(root: &std::path::Path, normalized: &str) -> bool {
-    use std::io::Read as _;
+/// The interpreters, named on a `#!` line, whose language comments with `//`.
+///
+/// A script with no extension says what it is on its first line alone. Most
+/// interpreters named there comment with `#`, and a JavaScript runtime does
+/// not, so a `#!/usr/bin/env node` script can carry a citation `comment-scan`
+/// reads (#1629).
+const SLASH_INTERPRETERS: &[&str] = &["node", "nodejs", "deno", "bun", "tsx", "ts-node"];
 
-    let by_extension = std::path::Path::new(normalized)
-        .extension()
-        .and_then(|extension| extension.to_str())
-        .is_some_and(|extension| {
+/// Whether the comments of the file at `normalized` under `root` open with
+/// `#`.
+///
+/// A file with an extension is decided by the extension alone: one of
+/// [`HASH_COMMENTED`] comments with `#`, and every other does not. So a `.rs`
+/// file that opens `#![no_std]` and a `.js` file that opens with a `#!` line
+/// are both read as files that comment with `//`. A file with no extension is
+/// decided by its first line: a `#!` line that names an interpreter outside
+/// [`SLASH_INTERPRETERS`] comments with `#`. A first line that opens `#` and
+/// not `#!`, such as `#include`, decides nothing.
+fn comments_with_hash(root: &std::path::Path, normalized: &str) -> bool {
+    use std::io::{BufRead as _, Read as _};
+
+    if let Some(extension) = std::path::Path::new(normalized).extension() {
+        return extension.to_str().is_some_and(|extension| {
             HASH_COMMENTED
                 .iter()
                 .any(|hashed| hashed.eq_ignore_ascii_case(extension))
         });
-    if by_extension {
-        return true;
     }
-    let mut opening = [0u8; 2];
-    std::fs::File::open(root.join(normalized))
-        .and_then(|mut file| file.read_exact(&mut opening))
-        .is_ok_and(|()| &opening == b"#!")
+    let mut first = String::new();
+    let read = std::fs::File::open(root.join(normalized)).and_then(|file| {
+        std::io::BufReader::new(file)
+            .take(4096)
+            .read_line(&mut first)
+    });
+    match (read, first.strip_prefix("#!")) {
+        (Ok(_), Some(line)) => {
+            interpreter(line).is_none_or(|name| !SLASH_INTERPRETERS.contains(&name))
+        }
+        _ => false,
+    }
+}
+
+/// The interpreter a `#!` line names: the file name of its first word, or,
+/// where that word is `env`, of the first word after it that is not an
+/// option or an assignment.
+fn interpreter(line: &str) -> Option<&str> {
+    let mut words = line.split_whitespace();
+    let program = words.next()?;
+    let program = program.rsplit('/').next().unwrap_or(program);
+    match program {
+        "env" => words
+            .find(|word| !word.starts_with('-') && !word.contains('='))
+            .map(|word| word.rsplit('/').next().unwrap_or(word)),
+        _ => Some(program),
+    }
 }
 
 /// The relations a document of this kind may declare and this run did not.

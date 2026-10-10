@@ -112,6 +112,9 @@ pub fn render(plan: &Plan) -> String {
 /// those three as an integer, a boolean and a null, and so does every other
 /// reader of the front matter. The test is the core schema's own predicates,
 /// asked of the target as a plain scalar (#1629).
+///
+/// A YAML 1.1 reader, PyYAML among them, also types `yes`, `no`, `on`, `off`,
+/// `y` and `n` as booleans, so those are quoted too ([`YAML_1_1_BOOLEANS`]).
 fn scalar(target: &str) -> String {
     let as_plain = headwater_yaml::Scalar {
         text: target.to_string(),
@@ -123,6 +126,7 @@ fn scalar(target: &str) -> String {
             || as_bool(&as_plain).is_some()
             || as_int(&as_plain).is_some()
             || as_float(&as_plain).is_some()
+            || YAML_1_1_BOOLEANS.contains(&target)
     };
     let plain = !target.is_empty()
         && !typed
@@ -135,6 +139,13 @@ fn scalar(target: &str) -> String {
         false => quoted(target),
     }
 }
+
+/// The plain scalars a YAML 1.1 reader types as a boolean and the 1.2 core
+/// schema reads as a string, in each case form that YAML 1.1 lists.
+const YAML_1_1_BOOLEANS: &[&str] = &[
+    "y", "Y", "yes", "Yes", "YES", "n", "N", "no", "No", "NO", "on", "On", "ON", "off", "Off",
+    "OFF",
+];
 
 /// A scalar as a double-quoted YAML string.
 ///
@@ -485,7 +496,8 @@ mod tests {
     #[test]
     fn a_target_the_core_schema_would_type_is_quoted() {
         for typed in [
-            "123", "true", "~", "null", "False", "0x1f", "-7", "1.5", ".inf", "",
+            "123", "true", "~", "null", "False", "0x1f", "-7", "1.5", ".inf", "", "yes", "No",
+            "ON", "off", "y", "N",
         ] {
             assert_eq!(scalar(typed), quoted(typed), "`{typed}` is quoted");
         }
