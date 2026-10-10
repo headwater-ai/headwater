@@ -20,6 +20,14 @@
 # two leak-kept probes and the dry run would refuse the spec. The two harder
 # sufficiency probes of #1472 are named there for that reason.
 #
+# The four harder variants of #1718 are on the shelf and await the owner's
+# approval of spend, so every line of their category leaves them out: two
+# sufficiency probes and two navigability probes. A line that named the
+# category and not the probe would plan it, and the dry run would price it in.
+# `the_campaign_spec_plans_no_probe_that_awaits_spend` in
+# `engine/crates/probe/tests/corpus.rs` holds the list. A probe leaves it only
+# by that approval.
+#
 # Nobody runs this spec until the owner rules on one ceiling for the whole
 # plan (#1472) and the sessions are confined (#1467).
 #
@@ -82,32 +90,32 @@
 # and leave 2868 sessions, $1,434.00.
 
 # Sufficiency, less the two leak-kept probes.
-campaign      present      sufficiency HW-PROBE-a-session-names-the-status-a-settled-decision-carries-in-its-pull-request HW-PROBE-a-session-names-the-event-that-makes-a-document-accepted
-campaign      absent       sufficiency HW-PROBE-a-session-names-the-status-a-settled-decision-carries-in-its-pull-request HW-PROBE-a-session-names-the-event-that-makes-a-document-accepted
-campaign      no-hook      sufficiency HW-PROBE-a-session-names-the-status-a-settled-decision-carries-in-its-pull-request HW-PROBE-a-session-names-the-event-that-makes-a-document-accepted
-campaign      no-skills    sufficiency HW-PROBE-a-session-names-the-status-a-settled-decision-carries-in-its-pull-request HW-PROBE-a-session-names-the-event-that-makes-a-document-accepted
-campaign      no-claude-md sufficiency HW-PROBE-a-session-names-the-status-a-settled-decision-carries-in-its-pull-request HW-PROBE-a-session-names-the-event-that-makes-a-document-accepted
-campaign      mcp          sufficiency HW-PROBE-a-session-names-the-status-a-settled-decision-carries-in-its-pull-request HW-PROBE-a-session-names-the-event-that-makes-a-document-accepted
-documentation absent       sufficiency HW-PROBE-a-session-names-the-status-a-settled-decision-carries-in-its-pull-request HW-PROBE-a-session-names-the-event-that-makes-a-document-accepted
+campaign      present      sufficiency HW-PROBE-a-session-names-the-status-a-settled-decision-carries-in-its-pull-request HW-PROBE-a-session-names-the-event-that-makes-a-document-accepted HW-PROBE-a-session-follows-two-citations-from-a-record-the-task-does-not-name HW-PROBE-a-session-says-which-date-a-corrected-status-carries
+campaign      absent       sufficiency HW-PROBE-a-session-names-the-status-a-settled-decision-carries-in-its-pull-request HW-PROBE-a-session-names-the-event-that-makes-a-document-accepted HW-PROBE-a-session-follows-two-citations-from-a-record-the-task-does-not-name HW-PROBE-a-session-says-which-date-a-corrected-status-carries
+campaign      no-hook      sufficiency HW-PROBE-a-session-names-the-status-a-settled-decision-carries-in-its-pull-request HW-PROBE-a-session-names-the-event-that-makes-a-document-accepted HW-PROBE-a-session-follows-two-citations-from-a-record-the-task-does-not-name HW-PROBE-a-session-says-which-date-a-corrected-status-carries
+campaign      no-skills    sufficiency HW-PROBE-a-session-names-the-status-a-settled-decision-carries-in-its-pull-request HW-PROBE-a-session-names-the-event-that-makes-a-document-accepted HW-PROBE-a-session-follows-two-citations-from-a-record-the-task-does-not-name HW-PROBE-a-session-says-which-date-a-corrected-status-carries
+campaign      no-claude-md sufficiency HW-PROBE-a-session-names-the-status-a-settled-decision-carries-in-its-pull-request HW-PROBE-a-session-names-the-event-that-makes-a-document-accepted HW-PROBE-a-session-follows-two-citations-from-a-record-the-task-does-not-name HW-PROBE-a-session-says-which-date-a-corrected-status-carries
+campaign      mcp          sufficiency HW-PROBE-a-session-names-the-status-a-settled-decision-carries-in-its-pull-request HW-PROBE-a-session-names-the-event-that-makes-a-document-accepted HW-PROBE-a-session-follows-two-citations-from-a-record-the-task-does-not-name HW-PROBE-a-session-says-which-date-a-corrected-status-carries
+documentation absent       sufficiency HW-PROBE-a-session-names-the-status-a-settled-decision-carries-in-its-pull-request HW-PROBE-a-session-names-the-event-that-makes-a-document-accepted HW-PROBE-a-session-follows-two-citations-from-a-record-the-task-does-not-name HW-PROBE-a-session-says-which-date-a-corrected-status-carries
 
 # The two leak-kept probes, on lines of their own.
-campaign      present      sufficiency HW-PROBE-a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer HW-PROBE-a-session-records-an-unmeasured-claim-in-the-shape-this-corpus-checks HW-PROBE-a-session-follows-a-citation-from-one-record-to-the-next HW-PROBE-a-session-records-which-obligation-an-evaluation-discharged
-campaign      absent       sufficiency HW-PROBE-a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer HW-PROBE-a-session-records-an-unmeasured-claim-in-the-shape-this-corpus-checks HW-PROBE-a-session-follows-a-citation-from-one-record-to-the-next HW-PROBE-a-session-records-which-obligation-an-evaluation-discharged
-campaign      no-hook      sufficiency HW-PROBE-a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer HW-PROBE-a-session-records-an-unmeasured-claim-in-the-shape-this-corpus-checks HW-PROBE-a-session-follows-a-citation-from-one-record-to-the-next HW-PROBE-a-session-records-which-obligation-an-evaluation-discharged
-campaign      no-skills    sufficiency HW-PROBE-a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer HW-PROBE-a-session-records-an-unmeasured-claim-in-the-shape-this-corpus-checks HW-PROBE-a-session-follows-a-citation-from-one-record-to-the-next HW-PROBE-a-session-records-which-obligation-an-evaluation-discharged
-campaign      no-claude-md sufficiency HW-PROBE-a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer HW-PROBE-a-session-records-an-unmeasured-claim-in-the-shape-this-corpus-checks HW-PROBE-a-session-follows-a-citation-from-one-record-to-the-next HW-PROBE-a-session-records-which-obligation-an-evaluation-discharged
-campaign      mcp          sufficiency HW-PROBE-a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer HW-PROBE-a-session-records-an-unmeasured-claim-in-the-shape-this-corpus-checks HW-PROBE-a-session-follows-a-citation-from-one-record-to-the-next HW-PROBE-a-session-records-which-obligation-an-evaluation-discharged
-documentation absent       sufficiency HW-PROBE-a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer HW-PROBE-a-session-records-an-unmeasured-claim-in-the-shape-this-corpus-checks HW-PROBE-a-session-follows-a-citation-from-one-record-to-the-next HW-PROBE-a-session-records-which-obligation-an-evaluation-discharged
+campaign      present      sufficiency HW-PROBE-a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer HW-PROBE-a-session-records-an-unmeasured-claim-in-the-shape-this-corpus-checks HW-PROBE-a-session-follows-a-citation-from-one-record-to-the-next HW-PROBE-a-session-records-which-obligation-an-evaluation-discharged HW-PROBE-a-session-follows-two-citations-from-a-record-the-task-does-not-name HW-PROBE-a-session-says-which-date-a-corrected-status-carries
+campaign      absent       sufficiency HW-PROBE-a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer HW-PROBE-a-session-records-an-unmeasured-claim-in-the-shape-this-corpus-checks HW-PROBE-a-session-follows-a-citation-from-one-record-to-the-next HW-PROBE-a-session-records-which-obligation-an-evaluation-discharged HW-PROBE-a-session-follows-two-citations-from-a-record-the-task-does-not-name HW-PROBE-a-session-says-which-date-a-corrected-status-carries
+campaign      no-hook      sufficiency HW-PROBE-a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer HW-PROBE-a-session-records-an-unmeasured-claim-in-the-shape-this-corpus-checks HW-PROBE-a-session-follows-a-citation-from-one-record-to-the-next HW-PROBE-a-session-records-which-obligation-an-evaluation-discharged HW-PROBE-a-session-follows-two-citations-from-a-record-the-task-does-not-name HW-PROBE-a-session-says-which-date-a-corrected-status-carries
+campaign      no-skills    sufficiency HW-PROBE-a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer HW-PROBE-a-session-records-an-unmeasured-claim-in-the-shape-this-corpus-checks HW-PROBE-a-session-follows-a-citation-from-one-record-to-the-next HW-PROBE-a-session-records-which-obligation-an-evaluation-discharged HW-PROBE-a-session-follows-two-citations-from-a-record-the-task-does-not-name HW-PROBE-a-session-says-which-date-a-corrected-status-carries
+campaign      no-claude-md sufficiency HW-PROBE-a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer HW-PROBE-a-session-records-an-unmeasured-claim-in-the-shape-this-corpus-checks HW-PROBE-a-session-follows-a-citation-from-one-record-to-the-next HW-PROBE-a-session-records-which-obligation-an-evaluation-discharged HW-PROBE-a-session-follows-two-citations-from-a-record-the-task-does-not-name HW-PROBE-a-session-says-which-date-a-corrected-status-carries
+campaign      mcp          sufficiency HW-PROBE-a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer HW-PROBE-a-session-records-an-unmeasured-claim-in-the-shape-this-corpus-checks HW-PROBE-a-session-follows-a-citation-from-one-record-to-the-next HW-PROBE-a-session-records-which-obligation-an-evaluation-discharged HW-PROBE-a-session-follows-two-citations-from-a-record-the-task-does-not-name HW-PROBE-a-session-says-which-date-a-corrected-status-carries
+documentation absent       sufficiency HW-PROBE-a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer HW-PROBE-a-session-records-an-unmeasured-claim-in-the-shape-this-corpus-checks HW-PROBE-a-session-follows-a-citation-from-one-record-to-the-next HW-PROBE-a-session-records-which-obligation-an-evaluation-discharged HW-PROBE-a-session-follows-two-citations-from-a-record-the-task-does-not-name HW-PROBE-a-session-says-which-date-a-corrected-status-carries
 
 # Navigability, less the governs probe that the campaign of 2026-10-03 ran.
 # It is superseded and stays on the shelf as that campaign's record, and the
 # plan selects a probe by its category and not by its status (#1709).
-campaign      present      navigability HW-PROBE-a-session-says-how-a-governs-line-reaches-a-document
-campaign      absent       navigability HW-PROBE-a-session-says-how-a-governs-line-reaches-a-document
-campaign      no-hook      navigability HW-PROBE-a-session-says-how-a-governs-line-reaches-a-document
-campaign      no-skills    navigability HW-PROBE-a-session-says-how-a-governs-line-reaches-a-document
-campaign      no-claude-md navigability HW-PROBE-a-session-says-how-a-governs-line-reaches-a-document
-campaign      mcp          navigability HW-PROBE-a-session-says-how-a-governs-line-reaches-a-document
+campaign      present      navigability HW-PROBE-a-session-says-how-a-governs-line-reaches-a-document HW-PROBE-a-session-answers-from-the-register-when-the-task-names-the-list-it-replaced HW-PROBE-an-agent-reaches-the-adjudication-when-the-decision-a-tombstone-links-is-superseded
+campaign      absent       navigability HW-PROBE-a-session-says-how-a-governs-line-reaches-a-document HW-PROBE-a-session-answers-from-the-register-when-the-task-names-the-list-it-replaced HW-PROBE-an-agent-reaches-the-adjudication-when-the-decision-a-tombstone-links-is-superseded
+campaign      no-hook      navigability HW-PROBE-a-session-says-how-a-governs-line-reaches-a-document HW-PROBE-a-session-answers-from-the-register-when-the-task-names-the-list-it-replaced HW-PROBE-an-agent-reaches-the-adjudication-when-the-decision-a-tombstone-links-is-superseded
+campaign      no-skills    navigability HW-PROBE-a-session-says-how-a-governs-line-reaches-a-document HW-PROBE-a-session-answers-from-the-register-when-the-task-names-the-list-it-replaced HW-PROBE-an-agent-reaches-the-adjudication-when-the-decision-a-tombstone-links-is-superseded
+campaign      no-claude-md navigability HW-PROBE-a-session-says-how-a-governs-line-reaches-a-document HW-PROBE-a-session-answers-from-the-register-when-the-task-names-the-list-it-replaced HW-PROBE-an-agent-reaches-the-adjudication-when-the-decision-a-tombstone-links-is-superseded
+campaign      mcp          navigability HW-PROBE-a-session-says-how-a-governs-line-reaches-a-document HW-PROBE-a-session-answers-from-the-register-when-the-task-names-the-list-it-replaced HW-PROBE-an-agent-reaches-the-adjudication-when-the-decision-a-tombstone-links-is-superseded
 
 # Discovery, less the authoring-skill probe, at the powered repetitions.
 campaign      present      discovery HW-PROBE-the-authoring-skill-reaches-an-agent-that-is-about-to-write-a-governed-document
