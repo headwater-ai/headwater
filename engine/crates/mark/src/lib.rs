@@ -472,7 +472,10 @@ mod tests {
         // The comment has to hold the word: a first line that is an authored
         // comment is not a marker, and most YAML and many Markdown files open
         // with one.
-        assert!(!carries_marker("out/x.yml", "# an authored comment\na: 1\n"));
+        assert!(!carries_marker(
+            "out/x.yml",
+            "# an authored comment\na: 1\n"
+        ));
         assert!(!carries_marker("docs/x.md", "<!-- a note -->\n# x\n"));
 
         // `<!--` opens the comment, and any other tag does not.
