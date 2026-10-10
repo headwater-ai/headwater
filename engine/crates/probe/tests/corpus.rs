@@ -334,10 +334,14 @@ struct Harder {
     /// case holds each path to its identifier and the probe to its `examines`
     /// list, so the path here cannot drift from the shelf.
     examines: &'static [(&'static str, &'static str)],
-    /// For the vocabulary shape: the content words of the task. Each is in
-    /// the task and in no identifier, file name or title of an examined
+    /// Words the task must hold, because the row's separation rests on them.
+    /// For the vocabulary shape these are the content words of the task, and
+    /// each is also in no identifier, file name or title of an examined
     /// document.
     words: &'static [&'static str],
+    /// Strings, in lower case, that the task must not hold. A row whose
+    /// separation rests on what the task does not name states it here.
+    absent: &'static [&'static str],
     /// Documents whose `status` the shape depends on, as path and status.
     statuses: &'static [(&'static str, &'static str)],
     shallow: Session,
@@ -363,6 +367,7 @@ const HARDER: &[Harder] = &[
             ),
         ],
         words: &["branches", "page", "total", "shared", "merges", "conflict", "wrong"],
+        absent: &[],
         statuses: &[],
         // A name search for the task's words reaches files whose names hold
         // `merge` or `page`, and none of them is the ruling.
@@ -381,6 +386,7 @@ const HARDER: &[Harder] = &[
         shape: Shape::SupersessionTrap,
         examines: &[],
         words: &[],
+        absent: &[],
         statuses: &[
             ("docs/decisions/0039-q39-how-a-figure-reaches-a-hand-built-page.md", "superseded"),
             (
@@ -396,6 +402,7 @@ const HARDER: &[Harder] = &[
         shape: Shape::MultiDocument,
         examines: &[],
         words: &[],
+        absent: &[],
         statuses: &[
             ("docs/decisions/0061-q61-how-a-recorded-terminal-demonstration-is-held-against-a-run.md", "superseded"),
             ("docs/decisions/0039-q39-how-a-figure-reaches-a-hand-built-page.md", "superseded"),
@@ -413,6 +420,7 @@ const HARDER: &[Harder] = &[
         shape: Shape::Distractors,
         examines: &[],
         words: &[],
+        absent: &[],
         statuses: &[
             // The probe the campaign of 2026-10-03 ran stays on the shelf
             // as its record, superseded by this one (#1709).
@@ -438,6 +446,7 @@ const HARDER: &[Harder] = &[
         shape: Shape::ChangeTask,
         examines: &[],
         words: &[],
+        absent: &[],
         statuses: &[],
         // What `probe-transform.sh --oracle-tree` derives over each patch, the
         // derivation a campaign runs. The asked file alone carries the
@@ -452,6 +461,97 @@ const HARDER: &[Harder] = &[
         sound: Session::Produced(&[
             (ASKED_EVALUATION, &["warrant.evidence.unsupported"]),
             (GOVERNING_OBLIGATION, &[]),
+        ]),
+    },
+    // The harder variants of #1718. Each stands beside a probe that sat at 30
+    // of 30 in the present and the absent arm of the campaign of 2026-10-03,
+    // and each shallow session is the strategy that reached that ceiling.
+    Harder {
+        id: "HW-PROBE-a-session-follows-two-citations-from-a-record-the-task-does-not-name",
+        shape: Shape::MultiDocument,
+        examines: &[],
+        words: &[],
+        absent: &["hw-dr-0", "hw-dr-1"],
+        statuses: &[
+            (
+                "docs/decisions/0078-a-recorded-terminal-demonstration-may-show-a-frozen-number-behind-a-recorded-on-date-marker.md",
+                "current",
+            ),
+            ("docs/decisions/0061-q61-how-a-recorded-terminal-demonstration-is-held-against-a-run.md", "superseded"),
+            ("docs/decisions/0039-q39-how-a-figure-reaches-a-hand-built-page.md", "superseded"),
+            (
+                "docs/decisions/0097-a-figure-on-a-hand-built-page-is-measured-when-the-site-is-published-and-the-committed-page-carries-none.md",
+                "current",
+            ),
+        ],
+        // The strategy of the original row's absent arm: follow the one
+        // citation of the record reached first, and answer with the record
+        // in force in place of the one it reached. From HW-DR-0078 that
+        // citation is HW-DR-0061, whose successor is HW-DR-0078 itself.
+        shallow: Session::Answered("HW-DR-0078"),
+        sound: Session::Answered("HW-DR-0097"),
+    },
+    Harder {
+        id: "HW-PROBE-a-session-says-which-date-a-corrected-status-carries",
+        shape: Shape::Distractors,
+        examines: &[],
+        words: &[],
+        absent: &["hw-dr-0", "hw-dr-1"],
+        statuses: &[(
+            "docs/decisions/0052-a-document-is-proposed-at-the-state-it-will-hold-and-the-merge-activates-it.md",
+            "current",
+        )],
+        // Nearly every document of the shelf carries a `status_since` equal to
+        // the day it merged, so a session that reads the examples and not the
+        // ruling answers `merge`.
+        shallow: Session::Answered("merge 66"),
+        sound: Session::Answered("correction 66"),
+    },
+    Harder {
+        id: "HW-PROBE-a-session-answers-from-the-register-when-the-task-names-the-list-it-replaced",
+        shape: Shape::SupersessionTrap,
+        examines: &[("HW-REG-open-questions", "docs/spec/09-open-questions.md")],
+        words: &["open questions, closed and redirected"],
+        absent: &[],
+        statuses: &[("docs/spec/09-open-questions.md", "superseded")],
+        // The task uses the title of the superseded list, so a name search
+        // opens that list first.
+        shallow: Session::Read(&[
+            "docs/spec/09-open-questions.md",
+            "docs/decisions/0020-where-scent-lives.md",
+        ]),
+        sound: Session::Read(&["docs/decisions/0020-where-scent-lives.md"]),
+    },
+    Harder {
+        id: "HW-PROBE-an-agent-reaches-the-adjudication-when-the-decision-a-tombstone-links-is-superseded",
+        shape: Shape::SupersessionTrap,
+        examines: &[(
+            "HW-DR-0087",
+            "docs/decisions/0087-no-paragraph-limit-joins-the-language-rule-because-most-paragraphs-past-six-sentences-hold-one-topic.md",
+        )],
+        words: &["09-open-questions.md#69--a-paragraph-limit"],
+        absent: &[],
+        statuses: &[
+            ("docs/spec/09-open-questions.md", "superseded"),
+            (
+                "docs/decisions/0069-a-paragraph-limit-counts-sentences-under-the-language-rule-and-never-words.md",
+                "superseded",
+            ),
+            (
+                "docs/decisions/0087-no-paragraph-limit-joins-the-language-rule-because-most-paragraphs-past-six-sentences-hold-one-topic.md",
+                "current",
+            ),
+        ],
+        // The strategy of the original's absent arm: follow the one link of
+        // the tombstone's section and answer from the record it reaches.
+        shallow: Session::Read(&[
+            "docs/spec/09-open-questions.md",
+            "docs/decisions/0069-a-paragraph-limit-counts-sentences-under-the-language-rule-and-never-words.md",
+        ]),
+        sound: Session::Read(&[
+            "docs/spec/09-open-questions.md",
+            "docs/decisions/0069-a-paragraph-limit-counts-sentences-under-the-language-rule-and-never-words.md",
+            "docs/decisions/0087-no-paragraph-limit-joins-the-language-rule-because-most-paragraphs-past-six-sentences-hold-one-topic.md",
         ]),
     },
 ];
@@ -635,16 +735,18 @@ use headwater_probe::grade::Verdict;
 /// about the documents, which is how the absent arm of the #1384 re-run sat at
 /// the ceiling. So each row grades the session that strategy produces and
 /// asserts a miss, and grades the sound session and asserts a pass. The table
-/// holds one probe of each of the five shapes, and every probe is a document of
-/// the shelf rather than a fixture of this crate.
+/// holds at least one probe of each of the five shapes. The harder variants of
+/// #1718 add more than one to some shapes, because each one stands beside a
+/// probe of the campaign of 2026-10-03 that sat at 30 of 30 in both arms. Every
+/// probe is a document of the shelf rather than a fixture of this crate.
 #[test]
 fn every_harder_probe_fails_the_shallow_session_and_passes_the_sound_one() {
     let root = repository_root();
     for shape in Shape::ALL {
         let count = HARDER.iter().filter(|row| row.shape == shape).count();
-        assert_eq!(
-            count, 1,
-            "{shape:?} has {count} probes in the table, and it needs one"
+        assert!(
+            count >= 1,
+            "{shape:?} has no probe in the table, and it needs at least one"
         );
     }
 
@@ -708,16 +810,29 @@ fn every_harder_probe_fails_the_shallow_session_and_passes_the_sound_one() {
             );
         }
 
+        // A harder task differs from its original in what it names, so the
+        // words it must hold and the strings it must not hold are part of the
+        // row (#1718).
+        let (source, _) = front_matter(&root.join(&selected.path));
+        let task = task_of(&source).to_lowercase();
+        for word in row.words {
+            assert!(
+                task.contains(word),
+                "{}: `{word}` is not a word of the task",
+                row.id
+            );
+        }
+        for string in row.absent {
+            assert!(
+                !task.contains(string),
+                "{}: the task holds `{string}`, and the row rests on its absence",
+                row.id
+            );
+        }
+
         if row.shape == Shape::VocabularyMismatch {
-            let (source, _) = front_matter(&root.join(&selected.path));
-            let task = task_of(&source).to_lowercase();
             assert!(!row.words.is_empty(), "{}: no words to check", row.id);
             for word in row.words {
-                assert!(
-                    task.contains(word),
-                    "{}: `{word}` is not a word of the task",
-                    row.id
-                );
                 for (id, path) in row.examines {
                     let (_, target) = front_matter(&root.join(path));
                     let title = scalar(&target, "title").unwrap_or_default().to_lowercase();
@@ -785,6 +900,63 @@ fn the_campaign_spec_plans_no_superseded_probe() {
                 of != category || left_out.contains(&id.as_str()),
                 "line {} of tools/probe/layer-campaign.spec plans the superseded probe {id}: \
                  it names the category `{category}` and does not leave the probe out",
+                number + 1
+            );
+        }
+    }
+    assert!(lines > 0, "the campaign spec holds no line");
+}
+
+/// The probes on the shelf that no campaign may run until the owner approves
+/// the spend (#1718). A probe leaves this list only by that approval, in the
+/// same change that lets the spec plan it.
+const AWAITING_SPEND: &[&str] = &[
+    "HW-PROBE-a-session-follows-two-citations-from-a-record-the-task-does-not-name",
+    "HW-PROBE-a-session-says-which-date-a-corrected-status-carries",
+    "HW-PROBE-a-session-answers-from-the-register-when-the-task-names-the-list-it-replaced",
+    "HW-PROBE-an-agent-reaches-the-adjudication-when-the-decision-a-tombstone-links-is-superseded",
+];
+
+/// The campaign spec plans no probe that awaits the owner's approval of spend.
+///
+/// `headwater probe plan` selects every probe of a category, so a probe added
+/// to the shelf is planned by every line of its category that does not leave
+/// it out by identifier. The dry run would then price a run nobody approved,
+/// and a campaign would spend on it (#1718).
+#[test]
+fn the_campaign_spec_plans_no_probe_that_awaits_spend() {
+    let root = repository_root();
+    let spec_path = root.join("tools/probe/layer-campaign.spec");
+    let spec = std::fs::read_to_string(&spec_path)
+        .unwrap_or_else(|e| panic!("{}: {e}", spec_path.display()));
+
+    let shelf = probes();
+    let mut awaiting = Vec::new();
+    for id in AWAITING_SPEND {
+        let probe = shelf
+            .iter()
+            .find(|probe| probe.id.as_deref() == Some(*id))
+            .unwrap_or_else(|| panic!("{id} is not on {SHELF}, so this list names nothing"));
+        let (_, document) = front_matter(&root.join(&probe.path));
+        let category = scalar(&document, "probe_category")
+            .unwrap_or_else(|| panic!("{id}: no probe_category"));
+        awaiting.push((*id, category));
+    }
+
+    let mut lines = 0;
+    for (number, line) in spec.lines().enumerate() {
+        let fields: Vec<&str> = line.split_whitespace().collect();
+        if fields.is_empty() || fields[0].starts_with('#') {
+            continue;
+        }
+        lines += 1;
+        let (category, left_out) = (fields[2], &fields[3..]);
+        for (id, of) in &awaiting {
+            assert!(
+                of != category || left_out.contains(id),
+                "line {} of tools/probe/layer-campaign.spec plans {id}, which awaits the \
+                 owner's approval of spend: it names the category `{category}` and does not \
+                 leave the probe out",
                 number + 1
             );
         }

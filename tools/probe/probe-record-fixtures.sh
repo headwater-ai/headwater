@@ -4264,9 +4264,11 @@ if [ -x "$engine" ]; then
     present "and each leak-kept line on its own" "line 8 holds only leak-kept probes" "$scratch/dry.out"
 
     # A line that pools a leak-kept probe with one that is not fails the dry run,
-    # and a plan over its ceiling is printed rather than fatal: six
+    # and a plan over its ceiling is printed rather than fatal: eight
     # sufficiency probes over the documentation tier's two arms at 30
-    # repetitions is 360 sessions, $180.00 against its $130.00. The campaign
+    # repetitions is 480 sessions, $240.00 against its $130.00. Two of the
+    # eight are the harder variants of #1718, which this line names by
+    # category and not by identifier. The campaign
     # tier no longer serves: no plan of one line passes its $2052.00 (#1659).
     printf 'documentation absent sufficiency\n' > "$scratch/pooled.spec"
     PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
@@ -4274,7 +4276,7 @@ if [ -x "$engine" ]; then
     same "a line that pools a leak-kept probe fails the dry run with 8, not 5" "8" "$?"
     present "and names the line" "line 1 pools a probe under \`leaks_kept:\`" "$scratch/pooled.out"
     present "and the ceiling's refusal is printed as a line" \
-        "L1 360 sessions project \$180.00 against a declared ceiling of \$130.00" "$scratch/pooled.out"
+        "L1 480 sessions project \$240.00 against a declared ceiling of \$130.00" "$scratch/pooled.out"
 
     # Any other refusal of a plan is the batch driver's 5.
     printf 'campaign present discovery\n' > "$scratch/refused.spec"
