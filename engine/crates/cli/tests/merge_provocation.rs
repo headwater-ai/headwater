@@ -97,6 +97,15 @@
 //! - Arm D takes `merge=union` off one append store, which then conflicts.
 //! - Arm E gives one decomposed recorded fixture a driver that keeps the current
 //!   side and exits 0. The merge is clean and drops the other branch's line.
+//! - Arm F gives the same fixture a driver that keeps the other side, so the
+//!   merge drops the current branch's line. E and F together hold that the
+//!   check reads the lines of both branches.
+//!
+//! The main case also asserts that each branch on its own moves every member
+//! the pair reaches, so the provocation cannot become one-sided. A shelf index
+//! with one editable row is the exception: branch `a` alone edits it, because
+//! two edits to one document conflict in the document and in every fold of it.
+//! The test counts those indexes and prints the count.
 
 mod common;
 use common::{fence, outside_base, repository};
@@ -367,9 +376,13 @@ struct Pair {
     population: Population,
     /// Members either branch moved.
     moved: BTreeSet<String>,
+    /// Members each branch moved, `a` then `b`.
+    moved_by: [BTreeSet<String>; 2],
     /// Shelf indexes no branch could edit a row of, because every row links a
     /// producer output.
     unprovokable: BTreeSet<String>,
+    /// Shelf indexes with one editable row, which branch `a` alone edits.
+    one_sided: BTreeSet<String>,
 }
 
 /// How a member's merge broke what its shape promises.
@@ -405,6 +418,14 @@ impl Merged {
             .iter()
             .map(|(path, finding, _)| (path.as_str(), *finding))
             .collect()
+    }
+
+    /// Whether a line branch `side` added is named as missing.
+    fn dropped_by(&self, side: &str) -> bool {
+        let prefix = format!("branch {side}:");
+        self.findings.iter().any(|(_, finding, detail)| {
+            *finding == Finding::LineMissing && detail.starts_with(&prefix)
+        })
     }
 
     fn report(&self) -> String {
@@ -449,6 +470,7 @@ impl Pair {
         // What each branch provokes, from the population and nothing else.
         let mut edits: [Vec<String>; 2] = [Vec::new(), Vec::new()];
         let mut unprovokable = BTreeSet::new();
+        let mut one_sided = BTreeSet::new();
         for member in &population.members {
             let body = copy.read(&member.path);
             if marker(&body).as_deref() != Some("shelf_index") {
@@ -474,6 +496,8 @@ impl Pair {
                     edits[0].push(first.clone());
                     if last != first {
                         edits[1].push(last.clone());
+                    } else {
+                        one_sided.insert(member.path.clone());
                     }
                 }
                 _ => {
@@ -502,19 +526,23 @@ impl Pair {
             copy.git(&["commit", "-q", "-m", &format!("branch {name}")]);
         }
 
-        let mut changed = copy.lines(&["diff", "--name-only", "main", "a"]);
-        changed.extend(copy.lines(&["diff", "--name-only", "main", "b"]));
-        let moved: BTreeSet<String> = population
-            .members
-            .iter()
-            .map(|member| member.path.clone())
-            .filter(|path| changed.contains(path))
-            .collect();
+        let moved_by = ["a", "b"].map(|side| {
+            let changed = copy.lines(&["diff", "--name-only", "main", side]);
+            population
+                .members
+                .iter()
+                .map(|member| member.path.clone())
+                .filter(|path| changed.contains(path))
+                .collect::<BTreeSet<String>>()
+        });
+        let moved = moved_by[0].union(&moved_by[1]).cloned().collect();
         Some(Pair {
             copy,
             population,
             moved,
+            moved_by,
             unprovokable,
+            one_sided,
         })
     }
 
@@ -826,6 +854,34 @@ fn every_member_of_the_derived_population_merges_as_its_shape_promises() {
         still.is_empty(),
         "the pair moves every member it reaches, and not {still:?}"
     );
+    // Both branches move each of them, or the provocation is one-sided and
+    // a merge of it is no merge at all. A shelf index with one editable row
+    // is edited by `a` alone, and is counted below.
+    for (side, name) in ["a", "b"].iter().enumerate() {
+        let missed: Vec<&str> = population
+            .members
+            .iter()
+            .filter(|member| must_move(member) && !pair.one_sided.contains(&member.path))
+            .filter(|member| !pair.moved_by[side].contains(&member.path))
+            .map(|member| member.path.as_str())
+            .collect();
+        assert!(
+            missed.is_empty(),
+            "branch {name} moves every member it reaches, and not {missed:?}"
+        );
+    }
+    eprintln!(
+        "{} of {} shelf indexes have one editable row, which branch a alone moves",
+        pair.one_sided.len(),
+        population
+            .members
+            .iter()
+            .filter(|member| {
+                marker(&pair.copy.git(&["show", &format!("main:{}", member.path)])).as_deref()
+                    == Some("shelf_index")
+            })
+            .count()
+    );
 
     let total = population.members.len();
     let unmoved = total - pair.moved.len();
@@ -956,5 +1012,29 @@ fn a_record_or_a_store_whose_treatment_stops_holding_is_named() {
         BTreeSet::from([(fixture.as_str(), Finding::LineMissing)]),
         "Arm E names the fixture for the line it dropped, and nothing else:\n{}",
         arm_e.report()
+    );
+    assert!(
+        arm_e.dropped_by("a") && !arm_e.dropped_by("b"),
+        "Arm E drops branch a's line, the other side's, and keeps branch b's:\n{}",
+        arm_e.report()
+    );
+
+    // Arm F: the same fixture takes a driver that keeps the other side, so
+    // the merge drops the line of the current branch instead.
+    pair.copy
+        .git(&["config", "merge.keep-other.driver", "cp %B %A"]);
+    let arm_f = pair.merged(&format!("{fixture} merge=keep-other\n"));
+    pair.copy
+        .git(&["config", "--unset", "merge.keep-other.driver"]);
+    assert_eq!(
+        arm_f.found(),
+        BTreeSet::from([(fixture.as_str(), Finding::LineMissing)]),
+        "Arm F names the fixture for the line it dropped, and nothing else:\n{}",
+        arm_f.report()
+    );
+    assert!(
+        arm_f.dropped_by("b") && !arm_f.dropped_by("a"),
+        "Arm F drops branch b's line, the current side's, and keeps branch a's:\n{}",
+        arm_f.report()
     );
 }
