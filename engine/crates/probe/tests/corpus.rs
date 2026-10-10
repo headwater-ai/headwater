@@ -409,11 +409,17 @@ const HARDER: &[Harder] = &[
         sound: Session::Answered("HW-DR-0097"),
     },
     Harder {
-        id: "HW-PROBE-a-session-says-how-a-governs-line-reaches-a-document",
+        id: "HW-PROBE-a-session-says-whether-a-command-or-a-hand-writes-a-governs-line",
         shape: Shape::Distractors,
         examines: &[],
         words: &[],
         statuses: &[
+            // The probe the campaign of 2026-10-03 ran stays on the shelf
+            // as its record, superseded by this one (#1709).
+            (
+                "docs/probes/a-session-says-how-a-governs-line-reaches-a-document.md",
+                "superseded",
+            ),
             (
                 "docs/decisions/0083-governs-and-traces-to-are-created-by-an-agent-because-a-session-proposes-the-line-and-a-person-types-it.md",
                 "superseded",
