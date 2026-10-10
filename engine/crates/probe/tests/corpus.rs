@@ -334,10 +334,14 @@ struct Harder {
     /// case holds each path to its identifier and the probe to its `examines`
     /// list, so the path here cannot drift from the shelf.
     examines: &'static [(&'static str, &'static str)],
-    /// For the vocabulary shape: the content words of the task. Each is in
-    /// the task and in no identifier, file name or title of an examined
+    /// Words the task must hold, because the row's separation rests on them.
+    /// For the vocabulary shape these are the content words of the task, and
+    /// each is also in no identifier, file name or title of an examined
     /// document.
     words: &'static [&'static str],
+    /// Strings, in lower case, that the task must not hold. A row whose
+    /// separation rests on what the task does not name states it here.
+    absent: &'static [&'static str],
     /// Documents whose `status` the shape depends on, as path and status.
     statuses: &'static [(&'static str, &'static str)],
     shallow: Session,
@@ -363,6 +367,7 @@ const HARDER: &[Harder] = &[
             ),
         ],
         words: &["branches", "page", "total", "shared", "merges", "conflict", "wrong"],
+        absent: &[],
         statuses: &[],
         // A name search for the task's words reaches files whose names hold
         // `merge` or `page`, and none of them is the ruling.
@@ -381,6 +386,7 @@ const HARDER: &[Harder] = &[
         shape: Shape::SupersessionTrap,
         examines: &[],
         words: &[],
+        absent: &[],
         statuses: &[
             ("docs/decisions/0039-q39-how-a-figure-reaches-a-hand-built-page.md", "superseded"),
             (
@@ -396,6 +402,7 @@ const HARDER: &[Harder] = &[
         shape: Shape::MultiDocument,
         examines: &[],
         words: &[],
+        absent: &[],
         statuses: &[
             ("docs/decisions/0061-q61-how-a-recorded-terminal-demonstration-is-held-against-a-run.md", "superseded"),
             ("docs/decisions/0039-q39-how-a-figure-reaches-a-hand-built-page.md", "superseded"),
@@ -413,6 +420,7 @@ const HARDER: &[Harder] = &[
         shape: Shape::Distractors,
         examines: &[],
         words: &[],
+        absent: &[],
         statuses: &[
             // The probe the campaign of 2026-10-03 ran stays on the shelf
             // as its record, superseded by this one (#1709).
@@ -438,6 +446,7 @@ const HARDER: &[Harder] = &[
         shape: Shape::ChangeTask,
         examines: &[],
         words: &[],
+        absent: &[],
         statuses: &[],
         // What `probe-transform.sh --oracle-tree` derives over each patch, the
         // derivation a campaign runs. The asked file alone carries the
@@ -462,6 +471,7 @@ const HARDER: &[Harder] = &[
         shape: Shape::MultiDocument,
         examines: &[],
         words: &[],
+        absent: &["hw-dr-0", "hw-dr-1"],
         statuses: &[
             (
                 "docs/decisions/0078-a-recorded-terminal-demonstration-may-show-a-frozen-number-behind-a-recorded-on-date-marker.md",
@@ -486,6 +496,7 @@ const HARDER: &[Harder] = &[
         shape: Shape::Distractors,
         examines: &[],
         words: &[],
+        absent: &["hw-dr-0", "hw-dr-1"],
         statuses: &[(
             "docs/decisions/0052-a-document-is-proposed-at-the-state-it-will-hold-and-the-merge-activates-it.md",
             "current",
@@ -500,7 +511,8 @@ const HARDER: &[Harder] = &[
         id: "HW-PROBE-a-session-answers-from-the-register-when-the-task-names-the-list-it-replaced",
         shape: Shape::SupersessionTrap,
         examines: &[("HW-REG-open-questions", "docs/spec/09-open-questions.md")],
-        words: &[],
+        words: &["open questions, closed and redirected"],
+        absent: &[],
         statuses: &[("docs/spec/09-open-questions.md", "superseded")],
         // The task uses the title of the superseded list, so a name search
         // opens that list first.
@@ -517,7 +529,8 @@ const HARDER: &[Harder] = &[
             "HW-DR-0087",
             "docs/decisions/0087-no-paragraph-limit-joins-the-language-rule-because-most-paragraphs-past-six-sentences-hold-one-topic.md",
         )],
-        words: &[],
+        words: &["09-open-questions.md#69--a-paragraph-limit"],
+        absent: &[],
         statuses: &[
             ("docs/spec/09-open-questions.md", "superseded"),
             (
@@ -797,16 +810,29 @@ fn every_harder_probe_fails_the_shallow_session_and_passes_the_sound_one() {
             );
         }
 
+        // A harder task differs from its original in what it names, so the
+        // words it must hold and the strings it must not hold are part of the
+        // row (#1718).
+        let (source, _) = front_matter(&root.join(&selected.path));
+        let task = task_of(&source).to_lowercase();
+        for word in row.words {
+            assert!(
+                task.contains(word),
+                "{}: `{word}` is not a word of the task",
+                row.id
+            );
+        }
+        for string in row.absent {
+            assert!(
+                !task.contains(string),
+                "{}: the task holds `{string}`, and the row rests on its absence",
+                row.id
+            );
+        }
+
         if row.shape == Shape::VocabularyMismatch {
-            let (source, _) = front_matter(&root.join(&selected.path));
-            let task = task_of(&source).to_lowercase();
             assert!(!row.words.is_empty(), "{}: no words to check", row.id);
             for word in row.words {
-                assert!(
-                    task.contains(word),
-                    "{}: `{word}` is not a word of the task",
-                    row.id
-                );
                 for (id, path) in row.examines {
                     let (_, target) = front_matter(&root.join(path));
                     let title = scalar(&target, "title").unwrap_or_default().to_lowercase();
