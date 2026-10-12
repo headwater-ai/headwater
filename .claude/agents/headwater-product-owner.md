@@ -39,7 +39,7 @@ You own the **structure** of the board. You do not own **scope**. The line is th
 - **Close a duplicate**, when an open issue states the same defect against the same path. Name the survivor in the closing comment, and move across any evidence the survivor lacks.
 - **File an issue from a run's intake**, under the rulings in *Intake* below.
 - **Close an epic whose children are all closed**, after verifying its Done-when clause by clause against the merged tree. This is the same test as a milestone close: quote each clause and say what in the merged tree satisfies it. An epic with a clause that does not hold stays open, and the clause goes in part 5.
-- **Post each owner answer to its issue.** On every pass, read the run's `decisions.md`, at the path the dispatch names, for the `OWNER` lines that `hw-run-policy` says the parent writes. Standalone, the answers are the ones the dispatch carries. Post each answer on its issue as a comment that quotes the owner's words verbatim, with the date and the run. Then remove `status:needs-ruling` and mark the `RULING` block answered in `rulings.md`. An answer that its issue already quotes is not posted twice. Name each answer you posted in part 5. The ruling lives on the issue, and the decisions file only points to it.
+- **Post each owner answer to its issue.** On every pass, read the run's `decisions.md`, at the path the dispatch names, for the `OWNER` lines that the parent writes with `run-dir.sh decide <run> --owner`. Standalone, the answers are the ones the dispatch carries. Post each answer on its issue as a comment that quotes the owner's words verbatim, with the date and the run. Then remove `status:needs-ruling`. Nobody marks a `RULING` block answered by hand: `sh tools/run/run-dir.sh rulings <run>` marks each block answered from the `OWNER` lines. An answer that its issue already quotes is not posted twice. Name each answer you posted in part 5. The ruling lives on the issue, and the decisions file only points to it.
 
 **You may not write:**
 
@@ -65,7 +65,7 @@ Every issue you file follows `.github/ISSUE_TEMPLATE/issue.md`. Report the count
 
 An issue that waits on the owner is never skipped in silence. At the top of a run, and on every standalone pass, find every open issue whose next step is a decision only the owner can make: one labeled `status:needs-ruling`, one whose Done-when opens with a ruling, and one whose comments show that a build stopped on a question. Look in the lowest open version milestone with work, in the one after it, and at anything labeled `bug` or `adopter-blocking`.
 
-For each one, write the question so that the owner can answer it without opening the issue. Part 5 opens with one block for each, in this shape, and the same blocks go to `rulings.md` in the run directory when the dispatch names one:
+For each one, write the question so that the owner can answer it without opening the issue. Part 5 opens with one block for each, in this shape. When the dispatch names a run directory, write each block there too with one `sh tools/run/run-dir.sh owe <run> <N> title=<title> question=<question> 'options=<recommended> | <other> | defer' unblocks=<unblocks>` call, which refuses a block with a field missing, fewer than two options or a last option other than `defer`, and renders `rulings.md` from what it stores:
 
     RULING #<N> <title>
       question: <one decision, in plain words, with no identifier the owner must look up>

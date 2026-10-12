@@ -1,5 +1,5 @@
 #!/bin/sh
-# The run directory of a build-order run, and the five files in it.
+# The run directory of a build-order run, and the files in it.
 #
 # A run of `.claude/commands/next-run.md` used to keep one ledger at
 # `~/.claude/headwater-build-order-ledger.md`, read whole at the top of every
@@ -43,6 +43,17 @@
 #                                               record a ruling in decisions.md, in the form next reads
 #     sh tools/run/run-dir.sh intake <dir> <file>    append a file of intake lines to intake.md
 #     sh tools/run/run-dir.sh decide <dir> <text>    append one dated line to decisions.md
+#     sh tools/run/run-dir.sh decide <dir> --owner <issue>... -- <quote>
+#                                               append the owner's answer, in the form next reads
+#     sh tools/run/run-dir.sh queue <dir> <issue> title=… milestone=… reader=… artifacts=… scope=wide|narrow [mark=ruling] [blocked=<M>[,<milestone>]]... [note=…]...
+#                                               append one issue to queue.jsonl, and render queue.md
+#     sh tools/run/run-dir.sh convert <dir>          turn a run's hand-written queue.md into queue.jsonl, once
+#     sh tools/run/run-dir.sh owe <dir> <issue> title=… question=… options=<a>|<b>|defer unblocks=…
+#                                               append one ruling the owner owes, and render rulings.md
+#     sh tools/run/run-dir.sh rulings <dir>          render rulings.md, each block marked answered or not, and print it
+#     sh tools/run/run-dir.sh integrate <dir> <pr> issue=<N|none> branch=… sha=… ruling=… footprint=<a,b>
+#                                               append one merge ruling to integrate.jsonl
+#     sh tools/run/run-dir.sh integrations <dir>     each ruled pull request the log has not recorded merged
 #     sh tools/run/run-dir.sh lesson <dir> <file>    append a file of prose to lessons.md
 #     sh tools/run/run-dir.sh withdraw <dir> <match> <line>
 #                                               replace the one intake line that holds <match>
@@ -50,16 +61,32 @@
 # Every <dir>, for every subcommand but `start`, may be a bare run id, such as `20260927-0443`, which names that
 # run under the git common dir. A worktree-isolated parent's shell refuses a
 # command whose text names `.git`, and `Edit` refuses a path there, so the id
-# and the four prose subcommands are its only way to write the ledger. Run
+# and the subcommands are its only way to write the ledger. Run
 # `20260927-0443` wrote four scripts of its own for exactly this.
 #
 # Three more files serve a parent that `tools/run/supervise.sh` restarts every
 # few merges, so that its context stays small (#1275). A subagent dies with
 # its parent's process, so a restart keeps only what is on disk:
 #
-#         queue.md         written by hw-queue; `next` reads its `N. #<issue>` lines
+#         queue.jsonl      one object per issue, written by hw-queue through `queue`; `next` reads it
+#         queue.md         rendered from queue.jsonl for a person; nothing reads it
 #         handover/<issue> the last stage the issue reached, and the paths to resume it
 #         drain            present while the run drains to zero before a restart
+#
+# Two more are written through a verb for the same reason: a file a script
+# reads is structured data, and a malformed entry is refused when it is
+# written, not when a later reader meets it after its writer has exited (#1724).
+#
+#         rulings.jsonl    one object per ruling the owner owes, written by the product owner through `owe`
+#         rulings.md       rendered from rulings.jsonl and decisions.md; nothing reads it
+#         integrate.jsonl  one object per merge ruling, appended by the parent through `integrate`
+#         queue-legacy.md, rulings-legacy.md
+#                          a run's hand-written file, kept whole when `convert` or the first `owe` replaces it
+#
+# Each of the three is per run, so `start` seeds none of them. An entry is
+# never rewritten: every verb that writes one of them appends, and a renderer
+# writes only its `.md` view. `withdraw` rewrites one line of intake.md, and
+# nothing opens any of the three for anything but an append.
 #
 # A stage is one of `adjudicated`, `built`, `verified-fail`, `verified-pass`
 # and `ruled-merge`, and a field is one of `branch`, `pr`, `rounds`, `note`,
@@ -186,10 +213,53 @@ lesson() {
     printf 'LESSON: %s lines appended\n' "$(wc -l < "$2" | tr -d ' ')"
 }
 
+nl='
+'
+
+refuse() {
+    echo "run-dir: $1" >&2
+    exit 2
+}
+
+# A plain decision is prose. An OWNER line is not: `answered_issues` reads its
+# issue numbers in every later run, so it is written only by `--owner`, with
+# the issues as arguments. A hand-typed `OWNER (<date>) #990, #1275:` would
+# answer neither, and the form that took the first `#N` alone answered one.
 decide() {
     dir=$1
+    shift
     need_dir "$dir"
-    printf -- '- %s — %s\n' "$(date -u +%Y-%m-%d)" "$2" >> "$dir/decisions.md"
+    if [ "${1:-}" = --owner ]; then
+        shift
+        decide_owner "$dir" "$@"
+        return
+    fi
+    [ $# -eq 1 ] || usage
+    case $(printf '%s' "$1" | sed 's/^[[:space:]]*//') in
+        OWNER*) refuse "a decision that opens \`OWNER\` is the owner's answer, and \`next\` reads one only in the form \`decide <run> --owner <issue>... -- <quote>\` writes." ;;
+    esac
+    printf -- '- %s — %s\n' "$(date -u +%Y-%m-%d)" "$1" >> "$dir/decisions.md"
+}
+
+decide_owner() {
+    dir=$1
+    shift
+    issues=''
+    while [ $# -gt 0 ] && [ "$1" != -- ]; do
+        case $1 in ''|*[!0-9]*) refuse "\`$1\` is not an issue number, and \`--owner\` takes issue numbers up to \`--\`." ;; esac
+        issues="$issues #$1"
+        shift
+    done
+    [ -n "$issues" ] || refuse "an OWNER line names the issue it answers: \`decide <run> --owner <issue>... -- <quote>\`."
+    [ "${1:-}" = -- ] || refuse "an OWNER line takes \`--\` between its issues and the owner's words."
+    shift
+    quote="$*"
+    case $quote in *"$nl"*) refuse "the owner's words are one line." ;; esac
+    [ -n "$(printf '%s' "$quote" | tr -d '[:space:]')" ] || refuse "an OWNER line quotes the owner's words, and this one quotes nothing."
+    day=$(date -u +%Y-%m-%d)
+    printf -- '- %s — OWNER (%s)%s: %s\n' "$day" "$day" "$issues" "$quote" >> "$dir/decisions.md"
+    render_rulings "$dir"
+    printf 'OWNER:%s\n' "$issues"
 }
 
 # Exactly one line may hold the match, so a withdrawal never rewrites the
@@ -596,18 +666,32 @@ ruled_issues() {
 # is the owner's own answer, the product owner posts it on the issue, and it
 # holds until the owner changes it. So it answers a `ruling` queue line in
 # every later run.
+#
+# It answers every `#N` between `OWNER (<date>)` and the first colon, which is
+# the form `decide --owner` writes. Run 20261012-1113 wrote
+# `OWNER (2026-10-12) #990 #1275: "Build both"`, and a reader that took the
+# first `#N` answered #990 alone. A `#N` after the colon is the owner's prose,
+# not an answer: the same run's `OWNER (2026-10-12): ... Target set: #502 #504`
+# answers nothing.
 answered_issues() {
     [ -f "$1/decisions.md" ] || return 0
-    sed -n 's/^.*OWNER\( ([^)]*)\)\{0,1\} #\([0-9][0-9]*\).*/\2/p' "$1/decisions.md" | tr '\n' ' '
+    awk 'match($0, /OWNER( [(][^)]*[)])?( #[0-9]+)+:/) {
+        s = substr($0, RSTART, RLENGTH)
+        sub(/^OWNER( [(][^)]*[)])?/, "", s)
+        while (match(s, /#[0-9]+/)) {
+            printf "%s ", substr(s, RSTART + 1, RLENGTH - 1)
+            s = substr(s, RSTART + RLENGTH)
+        }
+    }' "$1/decisions.md"
 }
 
-# The next issue to dispatch: the first queue line `N. #<issue> ...` whose
+# The next issue to dispatch: the first entry of queue.jsonl whose
 # issue holds no claim, has no handover, is in no log line, and is not ruled
 # out. It is ruled out when its last `RULED` line says gated, deferred or
-# refused, or when its queue line is marked `ruling` and neither an `OWNER`
+# refused, or when its entry carries `ruling` and neither an `OWNER`
 # line nor a `RULED ... open` line answers it (hw-run-policy: an unanswered
-# ruling waits, and a deferral skips the issue for the run). A line marked
-# `blocked` has an open `blocked by` link on GitHub, and it waits until the
+# ruling waits, and a deferral skips the issue for the run). An entry with a
+# blocker has an open `blocked by` link on GitHub, and it waits until the
 # parent writes `RULED ... open`. An OWNER line does not release it, because
 # the owner answered a question and not the order. A RULED line
 # binds only the run that wrote it, and an OWNER line binds every run. `DRAIN` when the
@@ -619,32 +703,29 @@ next() {
         echo DRAIN
         return 0
     fi
-    [ -f "$dir/queue.md" ] || { echo "run-dir: $dir holds no queue.md." >&2; exit 1; }
+    # `next` reads queue.jsonl, which only `queue` writes, and never the
+    # rendered queue.md. A run whose queue.md was typed by hand, as every run
+    # before #1724 was, is refused rather than read as empty.
+    if [ ! -f "$dir/queue.jsonl" ]; then
+        if [ -f "$dir/queue.md" ]; then
+            echo "run-dir: $dir holds a queue.md and no queue.jsonl, and next reads only queue.jsonl, which \`run-dir.sh queue\` writes. Convert this run's queue once with \`sh tools/run/run-dir.sh convert ${dir##*/}\`." >&2
+        else
+            echo "run-dir: $dir holds no queue.jsonl. hw-queue writes it, one \`run-dir.sh queue\` call per issue." >&2
+        fi
+        exit 1
+    fi
+    need_jq
     logged=$(logged_issues "$dir")
     ruled=$(ruled_issues "$dir")
     answered=$(answered_issues "$dir")
-    # `<issue> <ruling|-> <blocked|->`, from the `;`-separated marks of the
-    # last `|` field. A line can carry both: in run 20261012-1113 a sed that
-    # took only the first mark read `ruling; blocked (#1721)` as `ruling`, and
-    # the owner's answer would have released an issue whose blocker was open.
-    awk -F'|' '/^[0-9]+\. #[0-9]+/ {
-        match($0, /#[0-9]+/); issue = substr($0, RSTART + 1, RLENGTH - 1)
-        r = "-"; b = "-"
-        if (NF > 1) {
-            n = split($NF, marks, ";")
-            for (k = 1; k <= n; k++) {
-                m = marks[k]; sub(/^[ \t]+/, "", m)
-                if (m ~ /^ruling([^a-z]|$)/) r = "ruling"
-                if (m ~ /^blocked([^a-z]|$)/) b = "blocked"
-            }
-        }
-        print issue, r, b
-    }' "$dir/queue.md" > "$dir/.next.$$"
-    # A queue with issue lines that none of them parses is a queue written in
-    # the wrong shape, not an empty one (run 20261012-1113 wrote `1 | #502 |`).
-    if [ ! -s "$dir/.next.$$" ] && grep -q '#[0-9]' "$dir/queue.md"; then
+    # `<issue> <ruling|-> <blocked|->`, from the fields of each entry. An entry
+    # can carry both: in run 20261012-1113 a sed that took only the first mark
+    # of a prose line read `ruling; blocked (#1721)` as `ruling`, and the
+    # owner's answer would have released an issue whose blocker was open.
+    if ! jq -r '"\(.issue) \(if .ruling then "ruling" else "-" end) \(if (.blocked | length) > 0 then "blocked" else "-" end)"' \
+        "$dir/queue.jsonl" > "$dir/.next.$$" 2>/dev/null; then
         rm -f "$dir/.next.$$"
-        echo "run-dir: $dir/queue.md names issues but holds no line of the form \`<k>. #<issue> <title> | ...\` (.claude/agents/hw-queue.md)." >&2
+        echo "run-dir: $dir/queue.jsonl is not one JSON object per line, and only \`run-dir.sh queue\` writes it." >&2
         exit 1
     fi
     while read -r issue mark blocked; do
@@ -683,6 +764,313 @@ rule() {
     printf 'RULED: #%s %s\n' "$issue" "$kind"
 }
 
+# One value of a key=value argument: present, one line. The key is checked by
+# the caller, which knows its own keys.
+# A field that holds one value is refused when a call names it twice, rather
+# than letting the last value win in silence. `seen` is reset by each caller.
+once() {
+    case " $seen " in *" $1 "*) refuse "\`$1=\` is given twice, and the field holds one value." ;; esac
+    seen="$seen $1"
+}
+
+pair_value() {
+    case $1 in *=?*) ;; *) refuse "\`$1\` is not key=value with a value." ;; esac
+    case ${1#*=} in *"$nl"*) refuse "the value of \`${1%%=*}\` is more than one line." ;; esac
+}
+
+need_issue() {
+    case $1 in ''|*[!0-9]*) refuse "\`$1\` is not $2 number." ;; esac
+}
+
+# The queue of a run, one object per issue in queue.jsonl, in call order,
+# which is queue order: no entry stores its place ([HW-DR-0049]). hw-queue
+# makes one call per issue. A field the entry needs and does not carry, a key
+# or a mark nothing reads, a scope that is neither `wide` nor `narrow`, a
+# blocker that is not an issue number, and an issue already queued are each
+# refused with exit 2 and named, while the queue agent is still there to read
+# the refusal. #1723 refused a malformed line only when `next` read it, after
+# the queue agent had exited. `note=` holds anything that is not a mark, and
+# `next` never reads it.
+queue_fields='title milestone reader artifacts scope mark blocked note'
+
+queue() {
+    need_jq
+    dir=$1 issue=$2
+    shift 2
+    need_dir "$dir"
+    need_issue "$issue" 'an issue'
+    # A queue.md with no queue.jsonl beside it was typed by hand, and the
+    # render would overwrite it. `convert` keeps it and carries it in.
+    if [ -f "$dir/queue.md" ] && [ ! -f "$dir/queue.jsonl" ]; then
+        echo "run-dir: $dir holds a queue.md typed by hand, and the first \`queue\` call would overwrite it. Convert it first with \`sh tools/run/run-dir.sh convert ${dir##*/}\`." >&2
+        exit 1
+    fi
+    entry=$(jq -cn --argjson n "$issue" '{issue: $n, ruling: false, blocked: [], notes: []}')
+    seen=''
+    for pair in "$@"; do
+        pair_value "$pair"
+        key=${pair%%=*} value=${pair#*=}
+        case $key in blocked|note|mark) ;; *) once "$key" ;; esac
+        case $key in
+            title|milestone|reader|artifacts)
+                # `|` separates the columns of the rendered queue.md.
+                case $value in *'|'*) refuse "the value of \`$key\` holds \`|\`, which separates the columns of queue.md." ;; esac
+                filter='.[$k] = $v' ;;
+            scope)
+                case $value in wide|narrow) ;; *) refuse "\`scope=$value\`: the scope is \`wide\` or \`narrow\`." ;; esac
+                filter='.scope = $v' ;;
+            mark)
+                case $value in ruling) ;; *) refuse "\`mark=$value\` is not a mark. The one mark is \`ruling\`, and a blocker is \`blocked=<M>,<milestone>\`." ;; esac
+                filter='.ruling = true' ;;
+            blocked)
+                blocker=${value%%,*}
+                need_issue "$blocker" 'a blocking issue'
+                milestone=''
+                case $value in *,*) milestone=${value#*,} ;; esac
+                value=$milestone
+                filter='.blocked += [{issue: ($m | tonumber), milestone: $v}]' ;;
+            note) filter='.notes += [$v]' ;;
+            *) refuse "\`$key\` is not a queue field. A field is one of: $queue_fields." ;;
+        esac
+        entry=$(printf '%s' "$entry" | jq -c --arg k "$key" --arg v "$value" --arg m "${blocker:-0}" "$filter") || exit 1
+    done
+    for key in title milestone reader artifacts scope; do
+        printf '%s' "$entry" | jq -e --arg k "$key" 'has($k)' >/dev/null ||
+            refuse "the queue entry for #$issue needs \`$key=\`, and the call carries none."
+    done
+    if [ -s "$dir/queue.jsonl" ] && jq -se --argjson n "$issue" 'any(.[]; .issue == $n)' "$dir/queue.jsonl" >/dev/null; then
+        refuse "#$issue is already queued in this run, and the queue holds one entry per issue."
+    fi
+    printf '%s\n' "$entry" >> "$dir/queue.jsonl"
+    render_queue "$dir"
+    printf 'QUEUED: #%s, entry %s\n' "$issue" "$(wc -l < "$dir/queue.jsonl" | tr -d ' ')"
+}
+
+# queue.md is for a person. Its line shape is the one hw-queue used to type
+# by hand, so a reader of an older run sees no change. Nothing parses it.
+render_queue() {
+    {
+        printf '# Queue, run %s\n\nRendered by `run-dir.sh queue` from queue.jsonl, which `next` reads. Do not edit this file.\n\n' "${1##*/}"
+        jq -rs 'to_entries[] | .key as $k | .value |
+            ([if .ruling then "ruling" else empty end]
+             + [.blocked[] | if .milestone == "" then "blocked (#\(.issue))" else "blocked (#\(.issue), \(.milestone))" end]
+             + .notes) as $marks |
+            "\($k + 1). #\(.issue) \(.title) | \(.milestone) | \(.reader) | \(.artifacts) | \(.scope) | \($marks | join("; "))"' "$1/queue.jsonl"
+    } > "$1/.queue.md.$$" && mv "$1/.queue.md.$$" "$1/queue.md"
+}
+
+# The one path from a run whose queue.md was typed by hand to one `next`
+# reads. It parses queue.md once, with the parser `next` used before #1724,
+# and writes each line through `queue`, so a line `queue` would refuse is
+# refused here too, and nothing is written. The old file stays beside the new
+# one as queue-legacy.md. Each `;`-separated mark becomes `mark=ruling`,
+# `blocked=<M>,<milestone>`, or a `note=` that keeps its words.
+convert() {
+    need_jq
+    dir=$1
+    need_dir "$dir"
+    [ -f "$dir/queue.jsonl" ] && { echo "run-dir: $dir already holds queue.jsonl, and a run converts its queue once." >&2; exit 1; }
+    [ -f "$dir/queue.md" ] || { echo "run-dir: $dir holds no queue.md to convert." >&2; exit 1; }
+    mv "$dir/queue.md" "$dir/queue-legacy.md"
+    us=$(printf '\037')
+    awk -F'|' -v us="$us" '/^[0-9]+\. #[0-9]+/ {
+        match($1, /#[0-9]+/)
+        out = substr($1, RSTART + 1, RLENGTH - 1)
+        title = substr($1, RSTART + RLENGTH)
+        gsub(/^[ \t]+|[ \t]+$/, "", title)
+        out = out us title
+        for (k = 2; k <= NF; k++) { f = $k; gsub(/^[ \t]+|[ \t]+$/, "", f); out = out us f }
+        print out
+    }' "$dir/queue-legacy.md" > "$dir/.convert.$$"
+    converted=0
+    set -f
+    while IFS=$us read -r issue title milestone reader artifacts scope marks; do
+        set -- "$issue"
+        [ -n "$title" ] && set -- "$@" "title=$title"
+        [ -n "$milestone" ] && set -- "$@" "milestone=$milestone"
+        [ -n "$reader" ] && set -- "$@" "reader=$reader"
+        [ -n "$artifacts" ] && set -- "$@" "artifacts=$artifacts"
+        [ -n "$scope" ] && set -- "$@" "scope=$scope"
+        rest=$marks
+        while [ -n "$rest" ]; do
+            mark=${rest%%;*}
+            case $rest in *';'*) rest=${rest#*;} ;; *) rest='' ;; esac
+            mark=$(printf '%s' "$mark" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
+            case $mark in
+                '') ;;
+                ruling) set -- "$@" mark=ruling ;;
+                ruling[!a-z]*) set -- "$@" mark=ruling "note=$mark" ;;
+                blocked|blocked[!a-z]*)
+                    blocker=$(printf '%s' "$mark" | sed -n 's/^blocked *(#\([0-9][0-9]*\).*/\1/p')
+                    on=$(printf '%s' "$mark" | sed -n 's/^blocked *(#[0-9][0-9]*, *\([^,)]*\).*/\1/p' | sed 's/[[:space:]]*$//')
+                    set -- "$@" "blocked=${blocker:-?}${on:+,$on}"
+                    # What a hand-typed blocker said past its milestone is kept as a note.
+                    extra=$(printf '%s' "$mark" | sed -n 's/^blocked *(#[0-9][0-9]*, *[^,)]*, *\(.*\))$/\1/p')
+                    if [ -n "$extra" ]; then
+                        set -- "$@" "note=$extra"
+                    elif [ "$mark" != "blocked (#$blocker${on:+, $on})" ]; then
+                        set -- "$@" "note=$mark"
+                    fi ;;
+                *) set -- "$@" "note=$mark" ;;
+            esac
+        done
+        if ! sh "$0" queue "$dir" "$@" >/dev/null 2>"$dir/.convert-err.$$"; then
+            echo "run-dir: queue.md line $((converted + 1)), #$issue, is refused: $(sed 's/^run-dir: //' "$dir/.convert-err.$$")" >&2
+            echo "run-dir: nothing was converted, and queue.md is as it was. Correct that line, or enter the queue with \`run-dir.sh queue\` by hand." >&2
+            rm -f "$dir/queue.jsonl" "$dir/queue.md" "$dir/.convert.$$" "$dir/.convert-err.$$"
+            mv "$dir/queue-legacy.md" "$dir/queue.md"
+            exit 2
+        fi
+        converted=$((converted + 1))
+    done < "$dir/.convert.$$"
+    set +f
+    rm -f "$dir/.convert.$$" "$dir/.convert-err.$$"
+    [ -f "$dir/queue.jsonl" ] || { : > "$dir/queue.jsonl"; render_queue "$dir"; }
+    printf 'CONVERTED: %s entries into queue.jsonl; the old file is queue-legacy.md\n' "$converted"
+}
+
+# A ruling the owner owes, one object per decision in rulings.jsonl, written
+# by headwater-product-owner. rulings.md renders each in the block shape of
+# that definition, with an `answered:` line derived from the OWNER lines of
+# decisions.md, so no block is ever edited to mark it answered.
+owe_fields='title question options unblocks'
+
+owe() {
+    need_jq
+    dir=$1 issue=$2
+    shift 2
+    need_dir "$dir"
+    need_issue "$issue" 'an issue'
+    entry=$(jq -cn --argjson n "$issue" '{issue: $n}')
+    seen=''
+    for pair in "$@"; do
+        pair_value "$pair"
+        key=${pair%%=*} value=${pair#*=}
+        once "$key"
+        case $key in
+            title|question|unblocks) filter='.[$k] = $v' ;;
+            options)
+                filter='.options = ($v | split("|") | map(gsub("^\\s+|\\s+$"; "")))'
+                printf '%s' "$value" | jq -Re 'split("|") | map(gsub("^\\s+|\\s+$"; "")) | length >= 2 and all(. != "") and .[-1] == "defer"' >/dev/null ||
+                    refuse "\`options=$value\`: a ruling offers at least two options separated by \`|\`, none empty, and the last is \`defer\`." ;;
+            *) refuse "\`$key\` is not a ruling field. A field is one of: $owe_fields." ;;
+        esac
+        entry=$(printf '%s' "$entry" | jq -c --arg k "$key" --arg v "$value" "$filter") || exit 1
+    done
+    for key in $owe_fields; do
+        printf '%s' "$entry" | jq -e --arg k "$key" 'has($k)' >/dev/null ||
+            refuse "the ruling for #$issue needs \`$key=\`, and the call carries none."
+    done
+    # A rulings.md with no rulings.jsonl beside it was written by hand before
+    # #1724. Its blocks are prose for the owner, so it is kept whole as
+    # rulings-legacy.md rather than parsed, and the render does not overwrite it.
+    if [ -f "$dir/rulings.md" ] && [ ! -f "$dir/rulings.jsonl" ]; then
+        mv "$dir/rulings.md" "$dir/rulings-legacy.md"
+        echo "run-dir: the hand-written rulings.md is kept as rulings-legacy.md." >&2
+    fi
+    printf '%s\n' "$entry" >> "$dir/rulings.jsonl"
+    render_rulings "$dir"
+    printf 'OWED: #%s, ruling %s\n' "$issue" "$(wc -l < "$dir/rulings.jsonl" | tr -d ' ')"
+}
+
+render_rulings() {
+    [ -f "$1/rulings.jsonl" ] || return 0
+    need_jq
+    jq -r --arg answered " $(answered_issues "$1")" '
+        .issue as $i |
+        "RULING #\(.issue) \(.title)\n  question: \(.question)\n  options:  \(.options | join(" | "))\n  unblocks: \(.unblocks)\n  answered: \(if ($answered | contains(" \($i) ")) then "yes, an OWNER line in decisions.md" else "no" end)\n"' \
+        "$1/rulings.jsonl" > "$1/.rulings.md.$$" && mv "$1/.rulings.md.$$" "$1/rulings.md"
+}
+
+rulings() {
+    need_dir "$1"
+    [ -f "$1/rulings.jsonl" ] || { echo "run-dir: $1 holds no rulings.jsonl; the product owner writes it with \`run-dir.sh owe\`." >&2; exit 1; }
+    render_rulings "$1"
+    cat "$1/rulings.md"
+}
+
+# The integrator queue: one object per merge ruling, appended by the parent,
+# and never rewritten. The pull request keys an entry, because a ruled pull
+# request can have no issue (PR #1723 had none). A second ruling of one pull
+# request at a new head is appended, because an ejected pull request returns
+# for a new ruling at a new commit, and the last entry for a pull request is
+# the one that holds. The same ruling of the same pull request at the same
+# commit is refused: that is the parent appending one ruling twice. An
+# ejection is recorded as one more entry, `ruling=ejected`, which takes the
+# pull request off `integrations` until the parent rules it again.
+integrate_fields='issue branch sha ruling footprint'
+
+integrate() {
+    need_jq
+    dir=$1 pr=$2
+    shift 2
+    need_dir "$dir"
+    need_issue "$pr" 'a pull request'
+    entry=$(jq -cn --argjson n "$pr" '{pr: $n}')
+    seen=''
+    for pair in "$@"; do
+        pair_value "$pair"
+        key=${pair%%=*} value=${pair#*=}
+        once "$key"
+        case $key in
+            issue)
+                [ "$value" = none ] || need_issue "$value" 'an issue'
+                filter='.issue = (if $v == "none" then null else ($v | tonumber) end)' ;;
+            sha)
+                case $value in *[!0-9a-f]*) refuse "\`sha=$value\` is not a commit: seven to forty lower-case hex digits." ;; esac
+                [ ${#value} -ge 7 ] && [ ${#value} -le 40 ] || refuse "\`sha=$value\` is not a commit: seven to forty lower-case hex digits."
+                filter='.sha = $v' ;;
+            branch|footprint)
+                case $value in *[[:space:]]*) refuse "the value of \`$key\` holds whitespace, and it is one word." ;; esac
+                filter='.[$k] = $v' ;;
+            ruling) filter='.ruling = $v' ;;
+            *) refuse "\`$key\` is not an integrator field. A field is one of: $integrate_fields." ;;
+        esac
+        entry=$(printf '%s' "$entry" | jq -c --arg k "$key" --arg v "$value" "$filter") || exit 1
+    done
+    for key in $integrate_fields; do
+        printf '%s' "$entry" | jq -e --arg k "$key" 'has($k)' >/dev/null ||
+            refuse "the merge ruling for PR #$pr needs \`$key=\`, and the call carries none."
+    done
+    sha=$(printf '%s' "$entry" | jq -r .sha)
+    if [ -s "$dir/integrate.jsonl" ] && jq -se --argjson n "$pr" --arg s "$sha" --arg r "$(printf '%s' "$entry" | jq -r .ruling)" 'any(.[]; .pr == $n and .sha == $s and .ruling == $r)' "$dir/integrate.jsonl" >/dev/null; then
+        refuse "PR #$pr is already queued at $sha with this ruling. A new ruling of it is appended at its new head."
+    fi
+    printf '%s\n' "$entry" >> "$dir/integrate.jsonl"
+    printf 'INTEGRATE: PR #%s queued, entry %s\n' "$pr" "$(wc -l < "$dir/integrate.jsonl" | tr -d ' ')"
+}
+
+# Each pull request of integrate.jsonl that no log line records and whose
+# last ruling is not `ejected`, in the order it was first ruled, with its
+# last ruling. The integrator merges these.
+integrations() {
+    need_jq
+    need_dir "$1"
+    [ -s "$1/integrate.jsonl" ] || return 0
+    merged=$( [ -s "$1/log.jsonl" ] && jq -cs '[.[].pr | numbers]' "$1/log.jsonl" 2>/dev/null)
+    jq -rs --argjson merged "${merged:-[]}" '
+        reduce .[] as $e ({order: [], last: {}};
+            (if .last[$e.pr | tostring] then . else .order += [$e.pr] end) | .last[$e.pr | tostring] = $e)
+        | . as $s | $s.order[] | select(. as $p | $merged | any(.[]; . == $p) | not) | $s.last[tostring] | select(.ruling != "ejected")
+        | "PR #\(.pr) issue=\(.issue // "none") branch=\(.branch) sha=\(.sha) footprint=\(.footprint) ruling=\(.ruling)"' "$1/integrate.jsonl"
+}
+
+# Whether integrate.jsonl already holds a ruling for this issue or this pull
+# request, so a resumed parent is not told to append it twice.
+#
+# It reads the last entry for the pull request, or for the issue where the
+# handover names no pull request. One whose last ruling is `ejected` is not
+# held: the parent owes a new ruling at the new head, and a resumed parent
+# told `queued` would never append it, so the pull request would never merge
+# (verify-1 of PR #1726).
+integrate_holds() {
+    [ -s "$1/integrate.jsonl" ] || return 1
+    need_jq
+    jq -se --argjson i "$2" --arg p "${3:-}" '
+        [.[] | select(if $p != "" then .pr == ($p | tonumber) else .issue == $i end)] | last
+        | . != null and .ruling != "ejected"' "$1/integrate.jsonl" >/dev/null 2>&1
+}
+
 # What a resumed parent does with each open handover, one line per issue:
 # `<issue> <stage> <action>`. An open handover is one the log does not record.
 #
@@ -690,7 +1078,8 @@ rule() {
 #     adjudicated, claimed    iterate             dispatch hw-iterate with the note
 #     built, verified-fail    iterate             a fresh hw-iterate given the handover path
 #     verified-pass           rule                the parent rules, from the notes it names
-#     ruled-merge             integrate           append to the integrator queue
+#     ruled-merge, not queued integrate           append to the integrator queue with `integrate`
+#     ruled-merge, queued     queued              nothing: integrate.jsonl already holds its PR or issue
 #
 # An adjudicate that reports while the run drains is not claimed: `claim`
 # writes nothing in drain. Its checkpoint carries the footprint instead, and
@@ -718,7 +1107,12 @@ resume() {
                 fi ;;
             built|verified-fail) action=iterate ;;
             verified-pass) action=rule ;;
-            ruled-merge) action=integrate ;;
+            ruled-merge)
+                if integrate_holds "$dir" "$issue" "$(sed -n 's/^pr //p' "$h")"; then
+                    action=queued
+                else
+                    action=integrate
+                fi ;;
             *) action=unknown ;;
         esac
         printf '%s %s %s\n' "$issue" "$reached" "$action"
@@ -760,7 +1154,13 @@ case ${1:-} in
     usage) [ $# -eq 2 ] || usage; plan_usage "$run" ;;
     import) [ $# -eq 3 ] || usage; import "$2" "$(resolve "$3")" ;;
     intake) [ $# -eq 3 ] || usage; intake "$run" "$3" ;;
-    decide) [ $# -eq 3 ] || usage; decide "$run" "$3" ;;
+    decide) [ $# -ge 3 ] || usage; shift 2; decide "$run" "$@" ;;
+    queue) [ $# -ge 3 ] || usage; shift 2; queue "$run" "$@" ;;
+    convert) [ $# -eq 2 ] || usage; convert "$run" ;;
+    owe) [ $# -ge 3 ] || usage; shift 2; owe "$run" "$@" ;;
+    rulings) [ $# -eq 2 ] || usage; rulings "$run" ;;
+    integrate) [ $# -ge 3 ] || usage; shift 2; integrate "$run" "$@" ;;
+    integrations) [ $# -eq 2 ] || usage; integrations "$run" ;;
     lesson) [ $# -eq 3 ] || usage; lesson "$run" "$3" ;;
     withdraw) [ $# -eq 4 ] || usage; withdraw "$run" "$3" "$4" ;;
     *) usage ;;

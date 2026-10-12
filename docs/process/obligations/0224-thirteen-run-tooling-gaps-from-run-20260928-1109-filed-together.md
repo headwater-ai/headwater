@@ -18,7 +18,6 @@ waiting_on: build
 
 **The agents of the build order.**
 
-- `hw-queue` cannot write `queue.md` into the run directory from a worktree-isolated session, because the harness refuses the path under the common directory. `tools/run/run-dir.sh` has no `queue <dir> <file>` verb, so the parent copied the file with a script. (parent, no issue)
 - `.claude/agents/hw-build.md` ("Before you open the pull request") tells a builder to rebase onto `origin/main`. After a push, the rebased branch cannot land without the force-push that the same definition forbids. #1311 merged `origin/main` instead. (build, #1311)
 - `hw-adjudicate` switched the parent worktree to `origin/main` and back, and left `HEAD` detached. An adjudicator must not move a checkout that it did not make. (adjudicate, #978)
 - The mergeable wait in `.claude/agents/hw-verify.md`, `[ "$(gh pr view <N> --json mergeable -q .mergeable)" != UNKNOWN ]`, is met on an error. `gh pr view 1364` failed on this repository with "Could not resolve to a PullRequest", and the empty string is not `UNKNOWN`. `gh pr list --head <branch> --json mergeable,mergeStateStatus` works. (hw-verify, #1357)
@@ -50,3 +49,7 @@ Two items are discharged by #1518, the pull request for #1484:
 One item is discharged by #1481:
 
 - Seven transcripts under `docs/probe-results/` recorded digests that nearly every merge moved. They were the campaign-pilot and second-campaign-pilot discovery arms of 2026-09-28, and the regression-probe transcripts of 2026-09-16 and 2026-09-17. Two branches that regenerated them conflicted. In run `20260928-1109` they caused four ejections or refusals (#1328 twice, #1349, #1356, #1362). #1448 took the read-set digest out of the result page. #1481 removed the four pins that remained. They were the composed selection digest with the probe count, the read-set mark, the lock mark, and the tree's lock in a refusal. A committed result now pins only what it read, so an unrelated merge leaves it alone, and no merge driver is owed. (integrate, #1328)
+
+One item is discharged by the pull request for #1724:
+
+- `hw-queue` could not write `queue.md` into the run directory from a worktree-isolated session, because the harness refused the path under the common directory. `tools/run/run-dir.sh` had no `queue <dir> <file>` verb, so the parent copied the file with a script. Now `hw-queue` writes the queue through `sh tools/run/run-dir.sh queue`, with one call for each issue. The script writes `queue.jsonl` in the run directory, so no agent copies a file there. (parent, no issue)
