@@ -267,8 +267,16 @@ fn a_change_the_flag_named_reaches_the_verdict_and_not_only_the_parser() {
     // Both lines below are false of a run that read the manifest and dropped
     // it, and the second is the reading the change produces.
     assert!(
-        scoped.says("scoped to a change: 1 documents named, 0 added, 1 with a prior version"),
-        "the report states the change this run was scoped to:\n{}",
+        scoped.says("a change was read: 1 documents named, 0 added, 1 with a prior version"),
+        "the report states the change this run read:\n{}",
+        scoped.out
+    );
+    // The flag does not narrow the run (docs/interfaces/headwater-check.md),
+    // so the header says so and never that the run is scoped to the change.
+    assert!(
+        scoped.says("the findings are over the whole corpus, as in a run")
+            && !scoped.says("scoped to a change"),
+        "the report states that its findings are over the whole corpus:\n{}",
         scoped.out
     );
     assert!(
@@ -1793,8 +1801,8 @@ fn the_change_help_names_the_header_a_manifest_must_open_with() {
         read.err
     );
     assert!(
-        read.says("scoped to a change"),
-        "and the run is scoped to it:\n{}",
+        read.says("a change was read:"),
+        "and the run read it:\n{}",
         read.out
     );
 }

@@ -1011,7 +1011,7 @@ fn every_carrier_renders_the_one_sentence_and_no_two_agree() {
 /// member of either JSON document holds.
 fn states_the_scoping(format: Format, artifact: &str) -> bool {
     match format {
-        Format::Text => artifact.contains("scoped to a change:"),
+        Format::Text => artifact.contains("a change was read:"),
         Format::Json | Format::Sarif => artifact.contains("\"promotions\""),
         Format::Markdown => artifact.contains("**Scoped to a change.**"),
     }

@@ -233,7 +233,7 @@ reset
 produce HEAD
 out=$(cd "$scratch" && ./engine/target/release/headwater check --change "$hold/out/manifest" 2>/dev/null); status=$?
 judge 'a tree that moved nothing is a change that names nothing' 0 "$status" \
-    'scoped to a change: 0 documents named, 0 added, 0 with a prior version' "$out"
+    'a change was read: 0 documents named, 0 added, 0 with a prior version' "$out"
 
 reset
 printf '\n// one line nothing governs\n' >> "$scratch/engine/crates/check/src/change.rs"
