@@ -770,7 +770,10 @@ esac
 # lead. It must name the script, the first session as the one that starts it,
 # `HW_SUPERVISE_TREE`, because the script refuses a main checkout, and the drain
 # to zero before it starts, because two live parents on one run each fill
-# slots. This case holds the text alone. Only a supervised run shows that the
+# slots. It must also hold the steps: a bold lead that says the first session
+# starts the loop, `run_in_background: true` and no foreground, a first session
+# that fills no slot, and a wake on the `STOPPED:` line. This case holds the
+# text alone. Only a supervised run shows that the
 # loop runs.
 printf '\n# the first session of a run hands the run to supervise.sh in hw-run-policy\n'
 # Prints the handover sub-bullet of the restart rule in the file given: the
@@ -797,6 +800,18 @@ handover_misses() {
     printf '%s\n' "$bullet" | grep -qE 'first session[^.]* start' || printf ' the handover does not say the first session starts it'
     case $bullet in *HW_SUPERVISE_TREE*) ;; *) printf ' the handover does not name HW_SUPERVISE_TREE' ;; esac
     printf '%s\n' "$bullet" | grep -qE 'drains? to zero' || printf ' the handover does not drain to zero first'
+    # The steps, not only the words: the lead states the starter, the loop runs
+    # in the background, the first session fills no slot, and it wakes on the
+    # loop's stop line. A foreground loop blocks the first session on the whole
+    # run, and a first session that fills slots is a second live parent.
+    lead=${bullet#  - \*\*}
+    lead=${lead%%\*\**}
+    case $lead in *'first session starts the loop'*) ;; *) printf ' the bold lead does not say the first session starts the loop: %s' "$lead" ;; esac
+    case $bullet in *'run_in_background: true'*) ;; *) printf ' the handover does not start the loop with run_in_background: true' ;; esac
+    case $bullet in *foreground*) printf ' the handover runs the loop in the foreground' ;; esac
+    case $bullet in *'fills no slot'*) ;; *) printf ' the handover does not say the first session fills no slot' ;; esac
+    case $bullet in *'fills slots'*) printf ' the handover has the first session fill slots' ;; esac
+    case $bullet in *'STOPPED:'*) ;; *) printf ' the handover does not wake on the STOPPED: line' ;; esac
 }
 why=$(handover_misses "$skills/hw-run-policy/SKILL.md")
 if [ -z "$why" ]; then
@@ -833,6 +848,36 @@ case $(handover_arm '  - **The first session waits.** A person starts `HW_SUPERV
 ') in
     *'does not say the first session starts it'*) pass 'and a handover that a person starts is reported' ;;
     *) fail 'a handover that a person starts is reported' 'the handover passed it' ;;
+esac
+# The verifier's mutants of round 1: a lead that reverses the step, a loop in
+# the foreground, and a first session that fills slots, each beside a body that
+# otherwise holds; and a handover that never wakes on the stop line.
+handover_good='It drains to zero, then starts `HW_SUPERVISE_TREE=<tree> sh tools/run/supervise.sh <run-id>` with `run_in_background: true`. Then the first session starts nothing else: it fills no slot, ends its turn, and wakes on the `STOPPED: <reason>` line.'
+case $(handover_arm "  - **The first session starts the loop, and nothing else does.** $handover_good
+") in
+    '') pass 'and a handover that holds every step passes' ;;
+    *) fail 'a handover that holds every step passes' "reported: \`$(handover_arm "  - **The first session starts the loop, and nothing else does.** $handover_good
+")\`" ;;
+esac
+case $(handover_arm "  - **The first session may skip the loop.** $handover_good
+") in
+    *'bold lead does not say'*) pass 'and a lead that lets the first session skip the loop is reported' ;;
+    *) fail 'a lead that lets the first session skip the loop is reported' 'the handover passed it' ;;
+esac
+case $(handover_arm "  - **The first session starts the loop, and nothing else does.** $(printf '%s' "$handover_good" | sed 's/with `run_in_background: true`/in the foreground/')
+") in
+    *'in the foreground'*) pass 'and a loop started in the foreground is reported' ;;
+    *) fail 'a loop started in the foreground is reported' 'the handover passed it' ;;
+esac
+case $(handover_arm "  - **The first session starts the loop, and nothing else does.** $(printf '%s' "$handover_good" | sed 's/it fills no slot/it fills slots itself/')
+") in
+    *'fill slots'*) pass 'and a first session that fills slots is reported' ;;
+    *) fail 'a first session that fills slots is reported' 'the handover passed it' ;;
+esac
+case $(handover_arm "  - **The first session starts the loop, and nothing else does.** $(printf '%s' "$handover_good" | sed 's/, and wakes on the `STOPPED: <reason>` line//')
+") in
+    *'STOPPED: line'*) pass 'and a handover that never wakes on the stop line is reported' ;;
+    *) fail 'a handover that never wakes on the stop line is reported' 'the handover passed it' ;;
 esac
 # A handover sub-bullet under another rule is not the restart rule's.
 printf -- '- **A parent restarts every few merges, and drains to zero first.** `tools/run/supervise.sh` runs each session after the first.\n- **Another rule.** Its text.\n  - **The first session hands the run over.** It drains to zero, then starts `HW_SUPERVISE_TREE=<tree> sh tools/run/supervise.sh <run-id>`.\n' > "$scratch/restart-other.md"
