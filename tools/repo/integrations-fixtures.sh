@@ -337,9 +337,9 @@ fi
 python3 "$root/integrations/headwater-upkeep/fixtures/lost-governor.py" >"$scratch/lost-governor.out" 2>&1
 code=$?
 if [ "$code" -eq 0 ]; then
-    pass 'a path whose governor the change deleted is named, and a pattern the engine did not expand is unmeasured'
+    pass 'a path whose governor the change deleted is named, a pattern the engine did not expand is unmeasured, and a path route cannot read is not measured'
 else
-    fail 'a path whose governor the change deleted is named, and a pattern the engine did not expand is unmeasured' \
+    fail 'a path whose governor the change deleted is named, a pattern the engine did not expand is unmeasured, and a path route cannot read is not measured' \
         "$(grep '^FAIL' "$scratch/lost-governor.out" | tr '\n' ' ')"
 fi
 
