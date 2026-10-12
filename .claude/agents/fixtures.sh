@@ -10,7 +10,25 @@
 # definition's instructions, and a skill name nobody matches never loads. This
 # suite is what reports the drift.
 #
-# Fourteen cases, and the ceilings are the reason two of them exist. The parent's
+# Fifteen cases, and this list is the one place that names them all:
+#
+#     1   every agent a command or an agent dispatches is a definition
+#     2   every skill an agent invokes is a skill on this tree
+#     3   every ruling cited under .claude/ exists and is not superseded
+#     4   front matter is what a harness reads, and two agents cannot write
+#     5   the verification bar's headings are stated once
+#     6   the byte ceilings of CLAUDE.md, next-run.md and the doctrine
+#     7   the doctrine in the command is the doctrine file, byte for byte
+#     8   the two commands name the same agents
+#     9   every cargo build or test an agent runs goes through tools/hw-cargo
+#     10  the parent dispatches the loop agent, and it dispatches build and verify
+#     11  the rule against filing an issue covers the parent, by its marker
+#     12  the Record ruling checks the intake line against the tree
+#     13  each throughput rule of 2026-10-01 has one owner
+#     14  every file under .claude is shipped or named as internal
+#     15  the first session hands the run to supervise.sh
+#
+# The ceilings are the reason two of them exist. The parent's
 # context is the unit of cost ([HW-PD-0003]), so the command and the doctrine
 # carry a byte ceiling declared here, once, and CLAUDE.md carries one because
 # every agent pays for it on every dispatch ([HW-PD-0001]).

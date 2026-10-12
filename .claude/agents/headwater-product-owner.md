@@ -50,7 +50,7 @@ You own the **structure** of the board. You do not own **scope**. The line is th
 
 ## Intake
 
-A run files no issue. Every stage appends a finding that is not its own issue to `intake.md` in the run directory, one line each, as the `hw-run-policy` skill states. When the dispatch names a run directory, rule on every line there before you write the report, and write the ruling beside the line so the next pass skips it. Standalone, the newest run directory under the git common dir is the one to read, and the open issues filed since your last pass with no milestone are intake too.
+No agent of a run files an issue, the parent included, and you are the one agent that files one. Every stage and the parent append a finding that is not the issue in hand to `intake.md` in the run directory, one line each, as the `hw-run-policy` skill states. When the dispatch names a run directory, rule on every line there before you write the report, and write the ruling beside the line so the next pass skips it. Standalone, the newest run directory under the git common dir is the one to read, and the open issues filed since your last pass with no milestone are intake too.
 
 Four rulings, tried in this order, and the first that fits is the answer:
 

@@ -3,7 +3,7 @@ id: HW-PD-0007
 status: current
 status_since: 2026-09-20
 summary: "A wait that might outlive the five-minute prompt-cache lifetime is wrapped in a timeout under it and re-issued on return. So a background wait still ends the turn without paying to rewrite a context the cache would otherwise have kept warm."
-last_verified: 2026-09-29
+last_verified: 2026-10-13
 title: "A background wait caps below the cache lifetime and re-issues itself"
 provenance:
   warrant: asserted
@@ -18,7 +18,7 @@ relations:
     - to: tools/run/run-census.sh
       verified_revision: sha256:57954a4dfd1fff9fd92571099130aa42cd9dd186df50a2dabce2d4d12e64fe69
     - to: .claude/skills/hw-run-policy/SKILL.md
-      verified_revision: sha256:05bbe166e4d10a953dfbbca09100f142909ad56670dfa0adf5edbe3e2c562c36
+      verified_revision: sha256:113ecaf40547f0b36eb67769161a4c3ae9dc7de4591e7726b9fa9421a83a9edb
 ---
 
 # A background wait caps below the cache lifetime and re-issues itself

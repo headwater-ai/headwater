@@ -3,7 +3,7 @@ id: HW-PD-0008
 status: current
 status_since: 2026-09-24
 summary: "One agent owns where work sits on the board and never what the work is, and each milestone is a capped version."
-last_verified: 2026-10-02
+last_verified: 2026-10-13
 title: "The board has an owner of its structure, and its milestones are capped versions"
 provenance:
   warrant: asserted
@@ -14,7 +14,7 @@ provenance:
 relations:
   governs:
     - to: .claude/agents/headwater-product-owner.md
-      verified_revision: sha256:5071a7162fbf561842934eaac8cdf78776e02d278e45fb0ffa75615003fb67b1
+      verified_revision: sha256:4acd02db4714aafdcd86195d69299c20d8bfa78cce4dc009faf46661036fb1d5
 ---
 
 # The board has an owner of its structure, and its milestones are capped versions
@@ -41,7 +41,7 @@ The milestones themselves were part of the cause. The M-sequence was a bootstrap
 
 **One agent owns the structure of the board, and never its scope.** Structure is where work sits and how urgent it is: milestones, milestone membership, folds, and the `bug` and `adopter-blocking` labels. Scope is what the work is and when it is done, and scope stays with the owner. The agent is `headwater-product-owner`. It runs outside the context of any builder. It runs standalone, at the top of a run, at every fifth merge and at the end of a run. It names every write with its reason, in a form that the owner can reverse.
 
-**A run files no issue.** A stage writes a finding that is not its own issue as one line in the intake file of the run. The product owner rules on each line with one of four rulings: fold, record, admit or backlog. So the comparison against other work occurs before the filing, and not after it.
+**No agent of a run files an issue, the parent included, and only the product owner files one.** A stage or the parent writes a finding that is not the issue in hand as one line in the intake file of the run. The product owner rules on each line with one of four rulings: fold, record, admit or backlog. So the comparison against other work occurs before the filing, and not after it.
 
 **Every open milestone is a version.** The owner moved the board to version milestones on 2026-09-20. M7, M8 and M9 closed, and their open issues moved forward. R1 took the name 0.1, and M6b took the name 0.7 with its bar unchanged. The library track and the ecosystem track became `track:` labels over the backlog. Neither has an end that a release can name.
 
