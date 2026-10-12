@@ -80,6 +80,8 @@
 #         rulings.jsonl    one object per ruling the owner owes, written by the product owner through `owe`
 #         rulings.md       rendered from rulings.jsonl and decisions.md; nothing reads it
 #         integrate.jsonl  one object per merge ruling, appended by the parent through `integrate`
+#         queue-legacy.md, rulings-legacy.md
+#                          a run's hand-written file, kept whole when `convert` or the first `owe` replaces it
 #
 # Each of the three is per run, so `start` seeds none of them. An entry is
 # never rewritten: every verb that writes one of them appends, and a renderer
@@ -790,6 +792,12 @@ queue() {
     shift 2
     need_dir "$dir"
     need_issue "$issue" 'an issue'
+    # A queue.md with no queue.jsonl beside it was typed by hand, and the
+    # render would overwrite it. `convert` keeps it and carries it in.
+    if [ -f "$dir/queue.md" ] && [ ! -f "$dir/queue.jsonl" ]; then
+        echo "run-dir: $dir holds a queue.md typed by hand, and the first \`queue\` call would overwrite it. Convert it first with \`sh tools/run/run-dir.sh convert ${dir##*/}\`." >&2
+        exit 1
+    fi
     entry=$(jq -cn --argjson n "$issue" '{issue: $n, ruling: false, blocked: [], notes: []}')
     for pair in "$@"; do
         pair_value "$pair"
@@ -939,6 +947,13 @@ owe() {
         printf '%s' "$entry" | jq -e --arg k "$key" 'has($k)' >/dev/null ||
             refuse "the ruling for #$issue needs \`$key=\`, and the call carries none."
     done
+    # A rulings.md with no rulings.jsonl beside it was written by hand before
+    # #1724. Its blocks are prose for the owner, so it is kept whole as
+    # rulings-legacy.md rather than parsed, and the render does not overwrite it.
+    if [ -f "$dir/rulings.md" ] && [ ! -f "$dir/rulings.jsonl" ]; then
+        mv "$dir/rulings.md" "$dir/rulings-legacy.md"
+        echo "run-dir: the hand-written rulings.md is kept as rulings-legacy.md." >&2
+    fi
     printf '%s\n' "$entry" >> "$dir/rulings.jsonl"
     render_rulings "$dir"
     printf 'OWED: #%s, ruling %s\n' "$issue" "$(wc -l < "$dir/rulings.jsonl" | tr -d ' ')"

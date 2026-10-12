@@ -469,6 +469,9 @@ case $(cat "$scratch/err") in
     *) fail '  and the refusal names the convert verb for that run' "$(cat "$scratch/err")" ;;
 esac
 legacy=$(cat "$shape/queue.md")
+sh "$tool" queue shape 99 title=x milestone=none reader=x artifacts=x scope=narrow >/dev/null 2>"$scratch/err"; status=$?
+same 'a queue call on a run whose queue.md was typed by hand is refused with exit 1, and overwrites nothing' \
+    "1 1 $legacy" "$status $([ -e "$shape/queue.jsonl" ]; echo $?) $(cat "$shape/queue.md")"
 sh "$tool" convert shape >"$scratch/out" 2>"$scratch/err"; status=$?
 same 'convert exits 0 and converts every issue line' '0 CONVERTED: 2 entries into queue.jsonl; the old file is queue-legacy.md' "$status $(cat "$scratch/out")"
 same '  and keeps the typed file whole as queue-legacy.md' "$legacy" "$(cat "$shape/queue-legacy.md")"
@@ -566,6 +569,12 @@ sh "$tool" owe owes 1542 title=t 'options=a | defer' unblocks=u >/dev/null 2>"$s
 same 'owe missing the question exits 2' 2 "$status"
 case $(cat "$scratch/err") in *'question='*) pass '  and names the field' ;; *) fail '  and names the field' "$(cat "$scratch/err")" ;; esac
 same '  and no refused call wrote a ruling' 1 "$(wc -l < "$owes/rulings.jsonl" | tr -d ' ')"
+handrul=$(sh "$tool" start hand-rulings 2>/dev/null)
+printf 'RULING #1471 Typed by hand\n  question: q\n' > "$handrul/rulings.md"
+sh "$tool" owe hand-rulings 1472 title=t question=q 'options=a | defer' unblocks=u >/dev/null 2>&1; status=$?
+same 'the first owe in a run whose rulings.md was written by hand keeps that file whole as rulings-legacy.md' \
+    "0 RULING #1471 Typed by hand|  question: q RULING #1472 t" \
+    "$status $(paste -sd'|' "$handrul/rulings-legacy.md") $(head -n 1 "$handrul/rulings.md")"
 
 printf '\n# the integrator queue only appends, and no verb rewrites an earlier entry\n'
 ints=$(sh "$tool" start ints 2>/dev/null)
