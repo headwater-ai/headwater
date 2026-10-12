@@ -3,7 +3,7 @@ id: HW-PD-0021
 status: current
 status_since: 2026-09-28
 summary: "A stage runs its bounded wait in the foreground and keeps its turn. A background wait ends the stage's turn, and each attempt then wakes the parent at its full context."
-last_verified: 2026-09-29
+last_verified: 2026-10-13
 title: "A subagent waits in the foreground, because a background wait wakes its parent"
 provenance:
   warrant: accepted
@@ -19,7 +19,7 @@ relations:
     - to: tools/run/wait-for.sh
       verified_revision: sha256:d1e99759d7f8c50c387018ac8837f7005aee28c999952a29be977e3392bf2e3e
     - to: .claude/skills/hw-run-policy/SKILL.md
-      verified_revision: sha256:09d2a4b4b89583079451f87b98b27af8fb3461b6f90a9ccd15b54224efc41780
+      verified_revision: sha256:113ecaf40547f0b36eb67769161a4c3ae9dc7de4591e7726b9fa9421a83a9edb
 ---
 
 # A subagent waits in the foreground, because a background wait wakes its parent
