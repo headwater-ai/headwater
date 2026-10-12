@@ -87,6 +87,10 @@ echo "$code" >"$work/check.exit"
 # route_all <list> <tree> <out-dir> <index>: route each path of <list>, one
 # per line, against <tree>, with each ancestor directory as a further word.
 # The words go to `route` unquoted, so no pattern in a path may expand.
+# `route` reads its task as words split at whitespace, so a path that holds a
+# space reaches it as pieces and its report names nothing. The report reads
+# such a path as not measured, whatever route wrote, so a work directory from
+# an older copy of this script reads the same.
 set -f
 route_all() {
     n=0

@@ -84,10 +84,21 @@ def ancestors(path):
     return ["/".join(parts[:i]) for i in range(len(parts) - 1, 0, -1)]
 
 
+UNROUTABLE = "`route` reads its task as words split at whitespace, and this path holds whitespace"
+
+
 def classify(path, route):
     """Return (kind, detail) for one path: `governed` with its exact
     pointers, `directory` with (directory, pointer) pairs, `in_scope`,
-    `no_edge`, or `unread`. Also return the suspect edges route names."""
+    `no_edge`, `unroutable`, or `unread`. Also return the suspect edges route
+    names."""
+    # `route` splits its task at Unicode whitespace, so a path that holds any
+    # never reaches it whole. Whatever route wrote for such a path, an empty
+    # report among them, measures nothing about it. `str.isspace` holds for
+    # every character Rust's `char::is_whitespace` does, and for four more
+    # control characters, so this errs toward "not measured".
+    if any(c.isspace() for c in path):
+        return "unroutable", None, []
     if route is None:
         return "unread", None, []
     exact, by_dir, suspect = [], [], []
@@ -373,11 +384,14 @@ def main():
     owed = [(f, n) for f, n in listed if f.get("rule") not in SUSPECT_RULES]
 
     governed_count = sum(1 for p in others if classes[p][0] == "governed")
+    unroutable_count = sum(1 for p in others if classes[p][0] == "unroutable")
     lines = ["# Upkeep report", ""]
     lines.append(
         f"This change touches {len(changed)} path(s): {len(documents)} document(s) and "
         f"{len(others)} other path(s). A governs edge reaches {governed_count} "
-        f"of the {len(others)} other path(s) by name. It deletes or renames away {len(gone)} path(s)."
+        f"of the {len(others)} other path(s) by name"
+        + (f", and `route` cannot read {unroutable_count} of them" if unroutable_count else "")
+        + f". It deletes or renames away {len(gone)} path(s)."
         + (
             f" It deletes a document that governed {len(lost)} path(s) still on the tree."
             if lost
@@ -415,6 +429,8 @@ def main():
             now = f"{len(detail)} other document(s) govern it now"
         elif kind == "unread":
             now = "`route` wrote no report for it, so whether a document governs it now is not measured"
+        elif kind == "unroutable":
+            now = f"{UNROUTABLE}, so whether a document governs it now is not measured"
         else:
             now = "no document governs it now"
         lines.append(
@@ -500,6 +516,10 @@ def main():
             lines.append(f"- {code(path)}: no governs edge names it, so nothing here says which document it could stale.")
         elif kind == "unread":
             lines.append(f"- {code(path)}: `route` wrote no report for it.")
+        elif kind == "unroutable" and path in lost:
+            lines.append(f"- {code(path)}: {UNROUTABLE}. Touched names the document that governed it at the base.")
+        elif kind == "unroutable":
+            lines.append(f"- {code(path)}: {UNROUTABLE}, so whether a document governs it is not measured.")
     for entry in gone:
         old = entry[1]
         kind, detail = gone_classes[old]
@@ -511,6 +531,8 @@ def main():
                 )
         elif kind == "unread":
             lines.append(f"- {code(old)}: `route` over the base tree wrote no report for it.")
+        elif kind == "unroutable":
+            lines.append(f"- {code(old)}: {UNROUTABLE}, so whether a document governed it at the base is not measured.")
         elif kind != "governed":
             lines.append(f"- {code(old)}: no governs edge named it at the base.")
     for pattern, document, matched in unexpanded:
