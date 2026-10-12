@@ -198,5 +198,45 @@ else
     echo "  FAIL  no flock on this host, so the lock this case holds is never taken; unrun"
 fi
 
+echo "with every slot busy, the tool takes whichever slot frees first"
+# A caller that found no free slot used to queue on slot 1 alone, so a free
+# slot 2 or 3 sat idle while it waited (HW-OBL-0211). Three holders take the
+# three slots, and the one on slot 2 is stopped first. Each holder is `flock -o`
+# so the lock dies with the holder and not with its `sleep`. The tool must
+# report slot 2 and return while slots 1 and 3 are still held.
+if command -v flock >/dev/null 2>&1 && command -v timeout >/dev/null 2>&1; then
+    rm -rf "$pool"
+    mkdir -p "$pool"
+    holders=
+    for n in 1 2 3; do
+        flock -o "$pool/slot.$n.lock" sleep 60 &
+        eval "holder_$n=\$!"
+        holders="$holders $!"
+    done
+    sleep 1
+    (
+        cd "$worktree_b" || exit 1
+        PATH="$fakebin:$PATH" HW_CARGO_POOL="$pool" HW_CARGO_SLOTS=3 timeout 20 sh "$tool" build --profile dev-release -p headwater-cli --locked
+    ) >"$scratch/out" 2>"$scratch/err" &
+    waiter=$!
+    sleep 2
+    # shellcheck disable=SC2154 # set by the eval above
+    kill "$holder_2" 2>/dev/null
+    wait "$waiter"
+    status=$?
+    if [ "$status" -eq 0 ] && grep -q 'hw-cargo: slot 2,' "$scratch/err"; then
+        passed=$((passed + 1))
+        echo "  ok    slot 2 freed first, and the tool took slot 2 while 1 and 3 were held"
+    else
+        failed=$((failed + 1))
+        echo "  FAIL  the tool did not take slot 2 when it freed first (exit $status): $(tr '\n' ' ' <"$scratch/err")"
+    fi
+    for pid in $holders; do kill "$pid" 2>/dev/null; done
+    wait 2>/dev/null
+else
+    failed=$((failed + 1))
+    echo "  FAIL  no flock or timeout on this host, so the slot wait is never exercised; unrun"
+fi
+
 echo "$passed passed; $failed failed"
 [ "$failed" -eq 0 ]

@@ -39,16 +39,17 @@ Ten lines the parent of a build-order run obeys on every turn. A run copies them
 1. **Top of the run.** Dispatch `headwater-product-owner` and `hw-queue` in one turn. Read the queue agent's report and nothing else.
 2. **Fill.** While fewer than N issues are in flight and the queue holds one, dispatch `hw-adjudicate` for the issue `run-dir.sh next` prints, with the template below.
 3. **On an adjudicate report.** `VERDICT: BUILD` runs `run-dir.sh stage <run> <issue> adjudicated note=<path> footprint=<a,b>`, claims the footprint with `run-dir.sh claim <run> <issue> <branch> <artifacts>`, and dispatches `hw-iterate` with the same template, the adjudication note's path, and any `WAITS-ON` the claim printed. It owns build, verify and rework, and reports once. `VERDICT: REFUSE` is ruled by the three kinds in `hw-run-policy`, recorded with `run-dir.sh rule`, and the next issue is taken in the same turn.
-4. **On an iterate report.** `VERDICT: PASS` is your cue to rule, from the verdict and the notes it names, never from `git show` or `git diff` of the branch ([HW-PD-0022](../../docs/process/decisions/0022-the-verify-and-rework-loop-for-one-issue-runs-below-the-parent.md)). If you merge, append the ruling with `run-dir.sh integrate` and dispatch the next adjudicate in the same turn. `VERDICT: STOP` is ruled like a refusal.
+4. **On an iterate report.** `VERDICT: PASS` is your cue to rule, from the verdict and the notes it names, never from the branch. If you merge, append the ruling with `run-dir.sh integrate` and dispatch the next adjudicate in the same turn. `VERDICT: STOP` is ruled like a refusal.
 5. **The integrator slot.** Depth one. When nothing is integrating and `run-dir.sh integrations` prints a ruling, dispatch a fresh `hw-integrate` with each pull request it prints. It enqueues all, and an ejected one returns for a new ruling, recorded as `ruling=ejected` until you rule it again ([HW-PD-0020](../../docs/process/decisions/0020-merges-go-through-the-github-merge-queue-one-squash-commit-per-pull-request.md)). Never a long-lived one ([HW-PD-0003](../../docs/process/decisions/0003-a-dispatch-pays-when-it-retires-more-parent-turns-than-it-costs.md)).
 6. **Every fifth merge, and at the end**, dispatch `headwater-product-owner`.
+7. **Then**, if `run-dir.sh applies <run>` prints `APPLY` lines, dispatch one `hw-iterate` with `issue: none (run lessons <run>)`. A line its pull request could not apply goes to a process obligation record.
 
 ## The veto
 
 Your veto of a `PASS` goes by `SendMessage` to that `hw-iterate` id, with your finding. It counts toward the three `FAIL`s at which that agent stops: something upstream is wrong, and a fourth will not find it. Name exact mutants, never a standard.
 ## Resume
 
-`/next-run --resume <run-id>` is a fresh parent on a run `tools/run/supervise.sh` restarted. Drain to zero before any exit, because a subagent dies with its parent. `hw-run-policy` says what a resumed parent reads and does.
+`/next-run --resume <run-id>` is a fresh parent on a run `tools/run/supervise.sh` restarted. `hw-run-policy` says what a resumed parent reads and does.
 
 ## The dispatch
 
@@ -68,4 +69,4 @@ Composed with `Write` into the issue's scratch directory and passed as a path. N
 
 ## Stop
 
-Report at the end of the run, when a decision needs an owner, or when a human asks: a table of issue, pull request and result; what verification caught that a report did not, and what was your own error; anything you would not merge again without a ruling; the branches left for the owner; what `run-dir.sh end` prints. `ls` each file a command for the owner names.
+Report at the end of the run, when a decision needs an owner, or when a human asks: a table of issue, pull request and result, the lessons one included; what verification caught that a report did not, and what was your own error; anything you would not merge again without a ruling; the branches left for the owner; what `run-dir.sh end` prints. `ls` each file a command for the owner names.

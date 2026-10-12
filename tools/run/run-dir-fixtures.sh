@@ -384,6 +384,23 @@ sh "$tool" withdraw prose '| ' 'x' 2>"$scratch/err"; status=$?
 same 'withdraw refuses a match that two lines hold, and writes nothing' "1 - #1 | build | a finding" \
     "$status $(sed -n 1p "$prose/intake.md")"
 
+# The product owner rules a one-line remedy by ending its line with ` | APPLY`,
+# and `applies` prints those lines and a count. A line that names APPLY in its
+# text, or rules it in a field before the last, is not ruled.
+same 'applies prints no line and a zero count before anything is ruled' 'APPLY: 0' \
+    "$(sh "$tool" applies prose 2>&1)"
+sh "$tool" withdraw prose '#1 |' '- #1 | build | a finding | none | APPLY' 2>"$scratch/err"
+printf -- '- #3 | build | the APPLY ruling is named here | none\n- #4 | build | ruled early | APPLY | none\n- #5 | verify | a second one | none | APPLY\n' > "$scratch/lines"
+sh "$tool" intake prose "$scratch/lines" >/dev/null
+same 'applies prints each line ruled APPLY in its last field, then the count' \
+    "- #1 | build | a finding | none | APPLY
+- #5 | verify | a second one | none | APPLY
+APPLY: 2" "$(sh "$tool" applies prose 2>&1)"
+none_run=$(sh "$tool" start applies-none 2>/dev/null)
+rm -f "$none_run/intake.md"
+same 'applies reads a run with no intake.md as a zero count' 'APPLY: 0' \
+    "$(sh "$tool" applies applies-none 2>&1)"
+
 printf '## Parent\n\n- a lesson on two lines\n' > "$scratch/lesson"
 before=$(wc -l < "$prose/lessons.md" | tr -d ' ')
 same 'lesson takes a bare run id, appends a file of prose to lessons.md, and says how many lines' \

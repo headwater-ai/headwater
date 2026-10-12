@@ -112,8 +112,10 @@ else
     root=$(git rev-parse --show-toplevel 2>/dev/null) || root=
 fi
 
-# Take the first free slot. A caller that finds none queues on slot 1 rather
-# than adding a compiler to a machine that already has too many. A caller
+# Take the first free slot. A caller that finds none waits rather than adding
+# a compiler to a machine that already has too many, and it probes every slot
+# once a second, so it takes whichever slot frees first. It waited on slot 1
+# alone until #1483, and a slot 2 or 3 that freed sat idle (HW-OBL-0211). A caller
 # naming HW_CARGO_SLOT takes its own reserved slot instead, outside 1..slots,
 # so it never queues behind a builder and a builder never queues behind it.
 slot=
@@ -124,21 +126,25 @@ if [ -n "${HW_CARGO_SLOT:-}" ]; then
         flock 9
     fi
 elif command -v flock >/dev/null 2>&1; then
-    i=1
-    while [ "$i" -le "$slots" ]; do
-        exec 9>>"$pool/slot.$i.lock"
-        if flock -n 9; then
-            slot=$i
-            break
+    waited=
+    while [ -z "$slot" ]; do
+        i=1
+        while [ "$i" -le "$slots" ]; do
+            exec 9>>"$pool/slot.$i.lock"
+            if flock -n 9; then
+                slot=$i
+                break
+            fi
+            i=$((i + 1))
+        done
+        if [ -z "$slot" ]; then
+            if [ -z "$waited" ]; then
+                echo "hw-cargo: all $slots slots busy, waiting for whichever frees first" >&2
+                waited=1
+            fi
+            sleep 1
         fi
-        i=$((i + 1))
     done
-    if [ -z "$slot" ]; then
-        echo "hw-cargo: all $slots slots busy, queueing on slot 1" >&2
-        exec 9>>"$pool/slot.1.lock"
-        flock 9
-        slot=1
-    fi
 else
     # Without flock there is no throttle to take. Still pool the target
     # directory, because that half needs no lock of ours.
