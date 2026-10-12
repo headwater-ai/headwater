@@ -31,44 +31,48 @@ hw_governs_listed_at_most=20
 
 # The built engine, or empty when there is none.
 #
-# Two profiles build one. `release` is what CI builds and what a release
-# artifact ships. `dev-release` is the same optimization level without the
-# `lto = true` and `codegen-units = 1` link, and that link is single threaded:
-# measured on an eight core host, a one crate relink costs 153 seconds of CPU
-# under `release` and 25 under `dev-release`. This function read the first path
-# and no other, so every worktree that wanted a hook or the commit gate bought
-# the expensive link for a binary each position runs for a fifth of a second.
+# Two profiles build one, `release` and `dev-release`, and the newer one
+# answers. `tools/repo/resolve-engine.sh` is the one home of that rule and says
+# why on itself, and this function delegates to it. Before #990 this function
+# carried its own copy of the comparison, one of thirteen such copies.
 #
-# Both count, and the newer one answers. A rule that preferred `release` by name
-# would let a stale one shadow a `dev-release` binary built minutes later, which
-# is a hook reading a change through an engine that predates it. That defect is
-# quieter than the cost this removes, so the rule is the file system's answer
-# rather than a ranking of the two profiles.
+# The resolver is found beside this file, at
+# `$(dirname "$0")/../../tools/repo/resolve-engine.sh`, because every hook
+# sources this file as `$(dirname "$0")/lib.sh`. It is not found under
+# `$hw_root` first, because `hw_root` names the corpus a hook answers for, and a
+# fixture points it at a scratch tree that has no `tools/` at all. `$hw_root` is
+# the fallback for a caller that sources this file from somewhere else. A `.`
+# of a missing file exits a non-interactive POSIX shell, and this file fails
+# open, so each source is guarded: with no resolver, `hw_engine` returns 1 and
+# prints nothing.
 #
-# An exact tie goes to `release`, because `-nt` is false on equality and
-# `release` is assigned first. Nothing rests on that: two builds a second apart
-# carry different times on any file system this runs on, and a tie means the two
-# binaries are equally current. It is stated because a reader who has to know
-# which one ran should not have to derive it from an operator.
+# The function still sets the global `engine` to what it printed, or to empty,
+# as the copy it replaced did.
 #
 # A hook that has already found its engine can pin it in `hw_engine_pin`, and
 # every read below then uses that binary whatever `hw_root` names afterwards.
 # `intent.sh` does, because it corrects `hw_root` to the payload's `cwd` after
 # the engine is found, and a worktree with no build of its own then made every
 # later read fail and the hook exit before its shadow-log line (#917).
+for _hw_resolver in "$(dirname "$0")/../../tools/repo/resolve-engine.sh" "$hw_root/tools/repo/resolve-engine.sh"; do
+    if [ -r "$_hw_resolver" ]; then
+        . "$_hw_resolver"
+        break
+    fi
+done
+unset _hw_resolver
+
 hw_engine() {
     if [ -n "${hw_engine_pin:-}" ] && [ -x "$hw_engine_pin" ]; then
         printf '%s' "$hw_engine_pin"
         return 0
     fi
-    _release="$hw_root/engine/target/release/headwater"
-    _dev="$hw_root/engine/target/dev-release/headwater"
     engine=
-    [ -x "$_release" ] && engine=$_release
-    if [ -x "$_dev" ] && { [ -z "$engine" ] || [ "$_dev" -nt "$engine" ]; }; then
-        engine=$_dev
-    fi
-    [ -n "$engine" ] || return 1
+    command -v hw_resolve_engine_bin >/dev/null 2>&1 || return 1
+    engine=$(hw_resolve_engine_bin "$hw_root") || {
+        engine=
+        return 1
+    }
     printf '%s' "$engine"
 }
 

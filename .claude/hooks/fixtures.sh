@@ -22,9 +22,11 @@ hooks="$root/.claude/hooks"
 export HEADWATER_HOOK_ROOT="$root"
 
 # The engine this suite runs and stages into its scratch roots, resolved the way
-# `hw_engine` resolves it: either profile counts and the newer answers. `lib.sh`
-# states that rule and the cases below hold it, so this reads it from there
-# rather than writing a second copy that could disagree with the one under test.
+# `hw_engine` resolves it: either profile counts and the newer answers. The rule
+# lives in `tools/repo/resolve-engine.sh`, `hw_engine` in `lib.sh` delegates to
+# it (#990), and the cases below hold it through that function, so this reads it
+# from there rather than writing a second copy that could disagree with the one
+# under test.
 #
 # It named the `release` path alone, which mattered once this repository started
 # telling a session to build `--profile dev-release`. A worktree with only that

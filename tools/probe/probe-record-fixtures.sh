@@ -35,8 +35,11 @@ set -u
 root=$(cd "$(dirname "$0")/../.." && pwd)
 transform="$root/tools/probe/probe-transform.sh"
 driver="$root/tools/probe/probe-record.sh"
-engine="$root/engine/target/dev-release/headwater"
-[ -x "$engine" ] || engine="$root/engine/target/release/headwater"
+# The newer of the two profiles answers, by the rule in
+# `tools/repo/resolve-engine.sh` (#990). With neither built, `engine` names a
+# path that is not executable, and each case that needs one skips on that.
+. "$root/tools/repo/resolve-engine.sh"
+engine=$(hw_resolve_engine_bin "$root") || engine="$root/engine/target/release/headwater"
 
 if ! command -v jq >/dev/null 2>&1; then
     echo "no \`jq\` on the path, and the tool under test reads JSON with it." >&2
@@ -1654,9 +1657,8 @@ same "and prints no path" "" "$(cat "$scratch/refused-folds.out")"
 # script under a scratch root, with the built engine linked in and an unsafe
 # declaration in place, stands for a checkout whose declaration the engine
 # refuses. `HW_PROBE_YML` is unset for both runs.
-seal_engine=$root/engine/target/dev-release/headwater
-[ -x "$seal_engine" ] || seal_engine=$root/engine/target/release/headwater
-if [ -x "$seal_engine" ]; then
+seal_engine=$(hw_resolve_engine_bin "$root") || seal_engine=
+if [ -n "$seal_engine" ]; then
     mkdir -p "$scratch/refusing-root/tools/probe" "$scratch/refusing-root/.headwater" \
         "$scratch/refusing-root/engine/target/dev-release"
     cp "$root/tools/probe/seal.sh" "$scratch/refusing-root/tools/probe/seal.sh"

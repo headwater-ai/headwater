@@ -65,20 +65,13 @@ set -u
 
 root=$(cd "$(dirname "$0")/../.." && pwd)
 
-# Either profile builds the engine, and the newer answers. This is the rule
-# `.githooks/fixtures.sh` and `.githooks/pre-commit` state for themselves; the
-# three copies exist because the git half of this repository answers to no
-# harness and must not reach into `.claude/` for a shared one.
-release_engine="$root/engine/target/release/headwater"
-dev_release_engine="$root/engine/target/dev-release/headwater"
-engine=$release_engine
-if [ -x "$dev_release_engine" ] && { [ ! -x "$engine" ] || [ "$dev_release_engine" -nt "$engine" ]; }; then
-    engine=$dev_release_engine
-fi
-
-if [ ! -x "$engine" ]; then
-    echo "no built engine of either profile, so nothing here can run."
-    echo "  cargo build --profile dev-release -p headwater-cli --manifest-path engine/Cargo.toml --locked"
+# Either profile builds the engine, and the newer answers, by the rule in
+# `tools/repo/resolve-engine.sh` (#990). `.githooks/` keeps its own copies of
+# that rule, and says why on itself.
+. "$root/tools/repo/resolve-engine.sh"
+if ! engine=$(hw_resolve_engine_bin "$root"); then
+    echo "color-fixtures: no built engine of either profile, so nothing here can run." >&2
+    hw_resolve_engine_missing_message "$root" >&2
     exit 1
 fi
 

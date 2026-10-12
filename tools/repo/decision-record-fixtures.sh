@@ -146,20 +146,12 @@ readme="$fixtures/README.md"
 vendored="$fixtures/sources/inspect-evals"
 sysl_vendored="$fixtures/sources/sysl"
 
-engine=""
-if [ -x "$root/engine/target/release/headwater" ]; then
-    engine="$root/engine/target/release/headwater"
-fi
-if [ -x "$root/engine/target/dev-release/headwater" ] &&
-    { [ -z "$engine" ] || [ "$root/engine/target/dev-release/headwater" -nt "$engine" ]; }; then
-    engine="$root/engine/target/dev-release/headwater"
-fi
-if [ -z "$engine" ]; then
-    echo "no engine at engine/target/{release,dev-release}/headwater, and every" >&2
-    echo "  case below runs one. This suite states that and stops rather than" >&2
-    echo "  reporting a row of passes over a binary that is not there." >&2
-    echo "  Build one:" >&2
-    echo "  cargo build --profile dev-release -p headwater-cli --manifest-path engine/Cargo.toml --locked" >&2
+# The newer of the two profiles answers, by the rule in
+# `tools/repo/resolve-engine.sh` (#990).
+. "$root/tools/repo/resolve-engine.sh"
+if ! engine=$(hw_resolve_engine_bin "$root"); then
+    echo "decision-record-fixtures: every case below runs an engine, so this suite stops rather than report passes over a missing binary." >&2
+    hw_resolve_engine_missing_message "$root" >&2
     exit 1
 fi
 

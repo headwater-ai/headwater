@@ -1790,18 +1790,12 @@ slug=$(repo_slug "$(git -C "$root" remote get-url origin 2>/dev/null)")
 marker='The tag is not cut yet'
 
 # The engine, as the newer of the two profiles that write one, which is the rule
-# `.githooks/pre-commit` and `.claude/hooks/lib.sh` both implement. A session
-# builds whichever profile it likes and the newer binary answers. No engine at
-# all is RED below and never skipped, because an arm that passes quietly when
-# the binary is missing re-creates the defect group 6 exists to close.
-engine=
-if [ -x "$root/engine/target/release/headwater" ]; then
-    engine="$root/engine/target/release/headwater"
-fi
-if [ -x "$root/engine/target/dev-release/headwater" ] &&
-    { [ -z "$engine" ] || [ "$root/engine/target/dev-release/headwater" -nt "$engine" ]; }; then
-    engine="$root/engine/target/dev-release/headwater"
-fi
+# `tools/repo/resolve-engine.sh` implements (#990). A session builds whichever
+# profile it likes and the newer binary answers. No engine at all is RED below
+# and never skipped, because an arm that passes quietly when the binary is
+# missing re-creates the defect group 6 exists to close.
+. "$root/tools/repo/resolve-engine.sh"
+engine=$(hw_resolve_engine_bin "$root") || engine=
 
 echo "every relative link on the first screen"
 

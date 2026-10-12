@@ -223,8 +223,12 @@ case $0 in
     *) invoked_from=. ;;
 esac
 root=$(cd "$invoked_from/../.." && pwd)
-engine=$root/engine/target/dev-release/headwater
-[ -x "$engine" ] || engine=$root/engine/target/release/headwater
+# The engine is the newer of the two profiles, by the rule in
+# `tools/repo/resolve-engine.sh`, which uses builtins alone. Before #990 this
+# file preferred `dev-release` whenever it existed, so a stale `dev-release`
+# binary shadowed a `release` one built after it. Now the newer one answers.
+. "$root/tools/repo/resolve-engine.sh"
+engine=$(hw_resolve_engine_bin "$root") || engine=
 
 # The arguments and the workspace guard are checked **before anything about
 # this host**, because they are the two refusals that are the same everywhere.
@@ -476,9 +480,9 @@ if [ "$answer_only" = 1 ]; then
     exit 0
 fi
 
-[ -x "$engine" ] || {
-    echo "probe-record: no engine at $root/engine/target/{dev-release,release}/headwater." >&2
-    echo "probe-record: build one, or the plan members below would be guesses." >&2
+[ -n "$engine" ] || {
+    echo "probe-record: no engine, so the plan members below would be guesses." >&2
+    hw_resolve_engine_missing_message "$root" >&2
     exit 3
 }
 
