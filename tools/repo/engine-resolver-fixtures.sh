@@ -186,6 +186,20 @@ echo "this repository's own tree"
 pop=$(population "$root")
 more_than "the population is non-empty" 0 "$(printf '%s\n' "$pop" | grep -c .)"
 
+# The counts #990 asked a re-run to report, so a reader can see them move: of
+# the population, how many reference the resolver, and how many carry the
+# `dev-release` literal and no reference to it. Information, not a judgment.
+pop_resolver=0
+pop_inline=0
+for p in $pop; do
+    if grep -qE 'resolve-engine\.sh|resolve_engine' "$root/$p"; then
+        pop_resolver=$((pop_resolver + 1))
+    elif grep -q 'dev-release' "$root/$p"; then
+        pop_inline=$((pop_inline + 1))
+    fi
+done
+echo "  info  population $(printf '%s\n' "$pop" | grep -c .): $pop_resolver reference the resolver, $pop_inline carry dev-release with no reference to it"
+
 bad=$(noncompliant "$root")
 same "every real consumer today carries the resolver or the dual-profile check" \
     "" "$(printf '%s\n' "$bad" | tr '\n' '|' | sed 's/^|$//')"
@@ -326,6 +340,28 @@ echo "the files #990 moved onto the shared resolver"
 # `hw_resolve_engine_bin` and carries no profile comparison of its own. The
 # population judge above accepts an inline copy as compliant, so it cannot
 # see a file that goes back to its own copy. This list can.
+#
+# `own_copy` matches the three shapes the copies took: a `-nt` comparison of
+# a profile path, an executable test of a `dev` variable, and an assignment of
+# the `dev-release` path that a `release` fallback then follows. A fallback to
+# the `release` path after the resolver has answered no is not a copy, and it
+# does not match.
+own_copy='release/headwater"? *-nt|\[ -x "?\$[A-Za-z_]*dev|[A-Za-z_]+=["$A-Za-z_{}/]*target/dev-release/headwater"?$'
+
+# The pattern is tried on each shape before it is trusted with the list.
+for shape in \
+    '    { [ -z "$engine" ] || [ "$root/engine/target/dev-release/headwater" -nt "$engine" ]; }; then' \
+    'if [ -x "$dev_release_engine" ] && { [ ! -x "$engine" ] || [ "$dev_release_engine" -nt "$engine" ]; }; then' \
+    'engine=$root/engine/target/dev-release/headwater'; do
+    if printf '%s\n' "$shape" | grep -qE "$own_copy"; then
+        pass "the copy detector matches: $shape"
+    else
+        fail "the copy detector matches: $shape" "it does not"
+    fi
+done
+same "the copy detector leaves a release fallback alone" "0" \
+    "$(printf '%s\n' 'engine=$(hw_resolve_engine_bin "$root") || engine="$root/engine/target/release/headwater"' | grep -cE "$own_copy")"
+
 for migrated in \
     .claude/hooks/lib.sh \
     .claude/hooks/fixtures-live.sh \
@@ -341,7 +377,7 @@ for migrated in \
     tools/probe/probe-transform.sh; do
     if ! grep -q 'hw_resolve_engine_bin' "$root/$migrated"; then
         fail "$migrated resolves through the shared resolver" "it does not call hw_resolve_engine_bin"
-    elif grep -qE 'dev-release/headwater"? *-nt|release/headwater"? *-nt|\[ -x "?\$[A-Za-z_]*dev' "$root/$migrated"; then
+    elif grep -qE "$own_copy" "$root/$migrated"; then
         fail "$migrated resolves through the shared resolver" "it still carries its own profile comparison"
     else
         pass "$migrated resolves through the shared resolver"
@@ -370,11 +406,14 @@ hw_resolve_engine_missing_message "$2" >/dev/null
 env | sort >"$3.after"
 EOF
 
-# inherits RESOLVER — empty when a child sees the same environment before and
-# after RESOLVER is sourced and called; otherwise the lines that changed.
+# inherits RESOLVER [NAME=VALUE...] — empty when a child sees the same
+# environment before and after RESOLVER is sourced and called; otherwise the
+# lines that changed. Each NAME=VALUE is exported into the clean shell first.
 inherits() {
+    _resolver=$1
+    shift
     rm -f "$scratch/env.before" "$scratch/env.after"
-    env -i PATH="$PATH" HOME="$HOME" sh "$scratch/child-env.sh" "$1" "$scratch/eng" "$scratch/env" || {
+    env -i PATH="$PATH" HOME="$HOME" "$@" sh "$scratch/child-env.sh" "$_resolver" "$scratch/eng" "$scratch/env" || {
         echo "child-env.sh did not run"
         return
     }
@@ -398,6 +437,18 @@ sed 's/^\( *\)_hw_resolve_root=\$1$/\1_hw_resolve_root=$1; HEADWATER_HOOK_ROOT=$
 inherits "$scratch/resolve-hook-root.sh" >/dev/null
 same "a resolver that exports HEADWATER_HOOK_ROOT is caught" \
     "1" "$(grep -c '^HEADWATER_HOOK_ROOT=' "$scratch/env.after")"
+
+# A clean shell has nothing exported for the resolver to overwrite, so a plain
+# assignment to a name the caller already exports would pass the cases above.
+# These run with HEADWATER_HOOK_ROOT exported first, as `.claude/hooks/fixtures.sh`
+# exports it.
+same "with HEADWATER_HOOK_ROOT already exported, the real resolver leaves it as it was" \
+    "" "$(inherits "$root/tools/repo/resolve-engine.sh" HEADWATER_HOOK_ROOT=/sentinel)"
+sed 's/^\( *\)_hw_resolve_root=\$1$/\1_hw_resolve_root=$1; HEADWATER_HOOK_ROOT=$1/' \
+    "$root/tools/repo/resolve-engine.sh" >"$scratch/resolve-assign.sh"
+same "a resolver that assigns an exported name, with no export of its own, is caught" \
+    "> HEADWATER_HOOK_ROOT=$scratch/eng" \
+    "$(inherits "$scratch/resolve-assign.sh" HEADWATER_HOOK_ROOT=/sentinel | grep '^>')"
 
 echo
 echo "$passed passed, $failed failed"
