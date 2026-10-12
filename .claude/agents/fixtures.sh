@@ -703,5 +703,71 @@ case $(boundary "$root/engine/crates/cli/harness" "$scratch/partdot") in
     *) fail 'a skill named for part of a shipped name is reported' 'the boundary passed it' ;;
 esac
 
+# --- 15. the first session hands the run to supervise.sh ---------------------
+
+# `tools/run/supervise.sh` restarts the parent every few merges, and until
+# #1275 no sentence told anybody to start it: the policy said it "runs each
+# session after the first" and named no starter, so every run stayed one
+# unsupervised session, the failure the script exists to prevent. The parent
+# loads hw-run-policy at the start of every session, so the handover is a
+# sub-bullet of the restart rule there, found by `first session` in its bold
+# lead. It must name the script, the first session as the one that starts it,
+# `HW_SUPERVISE_TREE`, because the script refuses a main checkout, and the drain
+# to zero before it starts, because two live parents on one run each fill
+# slots. This case holds the text alone. Only a supervised run shows that the
+# loop runs.
+printf '\n# the first session of a run hands the run to supervise.sh in hw-run-policy\n'
+# Prints the handover sub-bullet of the restart rule in the file given: the
+# indented bullet whose bold lead names the first session, under the top-level
+# bullet whose bold lead says a parent restarts.
+handover_bullet() {
+    awk 'index($0, "- **") == 1 {
+            lead = substr($0, 5); i = index(lead, "**")
+            inrule = (i > 0 && index(substr(lead, 1, i - 1), "restarts") > 0); next
+        }
+        inrule && index($0, "  - **") == 1 {
+            lead = substr($0, 7); i = index(lead, "**")
+            if (i > 0 && index(substr(lead, 1, i - 1), "first session") > 0) { print; exit }
+        }' "$1"
+}
+# Prints why the handover does not hold, or nothing when it holds.
+handover_misses() {
+    bullet=$(handover_bullet "$1")
+    if [ -z "$bullet" ]; then
+        printf 'the restart rule has no sub-bullet whose bold lead names the first session, so nothing starts supervise.sh'
+        return
+    fi
+    case $bullet in *'tools/run/supervise.sh'*) ;; *) printf ' the handover does not name tools/run/supervise.sh' ;; esac
+    printf '%s\n' "$bullet" | grep -qE 'first session[^.]* start' || printf ' the handover does not say the first session starts it'
+    case $bullet in *HW_SUPERVISE_TREE*) ;; *) printf ' the handover does not name HW_SUPERVISE_TREE' ;; esac
+    printf '%s\n' "$bullet" | grep -qE 'drains? to zero' || printf ' the handover does not drain to zero first'
+}
+why=$(handover_misses "$skills/hw-run-policy/SKILL.md")
+if [ -z "$why" ]; then
+    pass 'the first session hands the run to tools/run/supervise.sh'
+else
+    fail 'the first session hands the run to tools/run/supervise.sh' "$why"
+fi
+# The arms, each a restart rule in a scratch file: the rule as it read before
+# #1275, which names no starter, and a handover that drops the drain to zero.
+handover_arm() {
+    printf -- '- **A parent restarts every few merges, and drains to zero first.** `tools/run/supervise.sh` runs each session after the first.\n%s' "$1" > "$scratch/restart.md"
+    handover_misses "$scratch/restart.md"
+}
+case $(handover_arm '') in
+    *'nothing starts supervise.sh'*) pass 'and a restart rule that names no starter is reported' ;;
+    *) fail 'a restart rule that names no starter is reported' 'the handover passed it' ;;
+esac
+case $(handover_arm '  - **The first session hands the run over.** With the rulings recorded, the first session starts `HW_SUPERVISE_TREE=<tree> sh tools/run/supervise.sh <run-id>` in the background.
+') in
+    *'does not drain to zero first'*) pass 'and a handover that does not drain to zero first is reported' ;;
+    *) fail 'a handover that does not drain to zero first is reported' 'the handover passed it' ;;
+esac
+case $(handover_arm '  - **The first session hands the run over.** It drains to zero, then starts `sh tools/run/supervise.sh <run-id>` in the background.
+') in
+    *'does not name HW_SUPERVISE_TREE'*) pass 'and a handover that names no tree is reported' ;;
+    *) fail 'a handover that names no tree is reported' 'the handover passed it' ;;
+esac
+
 printf '\n%s passed, %s failed\n' "$passed" "$failed"
 [ "$failed" -eq 0 ]
