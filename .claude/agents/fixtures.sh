@@ -359,64 +359,102 @@ else
     fail 'the refusal arms on hw-iterate.md run' 'no .claude/agents/hw-iterate.md to copy'
 fi
 
-# --- 11. the rule against filing an issue covers the parent in its bold lead --
+# --- 11. the rule against filing an issue covers the parent, by its marker ----
 
 # The parent is an agent of the run too, and a lead that names only a stage
 # reads as not covering it (#1275). The parent loads hw-run-policy at the start
-# of every session, so the skill's bold lead is where the words reach it. The
-# case reads the bold lead alone: the rest of the line already ends "and the
-# parent rules on it", which is about ruling and not about filing. The lead is
-# the text of a bullet up to its first `**`, so single-asterisk emphasis
-# inside it does not end it, and the rule is the first bullet whose lead says an agent "files an
-# issue" or "files no issue", so a rewording in either form is still found.
-printf '\n# the rule against filing an issue in hw-run-policy covers the parent in its bold lead\n'
-# Prints the bold lead of the no-filing rule in the file given.
-no_filing_lead() {
+# of every session, so the skill's no-filing rule is where the words reach it.
+# The rule is the first bullet whose bold lead says an agent "files an issue" or
+# "files no issue", and the lead is the text up to its first `**`, so
+# single-asterisk emphasis inside it does not end it. The lead must name the
+# parent. Whether it covers the parent is read from a marker the bullet carries,
+# not from the prose, because no word list holds every way to exempt the parent
+# in English: an earlier form of this case passed "the parent aside" and
+# "unless it is the parent". The marker is one HTML comment on the bullet,
+#     <!-- hw-filing-rule covers=<actor>,... filer=<agent> -->
+# and it holds when `covers` names `parent` and `filer` names
+# `headwater-product-owner`, the one agent of a run that files an issue.
+printf '\n# the rule against filing an issue in hw-run-policy covers the parent, by its marker\n'
+# Prints the whole bullet line of the no-filing rule in the file given.
+no_filing_bullet() {
     awk 'index($0, "- **") == 1 {
         lead = substr($0, 5); i = index(lead, "**"); if (i == 0) next
         lead = substr(lead, 1, i - 1)
-        if (lead ~ /files (an|no) issue/) { print lead; exit }
+        if (lead ~ /files (an|no) issue/) { print; exit }
     }' "$1"
 }
-# Prints why a lead fails to cover the parent, or nothing when it covers it.
-lead_misses_parent() {
+# Prints why a bullet fails to cover the parent, or nothing when it covers it.
+bullet_misses_parent() {
     case "$1" in
         '') printf 'no bullet has a bold lead that says an agent files an issue or files no issue' ; return ;;
-        *parent*) ;;
-        *) printf 'the lead does not name the parent: %s' "$1" ; return ;;
     esac
-    if printf '%s\n' "$1" | grep -qiE '(except|apart from|other than|but|besides|excluding|save|not) (for )?the parent'; then
-        printf 'the lead names the parent as an exception: %s' "$1"
+    lead=${1#- \*\*}
+    lead=${lead%%\*\**}
+    case "$lead" in
+        *parent*) ;;
+        *) printf 'the lead does not name the parent: %s' "$lead" ; return ;;
+    esac
+    marker=$(printf '%s\n' "$1" | grep -oE '<!-- hw-filing-rule [^>]*-->' | head -n 1)
+    if [ -z "$marker" ]; then
+        printf 'the rule carries no <!-- hw-filing-rule covers=... filer=... --> marker'
+        return
     fi
+    covers=$(printf '%s\n' "$marker" | sed -n 's/.* covers=\([^ ]*\).*/\1/p')
+    filer=$(printf '%s\n' "$marker" | sed -n 's/.* filer=\([^ ]*\).*/\1/p')
+    printf '%s\n' "$covers" | tr ',' '\n' | grep -qx parent || printf ' the marker does not cover the parent: %s' "$marker"
+    [ "$filer" = headwater-product-owner ] || printf ' the marker does not name headwater-product-owner as the filer: %s' "$marker"
 }
-lead=$(no_filing_lead "$skills/hw-run-policy/SKILL.md")
-why=$(lead_misses_parent "$lead")
+bullet=$(no_filing_bullet "$skills/hw-run-policy/SKILL.md")
+why=$(bullet_misses_parent "$bullet")
 if [ -z "$why" ]; then
-    pass "the bold lead covers the parent: $lead"
+    lead=${bullet#- \*\*}
+    pass "the no-filing rule covers the parent: ${lead%%\*\**}"
 else
-    fail 'the bold lead of the no-filing rule covers the parent' "$why"
+    fail 'the no-filing rule covers the parent' "$why"
 fi
-# The arms, each a one-line rule in a scratch file: two leads that do not cover
-# the parent are reported, and a rewording with emphasis inside the lead holds.
-lead_arm() {
-    printf -- '- **%s** The rest of the rule.\n' "$1" > "$scratch/no-filing.md"
-    lead_misses_parent "$(no_filing_lead "$scratch/no-filing.md")"
+# The arms, each a one-line rule in a scratch file.
+marker='<!-- hw-filing-rule covers=every-agent,parent filer=headwater-product-owner -->'
+filing_arm() {
+    printf -- '- **%s** The rest of the rule.%s\n' "$1" "$2" > "$scratch/no-filing.md"
+    bullet_misses_parent "$(no_filing_bullet "$scratch/no-filing.md")"
 }
-why=$(lead_arm 'No stage files an issue inside a run.')
+why=$(filing_arm 'No stage files an issue inside a run.' " $marker")
 case "$why" in
     *'does not name the parent'*) pass 'and a bold lead that names only a stage is reported' ;;
     *) fail 'a bold lead that names only a stage is reported' "reported: \`$why\`" ;;
 esac
-why=$(lead_arm 'No stage files an issue inside a run, apart from the parent.')
+# Four leads that exempt the parent in words, with no marker. The last three
+# passed the word list this case held before.
+for exempt in 'No stage files an issue inside a run, apart from the parent.' \
+    'No agent files an issue inside a run; the parent may.' \
+    'No agent files an issue inside a run, unless it is the parent.' \
+    'No agent files an issue inside a run, the parent aside.'; do
+    why=$(filing_arm "$exempt" '')
+    case "$why" in
+        *'no <!-- hw-filing-rule'*) pass "and a lead with no marker is reported: $exempt" ;;
+        *) fail "a lead with no marker is reported: $exempt" "reported: \`$why\`" ;;
+    esac
+done
+why=$(filing_arm 'No agent of a run files an issue, the parent included.' ' <!-- hw-filing-rule covers=every-stage filer=headwater-product-owner -->')
 case "$why" in
-    *'as an exception'*) pass 'and a bold lead that exempts the parent is reported' ;;
-    *) fail 'a bold lead that exempts the parent is reported' "reported: \`$why\`" ;;
+    *'does not cover the parent'*) pass 'and a marker that does not cover the parent is reported' ;;
+    *) fail 'a marker that does not cover the parent is reported' "reported: \`$why\`" ;;
 esac
-why=$(lead_arm 'An agent of a run, the *parent* included, files no issue.')
+why=$(filing_arm 'No agent of a run files an issue, the parent included.' ' <!-- hw-filing-rule covers=every-agent,parents filer=headwater-product-owner -->')
+case "$why" in
+    *'does not cover the parent'*) pass 'and a marker that names a word containing parent is reported' ;;
+    *) fail 'a marker that names a word containing parent is reported' "reported: \`$why\`" ;;
+esac
+why=$(filing_arm 'No agent of a run files an issue, the parent included.' ' <!-- hw-filing-rule covers=every-agent,parent filer=parent -->')
+case "$why" in
+    *'does not name headwater-product-owner'*) pass 'and a marker that names another filer is reported' ;;
+    *) fail 'a marker that names another filer is reported' "reported: \`$why\`" ;;
+esac
+why=$(filing_arm 'An agent of a run, the *parent* included, files no issue.' " $marker")
 if [ -z "$why" ]; then
-    pass 'and a reworded lead with emphasis inside it holds'
+    pass 'and a reworded lead with emphasis inside it and the marker holds'
 else
-    fail 'a reworded lead with emphasis inside it holds' "$why"
+    fail 'a reworded lead with emphasis inside it and the marker holds' "$why"
 fi
 
 # --- 12. the Record ruling checks the intake line against the tree -----------
