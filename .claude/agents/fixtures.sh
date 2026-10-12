@@ -824,6 +824,22 @@ case $(handover_arm '  - **The first session hands the run over.** It drains to 
     *'does not name HW_SUPERVISE_TREE'*) pass 'and a handover that names no tree is reported' ;;
     *) fail 'a handover that names no tree is reported' 'the handover passed it' ;;
 esac
+case $(handover_arm '  - **The first session hands the run over.** It drains to zero, then starts `HW_SUPERVISE_TREE=<tree> sh supervise <run-id>` in the background.
+') in
+    *'does not name tools/run/supervise.sh'*) pass 'and a handover that does not name the script is reported' ;;
+    *) fail 'a handover that does not name the script is reported' 'the handover passed it' ;;
+esac
+case $(handover_arm '  - **The first session waits.** A person starts `HW_SUPERVISE_TREE=<tree> sh tools/run/supervise.sh <run-id>` after the first session drains to zero.
+') in
+    *'does not say the first session starts it'*) pass 'and a handover that a person starts is reported' ;;
+    *) fail 'a handover that a person starts is reported' 'the handover passed it' ;;
+esac
+# A handover sub-bullet under another rule is not the restart rule's.
+printf -- '- **A parent restarts every few merges, and drains to zero first.** `tools/run/supervise.sh` runs each session after the first.\n- **Another rule.** Its text.\n  - **The first session hands the run over.** It drains to zero, then starts `HW_SUPERVISE_TREE=<tree> sh tools/run/supervise.sh <run-id>`.\n' > "$scratch/restart-other.md"
+case $(handover_misses "$scratch/restart-other.md") in
+    *'nothing starts supervise.sh'*) pass 'and a handover under another rule is reported' ;;
+    *) fail 'a handover under another rule is reported' 'the handover passed it' ;;
+esac
 
 printf '\n%s passed, %s failed\n' "$passed" "$failed"
 [ "$failed" -eq 0 ]

@@ -44,7 +44,7 @@ relations:
     - to: .claude/skills/hw-run-policy/SKILL.md
       verified_revision: sha256:113ecaf40547f0b36eb67769161a4c3ae9dc7de4591e7726b9fa9421a83a9edb
     - to: .claude/agents/fixtures.sh
-      verified_revision: sha256:e1740ce60161bc8e89613a73eca0feeb2ae8b4077b9857a873853918ac34aa8a
+      verified_revision: sha256:f91100d6a4c18b697b5ea6d8bd94b627587bfc9abcd3b537c8fff9a07af1b7ef
     - to: .claude/skills/hw-verification-bar/SKILL.md
       verified_revision: sha256:a68ce6b14b5a8d7068aeafd8c7443e0497a55b4e444e2b971daa1da738c2153b
 ---
