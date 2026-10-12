@@ -20,6 +20,18 @@
 #              with its count, because this report cannot expand it
 #   inbound    an inbound governs edge, a document target and an anchor edge
 #              that governs nothing: none names a path
+#   zero       `src/z/*.rs`, expanded by an engine that writes `paths`, and
+#              it matched nothing: `"paths": []`. The member is expanded, so
+#              Unmeasured does not name it as a pattern it cannot expand
+#   space      `src/c d.rs`, a literal whose path holds a space, on the tree.
+#              `route` reads its task as words split at whitespace, so the
+#              empty route report for it measures nothing, and Touched says
+#              so rather than "no document governs it now"
+#
+# Two more paths hold a space for the same reason: the changed path
+# `src/a b.rs` and the deleted path `src/e f.rs`. Route writes no pointer for
+# either, and Unmeasured says that whether a document governs it is not
+# measured, rather than that no governs edge names it.
 #
 # A second path of gone.tsv, `src/not-a-document.rs`, has no explain report,
 # as when `explain` refuses a path that is not a document.
@@ -63,6 +75,8 @@ EXPLAIN = {
         anchor(["src/g/*.rs"], [{"pattern": "src/g/*.rs", "matched": 2, "paths": ["src/g/gone.rs", "src/g/x.rs"]}]),
         anchor(["src/missing.rs"], [{"pattern": "src/missing.rs", "matched": 1}]),
         anchor(["src/p/**"], [{"pattern": "src/p/**", "matched": 3}]),
+        anchor(["src/z/*.rs"], [{"pattern": "src/z/*.rs", "matched": 0, "paths": []}]),
+        anchor(["src/c d.rs"], [{"pattern": "src/c d.rs", "matched": 1}]),
         anchor(["src/inbound.rs"], [{"pattern": "src/inbound.rs", "matched": 1}], inbound=True),
         anchor(["src/neither.rs"], [{"pattern": "src/neither.rs", "matched": 1}], governs="neither"),
         {
@@ -99,26 +113,32 @@ def main():
     failed = []
     with tempfile.TemporaryDirectory() as tmp:
         root, work = os.path.join(tmp, "root"), os.path.join(tmp, "work")
-        for path in ("src/lit.rs", "src/g/x.rs", "src/inbound.rs", "src/neither.rs"):
+        for path in ("src/lit.rs", "src/g/x.rs", "src/c d.rs", "src/a b.rs", "src/inbound.rs", "src/neither.rs"):
             write(os.path.join(root, path), "x\n")
-        write(os.path.join(work, "gone.tsv"), f"D\t{DELETED}\nD\tsrc/g/gone.rs\nD\tsrc/not-a-document.rs\n")
+        write(os.path.join(work, "gone.tsv"), f"D\t{DELETED}\nD\tsrc/g/gone.rs\nD\tsrc/not-a-document.rs\nD\tsrc/e f.rs\n")
         write(os.path.join(work, "explains-base.tsv"), f"1\t{DELETED}\n")
         write(os.path.join(work, "explain-base", "1.json"), json.dumps(EXPLAIN))
         lost = subprocess.run(
             [sys.executable, report, "--lost", work, root], check=True, capture_output=True, text=True
         ).stdout.splitlines()
-        if lost != ["src/g/x.rs", "src/lit.rs"]:
-            failed.append(f"--lost: got {lost}, want ['src/g/x.rs', 'src/lit.rs']")
+        want_lost = ["src/c d.rs", "src/g/x.rs", "src/lit.rs"]
+        if lost != want_lost:
+            failed.append(f"--lost: got {lost}, want {want_lost}")
 
         write(os.path.join(work, "lost.txt"), "\n".join(lost) + "\n")
-        write(os.path.join(work, "routes-lost.tsv"), "1\tsrc/g/x.rs\n2\tsrc/lit.rs\n")
+        write(os.path.join(work, "routes-lost.tsv"), "1\tsrc/g/x.rs\n2\tsrc/lit.rs\n3\tsrc/c d.rs\n")
         write(os.path.join(work, "route-lost", "1.json"), json.dumps(route_governed("src/g/x.rs", STILL, "ACME-DR-0002")))
         write(os.path.join(work, "route-lost", "2.json"), json.dumps(NO_EDGE))
-        write(os.path.join(work, "changed.txt"), "src/lit.rs\n")
-        write(os.path.join(work, "routes.tsv"), "1\tsrc/lit.rs\n")
+        # The shape route really writes for a path it split into words.
+        write(os.path.join(work, "route-lost", "3.json"), json.dumps(NO_EDGE))
+        write(os.path.join(work, "changed.txt"), "src/lit.rs\nsrc/a b.rs\n")
+        write(os.path.join(work, "routes.tsv"), "1\tsrc/lit.rs\n2\tsrc/a b.rs\n")
         write(os.path.join(work, "route", "1.json"), json.dumps(NO_EDGE))
+        write(os.path.join(work, "route", "2.json"), json.dumps(NO_EDGE))
+        write(os.path.join(work, "routes-base.tsv"), "1\tsrc/e f.rs\n")
+        write(os.path.join(work, "route-base", "1.json"), json.dumps(NO_EDGE))
         write(os.path.join(work, "check.exit"), "0\n")
-        write(os.path.join(work, "check.json"), json.dumps({"change": {"unmatched": ["src/lit.rs"]}, "findings": []}))
+        write(os.path.join(work, "check.json"), json.dumps({"change": {"unmatched": ["src/lit.rs", "src/a b.rs"]}, "findings": []}))
         write(os.path.join(work, "base-check.json"), json.dumps({"findings": []}))
         out = os.path.join(tmp, "report.md")
         subprocess.run([sys.executable, report, work, out], check=True)
@@ -143,15 +163,31 @@ def main():
     pattern = [l for l in unmeasured.splitlines() if l.startswith("- `src/p/**`:")]
     if len(pattern) != 1 or DELETED not in pattern[0] or "the 3 path(s)" not in pattern[0]:
         failed.append("pattern: Unmeasured does not name src/p/** once, with its document and its 3 paths")
-    if "It deletes a document that governed 2 path(s) still on the tree." not in text:
-        failed.append("summary: the opening sentence does not count the 2 paths that lost a governor")
+    if "It deletes a document that governed 3 path(s) still on the tree." not in text:
+        failed.append("summary: the opening sentence does not count the 3 paths that lost a governor")
+    if any(l.startswith("- `src/z/*.rs`:") for l in unmeasured.splitlines()):
+        failed.append("zero: Unmeasured names src/z/*.rs as unexpanded, and the engine expanded it to no path")
+    absent = ("no governs edge names it", "no governs edge named it", "no document governs it now")
+    space = [l for l in touched.splitlines() if l.startswith("- `src/c d.rs`: this change deleted")]
+    if len(space) != 1 or "not measured" not in space[0] or any(a in space[0] for a in absent):
+        failed.append("space: Touched does not say that whether a document governs src/c d.rs now is not measured")
+    for path in ("src/a b.rs", "src/e f.rs", "src/c d.rs"):
+        said = [l for l in unmeasured.splitlines() if l.startswith(f"- `{path}`:")]
+        if any(a in l for l in said for a in absent):
+            failed.append(f"space: Unmeasured says no edge names {path}, and route cannot read a path with a space")
+    for path in ("src/a b.rs", "src/e f.rs"):
+        said = [l for l in unmeasured.splitlines() if l.startswith(f"- `{path}`:")]
+        if len(said) != 1 or "not measured" not in said[0]:
+            failed.append(f"space: Unmeasured does not name {path} once as not measured")
+    if "A governs edge reaches 0 of the 2 other path(s) by name, and `route` cannot read 1 of them" not in text:
+        failed.append("summary: the opening sentence does not count src/a b.rs as a path route cannot read")
 
     for f in failed:
         print(f"FAIL {f}", file=sys.stderr)
     if failed:
         print(text, file=sys.stderr)
         return 1
-    print("lost-governor: literal, expanded, missing, pattern and inbound each hold")
+    print("lost-governor: literal, expanded, missing, pattern, inbound, zero and space each hold")
     return 0
 
 
