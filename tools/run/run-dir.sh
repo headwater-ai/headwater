@@ -1,5 +1,5 @@
 #!/bin/sh
-# The run directory of a build-order run, and the five files in it.
+# The run directory of a build-order run, and the files in it.
 #
 # A run of `.claude/commands/next-run.md` used to keep one ledger at
 # `~/.claude/headwater-build-order-ledger.md`, read whole at the top of every
@@ -61,7 +61,7 @@
 # Every <dir>, for every subcommand but `start`, may be a bare run id, such as `20260927-0443`, which names that
 # run under the git common dir. A worktree-isolated parent's shell refuses a
 # command whose text names `.git`, and `Edit` refuses a path there, so the id
-# and the four prose subcommands are its only way to write the ledger. Run
+# and the subcommands are its only way to write the ledger. Run
 # `20260927-0443` wrote four scripts of its own for exactly this.
 #
 # Three more files serve a parent that `tools/run/supervise.sh` restarts every
