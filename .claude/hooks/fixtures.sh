@@ -22,9 +22,11 @@ hooks="$root/.claude/hooks"
 export HEADWATER_HOOK_ROOT="$root"
 
 # The engine this suite runs and stages into its scratch roots, resolved the way
-# `hw_engine` resolves it: either profile counts and the newer answers. `lib.sh`
-# states that rule and the cases below hold it, so this reads it from there
-# rather than writing a second copy that could disagree with the one under test.
+# `hw_engine` resolves it: either profile counts and the newer answers. The rule
+# lives in `tools/repo/resolve-engine.sh`, `hw_engine` in `lib.sh` delegates to
+# it (#990), and the cases below hold it through that function, so this reads it
+# from there rather than writing a second copy that could disagree with the one
+# under test.
 #
 # It named the `release` path alone, which mattered once this repository started
 # telling a session to build `--profile dev-release`. A worktree with only that
@@ -257,6 +259,30 @@ chmod a-x "$engine_root/engine/target/release/headwater"
 engine_case 'neither binary executable, and the function reports none' '(none)'
 
 rm -rf "$engine_root"
+
+# Since #990 `hw_engine` delegates to `tools/repo/resolve-engine.sh`, which
+# `lib.sh` finds beside itself. A copy of `lib.sh` with no resolver beside it
+# and none under its root must still fail open: `hw_engine` reports none, and
+# the hook that sourced it runs on. An unguarded `.` of the missing file would
+# end that hook's shell before its next line, and a built engine beside the
+# copy does not change the answer.
+lone=$(mktemp -d "${TMPDIR:-/tmp}/headwater-hwengine-lone-XXXXXX")
+mkdir -p "$lone/.claude/hooks" "$lone/engine/target/release"
+cp "$hooks/lib.sh" "$lone/.claude/hooks/lib.sh"
+: > "$lone/engine/target/release/headwater"
+chmod u+x "$lone/engine/target/release/headwater"
+printf '. "$(dirname "$0")/lib.sh"\nhw_engine || printf "(none)"\nprintf " and the hook runs on"\n' \
+    > "$lone/.claude/hooks/probe.sh"
+got=$(HEADWATER_HOOK_ROOT="$lone" sh "$lone/.claude/hooks/probe.sh" 2>&1)
+if [ "$got" = '(none) and the hook runs on' ]; then
+    printf 'ok   %s\n' 'lib.sh with no resolver to find fails open, and the hook runs on'
+    passed=$((passed + 1))
+else
+    printf 'FAIL %s\n  expected %s\n  got      %s\n' 'lib.sh with no resolver to find fails open, and the hook runs on' \
+        '(none) and the hook runs on' "$got"
+    failed=$((failed + 1))
+fi
+rm -rf "$lone"
 
 printf '\n# write.sh, on PreToolUse: backfill\n'
 expect 'a new document under the corpus root is refused, and the refusal names the verb' \

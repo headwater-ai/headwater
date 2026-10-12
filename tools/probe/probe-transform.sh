@@ -305,11 +305,22 @@ step_derive_cites() {
 # derivation that found nothing.
 step_derive_findings() {
     file=$1
-    engine=$root/engine/target/dev-release/headwater
-    [ -x "$engine" ] || engine=$root/engine/target/release/headwater
-    [ -x "$engine" ] || {
+    # The newer of the two profiles answers, by the rule in
+    # `tools/repo/resolve-engine.sh`. Before #990 this preferred `dev-release`
+    # whenever it existed, so a stale `dev-release` binary shadowed a
+    # `release` one built after it. The resolver is read from beside this
+    # script and not from `$root`, because `--root` can name a tree that holds
+    # an engine and no `tools/`, and a `.` of a missing file ends the shell
+    # before the refusal below can print.
+    case $0 in
+        */*) transform_dir=${0%/*} ;;
+        *) transform_dir=. ;;
+    esac
+    [ -r "$transform_dir/../repo/resolve-engine.sh" ] && . "$transform_dir/../repo/resolve-engine.sh"
+    engine=$(hw_resolve_engine_bin "$root" 2>/dev/null) || {
         echo "probe-transform: no engine, so \`findings\` on $file cannot be derived." >&2
         echo "probe-transform: refusing to write an empty list, which claims that no rule reported." >&2
+        hw_resolve_engine_missing_message "$root" >&2
         exit 5
     }
     if [ -n "$oracle_tree" ]; then

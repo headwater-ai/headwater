@@ -33,13 +33,12 @@ agents="$root/.claude/agents"
 
 # Either profile builds the engine whose behavior the skills are checked
 # against, and the newer answers. A worktree with only the cheap binary skipped
-# every case that calls one, and said so in a line nothing reads.
-release_engine="$root/engine/target/release/headwater"
-dev_release_engine="$root/engine/target/dev-release/headwater"
-engine=$release_engine
-if [ -x "$dev_release_engine" ] && { [ ! -x "$engine" ] || [ "$dev_release_engine" -nt "$engine" ]; }; then
-    engine=$dev_release_engine
-fi
+# every case that calls one, and said so in a line nothing reads. The rule
+# lives in `tools/repo/resolve-engine.sh` (#990). With neither profile built,
+# `engine` names the release path, which is not executable, and each case that
+# needs an engine skips on that test as before.
+. "$root/tools/repo/resolve-engine.sh"
+engine=$(hw_resolve_engine_bin "$root") || engine="$root/engine/target/release/headwater"
 
 passed=0
 failed=0

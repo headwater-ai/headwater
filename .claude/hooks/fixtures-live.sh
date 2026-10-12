@@ -55,8 +55,7 @@ set -u
 root=$(cd "$(dirname "$0")/../.." && pwd)
 
 # The engine this suite stages into each scratch clone. Either profile builds
-# one and the newer answers, which is the rule `.claude/hooks/lib.sh` and
-# `.githooks/pre-commit` each state for themselves.
+# one and the newer answers, by the rule in `tools/repo/resolve-engine.sh`.
 #
 # This suite read the `release` path alone, which was a hole rather than a
 # preference. The build order tells an iteration agent to build
@@ -65,17 +64,18 @@ root=$(cd "$(dirname "$0")/../.." && pwd)
 # `0 passed, 0 failed` at exit 0. That silence is what `docs/spec/16` cites as
 # the live confirmation behind its support table.
 #
-# The rule is written out here rather than sourced from `lib.sh`. Sourcing it
-# needs `HEADWATER_HOOK_ROOT` set, and every harness this suite drives is a
-# child process that would inherit it and read this repository in place of the
+# This suite sources the resolver and not `lib.sh`. Sourcing `lib.sh` would
+# need `HEADWATER_HOOK_ROOT` set, and every harness this suite drives is a child
+# process that would inherit it and read this repository in place of the
 # scratch clone it was handed. That inversion passes the cases that assert
-# silence and fails only the ones that assert a refusal.
-release_engine="$root/engine/target/release/headwater"
-dev_release_engine="$root/engine/target/dev-release/headwater"
-engine=$release_engine
-if [ -x "$dev_release_engine" ] && { [ ! -x "$engine" ] || [ "$dev_release_engine" -nt "$engine" ]; }; then
-    engine=$dev_release_engine
-fi
+# silence and fails only the ones that assert a refusal. The resolver takes the
+# root as an argument and exports nothing, and
+# `tools/repo/engine-resolver-fixtures.sh` holds that with a case: a child sees
+# the same environment before and after the resolver is sourced and called
+# (#990). With neither profile built, `engine` names the release path, which is
+# not executable, and every case skips on that as before.
+. "$root/tools/repo/resolve-engine.sh"
+engine=$(hw_resolve_engine_bin "$root") || engine="$root/engine/target/release/headwater"
 branch=$(git -C "$root" rev-parse --abbrev-ref HEAD)
 
 passed=0

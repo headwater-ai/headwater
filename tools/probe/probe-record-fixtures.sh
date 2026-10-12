@@ -35,8 +35,11 @@ set -u
 root=$(cd "$(dirname "$0")/../.." && pwd)
 transform="$root/tools/probe/probe-transform.sh"
 driver="$root/tools/probe/probe-record.sh"
-engine="$root/engine/target/dev-release/headwater"
-[ -x "$engine" ] || engine="$root/engine/target/release/headwater"
+# The newer of the two profiles answers, by the rule in
+# `tools/repo/resolve-engine.sh` (#990). With neither built, `engine` names a
+# path that is not executable, and each case that needs one skips on that.
+. "$root/tools/repo/resolve-engine.sh"
+engine=$(hw_resolve_engine_bin "$root") || engine="$root/engine/target/release/headwater"
 
 if ! command -v jq >/dev/null 2>&1; then
     echo "no \`jq\` on the path, and the tool under test reads JSON with it." >&2
@@ -1654,9 +1657,8 @@ same "and prints no path" "" "$(cat "$scratch/refused-folds.out")"
 # script under a scratch root, with the built engine linked in and an unsafe
 # declaration in place, stands for a checkout whose declaration the engine
 # refuses. `HW_PROBE_YML` is unset for both runs.
-seal_engine=$root/engine/target/dev-release/headwater
-[ -x "$seal_engine" ] || seal_engine=$root/engine/target/release/headwater
-if [ -x "$seal_engine" ]; then
+seal_engine=$(hw_resolve_engine_bin "$root") || seal_engine=
+if [ -n "$seal_engine" ]; then
     mkdir -p "$scratch/refusing-root/tools/probe" "$scratch/refusing-root/.headwater" \
         "$scratch/refusing-root/engine/target/dev-release"
     cp "$root/tools/probe/seal.sh" "$scratch/refusing-root/tools/probe/seal.sh"
@@ -1732,9 +1734,13 @@ if [ -x "$engine" ] && [ -f "$root/.headwater/taxonomy.lock" ]; then
 
     # The confinement hides this checkout from the session, so the live case
     # runs the hook from a workspace that carries its own engine, as
-    # `campaign.sh` builds one.
-    mkdir -p "$scratch/live-ws/.claude" "$scratch/live-ws/engine/target/dev-release"
+    # `campaign.sh` builds one. `campaign.sh` archives the whole tree, so its
+    # workspace also holds `tools/repo/resolve-engine.sh`, which `hw_engine`
+    # in `lib.sh` delegates to since #990. This one copies it too, or the hook
+    # finds no engine and the case reads a silent hook.
+    mkdir -p "$scratch/live-ws/.claude" "$scratch/live-ws/engine/target/dev-release" "$scratch/live-ws/tools/repo"
     cp -a "$root/.claude/hooks" "$scratch/live-ws/.claude/hooks"
+    cp "$root/tools/repo/resolve-engine.sh" "$scratch/live-ws/tools/repo/resolve-engine.sh"
     cp "$engine" "$scratch/live-ws/engine/target/dev-release/headwater"
     cat > "$scratch/bin/claude" <<'STUB'
 #!/bin/sh
