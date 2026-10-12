@@ -661,8 +661,9 @@ for verb in "queue ints 19 title=a milestone=none reader=x artifacts=x scope=nar
     case $(cat "$scratch/err") in *'given twice'*) said=1 ;; *) said=0 ;; esac
     same "${verb%% *} refuses a field named twice with exit 2, and says so" '2 1' "$status $said"
 done
-sh "$tool" queue ints 19 'title=a | b' milestone=none reader=x artifacts=x scope=narrow >/dev/null 2>&1; status=$?
-same 'queue refuses a title that holds `|`, which separates the columns of queue.md' 2 "$status"
+sh "$tool" queue ints 29 'title=a | b' milestone=none reader=x artifacts=x scope=narrow >/dev/null 2>"$scratch/err"; status=$?
+case $(cat "$scratch/err") in *'separates the columns'*) said=1 ;; *) said=0 ;; esac
+same 'queue refuses a title that holds `|`, which separates the columns of queue.md' '2 1' "$status $said"
 
 printf '\n# an OWNER line an old ledger carries in is read like one decide --owner writes\n'
 imp=$(sh "$tool" start imported 2>/dev/null)
