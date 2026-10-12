@@ -1337,15 +1337,23 @@ pub struct Scoped {
 }
 
 impl Scoped {
-    /// The block a report opens with when a run was scoped to a change.
+    /// The block a report opens with when a run read a change.
+    ///
+    /// The change does not narrow the run (`docs/interfaces/headwater-check.md`,
+    /// the `--change` row), so the block says the findings are over the whole
+    /// corpus, as the Markdown paragraph does.
     pub fn render(&self) -> String {
         use std::fmt::Write;
         let mut out = String::new();
         let _ = writeln!(
             out,
-            "scoped to a change: {} documents named, {} added, {} with a prior version this run \
+            "a change was read: {} documents named, {} added, {} with a prior version this run \
              read",
             self.named.documents, self.named.added, self.named.carried
+        );
+        let _ = writeln!(
+            out,
+            "  the findings are over the whole corpus, as in a run that names no change"
         );
         if self.named.unreadable > 0 {
             let _ = writeln!(
