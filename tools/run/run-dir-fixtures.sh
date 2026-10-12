@@ -433,6 +433,29 @@ same 'a blocked line is skipped, and an OWNER line does not release it' 81 "$(sh
 sh "$tool" rule "$blocked" 80 open 'the blocker merged' >/dev/null 2>&1
 same '  and the parent ruling it open releases it' 80 "$(sh "$tool" next "$blocked" 2>&1)"
 
+printf '\n# a line marked both ruling and blocked is held by both, in either order\n'
+# Run 20261012-1113 queued #1541 as `ruling; blocked (#1721, none)`. The sed
+# that read the marks took the first one only, so the owner's answer to the
+# ruling would have released an issue whose blocker was still open.
+both=$(sh "$tool" start both 2>/dev/null)
+printf '# Queue\n\n1. #90 First | none | x | wide | ruling; blocked (#89, none)\n2. #91 Second | none | x | wide | blocked (#89, none); ruling\n3. #92 Free | none | x | narrow\n' > "$both/queue.md"
+printf -- '- 2026-10-12 — OWNER (2026-10-12) #90: stop warning.\n- 2026-10-12 — OWNER (2026-10-12) #91: stop warning.\n' >> "$both/decisions.md"
+same 'an OWNER answer does not release a line that is also blocked, whichever mark comes first' 92 "$(sh "$tool" next "$both" 2>&1)"
+sh "$tool" rule "$both" 91 open 'the blocker merged' >/dev/null 2>&1
+same '  and ruling it open releases it' 91 "$(sh "$tool" next "$both" 2>&1)"
+
+printf '\n# a queue whose issue lines none parse is an error, not an empty queue\n'
+# Run 20261012-1113's queue agent wrote `1 | #502 | ...`, and next printed
+# EMPTY over sixteen eligible issues.
+shape=$(sh "$tool" start shape 2>/dev/null)
+printf '# Queue\n\n1 | #95 | Wrong shape | none | x | narrow |\n' > "$shape/queue.md"
+sh "$tool" next "$shape" >/dev/null 2>"$scratch/err"; status=$?
+same 'next refuses a queue written in the wrong shape with exit 1' 1 "$status"
+case $(cat "$scratch/err") in
+    *'hw-queue.md'*) pass '  and the refusal names the definition that states the shape' ;;
+    *) fail '  and the refusal names the definition that states the shape' "$(cat "$scratch/err")" ;;
+esac
+
 printf '\n# drain while an adjudicate is in flight: the claim waits for the next session\n'
 # Verify-1 of PR #1279: the parent claims on an adjudicate report, which can
 # arrive after drain has started. `claim` then writes nothing. The parent

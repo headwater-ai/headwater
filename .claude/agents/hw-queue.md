@@ -16,6 +16,12 @@ One file, `queue.md`, in the run directory the dispatch names, and a report that
 
 The file is an ordered list, one line per eligible issue: number, title, milestone, the reader outside this repository it serves, and the artifacts it will most likely regenerate. A candidate that would touch a corpus-wide recorded artifact (a document under `docs/`, the census, the graph export) is marked `wide`, and an engine-only change is marked `narrow`, so the parent can prefer issues that do not collide when it runs more than one at once.
 
+`sh tools/run/run-dir.sh next` reads this file, and it parses each line in exactly this shape:
+
+    <k>. #<N> <title> | <milestone> | <reader> | <artifacts> | wide|narrow | <marks>
+
+The line opens with its place `k`, a full stop, a space and `#<N>`, and every field after the title is separated by `|`. A line in any other shape, such as `1 | #502 | …`, is not read: `next` refuses the file and names this definition. The last field holds the marks, separated by `;`, and it is empty when the issue carries none. Each mark opens with its word, so `next` reads it: `ruling` for an issue that waits on the owner, and `blocked (#<M>, <M's milestone>)` for an issue with an open blocker. An issue that has both carries both, in either order, as `ruling; blocked (#1721, 0.10)`. Any other note goes in its own mark after these, never in front of one.
+
 The report ends with this block, which the parent acts on:
 
     QUEUE: <count> eligible, <count> unmilestoned, <count> bug, <count> adopter-blocking, <count> blocked
@@ -40,7 +46,7 @@ The order: one labeled `bug` sorts above everything, whatever ground it stands o
 
     gh api repos/headwater-ai/headwater/issues/<N>/dependencies/blocked_by --jq '[.[] | select(.state == "open") | .number]'
 
-An issue with an open blocker stays in the queue at its place, and its last field reads `blocked (#<M>, <milestone>)`. You do not drop it and you do not reorder past the selection order to hide it. `run-dir.sh next` holds a `blocked` line until the parent rules it `open`, so the parent decides, not you: it builds the blocker first, proceeds with a reason, or gates the issue. A blocker in a later milestone than the issue it blocks is a finding for `headwater-product-owner`, because the milestone order then contradicts the link. The rule "the item that unblocks the most others" counts open issues in each candidate's `blocking` list, read the same way from `dependencies/blocking`.
+An issue with an open blocker stays in the queue at its place, and its last field carries the mark `blocked (#<M>, <milestone>)`. You do not drop it and you do not reorder past the selection order to hide it. `run-dir.sh next` holds a `blocked` line until the parent rules it `open`, so the parent decides, not you: it builds the blocker first, proceeds with a reason, or gates the issue. A blocker in a later milestone than the issue it blocks is a finding for `headwater-product-owner`, because the milestone order then contradicts the link. The rule "the item that unblocks the most others" counts open issues in each candidate's `blocking` list, read the same way from `dependencies/blocking`.
 
 Read an issue body with `sh tools/run/gh-issue.sh body <N>`. Read only the bodies you need to rank, not all of them.
 
