@@ -19,7 +19,7 @@ relations:
     - to: tools/run/wait-for.sh
       verified_revision: sha256:d1e99759d7f8c50c387018ac8837f7005aee28c999952a29be977e3392bf2e3e
     - to: .claude/skills/hw-run-policy/SKILL.md
-      verified_revision: sha256:113ecaf40547f0b36eb67769161a4c3ae9dc7de4591e7726b9fa9421a83a9edb
+      verified_revision: sha256:d480435d17740e1626d729bae8b2181dccd8e986786bcb0f659f9892fcf1a129
 ---
 
 # A subagent waits in the foreground, because a background wait wakes its parent
