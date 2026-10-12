@@ -589,6 +589,11 @@ same 'integrations lists each pull request once, at its last ruling, in the orde
     "$(sh "$tool" integrations ints | paste -sd'|')"
 printf '{"iter":1,"issue":0,"pr":1723,"merge":"abc1234","verdict":"MERGE","proved":"p","opened":[],"closed":[]}\n' >> "$ints/log.jsonl"
 same '  and drops one the log records merged' 'PR #1730' "$(sh "$tool" integrations ints | cut -d' ' -f1-2)"
+sh "$tool" integrate ints 1730 issue=1724 branch=1724-run-files sha=abc1234 ruling=ejected footprint=a,b >/dev/null 2>&1; status=$?
+same '  and an ejection is one more entry, which takes the pull request off the list' '0 4 0' \
+    "$status $(wc -l < "$ints/integrate.jsonl" | tr -d ' ') $(sh "$tool" integrations ints | wc -l | tr -d ' ')"
+sh "$tool" integrate ints 1730 issue=1724 branch=1724-run-files sha=abc5678 ruling=MERGE footprint=a,b >/dev/null 2>&1
+same '  until the parent rules it again at its new head' 'PR #1730 sha=abc5678' "$(sh "$tool" integrations ints | cut -d' ' -f1,2,5)"
 # Every verb that writes the run, once each. None may touch the first entry.
 q ints 5
 sh "$tool" owe ints 5 title=t question=q 'options=a | defer' unblocks=u >/dev/null 2>&1
@@ -603,7 +608,7 @@ sh "$tool" rulings ints >/dev/null 2>&1
 sh "$tool" integrations ints >/dev/null 2>&1
 sh "$tool" resume ints >/dev/null 2>&1
 same 'after every verb that writes the run, the first entry of integrate.jsonl is byte for byte as written' "$first" "$(sed -n 1p "$ints/integrate.jsonl")"
-same '  and the file only grew' 3 "$(wc -l < "$ints/integrate.jsonl" | tr -d ' ')"
+same '  and the file only grew' 5 "$(wc -l < "$ints/integrate.jsonl" | tr -d ' ')"
 same 'resume does not send a ruled-merge whose pull request is already queued to integrate again' '5 ruled-merge queued' "$(sh "$tool" resume ints 2>&1)"
 sh "$tool" stage ints 6 ruled-merge pr=1740 >/dev/null 2>&1
 same '  and one that is not queued still goes to integrate' '6 ruled-merge integrate' "$(sh "$tool" resume ints 2>&1 | grep '^6 ')"

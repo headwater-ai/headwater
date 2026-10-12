@@ -965,8 +965,10 @@ rulings() {
 # request can have no issue (PR #1723 had none). A second ruling of one pull
 # request at a new head is appended, because an ejected pull request returns
 # for a new ruling at a new commit, and the last entry for a pull request is
-# the one that holds. The same pull request at the same commit is refused:
-# that is the parent appending one ruling twice.
+# the one that holds. The same ruling of the same pull request at the same
+# commit is refused: that is the parent appending one ruling twice. An
+# ejection is recorded as one more entry, `ruling=ejected`, which takes the
+# pull request off `integrations` until the parent rules it again.
 integrate_fields='issue branch sha ruling footprint'
 
 integrate() {
@@ -1000,15 +1002,16 @@ integrate() {
             refuse "the merge ruling for PR #$pr needs \`$key=\`, and the call carries none."
     done
     sha=$(printf '%s' "$entry" | jq -r .sha)
-    if [ -s "$dir/integrate.jsonl" ] && jq -se --argjson n "$pr" --arg s "$sha" 'any(.[]; .pr == $n and .sha == $s)' "$dir/integrate.jsonl" >/dev/null; then
-        refuse "PR #$pr is already queued at $sha. A new ruling of it is appended at its new head."
+    if [ -s "$dir/integrate.jsonl" ] && jq -se --argjson n "$pr" --arg s "$sha" --arg r "$(printf '%s' "$entry" | jq -r .ruling)" 'any(.[]; .pr == $n and .sha == $s and .ruling == $r)' "$dir/integrate.jsonl" >/dev/null; then
+        refuse "PR #$pr is already queued at $sha with this ruling. A new ruling of it is appended at its new head."
     fi
     printf '%s\n' "$entry" >> "$dir/integrate.jsonl"
     printf 'INTEGRATE: PR #%s queued, entry %s\n' "$pr" "$(wc -l < "$dir/integrate.jsonl" | tr -d ' ')"
 }
 
-# Each pull request of integrate.jsonl that no log line records, in the
-# order it was first ruled, with its last ruling. The integrator merges these.
+# Each pull request of integrate.jsonl that no log line records and whose
+# last ruling is not `ejected`, in the order it was first ruled, with its
+# last ruling. The integrator merges these.
 integrations() {
     need_jq
     need_dir "$1"
@@ -1017,7 +1020,7 @@ integrations() {
     jq -rs --argjson merged "${merged:-[]}" '
         reduce .[] as $e ({order: [], last: {}};
             (if .last[$e.pr | tostring] then . else .order += [$e.pr] end) | .last[$e.pr | tostring] = $e)
-        | . as $s | $s.order[] | select(. as $p | $merged | any(.[]; . == $p) | not) | $s.last[tostring]
+        | . as $s | $s.order[] | select(. as $p | $merged | any(.[]; . == $p) | not) | $s.last[tostring] | select(.ruling != "ejected")
         | "PR #\(.pr) issue=\(.issue // "none") branch=\(.branch) sha=\(.sha) footprint=\(.footprint) ruling=\(.ruling)"' "$1/integrate.jsonl"
 }
 
