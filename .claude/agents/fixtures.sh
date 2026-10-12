@@ -10,7 +10,26 @@
 # definition's instructions, and a skill name nobody matches never loads. This
 # suite is what reports the drift.
 #
-# Fifteen cases, and the ceilings are the reason two of them exist. The parent's
+# Sixteen cases, and this list is the one place that names them all:
+#
+#     1   every agent a command or an agent dispatches is a definition
+#     2   every skill an agent invokes is a skill on this tree
+#     3   every ruling cited under .claude/ exists and is not superseded
+#     4   front matter is what a harness reads, and two agents cannot write
+#     5   the verification bar's headings are stated once
+#     6   the byte ceilings of CLAUDE.md, next-run.md and the doctrine
+#     7   the doctrine in the command is the doctrine file, byte for byte
+#     8   the two commands name the same agents
+#     9   every cargo build or test an agent runs goes through tools/hw-cargo
+#     10  the parent dispatches the loop agent, and it dispatches build and verify
+#     11  the rule against filing an issue covers the parent, by its marker
+#     12  the Record ruling checks the intake line against the tree
+#     13  each throughput rule of 2026-10-01 has one owner
+#     14  every file under .claude is shipped or named as internal
+#     15  the first session hands the run to supervise.sh
+#     16  a one-line lesson is ruled Apply and applied at the end of the run
+#
+# The ceilings are the reason two of them exist. The parent's
 # context is the unit of cost ([HW-PD-0003]), so the command and the doctrine
 # carry a byte ceiling declared here, once, and CLAUDE.md carries one because
 # every agent pays for it on every dispatch ([HW-PD-0001]).
@@ -359,64 +378,102 @@ else
     fail 'the refusal arms on hw-iterate.md run' 'no .claude/agents/hw-iterate.md to copy'
 fi
 
-# --- 11. the rule against filing an issue covers the parent in its bold lead --
+# --- 11. the rule against filing an issue covers the parent, by its marker ----
 
 # The parent is an agent of the run too, and a lead that names only a stage
 # reads as not covering it (#1275). The parent loads hw-run-policy at the start
-# of every session, so the skill's bold lead is where the words reach it. The
-# case reads the bold lead alone: the rest of the line already ends "and the
-# parent rules on it", which is about ruling and not about filing. The lead is
-# the text of a bullet up to its first `**`, so single-asterisk emphasis
-# inside it does not end it, and the rule is the first bullet whose lead says an agent "files an
-# issue" or "files no issue", so a rewording in either form is still found.
-printf '\n# the rule against filing an issue in hw-run-policy covers the parent in its bold lead\n'
-# Prints the bold lead of the no-filing rule in the file given.
-no_filing_lead() {
+# of every session, so the skill's no-filing rule is where the words reach it.
+# The rule is the first bullet whose bold lead says an agent "files an issue" or
+# "files no issue", and the lead is the text up to its first `**`, so
+# single-asterisk emphasis inside it does not end it. The lead must name the
+# parent. Whether it covers the parent is read from a marker the bullet carries,
+# not from the prose, because no word list holds every way to exempt the parent
+# in English: an earlier form of this case passed "the parent aside" and
+# "unless it is the parent". The marker is one HTML comment on the bullet,
+#     <!-- hw-filing-rule covers=<actor>,... filer=<agent> -->
+# and it holds when `covers` names `parent` and `filer` names
+# `headwater-product-owner`, the one agent of a run that files an issue.
+printf '\n# the rule against filing an issue in hw-run-policy covers the parent, by its marker\n'
+# Prints the whole bullet line of the no-filing rule in the file given.
+no_filing_bullet() {
     awk 'index($0, "- **") == 1 {
         lead = substr($0, 5); i = index(lead, "**"); if (i == 0) next
         lead = substr(lead, 1, i - 1)
-        if (lead ~ /files (an|no) issue/) { print lead; exit }
+        if (lead ~ /files (an|no) issue/) { print; exit }
     }' "$1"
 }
-# Prints why a lead fails to cover the parent, or nothing when it covers it.
-lead_misses_parent() {
+# Prints why a bullet fails to cover the parent, or nothing when it covers it.
+bullet_misses_parent() {
     case "$1" in
         '') printf 'no bullet has a bold lead that says an agent files an issue or files no issue' ; return ;;
-        *parent*) ;;
-        *) printf 'the lead does not name the parent: %s' "$1" ; return ;;
     esac
-    if printf '%s\n' "$1" | grep -qiE '(except|apart from|other than|but|besides|excluding|save|not) (for )?the parent'; then
-        printf 'the lead names the parent as an exception: %s' "$1"
+    lead=${1#- \*\*}
+    lead=${lead%%\*\**}
+    case "$lead" in
+        *parent*) ;;
+        *) printf 'the lead does not name the parent: %s' "$lead" ; return ;;
+    esac
+    marker=$(printf '%s\n' "$1" | grep -oE '<!-- hw-filing-rule [^>]*-->' | head -n 1)
+    if [ -z "$marker" ]; then
+        printf 'the rule carries no <!-- hw-filing-rule covers=... filer=... --> marker'
+        return
     fi
+    covers=$(printf '%s\n' "$marker" | sed -n 's/.* covers=\([^ ]*\).*/\1/p')
+    filer=$(printf '%s\n' "$marker" | sed -n 's/.* filer=\([^ ]*\).*/\1/p')
+    printf '%s\n' "$covers" | tr ',' '\n' | grep -qx parent || printf ' the marker does not cover the parent: %s' "$marker"
+    [ "$filer" = headwater-product-owner ] || printf ' the marker does not name headwater-product-owner as the filer: %s' "$marker"
 }
-lead=$(no_filing_lead "$skills/hw-run-policy/SKILL.md")
-why=$(lead_misses_parent "$lead")
+bullet=$(no_filing_bullet "$skills/hw-run-policy/SKILL.md")
+why=$(bullet_misses_parent "$bullet")
 if [ -z "$why" ]; then
-    pass "the bold lead covers the parent: $lead"
+    lead=${bullet#- \*\*}
+    pass "the no-filing rule covers the parent: ${lead%%\*\**}"
 else
-    fail 'the bold lead of the no-filing rule covers the parent' "$why"
+    fail 'the no-filing rule covers the parent' "$why"
 fi
-# The arms, each a one-line rule in a scratch file: two leads that do not cover
-# the parent are reported, and a rewording with emphasis inside the lead holds.
-lead_arm() {
-    printf -- '- **%s** The rest of the rule.\n' "$1" > "$scratch/no-filing.md"
-    lead_misses_parent "$(no_filing_lead "$scratch/no-filing.md")"
+# The arms, each a one-line rule in a scratch file.
+marker='<!-- hw-filing-rule covers=every-agent,parent filer=headwater-product-owner -->'
+filing_arm() {
+    printf -- '- **%s** The rest of the rule.%s\n' "$1" "$2" > "$scratch/no-filing.md"
+    bullet_misses_parent "$(no_filing_bullet "$scratch/no-filing.md")"
 }
-why=$(lead_arm 'No stage files an issue inside a run.')
+why=$(filing_arm 'No stage files an issue inside a run.' " $marker")
 case "$why" in
     *'does not name the parent'*) pass 'and a bold lead that names only a stage is reported' ;;
     *) fail 'a bold lead that names only a stage is reported' "reported: \`$why\`" ;;
 esac
-why=$(lead_arm 'No stage files an issue inside a run, apart from the parent.')
+# Four leads that exempt the parent in words, with no marker. The last three
+# passed the word list this case held before.
+for exempt in 'No stage files an issue inside a run, apart from the parent.' \
+    'No agent files an issue inside a run; the parent may.' \
+    'No agent files an issue inside a run, unless it is the parent.' \
+    'No agent files an issue inside a run, the parent aside.'; do
+    why=$(filing_arm "$exempt" '')
+    case "$why" in
+        *'no <!-- hw-filing-rule'*) pass "and a lead with no marker is reported: $exempt" ;;
+        *) fail "a lead with no marker is reported: $exempt" "reported: \`$why\`" ;;
+    esac
+done
+why=$(filing_arm 'No agent of a run files an issue, the parent included.' ' <!-- hw-filing-rule covers=every-stage filer=headwater-product-owner -->')
 case "$why" in
-    *'as an exception'*) pass 'and a bold lead that exempts the parent is reported' ;;
-    *) fail 'a bold lead that exempts the parent is reported' "reported: \`$why\`" ;;
+    *'does not cover the parent'*) pass 'and a marker that does not cover the parent is reported' ;;
+    *) fail 'a marker that does not cover the parent is reported' "reported: \`$why\`" ;;
 esac
-why=$(lead_arm 'An agent of a run, the *parent* included, files no issue.')
+why=$(filing_arm 'No agent of a run files an issue, the parent included.' ' <!-- hw-filing-rule covers=every-agent,parents filer=headwater-product-owner -->')
+case "$why" in
+    *'does not cover the parent'*) pass 'and a marker that names a word containing parent is reported' ;;
+    *) fail 'a marker that names a word containing parent is reported' "reported: \`$why\`" ;;
+esac
+why=$(filing_arm 'No agent of a run files an issue, the parent included.' ' <!-- hw-filing-rule covers=every-agent,parent filer=parent -->')
+case "$why" in
+    *'does not name headwater-product-owner'*) pass 'and a marker that names another filer is reported' ;;
+    *) fail 'a marker that names another filer is reported' "reported: \`$why\`" ;;
+esac
+why=$(filing_arm 'An agent of a run, the *parent* included, files no issue.' " $marker")
 if [ -z "$why" ]; then
-    pass 'and a reworded lead with emphasis inside it holds'
+    pass 'and a reworded lead with emphasis inside it and the marker holds'
 else
-    fail 'a reworded lead with emphasis inside it holds' "$why"
+    fail 'a reworded lead with emphasis inside it and the marker holds' "$why"
 fi
 
 # --- 12. the Record ruling checks the intake line against the tree -----------
@@ -703,7 +760,134 @@ case $(boundary "$root/engine/crates/cli/harness" "$scratch/partdot") in
     *) fail 'a skill named for part of a shipped name is reported' 'the boundary passed it' ;;
 esac
 
-# --- 15. a one-line lesson of a run is applied, and not only recorded --------
+# --- 15. the first session hands the run to supervise.sh ---------------------
+
+# `tools/run/supervise.sh` restarts the parent every few merges, and until
+# #1275 no sentence told anybody to start it: the policy said it "runs each
+# session after the first" and named no starter, so every run stayed one
+# unsupervised session, the failure the script exists to prevent. The parent
+# loads hw-run-policy at the start of every session, so the handover is a
+# sub-bullet of the restart rule there, found by `first session` in its bold
+# lead. It must name the script, the first session as the one that starts it,
+# `HW_SUPERVISE_TREE`, because the script refuses a main checkout, and the drain
+# to zero before it starts, because two live parents on one run each fill
+# slots. It must also hold the steps: a bold lead that says the first session
+# starts the loop, `run_in_background: true` and no foreground, a first session
+# that fills no slot, and a wake on the `STOPPED:` line. This case holds the
+# text alone. Only a supervised run shows that the
+# loop runs.
+printf '\n# the first session of a run hands the run to supervise.sh in hw-run-policy\n'
+# Prints the handover sub-bullet of the restart rule in the file given: the
+# indented bullet whose bold lead names the first session, under the top-level
+# bullet whose bold lead says a parent restarts.
+handover_bullet() {
+    awk 'index($0, "- **") == 1 {
+            lead = substr($0, 5); i = index(lead, "**")
+            inrule = (i > 0 && index(substr(lead, 1, i - 1), "restarts") > 0); next
+        }
+        inrule && index($0, "  - **") == 1 {
+            lead = substr($0, 7); i = index(lead, "**")
+            if (i > 0 && index(substr(lead, 1, i - 1), "first session") > 0) { print; exit }
+        }' "$1"
+}
+# Prints why the handover does not hold, or nothing when it holds.
+handover_misses() {
+    bullet=$(handover_bullet "$1")
+    if [ -z "$bullet" ]; then
+        printf 'the restart rule has no sub-bullet whose bold lead names the first session, so nothing starts supervise.sh'
+        return
+    fi
+    case $bullet in *'tools/run/supervise.sh'*) ;; *) printf ' the handover does not name tools/run/supervise.sh' ;; esac
+    printf '%s\n' "$bullet" | grep -qE 'first session[^.]* start' || printf ' the handover does not say the first session starts it'
+    case $bullet in *HW_SUPERVISE_TREE*) ;; *) printf ' the handover does not name HW_SUPERVISE_TREE' ;; esac
+    printf '%s\n' "$bullet" | grep -qE 'drains? to zero' || printf ' the handover does not drain to zero first'
+    # The steps, not only the words: the lead states the starter, the loop runs
+    # in the background, the first session fills no slot, and it wakes on the
+    # loop's stop line. A foreground loop blocks the first session on the whole
+    # run, and a first session that fills slots is a second live parent.
+    lead=${bullet#  - \*\*}
+    lead=${lead%%\*\**}
+    case $lead in *'first session starts the loop'*) ;; *) printf ' the bold lead does not say the first session starts the loop: %s' "$lead" ;; esac
+    case $bullet in *'run_in_background: true'*) ;; *) printf ' the handover does not start the loop with run_in_background: true' ;; esac
+    case $bullet in *foreground*) printf ' the handover runs the loop in the foreground' ;; esac
+    case $bullet in *'fills no slot'*) ;; *) printf ' the handover does not say the first session fills no slot' ;; esac
+    case $bullet in *'fills slots'*) printf ' the handover has the first session fill slots' ;; esac
+    case $bullet in *'STOPPED:'*) ;; *) printf ' the handover does not wake on the STOPPED: line' ;; esac
+}
+why=$(handover_misses "$skills/hw-run-policy/SKILL.md")
+if [ -z "$why" ]; then
+    pass 'the first session hands the run to tools/run/supervise.sh'
+else
+    fail 'the first session hands the run to tools/run/supervise.sh' "$why"
+fi
+# The arms, each a restart rule in a scratch file: the rule as it read before
+# #1275, which names no starter, and a handover that drops the drain to zero.
+handover_arm() {
+    printf -- '- **A parent restarts every few merges, and drains to zero first.** `tools/run/supervise.sh` runs each session after the first.\n%s' "$1" > "$scratch/restart.md"
+    handover_misses "$scratch/restart.md"
+}
+case $(handover_arm '') in
+    *'nothing starts supervise.sh'*) pass 'and a restart rule that names no starter is reported' ;;
+    *) fail 'a restart rule that names no starter is reported' 'the handover passed it' ;;
+esac
+case $(handover_arm '  - **The first session hands the run over.** With the rulings recorded, the first session starts `HW_SUPERVISE_TREE=<tree> sh tools/run/supervise.sh <run-id>` in the background.
+') in
+    *'does not drain to zero first'*) pass 'and a handover that does not drain to zero first is reported' ;;
+    *) fail 'a handover that does not drain to zero first is reported' 'the handover passed it' ;;
+esac
+case $(handover_arm '  - **The first session hands the run over.** It drains to zero, then starts `sh tools/run/supervise.sh <run-id>` in the background.
+') in
+    *'does not name HW_SUPERVISE_TREE'*) pass 'and a handover that names no tree is reported' ;;
+    *) fail 'a handover that names no tree is reported' 'the handover passed it' ;;
+esac
+case $(handover_arm '  - **The first session hands the run over.** It drains to zero, then starts `HW_SUPERVISE_TREE=<tree> sh supervise <run-id>` in the background.
+') in
+    *'does not name tools/run/supervise.sh'*) pass 'and a handover that does not name the script is reported' ;;
+    *) fail 'a handover that does not name the script is reported' 'the handover passed it' ;;
+esac
+case $(handover_arm '  - **The first session waits.** A person starts `HW_SUPERVISE_TREE=<tree> sh tools/run/supervise.sh <run-id>` after the first session drains to zero.
+') in
+    *'does not say the first session starts it'*) pass 'and a handover that a person starts is reported' ;;
+    *) fail 'a handover that a person starts is reported' 'the handover passed it' ;;
+esac
+# The verifier's mutants of round 1: a lead that reverses the step, a loop in
+# the foreground, and a first session that fills slots, each beside a body that
+# otherwise holds; and a handover that never wakes on the stop line.
+handover_good='It drains to zero, then starts `HW_SUPERVISE_TREE=<tree> sh tools/run/supervise.sh <run-id>` with `run_in_background: true`. Then the first session starts nothing else: it fills no slot, ends its turn, and wakes on the `STOPPED: <reason>` line.'
+case $(handover_arm "  - **The first session starts the loop, and nothing else does.** $handover_good
+") in
+    '') pass 'and a handover that holds every step passes' ;;
+    *) fail 'a handover that holds every step passes' "reported: \`$(handover_arm "  - **The first session starts the loop, and nothing else does.** $handover_good
+")\`" ;;
+esac
+case $(handover_arm "  - **The first session may skip the loop.** $handover_good
+") in
+    *'bold lead does not say'*) pass 'and a lead that lets the first session skip the loop is reported' ;;
+    *) fail 'a lead that lets the first session skip the loop is reported' 'the handover passed it' ;;
+esac
+case $(handover_arm "  - **The first session starts the loop, and nothing else does.** $(printf '%s' "$handover_good" | sed 's/with `run_in_background: true`/in the foreground/')
+") in
+    *'in the foreground'*) pass 'and a loop started in the foreground is reported' ;;
+    *) fail 'a loop started in the foreground is reported' 'the handover passed it' ;;
+esac
+case $(handover_arm "  - **The first session starts the loop, and nothing else does.** $(printf '%s' "$handover_good" | sed 's/it fills no slot/it fills slots itself/')
+") in
+    *'fill slots'*) pass 'and a first session that fills slots is reported' ;;
+    *) fail 'a first session that fills slots is reported' 'the handover passed it' ;;
+esac
+case $(handover_arm "  - **The first session starts the loop, and nothing else does.** $(printf '%s' "$handover_good" | sed 's/, and wakes on the `STOPPED: <reason>` line//')
+") in
+    *'STOPPED: line'*) pass 'and a handover that never wakes on the stop line is reported' ;;
+    *) fail 'a handover that never wakes on the stop line is reported' 'the handover passed it' ;;
+esac
+# A handover sub-bullet under another rule is not the restart rule's.
+printf -- '- **A parent restarts every few merges, and drains to zero first.** `tools/run/supervise.sh` runs each session after the first.\n- **Another rule.** Its text.\n  - **The first session hands the run over.** It drains to zero, then starts `HW_SUPERVISE_TREE=<tree> sh tools/run/supervise.sh <run-id>`.\n' > "$scratch/restart-other.md"
+case $(handover_misses "$scratch/restart-other.md") in
+    *'nothing starts supervise.sh'*) pass 'and a handover under another rule is reported' ;;
+    *) fail 'a handover under another rule is reported' 'the handover passed it' ;;
+esac
+
+# --- 16. a one-line lesson of a run is applied, and not only recorded --------
 
 # A run's intake line whose whole remedy is a line in an agent file, the run
 # policy, a command or a run script reached the obligation register and never

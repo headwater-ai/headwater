@@ -3,7 +3,7 @@ id: HW-SPEC-orchestration-architecture
 status: current
 status_since: 2026-09-22
 summary: "The six stages of a build-order run, what each one owns and never does, where the veto sits, and how claims order the merges."
-last_verified: 2026-10-02
+last_verified: 2026-10-13
 title: "Orchestration architecture"
 provenance:
   warrant: asserted
@@ -42,7 +42,9 @@ relations:
     - to: .claude/agents/hw-integrate.md
       verified_revision: sha256:2b9a3b297f09fd03d49fe57e280653dc610bd8cc85e091d504ec03909af295dc
     - to: .claude/skills/hw-run-policy/SKILL.md
-      verified_revision: sha256:09d2a4b4b89583079451f87b98b27af8fb3461b6f90a9ccd15b54224efc41780
+      verified_revision: sha256:d480435d17740e1626d729bae8b2181dccd8e986786bcb0f659f9892fcf1a129
+    - to: .claude/agents/fixtures.sh
+      verified_revision: sha256:c59260ae6df892c561de1cf8fd405feab17c1289f537334edd3db3cc093553f8
     - to: .claude/skills/hw-verification-bar/SKILL.md
       verified_revision: sha256:a68ce6b14b5a8d7068aeafd8c7443e0497a55b4e444e2b971daa1da738c2153b
 ---
@@ -118,7 +120,7 @@ flowchart LR
 
 **The parent waits by ending its turn.** With agents in flight, an ended turn is the blocking wait, and each report wakes it. A check on a timer buys nothing and costs a turn at the parent's full context. Its prompt cache holds that context for an hour, so a report arrives warm whether or not the parent looked.
 
-**A parent session ends every few merges, and the run outlives it.** The parent reads its whole context again on every call, so a long session pays more for each call than the call before it. `tools/run/supervise.sh` starts each session after the first. It creates a drain file when a call passes a context threshold or when the session reaches a count of merges. In drain the parent starts no new stage, and it exits when nothing is in flight, because every subagent ends with its process. The next session reads the handover file of each issue and dispatches the stage that each one needs. A veto of a `PASS` whose `hw-iterate` ended with the old session goes back through the handover file as a failed verify. [HW-PD-0023](../decisions/0023-a-build-order-parent-restarts-every-few-merges-drains-to-zero-first-and-resumes-from-the-handover-files-on-disk.md) records the three rulings and the measurement.
+**A parent session ends every few merges, and the run outlives it.** The parent reads its whole context again on every call, so a long session pays more for each call than the call before it. `tools/run/supervise.sh` starts each session after the first. The first session starts the script in the background, after the owner's rulings are recorded and nothing is in flight. The `hw-run-policy` skill states the command. The script creates a drain file when a call passes a context threshold or when the session reaches a count of merges. In drain the parent starts no new stage, and it exits when nothing is in flight, because every subagent ends with its process. The next session reads the handover file of each issue and dispatches the stage that each one needs. A veto of a `PASS` whose `hw-iterate` ended with the old session goes back through the handover file as a failed verify. [HW-PD-0023](../decisions/0023-a-build-order-parent-restarts-every-few-merges-drains-to-zero-first-and-resumes-from-the-handover-files-on-disk.md) records the three rulings and the measurement.
 
 **The parent escalates to a person on two conditions and rules on everything else.** A redirect that changes milestone order and a decision that needs an owner rather than an answer both go to the human. [`headwater-product-owner`](https://github.com/headwater-ai/headwater/blob/main/.claude/agents/headwater-product-owner.md) reads the whole board and writes one ruling block for each decision the owner owes. The parent records the owner's answer in the run's decisions file, and the next pass of the product owner posts that answer on the issue. Until then, the adjudication stage reads the recorded answer as the ruling. [`headwater-maintainer`](https://github.com/headwater-ai/headwater/blob/main/.claude/agents/headwater-maintainer.md) reports what a change left stale. Both propose, and neither accepts.
 
