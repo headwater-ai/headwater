@@ -82,7 +82,8 @@ impl Context {
         }
     }
 
-    /// The change this run is scoped to, and nothing for a full-corpus run.
+    /// The change this run read, and nothing for a run that names no change.
+    /// The change does not narrow the documents the run checks.
     ///
     /// A check never reaches this. [`crate::scope`] reads it, hands one
     /// document's prior version to a view that declared the input, and puts the
@@ -107,7 +108,7 @@ impl Context {
         })
     }
 
-    /// The same run, scoped to a change. The clock it already holds is
+    /// The same run, with a change it reads. The clock it already holds is
     /// unchanged, because a run is about one day whatever set of documents it
     /// is about.
     pub fn scoped_to(self, change: Change) -> Self {
