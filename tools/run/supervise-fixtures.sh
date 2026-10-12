@@ -54,15 +54,19 @@ exit 0
 EOF
 chmod u+x "$HW_SUPERVISE_CLAUDE"
 
-# fresh <run-id> [queue line]: a run directory and a stub directory for it.
+# fresh <run-id> ['']: a run directory and a stub directory for it, with a
+# queue of #10, #11 and #12, or an empty queue when a second argument is given.
 fresh() {
     RUN="$HEADWATER_RUN_ROOT/$1" STUB="$scratch/stub-$1"
     mkdir -p "$RUN" "$STUB"
     : > "$RUN/log.jsonl"
-    if [ $# -gt 1 ]; then
-        printf '# Queue\n\n%s\n' "$2" > "$RUN/queue.md"
-    else
-        printf '# Queue\n\n1. #10 One | none | x\n2. #11 Two | none | x\n3. #12 Three | none | x\n' > "$RUN/queue.md"
+    # The queue is written through run-dir.sh, as hw-queue writes it, because
+    # `next` reads queue.jsonl and refuses a run that holds only a typed queue.md.
+    : > "$RUN/queue.jsonl"
+    if [ $# -le 1 ]; then
+        for n in 10 11 12; do
+            sh "$root/tools/run/run-dir.sh" queue "$RUN" "$n" "title=Issue $n" milestone=none reader=x artifacts=x scope=narrow >/dev/null
+        done
     fi
     export RUN STUB
 }

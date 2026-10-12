@@ -72,7 +72,7 @@ flowchart LR
     iterate -->|"the branch, the attacks"| verify["hw-verify"]
     parent -->|"every ruling so far"| integrate["hw-integrate"]
 
-    queue -->|"queue.md, ordered"| parent
+    queue -->|"queue.jsonl, ordered"| parent
     adjudicate -->|"BUILD or REFUSE<br/>FOOTPRINT, DERIVED, FIXTURE"| parent
     build -->|"BRANCH, PR<br/>FIXTURE, PUSHED, EXPLORE"| iterate
     verify -->|"PASS or FAIL<br/>RAN, FIRED, UNCHECKED"| iterate
@@ -124,7 +124,7 @@ flowchart LR
 
 ### The queue stage
 
-[`.claude/agents/hw-queue.md`](https://github.com/headwater-ai/headwater/blob/main/.claude/agents/hw-queue.md) reads the whole issue list and the milestone list once, and writes an ordered file of eligible issues into the run directory.
+[`.claude/agents/hw-queue.md`](https://github.com/headwater-ai/headwater/blob/main/.claude/agents/hw-queue.md) reads the whole issue list and the milestone list once. It writes the eligible issues into the run directory in order, with one `run-dir.sh queue` call for each issue.
 
 **It owns the population and the order.** It applies the value rule, sorts a defect above everything else, and marks each candidate with the artifacts that change most likely regenerates. The parent then reads one report and never the board. A board dump read once is re-read on every later turn of the run. An issue with an open GitHub `blocked by` link stays in its place, marked `blocked`, and `run-dir.sh next` holds it until the parent rules it `open`. So the queue raises a dependency to the parent and never decides it.
 

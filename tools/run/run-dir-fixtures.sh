@@ -44,6 +44,22 @@ fail() {
     failed=$((failed + 1))
 }
 
+# q <run> <issue> [field=value]...: one queue entry through the verb, with
+# the fields a case names and a default for every other field `queue` needs.
+# `queue` refuses a field named twice, so a default is added only where the
+# case names none. No case types a queue.
+q() {
+    qrun=$1 n=$2
+    shift 2
+    for default in "title=Issue $n" milestone=none reader=x artifacts=x scope=narrow; do
+        named=0
+        for pair in "$@"; do [ "${pair%%=*}" = "${default%%=*}" ] && named=1; done
+        [ "$named" = 1 ] || set -- "$@" "$default"
+    done
+    sh "$tool" queue "$qrun" "$n" "$@" >/dev/null 2>"$scratch/qerr" ||
+        fail "the queue verb took #$n" "$(cat "$scratch/qerr")"
+}
+
 same() {
     name=$1 want=$2 got=$3
     if [ "$want" = "$got" ]; then
@@ -311,7 +327,7 @@ printf '\n# resume: next skips what is held, and drain reaches every verb a pare
 # a held issue prints `(already held)` and exits 0, so nothing refused the
 # re-dispatch either.
 resume=$(sh "$tool" start resume 2>/dev/null)
-printf '# Queue, run resume\n\nOrder: a fixture.\n\n1. #10 First | none | x\n2. #11 Second | none | x\n3. #12 Third | none | x\n' > "$resume/queue.md"
+q "$resume" 10; q "$resume" 11; q "$resume" 12
 sh "$tool" claim "$resume" 10 issue-10 a-file >/dev/null 2>&1
 sh "$tool" stage "$resume" 11 built branch=issue-11 pr=911 rounds=0 build=/s/build.md >/dev/null 2>"$scratch/err"; status=$?
 same 'stage writes a checkpoint and exits 0' 0 "$status"
@@ -385,7 +401,7 @@ printf '\n# every subcommand that names a run takes a bare run id\n'
 # case holds that for the handover verbs #1281 added, with no path in any call,
 # as a worktree-isolated parent types them.
 bare=$(sh "$tool" start bare 2>/dev/null)
-printf '# Queue\n\n1. #70 A | none | x\n2. #71 B | none | x\n' > "$bare/queue.md"
+q bare 70; q bare 71
 same 'next takes a bare run id' 70 "$(sh "$tool" next bare 2>&1)"
 sh "$tool" stage bare 70 adjudicated note=/s/a.md branch=issue-70 footprint=f70 >/dev/null 2>"$scratch/err"; status=$?
 same 'stage takes a bare run id and writes the handover' '0 stage adjudicated' "$status $(sed -n 1p "$bare/handover/70" 2>/dev/null)"
@@ -402,7 +418,8 @@ printf '\n# next skips what the run ruled out, and a ruling line the owner has n
 # handover/ or the log records a gate, a deferral or a refusal, and the queue
 # line was marked `ruling` with no OWNER line for it.
 ruled=$(sh "$tool" start ruled 2>/dev/null)
-printf '# Queue\n\n1. #20 Gated | none | x | wide | ruling (embedding path)\n2. #21 Answered | none | x | wide | ruling\n3. #22 Deferred | none | x | narrow\n4. #23 Refused | none | x | narrow\n5. #24 Open | none | x | narrow\n' > "$ruled/queue.md"
+q "$ruled" 20 scope=wide mark=ruling 'note=embedding path'; q "$ruled" 21 scope=wide mark=ruling
+q "$ruled" 22; q "$ruled" 23; q "$ruled" 24
 printf -- '- 2026-09-27 — OWNER (2026-09-27) #21: build it.\n' >> "$ruled/decisions.md"
 same 'a ruling line with no OWNER line is skipped, and one the owner answered is not' 21 "$(sh "$tool" next "$ruled" 2>&1)"
 sh "$tool" claim "$ruled" 21 issue-21 f21 >/dev/null 2>&1
@@ -427,7 +444,7 @@ printf '\n# next holds a line marked blocked until the parent rules it open\n'
 # `blocked by` links and raises an open one to the parent, rather than
 # dropping the issue or building it unremarked.
 blocked=$(sh "$tool" start blocked 2>/dev/null)
-printf '# Queue\n\n1. #80 Waits | 0.12 | x | narrow | blocked (#79, 0.11)\n2. #81 Free | 0.12 | x | narrow\n' > "$blocked/queue.md"
+q "$blocked" 80 milestone=0.12 blocked=79,0.11; q "$blocked" 81 milestone=0.12
 printf -- '- 2026-10-02 — OWNER (2026-10-02) #80: build it.\n' >> "$blocked/decisions.md"
 same 'a blocked line is skipped, and an OWNER line does not release it' 81 "$(sh "$tool" next "$blocked" 2>&1)"
 sh "$tool" rule "$blocked" 80 open 'the blocker merged' >/dev/null 2>&1
@@ -438,23 +455,223 @@ printf '\n# a line marked both ruling and blocked is held by both, in either ord
 # that read the marks took the first one only, so the owner's answer to the
 # ruling would have released an issue whose blocker was still open.
 both=$(sh "$tool" start both 2>/dev/null)
-printf '# Queue\n\n1. #90 First | none | x | wide | ruling; blocked (#89, none)\n2. #91 Second | none | x | wide | blocked (#89, none); ruling\n3. #92 Free | none | x | narrow\n' > "$both/queue.md"
+q "$both" 90 scope=wide mark=ruling blocked=89,none; q "$both" 91 scope=wide blocked=89,none mark=ruling; q "$both" 92
 printf -- '- 2026-10-12 — OWNER (2026-10-12) #90: stop warning.\n- 2026-10-12 — OWNER (2026-10-12) #91: stop warning.\n' >> "$both/decisions.md"
 same 'an OWNER answer does not release a line that is also blocked, whichever mark comes first' 92 "$(sh "$tool" next "$both" 2>&1)"
 sh "$tool" rule "$both" 91 open 'the blocker merged' >/dev/null 2>&1
 same '  and ruling it open releases it' 91 "$(sh "$tool" next "$both" 2>&1)"
 
-printf '\n# a queue whose issue lines none parse is an error, not an empty queue\n'
-# Run 20261012-1113's queue agent wrote `1 | #502 | ...`, and next printed
-# EMPTY over sixteen eligible issues.
+printf '\n# a run whose queue.md was typed by hand is refused, and converted once\n'
+# Before #1724, hw-queue typed queue.md and next parsed it, so a malformed line
+# was refused only when next read it, after the queue agent had exited. Run
+# 20261012-1113's queue agent wrote `1 | #502 | ...`, and next printed EMPTY
+# over sixteen eligible issues. Now next reads queue.jsonl alone, and a run
+# that holds only a hand-typed queue.md is an error that names the way out.
 shape=$(sh "$tool" start shape 2>/dev/null)
-printf '# Queue\n\n1 | #95 | Wrong shape | none | x | narrow |\n' > "$shape/queue.md"
+printf '# Queue\n\n1. #95 Typed | none | x | x | narrow | ruling\n2. #96 Typed too | 0.10 | a reader | docs | wide | blocked (#94, 0.10, not in queue: waits on Q18); owner added it\n' > "$shape/queue.md"
 sh "$tool" next "$shape" >/dev/null 2>"$scratch/err"; status=$?
-same 'next refuses a queue written in the wrong shape with exit 1' 1 "$status"
+same 'next refuses a run that holds queue.md and no queue.jsonl with exit 1' 1 "$status"
 case $(cat "$scratch/err") in
-    *'hw-queue.md'*) pass '  and the refusal names the definition that states the shape' ;;
-    *) fail '  and the refusal names the definition that states the shape' "$(cat "$scratch/err")" ;;
+    *'run-dir.sh convert shape'*) pass '  and the refusal names the convert verb for that run' ;;
+    *) fail '  and the refusal names the convert verb for that run' "$(cat "$scratch/err")" ;;
 esac
+legacy=$(cat "$shape/queue.md")
+sh "$tool" queue shape 99 title=x milestone=none reader=x artifacts=x scope=narrow >/dev/null 2>"$scratch/err"; status=$?
+same 'a queue call on a run whose queue.md was typed by hand is refused with exit 1, and overwrites nothing' \
+    "1 1 $legacy" "$status $([ -e "$shape/queue.jsonl" ]; echo $?) $(cat "$shape/queue.md")"
+sh "$tool" convert shape >"$scratch/out" 2>"$scratch/err"; status=$?
+same 'convert exits 0 and converts every issue line' '0 CONVERTED: 2 entries into queue.jsonl; the old file is queue-legacy.md' "$status $(cat "$scratch/out")"
+same '  and keeps the typed file whole as queue-legacy.md' "$legacy" "$(cat "$shape/queue-legacy.md")"
+same '  and the marks become fields, with the words past the milestone kept as a note' \
+    '95 true [] []|96 false [{"issue":94,"milestone":"0.10"}] ["not in queue: waits on Q18","owner added it"]' \
+    "$(jq -rc '"\(.issue) \(.ruling) \(.blocked) \(.notes)"' "$shape/queue.jsonl" | paste -sd'|')"
+same '  and next reads the converted queue' 96 "$(sh "$tool" rule shape 96 open 'the blocker merged' >/dev/null; sh "$tool" next shape 2>&1)"
+sh "$tool" convert shape >/dev/null 2>&1; status=$?
+same '  and a second convert is refused, because a run converts once' 1 "$status"
+bad=$(sh "$tool" start bad-shape 2>/dev/null)
+printf '# Queue\n\n1. #97 Fine | none | x | x | narrow |\n2. #98 No scope | none | x | x\n' > "$bad/queue.md"
+before=$(cat "$bad/queue.md")
+sh "$tool" convert bad-shape >/dev/null 2>"$scratch/err"; status=$?
+same 'convert refuses a line the queue verb would refuse, with exit 2' 2 "$status"
+case $(cat "$scratch/err") in
+    *'#98'*'scope'*) pass '  and the refusal names the line and the field' ;;
+    *) fail '  and the refusal names the line and the field' "$(cat "$scratch/err")" ;;
+esac
+same '  and writes nothing: no queue.jsonl, and queue.md as it was' "1 $before" "$([ -e "$bad/queue.jsonl" ]; echo $?) $(cat "$bad/queue.md")"
+
+printf '\n# an OWNER line naming two issues answers both, and a malformed call is refused when it is written\n'
+# The decisive case for #1724. Run 20261012-1113 recorded the owner's answer
+# to #990 and #1275 as one line, `OWNER (2026-10-12) #990 #1275: "Build both"`
+# (decisions.md:1215), and answered_issues took the first #N alone, so next
+# held #1275 for a ruling the owner had already given and handed out #7.
+two=$(sh "$tool" start two-answers 2>/dev/null)
+q two-answers 990 mark=ruling
+q two-answers 1275 mark=ruling
+q two-answers 7
+sh "$tool" decide two-answers --owner 990 1275 -- '"Build both"' >"$scratch/out" 2>"$scratch/err"; status=$?
+same 'decide --owner exits 0 and names each issue it answers' '0 OWNER: #990 #1275' "$status $(cat "$scratch/out")"
+same '  and writes the one line every reader parses' 1 "$(grep -c '^- [0-9-]* — OWNER ([0-9-]*) #990 #1275: "Build both"$' "$two/decisions.md")"
+same 'next hands out the first issue the line answers' 990 "$(sh "$tool" next two-answers 2>&1)"
+sh "$tool" claim two-answers 990 issue-990 f990 >/dev/null 2>&1
+same '  and the second, which the first-#N reader held' 1275 "$(sh "$tool" next two-answers 2>&1)"
+# The line already in run 20261012-1113, typed before the verb existed, is read the same way.
+hand=$(sh "$tool" start hand-typed 2>/dev/null)
+q hand-typed 990 mark=ruling; q hand-typed 1275 mark=ruling; q hand-typed 7
+printf -- '- 2026-10-12 — OWNER (2026-10-12) #990 #1275: "Build both (Recommended)" — build in this run despite the self-audit label.\n' >> "$hand/decisions.md"
+sh "$tool" claim hand-typed 990 issue-990 f990 >/dev/null 2>&1
+same 'a hand-typed OWNER line in the same form answers both of its issues too' 1275 "$(sh "$tool" next hand-typed 2>&1)"
+# A #N after the colon is the owner's prose. Read as an answer, this one
+# line of the same run would have answered twelve issues.
+prose=$(sh "$tool" start prose-owner 2>/dev/null)
+q prose-owner 502 mark=ruling; q prose-owner 504 mark=ruling; q prose-owner 8
+printf -- '- 2026-10-12 — OWNER (2026-10-12): this run rules out probe work; Target set: #502 #504.\n' >> "$prose/decisions.md"
+same 'an OWNER line whose issues follow the colon answers none of them' 8 "$(sh "$tool" next prose-owner 2>&1)"
+sh "$tool" queue two-answers 9 title=x milestone=none reader=x artifacts=x >/dev/null 2>"$scratch/err"; status=$?
+same 'a queue call missing a field exits 2' 2 "$status"
+case $(cat "$scratch/err") in *'scope='*) pass '  and names the field' ;; *) fail '  and names the field' "$(cat "$scratch/err")" ;; esac
+sh "$tool" queue two-answers 9 title=x milestone=none reader=x artifacts=x scope=narrow mark=rulng >/dev/null 2>"$scratch/err"; status=$?
+same 'a queue call carrying an unknown mark exits 2' 2 "$status"
+case $(cat "$scratch/err") in *'mark=rulng'*) pass '  and names the mark' ;; *) fail '  and names the mark' "$(cat "$scratch/err")" ;; esac
+# Each bad value replaces the good one, so the refusal is the value's own
+# and not the one for a field named twice.
+for call in 'scope=both' 'blocked=x' 'colour=red' 'title='; do
+    set --
+    for pair in title=x milestone=none reader=x artifacts=x scope=narrow; do
+        [ "${pair%%=*}" = "${call%%=*}" ] || set -- "$@" "$pair"
+    done
+    sh "$tool" queue two-answers 9 "$@" "$call" >/dev/null 2>"$scratch/err"; status=$?
+    case $(cat "$scratch/err") in *'given twice'*) twice=1 ;; *) twice=0 ;; esac
+    same "a queue call carrying \`$call\` exits 2, for its own reason" '2 0' "$status $twice"
+done
+sh "$tool" queue two-answers x9 title=x milestone=none reader=x artifacts=x scope=narrow >/dev/null 2>&1; status=$?
+same 'a queue call whose issue is not a number exits 2' 2 "$status"
+sh "$tool" queue two-answers 7 title=x milestone=none reader=x artifacts=x scope=narrow >/dev/null 2>&1; status=$?
+same 'a queue call for an issue already queued exits 2' 2 "$status"
+same '  and no refused call wrote an entry' 3 "$(wc -l < "$two/queue.jsonl" | tr -d ' ')"
+same 'queue.md is rendered from queue.jsonl, one line per entry in the shape hw-queue states' \
+    '1. #990 Issue 990 | none | x | x | narrow | ruling|2. #1275 Issue 1275 | none | x | x | narrow | ruling|3. #7 Issue 7 | none | x | x | narrow | ' \
+    "$(grep '^[0-9]*\. #' "$two/queue.md" | paste -sd'|')"
+printf '# Queue\n\n1. #7 Edited by hand | none | x | x | narrow | ruling\n' > "$two/queue.md"
+sh "$tool" release two-answers 990 >/dev/null 2>&1
+same '  and next never reads it: an edit there changes nothing' 990 "$(sh "$tool" next two-answers 2>&1)"
+sh "$tool" decide two-answers 'OWNER (2026-10-12) #7: typed by hand' >/dev/null 2>"$scratch/err"; status=$?
+same 'a plain decide whose text opens OWNER exits 2' 2 "$status"
+case $(cat "$scratch/err") in *'--owner'*) pass '  and names --owner' ;; *) fail '  and names --owner' "$(cat "$scratch/err")" ;; esac
+same '  and writes nothing' 0 "$(grep -c 'typed by hand' "$two/decisions.md")"
+sh "$tool" decide two-answers 'the parent filled slot 2' >/dev/null 2>&1; status=$?
+same 'a plain decide of prose is unchanged' '0 1' "$status $(grep -c ' — the parent filled slot 2$' "$two/decisions.md")"
+for call in '--owner -- "yes"' '--owner 12x -- "yes"' '--owner 12 -- ' '--owner 12 "yes"'; do
+    # shellcheck disable=SC2086
+    eval "sh \"\$tool\" decide two-answers $call" >/dev/null 2>&1; status=$?
+    same "decide $call exits 2" 2 "$status"
+done
+
+printf '\n# the rulings the owner owes are written through owe, and rendered\n'
+owes=$(sh "$tool" start owes 2>/dev/null)
+sh "$tool" owe owes 1541 'title=Declared conflict' 'question=Stop warning?' 'options=Stop warning, because the edge says it | Keep warning | defer' 'unblocks=#1541 in 0.10' >"$scratch/out" 2>&1; status=$?
+same 'owe exits 0' '0 OWED: #1541, ruling 1' "$status $(cat "$scratch/out")"
+same '  and rulings.md holds the block in the product owner'"'"'s shape, not yet answered' \
+    'RULING #1541 Declared conflict|  question: Stop warning?|  options:  Stop warning, because the edge says it | Keep warning | defer|  unblocks: #1541 in 0.10|  answered: no' \
+    "$(grep . "$owes/rulings.md" | paste -sd'|')"
+sh "$tool" decide owes --owner 1541 -- '"Stop warning (Recommended)"' >/dev/null 2>&1
+same '  and an OWNER line marks it answered, with no block edited' '  answered: yes, an OWNER line in decisions.md' "$(sh "$tool" rulings owes | grep answered)"
+for call in 'options=a | b' 'options=defer' 'options=a |  | defer' 'colour=red'; do
+    sh "$tool" owe owes 1542 title=t question=q unblocks=u "$call" >/dev/null 2>"$scratch/err"; status=$?
+    same "owe carrying \`$call\` exits 2" 2 "$status"
+done
+sh "$tool" owe owes 1542 title=t 'options=a | defer' unblocks=u >/dev/null 2>"$scratch/err"; status=$?
+same 'owe missing the question exits 2' 2 "$status"
+case $(cat "$scratch/err") in *'question='*) pass '  and names the field' ;; *) fail '  and names the field' "$(cat "$scratch/err")" ;; esac
+same '  and no refused call wrote a ruling' 1 "$(wc -l < "$owes/rulings.jsonl" | tr -d ' ')"
+handrul=$(sh "$tool" start hand-rulings 2>/dev/null)
+printf 'RULING #1471 Typed by hand\n  question: q\n' > "$handrul/rulings.md"
+sh "$tool" owe hand-rulings 1472 title=t question=q 'options=a | defer' unblocks=u >/dev/null 2>&1; status=$?
+same 'the first owe in a run whose rulings.md was written by hand keeps that file whole as rulings-legacy.md' \
+    "0 RULING #1471 Typed by hand|  question: q RULING #1472 t" \
+    "$status $(paste -sd'|' "$handrul/rulings-legacy.md") $(head -n 1 "$handrul/rulings.md")"
+
+printf '\n# the integrator queue only appends, and no verb rewrites an earlier entry\n'
+ints=$(sh "$tool" start ints 2>/dev/null)
+sh "$tool" integrate ints 1723 issue=none branch=1723-queue sha=5cd20cbb ruling=MERGE footprint=tools/run/run-dir.sh >"$scratch/out" 2>&1; status=$?
+same 'integrate exits 0 for a pull request with no issue' '0 INTEGRATE: PR #1723 queued, entry 1' "$status $(cat "$scratch/out")"
+first=$(sed -n 1p "$ints/integrate.jsonl")
+sh "$tool" integrate ints 1730 issue=1724 branch=1724-run-files sha=abc1234 'ruling=MERGE, held by its fixture' footprint=a,b >/dev/null 2>&1
+sh "$tool" integrate ints 1723 issue=none branch=1723-queue sha=5cd20cbb ruling=MERGE footprint=tools/run/run-dir.sh >/dev/null 2>"$scratch/err"; status=$?
+same 'the same pull request at the same commit is refused with exit 2' 2 "$status"
+sh "$tool" integrate ints 1723 issue=none branch=1723-queue sha=def5678 ruling='MERGE again, after an ejection' footprint=tools/run/run-dir.sh >/dev/null 2>&1; status=$?
+same '  and a new ruling of it at a new head is appended' '0 3' "$status $(wc -l < "$ints/integrate.jsonl" | tr -d ' ')"
+for call in 'issue=x' 'sha=XYZ1234' 'sha=abc' 'branch=a b' 'colour=red'; do
+    set --
+    for pair in issue=1 branch=b sha=abc1234 ruling=r footprint=f; do
+        [ "${pair%%=*}" = "${call%%=*}" ] || set -- "$@" "$pair"
+    done
+    sh "$tool" integrate ints 1731 "$@" "$call" >/dev/null 2>"$scratch/err"; status=$?
+    case $(cat "$scratch/err") in *'given twice'*) twice=1 ;; *) twice=0 ;; esac
+    same "integrate carrying \`$call\` exits 2, for its own reason" '2 0' "$status $twice"
+done
+sh "$tool" integrate ints 1731 issue=1 branch=b sha=abc1234 ruling=r >/dev/null 2>"$scratch/err"; status=$?
+same 'integrate missing the footprint exits 2' 2 "$status"
+case $(cat "$scratch/err") in *'footprint='*) pass '  and names the field' ;; *) fail '  and names the field' "$(cat "$scratch/err")" ;; esac
+same 'integrations lists each pull request once, at its last ruling, in the order first ruled' \
+    'PR #1723 issue=none branch=1723-queue sha=def5678 footprint=tools/run/run-dir.sh ruling=MERGE again, after an ejection|PR #1730 issue=1724 branch=1724-run-files sha=abc1234 footprint=a,b ruling=MERGE, held by its fixture' \
+    "$(sh "$tool" integrations ints | paste -sd'|')"
+printf '{"iter":1,"issue":0,"pr":1723,"merge":"abc1234","verdict":"MERGE","proved":"p","opened":[],"closed":[]}\n' >> "$ints/log.jsonl"
+same '  and drops one the log records merged' 'PR #1730' "$(sh "$tool" integrations ints | cut -d' ' -f1-2)"
+sh "$tool" integrate ints 1730 issue=1724 branch=1724-run-files sha=abc1234 ruling=ejected footprint=a,b >/dev/null 2>&1; status=$?
+same '  and an ejection is one more entry, which takes the pull request off the list' '0 4 0' \
+    "$status $(wc -l < "$ints/integrate.jsonl" | tr -d ' ') $(sh "$tool" integrations ints | wc -l | tr -d ' ')"
+sh "$tool" integrate ints 1730 issue=1724 branch=1724-run-files sha=abc5678 ruling=MERGE footprint=a,b >/dev/null 2>&1
+same '  until the parent rules it again at its new head' 'PR #1730 sha=abc5678' "$(sh "$tool" integrations ints | cut -d' ' -f1,2,5)"
+# Every verb that writes the run, once each. None may touch the first entry.
+q ints 5
+sh "$tool" owe ints 5 title=t question=q 'options=a | defer' unblocks=u >/dev/null 2>&1
+sh "$tool" decide ints --owner 5 -- 'yes' >/dev/null 2>&1
+sh "$tool" decide ints 'prose' >/dev/null 2>&1
+sh "$tool" rule ints 5 open 'r' >/dev/null 2>&1
+printf -- '- #5 | build | a finding | none\n' > "$scratch/intake"
+sh "$tool" intake ints "$scratch/intake" >/dev/null 2>&1
+sh "$tool" withdraw ints 'a finding' '- #5 | build | withdrawn | none' >/dev/null 2>&1
+sh "$tool" stage ints 5 ruled-merge pr=1730 >/dev/null 2>&1
+sh "$tool" rulings ints >/dev/null 2>&1
+sh "$tool" integrations ints >/dev/null 2>&1
+sh "$tool" resume ints >/dev/null 2>&1
+same 'after every verb that writes the run, the first entry of integrate.jsonl is byte for byte as written' "$first" "$(sed -n 1p "$ints/integrate.jsonl")"
+same '  and the file only grew' 5 "$(wc -l < "$ints/integrate.jsonl" | tr -d ' ')"
+same 'resume does not send a ruled-merge whose pull request is already queued to integrate again' '5 ruled-merge queued' "$(sh "$tool" resume ints 2>&1)"
+sh "$tool" stage ints 6 ruled-merge pr=1740 >/dev/null 2>&1
+same '  and one that is not queued still goes to integrate' '6 ruled-merge integrate' "$(sh "$tool" resume ints 2>&1 | grep '^6 ')"
+sh "$tool" stage ints 1724 ruled-merge >/dev/null 2>&1
+same '  and an issue queued under its own number is queued, with no pr on its handover' '1724 ruled-merge queued' "$(sh "$tool" resume ints 2>&1 | grep '^1724 ')"
+# Verify-1 of PR #1726: an ejected pull request's re-ruling read as queued,
+# so a parent that restarted before appending it was told to do nothing, and
+# the pull request never merged.
+sh "$tool" integrate ints 1750 issue=17 branch=b17 sha=aaa1750 ruling=MERGE footprint=f >/dev/null 2>&1
+sh "$tool" integrate ints 1750 issue=17 branch=b17 sha=aaa1750 ruling=ejected footprint=f >/dev/null 2>&1
+sh "$tool" stage ints 17 ruled-merge pr=1750 >/dev/null 2>&1
+same 'resume sends a ruled-merge whose pull request was last ejected to integrate, not queued' '17 ruled-merge integrate' "$(sh "$tool" resume ints 2>&1 | grep '^17 ')"
+sh "$tool" integrate ints 1750 issue=17 branch=b17 sha=bbb1750 ruling=MERGE footprint=f >/dev/null 2>&1
+same '  and once it is ruled again at its new head, it is queued' '17 ruled-merge queued' "$(sh "$tool" resume ints 2>&1 | grep '^17 ')"
+sh "$tool" stage ints 18 ruled-merge >/dev/null 2>&1
+sh "$tool" integrate ints 1760 issue=18 branch=b18 sha=aaa1760 ruling=ejected footprint=f >/dev/null 2>&1
+same '  and an ejected issue with no pr on its handover goes to integrate too' '18 ruled-merge integrate' "$(sh "$tool" resume ints 2>&1 | grep '^18 ')"
+for verb in "queue ints 19 title=a milestone=none reader=x artifacts=x scope=narrow title=b" \
+    "owe ints 19 title=a question=q 'options=a | defer' unblocks=u title=b" \
+    "integrate ints 1770 issue=19 branch=b sha=abc1234 ruling=r footprint=f sha=abc5678"; do
+    eval "sh \"\$tool\" $verb" >/dev/null 2>"$scratch/err"; status=$?
+    case $(cat "$scratch/err") in *'given twice'*) said=1 ;; *) said=0 ;; esac
+    same "${verb%% *} refuses a field named twice with exit 2, and says so" '2 1' "$status $said"
+done
+sh "$tool" queue ints 29 'title=a | b' milestone=none reader=x artifacts=x scope=narrow >/dev/null 2>"$scratch/err"; status=$?
+case $(cat "$scratch/err") in *'separates the columns'*) said=1 ;; *) said=0 ;; esac
+same 'queue refuses a title that holds `|`, which separates the columns of queue.md' '2 1' "$status $said"
+
+printf '\n# an OWNER line an old ledger carries in is read like one decide --owner writes\n'
+imp=$(sh "$tool" start imported 2>/dev/null)
+printf '# Ledger\n\n## Decisions needing an owner\n\n- 2026-09-01 — OWNER (2026-09-01) #310 #311: build both.\n\n## Log\n\nrow\n' > "$scratch/ledger.md"
+sh "$tool" import "$scratch/ledger.md" imported >/dev/null 2>&1
+q imported 310 mark=ruling; q imported 311 mark=ruling; q imported 312
+sh "$tool" claim imported 310 issue-310 f310 >/dev/null 2>&1
+same 'import carries an OWNER line that answers both of its issues' 311 "$(sh "$tool" next imported 2>&1)"
 
 printf '\n# drain while an adjudicate is in flight: the claim waits for the next session\n'
 # Verify-1 of PR #1279: the parent claims on an adjudicate report, which can
@@ -463,7 +680,7 @@ printf '\n# drain while an adjudicate is in flight: the claim waits for the next
 # session claims it and dispatches hw-iterate, and the issue is not
 # adjudicated twice. `resume` says which, for every open handover.
 inflight=$(sh "$tool" start inflight 2>/dev/null)
-printf '# Queue\n\n1. #30 A | none | x\n2. #31 B | none | x\n3. #32 C | none | x\n4. #33 D | none | x\n5. #34 E | none | x\n' > "$inflight/queue.md"
+for n in 30 31 32 33 34; do q "$inflight" "$n"; done
 touch "$inflight/drain"
 same 'in drain the claim on an adjudicate report writes nothing' 'DRAIN 1' \
     "$(sh "$tool" claim "$inflight" 30 issue-30 f30 g30 2>&1) $([ -e "$inflight/claims/issues/30" ]; echo $?)"
@@ -500,12 +717,14 @@ printf '\n# a ruling binds the run that wrote it, and an OWNER line binds every 
 rm -rf "$HEADWATER_RUN_ROOT"
 mkdir -p "$HEADWATER_RUN_ROOT"
 runa=$(sh "$tool" start 2026-a 2>/dev/null)
-printf '# Queue\n\n1. #40 Deferred in A | none | x\n2. #41 Answered in A | none | x | ruling\n3. #42 Other | none | x\n' > "$runa/queue.md"
+q "$runa" 40; q "$runa" 41 mark=ruling; q "$runa" 42
 sh "$tool" rule "$runa" 40 deferred 'not this run' >/dev/null 2>&1
 printf -- '- 2026-09-27 — OWNER (2026-09-27) #41: build it.\n' >> "$runa/decisions.md"
 same 'in the run that deferred it, next skips the issue' 41 "$(sh "$tool" next "$runa" 2>&1)"
 runb=$(sh "$tool" start 2026-b 2>/dev/null)
-cp "$runa/queue.md" "$runb/queue.md"
+same '  and the next run is seeded with no queue, no rulings and no integrator queue' '1 1 1' \
+    "$([ -e "$runb/queue.jsonl" ]; echo $?) $([ -e "$runb/rulings.jsonl" ]; echo $?) $([ -e "$runb/integrate.jsonl" ]; echo $?)"
+q "$runb" 40; q "$runb" 41 mark=ruling; q "$runb" 42
 same '  and the next run is seeded with the RULED line' 1 "$(grep -c 'RULED #40 deferred (run 2026-a)' "$runb/decisions.md")"
 same '  but the next run hands the issue out again' 40 "$(sh "$tool" next "$runb" 2>&1)"
 sh "$tool" claim "$runb" 40 issue-40 f40 >/dev/null 2>&1
@@ -521,7 +740,7 @@ cmd="$root/.claude/commands/next-run.md"
 form=$(grep -o 'run-dir\.sh stage <run> <issue> adjudicated[^`]*' "$cmd" | head -n 1)
 same 'next-run.md gives the parent a stage form for a BUILD report' 1 "$([ -n "$form" ] && echo 1 || echo 0)"
 own=$(sh "$tool" start own-form 2>/dev/null)
-printf '# Queue\n\n1. #60 A | none | x\n' > "$own/queue.md"
+q "$own" 60
 touch "$own/drain"
 filled=$(printf '%s' "$form" | sed -e "s|^run-dir\.sh stage <run> <issue>|stage $own 60|" \
     -e 's|<path>|/s/adjudication.md|g' -e 's|<name>|issue-60|g' -e 's|<a,b>|f60,g60|g')
